@@ -1,14 +1,16 @@
 import os
 
+import sys
+from urllib.parse import urlparse
+
 from django.contrib.messages import constants as messages  # NOQA
 from django.utils.crypto import get_random_string
 from django.utils.translation import ugettext_lazy as _  # NOQA
 
 
 # File system and directory settings
-
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-DATA_DIR = 'data'
+DATA_DIR = os.environ('PRETALX_DATA_DIR', os.path.join(BASE_DIR, 'data'))
 LOG_DIR = os.path.join(DATA_DIR, 'logs')
 MEDIA_ROOT = os.path.join(DATA_DIR, 'media')
 STATIC_ROOT = os.path.join(os.path.dirname(__file__), 'static.dist')
@@ -34,29 +36,39 @@ else:
 
 
 # General setup settings
-
-DEBUG = True
+debug_default = 'runserver' in sys.argv
+DEBUG = os.environ.get('PRETALX_DEBUG', str(debug_default)) == 'True'
 
 if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(DATA_DIR, 'db.sqlite3'),
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': '',
-        'PORT': '',
+        'ENGINE': 'django.db.backends.' + os.getenv('PRETALX_DB_TYPE', 'sqlite3'),
+        'NAME': os.getenv('PRETALX_DB_NAME', 'db.sqlite3'),
+        'USER': os.getenv('PRETALX_DB_USER', ''),
+        'PASSWORD': os.getenv('PRETALX_DB_PASS', ''),
+        'HOST': os.getenv('PRETALX_DB_HOST', ''),
+        'PORT': os.getenv('PRETALX_DB_PORT', ''),
         'CONN_MAX_AGE': 0,
     }
 }
 
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
-SITE_URL = 'http://localhost'
 
-ALLOWED_HOSTS = ['*']
+SITE_URL = os.getenv('PRETALX_SITE_URL', 'http://localhost')
+if SITE_URL == 'http://localhost':
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = [urlparse(SITE_URL).netloc]
+
+
+if os.getenv('PRETALX_COOKIE_DOMAIN', ''):
+    SESSION_COOKIE_DOMAIN = os.getenv('PRETALX_COOKIE_DOMAIN', '')
+    CSRF_COOKIE_DOMAIN = os.getenv('PRETALX_COOKIE_DOMAIN', '')
+
+SESSION_COOKIE_SECURE = os.getenv('PRETALX_HTTPS', 'True' if SITE_URL.startswith('https:') else 'False') == 'True'
 
 
 # Internal settings
