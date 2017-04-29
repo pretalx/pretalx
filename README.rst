@@ -1,6 +1,9 @@
 pretalx
 =======
 
+.. image:: https://travis-ci.org/openeventstack/pretalx.svg?branch=master
+    :target: https://travis-ci.org/openeventstack/pretalx
+
 `pretalx` will try to provide a conference planning tool, featuring
 
 - CfP and talk submission support with a clean interface
