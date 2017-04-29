@@ -20,7 +20,7 @@ RUN mkdir /static && \
     pip3 install -r requirements.txt && \
     pip3 install gunicorn mysqlclient && \
     python3 manage.py collectstatic --noinput && \
-    python3 manage.py compress --noinput && \
+    python3 manage.py compress && \
     chmod +x /usr/local/bin/pretalx
 
 RUN mkdir /data
