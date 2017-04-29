@@ -2,7 +2,11 @@ pretalx
 =======
 
 .. image:: https://travis-ci.org/openeventstack/pretalx.svg?branch=master
-    :target: https://travis-ci.org/openeventstack/pretalx
+   :target: https://travis-ci.org/openeventstack/pretalx
+
+.. image:: https://codecov.io/gh/openeventstack/pretalx/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/openeventstack/pretalx
+
 
 `pretalx` will try to provide a conference planning tool, featuring
 
