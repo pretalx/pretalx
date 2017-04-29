@@ -7,6 +7,7 @@ install:
   - pip install -r src/requirements/dev.txt -r src/requirements/fancy.txt
 script:
   - cd src/
+  - python manage.py collectstatic --noinput
   - python manage.py compress
   - pylama
   - isort -rc -c .
