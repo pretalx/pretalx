@@ -16,6 +16,7 @@ COPY src /src
 
 RUN mkdir /static && \
     cd /src && \
+    pip3 install -U pip setuptools wheel && \
     pip3 install -r requirements.txt && \
     pip3 install gunicorn mysqlclient && \
     python3 manage.py collectstatic --noinput && \
