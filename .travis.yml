@@ -7,5 +7,6 @@ install:
   - pip install -r src/requirements/dev.txt -r src/requirements/fancy.txt
 script:
   - cd src/
-  - flake8 .
+  - pylama
+  - isort -rc -c .
   - py.test tests/
