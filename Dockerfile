@@ -1,7 +1,7 @@
-FROM debian:jessie
+FROM python:3.6
 
-RUN apt-get update && apt-get install -y python3 git python3-pip \
-	libmysqlclient-dev libpq-dev locales build-essential python3-dev \
+RUN apt-get update && apt-get install -y git \
+	libmysqlclient-dev libpq-dev locales build-essential \
 	--no-install-recommends && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/* && \
@@ -16,7 +16,7 @@ COPY src /src
 
 RUN mkdir /static && \
     cd /src && \
-    pip3 install -U pip setuptools wheel && \
+    pip3 install -U pip setuptools wheel typing && \
     pip3 install -r requirements.txt && \
     pip3 install gunicorn mysqlclient && \
     python3 manage.py collectstatic --noinput && \
