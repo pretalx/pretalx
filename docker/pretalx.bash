@@ -1,6 +1,6 @@
 #!/bin/bash
 # For use with Docker
-cd /pretalx
+cd /src
 export PRETALX_DATA_DIR=/data
 python3 manage.py migrate
 gunicorn \
