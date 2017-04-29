@@ -34,13 +34,20 @@ else:
         os.chown(SECRET_FILE, os.getuid(), os.getgid())
         f.write(SECRET_KEY)
 
-
 # General setup settings
 debug_default = 'runserver' in sys.argv
 DEBUG = os.environ.get('PRETALX_DEBUG', str(debug_default)) == 'True'
 
 if DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    MAIL_FROM = SERVER_EMAIL = DEFAULT_FROM_EMAIL = os.environ.get('PRETALX_MAIL_FROM', 'admin@localhost')
+    EMAIL_HOST = os.environ.get('PRETALX_MAIL_HOST', 'localhost')
+    EMAIL_PORT = int(os.environ.get('PRETALX_MAIL_PORT', '25'))
+    EMAIL_HOST_USER = os.environ.get('PRETALX_MAIL_USER', '')
+    EMAIL_HOST_PASSOWRD = os.environ.get('PRETALX_MAIL_PASSWORD', '')
+    EMAIL_USE_TLS = os.environ.get('PRETALX_MAIL_TLS', 'False') == 'True'
+    EMAIL_USE_SSL = os.environ.get('PRETALX_MAIL_SSL', 'False') == 'True'
 
 DATABASES = {
     'default': {
