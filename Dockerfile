@@ -13,7 +13,6 @@ ENV LC_ALL C.UTF-8
 
 COPY docker/pretalx.bash /usr/local/bin/pretalx
 COPY src /src
-ADD docker/production_settings.py /src/pretalx/production_settings.py
 
 RUN mkdir /static && \
     cd /src && \
