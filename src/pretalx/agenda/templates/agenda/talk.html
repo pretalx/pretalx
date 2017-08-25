@@ -35,7 +35,7 @@
                 </div>
                 {% for speaker in speakers %}
                     <div class="info">
-                        <div class="speaker">{{ speaker.get_display_name }}</div>
+                        <a href="{% url 'agenda:speaker' event=talk.event.slug slug=speaker.nick %}">{{ speaker.get_display_name }}</a>
                         {% if speaker.talk_profile.biography %}
                             <div>{{ speaker.talk_profile.biography }}</div>
                         {% endif %}
