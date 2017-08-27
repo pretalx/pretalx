@@ -36,7 +36,14 @@
     </ul>
 
     {% if pending %}
-        <legend>{{ pending|length }} {% trans "Pending Invitations" %}</legend>
+        <legend>
+            {{ pending|length }}
+            {% blocktrans trimmed count count=pending.count %}
+            Pending Invitation
+            {% plural %}
+            Pending Invitations
+            {% endblocktrans %}
+        </legend>
         <ul>
             {% for email in pending %}
                 <li>
