@@ -1,0 +1,38 @@
+{% extends "agenda/base.html" %}
+{% load i18n %}
+
+{% block content %}
+<h3>
+    {{ speaker.nick }}
+    {% if speaker.name %}
+        <small>{{ speaker.name }}</small>
+    {% endif %}
+</h3>
+
+<div class="row">
+    <div class="col-lg-8 col-md-6 col-xs-12">
+        {% if speaker.biography %}
+            {{ speaker.biography }}
+        {% else %}
+            {% trans 'This speaker did not provide a biography yet.' %}
+        {% endif %}
+    </div>
+    <div class="col-lg-4 col-md-6 col-xs-12">
+        <div class="bordered-list">
+            <div class="header">
+                {% blocktrans trimmed count count=submissions.count %}
+                Talk
+                {% plural %}
+                Talks
+                {% endblocktrans %}
+            </div>
+            {% for submission in submissions %}
+                <div class="info">
+                    <div><a href="{{ submission.urls.public }}">{{ submission.title }}</a></div>
+                    <div>{{ submission.description }}</div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
