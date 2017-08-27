@@ -10,7 +10,14 @@
             {% endif %}{% endif %}
         {% trans "To invite more members to your team, enter an email address below." %}
     </div>
-    <legend>{{ team|length }} {% trans "Team Members" %}</legend>
+    <legend>
+        {{ team|length }}
+        {% blocktrans trimmed count count=team.count %}
+        Team Member
+        {% plural %}
+        Team Members
+        {% endblocktrans %}
+    </legend>
     <ul>
         {% for member in team %}
             <li>
