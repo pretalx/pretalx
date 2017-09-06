@@ -1,9 +1,11 @@
 from django.conf.urls import include, url
 
+from pretalx.event.models.event import SLUG_CHARS
+
 from .views import feed, location, schedule, speaker
 
 agenda_urls = [
-    url('^(?P<event>\w+)/', include([
+    url(f'^(?P<event>[{SLUG_CHARS}]+)/', include([
         url('^schedule/$', schedule.ScheduleView.as_view(), name='schedule'),
         url('^schedule/changelog$', schedule.ChangelogView.as_view(), name='schedule.changelog'),
         url('^schedule.xml$', schedule.FrabXmlView.as_view(), name='frab-xml'),
