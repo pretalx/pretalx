@@ -40,6 +40,7 @@ class SubmissionStates(Choices):
         REJECTED: (ACCEPTED, SUBMITTED),
         ACCEPTED: (CONFIRMED, CANCELED, REJECTED, SUBMITTED),
         CONFIRMED: (ACCEPTED, CANCELED),
+        CANCELED: (ACCEPTED, CONFIRMED),
         WITHDRAWN: (SUBMITTED,),
         DELETED: None,
     }
