@@ -42,7 +42,7 @@ class SubmissionStates(Choices):
         CONFIRMED: (ACCEPTED, CANCELED, DELETED),
         CANCELED: (ACCEPTED, CONFIRMED, DELETED),
         WITHDRAWN: (SUBMITTED, DELETED),
-        DELETED: None,
+        DELETED: tuple(),
     }
 
 
