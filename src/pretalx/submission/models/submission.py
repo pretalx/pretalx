@@ -206,19 +206,11 @@ class Submission(LogMixin, models.Model):
             )
 
     def confirm(self, person=None, force=False, orga=False):
-        if self.state not in [SubmissionStates.ACCEPTED] and not force:
-            raise SubmissionError(_('Submission must be accepted, not {state} to be confirmed.').format(state=self.state))
-
-        self.state = SubmissionStates.CONFIRMED
-        self.save(update_fields=['state'])
+        self._set_state(SubmissionStates.CONFIRMED, force)
         self.log_action('pretalx.submission.confirmation', person=person, orga=orga)
 
     def accept(self, person=None, force=False):
-        if self.state not in [SubmissionStates.SUBMITTED, SubmissionStates.REJECTED] and not force:
-            raise SubmissionError(_('Submission must be submitted or rejected, not {state} to be accepted.').format(state=self.state))
-
-        self.state = SubmissionStates.ACCEPTED
-        self.save(update_fields=['state'])
+        self._set_state(SubmissionStates.ACCEPTED, force)
         self.log_action('pretalx.submission.accept', person=person, orga=True)
 
         from pretalx.schedule.models import TalkSlot
@@ -230,9 +222,8 @@ class Submission(LogMixin, models.Model):
                 locale=self.content_locale
             )
 
-    def reject(self, person=None):
-        self.state = SubmissionStates.REJECTED
-        self.save(update_fields=['state'])
+    def reject(self, person=None, force=False):
+        self._set_state(SubmissionStates.REJECTED, force)
         self.log_action('pretalx.submission.reject', person=person, orga=True)
 
         from pretalx.schedule.models import TalkSlot
@@ -244,29 +235,21 @@ class Submission(LogMixin, models.Model):
                 locale=self.content_locale
             )
 
-    def cancel(self, person=None):
-        if self.state not in [SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]:
-            raise SubmissionError(_('This submission was {state}, not accepted or confirmed, and cannot be canceled.').format(state=self.state))
-
-        self.state = SubmissionStates.CANCELED
-        self.save(update_fields=['state'])
+    def cancel(self, person=None, force=False):
+        self._set_state(SubmissionStates.CANCELED, force)
         self.log_action('pretalx.submission.cancel', person=person, orga=True)
 
         from pretalx.schedule.models import TalkSlot
         TalkSlot.objects.filter(submission=self, schedule=self.event.wip_schedule).delete()
 
-    def withdraw(self, person=None):
-        if self.state != SubmissionStates.SUBMITTED:
-            raise SubmissionError(_('This submission has already been processed and cannot be withdrawn, only canceled.'))
-        self.state = SubmissionStates.WITHDRAWN
-        self.save(update_fields=['state'])
+    def withdraw(self, person=None, force=False):
+        self._set_state(SubmissionStates.WITHDRAWN, force)
         from pretalx.schedule.models import TalkSlot
         TalkSlot.objects.filter(submission=self, schedule=self.event.wip_schedule).delete()
         self.log_action('pretalx.submission.withdraw', person=person, orga=False)
 
-    def remove(self, person=None):
-        self.state = SubmissionStates.DELETED
-        self.save(update_fields=['state'])
+    def remove(self, person=None, force=False):
+        self._set_state(SubmissionStates.DELETED, force)
         from pretalx.schedule.models import TalkSlot
         TalkSlot.objects.filter(submission=self, schedule=self.event.wip_schedule).delete()
         self.log_action('pretalx.submission.deleted', person=person, orga=False)
