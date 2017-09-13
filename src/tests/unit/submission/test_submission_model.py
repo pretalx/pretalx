@@ -144,3 +144,13 @@ def test_withdraw_fail(submission, state):
     assert submission.event.queued_mails.count() == 0
     assert submission.event.wip_schedule.talks.count() == 0
     assert submission.logged_actions().count() == 0
+
+
+@pytest.mark.django_db
+def test_set_state_error_msg(submission):
+    submission.state = SubmissionStates.SUBMITTED
+
+    with pytest.raises(SubmissionError) as excinfo:
+        submission._set_state(SubmissionStates.SUBMITTED)
+
+    assert 'must be rejected or accepted or withdrawn not submitted to be submitted' in str(excinfo.value)

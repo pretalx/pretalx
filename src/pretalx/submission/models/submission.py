@@ -4,7 +4,7 @@ from django.conf import settings
 from django.db import models
 from django.utils.crypto import get_random_string
 from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import pgettext, ugettext_lazy as _
 from urlman import Urls
 
 from pretalx.common.choices import Choices
@@ -180,6 +180,30 @@ class Submission(LogMixin, models.Model):
         if self.duration is None:
             return self.submission_type.default_duration
         return self.duration
+
+    def _set_state(self, new_state, force=False):
+        """
+        check if the new state is valid for this Submission (based on SubmissionStates.valid_next_states).
+        if yes, set it and save the object. if no, raise a SubmissionError with a helpful message.
+        """
+
+        valid_next_states = SubmissionStates.valid_next_states.get(self.state, [])
+
+        if new_state in valid_next_states or force:
+            self.state = new_state
+            self.save(update_fields=['state'])
+        else:
+            source_states = (src for src, dsts in SubmissionStates.valid_next_states.items() if new_state in dsts)
+
+            # build an error message mentioning all states, which are valid source states for the desired new state.
+            trans_or = pgettext('used in talk confirm/accept/reject/...-errors, like "... must be accepted OR foo OR bar ..."', ' or ')
+            state_names = dict(SubmissionStates.get_choices())
+            source_states = trans_or.join(str(state_names[state]) for state in source_states)
+            raise SubmissionError(
+                _('Submission must be {src_states} not {state} to be {new_state}.').format(
+                    src_states=source_states, state=self.state, new_state=new_state
+                )
+            )
 
     def confirm(self, person=None, force=False, orga=False):
         if self.state not in [SubmissionStates.ACCEPTED] and not force:
