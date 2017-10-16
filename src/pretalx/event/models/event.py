@@ -138,6 +138,8 @@ class Event(LogMixin, models.Model):
         create = '/orga/event/new'
         base = '/orga/event/{self.slug}'
         cfp = '{base}/cfp'
+        view_cfp = '{cfp}/text'
+        edit_cfp = '{cfp}/text/edit'
         users = '{base}/users'
         mail = '{base}/mails'
         send_mails = '{mail}/send'
