@@ -106,7 +106,7 @@
                 <a class="nav-link {% if "settings." in url_name %}active{% endif %}" href="{{ request.event.orga_urls.settings }}">
                     <span class="fa fa-wrench"></span> {% trans "Settings" %}
                 </a>
-                <a class="nav-link {% if "cfp." in url_name %}active{% endif %}" href="{{ request.event.cfp.urls.text }}">
+                <a class="nav-link {% if "cfp." in url_name %}active{% endif %}" href="{{ request.event.orga_urls.view_cfp }}">
                     <span class="fa fa-bullhorn"></span> {% trans "CfP" %}
                 </a>
             {% endif %}
