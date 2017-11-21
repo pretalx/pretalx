@@ -122,10 +122,13 @@ Vue.component('talk', {
   template: `
     <div class="talk-box" :class="[talk.state, {dragged: isDragged}]" v-bind:style="style" @mousedown="onMouseDown"
          :title="title">
-      <span class="time" v-if="this.talk.start">
-        {{ humanStart }}
-      </span>
-      {{ talk.title }} ({{ talk.duration }} minutes)
+      <div v-if="this.talk.state != 'deleted'">
+        <span class="time" v-if="this.talk.start">
+          {{ humanStart }}
+        </span>
+        <span >{{ talk.title }} ({{ talk.duration }} minutes)</span>
+      </div>
+      <span v-else>[deleted]</span>
     </div>
   `,
   props: {
@@ -363,7 +366,9 @@ var app = new Vue({
             })
           })
         } else {
-          window.open(dragController.draggedTalk.url)
+          if (dragController.draggedTalk.state != 'deleted'){
+            window.open(dragController.draggedTalk.url)
+          }
           dragController.stopDragging()
         }
       }
