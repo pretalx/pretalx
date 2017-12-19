@@ -84,6 +84,7 @@ You need to build the Docker image yourself::
 
     git clone https://github.com/pretalx/pretalx.git
     cd pretalx/
+    git checkout `git describe --tags --abbrev=0`  # Optional. Switch to the most recent release.
     docker build -t pretalx/pretalx .
 
 Step 5: Add a system service
