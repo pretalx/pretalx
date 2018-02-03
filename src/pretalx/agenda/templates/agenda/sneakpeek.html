@@ -1,0 +1,41 @@
+{% extends "agenda/base.html" %}
+{% load compress %}
+{% load i18n %}
+{% load staticfiles %}
+
+{% block agenda_content %}
+<p>
+    {% if talks %}
+    {% blocktrans %}
+    <b>Welcome to our schedule sneak peek!</b><br><br>
+    We prepared a list of exciting talks, so you canget a feel for our
+    conference. Please keep in mind that this is not our full schedule.
+    That will follow in due time.
+    {% endblocktrans %}
+    {% else %}
+    {% blocktrans %}
+    <b>Welcome to our schedule sneak peek!</b><br><br>
+    In the near future you will see a curated list of talks we'd like
+    to show off here. Right now we are busy reviewing submissions.<br>
+    Check back later!
+    {% endblocktrans %}
+    {% endif %}
+</p>
+<div id="sneakpeak">
+    {% for talk in talks %}
+        <h3 class="talk-title">
+            <div> »{{ talk.title }}«</div>
+            <small>
+                {{ talk.display_speaker_names }};
+                <i>{{ talk.submission_type }}</i>
+            </small>
+        </h3>
+        <p>
+            {{ talk.abstract|default:talk.description|default:"" }}
+        </p>
+        {% if not forloop.last %}
+        <hr>
+        {% endif %}
+    {% endfor %}
+</div>
+{% endblock %}

@@ -19,6 +19,7 @@
         {% bootstrap_field form.notes layout='event' %}
         {% bootstrap_field form.content_locale layout='event' %}
         {% bootstrap_field form.do_not_record layout='event' %}
+        {% bootstrap_field form.is_featured layout='event' %}
         {% bootstrap_field form.duration addon_after='minutes' layout='event' %}
         {% if action == "create" %}
             {% bootstrap_field form.speaker layout='event' %}
