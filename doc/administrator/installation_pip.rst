@@ -74,11 +74,11 @@ mentioned above::
 
 For Ubuntu 16.04/Debian 9 you need the package "python3.6"::
 
-    # sudo add-apt-repository ppa:jonathonf/python3.6
-    # sudo apt-get update
-    # sudo apt-get install python3.6 python3.6-dev python3.6-venv
+    # add-apt-repository ppa:jonathonf/python3.6
+    # apt-get update
+    # apt-get install python3.6 python3.6-dev python3.6-venv
     # wget https://bootstrap.pypa.io/get-pip.py
-    # sudo python3.6 get-pip.py
+    # python3.6 get-pip.py
 
 Replace all further "pip" commands with "pip3.6"    
 Step 4: Configuration
