@@ -1,6 +1,9 @@
 {% extends "orga/base.html" %}
 {% load i18n %}
+{% load staticfiles %}
 {% block content %}
+<link href="{% static "vendored/bootstrap-colorpicker.min.css" %}" rel="stylesheet">
+<script type="text/javascript" src="{% static "vendored/bootstrap-colorpicker.min.js" %}"></script>
 <div class="flex-container">
     <div class="flex-content">
         {% block settings_content %}
