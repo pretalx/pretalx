@@ -26,6 +26,7 @@ Features
 - Individual directories for logs, media, and static files can now be configured via environment variables.
 - Organisers can now show information snippets to submitters, or speakers. (#348)
 - More environment and configuration variables were added to support customisation of filesystem decisions.
+- The colorpicker for custom event colors shows the color contrast and indicates if the color is readable on white.
 
 Fixed bugs
 ~~~~~~~~~~~
