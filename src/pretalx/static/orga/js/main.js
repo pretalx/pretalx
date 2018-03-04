@@ -70,6 +70,7 @@ $(function () {
     }
     $("input#id_primary_color")
         .colorpicker({
+            color: false;
             format: 'hex',
             align: 'left',
             customClass: 'colorpicker-2x',
