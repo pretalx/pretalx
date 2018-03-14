@@ -108,7 +108,7 @@ reboot. Create a file named ``/etc/systemd/system/pretalx.service`` with the fol
 
     [Service]
     Restart=always
-    ExecStart=/usr/bin/docker run -p 127.0.0.1:8089:80 \
+    ExecStart=/usr/bin/docker run -p 127.0.0.1:8089:8000 \
         -e PRETALX_FILESYSTEM_STATIC=/data/static \
         -e PRETALX_DATA_DIR=/data \
         -e PRETALX_DB_TYPE=mysql \
