@@ -14,18 +14,26 @@ ENV LC_ALL C.UTF-8
 COPY docker/pretalx.bash /usr/local/bin/pretalx
 COPY src /src
 
-RUN mkdir /static && \
-    pip3 install -U pip setuptools wheel typing && \
+RUN pip3 install -U pip setuptools wheel typing && \
     pip3 install -e src/ && \
-    pip3 install django-redis pylibmc mysqlclient psycopg2 && \
+    pip3 install django-redis pylibmc mysqlclient psycopg2-binary && \
     pip3 install gunicorn && \
     chmod +x /usr/local/bin/pretalx
 
-RUN mkdir -p /data/logs /data/media
-VOLUME /data
+RUN groupadd -g 999 pretalx && \
+    useradd -r -u 999 -g pretalx -d /src pretalx  
+
+RUN mkdir -p /data/logs /data/media /src/static.dist
 
 RUN python3 -m pretalx migrate && python3 -m pretalx rebuild
 
-EXPOSE 80
+RUN chown -R 999:999 /data && \
+    chown -R 999:999 /src/static.dist
+
+USER pretalx
+WORKDIR /src
+VOLUME /data
+EXPOSE 8000
+
 ENTRYPOINT ["/usr/local/bin/pretalx"]
 CMD ["web"]
