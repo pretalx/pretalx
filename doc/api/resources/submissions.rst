@@ -22,6 +22,7 @@ duration                              number                     The talk's dura
 do_not_record                         boolean                    Indicates if the speaker consent to recordings of their talk
 content_locale                        string                     The language the submission is in, e.g. "en" or "de"
 slot                                  object                     An object with the scheduling details, e.g. ``{"start": …, "end": …, "room": "R101"}`` if they exist.
+image                                 string                     The submission image URL
 ===================================== ========================== =======================================================
 
 Endpoints
@@ -69,7 +70,8 @@ Endpoints
               "start": "2017-12-27T10:00:00Z",
               "end": "2017-12-27T10:30:00Z",
               "room": "R101"
-            }
+            },
+            "image": "submission.png"
           }
         ]
       }
@@ -114,7 +116,8 @@ Endpoints
           "start": "2017-12-27T10:00:00Z",
           "end": "2017-12-27T10:30:00Z",
           "room": "R101"
-        }
+        },
+        "image": "submission.png"
       }
 
    :param event: The ``slug`` field of the event to fetch
