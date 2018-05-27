@@ -1,5 +1,5 @@
 from rest_framework.serializers import (
-    CharField, ModelSerializer, SerializerMethodField,
+    CharField, ImageField, ModelSerializer, SerializerMethodField,
 )
 
 from pretalx.api.serializers.question import AnswerSerializer
@@ -25,7 +25,7 @@ class SubmitterSerializer(ModelSerializer):
 class SpeakerSerializer(ModelSerializer):
     code = CharField(source='user.code')
     name = CharField(source='user.name')
-    avatar = CharField(source='user.avatar')
+    avatar = ImageField(source='user.avatar')
     submissions = SerializerMethodField()
 
     def get_submissions(self, obj):
