@@ -25,6 +25,7 @@ class SubmitterSerializer(ModelSerializer):
 class SpeakerSerializer(ModelSerializer):
     code = CharField(source='user.code')
     name = CharField(source='user.name')
+    avatar = CharField(source='user.avatar')
     submissions = SerializerMethodField()
 
     def get_submissions(self, obj):
