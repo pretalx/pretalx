@@ -18,7 +18,7 @@ class SubmitterSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'code', 'name', 'biography'
+            'code', 'name', 'biography', 'avatar',
         )
 
 
@@ -36,7 +36,7 @@ class SpeakerSerializer(ModelSerializer):
     class Meta:
         model = SpeakerProfile
         fields = (
-            'code', 'name', 'biography', 'submissions',
+            'code', 'name', 'biography', 'submissions', 'avatar',
         )
 
 
