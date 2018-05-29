@@ -21,9 +21,12 @@ def test_submission_accept_nologin(client, submission):
     submission.save()
 
     response = client.post(submission.urls.confirm, follow=True)
+    submission.refresh_from_db()
+
     assert response.status_code == 200
     assert response.redirect_chain[-1][1] == 302
     assert 'login?next=' in response.redirect_chain[-1][0]
+    assert submission.state == SubmissionStates.ACCEPTED
 
 
 @pytest.mark.django_db
