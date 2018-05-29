@@ -30,6 +30,19 @@ def test_submission_accept_nologin(client, submission):
 
 
 @pytest.mark.django_db
+def test_submission_accept_wrong_code(client, submission):
+    submission.state = SubmissionStates.ACCEPTED
+    submission.save()
+
+    assert submission.code in submission.urls.confirm
+    response = client.post(submission.urls.confirm.replace(submission.code, "foo"), follow=True)
+
+    assert response.status_code == 200
+    assert response.redirect_chain[-1][1] == 302
+    assert 'login?next=' in response.redirect_chain[-1][0]
+
+
+@pytest.mark.django_db
 def test_submission_withdraw(speaker_client, submission):
     submission.state = SubmissionStates.SUBMITTED
     submission.save()
