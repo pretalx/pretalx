@@ -30,7 +30,7 @@ def test_dashboard_event_list(orga_user, orga_client, speaker, event, other_even
 
 @pytest.mark.parametrize('test_user', ('orga', 'speaker', 'superuser', 'None'))
 @pytest.mark.django_db
-def test_dashboard_event_list(orga_user, orga_client, speaker, event, other_event, test_user):
+def test_dashboard_organiser_list(orga_user, orga_client, speaker, event, other_event, test_user):
     if test_user == 'speaker':
         orga_client.force_login(speaker)
     elif test_user == 'None':
