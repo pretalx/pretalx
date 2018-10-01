@@ -9,7 +9,7 @@ from pretalx.common.urls import EventUrls
 
 
 def answer_file_path(instance, filename):
-    return f'{instance.question.event.slug}/question_uploads/{instance.person.code}/{filename}'
+    return f'{instance.question.event.slug}/question_uploads/{instance.submission.code}/{filename}'
 
 
 class QuestionManager(models.Manager):
