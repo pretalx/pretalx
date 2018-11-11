@@ -382,7 +382,7 @@ class CfPQuestionRemind(PermissionRequired, TemplateView):
             )
             if missing:
                 context['questions'] = '\n'.join(
-                    [f'- {question.question}' for question in missing]
+                    ['- {}'.format(question.question) for question in missing]
                 )
                 request.event.question_template.to_mail(
                     person, event=request.event, context=context

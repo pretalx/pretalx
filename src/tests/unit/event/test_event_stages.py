@@ -48,6 +48,6 @@ def test_event_stages(
     for stage in STAGE_ORDER:
         assert in_stage(event, stage) == (
             stage == target
-        ), f'Event is{" not" if stage == target else ""} {stage} when it should be {target}!'
+        ), 'Event is{} {} when it should be {}!'.format(" not" if stage == target else "", stage, target)
         if stage == target:
             break

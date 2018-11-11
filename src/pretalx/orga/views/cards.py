@@ -172,7 +172,7 @@ class SubmissionCards(PermissionRequired, View):
             timestamp = now().strftime('%Y-%m-%d-%H%M')
             r[
                 'Content-Disposition'
-            ] = f'attachment; filename="{request.event.slug}_submission_cards_{timestamp}.pdf"'
+            ] = 'attachment; filename="{}_submission_cards_{}.pdf"'.format(request.event.slug, timestamp)
             r.write(f.read())
             return r
 

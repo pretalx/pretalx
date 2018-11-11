@@ -123,7 +123,7 @@ class SubmitWizard(EventPageMixin, NamedUrlSessionWizardView):
         return context
 
     def get_template_names(self):
-        return f'cfp/event/submission_{self.steps.current}.html'
+        return 'cfp/event/submission_{}.html'.format(self.steps.current)
 
     def get_prefix(self, request, *args, **kwargs):
         return super().get_prefix(request, *args, **kwargs) + ':' + kwargs.get('tmpid')

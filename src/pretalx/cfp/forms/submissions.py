@@ -15,7 +15,7 @@ class SubmissionInvitationForm(forms.Form):
         subject = _('{speaker} invites you to join their talk!').format(
             speaker=speaker.get_display_name()
         )
-        initial['subject'] = f'[{submission.event.slug}] {subject}'
+        initial['subject'] = '[{}] {}'.format(submission.event.slug, subject)
         initial['text'] = _(
             '''Hi!
 

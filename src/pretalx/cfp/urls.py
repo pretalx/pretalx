@@ -8,7 +8,7 @@ from .views import auth, event, locale, robots, user, wizard
 app_name = 'cfp'
 urlpatterns = [
     url(
-        f'^(?P<event>[{SLUG_CHARS}]+)/',
+        '^(?P<event>[{}]+)/'.format(SLUG_CHARS),
         include(
             [
                 url('^$', event.EventStartpage.as_view(), name='event.landing'),

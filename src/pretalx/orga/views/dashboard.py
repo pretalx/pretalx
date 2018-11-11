@@ -96,7 +96,7 @@ class EventDashboardView(PermissionRequired, TemplateView):
                     'small': _('of {total_days} days').format(
                         total_days=(event.date_to - event.date_from).days + 1
                     ),
-                    'url': event.urls.schedule + f'#{today.isoformat()}',
+                    'url': event.urls.schedule + '#{}'.format(today.isoformat()),
                 }
             )
         if event.current_schedule:
@@ -122,7 +122,7 @@ class EventDashboardView(PermissionRequired, TemplateView):
                         'large': talk_count,
                         'small': _('total talks'),
                         'url': event.orga_urls.submissions
-                        + f'?state={SubmissionStates.ACCEPTED}&state={SubmissionStates.CONFIRMED}',
+                        + '?state={}&state={}'.format(SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED),
                     }
                 )
                 confirmed_count = event.talks.filter(
@@ -134,7 +134,7 @@ class EventDashboardView(PermissionRequired, TemplateView):
                             'large': talk_count - confirmed_count,
                             'small': _('unconfirmed talks'),
                             'url': event.orga_urls.submissions
-                            + f'?state={SubmissionStates.ACCEPTED}',
+                            + '?state={}'.format(SubmissionStates.ACCEPTED),
                         }
                     )
         if event.speakers.count():

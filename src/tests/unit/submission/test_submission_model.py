@@ -245,4 +245,4 @@ def test_nonstandard_duration(submission):
 
 @pytest.mark.django_db
 def test_submission_image_path(submission):
-    assert submission_image_path(submission, 'foo') == f'{submission.event.slug}/images/{submission.code}/foo'
+    assert submission_image_path(submission, 'foo') == '{}/images/{}/foo'.format(submission.event.slug, submission.code)

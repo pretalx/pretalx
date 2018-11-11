@@ -13,4 +13,4 @@ from pretalx.submission.models import SubmissionType
     (60*48, '2 days'),
 ))
 def test_submission_type_string(duration, string):
-    assert str(SubmissionType(default_duration=duration, name='Test')) == f'Test ({string})'
+    assert str(SubmissionType(default_duration=duration, name='Test')) == 'Test ({})'.format(string)

@@ -28,8 +28,8 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
         )
         for counter in range(abs(self.max_value - self.min_value) + 1):
             value = self.min_value + counter
-            name = event.settings.get(f'review_score_name_{value}')
-            name = f'{value} (»{name}«)' if name else value
+            name = event.settings.get('review_score_name_{}'.format(value))
+            name = f'{} (»{}«)'.format(value, name) if name else value
             choices.append((value, name))
         if self.may_override:
             choices.insert(1, (self.min_value - 1, _('Negative override (Veto)')))
@@ -60,7 +60,7 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
             ):
                 raise forms.ValidationError(
                     _(
-                        f'Please assign a score between {self.min_value} and {self.max_value}!'
+                        'Please assign a score between {} and {}!'.format(self.min_value, self.max_value)
                     )
                 )
         return score

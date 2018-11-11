@@ -104,12 +104,12 @@ class CfPSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
         if getattr(obj, 'email'):
             self.fields[
                 'mail_on_new_submission'
-            ].help_text += f' (<a href="mailto:{obj.email}">{obj.email}</a>)'
+            ].help_text += ' (<a href="mailto:{}">{}</a>)'.format(obj.email, obj.email)
         if getattr(obj, 'slug'):
             additional = _(
                 'You can configure override votes <a href="{link}">in the team settings</a>.'
             ).format(link=obj.orga_urls.team_settings)
-            self.fields['allow_override_votes'].help_text += f' {additional}'
+            self.fields['allow_override_votes'].help_text += ' {}'.format(additional)
         minimum = int(obj.settings.review_min_score)
         maximum = int(obj.settings.review_max_score)
         self.fields['review_deadline'].widget = forms.DateTimeInput(
@@ -117,7 +117,7 @@ class CfPSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
         )
         for number in range(abs(maximum - minimum + 1)):
             index = minimum + number
-            self.fields[f'review_score_name_{index}'] = forms.CharField(
+            self.fields['review_score_name_{}'.format(index)] = forms.CharField(
                 label=_('Score label ({})').format(index),
                 help_text=_(
                     'Human readable explanation of what a score of "{}" actually means, e.g. "great!".'
@@ -125,8 +125,8 @@ class CfPSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
                 required=False,
             )
         for field in ['abstract', 'description', 'biography']:
-            self.fields[f'cfp_{field}_min_length'].widget.attrs['placeholder'] = ''
-            self.fields[f'cfp_{field}_max_length'].widget.attrs['placeholder'] = ''
+            self.fields['cfp_{}_min_length'.format(field)].widget.attrs['placeholder'] = ''
+            self.fields['cfp_{}_max_length'.format(field)].widget.attrs['placeholder'] = ''
 
     def clean(self):
         data = self.cleaned_data

@@ -144,7 +144,7 @@ class EventAuth(View):
         except Exception:
             raise PermissionDenied(_('Please go back and try again.'))
 
-        key = f'pretalx_event_access_{request.event.pk}'
+        key = 'pretalx_event_access_{}'.format(request.event.pk)
         parent = data.get(key)
         sparent = SessionStore(parent)
 
