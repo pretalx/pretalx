@@ -38,10 +38,10 @@ class Schedule(LogMixin, models.Model):
         from pretalx.schedule.models import TalkSlot
 
         if name in ['wip', 'latest']:
-            raise Exception(f'Cannot use reserved name "{name}" for schedule version.')
+            raise Exception('Cannot use reserved name "{}" for schedule version.'.format(name))
         if self.version:
             raise Exception(
-                f'Cannot freeze schedule version: already versioned as "{self.version}".'
+                'Cannot freeze schedule version: already versioned as "{}".'.format(self.version)
             )
         if not name:
             raise Exception('Cannot create schedule version without a version name.')
@@ -270,4 +270,4 @@ class Schedule(LogMixin, models.Model):
 
     def __str__(self) -> str:
         """Help when debugging."""
-        return f'Schedule(event={self.event.slug}, version={self.version})'
+        return 'Schedule(event={}, version={})'.format(self.event.slug, self.version)

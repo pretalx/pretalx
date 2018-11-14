@@ -40,4 +40,4 @@ def test_common_templatetag_xmlescape(input_, output):
     ('chaos.social', '<a href="http://chaos.social" rel="nofollow">chaos.social</a>'),
 ))
 def test_common_templatetag_rich_text(text, richer_text):
-    assert rich_text(text) == f'<p>{richer_text}</p>'
+    assert rich_text(text) == '<p>{}</p>'.format(richer_text)

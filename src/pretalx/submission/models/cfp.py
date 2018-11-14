@@ -48,7 +48,7 @@ class CfP(LogMixin, models.Model):
 
     def __str__(self) -> str:
         """Help with debugging."""
-        return f'CfP(event={self.event.slug})'
+        return 'CfP(event={})'.format(self.event.slug)
 
     @cached_property
     def is_open(self):

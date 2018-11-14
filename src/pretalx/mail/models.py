@@ -45,7 +45,7 @@ class MailTemplate(LogMixin, models.Model):
 
     def __str__(self):
         """Help with debugging."""
-        return f'MailTemplate(event={self.event.slug}, subject={self.subject})'
+        return 'MailTemplate(event={}, subject={})'.format(self.event.slug, self.subject)
 
     def to_mail(self, user, event, locale=None, context=None, skip_queue=False):
         address = user.email if hasattr(user, 'email') else user
@@ -55,7 +55,7 @@ class MailTemplate(LogMixin, models.Model):
                 subject = str(self.subject).format(**context)
                 text = str(self.text).format(**context)
             except KeyError as e:
-                raise SendMailException(f'Experienced KeyError when rendering Text: {str(e)}')
+                raise SendMailException('Experienced KeyError when rendering Text: {}'.format(str(e)))
 
             mail = QueuedMail(
                 event=self.event,
@@ -117,7 +117,7 @@ class QueuedMail(LogMixin, models.Model):
     def __str__(self):
         """Help with debugging."""
         sent = self.sent.isoformat() if self.sent else None
-        return f'OutboxMail(event={self.event.slug}, to={self.to}, subject={self.subject}, sent={sent})'
+        return 'OutboxMail(event={}, to={}, subject={}, sent={})'.format(self.event.slug, self.to, self.subject, sent)
 
     @classmethod
     def make_html(cls, text, event=None):
@@ -137,8 +137,8 @@ class QueuedMail(LogMixin, models.Model):
             return text
         sig = event.settings.mail_signature
         if not sig.strip().startswith('-- '):
-            sig = f'-- \n{sig}'
-        return f'{text}\n{sig}'
+            sig = '-- \n{}'.format(sig)
+        return '{}\n{}'.format(text, sig)
 
     @classmethod
     def make_subject(cls, text, event=None):
@@ -146,8 +146,8 @@ class QueuedMail(LogMixin, models.Model):
             return text
         prefix = event.settings.mail_subject_prefix
         if not (prefix.startswith('[') and prefix.endswith(']')):
-            prefix = f'[{prefix}]'
-        return f'{prefix} {text}'
+            prefix = '[{}]'.format(prefix)
+        return '{} {}'.format(prefix, text)
 
     def send(self):
         if self.sent:

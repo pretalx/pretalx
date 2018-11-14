@@ -9,7 +9,7 @@ from pretalx.common.urls import EventUrls
 
 
 def answer_file_path(instance, filename):
-    return f'{instance.question.event.slug}/question_uploads/{filename}'
+    return '{}/question_uploads/{}'.format(instance.question.event.slug, filename)
 
 
 class QuestionManager(models.Manager):
@@ -124,7 +124,7 @@ class Question(LogMixin, models.Model):
 
     def __str__(self):
         """Help when debugging."""
-        return f'Question(event={self.event.slug}, variant={self.variant}, target={self.target}, question={self.question})'
+        return 'Question(event={}, variant={}, target={}, question={})'.format(self.event.slug, self.variant, self.target, self.question)
 
     @cached_property
     def grouped_answers(self):
@@ -220,7 +220,7 @@ class Answer(LogMixin, models.Model):
 
     def __str__(self):
         """Help when debugging."""
-        return f'Answer(question={self.question.question}, answer={self.answer})'
+        return 'Answer(question={}, answer={})'.format(self.question.question, self.answer)
 
     def remove(self, person=None, force=False):
         for option in self.options.all():

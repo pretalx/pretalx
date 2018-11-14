@@ -25,18 +25,18 @@ class InfoForm(forms.ModelForm):
 
         self.fields['abstract'].widget.attrs['rows'] = 2
         for key in {'abstract', 'description', 'notes', 'image', 'do_not_record'}:
-            request = event.settings.get(f'cfp_request_{key}')
-            require = event.settings.get(f'cfp_require_{key}')
+            request = event.settings.get('cfp_request_{}'.format(key))
+            require = event.settings.get('cfp_require_{}'.format(key))
             if not request:
                 self.fields.pop(key)
             else:
                 self.fields[key].required = require
-                min_value = event.settings.get(f'cfp_{key}_min_length')
-                max_value = event.settings.get(f'cfp_{key}_max_length')
+                min_value = event.settings.get('cfp_{}_min_length'.format(key))
+                max_value = event.settings.get('cfp_{}_max_length'.format(key))
                 if min_value:
-                    self.fields[key].widget.attrs[f'minlength'] = min_value
+                    self.fields[key].widget.attrs['minlength'] = min_value
                 if max_value:
-                    self.fields[key].widget.attrs[f'maxlength'] = max_value
+                    self.fields[key].widget.attrs['maxlength'] = max_value
                 self.fields[key].help_text = get_help_text(
                     self.fields[key].help_text, min_value, max_value
                 )
@@ -103,7 +103,7 @@ class SubmissionFilterForm(forms.Form):
             .count()
         )
         self.fields['submission_type'].choices = [
-            (sub_type.pk, f'{str(sub_type)} ({type_count(sub_type.pk)})')
+            (sub_type.pk, '{} ({})'.format(str(sub_type), type_count(sub_type.pk)))
             for sub_type in event.submission_types.all()
         ]
         self.fields['submission_type'].widget.attrs['title'] = _('Submission types')
@@ -115,8 +115,5 @@ class SubmissionFilterForm(forms.Form):
             ]
         else:
             usable_states = self.fields['state'].choices
-        self.fields['state'].choices = [
-            (choice[0], f'{choice[1].capitalize()} ({sub_count(choice[0])})')
-            for choice in usable_states
-        ]
+        self.fields['state'].choices = [(choice[0], '{} ({})'.format(choice[1].capitalize(), sub_count(choice[0])) for choice in usable_states]
         self.fields['state'].widget.attrs['title'] = _('Submission states')

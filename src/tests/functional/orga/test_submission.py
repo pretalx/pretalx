@@ -13,7 +13,7 @@ def test_orga_can_see_submissions(orga_client, event, submission):
 @pytest.mark.django_db
 def test_orga_can_search_submissions(orga_client, event, submission):
     response = orga_client.get(
-        event.orga_urls.submissions + f'?q={submission.title[:5]}', follow=True
+        event.orga_urls.submissions + '?q={}'.format(submission.title[:5]), follow=True
     )
     assert response.status_code == 200
     assert submission.title in response.content.decode()
@@ -22,7 +22,7 @@ def test_orga_can_search_submissions(orga_client, event, submission):
 @pytest.mark.django_db
 def test_orga_can_miss_search_submissions(orga_client, event, submission):
     response = orga_client.get(
-        event.orga_urls.submissions + f'?q={submission.title[:5]}xxy', follow=True
+        event.orga_urls.submissions + '?q={}xxy'.format(submission.title[:5]), follow=True
     )
     assert response.status_code == 200
     assert submission.title not in response.content.decode()
@@ -70,7 +70,7 @@ def test_accept_submission_redirects_to_review_list(orga_client, submission):
     assert submission.state == SubmissionStates.SUBMITTED
 
     response = orga_client.post(
-        submission.orga_urls.accept + f'?next={submission.event.orga_urls.reviews}'
+        submission.orga_urls.accept + '?next={}'.format(submission.event.orga_urls.reviews)
     )
     _, redirected_page_url = response._headers['location']
 

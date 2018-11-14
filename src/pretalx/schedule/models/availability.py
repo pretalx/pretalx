@@ -31,7 +31,7 @@ class Availability(LogMixin, models.Model):
         person = self.person.user.get_display_name() if self.person else None
         room = getattr(self.room, 'name', None)
         event = getattr(getattr(self, 'event', None), 'slug', None)
-        return f'Availability(event={event}, person={person}, room={room})'
+        return 'Availability(event={}, person={}, room={})'.format(event, person, room)
 
     def __eq__(self, other: 'Availability') -> bool:
         return all(

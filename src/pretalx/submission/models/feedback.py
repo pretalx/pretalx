@@ -27,4 +27,4 @@ class Feedback(LogMixin, models.Model):
 
     def __str__(self):
         """Help when debugging."""
-        return f'Feedback(event={self.talk.event.slug}, talk={self.talk.title}, rating={self.rating})'
+        return 'Feedback(event={}, talk={}, rating={})'.format(self.talk.event.slug, self.talk.title, self.rating)

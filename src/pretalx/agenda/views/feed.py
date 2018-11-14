@@ -16,7 +16,7 @@ class ScheduleFeed(Feed):
         return request.event
 
     def title(self, obj):
-        return f'{obj.name} schedule updates'
+        return '{} schedule updates'.format(obj.name)
 
     def link(self, obj):
         return obj.urls.schedule.full()
@@ -28,18 +28,18 @@ class ScheduleFeed(Feed):
         return obj.urls.feed.full()
 
     def description(self, obj):
-        return f'Updates to the {obj.name} schedule.'
+        return 'Updates to the {} schedule.'.format(obj.name)
 
     def items(self, obj):
         return obj.schedules.filter(version__isnull=False).order_by('-published')
 
     def item_title(self, item):
-        return f'New {item.event.name} schedule released ({item.version})'
+        return 'New {} schedule released ({})'.format(item.event.name, item.version)
 
     def item_link(self, item):
         url = item.event.urls.schedule.full()
         version = {'version': item.version}
-        return f'{url}={urlencode(version)}'
+        return '{}={}'.format(url, urlencode(version))
 
     def item_pubdate(self, item):
         return item.published

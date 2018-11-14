@@ -96,7 +96,7 @@ class TalkView(PermissionRequired, DetailView):
         context['submission_description'] = (
             slot.submission.description
             or slot.submission.abstract
-            or _('The talk »{title}« at {event}').format(
+            or _('The talk »{}« at {}').format(
                 title=slot.submission.title, event=slot.submission.event.name
             )
         )
@@ -137,7 +137,7 @@ class SingleICalView(EventPageMixin, DetailView):
         resp = HttpResponse(cal.serialize(), content_type='text/calendar')
         resp[
             'Content-Disposition'
-        ] = f'attachment; filename="{request.event.slug}-{code}.ics"'
+        ] = 'attachment; filename="{}-{}.ics"'.format(request.event.slug, code)
         return resp
 
 

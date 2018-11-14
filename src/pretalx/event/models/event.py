@@ -48,11 +48,11 @@ def validate_event_slug_blacklist(value):
 
 
 def event_css_path(instance, filename):
-    return f'{instance.slug}/css/{filename}'
+    return '{}/css/{}'.format(instance.slug, filename)
 
 
 def event_logo_path(instance, filename):
-    return f'{instance.slug}/img/{filename}'
+    return '{}/img/{}'.format(instance.slug, filename)
 
 
 @hierarkey.add()
@@ -64,7 +64,7 @@ class Event(LogMixin, models.Model):
         unique=True,
         validators=[
             RegexValidator(
-                regex=f"^[{SLUG_CHARS}]+$",
+                regex="^[{}]+$".format(SLUG_CHARS),
                 message=_(
                     'The slug may only contain letters, numbers, dots and dashes.'
                 ),
@@ -173,7 +173,7 @@ class Event(LogMixin, models.Model):
     plugins = models.TextField(null=True, blank=True, verbose_name=_('Plugins'))
 
     template_names = [
-        f'{t}_template' for t in ('accept', 'ack', 'reject', 'update', 'question')
+        '{}_template'.format(t) for t in ('accept', 'ack', 'reject', 'update', 'question')
     ]
 
     class urls(EventUrls):

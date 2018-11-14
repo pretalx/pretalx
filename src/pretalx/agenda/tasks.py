@@ -12,10 +12,10 @@ def export_schedule_html(*, event_id: int, make_zip=True):
 
     event = Event.objects.filter(pk=event_id).first()
     if not event:
-        LOGGER.error(f'In export_schedule_html: Could not find Event ID {event_id}')
+        LOGGER.error('In export_schedule_html: Could not find Event ID {}'.format(event_id))
         return
     if not event.current_schedule:
-        LOGGER.error(f'In export_schedule_html: Event {event.slug} has no schedule.')
+        LOGGER.error('In export_schedule_html: Event {} has no schedule.'.format(event.slug))
         return
 
     cmd = ['export_schedule_html', event.slug]

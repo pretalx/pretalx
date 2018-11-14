@@ -57,7 +57,7 @@ class QuestionsForm(forms.Form):
             )
             field.question = question
             field.answer = initial_object
-            self.fields[f'question_{question.pk}'] = field
+            self.fields['question_{}'.format(question.pk)] = field
 
     @cached_property
     def speaker_fields(self):

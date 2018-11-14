@@ -111,7 +111,7 @@ class Filterable:
             if len(value) == 1:
                 value = value[0]
             elif len(value) > 1:
-                key = f'{key}__in' if not key.endswith('__in') else key
+                key = '{}__in'.format(key) if not key.endswith('__in') else key
             if value:
                 lookup_key = key.split('__')[0]
                 print(value)
@@ -161,7 +161,7 @@ class PermissionRequired(PermissionRequiredMixin):
         if not result:
             request = getattr(self, 'request', None)
             if request and hasattr(request, 'event'):
-                key = f'pretalx_event_access_{request.event.pk}'
+                key = 'pretalx_event_access_{}'.format(request.event.pk)
                 if key in request.session:
                     sparent = SessionStore(request.session.get(key))
                     parentdata = []
@@ -184,6 +184,6 @@ class PermissionRequired(PermissionRequiredMixin):
         ):
             params = '&' + request.GET.urlencode() if request.GET else ''
             return redirect(
-                request.event.urls.login + f'?next={quote(request.path)}' + params
+                request.event.urls.login + '?next={}'.format(quote(request.path)) + params
             )
         raise Http404()

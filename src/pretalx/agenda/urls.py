@@ -14,7 +14,7 @@ def get_schedule_urls(regex_prefix, name_prefix=""):
     regex_prefix = regex_prefix.rstrip('/')
 
     return [
-        url(f'{regex_prefix}{regex}', view, name=f'{name_prefix}{name}')
+        url('{}{}'.format(regex_prefix, regex), view, name='{}{}'.format(name_prefix, name))
         for regex, view, name in [
             ('/$', schedule.ScheduleView.as_view(), 'schedule'),
             ('.xml$', schedule.ExporterView.as_view(), 'export.schedule.xml'),

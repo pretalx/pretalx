@@ -52,6 +52,6 @@ def test_versioned_schedule_page(client, event, speaker, slot, schedule):
 
     version = quote(schedule.version)
     redirected_response = client.get(
-        f'/{event.slug}/schedule?version={version}', follow=True
+        '/{}/schedule?version={}'.format(event.slug, version), follow=True
     )
     assert redirected_response._request.path == response._request.path

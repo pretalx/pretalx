@@ -4,7 +4,7 @@ def log_initial(*, debug, config_files, db_name, db_backend, LOG_DIR, plugins):
 
     mode = 'development' if debug else 'production'
     lines = [
-        ('This is pretalx v{} calling, running in {mode} mode.'.format(__version__), True),
+        ('This is pretalx v{} calling, running in {} mode.'.format(__version__, mode), True),
         ('', False),
         ('Settings:', True),
         ('Read from: {}'.format(", ".join(config_files)), False),

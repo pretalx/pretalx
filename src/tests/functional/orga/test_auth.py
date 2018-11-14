@@ -20,7 +20,7 @@ def test_orga_redirect_login(client, orga_user, event):
     request_url = event.orga_urls.base + '/?' + queryparams
     response = client.get(request_url, follow=True)
     assert response.status_code == 200
-    assert response.redirect_chain[-1] == (f'/orga/login/?next={event.orga_urls.base}/&{queryparams}', 302)
+    assert response.redirect_chain[-1] == ('/orga/login/?next={}/&{}'.format(event.orga_urls.base, queryparams), 302)
 
     response = client.post(response.redirect_chain[-1][0], data={'email': orga_user.email, 'password': 'orgapassw0rd'}, follow=True)
     assert response.status_code == 200
@@ -126,7 +126,7 @@ def test_can_reset_password_by_email(orga_user, client, event):
     assert len(djmail.outbox) == 1
 
     response = client.post(
-        f'/orga/reset/{orga_user.pw_reset_token}',
+        '/orga/reset/{}'.format(orga_user.pw_reset_token),
         data={'password': 'mynewpassword1!', 'password_repeat': 'mynewpassword1!'},
         follow=True,
     )
@@ -144,7 +144,7 @@ def test_can_reset_password_by_email(orga_user, client, event):
 @pytest.mark.django_db
 def test_cannot_use_incorrect_token(orga_user, client, event):
     response = client.post(
-        f'/orga/reset/abcdefg',
+        '/orga/reset/abcdefg',
         data={'password': 'mynewpassword1!', 'password_repeat': 'mynewpassword1!'},
         follow=True,
     )
@@ -162,7 +162,7 @@ def test_cannot_reset_password_with_incorrect_input(orga_user, client, event):
     orga_user.refresh_from_db()
     assert orga_user.pw_reset_token
     response = client.post(
-        f'/orga/reset/{orga_user.pw_reset_token}',
+        '/orga/reset/{}'.format(orga_user.pw_reset_token),
         data={'password': 'mynewpassword1!', 'password_repeat': 'mynewpassword123!'},
         follow=True,
     )
@@ -188,7 +188,7 @@ def test_cannot_reset_password_to_insecure_password(orga_user, client, event):
     orga_user.refresh_from_db()
     assert orga_user.pw_reset_token
     response = client.post(
-        f'/orga/reset/{orga_user.pw_reset_token}',
+        '/orga/reset/{}'.format(orga_user.pw_reset_token),
         data={'password': 'password', 'password_repeat': 'password'},
         follow=True,
     )

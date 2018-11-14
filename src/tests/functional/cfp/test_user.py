@@ -248,10 +248,10 @@ def test_can_edit_and_update_speaker_answers(
     response = speaker_client.post(
         event.urls.user,
         data={
-            f'question_{speaker_question.id}': 'black as the night',
-            f'question_{speaker_boolean_question.id}': 'True',
-            f'question_{speaker_file_question.id}': f,
-            f'question_{speaker_text_question.id}': 'Green is totally the best color.',
+            'question_{}'.format(speaker_question.id): 'black as the night',
+            'question_{}'.format(speaker_boolean_question.id): 'True',
+            'question_{}'.format(speaker_file_question.id): f,
+            'question_{}'.format(speaker_text_question.id): 'Green is totally the best color.',
             'form': 'questions'
         },
         follow=True,
@@ -270,7 +270,7 @@ def test_can_edit_and_update_speaker_answers(
 
     response = speaker_client.post(
         event.urls.user,
-        data={f'question_{speaker_question.id}': 'green as the sky', 'form': 'questions'},
+        data={'question_{}'.format(speaker_question.id): 'green as the sky', 'form': 'questions'},
         follow=True,
     )
     assert response.status_code == 200
@@ -313,7 +313,7 @@ def test_can_change_locale(multilingual_event, client):
     assert 'submission' in first_response.content.decode()
     assert 'Einreichung' not in first_response.content.decode()
     second_response = client.get(
-        reverse('cfp:locale.set', kwargs={'event': multilingual_event.slug}) + f'?locale=de&next=/{multilingual_event.slug}/',
+        reverse('cfp:locale.set', kwargs={'event': multilingual_event.slug}) + '?locale=de&next=/{}/'.format(multilingual_event.slug),
         follow=True,
     )
     assert 'Einreichung' in second_response.content.decode()
@@ -323,7 +323,7 @@ def test_can_change_locale(multilingual_event, client):
 def test_persists_changed_locale(multilingual_event, orga_user, orga_client):
     assert orga_user.locale == 'en'
     response = orga_client.get(
-        reverse('cfp:locale.set', kwargs={'event': multilingual_event.slug}) + f'?locale=de&next=/{multilingual_event.slug}/',
+        reverse('cfp:locale.set', kwargs={'event': multilingual_event.slug}) + '?locale=de&next=/{}/'.format(multilingual_event.slug),
         follow=True,
     )
     orga_user.refresh_from_db()

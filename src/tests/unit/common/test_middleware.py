@@ -37,44 +37,44 @@ def test_orga_on_unknown_domain(event, client):
 
 @pytest.mark.django_db
 def test_event_on_custom_domain(event_on_foobar, client):
-    r = client.get(f'/{event_on_foobar.slug}/', HTTP_HOST='foobar')
+    r = client.get('/{}/'.format(event_on_foobar.slug), HTTP_HOST='foobar')
     assert r.status_code == 200
 
 
 @pytest.mark.django_db
 def test_event_on_custom_port(event_on_custom_port, client):
-    r = client.get(f'/{event_on_custom_port.slug}/', HTTP_HOST='foobar:8000')
+    r = client.get('/{}/'.format(event_on_custom_port.slug), HTTP_HOST='foobar:8000')
     assert r.status_code == 200
 
 
 @pytest.mark.django_db
 def test_event_on_custom_domain_in_orga_area(event_on_foobar, client):
-    r = client.get(f'/orga/event/{event_on_foobar.slug}/', HTTP_HOST='foobar')
+    r = client.get('/orga/event/{}/'.format(event_on_foobar.slug), HTTP_HOST='foobar')
     assert r.status_code == 302
-    assert r['Location'] == f'http://example.com/orga/event/{event_on_foobar.slug}/'
+    assert r['Location'] == 'http://example.com/orga/event/{}/'.format(event_on_foobar.slug)
 
 
 @pytest.mark.django_db
 def test_event_on_custom_port_in_orga_area(event_on_custom_port, client):
-    r = client.get(f'/orga/event/{event_on_custom_port.slug}/', HTTP_HOST='foobar:8000')
+    r = client.get('/orga/event/{}/'.format(event_on_custom_port.slug), HTTP_HOST='foobar:8000')
     assert r.status_code == 302
-    assert r['Location'] == f'http://example.com/orga/event/{event_on_custom_port.slug}/'
+    assert r['Location'] == 'http://example.com/orga/event/{}/'.format(event_on_custom_port.slug)
 
 
 @pytest.mark.django_db
 def test_event_with_custom_domain_on_main_domain(event_on_foobar, client):
     """ redirect from common domain to custom domain """
-    r = client.get(f'/{event_on_foobar.slug}/', HTTP_HOST='example.com')
+    r = client.get('/{}/'.format(event_on_foobar.slug), HTTP_HOST='example.com')
     assert r.status_code == 302
-    assert r['Location'] == f'https://foobar/{event_on_foobar.slug}/'
+    assert r['Location'] == 'https://foobar/{}/'.format(event_on_foobar.slug)
 
 
 @pytest.mark.django_db
 def test_event_with_custom_port_on_main_domain(event_on_custom_port, client):
     """ redirect from common domain to custom domain """
-    r = client.get(f'/{event_on_custom_port.slug}/', HTTP_HOST='example.com')
+    r = client.get('/{}/'.format(event_on_custom_port.slug), HTTP_HOST='example.com')
     assert r.status_code == 302
-    assert r['Location'] == f'https://foobar:8000/{event_on_custom_port.slug}/'
+    assert r['Location'] == 'https://foobar:8000/{}/'.format(event_on_custom_port.slug)
 
 
 @pytest.mark.django_db
@@ -85,7 +85,7 @@ def test_unknown_event_on_custom_domain(event_on_foobar, client):
 
 @pytest.mark.django_db
 def test_cookie_domain_on_custom_domain(event_on_foobar, client):
-    r = client.get(f'/{event_on_foobar.slug}/login/', HTTP_HOST='foobar')
+    r = client.get('/{}/login/'.format(event_on_foobar.slug), HTTP_HOST='foobar')
     assert r.status_code == 200
     assert r.client.cookies['pretalx_csrftoken']['domain'] == ''
     assert r.client.cookies['pretalx_session']['domain'] == ''
@@ -94,7 +94,7 @@ def test_cookie_domain_on_custom_domain(event_on_foobar, client):
 @pytest.mark.django_db
 def test_cookie_domain_on_main_domain(event, client):
     with override_settings(SESSION_COOKIE_DOMAIN='example.com'):
-        r = client.get(f'/{event.slug}/login/', HTTP_HOST='example.com')
+        r = client.get('/{}/login/'.format(event.slug), HTTP_HOST='example.com')
         assert r.status_code == 200
         assert r.client.cookies['pretalx_csrftoken']['domain'] == 'example.com'
         assert r.client.cookies['pretalx_session']['domain'] == 'example.com'
@@ -103,7 +103,7 @@ def test_cookie_domain_on_main_domain(event, client):
 @pytest.mark.django_db
 def test_with_forwarded_host(event_on_foobar, client):
     settings.USE_X_FORWARDED_HOST = True
-    r = client.get(f'/{event_on_foobar.slug}/', HTTP_X_FORWARDED_HOST='foobar')
+    r = client.get('/{}/'.format(event_on_foobar.slug), HTTP_X_FORWARDED_HOST='foobar')
     assert r.status_code == 200
 
 

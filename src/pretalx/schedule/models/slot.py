@@ -33,7 +33,7 @@ class TalkSlot(LogMixin, models.Model):
 
     def __str__(self):
         """Help when debugging."""
-        return f'TalkSlot(event={self.submission.event.slug}, submission={self.submission.title}, schedule={self.schedule.version})'
+        return 'TalkSlot(event={}, submission={}, schedule={})'.format(self.submission.event.slug, self.submission.title, self.schedule.version)
 
     @cached_property
     def event(self):
@@ -57,7 +57,7 @@ class TalkSlot(LogMixin, models.Model):
         days = duration.days
         hours = duration.total_seconds() // 3600 - days * 24
         minutes = duration.seconds // 60 % 60
-        return f'{hours:02}{minutes:02}00'
+        return '{:02}{:02}00'.format(hours, minutes)
 
     @cached_property
     def real_end(self):
@@ -131,7 +131,7 @@ class TalkSlot(LogMixin, models.Model):
         vevent = calendar.add('vevent')
         vevent.add(
             'summary'
-        ).value = f'{self.submission.title} - {self.submission.display_speaker_names}'
+        ).value = '{} - {}'.format(self.submission.title, self.submission.display_speaker_names)
         vevent.add('dtstamp').value = creation_time
         vevent.add('location').value = str(self.room.name)
         vevent.add('uid').value = 'pretalx-{}-{}@{}'.format(

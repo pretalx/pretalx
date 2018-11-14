@@ -125,7 +125,7 @@ def test_reset_team_member_password(orga_client, organiser, other_orga_user):
     team.save()
     member = team.members.first()
     assert not member.pw_reset_token
-    url = organiser.orga_urls.teams + f'/{team.pk}/reset/{member.pk}'
+    url = organiser.orga_urls.teams + '/{}/reset/{}'.format(team.pk, member.pk)
     response = orga_client.post(url, follow=True)
     assert response.status_code == 200
     member.refresh_from_db()
@@ -147,7 +147,7 @@ class TestEventCreation:
     url = '/orga/event/new/'
 
     def post(self, step, data):
-        data = {f'{step}-{key}': value for key, value in data.items()}
+        data = {'{}-{}'.format(step, key): value for key, value in data.items()}
         data['event_wizard-current_step'] = step
         response = self.client.post(self.url, data=data, follow=True)
         assert response.status_code == 200

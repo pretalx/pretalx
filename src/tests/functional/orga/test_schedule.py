@@ -13,7 +13,7 @@ from pretalx.schedule.models import Availability, Schedule, TalkSlot
 @pytest.mark.usefixtures('room')
 def test_room_list(orga_client, event, room_availability):
     response = orga_client.get(
-        reverse(f'orga:schedule.api.rooms', kwargs={'event': event.slug}), follow=True
+        reverse('orga:schedule.api.rooms', kwargs={'event': event.slug}), follow=True
     )
     content = json.loads(response.content.decode())
     assert response.status_code == 200
@@ -32,7 +32,7 @@ def test_room_list(orga_client, event, room_availability):
 @pytest.mark.usefixtures('accepted_submission')
 def test_talk_list(orga_client, event):
     response = orga_client.get(
-        reverse(f'orga:schedule.api.talks', kwargs={'event': event.slug}), follow=True
+        reverse('orga:schedule.api.talks', kwargs={'event': event.slug}), follow=True
     )
     content = json.loads(response.content.decode())
     assert response.status_code == 200
@@ -44,7 +44,7 @@ def test_talk_list(orga_client, event):
 @pytest.mark.usefixtures('accepted_submission', 'slot')
 def test_talk_list_with_filter(orga_client, event, schedule):
     response = orga_client.get(
-        reverse(f'orga:schedule.api.talks', kwargs={'event': event.slug}),
+        reverse('orga:schedule.api.talks', kwargs={'event': event.slug}),
         data={'version': schedule.version},
         follow=True,
     )
@@ -61,7 +61,7 @@ def test_talk_schedule_api_update(orga_client, event, schedule, slot, room):
     assert slot.start != start
     response = orga_client.patch(
         reverse(
-            f'orga:schedule.api.update', kwargs={'event': event.slug, 'pk': slot.pk}
+            'orga:schedule.api.update', kwargs={'event': event.slug, 'pk': slot.pk}
         ),
         data=json.dumps({'room': room.pk, 'start': start.isoformat()}),
         follow=True,
@@ -82,7 +82,7 @@ def test_talk_schedule_api_update_reset(orga_client, event, schedule, slot, room
     assert slot.start
     response = orga_client.patch(
         reverse(
-            f'orga:schedule.api.update', kwargs={'event': event.slug, 'pk': slot.pk}
+            'orga:schedule.api.update', kwargs={'event': event.slug, 'pk': slot.pk}
         ),
         data=json.dumps(dict()),
         follow=True,
@@ -113,7 +113,7 @@ def test_api_availabilities(orga_client, event, room, speaker, confirmed_submiss
 
     response = orga_client.get(
         reverse(
-            f'orga:schedule.api.availabilities',
+            'orga:schedule.api.availabilities',
             kwargs={'event': event.slug, 'talkid': talk.pk, 'roomid': room.pk},
         ),
         follow=True,

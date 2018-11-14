@@ -10,7 +10,7 @@ from django.urls import reverse
 def test_user_can_access_url(orga_client, logged_in, url, template_patch):
     if not logged_in:
         orga_client.logout()
-    response = orga_client.get(reverse(f'orga:{url}'), follow=True)
+    response = orga_client.get(reverse('orga:{}'.format(url)), follow=True)
     assert response.status_code == 200, response.content
 
 
@@ -50,7 +50,7 @@ def test_user_can_access_event_urls(
         orga_user, review_user, orga_reviewer_user, client, url,
         orga_access, reviewer_access, event, template_patch
 ):
-    url = reverse(f'orga:{url}', kwargs={'event': event.slug})
+    url = reverse('orga:{}'.format(url), kwargs={'event': event.slug})
     client.force_login(orga_user)
     orga_response = client.get(url, follow=True)
     client.force_login(review_user)

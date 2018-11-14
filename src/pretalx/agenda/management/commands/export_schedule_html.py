@@ -46,7 +46,7 @@ class Command(BakeryBuildCommand):
         try:
             event = Event.objects.get(slug__iexact=event_slug)
         except Event.DoesNotExist:
-            raise CommandError(f'Could not find event with slug "{event_slug}".')
+            raise CommandError('Could not find event with slug "{}".'.format(event_slug))
 
         self._exporting_event = event
         translation.activate(event.locale)

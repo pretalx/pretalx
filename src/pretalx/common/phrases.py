@@ -92,7 +92,7 @@ class BasePhrases(Phrases, app='base'):
             'Your password is the only thing protecting your account, so please choose a strong one.'
         ),
     ]
-    use_markdown = _('You can use {link_start}Markdown{link_end} here.').format(
-        link_start=f'<a href="https://docs.pretalx.org/en/latest/user/markdown.html" target="_blank" rel="noopener">',
-        link_end='</a>',
+    use_markdown = _('You can use {}Markdown{} here.').format(
+        '<a href="https://docs.pretalx.org/en/latest/user/markdown.html" target="_blank" rel="noopener">',
+        '</a>',
     )

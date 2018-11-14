@@ -52,7 +52,7 @@ class SpeakerTalksIcalView(PermissionRequired, DetailView):
         cal = vobject.iCalendar()
         cal.add(
             'prodid'
-        ).value = f'-//pretalx//{netloc}//{request.event.slug}//{speaker.code}'
+        ).value = '-//pretalx//{}//{}//{}'.format(netloc, request.event.slug, speaker.code)
 
         for slot in slots:
             slot.build_ical(cal)
@@ -61,5 +61,5 @@ class SpeakerTalksIcalView(PermissionRequired, DetailView):
         speaker_name = Storage().get_valid_name(name=speaker.user.name)
         resp[
             'Content-Disposition'
-        ] = f'attachment; filename="{request.event.slug}-{speaker_name}.ics"'
+        ] = 'attachment; filename="{}-{}.ics"'.format(request.event.slug, speaker_name)
         return resp

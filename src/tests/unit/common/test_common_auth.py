@@ -8,6 +8,6 @@ def test_can_see_schedule_with_bearer_token(event, schedule, slot, orga_user):
     Token.objects.create(user=orga_user)
     client = Client(HTTP_AUTHORIZATION='Token ' + orga_user.auth_token.key)
     event.settings.show_schedule = False
-    response = client.get(f'/{event.slug}/schedule.xml')
+    response = client.get('/{}/schedule.xml'.format(event.slug))
     assert response.status_code == 200
     assert slot.submission.title in response.content.decode()

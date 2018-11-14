@@ -24,7 +24,7 @@ class Organiser(LogMixin, models.Model):
         unique=True,
         validators=[
             RegexValidator(
-                regex=f"^[{SLUG_CHARS}]+$",
+                regex="^[{}]+$".format(SLUG_CHARS),
                 message=_(
                     'The slug may only contain letters, numbers, dots and dashes.'
                 ),

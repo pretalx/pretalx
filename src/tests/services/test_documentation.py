@@ -49,4 +49,4 @@ def test_documentation_includes_management_commands(app):
         for python_file in glob.glob(path):
             file_name = python_file.split('/')[-1]
             if file_name != '__init__.py':
-                assert f'python -m pretalx {file_name[:-3]}``' in command_docs
+                assert 'python -m pretalx {}``'.format(file_name[:-3]) in command_docs

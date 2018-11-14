@@ -41,7 +41,7 @@ def process_frab(root, event):
         schedule = event.schedules.get(version=schedule_version)
     except Exception:
         raise Exception(
-            f'Could not import "{event.name}" schedule version "{schedule_version}": failed creating schedule release.'
+            'Could not import "{}" schedule version "{}": failed creating schedule release.'.format(event.name, schedule_version)
         )
 
     schedule.talks.update(is_visible=True)
@@ -51,7 +51,7 @@ def process_frab(root, event):
     event.date_to = end.date()
     event.save()
     return (
-        f'Successfully imported "{event.name}" schedule version "{schedule_version}".'
+        'Successfully imported "{}" schedule version "{}".'.format(event.name, schedule_version)
     )
 
 
@@ -111,7 +111,7 @@ def _create_talk(*, talk, room, event):
     for person in talk.find('persons').findall('person'):
         user = User.objects.filter(name=person.text[:60]).first()
         if not user:
-            user = User(name=person.text, email=f'{person.text}@localhost')
+            user = User(name=person.text, email='{}@localhost'.format(person.text))
             user.save()
             SpeakerProfile.objects.create(user=user, event=event)
         sub.speakers.add(user)

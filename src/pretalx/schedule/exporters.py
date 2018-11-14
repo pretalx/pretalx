@@ -62,7 +62,7 @@ class FrabXmlExporter(ScheduleData):
     def render(self, **kwargs):
         context = {'data': self.data, 'schedule': self.schedule, 'event': self.event, 'version': __version__}
         content = get_template('agenda/schedule.xml').render(context=context)
-        return f'{self.event.slug}-schedule.xml', 'text/xml', content
+        return '{}-schedule.xml', 'text/xml'.format(self.event.slug), content
 
 
 class FrabXCalExporter(ScheduleData):
@@ -75,7 +75,7 @@ class FrabXCalExporter(ScheduleData):
         url = get_base_url(self.event)
         context = {'data': self.data, 'url': url, 'domain': urlparse(url).netloc}
         content = get_template('agenda/schedule.xcal').render(context=context)
-        return f'{self.event.slug}.xcal', 'text/xml', content
+        return '{}.xcal'.format(self.event.slug), 'text/xml', content
 
 
 class FrabJsonExporter(ScheduleData):
@@ -157,7 +157,7 @@ class FrabJsonExporter(ScheduleData):
                 ]
             }
         }
-        return f'{self.event.slug}.json'.format(self.event.slug), 'application/json', json.dumps({'schedule': content}, cls=I18nJSONEncoder)
+        return '{}.json'.format(self.event.slug), 'application/json', json.dumps({'schedule': content}, cls=I18nJSONEncoder)
 
 
 class ICalExporter(BaseExporter):
@@ -184,4 +184,4 @@ class ICalExporter(BaseExporter):
         for talk in talks:
             talk.build_ical(cal, creation_time=creation_time, netloc=netloc)
 
-        return f'{self.event.slug}.ics', 'text/calendar', cal.serialize()
+        return '{}.ics'.format(self.event.slug), 'text/calendar', cal.serialize()

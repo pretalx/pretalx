@@ -9,13 +9,13 @@ class CheckboxMultiDropdown(CheckboxSelectMultiple):
         checkboxes = super().render(name, value, attrs=attrs, renderer=renderer)
         title = attrs.get('title') if attrs else None
         title = title or _('Choose one or more')
-        markup = f"""
+        markup = """
         <div class="checkbox-multi-select form-group">
-            <span class="multi-select-title form-control" data-title="{title}">{title}</span>
+            <span class="multi-select-title form-control" data-title="{0}">{0}</span>
             <span class="multi-select-options"><div class="form-group">
-                {checkboxes}
+                {1}
             </div></span>
-        </div>"""
+        </div>""".format(title, checkboxes)
         return mark_safe(markup)
 
 

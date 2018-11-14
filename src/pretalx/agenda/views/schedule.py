@@ -33,7 +33,7 @@ class ScheduleDataView(PermissionRequired, TemplateView):
             kwargs['version'] = request.GET['version']
             return HttpResponsePermanentRedirect(
                 reverse(
-                    f'agenda:versioned-{request.resolver_match.url_name}',
+                    'agenda:versioned-{}'.fomrat(request.resolver_match.url_name),
                     args=args,
                     kwargs=kwargs,
                 )
@@ -56,7 +56,7 @@ class ScheduleDataView(PermissionRequired, TemplateView):
 
         if not schedule and self.version:
             context['version'] = self.version
-            context['error'] = f'Schedule "{self.version}" not found.'
+            context['error'] = 'Schedule "{}" not found.'.format(self.version)
             return context
         if not schedule:
             context['error'] = 'Schedule not found.'
@@ -103,7 +103,7 @@ class ExporterView(ScheduleDataView):
             resp = HttpResponse(data, content_type=file_type)
             resp['ETag'] = etag
             if file_type not in ['application/json', 'text/xml']:
-                resp['Content-Disposition'] = f'attachment; filename="{file_name}"'
+                resp['Content-Disposition'] = 'attachment; filename="{}"'.format(file_name)
             return resp
         except Exception as export_exception:
             print(export_exception)

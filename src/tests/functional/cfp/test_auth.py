@@ -1,4 +1,4 @@
-import pytest
+.format(question.pk)import pytest
 
 
 @pytest.mark.django_db
@@ -44,7 +44,7 @@ def test_can_reset_password_by_email(speaker, client, event):
     speaker.refresh_from_db()
     assert speaker.pw_reset_token
     response = client.post(
-        event.urls.reset + f'/{speaker.pw_reset_token}',
+        event.urls.reset + '/{}'.format(speaker.pw_reset_token},
         data={'password': 'mynewpassword1!', 'password_repeat': 'mynewpassword1!'},
         follow=True,
     )
@@ -62,7 +62,7 @@ def test_can_reset_password_by_email(speaker, client, event):
 @pytest.mark.django_db
 def test_cannot_use_incorrect_token(speaker, client, event):
     response = client.post(
-        event.urls.reset + f'/abcdefg',
+        event.urls.reset + '/abcdefg',
         data={'password': 'mynewpassword1!', 'password_repeat': 'mynewpassword1!'},
         follow=True,
     )
@@ -80,7 +80,7 @@ def test_cannot_reset_password_with_incorrect_input(speaker, client, event):
     speaker.refresh_from_db()
     assert speaker.pw_reset_token
     response = client.post(
-        event.urls.reset + f'/{speaker.pw_reset_token}',
+        event.urls.reset + '/{}'.format(speaker.pw_reset_token),
         data={'password': 'mynewpassword1!', 'password_repeat': 'mynewpassword123!'},
         follow=True,
     )
@@ -106,7 +106,7 @@ def test_cannot_reset_password_to_insecure_password(speaker, client, event):
     speaker.refresh_from_db()
     assert speaker.pw_reset_token
     response = client.post(
-        event.urls.reset + f'/{speaker.pw_reset_token}',
+        event.urls.reset + '/{}'.format(speaker.pw_reset_token),
         data={'password': 'password', 'password_repeat': 'password'},
         follow=True,
     )

@@ -27,7 +27,7 @@ class SubmissionError(Exception):
 
 
 def submission_image_path(instance, filename):
-    return f'{instance.event.slug}/images/{instance.code}/{filename}'
+    return '{}/images/{}/{}'.format(instance.event.slug, instance.code, filename)
 
 
 class SubmissionStates(Choices):
@@ -372,11 +372,11 @@ class Submission(LogMixin, models.Model):
     def frab_slug(self):
         title = re.sub(r'\W+', '-', self.title)
         legal_chars = string.ascii_letters + string.digits + '-'
-        pattern = f'[^{legal_chars}]+'
+        pattern = '[^{}]+'.format(legal_chars)
         title = re.sub(pattern, '', title)
         title = title.lower()
         title = title.strip('_')
-        return f'{self.event.slug}-{self.pk}-{title}'
+        return '{}-{}-{}'.format(self.event.slug, self.pk, title)
 
     @cached_property
     def integer_uuid(self):
@@ -447,7 +447,7 @@ class Submission(LogMixin, models.Model):
 
     def __str__(self):
         """Help when debugging."""
-        return f'Submission(event={self.event.slug}, code={self.code}, title={self.title}, state={self.state})'
+        return 'Submission(event={}, code={}, title={}, state={})'.format(self.event.slug, self.code, self.title, self.state)
 
     @cached_property
     def export_duration(self):

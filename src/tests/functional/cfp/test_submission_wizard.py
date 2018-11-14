@@ -57,14 +57,14 @@ class TestWizard:
         response, current_url = self.get_response_and_url(
             client, url, data=submission_data
         )
-        assert current_url.endswith(f'/{next}/')
+        assert current_url.endswith('/{}/'.format(next))
         return response, current_url
 
     def perform_question_wizard(self, client, response, url, data, next='profile'):
         key, value = self.get_form_name(response)
         data[key] = value
         response, current_url = self.get_response_and_url(client, url, data=data)
-        assert current_url.endswith(f'/{next}/')
+        assert current_url.endswith('/{}/'.format(next))
         return response, current_url
 
     def perform_user_wizard(
@@ -88,7 +88,7 @@ class TestWizard:
         key, value = self.get_form_name(response)
         data[key] = value
         response, current_url = self.get_response_and_url(client, url, data=data)
-        assert current_url.endswith(f'/{next}/')
+        assert current_url.endswith('/{}/'.format(next))
         return response, current_url
 
     def perform_profile_form(
@@ -111,7 +111,7 @@ class TestWizard:
     def test_wizard_new_user(self, event, question, client):
         event.settings.set('mail_on_new_submission', True)
         submission_type = SubmissionType.objects.filter(event=event).first().pk
-        answer_data = {f'questions-question_{question.pk}': '42'}
+        answer_data = {'questions-question_{}'.format(question.pk): '42'}
 
         response, current_url = self.perform_init_wizard(client)
         response, current_url = self.perform_info_wizard(
@@ -163,10 +163,10 @@ class TestWizard:
     ):
         submission_type = SubmissionType.objects.filter(event=event).first().pk
         answer_data = {
-            f'questions-question_{question.pk}': '42',
-            f'questions-question_{speaker_question.pk}': 'green',
-            f'questions-question_{choice_question.pk}': choice_question.options.first().pk,
-            f'questions-question_{multiple_choice_question.pk}': multiple_choice_question.options.first().pk,
+            'questions-question_{}'.format(question.pk): '42',
+            'questions-question_{}'.format(speaker_question.pk): 'green',
+            'questions-question_{}'.format(choice_question.pk): choice_question.options.first().pk,
+            'questions-question_{}'.format(multiple_choice_question.pk): multiple_choice_question.options.first().pk,
         }
 
         response, current_url = self.perform_init_wizard(client)
@@ -208,7 +208,7 @@ class TestWizard:
         self, event, client, question, user, review_question
     ):
         submission_type = SubmissionType.objects.filter(event=event).first().pk
-        answer_data = {f'questions-question_{question.pk}': '42'}
+        answer_data = {'questions-question_{}'.format(question.pk): '42'}
 
         client.force_login(user)
         response, current_url = self.perform_init_wizard(client)

@@ -6,11 +6,11 @@ def serialize_duration(minutes):
     days = duration.days
     hours = int(duration.total_seconds() // 3600 - days * 24)
     minutes = int(duration.seconds // 60 % 60)
-    fmt = f'{minutes:02}'
+    fmt = '{:02}'.format(minutes)
     if hours or days:
-        fmt = f'{hours:02}:{fmt}'
+        fmt = '{:02}:{}'.format(hours, fmt)
         if days:
-            fmt = f'{days}:{fmt}'
+            fmt = '{:{}'.format(days, fmt)
     else:
-        fmt = f'00:{fmt}'
+        fmt = '00:{}'.format(fmt)
     return fmt
