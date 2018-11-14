@@ -113,12 +113,12 @@ class SpeakerProfileForm(AvailabilitiesFormMixin, ReadOnlyFlag, forms.ModelForm)
         initials = dict()
         for field in ('availabilities', 'biography'):
             if self.event and not getattr(
-                self.event.settings, f'cfp_request_{field}', True
+                self.event.settings, 'cfp_request_{}'.format(field), True
             ):
                 self.fields.pop(field)
             else:
                 self.fields[field].required = getattr(
-                    self.event.settings, f'cfp_require_{field}', False
+                    self.event.settings, 'cfp_require_{}'.format(field), False
                 )
         if self.user:
             initials = {field: getattr(self.user, field) for field in self.user_fields}

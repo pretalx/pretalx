@@ -4,15 +4,15 @@ def log_initial(*, debug, config_files, db_name, db_backend, LOG_DIR, plugins):
 
     mode = 'development' if debug else 'production'
     lines = [
-        (f'This is pretalx v{__version__} calling, running in {mode} mode.', True),
+        ('This is pretalx v{} calling, running in {mode} mode.'.format(__version__), True),
         ('', False),
-        (f'Settings:', True),
-        (f'Read from: {", ".join(config_files)}', False),
-        (f'Database:  {db_name} ({db_backend})', False),
-        (f'Logging:   {LOG_DIR}', False),
+        ('Settings:', True),
+        ('Read from: {}'.format(", ".join(config_files)), False),
+        ('Database:  {} ({})'.format(db_name, db_backend), False),
+        ('Logging:   {}'.format(LOG_DIR), False),
     ]
     if plugins:
-        lines += [(f'Plugins:   {",".join(plugins)}', False)]
+        lines += [('Plugins:   {}'.format(','.join(plugins)), False)]
     else:
         lines += [('', False)]
     image = '''
@@ -30,7 +30,7 @@ def log_initial(*, debug, config_files, db_name, db_backend, LOG_DIR, plugins):
     image[-1] += ' ' * (img_width - len(image[-1]))
     image += [' ' * img_width for _ in range((len(lines) - len(image)))]
 
-    lines = [(f'{image[n]}  {lines[n][0]}', lines[n][1]) for n in range(len(lines))]
+    lines = [('{}  {}'.format(image[n], lines[n][0]), lines[n][1]) for n in range(len(lines))]
 
     size = max(len(line[0]) for line in lines) + 4
     start_box(size)

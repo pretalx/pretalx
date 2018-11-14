@@ -11,25 +11,25 @@ def _review_score_number(context, score):
 
     if isinstance(score, int) or (isinstance(score, float) and score.is_integer()):
         score = int(score)
-        name = context['request'].event.settings.get(f'review_score_name_{score}')
+        name = context['request'].event.settings.get('review_score_name_{}'.format(score))
         if name:
-            return f'{score}/{max_score} (»{name}«)'
+            return '{}/{} (»{}«)'.format(score, max_score, name)
     else:
         score = round(score, 1)
 
-    return f'{score}/{max_score}'
+    return '{}/{}'.format(score, max_score)
 
 
 def _review_score_override(positive_overrides, negative_overrides):
     result = ''
     if positive_overrides:
-        result += f'<i class="fa fa-arrow-circle-up override text-success"></i>'
+        result += '<i class="fa fa-arrow-circle-up override text-success"></i>'
         if positive_overrides > 1 or negative_overrides:
-            result += f' {positive_overrides}'
+            result += ' {}'.format(positive_overrides)
     if negative_overrides:
-        result += f'<i class="fa fa-arrow-circle-down override text-danger"></i>'
+        result += '<i class="fa fa-arrow-circle-down override text-danger"></i>'
         if negative_overrides > 1 or positive_overrides:
-            result += f' {negative_overrides}'
+            result += ' {}'.format(negative_overrides)
     return result
 
 

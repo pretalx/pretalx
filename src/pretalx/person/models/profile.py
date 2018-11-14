@@ -40,7 +40,7 @@ class SpeakerProfile(LogMixin, models.Model):
     def __str__(self):
         """Help when debugging."""
         user = self.user.get_display_name() if self.user else None
-        return f'SpeakerProfile(event={self.event.slug}, user={user})'
+        return 'SpeakerProfile(event={}, user={})'.format(self.event.slug, user)
 
     @cached_property
     def code(self):

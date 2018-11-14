@@ -45,12 +45,12 @@ def orga_events(request):
             and request.event.settings.custom_domain
             and request.user.has_perm('cfp.view_event', request.event)
         ):
-            child_session_key = f'child_session_{request.event.pk}'
+            child_session_key = 'child_session_{}'.format(request.event.pk)
             child_session = request.session.get(child_session_key)
             s = SessionStore()
             if not child_session or not s.exists(child_session):
                 s[
-                    f'pretalx_event_access_{request.event.pk}'
+                    'pretalx_event_access_{}'.format(request.event.pk)'
                 ] = request.session.session_key
                 s.create()
                 context['new_session'] = s.session_key

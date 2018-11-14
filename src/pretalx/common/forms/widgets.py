@@ -59,7 +59,7 @@ class PasswordConfirmationInput(PasswordInput):
 
     def render(self, name, value, attrs=None, renderer=None):
         if self.confirm_with:
-            self.attrs['data-confirm-with'] = f'{self.confirm_with}'
+            self.attrs['data-confirm-with'] = '{}'.format(self.confirm_with)
 
         markup = """
         <div class="hidden password_strength_info">

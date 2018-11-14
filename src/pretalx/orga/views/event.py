@@ -411,7 +411,7 @@ class EventWizard(PermissionRequired, SessionWizardView):
         if not has_control_rights:
             t = Team.objects.create(
                 organiser=event.organiser,
-                name=_(f'Team {event.name}'),
+                name=_('Team {}'.format(event.name)),
                 can_change_event_settings=True,
                 can_change_submissions=True,
             )

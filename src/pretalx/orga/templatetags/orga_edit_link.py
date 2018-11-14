@@ -8,6 +8,6 @@ register = template.Library()
 @register.simple_tag()
 def orga_edit_link(url, target=None):
     if target:
-        url = f'{url}#{target}'
-    result = f'<a href="{url}" class="btn btn-xs btn-outline-primary orga-edit-link float-right" title="{_("Edit")}"><i class="fa fa-pencil"></i></a>'
+        url = '{}#{}'.format(url, target)
+    result = '<a href="{}" class="btn btn-xs btn-outline-primary orga-edit-link float-right" title="{}"><i class="fa fa-pencil"></i></a>'.format(url, _("Edit"))
     return mark_safe(result)

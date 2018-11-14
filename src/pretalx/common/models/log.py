@@ -117,7 +117,7 @@ class ActivityLog(models.Model):
         """Custom __str__ to help with debugging."""
         event = getattr(self.event, 'slug', 'None')
         person = getattr(self.person, 'name', 'None')
-        return f'ActivityLog(event={event}, person={person}, content_object={self.content_object}, action_type={self.action_type})'
+        return 'ActivityLog(event={}, person={}, content_object={}, action_type={})'.format(event, person, self.content_object, self.action_type)
 
     def display(self):
         response = LOG_NAMES.get(self.action_type)
@@ -125,7 +125,7 @@ class ActivityLog(models.Model):
             import logging
 
             logger = logging.getLogger(__name__)
-            logger.warning(f'Unknown log action "{self.action_type}".')
+            logger.warning('Unknown log action "{}".'.format(self.action_type))
             return self.action_type
         return response
 

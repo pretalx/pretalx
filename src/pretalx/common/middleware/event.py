@@ -48,7 +48,7 @@ class EventPermissionMiddleware:
             and url.url_name not in self.UNAUTHENTICATED_ORGA_URLS
         ):
             params = '&' + request.GET.urlencode() if request.GET else ''
-            return reverse('orga:login') + f'?next={quote(request.path)}' + params
+            return reverse('orga:login') + '?next={}'.format(quote(request.path)) + params
         return None
 
     def __call__(self, request):

@@ -35,7 +35,7 @@ class MultiDomainMiddleware:
             host = request.META['SERVER_NAME']
             server_port = str(request.META['SERVER_PORT'])
             if server_port != ('443' if request.is_secure() else '80'):
-                host = f'{host}:{server_port}'
+                host = '{}:{}'.format(host, server_port)
         return host
 
     def process_request(self, request):
@@ -68,9 +68,9 @@ class MultiDomainMiddleware:
 
         if request.path.startswith('/orga'):
             if default_port not in (80, 443):
-                default_domain = f'{default_domain}:{default_port}'
+                default_domain = '{}:{}'.format(default_domain, default_port)
             return redirect(urljoin(default_domain, request.get_full_path()))
-        raise DisallowedHost(f'Unknown host: {host}')
+        raise DisallowedHost('Unknown host: {}'.format(host))
 
     def __call__(self, request):
         response = self.process_request(request)

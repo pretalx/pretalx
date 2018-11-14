@@ -19,14 +19,14 @@ logger = logging.getLogger(__name__)
 def regenerate_css(event_id: int):
     event = Event.objects.filter(pk=event_id).first()
     if not event:
-        logger.error(f'In regenerate_css: Event ID {event_id} not found.')
+        logger.error('In regenerate_css: Event ID {} not found.'.format(event_id))
         return
     local_apps = ['agenda', 'cfp']
 
     if not event.primary_color:
         for local_app in local_apps:
-            event.settings.delete(f'{local_app}_css_file')
-            event.settings.delete(f'{local_app}_css_checksum')
+            event.settings.delete('{}_css_file'.format(local_app))
+            event.settings.delete('{}_css_checksum'.format(local_app))
         return
 
     for local_app in local_apps:
@@ -35,7 +35,7 @@ def regenerate_css(event_id: int):
 
         if event.primary_color:
             sassrules.append('$brand-primary: {};'.format(event.primary_color))
-            sassrules.append(f'@import "{path}";')
+            sassrules.append('@import "{}";'.format(path))
 
         custom_functions = dict(django_libsass.CUSTOM_FUNCTIONS)
         custom_functions['static'] = static
@@ -45,9 +45,9 @@ def regenerate_css(event_id: int):
             custom_functions=custom_functions,
         )
         checksum = hashlib.sha1(css.encode('utf-8')).hexdigest()
-        fname = f'{event.slug}/{local_app}.{checksum[:16]}.css'
+        fname = '{}/{}.{}.css'.format(event.slug, local_app, checksum[:16])
 
-        if event.settings.get(f'{local_app}_css_checksum', '') != checksum:
+        if event.settings.get('{}_css_checksum'.format(local_app), '') != checksum:
             newname = default_storage.save(fname, ContentFile(css.encode('utf-8')))
-            event.settings.set(f'{local_app}_css_file', f'/media/{newname}')
-            event.settings.set(f'{local_app}_css_checksum', checksum)
+            event.settings.set('{}_css_file'.format(local_app), '/media/{newname}'.format(newname))
+            event.settings.set('{}_css_checksum'.format(local_app), checksum)
