@@ -80,7 +80,7 @@ def test_regenerate_css_no_color(event):
     event = Event.objects.get(pk=event.pk)
     for local_app in ['agenda', 'cfp']:
         assert not event.settings.get('{}_css_file'.format(local_app))
-        assert not event.settings.get('{local_app}_css_checksum'.format(local_app))
+        assert not event.settings.get('{}_css_checksum'.format(local_app))
 
 
 @pytest.mark.django_db

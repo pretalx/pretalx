@@ -23,7 +23,7 @@ urlpatterns = [
 
     url('^organiser/$', dashboard.DashboardOrganiserListView.as_view(), name='organiser.list'),
     url('^organiser/new$', organiser.OrganiserDetail.as_view(), name='organiser.create'),
-    url('^organiser/(?P<organiser>[{S}]+)/'.format(SLUG_CHARS), include([
+    url('^organiser/(?P<organiser>[{}]+)/'.format(SLUG_CHARS), include([
         url('^$', organiser.OrganiserDetail.as_view(), name='organiser.view'),
         url('^delete$', organiser.OrganiserDelete.as_view(), name='organiser.delete'),
         url('^teams/$', organiser.TeamDetail.as_view(), name='organiser.teams'),

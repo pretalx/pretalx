@@ -10,7 +10,7 @@ def serialize_duration(minutes):
     if hours or days:
         fmt = '{:02}:{}'.format(hours, fmt)
         if days:
-            fmt = '{:{}'.format(days, fmt)
+            fmt = '{}:{}'.format(days, fmt)
     else:
         fmt = '00:{}'.format(fmt)
     return fmt

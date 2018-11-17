@@ -268,7 +268,7 @@ def test_orga_can_compose_single_mail_reviewers(orga_client, event, orga_user, r
 @pytest.mark.django_db
 def test_orga_can_compose_single_mail_from_template(orga_client, event, submission):
     response = orga_client.get(
-        event.orga_urls.compose_mails + '?template={}&submission={}'.format(event.ack_template.pk, submission_code), follow=True,
+        event.orga_urls.compose_mails + '?template={}&submission={}'.format(event.ack_template.pk, submission.code), follow=True,
     )
     assert response.status_code == 200
     assert str(event.ack_template.subject) in response.content.decode()

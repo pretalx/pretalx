@@ -49,5 +49,5 @@ def regenerate_css(event_id: int):
 
         if event.settings.get('{}_css_checksum'.format(local_app), '') != checksum:
             newname = default_storage.save(fname, ContentFile(css.encode('utf-8')))
-            event.settings.set('{}_css_file'.format(local_app), '/media/{newname}'.format(newname))
+            event.settings.set('{}_css_file'.format(local_app), '/media/{}'.format(newname))
             event.settings.set('{}_css_checksum'.format(local_app), checksum)

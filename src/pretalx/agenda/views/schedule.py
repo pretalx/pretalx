@@ -33,7 +33,7 @@ class ScheduleDataView(PermissionRequired, TemplateView):
             kwargs['version'] = request.GET['version']
             return HttpResponsePermanentRedirect(
                 reverse(
-                    'agenda:versioned-{}'.fomrat(request.resolver_match.url_name),
+                    'agenda:versioned-{}'.format(request.resolver_match.url_name),
                     args=args,
                     kwargs=kwargs,
                 )

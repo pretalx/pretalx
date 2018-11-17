@@ -151,7 +151,7 @@ class User(PermissionsMixin, AbstractBaseUser):
     def deactivate(self):
         from pretalx.submission.models import Answer
 
-        self.email = 'deleted_user_{}@localhost'.format(random.randomint(0, 999))
+        self.email = 'deleted_user_{}@localhost'.format(random.randint(0, 999))
         while self.__class__.objects.filter(email__iexact=self.email).exists():
             self.email = 'deleted_user_{}'.format(random.randint(0, 999))
         self.name = 'Deleted User'

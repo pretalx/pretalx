@@ -115,5 +115,5 @@ class SubmissionFilterForm(forms.Form):
             ]
         else:
             usable_states = self.fields['state'].choices
-        self.fields['state'].choices = [(choice[0], '{} ({})'.format(choice[1].capitalize(), sub_count(choice[0])) for choice in usable_states]
+        self.fields['state'].choices = [(choice[0], '{} ({})'.format(choice[1].capitalize(), sub_count(choice[0]))) for choice in usable_states]
         self.fields['state'].widget.attrs['title'] = _('Submission states')

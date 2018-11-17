@@ -29,7 +29,7 @@ def get_schedule_urls(regex_prefix, name_prefix=""):
 app_name = 'agenda'
 urlpatterns = [
     url(
-        fr'^(?P<event>[{SLUG_CHARS}]+)/',
+        r'^(?P<event>[{}]+)/'.format(SLUG_CHARS),
         include(
             [
                 url(r'^schedule/changelog$', schedule.ChangelogView.as_view(), name='schedule.changelog'),
