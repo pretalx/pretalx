@@ -622,14 +622,15 @@ def other_room(event):
 
 @pytest.fixture
 def availability(event):
+    # the tzinfo argument for datetime.datetime.combine was added in Python 3.6
+    start = datetime.datetime.combine(event.date_from, datetime.time.min)
+    start = start.replace(tzinfo=pytz.utc)
+    end = datetime.datetime.combine(event.date_to, datetime.time.min)
+    end = end.replace(tzinfo=pytz.utc)
     return Availability(
         event=event,
-        start=datetime.datetime.combine(
-            event.date_from, datetime.time.min, tzinfo=pytz.utc
-        ),
-        end=datetime.datetime.combine(
-            event.date_to, datetime.time.max, tzinfo=pytz.utc
-        ),
+        start=start,
+        end=end,
     )
 
 
