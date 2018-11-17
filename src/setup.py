@@ -21,7 +21,8 @@ class CustomBuild(build):
         environ.setdefault("DJANGO_SETTINGS_MODULE", "pretalx.settings")
         try:
             import django
-        except (ImportError, ModuleNotFoundError):
+        except (ImportError):
+            # ModuleNotFoundError which was catched here in the Python 3.6 version as well is a subclass of ImportError but available on Python >= 3.6 only
             return
         django.setup()
         from django.conf import settings
