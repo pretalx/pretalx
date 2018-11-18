@@ -263,6 +263,8 @@ class Submission(LogMixin, models.Model):
                 ' or ',
             )
             state_names = dict(SubmissionStates.get_choices())
+            # sorted() is required with Python 3.5 because the order of source_states is not stable
+            source_states = sorted(source_states)
             source_states = trans_or.join(
                 str(state_names[state]) for state in source_states
             )

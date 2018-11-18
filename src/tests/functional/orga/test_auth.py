@@ -16,7 +16,7 @@ def test_orga_successful_login(client, user, template_patch):
 
 @pytest.mark.django_db
 def test_orga_redirect_login(client, orga_user, event):
-    queryparams = 'foo=bar&something=else'
+    queryparams = 'something=else&foo=bar'
     request_url = event.orga_urls.base + '/?' + queryparams
     response = client.get(request_url, follow=True)
     assert response.status_code == 200

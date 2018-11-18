@@ -192,7 +192,8 @@ class TestWizard:
         assert answ.answer == '42'
         assert answ.submission == sub
         assert not answ.person
-        answ = user.answers.filter(question__target='speaker').first()
+        # the order of user.answers is not stable between different runs of this test
+        answ = user.answers.filter(question__target='speaker').order_by('question__question')[1]
         assert answ.question == speaker_question
         assert answ.person == user
         assert not answ.submission

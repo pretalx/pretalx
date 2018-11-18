@@ -333,13 +333,13 @@ def test_serialize(availabilitiesform, avails, expected, tzname):
     else:
         instance = None
 
+    expected = json.loads(expected)
     if avails:
-        expected = json.loads(expected)
         for a, j in zip(avails, expected['availabilities']):
             j['id'] = a.pk
-        expected = json.dumps(expected)
 
     actual = availabilitiesform._serialize(availabilitiesform.event, instance)
+    actual = json.loads(actual)
     assert actual == expected
 
 
