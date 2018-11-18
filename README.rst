@@ -1,3 +1,12 @@
+Pretalx for Python 3.5
+======================
+
+This fork is a backport of Pretalx on Python 3.5 because Pretalx makes usage of
+f-strigs ([PEP 498](https://www.python.org/dev/peps/pep-0498/)) and other
+features only available in Python 3.6.
+
+The following is the original Readme:
+
 pretalx |logo|
 ==============
 
