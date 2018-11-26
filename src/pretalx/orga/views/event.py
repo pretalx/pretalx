@@ -27,7 +27,7 @@ from pretalx.event.forms import (
 )
 from pretalx.event.models import Event, Team, TeamInvite
 from pretalx.orga.forms import EventForm, EventSettingsForm
-from pretalx.orga.forms.event import MailSettingsForm
+from pretalx.orga.forms.event import LoginSettingsForm, MailSettingsForm
 from pretalx.orga.signals import activate_event
 from pretalx.person.forms import LoginInfoForm, OrgaProfileForm, UserForm
 from pretalx.person.models import User
@@ -226,6 +226,19 @@ class EventMailSettings(EventSettingsPermission, ActionFromUrl, FormView):
         else:
             messages.success(self.request, _('Yay! We saved your changes.'))
 
+        return super().form_valid(form)
+
+
+class EventLoginSettings(EventSettingsPermission, ActionFromUrl, FormView):
+    form_class = LoginSettingsForm
+    template_name = 'orga/settings/login.html'
+    write_permission_required = 'orga.change_settings'
+
+    def get_success_url(self) -> str:
+        return self.request.event.orga_urls.login_settings
+
+    def form_valid(self, form):
+        form.save()
         return super().form_valid(form)
 
 

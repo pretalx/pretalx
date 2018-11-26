@@ -1,0 +1,30 @@
+{% extends "orga/settings/base.html" %}
+{% load bootstrap4 %}
+{% load i18n %}
+{% load fullurl %}
+
+{% block settings_content %}
+    <form method="post" action="">
+        {% csrf_token %}
+        <h2>{% trans "Login settings" %}</h2>
+        <h3>{% trans "GitHub" %}</h3>
+        <div class="alert alert-info">
+            <span>
+                {% url 'github_callback' as rel_github_callback %}
+                {% buildfullurl rel_github_callback as full_github_callback %}
+                {% blocktrans with github_callback=full_github_callback %}
+                If you want to enable the login via GitHub authentication, create a new OAuth App from your <a href="https://github.com/settings/developers">GitHub account developer settings</a>. Use <code>{{ github_callback }}</code> as the <strong>Authorization callback URL</strong> setting.
+                {% endblocktrans %}
+            </span>
+        </div>
+        {% bootstrap_form form layout='event' %}
+        <div class="submit-group panel">
+            <span></span>
+            <span>
+                {% if action == "edit" or action == "create" %}
+                    <button type="submit" class="btn btn-lg btn-info">{% trans "Save" %}</button>
+                {% endif %}
+            </span>
+        </div>
+    </form>
+{% endblock %}

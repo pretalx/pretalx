@@ -69,6 +69,7 @@ setup(
         'csscompressor==0.9.*',  # 2017-11, no changelog, https://github.com/sprymix/csscompressor
         'cssutils==1.0.*',  # https://pythonhosted.org/cssutils/CHANGELOG.html
         'Django>=2.1,<2.2',  # https://docs.djangoproject.com/en/2.0/releases/
+        'django-allauth==0.38.0',  # https://django-allauth.readthedocs.io/en/latest/release-notes.html
         'django-bakery==0.12.*',  # http://django-bakery.readthedocs.io/en/latest/changelog.html
         'django-bootstrap4==0.0.6',  # http://django-bootstrap4.readthedocs.io/en/latest/history.html
         'django-compressor==2.2.*',  # https://django-compressor.readthedocs.io/en/latest/changelog/
@@ -76,6 +77,7 @@ setup(
         'django-filter==2.0.*',  # https://github.com/carltongibson/django-filter/blob/master/CHANGES.rst
         'django-formset-js-improved==0.5.0.2',  # no changelog, https://github.com/pretix/django-formset-js
         'django-formtools==2.1.*',  # http://django-formtools.readthedocs.io/en/latest/changelog.html
+        'django-fullurl==0.5',  # https://github.com/Flimm/django-fullurl/blob/master/CHANGELOG.rst
         'django-hierarkey==1.0.*',  # no changelog, https://github.com/raphaelm/django-hierarkey
         'django-i18nfield==1.4.*',  # 2017-11, no changelog, https://github.com/raphaelm/django-i18nfield/
         'django-libsass==0.7',  # inactive, https://github.com/torchbox/django-libsass/blob/master/CHANGELOG.txt

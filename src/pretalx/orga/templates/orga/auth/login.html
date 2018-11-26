@@ -1,6 +1,8 @@
 {% extends "orga/auth/base.html" %}
+{% load cfp %}
 {% load i18n %}
 {% load static %}
+{% load socialaccount %}
 {% block title %}{% trans "Sign in" %}{% endblock %}
 {% block content %}
     <form class="form-signin" method="post" autocomplete="off">
@@ -16,4 +18,9 @@
             {% trans "Reset password" %}
         </a>
     </form>
+    {% is_auth_provider_setup "github" as is_github_setup %}
+    {% if is_github_setup %}
+    <p><a href="{% provider_login_url 'github' %}">Login with GitHub</a></p>
+    {% endif %}
+
 {% endblock %}

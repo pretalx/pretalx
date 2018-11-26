@@ -1,6 +1,8 @@
 {% extends "cfp/event/base.html" %}
 {% load bootstrap4 %}
+{% load cfp %}
 {% load i18n %}
+{% load socialaccount %}
 
 {% block title %}{% trans "Login" %} :: {% endblock %}
 
@@ -34,6 +36,10 @@
                 <a class="btn btn-block btn-link" href="{{ request.event.urls.reset }}">
                     {% trans "Reset password" %}
                 </a>
+                {% is_auth_provider_setup "github" as is_github_setup %}
+                {% if is_github_setup %}
+                <p><a href="{% provider_login_url 'github' %}{% if not request.GET.next %}?next={{ request.event.urls.user_submissions }}{% endif %}">Log In with GitHub</a></p>
+                {% endif %}
             </div>
             <div class="col-md-6">
                 <h4 class="text-center">{% trans "I need a new account" %}</h4>

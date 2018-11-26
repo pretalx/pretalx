@@ -1,3 +1,4 @@
+from allauth.socialaccount.models import SocialApp
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -231,3 +232,36 @@ class MailSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
                     'Your administrator can add an instance-wide bypass. If you use this bypass, please also adjust your Privacy Policy.'
                 )
             )
+
+
+class LoginSettingsForm(ReadOnlyFlag, forms.ModelForm):
+    """Form for logins via 3rd party accounts."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Use existing values if possible
+        try:
+            github = SocialApp.objects.get(provider='github')
+            self.initial['client_id'] = github.client_id
+            self.initial['secret'] = github.secret
+        except SocialApp.DoesNotExist:
+            pass
+
+    def save(self, *args, **kwargs):
+        self.instance.provider = 'github'
+        self.instance.name = 'GitHub Login'
+        saved_model = super().save(*args, **kwargs)
+        saved_model.sites.add(1)
+        return saved_model
+
+    class Meta:
+        model = SocialApp
+        fields = ['client_id', 'secret']
+        labels = {
+            'client_id': _('Client ID'),
+            'secret': _('Client Secret'),
+        }
+        help_texts = {
+            'client_id': None,
+            'secret': None,
+        }

@@ -149,6 +149,8 @@ class User(PermissionsMixin, AbstractBaseUser):
         return ActivityLog.objects.filter(person=self)
 
     def deactivate(self):
+        from allauth.socialaccount.models import SocialAccount
+        from allauth.account.models import EmailAddress
         from pretalx.submission.models import Answer
 
         self.email = f'deleted_user_{random.randint(0, 999)}@localhost'
@@ -169,6 +171,9 @@ class User(PermissionsMixin, AbstractBaseUser):
         ).delete()
         for team in self.teams.all():
             team.members.remove(self)
+        # Remove all relate django-allauth accounts
+        SocialAccount.objects.filter(user=self).delete()
+        EmailAddress.objects.filter(user=self).delete()
 
     @cached_property
     def gravatar_parameter(self):

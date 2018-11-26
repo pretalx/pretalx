@@ -1,6 +1,8 @@
 {% extends "orga/base.html" %}
 {% load bootstrap4 %}
+{% load cfp %}
 {% load i18n %}
+{% load socialaccount %}
 
 {% block title %}{% trans "Invitation" %} :: {% trans "Sign in" %}{% endblock %}
 {% block content %}
@@ -22,6 +24,10 @@
             <button type="submit" class="btn btn-block btn-success btn-lg">
                 {% trans "Log in" %} &raquo;
             </button>
+            {% is_auth_provider_setup "github" as is_github_setup %}
+            {% if is_github_setup %}
+            <p><a href="{% provider_login_url 'github' %}{% if not request.GET.next %}?next=/orga{% endif %}">Log In with GitHub</a></p>
+            {% endif %}
         </div>
         <div class="col-md-6">
             <h4 class="text-center">{% trans "I need a new account" %}</h4>
