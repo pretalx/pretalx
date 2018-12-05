@@ -20,7 +20,8 @@ RUN mkdir /static && \
     pip3 install -U pip setuptools wheel typing && \
     pip3 install -e src/ && \
     pip3 install django-redis pylibmc mysqlclient psycopg2 && \
-    pip3 install gunicorn && \
+    pip3 install gunicorn && \    
+    pip3 install redis==2.10.6 && \
     chmod +x /usr/local/bin/pretalx
 
 RUN mkdir -p /data/logs /data/media
