@@ -22,6 +22,7 @@ state                                 string                     The submission'
 abstract                              string                     The abstract, a short note of the submission's content
 description                           string                     The description, a more expansive description of the submission's content
 duration                              number                     The talk's duration in minutes, or ``null``
+available_count                       number                     How often the talk is available for scheduling
 do_not_record                         boolean                    Indicates if the speaker consent to recordings of their talk
 is_featured                           boolean                    Indicates if the talk is show in the schedule preview / sneak peek
 content_locale                        string                     The language the submission is in, e.g. "en" or "de"
@@ -69,6 +70,7 @@ Endpoints
             "abstract": "A good talk.",
             "description": "I will expand upon the properties of the talk, primarily its high quality.",
             "duration": 30,
+            "available_count": 1,
             "do_not_record": true,
             "is_featured": false,
             "content_locale": "en",
@@ -127,6 +129,7 @@ Endpoints
         "abstract": "A good talk.",
         "description": "I will expand upon the properties of the talk, primarily its high quality.",
         "duration": 30,
+        "available_count": 1,
         "do_not_record": true,
         "is_featured": false,
         "content_locale": "en",
