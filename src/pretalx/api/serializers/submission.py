@@ -23,7 +23,6 @@ class SubmissionSerializer(I18nAwareModelSerializer):
     track = SlugRelatedField(slug_field='name', read_only=True)
     slot = SlotSerializer(TalkSlot.objects.filter(is_visible=True), read_only=True)
     duration = SerializerMethodField()
-    available_count = SerializerMethodField()
     answers = SerializerMethodField()
 
     @property
