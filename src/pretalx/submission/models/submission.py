@@ -141,6 +141,14 @@ class Submission(LogMixin, models.Model):
             'The duration in minutes. Leave empty for default duration for this submission type.'
         ),
     )
+    available_count = models.PositiveIntegerField(
+        default=1,
+        verbose_name=_('Available Count'),
+        help_text=_(
+            'How often are you available to hold your talk.'
+            'Currently only editable by the organiser.'
+        ),
+    )
     content_locale = models.CharField(
         max_length=32,
         default=settings.LANGUAGE_CODE,
