@@ -31,7 +31,7 @@ class TalkList(EventPermissionRequired, Filterable, ListView):
     default_filters = ('speakers__name__icontains', 'title__icontains')
 
     def get_queryset(self):
-        return self.filter_queryset(self.request.event.talks)
+        return self.filter_queryset(self.request.event.talks).distinct()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -49,6 +49,7 @@ class SpeakerList(EventPermissionRequired, Filterable, ListView):
         qs = SpeakerProfile.objects.filter(
             user__in=self.request.event.speakers, event=self.request.event
         ).select_related('user', 'event')
+        print('*****  qs', qs)
         return self.filter_queryset(qs)
 
     def get_context_data(self, **kwargs):
@@ -66,14 +67,14 @@ class TalkView(PermissionRequired, DetailView):
 
     def get_object(self, queryset=None):
         with suppress(AttributeError, TalkSlot.DoesNotExist):
-            return self.request.event.current_schedule.talks.get(
+            return self.request.event.current_schedule.talks.filter(
                 submission__code__iexact=self.kwargs['slug'], is_visible=True
-            )
+            ).first()
         if getattr(self.request, 'is_orga', False):
             with suppress(AttributeError, TalkSlot.DoesNotExist):
-                return self.request.event.wip_schedule.talks.get(
+                return self.request.event.wip_schedule.talks.filter(
                     submission__code__iexact=self.kwargs['slug'], is_visible=True
-                )
+                ).first()
         raise Http404()
 
     @cached_property
@@ -113,6 +114,7 @@ class TalkView(PermissionRequired, DetailView):
         elif self.request.is_orga:
             qs = self.request.event.wip_schedule.talks
         event_talks = qs.exclude(submission=slot.submission)
+
         context['submission'] = slot.submission
         context['submission_description'] = (
             slot.submission.description
@@ -124,8 +126,14 @@ class TalkView(PermissionRequired, DetailView):
         context['recording_iframe'] = self.recording.get('iframe')
         context['speakers'] = []
         for speaker in slot.submission.speakers.all():
-            speaker.talk_profile = speaker.event_profile(event=self.request.event)
-            speaker.other_talks = event_talks.filter(submission__speakers__in=[speaker])
+            speaker.talk_profile = speaker.event_profile(
+                event=self.request.event)
+            speaker_talks = event_talks.filter(
+                submission__speakers__in=[speaker],
+                # with the following we get only the first appearance
+                available_index__exact=0
+            )
+            speaker.other_talks = speaker_talks
             context['speakers'].append(speaker)
         return context
 
