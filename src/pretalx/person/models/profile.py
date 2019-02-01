@@ -52,7 +52,7 @@ class SpeakerProfile(LogMixin, models.Model):
 
     @cached_property
     def talks(self):
-        return self.event.talks.filter(speakers__in=[self.user])
+        return self.event.talks.filter(speakers__in=[self.user]).distinct()
 
     @cached_property
     def answers(self):

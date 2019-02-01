@@ -49,8 +49,10 @@ class SpeakerList(EventPermissionRequired, Filterable, ListView):
         qs = SpeakerProfile.objects.filter(
             user__in=self.request.event.speakers, event=self.request.event
         ).select_related('user', 'event')
-        print('*****  qs', qs)
-        return self.filter_queryset(qs)
+        print('DEBGU !!! *****  qs', qs)
+        result = self.filter_queryset(qs)
+        print('DEBGU !!! *****  result', result)
+        return result
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
