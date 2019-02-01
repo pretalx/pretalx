@@ -310,11 +310,13 @@ class Submission(LogMixin, models.Model):
         self.slots.filter(schedule=self.event.wip_schedule).update(is_visible=True)
         from pretalx.schedule.models import TalkSlot
 
-        TalkSlot.objects.update_or_create(
-            submission=self,
-            schedule=self.event.wip_schedule,
-            defaults={'is_visible': True},
-        )
+        for index in range(self.available_count):
+            TalkSlot.objects.update_or_create(
+                submission=self,
+                schedule=self.event.wip_schedule,
+                defaults={'is_visible': True},
+                available_index=index,
+            )
 
     def accept(self, person=None, force=False, orga=True):
         previous = self.state
@@ -322,12 +324,14 @@ class Submission(LogMixin, models.Model):
         self.log_action('pretalx.submission.accept', person=person, orga=True)
 
         from pretalx.schedule.models import TalkSlot
-
-        TalkSlot.objects.update_or_create(
-            submission=self,
-            schedule=self.event.wip_schedule,
-            defaults={'is_visible': True},
-        )
+        
+        for index in range(self.available_count):
+            TalkSlot.objects.update_or_create(
+                submission=self,
+                schedule=self.event.wip_schedule,
+                defaults={'is_visible': True},
+                available_index=index,
+            )
 
         if previous != SubmissionStates.CONFIRMED:
             for speaker in self.speakers.all():
@@ -427,6 +431,14 @@ class Submission(LogMixin, models.Model):
     def slot(self):
         return (
             self.event.current_schedule.talks.filter(submission=self).first()
+            if self.event.current_schedule
+            else None
+        )
+
+    @property
+    def slots(self):
+        return (
+            self.event.current_schedule.talks.filter(submission=self).all()
             if self.event.current_schedule
             else None
         )
