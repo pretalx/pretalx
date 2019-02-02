@@ -322,7 +322,7 @@ def test_schedule_orga_download_export(
         response = orga_client.get(
             event.orga_urls.schedule_export_download, follow=True
         )
-    assert len(b"".join(response.streaming_content)) > 1_000_000  # 1MB
+    assert len(b"".join(response.streaming_content)) > 1000000  # 1MB
 
 
 @pytest.mark.django_db
