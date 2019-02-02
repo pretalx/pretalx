@@ -349,7 +349,7 @@ def test_reviewer_can_see_reviews(review_client, event, review, other_review):
 @pytest.mark.django_db
 def test_reviewer_can_filter_by_submission(review_client, event, review, other_review):
     response = review_client.get(
-        event.api_urls.reviews + f'?submission__code={review.submission.code}',
+        event.api_urls.reviews + '?submission__code={}'.format(review.submission.code),
         follow=True,
     )
     content = json.loads(response.content.decode())

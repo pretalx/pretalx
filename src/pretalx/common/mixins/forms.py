@@ -22,18 +22,18 @@ class RequestRequire:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for key in self.Meta.request_require:
-            request = self.event.settings.get(f'cfp_request_{key}')
-            require = self.event.settings.get(f'cfp_require_{key}')
+            request = self.event.settings.get('cfp_request_{}'.format(key))
+            require = self.event.settings.get('cfp_require_{}'.format(key))
             if not request:
                 self.fields.pop(key)
             else:
                 self.fields[key].required = require
-                min_value = self.event.settings.get(f'cfp_{key}_min_length')
-                max_value = self.event.settings.get(f'cfp_{key}_max_length')
+                min_value = self.event.settings.get('cfp_{}_min_length'.format(key))
+                max_value = self.event.settings.get('cfp_{}_max_length'.format(key))
                 if min_value:
-                    self.fields[key].widget.attrs[f'minlength'] = min_value
+                    self.fields[key].widget.attrs['minlength'] = min_value
                 if max_value:
-                    self.fields[key].widget.attrs[f'maxlength'] = max_value
+                    self.fields[key].widget.attrs['maxlength'] = max_value
                 self.fields[key].help_text = get_help_text(
                     self.fields[key].help_text, min_value, max_value
                 )
