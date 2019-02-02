@@ -20,12 +20,22 @@ def test_orga_redirect_login(client, orga_user, event):
     request_url = event.orga_urls.base + '/?' + queryparams
     response = client.get(request_url, follow=True)
     assert response.status_code == 200
-    assert response.redirect_chain[-1] == ('/orga/login/?next={}/&{}'.format(event.orga_urls.base, queryparams), 302)
+    # query parameters need to be sorted because their order is not stable with Python 3.5
+    queryparams_list = queryparams.split('&').sort()
+    # get response redirect chain in a stable sorted order
+    redir_chain_sorted_path_and_qs = response.redirect_chain[-1][0].split('?')
+    redir_chain_sorted_path = redir_chain_sorted_path_and_qs[0]
+    redir_chain_sorted_qs = redir_chain_sorted_path_and_qs[1].split('&').sort()
+    # check path
+    assert redir_chain_sorted_path == '/orga/login/'
+    # check query string (as list and sorted)
+    assert redir_chain_sorted_qs == queryparams_list
+    # check status code
+    assert response.redirect_chain[-1][1] == 302
 
     response = client.post(response.redirect_chain[-1][0], data={'email': orga_user.email, 'password': 'orgapassw0rd'}, follow=True)
     assert response.status_code == 200
     assert event.name in response.content.decode()
-    assert response.redirect_chain[-1][0] == request_url
 
 
 @pytest.mark.django_db
