@@ -324,7 +324,7 @@ class Submission(LogMixin, models.Model):
         self.log_action('pretalx.submission.accept', person=person, orga=True)
 
         from pretalx.schedule.models import TalkSlot
-        
+
         for index in range(self.available_count):
             TalkSlot.objects.update_or_create(
                 submission=self,
