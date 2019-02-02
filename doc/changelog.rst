@@ -3,7 +3,24 @@
 Release Notes
 =============
 
-- :bug:`529` When trying to review their own permission, a user would see a 404 not found error instead of an explanation that this was a forbidden action.
+- :release:`0.9.0 <2018-12-21>`
+- :feature:`-` pretalx can now group talks in tracks. Each talk can be assigned a track (either by the submitter, or by the organiser). Tracks will be displayed in configurable colors in the public schedule. The feature is entirely optional, and you can continue using pretalx without tracks without any problem.
+- :feature:`-` We tuned pretalx performance to be faster when showing the schedules of large conferences with several hundreds of talks.
+- :feature:`538` The sneak peek view will only feature talks that have been accepted.
+- :feature:`440` Organisers can now follow an RSS feed to see new submissions – you'll have to provide your authentication token in the RSS request header to authenticate.
+- :feature:`-` You can now set the default pretalx system wide time zone and locale (defaulting to ``UTC`` and ``en``).
+- :bug:`544` Organisers could see the titles of speaker information notes of all events, not just the currently active one (they could not see the details or edit them).
+- :feature:`504` The schedule page is now better printable.
+- :bug:`-` A `bug <https://github.com/celery/celery/issues/4878>` in celery could make running pretalx with asynchronous workers impossible. We've pinned an earlier celery version that doesn't show this problem.
+- :support:`-` A new pretalx plugin adds media.ccc.de as a recording provider – this plugin replaces the previously inbuilt capacity of pretalx to provide recording iframes. (This functionality was never directly exposed and only accessible via the pretalx shell. It is now deprecated and will be removed in a later version.)
+- :feature:`-` Plugins can now provide recording iframes (via the new ``register_recording_provider`` signal and other mixins).
+- :feature:`-` The new ``nav_event_settings`` plugin signal allows plugins to integrate their own settings pages next to the pretalx core pages.
+- :feature:`-` pretalx now presents a colorpicker for your event primary color, including a hint on color suitability.
+- :feature:`-` The new `/api/me` endpoint shows name, email address, locale, and timezone of the logged in user.
+- :feature:`-` The ``nav_event`` plugin signal has changed to expect a list instead of a dictionary response. The dictionary response will be supported for one more version, and raises a deprecation warning.
+- :feature:`-` The API now provides a ``/rooms`` endpoint – this endpoint is public, so upgrading will publish which rooms you have configured in your conferences!
+- :feature:`530` The API now provides a ``/reviews`` endpoint.
+- :bug:`529` When trying to review their own submission, a user would see a 404 not found error instead of an explanation that this was a forbidden action.
 - :bug:`-` The password reset form told users if they had already tried to reset their password in the last 24 hours. While this is helpful, it also allows user discovery via password reset. Instead, the user now sees a more generic message.
 - :feature:`-` While filling out the submission form wizard, submitters see a top bar telling them where they are in the submission process.
 - :bug:`-` The event dashboard showed a wrong countdown towards the CfP end while the CfP end was between three and one day away.

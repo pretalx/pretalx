@@ -218,6 +218,7 @@ class Event(LogMixin, models.Model):
         purge_outbox = '{outbox}/purge'
         submissions = '{base}/submissions'
         submission_cards = '{base}/submissions/cards/'
+        submission_feed = '{base}/submissions/feed/'
         new_submission = '{submissions}/new'
         speakers = '{base}/speakers'
         settings = edit_settings = '{base}/settings'
@@ -248,6 +249,8 @@ class Event(LogMixin, models.Model):
         talks = '{base}/talks'
         schedules = '{base}/schedules'
         speakers = '{base}/speakers'
+        reviews = '{base}/reviews'
+        rooms = '{base}/rooms'
 
     class Meta:
         ordering = ('date_from',)
@@ -453,7 +456,7 @@ class Event(LogMixin, models.Model):
         if self.current_schedule:
             return self.submissions.filter(
                 slots__in=self.current_schedule.talks.filter(is_visible=True)
-            )
+            ).select_related('submission_type').prefetch_related('speakers')
         return Submission.objects.none()
 
     @cached_property

@@ -4,10 +4,13 @@ import json
 import pytest
 import pytz
 from django.forms import ModelForm, ValidationError
+from django.utils import timezone
 
 from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.forms import AvailabilitiesFormMixin
 from pretalx.schedule.models import Availability, Room
+
+timezone.activate(pytz.utc)
 
 
 class AvailabilitiesForm(AvailabilitiesFormMixin, ModelForm):
@@ -272,23 +275,23 @@ def test_replace_availabilities(availabilitiesform):
 @pytest.mark.parametrize('avail,expected', (
     (
         Availability(start=datetime.datetime(2017, 1, 1, 10), end=datetime.datetime(2017, 1, 1, 12)),
-        {'start': '2017-01-01 10:00:00', 'end': '2017-01-01 12:00:00', 'allDay': False}
+        {'start': '2017-01-01T10:00:00Z', 'end': '2017-01-01T12:00:00Z', 'allDay': False}
     ),
     (
         Availability(start=datetime.datetime(2017, 1, 1, 10), end=datetime.datetime(2017, 1, 2)),
-        {'start': '2017-01-01 10:00:00', 'end': '2017-01-02 00:00:00', 'allDay': False}
+        {'start': '2017-01-01T10:00:00Z', 'end': '2017-01-02T00:00:00Z', 'allDay': False}
     ),
     (
         Availability(start=datetime.datetime(2017, 1, 1), end=datetime.datetime(2017, 1, 1, 10)),
-        {'start': '2017-01-01 00:00:00', 'end': '2017-01-01 10:00:00', 'allDay': False}
+        {'start': '2017-01-01T00:00:00Z', 'end': '2017-01-01T10:00:00Z', 'allDay': False}
     ),
     (
         Availability(start=datetime.datetime(2017, 1, 1, 10), end=datetime.datetime(2017, 1, 2)),
-        {'start': '2017-01-01 10:00:00', 'end': '2017-01-02 00:00:00', 'allDay': False}
+        {'start': '2017-01-01T10:00:00Z', 'end': '2017-01-02T00:00:00Z', 'allDay': False}
     ),
     (
         Availability(start=datetime.datetime(2017, 1, 1), end=datetime.datetime(2017, 1, 2)),
-        {'start': '2017-01-01 00:00:00', 'end': '2017-01-02 00:00:00', 'allDay': True}
+        {'start': '2017-01-01T00:00:00Z', 'end': '2017-01-02T00:00:00Z', 'allDay': True}
     ),
 ))
 def test_serialize_availability(availabilitiesform, avail, expected):
@@ -301,7 +304,7 @@ def test_serialize_availability(availabilitiesform, avail, expected):
 @pytest.mark.parametrize('avails,expected,tzname', (
     (
         [Availability(start=datetime.datetime(2017, 1, 1, 10, tzinfo=pytz.utc), end=datetime.datetime(2017, 1, 1, 12, tzinfo=pytz.utc))],
-        '{"availabilities": [{"id": 1, "start": "2017-01-01 10:00:00+00:00", "end": "2017-01-01 12:00:00+00:00", "allDay": false}], "event": {"timezone": "UTC", "date_from": "2017-01-01", "date_to": "2017-01-02"}}',
+        '{"availabilities": [{"id": 1, "start": "2017-01-01T10:00:00Z", "end": "2017-01-01T12:00:00Z", "allDay": false}], "event": {"timezone": "UTC", "date_from": "2017-01-01", "date_to": "2017-01-02"}}',
         'UTC',
     ),
     (

@@ -1,6 +1,7 @@
 import re
 import string
 import uuid
+import warnings
 
 from django.conf import settings
 from django.db import models
@@ -99,6 +100,14 @@ class Submission(LogMixin, models.Model):
         on_delete=models.PROTECT,
         verbose_name=_('Type of submission'),
     )
+    track = models.ForeignKey(
+        to='submission.Track',
+        related_name='submissions',
+        on_delete=models.PROTECT,
+        verbose_name=_('Track'),
+        null=True,
+        blank=True,
+    )
     state = models.CharField(
         max_length=SubmissionStates.get_max_length(),
         choices=SubmissionStates.get_choices(),
@@ -141,7 +150,7 @@ class Submission(LogMixin, models.Model):
     is_featured = models.BooleanField(
         default=False,
         verbose_name=_(
-            'Show this talk on the public sneak peek page, if it is enabled.'
+            'Show this talk on the public sneak peek page, if the sneak peek page is enabled and the talk was accepted.'
         ),
     )
     do_not_record = models.BooleanField(
@@ -425,15 +434,18 @@ class Submission(LogMixin, models.Model):
 
     @cached_property
     def rendered_recording_iframe(self):
-        if not (self.recording_url and self.recording_source):
-            return None
-        from django.template import engines
+        if self.recording_url and self.recording_source:
+            warnings.warn(
+                'Please use a recording source plugin instead of pretalx core functionality.',
+                DeprecationWarning,
+            )
+            from django.template import engines
 
-        django_engine = engines['django']
-        template = django_engine.from_string(
-            '<div class="embed-responsive embed-responsive-16by9"><iframe src="{{ url }}" frameborder="0" allowfullscreen></iframe></div>'
-        )
-        return template.render(context={'url': self.recording_url})
+            django_engine = engines['django']
+            template = django_engine.from_string(
+                '<div class="embed-responsive embed-responsive-16by9"><iframe src="{{ url }}" frameborder="0" allowfullscreen></iframe></div>'
+            )
+            return template.render(context={'url': self.recording_url})
 
     @property
     def average_score(self):
@@ -473,3 +485,9 @@ class Submission(LogMixin, models.Model):
             person__in=self.speaker_profiles
         )
         return Availability.intersection(all_availabilities)
+
+    @cached_property
+    def created(self):
+        return getattr(
+            self.logged_actions().order_by('timestamp').first(), 'timestamp', None
+        )

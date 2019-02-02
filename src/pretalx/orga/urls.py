@@ -58,9 +58,13 @@ urlpatterns = [
         url('^cfp/text$', cfp.CfPTextDetail.as_view(), name='cfp.text.view'),
         url('^cfp/types$', cfp.SubmissionTypeList.as_view(), name='cfp.types.view'),
         url('^cfp/types/new$', cfp.SubmissionTypeDetail.as_view(), name='cfp.types.create'),
-        url('^cfp/types/(?P<pk>[0-9]+)$', cfp.SubmissionTypeDetail.as_view(), name='cfp.types.view'),
+        url('^cfp/types/(?P<pk>[0-9]+)$', cfp.SubmissionTypeDetail.as_view(), name='cfp.type.view'),
         url('^cfp/types/(?P<pk>[0-9]+)/delete$', cfp.SubmissionTypeDelete.as_view(), name='cfp.type.delete'),
         url('^cfp/types/(?P<pk>[0-9]+)/default$', cfp.SubmissionTypeDefault.as_view(), name='cfp.type.default'),
+        url('^cfp/tracks$', cfp.TrackList.as_view(), name='cfp.tracks.view'),
+        url('^cfp/tracks/new$', cfp.TrackDetail.as_view(), name='cfp.track.create'),
+        url('^cfp/tracks/(?P<pk>[0-9]+)$', cfp.TrackDetail.as_view(), name='cfp.track.view'),
+        url('^cfp/tracks/(?P<pk>[0-9]+)/delete$', cfp.TrackDelete.as_view(), name='cfp.track.delete'),
 
         url('^mails/', include([
             url('^(?P<pk>[0-9]+)$', mails.MailDetail.as_view(), name='mails.outbox.mail.view'),
@@ -81,6 +85,7 @@ urlpatterns = [
         url('^submissions$', submission.SubmissionList.as_view(), name='submissions.list'),
         url('^submissions/new$', submission.SubmissionContent.as_view(), name='submissions.create'),
         url('^submissions/cards/$', cards.SubmissionCards.as_view(), name='submissions.cards'),
+        url('^submissions/feed/$', submission.SubmissionFeed(), name='submissions.feed'),
         url('^submissions/(?P<code>[\w-]+)/', include([
             url('^$', submission.SubmissionContent.as_view(), name='submissions.content.view'),
             url('^submit$', submission.SubmissionStateChange.as_view(), name='submissions.submit'),
@@ -137,7 +142,6 @@ urlpatterns = [
         url('^schedule/rooms/(?P<pk>[0-9]+)/delete$', schedule.RoomDelete.as_view(), name='schedule.rooms.delete'),
         url('^schedule/rooms/(?P<pk>[0-9]+)/up$', schedule.room_move_up, name='schedule.rooms.up'),
         url('^schedule/rooms/(?P<pk>[0-9]+)/down$', schedule.room_move_down, name='schedule.rooms.down'),
-        url('^schedule/api/rooms/$', schedule.RoomListApi.as_view(), name='schedule.api.rooms'),
         url('^schedule/api/talks/$', schedule.TalkList.as_view(), name='schedule.api.talks'),
         url('^schedule/api/talks/(?P<pk>[0-9]+)/$', schedule.TalkUpdate.as_view(), name='schedule.api.update'),
         url(

@@ -191,6 +191,8 @@ class User(PermissionsMixin, AbstractBaseUser):
 
     def get_events_for_permission(self, **kwargs):
         from pretalx.event.models import Event
+        if self.is_administrator:
+            return Event.objects.all()
 
         orga_teams = self.teams.filter(**kwargs)
         absolute = orga_teams.filter(all_events=True).values_list(
@@ -222,8 +224,8 @@ class User(PermissionsMixin, AbstractBaseUser):
                 event.teams.filter(members__in=[self], is_reviewer=True).values_list(
                     'review_override_votes', flat=True
                 )
+                or [0]
             )
-            or 0
         )
         overridden = self.reviews.filter(
             submission__event=event, override_vote__isnull=False

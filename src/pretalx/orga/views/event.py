@@ -64,6 +64,11 @@ class EventDetail(ActionFromUrl, EventSettingsPermission, UpdateView):
             prefix='settings',
         )
 
+    def get_form_kwargs(self, *args, **kwargs):
+        response = super().get_form_kwargs(*args, **kwargs)
+        response['is_administrator'] = self.request.user.is_administrator
+        return response
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['sform'] = self.sform
@@ -117,6 +122,13 @@ class EventLive(EventSettingsPermission, TemplateView):
                 }
             )
         # TODO: test that mails can be sent
+        if self.request.event.settings.use_tracks and self.request.event.settings.cfp_request_track and self.request.event.tracks.count() < 2:
+            suggestions.append(
+                {
+                    'text': _('You want submitters to choose the tracks for their submissions, but you do not offer tracks for selection. Add at least one track!'),
+                    'url': self.request.event.cfp.urls.tracks,
+                }
+            )
         if not self.request.event.submission_types.count() > 1:
             suggestions.append(
                 {

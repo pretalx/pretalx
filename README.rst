@@ -51,6 +51,7 @@ their respective changelogs on GitHub_ or install pretalx via PyPI_.
 
 Previous conferences using pretalx include:
 
+- `NorthSec 2019`_
 - `EasterHegg 2019`_
 - `PrivacyWeek 2018`_
 - `hack.lu 2018`_
@@ -108,3 +109,4 @@ to this project.
 .. _DjangoCon 2018: https://2018.djangocon.eu
 .. _PrivacyWeek 2018: https://privacyweek.at/
 .. _EasterHegg 2019: https://eh19.easterhegg.eu/
+.. _NorthSec 2019: https://cfp.nsec.io/2019/

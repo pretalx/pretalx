@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -8,7 +10,7 @@ from i18nfield.forms import I18nFormMixin, I18nModelForm
 
 from pretalx.common.css import validate_css
 from pretalx.common.mixins.forms import ReadOnlyFlag
-from pretalx.event.models import Event
+from pretalx.event.models.event import Event, Event_SettingsStore
 from pretalx.orga.forms.widgets import HeaderSelect, MultipleLanguagesWidget
 
 
@@ -20,6 +22,7 @@ class EventForm(ReadOnlyFlag, I18nModelForm):
     )
 
     def __init__(self, *args, **kwargs):
+        self.is_administrator = kwargs.pop('is_administrator', False)
         super().__init__(*args, **kwargs)
         self.initial['locales'] = self.instance.locale_array.split(',')
         year = str(now().year)
@@ -32,12 +35,15 @@ class EventForm(ReadOnlyFlag, I18nModelForm):
         self.fields['primary_color'].widget.attrs['placeholder'] = _(
             'A color hex value, e.g. #ab01de'
         )
+        self.fields['primary_color'].widget.attrs['class'] = 'colorpickerfield'
         self.fields['slug'].disabled = True
 
     def clean_custom_css(self):
 
         if self.cleaned_data.get('custom_css') or self.files.get('custom_css'):
             css = self.cleaned_data['custom_css'] or self.files['custom_css']
+            if self.is_administrator:
+                return css
             try:
                 validate_css(css.read())
                 return css
@@ -141,6 +147,30 @@ class EventSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
         required=False,
         widget=HeaderSelect,
     )
+
+    def clean_custom_domain(self):
+        data = self.cleaned_data['custom_domain']
+        if not data:
+            return data
+        if data == urlparse(settings.SITE_URL).hostname or data == settings.SITE_URL:
+            raise ValidationError(
+                _('You cannot choose the base domain of this installation.')
+            )
+        known_domains = [
+            domain
+            for domain in set(
+                Event_SettingsStore.objects.filter(key='custom_domain').values_list(
+                    'value', flat=True
+                )
+            )
+            if domain
+        ]
+        parsed_domains = [urlparse(domain).hostname for domain in known_domains]
+        if data in known_domains or data in parsed_domains:
+            raise ValidationError(
+                _('This domain is already in use for a different event.')
+            )
+        return data
 
 
 class MailSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):

@@ -21,6 +21,7 @@ from pretalx.agenda.management.commands.export_schedule_html import (
     Command as ExportScheduleHtml,
 )
 from pretalx.agenda.tasks import export_schedule_html
+from pretalx.api.serializers.room import AvailabilitySerializer
 from pretalx.common.mixins.views import ActionFromUrl, PermissionRequired
 from pretalx.common.signals import register_data_exporters
 from pretalx.common.views import CreateOrUpdateView
@@ -179,36 +180,6 @@ class ScheduleToggleView(PermissionRequired, View):
         return redirect(self.request.event.orga_urls.schedule)
 
 
-class RoomListApi(PermissionRequired, View):
-    permission_required = 'orga.view_room'
-
-    def get_permission_object(self):
-        return self.request.event
-
-    def get(self, request, event):
-        return JsonResponse(
-            {
-                'start': request.event.datetime_from.isoformat(),
-                'end': request.event.datetime_to.isoformat(),
-                'timezone': request.event.timezone,
-                'rooms': [
-                    {
-                        'id': room.pk,
-                        'name': str(room.name),
-                        'description': room.description,
-                        'capacity': room.capacity,
-                        'url': room.urls.edit,
-                        'availabilities': [
-                            avail.serialize() for avail in room.availabilities.all()
-                        ],
-                    }
-                    for room in request.event.rooms.order_by('position')
-                ],
-            },
-            encoder=I18nJSONEncoder,
-        )
-
-
 def serialize_slot(slot):
     return {
         'id': slot.pk,
@@ -240,6 +211,12 @@ class TalkList(PermissionRequired, View):
         return self.request.event
 
     def get(self, request, event):
+        result = {
+            'start': request.event.datetime_from.isoformat(),
+            'end': request.event.datetime_to.isoformat(),
+            'timezone': request.event.timezone,
+            'results': [],
+        }
         version = self.request.GET.get('version')
         if version:
             schedule = request.event.schedules.filter(version=version).first()
@@ -247,11 +224,9 @@ class TalkList(PermissionRequired, View):
             schedule = request.event.wip_schedule
 
         if not schedule:
-            return JsonResponse({'results': []})
-        return JsonResponse(
-            {'results': [serialize_slot(slot) for slot in schedule.talks.all()]},
-            encoder=I18nJSONEncoder,
-        )
+            return JsonResponse(result)
+        result['results'] = [serialize_slot(slot) for slot in schedule.talks.all()]
+        return JsonResponse(result, encoder=I18nJSONEncoder)
 
 
 class TalkUpdate(PermissionRequired, View):
@@ -329,7 +304,7 @@ class RoomTalkAvailabilities(PermissionRequired, View):
         else:
             availabilities = room.availabilities.all()
         return JsonResponse(
-            {'results': [avail.serialize() for avail in availabilities]}
+            {'results': AvailabilitySerializer(availabilities, many=True).data}
         )
 
 

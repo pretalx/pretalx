@@ -3,12 +3,12 @@ from django.conf import settings
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 
-from pretalx.common.forms.utils import get_help_text
 from pretalx.common.forms.widgets import CheckboxMultiDropdown
+from pretalx.common.mixins.forms import RequestRequire
 from pretalx.submission.models import Submission, SubmissionStates, SubmissionType
 
 
-class InfoForm(forms.ModelForm):
+class InfoForm(RequestRequire, forms.ModelForm):
     def __init__(self, event, **kwargs):
         self.event = event
         self.readonly = kwargs.pop('readonly', False)
@@ -23,23 +23,16 @@ class InfoForm(forms.ModelForm):
 
         super().__init__(initial=initial, **kwargs)
 
-        self.fields['abstract'].widget.attrs['rows'] = 2
-        for key in {'abstract', 'description', 'notes', 'image', 'do_not_record'}:
-            request = event.settings.get('cfp_request_{}'.format(key))
-            require = event.settings.get('cfp_require_{}'.format(key))
-            if not request:
-                self.fields.pop(key)
-            else:
-                self.fields[key].required = require
-                min_value = event.settings.get('cfp_{}_min_length'.format(key))
-                max_value = event.settings.get('cfp_{}_max_length'.format(key))
-                if min_value:
-                    self.fields[key].widget.attrs['minlength'] = min_value
-                if max_value:
-                    self.fields[key].widget.attrs['maxlength'] = max_value
-                self.fields[key].help_text = get_help_text(
-                    self.fields[key].help_text, min_value, max_value
-                )
+        if 'abstract' in self.fields:
+            self.fields['abstract'].widget.attrs['rows'] = 2
+        if 'track' in self.fields:
+            if not event.settings.use_tracks:
+                self.fields.pop('track')
+            elif not instance or instance.state == SubmissionStates.SUBMITTED:
+                self.fields['track'].queryset = event.tracks.all()
+            elif instance and instance.state != SubmissionStates.SUBMITTED:
+                self.fields.pop('track')
+
         self.fields['submission_type'].queryset = SubmissionType.objects.filter(
             event=self.event
         )
@@ -71,12 +64,21 @@ class InfoForm(forms.ModelForm):
         fields = [
             'title',
             'submission_type',
+            'track',
             'content_locale',
             'abstract',
             'description',
             'notes',
             'do_not_record',
             'image',
+        ]
+        request_require = [
+            'abstract',
+            'description',
+            'notes',
+            'image',
+            'do_not_record',
+            'track',
         ]
 
 

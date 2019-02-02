@@ -139,7 +139,7 @@ class ScheduleView(ScheduleDataView):
         context['data'] = ScheduleData(
             event=self.request.event, schedule=context['schedule']
         ).data
-        context['search'] = self.request.GET.get('q')
+        context['search'] = self.request.GET.get('q', '').lower()
         for date in context['data']:
             if date.get('first_start') and date.get('last_end'):
                 start = (
@@ -162,7 +162,7 @@ class ScheduleView(ScheduleDataView):
                             * 2
                         )
                         talk.height = int(talk.duration * 2)
-                        talk.is_active = talk.start <= now() <= talk.end
+                        talk.is_active = talk.start <= now() <= talk.real_end
         return context
 
 

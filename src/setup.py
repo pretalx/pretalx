@@ -21,7 +21,7 @@ class CustomBuild(build):
         environ.setdefault("DJANGO_SETTINGS_MODULE", "pretalx.settings")
         try:
             import django
-        except (ImportError):
+        except ImportError:
             # ModuleNotFoundError which was catched here in the Python 3.6 version as well is a subclass of ImportError but available on Python >= 3.6 only
             return
         django.setup()
@@ -66,7 +66,7 @@ setup(
     keywords='conference cfp event barcamp',
     install_requires=[
         'bleach>=2.1.2,==2.1.*',  # https://bleach.readthedocs.io/en/latest/changes.html
-        'celery==4.2.*',  # search for "what's new" on http://docs.celeryproject.org/en/latest/
+        'celery==4.1.*',  # search for "what's new" on http://docs.celeryproject.org/en/latest/, restricted to 4.1 due to https://github.com/celery/celery/issues/4878
         'csscompressor==0.9.*',  # 2017-11, no changelog, https://github.com/sprymix/csscompressor
         'cssutils==1.0.*',  # https://pythonhosted.org/cssutils/CHANGELOG.html
         'Django>=2.1,<2.2',  # https://docs.djangoproject.com/en/2.0/releases/
@@ -80,7 +80,7 @@ setup(
         'django-hierarkey==1.0.*',  # no changelog, https://github.com/raphaelm/django-hierarkey
         'django-i18nfield==1.4.*',  # 2017-11, no changelog, https://github.com/raphaelm/django-i18nfield/
         'django-libsass==0.7',  # inactive, https://github.com/torchbox/django-libsass/blob/master/CHANGELOG.txt
-        'djangorestframework==3.8.*',  # http://www.django-rest-framework.org/topics/release-notes/
+        'djangorestframework==3.9.*',  # http://www.django-rest-framework.org/topics/release-notes/
         'inlinestyler==0.2.*',  # https://github.com/dlanger/inlinestyler/blob/master/CHANGELOG
         'libsass==0.14.5',  # https://sass.github.io/libsass-python/changes.html
         'Markdown==2.6.*',  # https://python-markdown.github.io/change_log/

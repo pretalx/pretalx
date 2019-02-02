@@ -10,25 +10,6 @@ from pretalx.schedule.models import Availability, Schedule, TalkSlot
 
 
 @pytest.mark.django_db
-@pytest.mark.usefixtures('room')
-def test_room_list(orga_client, event, room_availability):
-    response = orga_client.get(
-        reverse('orga:schedule.api.rooms', kwargs={'event': event.slug}), follow=True
-    )
-    content = json.loads(response.content.decode())
-    assert response.status_code == 200
-    assert len(content['rooms']) == 1
-    assert content['rooms'][0]['name']
-    assert content['start']
-    assert content['end']
-    availabilities = content['rooms'][0]['availabilities']
-    assert len(availabilities) == 1
-    assert availabilities[0]['id'] == room_availability.pk
-    assert availabilities[0]['start']
-    assert availabilities[0]['end']
-
-
-@pytest.mark.django_db
 @pytest.mark.usefixtures('accepted_submission')
 def test_talk_list(orga_client, event):
     response = orga_client.get(
@@ -122,8 +103,8 @@ def test_api_availabilities(orga_client, event, room, speaker, confirmed_submiss
     content = json.loads(response.content.decode())
     assert response.status_code == 200
     assert len(content['results']) == 1
-    assert content['results'][0]['start'] == '2017-01-01 03:00:00+00:00'
-    assert content['results'][0]['end'] == '2017-01-01 05:00:00+00:00'
+    assert content['results'][0]['start'] == '2017-01-01T03:00:00Z'
+    assert content['results'][0]['end'] == '2017-01-01T05:00:00Z'
 
 
 @pytest.mark.django_db

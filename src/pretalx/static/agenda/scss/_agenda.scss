@@ -5,6 +5,7 @@
   background-color: $offwhite;
   padding: 8px 16px;
   box-shadow: 0 3px 3px 0 rgba(0, 0, 0, 0.16), 0 5px 8px 0 rgba(0, 0, 0, 0.12);
+  z-index: 100;
 
   &:hover {
     .days {
@@ -17,6 +18,32 @@
   .days {
     display: none;
   }
+}
+#legend {
+  position: fixed;
+  left: 0;
+  margin-top: 100px;
+  background-color: $offwhite;
+  padding: 8px 16px;
+  box-shadow: 0 3px 3px 0 rgba(0, 0, 0, 0.16), 0 5px 8px 0 rgba(0, 0, 0, 0.12);
+  z-index: 50;
+
+  &:hover {
+    ul.tracks {
+      margin-top: 4px;
+      margin: 0;
+      padding: 0 8px;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  ul.tracks {
+    display: none;
+  }
+}
+header {
+  word-break: normal;
 }
 .schedule-header {
   display: flex;
@@ -160,7 +187,7 @@
               font-weight: bold;
               line-height: 1;
               padding: 8px 16px;
-              top: -46px;
+              top: -44px;
               white-space: nowrap;
             }
 
@@ -209,6 +236,18 @@
 }
 
 @media (max-width: 1000px) {
+  header {
+    text-align: right;
+    flex-direction: column;
+  }
+  #navigator {
+    top: 10px;
+    margin-top: 0;
+  }
+  #legend {
+    top: 50px;
+    margin-top: 0;
+  }
   #fahrplan {
     width: 100%;
 
@@ -232,5 +271,34 @@
     .room, .room-header {
       min-width: 150px;
     }
+  }
+}
+@media print {
+  body {
+    background: none;
+    overflow: visible !important;
+    height: auto;
+  }
+  #navigator, #legend,
+  #schedule-nav,
+  #main-card .user-row,
+  header, footer,
+  .schedule-header .btn,
+  #event-nonpublic {
+    display: none;
+  }
+  h3:not(:first-of-type) { /* improve look of day captions after page break */
+    margin-top: 5em;
+  }
+  .container {
+    max-width: 100%;
+  }
+  #fahrplan {
+    display: block;
+    overflow: visible !important;
+  }
+  .day {
+    page-break-after: always;
+    overflow: visible !important;
   }
 }
