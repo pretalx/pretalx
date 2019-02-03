@@ -160,6 +160,57 @@ class ScheduleView(ScheduleDataView):
         return context
 
 
+class ScheduleListView(ScheduleView):
+    # just overwrite template
+    template_name = 'agenda/schedule_list.html'
+
+# class ScheduleListView(ScheduleDataView):
+#     template_name = 'agenda/schedule_list.html'
+#     permission_required = 'agenda.view_schedule'
+#
+#     def get_object(self):
+#         if self.version == 'wip' and self.request.user.has_perm(
+#             'orga.view_schedule', self.request.event
+#         ):
+#             return self.request.event.wip_schedule
+#         return super().get_object()
+#
+#     def get_context_data(self, **kwargs):
+#         from pretalx.schedule.exporters import ScheduleData
+#
+#         context = super().get_context_data(**kwargs)
+#         context['exporters'] = list(
+#             exporter(self.request.event)
+#             for _, exporter in register_data_exporters.send(self.request.event)
+#         )
+#         timezone = pytz.timezone(self.request.event.timezone)
+#         if 'schedule' not in context:
+#             return context
+#
+#         context['data'] = ScheduleData(
+#             event=self.request.event, schedule=context['schedule']
+#         ).data
+#         context['search'] = self.request.GET.get('q', '').lower()
+#         for date in context['data']:
+#             if date.get('first_start') and date.get('last_end'):
+#                 start = (
+#                     date.get('first_start')
+#                     .astimezone(timezone)
+#                     .replace(second=0, minute=0)
+#                 )
+#                 end = date.get('last_end').astimezone(timezone)
+#                 for room in date['rooms']:
+#                     for talk in room.get('talks', []):
+#                         talk.top = int(
+#                             (talk.start.astimezone(timezone) - start).total_seconds()
+#                             / 60
+#                             * 2
+#                         )
+#                         talk.height = int(talk.duration * 2)
+#                         talk.is_active = talk.start <= now() <= talk.real_end
+#         return context
+
+
 class ChangelogView(EventPermissionRequired, TemplateView):
     template_name = 'agenda/changelog.html'
     permission_required = 'agenda.view_schedule'

@@ -51,6 +51,7 @@ class ScheduleData(BaseExporter):
                 'first_start': None,
                 'last_end': None,
                 'rooms': dict(),
+                'talks': [],
             }
             for index, current_date in enumerate(
                 [
@@ -69,6 +70,7 @@ class ScheduleData(BaseExporter):
             day_data = data.get(talk_date)
             if not day_data:
                 continue
+            # create room or add talk to room
             if str(talk.room.name) not in day_data['rooms']:
                 day_data['rooms'][str(talk.room.name)] = {
                     'name': talk.room.name,
@@ -81,6 +83,8 @@ class ScheduleData(BaseExporter):
                 day_data['first_start'] = talk.start
             if not day_data['last_end'] or talk.real_end > day_data['last_end']:
                 day_data['last_end'] = talk.real_end
+            # add talk to day
+            day_data['talks'].append(talk)
 
         for d in data.values():
             d['rooms'] = sorted(

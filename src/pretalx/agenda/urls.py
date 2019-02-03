@@ -22,6 +22,7 @@ def get_schedule_urls(regex_prefix, name_prefix=""):
             ('.json$', schedule.ExporterView.as_view(), 'export.schedule.json'),
             ('.ics$', schedule.ExporterView.as_view(), 'export.schedule.ics'),
             ('/export/(?P<name>[A-Za-z.-]+)$', schedule.ExporterView.as_view(), 'export'),
+            ('/list$', schedule.ScheduleListView.as_view(), 'list'),
         ]
     ]
 

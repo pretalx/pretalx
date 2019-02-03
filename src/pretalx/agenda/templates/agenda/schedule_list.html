@@ -1,0 +1,92 @@
+{% extends "agenda/base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block agenda_custom_header %}
+    <script src="{% static "agenda/js/offline.js" %}"></script>
+{% endblock %}
+
+{% block agenda_content %}
+<span id="offline-vars" data-event="{{ request.event.urls.schedule }}"></span>
+{% if data|length > 1 %}
+<div id="navigator">
+  <i class="fa fa-dot-circle-o"></i> nav
+  <div class="days">
+    {% for day in data %}
+    <a href="#{{ day.start.date|date:"c" }}">{{ day.start.date|date }}</a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if request.event.settings.use_tracks and request.event.tracks.count > 1 %}
+<div id="legend">
+  <i class="fa fa-dot-circle-o"></i> ?
+  <ul class="tracks">
+    {% for track in request.event.tracks.all %}
+    <li style="color: {{ track.color }}">{{ track.name }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div id="fahrplan">
+    {% if schedule != schedule.event.current_schedule %}
+        <div class="alert alert-warning"><span>
+            {% if not schedule.version %}
+                {{ phrases.agenda.schedule_editable }}
+            {% else %}
+                {% blocktrans trimmed with current_url=schedule.event.urls.schedule %}
+                    You are currently viewing an older schedule version.
+                {% endblocktrans %}
+            {% endif %}
+            {% if request.event.current_schedule %}
+                {% blocktrans trimmed with current_url=schedule.event.urls.schedule %}
+                    You can find the current version <a href="{{ current_url }}">here</a>.
+                {% endblocktrans %}
+            {% endif %}
+        </span></div>
+    {% endif %}
+    <div id="offline-warning" class="alert alert-danger d-none"><span>
+      {% blocktrans trimmed %}
+      You're currently viewing an offline version of the schedule, so it may be
+      outdated. <strong>Refresh</strong> this page once you have an internet
+      connection to see the current schedule.
+      {% endblocktrans %}
+    </span></div>
+
+    {% include "agenda/header_row.html" %}
+
+  <div class="schedule-header ml-auto mt-4">
+    <span>{% trans "Version" %} {{ schedule.version|default:"–" }}</span>
+    <a href="{{ request.event.urls.changelog }}" class="btn btn-outline-info btn-sm" title="{% trans "Changelog" %}"><i class="fa fa-clock-o"></i></a>
+    <a href="{{ request.event.urls.feed }}" class="btn btn-outline-info btn-sm" title="{% trans "Feed" %}"><i class="fa fa-feed"></i></a>
+    <div class="dropdown">
+        <button class="btn btn-sm btn-outline-info dropdown-toggle" id="exportDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            <i class="fa fa-code"></i>
+        </button>
+        <div class="dropdown-menu" aria-labelledby="exportDropdown">
+            {% for exporter in exporters %}{% if exporter.public %}
+            <a class="dropdown-item" href="{{ request.event.urls.export }}/{{ exporter.identifier|iriencode }}">
+                {% if exporter.icon|slice:":3" == "fa-" %}
+                    <span class="fa {{ exporter.icon }} export-icon"></span>
+                {% else %}
+                    <span class="export-icon">{{ exporter.icon }}</span>
+                {% endif %}
+                {{ exporter.verbose_name }}
+            </a>
+            {% endif %}{% endfor %}
+        </div>
+      </div>
+    </div>
+    {% include "agenda/schedule_list_days.html" %}
+</div>
+
+
+<script>
+  if('serviceWorker' in navigator) {
+    var scope = '/{{ request.event.name }}/schedule/';
+    navigator.serviceWorker.register('/sw.js', {scope: scope})
+  }
+</script>
+{% endblock %}
