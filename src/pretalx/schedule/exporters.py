@@ -134,8 +134,8 @@ class FrabJsonExporter(ScheduleData):
                     {
                         'index': day['index'],
                         'date': day['start'].strftime('%Y-%m-%d'),
-                        'day_start': day['start'].astimezone(tz).isoformat(),
-                        'day_end': day['end'].astimezone(tz).isoformat(),
+                        'day_start': tz.localize(day['start']).isoformat(),
+                        'day_end': tz.localize(day['end']).isoformat(),
                         'rooms': {
                             str(room['name']): [
                                 {
