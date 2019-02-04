@@ -1,14 +1,14 @@
 {% load i18n %}
 {% load static %}
 
-<div class="talks-list">
+<div class="schedule-as-list">
     {% for day in data %}
         <h3 id="{{ day.start.date|date:"c" }}">
             <a href="#{{ day.start.date|date:"c" }}">{{ day.start.date|date:"DATE_FORMAT" }}</a>
         </h3>
         <div class="day">
             {% if day.first_start %}
-                <div class="talk-container">
+                <div class="talk-container talks-list">
                     {% for talk in day.talks %}
                         {% if not schedule.is_archived %}
                          <a href="{{ talk.submission.urls.public }}">
@@ -33,12 +33,11 @@
                                     {% else %}
                                         <h4 class="talk-title">{{ talk.submission.title }}</h4>
 
+                                        <span class="talk-time">{{ talk.start|date:"H:i" }}–{{ talk.end|date:"H:i" }},</span>
+                                        <span class="talk-room">{{ talk.room.name }}</span>
                                         {% if talk.submission.speakers.exists %}
-                                          <span class="talk-speakers">{{ talk.submission.display_speaker_names }}</span><br>
+                                            <span class="talk-speakers">- {{ talk.submission.display_speaker_names }}</span>
                                         {% endif %}
-                                        <span class="talk-info">
-                                            {{ talk.start|date:"H:i" }}–{{ talk.end|date:"H:i" }}, {{ talk.room.name }}
-                                        </span>
                                     {% endif %}
 
                                 </div>

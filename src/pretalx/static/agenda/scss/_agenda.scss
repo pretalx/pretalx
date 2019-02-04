@@ -19,6 +19,7 @@
     display: none;
   }
 }
+
 #legend {
   position: fixed;
   left: 0;
@@ -42,15 +43,19 @@
     display: none;
   }
 }
+
 header {
   word-break: normal;
 }
+
 .schedule-header {
   display: flex;
   align-items: flex-end;
+
   span, a, div {
     margin-left: 8px;
   }
+
   a i.fa {
     padding-right: 0;
   }
@@ -65,8 +70,8 @@ header {
     font-size: 16px;
     font-weight: normal;
     margin: 0;
-    &.active {
-    }
+
+    &.active {}
   }
 
   form {
@@ -220,6 +225,25 @@ header {
       text-align: center;
     }
   }
+
+  .schedule-as-list {
+    .day {
+      background: none;
+
+      .talks-list {
+        .talk {
+          border-radius: 0.5em;
+          border: solid 1px;
+          margin: 0.5em 0;
+          padding: 0.1em 0.5em;
+
+          .talk-title {
+            margin-bottom: 0;
+          }
+        }
+      }
+    }
+  }
 }
 
 .btn-sm .fa {
@@ -240,14 +264,17 @@ header {
     text-align: right;
     flex-direction: column;
   }
+
   #navigator {
     top: 10px;
     margin-top: 0;
   }
+
   #legend {
     top: 50px;
     margin-top: 0;
   }
+
   #fahrplan {
     width: 100%;
 
@@ -273,12 +300,14 @@ header {
     }
   }
 }
+
 @media print {
   body {
     background: none;
     overflow: visible !important;
     height: auto;
   }
+
   #navigator, #legend,
   #schedule-nav,
   #main-card .user-row,
@@ -287,16 +316,21 @@ header {
   #event-nonpublic {
     display: none;
   }
-  h3:not(:first-of-type) { /* improve look of day captions after page break */
+
+  h3:not(:first-of-type) {
+    /* improve look of day captions after page break */
     margin-top: 5em;
   }
+
   .container {
     max-width: 100%;
   }
+
   #fahrplan {
     display: block;
     overflow: visible !important;
   }
+
   .day {
     page-break-after: always;
     overflow: visible !important;

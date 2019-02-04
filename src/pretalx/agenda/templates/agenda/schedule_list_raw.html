@@ -1,0 +1,62 @@
+{% extends "common/base.html" %}
+{% load i18n %}
+{% load rules %}
+{% load static %}
+
+
+{% block custom_header %}
+    <link rel="alternate" type="application/atom+xml" title="{{ request.event.name }} Schedule Versions" href="{{ request.event.urls.feed }}" />
+    <script src="{% static "agenda/js/offline.js" %}"></script>
+{% endblock %}
+
+{% block content %}
+    {% if not request.event.settings.show_schedule and not request.user.is_anonymous %}
+        <div id="event-nonpublic">
+            <i class="fa fa-user-secret"></i>
+            {% blocktrans trimmed %}
+                This schedule-related page is non-public. Only organisers can see it.
+            {% endblocktrans %}
+        </div>
+    {% endif %}
+    <span id="offline-vars" data-event="{{ request.event.urls.schedule }}"></span>
+
+    <div id="fahrplan">
+        {% if schedule != schedule.event.current_schedule %}
+            <div class="alert alert-warning"><span>
+                {% if not schedule.version %}
+                    {{ phrases.agenda.schedule_editable }}
+                {% else %}
+                    {% blocktrans trimmed with current_url=schedule.event.urls.schedule %}
+                        You are currently viewing an older schedule version.
+                    {% endblocktrans %}
+                {% endif %}
+                {% if request.event.current_schedule %}
+                    {% blocktrans trimmed with current_url=schedule.event.urls.schedule %}
+                        You can find the current version <a href="{{ current_url }}">here</a>.
+                    {% endblocktrans %}
+                {% endif %}
+            </span></div>
+        {% endif %}
+        <div id="offline-warning" class="alert alert-danger d-none"><span>
+          {% blocktrans trimmed %}
+          You're currently viewing an offline version of the schedule, so it may be
+          outdated. <strong>Refresh</strong> this page once you have an internet
+          connection to see the current schedule.
+          {% endblocktrans %}
+        </span></div>
+
+        <div class="schedule-header ml-auto mt-4">
+            <span>{% trans "Version" %} {{ schedule.version|default:"–" }}</span>
+        </div>
+        {% include "agenda/schedule_list_days.html" %}
+    </div> {# end fahrplan #}
+
+
+    <script>
+      if('serviceWorker' in navigator) {
+        var scope = '/{{ request.event.name }}/schedule/';
+        navigator.serviceWorker.register('/sw.js', {scope: scope})
+      }
+    </script>
+
+{% endblock %}
