@@ -2,9 +2,34 @@
 
 <nav id="schedule-nav">
     <div class="navigation">
-        <a href="{{ request.event.urls.schedule }}" class="btn btn-outline-success {% if "/schedule/" in request.path %} active{% endif %}"><i class="fa fa-calendar"></i> {% trans "Schedule" %}
-        </a><a href="{{ request.event.urls.talks }}" class="btn btn-outline-success {% if "/talk/" in request.path %} active{% endif %}"><i class="fa fa-comments-o"></i> {% trans "Talks" %}
-        </a><a href="{{ request.event.urls.speakers }}" class="btn btn-outline-success {% if "/speaker/" in request.path %} active{% endif %}"><i class="fa fa-group"></i> {% trans "Speakers" %}</a>
+        <a
+            href="{{ request.event.urls.schedule }}"
+            class="btn btn-outline-success
+                {% if "/schedule/" in request.path and "/schedule/list" not in request.path %}
+                    active
+                {% endif %}"
+        >
+            <i class="fa fa-calendar"></i> {% trans "Schedule" %}
+        </a><a
+            href="{{ request.event.urls.schedule.list }}"
+            class="btn btn-outline-success
+            {% if "/schedule/list" in request.path %}
+                active
+            {% endif %}"
+        >
+            <i class="fa fa-calendar"></i> {% trans "Schedule List" %}
+        </a><a
+            href="{{ request.event.urls.talks }}"
+            class="btn btn-outline-success {% if "/talk/" in request.path %} active{% endif %}"
+        >
+            <i class="fa fa-comments-o"></i> {% trans "Talks" %}
+        </a><a
+            href="{{ request.event.urls.speakers }}"
+            class="btn btn-outline-success {% if "/speaker/" in request.path %} active{% endif %}"
+        >
+            <i class="fa fa-group"></i> {% trans "Speakers" %}
+        </a>
+        {# no space allowed between '</a><a>' from on to next button - otherwise it is renderd differently  → css bug? #}
     </div>
     <div class="header-right">
         <form class="search">
