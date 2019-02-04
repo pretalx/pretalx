@@ -6,6 +6,7 @@
 
 {% block cfp_content %}
     <script src="{% static "js/jquery.formset.js" %}"></script>
+    {% bootstrap_form_errors form %}
     <h2>
         {% if form.instance.question %}{% trans "Question" %}: {{ form.instance.question }}{% else %}{% trans "New question" %}{% endif %}
     </h2>
@@ -40,6 +41,7 @@
         {% endif %}
 
         {% bootstrap_field form.target layout='event' %}
+        <span class="submission-type">{% bootstrap_field form.submission_type layout='event' %}</span>
         {% bootstrap_field form.question layout='event' %}
         {% bootstrap_field form.variant layout='event' %}
         {% bootstrap_field form.help_text layout='event' %}

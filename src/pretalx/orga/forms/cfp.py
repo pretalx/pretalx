@@ -4,7 +4,7 @@ from hierarkey.forms import HierarkeyForm
 from i18nfield.forms import I18nFormMixin, I18nModelForm
 
 from pretalx.common.mixins.forms import ReadOnlyFlag
-from pretalx.submission.models import AnswerOption, CfP, Question, SubmissionType, Track
+from pretalx.submission.models import AnswerOption, CfP, Question, SubmissionType, Track, QuestionTarget
 
 
 class CfPSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
@@ -99,6 +99,7 @@ class QuestionForm(ReadOnlyFlag, I18nModelForm):
         model = Question
         fields = [
             'target',
+            'submission_type',
             'question',
             'help_text',
             'variant',

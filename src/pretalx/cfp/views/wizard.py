@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.core.files.storage import FileSystemStorage
+from django.db.models import Q
 from django.forms import ValidationError
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -23,7 +24,7 @@ from pretalx.mail.models import MailTemplate
 from pretalx.person.forms import SpeakerProfileForm, UserForm
 from pretalx.person.models import User
 from pretalx.submission.forms import InfoForm, QuestionsForm
-from pretalx.submission.models import Answer, QuestionTarget, QuestionVariant
+from pretalx.submission.models import Answer, QuestionTarget, QuestionVariant, SubmissionType
 
 FORMS = [
     ('info', InfoForm),
@@ -55,7 +56,17 @@ class SubmitStartView(EventPageMixin, View):
 
 
 def show_questions_page(wizard):
-    return wizard.request.event.questions.all().exists()
+    info_data = wizard.get_cleaned_data_for_step('info')
+    if info_data is None:
+        return wizard.request.event.questions.all().exists()
+    submission_type = info_data['submission_type']
+    return wizard.request.event.questions.exclude(
+        Q(target=QuestionTarget.SUBMISSION)
+        & (
+            ~Q(submission_type=submission_type)
+            & Q(submission_type__isnull=False)
+        )
+    ).exists()
 
 
 def show_user_page(wizard):
@@ -90,6 +101,8 @@ class SubmitWizard(EventPageMixin, NamedUrlSessionWizardView):
             kwargs['essential_only'] = True
         if step == 'questions':
             kwargs['target'] = ''
+            user_data = self.get_cleaned_data_for_step('info')
+            kwargs['submission_type'] = user_data['submission_type']
         return kwargs
 
     def get_context_data(self, **kwargs):

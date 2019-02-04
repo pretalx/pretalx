@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django import forms
 from django.core.files.uploadedfile import UploadedFile
+from django.db.models import Q
 from django.utils.functional import cached_property
 
 from pretalx.common.forms.utils import get_help_text
@@ -13,6 +14,7 @@ class QuestionsForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.event = kwargs.pop('event')
         self.submission = kwargs.pop('submission', None)
+        self.submission_type = kwargs.pop('submission_type', None)
         self.speaker = kwargs.pop('speaker', None)
         self.review = kwargs.pop('review', None)
         self.request_user = kwargs.pop('request_user', None)
@@ -31,8 +33,12 @@ class QuestionsForm(forms.Form):
         self.queryset = Question.all_objects.filter(event=self.event, active=True)
         if self.target_type:
             self.queryset = self.queryset.filter(target=self.target_type)
+            if self.submission_type and self.target_type == QuestionTarget.SUBMISSION:
+                self.queryset = self.queryset.filter(Q(submission_type=self.submission_type) | Q(submission_type=None))
         else:
             self.queryset = self.queryset.exclude(target=QuestionTarget.REVIEWER)
+            if self.submission_type:
+                self.queryset = self.queryset.filter(Q(submission_type=self.submission_type) | Q(submission_type=None))
         for question in self.queryset.prefetch_related('options'):
             initial_object = None
             initial = question.default_answer
