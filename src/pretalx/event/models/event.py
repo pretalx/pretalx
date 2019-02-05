@@ -188,6 +188,7 @@ class Event(LogMixin, models.Model):
         user_delete = '{base}me/delete'
         user_submissions = '{user}submissions/'
         schedule = '{base}schedule/'
+        schedule_list = '{base}schedule/list'
         sneakpeek = '{base}sneak/'
         talks = '{base}talk/'
         speakers = '{base}speaker/'
