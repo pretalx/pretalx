@@ -48,6 +48,30 @@ header {
   word-break: normal;
 }
 
+.header-hide {
+  #main-container {
+    padding-top: 0;
+
+    .schedule-header {
+      margin-top: 0 !important;
+    }
+  }
+
+  header {
+    display: none;
+  }
+}
+
+.footer-hide {
+  footer {
+    display: none;
+  }
+}
+
+.top-bg-hide #top-bg {
+  display: none;
+}
+
 .schedule-header {
   display: flex;
   align-items: flex-end;

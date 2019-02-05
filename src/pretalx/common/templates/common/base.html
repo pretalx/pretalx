@@ -53,7 +53,7 @@
     {% endcompress %}
     {% block custom_header %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_extra_class %}{% endblock %}">
     <div id="top-bg" class="header {{ request.event.settings.display_header_pattern|default:"bg-primary" }}">
     </div>
     {% if request.event and not request.event.is_public and not is_html_export %}
@@ -69,7 +69,7 @@
             <h1>
                 <a href="{% block nav_link %}{% endblock %}">
                     {% if request.event and request.event.logo %}
-                    <img src="{{ request.event.logo.url }}" id="event-logo" alt="{% trans "The event's logo" %}">
+                    <img src="{{ request.event.logo.url }}" id="event-logo" alt="{% trans "The event logo" %}">
                     {% elif request.event %}
                         {{ request.event.name }}
                     {% endif %}

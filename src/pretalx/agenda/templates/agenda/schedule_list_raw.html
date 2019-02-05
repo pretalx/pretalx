@@ -9,6 +9,8 @@
     <script src="{% static "agenda/js/offline.js" %}"></script>
 {% endblock %}
 
+{% block body_extra_class %}top-bg-hide header-hide footer-hide{% endblock %}
+
 {% block content %}
     {% if not request.event.settings.show_schedule and not request.user.is_anonymous %}
         <div id="event-nonpublic">
