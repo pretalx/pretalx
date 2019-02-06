@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :bug:`-` The visual representation of a speaker's avatar is now consistent across all image-sizes and bio-texts.
 - :bug:`583` When signing up with an email address with upper case letters included, pretalx only allowed to log in with a lower-cased email address.
 - :bug:`572` People who had only deleted submissions in an event were still shown in the submitter list, which was unexpected and was since fixed.
 - :feature:`-` If only one conference language is available, pretalx doesn't as speakers to choose it from a drop-down, as this behaviour is rather silly.
