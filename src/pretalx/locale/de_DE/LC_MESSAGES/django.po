@@ -191,7 +191,7 @@ msgstr "Programm"
 
 #: pretalx/agenda/templates/agenda/header_row.html:20
 msgid "Schedule List"
-msgstr "Programmliste"
+msgstr "Programm Liste"
 
 #: pretalx/agenda/templates/agenda/header_row.html:25
 #: pretalx/agenda/templates/agenda/speaker.html:37
