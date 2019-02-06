@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`-` Added a new view `schedule/list`: a list of all talks in chronological order - easy to read on small screens. Also includes a `list_raw` variant for iframe embedding (hidden navigation, header and footer).
 - :bug:`572` People who had only deleted submissions in an event were still shown in the submitter list, which was unexpected and was since fixed.
 - :feature:`-` If only one conference language is available, pretalx doesn't as speakers to choose it from a drop-down, as this behaviour is rather silly.
 - :support:`-` pretalx doesn't run ``regenerate_css`` on startup automatically any longer. This reduces startup times. If for any reason an event does not look as it should, you can fix it by running ``python -m pretalx regenerate_css``.
