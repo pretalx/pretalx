@@ -1,4 +1,5 @@
 import json
+import logging
 from collections import Counter
 from datetime import timedelta
 
@@ -16,7 +17,6 @@ from django.utils.http import is_safe_url
 from django.utils.timezone import now
 from django.utils.translation import override, ugettext as _
 from django.views.generic import ListView, TemplateView, View
-import logging
 
 from pretalx.common.mixins.views import (
     ActionFromUrl, EventPermissionRequired, Filterable, PermissionRequired, Sortable,
@@ -403,10 +403,15 @@ class SubmissionContent(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
             debug_message = '\n' + debug_message
             logging.debug(debug_message)
             # handle available_count change:
-            if 'available_count' in form.changed_data:
-                debug_message = '!!! TODOD: handle available_count update !!!'
-                messages.debug(self.request, debug_message)
-                logging.debug(debug_message)
+            field_name = 'available_count'
+            if field_name in form.changed_data:
+                # debug_message = (
+                #     '!!! TODOD: handle ' + field_name + ' update !!!'
+                # )
+                # messages.debug(self.request, debug_message)
+                # logging.debug(debug_message)
+                self.object.update_TalkSlots(
+                    available_count_old=form.initial[field_name])
             action = 'pretalx.submission.' + ('create' if created else 'update')
             form.instance.log_action(action, person=self.request.user, orga=True)
         return redirect(self.get_success_url())
