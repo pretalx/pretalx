@@ -23,9 +23,7 @@
     <img src="{% static "common/img/logo_white.svg" %}" class="logo" alt="{% trans "The pretalx logo" %}">
     {% if messages %}
         {% for message in messages %}
-            <div class="card card-inverse card-{{ message.tags }} mb-3 text-center">
-                {{ message }}
-            </div>
+            <div class="card card-inverse card-{{ message.tags }} mb-3 text-center">{{ message }}</div>
         {% endfor %}
     {% endif %}
     <div class="card card-login">

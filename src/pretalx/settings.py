@@ -187,7 +187,11 @@ LOGGING = {
         },
     },
     'loggers': {
-        '': {'handlers': ['file', 'console'], 'level': loglevel, 'propagate': True},
+        '': {
+            'handlers': ['file', 'console'],
+            'level': loglevel,
+            'propagate': True
+        },
         'django.request': {
             'handlers': ['file', 'console'],
             'level': loglevel,
@@ -205,6 +209,10 @@ LOGGING = {
         },
     },
 }
+
+if DEBUG:
+    from django.contrib.messages import constants as message_constants
+    MESSAGE_LEVEL = message_constants.DEBUG
 
 email_level = config.get('logging', 'email_level', fallback='ERROR') or 'ERROR'
 emails = config.get('logging', 'email', fallback='').split(',')
