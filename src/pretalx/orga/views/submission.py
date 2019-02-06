@@ -16,6 +16,7 @@ from django.utils.http import is_safe_url
 from django.utils.timezone import now
 from django.utils.translation import override, ugettext as _
 from django.views.generic import ListView, TemplateView, View
+import logging
 
 from pretalx.common.mixins.views import (
     ActionFromUrl, EventPermissionRequired, Filterable, PermissionRequired, Sortable,
@@ -317,7 +318,6 @@ class SubmissionContent(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
                 obj.log_action(
                     'pretalx.submission.resource.update', person=self.request.user
                 )
-
         extra_forms = [
             form
             for form in self.formset.extra_forms
@@ -388,6 +388,25 @@ class SubmissionContent(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
                 return self.get(self.request, *self.args, **self.kwargs)
             messages.success(self.request, _('The submission has been updated!'))
         if form.has_changed():
+            debug_message = 'form changed:\n'
+            for field_name in form.changed_data:
+                debug_message += (
+                    '    {field_name}: \'{initial}\' → \'{new}\''
+                    ''.format(
+                        field_name=field_name,
+                        initial=form.initial[field_name],
+                        new=form.cleaned_data[field_name],
+                    )
+                ) + '\n'
+            messages.debug(self.request, debug_message)
+            # force message to new line
+            debug_message = '\n' + debug_message
+            logging.debug(debug_message)
+            # handle available_count change:
+            if 'available_count' in form.changed_data:
+                debug_message = '!!! TODOD: handle available_count update !!!'
+                messages.debug(self.request, debug_message)
+                logging.debug(debug_message)
             action = 'pretalx.submission.' + ('create' if created else 'update')
             form.instance.log_action(action, person=self.request.user, orga=True)
         return redirect(self.get_success_url())
