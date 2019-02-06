@@ -10,7 +10,6 @@ from pretalx.common.forms.widgets import CheckboxMultiDropdown
 from pretalx.common.mixins.forms import RequestRequire
 from pretalx.submission.models import Submission
 from pretalx.submission.models import SubmissionStates
-from pretalx.submission.models import SubmissionType
 
 
 class InfoForm(RequestRequire, forms.ModelForm):
@@ -38,26 +37,11 @@ class InfoForm(RequestRequire, forms.ModelForm):
             elif instance and instance.state != SubmissionStates.SUBMITTED:
                 self.fields.pop('track')
 
-        _now = now()
-        if (
-            not self.event.cfp.deadline or self.event.cfp.deadline >= _now
-        ):  # No global deadline or still open
-            types = self.event.submission_types.exclude(deadline__lt=_now)
-        else:
-            types = self.event.submission_types.filter(deadline__gte=_now)
-        pks = set(types.values_list('pk', flat=True))
-        if instance and instance.pk:
-            pks |= {instance.submission_type.pk}
-        if len(pks) == 1:
-            self.fields['submission_type'].initial = self.event.submission_types.get(pk=pks.pop())
-            self.fields['submission_type'].widget=forms.HiddenInput()
-        else:
-            self.fields['submission_type'].queryset = self.event.submission_types.filter(
-                pk__in=pks
-            )
+        self._set_submission_types(instance=instance)
+
         if len(self.event.locales) == 1:
             self.fields['content_locale'].initial = self.event.locales[0]
-            self.fields['content_locale'].widget=forms.HiddenInput()
+            self.fields['content_locale'].widget = forms.HiddenInput()
         else:
             locale_names = dict(settings.LANGUAGES)
             self.fields['content_locale'].choices = [
@@ -71,6 +55,25 @@ class InfoForm(RequestRequire, forms.ModelForm):
         if self.readonly:
             for f in self.fields.values():
                 f.disabled = True
+
+    def _set_submission_types(self, instance=None):
+        _now = now()
+        if (
+            not self.event.cfp.deadline or self.event.cfp.deadline >= _now
+        ):  # No global deadline or still open
+            types = self.event.submission_types.exclude(deadline__lt=_now)
+        else:
+            types = self.event.submission_types.filter(deadline__gte=_now)
+        pks = set(types.values_list('pk', flat=True))
+        if instance and instance.pk:
+            pks |= {instance.submission_type.pk}
+        if len(pks) == 1:
+            self.fields['submission_type'].initial = self.event.submission_types.get(pk=pks.pop())
+            self.fields['content_locale'].widget = forms.HiddenInput()
+        else:
+            self.fields['submission_type'].queryset = self.event.submission_types.filter(
+                pk__in=pks
+            )
 
     def clean_image(self):
         image = self.cleaned_data.get('image')
