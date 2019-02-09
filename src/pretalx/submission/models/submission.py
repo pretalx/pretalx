@@ -144,9 +144,9 @@ class Submission(LogMixin, models.Model):
     )
     slot_count = models.PositiveIntegerField(
         default=1,
-        verbose_name=_('Available Count'),
+        verbose_name=_('Slot Count'),
         help_text=_(
-            'How How many times this talk will be held. '
+            'How many times this talk will be held. '
             'Currently only editable by the organiser.'
         ),
     )
