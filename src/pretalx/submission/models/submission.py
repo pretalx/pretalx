@@ -146,7 +146,7 @@ class Submission(LogMixin, models.Model):
         default=1,
         verbose_name=_('Available Count'),
         help_text=_(
-            'How often are you available to hold your talk.'
+            'How How many times this talk will be held. '
             'Currently only editable by the organiser.'
         ),
     )
