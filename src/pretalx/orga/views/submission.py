@@ -388,30 +388,10 @@ class SubmissionContent(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
                 return self.get(self.request, *self.args, **self.kwargs)
             messages.success(self.request, _('The submission has been updated!'))
         if form.has_changed():
-            debug_message = 'form changed:\n'
-            for field_name in form.changed_data:
-                debug_message += (
-                    '    {field_name}: \'{initial}\' → \'{new}\''
-                    ''.format(
-                        field_name=field_name,
-                        initial=form.initial[field_name],
-                        new=form.cleaned_data[field_name],
-                    )
-                ) + '\n'
-            messages.debug(self.request, debug_message)
-            # force message to new line
-            debug_message = '\n' + debug_message
-            logging.debug(debug_message)
             # handle slot_count change:
-            field_name = 'slot_count'
-            if field_name in form.changed_data:
-                # debug_message = (
-                #     '!!! TODOD: handle ' + field_name + ' update !!!'
-                # )
-                # messages.debug(self.request, debug_message)
-                # logging.debug(debug_message)
-                self.object.update_TalkSlots(
-                    slot_count_old=form.initial[field_name])
+            if 'slot_count' in form.changed_data:
+                self.object.update_talk_slots(
+                    slot_count_old=form.initial['slot_count'])
             action = 'pretalx.submission.' + ('create' if created else 'update')
             form.instance.log_action(action, person=self.request.user, orga=True)
         return redirect(self.get_success_url())
