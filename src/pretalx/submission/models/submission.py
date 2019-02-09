@@ -316,8 +316,8 @@ class Submission(LogMixin, models.Model):
                 #     'slot_count_old: {}'.format(slot_count_old))
                 # logging.debug(
                 #     'self.slot_count {}'.format(self.slot_count))
-                # range_to_delete = list(range(
-                #     self.slot_count, slot_count_old))
+                range_to_delete = list(range(
+                    self.slot_count, slot_count_old))
                 # logging.debug('range_to_delete: {}'.format(range_to_delete))
                 qs_delete = TalkSlot.objects.filter(
                     submission=self,
