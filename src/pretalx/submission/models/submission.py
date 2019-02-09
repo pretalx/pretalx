@@ -296,10 +296,11 @@ class Submission(LogMixin, models.Model):
                     src_states=source_states, state=self.state, new_state=new_state
                 )
             )
+        self.update_talk_slots()
 
-    def update_TalkSlots(self, slot_count_old=None):
+    def update_talk_slots(self, slot_count_old=None):
         from pretalx.schedule.models import TalkSlot
-        logging.debug('update_TalkSlots')
+        logging.debug('update_talk_slots')
         # debug: print all now available Talks
         qs_temp = TalkSlot.objects.filter(
             submission=self,
@@ -349,19 +350,16 @@ class Submission(LogMixin, models.Model):
 
     def make_submitted(self, person=None, force=False, orga=False):
         self._set_state(SubmissionStates.SUBMITTED, force, person=person)
-        self.update_TalkSlots()
 
     def confirm(self, person=None, force=False, orga=False):
         self._set_state(SubmissionStates.CONFIRMED, force, person=person)
         self.log_action('pretalx.submission.confirm', person=person, orga=orga)
         self.slots.filter(schedule=self.event.wip_schedule).update(is_visible=True)
-        self.update_TalkSlots()
 
     def accept(self, person=None, force=False, orga=True):
         previous = self.state
         self._set_state(SubmissionStates.ACCEPTED, force, person=person)
         self.log_action('pretalx.submission.accept', person=person, orga=True)
-        self.update_TalkSlots()
 
         if previous != SubmissionStates.CONFIRMED:
             for speaker in self.speakers.all():
@@ -375,7 +373,6 @@ class Submission(LogMixin, models.Model):
     def reject(self, person=None, force=False, orga=True):
         self._set_state(SubmissionStates.REJECTED, force, person=person)
         self.log_action('pretalx.submission.reject', person=person, orga=True)
-        self.update_TalkSlots()
 
         for speaker in self.speakers.all():
             self.event.reject_template.to_mail(
@@ -388,18 +385,15 @@ class Submission(LogMixin, models.Model):
     def cancel(self, person=None, force=False, orga=True):
         self._set_state(SubmissionStates.CANCELED, force, person=person)
         self.log_action('pretalx.submission.cancel', person=person, orga=True)
-        self.update_TalkSlots()
 
     def withdraw(self, person=None, force=False, orga=False):
         self._set_state(SubmissionStates.WITHDRAWN, force, person=person)
-        self.update_TalkSlots()
         self.log_action('pretalx.submission.withdraw', person=person, orga=orga)
 
     def remove(self, person=None, force=False, orga=True):
         self._set_state(SubmissionStates.DELETED, force, person=person)
         for answer in self.answers.all():
             answer.remove(person=person, force=force)
-        self.update_TalkSlots()
         self.log_action('pretalx.submission.deleted', person=person, orga=True)
 
     @cached_property
