@@ -402,8 +402,8 @@ class SubmissionContent(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
             # force message to new line
             debug_message = '\n' + debug_message
             logging.debug(debug_message)
-            # handle available_count change:
-            field_name = 'available_count'
+            # handle slot_count change:
+            field_name = 'slot_count'
             if field_name in form.changed_data:
                 # debug_message = (
                 #     '!!! TODOD: handle ' + field_name + ' update !!!'
@@ -411,7 +411,7 @@ class SubmissionContent(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
                 # messages.debug(self.request, debug_message)
                 # logging.debug(debug_message)
                 self.object.update_TalkSlots(
-                    available_count_old=form.initial[field_name])
+                    slot_count_old=form.initial[field_name])
             action = 'pretalx.submission.' + ('create' if created else 'update')
             form.instance.log_action(action, person=self.request.user, orga=True)
         return redirect(self.get_success_url())

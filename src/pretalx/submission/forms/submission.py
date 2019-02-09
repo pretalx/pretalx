@@ -50,7 +50,7 @@ class InfoForm(RequestRequire, forms.ModelForm):
 
         # currently we only display this.
         # changes only allowed from orga backend.
-        self.fields['available_count'].disabled = True
+        self.fields['slot_count'].disabled = True
 
         if self.readonly:
             for f in self.fields.values():
@@ -98,7 +98,7 @@ class InfoForm(RequestRequire, forms.ModelForm):
             'abstract',
             'description',
             'notes',
-            'available_count',
+            'slot_count',
             'do_not_record',
             'image',
         ]

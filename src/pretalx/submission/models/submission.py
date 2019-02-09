@@ -142,7 +142,7 @@ class Submission(LogMixin, models.Model):
             'The duration in minutes. Leave empty for default duration for this submission type.'
         ),
     )
-    available_count = models.PositiveIntegerField(
+    slot_count = models.PositiveIntegerField(
         default=1,
         verbose_name=_('Available Count'),
         help_text=_(
@@ -297,7 +297,7 @@ class Submission(LogMixin, models.Model):
                 )
             )
 
-    def update_TalkSlots(self, available_count_old=None):
+    def update_TalkSlots(self, slot_count_old=None):
         from pretalx.schedule.models import TalkSlot
         logging.debug('update_TalkSlots')
         # debug: print all now available Talks
@@ -311,13 +311,13 @@ class Submission(LogMixin, models.Model):
         if self.state == SubmissionStates.ACCEPTED or \
             self.state == SubmissionStates.CONFIRMED:
             # logging.debug('state is ACCEPTED or CONFIRMED')
-            if available_count_old is not None:
+            if slot_count_old is not None:
                 # logging.debug(
-                #     'available_count_old: {}'.format(available_count_old))
+                #     'slot_count_old: {}'.format(slot_count_old))
                 # logging.debug(
-                #     'self.available_count {}'.format(self.available_count))
+                #     'self.slot_count {}'.format(self.slot_count))
                 # range_to_delete = list(range(
-                #     self.available_count, available_count_old))
+                #     self.slot_count, slot_count_old))
                 # logging.debug('range_to_delete: {}'.format(range_to_delete))
                 qs_delete = TalkSlot.objects.filter(
                     submission=self,
@@ -328,7 +328,7 @@ class Submission(LogMixin, models.Model):
                 #     [i.available_index for i in qs_delete]))
                 qs_delete.delete()
             # logging.debug('TalkSlot update_or_create')
-            for index in range(self.available_count):
+            for index in range(self.slot_count):
                 TalkSlot.objects.update_or_create(
                     submission=self,
                     schedule=self.event.wip_schedule,
