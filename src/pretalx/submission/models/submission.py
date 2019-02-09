@@ -441,13 +441,13 @@ class Submission(LogMixin, models.Model):
             else None
         )
 
-    @property
-    def slots(self):
-        return (
-            self.event.current_schedule.talks.filter(submission=self).all()
-            if self.event.current_schedule
-            else None
-        )
+    # @cached_property
+    # def slots_current(self):
+    #     return (
+    #         self.event.current_schedule.talks.filter(submission=self)
+    #         if self.event.current_schedule
+    #         else None
+    #     )
 
     @property
     def display_speaker_names(self):
