@@ -451,10 +451,6 @@ class Submission(LogMixin, models.Model):
             return template.render(context={'url': self.recording_url})
 
     @property
-    def average_score(self):
-        return self.reviews.all().aggregate(avg=models.Avg('score'))['avg']
-
-    @property
     def active_resources(self):
         return self.resources.filter(resource__isnull=False)
 

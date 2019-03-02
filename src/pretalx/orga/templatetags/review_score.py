@@ -35,7 +35,7 @@ def _review_score_override(positive_overrides, negative_overrides):
 
 @register.simple_tag(takes_context=True)
 def review_score(context, submission):
-    score = submission.average_score
+    score = submission.avg_score
     positive_overrides = submission.reviews.filter(override_vote=True).count()
     negative_overrides = submission.reviews.filter(override_vote=False).count()
 

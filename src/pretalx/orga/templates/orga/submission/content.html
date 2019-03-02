@@ -80,7 +80,7 @@
                     });
                     });</script>
         {% endif %}
-        {% if form.instance.average_score != None %}
+        {% if submission.reviews.count %}
         <div class="form-group row">
             <label class="col-md-3 col-form-label">
                 {% trans "Review score" %}
