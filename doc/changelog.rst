@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`609` Filter submissions and reviews by track.
 - :bug:`-` Changing the order of rooms made the schedule break.
 - :feature:`433` Organisers can now view all reviews, except for their own submissions.
 - :feature:`589` Before setting a new custom domain for an event, pretalx now checks if the domain has any nameserver records.
