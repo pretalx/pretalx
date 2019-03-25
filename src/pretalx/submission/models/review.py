@@ -93,6 +93,10 @@ class ReviewPhase(models.Model):
         verbose_name=_('Reviewers can see speaker names'),
         default=True,
     )
+    can_see_notes_to_organiser = models.BooleanField(
+        verbose_name=_('Reviewers can see notes to organiser'),
+        default=False,
+    )
     can_change_submission_state = models.BooleanField(
         verbose_name=_('Reviewers can accept and reject submissions'),
         default=False,

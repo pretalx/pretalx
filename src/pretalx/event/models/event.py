@@ -385,6 +385,7 @@ class Event(LogMixin, models.Model):
                 position=0,
                 can_review=True,
                 can_see_other_reviews='after_review',
+                can_see_notes_to_organiser=False,
                 can_see_speaker_names=True,
                 can_change_submission_state=False,
             )
@@ -395,6 +396,7 @@ class Event(LogMixin, models.Model):
                 position=1,
                 can_review=False,
                 can_see_other_reviews='always',
+                can_see_notes_to_organiser=True,
                 can_see_speaker_names=True,
                 can_change_submission_state=True,
             )
@@ -519,6 +521,7 @@ class Event(LogMixin, models.Model):
 
                 can_review=True,
                 can_see_other_reviews='after_review',
+                can_see_notes_to_organiser=False,
                 can_see_speaker_names=True,
                 can_change_submission_state=False,
             )

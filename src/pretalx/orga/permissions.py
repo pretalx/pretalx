@@ -86,6 +86,12 @@ def is_event_over(user, obj):
 
 
 @rules.predicate
+def can_view_notes_to_organiser(user, obj):
+    event = obj.event
+    return event.active_review_phase and event.active_review_phase.can_see_notes_to_organiser
+
+
+@rules.predicate
 def can_view_speaker_names(user, obj):
     event = obj.event
     return event.active_review_phase and event.active_review_phase.can_see_speaker_names
@@ -125,6 +131,7 @@ rules.add_perm('orga.edit_schedule', can_change_submissions)
 rules.add_perm('orga.schedule_talk', can_change_submissions)
 rules.add_perm('orga.view_room', can_change_submissions)
 rules.add_perm('orga.edit_room', can_change_submissions)
+rules.add_perm('orga.view_notes', can_change_submissions | (is_reviewer & can_view_notes_to_organiser))
 rules.add_perm('orga.view_speakers', can_change_submissions | (is_reviewer & can_view_speaker_names))
 rules.add_perm('orga.view_speaker', can_change_submissions | (is_reviewer & can_view_speaker_names))
 rules.add_perm('orga.change_speaker', can_change_submissions)

@@ -242,6 +242,7 @@ class ReviewPhaseForm(I18nModelForm):
         fields = [
             'name', 'start', 'end',
             'can_review',
+            'can_see_notes_to_organiser',
             'can_see_speaker_names',
             'can_change_submission_state',
             'can_see_other_reviews',

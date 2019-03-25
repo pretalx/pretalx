@@ -5,6 +5,7 @@
 {% load rules %}
 
 {% block submission_content %}
+{% has_perm 'orga.view_notes' request.user request.event as can_view_notes_to_organiser %}
 {% has_perm 'orga.view_speakers' request.user request.event as can_view_speakers %}
 {% has_perm 'orga.view_reviews' request.user submission as can_view_other_reviews %}
 {% if request.user in submission.speakers.all %}
@@ -69,7 +70,7 @@
         </div>
     </div>
     {% endif %}
-    {% if request.event.settings.cfp_request_notes %}
+    {% if can_view_notes_to_organiser and request.event.settings.cfp_request_notes %}
     <div class="form-group row">
         <label class="col-md-3 col-form-label" for="id_text">{% trans "Notes" %}</label>
         <div class="col-md-9 mt-1">
