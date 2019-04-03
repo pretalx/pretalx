@@ -32,11 +32,12 @@
             />
         </label>
         <div class="avatar-form-fields col-md-9">
-            {% bootstrap_field wizard.form.get_gravatar layout='event-inline' %}
             <div class="user-avatar-display">
                 {% bootstrap_field wizard.form.avatar layout='inline' %}
                 <small class="form-text text-muted d-block">{{ profile_form.avatar.help_text }}</small>
+                <br><strong>... oder ...</strong><br><br>
             </div>
+            {% bootstrap_field wizard.form.get_gravatar layout='event-inline' %}
         </div>
     </div>
     {% bootstrap_field wizard.form.name layout='event' %}
