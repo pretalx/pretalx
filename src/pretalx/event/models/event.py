@@ -10,6 +10,7 @@ from django.core.validators import RegexValidator
 from django.db import models, transaction
 from django.utils.functional import cached_property
 from django.utils.timezone import make_aware, now
+from django.utils.text import format_lazy
 from django.utils.translation import ugettext_lazy as _
 from i18nfield.fields import I18nCharField, I18nTextField
 
@@ -174,11 +175,10 @@ class Event(LogMixin, models.Model):
     )
     landing_page_text = I18nTextField(
         verbose_name=_('Landing page text'),
-        help_text=_(
-            'This text will be shown on the landing page, alongside with links to the CfP and schedule, if appropriate.'
-        )
-        + ' '
-        + phrases.base.use_markdown,
+        help_text=format_lazy('{text} {markdown}',
+            text=_('This text will be shown on the landing page, alongside with links to the CfP and schedule, if appropriate.'),
+            markdown=phrases.base.use_markdown
+        ),
         null=True,
         blank=True,
     )

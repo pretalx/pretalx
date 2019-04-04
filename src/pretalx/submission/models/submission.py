@@ -10,6 +10,7 @@ from django.db.models.fields.files import FieldFile
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.timezone import now
+from django.utils.text import format_lazy
 from django.utils.translation import pgettext, ugettext_lazy as _
 
 from pretalx.common.choices import Choices
@@ -121,17 +122,19 @@ class Submission(LogMixin, models.Model):
         null=True,
         blank=True,
         verbose_name=_('Abstract'),
-        help_text=_('A concise summary of your talk in one or two sentences.')
-        + ' '
-        + phrases.base.use_markdown,
+        help_text=format_lazy('{text} {markdown}',
+            text=_('A concise summary of your talk in one or two sentences.'),
+            markdown=phrases.base.use_markdown
+        )
     )
     description = models.TextField(
         null=True,
         blank=True,
         verbose_name=_('Description'),
-        help_text=_('A full-text description of your talk and its contents.')
-        + ' '
-        + phrases.base.use_markdown,
+        help_text=format_lazy('{text} {markdown}',
+            text=_('A full-text description of your talk and its contents.'),
+            markdown=phrases.base.use_markdown
+        ),
     )
     notes = models.TextField(
         null=True, blank=True, verbose_name=_('Notes'),

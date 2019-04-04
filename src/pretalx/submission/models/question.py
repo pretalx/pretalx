@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.functional import cached_property
+from django.utils.text import format_lazy
 from django.utils.translation import ugettext_lazy as _
 from i18nfield.fields import I18nCharField
 
@@ -88,9 +89,10 @@ class Question(LogMixin, models.Model):
         blank=True,
         max_length=200,
         verbose_name=_('help text'),
-        help_text=_('Will appear just like this text below the question input field.')
-        + ' '
-        + phrases.base.use_markdown,
+        help_text=format_lazy('{text} {markdown}',
+            text=_('Will appear just like this text below the question input field.'),
+            markdown=phrases.base.use_markdown
+        ),
     )
     default_answer = models.TextField(
         null=True, blank=True, verbose_name=_('default answer')

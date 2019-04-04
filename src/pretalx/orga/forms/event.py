@@ -5,6 +5,7 @@ from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.timezone import now
+from django.utils.text import format_lazy
 from django.utils.translation import ugettext_lazy as _
 from hierarkey.forms import HierarkeyForm
 from i18nfield.fields import I18nFormField, I18nTextarea
@@ -310,11 +311,10 @@ class MailSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
 class ReviewSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
     review_help_text = I18nFormField(
         label=_('Help text for reviewers'),
-        help_text=_(
-            'This text will be shown at the top of every review, as long as reviews can be created or edited.'
-        )
-        + ' '
-        + phrases.base.use_markdown,
+        help_text=format_lazy('{text} {markdown}',
+            text=_('This text will be shown at the top of every review, as long as reviews can be created or edited.'),
+            markdown=phrases.base.use_markdown
+        ),
         widget=I18nTextarea,
         required=False,
     )
