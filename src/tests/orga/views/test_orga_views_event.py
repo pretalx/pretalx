@@ -111,11 +111,7 @@ def test_add_custom_css(event, orga_client, path, allowed):
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     'path',
-    (
-        'tests/fixtures/custom.css',
-        'tests/fixtures/malicious.css',
-        'tests/conftest.py',
-    ),
+    ('tests/fixtures/custom.css', 'tests/fixtures/malicious.css', 'tests/conftest.py'),
 )
 def test_add_custom_css_as_administrator(event, administrator_client, path):
     assert not event.custom_css
@@ -200,12 +196,15 @@ def test_add_logo_no_svg(event, orga_client):
     assert response.status_code == 200
     assert not event.logo
     response = orga_client.get(event.urls.base, follow=True)
-    assert '<img src="/media' not in response.content.decode(), response.content.decode()
+    assert (
+        '<img src="/media' not in response.content.decode()
+    ), response.content.decode()
 
 
 @pytest.mark.django_db
 def test_change_custom_domain(event, orga_client, monkeypatch):
     from pretalx.orga.forms.event import socket
+
     yessocket = lambda x: True  # noqa
     monkeypatch.setattr(socket, 'gethostbyname', yessocket)
     assert not event.settings.custom_domain
@@ -286,11 +285,14 @@ def test_change_custom_domain_to_other_event_domain(event, orga_client, other_ev
 
 
 @pytest.mark.django_db
-def test_change_custom_domain_to_unavailable_domain(event, orga_client, other_event, monkeypatch):
+def test_change_custom_domain_to_unavailable_domain(
+    event, orga_client, other_event, monkeypatch
+):
     from pretalx.orga.forms.event import socket
 
     def nosocket(param):
         raise OSError
+
     monkeypatch.setattr(socket, 'gethostbyname', nosocket)
     assert not event.settings.custom_domain
     response = orga_client.post(
@@ -319,9 +321,7 @@ def test_change_custom_domain_to_unavailable_domain(event, orga_client, other_ev
 @pytest.mark.django_db
 def test_toggle_event_is_public(event, orga_client):
     assert event.is_public
-    response = orga_client.get(
-        event.orga_urls.live, follow=True
-    )
+    response = orga_client.get(event.orga_urls.live, follow=True)
     assert response.status_code == 200
     event.refresh_from_db()
     assert event.is_public
@@ -357,9 +357,7 @@ def test_invite_orga_member(orga_client, event):
     assert team.members.count() == 1
     assert team.invites.count() == 0
     response = orga_client.post(
-        team.orga_urls.base,
-        {'email': 'other@user.org', 'form': 'invite'},
-        follow=True,
+        team.orga_urls.base, {'email': 'other@user.org', 'form': 'invite'}, follow=True
     )
     assert response.status_code == 200
     assert team.members.count() == 1
@@ -371,9 +369,7 @@ def test_invite_orga_member(orga_client, event):
 def test_retract_invitation(orga_client, event):
     team = event.organiser.teams.get(can_change_submissions=True, is_reviewer=False)
     response = orga_client.post(
-        team.orga_urls.base,
-        {'email': 'other@user.org', 'form': 'invite'},
-        follow=True,
+        team.orga_urls.base, {'email': 'other@user.org', 'form': 'invite'}, follow=True
     )
     assert response.status_code == 200
     assert team.members.count() == 1

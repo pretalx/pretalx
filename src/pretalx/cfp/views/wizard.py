@@ -49,7 +49,6 @@ FORM_DATA = {
 
 
 class SubmitStartView(EventPageMixin, View):
-
     @staticmethod
     def get(request, *args, **kwargs):
         url = reverse(
@@ -71,10 +70,7 @@ def show_questions_page(wizard):
         return wizard.request.event.questions.all().exists()
     return wizard.request.event.questions.exclude(
         Q(target=QuestionTarget.SUBMISSION)
-        & (
-            ~Q(tracks__in=[info_data.get('track')])
-            & Q(tracks__isnull=False)
-        )
+        & (~Q(tracks__in=[info_data.get('track')]) & Q(tracks__isnull=False))
     ).exists()
 
 
@@ -112,7 +108,9 @@ class SubmitWizard(EventPageMixin, SensibleBackWizardMixin, NamedUrlSessionWizar
             kwargs['essential_only'] = True
         if step == 'questions':
             kwargs['target'] = ''
-            kwargs['track'] = (self.get_cleaned_data_for_step('info') or dict()).get('track')
+            kwargs['track'] = (self.get_cleaned_data_for_step('info') or dict()).get(
+                'track'
+            )
         return kwargs
 
     def get_form_initial(self, step):
@@ -123,7 +121,9 @@ class SubmitWizard(EventPageMixin, SensibleBackWizardMixin, NamedUrlSessionWizar
                 if request_value:
                     with suppress(AttributeError, TypeError):
                         pk = int(request_value.split('-'))
-                        obj = model.objects.filter(event=self.request.event, pk=pk).first()
+                        obj = model.objects.filter(
+                            event=self.request.event, pk=pk
+                        ).first()
                         if obj:
                             initial[field] = obj
         return initial
@@ -211,7 +211,7 @@ class SubmitWizard(EventPageMixin, SensibleBackWizardMixin, NamedUrlSessionWizar
             raise ValidationError(
                 _(
                     'There was an error when logging in. Please contact the organiser for further help.'
-                ),
+                )
             )
 
         form_dict['info'].instance.event = self.request.event
@@ -247,7 +247,9 @@ class SubmitWizard(EventPageMixin, SensibleBackWizardMixin, NamedUrlSessionWizar
                     skip_queue=True,
                     locale=self.request.event.locale,
                 )
-            additional_speaker = form_dict['info'].cleaned_data.get('additional_speaker')
+            additional_speaker = form_dict['info'].cleaned_data.get(
+                'additional_speaker'
+            )
             if additional_speaker:
                 sub.send_invite(to=[additional_speaker], _from=user)
         except SendMailException as exception:

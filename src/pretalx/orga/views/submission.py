@@ -531,26 +531,63 @@ class SubmissionStats(PermissionRequired, TemplateView):
     @context
     @cached_property
     def submission_state_data(self):
-        counter = Counter(submission.get_state_display() for submission in self.request.event.submissions(manager='all_objects').all())
-        return json.dumps(sorted(list({'label': label, 'value': value} for label, value in counter.items()), key=itemgetter('label')))
+        counter = Counter(
+            submission.get_state_display()
+            for submission in self.request.event.submissions(
+                manager='all_objects'
+            ).all()
+        )
+        return json.dumps(
+            sorted(
+                list(
+                    {'label': label, 'value': value} for label, value in counter.items()
+                ),
+                key=itemgetter('label'),
+            )
+        )
 
     @context
     def submission_type_data(self):
-        counter = Counter(str(submission.submission_type) for submission in self.request.event.submissions(manager='all_objects').all())
-        return json.dumps(sorted(list({'label': label, 'value': value} for label, value in counter.items()), key=itemgetter('label')))
+        counter = Counter(
+            str(submission.submission_type)
+            for submission in self.request.event.submissions(
+                manager='all_objects'
+            ).all()
+        )
+        return json.dumps(
+            sorted(
+                list(
+                    {'label': label, 'value': value} for label, value in counter.items()
+                ),
+                key=itemgetter('label'),
+            )
+        )
 
     @context
     def submission_track_data(self):
         if self.request.event.settings.use_tracks:
-            counter = Counter(str(submission.track) for submission in self.request.event.submissions(manager='all_objects').all())
-            return json.dumps(sorted(list({'label': label, 'value': value} for label, value in counter.items()), key=itemgetter('label')))
+            counter = Counter(
+                str(submission.track)
+                for submission in self.request.event.submissions(
+                    manager='all_objects'
+                ).all()
+            )
+            return json.dumps(
+                sorted(
+                    list(
+                        {'label': label, 'value': value}
+                        for label, value in counter.items()
+                    ),
+                    key=itemgetter('label'),
+                )
+            )
 
     @context
     def talk_timeline_data(self):
         data = Counter(
             log.timestamp.date()
             for log in ActivityLog.objects.filter(
-                event=self.request.event, action_type='pretalx.submission.create',
+                event=self.request.event, action_type='pretalx.submission.create'
             )
             if getattr(log.content_object, 'state', None) in ['accepted', 'confirmed']
         )
@@ -571,16 +608,53 @@ class SubmissionStats(PermissionRequired, TemplateView):
 
     @context
     def talk_state_data(self):
-        counter = Counter(submission.get_state_display() for submission in self.request.event.submissions.filter(state__in=['accepted', 'confirmed']))
-        return json.dumps(sorted(list({'label': label, 'value': value} for label, value in counter.items()), key=itemgetter('label')))
+        counter = Counter(
+            submission.get_state_display()
+            for submission in self.request.event.submissions.filter(
+                state__in=['accepted', 'confirmed']
+            )
+        )
+        return json.dumps(
+            sorted(
+                list(
+                    {'label': label, 'value': value} for label, value in counter.items()
+                ),
+                key=itemgetter('label'),
+            )
+        )
 
     @context
     def talk_type_data(self):
-        counter = Counter(str(submission.submission_type) for submission in self.request.event.submissions.filter(state__in=['accepted', 'confirmed']))
-        return json.dumps(sorted(list({'label': label, 'value': value} for label, value in counter.items()), key=itemgetter('label')))
+        counter = Counter(
+            str(submission.submission_type)
+            for submission in self.request.event.submissions.filter(
+                state__in=['accepted', 'confirmed']
+            )
+        )
+        return json.dumps(
+            sorted(
+                list(
+                    {'label': label, 'value': value} for label, value in counter.items()
+                ),
+                key=itemgetter('label'),
+            )
+        )
 
     @context
     def talk_track_data(self):
         if self.request.event.settings.use_tracks:
-            counter = Counter(str(submission.track) for submission in self.request.event.submissions.filter(state__in=['accepted', 'confirmed']))
-            return json.dumps(sorted(list({'label': label, 'value': value} for label, value in counter.items()), key=itemgetter('label')))
+            counter = Counter(
+                str(submission.track)
+                for submission in self.request.event.submissions.filter(
+                    state__in=['accepted', 'confirmed']
+                )
+            )
+            return json.dumps(
+                sorted(
+                    list(
+                        {'label': label, 'value': value}
+                        for label, value in counter.items()
+                    ),
+                    key=itemgetter('label'),
+                )
+            )

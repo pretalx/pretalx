@@ -48,11 +48,7 @@ HAS_CELERY = False
 # Don't use redis
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 HAS_REDIS = False
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
-    }
-}
+CACHES = {'default': {'BACKEND': 'django.core.cache.backends.dummy.DummyCache'}}
 
 with suppress(ValueError):
     INSTALLED_APPS.remove('debug_toolbar.apps.DebugToolbarConfig')  # noqa
@@ -61,7 +57,6 @@ with suppress(ValueError):
 
 # Don't run migrations
 class DisableMigrations(object):
-
     def __contains__(self, item):
         return True
 

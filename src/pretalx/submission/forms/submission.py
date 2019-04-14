@@ -14,7 +14,9 @@ from pretalx.submission.models import Submission, SubmissionStates
 class InfoForm(RequestRequire, PublicContent, forms.ModelForm):
     additional_speaker = forms.EmailField(
         label=_('Additional Speaker'),
-        help_text=_('If you have a co-speaker, please add their email address here, and we will invite them to create an account. If you have more than one co-speaker, you can add more speakers after finishing the submission process.'),
+        help_text=_(
+            'If you have a co-speaker, please add their email address here, and we will invite them to create an account. If you have more than one co-speaker, you can add more speakers after finishing the submission process.'
+        ),
         required=False,
     )
 
@@ -37,7 +39,11 @@ class InfoForm(RequestRequire, PublicContent, forms.ModelForm):
         if 'track' in self.fields:
             if not instance or instance.state == SubmissionStates.SUBMITTED:
                 self.fields['track'].queryset = event.tracks.all()
-            elif not event.settings.use_tracks or instance and instance.state != SubmissionStates.SUBMITTED:
+            elif (
+                not event.settings.use_tracks
+                or instance
+                and instance.state != SubmissionStates.SUBMITTED
+            ):
                 self.fields.pop('track')
         if instance and instance.pk:
             self.fields.pop('additional_speaker')
@@ -47,9 +53,18 @@ class InfoForm(RequestRequire, PublicContent, forms.ModelForm):
 
         if not event.settings.present_multiple_times:
             self.fields.pop('slot_count', None)
-        elif 'slot_count' in self.fields and instance and instance.state in [SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]:
+        elif (
+            'slot_count' in self.fields
+            and instance
+            and instance.state
+            in [SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]
+        ):
             self.fields['slot_count'].disabled = True
-            self.fields['slot_count'].help_text += ' ' + str(_('Please contact the organisers if you want to change how often you\'re presenting this submission.'))
+            self.fields['slot_count'].help_text += ' ' + str(
+                _(
+                    'Please contact the organisers if you want to change how often you\'re presenting this submission.'
+                )
+            )
 
         if self.readonly:
             for f in self.fields.values():
@@ -70,7 +85,9 @@ class InfoForm(RequestRequire, PublicContent, forms.ModelForm):
             pk__in=pks
         )
         if len(pks) == 1:
-            self.fields['submission_type'].initial = self.event.submission_types.get(pk=pks.pop())
+            self.fields['submission_type'].initial = self.event.submission_types.get(
+                pk=pks.pop()
+            )
             self.fields['submission_type'].widget = forms.HiddenInput()
 
     def _set_locales(self):
@@ -130,9 +147,7 @@ class SubmissionFilterForm(forms.Form):
     submission_type = forms.MultipleChoiceField(
         required=False, widget=CheckboxMultiDropdown
     )
-    track = forms.MultipleChoiceField(
-        required=False, widget=CheckboxMultiDropdown
-    )
+    track = forms.MultipleChoiceField(required=False, widget=CheckboxMultiDropdown)
 
     def __init__(self, event, *args, **kwargs):
         self.event = event
@@ -148,7 +163,7 @@ class SubmissionFilterForm(forms.Form):
         )
         track_count = (
             lambda x: event.submissions(manager='all_objects')
-            .filter(track=x) #noqa
+            .filter(track=x)  # noqa
             .count()
         )
         self.fields['submission_type'].choices = [

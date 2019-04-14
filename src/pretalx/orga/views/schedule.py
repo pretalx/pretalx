@@ -181,12 +181,17 @@ class ScheduleResendMailsView(EventPermissionRequired, View):
             self.request.event.current_schedule.notify_speakers()
             messages.success(
                 self.request,
-                _('{count} emails have been saved to the outbox – you can make individual changes there or just send them all.').format(
-                    count=len(self.request.event.current_schedule.notifications)
-                )
+                _(
+                    '{count} emails have been saved to the outbox – you can make individual changes there or just send them all.'
+                ).format(count=len(self.request.event.current_schedule.notifications)),
             )
         else:
-            messages.warning(self.request, _('You can only regenerate mails after the first schedule was released.'))
+            messages.warning(
+                self.request,
+                _(
+                    'You can only regenerate mails after the first schedule was released.'
+                ),
+            )
         return redirect(self.request.event.orga_urls.schedule)
 
 
@@ -198,7 +203,12 @@ def serialize_slot(slot):
             {'name': speaker.name} for speaker in slot.submission.speakers.all()
         ],
         'submission_type': str(slot.submission.submission_type.name),
-        'track': {'name': str(slot.submission.track.name), 'color': slot.submission.track.color} if slot.submission.track else None,
+        'track': {
+            'name': str(slot.submission.track.name),
+            'color': slot.submission.track.color,
+        }
+        if slot.submission.track
+        else None,
         'state': slot.submission.state,
         'description': str(slot.submission.description),
         'abstract': str(slot.submission.abstract),
@@ -235,10 +245,15 @@ class TalkList(EventPermissionRequired, View):
             return JsonResponse(result)
         result['results'] = [
             serialize_slot(slot)
-            for slot
-            in (
+            for slot in (
                 schedule.talks.all()
-                .select_related('submission', 'submission__event', 'room', 'submission__submission_type', 'submission__track')
+                .select_related(
+                    'submission',
+                    'submission__event',
+                    'room',
+                    'submission__submission_type',
+                    'submission__track',
+                )
                 .prefetch_related('submission__speakers')
             )
         ]

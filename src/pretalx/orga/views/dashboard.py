@@ -76,7 +76,9 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
             context['tiles'].append(
                 {
                     'large': days,
-                    'small': ngettext_lazy('day until event start', 'days until event start', days),
+                    'small': ngettext_lazy(
+                        'day until event start', 'days until event start', days
+                    ),
                 }
             )
         elif today > event.date_to:
@@ -84,7 +86,9 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
             context['tiles'].append(
                 {
                     'large': days,
-                    'small': ngettext_lazy('day since event end', 'days since event end', days),
+                    'small': ngettext_lazy(
+                        'day since event end', 'days since event end', days
+                    ),
                 }
             )
         elif event.date_to != event.date_from:
@@ -133,7 +137,9 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
                     context['tiles'].append(
                         {
                             'large': count,
-                            'small': ngettext_lazy('unconfirmed talk', 'unconfirmed talks', count),
+                            'small': ngettext_lazy(
+                                'unconfirmed talk', 'unconfirmed talks', count
+                            ),
                             'url': event.orga_urls.submissions
                             + f'?state={SubmissionStates.ACCEPTED}',
                         }

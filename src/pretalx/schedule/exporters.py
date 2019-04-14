@@ -43,7 +43,8 @@ class ScheduleData(BaseExporter):
             current_date.date(): {
                 'index': index + 1,
                 'start': current_date.replace(hour=4, minute=0).astimezone(tz),
-                'end': current_date.replace(hour=3, minute=59).astimezone(tz) + timedelta(days=1),
+                'end': current_date.replace(hour=3, minute=59).astimezone(tz)
+                + timedelta(days=1),
                 'first_start': None,
                 'last_end': None,
                 'rooms': dict(),
@@ -81,7 +82,10 @@ class ScheduleData(BaseExporter):
 
         for d in data.values():
             d['rooms'] = sorted(
-                d['rooms'].values(), key=lambda room: room['position'] if room['position'] is not None else room['id']
+                d['rooms'].values(),
+                key=lambda room: room['position']
+                if room['position'] is not None
+                else room['id'],
             )
         return data.values()
 

@@ -11,7 +11,9 @@ from pretalx.event.services import periodic_event_services, task_periodic_event_
 @pytest.mark.django_db
 def test_task_periodic_event_created(event):
     djmail.outbox = []
-    log = ActivityLog.objects.create(event=event, content_object=event, action_type='test')
+    log = ActivityLog.objects.create(
+        event=event, content_object=event, action_type='test'
+    )
     assert str(event) in str(log)
     assert not event.settings.sent_mail_event_created
     task_periodic_event_services(event.slug)

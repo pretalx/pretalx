@@ -13,7 +13,9 @@ from pretalx.submission.models import Submission
 def test_copy_to_schedule(slot):
     slot_count = TalkSlot.objects.count()
     schedule_count = Schedule.objects.count()
-    new_schedule = Schedule.objects.create(event=slot.submission.event, version='Version')
+    new_schedule = Schedule.objects.create(
+        event=slot.submission.event, version='Version'
+    )
     new_slot = slot.copy_to_schedule(new_schedule)
     assert TalkSlot.objects.count() == slot_count + 1
     assert Schedule.objects.count() == schedule_count + 1
@@ -44,7 +46,9 @@ def test_freeze(slot):
 def test_freeze_fail(slot, schedule, version):
     schedule_count = Schedule.objects.count()
     with pytest.raises(Exception):
-        old, new = slot.submission.event.wip_schedule.freeze(version if version is not None else schedule.version)
+        old, new = slot.submission.event.wip_schedule.freeze(
+            version if version is not None else schedule.version
+        )
     assert Schedule.objects.count() == schedule_count
 
 
@@ -69,7 +73,9 @@ def test_freeze_cache(slot):
 def test_unfreeze(slot):
     event = slot.event
     schedule_count = event.schedules.exclude(version=None).count()
-    current_slot = slot.submission.slots.filter(schedule=slot.submission.event.wip_schedule).first()
+    current_slot = slot.submission.slots.filter(
+        schedule=slot.submission.event.wip_schedule
+    ).first()
     current_slot.room = slot.room
     current_slot.save()
 
@@ -97,8 +103,12 @@ def test_unfreeze_bug72(slot):
 
     schedule1, _ = event.wip_schedule.freeze('Version 1')
 
-    sub = Submission.objects.create(title='Submission 2', event=event, submission_type=event.cfp.default_type)
-    TalkSlot.objects.create(submission=sub, room=slot.room, schedule=event.wip_schedule, is_visible=True)
+    sub = Submission.objects.create(
+        title='Submission 2', event=event, submission_type=event.cfp.default_type
+    )
+    TalkSlot.objects.create(
+        submission=sub, room=slot.room, schedule=event.wip_schedule, is_visible=True
+    )
     schedule2, _ = event.wip_schedule.freeze('Version 2')
 
     schedule1.unfreeze()
@@ -123,7 +133,9 @@ def test_scheduled_talks(slot, room):
     current_slot.save()
     old, new = current_slot.schedule.freeze('test-version')
     assert new.scheduled_talks.count() == slot_count
-    current_slot = current_slot.submission.slots.filter(schedule__version__isnull=True).first()
+    current_slot = current_slot.submission.slots.filter(
+        schedule__version__isnull=True
+    ).first()
     current_slot.room = None
     current_slot.start = now()
     current_slot.save()
@@ -174,14 +186,22 @@ def test_schedule_changes(event, slot, room, accepted_submission):
     mail_count = QueuedMail.objects.filter(sent__isnull=True).count()
     assert mail_count == slot.submission.speakers.count()
 
-    current_slot = slot.submission.slots.get(schedule=event.wip_schedule, start=current_slot.start)
+    current_slot = slot.submission.slots.get(
+        schedule=event.wip_schedule, start=current_slot.start
+    )
     current_slot.submission.event.submit_multiple_times = True
     current_slot.submission.slot_count = 2
     current_slot.submission.save()
     current_slot.submission.update_talk_slots()
-    assert current_slot.submission.slots.filter(schedule=event.wip_schedule).count() == 2
+    assert (
+        current_slot.submission.slots.filter(schedule=event.wip_schedule).count() == 2
+    )
     assert event.wip_schedule.talks.all().count() == 3
-    second_slot = slot.submission.slots.exclude(pk=current_slot.pk).filter(schedule=slot.submission.event.wip_schedule).get()
+    second_slot = (
+        slot.submission.slots.exclude(pk=current_slot.pk)
+        .filter(schedule=slot.submission.event.wip_schedule)
+        .get()
+    )
     second_slot.room = room
     second_slot.start = current_slot.start + timedelta(hours=2)
     second_slot.end = current_slot.end + timedelta(hours=2)

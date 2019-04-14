@@ -29,9 +29,10 @@ date_conversion_to_moment = {
     '%W': 'WW',
     '%c': '',
     '%x': '',
-    '%X': ''
+    '%X': '',
 }
 
+# fmt: off
 moment_locales = {
     'af', 'az', 'bs', 'de-at', 'en-gb', 'et', 'fr-ch', 'hi', 'it', 'ko', 'me', 'ms-my', 'pa-in', 'se', 'sr', 'th',
     'tzm-latn', 'zh-hk', 'ar', 'be', 'ca', 'de', 'en-ie', 'eu', 'fr', 'hr', 'ja', 'ky', 'mi', 'my', 'pl', 'si', 'ss',
@@ -41,16 +42,16 @@ moment_locales = {
     'tzl', 'x-pseudo', 'ar-tn', 'br', 'da', 'en-ca', 'es', 'fr-ca', 'he', 'is', 'km', 'lv', 'ms', 'nn', 'ru', 'sr-cyrl',
     'te', 'tzm', 'zh-cn',
 }
+# fmt: on
 
-toJavascript_re = re.compile(r'(?<!\w)(' + '|'.join(date_conversion_to_moment.keys()) + r')\b')
+toJavascript_re = re.compile(
+    r'(?<!\w)(' + '|'.join(date_conversion_to_moment.keys()) + r')\b'
+)
 
 
 def get_javascript_format(format_name):
     f = get_format(format_name)[0]
-    return toJavascript_re.sub(
-        lambda x: date_conversion_to_moment[x.group()],
-        f
-    )
+    return toJavascript_re.sub(lambda x: date_conversion_to_moment[x.group()], f)
 
 
 def get_moment_locale(locale=None):

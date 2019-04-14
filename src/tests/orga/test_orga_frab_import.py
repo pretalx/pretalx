@@ -11,9 +11,7 @@ def test_frab_import_minimal(administrator):
     assert Event.objects.count() == 0
     assert administrator.teams.count() == 0
 
-    call_command(
-        'import_schedule', 'tests/fixtures/frab_schedule_minimal.xml'
-    )
+    call_command('import_schedule', 'tests/fixtures/frab_schedule_minimal.xml')
 
     assert Room.objects.count() == 1
     assert Room.objects.all()[0].name == 'Volkskundemuseum'
@@ -35,9 +33,7 @@ def test_frab_import_minimal(administrator):
     )
 
     with pytest.raises(Exception):
-        call_command(
-            'import_schedule', 'tests/fixtures/frab_schedule_minimal.xml'
-        )
+        call_command('import_schedule', 'tests/fixtures/frab_schedule_minimal.xml')
 
     assert (
         administrator.teams.filter(
@@ -50,9 +46,7 @@ def test_frab_import_minimal(administrator):
     assert TalkSlot.objects.count() == 2
     assert Room.objects.count() == 1
 
-    call_command(
-        'import_schedule', 'tests/fixtures/frab_schedule_minimal_2.xml'
-    )
+    call_command('import_schedule', 'tests/fixtures/frab_schedule_minimal_2.xml')
 
     assert Room.objects.count() == 1
     assert Event.objects.count() == 1

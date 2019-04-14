@@ -71,7 +71,7 @@ def rich_text(text: str):
                 extensions=[
                     'markdown.extensions.sane_lists',
                     'markdown.extensions.nl2br',
-                ]
+                ],
             ),
             tags=ALLOWED_TAGS,
             attributes=ALLOWED_ATTRIBUTES,

@@ -16,10 +16,12 @@ from pretalx.event.models import Event
 
 @pytest.mark.skipif(
     "TRAVIS" not in os.environ or "CI" not in os.environ and os.environ["CI"],
-    reason="No need to bother with this outside of CI."
+    reason="No need to bother with this outside of CI.",
 )
 def test_schedule_xsd_is_up_to_date():
-    response = requests.get('https://raw.githubusercontent.com/voc/schedule/master/validator/xsd/schedule.xml.xsd')
+    response = requests.get(
+        'https://raw.githubusercontent.com/voc/schedule/master/validator/xsd/schedule.xml.xsd'
+    )
     assert response.status_code == 200
     path = os.path.join(os.path.dirname(__file__), '../fixtures/schedule.xsd')
     with open(path) as schema:

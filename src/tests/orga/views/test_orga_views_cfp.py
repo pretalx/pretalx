@@ -165,7 +165,9 @@ def test_move_questions_in_list_down_out_of_bounds(
 
 
 @pytest.mark.django_db
-def test_move_questions_in_list_wront_user(review_client, question, speaker_question, event):
+def test_move_questions_in_list_wront_user(
+    review_client, question, speaker_question, event
+):
     assert event.questions.count() == 2
     question.position = 0
     question.save()
@@ -398,7 +400,9 @@ def test_can_see_single_track(orga_client, track):
 
 @pytest.mark.django_db
 def test_can_edit_track(orga_client, track):
-    response = orga_client.post(track.urls.base, {'name_0': 'Name', 'color': 'ffff99'}, follow=True)
+    response = orga_client.post(
+        track.urls.base, {'name_0': 'Name', 'color': 'ffff99'}, follow=True
+    )
     assert response.status_code == 200
     track.refresh_from_db()
     assert str(track.name) == 'Name'

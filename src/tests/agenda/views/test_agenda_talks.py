@@ -209,8 +209,7 @@ def test_talk_speaker_other_submissions(
     assert len(speaker_response.other_submissions) == 1
     assert len(other_response.other_submissions) == 0
     assert (
-        speaker_response.other_submissions[0].title
-        == speaker.submissions.first().title
+        speaker_response.other_submissions[0].title == speaker.submissions.first().title
     )
 
 

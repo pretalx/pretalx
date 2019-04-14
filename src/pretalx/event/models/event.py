@@ -395,14 +395,16 @@ class Event(LogMixin, models.Model):
 
             cfp_deadline = self.cfp.deadline
             r = ReviewPhase.objects.create(
-                event=self, name=_('Review'),
+                event=self,
+                name=_('Review'),
                 start=cfp_deadline,
                 end=self.datetime_from - relativedelta(months=-3),
                 is_active=bool(not cfp_deadline or cfp_deadline < now()),
                 position=0,
             )
             ReviewPhase.objects.create(
-                event=self, name=_('Selection'),
+                event=self,
+                name=_('Selection'),
                 start=r.end,
                 is_active=False,
                 position=1,
@@ -524,7 +526,8 @@ class Event(LogMixin, models.Model):
 
             cfp_deadline = self.cfp.deadline
             phase = ReviewPhase.objects.create(
-                event=self, name=_('Review'),
+                event=self,
+                name=_('Review'),
                 start=cfp_deadline,
                 end=self.date_from - relativedelta(months=-3),
                 is_active=bool(cfp_deadline),

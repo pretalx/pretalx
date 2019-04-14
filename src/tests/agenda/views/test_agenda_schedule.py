@@ -44,8 +44,12 @@ def test_speaker_page(
 def test_speaker_redirect(
     client, django_assert_num_queries, event, speaker, slot, other_slot
 ):
-    target = reverse('agenda:speaker', kwargs={'code': speaker.code, 'event': event.slug})
-    url = reverse('agenda:speaker.redirect', kwargs={'pk': speaker.pk, 'event': event.slug})
+    target = reverse(
+        'agenda:speaker', kwargs={'code': speaker.code, 'event': event.slug}
+    )
+    url = reverse(
+        'agenda:speaker.redirect', kwargs={'pk': speaker.pk, 'event': event.slug}
+    )
     response = client.get(url)
     assert response.status_code == 302
     assert response.url.endswith(target)

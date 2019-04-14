@@ -82,7 +82,7 @@ class EventForm(ReadOnlyFlag, I18nModelForm):
         data = super().clean()
         if data.get('locale') not in data.get('locales', []):
             error = forms.ValidationError(
-                _('Your default language needs to be one of your active languages.'),
+                _('Your default language needs to be one of your active languages.')
             )
             self.add_error('locale', error)
         return data
@@ -209,7 +209,11 @@ class EventSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
         try:
             socket.gethostbyname(data.lstrip('https://'))
         except OSError:
-            raise forms.ValidationError(_('The domain "{domain}" does not have a name server entry at this time.').format(domain=data))
+            raise forms.ValidationError(
+                _(
+                    'The domain "{domain}" does not have a name server entry at this time.'
+                ).format(domain=data)
+            )
         return data
 
 
@@ -280,11 +284,14 @@ class MailSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
             data['smtp_password'] = self.initial.get('smtp_password')
 
         if data.get('smtp_use_tls') and data.get('smtp_use_ssl'):
-            self.add_error('smtp_use_tls', ValidationError(
-                _(
-                    'You can activate either SSL or STARTTLS security, but not both at the same time.'
-                )
-            ))
+            self.add_error(
+                'smtp_use_tls',
+                ValidationError(
+                    _(
+                        'You can activate either SSL or STARTTLS security, but not both at the same time.'
+                    )
+                ),
+            )
         uses_encryption = data.get('smtp_use_tls') or data.get('smtp_use_ssl')
         localhost_names = [
             '127.0.0.1',
@@ -294,12 +301,15 @@ class MailSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
             'localhost.localdomain',
         ]
         if not uses_encryption and not data.get('smtp_host') in localhost_names:
-            self.add_error('smtp_host', ValidationError(
-                _(
-                    'You have to activate either SSL or STARTTLS security if you use a non-local mailserver due to data protection reasons. '
-                    'Your administrator can add an instance-wide bypass. If you use this bypass, please also adjust your Privacy Policy.'
-                )
-            ))
+            self.add_error(
+                'smtp_host',
+                ValidationError(
+                    _(
+                        'You have to activate either SSL or STARTTLS security if you use a non-local mailserver due to data protection reasons. '
+                        'Your administrator can add an instance-wide bypass. If you use this bypass, please also adjust your Privacy Policy.'
+                    )
+                ),
+            )
 
 
 class ReviewSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
@@ -357,7 +367,10 @@ class ReviewSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
         minimum = int(data.get('review_min_score'))
         maximum = int(data.get('review_max_score'))
         if minimum >= maximum:
-            self.add_error('review_min_score', forms.ValidationError(
-                _('Please assign a minimum score smaller than the maximum score!')
-            ))
+            self.add_error(
+                'review_min_score',
+                forms.ValidationError(
+                    _('Please assign a minimum score smaller than the maximum score!')
+                ),
+            )
         return data

@@ -18,14 +18,22 @@ class SubmissionViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ('title', 'speakers__name')
 
     def get_queryset(self):
-        if self.request._request.path.endswith('/talks/') or not self.request.user.has_perm('orga.view_submissions', self.request.event):
+        if self.request._request.path.endswith(
+            '/talks/'
+        ) or not self.request.user.has_perm(
+            'orga.view_submissions', self.request.event
+        ):
             if (
-                not self.request.user.has_perm('agenda.view_schedule', self.request.event)
+                not self.request.user.has_perm(
+                    'agenda.view_schedule', self.request.event
+                )
                 or not self.request.event.current_schedule
             ):
                 return Submission.objects.none()
             return self.request.event.submissions.filter(
-                slots__in=self.request.event.current_schedule.talks.filter(is_visible=True)
+                slots__in=self.request.event.current_schedule.talks.filter(
+                    is_visible=True
+                )
             )
         return self.request.event.submissions.all()
 

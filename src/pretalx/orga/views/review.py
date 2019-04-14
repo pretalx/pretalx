@@ -54,10 +54,7 @@ class ReviewDashboard(EventPermissionRequired, Filterable, ListView):
         )
         limit_tracks = self.request.user.teams.filter(
             Q(all_events=True)
-            | Q(
-                Q(all_events=False)
-                & Q(limit_events__in=[self.request.event])
-            ),
+            | Q(Q(all_events=False) & Q(limit_events__in=[self.request.event])),
             limit_tracks__isnull=False,
         )
         if limit_tracks.exists():
@@ -65,9 +62,13 @@ class ReviewDashboard(EventPermissionRequired, Filterable, ListView):
             for team in limit_tracks:
                 tracks.update(team.limit_tracks.filter(event=self.request.event))
             queryset = queryset.filter(track__in=tracks)
-        queryset = self.filter_queryset(queryset).annotate(review_count=Count('reviews'))
+        queryset = self.filter_queryset(queryset).annotate(
+            review_count=Count('reviews')
+        )
 
-        can_see_all_reviews = self.request.user.has_perm('orga.view_all_reviews', self.request.event)
+        can_see_all_reviews = self.request.user.has_perm(
+            'orga.view_all_reviews', self.request.event
+        )
         ordering = self.request.GET.get('sort', 'default')
 
         overridden_reviews = Review.objects.filter(
@@ -78,7 +79,11 @@ class ReviewDashboard(EventPermissionRequired, Filterable, ListView):
         if not can_see_all_reviews:
             overridden_reviews = overridden_reviews.filter(user=self.request.user)
             user_reviews = self.request.event.reviews.filter(user=self.request.user)
-            default = Subquery(user_reviews.filter(submission_id=OuterRef('pk')).values_list('score')[:1])
+            default = Subquery(
+                user_reviews.filter(submission_id=OuterRef('pk')).values_list('score')[
+                    :1
+                ]
+            )
 
         queryset = (
             queryset.order_by('review_id')
@@ -219,12 +224,17 @@ class ReviewSubmission(PermissionRequired, CreateOrUpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['done'] = self.request.user.reviews.filter(submission__event=self.request.event).count()
-        context['total_reviews'] = Review.find_missing_reviews(
-            self.request.event, self.request.user
-        ).count() + context['done']
+        context['done'] = self.request.user.reviews.filter(
+            submission__event=self.request.event
+        ).count()
+        context['total_reviews'] = (
+            Review.find_missing_reviews(self.request.event, self.request.user).count()
+            + context['done']
+        )
         if context['total_reviews']:
-            context['percentage'] = int(context['done'] * 100 / context['total_reviews'])
+            context['percentage'] = int(
+                context['done'] * 100 / context['total_reviews']
+            )
         return context
 
     def get_form_kwargs(self):

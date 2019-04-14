@@ -255,12 +255,9 @@ class ComposeMail(EventPermissionRequired, FormView):
 
         for recipient in form.cleaned_data.get('recipients'):
             if recipient == 'reviewers':
-                users = (
-                    User.objects.filter(
-                        teams__in=self.request.event.teams.filter(is_reviewer=True)
-                    )
-                    .distinct()
-                )
+                users = User.objects.filter(
+                    teams__in=self.request.event.teams.filter(is_reviewer=True)
+                ).distinct()
             else:
                 if recipient == 'selected_submissions':
                     submission_filter = {
@@ -269,9 +266,11 @@ class ComposeMail(EventPermissionRequired, FormView):
                 else:
                     submission_filter = {'state': recipient}  # e.g. "submitted"
 
-                users = User.objects.filter(submissions__in=self.request.event.submissions.filter(
-                    **submission_filter
-                ))
+                users = User.objects.filter(
+                    submissions__in=self.request.event.submissions.filter(
+                        **submission_filter
+                    )
+                )
 
             user_set.update(users)
 

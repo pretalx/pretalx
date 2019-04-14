@@ -131,14 +131,20 @@ class Submission(LogMixin, models.Model):
         help_text=phrases.base.use_markdown,
     )
     notes = models.TextField(
-        null=True, blank=True, verbose_name=_('Notes'),
-        help_text=_('These notes are meant for the organiser and won\'t be made public.'),
+        null=True,
+        blank=True,
+        verbose_name=_('Notes'),
+        help_text=_(
+            'These notes are meant for the organiser and won\'t be made public.'
+        ),
     )
     internal_notes = models.TextField(
         null=True,
         blank=True,
         verbose_name=_('Internal notes'),
-        help_text=_('Internal notes for other organisers/reviewers. Not visible to the speakers or the public.')
+        help_text=_(
+            'Internal notes for other organisers/reviewers. Not visible to the speakers or the public.'
+        ),
     )
     duration = models.PositiveIntegerField(
         null=True,
@@ -151,9 +157,7 @@ class Submission(LogMixin, models.Model):
     slot_count = models.PositiveIntegerField(
         default=1,
         verbose_name=_('Slot Count'),
-        help_text=_(
-            'How many times this talk will be held.'
-        ),
+        help_text=_('How many times this talk will be held.'),
     )
     content_locale = models.CharField(
         max_length=32,
@@ -251,7 +255,10 @@ class Submission(LogMixin, models.Model):
     @property
     def editable(self):
         if self.state == SubmissionStates.SUBMITTED:
-            return self.event.cfp.is_open or (self.event.active_review_phase and self.event.active_review_phase.speakers_can_change_submissions)
+            return self.event.cfp.is_open or (
+                self.event.active_review_phase
+                and self.event.active_review_phase.speakers_can_change_submissions
+            )
         return self.state in (SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED)
 
     def get_duration(self):
@@ -319,26 +326,28 @@ class Submission(LogMixin, models.Model):
             return
 
         slot_count_current = TalkSlot.objects.filter(
-            submission=self,
-            schedule=self.event.wip_schedule,
+            submission=self, schedule=self.event.wip_schedule
         ).count()
         diff = slot_count_current - self.slot_count
 
         if diff > 0:
             # We build a list of all IDs to delete as .delete() doesn't work on sliced querysets.
             # We delete unscheduled talks first.
-            talks_to_delete = TalkSlot.objects.filter(
-                submission=self,
-                schedule=self.event.wip_schedule,
-                room__isnull=True,
-                start__isnull=True,
-            ).order_by('start', 'is_visible')[:diff].values_list("id", flat=True)
+            talks_to_delete = (
+                TalkSlot.objects.filter(
+                    submission=self,
+                    schedule=self.event.wip_schedule,
+                    room__isnull=True,
+                    start__isnull=True,
+                )
+                .order_by('start', 'is_visible')[:diff]
+                .values_list("id", flat=True)
+            )
             TalkSlot.objects.filter(pk__in=list(talks_to_delete)).delete()
         elif diff < 0:
             for index in range(abs(diff)):
                 TalkSlot.objects.create(
-                    submission=self,
-                    schedule=self.event.wip_schedule,
+                    submission=self, schedule=self.event.wip_schedule
                 )
 
     def make_submitted(self, person=None, force=False, orga=False):
@@ -506,7 +515,16 @@ class Submission(LogMixin, models.Model):
         )
 
     def get_content_for_mail(self):
-        order = ['title', 'abstract', 'description', 'notes', 'duration', 'content_locale', 'do_not_record', 'image']
+        order = [
+            'title',
+            'abstract',
+            'description',
+            'notes',
+            'duration',
+            'content_locale',
+            'do_not_record',
+            'image',
+        ]
         data = []
         result = ''
         for field in order:
@@ -519,14 +537,18 @@ class Submission(LogMixin, models.Model):
             if answer.answer:
                 data.append({'name': answer.question.question, 'value': answer.answer})
             elif answer.answer_file:
-                data.append({'name': answer.question.question, 'value': answer.answer_file})
+                data.append(
+                    {'name': answer.question.question, 'value': answer.answer_file}
+                )
         for content in data:
             field_name = content['name']
             field_content = content['value']
             if isinstance(field_content, bool):
                 field_content = _('Yes') if field_content else _('No')
             elif isinstance(field_content, FieldFile):
-                field_content = (self.event.settings.custom_domain or settings.SITE_URL) + field_content.url
+                field_content = (
+                    self.event.settings.custom_domain or settings.SITE_URL
+                ) + field_content.url
             result += f'**{field_name}**: {field_content}\n\n'
         return result
 
@@ -538,8 +560,10 @@ class Submission(LogMixin, models.Model):
             speaker=_from.get_display_name()
         )
         subject = f'[{self.event.slug}] {subject}'
-        text = text or _(
-            '''Hi!
+        text = (
+            text
+            or _(
+                '''Hi!
 
 I'd like to invite you to be a speaker in the talk
 
@@ -551,17 +575,13 @@ at {event}. Please follow this link to join:
 
 I'm looking forward to it!
 {speaker}'''
-        ).format(
-            event=self.event.name,
-            title=self.title,
-            url=self.urls.accept_invitation.full(),
-            speaker=_from.get_display_name(),
+            ).format(
+                event=self.event.name,
+                title=self.title,
+                url=self.urls.accept_invitation.full(),
+                speaker=_from.get_display_name(),
+            )
         )
         to = to.split(',') if isinstance(to, str) else to
         for invite in to:
-            QueuedMail(
-                event=self.event,
-                to=invite,
-                subject=subject,
-                text=text,
-            ).send()
+            QueuedMail(event=self.event, to=invite, subject=subject, text=text).send()

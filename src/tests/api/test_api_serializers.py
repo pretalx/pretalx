@@ -101,7 +101,10 @@ def test_submission_serializer_for_organiser(submission, orga_user):
     class Request:
         user = orga_user
         event = submission.event
-    data = SubmissionOrgaSerializer(submission, context={'event': submission.event, 'request': Request()}).data
+
+    data = SubmissionOrgaSerializer(
+        submission, context={'event': submission.event, 'request': Request()}
+    ).data
     assert set(data.keys()) == {
         'code',
         'speakers',
@@ -207,7 +210,14 @@ def test_review_serializer(review):
 @pytest.mark.django_db
 def test_room_serializer(room):
     data = RoomSerializer(room).data
-    assert set(data.keys()) == {'id', 'name', 'description', 'capacity', 'position', 'url'}
+    assert set(data.keys()) == {
+        'id',
+        'name',
+        'description',
+        'capacity',
+        'position',
+        'url',
+    }
     assert data['id'] == room.pk
 
 

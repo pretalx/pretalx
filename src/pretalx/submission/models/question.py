@@ -81,7 +81,9 @@ class Question(LogMixin, models.Model):
     tracks = models.ManyToManyField(
         to='submission.Track',
         related_name='questions',
-        help_text=_('You can limit this question to some tracks. Leave this field empty to apply to all tracks.'),
+        help_text=_(
+            'You can limit this question to some tracks. Leave this field empty to apply to all tracks.'
+        ),
         verbose_name=_('Tracks'),
         blank=True,
     )
@@ -116,18 +118,24 @@ class Question(LogMixin, models.Model):
         null=True,
         blank=True,
         verbose_name=_('Minimum text length'),
-        help_text=_('Minimum allowed text in characters or words (set in CfP settings).'),
+        help_text=_(
+            'Minimum allowed text in characters or words (set in CfP settings).'
+        ),
     )
     max_length = models.PositiveIntegerField(
         null=True,
         blank=True,
         verbose_name=_('Maximum text length'),
-        help_text=_('Maximum allowed text lenght in characters or words (set in CfP settings).'),
+        help_text=_(
+            'Maximum allowed text lenght in characters or words (set in CfP settings).'
+        ),
     )
     is_public = models.BooleanField(
         default=False,
         verbose_name=_('Publish answers'),
-        help_text=_('Answers will be shown on talk or speaker pages as appropriate. Please note that you cannot make a question public after the first answers have been given, to allow speakers explicit consent before publishing information.'),
+        help_text=_(
+            'Answers will be shown on talk or speaker pages as appropriate. Please note that you cannot make a question public after the first answers have been given, to allow speakers explicit consent before publishing information.'
+        ),
     )
     objects = QuestionManager()
     all_objects = AllQuestionManager()

@@ -112,11 +112,11 @@ class Schedule(LogMixin, models.Model):
 
     @cached_property
     def scheduled_talks(self):
-        return self.talks.select_related(
-            'submission', 'submission__event', 'room',
-        ).filter(
-            room__isnull=False, start__isnull=False, is_visible=True
-        ).exclude(submission__state=SubmissionStates.DELETED)
+        return (
+            self.talks.select_related('submission', 'submission__event', 'room')
+            .filter(room__isnull=False, start__isnull=False, is_visible=True)
+            .exclude(submission__state=SubmissionStates.DELETED)
+        )
 
     @cached_property
     def slots(self):
@@ -139,8 +139,16 @@ class Schedule(LogMixin, models.Model):
         moved = []
         all_old_slots = list(old_slots.filter(submission__pk=submission_pk))
         all_new_slots = list(new_slots.filter(submission__pk=submission_pk))
-        old_slots = [slot for slot in all_old_slots if not any(slot.is_same_slot(other_slot) for other_slot in all_new_slots)]
-        new_slots = [slot for slot in all_new_slots if not any(slot.is_same_slot(other_slot) for other_slot in all_old_slots)]
+        old_slots = [
+            slot
+            for slot in all_old_slots
+            if not any(slot.is_same_slot(other_slot) for other_slot in all_new_slots)
+        ]
+        new_slots = [
+            slot
+            for slot in all_new_slots
+            if not any(slot.is_same_slot(other_slot) for other_slot in all_old_slots)
+        ]
         diff = len(old_slots) - len(new_slots)
         if diff > 0:
             canceled = old_slots[:diff]
@@ -152,14 +160,16 @@ class Schedule(LogMixin, models.Model):
         for move in zip(old_slots, new_slots):
             old_slot = move[0]
             new_slot = move[1]
-            moved.append({
-                'submission': new_slot.submission,
-                'old_start': old_slot.start.astimezone(self.tz),
-                'new_start': new_slot.start.astimezone(self.tz),
-                'old_room': old_slot.room.name,
-                'new_room': new_slot.room.name,
-                'new_info': new_slot.room.speaker_info,
-            })
+            moved.append(
+                {
+                    'submission': new_slot.submission,
+                    'old_start': old_slot.start.astimezone(self.tz),
+                    'new_start': new_slot.start.astimezone(self.tz),
+                    'old_room': old_slot.room.name,
+                    'new_room': new_slot.room.name,
+                    'new_info': new_slot.room.speaker_info,
+                }
+            )
         return new, canceled, moved
 
     @cached_property
@@ -181,8 +191,12 @@ class Schedule(LogMixin, models.Model):
 
         old_slots = self.previous_schedule.scheduled_talks
         new_slots = self.scheduled_talks
-        old_slot_set = set(old_slots.values_list('submission', 'room', 'start', named=True))
-        new_slot_set = set(new_slots.values_list('submission', 'room', 'start', named=True))
+        old_slot_set = set(
+            old_slots.values_list('submission', 'room', 'start', named=True)
+        )
+        new_slot_set = set(
+            new_slots.values_list('submission', 'room', 'start', named=True)
+        )
         old_submissions = set(old_slots.values_list('submission__id', flat=True))
         new_submissions = set(new_slots.values_list('submission__id', flat=True))
         handled_submissions = set()
@@ -194,9 +208,13 @@ class Schedule(LogMixin, models.Model):
             if entry.submission in handled_submissions:
                 continue
             if entry.submission not in new_submissions:
-                result['canceled_talks'] += list(old_slots.filter(submission__pk=entry.submission))
+                result['canceled_talks'] += list(
+                    old_slots.filter(submission__pk=entry.submission)
+                )
             else:
-                new, canceled, moved = self._handle_submission_move(entry.submission, old_slots, new_slots)
+                new, canceled, moved = self._handle_submission_move(
+                    entry.submission, old_slots, new_slots
+                )
                 result['new_talks'] += new
                 result['canceled_talks'] += canceled
                 result['moved_talks'] += moved
@@ -205,9 +223,13 @@ class Schedule(LogMixin, models.Model):
             if entry.submission in handled_submissions:
                 continue
             if entry.submission not in old_submissions:
-                result['new_talks'] += list(new_slots.filter(submission__pk=entry.submission))
+                result['new_talks'] += list(
+                    new_slots.filter(submission__pk=entry.submission)
+                )
             else:
-                new, canceled, moved = self._handle_submission_move(entry.submission, old_slots, new_slots)
+                new, canceled, moved = self._handle_submission_move(
+                    entry.submission, old_slots, new_slots
+                )
                 result['new_talks'] += new
                 result['canceled_talks'] += canceled
                 result['moved_talks'] += moved

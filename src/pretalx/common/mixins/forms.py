@@ -30,11 +30,12 @@ class PublicContent:
         for field_name in self.Meta.public_fields:
             field = self.fields.get(field_name)
             if field:
-                field.help_text = (field.help_text or '') + ' ' + str(phrases.base.public_content)
+                field.help_text = (
+                    (field.help_text or '') + ' ' + str(phrases.base.public_content)
+                )
 
 
 class RequestRequire:
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         count_chars = self.event.settings.cfp_count_length_in == 'chars'

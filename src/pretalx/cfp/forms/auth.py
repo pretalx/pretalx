@@ -9,9 +9,7 @@ from pretalx.person.models import User
 
 class ResetForm(forms.Form):
     login_email = forms.EmailField(
-        max_length=60,
-        label=phrases.base.enter_email,
-        required=True,
+        max_length=60, label=phrases.base.enter_email, required=True
     )
 
     def clean(self):
@@ -26,18 +24,15 @@ class ResetForm(forms.Form):
 
 
 class RecoverForm(forms.Form):
-    password = PasswordField(
-        label=_('New password'),
-        required=False,
-    )
+    password = PasswordField(label=_('New password'), required=False)
     password_repeat = PasswordConfirmationField(
-        label=phrases.base.password_repeat,
-        required=False,
-        confirm_with='password',
+        label=phrases.base.password_repeat, required=False, confirm_with='password'
     )
 
     def clean(self):
         data = super().clean()
         if data.get('password') != data.get('password_repeat'):
-            self.add_error('password_repeat', ValidationError(phrases.base.passwords_differ))
+            self.add_error(
+                'password_repeat', ValidationError(phrases.base.passwords_differ)
+            )
         return data

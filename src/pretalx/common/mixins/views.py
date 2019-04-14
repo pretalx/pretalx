@@ -155,9 +155,9 @@ class Filterable:
         if hasattr(self, 'get_filter_form'):
             return self.get_filter_form()
         if self.filter_fields:
-            _form = forms.modelform_factory(
-                self.model, fields=self.filter_fields
-            )(self.request.GET)
+            _form = forms.modelform_factory(self.model, fields=self.filter_fields)(
+                self.request.GET
+            )
             for field in _form.fields.values():
                 field.required = False
                 if hasattr(field, 'queryset'):
@@ -204,8 +204,7 @@ class EventPermissionRequired(PermissionRequired):
         return self.request.event
 
 
-class SensibleBackWizardMixin():
-
+class SensibleBackWizardMixin:
     def post(self, *args, **kwargs):
         """
         Don't redirect if user presses the prev. step button, save data instead.
@@ -221,8 +220,10 @@ class SensibleBackWizardMixin():
             )
 
         form_current_step = management_form.cleaned_data['current_step']
-        if (form_current_step != self.steps.current and
-                self.storage.current_step is not None):
+        if (
+            form_current_step != self.steps.current
+            and self.storage.current_step is not None
+        ):
             # form refreshed, change current step
             self.storage.current_step = form_current_step
 
@@ -233,7 +234,9 @@ class SensibleBackWizardMixin():
         if form.is_valid():
             # if the form is valid, store the cleaned data and files.
             self.storage.set_step_data(self.steps.current, self.process_step(form))
-            self.storage.set_step_files(self.steps.current, self.process_step_files(form))
+            self.storage.set_step_files(
+                self.steps.current, self.process_step_files(form)
+            )
 
             # check if the current step is the last step
             if wizard_goto_step and wizard_goto_step in self.get_form_list():

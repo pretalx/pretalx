@@ -70,7 +70,9 @@ class User(PermissionsMixin, AbstractBaseUser):
     name = models.CharField(
         max_length=120,
         verbose_name=_('Name'),
-        help_text=_('Please enter the name you wish to be displayed publicly. This name will be used for all events you are participating in on this server.'),
+        help_text=_(
+            'Please enter the name you wish to be displayed publicly. This name will be used for all events you are participating in on this server.'
+        ),
     )
     email = models.EmailField(
         unique=True,
@@ -110,7 +112,11 @@ class User(PermissionsMixin, AbstractBaseUser):
 
     def __str__(self) -> str:
         """Use a useful string representation."""
-        return self.name + f' <{self.email}>' if self.name else self.email or str(_('Unnamed user'))
+        return (
+            self.name + f' <{self.email}>'
+            if self.name
+            else self.email or str(_('Unnamed user'))
+        )
 
     def get_display_name(self) -> str:
         return self.name if self.name else str(_('Unnamed user'))
@@ -279,8 +285,7 @@ the pretalx robot'''
 
         with override(get_language()):
             mail = QueuedMail.objects.create(
-                subject=_('Password recovery'),
-                text=str(mail_text).format(**context),
+                subject=_('Password recovery'), text=str(mail_text).format(**context)
             )
             mail.to_users.add(self)
             mail.send()

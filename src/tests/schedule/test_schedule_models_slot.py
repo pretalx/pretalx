@@ -8,12 +8,8 @@ from pretalx.schedule.models import TalkSlot
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    'start,end,duration', (
-        (None, None, 'sub'),
-        (0, None, 'sub'),
-        (None, 0, 'sub'),
-        (0, 1, 1),
-    )
+    'start,end,duration',
+    ((None, None, 'sub'), (0, None, 'sub'), (None, 0, 'sub'), (0, 1, 1)),
 )
 def test_slot_duration(submission, start, end, duration):
     _now = now()

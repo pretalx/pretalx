@@ -120,26 +120,43 @@ rules.add_perm('orga.purge_mails', can_change_submissions)
 rules.add_perm('orga.view_mail_templates', can_change_submissions)
 rules.add_perm('orga.edit_mail_templates', can_change_submissions)
 rules.add_perm('orga.view_review_dashboard', can_change_submissions | is_reviewer)
-rules.add_perm('orga.view_reviews', can_change_submissions | (is_reviewer & can_view_reviews))
-rules.add_perm('orga.view_all_reviews', can_change_submissions | (is_reviewer & can_view_all_reviews))
+rules.add_perm(
+    'orga.view_reviews', can_change_submissions | (is_reviewer & can_view_reviews)
+)
+rules.add_perm(
+    'orga.view_all_reviews',
+    can_change_submissions | (is_reviewer & can_view_all_reviews),
+)
 rules.add_perm('orga.perform_reviews', is_reviewer & reviews_are_open)
-rules.add_perm('orga.remove_review', is_administrator | (is_review_author & can_be_reviewed))
+rules.add_perm(
+    'orga.remove_review', is_administrator | (is_review_author & can_be_reviewed)
+)
 rules.add_perm('orga.view_schedule', can_change_submissions)
 rules.add_perm('orga.release_schedule', can_change_submissions)
 rules.add_perm('orga.edit_schedule', can_change_submissions)
 rules.add_perm('orga.schedule_talk', can_change_submissions)
 rules.add_perm('orga.view_room', can_change_submissions)
 rules.add_perm('orga.edit_room', can_change_submissions)
-rules.add_perm('orga.view_speakers', can_change_submissions | (is_reviewer & can_view_speaker_names))
-rules.add_perm('orga.view_speaker', can_change_submissions | (is_reviewer & can_view_speaker_names))
+rules.add_perm(
+    'orga.view_speakers',
+    can_change_submissions | (is_reviewer & can_view_speaker_names),
+)
+rules.add_perm(
+    'orga.view_speaker', can_change_submissions | (is_reviewer & can_view_speaker_names)
+)
 rules.add_perm('orga.change_speaker', can_change_submissions)
 rules.add_perm('orga.view_submissions', can_change_submissions | is_reviewer)
 rules.add_perm('orga.create_submission', can_change_submissions)
 rules.add_perm('orga.change_submissions', can_change_submissions)
-rules.add_perm('orga.change_submission_state', can_change_submissions | (is_reviewer & reviewer_can_change_submissions))
+rules.add_perm(
+    'orga.change_submission_state',
+    can_change_submissions | (is_reviewer & reviewer_can_change_submissions),
+)
 rules.add_perm('orga.view_information', can_change_submissions)
 rules.add_perm('orga.change_information', can_change_event_settings)
 rules.add_perm('orga.create_events', can_create_events)
 rules.add_perm('orga.change_plugins', is_administrator)
-rules.add_perm('orga.mark_speakers_arrived', can_change_submissions & can_mark_speakers_arrived)
+rules.add_perm(
+    'orga.mark_speakers_arrived', can_change_submissions & can_mark_speakers_arrived
+)
 rules.add_perm('orga.see_speakers_arrival', can_change_submissions & is_event_over)

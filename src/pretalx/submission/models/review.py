@@ -33,10 +33,7 @@ class Review(models.Model):
         )
         limit_tracks = user.teams.filter(
             models.Q(all_events=True)
-            | models.Q(
-                models.Q(all_events=False)
-                & models.Q(limit_events__in=[event])
-            ),
+            | models.Q(models.Q(all_events=False) & models.Q(limit_events__in=[event])),
             limit_tracks__isnull=False,
         )
         if limit_tracks.exists():
@@ -80,31 +77,34 @@ class ReviewPhase(models.Model):
     is_active = models.BooleanField(default=False)
 
     can_review = models.BooleanField(
-        verbose_name=_('Reviewers can write and edit reviews'),
-        default=True,
+        verbose_name=_('Reviewers can write and edit reviews'), default=True
     )
     can_see_other_reviews = models.CharField(
         verbose_name=_('Reviewers can see other reviews'),
         max_length=12,
-        choices=(('always', _('Always')), ('never', _('Never')), ('after_review', _('After reviewing the submission'))),
+        choices=(
+            ('always', _('Always')),
+            ('never', _('Never')),
+            ('after_review', _('After reviewing the submission')),
+        ),
         default='after_review',
     )
     can_see_speaker_names = models.BooleanField(
-        verbose_name=_('Reviewers can see speaker names'),
-        default=True,
+        verbose_name=_('Reviewers can see speaker names'), default=True
     )
     can_change_submission_state = models.BooleanField(
-        verbose_name=_('Reviewers can accept and reject submissions'),
-        default=False,
+        verbose_name=_('Reviewers can accept and reject submissions'), default=False
     )
     speakers_can_change_submissions = models.BooleanField(
         verbose_name=_('Speakers can modify their submissions before acceptance'),
-        help_text=_('By default, modification of submissions is locked after the CfP ends, and is re-enabled once the submission was accepted.'),
+        help_text=_(
+            'By default, modification of submissions is locked after the CfP ends, and is re-enabled once the submission was accepted.'
+        ),
         default=False,
     )
 
     class Meta:
-        ordering = ('position', )
+        ordering = ('position',)
 
     class urls(EventUrls):
         base = '{self.event.orga_urls.review_settings}phase/{self.pk}/'

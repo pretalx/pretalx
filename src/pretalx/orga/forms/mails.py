@@ -41,7 +41,6 @@ class MailTemplateForm(ReadOnlyFlag, I18nModelForm):
 
 
 class MailDetailForm(ReadOnlyFlag, forms.ModelForm):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self.instance or not self.instance.to_users.all().count():
@@ -53,13 +52,20 @@ class MailDetailForm(ReadOnlyFlag, forms.ModelForm):
     def clean(self, *args, **kwargs):
         cleaned_data = super().clean(*args, **kwargs)
         if not cleaned_data['to'] and not cleaned_data.get('to_users'):
-            self.add_error('to', forms.ValidationError(_('An email needs to have at least one recipient.')))
+            self.add_error(
+                'to',
+                forms.ValidationError(
+                    _('An email needs to have at least one recipient.')
+                ),
+            )
         return cleaned_data
 
     def save(self, *args, **kwargs):
         obj = super().save(*args, **kwargs)
         if self.has_changed() and 'to' in self.changed_data:
-            addresses = list(set(a.strip().lower() for a in (obj.to or '').split(',') if a.strip()))
+            addresses = list(
+                set(a.strip().lower() for a in (obj.to or '').split(',') if a.strip())
+            )
             for address in addresses:
                 user = User.objects.filter(email__iexact=address).first()
                 if user:

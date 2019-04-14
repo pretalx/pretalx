@@ -18,11 +18,19 @@ class Command(BaseCommand):
             except Event.DoesNotExist:
                 self.stdout.write(self.style.ERROR('This event does not exist.'))
                 return
-            regenerate_css.apply_async(args=(event.pk, ))
-            self.stdout.write(self.style.SUCCESS(f'[{event.slug}] Event style was successfully regenerated.'))
+            regenerate_css.apply_async(args=(event.pk,))
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f'[{event.slug}] Event style was successfully regenerated.'
+                )
+            )
 
         else:
             for es in Event_SettingsStore.objects.filter(key='agenda_css_file'):
                 event = Event.objects.get(pk=es.object_id)
-                regenerate_css.apply_async(args=(event.pk, ))
-                self.stdout.write(self.style.SUCCESS(f'[{event.slug}] Event style was successfully regenerated.'))
+                regenerate_css.apply_async(args=(event.pk,))
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f'[{event.slug}] Event style was successfully regenerated.'
+                    )
+                )

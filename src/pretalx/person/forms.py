@@ -61,22 +61,32 @@ class UserForm(forms.Form):
 
     def _clean_register(self, data):
         if data.get('register_password') != data.get('register_password_repeat'):
-            self.add_error('register_password_repeat', ValidationError(phrases.base.passwords_differ))
+            self.add_error(
+                'register_password_repeat',
+                ValidationError(phrases.base.passwords_differ),
+            )
 
         if User.objects.filter(email__iexact=data.get('register_email')).exists():
-            self.add_error('register_email', ValidationError(
-                _(
-                    'We already have a user with that email address. Did you already register '
-                    'before and just need to log in?'
-                )
-            ))
+            self.add_error(
+                'register_email',
+                ValidationError(
+                    _(
+                        'We already have a user with that email address. Did you already register '
+                        'before and just need to log in?'
+                    )
+                ),
+            )
 
     def clean(self):
         data = super().clean()
 
         if data.get('login_email') and data.get('login_password'):
             self._clean_login(data)
-        elif data.get('register_email') and data.get('register_password') and data.get('register_name'):
+        elif (
+            data.get('register_email')
+            and data.get('register_password')
+            and data.get('register_name')
+        ):
             self._clean_register(data)
         else:
             raise ValidationError(
@@ -132,7 +142,9 @@ class SpeakerProfileForm(
                     self.event.settings, f'cfp_require_{field}', False
                 )
         if self.user:
-            initial.update({field: getattr(self.user, field) for field in self.user_fields})
+            initial.update(
+                {field: getattr(self.user, field) for field in self.user_fields}
+            )
         for field in self.user_fields:
             self.fields[field] = User._meta.get_field(field).formfield(
                 initial=initial.get(field), disabled=read_only
@@ -240,7 +252,9 @@ class LoginInfoForm(forms.ModelForm):
         super().clean()
         password = self.cleaned_data.get('password')
         if password and not password == self.cleaned_data.get('password_repeat'):
-            self.add_error('password_repeat', ValidationError(phrases.base.passwords_differ))
+            self.add_error(
+                'password_repeat', ValidationError(phrases.base.passwords_differ)
+            )
 
     def __init__(self, user, *args, **kwargs):
         self.user = user
@@ -266,11 +280,14 @@ class SpeakerInformationForm(I18nModelForm):
             self.cleaned_data['include_submitters']
             and self.cleaned_data['exclude_unconfirmed']
         ):
-            self.add_error('exclude_unconfirmed', ValidationError(
-                _(
-                    'Either target all submitters or only confirmed speakers, these options are exclusive!'
-                )
-            ))
+            self.add_error(
+                'exclude_unconfirmed',
+                ValidationError(
+                    _(
+                        'Either target all submitters or only confirmed speakers, these options are exclusive!'
+                    )
+                ),
+            )
         return result
 
     class Meta:

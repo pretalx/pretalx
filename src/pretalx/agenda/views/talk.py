@@ -48,9 +48,13 @@ class SpeakerList(EventPermissionRequired, Filterable, ListView):
     default_filters = ('user__name__icontains',)
 
     def get_queryset(self):
-        qs = SpeakerProfile.objects.filter(
-            user__in=self.request.event.speakers, event=self.request.event
-        ).select_related('user', 'event').order_by('user__name')
+        qs = (
+            SpeakerProfile.objects.filter(
+                user__in=self.request.event.speakers, event=self.request.event
+            )
+            .select_related('user', 'event')
+            .order_by('user__name')
+        )
         return self.filter_queryset(qs)
 
     @context
@@ -66,9 +70,7 @@ class TalkView(PermissionRequired, DetailView):
 
     def get_object(self, queryset=None):
         with suppress(AttributeError, Submission.DoesNotExist):
-            return self.request.event.talks.get(
-                code__iexact=self.kwargs['slug'],
-            )
+            return self.request.event.talks.get(code__iexact=self.kwargs['slug'])
         if getattr(self.request, 'is_orga', False):
             talk = self.request.event.wip_schedule.talks.filter(
                 submission__code__iexact=self.kwargs['slug'], is_visible=True
@@ -124,7 +126,9 @@ class TalkView(PermissionRequired, DetailView):
             qs = schedule.talks.all()
         context['talk_slots'] = qs.filter(submission=self.submission).order_by('start')
         result = []
-        other_submissions = schedule.slots.exclude(pk=self.submission.pk).filter(is_visible=True)
+        other_submissions = schedule.slots.exclude(pk=self.submission.pk).filter(
+            is_visible=True
+        )
         for speaker in self.submission.speakers.all():
             speaker.talk_profile = speaker.event_profile(event=self.request.event)
             speaker.other_submissions = other_submissions.filter(speakers__in=[speaker])

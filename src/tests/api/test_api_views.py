@@ -308,7 +308,9 @@ def test_reviewer_cannot_see_speakers(
     content = json.loads(response.content.decode())
 
     assert response.status_code == 200
-    assert content['count'] == 1  # can see the slot's speaker, but not the other submissions'
+    assert (
+        content['count'] == 1
+    )  # can see the slot's speaker, but not the other submissions'
 
 
 @pytest.mark.django_db

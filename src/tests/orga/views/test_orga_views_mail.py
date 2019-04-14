@@ -38,7 +38,7 @@ def test_orga_can_edit_pending_mail(orga_client, event, mail):
             'reply_to': mail.reply_to or '',
             'subject': mail.subject,
             'text': mail.text or '',
-        }
+        },
     )
     assert response.status_code == 200
     assert mail.subject in response.content.decode()
@@ -61,10 +61,12 @@ def test_orga_can_edit_and_send_pending_mail(orga_client, event, mail):
             'subject': mail.subject,
             'text': 'This is the best test.',
             'form': 'send',
-        }
+        },
     )
     assert response.status_code == 200
-    assert mail.subject not in response.content.decode()  # Is now in the sent mail view, not in the outbox
+    assert (
+        mail.subject not in response.content.decode()
+    )  # Is now in the sent mail view, not in the outbox
     mail.refresh_from_db()
     assert mail.to == 'testwin@gmail.com'
     assert mail.cc != 'None'
@@ -95,7 +97,7 @@ def test_orga_cannot_edit_sent_mail(orga_client, event, sent_mail):
             'reply_to': sent_mail.reply_to or '',
             'subject': 'WILD NEW SUBJECT APPEARS',
             'text': sent_mail.text or '',
-        }
+        },
     )
     assert response.status_code == 200
     assert sent_mail.subject in response.content.decode()
@@ -180,8 +182,11 @@ def test_orga_can_view_templates(orga_client, event, mail_template):
 @pytest.mark.django_db
 def test_orga_can_create_template(orga_client, event, mail_template):
     assert MailTemplate.objects.count() == 6
-    response = orga_client.post(event.orga_urls.new_template, follow=True,
-                                data={'subject_0': '[test] subject', 'text_0': 'text'})
+    response = orga_client.post(
+        event.orga_urls.new_template,
+        follow=True,
+        data={'subject_0': '[test] subject', 'text_0': 'text'},
+    )
     assert response.status_code == 200
     assert MailTemplate.objects.count() == 7
     assert MailTemplate.objects.get(event=event, subject__contains='[test] subject')
@@ -195,19 +200,33 @@ def test_orga_can_edit_template(orga_client, event, mail_template, variant):
     assert MailTemplate.objects.count() == 6
     response = orga_client.get(mail_template.urls.edit, follow=True)
     assert response.status_code == 200
-    response = orga_client.post(mail_template.urls.edit, follow=True,
-                                data={'subject_0': 'COMPLETELY NEW AND UNHEARD OF', 'text_0': mail_template.text})
+    response = orga_client.post(
+        mail_template.urls.edit,
+        follow=True,
+        data={
+            'subject_0': 'COMPLETELY NEW AND UNHEARD OF',
+            'text_0': mail_template.text,
+        },
+    )
     assert response.status_code == 200
     assert MailTemplate.objects.count() == 6
-    assert MailTemplate.objects.get(event=event, subject__contains='COMPLETELY NEW AND UNHEARD OF')
+    assert MailTemplate.objects.get(
+        event=event, subject__contains='COMPLETELY NEW AND UNHEARD OF'
+    )
 
 
 @pytest.mark.django_db
 def test_orga_cannot_add_wrong_placeholder_in_template(orga_client, event):
     assert MailTemplate.objects.count() == 5
     mail_template = event.ack_template
-    response = orga_client.post(mail_template.urls.edit, follow=True,
-                                data={'subject_0': 'COMPLETELY NEW AND UNHEARD OF', 'text_0': str(mail_template.text) + '{wrong_placeholder}'})
+    response = orga_client.post(
+        mail_template.urls.edit,
+        follow=True,
+        data={
+            'subject_0': 'COMPLETELY NEW AND UNHEARD OF',
+            'text_0': str(mail_template.text) + '{wrong_placeholder}',
+        },
+    )
     assert response.status_code == 200
     mail_template.refresh_from_db()
     assert 'COMPLETELY' not in str(mail_template.subject)
@@ -224,28 +243,41 @@ def test_orga_can_delete_template(orga_client, event, mail_template):
 
 @pytest.mark.django_db
 def test_orga_can_compose_single_mail(orga_client, event, submission):
-    response = orga_client.get(
-        event.orga_urls.compose_mails, follow=True,
-    )
+    response = orga_client.get(event.orga_urls.compose_mails, follow=True)
     assert response.status_code == 200
     assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
     response = orga_client.post(
-        event.orga_urls.compose_mails, follow=True,
-        data={'recipients': 'submitted', 'bcc': '', 'cc': '', 'reply_to': '', 'subject': 'foo', 'text': 'bar'}
+        event.orga_urls.compose_mails,
+        follow=True,
+        data={
+            'recipients': 'submitted',
+            'bcc': '',
+            'cc': '',
+            'reply_to': '',
+            'subject': 'foo',
+            'text': 'bar',
+        },
     )
     assert response.status_code == 200
     assert QueuedMail.objects.filter(sent__isnull=True).count() == 1
 
 
 @pytest.mark.django_db
-def test_orga_can_compose_single_mail_selected_submissions(orga_client, event, submission, other_submission):
+def test_orga_can_compose_single_mail_selected_submissions(
+    orga_client, event, submission, other_submission
+):
     assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
     response = orga_client.post(
-        event.orga_urls.compose_mails, follow=True,
+        event.orga_urls.compose_mails,
+        follow=True,
         data={
             'recipients': 'selected_submissions',
             'submissions': [other_submission.code],
-            'bcc': '', 'cc': '', 'reply_to': '', 'subject': 'foo', 'text': 'bar',
+            'bcc': '',
+            'cc': '',
+            'reply_to': '',
+            'subject': 'foo',
+            'text': 'bar',
         },
     )
     assert response.status_code == 200
@@ -256,13 +288,20 @@ def test_orga_can_compose_single_mail_selected_submissions(orga_client, event, s
 
 
 @pytest.mark.django_db
-def test_orga_can_compose_single_mail_reviewers(orga_client, event, orga_user, review_user):
+def test_orga_can_compose_single_mail_reviewers(
+    orga_client, event, orga_user, review_user
+):
     assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
     response = orga_client.post(
-        event.orga_urls.compose_mails, follow=True,
+        event.orga_urls.compose_mails,
+        follow=True,
         data={
             'recipients': 'reviewers',
-            'bcc': '', 'cc': '', 'reply_to': '', 'subject': 'foo', 'text': 'bar',
+            'bcc': '',
+            'cc': '',
+            'reply_to': '',
+            'subject': 'foo',
+            'text': 'bar',
         },
     )
     assert response.status_code == 200
@@ -275,7 +314,9 @@ def test_orga_can_compose_single_mail_reviewers(orga_client, event, orga_user, r
 @pytest.mark.django_db
 def test_orga_can_compose_single_mail_from_template(orga_client, event, submission):
     response = orga_client.get(
-        event.orga_urls.compose_mails + f'?template={event.ack_template.pk}&submission={submission.code}', follow=True,
+        event.orga_urls.compose_mails
+        + f'?template={event.ack_template.pk}&submission={submission.code}',
+        follow=True,
     )
     assert response.status_code == 200
     assert str(event.ack_template.subject) in response.content.decode()

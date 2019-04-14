@@ -269,7 +269,9 @@ def phase_move(request, pk, up=True):
     except ReviewPhase.DoesNotExist:
         raise Http404(_('The selected review phase does not exist.'))
     if not request.user.has_perm('orga.change_settings', phase):
-        messages.error(request, _('Sorry, you are not allowed to reorder review phases.'))
+        messages.error(
+            request, _('Sorry, you are not allowed to reorder review phases.')
+        )
         return
     phases = list(request.event.review_phases.order_by('position'))
 
@@ -631,7 +633,7 @@ def event_list(request):
                 'date_range': event.get_date_range_display(),
                 'url': event.orga_urls.base,
             }
-            for event in qs.select_related('organiser')[offset: offset + pagesize]
+            for event in qs.select_related('organiser')[offset : offset + pagesize]
         ],
         'pagination': {"more": total >= (offset + pagesize)},
     }

@@ -27,7 +27,9 @@ class SubmissionType(LogMixin, models.Model):
         null=True,
         blank=True,
         verbose_name=_('deadline'),
-        help_text=_('If you want a different deadline than the global deadline for this submission type, enter it here.'),
+        help_text=_(
+            'If you want a different deadline than the global deadline for this submission type, enter it here.'
+        ),
     )
 
     class urls(EventUrls):

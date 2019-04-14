@@ -13,7 +13,9 @@ def get_help_text(text, min_length, max_length, count_in='chars'):
         text = ''
     texts = {
         'minmaxwords': _('Please write between {min_length} and {max_length} words.'),
-        'minmaxchars': _('Please write between {min_length} and {max_length} characters.'),
+        'minmaxchars': _(
+            'Please write between {min_length} and {max_length} characters.'
+        ),
         'minwords': _('Please write at least {min_length} words.'),
         'minchars': _('Please write at least {min_length} characters.'),
         'maxwords': _('Please write at most {max_length} words.'),

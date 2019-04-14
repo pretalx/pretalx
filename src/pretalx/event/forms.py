@@ -228,20 +228,26 @@ class EventWizardCopyForm(forms.Form):
 
 
 class ReviewPhaseForm(I18nModelForm):
-
     def __init__(self, *args, event=None, **kwargs):
         super().__init__(*args, **kwargs)
 
     def clean(self):
         data = super().clean()
         if data.get('start') and data.get('end') and data['start'] > data['end']:
-            self.add_error('end', forms.ValidationError(_('The end of a phase has to be after its start.')))
+            self.add_error(
+                'end',
+                forms.ValidationError(
+                    _('The end of a phase has to be after its start.')
+                ),
+            )
         return data
 
     class Meta:
         model = ReviewPhase
         fields = [
-            'name', 'start', 'end',
+            'name',
+            'start',
+            'end',
             'can_review',
             'can_see_speaker_names',
             'can_change_submission_state',
@@ -250,7 +256,5 @@ class ReviewPhaseForm(I18nModelForm):
         ]
         widgets = {
             'start': forms.DateInput(attrs={'class': 'datetimepickerfield'}),
-            'end': forms.DateInput(
-                attrs={'class': 'datetimepickerfield'}
-            ),
+            'end': forms.DateInput(attrs={'class': 'datetimepickerfield'}),
         }

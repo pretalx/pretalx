@@ -5,19 +5,22 @@ def get_context_explanation():
     return [
         {
             'name': 'confirmation_link',
-            'explanation': _('Link to confirm a submission after it has been accepted.'),
+            'explanation': _(
+                'Link to confirm a submission after it has been accepted.'
+            ),
         },
-        {
-            'name': 'event_name',
-            'explanation': _('The event\'s full name.'),
-        },
+        {'name': 'event_name', 'explanation': _('The event\'s full name.')},
         {
             'name': 'submission_title',
-            'explanation': _('The title of the submission in question. Only usable in default templates.'),
+            'explanation': _(
+                'The title of the submission in question. Only usable in default templates.'
+            ),
         },
         {
             'name': 'submission_url',
-            'explanation': _('The link to a submission. Only usable in default templates.'),
+            'explanation': _(
+                'The link to a submission. Only usable in default templates.'
+            ),
         },
         {
             'name': 'speakers',

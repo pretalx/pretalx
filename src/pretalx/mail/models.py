@@ -16,28 +16,27 @@ from pretalx.common.urls import EventUrls
 
 class MailTemplate(LogMixin, models.Model):
     event = models.ForeignKey(
-        to='event.Event',
-        on_delete=models.PROTECT,
-        related_name='mail_templates',
+        to='event.Event', on_delete=models.PROTECT, related_name='mail_templates'
     )
-    subject = I18nCharField(
-        max_length=200,
-        verbose_name=_('Subject'),
-    )
-    text = I18nTextField(
-        verbose_name=_('Text'),
-    )
+    subject = I18nCharField(max_length=200, verbose_name=_('Subject'))
+    text = I18nTextField(verbose_name=_('Text'))
     reply_to = models.CharField(
         max_length=200,
-        blank=True, null=True,
+        blank=True,
+        null=True,
         verbose_name=_('Reply-To'),
-        help_text=_('Change the Reply-To address if you do not want to use the default orga address'),
+        help_text=_(
+            'Change the Reply-To address if you do not want to use the default orga address'
+        ),
     )
     bcc = models.CharField(
         max_length=1000,
-        blank=True, null=True,
+        blank=True,
+        null=True,
         verbose_name=_('BCC'),
-        help_text=_('Enter comma separated addresses. Will receive a blind copy of every mail sent from this template. This may be a LOT!'),
+        help_text=_(
+            'Enter comma separated addresses. Will receive a blind copy of every mail sent from this template. This may be a LOT!'
+        ),
     )
 
     class urls(EventUrls):
@@ -66,10 +65,14 @@ class MailTemplate(LogMixin, models.Model):
                 subject = str(self.subject).format(**context)
                 text = str(self.text).format(**context)
                 if submission and full_submission_content:
-                    text += '\n\n\n***********\n\n' + str(_('Full submission content:\n\n'))
+                    text += '\n\n\n***********\n\n' + str(
+                        _('Full submission content:\n\n')
+                    )
                     text += submission.get_content_for_mail()
             except KeyError as e:
-                raise SendMailException(f'Experienced KeyError when rendering Text: {str(e)}')
+                raise SendMailException(
+                    f'Experienced KeyError when rendering Text: {str(e)}'
+                )
 
             mail = QueuedMail(
                 event=self.event,
@@ -88,19 +91,20 @@ class MailTemplate(LogMixin, models.Model):
 
 class QueuedMail(LogMixin, models.Model):
     event = models.ForeignKey(
-        to='event.Event', on_delete=models.PROTECT, related_name='queued_mails',
-        null=True, blank=True,
+        to='event.Event',
+        on_delete=models.PROTECT,
+        related_name='queued_mails',
+        null=True,
+        blank=True,
     )
     to = models.CharField(
         max_length=1000,
         verbose_name=_('To'),
         help_text=_('One email address or several addresses separated by commas.'),
-        null=True, blank=True,
+        null=True,
+        blank=True,
     )
-    to_users = models.ManyToManyField(
-        to='person.User',
-        related_name='mails',
-    )
+    to_users = models.ManyToManyField(to='person.User', related_name='mails')
     reply_to = models.CharField(
         max_length=1000,
         null=True,
@@ -172,7 +176,9 @@ class QueuedMail(LogMixin, models.Model):
     @transaction.atomic
     def send(self, requestor=None, orga=True):
         if self.sent:
-            raise Exception(_('This mail has been sent already. It cannot be sent again.'))
+            raise Exception(
+                _('This mail has been sent already. It cannot be sent again.')
+            )
 
         has_event = getattr(self, 'event', None)
         text = self.make_text(self.text, event=has_event)
@@ -189,7 +195,8 @@ class QueuedMail(LogMixin, models.Model):
                 'subject': self.make_subject(self.subject, event=has_event),
                 'body': text,
                 'html': body_html,
-                'reply_to': (self.reply_to or '').split(',') or ([self.event.email] if has_event else None),
+                'reply_to': (self.reply_to or '').split(',')
+                or ([self.event.email] if has_event else None),
                 'event': self.event.pk if has_event else None,
                 'cc': (self.cc or '').split(','),
                 'bcc': (self.bcc or '').split(','),
@@ -199,8 +206,12 @@ class QueuedMail(LogMixin, models.Model):
         self.sent = now()
         if self.pk:
             self.log_action(
-                'pretalx.mail.sent', person=requestor, orga=orga,
-                data={'to_users': [(user.pk, user.email) for user in self.to_users.all()]},
+                'pretalx.mail.sent',
+                person=requestor,
+                orga=orga,
+                data={
+                    'to_users': [(user.pk, user.email) for user in self.to_users.all()]
+                },
             )
             self.save()
 

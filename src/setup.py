@@ -12,7 +12,8 @@ here = path.abspath(path.dirname(__file__))
 CURRENT_PYTHON = sys.version_info[:2]
 REQUIRED_PYTHON = (3, 6)
 if CURRENT_PYTHON < REQUIRED_PYTHON:
-    sys.stderr.write("""
+    sys.stderr.write(
+        """
 ==========================
 Unsupported Python version
 ==========================
@@ -25,7 +26,10 @@ have pip >= 9.0 and setuptools >= 24.2, then try again:
     $ python -m pip install pretalx
 This will install the latest version of pretalx which works on your
 version of Python.
-""".format(*(REQUIRED_PYTHON + CURRENT_PYTHON)))
+""".format(
+            *(REQUIRED_PYTHON + CURRENT_PYTHON)
+        )
+    )
     sys.exit(1)
 
 # Get the long description from the relevant file

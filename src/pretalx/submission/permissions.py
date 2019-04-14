@@ -119,13 +119,24 @@ def has_reviewer_access(user, obj):
 
 @rules.predicate
 def reviewer_can_change_submissions(user, obj):
-    return obj.event.active_review_phase and obj.event.active_review_phase.can_change_submission_state
+    return (
+        obj.event.active_review_phase
+        and obj.event.active_review_phase.can_change_submission_state
+    )
 
 
 rules.add_perm('submission.perform_actions', is_speaker)
 rules.add_perm('submission.withdraw_submission', can_be_withdrawn & is_speaker)
-rules.add_perm('submission.reject_submission', can_be_rejected & (can_change_submissions | (is_reviewer & reviewer_can_change_submissions)))
-rules.add_perm('submission.accept_submission', can_be_accepted & (can_change_submissions | (is_reviewer & reviewer_can_change_submissions)))
+rules.add_perm(
+    'submission.reject_submission',
+    can_be_rejected
+    & (can_change_submissions | (is_reviewer & reviewer_can_change_submissions)),
+)
+rules.add_perm(
+    'submission.accept_submission',
+    can_be_accepted
+    & (can_change_submissions | (is_reviewer & reviewer_can_change_submissions)),
+)
 rules.add_perm(
     'submission.confirm_submission',
     can_be_confirmed & (is_speaker | can_change_submissions),

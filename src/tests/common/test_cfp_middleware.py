@@ -58,7 +58,9 @@ def test_event_on_custom_domain_in_orga_area(event_on_foobar, client):
 def test_event_on_custom_port_in_orga_area(event_on_custom_port, client):
     r = client.get(f'/orga/event/{event_on_custom_port.slug}/', HTTP_HOST='foobar:8000')
     assert r.status_code == 302
-    assert r['Location'] == f'http://example.com/orga/event/{event_on_custom_port.slug}/'
+    assert (
+        r['Location'] == f'http://example.com/orga/event/{event_on_custom_port.slug}/'
+    )
 
 
 @pytest.mark.django_db
