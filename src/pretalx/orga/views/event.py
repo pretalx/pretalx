@@ -22,13 +22,20 @@ from rest_framework.authtoken.models import Token
 
 from pretalx.common.forms import I18nFormSet
 from pretalx.common.mixins.views import (
-    ActionFromUrl, EventPermissionRequired, PermissionRequired, SensibleBackWizardMixin,
+    ActionFromUrl,
+    EventPermissionRequired,
+    PermissionRequired,
+    SensibleBackWizardMixin,
 )
 from pretalx.common.tasks import regenerate_css
 from pretalx.common.views import is_form_bound
 from pretalx.event.forms import (
-    EventWizardBasicsForm, EventWizardCopyForm, EventWizardDisplayForm,
-    EventWizardInitialForm, EventWizardTimelineForm, ReviewPhaseForm,
+    EventWizardBasicsForm,
+    EventWizardCopyForm,
+    EventWizardDisplayForm,
+    EventWizardInitialForm,
+    EventWizardTimelineForm,
+    ReviewPhaseForm,
 )
 from pretalx.event.models import Event, Team, TeamInvite
 from pretalx.orga.forms import EventForm, EventSettingsForm

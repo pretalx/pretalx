@@ -10,7 +10,8 @@ from django.db.models.fields.files import FieldFile
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.timezone import now
-from django.utils.translation import pgettext, ugettext_lazy as _
+from django.utils.translation import pgettext
+from django.utils.translation import ugettext_lazy as _
 
 from pretalx.common.choices import Choices
 from pretalx.common.mixins import LogMixin

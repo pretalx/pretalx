@@ -2,7 +2,9 @@ import pytest
 
 from pretalx.orga.templatetags.orga_edit_link import orga_edit_link
 from pretalx.orga.templatetags.review_score import (
-    _review_score_number, _review_score_override, review_score,
+    _review_score_number,
+    _review_score_override,
+    review_score,
 )
 
 

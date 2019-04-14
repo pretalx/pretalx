@@ -11,14 +11,21 @@ from django_context_decorator import context
 
 from pretalx.common.forms import I18nFormSet
 from pretalx.common.mixins.views import (
-    ActionFromUrl, EventPermissionRequired, PermissionRequired,
+    ActionFromUrl,
+    EventPermissionRequired,
+    PermissionRequired,
 )
 from pretalx.common.views import CreateOrUpdateView
 from pretalx.orga.forms import CfPForm, QuestionForm, SubmissionTypeForm, TrackForm
 from pretalx.orga.forms.cfp import AnswerOptionForm, CfPSettingsForm
 from pretalx.person.forms import SpeakerFilterForm
 from pretalx.submission.models import (
-    AnswerOption, CfP, Question, QuestionTarget, SubmissionType, Track,
+    AnswerOption,
+    CfP,
+    Question,
+    QuestionTarget,
+    SubmissionType,
+    Track,
 )
 
 

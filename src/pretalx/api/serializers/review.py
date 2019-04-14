@@ -1,5 +1,7 @@
 from rest_framework.serializers import (
-    ModelSerializer, SerializerMethodField, SlugRelatedField,
+    ModelSerializer,
+    SerializerMethodField,
+    SlugRelatedField,
 )
 
 from pretalx.api.serializers.question import AnswerSerializer

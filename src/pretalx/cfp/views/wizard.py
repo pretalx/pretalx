@@ -27,7 +27,11 @@ from pretalx.person.forms import SpeakerProfileForm, UserForm
 from pretalx.person.models import User
 from pretalx.submission.forms import InfoForm, QuestionsForm
 from pretalx.submission.models import (
-    Answer, QuestionTarget, QuestionVariant, SubmissionType, Track,
+    Answer,
+    QuestionTarget,
+    QuestionVariant,
+    SubmissionType,
+    Track,
 )
 
 FORMS = [

@@ -7,7 +7,9 @@ from django.shortcuts import get_object_or_404, redirect, reverse
 from django.urls import resolve
 from django.utils import timezone, translation
 from django.utils.translation.trans_real import (
-    get_supported_language_variant, language_code_re, parse_accept_lang_header,
+    get_supported_language_variant,
+    language_code_re,
+    parse_accept_lang_header,
 )
 
 from pretalx.event.models import Event, Organiser, Team

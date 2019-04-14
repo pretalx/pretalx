@@ -5,7 +5,8 @@ import markdown
 from django.db import models, transaction
 from django.template.loader import get_template
 from django.utils.timezone import now
-from django.utils.translation import override, ugettext_lazy as _
+from django.utils.translation import override
+from django.utils.translation import ugettext_lazy as _
 from i18nfield.fields import I18nCharField, I18nTextField
 
 from pretalx.common.mail import SendMailException

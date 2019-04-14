@@ -7,7 +7,9 @@ from django.views.generic import ListView, TemplateView
 from django_context_decorator import context
 
 from pretalx.common.mixins.views import (
-    EventPermissionRequired, Filterable, PermissionRequired,
+    EventPermissionRequired,
+    Filterable,
+    PermissionRequired,
 )
 from pretalx.common.phrases import phrases
 from pretalx.common.views import CreateOrUpdateView

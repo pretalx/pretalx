@@ -1,5 +1,6 @@
 from django import forms
-from django.utils.translation import ngettext_lazy, ugettext_lazy as _
+from django.utils.translation import ngettext_lazy
+from django.utils.translation import ugettext_lazy as _
 
 from pretalx.common.mixins.forms import ReadOnlyFlag
 from pretalx.common.phrases import phrases

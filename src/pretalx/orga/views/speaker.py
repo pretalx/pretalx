@@ -12,11 +12,17 @@ from django_context_decorator import context
 
 from pretalx.common.mail import SendMailException
 from pretalx.common.mixins.views import (
-    ActionFromUrl, EventPermissionRequired, Filterable, PermissionRequired, Sortable,
+    ActionFromUrl,
+    EventPermissionRequired,
+    Filterable,
+    PermissionRequired,
+    Sortable,
 )
 from pretalx.common.views import CreateOrUpdateView
 from pretalx.person.forms import (
-    SpeakerFilterForm, SpeakerInformationForm, SpeakerProfileForm,
+    SpeakerFilterForm,
+    SpeakerInformationForm,
+    SpeakerProfileForm,
 )
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
 from pretalx.submission.forms import QuestionsForm

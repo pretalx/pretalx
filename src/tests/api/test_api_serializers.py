@@ -5,10 +5,13 @@ from pretalx.api.serializers.question import AnswerSerializer, QuestionSerialize
 from pretalx.api.serializers.review import ReviewSerializer
 from pretalx.api.serializers.room import RoomOrgaSerializer, RoomSerializer
 from pretalx.api.serializers.speaker import (
-    SpeakerOrgaSerializer, SpeakerSerializer, SubmitterSerializer,
+    SpeakerOrgaSerializer,
+    SpeakerSerializer,
+    SubmitterSerializer,
 )
 from pretalx.api.serializers.submission import (
-    SubmissionOrgaSerializer, SubmissionSerializer,
+    SubmissionOrgaSerializer,
+    SubmissionSerializer,
 )
 
 

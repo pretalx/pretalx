@@ -10,8 +10,16 @@ from pretalx.mail.models import MailTemplate
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
 from pretalx.schedule.models import Availability, Room, TalkSlot
 from pretalx.submission.models import (
-    Answer, AnswerOption, Feedback, Question, QuestionVariant,
-    Resource, Review, Submission, SubmissionType, Track,
+    Answer,
+    AnswerOption,
+    Feedback,
+    Question,
+    QuestionVariant,
+    Resource,
+    Review,
+    Submission,
+    SubmissionType,
+    Track,
 )
 
 

@@ -4,11 +4,16 @@ import rules
 from django.utils.timezone import now
 
 from pretalx.person.permissions import (
-    can_change_submissions, is_administrator, is_reviewer,
+    can_change_submissions,
+    is_administrator,
+    is_reviewer,
 )
 from pretalx.submission.permissions import (
-    can_be_reviewed, can_view_all_reviews, can_view_reviews,
-    is_review_author, reviewer_can_change_submissions,
+    can_be_reviewed,
+    can_view_all_reviews,
+    can_view_reviews,
+    is_review_author,
+    reviewer_can_change_submissions,
 )
 
 

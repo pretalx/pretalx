@@ -10,7 +10,12 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.views.generic import (
-    DetailView, FormView, ListView, TemplateView, UpdateView, View,
+    DetailView,
+    FormView,
+    ListView,
+    TemplateView,
+    UpdateView,
+    View,
 )
 from django_context_decorator import context
 

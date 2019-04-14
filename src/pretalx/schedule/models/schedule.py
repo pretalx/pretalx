@@ -6,8 +6,10 @@ import pytz
 from django.db import models, transaction
 from django.template.loader import get_template
 from django.utils.functional import cached_property
-from django.utils.timezone import now, override as tzoverride
-from django.utils.translation import override, ugettext_lazy as _
+from django.utils.timezone import now
+from django.utils.timezone import override as tzoverride
+from django.utils.translation import override
+from django.utils.translation import ugettext_lazy as _
 
 from pretalx.agenda.tasks import export_schedule_html
 from pretalx.common.mixins import LogMixin

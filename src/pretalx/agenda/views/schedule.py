@@ -4,7 +4,10 @@ from urllib.parse import unquote
 
 import pytz
 from django.http import (
-    Http404, HttpResponse, HttpResponseNotModified, HttpResponsePermanentRedirect,
+    Http404,
+    HttpResponse,
+    HttpResponseNotModified,
+    HttpResponsePermanentRedirect,
 )
 from django.urls import resolve, reverse
 from django.utils.functional import cached_property

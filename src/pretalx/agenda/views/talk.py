@@ -15,7 +15,9 @@ from django_context_decorator import context
 from pretalx.agenda.signals import register_recording_provider
 from pretalx.cfp.views.event import EventPageMixin
 from pretalx.common.mixins.views import (
-    EventPermissionRequired, Filterable, PermissionRequired,
+    EventPermissionRequired,
+    Filterable,
+    PermissionRequired,
 )
 from pretalx.common.phrases import phrases
 from pretalx.person.models.profile import SpeakerProfile

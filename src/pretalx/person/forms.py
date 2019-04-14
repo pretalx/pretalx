@@ -10,7 +10,9 @@ from django.utils.translation import ugettext_lazy as _
 from i18nfield.forms import I18nModelForm
 
 from pretalx.common.forms.fields import (
-    IMAGE_EXTENSIONS, PasswordConfirmationField, PasswordField,
+    IMAGE_EXTENSIONS,
+    PasswordConfirmationField,
+    PasswordField,
 )
 from pretalx.common.mixins.forms import PublicContent, ReadOnlyFlag
 from pretalx.common.phrases import phrases

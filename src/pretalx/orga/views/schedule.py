@@ -24,7 +24,9 @@ from pretalx.agenda.management.commands.export_schedule_html import (
 from pretalx.agenda.tasks import export_schedule_html
 from pretalx.api.serializers.room import AvailabilitySerializer
 from pretalx.common.mixins.views import (
-    ActionFromUrl, EventPermissionRequired, PermissionRequired,
+    ActionFromUrl,
+    EventPermissionRequired,
+    PermissionRequired,
 )
 from pretalx.common.signals import register_data_exporters
 from pretalx.common.views import CreateOrUpdateView

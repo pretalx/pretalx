@@ -5,7 +5,9 @@ from django.forms import CharField, FileField, ValidationError
 from django.utils.translation import ugettext_lazy as _
 
 from pretalx.common.forms.widgets import (
-    ClearableBasenameFileInput, PasswordConfirmationInput, PasswordStrengthInput,
+    ClearableBasenameFileInput,
+    PasswordConfirmationInput,
+    PasswordStrengthInput,
 )
 
 IMAGE_EXTENSIONS = (".png", ".jpg", ".gif", ".jpeg")

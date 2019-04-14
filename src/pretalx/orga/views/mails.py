@@ -6,7 +6,11 @@ from django.views.generic import FormView, ListView, TemplateView, View
 from django_context_decorator import context
 
 from pretalx.common.mixins.views import (
-    ActionFromUrl, EventPermissionRequired, Filterable, PermissionRequired, Sortable,
+    ActionFromUrl,
+    EventPermissionRequired,
+    Filterable,
+    PermissionRequired,
+    Sortable,
 )
 from pretalx.common.views import CreateOrUpdateView
 from pretalx.mail.context import get_context_explanation

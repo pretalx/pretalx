@@ -16,11 +16,16 @@ from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.http import is_safe_url
 from django.utils.timezone import now
-from django.utils.translation import override, ugettext as _
+from django.utils.translation import override
+from django.utils.translation import ugettext as _
 from django.views.generic import ListView, TemplateView, View
 
 from pretalx.common.mixins.views import (
-    ActionFromUrl, EventPermissionRequired, Filterable, PermissionRequired, Sortable,
+    ActionFromUrl,
+    EventPermissionRequired,
+    Filterable,
+    PermissionRequired,
+    Sortable,
 )
 from pretalx.common.models import ActivityLog
 from pretalx.common.urls import build_absolute_uri
@@ -31,7 +36,10 @@ from pretalx.person.forms import OrgaSpeakerForm
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.forms import QuestionsForm, ResourceForm, SubmissionFilterForm
 from pretalx.submission.models import (
-    Resource, Submission, SubmissionError, SubmissionStates,
+    Resource,
+    Submission,
+    SubmissionError,
+    SubmissionStates,
 )
 
 
