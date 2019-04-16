@@ -14,8 +14,7 @@ def populate_to_users(apps, schema_editor):
     for mail in QueuedMail.objects.all():
         addresses = (mail.to or '').split(',')
         for address in addresses:
-            address = address.strip().lower()
-            if not address:
+            if not address.strip():
                 continue
             user = user_lookup.get(address.strip().lower())
             if user:
