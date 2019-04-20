@@ -8,7 +8,7 @@ from pretalx.common.forms.widgets import (
     ClearableBasenameFileInput, PasswordConfirmationInput, PasswordStrengthInput,
 )
 
-IMAGE_EXTENSIONS = (".png", ".jpg", ".gif", ".jpeg")
+IMAGE_EXTENSIONS = (".png", ".jpg", ".gif", ".jpeg", ".svg")
 
 
 class GlobalValidator:
