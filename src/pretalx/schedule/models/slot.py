@@ -135,7 +135,8 @@ class TalkSlot(LogMixin, models.Model):
             'summary'
         ).value = f'{self.submission.title} - {self.submission.display_speaker_names}'
         vevent.add('dtstamp').value = creation_time
-        vevent.add('location').value = str(self.room.name)
+        if self.room:
+            vevent.add('location').value = str(self.room.name)
         vevent.add('uid').value = 'pretalx-{}-{}@{}'.format(
             self.submission.event.slug, self.submission.code, netloc
         )
