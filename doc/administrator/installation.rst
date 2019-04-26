@@ -154,7 +154,7 @@ named ``/etc/systemd/system/pretalx-web.service`` with the following content::
     [Install]
     WantedBy=multi-user.target
 
-For asynchronous execution of long-running tasks via Celery, such as outgoing mail),
+For asynchronous execution of long-running tasks via Celery (such as outgoing mail),
 you'll also need a second service ``/etc/systemd/system/pretalx-worker.service``
 with the following content::
 
