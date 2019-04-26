@@ -154,9 +154,9 @@ named ``/etc/systemd/system/pretalx-web.service`` with the following content::
     [Install]
     WantedBy=multi-user.target
 
-If you decide to use Celery (giving you asynchronous execution for long-running
-tasks), you'll also need a second service
-``/etc/systemd/system/pretalx-worker.service`` with the following content::
+For asynchronous execution of long-running tasks via Celery, such as outgoing mail),
+you'll also need a second service ``/etc/systemd/system/pretalx-worker.service``
+with the following content::
 
     [Unit]
     Description=pretalx background worker
@@ -235,8 +235,8 @@ You can make sure the web interface is up and look for any issues with::
 
     # journalctl -u pretalx-web
 
-If you use Celery, you can do the same for the worker processes (for example in
-case the emails are not sent)::
+For the Celery worker you can do the same for the worker processes (for example in
+case outgoing mails are not sent)::
 
     # journalctl -u pretalx-worker
 
