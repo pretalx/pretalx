@@ -101,7 +101,8 @@ Now we will install pretalx itself. Please execute the following steps as the ``
 install all Python packages, including pretalx, in the user's Python environment, so that your global Python
 installation will not know of them::
 
-    $ pip install --user -U pip setuptools wheel pretalx gunicorn
+    $ pip install --user -U pip setuptools wheel gunicorn
+    $ pip install --user -U pretalx
 
 pretalx works your choice of database backends – we recommend using
 PostgreSQL, but MySQL, SQLite, and Oracle work as well. Use the following
