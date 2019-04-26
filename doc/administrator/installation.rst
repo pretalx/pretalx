@@ -66,8 +66,8 @@ dependencies mentioned above.  Due to the impossibility of maintaining an up to
 date list for all Linux flavours out there, we sadly can't provide one here.
 
 If you're running Ubuntu or a similar system, you'll probably want to install
-packages like ``build-essential``, ``libssl-dev``, and ``gettext``, plus
-``libmysqlclient-dev`` if you use MariaDB.
+packages like ``build-essential``, ``libssl-dev``, ``python3-dev`` and
+``gettext``, plus ``libmysqlclient-dev`` if you use MariaDB.
 
 Please note that pretalx requires Python 3.6 or Python 3.7 – if your operating
 system doesn't come with one of those Python versions, please either find an
