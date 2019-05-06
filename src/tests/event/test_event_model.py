@@ -4,16 +4,19 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 
+from pretalx.event.actions import build_initial_data
 from pretalx.event.models import Event
 
 
 @pytest.fixture
 def event():
-    return Event.objects.create(
+    event = Event.objects.create(
         name='Event', slug='event', is_public=True,
         email='orga@orga.org', locale_array='en,de', locale='en',
         date_from=datetime.date.today(), date_to=datetime.date.today()
     )
+    build_initial_data(event)
+    return event
 
 
 @pytest.mark.django_db
@@ -26,28 +29,6 @@ def test_locales(event, locale_array, count):
     event.save()
     assert len(event.locales) == count
     assert len(event.named_locales) == count
-
-
-@pytest.mark.django_db
-def test_initial_data(event):
-    assert event.cfp
-    assert event.cfp.default_type
-    assert event.accept_template
-    assert event.ack_template
-    assert event.reject_template
-    assert event.schedules.count()
-    assert event.wip_schedule
-
-    event.cfp.delete()
-    event.build_initial_data()
-
-    assert event.cfp
-    assert event.cfp.default_type
-    assert event.accept_template
-    assert event.ack_template
-    assert event.reject_template
-    assert event.schedules.count()
-    assert event.wip_schedule
 
 
 @pytest.mark.parametrize('slug', (
@@ -95,22 +76,12 @@ def test_event_copy_settings(event, submission_type, with_url):
         email='tehname@example.org', locale='de',
         date_from=datetime.date.today(), date_to=datetime.date.today()
     )
-    assert new_event.accept_template
-    assert new_event.submission_types.count() == 1
-    assert event.submission_types.count() == 2
     new_event.copy_data_from(event)
     assert new_event.submission_types.count() == event.submission_types.count()
     assert new_event.accept_template
     assert new_event.accept_template.text == 'testtemplate'
     assert new_event.settings.random_value == 'testcopysettings'
     assert not new_event.settings.custom_domain
-
-
-@pytest.mark.django_db
-def test_event_get_default_type(event):
-    assert event.submission_types.count() == 1
-    event._get_default_submission_type()
-    assert event.submission_types.count() == 1
 
 
 @pytest.mark.django_db

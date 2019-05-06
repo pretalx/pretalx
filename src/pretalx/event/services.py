@@ -5,6 +5,7 @@ from django.utils.timezone import now
 
 from pretalx.celery_app import app
 from pretalx.common.signals import periodic_task
+from pretalx.event.actions import build_initial_data
 from pretalx.event.models import Event
 
 
@@ -19,7 +20,7 @@ def task_periodic_event_services(event_slug):
     if not event:
         return
 
-    event.build_initial_data()  # Make sure the required mail templates are there
+    build_initial_data(event)  # Make sure the required mail templates are there
     if not event.settings.sent_mail_event_created:
         if (
             timedelta(0)

@@ -5,6 +5,7 @@ import pytz
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.timezone import now
 
+from pretalx.event.actions import build_initial_data
 from pretalx.event.models import Event, Organiser, Team, TeamInvite
 from pretalx.mail.models import MailTemplate
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
@@ -88,6 +89,7 @@ def event(organiser):
         date_to=today + datetime.timedelta(days=3),
         organiser=organiser,
     )
+    build_initial_data(event)
     # exporting takes quite some time, so this speeds up our tests
     event.settings.export_html_on_schedule_release = False
     for team in organiser.teams.all():
@@ -106,6 +108,7 @@ def other_event(other_organiser):
         date_to=datetime.date.today() + datetime.timedelta(days=1),
         organiser=other_organiser,
     )
+    build_initial_data(event)
     event.settings.export_html_on_schedule_release = False
     for team in other_organiser.teams.all():
         team.limit_events.add(event)
@@ -125,6 +128,7 @@ def multilingual_event(organiser):
         locale_array='en,de',
         organiser=organiser,
     )
+    build_initial_data(event)
     event.settings.export_html_on_schedule_release = False
     for team in organiser.teams.all():
         team.limit_events.add(event)

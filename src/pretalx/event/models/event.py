@@ -328,13 +328,6 @@ class Event(LogMixin, models.Model):
     def html_export_url(self) -> str:
         return get_base_url(self) + self.orga_urls.schedule_export_download
 
-    def save(self, *args, **kwargs):
-        was_created = not bool(self.pk)
-        super().save(*args, **kwargs)
-
-        if was_created:
-            self.build_initial_data()
-
     @property
     def plugin_list(self) -> list:
         """Provides a list of active plugins as strings, and is also an attribute setter."""
@@ -388,14 +381,6 @@ class Event(LogMixin, models.Model):
             plugins_active.remove(module)
             self.plugin_list = plugins_active
 
-    def _get_default_submission_type(self):
-        from pretalx.submission.models import SubmissionType
-
-        sub_type = SubmissionType.objects.filter(event=self).first()
-        if not sub_type:
-            sub_type = SubmissionType.objects.create(event=self, name='Talk')
-        return sub_type
-
     @cached_property
     def fixed_templates(self) -> list:
         return [
@@ -404,69 +389,6 @@ class Event(LogMixin, models.Model):
             self.reject_template,
             self.update_template,
         ]
-
-    def build_initial_data(self):
-        from pretalx.mail.default_templates import (
-            ACCEPT_TEXT,
-            ACK_TEXT,
-            GENERIC_SUBJECT,
-            REJECT_TEXT,
-            UPDATE_SUBJECT,
-            UPDATE_TEXT,
-            QUESTION_SUBJECT,
-            QUESTION_TEXT,
-        )
-        from pretalx.mail.models import MailTemplate
-
-        if not hasattr(self, 'cfp'):
-            from pretalx.submission.models import CfP
-
-            CfP.objects.create(
-                event=self, default_type=self._get_default_submission_type()
-            )
-
-        if not self.schedules.filter(version__isnull=True).exists():
-            from pretalx.schedule.models import Schedule
-
-            Schedule.objects.create(event=self)
-
-        self.accept_template = self.accept_template or MailTemplate.objects.create(
-            event=self, subject=GENERIC_SUBJECT, text=ACCEPT_TEXT
-        )
-        self.ack_template = self.ack_template or MailTemplate.objects.create(
-            event=self, subject=GENERIC_SUBJECT, text=ACK_TEXT
-        )
-        self.reject_template = self.reject_template or MailTemplate.objects.create(
-            event=self, subject=GENERIC_SUBJECT, text=REJECT_TEXT
-        )
-        self.update_template = self.update_template or MailTemplate.objects.create(
-            event=self, subject=UPDATE_SUBJECT, text=UPDATE_TEXT
-        )
-        self.question_template = self.question_template or MailTemplate.objects.create(
-            event=self, subject=QUESTION_SUBJECT, text=QUESTION_TEXT
-        )
-
-        if not self.review_phases.all().exists():
-            from pretalx.submission.models import ReviewPhase
-
-            cfp_deadline = self.cfp.deadline
-            r = ReviewPhase.objects.create(
-                event=self, name=_('Review'),
-                start=cfp_deadline,
-                end=self.datetime_from - relativedelta(months=-3),
-                is_active=bool(not cfp_deadline or cfp_deadline < now()),
-                position=0,
-            )
-            ReviewPhase.objects.create(
-                event=self, name=_('Selection'),
-                start=r.end,
-                is_active=False,
-                position=1,
-                can_review=False,
-                can_see_other_reviews='always',
-                can_change_submission_state=True,
-            )
-        self.save()
 
     def _delete_mail_templates(self):
         for template in self.template_names:
@@ -501,7 +423,7 @@ class Event(LogMixin, models.Model):
             s.object = self
             s.pk = None
             s.save()
-        self.build_initial_data()  # make sure we get a functioning event
+        build_initial_data(self)  # make sure we get a functioning event
 
     @cached_property
     def pending_mails(self) -> int:
