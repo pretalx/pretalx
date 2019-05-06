@@ -17,5 +17,5 @@ from pretalx.schedule.utils import guess_schedule_version
 ))
 def test_schedule_version_guessing(event, previous, suggestion):
     if previous:
-        event.release_schedule(previous)
+        event.wip_schedule.freeze(previous)
     assert guess_schedule_version(event) == suggestion

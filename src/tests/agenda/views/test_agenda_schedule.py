@@ -66,7 +66,7 @@ def test_schedule_page(
 def test_versioned_schedule_page(
     client, django_assert_num_queries, event, speaker, slot, schedule, other_slot
 ):
-    event.release_schedule('new schedule')
+    event.wip_schedule.freeze('new schedule')
     event.current_schedule.talks.update(is_visible=False)
 
     url = event.urls.schedule

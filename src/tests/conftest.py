@@ -647,7 +647,7 @@ def availability(event):
 
 @pytest.fixture
 def schedule(event):
-    event.release_schedule('🍪 Version')
+    event.wip_schedule.freeze('🍪 Version')
     return event.current_schedule
 
 

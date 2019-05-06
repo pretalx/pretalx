@@ -128,7 +128,7 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
         return redirect(self.request.event.orga_urls.release_schedule)
 
     def form_valid(self, form):
-        self.request.event.release_schedule(
+        self.request.event.wip_schedule.freeze(
             form.cleaned_data['version'],
             user=self.request.user,
             notify_speakers=form.cleaned_data['notify_speakers'],

@@ -321,7 +321,7 @@ class Event(LogMixin, models.Model):
     @cached_property
     def named_locales(self) -> list:
         """Is a list of tuples of locale codes and natural names for this event."""
-        enabled = set(self.locale_array.split(","))
+        enabled = set(self.locales)
         return [a for a in settings.LANGUAGES_NATURAL_NAMES if a[0] in enabled]
 
     @cached_property
@@ -565,16 +565,6 @@ class Event(LogMixin, models.Model):
         E.g. as long as the event takes place within the same month, the month
         is only named once."""
         return daterange(self.date_from, self.date_to)
-
-    def release_schedule(self, name: str, user=None, notify_speakers: bool=False):
-        """Releases a new :class:`~pretalx.schedule.models.schedule.Schedule` by finalizing the current WIP schedule.
-
-        :param name: The new version name
-        :param user: The :class:`~pretalx.person.models.user.User` executing the release
-        :param notify_speakers: Generate emails for all speakers with changed slots.
-        :type user: :class:`~pretalx.person.models.user.User`
-        """
-        self.wip_schedule.freeze(name=name, user=user, notify_speakers=notify_speakers)
 
     def send_orga_mail(self, text, stats=False):
         from django.utils.translation import override

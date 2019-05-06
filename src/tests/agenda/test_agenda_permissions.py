@@ -17,7 +17,7 @@ def test_agenda_permission_is_agenda_visible(is_public, show_schedule, has_sched
     event.is_public = is_public
     event.settings.show_schedule = show_schedule
     if has_schedule:
-        event.release_schedule('42')
+        event.wip_schedule.freeze('42')
     assert is_agenda_visible(None, event) is result
 
 

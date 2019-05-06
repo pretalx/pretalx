@@ -13,7 +13,7 @@ def test_sneak_peek_invisible_because_schedule(
     client, django_assert_num_queries, event
 ):
     event.settings.show_sneak_peek = True
-    event.release_schedule("42")
+    event.wip_schedule.freeze("42")
     with django_assert_num_queries(27):
         response = client.get(event.urls.sneakpeek, follow=True)
 
@@ -39,7 +39,7 @@ def test_sneak_peek_visible(client, django_assert_num_queries, event):
 def test_sneak_peek_visible_despite_schedule(client, django_assert_num_queries, event):
     event.settings.show_sneak_peek = True
     event.settings.show_schedule = False
-    event.release_schedule("42")
+    event.wip_schedule.freeze("42")
     with django_assert_num_queries(17):
         response = client.get(event.urls.sneakpeek, follow=True)
     assert response.status_code == 200

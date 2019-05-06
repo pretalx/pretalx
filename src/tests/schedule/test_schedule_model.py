@@ -133,8 +133,8 @@ def test_scheduled_talks(slot, room):
 
 @pytest.mark.django_db
 def test_is_archived(event):
-    event.release_schedule(name='v1')
-    event.release_schedule(name='v2')
+    event.wip_schedule.freeze(name='v1')
+    event.wip_schedule.freeze(name='v2')
 
     v1_schedule = Schedule.objects.get(version='v1')
     v2_schedule = Schedule.objects.get(version='v2')
