@@ -27,7 +27,7 @@ from pretalx.common.mixins.views import (
 )
 from pretalx.common.tasks import regenerate_css
 from pretalx.common.views import is_form_bound
-from pretalx.event.actions import build_initial_data
+from pretalx.event.actions import build_initial_data, copy_data_from
 from pretalx.event.forms import (
     EventWizardBasicsForm, EventWizardCopyForm, EventWizardDisplayForm,
     EventWizardInitialForm, EventWizardTimelineForm, ReviewPhaseForm,
@@ -554,6 +554,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
             date_from=steps['timeline']['date_from'],
             date_to=steps['timeline']['date_to'],
         )
+        build_initial_data(event)
         deadline = steps['timeline'].get('deadline')
         if deadline:
             zone = timezone(event.timezone)
@@ -588,9 +589,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
         )
 
         if steps['copy'] and steps['copy']['copy_from_event']:
-            event.copy_data_from(steps['copy']['copy_from_event'])
-
-        build_initial_data(event)
+            copy_data_from(steps['copy']['copy_from_event'], event)
         return redirect(event.orga_urls.base + '?congratulations')
 
 

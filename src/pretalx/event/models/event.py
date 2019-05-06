@@ -390,41 +390,6 @@ class Event(LogMixin, models.Model):
             self.update_template,
         ]
 
-    def _delete_mail_templates(self):
-        for template in self.template_names:
-            setattr(self, template, None)
-        self.save()
-        self.mail_templates.all().delete()
-
-    def copy_data_from(self, other_event):
-        protected_settings = ['custom_domain', 'display_header_data']
-        self._delete_mail_templates()
-        self.submission_types.exclude(pk=self.cfp.default_type_id).delete()
-        for template in self.template_names:
-            new_template = getattr(other_event, template)
-            new_template.pk = None
-            new_template.event = self
-            new_template.save()
-            setattr(self, template, new_template)
-        for submission_type in other_event.submission_types.all():
-            is_default = submission_type == other_event.cfp.default_type
-            submission_type.pk = None
-            submission_type.event = self
-            submission_type.save()
-            if is_default:
-                old_default = self.cfp.default_type
-                self.cfp.default_type = submission_type
-                self.cfp.save()
-                old_default.delete()
-
-        for s in other_event.settings._objects.all():
-            if s.value.startswith('file://') or s.key in protected_settings:
-                continue
-            s.object = self
-            s.pk = None
-            s.save()
-        build_initial_data(self)  # make sure we get a functioning event
-
     @cached_property
     def pending_mails(self) -> int:
         """The amount of currently unsent :class:`~pretalx.mail.models.QueuedMail` objects."""
@@ -644,6 +609,7 @@ class Event(LogMixin, models.Model):
     @transaction.atomic
     def shred(self):
         """Irrevocably deletes an event and all related data."""
+        from pretalx.event.actions import delete_mail_templates
         from pretalx.common.models import ActivityLog
         from pretalx.person.models import SpeakerProfile
         from pretalx.schedule.models import TalkSlot
@@ -676,6 +642,6 @@ class Event(LogMixin, models.Model):
             self,
         ]
 
-        self._delete_mail_templates()
+        delete_mail_templates(self)
         for entry in deletion_order:
             entry.delete()

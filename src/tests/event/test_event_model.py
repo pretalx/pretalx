@@ -63,28 +63,6 @@ def test_event_model_slug_uniqueness():
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize('with_url', (True, False))
-def test_event_copy_settings(event, submission_type, with_url):
-    if with_url:
-        event.settings.custom_domain = 'https://testeventcopysettings.example.org'
-    event.settings.random_value = 'testcopysettings'
-    event.accept_template.text = 'testtemplate'
-    event.accept_template.save()
-    new_event = Event.objects.create(
-        organiser=event.organiser, locale_array='de,en',
-        name='Teh Name', slug='tn', timezone='Europe/Berlin',
-        email='tehname@example.org', locale='de',
-        date_from=datetime.date.today(), date_to=datetime.date.today()
-    )
-    new_event.copy_data_from(event)
-    assert new_event.submission_types.count() == event.submission_types.count()
-    assert new_event.accept_template
-    assert new_event.accept_template.text == 'testtemplate'
-    assert new_event.settings.random_value == 'testcopysettings'
-    assert not new_event.settings.custom_domain
-
-
-@pytest.mark.django_db
 def test_event_urls_custom(event):
     custom = 'https://foo.bar.com'
     assert custom not in event.urls.submit.full()

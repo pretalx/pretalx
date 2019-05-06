@@ -63,3 +63,53 @@ def build_initial_data(event: Event):
             can_change_submission_state=True,
         )
     event.save()
+
+
+def delete_mail_templates(event: Event):
+    """Deletes all mail templates on an event, including special cases."""
+    for template in event.template_names:
+        setattr(event, template, None)
+    event.save()
+    event.mail_templates.all().delete()
+
+
+@transaction.atomic
+def copy_data_from(other_event: Event, event: Event):
+    """Copies all configuration from the first argument to the second."""
+    protected_settings = ["custom_domain", "display_header_data"]
+    has_cfp = hasattr(event, "cfp")
+    delete_mail_templates(event)
+    if has_cfp:
+        event.submission_types.exclude(pk=event.cfp.default_type_id).delete()
+        old_default = event.cfp.default_type
+    else:
+        event.submission_types.all().delete()
+        other_event.cfp.pk = None
+        other_event.cfp.event = event
+        other_event.cfp.save()
+
+    for template in event.template_names:
+        new_template = getattr(other_event, template)
+        new_template.pk = None
+        new_template.event = event
+        new_template.save()
+        setattr(event, template, new_template)
+
+    for submission_type in other_event.submission_types.all():
+        is_default = submission_type == other_event.cfp.default_type
+        submission_type.pk = None
+        submission_type.event = event
+        submission_type.save()
+        if is_default:
+            event.cfp.default_type = submission_type
+            event.cfp.save()
+            if has_cfp:
+                old_default.delete()
+
+    for setting in other_event.settings._objects.all():
+        if setting.value.startswith("file://") or setting.key in protected_settings:
+            continue
+        setting.object = event
+        setting.pk = None
+        setting.save()
+    build_initial_data(event)  # make sure we get a functioning event
