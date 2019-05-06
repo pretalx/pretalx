@@ -9,6 +9,7 @@ from django_context_decorator import context
 from pretalx.common.mail import SendMailException
 from pretalx.common.mixins.views import PermissionRequired
 from pretalx.common.views import CreateOrUpdateView
+from pretalx.event.actions import shred_organiser
 from pretalx.event.forms import OrganiserForm, TeamForm, TeamInviteForm, TeamTrackForm
 from pretalx.event.models import Organiser, Team, TeamInvite
 
@@ -198,5 +199,5 @@ class OrganiserDelete(PermissionRequired, DeleteView):
     def delete(self, request, *args, **kwargs):
         organiser = self.get_object()
         if organiser:
-            organiser.shred()
+            shred_organiser(organiser)
         return HttpResponseRedirect('/orga/')

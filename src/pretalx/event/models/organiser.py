@@ -1,7 +1,7 @@
 import string
 
 from django.core.validators import RegexValidator
-from django.db import models, transaction
+from django.db import models
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
@@ -45,15 +45,6 @@ class Organiser(LogMixin, models.Model):
         delete = '{base}delete'
         teams = '{base}teams/'
         new_team = '{teams}new'
-
-    @transaction.atomic
-    def shred(self):
-        """Irrevocably deletes the organiser and all related events and their data."""
-        from pretalx.event.actions import shred_event
-        for event in self.events.all():
-            shred_event(event)
-        self.logged_actions().delete()
-        self.delete()
 
 
 class Team(LogMixin, models.Model):

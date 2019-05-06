@@ -4,7 +4,7 @@ from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 
 from pretalx.common.models import ActivityLog
-from pretalx.event.models import Event
+from pretalx.event.models import Event, Organiser
 from pretalx.mail.default_templates import (
     ACCEPT_TEXT, ACK_TEXT, GENERIC_SUBJECT, QUESTION_SUBJECT,
     QUESTION_TEXT, REJECT_TEXT, UPDATE_SUBJECT, UPDATE_TEXT,
@@ -146,3 +146,12 @@ def shred_event(event: Event):
     delete_mail_templates(event)
     for entry in deletion_order:
         entry.delete()
+
+
+@transaction.atomic
+def shred_organiser(organiser: Organiser):
+    """Irrevocably deletes the organiser and all related events and their data."""
+    for event in organiser.events.all():
+        shred_event(event)
+    organiser.logged_actions().delete()
+    organiser.delete()
