@@ -3,14 +3,19 @@ from django.db import transaction
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy as _
 
+from pretalx.common.models import ActivityLog
 from pretalx.event.models import Event
 from pretalx.mail.default_templates import (
     ACCEPT_TEXT, ACK_TEXT, GENERIC_SUBJECT, QUESTION_SUBJECT,
     QUESTION_TEXT, REJECT_TEXT, UPDATE_SUBJECT, UPDATE_TEXT,
 )
 from pretalx.mail.models import MailTemplate
-from pretalx.schedule.models import Schedule
-from pretalx.submission.models import CfP, ReviewPhase, SubmissionType
+from pretalx.person.models import SpeakerProfile
+from pretalx.schedule.models import Schedule, TalkSlot
+from pretalx.submission.models import (
+    Answer, AnswerOption, CfP, Feedback, Question,
+    Resource, ReviewPhase, SubmissionType,
+)
 
 
 @transaction.atomic
@@ -113,3 +118,31 @@ def copy_data_from(other_event: Event, event: Event):
         setting.pk = None
         setting.save()
     build_initial_data(event)  # make sure we get a functioning event
+
+
+@transaction.atomic
+def shred_event(event: Event):
+    """Irrevocably deletes an event and all related data."""
+    deletion_order = [
+        event.logged_actions(),
+        event.queued_mails.all(),
+        event.cfp,
+        event.mail_templates.all(),
+        event.information.all(),
+        TalkSlot.objects.filter(schedule__event=event),
+        Feedback.objects.filter(talk__event=event),
+        Resource.objects.filter(submission__event=event),
+        Answer.objects.filter(question__event=event),
+        AnswerOption.objects.filter(question__event=event),
+        Question.all_objects.filter(event=event),
+        event.submissions(manager="all_objects").all(),
+        event.submission_types.all(),
+        event.schedules.all(),
+        SpeakerProfile.objects.filter(event=event),
+        event.rooms.all(),
+        ActivityLog.objects.filter(event=event),
+        event,
+    ]
+    delete_mail_templates(event)
+    for entry in deletion_order:
+        entry.delete()

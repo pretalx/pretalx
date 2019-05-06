@@ -27,7 +27,7 @@ from pretalx.common.mixins.views import (
 )
 from pretalx.common.tasks import regenerate_css
 from pretalx.common.views import is_form_bound
-from pretalx.event.actions import build_initial_data, copy_data_from
+from pretalx.event.actions import build_initial_data, copy_data_from, shred_event
 from pretalx.event.forms import (
     EventWizardBasicsForm, EventWizardCopyForm, EventWizardDisplayForm,
     EventWizardInitialForm, EventWizardTimelineForm, ReviewPhaseForm,
@@ -604,7 +604,7 @@ class EventDelete(PermissionRequired, DeleteView):
     def delete(self, request, *args, **kwargs):
         event = self.get_object()
         if event:
-            event.shred()
+            shred_event(event)
         return redirect('/orga/')
 
 

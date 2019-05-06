@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.core.mail import get_connection
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.validators import RegexValidator
-from django.db import models, transaction
+from django.db import models
 from django.utils.functional import cached_property
 from django.utils.timezone import make_aware, now
 from django.utils.translation import ugettext_lazy as _
@@ -595,43 +595,3 @@ class Event(LogMixin, models.Model):
                 text=str(text).format(**context),
                 to=self.email,
             ).send()
-
-    @transaction.atomic
-    def shred(self):
-        """Irrevocably deletes an event and all related data."""
-        from pretalx.event.actions import delete_mail_templates
-        from pretalx.common.models import ActivityLog
-        from pretalx.person.models import SpeakerProfile
-        from pretalx.schedule.models import TalkSlot
-        from pretalx.submission.models import (
-            Answer,
-            AnswerOption,
-            Feedback,
-            Question,
-            Resource,
-        )
-
-        deletion_order = [
-            self.logged_actions(),
-            self.queued_mails.all(),
-            self.cfp,
-            self.mail_templates.all(),
-            self.information.all(),
-            TalkSlot.objects.filter(schedule__event=self),
-            Feedback.objects.filter(talk__event=self),
-            Resource.objects.filter(submission__event=self),
-            Answer.objects.filter(question__event=self),
-            AnswerOption.objects.filter(question__event=self),
-            Question.all_objects.filter(event=self),
-            self.submissions(manager='all_objects').all(),
-            self.submission_types.all(),
-            self.schedules.all(),
-            SpeakerProfile.objects.filter(event=self),
-            self.rooms.all(),
-            ActivityLog.objects.filter(event=self),
-            self,
-        ]
-
-        delete_mail_templates(self)
-        for entry in deletion_order:
-            entry.delete()

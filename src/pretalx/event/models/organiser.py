@@ -49,8 +49,9 @@ class Organiser(LogMixin, models.Model):
     @transaction.atomic
     def shred(self):
         """Irrevocably deletes the organiser and all related events and their data."""
+        from pretalx.event.actions import shred_event
         for event in self.events.all():
-            event.shred()
+            shred_event(event)
         self.logged_actions().delete()
         self.delete()
 
