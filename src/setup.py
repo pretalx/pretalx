@@ -16,7 +16,7 @@ if CURRENT_PYTHON < REQUIRED_PYTHON:
 ==========================
 Unsupported Python version
 ==========================
-This version of pretix requires Python {}.{}, but you're trying to
+This version of pretalx requires Python {}.{}, but you're trying to
 install it on Python {}.{}.
 This may be because you are using a version of pip that doesn't
 understand the python_requires classifier. Make sure you
@@ -27,24 +27,10 @@ This will install the latest version of pretalx which works on your
 version of Python.
 """.format(*(REQUIRED_PYTHON + CURRENT_PYTHON)))
     sys.exit(1)
-elif CURRENT_PYTHON != REQUIRED_PYTHON:
-    sys.stderr.write("""
-==========================
-Unsupported Python version
-==========================
-This version of pretix requires Python {}.{}, but you're trying to
-install it on Python {}.{}.
-pretalx does run correctly with your Python version, but some of
-its dependencies don't – you will not be able to run asynchronous
-workers of pretalx with your Python version.
-""".format(*(REQUIRED_PYTHON + CURRENT_PYTHON)))
 
 # Get the long description from the relevant file
-try:
-    with open(path.join(here, '../README.rst'), encoding='utf-8') as f:
-        long_description = f.read()
-except:  # noqa
-    long_description = ''
+with open(path.join(here, '../README.rst'), encoding='utf-8') as f:
+    long_description = f.read()
 
 
 class CustomBuild(build):
@@ -97,15 +83,16 @@ setup(
     keywords='conference cfp event barcamp',
     install_requires=[
         'bleach==3.1.*',  # https://bleach.readthedocs.io/en/latest/changes.html
-        'celery==4.1.*',  # search for "what's new" on http://docs.celeryproject.org/en/latest/, restricted to 4.1 due to https://github.com/celery/celery/issues/4878
+        'celery==4.3.*',  # search for "what's new" on http://docs.celeryproject.org/en/latest/
         'csscompressor==0.9.*',  # 2017-11, no changelog, https://github.com/sprymix/csscompressor
         'cssutils==1.0.*',  # https://pythonhosted.org/cssutils/CHANGELOG.html
-        'Django>=2.1.5,<2.2.0',  # https://docs.djangoproject.com/en/2.0/releases/
+        'Django>=2.2.1,<2.3.0',  # https://docs.djangoproject.com/en/2.0/releases/
         'django-bakery==0.12.*',  # http://django-bakery.readthedocs.io/en/latest/changelog.html
-        'django-bootstrap4==0.0.6',  # http://django-bootstrap4.readthedocs.io/en/latest/history.html
+        'django-bootstrap4==0.0.8',  # http://django-bootstrap4.readthedocs.io/en/latest/history.html
         'django-compressor==2.2.*',  # https://django-compressor.readthedocs.io/en/latest/changelog/
-        'django-csp==3.4.*',  # https://github.com/mozilla/django-csp/blob/master/CHANGES
-        'django-filter==2.0.*',  # https://github.com/carltongibson/django-filter/blob/master/CHANGES.rst
+        'django-context-decorator',
+        'django-csp==3.5.*',  # https://github.com/mozilla/django-csp/blob/master/CHANGES
+        'django-filter==2.1.*',  # https://github.com/carltongibson/django-filter/blob/master/CHANGES.rst
         'django-formset-js-improved==0.5.0.2',  # no changelog, https://github.com/pretix/django-formset-js
         'django-formtools==2.1.*',  # http://django-formtools.readthedocs.io/en/latest/changelog.html
         'django-hierarkey==1.0.*',  # no changelog, https://github.com/raphaelm/django-hierarkey
@@ -113,8 +100,8 @@ setup(
         'django-libsass==0.7',  # inactive, https://github.com/torchbox/django-libsass/blob/master/CHANGELOG.txt
         'djangorestframework==3.9.*',  # http://www.django-rest-framework.org/topics/release-notes/
         'inlinestyler==0.2.*',  # https://github.com/dlanger/inlinestyler/blob/master/CHANGELOG
-        'libsass==0.17.0',  # https://sass.github.io/libsass-python/changes.html
-        'Markdown==3.0.*',  # https://python-markdown.github.io/change_log/
+        'libsass==0.18.0',  # https://sass.github.io/libsass-python/changes.html
+        'Markdown==3.1.*',  # https://python-markdown.github.io/change_log/
         'publicsuffixlist==0.6.*',
         'pytz',
         'qrcode==6.1',  # https://github.com/lincolnloop/python-qrcode/blob/master/CHANGES.rst
@@ -123,7 +110,7 @@ setup(
         'rules==2.0.*',  # https://github.com/dfunckt/django-rules/blob/master/CHANGELOG.md
         'urlman==1.2.*',  # https://github.com/andrewgodwin/urlman/blob/master/CHANGELOG
         'vobject==0.9.*',  # 2017-06, http://eventable.github.io/vobject/ look for "release"
-        'whitenoise==3.3.*',  # http://whitenoise.evans.io/en/stable/changelog.html
+        'whitenoise==4.1.*',  # http://whitenoise.evans.io/en/stable/changelog.html
         'zxcvbn==4.4.*',  # Nothing? https://github.com/dwolfhub/zxcvbn-python/issues/38
     ],
     extras_require={
@@ -142,5 +129,6 @@ setup(
     },
     packages=find_packages(exclude=['tests', 'tests.*']),
     include_package_data=True,
+    zip_safe=False,
     cmdclass=cmdclass,
 )

@@ -9,8 +9,8 @@
 {% block content %}
 {% has_perm 'orga.change_speaker' request.user form.instance as can_edit_speaker %}
     <h2>
-        {{ form.instance.user.get_display_name }} ({{ submission_count }}
-        {% blocktrans trimmed count count=submission_count %}
+        {{ form.instance.user.get_display_name }} ({{ submissions.count }}
+        {% blocktrans trimmed count count=submissions.count %}
         submission
         {% plural %}
         submissions
@@ -18,7 +18,13 @@
     </h2>
     <div class="alert alert-info col-md-9 ml-auto">
         <span>
-        <h5>{% if submission_count > 1 %}{% trans "Submissions" %}{% else %}{% trans "Submission" %}{% endif %}</h5>
+        <h5>
+            {% blocktrans trimmed count count=submissions.count %}
+            Submission
+            {% plural %}
+            Submissions
+            {% endblocktrans %})
+        </h5>
         <ul>
             {% for submission in submissions %}
             <li>
@@ -69,7 +75,7 @@
             <script defer src="{% static "vendored/moment-with-locales.js" %}"></script>
             <script defer src="{% static "vendored/moment-timezone-with-data-2012-2022.js" %}"></script>
             <script defer src="{% static "vendored/fullcalendar/fullcalendar.min.js" %}"></script>
-            <script async src="{% static "common/js/availabilities.js" %}"></script>
+            <script defer src="{% static "common/js/availabilities.js" %}"></script>
         {% endcompress %}
         {% bootstrap_field form.availabilities layout='event' %}
         {% endif %}
@@ -99,5 +105,5 @@
     {% endif %}
 
 
-    <script async src="{% static "cfp/js/profile.js" %}"></script>
+    <script defer src="{% static "cfp/js/profile.js" %}"></script>
 {% endblock %}

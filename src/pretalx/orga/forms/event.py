@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
 from django.utils.timezone import now
 from django.utils.text import format_lazy
 from django.utils.translation import ugettext_lazy as _
@@ -44,6 +45,12 @@ class EventForm(ReadOnlyFlag, I18nModelForm):
             'We will show your logo in its full size if possible, scaled down to the full header width otherwise.'
         ),
     )
+    custom_css_text = forms.CharField(
+        required=False,
+        widget=forms.Textarea(),
+        label='',
+        help_text=_('You can type in your CSS instead of uploading it, too.')
+    )
 
     def __init__(self, *args, **kwargs):
         self.is_administrator = kwargs.pop('is_administrator', False)
@@ -63,7 +70,6 @@ class EventForm(ReadOnlyFlag, I18nModelForm):
         self.fields['slug'].disabled = True
 
     def clean_custom_css(self):
-
         if self.cleaned_data.get('custom_css') or self.files.get('custom_css'):
             css = self.cleaned_data['custom_css'] or self.files['custom_css']
             if self.is_administrator:
@@ -79,23 +85,29 @@ class EventForm(ReadOnlyFlag, I18nModelForm):
             self.instance.save(update_fields=['custom_css'])
         return None
 
+    def clean_custom_css_text(self):
+        css = self.cleaned_data.get('custom_css_text').strip()
+        if not css or self.is_administrator:
+            return css
+        validate_css(css)
+        return css
+
     def clean(self):
         data = super().clean()
         if data.get('locale') not in data.get('locales', []):
-            raise forms.ValidationError(
-                _('Your default language needs to be one of your active languages.')
+            error = forms.ValidationError(
+                _('Your default language needs to be one of your active languages.'),
             )
-        if not data.get('email'):
-            raise forms.ValidationError(
-                _(
-                    'Please provide a contact address – your speakers and participants should be able to reach you easily.'
-                )
-            )
+            self.add_error('locale', error)
         return data
 
     def save(self, *args, **kwargs):
         self.instance.locale_array = ','.join(self.cleaned_data['locales'])
-        return super().save(*args, **kwargs)
+        result = super().save(*args, **kwargs)
+        css_text = self.cleaned_data['custom_css_text']
+        if css_text:
+            self.instance.custom_css.save(self.instance.slug + '.css', ContentFile(css_text))
+        return result
 
     class Meta:
         model = Event
@@ -189,7 +201,7 @@ class EventSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
         if not data:
             return data
         data = data.lower()
-        if data == urlparse(settings.SITE_URL).hostname or data == settings.SITE_URL:
+        if data in [urlparse(settings.SITE_URL).hostname, settings.SITE_URL]:
             raise ValidationError(
                 _('You cannot choose the base domain of this installation.')
             )
@@ -223,6 +235,11 @@ class MailSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
     mail_from = forms.EmailField(
         label=_('Sender address'),
         help_text=_('Sender address for outgoing emails.'),
+        required=False,
+    )
+    mail_reply_to = forms.EmailField(
+        label=_('Contact address'),
+        help_text=_('Reply-To address. If this setting is empty and you have no custom sender, your event email address will be used as Reply-To.'),
         required=False,
     )
     mail_subject_prefix = forms.CharField(
@@ -273,9 +290,9 @@ class MailSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
         event = kwargs.get('obj')
         if event:
             self.fields['mail_from'].widget.attrs['placeholder'] = event.email
-            self.fields['mail_from'].help_text += _(
+            self.fields['mail_from'].help_text += ' ' + _(
                 'Leave empty to use the default address: {}'
-            ).format(event.email)
+            ).format(settings.MAIL_FROM)
 
     def clean(self):
         data = self.cleaned_data
@@ -286,11 +303,11 @@ class MailSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
             data['smtp_password'] = self.initial.get('smtp_password')
 
         if data.get('smtp_use_tls') and data.get('smtp_use_ssl'):
-            raise ValidationError(
+            self.add_error('smtp_use_tls', ValidationError(
                 _(
                     'You can activate either SSL or STARTTLS security, but not both at the same time.'
                 )
-            )
+            ))
         uses_encryption = data.get('smtp_use_tls') or data.get('smtp_use_ssl')
         localhost_names = [
             '127.0.0.1',
@@ -300,12 +317,12 @@ class MailSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
             'localhost.localdomain',
         ]
         if not uses_encryption and not data.get('smtp_host') in localhost_names:
-            raise ValidationError(
+            self.add_error('smtp_host', ValidationError(
                 _(
                     'You have to activate either SSL or STARTTLS security if you use a non-local mailserver due to data protection reasons. '
                     'Your administrator can add an instance-wide bypass. If you use this bypass, please also adjust your Privacy Policy.'
                 )
-            )
+            ))
 
 
 class ReviewSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
@@ -362,7 +379,7 @@ class ReviewSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
         minimum = int(data.get('review_min_score'))
         maximum = int(data.get('review_max_score'))
         if minimum >= maximum:
-            raise forms.ValidationError(
+            self.add_error('review_min_score', forms.ValidationError(
                 _('Please assign a minimum score smaller than the maximum score!')
-            )
+            ))
         return data

@@ -294,6 +294,23 @@ def test_orga_can_see_all_speakers(
 
 
 @pytest.mark.django_db
+def test_orga_can_see_all_speakers_with_limit_and_offset(
+    orga_client,
+    slot,
+    accepted_submission,
+    rejected_submission,
+    submission,
+    impersonal_answer,
+):
+    response = orga_client.get(submission.event.api_urls.speakers + '?limit=1', follow=True)
+    content = json.loads(response.content.decode())
+
+    assert response.status_code == 200
+    assert content['count'] == 2
+    assert 'offset=1' in content['next']
+
+
+@pytest.mark.django_db
 def test_reviewer_cannot_see_speakers(
     review_client,
     slot,
@@ -351,6 +368,17 @@ def test_orga_can_see_reviews(orga_client, event, review):
 
     assert response.status_code == 200
     assert len(content['results']) == 1
+
+
+@pytest.mark.django_db
+def test_orga_cannot_see_reviews_of_deleted_submission(orga_client, event, review):
+    review.submission.state = 'deleted'
+    review.submission.save()
+    response = orga_client.get(event.api_urls.reviews, follow=True)
+    content = json.loads(response.content.decode())
+
+    assert response.status_code == 200
+    assert len(content['results']) == 0
 
 
 @pytest.mark.django_db

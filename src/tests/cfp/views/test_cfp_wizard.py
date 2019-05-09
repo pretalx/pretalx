@@ -1,9 +1,11 @@
 from datetime import timedelta
+from urllib.parse import urlparse
 
 import bs4
 import django.forms as forms
 import pytest
 from django.core import mail as djmail
+from django.http.request import QueryDict
 from django.utils.timezone import now
 
 from pretalx.submission.forms import InfoForm
@@ -115,6 +117,23 @@ class TestWizard:
         return response, current_url
 
     @pytest.mark.django_db
+    def test_info_wizard_query_string_handling(self, event, client):
+        # build query string
+        params_dict = QueryDict('track=academic&submission_type=academic_talk')
+        current_url = '/test/submit/?{params_dict}'
+        # Start wizard
+        djmail.outbox = []
+        response, current_url = self.get_response_and_url(
+            client, current_url, method='GET'
+        )
+        # get query string from current URL
+        url_parts = urlparse(current_url)
+        q = QueryDict(url_parts.query)
+        assert url_parts.path.endswith('/info/') is True
+        assert q.get('track') == params_dict.get('academic')
+        assert q.get('submission_type') == params_dict.get('academic_talk')
+
+    @pytest.mark.django_db
     def test_wizard_new_user(self, event, question, client):
         event.settings.set('mail_on_new_submission', True)
         submission_type = SubmissionType.objects.filter(event=event).first().pk
@@ -122,7 +141,8 @@ class TestWizard:
 
         response, current_url = self.perform_init_wizard(client)
         response, current_url = self.perform_info_wizard(
-            client, response, current_url, submission_type=submission_type
+            client, response, current_url + '?submission_type={}-helpful-slug'.format(submission_type),
+            submission_type=submission_type
         )
         response, current_url = self.perform_question_wizard(
             client, response, current_url, answer_data, next='user'
@@ -179,7 +199,7 @@ class TestWizard:
 
         response, current_url = self.perform_init_wizard(client)
         response, current_url = self.perform_info_wizard(
-            client, response, current_url, submission_type=submission_type
+            client, response, current_url + '?submission_type=123-helpful-slug', submission_type=submission_type
         )
         response, current_url = self.perform_question_wizard(
             client, response, current_url, answer_data, next='user'
@@ -210,6 +230,10 @@ class TestWizard:
         assert s_user.name == 'Jane Doe'
         assert s_user.profiles.get(event=event).biography == 'l337 hax0r'
         assert len(djmail.outbox) == 1
+        mail = djmail.outbox[0]
+        assert sub.title in mail.subject
+        assert sub.title in mail.body
+        assert s_user.email in mail.to
 
     @pytest.mark.django_db
     def test_wizard_logged_in_user(
@@ -241,6 +265,10 @@ class TestWizard:
         assert s_user.name == 'Jane Doe'
         assert s_user.profiles.get(event=event).biography == 'l337 hax0r'
         assert len(djmail.outbox) == 1
+        mail = djmail.outbox[0]
+        assert sub.title in mail.subject
+        assert sub.title in mail.body
+        assert s_user.email in mail.to
 
     @pytest.mark.django_db
     def test_wizard_logged_in_user_no_questions(self, event, client, user):
@@ -268,6 +296,10 @@ class TestWizard:
         assert s_user.name == 'Jane Doe'
         assert s_user.profiles.get(event=event).biography == 'l337 hax0r'
         assert len(djmail.outbox) == 1
+        mail = djmail.outbox[0]
+        assert sub.title in mail.subject
+        assert sub.title in mail.body
+        assert s_user.email in mail.to
 
     @pytest.mark.django_db
     def test_wizard_logged_in_user_only_review_questions(
@@ -297,6 +329,10 @@ class TestWizard:
         assert s_user.name == 'Jane Doe'
         assert s_user.profiles.get(event=event).biography == 'l337 hax0r'
         assert len(djmail.outbox) == 1
+        mail = djmail.outbox[0]
+        assert sub.title in mail.subject
+        assert sub.title in mail.body
+        assert s_user.email in mail.to
 
     @pytest.mark.django_db
     def test_wizard_logged_in_user_no_questions_broken_template(

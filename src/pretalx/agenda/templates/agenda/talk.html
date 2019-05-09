@@ -15,12 +15,14 @@
 {% block agenda_content %}
 <article>
     <h3 class="talk-title">
-        <div>
-        {{ quotation_open }}{{ submission.title }}{{ quotation_close }}
+        <div class="heading-with-buttons">
+        {{ submission.title }}
         <div class="buttons" id="talk-buttons">
-            <a class="btn btn-outline-success" href="{{ submission.urls.ical }}">
+            {% if submission.state == 'confirmed' %}
+            <a class="btn btn-outline-primary" href="{{ submission.urls.ical }}">
                 <i class="fa fa-calendar"></i> .ical
             </a>
+            {% endif %}
             {% if submission.does_accept_feedback and not is_html_export %}
                 <a href="{{ submission.urls.feedback }}"
                         class="btn btn-success">
@@ -30,7 +32,7 @@
             {% if request.user in submission.speakers.all %}
                 <a href="{{ submission.urls.user_base }}"
                         class="btn btn-info">
-                    <i class="fa fa-edit"></i>{{ phrases.base.edit }}
+                    <i class="fa fa-edit"></i> {{ phrases.base.edit }}
                 </a>
             {% endif %}
         </div>
@@ -88,15 +90,15 @@
             {% endfor %}
             {% endif %}
             </section>
-            {% if submission.active_resources.count %}
+            {% if submission.active_resources %}
                 <section class="resources">
                     {% trans "See also:" %}
-                    {% if submission.active_resources.count == 1 %}
-                        <a href="{{ submission.active_resources.first.resource.url }}">
+                    {% if submission.active_resources.count == 1 %}{% with resource=submission.active_resources.first %}
+                        <a href="{{ resource.resource.url }}">
                             <i class="fa fa-file-o"></i>
-                            {{ submission.active_resources.first.description }}
+                            {{ resource.description }}
                         </a>
-                    {% else %}
+                        {% endwith %}{% else %}
                         <ul>
                             {% for resource in submission.active_resources %}
                                 <li>
@@ -125,7 +127,7 @@
                 <div class="speaker-header">
                     {% if speakers.1 %}
                         {% trans "Speakers" %}
-                    {% elif speakers.0 %}
+                    {% else %}
                         {% trans "Speaker" %}
                     {% endif %}
                 </div>
@@ -137,7 +139,6 @@
                             </div>
                         </a>
                         <div class="info">
-
                             {% if speaker.other_submissions.count > 1 %}
                                 {{ phrases.agenda.speaker_other_talks }}
                                 <ul class="speaker-talks">
@@ -156,6 +157,11 @@
                         </div>
                     </div>
                 {% endfor %}
+            </div>
+            {% endif %}
+            {% if request.event.is_multilingual %}
+            <div class="speakers">
+                <strong>{% trans "Language" %}:</strong> {{ submission.get_content_locale_display }}
             </div>
             {% endif %}
         </aside>

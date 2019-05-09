@@ -1,3 +1,5 @@
+import json
+
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.text import format_lazy
@@ -8,6 +10,7 @@ from pretalx.common.choices import Choices
 from pretalx.common.mixins import LogMixin
 from pretalx.common.phrases import phrases
 from pretalx.common.urls import EventUrls
+from pretalx.common.utils import I18nStrJSONEncoder
 
 
 def answer_file_path(instance, filename):
@@ -61,6 +64,20 @@ class QuestionTarget(Choices):
 
 
 class Question(LogMixin, models.Model):
+    """Questions can be asked per :class:`~pretalx.submission.models.submission.Submission`, per speaker, or of reviewers per :class:`~pretalx.submission.models.review.Review`.
+
+    Questions can have many types, which offers a flexible framework to give organisers
+    the opportunity to get all the information they need.
+
+    :param variant: Can be any of 'number', 'string', 'text', 'boolean',
+        'file', 'choices', or 'multiple_choice'. Defined in the
+        ``QuestionVariant`` class.
+    :param target: Can be any of 'submission', 'speaker', or 'reviewer'.
+        Defined in the ``QuestionTarget`` class.
+    :param required: If this is ``True``, the answer must be given at
+        submission time. On boolean questions: must check box.
+    :param position: Position in the question order in this event.
+    """
     event = models.ForeignKey(
         to='event.Event', on_delete=models.PROTECT, related_name='questions'
     )
@@ -161,7 +178,19 @@ class Question(LogMixin, models.Model):
             .order_by('-count')
         )
 
-    def missing_answers(self, filter_speakers=False, filter_talks=False):
+    @cached_property
+    def grouped_answers_json(self):
+        return json.dumps(list(self.grouped_answers), cls=I18nStrJSONEncoder)
+
+    def missing_answers(self, filter_speakers: list=False, filter_talks: list=False) -> int:
+        """Returns how many answers are still missing or this question.
+
+        This method only supports submission questions and speaker questions.
+        For missing reviews, please use the Review.find_missing_reviews method.
+
+        :param filter_speakers: Apply only to these speakers.
+        :param filter_talks: Apply only to these talks.
+        """
         from pretalx.person.models import User
 
         answers = self.answers.all()
@@ -173,12 +202,12 @@ class Question(LogMixin, models.Model):
         answer_count = answers.count()
         if self.target == QuestionTarget.SUBMISSION:
             submissions = filter_talks or self.event.submissions.all()
-            return submissions.count() - answer_count
+            return max(submissions.count() - answer_count, 0)
         if self.target == QuestionTarget.SPEAKER:
             users = filter_speakers or User.objects.filter(
                 submissions__event_id=self.event.pk
             )
-            return users.count() - answer_count
+            return max(users.count() - answer_count, 0)
         return 0
 
     class Meta:
@@ -186,6 +215,7 @@ class Question(LogMixin, models.Model):
 
 
 class AnswerOption(LogMixin, models.Model):
+    """Provides the possible answers for :class:`~pretalx.submission.models.question.Question` objects of variant 'choice' or 'multiple_choice'."""
     question = models.ForeignKey(
         to='submission.Question', on_delete=models.PROTECT, related_name='options'
     )
@@ -201,6 +231,13 @@ class AnswerOption(LogMixin, models.Model):
 
 
 class Answer(LogMixin, models.Model):
+    """
+    Answers are connected to a
+    :class:`~pretalx.submission.models.question.Question`, and, depending on
+    type, a :class:`~pretalx.person.models.user.User`, a
+    :class:`~pretalx.submission.models.submission.Submission`, or a
+    :class:`~pretalx.submission.models.review.Review`.
+    """
     question = models.ForeignKey(
         to='submission.Question', on_delete=models.PROTECT, related_name='answers'
     )
@@ -240,6 +277,7 @@ class Answer(LogMixin, models.Model):
         return f'Answer(question={self.question.question}, answer={self.answer})'
 
     def remove(self, person=None, force=False):
+        """Deletes an answer."""
         for option in self.options.all():
             option.answers.remove(self)
         self.delete()

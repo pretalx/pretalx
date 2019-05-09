@@ -56,7 +56,7 @@ def test_make_submission_type_default(
 def test_edit_submission_type(orga_client, submission_type):
     response = orga_client.post(
         submission_type.urls.edit,
-        {'default_duration': 31, 'name_0': 'New Type!'},
+        {'default_duration': 31, 'slug': 'New_Type', 'name_0': 'New Type!'},
         follow=True,
     )
     submission_type.refresh_from_db()
@@ -183,6 +183,9 @@ def test_delete_question(orga_client, event, question):
     assert event.questions.count() == 1
     response = orga_client.get(question.urls.delete, follow=True)
     assert response.status_code == 200
+    assert event.questions.count() == 1
+    response = orga_client.post(question.urls.delete, follow=True)
+    assert response.status_code == 200
     assert event.questions.count() == 0
     assert Question.all_objects.filter(event=event).count() == 0
 
@@ -190,7 +193,7 @@ def test_delete_question(orga_client, event, question):
 @pytest.mark.django_db
 def test_delete_inactive_question(orga_client, event, inactive_question):
     assert Question.all_objects.filter(event=event).count() == 1
-    response = orga_client.get(inactive_question.urls.delete, follow=True)
+    response = orga_client.post(inactive_question.urls.delete, follow=True)
     assert response.status_code == 200
     assert event.questions.count() == 0
     assert Question.all_objects.filter(event=event).count() == 0
@@ -199,7 +202,7 @@ def test_delete_inactive_question(orga_client, event, inactive_question):
 @pytest.mark.django_db
 def test_delete_choice_question(orga_client, event, choice_question):
     assert Question.all_objects.filter(event=event).count() == 1
-    response = orga_client.get(choice_question.urls.delete, follow=True)
+    response = orga_client.post(choice_question.urls.delete, follow=True)
     assert response.status_code == 200
     assert event.questions.count() == 0
     assert Question.all_objects.filter(event=event).count() == 0
@@ -210,7 +213,7 @@ def test_cannot_delete_answered_question(orga_client, event, answered_choice_que
     assert event.questions.count() == 1
     assert answered_choice_question.answers.count() == 1
     assert answered_choice_question.options.count() == 3
-    response = orga_client.get(answered_choice_question.urls.delete, follow=True)
+    response = orga_client.post(answered_choice_question.urls.delete, follow=True)
     assert response.status_code == 200
     answered_choice_question = Question.all_objects.get(pk=answered_choice_question.pk)
     assert answered_choice_question
@@ -395,10 +398,18 @@ def test_can_see_single_track(orga_client, track):
 
 @pytest.mark.django_db
 def test_can_edit_track(orga_client, track):
-    response = orga_client.post(track.urls.base, {'name_0': 'Name', 'color': 'ffff99'}, follow=True)
+    response = orga_client.post(track.urls.base, {'name_0': 'Name', 'color': '#ffff99'}, follow=True)
     assert response.status_code == 200
     track.refresh_from_db()
     assert str(track.name) == 'Name'
+
+
+@pytest.mark.django_db
+def test_cannot_set_incorrect_track_color(orga_client, track):
+    response = orga_client.post(track.urls.base, {'name_0': 'Name', 'color': '#fgff99'}, follow=True)
+    assert response.status_code == 200
+    track.refresh_from_db()
+    assert str(track.name) != 'Name'
 
 
 @pytest.mark.django_db

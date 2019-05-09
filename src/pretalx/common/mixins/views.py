@@ -3,13 +3,18 @@ from contextlib import suppress
 from importlib import import_module
 from urllib.parse import quote
 
+from django import forms
 from django.conf import settings
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import CharField, Q
 from django.db.models.functions import Lower
+from django.forms import ValidationError
 from django.http import Http404
 from django.shortcuts import redirect
 from django.utils.functional import cached_property
+from django.utils.translation import ugettext_lazy as _
+from django_context_decorator import context
+from formtools.wizard.forms import ManagementForm
 from i18nfield.forms import I18nModelForm
 from rules.contrib.views import PermissionRequiredMixin
 
@@ -29,8 +34,9 @@ class ActionFromUrl:
     def permission_object(self):
         return self.object
 
+    @context
     @cached_property
-    def _action(self):
+    def action(self):
         if not any(_id in self.kwargs for _id in ['pk', 'code']):
             return 'create'
         if self.request.user.has_perm(
@@ -39,14 +45,9 @@ class ActionFromUrl:
             return 'edit'
         return 'view'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['action'] = self._action
-        return context
-
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['read_only'] = self._action == 'view'
+        kwargs['read_only'] = self.action == 'view'
         if hasattr(self.request, 'event') and issubclass(
             self.form_class, I18nModelForm
         ):
@@ -75,7 +76,7 @@ class Sortable:
             sort_key = getattr(self, 'default_sort_field', '')
         if sort_key:
             plain_key = sort_key[1:] if sort_key.startswith('-') else sort_key
-            reverse = not (plain_key == sort_key)
+            reverse = not plain_key == sort_key
             if plain_key in self.sortable_fields:
                 is_text = False
                 if '__' not in plain_key:
@@ -141,32 +142,35 @@ class Filterable:
             qs = qs.filter(_filters[0])
         return qs
 
-    def get_context_data(self, **kwargs):
-        from django import forms
+    @context
+    @cached_property
+    def search_form(self):
+        return SearchForm(self.request.GET if 'q' in self.request.GET else None)
 
-        context = super().get_context_data(**kwargs)
-        context['search_form'] = SearchForm(
-            self.request.GET if 'q' in self.request.GET else {}
-        )
+    @context
+    @cached_property
+    def filter_form(self):
         if hasattr(self, 'filter_form_class'):
-            context['filter_form'] = self.filter_form_class(
-                self.request.event, self.request.GET
-            )
-        elif hasattr(self, 'get_filter_form'):
-            context['filter_form'] = self.get_filter_form()
-        elif self.filter_fields:
-            context['filter_form'] = forms.modelform_factory(
+            return self.filter_form_class(self.request.event, self.request.GET)
+        if hasattr(self, 'get_filter_form'):
+            return self.get_filter_form()
+        if self.filter_fields:
+            _form = forms.modelform_factory(
                 self.model, fields=self.filter_fields
             )(self.request.GET)
-            for field in context['filter_form'].fields.values():
+            for field in _form.fields.values():
                 field.required = False
                 if hasattr(field, 'queryset'):
                     field.queryset = field.queryset.filter(event=self.request.event)
-        return context
+            return _form
+        return None
 
 
 class PermissionRequired(PermissionRequiredMixin):
+
     def has_permission(self):
+        if not hasattr(self, 'get_permission_object') and hasattr(self, 'object'):
+            self.get_permission_object = lambda self: self.object
         result = super().has_permission()
         if not result:
             request = getattr(self, 'request', None)
@@ -202,3 +206,45 @@ class PermissionRequired(PermissionRequiredMixin):
 class EventPermissionRequired(PermissionRequired):
     def get_permission_object(self):
         return self.request.event
+
+
+class SensibleBackWizardMixin():
+
+    def post(self, *args, **kwargs):
+        """
+        Don't redirect if user presses the prev. step button, save data instead.
+        The rest of this is copied from WizardView.
+        We want to save data when hitting "back"!
+        """
+        wizard_goto_step = self.request.POST.get('wizard_goto_step', None)
+        management_form = ManagementForm(self.request.POST, prefix=self.prefix)
+        if not management_form.is_valid():
+            raise ValidationError(
+                _('ManagementForm data is missing or has been tampered.'),
+                code='missing_management_form',
+            )
+
+        form_current_step = management_form.cleaned_data['current_step']
+        if (form_current_step != self.steps.current and
+                self.storage.current_step is not None):
+            # form refreshed, change current step
+            self.storage.current_step = form_current_step
+
+        # get the form for the current step
+        form = self.get_form(data=self.request.POST, files=self.request.FILES)
+
+        # and try to validate
+        if form.is_valid():
+            # if the form is valid, store the cleaned data and files.
+            self.storage.set_step_data(self.steps.current, self.process_step(form))
+            self.storage.set_step_files(self.steps.current, self.process_step_files(form))
+
+            # check if the current step is the last step
+            if wizard_goto_step and wizard_goto_step in self.get_form_list():
+                return self.render_goto_step(wizard_goto_step)
+            if self.steps.current == self.steps.last:
+                # no more steps, render done view
+                return self.render_done(form, **kwargs)
+            # proceed to the next step
+            return self.render_next_step(form)
+        return self.render(form)

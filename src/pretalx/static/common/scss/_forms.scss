@@ -46,7 +46,7 @@ form small.form-text.text-muted {
     text-decoration: underline;
   }
 }
-form .checkbox + small.form-text {
+form .form-check + small.form-text {
   margin-top: -8px;
   margin-left: 36px;
 }
@@ -126,12 +126,12 @@ form .form-control:disabled, .form-control[readonly] {
   background-color: $brand-primary;
 }
 
-table .radio, table .checkbox {
+table .form-radio, table .form-check {
   margin-top: -8px;
 }
 
 .checkbox-multi-select {
-  height: calc(2.25rem + 2px);
+  height: calc(2.25rem - 2px);
   margin-top: 0px !important;
   width: 300px;
 
@@ -144,12 +144,12 @@ table .radio, table .checkbox {
   .multi-select-options {
     display: none;
     position: absolute;
-    margin-top: calc(2.25rem + 2px);
+    margin-top: calc(2.25rem - 2px);
     background-color: $white;
     border: 1px solid #ced4da;
     color: #495057;
     width: 300px;
-    z-index: 10;
+    z-index: 100;
   }
   &:hover {
     .multi-select-options {
@@ -158,7 +158,7 @@ table .radio, table .checkbox {
   }
 }
 
-.radio, .checkbox {
+.form-check, .checkbox, .radio {
   position: relative;
   padding: 4px 0 4px 36px;
 
@@ -241,4 +241,9 @@ table .action-column {
   .btn {
     margin-left: 8px;
   }
+}
+/* fix input group prepend look */
+.input-group-text.input-group-prepend {
+  font-size: inherit;
+  line-height: inherit;
 }

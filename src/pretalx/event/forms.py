@@ -1,6 +1,7 @@
 from django import forms
 from django.conf import settings
 from django.db.models import Q
+from django.utils.html import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from i18nfield.forms import I18nModelForm
 
@@ -22,10 +23,10 @@ class TeamForm(ReadOnlyFlag, I18nModelForm):
             self.fields['organiser'].initial = organiser
             self.fields['limit_events'].queryset = organiser.events.all()
         if instance and instance.pk:
-            self.fields['is_reviewer'].label += (
+            self.fields['is_reviewer'].help_text = mark_safe(
                 f' (<a href="{instance.orga_urls.base}tracks">'
-                + str(_('Limit to certain tracks'))
-                + '</a>?)'
+                + str(_('Limit to certain tracks?'))
+                + '</a>)'
             )
 
     class Meta:
@@ -118,11 +119,11 @@ class EventWizardBasicsForm(I18nModelForm):
         self.fields['locale'].choices = [
             (a, b) for a, b in settings.LANGUAGES if a in locales
         ]
-        self.fields['slug'].help_text = _(
+        self.fields['slug'].help_text = str(_(
             'This is the address your event will be available at. '
             'Should be short, only contain lowercase letters and numbers, and must be unique. '
             'We recommend some kind of abbreviation with less than 10 characters that can be easily remembered.'
-        )
+        )) + ' <strong>' + str(_('You cannot change the slug later on!')) + '</strong>'
 
     def clean_slug(self):
         slug = self.cleaned_data['slug']
@@ -168,7 +169,14 @@ class EventWizardDisplayForm(forms.Form):
         label=_('Show on dashboard'),
         help_text=_('Show this event on this website\'s dashboard, once it is public?'),
     )
-    primary_color = forms.CharField(required=False)
+    primary_color = forms.CharField(
+        max_length=7,
+        label=_('Main event colour'),
+        help_text=_(
+            'Provide a hex value like #00ff00 if you want to style pretalx in your event\'s colour scheme.'
+        ),
+        required=False,
+    )
     logo = ExtensionFileField(
         required=False,
         extension_whitelist=IMAGE_EXTENSIONS,
@@ -197,6 +205,7 @@ class EventWizardDisplayForm(forms.Form):
 
     def __init__(self, *args, user=None, locales=None, organiser=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['primary_color'].widget.attrs['class'] = 'colorpickerfield'
 
 
 class EventWizardCopyForm(forms.Form):
@@ -234,7 +243,7 @@ class ReviewPhaseForm(I18nModelForm):
     def clean(self):
         data = super().clean()
         if data.get('start') and data.get('end') and data['start'] > data['end']:
-            raise forms.ValidationError(_('The end of a phase has to be after its start.'))
+            self.add_error('end', forms.ValidationError(_('The end of a phase has to be after its start.')))
         return data
 
     class Meta:
@@ -245,6 +254,7 @@ class ReviewPhaseForm(I18nModelForm):
             'can_see_speaker_names',
             'can_change_submission_state',
             'can_see_other_reviews',
+            'speakers_can_change_submissions',
         ]
         widgets = {
             'start': forms.DateInput(attrs={'class': 'datetimepickerfield'}),

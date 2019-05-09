@@ -30,18 +30,18 @@
     {% endif %}
     <div class="row mb-4 url-links">
         <a class="btn btn-success btn-lg btn-block {% if not cfp.is_open %}disabled{% endif %}"
-           href="{{ request.event.urls.submit }}">
-            {% if cfp.is_open %}
+            href="{{ request.event.urls.submit }}{{ submit_qs }}">
+        {% if cfp.is_open %}
             {% trans "Submit a proposal" %}
-            {% else %}
+        {% else %}
             {% trans "Submissions are closed" %}
-            {% endif %}
+        {% endif %}
         </a>
 
         {% if has_submissions or request.user.is_anonymous %}
-        <a class="btn btn-info btn-lg btn-block" href="{{ request.event.urls.user_submissions }}">
-            {% trans "Edit or view your submissions" %}
-        </a>
+            <a class="btn btn-info btn-lg btn-block" href="{{ request.event.urls.user_submissions }}">
+                {% trans "Edit or view your submissions" %}
+            </a>
         {% endif %}
 
         {% if can_view_schedule %}

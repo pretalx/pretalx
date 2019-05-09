@@ -11,7 +11,7 @@ from pretalx.common.settings.config import build_config
 from pretalx.common.settings.utils import log_initial
 
 
-config, config_files = build_config()
+config, CONFIG_FILES = build_config()
 CONFIG = config
 
 ##
@@ -82,7 +82,8 @@ for entry_point in iter_entry_points(group='pretalx.plugin', name=None):
     PLUGINS.append(entry_point.module_name)
     INSTALLED_APPS.append(entry_point.module_name)
 
-CORE_MODULES = LOCAL_APPS + config.get('site', 'core_modules').split(',')
+CORE_MODULES = LOCAL_APPS + [module for module in config.get('site', 'core_modules').split(',') if module]
+
 
 ## URL SETTINGS
 SITE_URL = config.get('site', 'url', fallback='http://localhost')
@@ -451,6 +452,7 @@ REST_FRAMEWORK = {
     'SEARCH_PARAM': 'q',
     'ORDERING_PARAM': 'o',
     'VERSIONING_PARAM': 'v',
+    'DATETIME_FORMAT': 'iso-8601',
 }
 if DEBUG:
     REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] += (
@@ -461,7 +463,7 @@ if DEBUG:
 WSGI_APPLICATION = 'pretalx.wsgi.application'
 log_initial(
     debug=DEBUG,
-    config_files=config_files,
+    config_files=CONFIG_FILES,
     db_name=db_name,
     db_backend=db_backend,
     LOG_DIR=LOG_DIR,

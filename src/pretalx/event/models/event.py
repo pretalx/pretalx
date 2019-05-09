@@ -59,6 +59,38 @@ def event_logo_path(instance, filename):
 
 @hierarkey.add()
 class Event(LogMixin, models.Model):
+    """The Event class has direct or indirect relations to all other models.
+
+    Since most models depend on the Event model in some way, they should
+    preferably be accessed via the reverse relation on the event model to
+    prevent data leaks.
+
+    :param is_public: Is this event public yet? Should only be set via the
+        ``pretalx.orga.views.EventLive`` view after the warnings have been
+        acknowledged.
+    :param locale_array: Contains the event's active locales as a comma
+        separated string. Please use the ``locales`` property to interact
+        with this information.
+    :param accept_template: Templates for emails sent when accepting a talk.
+    :param reject_template: Templates for emails sent when rejecting a talk.
+    :param ack_template: Templates for emails sent when acknowledging that
+        a submission was sent in.
+    :param update_template: Templates for emails sent when a talk scheduling
+        was modified.
+    :param question_template: Templates for emails sent when a speaker has not
+        yet answered a question, and organisers send out reminders.
+    :param primary_color: Main event color. Accepts hex values like
+        ``#00ff00``.
+    :param custom_css: Custom event CSS. Has to pass fairly restrictive
+        whitelist for security considerations.
+    :param logo: Replaces the event name in the public header. Will be
+        displayed at up to full header height and up to full content width.
+    :param header_image: Replaces the header pattern and/or background
+        color. Center-aligned, so when the window shrinks, the center will
+        continue to be displayed.
+    :param plugins: A list of active plugins as a comma-separated string.
+        Please use the ``plugin_list`` property for interaction.
+    """
     name = I18nCharField(max_length=200, verbose_name=_('Name'))
     slug = models.SlugField(
         max_length=50,
@@ -74,6 +106,7 @@ class Event(LogMixin, models.Model):
             validate_event_slug_blacklist,
         ],
         verbose_name=_("Short form"),
+        help_text=_('The slug may only contain letters, numbers, dots and dashes.'),
     )
     organiser = models.ForeignKey(
         to='Organiser',
@@ -85,20 +118,23 @@ class Event(LogMixin, models.Model):
     date_from = models.DateField(verbose_name=_('Event start date'))
     date_to = models.DateField(verbose_name=_('Event end date'))
     timezone = models.CharField(
-        choices=[(tz, tz) for tz in pytz.common_timezones], max_length=30, default='UTC'
+        choices=[(tz, tz) for tz in pytz.common_timezones], max_length=30, default='UTC',
+        help_text=_('All event dates will be localized and interpreted to be in this timezone.'),
     )
     email = models.EmailField(
-        verbose_name=_('Orga email address'),
-        help_text=_('Will be used as sender/reply-to in emails'),
+        verbose_name=_('Organiser email address'),
+        help_text=_('Will be used as Reply-To in emails.'),
     )
     primary_color = models.CharField(
         max_length=7,
         null=True,
         blank=True,
-        validators=[],
+        validators=[
+            RegexValidator(r'#([0-9A-Fa-f]{3}){1,2}'),
+        ],
         verbose_name=_('Main event colour'),
         help_text=_(
-            'Please provide a hex value like #00ff00 if you want to style pretalx in your event\'s colour scheme.'
+            'Provide a hex value like #00ff00 if you want to style pretalx in your event\'s colour scheme.'
         ),
     )
     custom_css = models.FileField(
@@ -116,8 +152,9 @@ class Event(LogMixin, models.Model):
         blank=True,
         verbose_name=_('Logo'),
         help_text=_(
-            'If you provide a logo image, we will by default not show your events name and date in the page header. '
-            'We will show your logo with a maximal height of 120 pixels.'
+            'If you provide a logo image, your event\'s name will not be shown in the event header. '
+            'The logo will be displayed left-aligned, and be allowed to grow up to the width of the'
+            'event content, if it is larger than that.'
         ),
     )
     header_image = models.FileField(
@@ -127,7 +164,7 @@ class Event(LogMixin, models.Model):
         verbose_name=_('Header image'),
         help_text=_(
             'If you provide a header image, it will be displayed instead of your event\'s color and/or header pattern '
-            'on top of all event pages. It will be center-aligned, so when the window shrinks, the center parts will '
+            'at the top of all event pages. It will be center-aligned, so when the window shrinks, the center parts will '
             'continue to be displayed, and not stretched.'
         ),
     )
@@ -230,6 +267,7 @@ class Event(LogMixin, models.Model):
         purge_outbox = '{outbox}purge'
         submissions = '{base}submissions/'
         submission_cards = '{base}submissions/cards/'
+        stats = '{base}submissions/statistics/'
         submission_feed = '{base}submissions/feed/'
         new_submission = '{submissions}new'
         speakers = '{base}speakers/'
@@ -272,10 +310,17 @@ class Event(LogMixin, models.Model):
 
     @cached_property
     def locales(self) -> list:
+        """Is a list of active event locales."""
         return self.locale_array.split(",")
 
     @cached_property
+    def is_multilingual(self) -> bool:
+        """Is ``True`` if the event supports more than one locale."""
+        return len(self.locales) > 1
+
+    @cached_property
     def named_locales(self) -> list:
+        """Is a list of tuples of locale codes and natural names for this event."""
         enabled = set(self.locale_array.split(","))
         return [a for a in settings.LANGUAGES_NATURAL_NAMES if a[0] in enabled]
 
@@ -290,15 +335,18 @@ class Event(LogMixin, models.Model):
         if was_created:
             self.build_initial_data()
 
-    def get_plugins(self):
+    @property
+    def plugin_list(self) -> list:
+        """Provides a list of active plugins as strings, and is also an attribute setter."""
         if not self.plugins:
             return []
         return self.plugins.split(',')
 
-    def set_active_plugins(self, modules):
+    @plugin_list.setter
+    def plugin_list(self, modules: list) -> None:
         from pretalx.common.plugins import get_all_plugins
 
-        plugins_active = self.get_plugins()
+        plugins_active = self.plugin_list
         plugins_available = {
             p.module: p
             for p in get_all_plugins(self)
@@ -313,19 +361,32 @@ class Event(LogMixin, models.Model):
 
         self.plugins = ",".join(modules)
 
-    def enable_plugin(self, module):
-        plugins_active = self.get_plugins()
+    def enable_plugin(self, module: str) -> None:
+        """Enables a named plugin.
+
+        Caution, no validation is performed at this point. No exception is
+        raised if the module is unknown. An already active module will not
+        be added to the plugin list again.
+
+        :param module: The module to be activated."""
+        plugins_active = self.plugin_list
 
         if module not in plugins_active:
             plugins_active.append(module)
-            self.set_active_plugins(plugins_active)
+            self.plugin_list = plugins_active
 
-    def disable_plugin(self, module):
-        plugins_active = self.get_plugins()
+    def disable_plugin(self, module: str) -> None:
+        """Disbles a named plugin.
+
+        Caution, no validation is performed at this point. No exception is
+        raised if the module was not part of the active plugins.
+
+        :param module: The module to be deactivated."""
+        plugins_active = self.plugin_list
 
         if module in plugins_active:
             plugins_active.remove(module)
-            self.set_active_plugins(plugins_active)
+            self.plugin_list = plugins_active
 
     def _get_default_submission_type(self):
         from pretalx.submission.models import SubmissionType
@@ -336,7 +397,7 @@ class Event(LogMixin, models.Model):
         return sub_type
 
     @cached_property
-    def fixed_templates(self):
+    def fixed_templates(self) -> list:
         return [
             self.accept_template,
             self.ack_template,
@@ -395,10 +456,6 @@ class Event(LogMixin, models.Model):
                 end=self.datetime_from - relativedelta(months=-3),
                 is_active=bool(not cfp_deadline or cfp_deadline < now()),
                 position=0,
-                can_review=True,
-                can_see_other_reviews='after_review',
-                can_see_speaker_names=True,
-                can_change_submission_state=False,
             )
             ReviewPhase.objects.create(
                 event=self, name=_('Selection'),
@@ -407,7 +464,6 @@ class Event(LogMixin, models.Model):
                 position=1,
                 can_review=False,
                 can_see_other_reviews='always',
-                can_see_speaker_names=True,
                 can_change_submission_state=True,
             )
         self.save()
@@ -448,16 +504,21 @@ class Event(LogMixin, models.Model):
         self.build_initial_data()  # make sure we get a functioning event
 
     @cached_property
-    def pending_mails(self):
+    def pending_mails(self) -> int:
+        """The amount of currently unsent :class:`~pretalx.mail.models.QueuedMail` objects."""
         return self.queued_mails.filter(sent__isnull=True).count()
 
     @cached_property
     def wip_schedule(self):
+        """Returns the latest unreleased :class:`~pretalx.schedule.models.schedule.Schedule`.
+
+        :retval: :class:`~pretalx.schedule.models.schedule.Schedule`"""
         schedule, _ = self.schedules.get_or_create(version__isnull=True)
         return schedule
 
     @cached_property
     def current_schedule(self):
+        """Returns the latest released :class:`~pretalx.schedule.models.schedule.Schedule`, or ``None`` before the first release."""
         return (
             self.schedules.order_by('-published')
             .filter(published__isnull=False)
@@ -489,6 +550,7 @@ class Event(LogMixin, models.Model):
 
     @cached_property
     def teams(self):
+        """Returns all :class:`~pretalx.event.models.organiser.Team` objects that concern this event."""
         from .organiser import Team
 
         return Team.objects.filter(
@@ -497,18 +559,30 @@ class Event(LogMixin, models.Model):
         )
 
     @cached_property
-    def datetime_from(self):
+    def datetime_from(self) -> datetime:
+        """The localised datetime of the event start date.
+
+        :rtype: datetime
+        """
         return make_aware(
             datetime.combine(self.date_from, time(hour=0, minute=0, second=0)),
-            pytz.timezone(self.timezone),
+            self.tz,
         )
 
     @cached_property
-    def datetime_to(self):
+    def datetime_to(self) -> datetime:
+        """The localised datetime of the event end date.
+
+        :rtype: datetime
+        """
         return make_aware(
             datetime.combine(self.date_to, time(hour=23, minute=59, second=59)),
-            pytz.timezone(self.timezone),
+            self.tz,
         )
+
+    @cached_property
+    def tz(self):
+        return pytz.timezone(self.timezone)
 
     @cached_property
     def reviews(self):
@@ -528,18 +602,16 @@ class Event(LogMixin, models.Model):
                 start=cfp_deadline,
                 end=self.date_from - relativedelta(months=-3),
                 is_active=bool(cfp_deadline),
-
-                can_review=True,
                 can_see_other_reviews='after_review',
                 can_see_speaker_names=True,
-                can_change_submission_state=False,
             )
         return phase
 
     def update_review_phase(self):
         """
-        This method activates the next review phase if the current one is over,
-        or if no review phase is active and if there is a new one to activate.
+        This method activates the next review phase if the current one is over.
+
+        If no review phase is active and if there is a new one to activate.
         """
         _now = now()
         future_phases = self.review_phases.all()
@@ -551,14 +623,14 @@ class Event(LogMixin, models.Model):
             if old_phase.end:
                 if old_phase.end > _now:
                     return old_phase
-                else:
-                    old_phase.is_active = False
-                    old_phase.save()
+                old_phase.is_active = False
+                old_phase.save()
             elif not (next_phase and next_phase.start and next_phase.start <= _now):
                 return old_phase
         if next_phase and (not next_phase.start or next_phase.start <= _now):
             next_phase.activate()
             return next_phase
+        return None
 
     @cached_property
     def submission_questions(self):
@@ -566,6 +638,7 @@ class Event(LogMixin, models.Model):
 
     @cached_property
     def talks(self):
+        """Returns a queryset of all :class:`~pretalx.submission.models.submission.Submission` object in the current released schedule."""
         from pretalx.submission.models.submission import Submission
 
         if self.current_schedule:
@@ -580,24 +653,40 @@ class Event(LogMixin, models.Model):
 
     @cached_property
     def speakers(self):
+        """Returns a queryset of all speakers (of type :class:`~pretalx.person.models.user.User`) visible in the current released schedule."""
         from pretalx.person.models import User
 
         return User.objects.filter(submissions__in=self.talks).order_by('id').distinct()
 
     @cached_property
     def submitters(self):
+        """Returns a queryset of all :class:`~pretalx.person.models.user.User` objects who have submitted to this event.
+
+        Ignores users who have deleted all of their submissions."""
         from pretalx.person.models import User
 
         return (
             User.objects.filter(submissions__in=self.submissions.all())
+            .prefetch_related('submissions')
             .order_by('id')
             .distinct()
         )
 
     def get_date_range_display(self) -> str:
+        """Returns the localised, prettily formatted date range for this event.
+
+        E.g. as long as the event takes place within the same month, the month
+        is only named once."""
         return daterange(self.date_from, self.date_to)
 
-    def release_schedule(self, name, user=None, notify_speakers=False):
+    def release_schedule(self, name: str, user=None, notify_speakers: bool=False):
+        """Releases a new :class:`~pretalx.schedule.models.schedule.Schedule` by finalizing the current WIP schedule.
+
+        :param name: The new version name
+        :param user: The :class:`~pretalx.person.models.user.User` executing the release
+        :param notify_speakers: Generate emails for all speakers with changed slots.
+        :type user: :class:`~pretalx.person.models.user.User`
+        """
         self.wip_schedule.freeze(name=name, user=user, notify_speakers=notify_speakers)
 
     def send_orga_mail(self, text, stats=False):
@@ -632,6 +721,7 @@ class Event(LogMixin, models.Model):
 
     @transaction.atomic
     def shred(self):
+        """Irrevocably deletes an event and all related data."""
         from pretalx.common.models import ActivityLog
         from pretalx.person.models import SpeakerProfile
         from pretalx.schedule.models import TalkSlot

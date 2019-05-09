@@ -59,15 +59,15 @@ class UserForm(forms.Form):
 
     def _clean_register(self, data):
         if data.get('register_password') != data.get('register_password_repeat'):
-            raise ValidationError(phrases.base.passwords_differ)
+            self.add_error('register_password_repeat', ValidationError(phrases.base.passwords_differ))
 
         if User.objects.filter(email__iexact=data.get('register_email')).exists():
-            raise ValidationError(
+            self.add_error('register_email', ValidationError(
                 _(
                     'We already have a user with that email address. Did you already register '
                     'before and just need to log in?'
                 )
-            )
+            ))
 
     def clean(self):
         data = super().clean()
@@ -91,8 +91,8 @@ class UserForm(forms.Form):
             return data['user_id']
 
         user = User.objects.create_user(
-            name=data.get('register_name'),
-            email=data.get('register_email').lower(),
+            name=data.get('register_name').strip(),
+            email=data.get('register_email').lower().strip(),
             password=data.get('register_password'),
             locale=translation.get_language(),
             timezone=timezone.get_current_timezone_name(),
@@ -113,7 +113,7 @@ class SpeakerProfileForm(
         self.with_email = kwargs.pop('with_email', True)
         self.essential_only = kwargs.pop('essential_only', False)
         if self.user:
-            kwargs['instance'] = self.user.profiles.filter(event=self.event).first()
+            kwargs['instance'] = self.user.event_profile(self.event)
         else:
             kwargs['instance'] = SpeakerProfile()
         super().__init__(*args, **kwargs, event=self.event)
@@ -238,7 +238,7 @@ class LoginInfoForm(forms.ModelForm):
         super().clean()
         password = self.cleaned_data.get('password')
         if password and not password == self.cleaned_data.get('password_repeat'):
-            raise ValidationError(phrases.base.passwords_differ)
+            self.add_error('password_repeat', ValidationError(phrases.base.passwords_differ))
 
     def __init__(self, user, *args, **kwargs):
         self.user = user
@@ -264,11 +264,11 @@ class SpeakerInformationForm(I18nModelForm):
             self.cleaned_data['include_submitters']
             and self.cleaned_data['exclude_unconfirmed']
         ):
-            raise ValidationError(
+            self.add_error('exclude_unconfirmed', ValidationError(
                 _(
                     'Either target all submitters or only confirmed speakers, these options are exclusive!'
                 )
-            )
+            ))
         return result
 
     class Meta:

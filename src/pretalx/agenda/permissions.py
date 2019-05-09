@@ -9,7 +9,7 @@ def is_agenda_visible(user, event):
         event
         and event.is_public
         and event.settings.show_schedule
-        and event.schedules.filter(version__isnull=False).exists()
+        and event.current_schedule
     )
 
 
@@ -28,7 +28,9 @@ def is_submission_visible(user, submission):
     if hasattr(submission, 'submission'):
         submission = submission.submission
     return bool(
-        submission and is_agenda_visible(user, submission.event) and submission.slots.filter(schedule=submission.event.current_schedule, is_visible=True).exists()
+        submission
+        and is_agenda_visible(user, submission.event)
+        and submission.slots.filter(schedule=submission.event.current_schedule, is_visible=True).exists()
     )
 
 

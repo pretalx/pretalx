@@ -22,7 +22,7 @@ def test_speaker_list(
     client, django_assert_num_queries, event, speaker, slot, other_slot
 ):
     url = event.urls.speakers
-    with django_assert_num_queries(23):
+    with django_assert_num_queries(19):
         response = client.get(url, follow=True)
     assert response.status_code == 200
     assert speaker.name in response.content.decode()
@@ -37,6 +37,18 @@ def test_speaker_page(
         response = client.get(url, follow=True)
     assert response.status_code == 200
     assert speaker.profiles.get(event=event).biography in response.content.decode()
+    assert slot.submission.title in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_speaker_redirect(
+    client, django_assert_num_queries, event, speaker, slot, other_slot
+):
+    target = reverse('agenda:speaker', kwargs={'code': speaker.code, 'event': event.slug})
+    url = reverse('agenda:speaker.redirect', kwargs={'pk': speaker.pk, 'event': event.slug})
+    response = client.get(url)
+    assert response.status_code == 302
+    assert response.url.endswith(target)
 
 
 @pytest.mark.django_db
@@ -69,6 +81,6 @@ def test_versioned_schedule_page(
     assert slot.submission.title in response.content.decode()
 
     url = f'/{event.slug}/schedule?version={quote(schedule.version)}'
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(22):
         redirected_response = client.get(url, follow=True)
     assert redirected_response._request.path == response._request.path

@@ -1,5 +1,6 @@
 import logging
 import os
+from contextlib import suppress
 
 from csp.decorators import csp_update
 from django.conf import settings
@@ -18,13 +19,16 @@ from formtools.wizard.views import NamedUrlSessionWizardView
 
 from pretalx.cfp.views.event import EventPageMixin
 from pretalx.common.mail import SendMailException
+from pretalx.common.mixins.views import SensibleBackWizardMixin
 from pretalx.common.phrases import phrases
 from pretalx.mail.context import template_context_from_submission
 from pretalx.mail.models import MailTemplate
 from pretalx.person.forms import SpeakerProfileForm, UserForm
 from pretalx.person.models import User
 from pretalx.submission.forms import InfoForm, QuestionsForm
-from pretalx.submission.models import Answer, QuestionTarget, QuestionVariant
+from pretalx.submission.models import (
+    Answer, QuestionTarget, QuestionVariant, SubmissionType, Track,
+)
 
 FORMS = [
     ('info', InfoForm),
@@ -41,18 +45,20 @@ FORM_DATA = {
 
 
 class SubmitStartView(EventPageMixin, View):
+
     @staticmethod
     def get(request, *args, **kwargs):
-        return redirect(
-            reverse(
-                'cfp:event.submit',
-                kwargs={
-                    'event': request.event.slug,
-                    'step': 'info',
-                    'tmpid': get_random_string(length=6),
-                },
-            )
+        url = reverse(
+            'cfp:event.submit',
+            kwargs={
+                'event': request.event.slug,
+                'step': 'info',
+                'tmpid': get_random_string(length=6),
+            },
         )
+        if request.GET:
+            url += f'?{request.GET.urlencode()}'
+        return redirect(url)
 
 
 def show_questions_page(wizard):
@@ -73,7 +79,7 @@ def show_user_page(wizard):
 
 
 @method_decorator(csp_update(IMG_SRC="https://www.gravatar.com"), name='dispatch')
-class SubmitWizard(EventPageMixin, NamedUrlSessionWizardView):
+class SubmitWizard(EventPageMixin, SensibleBackWizardMixin, NamedUrlSessionWizardView):
     form_list = FORMS
     condition_dict = {'questions': show_questions_page, 'user': show_user_page}
     file_storage = FileSystemStorage(os.path.join(settings.MEDIA_ROOT, 'avatars'))
@@ -103,7 +109,22 @@ class SubmitWizard(EventPageMixin, NamedUrlSessionWizardView):
         if step == 'questions':
             kwargs['target'] = ''
             kwargs['track'] = (self.get_cleaned_data_for_step('info') or dict()).get('track')
+            if not self.request.user.is_anonymous:
+                kwargs['speaker'] = self.request.user
         return kwargs
+
+    def get_form_initial(self, step):
+        initial = super().get_form_initial(step)
+        if step == 'info':
+            for field, model in (('submission_type', SubmissionType), ('track', Track)):
+                request_value = self.request.GET.get(field)
+                if request_value:
+                    with suppress(AttributeError, TypeError):
+                        pk = int(request_value.split('-'))
+                        obj = model.objects.filter(event=self.request.event, pk=pk).first()
+                        if obj:
+                            initial[field] = obj
+        return initial
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -224,7 +245,7 @@ class SubmitWizard(EventPageMixin, NamedUrlSessionWizardView):
                     skip_queue=True,
                     locale=self.request.event.locale,
                 )
-            additional_speaker = form_dict['info'].cleaned_data.get('additional_speaker')
+            additional_speaker = form_dict['info'].cleaned_data.get('additional_speaker').strip()
             if additional_speaker:
                 sub.send_invite(to=[additional_speaker], _from=user)
         except SendMailException as exception:

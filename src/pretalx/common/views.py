@@ -13,6 +13,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.generic import FormView
 from django.views.generic.detail import SingleObjectTemplateResponseMixin
 from django.views.generic.edit import ModelFormMixin, ProcessFormView
+from django_context_decorator import context
 
 from pretalx.cfp.forms.auth import ResetForm
 from pretalx.common.mail import SendMailException
@@ -55,10 +56,9 @@ def get_static(request, path, content_type):
 class GenericLoginView(FormView):
     form_class = UserForm
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['password_reset_link'] = self.get_password_reset_link()
-        return context
+    @context
+    def password_reset_link(self):
+        return self.get_password_reset_link()
 
     def form_valid(self, form):
         pk = form.save()

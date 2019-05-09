@@ -1,7 +1,8 @@
 import re
+import statistics
 import string
 import uuid
-import warnings
+from contextlib import suppress
 from datetime import timedelta
 
 from django.conf import settings
@@ -15,12 +16,16 @@ from django.utils.translation import pgettext, ugettext_lazy as _
 
 from pretalx.common.choices import Choices
 from pretalx.common.mixins import LogMixin
-from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.mail.context import template_context_from_submission
 from pretalx.mail.models import QueuedMail
 from pretalx.submission.signals import submission_state_change
+
+INSTANCE_IDENTIFIER = None
+with suppress(Exception):
+    from pretalx.common.models.settings import GlobalSettings
+    INSTANCE_IDENTIFIER = GlobalSettings().get_instance_identifier()
 
 
 def generate_invite_code(length=32):
@@ -90,6 +95,25 @@ class AllSubmissionManager(models.Manager):
 
 
 class Submission(LogMixin, models.Model):
+    """Submissions are, next to :class:`~pretalx.event.models.event.Event`, the central model in pretalx.
+
+    A submission, which belongs to exactly one event, can have multiple
+    speakers and a lot of other related data, such as a
+    :class:`~pretalx.submission.models.type.SubmissionType`, a
+    :class:`~pretalx.submission.models.track.Track`, multiple
+    :class:`~pretalx.submission.models.question.Answer` objects, and so on.
+
+    :param code: The unique alphanumeric identifier used to refer to a
+        submission.
+    :param state: The submission can be 'submitted', 'accepted', 'confirmed',
+        'rejected', 'withdrawn', or 'canceled'. State changes should be done via
+        the corresponding methods, like ``accept()``. The ``SubmissionStates``
+        class comes with a ``method_names`` dictionary for method lookup.
+    :param image: An image illustrating the talk or topic.
+    :param review_code: A token used in secret URLs giving read-access to the
+        submission.
+    """
+    created = models.DateTimeField(null=True, auto_now_add=True)
     code = models.CharField(max_length=16, unique=True)
     speakers = models.ManyToManyField(
         to='person.User', related_name='submissions', blank=True
@@ -125,7 +149,7 @@ class Submission(LogMixin, models.Model):
         help_text=format_lazy('{text} {markdown}',
             text=_('A concise summary of your talk in one or two sentences.'),
             markdown=phrases.base.use_markdown
-        )
+        ),
     )
     description = models.TextField(
         null=True,
@@ -182,16 +206,6 @@ class Submission(LogMixin, models.Model):
         upload_to=submission_image_path,
         verbose_name=_('Talk image'),
         help_text=_('Use this if you want an illustration to go with your submission.'),
-    )
-    recording_url = models.CharField(
-        max_length=200, null=True, blank=True, verbose_name=_('Recording URL')
-    )
-    recording_source = models.CharField(
-        choices=(('VOC', 'media.ccc.de'),),
-        max_length=3,
-        null=True,
-        blank=True,
-        verbose_name=_('Recording Source'),
     )
     invitation_token = models.CharField(max_length=32, default=generate_invite_code)
     review_code = models.CharField(
@@ -256,18 +270,24 @@ class Submission(LogMixin, models.Model):
 
     @property
     def editable(self):
-        return (
-            self.event.cfp.is_open
-            if self.state == SubmissionStates.SUBMITTED
-            else self.state in (SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED)
-        )
+        if self.state == SubmissionStates.SUBMITTED:
+            return self.event.cfp.is_open or (self.event.active_review_phase and self.event.active_review_phase.speakers_can_change_submissions)
+        return self.state in (SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED)
 
-    def get_duration(self):
+    def get_duration(self) -> int:
+        """Returns this submission's duration in minutes.
+
+        Falls back to the
+        :class:`~pretalx.submission.models.type.SubmissionType`'s default
+        duration if none is set on the submission."""
         if self.duration is None:
             return self.submission_type.default_duration
         return self.duration
 
     def update_duration(self):
+        """Apply the submission's duration to its currently scheduled :class:`~pretalx.schedule.models.slot.TalkSlot`.
+
+        Should be called whenever the duration changes."""
         for slot in self.event.wip_schedule.talks.filter(
             submission=self, start__isnull=False
         ):
@@ -318,6 +338,10 @@ class Submission(LogMixin, models.Model):
             )
 
     def update_talk_slots(self):
+        """Makes sure the correct amount of :class:`~pretalx.schedule.models.slot.TalkSlot` objects exists.
+
+        After an update or state change, talk slots should either be all deleted,
+        or all created, or the number of talk slots might need to be adjusted."""
         from pretalx.schedule.models import TalkSlot
 
         if self.state not in [SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]:
@@ -343,20 +367,26 @@ class Submission(LogMixin, models.Model):
             ).order_by('start', 'is_visible')[:diff].values_list("id", flat=True)
             TalkSlot.objects.filter(pk__in=list(talks_to_delete)).delete()
         elif diff < 0:
-            for index in range(abs(diff)):
+            for __ in range(abs(diff)):
                 TalkSlot.objects.create(
                     submission=self,
                     schedule=self.event.wip_schedule,
                 )
 
-    def make_submitted(self, person=None, force=False, orga=False):
+    def make_submitted(self, person=None, force: bool=False, orga: bool=False):
+        """Sets the submission's state to 'submitted'."""
         self._set_state(SubmissionStates.SUBMITTED, force, person=person)
 
-    def confirm(self, person=None, force=False, orga=False):
+    def confirm(self, person=None, force: bool=False, orga: bool=False):
+        """Sets the submission's state to 'confirmed'."""
         self._set_state(SubmissionStates.CONFIRMED, force, person=person)
         self.log_action('pretalx.submission.confirm', person=person, orga=orga)
 
-    def accept(self, person=None, force=False, orga=True):
+    def accept(self, person=None, force: bool=False, orga: bool=True):
+        """Sets the submission's state to 'accepted'.
+
+        Creates an acceptance :class:`~pretalx.mail.models.QueuedMail` unless
+        the submission was previously confirmed."""
         previous = self.state
         self._set_state(SubmissionStates.ACCEPTED, force, person=person)
         self.log_action('pretalx.submission.accept', person=person, orga=True)
@@ -370,7 +400,9 @@ class Submission(LogMixin, models.Model):
                     locale=self.content_locale,
                 )
 
-    def reject(self, person=None, force=False, orga=True):
+    def reject(self, person=None, force: bool=False, orga: bool=True):
+        """Sets the submission's state to 'rejected' and creates a rejection
+        :class:`~pretalx.mail.models.QueuedMail`."""
         self._set_state(SubmissionStates.REJECTED, force, person=person)
         self.log_action('pretalx.submission.reject', person=person, orga=True)
 
@@ -382,15 +414,18 @@ class Submission(LogMixin, models.Model):
                 locale=self.content_locale,
             )
 
-    def cancel(self, person=None, force=False, orga=True):
+    def cancel(self, person=None, force: bool=False, orga: bool=True):
+        """Sets the submission's state to 'canceled'."""
         self._set_state(SubmissionStates.CANCELED, force, person=person)
         self.log_action('pretalx.submission.cancel', person=person, orga=True)
 
-    def withdraw(self, person=None, force=False, orga=False):
+    def withdraw(self, person=None, force: bool=False, orga: bool=False):
+        """Sets the submission's state to 'withdrawn'."""
         self._set_state(SubmissionStates.WITHDRAWN, force, person=person)
         self.log_action('pretalx.submission.withdraw', person=person, orga=orga)
 
-    def remove(self, person=None, force=False, orga=True):
+    def remove(self, person=None, force: bool=False, orga: bool=True):
+        """Sets the submission's state to 'deleted'."""
         self._set_state(SubmissionStates.DELETED, force, person=person)
         for answer in self.answers.all():
             answer.remove(person=person, force=force)
@@ -398,7 +433,12 @@ class Submission(LogMixin, models.Model):
 
     @cached_property
     def uuid(self):
-        return uuid.uuid5(GlobalSettings().get_instance_identifier(), self.code)
+        """A UUID5, calculated from the submission code and the instance identifier."""
+        global INSTANCE_IDENTIFIER
+        if not INSTANCE_IDENTIFIER:
+            from pretalx.common.models.settings import GlobalSettings
+            INSTANCE_IDENTIFIER = GlobalSettings().get_instance_identifier()
+        return uuid.uuid5(INSTANCE_IDENTIFIER, self.code)
 
     @cached_property
     def frab_slug(self):
@@ -433,19 +473,23 @@ class Submission(LogMixin, models.Model):
             intval += table[char]
         return intval
 
-    @property
+    @cached_property
     def slot(self):
+        """The first scheduled :class:`~pretalx.schedule.models.slot.TalkSlot` of this submission in the current :class:`~pretalx.schedule.models.schedule.Schedule`.
+
+        Note that this slot is not guaranteed to be visible."""
         return (
             self.event.current_schedule.talks.filter(submission=self).first()
             if self.event.current_schedule
             else None
         )
 
-    @property
+    @cached_property
     def display_speaker_names(self):
+        """Helper method for a consistent speaker name display."""
         return ', '.join(speaker.get_display_name() for speaker in self.speakers.all())
 
-    @property
+    @cached_property
     def does_accept_feedback(self):
         slot = self.slot
         if slot and slot.start:
@@ -454,27 +498,13 @@ class Submission(LogMixin, models.Model):
         return False
 
     @cached_property
-    def rendered_recording_iframe(self):
-        if self.recording_url and self.recording_source:
-            warnings.warn(
-                'Please use a recording source plugin instead of pretalx core functionality.',
-                DeprecationWarning,
-            )
-            from django.template import engines
+    def median_score(self):
+        scores = [r.score for r in self.reviews.all() if r.score is not None]
+        return statistics.median(scores) if scores else None
 
-            django_engine = engines['django']
-            template = django_engine.from_string(
-                '<div class="embed-responsive embed-responsive-16by9"><iframe src="{{ url }}" frameborder="0" allowfullscreen></iframe></div>'
-            )
-            return template.render(context={'url': self.recording_url})
-
-    @property
-    def average_score(self):
-        return self.reviews.all().aggregate(avg=models.Avg('score'))['avg']
-
-    @property
+    @cached_property
     def active_resources(self):
-        return self.resources.filter(resource__isnull=False)
+        return self.resources.exclude(resource=None).exclude(resource="")
 
     @property
     def is_deleted(self):
@@ -500,18 +530,13 @@ class Submission(LogMixin, models.Model):
 
     @property
     def availabilities(self):
+        """The intersection of all :class:`~pretalx.schedule.models.availability.Availability` objects of all speakers of this submission."""
         from pretalx.schedule.models.availability import Availability
 
         all_availabilities = self.event.availabilities.filter(
             person__in=self.speaker_profiles
         )
         return Availability.intersection(all_availabilities)
-
-    @cached_property
-    def created(self):
-        return getattr(
-            self.logged_actions().order_by('timestamp').first(), 'timestamp', None
-        )
 
     def get_content_for_mail(self):
         order = ['title', 'abstract', 'description', 'notes', 'duration', 'content_locale', 'do_not_record', 'image']

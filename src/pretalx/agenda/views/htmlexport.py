@@ -3,6 +3,7 @@ import os
 from bakery.views import BuildableDetailView
 from django.conf import settings
 from django.utils.functional import cached_property
+from django_context_decorator import context
 
 from pretalx.agenda.views.schedule import ExporterView, ScheduleView
 from pretalx.agenda.views.speaker import SpeakerView
@@ -25,10 +26,9 @@ class PretalxExportContextMixin:
     def object(self):
         return self.get_object()
 
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
-        context['is_html_export'] = True
-        return context
+    @context
+    def is_html_export(self):
+        return True
 
     @staticmethod
     def get_url(obj):
@@ -48,7 +48,7 @@ class PretalxExportContextMixin:
 class ExportScheduleView(PretalxExportContextMixin, BuildableDetailView, ScheduleView):
     """ Build the current schedule. """
 
-    queryset = Schedule.objects.filter(published__isnull=False).order_by('published')
+    queryset = Schedule.objects.filter(published__isnull=False).order_by('published').select_related('event').prefetch_related('talks')
 
     @staticmethod
     def get_url(obj):
@@ -56,7 +56,7 @@ class ExportScheduleView(PretalxExportContextMixin, BuildableDetailView, Schedul
 
 
 class ExportFrabXmlView(PretalxExportContextMixin, BuildableDetailView, ExporterView):
-    queryset = Schedule.objects.filter(published__isnull=False).order_by('published')
+    queryset = Schedule.objects.filter(published__isnull=False).order_by('published').select_related('event').prefetch_related('talks')
 
     def get_url(self, obj):
         return obj.event.urls.frab_xml
@@ -69,7 +69,7 @@ class ExportFrabXmlView(PretalxExportContextMixin, BuildableDetailView, Exporter
 
 
 class ExportFrabXCalView(PretalxExportContextMixin, BuildableDetailView, ExporterView):
-    queryset = Schedule.objects.filter(published__isnull=False).order_by('published')
+    queryset = Schedule.objects.filter(published__isnull=False).order_by('published').select_related('event').prefetch_related('talks')
 
     def get_url(self, obj):
         return obj.event.urls.frab_xcal
@@ -82,7 +82,7 @@ class ExportFrabXCalView(PretalxExportContextMixin, BuildableDetailView, Exporte
 
 
 class ExportFrabJsonView(PretalxExportContextMixin, BuildableDetailView, ExporterView):
-    queryset = Schedule.objects.filter(published__isnull=False).order_by('published')
+    queryset = Schedule.objects.filter(published__isnull=False).order_by('published').select_related('event').prefetch_related('talks')
 
     def get_url(self, obj):
         return obj.event.urls.frab_json
@@ -95,7 +95,7 @@ class ExportFrabJsonView(PretalxExportContextMixin, BuildableDetailView, Exporte
 
 
 class ExportICalView(PretalxExportContextMixin, BuildableDetailView, ExporterView):
-    queryset = Schedule.objects.filter(published__isnull=False).order_by('published')
+    queryset = Schedule.objects.filter(published__isnull=False).order_by('published').select_related('event').prefetch_related('talks')
 
     def get_url(self, obj):
         return obj.event.urls.ical
@@ -147,4 +147,4 @@ class ExportTalkICalView(
 class ExportSpeakerView(PretalxExportContextMixin, BuildableDetailView, SpeakerView):
     queryset = SpeakerProfile.objects.filter(
         user__submissions__slots__schedule__published__isnull=False
-    ).distinct()
+    ).select_related('user', 'event').prefetch_related('user__submissions').distinct()

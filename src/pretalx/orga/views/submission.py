@@ -2,6 +2,7 @@ import json
 from collections import Counter
 from contextlib import suppress
 from datetime import timedelta
+from operator import itemgetter
 
 from dateutil import rrule
 from django.contrib import messages
@@ -23,7 +24,7 @@ from pretalx.common.mixins.views import (
 )
 from pretalx.common.models import ActivityLog
 from pretalx.common.urls import build_absolute_uri
-from pretalx.common.views import CreateOrUpdateView
+from pretalx.common.views import CreateOrUpdateView, context
 from pretalx.mail.models import QueuedMail
 from pretalx.orga.forms import SubmissionForm
 from pretalx.person.forms import OrgaSpeakerForm
@@ -40,8 +41,8 @@ def create_user_as_orga(email, submission=None, name=None):
 
     user = User.objects.create_user(
         password=get_random_string(32),
-        email=form.cleaned_data['email'].lower(),
-        name=form.cleaned_data['name'],
+        email=form.cleaned_data['email'].lower().strip(),
+        name=form.cleaned_data['name'].strip(),
         pw_reset_token=get_random_string(32),
         pw_reset_time=now() + timedelta(days=7),
     )
@@ -85,7 +86,7 @@ The {event} orga crew'''
 class SubmissionViewMixin(PermissionRequired):
     def get_object(self):
         return get_object_or_404(
-            self.request.event.submissions(manager='all_objects'),
+            Submission.all_objects.filter(event=self.request.event),
             code__iexact=self.kwargs.get('code'),
         )
 
@@ -93,10 +94,9 @@ class SubmissionViewMixin(PermissionRequired):
     def object(self):
         return self.get_object()
 
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
-        context['submission'] = self.object
-        return context
+    @context
+    def submission(self):
+        return self.object
 
 
 class SubmissionStateChange(SubmissionViewMixin, TemplateView):
@@ -113,16 +113,20 @@ class SubmissionStateChange(SubmissionViewMixin, TemplateView):
     }
 
     @cached_property
-    def target(self) -> str:
+    def _target(self) -> str:
         """ Returns one of submit|accept|reject|confirm|delete|withdraw|cancel """
         return self.TARGETS[self.request.resolver_match.url_name.split('.')[-1]]
 
+    @context
+    def target(self):
+        return self._target
+
     @cached_property
     def is_allowed(self):
-        return self.target in SubmissionStates.valid_next_states[self.object.state]
+        return self._target in SubmissionStates.valid_next_states[self.object.state]
 
     def do(self, force=False):
-        method = getattr(self.object, SubmissionStates.method_names[self.target])
+        method = getattr(self.object, SubmissionStates.method_names[self._target])
         try:
             method(person=self.request.user, force=force, orga=True)
         except SubmissionError as e:
@@ -130,7 +134,7 @@ class SubmissionStateChange(SubmissionViewMixin, TemplateView):
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        if self.target == self.object.state:
+        if self._target == self.object.state:
             messages.info(
                 request,
                 _(
@@ -146,11 +150,9 @@ class SubmissionStateChange(SubmissionViewMixin, TemplateView):
             return redirect(url)
         return redirect(self.object.orga_urls.base)
 
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
-        context['target'] = self.target
-        context['next'] = self.request.GET.get('next')
-        return context
+    @context
+    def next(self):
+        return self.request.GET.get('next')
 
 
 class SubmissionSpeakersAdd(SubmissionViewMixin, View):
@@ -214,10 +216,10 @@ class SubmissionSpeakers(SubmissionViewMixin, TemplateView):
     template_name = 'orga/submission/speakers.html'
     permission_required = 'orga.view_speakers'
 
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
-        submission = context['submission']
-        context['speakers'] = [
+    @context
+    def speakers(self):
+        submission = self.object
+        return [
             {
                 'id': speaker.id,
                 'name': speaker.get_display_name(),
@@ -230,8 +232,10 @@ class SubmissionSpeakers(SubmissionViewMixin, TemplateView):
             }
             for speaker in submission.speakers.all()
         ]
-        context['users'] = User.objects.all()  # TODO: yeah, no
-        return context
+
+    @context
+    def users(self):
+        return User.objects.all()
 
 
 class SubmissionContent(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
@@ -248,12 +252,6 @@ class SubmissionContent(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
                 return None
             return not_found
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['formset'] = self.formset
-        context['questions_form'] = self.questions_form
-        return context
-
     @cached_property
     def write_permission_required(self):
         if self.kwargs.get('code'):
@@ -261,7 +259,7 @@ class SubmissionContent(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
         return 'orga.create_submission'
 
     @cached_property
-    def formset(self):
+    def _formset(self):
         formset_class = inlineformset_factory(
             Submission,
             Resource,
@@ -280,8 +278,12 @@ class SubmissionContent(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
             prefix='resource',
         )
 
+    @context
+    def formset(self):
+        return self._formset
+
     @cached_property
-    def questions_form(self):
+    def _questions_form(self):
         submission = self.get_object()
         return QuestionsForm(
             self.request.POST if self.request.method == 'POST' else None,
@@ -291,11 +293,16 @@ class SubmissionContent(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
             event=self.request.event,
         )
 
+    @context
+    def questions_form(self):
+        return self._questions_form
+
     def save_formset(self, obj):
-        if not self.formset.is_valid():
+        if not self._formset.is_valid():
             return False
-        for form in self.formset.initial_forms:
-            if form in self.formset.deleted_forms:
+
+        for form in self._formset.initial_forms:
+            if form in self._formset.deleted_forms:
                 if not form.instance.pk:
                     continue
                 obj.log_action(
@@ -316,8 +323,8 @@ class SubmissionContent(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
 
         extra_forms = [
             form
-            for form in self.formset.extra_forms
-            if form.has_changed and not self.formset._should_delete_form(form)
+            for form in self._formset.extra_forms
+            if form.has_changed and not self._formset._should_delete_form(form) and form.instance.resource
         ]
         for form in extra_forms:
             form.instance.submission = obj
@@ -349,10 +356,10 @@ class SubmissionContent(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
         form.instance.event = self.request.event
         form.save()
         self.object = form.instance
-        self.questions_form.submission = self.object
-        if not self.questions_form.is_valid():
+        self._questions_form.submission = self.object
+        if not self._questions_form.is_valid():
             return self.get(self.request, *self.args, **self.kwargs)
-        self.questions_form.save()
+        self._questions_form.save()
 
         if created:
             email = form.cleaned_data['speaker']
@@ -423,30 +430,6 @@ class SubmissionList(EventPermissionRequired, Sortable, Filterable, ListView):
         qs = self.sort_queryset(qs)
         return qs.distinct()
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        data = Counter(
-            timestamp.date()
-            for timestamp in ActivityLog.objects.filter(
-                event=self.request.event, action_type='pretalx.submission.create'
-            ).values_list('timestamp', flat=True)
-        )
-        dates = data.keys()
-        if len(dates) > 1:
-            date_range = rrule.rrule(
-                rrule.DAILY,
-                count=(max(dates) - min(dates)).days + 1,
-                dtstart=min(dates),
-            )
-            if len(data) > 1:
-                context['timeline_data'] = json.dumps(
-                    [
-                        {"x": date.isoformat(), "y": data.get(date.date(), 0)}
-                        for date in date_range
-                    ]
-                )
-        return context
-
 
 class FeedbackList(SubmissionViewMixin, ListView):
     template_name = 'orga/submission/feedback_list.html'
@@ -506,3 +489,95 @@ class SubmissionFeed(PermissionRequired, Feed):
 
     def item_pubdate(self, item):
         return item.created
+
+
+class SubmissionStats(PermissionRequired, TemplateView):
+    template_name = 'orga/submission/stats.html'
+    permission_required = 'orga.view_submissions'
+
+    def get_permission_object(self):
+        return self.request.event
+
+    @context
+    def submission_timeline_data(self):
+        data = Counter(
+            timestamp.astimezone(self.request.event.tz).date()
+            for timestamp in ActivityLog.objects.filter(
+                event=self.request.event, action_type='pretalx.submission.create'
+            ).values_list('timestamp', flat=True)
+        )
+        dates = data.keys()
+        if len(dates) > 1:
+            date_range = rrule.rrule(
+                rrule.DAILY,
+                count=(max(dates) - min(dates)).days + 1,
+                dtstart=min(dates),
+            )
+            if len(data) > 1:
+                return json.dumps(
+                    [
+                        {"x": date.isoformat(), "y": data.get(date.date(), 0)}
+                        for date in date_range
+                    ]
+                )
+        return ''
+
+    @context
+    @cached_property
+    def submission_state_data(self):
+        counter = Counter(submission.get_state_display() for submission in self.request.event.submissions(manager='all_objects').all())
+        return json.dumps(sorted(list({'label': label, 'value': value} for label, value in counter.items()), key=itemgetter('label')))
+
+    @context
+    def submission_type_data(self):
+        counter = Counter(str(submission.submission_type) for submission in self.request.event.submissions(manager='all_objects').all())
+        return json.dumps(sorted(list({'label': label, 'value': value} for label, value in counter.items()), key=itemgetter('label')))
+
+    @context
+    def submission_track_data(self):
+        if self.request.event.settings.use_tracks:
+            counter = Counter(str(submission.track) for submission in self.request.event.submissions(manager='all_objects').all())
+            return json.dumps(sorted(list({'label': label, 'value': value} for label, value in counter.items()), key=itemgetter('label')))
+        return ''
+
+    @context
+    def talk_timeline_data(self):
+        data = Counter(
+            log.timestamp.astimezone(self.request.event.tz).date()
+            for log in ActivityLog.objects.filter(
+                event=self.request.event, action_type='pretalx.submission.create',
+            )
+            if getattr(log.content_object, 'state', None) in [SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]
+        )
+        dates = data.keys()
+        if len(dates) > 1:
+            date_range = rrule.rrule(
+                rrule.DAILY,
+                count=(max(dates) - min(dates)).days + 1,
+                dtstart=min(dates),
+            )
+            if len(data) > 1:
+                return json.dumps(
+                    [
+                        {"x": date.isoformat(), "y": data.get(date.date(), 0)}
+                        for date in date_range
+                    ]
+                )
+        return ''
+
+    @context
+    def talk_state_data(self):
+        counter = Counter(submission.get_state_display() for submission in self.request.event.submissions.filter(state__in=[SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]))
+        return json.dumps(sorted(list({'label': label, 'value': value} for label, value in counter.items()), key=itemgetter('label')))
+
+    @context
+    def talk_type_data(self):
+        counter = Counter(str(submission.submission_type) for submission in self.request.event.submissions.filter(state__in=[SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]))
+        return json.dumps(sorted(list({'label': label, 'value': value} for label, value in counter.items()), key=itemgetter('label')))
+
+    @context
+    def talk_track_data(self):
+        if self.request.event.settings.use_tracks:
+            counter = Counter(str(submission.track) for submission in self.request.event.submissions.filter(state__in=[SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]))
+            return json.dumps(sorted(list({'label': label, 'value': value} for label, value in counter.items()), key=itemgetter('label')))
+        return ''

@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import DetailView, ListView, TemplateView, UpdateView, View
+from django_context_decorator import context
 
 from pretalx.common.forms import I18nFormSet
 from pretalx.common.mixins.views import (
@@ -28,15 +29,11 @@ class CfPTextDetail(PermissionRequired, ActionFromUrl, UpdateView):
     permission_required = 'orga.edit_cfp'
     write_permission_required = 'orga.edit_cfp'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['sform'] = self.sform
-        return context
-
+    @context
     @cached_property
     def sform(self):
         return CfPSettingsForm(
-            read_only=(self._action == 'view'),
+            read_only=(self.action == 'view'),
             locales=self.request.event.locales,
             obj=self.request.event,
             attribute_name='settings',
@@ -70,10 +67,9 @@ class CfPQuestionList(EventPermissionRequired, TemplateView):
     template_name = 'orga/cfp/question_view.html'
     permission_required = 'orga.view_question'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['questions'] = Question.all_objects.filter(event=self.request.event)
-        return context
+    @context
+    def questions(self):
+        return Question.all_objects.filter(event=self.request.event)
 
 
 class CfPQuestionDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
@@ -100,6 +96,12 @@ class CfPQuestionDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
     def object(self):
         return self.get_object()
 
+    @context
+    @cached_property
+    def question(self):
+        return self.object
+
+    @context
     @cached_property
     def formset(self):
         formset_class = inlineformset_factory(
@@ -164,18 +166,19 @@ class CfPQuestionDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
 
         return True
 
+    @context
+    def filter_form(self):
+        return SpeakerFilterForm()
+
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        result = super().get_context_data(**kwargs)
         question = self.object
-        context['formset'] = self.formset
-        context['filter_form'] = SpeakerFilterForm()
-        context['question'] = question
         if question:
             role = self.request.GET.get('role')
             if role == 'true':
                 talks = self.request.event.talks.all()
                 speakers = self.request.event.speakers.all()
-                answers = context['question'].answers.filter(
+                answers = question.answers.filter(
                     models.Q(person__in=speakers) | models.Q(submission__in=talks)
                 )
             elif role == 'false':
@@ -187,20 +190,20 @@ class CfPQuestionDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
                         'code', flat=True
                     )
                 )
-                answers = context['question'].answers.filter(
+                answers = question.answers.filter(
                     models.Q(person__in=speakers) | models.Q(submission__in=talks)
                 )
             else:
-                answers = context['question'].answers.all()
-            context['answer_count'] = answers.count()
-            context['missing_answers'] = (
+                answers = question.answers.all()
+            result['answer_count'] = answers.count()
+            result['missing_answers'] = (
                 question.missing_answers()
                 if not role
                 else question.missing_answers(
                     filter_speakers=speakers, filter_talks=talks
                 )
             )
-        return context
+        return result
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -212,8 +215,9 @@ class CfPQuestionDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
         return kwargs
 
     def get_success_url(self) -> str:
-        question = self.object or self.instance
-        return question.urls.base
+        if 'pk' in self.kwargs and self.object:
+            return self.object.urls.base
+        return self.request.event.cfp.urls.questions
 
     @transaction.atomic
     def form_valid(self, form):
@@ -225,22 +229,22 @@ class CfPQuestionDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
             if not formset:
                 return self.get(self.request, *self.args, **self.kwargs)
         if form.has_changed():
-            action = 'pretalx.question.' + ('update' if self.object else 'create')
+            action = 'pretalx.question.' + ('update' if 'pk' in self.kwargs else 'create')
             form.instance.log_action(action, person=self.request.user, orga=True)
         messages.success(self.request, 'The question has been saved.')
         return result
 
 
-class CfPQuestionDelete(PermissionRequired, View):
+class CfPQuestionDelete(PermissionRequired, DetailView):
     permission_required = 'orga.remove_question'
+    template_name = 'orga/cfp/question_delete.html'
 
     def get_object(self) -> Question:
         return get_object_or_404(
             Question.all_objects, event=self.request.event, pk=self.kwargs.get('pk')
         )
 
-    def dispatch(self, request, *args, **kwargs):
-        super().dispatch(request, *args, **kwargs)
+    def post(self, request, *args, **kwargs):
         question = self.get_object()
 
         try:
@@ -323,11 +327,7 @@ class CfPQuestionRemind(EventPermissionRequired, TemplateView):
     template_name = 'orga/cfp/question_remind.html'
     permission_required = 'orga.view_question'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['filter_form'] = self.filter_form
-        return context
-
+    @context
     @cached_property
     def filter_form(self):
         data = self.request.GET if self.request.method == 'GET' else self.request.POST
@@ -366,7 +366,7 @@ class CfPQuestionRemind(EventPermissionRequired, TemplateView):
             submissions = request.event.submissions.all()
 
         mandatory_questions = request.event.questions.filter(required=True)
-        context = {
+        data = {
             'url': request.event.urls.user_submissions.full(),
             'event_name': request.event.name,
         }
@@ -375,11 +375,11 @@ class CfPQuestionRemind(EventPermissionRequired, TemplateView):
                 questions=mandatory_questions, person=person, submissions=submissions
             )
             if missing:
-                context['questions'] = '\n'.join(
+                data['questions'] = '\n'.join(
                     [f'- {question.question}' for question in missing]
                 )
                 request.event.question_template.to_mail(
-                    person, event=request.event, context=context
+                    person, event=request.event, context=data
                 )
         return redirect(request.event.orga_urls.outbox)
 

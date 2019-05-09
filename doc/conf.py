@@ -20,7 +20,6 @@ except:
     HAS_PYENCHANT = False
 # -- General configuration ------------------------------------------------
 
-
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
@@ -30,7 +29,9 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
+    'sphinx_autodoc_typehints',
     'sphinxcontrib.httpdomain',
+    'sphinxcontrib_django',
     'releases',
 ]
 
@@ -153,3 +154,17 @@ linkcheck_ignore = [
 releases_release_uri = 'https://pypi.org/project/pretalx/%s/'
 releases_issue_uri = 'https://github.com/pretalx/pretalx/issues/%s'
 releases_unstable_prehistory = True
+
+# GitHub integration
+html_context = {
+    "display_github": True, # Integrate GitHub
+    "github_user": "pretalx", # Username
+    "github_repo": "pretalx", # Repo name
+    "github_version": "master", # Version
+    "conf_py_path": "/doc/", # Path in the checkout to the docs root
+}
+
+favicon = 'images/favicon.ico'
+
+# Autodoc options
+autodoc_member_order = 'groupwise'

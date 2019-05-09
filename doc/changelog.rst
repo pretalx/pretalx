@@ -3,6 +3,24 @@
 Release Notes
 =============
 
+- :feature:`-` Administrators can now see a dashboard with relevant settings and current information, including documentation links.
+- :bug:`689` In the (undocumented) review API, reviews of deleted submissions were shown, even though those submissions were not available anymore via the frontend.
+- :bug:`688` pretalx was inconstent in its usage of email senders and reply-tos. Now, if there is a sender address configured, the reply-to is not explicitly set. pretalx falls back to the instance-global sender if there is no event sender address. A reply-to setting is available if the organisers wish to provide a separate address there.
+- :feature:`682` The submission endpoint now provides a ``created`` field to organiser users.
+- :feature:`326` During event creation, pretalx provides more critical feedback, such as asking if the event is supposed to take place in the past, or suggesting good slugs.
+- :feature:`393` As an alternative to file uploads, organisers can now also provide their custom CSS directly as text.
+- :feature:`360` Within the review dashboard, organisers can now accept and reject multiple submissions at the same time.
+- :feature:`656` Instead of by average, review scores are now shown aggregated by the median.
+- :bug:`655` Mails to submissions with titles near the length cap (of 200 characters) could not be created, since with the added "[event]" prefix the mail subject was too long to be saved.
+- :feature:`-` Question pages now feature visual statistics where appropriate.
+- :feature:`-` There now is a page for submission statistics.
+- :feature:`628` Prefill CfP form with track and submission type if they are available in the query string.
+- :support:`-` pretalx is now able to run with Python 3.7 even when using Celery.
+- :feature:`598` Via the new review phase settings, speakers can be allowed to modify their submissions while they are being reviewed.
+- :feature:`641` At the undocumented URL `/<event>/speaker/by-id/123/` there is now a redirect to the canonical speaker URL `/<event>/speaker/CODE/` to work around export format restrictions.
+- :bug:`565` When using the back button to return to the previous step in the submission workflow, the data from the current step had to be filled in to use the button, but was not saved. Now it will be saved, and the progress bar on top can be used for lossy (but quick) navigation to the previous step.
+- :bug:`645` The rendering of the full submission content in the acknowledgment mail (upon submission) looked weird in HTML, due to missing line breaks.
+- :bug:`646` On slow network connections, the login step of the CfP submission loaded in a suboptimal way, leaving users with a seemingly finished page but without the login/registration form. As a consequence, all page loads (but especially that one) were optimized.
 - :bug:`642` Having only one submission type in the event showed a drop-down with submission types from ALL events, instead of hiding the submission type input completely as intended.
 - :feature:`609` Organisers can now filter submissions and reviews by track.
 - :feature:`634` The API now provides internal notes by speakers and organisers to requesting users with adequate permissions.

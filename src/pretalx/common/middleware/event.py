@@ -44,10 +44,7 @@ class EventPermissionMiddleware:
                 )
                 if hasattr(request, 'event'):
                     request.is_orga = request.event in request.orga_events
-                    request.is_reviewer = (
-                        request.event
-                        in request.user.get_events_for_permission(is_reviewer=True)
-                    )
+                    request.is_reviewer = request.event.teams.filter(members__in=[request.user], is_reviewer=True).exists()
 
     def _handle_orga_url(self, request, url):
         if request.uses_custom_domain:
@@ -87,13 +84,15 @@ class EventPermissionMiddleware:
 
         event_slug = url.kwargs.get('event')
         if event_slug:
-            request.event = get_object_or_404(Event, slug__iexact=event_slug)
+            request.event = get_object_or_404(Event.objects.prefetch_related('schedules', 'submissions'), slug__iexact=event_slug)
 
         self._set_orga_events(request)
         self._select_locale(request)
         is_exempt = (
-            'agenda' in url.namespaces and url.url_name == 'export'
-        ) or request.path.startswith('/api/')
+            url.url_name == 'export'
+            if 'agenda' in url.namespaces
+            else request.path.startswith('/api/')
+        )
 
         if 'orga' in url.namespaces or (
             'plugins' in url.namespaces and request.path.startswith('/orga')
@@ -173,3 +172,4 @@ class EventPermissionMiddleware:
                 value = get_supported_language_variant(request.user.locale)
                 if value and value in supported:
                     return value
+        return None

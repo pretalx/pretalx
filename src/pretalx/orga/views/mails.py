@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import FormView, ListView, TemplateView, View
+from django_context_decorator import context
 
 from pretalx.common.mixins.views import (
     ActionFromUrl, EventPermissionRequired, Filterable, PermissionRequired, Sortable,
@@ -25,7 +26,7 @@ class OutboxList(EventPermissionRequired, Sortable, Filterable, ListView):
     permission_required = 'orga.view_mails'
 
     def get_queryset(self):
-        qs = self.request.event.queued_mails.filter(sent__isnull=True).order_by('-id')
+        qs = self.request.event.queued_mails.prefetch_related('to_users').filter(sent__isnull=True).order_by('-id')
         qs = self.filter_queryset(qs)
         qs = self.sort_queryset(qs)
         return qs
@@ -42,7 +43,7 @@ class SentMail(EventPermissionRequired, Sortable, Filterable, ListView):
     permission_required = 'orga.view_mails'
 
     def get_queryset(self):
-        qs = self.request.event.queued_mails.filter(sent__isnull=False).order_by(
+        qs = self.request.event.queued_mails.prefetch_related('to_users').filter(sent__isnull=False).order_by(
             '-sent'
         )
         qs = self.filter_queryset(qs)
@@ -54,12 +55,11 @@ class OutboxSend(EventPermissionRequired, TemplateView):
     permission_required = 'orga.send_mails'
     template_name = 'orga/mails/confirm.html'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['question'] = _('Do you really want to send {count} mails?').format(
+    @context
+    def question(self):
+        return _('Do you really want to send {count} mails?').format(
             count=self.queryset.count()
         )
-        return context
 
     def dispatch(self, request, *args, **kwargs):
         if 'pk' in self.kwargs:
@@ -110,12 +110,11 @@ class OutboxPurge(PermissionRequired, TemplateView):
             ).first()
         return self.request.event
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['question'] = _('Do you really want to purge {count} mails?').format(
+    @context
+    def question(self):
+        return _('Do you really want to purge {count} mails?').format(
             count=self.queryset.count()
         )
-        return context
 
     def dispatch(self, request, *args, **kwargs):
         if 'pk' in self.kwargs:
@@ -311,28 +310,28 @@ class TemplateList(EventPermissionRequired, TemplateView):
     permission_required = 'orga.view_mail_templates'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        result = super().get_context_data(**kwargs)
         accept = self.request.event.accept_template
         ack = self.request.event.ack_template
         reject = self.request.event.reject_template
         update = self.request.event.update_template
-        context['accept'] = MailTemplateForm(
+        result['accept'] = MailTemplateForm(
             instance=accept, read_only=True, event=self.request.event
         )
-        context['ack'] = MailTemplateForm(
+        result['ack'] = MailTemplateForm(
             instance=ack, read_only=True, event=self.request.event
         )
-        context['reject'] = MailTemplateForm(
+        result['reject'] = MailTemplateForm(
             instance=reject, read_only=True, event=self.request.event
         )
-        context['update'] = MailTemplateForm(
+        result['update'] = MailTemplateForm(
             instance=update, read_only=True, event=self.request.event
         )
         pks = [
             template.pk if template else None
             for template in [accept, ack, reject, update]
         ]
-        context['other'] = [
+        result['other'] = [
             MailTemplateForm(
                 instance=template, read_only=True, event=self.request.event
             )
@@ -340,7 +339,7 @@ class TemplateList(EventPermissionRequired, TemplateView):
                 pk__in=[pk for pk in pks if pk]
             )
         ]
-        return context
+        return result
 
 
 class TemplateDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
@@ -350,19 +349,20 @@ class TemplateDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
     permission_required = 'orga.view_mail_templates'
     write_permission_required = 'orga.edit_mail_templates'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+    @context
+    def placeholders(self):
         template = self.object
         if template and template in template.event.fixed_templates:
-            context['placeholders'] = get_context_explanation()
+            result = get_context_explanation()
             if template == template.event.update_template:
-                context['placeholders'].append(
+                result.append(
                     {
                         'name': 'notifications',
                         'explanation': _('A list of notifications for this speaker'),
                     }
                 )
-        return context
+            return result
+        return None
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

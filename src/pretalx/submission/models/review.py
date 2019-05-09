@@ -6,6 +6,17 @@ from pretalx.common.urls import EventUrls
 
 
 class Review(models.Model):
+    """Reviews model the opinion of reviewers of a :class:`~pretalx.submission.models.submission.Submission`.
+
+    They can, but don't have to, include a score and a text.
+
+    :param text: The review itself. May be empty.
+    :param score: The upper and lower bounds of this value are defined in an
+        event's settings.
+    :param override_vote: If this field is ``True`` or ``False``, it indicates
+        that the reviewer has spent one of their override votes to emphasize
+        their opinion of the review. It is ``None`` otherwise.
+    """
     submission = models.ForeignKey(
         to='submission.Submission', related_name='reviews', on_delete=models.CASCADE
     )
@@ -23,6 +34,19 @@ class Review(models.Model):
 
     @classmethod
     def find_missing_reviews(cls, event, user, ignore=None):
+        """
+        Returns all :class:`~pretalx.submission.models.submission.Submission`
+        objects this :class:`~pretalx.person.models.user.User` still has to
+        review for the given :class:`~pretalx.event.models.event.Event`.
+
+        Excludes submissions this user has submitted, and takes track
+        :class:`~pretalx.event.models.organiser.Team` permissions into account.
+        The result is ordered by review count.
+
+        :type event: :class:`~pretalx.event.models.event.Event`
+        :type user: :class:`~pretalx.person.models.user.User`
+        :rtype: Queryset of :class:`~pretalx.submission.models.submission.Submission` objects
+        """
         from pretalx.submission.models import SubmissionStates
 
         queryset = (
@@ -53,7 +77,8 @@ class Review(models.Model):
         return self.submission.event
 
     @cached_property
-    def display_score(self):
+    def display_score(self) -> str:
+        """Helper method to get a display string of the review's score."""
         if self.override_vote is True:
             return _('Positive override')
         if self.override_vote is False:
@@ -70,6 +95,14 @@ class Review(models.Model):
 
 
 class ReviewPhase(models.Model):
+    """ReviewPhases determine reviewer access rights during a (potentially open) timeframe.
+
+    :param is_active: Is this phase currently active? There can be only one
+        active phase per event. Use the ``activate`` method to activate a
+        review phase, as it will take care of this limitation.
+    :param position: Helper field to deal with relative positioning of review
+        phases next to each other.
+    """
     event = models.ForeignKey(
         to='event.Event', related_name='review_phases', on_delete=models.CASCADE
     )
@@ -97,6 +130,11 @@ class ReviewPhase(models.Model):
         verbose_name=_('Reviewers can accept and reject submissions'),
         default=False,
     )
+    speakers_can_change_submissions = models.BooleanField(
+        verbose_name=_('Speakers can modify their submissions before acceptance'),
+        help_text=_('By default, modification of submissions is locked after the CfP ends, and is re-enabled once the submission was accepted.'),
+        default=False,
+    )
 
     class Meta:
         ordering = ('position', )
@@ -108,7 +146,8 @@ class ReviewPhase(models.Model):
         down = '{base}down'
         activate = '{base}activate'
 
-    def activate(self):
+    def activate(self) -> None:
+        """Activates this review phase and deactivates all others in this event."""
         self.event.review_phases.all().update(is_active=False)
         self.is_active = True
         self.save()

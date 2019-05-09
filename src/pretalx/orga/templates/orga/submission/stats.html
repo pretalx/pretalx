@@ -1,0 +1,71 @@
+{% extends "orga/cfp/base.html" %}
+{% load compress %}
+{% load i18n %}
+{% load static %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" type="text/css" href="{% static "vendored/nvd3/nv.d3.min.css" %}" />
+{% endblock %}
+
+{% block scripts %}
+    {% compress js %}
+        <script defer src="{% static "vendored/nvd3/d3.min.js" %}"></script>
+        <script defer src="{% static "vendored/nvd3/nv.d3.min.js" %}"></script>
+        <script defer src="{% static "orga/js/stats.js" %}"></script>
+    {% endcompress %}
+{% endblock %}
+
+{% block content %}
+<div id="stats">
+    <h2 class="d-flex w-100 justify-content-between align-items-start">
+        {% trans "Submission Statistics" %}
+        <button id="toggle-button" type="button" class="btn btn-toggle" data-toggle="button" aria-pressed="false" autocomplete="off" data-left="{% trans 'Submissions' %}" data-right="{% trans 'Talks' %}">
+            <div class="handle"></div>
+        </button>
+    </h2>
+
+    {% if submission_timeline_data %}
+    <div class="card stats-timeline">
+        <div class="card-header submissions">{% trans "Submissions by submission date" %}</div>
+        <div class="card-header talks d-none">{% trans "Talks by submission date" %}</div>
+        <div id="submission-timeline-data" class="d-none" data-timeline='{{ submission_timeline_data }}'></div>
+        <div id="talk-timeline-data" class="d-none" data-timeline='{{ talk_timeline_data }}'></div>
+        <div id="submission-timeline" class="card-body submissions"><svg></svg></div>
+        <div id="talk-timeline" class="card-body talks d-none"><svg></svg></div>
+    </div>
+    {% endif %}
+
+    {% if submission_state_data %}
+    <div class="card">
+        <div class="card-header submissions">{% trans "Submissions by state" %}</div>
+        <div class="card-header talks d-none">{% trans "Talks by state" %}</div>
+        <div id="submission-state-data" class="d-none" data-states='{{ submission_state_data }}'></div>
+        <div id="talk-state-data" class="d-none" data-states='{{ talk_state_data }}'></div>
+        <div id="submission-states" class="pie card-body submissions"><svg></svg></div>
+        <div id="talk-states" class="pie card-body talks d-none"><svg></svg></div>
+    </div>
+    {% endif %}
+
+    {% if submission_type_data %}
+    <div class="card">
+        <div class="card-header submissions">{% trans "Submissions by submission type" %}</div>
+        <div class="card-header talks d-none">{% trans "Talks by submission type" %}</div>
+        <div id="submission-type-data" class="d-none" data-states='{{ submission_type_data }}'></div>
+        <div id="talk-type-data" class="d-none" data-states='{{ talk_type_data }}'></div>
+        <div id="submission-types" class="pie card-body submissions"><svg></svg></div>
+        <div id="talk-types" class="pie card-body talks d-none"><svg></svg></div>
+    </div>
+    {% endif %}
+
+    {% if submission_track_data %}
+    <div class="card">
+        <div class="card-header submissions">{% trans "Submissions by track" %}</div>
+        <div class="card-header talks d-none">{% trans "Talks by track" %}</div>
+        <div id="submission-track-data" class="d-none" data-states='{{ submission_track_data }}'></div>
+        <div id="talk-track-data" class="d-none" data-states='{{ talk_track_data }}'></div>
+        <div id="submission-tracks" class="pie card-body submissions"><svg></svg></div>
+        <div id="talk-tracks" class="pie card-body talks d-none"><svg></svg></div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

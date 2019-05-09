@@ -28,6 +28,8 @@
     </div>
 </fieldset>
 
+{% if request.organiser %}
+
 <fieldset>
     <legend>{% trans "Teams" %}</legend>
     <table class="table table-hover table-sm table-responsive-md">
@@ -53,10 +55,10 @@
                 </td>
                 <td>{{ team.members.count }}</td>
                 <td>
-                    <i class="fa fa-{% if team.all_events %}check-circle text-success{% else %}times-circle text-danger{% endif %}">
+                    <i class="fa fa-{{ team.all_events|yesno:"check-circle text-success,times-circle text-danger" }}">
                 </td>
                 <td>
-                    <i class="fa fa-{% if team.is_reviewer %}check-circle text-success{% else %}times-circle text-danger{% endif %}">
+                    <i class="fa fa-{{ team.is_reviewer|yesno:"check-circle text-success,times-circle text-danger" }}">
                 </td>
                 <td>
                     <a href="{{ team.orga_urls.base }}"
@@ -84,5 +86,6 @@
         </span>
     </div>
 </fieldset>
+{% endif %}
 </form>
 {% endblock %}
