@@ -100,7 +100,7 @@ setup(
         'django-libsass==0.7',  # inactive, https://github.com/torchbox/django-libsass/blob/master/CHANGELOG.txt
         'djangorestframework==3.9.*',  # http://www.django-rest-framework.org/topics/release-notes/
         'inlinestyler==0.2.*',  # https://github.com/dlanger/inlinestyler/blob/master/CHANGELOG
-        'libsass==0.18.0',  # https://sass.github.io/libsass-python/changes.html
+        'libsass==0.19.1',  # https://sass.github.io/libsass-python/changes.html
         'Markdown==3.1.*',  # https://python-markdown.github.io/change_log/
         'publicsuffixlist==0.6.*',
         'python-dateutil==2.8.*',  # https://dateutil.readthedocs.io/en/stable/changelog.html
