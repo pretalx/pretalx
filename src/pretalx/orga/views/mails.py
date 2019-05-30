@@ -265,6 +265,14 @@ class ComposeMail(EventPermissionRequired, FormView):
                 submission_type_id__in=submission_types
             ))
             user_set.update(users)
+        boolean_questions = form.cleaned_data.get('boolean_questions')
+        if boolean_questions:
+            users = User.objects.filter(
+                submissions__in=self.request.event.submissions.all(),
+                answers__question__pk__in=boolean_questions,
+                answers__answer='True',
+            )
+            user_set.update(users)
 
         for recipient in form.cleaned_data.get('recipients'):
             if recipient == 'reviewers':

@@ -255,6 +255,36 @@ def test_orga_can_compose_mail_for_track(orga_client, event, submission, track):
 
 
 @pytest.mark.django_db
+def test_orga_can_compose_mail_for_boolean_questions_no_answer(orga_client, event, submission, speaker_boolean_question, other_speaker_boolean_answer):
+    response = orga_client.get(
+        event.orga_urls.compose_mails, follow=True,
+    )
+    assert response.status_code == 200
+    assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+    response = orga_client.post(
+        event.orga_urls.compose_mails, follow=True,
+        data={'bcc': '', 'cc': '', 'reply_to': '', 'subject': 'foo', 'text': 'bar', 'boolean_questions': [speaker_boolean_question.pk]}
+    )
+    assert response.status_code == 200
+    assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+
+
+@pytest.mark.django_db
+def test_orga_can_compose_mail_for_boolean_questions_answer(orga_client, event, submission, speaker_boolean_answer, other_speaker_boolean_question):
+    response = orga_client.get(
+        event.orga_urls.compose_mails, follow=True,
+    )
+    assert response.status_code == 200
+    assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+    response = orga_client.post(
+        event.orga_urls.compose_mails, follow=True,
+        data={'bcc': '', 'cc': '', 'reply_to': '', 'subject': 'foo', 'text': 'bar', 'boolean_questions': [speaker_boolean_answer.question.pk]}
+    )
+    assert response.status_code == 200
+    assert QueuedMail.objects.filter(sent__isnull=True).count() == 1
+
+
+@pytest.mark.django_db
 def test_orga_can_compose_mail_for_submission_type(orga_client, event, submission):
     response = orga_client.get(
         event.orga_urls.compose_mails, follow=True,

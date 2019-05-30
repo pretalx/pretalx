@@ -210,6 +210,27 @@ def speaker_boolean_question(event):
 
 
 @pytest.fixture
+def speaker_boolean_answer(event, speaker, speaker_boolean_question):
+    return Answer.objects.create(answer='True', person=speaker, question=speaker_boolean_question)
+
+
+@pytest.fixture
+def other_speaker_boolean_question(event):
+    return Question.objects.create(
+        event=event,
+        question='Do you like red?',
+        variant=QuestionVariant.BOOLEAN,
+        target='speaker',
+        required=False,
+    )
+
+
+@pytest.fixture
+def other_speaker_boolean_answer(event, speaker, other_speaker_boolean_question):
+    return Answer.objects.create(answer='True', person=speaker, question=other_speaker_boolean_question)
+
+
+@pytest.fixture
 def speaker_file_question(event):
     return Question.objects.create(
         event=event,

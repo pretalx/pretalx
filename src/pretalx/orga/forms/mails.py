@@ -6,6 +6,7 @@ from pretalx.common.mixins.forms import ReadOnlyFlag
 from pretalx.mail.context import get_context_explanation
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.person.models import User
+from pretalx.submission.models import QuestionTarget, QuestionVariant
 
 
 class MailTemplateForm(ReadOnlyFlag, I18nModelForm):
@@ -98,6 +99,7 @@ class WriteMailForm(forms.ModelForm):
         required=False,
     )
     tracks = forms.MultipleChoiceField(label=_('All submissions in these tracks'), required=False)
+    boolean_questions = forms.MultipleChoiceField(label=_('Answered one of these questions with "yes"'), required=False)
     submission_types = forms.MultipleChoiceField(label=_('All submissions of these types'), required=False)
     submissions = forms.MultipleChoiceField(required=False)
     additional_recipients = forms.CharField(
@@ -120,6 +122,13 @@ class WriteMailForm(forms.ModelForm):
             del self.fields['tracks']
         self.fields['submission_types'].choices = [
             (submission_type.pk, submission_type.name) for submission_type in event.submission_types.all()
+        ]
+        self.fields['boolean_questions'].choices = [
+            (question.pk, question.question)
+            for question in event.questions.filter(
+                variant=QuestionVariant.BOOLEAN,
+                target=QuestionTarget.SPEAKER,
+            )
         ]
         self.fields['text'].help_text = _(
             'Please note: Placeholders will not be substituted, this is an upcoming feature. '
