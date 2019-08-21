@@ -11,6 +11,7 @@ class AuthenticationTokenBackend:
         if token:
             with suppress(User.DoesNotExist, MultipleObjectsReturned):
                 return User.objects.get(auth_token__key__iexact=token)
+        return None
 
 
 class AuthenticationTokenMiddleware:
@@ -18,10 +19,13 @@ class AuthenticationTokenMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if not request.user.is_authenticated and 'HTTP_AUTHORIZATION' in request.META:
-            token = request.META['HTTP_AUTHORIZATION'].lower().lstrip('token ')
+        if not request.user.is_authenticated and 'Authorization' in request.headers:
+            token = request.headers['Authorization'].lower()
+            token = token[len('token '):] if token.startswith('token ') else token
             user = authenticate(
-                token=token, backend='pretalx.common.auth.AuthenticationTokenBackend'
+                request,
+                token=token,
+                backend='pretalx.common.auth.AuthenticationTokenBackend',
             )
             if user:
                 request.user = user

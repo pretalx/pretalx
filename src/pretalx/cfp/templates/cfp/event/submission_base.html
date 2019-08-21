@@ -1,10 +1,27 @@
 {% extends "cfp/event/base.html" %}
+{% load compress %}
 {% load i18n %}
+{% load static %}
 
 {% block title %}{% trans "Create submission" %} :: {{ request.event.name }}{% endblock %}
 
 {% block content %}
-    <form action="" method="post" enctype="multipart/form-data">
+    <script src="{% static "vendored/marked.min.js" %}" defer></script>
+    <script src="{% static "common/js/markdown.js" %}" defer></script>
+
+    <div id="submission-steps" class="stages">
+        {% for stp in step_list %}
+        <a {% if stp.phase == 'done' %}href="{{ stp.url }}"{% endif %} class="step step-{{ stp.phase }}">
+            <div class="step-icon">
+                <span class="fa {% if stp.phase == 'done' %}fa-check{% elif stp.icon %}fa-{{ stp.icon }}{% else %}fa-pencil{% endif %}"></span>
+            </div>
+            <div class="step-label">
+                {{ stp.label }}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ wizard.management_form }}
         {% block inner %}

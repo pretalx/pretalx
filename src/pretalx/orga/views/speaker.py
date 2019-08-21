@@ -1,17 +1,17 @@
 from csp.decorators import csp_update
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, ListView, View
+from django_context_decorator import context
 
 from pretalx.common.mail import SendMailException
 from pretalx.common.mixins.views import (
-    ActionFromUrl, Filterable, PermissionRequired, Sortable,
+    ActionFromUrl, EventPermissionRequired, Filterable, PermissionRequired, Sortable,
 )
 from pretalx.common.views import CreateOrUpdateView
 from pretalx.person.forms import (
@@ -19,10 +19,10 @@ from pretalx.person.forms import (
 )
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
 from pretalx.submission.forms import QuestionsForm
-from pretalx.submission.models.submission import SubmissionStates
+from pretalx.submission.models.submission import Submission, SubmissionStates
 
 
-class SpeakerList(PermissionRequired, Sortable, Filterable, ListView):
+class SpeakerList(EventPermissionRequired, Sortable, Filterable, ListView):
     model = SpeakerProfile
     template_name = 'orga/speaker/list.html'
     context_object_name = 'speakers'
@@ -32,16 +32,14 @@ class SpeakerList(PermissionRequired, Sortable, Filterable, ListView):
     paginate_by = 25
     permission_required = 'orga.view_speakers'
 
-    def get_permission_object(self):
-        return self.request.event
-
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
-        context['filter_form'] = SpeakerFilterForm()
-        return context
+    @context
+    def filter_form(self):
+        return SpeakerFilterForm()
 
     def get_queryset(self):
-        qs = SpeakerProfile.objects.filter(event=self.request.event, user__in=self.request.event.submitters)
+        qs = SpeakerProfile.objects.filter(
+            event=self.request.event, user__in=self.request.event.submitters
+        )
 
         qs = self.filter_queryset(qs)
         if 'role' in self.request.GET:
@@ -76,12 +74,7 @@ class SpeakerDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
     def get_object(self):
         return get_object_or_404(
             User.objects.filter(
-                Q(submissions__in=self.request.event.submissions.all())
-                | Q(
-                    submissions__in=self.request.event.submissions(
-                        manager='deleted_objects'
-                    ).all()
-                )
+                submissions__in=Submission.all_objects.filter(event=self.request.event)
             )
             .order_by('id')
             .distinct(),
@@ -105,14 +98,15 @@ class SpeakerDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
             kwargs={'event': self.request.event.slug, 'pk': self.kwargs['pk']},
         )
 
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
-        submissions = self.request.event.submissions.filter(speakers__in=[self.object])
-        context['submission_count'] = submissions.count()
-        context['submissions'] = submissions
-        context['questions_form'] = self.questions_form
-        return context
+    @context
+    def submissions(self, **kwargs):
+        return self.request.event.submissions.filter(speakers__in=[self.object])
 
+    @context
+    def mails(self):
+        return self.object.mails.filter(sent__isnull=False, event=self.request.event).order_by('-sent')
+
+    @context
     @cached_property
     def questions_form(self):
         speaker = self.get_object()
@@ -144,19 +138,15 @@ class SpeakerDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
         return kwargs
 
 
-class SpeakerPasswordReset(PermissionRequired, DetailView):
+class SpeakerPasswordReset(EventPermissionRequired, DetailView):
     permission_required = 'orga.change_speaker'
     template_name = 'orga/speaker/reset_password.html'
     model = User
     context_object_name = 'speaker'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['profile'] = self.get_object().event_profile(self.request.event)
-        return context
-
-    def get_permission_object(self):
-        return self.request.event
+    @context
+    def profile(self):
+        return self.get_object().event_profile(self.request.event)
 
     @transaction.atomic()
     def post(self, request, *args, **kwargs):
@@ -212,15 +202,14 @@ class SpeakerToggleArrived(PermissionRequired, View):
         return redirect(reverse('orga:speakers.view', kwargs=self.kwargs))
 
 
-class InformationList(PermissionRequired, ListView):
-    queryset = SpeakerInformation.objects.order_by('pk')
+class InformationList(EventPermissionRequired, ListView):
+    queryset = SpeakerInformation.objects.none()
     template_name = 'orga/speaker/information_list.html'
     context_object_name = 'information'
-    paginate_by = 25
     permission_required = 'orga.view_information'
 
-    def get_permission_object(self):
-        return self.request.event
+    def get_queryset(self):
+        return self.request.event.information.all().order_by('pk')
 
 
 class InformationDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
@@ -256,6 +245,9 @@ class InformationDelete(PermissionRequired, DetailView):
     model = SpeakerInformation
     permission_required = 'orga.change_information'
     template_name = 'orga/speaker/information_delete.html'
+
+    def get_queryset(self):
+        return self.request.event.information.all()
 
     def post(self, request, *args, **kwargs):
         information = self.get_object()

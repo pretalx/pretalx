@@ -1,22 +1,25 @@
 from django.contrib import messages
-from django.db import models
+from django.db import transaction
+from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, TemplateView
+from django_context_decorator import context
 
-from pretalx.common.mixins.views import Filterable, PermissionRequired
+from pretalx.common.mixins.views import (
+    EventPermissionRequired, Filterable, PermissionRequired,
+)
 from pretalx.common.phrases import phrases
 from pretalx.common.views import CreateOrUpdateView
 from pretalx.orga.forms import ReviewForm
-from pretalx.person.models import User
 from pretalx.submission.forms import QuestionsForm, SubmissionFilterForm
-from pretalx.submission.models import Review, SubmissionStates
+from pretalx.submission.models import Review, Submission, SubmissionStates
 
 
-class ReviewDashboard(PermissionRequired, Filterable, ListView):
+class ReviewDashboard(EventPermissionRequired, Filterable, ListView):
     template_name = 'orga/review/dashboard.html'
-    paginate_by = 25
+    paginate_by = None
     context_object_name = 'submissions'
     permission_required = 'orga.view_review_dashboard'
     default_filters = (
@@ -24,7 +27,7 @@ class ReviewDashboard(PermissionRequired, Filterable, ListView):
         'speakers__name__icontains',
         'title__icontains',
     )
-    filter_fields = ('submission_type', 'state')
+    filter_fields = ('submission_type', 'state', 'track')
 
     def get_filter_form(self):
         return SubmissionFilterForm(
@@ -38,10 +41,7 @@ class ReviewDashboard(PermissionRequired, Filterable, ListView):
             ],
         )
 
-    def get_queryset(self, *args, **kwargs):
-        overridden_reviews = Review.objects.filter(
-            override_vote__isnull=False, submission_id=models.OuterRef('pk')
-        )
+    def get_queryset(self):
         queryset = self.request.event.submissions.filter(
             state__in=[
                 SubmissionStates.SUBMITTED,
@@ -50,48 +50,113 @@ class ReviewDashboard(PermissionRequired, Filterable, ListView):
                 SubmissionStates.CONFIRMED,
             ]
         )
-        queryset = self.filter_queryset(queryset)
-        return (
-            queryset.order_by('review_id')
-            .annotate(has_override=models.Exists(overridden_reviews))
-            .annotate(
-                avg_score=models.Case(
-                    models.When(
-                        has_override=True,
-                        then=self.request.event.settings.review_max_score + 1,
-                    ),
-                    default=models.Avg('reviews__score'),
-                )
-            )
-            .order_by('-state', '-avg_score', 'code')
+        limit_tracks = self.request.user.teams.filter(
+            Q(all_events=True)
+            | Q(
+                Q(all_events=False)
+                & Q(limit_events__in=[self.request.event])
+            ),
+            limit_tracks__isnull=False,
+        )
+        if limit_tracks:
+            tracks = set()
+            for team in limit_tracks:
+                tracks.update(team.limit_tracks.filter(event=self.request.event))
+            queryset = queryset.filter(track__in=tracks)
+        queryset = self.filter_queryset(queryset).annotate(review_count=Count('reviews'))
+
+        can_see_all_reviews = self.request.user.has_perm('orga.view_all_reviews', self.request.event)
+        overridden_reviews = Review.objects.filter(
+            override_vote__isnull=False, submission_id=OuterRef('pk')
+        )
+        if not can_see_all_reviews:
+            overridden_reviews = overridden_reviews.filter(user=self.request.user)
+
+        queryset = (
+            queryset.annotate(has_override=Exists(overridden_reviews))
+            .select_related('track', 'submission_type')
+            .prefetch_related('speakers', 'reviews', 'reviews__user')
         )
 
-    def get_permission_object(self):
-        return self.request.event
+        for submission in queryset:
+            if can_see_all_reviews:
+                submission.current_score = submission.median_score
+            else:
+                reviews = [review for review in submission.reviews.all() if review.user == self.request.user]
+                submission.current_score = None
+                if reviews:
+                    submission.current_score = reviews[0].score
 
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
+        return self.sort_queryset(queryset)
+
+    def sort_queryset(self, queryset):
+        order_prevalence = {
+            'default': ('state', 'current_score', 'code'),
+            'score': ('current_score', 'state', 'code'),
+            'count': ('review_count', 'code')
+        }
+        ordering = self.request.GET.get('sort', 'default')
+        reverse = True
+        if ordering.startswith('-'):
+            reverse = False
+            ordering = ordering[1:]
+
+        order = order_prevalence.get(ordering, order_prevalence['default'])
+
+        def get_order_tuple(obj):
+            return tuple(
+                getattr(obj, key)
+                if not (key == 'current_score' and obj.current_score is None)
+                else 100 * -int(reverse)
+                for key in order
+            )
+
+        return sorted(
+            queryset,
+            key=get_order_tuple,
+            reverse=reverse,
+        )
+
+    @context
+    def can_accept_submissions(self):
+        return self.request.event.submissions.filter(state=SubmissionStates.SUBMITTED).exists() and self.request.user.has_perm('submission.accept_or_reject_submissions', self.request.event)
+
+    def get_context_data(self, **kwargs):
+        result = super().get_context_data(**kwargs)
         missing_reviews = Review.find_missing_reviews(
             self.request.event, self.request.user
         )
-        reviewers = User.objects.filter(
-            teams__in=self.request.event.teams.filter(is_reviewer=True)
-        ).distinct()
-        context['missing_reviews'] = missing_reviews
-        context['next_submission'] = missing_reviews.first()
-        context['reviewers'] = reviewers.count()
-        context['active_reviewers'] = (
-            reviewers.filter(reviews__isnull=False)
-            .order_by('user__id')
-            .distinct()
-            .count()
-        )
-        context['review_count'] = self.request.event.reviews.count()
-        if context['active_reviewers'] > 1:
-            context['avg_reviews'] = round(
-                context['review_count'] / context['active_reviewers'], 1
-            )
-        return context
+        result['missing_reviews'] = missing_reviews.count()
+        result['next_submission'] = missing_reviews.first()
+        return result
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        total = {'accept': 0, 'reject': 0, 'error': 0}
+        for key, value in request.POST.items():
+            if not key.startswith('s-') or value not in ['accept', 'reject']:
+                continue
+            pk = key.strip('s-')
+            try:
+                submission = request.event.submissions.filter(state=SubmissionStates.SUBMITTED).get(pk=pk)
+            except (Submission.DoesNotExist, ValueError):
+                total['error'] += 1
+                continue
+            if not request.user.has_perm('submission.' + value + '_submission', submission):
+                total['error'] += 1
+                continue
+            getattr(submission, value)(person=request.user)
+            total[value] += 1
+        if not total['accept'] and not total['reject'] and not total['error']:
+            messages.success(request, _('There was nothing to do.'))
+        elif total['accept'] or total['reject']:
+            msg = str(_('Success! {accepted} submissions were accepted, {rejected} submissions were rejected.')).format(accepted=total['accept'], rejected=total['reject'])
+            if total['error']:
+                msg += ' ' + str(_('We were unable to change the state of {count} submissions.')).format(count=total['error'])
+            messages.success(request, msg)
+        else:
+            messages.error(request, str(_('We were unable to change the state of all {count} submissions.')).format(count=total['error']))
+        return super().get(request, *args, **kwargs)
 
 
 class ReviewSubmission(PermissionRequired, CreateOrUpdateView):
@@ -100,7 +165,9 @@ class ReviewSubmission(PermissionRequired, CreateOrUpdateView):
     model = Review
     template_name = 'orga/submission/review.html'
     permission_required = 'submission.view_reviews'
+    write_permission_required = 'submission.review_submission'
 
+    @context
     @cached_property
     def submission(self):
         return get_object_or_404(
@@ -121,38 +188,23 @@ class ReviewSubmission(PermissionRequired, CreateOrUpdateView):
     def get_permission_object(self):
         return self.submission
 
+    @context
     @cached_property
     def read_only(self):
         return not self.request.user.has_perm(
             'submission.review_submission', self.get_object() or self.submission
         )
 
-    @cached_property
-    def qform(self):
-        return QuestionsForm(
-            target='reviewer',
-            event=self.request.event,
-            data=(self.request.POST if self.request.method == 'POST' else None),
-            files=(self.request.FILES if self.request.method == 'POST' else None),
-            speaker=self.request.user,
-            review=self.object,
-            readonly=self.read_only,
-        )
-
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
-        context['submission'] = self.submission
-        context['review'] = self.object
-        context['read_only'] = self.read_only
-        context['qform'] = self.qform
-        context['skip_for_now'] = Review.find_missing_reviews(
-            self.request.event, self.request.user, ignore=[self.submission]
-        ).first()
-        context['profiles'] = [
+    @context
+    def profiles(self):
+        return [
             speaker.event_profile(self.request.event)
             for speaker in self.submission.speakers.all()
         ]
-        context['reviews'] = [
+
+    @context
+    def reviews(self):
+        return [
             {
                 'score': review.display_score,
                 'text': review.text,
@@ -166,7 +218,35 @@ class ReviewSubmission(PermissionRequired, CreateOrUpdateView):
                 pk=(self.object.pk if self.object else None)
             )
         ]
-        return context
+
+    @context
+    @cached_property
+    def qform(self):
+        return QuestionsForm(
+            target='reviewer',
+            event=self.request.event,
+            data=(self.request.POST if self.request.method == 'POST' else None),
+            files=(self.request.FILES if self.request.method == 'POST' else None),
+            speaker=self.request.user,
+            review=self.object,
+            readonly=self.read_only,
+        )
+
+    @context
+    def skip_for_now(self):
+        return Review.find_missing_reviews(
+            self.request.event, self.request.user, ignore=[self.submission]
+        ).first()
+
+    def get_context_data(self, **kwargs):
+        result = super().get_context_data(**kwargs)
+        result['done'] = self.request.user.reviews.filter(submission__event=self.request.event).count()
+        result['total_reviews'] = Review.find_missing_reviews(
+            self.request.event, self.request.user
+        ).count() + result['done']
+        if result['total_reviews']:
+            result['percentage'] = int(result['done'] * 100 / result['total_reviews'])
+        return result
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -216,9 +296,28 @@ class ReviewSubmission(PermissionRequired, CreateOrUpdateView):
         return self.submission.orga_urls.reviews
 
 
-class ReviewSubmissionDelete(PermissionRequired, TemplateView):
+class ReviewSubmissionDelete(EventPermissionRequired, TemplateView):
     template_name = 'orga/review/submission_delete.html'
     permission_required = 'orga.remove_review'
 
-    def get_permission_object(self):
-        return self.request.event
+
+class RegenerateDecisionMails(EventPermissionRequired, TemplateView):
+    template_name = 'orga/review/regenerate_decision_mails.html'
+    permission_required = 'orga.change_submissions'
+
+    def get_queryset(self):
+        return self.request.event.submissions.filter(
+            state__in=[SubmissionStates.ACCEPTED, SubmissionStates.REJECTED],
+            speakers__isnull=False,
+        )
+
+    @context
+    @cached_property
+    def count(self):
+        return self.get_queryset().count()
+
+    def post(self, request, **kwargs):
+        for submission in self.get_queryset():
+            submission.send_state_mail()
+        messages.success(request, _('{count} emails were generated and placed in the outbox.').format(count=self.count))
+        return redirect(self.request.event.orga_urls.reviews)

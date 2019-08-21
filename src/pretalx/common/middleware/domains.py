@@ -11,11 +11,12 @@ from django.middleware.csrf import CsrfViewMiddleware as BaseCsrfMiddleware
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import resolve
 from django.utils.cache import patch_vary_headers
-from django.utils.http import cookie_date
+from django.utils.http import http_date
 
 from pretalx.event.models import Event
 
 LOCAL_HOST_NAMES = ('testserver', 'localhost')
+ANY_DOMAIN_ALLOWED = ('robots.txt', 'root.main')
 
 
 class MultiDomainMiddleware:
@@ -25,10 +26,10 @@ class MultiDomainMiddleware:
     @staticmethod
     def get_host(request):
         # We try three options, in order of decreasing preference.
-        if settings.USE_X_FORWARDED_HOST and ('HTTP_X_FORWARDED_HOST' in request.META):
-            host = request.META['HTTP_X_FORWARDED_HOST']
-        elif 'HTTP_HOST' in request.META:
-            host = request.META['HTTP_HOST']
+        if settings.USE_X_FORWARDED_HOST and ('X-Forwarded-Host' in request.headers):
+            host = request.headers['X-Forwarded-Host']
+        elif 'Host' in request.headers:
+            host = request.headers['Host']
         else:
             # Reconstruct the host using the algorithm from PEP 333.
             host = request.META['SERVER_NAME']
@@ -40,14 +41,14 @@ class MultiDomainMiddleware:
     def process_request(self, request):
         host = self.get_host(request)
         domain, port = split_domain_port(host)
-        if not domain:
-            raise DisallowedHost(f'Invalid HTTP_HOST header: {host}.')
-
         request.host = domain
         request.port = int(port) if port else None
         request.uses_custom_domain = False
 
-        event_slug = resolve(request.path).kwargs.get('event')
+        resolved = resolve(request.path)
+        if resolved.url_name in ANY_DOMAIN_ALLOWED or request.path.startswith('/api/'):
+            return
+        event_slug = resolved.kwargs.get('event')
         if event_slug:
             event = get_object_or_404(Event, slug__iexact=event_slug)
             request.event = event
@@ -108,31 +109,30 @@ class SessionMiddleware(BaseSessionMiddleware):
             # The session should be deleted only if the session is entirely empty
             if settings.SESSION_COOKIE_NAME in request.COOKIES and empty:
                 response.delete_cookie(settings.SESSION_COOKIE_NAME)
-            else:
-                if accessed:
-                    patch_vary_headers(response, ('Cookie',))
-                if modified or settings.SESSION_SAVE_EVERY_REQUEST:
-                    if request.session.get_expire_at_browser_close():
-                        max_age = None
-                        expires = None
-                    else:
-                        max_age = request.session.get_expiry_age()
-                        expires_time = time.time() + max_age
-                        expires = cookie_date(expires_time)
-                    # Save the session data and refresh the client cookie.
-                    # Skip session save for 500 responses, refs #3881.
-                    if response.status_code != 500:
-                        request.session.save()
-                        response.set_cookie(
-                            settings.SESSION_COOKIE_NAME,
-                            request.session.session_key,
-                            max_age=max_age,
-                            expires=expires,
-                            domain=get_cookie_domain(request),
-                            path=settings.SESSION_COOKIE_PATH,
-                            secure=request.scheme == 'https',
-                            httponly=settings.SESSION_COOKIE_HTTPONLY or None,
-                        )
+                return response
+            if accessed:
+                patch_vary_headers(response, ('Cookie',))
+            if modified or settings.SESSION_SAVE_EVERY_REQUEST:
+                max_age = None
+                expires = None
+                if not request.session.get_expire_at_browser_close():
+                    max_age = request.session.get_expiry_age()
+                    expires_time = time.time() + max_age
+                    expires = http_date(expires_time)
+                # Save the session data and refresh the client cookie.
+                # Skip session save for 500 responses, refs #3881.
+                if response.status_code != 500:
+                    request.session.save()
+                    response.set_cookie(
+                        settings.SESSION_COOKIE_NAME,
+                        request.session.session_key,
+                        max_age=max_age,
+                        expires=expires,
+                        domain=get_cookie_domain(request),
+                        path=settings.SESSION_COOKIE_PATH,
+                        secure=request.scheme == 'https',
+                        httponly=settings.SESSION_COOKIE_HTTPONLY or None,
+                    )
         return response
 
     def __call__(self, request):

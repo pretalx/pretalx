@@ -5,9 +5,11 @@ import pytz
 from django import forms
 from django.db import transaction
 from django.utils.dateparse import parse_datetime
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
+from django_scopes.forms import SafeModelChoiceField
 from i18nfield.forms import I18nModelForm
 
+from pretalx.api.serializers.room import AvailabilitySerializer
 from pretalx.common.mixins.forms import ReadOnlyFlag
 from pretalx.schedule.models import Availability, Room, TalkSlot
 
@@ -24,9 +26,9 @@ class AvailabilitiesFormMixin(forms.Form):
 
     def _serialize(self, event, instance):
         if instance:
-            availabilities = [
-                avail.serialize() for avail in instance.availabilities.all()
-            ]
+            availabilities = AvailabilitySerializer(
+                instance.availabilities.all(), many=True
+            ).data
         else:
             availabilities = []
 
@@ -55,14 +57,16 @@ class AvailabilitiesFormMixin(forms.Form):
             rawdata = json.loads(jsonavailabilities)
         except ValueError:
             raise forms.ValidationError("Submitted availabilities are not valid json.")
-
-        try:
-            assert isinstance(rawdata, dict)
-            availabilities = rawdata['availabilities']
-            assert isinstance(availabilities, list)
-            return availabilities
-        except (ValueError, AssertionError, LookupError):
-            raise forms.ValidationError("Submitted json does not comply with format.")
+        if not isinstance(rawdata, dict):
+            raise forms.ValidationError(
+                "Submitted json does not comply with expected format, should be object."
+            )
+        availabilities = rawdata.get('availabilities')
+        if not isinstance(availabilities, list):
+            raise forms.ValidationError(
+                "Submitted json does not comply with expected format, missing or malformed availabilities field"
+            )
+        return availabilities
 
     def _parse_datetime(self, strdate):
         tz = pytz.timezone(self.event.timezone)
@@ -84,7 +88,7 @@ class AvailabilitiesFormMixin(forms.Form):
             assert 'end' in rawavail
         except AssertionError:
             raise forms.ValidationError(
-                "Submitted availability does not comply with format."
+                _("The submitted availability does not comply with the required format.")
             )
 
         try:
@@ -92,42 +96,43 @@ class AvailabilitiesFormMixin(forms.Form):
             rawavail['end'] = self._parse_datetime(rawavail['end'])
         except (AssertionError, TypeError, ValueError):
             raise forms.ValidationError(
-                "Submitted availability contains an invalid date."
+                _("The submitted availability contains an invalid date.")
             )
 
         tz = pytz.timezone(self.event.timezone)
 
-        try:
-            timeframe_start = tz.localize(
-                datetime.datetime.combine(self.event.date_from, datetime.time())
-            )
-            assert rawavail['start'] >= timeframe_start
+        timeframe_start = tz.localize(
+            datetime.datetime.combine(self.event.date_from, datetime.time())
+        )
+        if rawavail['start'] < timeframe_start:
+            rawavail['start'] = timeframe_start
 
-            # add 1 day, not 24 hours, https://stackoverflow.com/a/25427822/2486196
-            timeframe_end = datetime.datetime.combine(
-                self.event.date_to, datetime.time()
-            )
-            timeframe_end = timeframe_end + datetime.timedelta(days=1)
-            timeframe_end = tz.localize(timeframe_end, is_dst=None)
-            assert rawavail['end'] <= timeframe_end
-        except AssertionError:
-            raise forms.ValidationError(
-                "Submitted availability is not within the event timeframe."
-            )
+        # add 1 day, not 24 hours, https://stackoverflow.com/a/25427822/2486196
+        timeframe_end = datetime.datetime.combine(self.event.date_to, datetime.time())
+        timeframe_end = timeframe_end + datetime.timedelta(days=1)
+        timeframe_end = tz.localize(timeframe_end, is_dst=None)
+        if rawavail['end'] > timeframe_end:
+            # If the submitted availability ended outside the event timeframe, fix it silently
+            rawavail['end'] = timeframe_end
 
     def clean_availabilities(self):
-        if self.cleaned_data['availabilities'] == '':
+        data = self.cleaned_data.get('availabilities')
+        required = (
+            'availabilities' in self.fields and self.fields['availabilities'].required
+        )
+        if not data:
+            if required:
+                raise forms.ValidationError(_('Please fill in your availabilities!'))
             return None
 
-        rawavailabilities = self._parse_availabilities_json(
-            self.cleaned_data['availabilities']
-        )
+        rawavailabilities = self._parse_availabilities_json(data)
         availabilities = []
 
         for rawavail in rawavailabilities:
             self._validate_availability(rawavail)
             availabilities.append(Availability(event_id=self.event.id, **rawavail))
-
+        if not availabilities and required:
+            raise forms.ValidationError(_('Please fill in your availabilities!'))
         return availabilities
 
     def _set_foreignkeys(self, instance, availabilities):
@@ -149,7 +154,7 @@ class AvailabilitiesFormMixin(forms.Form):
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
-        availabilities = self.cleaned_data['availabilities']
+        availabilities = self.cleaned_data.get('availabilities')
 
         if availabilities is not None:
             self._set_foreignkeys(instance, availabilities)
@@ -207,3 +212,6 @@ class QuickScheduleForm(forms.ModelForm):
     class Meta:
         model = TalkSlot
         fields = ('room',)
+        field_classes = {
+            'room': SafeModelChoiceField,
+        }

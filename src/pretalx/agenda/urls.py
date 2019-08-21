@@ -32,13 +32,14 @@ urlpatterns = [
         fr'^(?P<event>[{SLUG_CHARS}]+)/',
         include(
             [
-                url(r'^schedule/changelog$', schedule.ChangelogView.as_view(), name='schedule.changelog'),
+                url(r'^schedule/changelog/$', schedule.ChangelogView.as_view(), name='schedule.changelog'),
                 url(r'^schedule/feed.xml$', feed.ScheduleFeed(), name='feed'),
 
                 *get_schedule_urls('^schedule'),
                 *get_schedule_urls('^schedule/v/(?P<version>.+)', 'versioned-'),
                 url(r'^sneak/$', sneakpeek.SneakpeekView.as_view(), name='sneak'),
                 url(r'^speaker/$', talk.SpeakerList.as_view(), name='speakers'),
+                url(r'^speaker/by-id/(?P<pk>\d+)/$', speaker.SpeakerRedirect.as_view(), name='speaker.redirect'),
                 url(r'^talk/$', talk.TalkList.as_view(), name='talks'),
                 url(r'^talk/(?P<slug>\w+)/$', talk.TalkView.as_view(), name='talk'),
                 url(

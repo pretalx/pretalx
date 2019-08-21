@@ -3,12 +3,18 @@
 {% load compress %}
 {% load formset_tags %}
 {% load i18n %}
-{% load review_score %}
-{% load staticfiles %}
+{% load static %}
+{% load rules %}
 
 {% block submission_content %}
-<script type="text/javascript" src="{% static "js/jquery.formset.js" %}"></script>
-<form method="post" action="" enctype="multipart/form-data"><fieldset>
+{% has_perm 'orga.send_mails' request.user request.event as can_send_mails %}
+{% has_perm 'orga.view_all_reviews' request.user request.event as can_view_all_reviews %}
+{% compress js %}
+    <script defer src="{% static "js/jquery.formset.js" %}"></script>
+    <script defer src="{% static "cfp/js/animateFormset.js" %}"></script>
+    <script defer src="{% static "orga/js/speakers.js" %}"></script>
+{% endcompress %}
+<form method="post" enctype="multipart/form-data"><fieldset>
     {% if not submission %}
     <legend>{% trans "Create submission" %}</legend>
     {% endif %}
@@ -74,40 +80,37 @@
                 </div>
                 {% endif %}
             </div>
-                <script>jQuery(function($) {
-                    $(".formset").formset({
-                        animateForms: true
-                    });
-                    });</script>
         {% endif %}
-        {% if form.instance.average_score != None %}
+        {% if form.instance.median_score != None and can_view_all_reviews %}
         <div class="form-group row">
             <label class="col-md-3 col-form-label">
-                {% trans "Review score" %}
+                {% trans "Reviews" %}
             </label>
             <div class="col-md-9">
                 <label>
-                    {% review_score form.instance %}
-                    ({{ submission.reviews.count }} {% trans "reviews" %})
+                    {{ submission.reviews.count }} {% trans "reviews" %}
                 </label>
             </div>
         </div>
         {% endif %}
         {% bootstrap_field form.submission_type layout='event' %}
+        {% if form.track %}{% bootstrap_field form.track layout='event' %}{% endif %}
         {% if form.abstract %}{% bootstrap_field form.abstract layout='event' %}{% endif %}
         {% if form.description %}{% bootstrap_field form.description layout='event' %}{% endif %}
         {% if form.notes %}{% bootstrap_field form.notes layout='event' %}{% endif %}
+        {% bootstrap_field form.internal_notes layout='event' %}
         {% bootstrap_field form.content_locale layout='event' %}
         {% if form.do_not_record %}{% bootstrap_field form.do_not_record layout='event' %}{% endif %}
         {% bootstrap_field form.is_featured layout='event' %}
         {% bootstrap_field form.duration addon_after='minutes' layout='event' addon_after_class="input-group-append input-group-text" %}
+        {% if form.slot_count %}{% bootstrap_field form.slot_count layout='event' %}{% endif %}
         {% if form.image %}{% bootstrap_field form.image layout='event' %}{% endif %}
         {% if questions_form %}{% bootstrap_form questions_form layout='event' %}{% endif %}
 
         <div class="submit-group panel">
             <span></span>
             <span>
-                {% if form.instance.code %}
+                {% if form.instance.code and can_send_mails %}
                     <a class="btn btn-lg btn-info" href="{{ request.event.orga_urls.compose_mails }}?submission={{ form.instance.code }}">
                         <i class="fa fa-envelope-o"></i>
                         {% trans "Send mail to speakers" %}
@@ -122,8 +125,4 @@
     </fieldset></form>
 
     <span id="vars" remoteUrl="{{ request.event.orga_urls.users }}?search=%QUERY"></span>
-    {% compress js %}
-    <script type="text/javascript" src="{% static "vendored/typeahead.bundle.min.js" %}"></script>
-    <script type="text/javascript" src="{% static "orga/js/speakers.js" %}"></script>
-    {% endcompress %}
 {% endblock %}

@@ -16,6 +16,7 @@ ALLOWED_TAGS = [
     'code',
     'div',
     'em',
+    'hr',
     'i',
     'li',
     'ol',
@@ -66,7 +67,14 @@ def rich_text(text: str):
         return ''
     body_md = LINKIFIER.linkify(
         bleach.clean(
-            markdown.markdown(str(text)),
+            markdown.markdown(
+                str(text),
+                extensions=[
+                    'markdown.extensions.nl2br',
+                    'markdown.extensions.sane_lists',
+                    'markdown.extensions.tables',
+                ]
+            ),
             tags=ALLOWED_TAGS,
             attributes=ALLOWED_ATTRIBUTES,
             protocols=ALLOWED_PROTOCOLS,

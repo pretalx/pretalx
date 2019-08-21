@@ -3,35 +3,63 @@ from datetime import timedelta
 
 from dateutil.parser import parse
 from django.db import transaction
+from django_scopes import scope
 
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.schedule.models import Room, TalkSlot
-from pretalx.submission.models import Submission, SubmissionStates, SubmissionType
+from pretalx.submission.models import (
+    Submission, SubmissionStates, SubmissionType, Track,
+)
+
+
+def guess_schedule_version(event):
+    if not event.current_schedule:
+        return '0.1'
+
+    version = event.current_schedule.version
+    prefix = ''
+    for separator in [',', '.', '-', '_']:
+        if separator in version:
+            prefix, version = version.rsplit(separator, maxsplit=1)
+            break
+    if version.isdigit():
+        version = str(int(version) + 1)
+        return prefix + separator + version
+    return ''
 
 
 @transaction.atomic()
 def process_frab(root, event):
-    """Take an xml document root and an event, and releases a schedule with the data from the xml document."""
-    for day in root.findall('day'):
-        for rm in day.findall('room'):
-            room, _ = Room.objects.get_or_create(event=event, name=rm.attrib['name'])
-            for talk in rm.findall('event'):
-                _create_talk(talk=talk, room=room, event=event)
+    """
+    Takes an xml document root and an event, and releases a schedule with the data from the xml document.
 
-    schedule_version = root.find('version').text
-    try:
-        event.wip_schedule.freeze(schedule_version, notify_speakers=False)
-        schedule = event.schedules.get(version=schedule_version)
-    except Exception:
-        raise Exception(f'Could not import "{event.name}" schedule version "{schedule_version}": failed creating schedule release.')
+    Called from the `import_schedule` manage command, at least.
+    """
+    with scope(event=event):
+        for day in root.findall('day'):
+            for rm in day.findall('room'):
+                room, _ = Room.objects.get_or_create(event=event, name=rm.attrib['name'])
+                for talk in rm.findall('event'):
+                    _create_talk(talk=talk, room=room, event=event)
 
-    schedule.talks.update(is_visible=True)
-    start = schedule.talks.order_by('start').first().start
-    end = schedule.talks.order_by('-end').first().end
-    event.date_from = start.date()
-    event.date_to = end.date()
-    event.save()
-    return f'Successfully imported "{event.name}" schedule version "{schedule_version}".'
+        schedule_version = root.find('version').text
+        try:
+            event.wip_schedule.freeze(schedule_version, notify_speakers=False)
+            schedule = event.schedules.get(version=schedule_version)
+        except Exception:
+            raise Exception(
+                f'Could not import "{event.name}" schedule version "{schedule_version}": failed creating schedule release.'
+            )
+
+        schedule.talks.update(is_visible=True)
+        start = schedule.talks.order_by('start').first().start
+        end = schedule.talks.order_by('-end').first().end
+        event.date_from = start.date()
+        event.date_to = end.date()
+        event.save()
+    return (
+        f'Successfully imported "{event.name}" schedule version "{schedule_version}".'
+    )
 
 
 def _create_talk(*, talk, room, event):
@@ -50,7 +78,16 @@ def _create_talk(*, talk, room, event):
 
     if not sub_type:
         sub_type = SubmissionType.objects.create(
-            name=talk.find('type').text or 'default', event=event, default_duration=duration_in_minutes
+            name=talk.find('type').text or 'default',
+            event=event,
+            default_duration=duration_in_minutes,
+        )
+
+    track = Track.objects.filter(event=event, name=talk.find('track').text).first()
+
+    if not track:
+        track = Track.objects.create(
+            name=talk.find('track').text or 'default', event=event
         )
 
     optout = False
@@ -58,17 +95,24 @@ def _create_talk(*, talk, room, event):
         optout = talk.find('recording').find('optout').text == 'true'
 
     code = None
-    if Submission.objects.filter(code__iexact=talk.attrib['id'], event=event).exists() or not Submission.objects.filter(code__iexact=talk.attrib['id']).exists():
+    if (
+        Submission.objects.filter(code__iexact=talk.attrib['id'], event=event).exists()
+        or not Submission.objects.filter(code__iexact=talk.attrib['id']).exists()
+    ):
         code = talk.attrib['id']
-    elif Submission.objects.filter(code__iexact=talk.attrib['guid'][:16], event=event).exists() or not Submission.objects.filter(code__iexact=talk.attrib['guid'][:16]).exists():
+    elif (
+        Submission.objects.filter(
+            code__iexact=talk.attrib['guid'][:16], event=event
+        ).exists()
+        or not Submission.objects.filter(code__iexact=talk.attrib['guid'][:16]).exists()
+    ):
         code = talk.attrib['guid'][:16]
 
     sub, _ = Submission.objects.get_or_create(
-        event=event,
-        code=code,
-        defaults={'submission_type': sub_type}
+        event=event, code=code, defaults={'submission_type': sub_type}
     )
     sub.submission_type = sub_type
+    sub.track = track
     sub.title = talk.find('title').text
     sub.description = talk.find('description').text
     if talk.find('subtitle').text:
@@ -88,9 +132,7 @@ def _create_talk(*, talk, room, event):
         sub.speakers.add(user)
 
     slot, _ = TalkSlot.objects.get_or_create(
-        submission=sub,
-        schedule=event.wip_schedule,
-        is_visible=True,
+        submission=sub, schedule=event.wip_schedule, is_visible=True
     )
     slot.room = room
     slot.is_visible = True

@@ -1,5 +1,6 @@
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
+from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField
 
 from pretalx.common.mixins import LogMixin
@@ -7,6 +8,11 @@ from pretalx.common.urls import EventUrls
 
 
 class Room(LogMixin, models.Model):
+    """A Room is an actual place where talks will be scheduled.
+
+    The Room object stores some meta information. Most, like capacity, are not
+    in use right now.
+    """
     event = models.ForeignKey(
         to='event.Event', on_delete=models.PROTECT, related_name='rooms'
     )
@@ -42,14 +48,16 @@ class Room(LogMixin, models.Model):
         ),
     )
 
+    objects = ScopedManager(event='event')
+
     class Meta:
         ordering = ('position',)
 
     class urls(EventUrls):
-        settings_base = edit = '{self.event.orga_urls.room_settings}/{self.pk}'
-        delete = '{settings_base}/delete'
-        up = '{settings_base}/up'
-        down = '{settings_base}/down'
+        settings_base = edit = '{self.event.orga_urls.room_settings}{self.pk}/'
+        delete = '{settings_base}delete'
+        up = '{settings_base}up'
+        down = '{settings_base}down'
 
     def __str__(self) -> str:
         return str(self.name)

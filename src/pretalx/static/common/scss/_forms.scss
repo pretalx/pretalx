@@ -14,13 +14,13 @@
   font-size: 14px;
 }
 
-input[type=number]::-webkit-outer-spin-button,
-input[type=number]::-webkit-inner-spin-button {
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-input[type=number] {
+input[type="number"] {
   -moz-appearance: textfield;
 }
 
@@ -46,13 +46,24 @@ form small.form-text.text-muted {
     text-decoration: underline;
   }
 }
-form .checkbox + small.form-text {
+form .form-check + small.form-text {
   margin-top: -8px;
   margin-left: 36px;
 }
 
-form .form-control:disabled, .form-control[readonly] {
+form .form-control:disabled,
+.form-control[readonly] {
   background-color: $gray-lightest !important;
+}
+
+#auth-form {
+  display: flex;
+  flex-direction: row;
+
+  .auth-form-block {
+    flex-grow: 1;
+    margin: 12px;
+  }
 }
 
 .labelless-password-input-form {
@@ -60,11 +71,8 @@ form .form-control:disabled, .form-control[readonly] {
   margin-left: auto;
   margin-right: auto;
 
-  .form-group {
-    flex-direction: column;
-  }
-
-  input.password_strength, input.password_confirmation {
+  input.password_strength,
+  input.password_confirmation {
     height: 100%;
     display: block;
     width: 100%;
@@ -72,12 +80,20 @@ form .form-control:disabled, .form-control[readonly] {
   }
 }
 
-.password-input-form, .labelless-password-input-form {
+#auth-form {
+  flex-direction: row;
+  .form-group {
+    flex-direction: column;
+  }
+}
+
+.password-input-form,
+.labelless-password-input-form {
   p.text-muted {
     font-size: 80%;
     padding-top: 2px;
     padding: 0;
-    color: #636c72;
+    margin-bottom: 0;
   }
 
   .password-progress {
@@ -112,12 +128,13 @@ form .form-control:disabled, .form-control[readonly] {
   background-color: $brand-primary;
 }
 
-table .radio, table .checkbox {
+table .form-radio,
+table .form-check {
   margin-top: -8px;
 }
 
 .checkbox-multi-select {
-  height: calc(2.25rem + 2px);
+  height: calc(2.25rem - 2px);
   margin-top: 0px !important;
   width: 300px;
 
@@ -130,12 +147,12 @@ table .radio, table .checkbox {
   .multi-select-options {
     display: none;
     position: absolute;
-    margin-top: calc(2.25rem + 2px);
+    margin-top: calc(2.25rem - 2px);
     background-color: $white;
     border: 1px solid #ced4da;
     color: #495057;
     width: 300px;
-    z-index: 10;
+    z-index: 100;
   }
   &:hover {
     .multi-select-options {
@@ -144,17 +161,20 @@ table .radio, table .checkbox {
   }
 }
 
-.radio, .checkbox {
+.form-check,
+.checkbox,
+.radio {
   position: relative;
   padding: 4px 0 4px 36px;
 
   label {
     cursor: pointer;
     display: inherit !important;
+    position: relative;
 
     &:before,
     &:after {
-      content: '';
+      content: "";
       position: absolute;
     }
 
@@ -164,27 +184,29 @@ table .radio, table .checkbox {
       height: 24px;
       background: $offwhite;
       box-shadow: 0 0 1px $gray-500;
+      margin-left: -34px;
     }
 
     &:after {
+      top: 0;
       left: 4px;
-      top: 4px;
       width: 16px;
       height: 16px;
       margin: 4px 0px 0;
       opacity: 0;
       background: $brand-success;
+      margin-left: -34px;
     }
   }
 
   input {
     position: absolute;
-    top: 0;
-    left: -9999px;
-    visibility: hidden;
+    left: 0px;
+    opacity: 0;
 
     &:checked + label {
-      &:before {}
+      &:before {
+      }
 
       &:after {
         opacity: 1;
@@ -195,9 +217,19 @@ table .radio, table .checkbox {
 
 .radio {
   input {
-    + label:before, + label:after {
+    + label:before,
+    + label:after {
       border-radius: 50% !important;
     }
+  }
+}
+
+table .form-check label,
+table .checkbox label,
+table .form-check .radio label {
+  &:before,
+  &:after {
+    margin-left: 0;
   }
 }
 
@@ -221,4 +253,56 @@ table .radio, table .checkbox {
 .wizard-row {
   display: flex;
   flex-direction: row-reverse;
+}
+table .action-column {
+  display: flex;
+  justify-content: flex-end;
+  .btn {
+    margin-left: 8px;
+  }
+}
+/* fix input group prepend look */
+.input-group-text.input-group-prepend {
+  font-size: inherit;
+  line-height: inherit;
+}
+
+nav.markdown-nav {
+  a:active,
+  a:focus,
+  a:hover {
+    outline: none !important;
+  }
+}
+.markdown-wrapper {
+  max-height: 160px;
+  textarea {
+    max-height: 160px;
+    border-top: none;
+  }
+  .preview {
+    border: 1px solid #ced4da;
+    border-top: none;
+    min-height: 160px;
+    max-height: 160px;
+    padding: 8px;
+    overflow-y: auto;
+    width: auto;
+    background: $white;
+  }
+}
+.markdown-column .form-group {
+  flex-direction: column;
+}
+.markdown-table {
+  .form-group {
+    flex-direction: column;
+  }
+  .preview,
+  nav {
+    display: none;
+  }
+  textarea {
+    border: 1px solid #ced4da;
+  }
 }

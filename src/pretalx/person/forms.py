@@ -1,14 +1,19 @@
+from pathlib import Path
+
 from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import check_password
 from django.core.exceptions import ValidationError
 from django.utils import timezone, translation
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from i18nfield.forms import I18nModelForm
 
-from pretalx.common.forms.fields import PasswordConfirmationField, PasswordField
-from pretalx.common.mixins.forms import ReadOnlyFlag
+from pretalx.common.forms.fields import (
+    IMAGE_EXTENSIONS, PasswordConfirmationField, PasswordField,
+)
+from pretalx.common.forms.widgets import MarkdownWidget
+from pretalx.common.mixins.forms import PublicContent, ReadOnlyFlag
 from pretalx.common.phrases import phrases
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
 from pretalx.schedule.forms import AvailabilitiesFormMixin
@@ -21,6 +26,7 @@ class UserForm(forms.Form):
     login_password = forms.CharField(
         widget=forms.PasswordInput, label=_('Password'), required=False
     )
+    register_name = forms.CharField(label=_('Name'), required=False)
     register_email = forms.EmailField(label=_('Email address'), required=False)
     register_password = PasswordField(label=_('Password'), required=False)
     register_password_repeat = PasswordConfirmationField(
@@ -33,7 +39,7 @@ class UserForm(forms.Form):
 
     def _clean_login(self, data):
         try:
-            uname = User.objects.get(email=data.get('login_email')).email
+            uname = User.objects.get(email__iexact=data.get('login_email')).email
         except User.DoesNotExist:  # We do this to avoid timing attacks
             uname = 'user@invalid'
 
@@ -54,22 +60,22 @@ class UserForm(forms.Form):
 
     def _clean_register(self, data):
         if data.get('register_password') != data.get('register_password_repeat'):
-            raise ValidationError(phrases.base.passwords_differ)
+            self.add_error('register_password_repeat', ValidationError(phrases.base.passwords_differ))
 
         if User.objects.filter(email__iexact=data.get('register_email')).exists():
-            raise ValidationError(
+            self.add_error('register_email', ValidationError(
                 _(
                     'We already have a user with that email address. Did you already register '
                     'before and just need to log in?'
                 )
-            )
+            ))
 
     def clean(self):
         data = super().clean()
 
         if data.get('login_email') and data.get('login_password'):
             self._clean_login(data)
-        elif data.get('register_email') and data.get('register_password'):
+        elif data.get('register_email') and data.get('register_password') and data.get('register_name'):
             self._clean_register(data)
         else:
             raise ValidationError(
@@ -86,7 +92,8 @@ class UserForm(forms.Form):
             return data['user_id']
 
         user = User.objects.create_user(
-            email=data.get('register_email'),
+            name=data.get('register_name').strip(),
+            email=data.get('register_email').lower().strip(),
             password=data.get('register_password'),
             locale=translation.get_language(),
             timezone=timezone.get_current_timezone_name(),
@@ -95,33 +102,39 @@ class UserForm(forms.Form):
         return user.pk
 
 
-class SpeakerProfileForm(AvailabilitiesFormMixin, ReadOnlyFlag, forms.ModelForm):
+class SpeakerProfileForm(
+    AvailabilitiesFormMixin, ReadOnlyFlag, PublicContent, forms.ModelForm
+):
     USER_FIELDS = ['name', 'email', 'avatar', 'get_gravatar']
     FIRST_TIME_EXCLUDE = ['email']
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, name=None, **kwargs):
         self.user = kwargs.pop('user', None)
         self.event = kwargs.pop('event', None)
         self.with_email = kwargs.pop('with_email', True)
         self.essential_only = kwargs.pop('essential_only', False)
         if self.user:
-            kwargs['instance'] = self.user.profiles.filter(event=self.event).first()
+            kwargs['instance'] = self.user.event_profile(self.event)
         else:
             kwargs['instance'] = SpeakerProfile()
         super().__init__(*args, **kwargs, event=self.event)
         read_only = kwargs.get('read_only', False)
-        initials = dict()
-        if self.event and not self.event.settings.cfp_request_biography:
-            self.fields.pop('biography')
-        else:
-            self.fields[
-                'biography'
-            ].required = self.event.settings.cfp_require_biography
+        initial = kwargs.get('initial', dict())
+        initial['name'] = name
+        for field in ('availabilities', 'biography'):
+            if self.event and not getattr(
+                self.event.settings, f'cfp_request_{field}', True
+            ):
+                self.fields.pop(field)
+            else:
+                self.fields[field].required = getattr(
+                    self.event.settings, f'cfp_require_{field}', False
+                )
         if self.user:
-            initials = {field: getattr(self.user, field) for field in self.user_fields}
+            initial.update({field: getattr(self.user, field) for field in self.user_fields})
         for field in self.user_fields:
             self.fields[field] = User._meta.get_field(field).formfield(
-                initial=initials.get(field), disabled=read_only
+                initial=initial.get(field), disabled=read_only
             )
 
     @cached_property
@@ -136,13 +149,21 @@ class SpeakerProfileForm(AvailabilitiesFormMixin, ReadOnlyFlag, forms.ModelForm)
 
     def clean_avatar(self):
         avatar = self.cleaned_data.get('avatar')
-        if (
-            avatar
-            and avatar.file
-            and hasattr(avatar, '_size')
-            and avatar._size > 10 * 1024 * 1024
-        ):
-            raise ValidationError(_('Your avatar may not be larger than 10 MB.'))
+        if avatar:
+            if (
+                avatar.file
+                and hasattr(avatar, '_size')
+                and avatar._size > 10 * 1024 * 1024
+            ):
+                raise ValidationError(_('Your avatar may not be larger than 10 MB.'))
+            extension = Path(avatar.name).suffix.lower()
+            if extension not in IMAGE_EXTENSIONS:
+                raise ValidationError(
+                    _(
+                        "This filetype is not allowed, it has to be one of the following: "
+                    )
+                    + ', '.join(IMAGE_EXTENSIONS)
+                )
         return avatar
 
     def clean_email(self):
@@ -172,12 +193,22 @@ class SpeakerProfileForm(AvailabilitiesFormMixin, ReadOnlyFlag, forms.ModelForm)
     class Meta:
         model = SpeakerProfile
         fields = ('biography',)
+        public_fields = ['name', 'biography', 'avatar']
+        widgets = {
+            'biography': MarkdownWidget,
+        }
 
 
 class OrgaProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ('name', 'locale')
+
+
+class OrgaSpeakerForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ('name', 'email')
 
 
 class LoginInfoForm(forms.ModelForm):
@@ -211,7 +242,7 @@ class LoginInfoForm(forms.ModelForm):
         super().clean()
         password = self.cleaned_data.get('password')
         if password and not password == self.cleaned_data.get('password_repeat'):
-            raise ValidationError(phrases.base.passwords_differ)
+            self.add_error('password_repeat', ValidationError(phrases.base.passwords_differ))
 
     def __init__(self, user, *args, **kwargs):
         self.user = user
@@ -237,11 +268,11 @@ class SpeakerInformationForm(I18nModelForm):
             self.cleaned_data['include_submitters']
             and self.cleaned_data['exclude_unconfirmed']
         ):
-            raise ValidationError(
+            self.add_error('exclude_unconfirmed', ValidationError(
                 _(
                     'Either target all submitters or only confirmed speakers, these options are exclusive!'
                 )
-            )
+            ))
         return result
 
     class Meta:

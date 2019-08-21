@@ -1,6 +1,8 @@
 .. highlight:: python
    :linenothreshold: 5
 
+.. _`pluginsignals`:
+
 General APIs
 ============
 
@@ -27,10 +29,13 @@ Organiser area
 --------------
 
 .. automodule:: pretalx.orga.signals
-   :members: nav_event, nav_global, activate_event
+   :members: nav_event, nav_global, activate_event, nav_event_settings
 
 Display
 -------
 
 .. automodule:: pretalx.cfp.signals
    :members: footer_link
+
+.. automodule:: pretalx.agenda.signals
+   :members: register_recording_providers

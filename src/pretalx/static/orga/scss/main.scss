@@ -5,6 +5,7 @@
 @import "../../common/scss/_forms";
 @import "../../common/scss/_availabilities";
 @import "../../common/scss/_dashboard";
+@import "../../common/scss/_stages";
 @import "../../vendored/forkawesome/scss/fork-awesome";
 @import "../../vendored/datetimepicker/_bootstrap-datetimepicker";
 @import "../../common/scss/pretalx";
@@ -86,15 +87,15 @@ h3 {
 }
 
 .teameditor {
-  input[type=checkbox] {
+  input[type="checkbox"] {
     vertical-align: middle;
   }
 
-  input[type=email] {
+  input[type="email"] {
     max-width: 15em;
   }
 
-  input[type=number] {
+  input[type="number"] {
     max-width: 2.5em;
     text-align: center;
   }

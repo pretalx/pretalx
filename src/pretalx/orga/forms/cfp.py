@@ -1,41 +1,47 @@
 from django import forms
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
+from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
 from hierarkey.forms import HierarkeyForm
-from i18nfield.fields import I18nFormField, I18nTextarea
 from i18nfield.forms import I18nFormMixin, I18nModelForm
 
 from pretalx.common.mixins.forms import ReadOnlyFlag
-from pretalx.common.phrases import phrases
-from pretalx.submission.models import AnswerOption, CfP, Question, SubmissionType
+from pretalx.submission.models import AnswerOption, CfP, Question, SubmissionType, Track
 
 
 class CfPSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
+    use_tracks = forms.BooleanField(
+        label=_('Use tracks'),
+        required=False,
+        help_text=_('Do you organise your talks by tracks?'),
+    )
+    present_multiple_times = forms.BooleanField(
+        label=_('Slot Count'),
+        required=False,
+        help_text=_('Can talks be held multiple times?'),
+    )
     cfp_show_deadline = forms.BooleanField(
-        label=_('Display deadline publicly'), required=False
+        label=_('Display deadline publicly'),
+        required=False,
+        help_text=_('Show the time and date the CfP ends to potential speakers.'),
     )
-    cfp_request_abstract = forms.BooleanField(
-        label=_('Offer data entry'), required=False
-    )
-    cfp_request_description = forms.BooleanField(
-        label=_('Offer data entry'), required=False
-    )
-    cfp_request_notes = forms.BooleanField(label=_('Offer data entry'), required=False)
-    cfp_request_biography = forms.BooleanField(
-        label=_('Offer data entry'), required=False
-    )
-    cfp_request_do_not_record = forms.BooleanField(
-        label=_('Offer data entry'), required=False
-    )
-    cfp_request_image = forms.BooleanField(label=_('Offer data entry'), required=False)
-    cfp_require_abstract = forms.BooleanField(
-        label=_('Force data entry'), required=False
-    )
-    cfp_require_description = forms.BooleanField(
-        label=_('Force data entry'), required=False
-    )
-    cfp_require_notes = forms.BooleanField(label=_('Force data entry'), required=False)
-    cfp_require_biography = forms.BooleanField(required=False)
-    cfp_require_image = forms.BooleanField(label=_('Force data entry'), required=False)
+    cfp_request_abstract = forms.BooleanField(label='', required=False)
+    cfp_request_description = forms.BooleanField(label='', required=False)
+    cfp_request_notes = forms.BooleanField(label='', required=False)
+    cfp_request_biography = forms.BooleanField(label='', required=False)
+    cfp_request_availabilities = forms.BooleanField(label='', required=False)
+    cfp_request_do_not_record = forms.BooleanField(label='', required=False)
+    cfp_request_image = forms.BooleanField(label='', required=False)
+    cfp_request_track = forms.BooleanField(label='', required=False)
+    cfp_request_duration = forms.BooleanField(label='', required=False)
+    cfp_require_abstract = forms.BooleanField(label='', required=False)
+    cfp_require_description = forms.BooleanField(label='', required=False)
+    cfp_require_notes = forms.BooleanField(label='', required=False)
+    cfp_require_biography = forms.BooleanField(label='', required=False)
+    cfp_require_availabilities = forms.BooleanField(label='', required=False)
+    cfp_require_image = forms.BooleanField(label='', required=False)
+    cfp_require_track = forms.BooleanField(label='', required=False)
+    cfp_require_duration = forms.BooleanField(label='', required=False)
+    cfp_title_min_length = forms.IntegerField(label='', required=False, min_value=0)
     cfp_abstract_min_length = forms.IntegerField(
         label=_('Minimum length'), required=False, min_value=0
     )
@@ -45,6 +51,7 @@ class CfPSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
     cfp_biography_min_length = forms.IntegerField(
         label=_('Minimum length'), required=False, min_value=0
     )
+    cfp_title_max_length = forms.IntegerField(label='', required=False, min_value=0)
     cfp_abstract_max_length = forms.IntegerField(
         label=_('Maximum length'), required=False, min_value=0
     )
@@ -54,41 +61,15 @@ class CfPSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
     cfp_biography_max_length = forms.IntegerField(
         label=_('Maximum length'), required=False, min_value=0
     )
-    review_deadline = forms.DateTimeField(label=_('Review deadline'), required=False)
-    review_score_mandatory = forms.BooleanField(
-        label=_('Force data entry'), required=False
-    )
-    review_text_mandatory = forms.BooleanField(
-        label=_('Force data entry'), required=False
+    cfp_count_length_in = forms.ChoiceField(
+        label=_('Count text length in'),
+        choices=(('chars', _('Characters')), ('words', _('Words'))),
     )
     mail_on_new_submission = forms.BooleanField(
         label=_('Send mail on new submission'),
         help_text=_(
             'If this setting is checked, you will receive an email to the organiser address for every received submission.'
         ),
-        required=False,
-    )
-    allow_override_votes = forms.BooleanField(
-        label=_('Allow override votes'),
-        help_text=_(
-            'Review teams can be assigned a fixed amount of "override votes": Positive or negative vetos each reviewer can assign.'
-        ),
-        required=False,
-    )
-    review_min_score = forms.IntegerField(
-        label=_('Minimum score'), help_text=_('The minimum score reviewers can assign')
-    )
-    review_max_score = forms.IntegerField(
-        label=_('Maximum score'), help_text=_('The maximum score reviewers can assign')
-    )
-    review_help_text = I18nFormField(
-        label=_('Help text for reviewers'),
-        help_text=_(
-            'This text will be shown at the top of every review, as long as reviews can be created or edited.'
-        )
-        + ' '
-        + phrases.base.use_markdown,
-        widget=I18nTextarea,
         required=False,
     )
 
@@ -101,38 +82,9 @@ class CfPSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
             self.fields[
                 'mail_on_new_submission'
             ].help_text += f' (<a href="mailto:{obj.email}">{obj.email}</a>)'
-        if getattr(obj, 'slug'):
-            additional = _(
-                'You can configure override votes <a href="{link}">in the team settings</a>.'
-            ).format(link=obj.orga_urls.team_settings)
-            self.fields['allow_override_votes'].help_text += f' {additional}'
-        minimum = int(obj.settings.review_min_score)
-        maximum = int(obj.settings.review_max_score)
-        self.fields['review_deadline'].widget = forms.DateTimeInput(
-            attrs={'class': 'datetimepickerfield'}
-        )
-        for number in range(abs(maximum - minimum + 1)):
-            index = minimum + number
-            self.fields[f'review_score_name_{index}'] = forms.CharField(
-                label=_('Score label ({})').format(index),
-                help_text=_(
-                    'Human readable explanation of what a score of "{}" actually means, e.g. "great!".'
-                ).format(index),
-                required=False,
-            )
         for field in ['abstract', 'description', 'biography']:
             self.fields[f'cfp_{field}_min_length'].widget.attrs['placeholder'] = ''
             self.fields[f'cfp_{field}_max_length'].widget.attrs['placeholder'] = ''
-
-    def clean(self):
-        data = self.cleaned_data
-        minimum = int(data.get('review_min_score'))
-        maximum = int(data.get('review_max_score'))
-        if not minimum < maximum:
-            raise forms.ValidationError(
-                _('Please assign a minimum score smaller than the maximum score!')
-            )
-        return data
 
 
 class CfPForm(ReadOnlyFlag, I18nModelForm):
@@ -145,6 +97,25 @@ class CfPForm(ReadOnlyFlag, I18nModelForm):
 
 
 class QuestionForm(ReadOnlyFlag, I18nModelForm):
+    def __init__(self, *args, event=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        instance = kwargs.get('instance')
+        if not (
+            event.settings.use_tracks
+            and event.tracks.all().count()
+            and event.settings.cfp_request_track
+        ):
+            self.fields.pop('tracks')
+        else:
+            self.fields['tracks'].queryset = event.tracks.all()
+        if (
+            instance
+            and instance.pk
+            and instance.answers.count()
+            and not instance.is_public
+        ):
+            self.fields['is_public'].disabled = True
+
     class Meta:
         model = Question
         fields = [
@@ -152,11 +123,17 @@ class QuestionForm(ReadOnlyFlag, I18nModelForm):
             'question',
             'help_text',
             'variant',
+            'is_public',
             'required',
+            'tracks',
             'contains_personal_data',
             'min_length',
             'max_length',
         ]
+        field_classes = {
+            'variant': SafeModelChoiceField,
+            'tracks': SafeModelMultipleChoiceField,
+        }
 
 
 class AnswerOptionForm(ReadOnlyFlag, I18nModelForm):
@@ -166,9 +143,24 @@ class AnswerOptionForm(ReadOnlyFlag, I18nModelForm):
 
 
 class SubmissionTypeForm(ReadOnlyFlag, I18nModelForm):
+    def save(self, *args, **kwargs):
+        instance = super().save(*args, **kwargs)
+        if instance.pk and 'duration' in self.changed_data:
+            instance.update_duration()
+
     class Meta:
         model = SubmissionType
         fields = ['name', 'default_duration', 'deadline']
         widgets = {
             'deadline': forms.DateTimeInput(attrs={'class': 'datetimepickerfield'})
         }
+
+
+class TrackForm(ReadOnlyFlag, I18nModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['color'].widget.attrs['class'] = 'colorpickerfield'
+
+    class Meta:
+        model = Track
+        fields = ['name', 'color']

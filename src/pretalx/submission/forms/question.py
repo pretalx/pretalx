@@ -1,10 +1,14 @@
 from decimal import Decimal
+from functools import partial
 
 from django import forms
 from django.core.files.uploadedfile import UploadedFile
+from django.db.models import Q
 from django.utils.functional import cached_property
 
-from pretalx.common.forms.utils import get_help_text
+from pretalx.common.forms.utils import get_help_text, validate_field_length
+from pretalx.common.phrases import phrases
+from pretalx.common.templatetags.rich_text import rich_text
 from pretalx.submission.models import Answer, Question, QuestionTarget, QuestionVariant
 
 
@@ -14,15 +18,19 @@ class QuestionsForm(forms.Form):
         self.submission = kwargs.pop('submission', None)
         self.speaker = kwargs.pop('speaker', None)
         self.review = kwargs.pop('review', None)
+        self.track = kwargs.pop('track', None) or getattr(
+            self.submission, 'track', None
+        )
         self.request_user = kwargs.pop('request_user', None)
         self.target_type = kwargs.pop('target', QuestionTarget.SUBMISSION)
-        target_object = None
         if self.target_type == QuestionTarget.SUBMISSION:
             target_object = self.submission
         elif self.target_type == QuestionTarget.SPEAKER:
             target_object = self.speaker
         elif self.target_type == QuestionTarget.REVIEWER:
             target_object = self.review
+        else:
+            target_object = self.speaker
         readonly = kwargs.pop('readonly', False)
 
         super().__init__(*args, **kwargs)
@@ -32,7 +40,13 @@ class QuestionsForm(forms.Form):
             self.queryset = self.queryset.filter(target=self.target_type)
         else:
             self.queryset = self.queryset.exclude(target=QuestionTarget.REVIEWER)
+        if self.track:
+            self.queryset = self.queryset.filter(
+                Q(tracks__in=[self.track]) | Q(tracks__isnull=True)
+            )
         for question in self.queryset.prefetch_related('options'):
+            initial_object = None
+            initial = question.default_answer
             if target_object:
                 answers = [
                     a
@@ -46,12 +60,6 @@ class QuestionsForm(forms.Form):
                         if question.variant == QuestionVariant.FILE
                         else answers[0].answer
                     )
-                else:
-                    initial_object = None
-                    initial = question.default_answer
-            else:
-                initial_object = None
-                initial = question.default_answer
 
             field = self.get_field(
                 question=question,
@@ -80,70 +88,103 @@ class QuestionsForm(forms.Form):
         ]
 
     def get_field(self, *, question, initial, initial_object, readonly):
+        help_text = rich_text(question.help_text)
+        if question.is_public:
+            help_text += ' ' + str(phrases.base.public_content)
+        count_chars = self.event.settings.cfp_count_length_in == 'chars'
         if question.variant == QuestionVariant.BOOLEAN:
             # For some reason, django-bootstrap4 does not set the required attribute
             # itself.
             widget = (
-                forms.CheckboxInput(attrs={'required': 'required'})
+                forms.CheckboxInput(attrs={'required': 'required', 'placeholder': ''})
                 if question.required
                 else forms.CheckboxInput()
-            )
-            initialbool = (
-                (initial == 'True') if initial else bool(question.default_answer)
             )
 
             return forms.BooleanField(
                 disabled=readonly,
-                help_text=question.help_text,
+                help_text=help_text,
                 label=question.question,
                 required=question.required,
                 widget=widget,
-                initial=initialbool,
+                initial=(initial == 'True')
+                if initial
+                else bool(question.default_answer),
             )
-        elif question.variant == QuestionVariant.NUMBER:
-            return forms.DecimalField(
+        if question.variant == QuestionVariant.NUMBER:
+            field = forms.DecimalField(
                 disabled=readonly,
-                help_text=question.help_text,
+                help_text=help_text,
                 label=question.question,
                 required=question.required,
                 min_value=Decimal('0.00'),
                 initial=initial,
             )
-        elif question.variant == QuestionVariant.STRING:
-            return forms.CharField(
+            field.widget.attrs['placeholder'] = ''  # XSS
+            return field
+        if question.variant == QuestionVariant.STRING:
+            field = forms.CharField(
                 disabled=readonly,
                 help_text=get_help_text(
-                    question.help_text, question.min_length, question.max_length
+                    help_text,
+                    question.min_length,
+                    question.max_length,
+                    self.event.settings.cfp_count_length_in,
                 ),
                 label=question.question,
                 required=question.required,
                 initial=initial,
-                min_length=question.min_length,
-                max_length=question.max_length,
+                min_length=question.min_length if count_chars else None,
+                max_length=question.max_length if count_chars else None,
             )
-        elif question.variant == QuestionVariant.TEXT:
-            return forms.CharField(
+            field.widget.attrs['placeholder'] = ''  # XSS
+            field.validators.append(
+                partial(
+                    validate_field_length,
+                    min_length=question.min_length,
+                    max_length=question.max_length,
+                    count_in=self.event.settings.cfp_count_length_in,
+                )
+            )
+            return field
+        if question.variant == QuestionVariant.TEXT:
+            field = forms.CharField(
                 label=question.question,
                 required=question.required,
                 widget=forms.Textarea,
                 disabled=readonly,
                 help_text=get_help_text(
-                    question.help_text, question.min_length, question.max_length
+                    help_text,
+                    question.min_length,
+                    question.max_length,
+                    self.event.settings.cfp_count_length_in,
                 ),
                 initial=initial,
-                min_length=question.min_length,
-                max_length=question.max_length,
+                min_length=question.min_length if count_chars else None,
+                max_length=question.max_length if count_chars else None,
             )
-        elif question.variant == QuestionVariant.FILE:
-            return forms.FileField(
+            field.validators.append(
+                partial(
+                    validate_field_length,
+                    min_length=question.min_length,
+                    max_length=question.max_length,
+                    count_in=self.event.settings.cfp_count_length_in,
+                )
+            )
+            field.widget.attrs['placeholder'] = ''  # XSS
+            return field
+        if question.variant == QuestionVariant.FILE:
+            field = forms.FileField(
                 label=question.question,
                 required=question.required,
                 disabled=readonly,
-                help_text=question.help_text,
+                help_text=help_text,
                 initial=initial,
             )
-        elif question.variant == QuestionVariant.CHOICES:
-            return forms.ModelChoiceField(
+            field.widget.attrs['placeholder'] = ''  # XSS
+            return field
+        if question.variant == QuestionVariant.CHOICES:
+            field = forms.ModelChoiceField(
                 queryset=question.options.all(),
                 label=question.question,
                 required=question.required,
@@ -151,10 +192,12 @@ class QuestionsForm(forms.Form):
                 if initial_object
                 else question.default_answer,
                 disabled=readonly,
-                help_text=question.help_text,
+                help_text=help_text,
             )
-        elif question.variant == QuestionVariant.MULTIPLE:
-            return forms.ModelMultipleChoiceField(
+            field.widget.attrs['placeholder'] = ''  # XSS
+            return field
+        if question.variant == QuestionVariant.MULTIPLE:
+            field = forms.ModelMultipleChoiceField(
                 queryset=question.options.all(),
                 label=question.question,
                 required=question.required,
@@ -163,8 +206,11 @@ class QuestionsForm(forms.Form):
                 if initial_object
                 else question.default_answer,
                 disabled=readonly,
-                help_text=question.help_text,
+                help_text=help_text,
             )
+            field.widget.attrs['placeholder'] = ''  # XSS
+            return field
+        return None
 
     def save(self):
         for k, v in self.cleaned_data.items():
@@ -178,12 +224,10 @@ class QuestionsForm(forms.Form):
                     self._save_to_answer(field, field.answer, v)
                     field.answer.save()
             elif v != '' and v is not None:
-                # Not distinguishing between the external question types helps to make
-                # experiences smoother if orga changes a question type.
                 answer = Answer(
-                    review=self.review,
-                    submission=self.submission,
-                    person=self.speaker,
+                    review=self.review if field.question.target == QuestionTarget.REVIEWER else None,
+                    submission=self.submission if field.question.target == QuestionTarget.SUBMISSION else None,
+                    person=self.speaker if field.question.target == QuestionTarget.SPEAKER else None,
                     question=field.question,
                 )
                 self._save_to_answer(field, answer, v)

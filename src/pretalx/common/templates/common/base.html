@@ -1,19 +1,19 @@
 {% load compress %}
 {% load i18n %}
 {% load rules %}
-{% load staticfiles %}
+{% load static %}
 <!DOCTYPE html>
 <html{% if request.LANGUAGE_CODE %} lang="{{ request.LANGUAGE_CODE }}"{% endif %}>
 <head>
     <meta charset="utf-8">
     <title>{% block title %}{% endblock %} {% if request.event %} {{ request.event.name }} {% endif %}:: pretalx</title>
     <meta name="title" content="{% block meta_title %}{% endblock %} {% if request.event %} - {{ request.event.name }} {% endif %}pretalx">
-    <meta name="description" content="{% block meta_description %}{% if request.event %}Schedule, talks and talk submissions for {{ reqeuest.event.name }}{% else %}Talks and talk submissions by pretalx{% endif %}{% endblock %}">
+    <meta name="description" content="{% block meta_description %}{% if request.event %}Schedule, talks and talk submissions for {{ request.event.name }}{% else %}Talks and talk submissions by pretalx{% endif %}{% endblock %}">
     <meta name="application-name" content="pretalx">
     <meta name="generator" content="pretalx">
     <meta name="keywords" content="{% if request.event %}{{ request.event.name }}, {{ request.event.slug }}, {% if request.event.date_from %}{{ request.event.date_from.year }}, {% endif %}{% endif %}schedule, talks, cfp, call for papers, conference, submissions, organizer">
     <meta name="referrer" content="origin-when-crossorigin">
-    <meta name="robots" content="index, follow">
+    {% if request.event and request.event.settings.meta_noindex %}<meta name="robots" content="noindex, nofollow">{% else %}<meta name="robots" content="index, follow">{% endif %}
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="{% if request.event and request.event.primary_color %}{{ request.event.primary_color }}{% else %}#1C4A3B{% endif %}">
     <meta name="HandheldFriendly" content="True"/>
@@ -41,20 +41,19 @@
     {% endif %}
     {% if request.event and request.event.custom_css %}<link rel="stylesheet" type="text/css" href="{{ request.event.custom_css.url }}"/>{% endif %}
     {% compress js %}
-        <script type="text/javascript" src="{% static "vendored/jquery-3.1.1.js" %}"></script>
-        <script type="text/javascript" src="{% static "vendored/popper.js" %}"></script>
-        <script type="text/javascript" src="{% static "vendored/tether/tether.min.js" %}"></script>
-        <script type="text/javascript" src="{% static "vendored/bootstrap/dist/js/bootstrap.min.js" %}"></script>
-
-        <script type="text/javascript" src="{% static "vendored/moment-with-locales.js" %}"></script>
-        <script type="text/javascript" src="{% static "vendored/moment-timezone-with-data-2012-2022.js" %}"></script>
-        <script type="text/javascript" src="{% static "vendored/fullcalendar/fullcalendar.min.js" %}"></script>
-        <script type="text/javascript" src="{% static "common/js/availabilities.js" %}"></script>
+        <script defer src="{% static "vendored/jquery-3.1.1.js" %}"></script>
+        <script defer src="{% static "vendored/tether/tether.min.js" %}"></script>
+        <script defer src="{% static "vendored/bootstrap/dist/js/bootstrap.bundle.min.js" %}"></script>
+        <script defer src="{% static "vendored/moment-with-locales.js" %}"></script>
+        <script defer src="{% static "vendored/moment-timezone-with-data-2012-2022.js" %}"></script>
     {% endcompress %}
     {% block custom_header %}{% endblock %}
 </head>
 <body>
     <div id="top-bg" class="header {{ request.event.settings.display_header_pattern|default:"bg-primary" }}">
+    {% if request.event and request.event.header_image %}
+        <img src="{{ request.event.header_image.url }}" id="header-image">
+    {% endif %}
     </div>
     {% if request.event and not request.event.is_public and not is_html_export %}
     <div id="event-nonpublic">
@@ -64,50 +63,62 @@
         {% endblocktrans %}
     </div>
     {% endif %}
-    <div class="container" id="main-container">
+    <div class="container{% block container_width %}{% endblock %}" id="main-container">
         <header>
             <h1>
                 <a href="{% block nav_link %}{% endblock %}">
                     {% if request.event and request.event.logo %}
-                        <img src="{{ request.event.logo.url }}" id="event-logo"></img>
+                    <img src="{{ request.event.logo.url }}" id="event-logo" alt="{% trans "The event's logo" %}">
                     {% elif request.event %}
                         {{ request.event.name }}
                     {% endif %}
                 </a>
             </h1>
+            <div class="d-flex" id="header-row">
             {% if request.event and request.event.locales|length > 1 and not is_html_export %}
                 <div class="locales">
                     {% for l, name in request.event.named_locales %}
                         <a href="{% url "cfp:locale.set" event=request.event.slug %}?locale={{ l }}&next={{ request.path }}%3F{{ request.META.QUERY_STRING|urlencode }}"
                                 class="{% if l == request.LANGUAGE_CODE %}active{% endif %}">{{ name }}</a>
                     {% endfor %}
-                    {% if request.user.is_anonymous %}
-                    • <a href="{{ request.event.urls.login }}">login</a>
-                    {% endif %}
+                    •&nbsp;
                 </div>
             {% endif %}
+            {% if request.event and request.user.is_authenticated and not is_html_export %}
+                <div id="user-dropdown-label">
+                    {% has_perm 'orga.view_orga_area' request.user request.event as can_see_orga_area %}
+                    {{ request.user.get_display_name }} <i class="fa fa-caret-down ml-1"></i>
+                    <div id="user-dropdown">
+                        <a href="{% url "cfp:event.user.submissions" event=request.event.slug %}">
+                            <i class="fa fa-sticky-note-o mr-2"></i>
+                            {% trans "My submissions" %}
+                        </a>
+                        <a href="{{ request.event.urls.user_mails }}">
+                            <i class="fa fa-envelope mr-2"></i>
+                            {% trans "My E-mails" %}
+                        </a>
+                        <a href="{{ request.event.urls.user }}">
+                            <i class="fa fa-address-card-o mr-2"></i>
+                            {% trans "My profile" %}
+                        </a>
+                        {% if can_see_orga_area %}
+                        <a href="{{ request.event.orga_urls.base }}">
+                            <i class="fa fa-gears mr-2"></i>
+                            {% trans "Orga area" %}
+                        </a>
+                        {% endif %}
+                        <a href="{% url "cfp:event.logout" event=request.event.slug %}">
+                            <i class="fa fa-sign-out mr-2"></i>
+                            {% trans "Logout" %}
+                        </a>
+                    </div>
+                </div>
+            {% elif request.event and not is_html_export %}
+                <a href="{{ request.event.urls.login }}">login</a>
+            {% endif %}
+            </div>
         </header>
         <div class="card" id="main-card">
-            {% if request.event and request.user.is_authenticated and not is_html_export %}
-                <nav class="user-row">
-                    {% url "cfp:event.user.view" event=request.event.slug as userurl %}
-                    <div>
-                    {% blocktrans trimmed with name=request.user.get_display_name attr="href='"|add:userurl|add:"'"|safe %}
-                        You are logged in as <a {{ attr }}>{{ name }}</a>.
-                    {% endblocktrans %}
-                    </div>
-                    <div>
-                        {% has_perm 'orga.view_orga_area' request.user request.event as can_see_orga_area %}
-                        {% if can_see_orga_area %}
-                        <a href="{{ request.event.orga_urls.base }}">{% trans "Orga area" %}</a> &middot;
-                        {% endif %}
-                        <a href="{% url "cfp:event.user.submissions" event=request.event.slug %}">
-                            {% trans "My submissions" %}
-                        </a> &middot;
-                        <a href="{% url "cfp:event.logout" event=request.event.slug %}">{% trans "Logout" %}</a>
-                    </div>
-                </nav>
-            {% endif %}
             <main>
                 {% if messages %}
                     {% for message in messages %}
@@ -131,7 +142,7 @@
             </div>
             {% endif %}
             <a href="http://pretalx.com" target="_blank" rel="noopener">
-                <img src="{% static "common/img/logo.svg" %}">
+                <img src="{% static "common/img/logo.svg" %}" alt="{% trans "The pretalx logo" %}">
             </a>
             {% if request.event %}
                 &middot;

@@ -1,21 +1,24 @@
+.. _configure:
+
 Configuration
 =============
 
-You can configure pretalx in two different ways: using config files or
-environment variables. You can combine those two options, and their precedence
-is in this order:
+You can configure pretalx using config files or environment variables. You can
+combine those two options, and their precedence is in this order:
 
 1. Environment variables
 2. Configuration files
-    - The config file in ``PRETALX_CONFIG_FILE`` if that environment variable is set, **or**:
+    - The config file in the environment variable ``PRETALX_CONFIG_FILE`` if present, **or**:
     - The following three configuration files in this order:
        - The config file ``pretalx.cfg`` in the ``src`` directory, next to the ``pretalx.example.cfg`` file.
        - The config file ``~/.pretalx.cfg`` in the home of the executing user.
        - The config file ``/etc/pretalx/pretalx.cfg``
 5. Sensible defaults
 
-This page explains the options by configuration file section and notes the corresponding environment
-variable next to it. A config file looks like this:
+
+This page explains the options grouped by configuration file sections. You'll
+find the environment variable next to their corresponding settings.  A config
+file looks like this:
 
 .. literalinclude:: ../../src/pretalx.example.cfg
    :language: ini
@@ -26,10 +29,10 @@ The filesystem section
 ``data``
 ~~~~~~~~
 
-- The ``data`` option describes the path that is the base for the media files
-  directory, and where pretalx will save log files. Unless you have a
-  compelling reason to keep those files apart, setting the ``data`` option is
-  the easiest way to configure pretalx.
+- The ``data`` option describes the path that is the base for all other
+  directories. pretalx will also save its log files there. Unless you have a
+  compelling reason to keep other files apart, setting the ``data`` option is
+  the easiest way to configure file storage.
 - **Environment variable:** ``PRETALX_DATA_DIR``
 - **Default:** A directory called ``data`` next to pretalx's ``manage.py``.
 
@@ -73,8 +76,8 @@ The site section
 ``url``
 ~~~~~~~
 
-- This value will appear wherever pretalx needs to render full URLs (for example in emails and
-  feeds), and set the appropriate allowed hosts variables.
+- pretalx uses this value when it has to render full URLs, for example in
+  emails or feeds. It is also used to determined the allowed incoming hosts.
 - **Environment variable:** ``PRETALX_SITE_URL``
 - **Default:** ``http://localhost``
 
@@ -83,7 +86,7 @@ The site section
 
 - Every Django application has a secret that Django uses for cryptographic signing.
   You do not need to set this variable – pretalx will generate a secret key and save it in a local file if
-  you do not set it manually.
+  you do not set it.
 - **Default:** None
 
 
@@ -93,9 +96,10 @@ The database section
 ``backend``
 ~~~~~~~~~~~
 
-- pretalx supports most SQL databases, although you'll need to install the appropriate Python
-  library for each of them, as described in the table below. The default is SQLite, which is *not* a
-  production database. Please use a database like PostgresQL or MySQL.
+- pretalx supports most SQL databases. You'll need to install the appropriate
+  Python library for each of them, as described in the table below. The default
+  is SQLite, which is *not* a production database. Please use a database like
+  PostgresQL or MySQL.
 - **Environment variable:** ``PRETALX_DB_TYPE``
 - **Default:** ``sqlite3``
 
@@ -201,6 +205,10 @@ The mail section
 The celery section
 ------------------
 
+Celery is not a requirement for pretalx. Celery runs as a separate process, and
+allows you to execute long-running tasks away from the usual request-response
+cycle.
+
 ``backend``
 ~~~~~~~~~~~
 
@@ -256,3 +264,20 @@ The logging section
 - The log level to start sending emails at. Any of ``[DEBUG, INFO, WARNING, ERROR, CRITICAL]``.
 - **Environment variable:** ``PRETALX_LOGGING_EMAIL_LEVEL``
 - **Default:** ``'ERROR'``
+
+The locale section
+------------------
+
+``language_code``
+~~~~~~~~~~~~~~~~~
+
+- The system's default locale.
+- **Environment variable:** ``PRETALX_LANGUAGE_CODE``
+- **Default:** ``'en'``
+
+``time_zone``
+~~~~~~~~~~~~~
+
+- The system's default time zone as a ``pytz`` name.
+- **Environment variable:** ``PRETALX_TIME_ZONE``
+- **Default:** ``'UTC'``

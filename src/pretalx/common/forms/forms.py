@@ -1,6 +1,6 @@
 import i18nfield.forms
 from django import forms
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 
 class SearchForm(forms.Form):
@@ -12,6 +12,5 @@ class I18nFormSet(i18nfield.forms.I18nModelFormSet):
 
     def __init__(self, *args, **kwargs):
         event = kwargs.pop('event', None)
-        if event:
-            kwargs['locales'] = event.locales
+        kwargs['locales'] = getattr(event, 'locales', [])
         super().__init__(*args, **kwargs)

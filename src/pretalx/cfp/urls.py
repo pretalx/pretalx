@@ -15,7 +15,7 @@ urlpatterns = [
                 url('^logout$', auth.LogoutView.as_view(), name='event.logout'),
                 url('^auth/$', auth.EventAuth.as_view(), name='event.auth'),
                 url('^reset$', auth.ResetView.as_view(), name='event.reset'),
-                url('^login', auth.LoginView.as_view(), name='event.login'),
+                url('^login/$', auth.LoginView.as_view(), name='event.login'),
                 url(
                     r'^reset/(?P<token>\w+)$',
                     auth.RecoverView.as_view(),
@@ -35,45 +35,50 @@ urlpatterns = [
                     user.SubmissionInviteAcceptView.as_view(),
                     name='invitation.view',
                 ),
-                url('^me$', user.ProfileView.as_view(), name='event.user.view'),
+                url('^me/$', user.ProfileView.as_view(), name='event.user.view'),
                 url(
                     '^me/delete$',
                     user.DeleteAccountView.as_view(),
                     name='event.user.delete',
                 ),
                 url(
-                    '^me/submissions$',
+                    '^me/submissions/$',
                     user.SubmissionsListView.as_view(),
                     name='event.user.submissions',
+                ),
+                url(
+                    '^me/mails/$',
+                    user.MailListView.as_view(),
+                    name='event.user.mails',
                 ),
                 url(
                     r'^me/submissions/(?P<code>[\w-]+)/',
                     include(
                         [
                             url(
-                                '^$',
+                                r'^$',
                                 user.SubmissionsEditView.as_view(),
                                 name='event.user.submission.edit',
                             ),
                             url(
-                                '^withdraw$',
+                                r'^withdraw$',
                                 user.SubmissionsWithdrawView.as_view(),
                                 name='event.user.submission.withdraw',
                             ),
                             url(
-                                '^confirm$',
+                                r'^confirm$',
                                 user.SubmissionConfirmView.as_view(),
                                 name='event.user.submission.confirm',
                             ),
                             url(
-                                '^invite$',
+                                r'^invite$',
                                 user.SubmissionInviteView.as_view(),
                                 name='event.user.submission.invite',
                             ),
                         ]
                     ),
                 ),
-                url('^locale/set', locale.LocaleSet.as_view(), name='locale.set'),
+                url(r'^locale/set', locale.LocaleSet.as_view(), name='locale.set'),
             ]
         ),
     ),
@@ -83,5 +88,5 @@ urlpatterns = [
         name='notpretix',
     ),
     url(r'^robots.txt$', robots.robots_txt, name='robots.txt'),
-    url('^$', event.GeneralView.as_view()),
+    url(r'^$', event.GeneralView.as_view(), name='root.main'),
 ]

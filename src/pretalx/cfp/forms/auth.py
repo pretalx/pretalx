@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.forms.fields import PasswordConfirmationField, PasswordField
 from pretalx.common.phrases import phrases
@@ -39,5 +39,5 @@ class RecoverForm(forms.Form):
     def clean(self):
         data = super().clean()
         if data.get('password') != data.get('password_repeat'):
-            raise ValidationError(phrases.base.passwords_differ)
+            self.add_error('password_repeat', ValidationError(phrases.base.passwords_differ))
         return data

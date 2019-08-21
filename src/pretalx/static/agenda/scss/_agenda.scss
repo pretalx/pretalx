@@ -1,3 +1,9 @@
+#main-container.container.container-wide {
+  max-width: 100%;
+}
+#main-container.container.container-semi-wide {
+  max-width: 1400px;
+}
 #navigator {
   position: fixed;
   left: 0;
@@ -5,6 +11,7 @@
   background-color: $offwhite;
   padding: 8px 16px;
   box-shadow: 0 3px 3px 0 rgba(0, 0, 0, 0.16), 0 5px 8px 0 rgba(0, 0, 0, 0.12);
+  z-index: 100;
 
   &:hover {
     .days {
@@ -16,6 +23,44 @@
 
   .days {
     display: none;
+  }
+}
+#legend {
+  position: fixed;
+  left: 0;
+  margin-top: 100px;
+  background-color: $offwhite;
+  padding: 8px 16px;
+  box-shadow: 0 3px 3px 0 rgba(0, 0, 0, 0.16), 0 5px 8px 0 rgba(0, 0, 0, 0.12);
+  z-index: 50;
+
+  &:hover {
+    ul.tracks {
+      margin-top: 4px;
+      margin: 0;
+      padding: 0 8px;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  ul.tracks {
+    display: none;
+  }
+}
+header {
+  word-break: normal;
+}
+.schedule-header {
+  display: flex;
+  align-items: flex-end;
+  > span,
+  > a,
+  > div {
+    margin-left: 8px;
+  }
+  a i.fa {
+    padding-right: 0;
   }
 }
 
@@ -50,6 +95,7 @@
     background: $gray-lightest;
     margin-bottom: 16px;
     width: auto;
+    overflow: hidden; /* This hides the .nowline element. */
 
     .header-row {
       background: $gray-lightest;
@@ -84,7 +130,17 @@
         text-align: right;
       }
 
-      background: repeating-linear-gradient(to bottom, $gray-200, $gray-200 2px, $white 2px, $white 30px, $gray-200 30px, $gray-200 31px, $white 31px, $white 60px);
+      background: repeating-linear-gradient(
+        to bottom,
+        $gray-200,
+        $gray-200 2px,
+        $white 2px,
+        $white 30px,
+        $gray-200 30px,
+        $gray-200 31px,
+        $white 31px,
+        $white 60px
+      );
     }
 
     .rooms {
@@ -94,7 +150,17 @@
       .room {
         border-left: 2px solid #ccc;
         flex: 1 0;
-        background: repeating-linear-gradient(to bottom, $gray-200, $gray-200 2px, $white 2px, $white 30px, $gray-200 30px, $gray-200 31px, $white 31px, $white 60px);
+        background: repeating-linear-gradient(
+          to bottom,
+          $gray-200,
+          $gray-200 2px,
+          $white 2px,
+          $white 30px,
+          $gray-200 30px,
+          $gray-200 31px,
+          $white 31px,
+          $white 60px
+        );
 
         .talk-container {
           position: relative;
@@ -135,11 +201,22 @@
             }
           }
 
+          &.accepted {
+            background-image: repeating-linear-gradient(
+              135deg,
+              $gray-lighter,
+              $gray-lighter 10px,
+              white 10px,
+              white 20px
+            );
+          }
+
           &:hover {
             background-color: $gray-200;
             height: auto !important;
             z-index: 6;
-            box-shadow: 0 3px 3px 0 rgba(0, 0, 0, 0.16), 0 5px 8px 0 rgba(0, 0, 0, 0.12);
+            box-shadow: 0 3px 3px 0 rgba(0, 0, 0, 0.16),
+              0 5px 8px 0 rgba(0, 0, 0, 0.12);
 
             &::before {
               position: absolute;
@@ -150,13 +227,13 @@
               font-weight: bold;
               line-height: 1;
               padding: 8px 16px;
-              top: -46px;
+              top: -44px;
               white-space: nowrap;
             }
 
             &::after {
               position: absolute;
-              content: '';
+              content: "";
               left: 24px;
               width: 0;
               height: 0;
@@ -168,7 +245,8 @@
           }
         }
 
-        .talk.talk-personal, .talk.active {
+        .talk.talk-personal,
+        .talk.active {
           background-color: rgba(155, 255, 155, 0.76);
         }
 
@@ -182,6 +260,13 @@
     .no-talks {
       text-align: center;
     }
+  }
+}
+#talk-buttons {
+  display: flex;
+  justify-content: flex-end;
+  .btn {
+    margin-left: 8px;
   }
 }
 
@@ -199,6 +284,18 @@
 }
 
 @media (max-width: 1000px) {
+  header {
+    text-align: right;
+    flex-direction: column;
+  }
+  #navigator {
+    top: 10px;
+    margin-top: 0;
+  }
+  #legend {
+    top: 50px;
+    margin-top: 0;
+  }
   #fahrplan {
     width: 100%;
 
@@ -219,8 +316,51 @@
       overflow-x: auto;
     }
 
-    .room, .room-header {
+    .room,
+    .room-header {
       min-width: 150px;
     }
+  }
+}
+@media print {
+  body {
+    background: none;
+    overflow: visible !important;
+    height: auto;
+  }
+  #navigator,
+  #legend,
+  #schedule-nav,
+  #main-card .user-row,
+  header,
+  footer,
+  .schedule-header .btn,
+  #event-nonpublic {
+    display: none;
+  }
+  h3:not(:first-of-type) {
+    /* improve look of day captions after page break */
+    margin-top: 5em;
+  }
+  .container {
+    max-width: 100%;
+  }
+  #fahrplan,
+  .card {
+    display: block;
+    overflow: visible !important;
+  }
+  .day {
+    page-break-after: always;
+    overflow: visible !important;
+  }
+}
+.heading-with-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  width: 100%;
+  & > :last-child {
+    margin-left: auto;
   }
 }

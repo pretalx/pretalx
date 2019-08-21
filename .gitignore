@@ -125,3 +125,11 @@ pretalx.cfg
 .DS_Store
 
 .pytest_cache
+*.cfg
+
+# django-perf-rec
+src/tests/**/*.yml
+
+# Python packaging
+src/LICENSE
+src/README.rst

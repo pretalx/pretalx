@@ -1,15 +1,18 @@
-from django.forms import CheckboxSelectMultiple, PasswordInput
+from pathlib import Path
+
+from django.forms import (
+    CheckboxSelectMultiple, ClearableFileInput, PasswordInput, Textarea,
+)
+from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 
 class CheckboxMultiDropdown(CheckboxSelectMultiple):
     def render(self, name, value, attrs=None, renderer=None):
         attrs['layout'] = 'event-inline'
         checkboxes = super().render(name, value, attrs=attrs, renderer=renderer)
-        title = None
-        if attrs:
-            title = attrs.get('title')
+        title = attrs.get('title') if attrs else None
         title = title or _('Choose one or more')
         markup = f"""
         <div class="checkbox-multi-select form-group">
@@ -50,7 +53,7 @@ class PasswordStrengthInput(PasswordInput):
         )
         return mark_safe(super().render(name, value, self.attrs) + markup)
 
-    class Media:
+    class Media:  # Note: we don't use {{ form.media }}, since it doesn't allow us to load media async, and the zxcvbn scripts are horribly slow
         js = ('common/js/zxcvbn.js', 'common/js/password_strength.js')
 
 
@@ -79,3 +82,19 @@ class PasswordConfirmationInput(PasswordInput):
         )
 
         return mark_safe(super().render(name, value, self.attrs) + markup)
+
+
+class ClearableBasenameFileInput(ClearableFileInput):
+    def get_template_substitution_values(self, value):
+        """
+        Return value-related substitutions.
+        """
+        bname = Path(value.name).name
+        return {
+            'initial': conditional_escape(bname),
+            'initial_url': conditional_escape(value.url),
+        }
+
+
+class MarkdownWidget(Textarea):
+    template_name = 'common/widgets/markdown.html'

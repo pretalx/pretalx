@@ -1,27 +1,33 @@
 {% extends "cfp/event/base.html" %}
 {% load bootstrap4 %}
+{% load compress %}
 {% load i18n %}
-{% load staticfiles %}
+{% load static %}
 
 {% block title %}{% trans "Your Profile" %} :: {% endblock %}
 
 {% block content %}
+    {% if profile_form.biography %}
+       <script src="{% static "vendored/marked.min.js" %}" defer></script>
+       <script src="{% static "common/js/markdown.js" %}" defer></script>
+    {% endif %}
+
     <h2>{% trans "Your Profile" %}</h2>
     <p>
         {% trans "This data will be displayed publicly if your talk is accepted. It is also visible to reviewers." %}
     </p>
-    <form action="" method="post" enctype="multipart/form-data" class="speaker-profile-form">
+    <form method="post" enctype="multipart/form-data" class="speaker-profile-form">
         {% csrf_token %}
         {% bootstrap_form_errors profile_form %}
-        <div class="avatar-form">
-            <label class="col-md-3 col-form-label left-side">
+        <div class="avatar-form form-group row">
+            <label class="col-md-3 col-form-label">
             {% trans "Profile picture" %}
-            <br><span class="optional">{% trans "Optional" %}</span>
             <br>
             <img
               class="avatar float-right"
               data-gravatar="{{ request.user.gravatar_parameter }}"
               data-avatar="{% if request.user.avatar %}{{ request.user.avatar.url }}{% endif %}"
+              alt="{% trans "Your avatar" %}"
               {% if request.user.get_gravatar %}
               src="https://www.gravatar.com/avatar/{{ request.user.gravatar_parameter }}"
               {% elif request.user.avatar and request.user.avatar != 'False' %}
@@ -29,18 +35,27 @@
               {% endif %}
             />
             </label>
-            <div class="avatar-form-fields">
+            <div class="avatar-form-fields col-md-9">
                 {% bootstrap_field profile_form.get_gravatar layout='event-inline' %}
                 <div class="user-avatar-display">
                     {% bootstrap_field profile_form.avatar layout='inline' %}
+                    <small class="form-text text-muted d-block">{{ profile_form.avatar.help_text }}</small>
                 </div>
             </div>
         </div>
         {% bootstrap_field profile_form.name layout='event' %}
         {% if profile_form.biography %}{% bootstrap_field profile_form.biography layout='event' %}{% endif %}
+        {% if profile_form.availabilities %}
+        {% compress js %}
+            <script defer src="{% static "vendored/moment-with-locales.js" %}"></script>
+            <script defer src="{% static "vendored/moment-timezone-with-data-2012-2022.js" %}"></script>
+            <script defer src="{% static "vendored/fullcalendar/fullcalendar.min.js" %}"></script>
+            <script defer src="{% static "common/js/availabilities.js" %}"></script>
+        {% endcompress %}
         {% bootstrap_field profile_form.availabilities layout='event' %}
+        {% endif %}
         <div class="row">
-            <div class="col-md-3 ml-auto">
+            <div class="col-md-4 ml-auto">
                 <button type="submit" class="btn btn-block btn-success btn-lg" name="form" value="profile">
                     {% trans "Save" %}
                 </button>
@@ -50,11 +65,11 @@
 
     {% if questions_exist %}
     <h2>{% trans "We have some questions" %}</h2>
-    <form action="" method="post" enctype="multipart/form-data">
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {% bootstrap_form questions_form layout='event' %}
         <div class="row">
-            <div class="col-md-3 ml-auto">
+            <div class="col-md-4 ml-auto">
                 <button type="submit" class="btn btn-block btn-success btn-lg" name="form" value="questions">
                     {% trans "Save" %}
                 </button>
@@ -67,7 +82,7 @@
     <p>
         {% trans "You can change your log in data here." %}
     </p>
-    <form action="" method="post" class="form password-input-form">
+    <form method="post" class="form password-input-form">
         {% csrf_token %}
         {{ login_form.media }}
         {% bootstrap_field login_form.old_password layout='event' %}
@@ -75,7 +90,7 @@
         {% bootstrap_field login_form.password layout='event' %}
         {% bootstrap_field login_form.password_repeat layout='event' %}
         <div class="row">
-            <div class="col-md-3 ml-auto">
+            <div class="col-md-4 ml-auto">
                 <button type="submit" class="btn btn-block btn-success btn-lg" name="form" value="login">
                     {% trans "Save" %}
                 </button>
@@ -93,11 +108,13 @@
                 <input type="checkbox" name="really" id="really">
                 <label class="form-control-label" for="really">{% trans "I really do want to delete my account, losing access to my submissions and talks, and overriding my public and private data." %}</label>
             </div>
-            <div class="col-md-3 ml-auto">
+            <div class="col-md-4 ml-auto">
                 <button type="submit" class="btn btn-block btn-danger btn-lg" name="form" value="">
                     {% trans "Delete my account" %}
                 </button>
             </div>
     </form>
-    <script type="text/javascript" src="{% static "cfp/js/profile.js" %}"></script>
+    {% compress js %}
+        <script defer src="{% static "cfp/js/profile.js" %}"></script>
+    {% endcompress %}
 {% endblock %}

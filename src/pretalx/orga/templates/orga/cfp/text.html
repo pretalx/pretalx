@@ -1,6 +1,18 @@
 {% extends "orga/cfp/base.html" %}
 {% load bootstrap4 %}
+{% load compress %}
 {% load i18n %}
+{% load static %}
+
+{% block scripts %}
+    {% compress js %}
+    <script defer src="{% static "vendored/moment-with-locales.js" %}"></script>
+    <script defer src="{% static "vendored/moment-timezone-with-data-2012-2022.js" %}"></script>
+    <script defer src="{% static "vendored/datetimepicker/bootstrap-datetimepicker.js" %}"></script>
+    <script defer src="{% static "orga/js/datetimepicker.js" %}"></script>
+    <script defer src="{% static "orga/js/cfp.js" %}"></script>
+    {% endcompress %}
+{% endblock %}
 
 {% block cfp_content %}
 <div class="alert alert-info">
@@ -19,7 +31,7 @@
 </div>
 <div class="flex-container">
     <div class="flex-content">
-        <form method="post" action="">
+        <form method="post">
             {% csrf_token %}
             {% bootstrap_form_errors form %}
             {% bootstrap_form_errors sform %}
@@ -29,6 +41,8 @@
             {% bootstrap_field form.text layout='event' %}
             {% bootstrap_field form.deadline layout='event' %}
             {% bootstrap_field sform.cfp_show_deadline layout='event' %}
+            {% bootstrap_field sform.use_tracks layout='event' %}
+            {% bootstrap_field sform.present_multiple_times layout='event' %}
             {% bootstrap_field sform.mail_on_new_submission layout='event' %}
             </fieldset>
 
@@ -44,38 +58,61 @@
                         <th></th>
                         <th>{% trans "Request" %}</th>
                         <th>{% trans "Require" %}</th>
-                        <th>{% trans "Minimum length" %}<div class="text-muted">({% trans "characters" %})</small></div></th>
-                        <th>{% trans "Maximum length" %}<div class="text-muted">({% trans "characters" %})</small></div></th>
+                        <th>{% trans "Minimum length" %}</th>
+                        <th>{% trans "Maximum length" %}</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
+                        <th>{% trans "Title" %}</th>
+                        <td></td>
+                        <td></td>
+                        <td>{% bootstrap_field sform.cfp_title_min_length use_label=False layout='inline' %}</td>
+                        <td>{% bootstrap_field sform.cfp_title_max_length use_label=False layout='inline' %}</td>
+                    </tr>
+                    <tr>
                         <th>{% trans "Abstract" %}</th>
-                        <td>{% bootstrap_field sform.cfp_request_abstract use_label=False layout='event-inline' %}</td>
-                        <td>{% bootstrap_field sform.cfp_require_abstract use_label=False layout='event-inline' %}</td>
+                        <td class="request">{% bootstrap_field sform.cfp_request_abstract use_label=False layout='event-inline' %}</td>
+                        <td class="require">{% bootstrap_field sform.cfp_require_abstract use_label=False layout='event-inline' %}</td>
                         <td>{% bootstrap_field sform.cfp_abstract_min_length use_label=False layout='inline' %}</td>
                         <td>{% bootstrap_field sform.cfp_abstract_max_length use_label=False layout='inline' %}</td>
                     </tr>
                     <tr>
                         <th>{% trans "Description" %}</th>
-                        <td>{% bootstrap_field sform.cfp_request_description use_label=False layout='event-inline' %}</td>
-                        <td>{% bootstrap_field sform.cfp_require_description use_label=False layout='event-inline' %}</td>
+                        <td class="request">{% bootstrap_field sform.cfp_request_description use_label=False layout='event-inline' %}</td>
+                        <td class="require">{% bootstrap_field sform.cfp_require_description use_label=False layout='event-inline' %}</td>
                         <td>{% bootstrap_field sform.cfp_description_min_length use_label=False layout='inline' %}</td>
                         <td>{% bootstrap_field sform.cfp_description_max_length use_label=False layout='inline' %}</td>
                     </tr>
+                    {% if request.event.settings.use_tracks %}
                     <tr>
-                        <th>{% trans "Notes for the organiser" %}</th>
-                        <td>{% bootstrap_field sform.cfp_request_notes use_label=False layout='event-inline' %}</td>
-                        <td>{% bootstrap_field sform.cfp_require_notes use_label=False layout='event-inline' %}</td>
+                        <th>{% trans "Track" %}</th>
+                        <td class="request">{% bootstrap_field sform.cfp_request_track use_label=False layout='event-inline' %}</td>
+                        <td class="require">{% bootstrap_field sform.cfp_require_track use_label=False layout='event-inline' %}</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <th>{% trans "Biography" %}</th>
+                        <td class="request">{% bootstrap_field sform.cfp_request_biography use_label=False layout='event-inline' %}</td>
+                        <td class="require">{% bootstrap_field sform.cfp_require_biography use_label=False layout='event-inline' %}</td>
+                        <td>{% bootstrap_field sform.cfp_biography_min_length use_label=False layout='inline' %}</td>
+                        <td>{% bootstrap_field sform.cfp_biography_max_length use_label=False layout='inline' %}</td>
+                    </tr>
+                    <tr>
+                        <th>{% trans "Availability" %}</th>
+                        <td class="request">{% bootstrap_field sform.cfp_request_availabilities use_label=False layout='event-inline' %}</td>
+                        <td class="require">{% bootstrap_field sform.cfp_require_availabilities use_label=False layout='event-inline' %}</td>
                         <td></td>
                         <td></td>
                     </tr>
                     <tr>
-                        <th>{% trans "Biography" %}</th>
-                        <td>{% bootstrap_field sform.cfp_request_biography use_label=False layout='event-inline' %}</td>
-                        <td>{% bootstrap_field sform.cfp_require_biography use_label=False layout='event-inline' %}</td>
-                        <td>{% bootstrap_field sform.cfp_biography_min_length use_label=False layout='inline' %}</td>
-                        <td>{% bootstrap_field sform.cfp_biography_max_length use_label=False layout='inline' %}</td>
+                        <th>{% trans "Notes" %}</th>
+                        <td class="request">{% bootstrap_field sform.cfp_request_notes use_label=False layout='event-inline' %}</td>
+                        <td class="require">{% bootstrap_field sform.cfp_require_notes use_label=False layout='event-inline' %}</td>
+                        <td></td>
+                        <td></td>
                     </tr>
                     <tr>
                         <th>{% trans "Recording opt-out" %}</th>
@@ -86,31 +123,24 @@
                     </tr>
                     <tr>
                         <th>{% trans "Talk image" %}</th>
-                        <td>{% bootstrap_field sform.cfp_request_image use_label=False layout='event-inline' %}</td>
-                        <td>{% bootstrap_field sform.cfp_require_image use_label=False layout='event-inline' %}</td>
+                        <td class="request">{% bootstrap_field sform.cfp_request_image use_label=False layout='event-inline' %}</td>
+                        <td class="require">{% bootstrap_field sform.cfp_require_image use_label=False layout='event-inline' %}</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <th>{% trans "Duration" %}</th>
+                        <td class="request">{% bootstrap_field sform.cfp_request_duration use_label=False layout='event-inline' %}</td>
+                        <td class="require">{% bootstrap_field sform.cfp_require_duration use_label=False layout='event-inline' %}</td>
                         <td></td>
                         <td></td>
                     </tr>
                 </tbody>
             </table>
+            {% bootstrap_field sform.cfp_count_length_in layout='event' %}
             </fieldset>
 
-            <fieldset>
-            <legend id="review">{% trans "Review settings" %}</legend>
-            {% bootstrap_field sform.review_deadline layout='event' %}
-            {% bootstrap_field sform.allow_override_votes layout='event' %}
-            {% bootstrap_field sform.review_score_mandatory layout='event' %}
-            {% bootstrap_field sform.review_text_mandatory layout='event' %}
-            {% bootstrap_field sform.review_help_text layout='event' %}
-            {% bootstrap_field sform.review_min_score layout='event' %}
-            {% bootstrap_field sform.review_max_score layout='event' %}
-            {% for field in sform %}
-                {% if 'review_score_name_' in field.name %}
-                    {% bootstrap_field field layout='event' %}
-                {% endif %}
-            {% endfor %}
             {% include "orga/submit_row.html" %}
-            </fieldset>
         </form>
     </div>
 </div>

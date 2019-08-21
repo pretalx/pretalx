@@ -9,8 +9,9 @@
         <end>{{ event.date_to|date:"c" }}</end>
         <days>{{ event.duration }}</days>
         <timeslot_duration>00:05</timeslot_duration>
+        <base_url>{{ metadata.base_url }}</base_url>
     </conference>
-    {% for day in data %}<day index='{{ day.index }}' date='{{ day.start.date|date:"c" }}' start='{{ day.start.isoformat }}' end='{{ day.end.isoformat }}'>
+    {% for day in data %}<day index='{{ day.index }}' date='{{ day.start.date|date:"c" }}' start='{{ day.start|date:"c" }}' end='{{ day.end|date:"c" }}'>
         {% for room in day.rooms %}<room name='{{ room.name|xmlescape }}'>
             {% for talk in room.talks %}<event guid='{{ talk.submission.uuid }}' id='{{ talk.submission.id }}'>
                 <date>{{ talk.start|date:"c" }}</date>
@@ -18,22 +19,24 @@
                 <duration>{{ talk.export_duration }}</duration>
                 <room>{{ room.name|xmlescape }}</room>
                 <slug>{{ talk.submission.frab_slug }}</slug>
-                <url>{{ talk.submission.urls.public.full }}</url>
+                <url>{{ base_url }}{{ talk.submission.urls.public }}</url>
                 <recording>
                     <license>{{ talk.submission.license|xmlescape }}</license>
                     <optout>{{ talk.submission.do_not_record|yesno:"true,false" }}</optout>
                 </recording>
                 <title>{{ talk.submission.title|xmlescape }}</title>
                 <subtitle></subtitle>
-                <track></track>
+                <track>{% if talk.submission.track %}{{ talk.submission.track.name }}{% endif %}</track>
                 <type>{{ talk.submission.submission_type.name|xmlescape }}</type>
                 <language>{{ talk.submission.content_locale }}</language>
                 <abstract>{{ talk.submission.abstract|xmlescape }}</abstract>
                 <description>{{ talk.submission.description|xmlescape }}</description>
+                <logo>{{ talk.submission.urls.image }}</logo>
                 <persons>
                     {% for person in talk.submission.speakers.all %}<person id='{{ person.id }}'>{{ person.get_display_name|xmlescape }}</person>{% endfor %}
                 </persons>
                 <links></links>
+                <attachments></attachments>
             </event>
             {% endfor %}
         </room>

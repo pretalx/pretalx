@@ -1,6 +1,8 @@
 {% extends "cfp/event/base.html" %}
 {% load bootstrap4 %}
+{% load compress %}
 {% load i18n %}
+{% load static %}
 
 {% block title %}{% trans "Your submission" %} :: {% endblock %}
 
@@ -11,25 +13,49 @@
         {% trans "Current state of your submission:" %}
         {% include "cfp/event/fragment_state.html" with state=submission.state %}
     </p>
+    {% if submission.submission_type and request.event.submission_types.all|length > 1 %}<p>{% trans "Submission type" %}: {{ submission.submission_type }}</p>{% endif %}
+    {% if submission.track and request.event.tracks.all|length > 1 %}<p>{% trans "Track" %}: {{ submission.track.name }}</p>{% endif %}
+    {% if request.event.locales|length > 1 %}<p>{% trans "Language" %}: {{ submission.get_content_locale_display }}</p>{% endif %}
     <div class="text">
     {% blocktrans trimmed %}
-    Congratulations on your acceptance! Please provide us with your available hours during the event, so that we can schedule your event accordingly:<p>
+    Congratulations on your acceptance!
     {% endblocktrans %}
+    {% if form.availabilities %}
+        {% blocktrans trimmed %}
+        Please provide us with your available hours during the event, so that we can schedule your event accordingly:<p>
+        {% endblocktrans %}
+    {% endif %}
     </div>
-    <form action="" method="post">
+    <form method="post">
         {% csrf_token %}
-        {% bootstrap_field form.availabilities layout='inline' %}
+        {% if form.availabilities %}
+        {% compress js %}
+            <script defer src="{% static "vendored/moment-with-locales.js" %}"></script>
+            <script defer src="{% static "vendored/moment-timezone-with-data-2012-2022.js" %}"></script>
+            <script defer src="{% static "vendored/fullcalendar/fullcalendar.min.js" %}"></script>
+            <script defer src="{% static "common/js/availabilities.js" %}"></script>
+        {% endcompress %}
+            {% bootstrap_field form.availabilities layout='inline' %}
+        {% endif %}
+        <p></p>
         {% blocktrans trimmed %}
         By confirming your submission, you agree that you are able and willing to participate in this event and
-        present the content of this submission.<br>
-        The submission data, such as title, abstract, description, and any uploads you provided, will be
+        present the content of this submission.
+        The submission data, such as title, abstract, description, and any uploads you provided, can be made
         publicly available once the submission is confirmed.
         {% endblocktrans %}
-        <div class="submit-group"><span></span><span>
+        <p></p>
+        <div class="submit-group"><span>
             <a href="{{ submission.urls.user_base }}"
                class="btn btn-lg btn-info">
                 {% trans "Go back" %}
             </a>
+            <a href="{{ submission.urls.withdraw }}"
+               class="btn btn-lg btn-danger">
+                {% trans "Withdraw" %}
+            </a>
+        </span>
+        <span>
             <button type="submit"
                class="btn btn-lg btn-success">
                 {% trans "Confirm" %}

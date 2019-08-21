@@ -3,7 +3,9 @@ from rest_framework.serializers import (
 )
 
 from pretalx.api.serializers.question import AnswerSerializer
+from pretalx.api.serializers.room import AvailabilitySerializer
 from pretalx.person.models import SpeakerProfile, User
+from pretalx.schedule.models import Availability
 from pretalx.submission.models import Answer
 
 
@@ -45,7 +47,9 @@ class SpeakerSerializer(ModelSerializer):
 
 
 class SpeakerOrgaSerializer(SpeakerSerializer):
-    answers = AnswerSerializer(Answer.objects.all(), many=True, read_only=True)
+    email = CharField(source='user.email')
+    answers = AnswerSerializer(Answer.objects.none(), many=True, read_only=True)
+    availabilities = AvailabilitySerializer(Availability.objects.none(), many=True, read_only=True)
 
     def get_submissions(self, obj):
         return obj.user.submissions.filter(event=obj.event).values_list(
@@ -53,4 +57,4 @@ class SpeakerOrgaSerializer(SpeakerSerializer):
         )
 
     class Meta(SpeakerSerializer.Meta):
-        fields = SpeakerSerializer.Meta.fields + ('answers',)
+        fields = SpeakerSerializer.Meta.fields + ('answers', 'email', 'availabilities')

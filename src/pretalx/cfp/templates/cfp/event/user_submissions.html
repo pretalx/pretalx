@@ -1,4 +1,5 @@
 {% extends "cfp/event/base.html" %}
+{% load compress %}
 {% load i18n %}
 {% load rich_text %}
 {% load rules %}
@@ -26,11 +27,11 @@
                 <th>{% trans "Title" %}</th>
                 <th>{% trans "State" %}</th>
                 <th></th>
+                <th></th>
             </tr>
             </thead>
             <tbody>
             {% for submission in submissions %}
-            {% has_perm 'agenda.view_slot' request.user submission.slot as can_see_slot %}
                 <tr>
                     <td>
                         <a href="{{ submission.urls.user_base }}">
@@ -41,8 +42,17 @@
                         {% include "cfp/event/fragment_state.html" with state=submission.state %}
                     </td>
                     <td class="text-right">
+                        {% if submission.public_slots %}
+                            <a href="{{ submission.urls.public }}">
+                            {% for talk in submission.public_slots %}
+                            {{ talk.start.date|date:"c" }}, {{ talk.start|date:"H:i" }}–{{ talk.end|date:"H:i" }}, {{ talk.room.name }} {% if not forloop.last %}<br>{% endif %}
+                            {% endfor %}
+                            </a>
+                        {% endif %}
+                    </td>
+                    <td class="text-right">
                         {% if submission.review_code %}
-                            <button data-destination="{{ submission.urls.review }}"
+                            <button data-destination="{{ submission.urls.review.full }}"
                                     class="btn btn-sm btn-info"
                                     data-toggle="tooltip" 
                                     data-placement="top" 
@@ -51,22 +61,13 @@
                                 <i class="fa fa-link"></i>
                             </button>
                         {% endif %}
-                        {% if submission.editable %}
-                            <a href="{{ submission.urls.user_base }}"
-                                    class="btn btn-sm btn-info">
-                                <i class="fa fa-edit"></i>
-                            </a>
-                        {% endif %}
+                        <a href="{{ submission.urls.user_base }}" class="btn btn-sm btn-info">
+                            <i class="fa fa-{{ submission.editable|yesno:'edit,eye' }}"></i>
+                        </a>
                         {% if submission.state == 'accepted' %}
                             <a href="{{ submission.urls.confirm }}"
                                     class="btn btn-sm btn-success">
                                 <i class="fa fa-check"></i> {% trans "Confirm" %}
-                            </a>
-                        {% endif %}
-                        {% if can_see_slot %}
-                            <a href="{{ submission.urls.public }}"
-                                    class="btn btn-sm btn-info">
-                                <i class="fa fa-calendar"></i> {% trans "Schedule" %}
                             </a>
                         {% endif %}
                         {% if submission.does_accept_feedback %}
@@ -107,5 +108,7 @@
             </p>
         {% endif %}
     {% endif %}
-    <script type="text/javascript" src="{% static "submission/js/review_code.js" %}"></script>
+    {% compress js %}
+        <script defer src="{% static "common/js/copy.js" %}"></script>
+    {% endcompress %}
 {% endblock %}

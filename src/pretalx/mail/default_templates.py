@@ -1,4 +1,4 @@
-from django.utils.translation import ugettext_noop as _
+from django.utils.translation import gettext_noop as _
 from i18nfield.strings import LazyI18nString
 
 GENERIC_SUBJECT = LazyI18nString.from_gettext(_('Your submission: {submission_title}'))
@@ -38,12 +38,14 @@ of a speaker!
 
 The {event_name} organisers'''))
 
+UPDATE_SUBJECT = LazyI18nString.from_gettext(_('New schedule!'))
 UPDATE_TEXT = LazyI18nString.from_gettext(_('''Hi!
 
-We have released a new schedule version, and your talk slot has moved:
-From {old_datetime} ({old_room}) to {new_datetime} ({new_room}).
+We have released a new schedule version, and wanted to tell you:
 
-If this poses a problem, don't hesitate to contact us!
+{notifications}
+
+We look forward to seeing you, and please contact us if there is any problem with your talk or assigned slot.
 
 The {event_name} organisers'''))
 

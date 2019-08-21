@@ -1,13 +1,20 @@
 import urllib
 from contextlib import suppress
 from importlib import import_module
+from urllib.parse import quote
 
+from django import forms
 from django.conf import settings
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import CharField, Q
 from django.db.models.functions import Lower
+from django.forms import ValidationError
 from django.http import Http404
+from django.shortcuts import redirect
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
+from django_context_decorator import context
+from formtools.wizard.forms import ManagementForm
 from i18nfield.forms import I18nModelForm
 from rules.contrib.views import PermissionRequiredMixin
 
@@ -27,8 +34,9 @@ class ActionFromUrl:
     def permission_object(self):
         return self.object
 
+    @context
     @cached_property
-    def _action(self):
+    def action(self):
         if not any(_id in self.kwargs for _id in ['pk', 'code']):
             return 'create'
         if self.request.user.has_perm(
@@ -37,14 +45,9 @@ class ActionFromUrl:
             return 'edit'
         return 'view'
 
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
-        context['action'] = self._action
-        return context
-
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['read_only'] = self._action == 'view'
+        kwargs['read_only'] = self.action == 'view'
         if hasattr(self.request, 'event') and issubclass(
             self.form_class, I18nModelForm
         ):
@@ -53,16 +56,27 @@ class ActionFromUrl:
 
 
 class Sortable:
+    """
+    In the main class, you'll have to call sort_queryset() in get_queryset.
+    In the template, do this:
+
+        {% load url_replace %}
+        <th>
+            {% trans "Title" %}
+            <a href="?{% url_replace request 'sort' '-title' %}"><i class="fa fa-caret-down"></i></a>
+            <a href="?{% url_replace request 'sort' 'title' %}"><i class="fa fa-caret-up"></i></a>
+        </th>
+    """
 
     sortable_fields = []
 
     def sort_queryset(self, qs):
-        sort_key = self.request.GET.get('sort') or getattr(
-            self, 'default_sort_field', ''
-        )
+        sort_key = self.request.GET.get('sort')
+        if not sort_key or sort_key == 'default':
+            sort_key = getattr(self, 'default_sort_field', '')
         if sort_key:
             plain_key = sort_key[1:] if sort_key.startswith('-') else sort_key
-            reverse = not (plain_key == sort_key)
+            reverse = not plain_key == sort_key
             if plain_key in self.sortable_fields:
                 is_text = False
                 if '__' not in plain_key:
@@ -112,7 +126,6 @@ class Filterable:
                 key = f'{key}__in' if not key.endswith('__in') else key
             if value:
                 lookup_key = key.split('__')[0]
-                print(value)
                 if lookup_key in self.filter_fields:
                     qs = qs.filter(**{key: value})
         return qs
@@ -129,44 +142,109 @@ class Filterable:
             qs = qs.filter(_filters[0])
         return qs
 
-    def get_context_data(self, *args, **kwargs):
-        from django import forms
+    @context
+    @cached_property
+    def search_form(self):
+        return SearchForm(self.request.GET if 'q' in self.request.GET else None)
 
-        context = super().get_context_data(*args, **kwargs)
-        context['search_form'] = SearchForm(
-            self.request.GET if 'q' in self.request.GET else {}
-        )
+    @context
+    @cached_property
+    def filter_form(self):
         if hasattr(self, 'filter_form_class'):
-            context['filter_form'] = self.filter_form_class(
-                self.request.event, self.request.GET
-            )
-        elif hasattr(self, 'get_filter_form'):
-            context['filter_form'] = self.get_filter_form()
-        elif self.filter_fields:
-            context['filter_form'] = forms.modelform_factory(
+            return self.filter_form_class(self.request.event, self.request.GET)
+        if hasattr(self, 'get_filter_form'):
+            return self.get_filter_form()
+        if self.filter_fields:
+            _form = forms.modelform_factory(
                 self.model, fields=self.filter_fields
             )(self.request.GET)
-            for field in context['filter_form'].fields.values():
+            for field in _form.fields.values():
                 field.required = False
                 if hasattr(field, 'queryset'):
                     field.queryset = field.queryset.filter(event=self.request.event)
-        return context
+            return _form
+        return None
 
 
 class PermissionRequired(PermissionRequiredMixin):
+
     def has_permission(self):
+        if not hasattr(self, 'get_permission_object') and hasattr(self, 'object'):
+            self.get_permission_object = lambda self: self.object
         result = super().has_permission()
         if not result:
             request = getattr(self, 'request', None)
-            key = f'pretalx_event_access_{request.event.pk}'
-            if request and hasattr(request, 'event') and key in request.session:
-                sparent = SessionStore(request.session.get(key))
-                parentdata = []
-                with suppress(Exception):
-                    parentdata = sparent.load()
-                return 'event_access' in parentdata
+            if request and hasattr(request, 'event'):
+                key = f'pretalx_event_access_{request.event.pk}'
+                if key in request.session:
+                    sparent = SessionStore(request.session.get(key))
+                    parentdata = []
+                    with suppress(Exception):
+                        parentdata = sparent.load()
+                    return 'event_access' in parentdata
         return result
 
     def get_login_url(self):
         """We do this to avoid leaking data about existing pages."""
         raise Http404()
+
+    def handle_no_permission(self):
+        request = getattr(self, 'request', None)
+        if (
+            request
+            and hasattr(request, 'event')
+            and request.user.is_anonymous
+            and 'cfp' in request.resolver_match.namespaces
+        ):
+            params = '&' + request.GET.urlencode() if request.GET else ''
+            return redirect(
+                request.event.urls.login + f'?next={quote(request.path)}' + params
+            )
+        raise Http404()
+
+
+class EventPermissionRequired(PermissionRequired):
+    def get_permission_object(self):
+        return self.request.event
+
+
+class SensibleBackWizardMixin():
+
+    def post(self, *args, **kwargs):
+        """
+        Don't redirect if user presses the prev. step button, save data instead.
+        The rest of this is copied from WizardView.
+        We want to save data when hitting "back"!
+        """
+        wizard_goto_step = self.request.POST.get('wizard_goto_step', None)
+        management_form = ManagementForm(self.request.POST, prefix=self.prefix)
+        if not management_form.is_valid():
+            raise ValidationError(
+                _('ManagementForm data is missing or has been tampered.'),
+                code='missing_management_form',
+            )
+
+        form_current_step = management_form.cleaned_data['current_step']
+        if (form_current_step != self.steps.current and
+                self.storage.current_step is not None):
+            # form refreshed, change current step
+            self.storage.current_step = form_current_step
+
+        # get the form for the current step
+        form = self.get_form(data=self.request.POST, files=self.request.FILES)
+
+        # and try to validate
+        if form.is_valid():
+            # if the form is valid, store the cleaned data and files.
+            self.storage.set_step_data(self.steps.current, self.process_step(form))
+            self.storage.set_step_files(self.steps.current, self.process_step_files(form))
+
+            # check if the current step is the last step
+            if wizard_goto_step and wizard_goto_step in self.get_form_list():
+                return self.render_goto_step(wizard_goto_step)
+            if self.steps.current == self.steps.last:
+                # no more steps, render done view
+                return self.render_done(form, **kwargs)
+            # proceed to the next step
+            return self.render_next_step(form)
+        return self.render(form)

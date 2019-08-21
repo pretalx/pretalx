@@ -1,6 +1,7 @@
 from django import forms
-from django.utils.translation import ngettext_lazy, ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _, ngettext_lazy
 
+from pretalx.common.forms.widgets import MarkdownWidget
 from pretalx.common.mixins.forms import ReadOnlyFlag
 from pretalx.common.phrases import phrases
 from pretalx.submission.models import Review
@@ -26,22 +27,19 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
         choices = (
             [(None, _('No score'))] if not event.settings.review_score_mandatory else []
         )
-        if self.may_override:
-            choices.append((self.min_value - 1, _('Negative override (Veto)')))
         for counter in range(abs(self.max_value - self.min_value) + 1):
             value = self.min_value + counter
             name = event.settings.get(f'review_score_name_{value}')
-            if name:
-                name = f'{value} (»{name}«)'
-            else:
-                name = value
+            name = f'{value} (“{name}”)' if name else value
             choices.append((value, name))
         if self.may_override:
+            choices.insert(1, (self.min_value - 1, _('Negative override (Veto)')))
             choices.append((self.max_value + 1, _('Positive override')))
 
         self.fields['score'] = forms.ChoiceField(
             choices=choices,
             required=event.settings.review_score_mandatory,
+            widget=forms.RadioSelect,
             disabled=kwargs.get('read_only', False),
             help_text=ngettext_lazy(
                 'You have {count} override vote left.',
@@ -54,14 +52,14 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
         self.fields['text'].widget.attrs['rows'] = 2
         self.fields['text'].widget.attrs['placeholder'] = phrases.orga.example_review
         self.fields['text'].required = event.settings.review_text_mandatory
+        self.fields['text'].help_text += ' ' + phrases.base.use_markdown
 
     def clean_score(self):
         score = self.cleaned_data.get('score')
         score = int(score) if score else None
         if score and not self.min_value <= score <= self.max_value:
             if not (
-                (score == self.min_value - 1 or score == self.max_value + 1)
-                and self.may_override
+                score in (self.min_value - 1, self.max_value + 1) and self.may_override
             ):
                 raise forms.ValidationError(
                     _(
@@ -89,3 +87,6 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
     class Meta:
         model = Review
         fields = ('text', 'score')
+        widgets = {
+            'text': MarkdownWidget,
+        }

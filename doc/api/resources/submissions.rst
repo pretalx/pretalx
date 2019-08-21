@@ -1,12 +1,11 @@
-.. spelling:: de
-
 Submissions
 ===========
 
 Resource description
 --------------------
 
-The submission resource contains the following public fields:
+The submission resource may contain the following fields. Some fields are only
+accessible if users have the correct permissions:
 
 .. rst-class:: rest-resource-table
 
@@ -15,8 +14,10 @@ Field                                 Type                       Description
 ===================================== ========================== =======================================================
 code                                  string                     A unique, alphanumeric identifier, also used in URLs
 speakers                              list                       A list of speaker objects, e.g. ``[{"name": "Jane", "code": "ABCDEF", "biography": "", "avatar": ""}]``
+created                               string                     The time of submission creation as an ISO-8601 formatted datetime. Available if the requesting user has organiser permission.
 title                                 string                     The submission's title
 submission_type                       string                     The submission type (e.g. "talk", "workshop")
+track                                 string                     The track this talk belongs to (e.g. "security", "design", or ``null``)
 state                                 string                     The submission's state, one of "submitted", "accepted", "rejected", "confirmed"
 abstract                              string                     The abstract, a short note of the submission's content
 description                           string                     The description, a more expansive description of the submission's content
@@ -24,9 +25,12 @@ duration                              number                     The talk's dura
 do_not_record                         boolean                    Indicates if the speaker consent to recordings of their talk
 is_featured                           boolean                    Indicates if the talk is show in the schedule preview / sneak peek
 content_locale                        string                     The language the submission is in, e.g. "en" or "de"
-slot                                  object                     An object with the scheduling details, e.g. ``{"start": …, "end": …, "room": "R101"}`` if they exist.
+slot                                  object                     An object with the scheduling details, e.g. ``{"start": …, "end": …, "room": "R101"}`` if they exist. This will not be present til after the schedule is released.
+slot_count                            number                     How often this submission may be scheduled.
 image                                 string                     The submission image URL
-answers                               list                       The question answers given by the speakers, if the request was issued by an organiser with permissions
+answers                               list                       The question answers given by the speakers. Available if the requesting user has organiser permissions.
+notes                                 string                     Notes the speaker left for the organisers. Available if the requesting user has organiser permissions.
+internal_notes                        string                     Notes the organisers left on the submission. Available if the requesting user has organiser permissions.
 ===================================== ========================== =======================================================
 
 Endpoints
@@ -87,7 +91,9 @@ Endpoints
                 "person": null,
                 "options": []
               }
-             ]
+             ],
+             "notes": "Please make sure you give me red M&Ms",
+             "internal_notes": "Absolutely no M&Ms, but cool proposal otherwise!"
           }
         ]
       }
@@ -145,7 +151,9 @@ Endpoints
             "person": null,
             "options": []
           }
-         ]
+         ],
+         "notes": "Please make sure you give me red M&Ms",
+         "internal_notes": "Absolutely no M&Ms, but cool proposal otherwise!"
       }
 
    :param event: The ``slug`` field of the event to fetch

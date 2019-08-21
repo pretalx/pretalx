@@ -1,5 +1,6 @@
 {% load compress %}
-{% load staticfiles %}
+{% load i18n %}
+{% load static %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -13,13 +14,18 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{% static "common/img/favicon-32x32.png" %}">
     <link rel="icon" type="image/png" sizes="16x16" href="{% static "common/img/favicon-16x16.png" %}">
     {% compress js %}
-        <script type="text/javascript" src="{% static "vendored/jquery-3.1.1.js" %}"></script>
-        <script type="text/javascript" src="{% static "vendored/bootstrap/dist/js/bootstrap.min.js" %}"></script>
+        <script defer src="{% static "vendored/jquery-3.1.1.js" %}"></script>
+        <script defer src="{% static "vendored/bootstrap/dist/js/bootstrap.bundle.min.js" %}"></script>
     {% endcompress %}
 </head>
 <body>
-<div id="wrapper">
-    <img src="{% static "common/img/logo_white.svg" %}" class="logo">
+    <div id="wrapper"{% if request.event.primary_color %} style="background-color: {{ request.event.primary_color }}"{% endif %}>
+    {% if not request.event.logo %}
+        <img src="{% static "common/img/logo_white.svg" %}" class="logo" alt="{% trans "The pretalx logo" %}">
+    {% else %}
+            <img height="150" width="auto" src="{{ request.event.logo.url }}" id="event-logo" alt="{% trans "The event's logo" %}">
+    {% endif %}
+    <p>
     {% if messages %}
         {% for message in messages %}
             <div class="card card-inverse card-{{ message.tags }} mb-3 text-center">
@@ -27,6 +33,7 @@
             </div>
         {% endfor %}
     {% endif %}
+    <p>
     <div class="card card-login">
         {% block content %}
         {% endblock %}

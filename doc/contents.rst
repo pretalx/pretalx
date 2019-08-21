@@ -7,6 +7,6 @@ Documentation contents
    administrator/index
    api/index
    developer/index
+   faq
 
-   features
    changelog

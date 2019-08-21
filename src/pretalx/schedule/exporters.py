@@ -11,14 +11,19 @@ from i18nfield.utils import I18nJSONEncoder
 from pretalx import __version__
 from pretalx.common.exporter import BaseExporter
 from pretalx.common.urls import get_base_url
-from pretalx.schedule.models import Room
 
 
 class ScheduleData(BaseExporter):
-
-    def __init__(self, event, schedule=None):
+    def __init__(self, event, schedule=None, with_accepted=False):
         super().__init__(event)
         self.schedule = schedule
+        self.with_accepted = with_accepted
+
+    @cached_property
+    def metadata(self):
+        if not self.schedule:
+            return []
+        return {'base_url': self.event.urls.schedule.full()}
 
     @cached_property
     def data(self):
@@ -29,38 +34,76 @@ class ScheduleData(BaseExporter):
         schedule = self.schedule
         tz = pytz.timezone(event.timezone)
 
-        talks = schedule.talks.filter(is_visible=True)\
-            .select_related('submission', 'submission__event', 'room')\
-            .prefetch_related('submission__speakers')\
+        base_qs = schedule.talks.all() if self.with_accepted else schedule.talks.filter(is_visible=True)
+        talks = (
+            base_qs
+            .select_related('submission', 'submission__event', 'submission__submission_type', 'submission__track', 'room')
+            .prefetch_related('submission__speakers')
             .order_by('start')
-        rooms = Room.objects.filter(pk__in=talks.values_list('room', flat=True).distinct())
-        data = [
-            {
+        )
+        data = {
+            current_date.date(): {
                 'index': index + 1,
-                'start': current_date,
-                'end': current_date + timedelta(days=1),
-                'first_start': min([t.start for t in talks if t.start and t.start.astimezone(tz).date() == current_date.date()] or [0]),
-                'last_end': max([t.end for t in talks if t.start and t.start.astimezone(tz).date() == current_date.date()] or [0]),
-                'rooms': [{
-                    'name': room.name,
-                    'talks': [talk for talk in talks
-                              if talk.start and talk.start.astimezone(tz).date() == current_date.date() and talk.room_id == room.pk],
-                } for room in rooms],
-            } for index, current_date in enumerate([
-                event.datetime_from + timedelta(days=i) for i in range((event.date_to - event.date_from).days + 1)
-            ])
-        ]
-        return data
+                'start': current_date.replace(hour=4, minute=0).astimezone(tz),
+                'end': current_date.replace(hour=3, minute=59).astimezone(tz) + timedelta(days=1),
+                'first_start': None,
+                'last_end': None,
+                'rooms': dict(),
+            }
+            for index, current_date in enumerate(
+                [
+                    event.datetime_from + timedelta(days=i)
+                    for i in range((event.date_to - event.date_from).days + 1)
+                ]
+            )
+        }
+
+        for talk in talks:
+            if not talk.start or not talk.room:
+                continue
+            talk_date = talk.start.astimezone(tz).date()
+            if talk.start.astimezone(tz).hour < 3 and talk_date != event.date_from:
+                talk_date -= timedelta(days=1)
+            day_data = data.get(talk_date)
+            if not day_data:
+                continue
+            if str(talk.room.name) not in day_data['rooms']:
+                day_data['rooms'][str(talk.room.name)] = {
+                    'id': talk.room.id,
+                    'name': talk.room.name,
+                    'position': talk.room.position,
+                    'talks': [talk],
+                }
+            else:
+                day_data['rooms'][str(talk.room.name)]['talks'].append(talk)
+            if not day_data['first_start'] or talk.start < day_data['first_start']:
+                day_data['first_start'] = talk.start
+            if not day_data['last_end'] or talk.real_end > day_data['last_end']:
+                day_data['last_end'] = talk.real_end
+
+        for d in data.values():
+            d['rooms'] = sorted(
+                d['rooms'].values(), key=lambda room: room['position'] if room['position'] is not None else room['id']
+            )
+        return data.values()
 
 
 class FrabXmlExporter(ScheduleData):
     identifier = 'schedule.xml'
     verbose_name = 'XML (frab compatible)'
     public = True
+    show_qrcode = True
     icon = 'fa-code'
 
     def render(self, **kwargs):
-        context = {'data': self.data, 'schedule': self.schedule, 'event': self.event, 'version': __version__}
+        context = {
+            'data': self.data,
+            'metadata': self.metadata,
+            'schedule': self.schedule,
+            'event': self.event,
+            'version': __version__,
+            'base_url': get_base_url(self.event),
+        }
         content = get_template('agenda/schedule.xml').render(context=context)
         return f'{self.event.slug}-schedule.xml', 'text/xml', content
 
@@ -89,6 +132,7 @@ class FrabJsonExporter(ScheduleData):
         schedule = self.schedule
         content = {
             'version': schedule.version,
+            'base_url': self.metadata['base_url'],
             'conference': {
                 'acronym': self.event.slug,
                 'title': str(self.event.name),
@@ -107,16 +151,20 @@ class FrabJsonExporter(ScheduleData):
                                 {
                                     'id': talk.submission.id,
                                     'guid': talk.submission.uuid,
-                                    'logo': None,
+                                    'logo': talk.submission.urls.image,
                                     'date': talk.start.astimezone(tz).isoformat(),
-                                    'start': talk.start.astimezone(tz).strftime('%H:%M'),
+                                    'start': talk.start.astimezone(tz).strftime(
+                                        '%H:%M'
+                                    ),
                                     'duration': talk.export_duration,
                                     'room': str(room['name']),
                                     'slug': talk.submission.code,
                                     'url': talk.submission.urls.public.full(),
                                     'title': talk.submission.title,
                                     'subtitle': '',
-                                    'track': None,
+                                    'track': str(talk.submission.track.name)
+                                    if talk.submission.track
+                                    else None,
                                     'type': str(talk.submission.submission_type.name),
                                     'language': talk.submission.content_locale,
                                     'abstract': talk.submission.abstract,
@@ -126,16 +174,28 @@ class FrabJsonExporter(ScheduleData):
                                     'persons': [
                                         {
                                             'id': person.id,
-                                            'name': person.get_display_name(),
-                                            'biography': getattr(person.profiles.filter(event=self.event).first(), 'biography', ''),
+                                            'code': person.code,
+                                            'public_name': person.get_display_name(),
+                                            'biography': getattr(
+                                                person.profiles.filter(
+                                                    event=self.event
+                                                ).first(),
+                                                'biography',
+                                                '',
+                                            ),
                                             'answers': [
                                                 {
                                                     'question': answer.question.id,
                                                     'answer': answer.answer,
-                                                    'options': [option.answer for option in answer.options.all()],
+                                                    'options': [
+                                                        option.answer
+                                                        for option in answer.options.all()
+                                                    ],
                                                 }
                                                 for answer in person.answers.all()
-                                            ] if getattr(self, 'is_orga', False) else [],
+                                            ]
+                                            if getattr(self, 'is_orga', False)
+                                            else [],
                                         }
                                         for person in talk.submission.speakers.all()
                                     ],
@@ -145,25 +205,37 @@ class FrabJsonExporter(ScheduleData):
                                         {
                                             'question': answer.question.id,
                                             'answer': answer.answer,
-                                            'options': [option.answer for option in answer.options.all()],
+                                            'options': [
+                                                option.answer
+                                                for option in answer.options.all()
+                                            ],
                                         }
                                         for answer in talk.submission.answers.all()
-                                    ] if getattr(self, 'is_orga', False) else [],
-                                } for talk in room['talks']
-                            ] for room in day['rooms']
-                        }
-
-                    } for day in self.data
-                ]
-            }
+                                    ]
+                                    if getattr(self, 'is_orga', False)
+                                    else [],
+                                }
+                                for talk in room['talks']
+                            ]
+                            for room in day['rooms']
+                        },
+                    }
+                    for day in self.data
+                ],
+            },
         }
-        return f'{self.event.slug}.json'.format(self.event.slug), 'application/json', json.dumps({'schedule': content}, cls=I18nJSONEncoder)
+        return (
+            f'{self.event.slug}.json'.format(self.event.slug),
+            'application/json',
+            json.dumps({'schedule': content}, cls=I18nJSONEncoder),
+        )
 
 
 class ICalExporter(BaseExporter):
     identifier = 'schedule.ics'
     verbose_name = 'iCal'
     public = True
+    show_qrcode = True
     icon = 'fa-calendar'
 
     def __init__(self, event, schedule=None):
@@ -176,11 +248,12 @@ class ICalExporter(BaseExporter):
         cal.add('prodid').value = '-//pretalx//{}//'.format(netloc)
         creation_time = datetime.now(pytz.utc)
 
-        talks = self.schedule.talks\
-            .filter(is_visible=True)\
-            .prefetch_related('submission__speakers')\
-            .select_related('submission', 'room')\
+        talks = (
+            self.schedule.talks.filter(is_visible=True)
+            .prefetch_related('submission__speakers')
+            .select_related('submission', 'room', 'submission__event')
             .order_by('start')
+        )
         for talk in talks:
             talk.build_ical(cal, creation_time=creation_time, netloc=netloc)
 

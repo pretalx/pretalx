@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.utils.timezone import now
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.views.generic import View
 from reportlab.graphics import renderPDF
 from reportlab.graphics.barcode import qr
@@ -14,7 +14,7 @@ from reportlab.lib.styles import ParagraphStyle, StyleSheet1
 from reportlab.lib.units import mm
 from reportlab.platypus import BaseDocTemplate, Flowable, Frame, PageTemplate, Paragraph
 
-from pretalx.common.mixins.views import PermissionRequired
+from pretalx.common.mixins.views import EventPermissionRequired
 from pretalx.submission.models import SubmissionStates
 
 
@@ -40,7 +40,13 @@ class SubmissionCard(Flowable):
         x, y = x * unit, self.height - y * unit
         return x, y
 
+    def render_paragraph(self, paragraph, gap=2):
+        _, height = paragraph.wrapOn(self.canv, self.width - 30 * mm, 50 * mm)
+        self.text_location += height + gap * mm
+        paragraph.drawOn(self.canv, *self.coord(20 * mm, self.text_location))
+
     def draw(self):
+        self.text_location = 0
         self.canv.rect(0, 0, self.width, self.height)
 
         self.canv.rotate(90)
@@ -54,58 +60,50 @@ class SubmissionCard(Flowable):
         bounds = qr_code.getBounds()
         width = bounds[2] - bounds[0]
         height = bounds[3] - bounds[1]
-        d = Drawing(45, 45, transform=[45 / width, 0, 0, 45 / height, 0, 0])
-        d.add(qr_code)
-        renderPDF.draw(d, self.canv, 15, 10)
+        drawing = Drawing(45, 45, transform=[45 / width, 0, 0, 45 / height, 0, 0])
+        drawing.add(qr_code)
+        renderPDF.draw(drawing, self.canv, 15, 10)
 
-        p = Paragraph(self.submission.title, style=self.styles["Title"])
-        w, h = p.wrapOn(self.canv, self.width - 30 * mm, 50 * mm)
-        y = h + 10 * mm
-        p.drawOn(self.canv, *self.coord(20 * mm, y))
-
-        p = Paragraph(
-            ", ".join([s.get_display_name() for s in self.submission.speakers.all()]),
-            style=self.styles["Speaker"],
+        self.render_paragraph(
+            Paragraph(self.submission.title, style=self.styles["Title"]), gap=10
         )
-        w, h = p.wrapOn(self.canv, self.width - 30 * mm, 50 * mm)
-        y += h + 2 * mm
-        p.drawOn(self.canv, *self.coord(20 * mm, y))
-
-        p = Paragraph(
-            _('{} minutes, #{}, {}, {}').format(
-                self.submission.get_duration(),
-                self.submission.code,
-                self.submission.content_locale,
-                self.submission.state,
-            ),
-            style=self.styles["Meta"],
+        self.render_paragraph(
+            Paragraph(
+                ", ".join(
+                    [s.get_display_name() for s in self.submission.speakers.all()]
+                ),
+                style=self.styles["Speaker"],
+            )
         )
-        w, h = p.wrapOn(self.canv, self.width - 30 * mm, 50 * mm)
-        y += h + 2 * mm
-        p.drawOn(self.canv, *self.coord(20 * mm, y))
+        self.render_paragraph(
+            Paragraph(
+                _('{} minutes, #{}, {}, {}').format(
+                    self.submission.get_duration(),
+                    self.submission.code,
+                    self.submission.content_locale,
+                    self.submission.state,
+                ),
+                style=self.styles["Meta"],
+            )
+        )
 
         if self.submission.abstract:
-            p = Paragraph(
-                ellipsize(self.submission.abstract, 140), style=self.styles["Meta"]
+            self.render_paragraph(
+                Paragraph(
+                    ellipsize(self.submission.abstract, 140), style=self.styles["Meta"]
+                )
             )
-            w, h = p.wrapOn(self.canv, self.width - 30 * mm, 50 * mm)
-            y += h + 2 * mm
-            p.drawOn(self.canv, *self.coord(20 * mm, y))
 
         if self.submission.notes:
-            p = Paragraph(
-                ellipsize(self.submission.notes, 140), style=self.styles["Meta"]
+            self.render_paragraph(
+                Paragraph(
+                    ellipsize(self.submission.notes, 140), style=self.styles["Meta"]
+                )
             )
-            w, h = p.wrapOn(self.canv, self.width - 30 * mm, 50 * mm)
-            y += h + 2 * mm
-            p.drawOn(self.canv, *self.coord(20 * mm, y))
 
 
-class SubmissionCards(PermissionRequired, View):
+class SubmissionCards(EventPermissionRequired, View):
     permission_required = 'orga.view_submission_cards'
-
-    def get_permission_object(self):
-        return self.request.event
 
     def get_queryset(self):
         return (

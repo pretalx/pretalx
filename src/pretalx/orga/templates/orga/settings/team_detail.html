@@ -6,11 +6,7 @@
 <div>
     {% if team.pk %}
     <h2>
-        {% if team %}
-            {% trans "Team" %} »{{ team.name }}«: {% trans "Members" %}
-        {% else %}
-            {% trans "New team" %}
-        {% endif %}
+        {% trans "Team" %} {{ quotation_open }}{{ team.name }}{{ quotation_close }}: {% trans "Members" %}
     </h2>
 
     <form method="post">{% csrf_token %}
@@ -29,13 +25,13 @@
                 <td><a href="mailto:{{ member.email }}">{{ member.email }}</a></td>
                 <td class="text-right">
                     <a
-                    href="{% if request.event %}{{ request.event.orga_urls.team_settings }}{% else %}{{ request.organiser.orga_urls.teams }}{% endif %}/{{ team.id }}/reset/{{ member.id }}"
+                    href="{% if request.event %}{{ request.event.orga_urls.team_settings }}{% else %}{{ request.organiser.orga_urls.teams }}{% endif %}{{ team.id }}/reset/{{ member.id }}"
                       class="btn btn-sm btn-warning"
                     >
                         {% trans "Reset password" %}
                     </a>
                     <a
-                    href="{% if request.event %}{{ request.event.orga_urls.team_settings }}{% else %}{{ request.organiser.orga_urls.teams }}{% endif %}/{{ team.id }}/delete/{{ member.id }}"
+                    href="{% if request.event %}{{ request.event.orga_urls.team_settings }}{% else %}{{ request.organiser.orga_urls.teams }}{% endif %}{{ team.id }}/delete/{{ member.id }}"
                       class="btn btn-sm btn-danger" title="{% trans "Remove team member" %}"
                     >
                         <i class="fa fa-trash"></i>
@@ -56,7 +52,7 @@
                 </td>
                 <td class="text-right">
                     <a
-                      href="{% if request.event %}{{ request.event.orga_urls.team_settings }}{% else %}{{ request.organiser.orga_urls.teams }}{% endif %}/{{ member.id }}/uninvite"
+                      href="{% if request.event %}{{ request.event.orga_urls.team_settings }}{% else %}{{ request.organiser.orga_urls.teams }}{% endif %}{{ member.id }}/uninvite"
                       class="btn btn-sm btn-danger"
                     >
                         <i class="fa fa-trash"></i>
@@ -75,8 +71,10 @@
     </table>
     </form>
     <h3 id="permissions">
-        {% trans "Team" %} »{{ team.name }}«: {% trans "Permissions" %}
+        {% trans "Team" %} {{ quotation_open }}{{ team.name }}{{ quotation_close }}: {% trans "Permissions" %}
     </h3>
+    {% else %}
+    <h2>{% trans "New team" %}</h2>
     {% endif %}
 
     <form method="post">

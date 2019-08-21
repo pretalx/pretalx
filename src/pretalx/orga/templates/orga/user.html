@@ -1,10 +1,12 @@
 {% extends "orga/base.html" %}
 {% load bootstrap4 %}
+{% load copyable %}
 {% load i18n %}
+{% load static %}
 
 {% block title %}{% trans "User settings" %}{% endblock %}
 {% block content %}
-    <form method="post" action="">
+    <form method="post">
         {% csrf_token %}
         <fieldset>
         <legend>{% trans "User settings" %}</legend>
@@ -12,7 +14,7 @@
         {% include "orga/submit_row.html" with submit_name="form" submit_value="profile" %}
         </fieldset>
     </form>
-    <form method="post" action="" class="password-input-form">
+    <form method="post" class="password-input-form">
         {% csrf_token %}
         <fieldset>
         <legend>{% trans "Login settings" %}</legend>
@@ -21,7 +23,7 @@
         {% include "orga/submit_row.html" with submit_name="form" submit_value="login" %}
         </fieldset>
     </form>
-    <form method="post" action="">
+    <form method="post">
         {% csrf_token %}
         <fieldset>
         <legend>{% trans "API Access" %}</legend>
@@ -36,7 +38,7 @@
         <div class="form-group row">
             <label class="col-md-3 col-form-label">{% trans "API Token" %}</label>
             <div class="col-md-9">
-                {{ token }}
+                {{ token|copyable }}
                 <div class="help-block">
                     {% trans "Use for authentication when accessing the API." %}
                 </div>
@@ -44,11 +46,12 @@
         </div>
         <div class="submit-group"><span></span>
             <div>
-                <button type="submit" class="btn btn-lg btn-success" name="form" value="token">
+                <button type="submit" class="btn btn-lg btn-danger" name="form" value="token" data-toggle="tooltip" title="{% trans "Generate a new token. The current token will not be usable any longer." %}">
                     {% trans "Invalidate and regenerate" %}
                 </button>
             </div>
         </div>
         </fieldset>
     </form>
+    <script defer src="{% static "common/js/copy.js" %}"></script>
 {% endblock %}

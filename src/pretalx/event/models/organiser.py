@@ -1,10 +1,11 @@
 import string
 
 from django.core.validators import RegexValidator
-from django.db import models
+from django.db import models, transaction
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
+from django_scopes import scope, scopes_disabled
 from i18nfield.fields import I18nCharField
 
 from pretalx.common.mixins import LogMixin
@@ -15,7 +16,7 @@ SLUG_CHARS = 'a-zA-Z0-9.-'
 
 
 class Organiser(LogMixin, models.Model):
-    """The Organiser model represents the entity responsible for one or several events."""
+    """The Organiser model represents the entity responsible for at least one :class:`~pretalx.event.models.event.Event`."""
 
     name = I18nCharField(max_length=190, verbose_name=_('Name'))
     slug = models.SlugField(
@@ -41,13 +42,30 @@ class Organiser(LogMixin, models.Model):
         return str(self.name)
 
     class orga_urls(EventUrls):
-        base = '/orga/organiser/{self.slug}'
-        teams = '{base}/teams'
-        new_team = '{teams}/new'
+        base = '/orga/organiser/{self.slug}/'
+        delete = '{base}delete'
+        teams = '{base}teams/'
+        new_team = '{teams}new'
+
+    @transaction.atomic
+    def shred(self):
+        """Irrevocably deletes the organiser and all related events and their data."""
+        for event in self.events.all():
+            with scope(event=event):
+                event.shred()
+        with scopes_disabled():
+            self.logged_actions().delete()
+        self.delete()
 
 
 class Team(LogMixin, models.Model):
-    """Team members share permissions for one or several events of one organiser."""
+    """A team is a group of people working for the same organiser.
+
+    Team members (of type :class:`~pretalx.person.models.user.User`) share
+    permissions for one or several events of
+    :class:`~pretalx.event.models.organiser.Organiser`.  People can be in
+    multiple Teams, and will have all permissions *any* of their teams has.
+    """
 
     organiser = models.ForeignKey(
         to=Organiser, related_name='teams', on_delete=models.CASCADE
@@ -57,10 +75,14 @@ class Team(LogMixin, models.Model):
         to=User, related_name='teams', verbose_name=_('Team members')
     )
     all_events = models.BooleanField(
-        default=False, verbose_name=_('All events (including newly created ones)')
+        default=False,
+        verbose_name=_('Apply permissions to all events by this organiser (including newly created ones)'),
     )
     limit_events = models.ManyToManyField(
-        to='Event', verbose_name=_('Limit to events'), blank=True
+        to='Event', verbose_name=_('Limit permissions to these events'), blank=True
+    )
+    limit_tracks = models.ManyToManyField(
+        to='submission.Track', verbose_name=_('Limit to tracks'), blank=True
     )
     can_create_events = models.BooleanField(
         default=False, verbose_name=_('Can create events')
@@ -94,6 +116,7 @@ class Team(LogMixin, models.Model):
 
     @cached_property
     def permission_set(self) -> set:
+        """A set of all permissions this team has, as strings."""
         attribs = dir(self)
         return {
             a
@@ -101,6 +124,10 @@ class Team(LogMixin, models.Model):
             if (a.startswith('can_') or a.startswith('is_'))
             and getattr(self, a, False) is True
         }
+
+    class orga_urls(EventUrls):
+        base = '{self.organiser.orga_urls.teams}{self.pk}/'
+        delete = '{base}delete'
 
 
 def generate_invite_token():
@@ -148,7 +175,7 @@ The {event} team'''
         )
         invitation_subject = _('You have been invited to an organiser team')
 
-        mail = QueuedMail(
+        mail = QueuedMail.objects.create(
             to=self.email,
             event=event,
             subject=str(invitation_subject),

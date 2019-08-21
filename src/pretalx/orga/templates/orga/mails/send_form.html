@@ -3,12 +3,15 @@
 {% load i18n %}
 
 {% block mail_content %}
-    <form method="post" action="">
+    <form method="post">
         {% csrf_token %}
         <h2>{% trans "Mail Editor" %}</h2>
         {% bootstrap_form_errors form %}
         {% bootstrap_field form.recipients layout='event' %}
+        {% if form.tracks %}{% bootstrap_field form.tracks layout='event' %}{% endif %}
+        {% bootstrap_field form.submission_types layout='event' %}
         {% bootstrap_field form.submissions layout='event' %}
+        {% bootstrap_field form.additional_recipients layout='event' %}
         {% bootstrap_field form.reply_to layout='event' %}
         {% bootstrap_field form.cc layout='event' %}
         {% bootstrap_field form.bcc layout='event' %}

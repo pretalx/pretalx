@@ -5,33 +5,20 @@
 {% block title %}{% trans "Invitation" %} :: {% trans "Sign in" %}{% endblock %}
 {% block content %}
 <h3>
-    {% blocktrans with event=invitation.event.name trimmed %}
-        Invitation to the team organising {{ event }}
+    {% blocktrans with organiser=invitation.team.organiser.name name=invitation.team.name trimmed %}
+        Invitation to the {{ organiser }} team "{{ name }}"
     {% endblocktrans %}
 </h3>
 
-<form action="" class="labelless-password-input-form" method="post">
-    {% csrf_token %}
-    {% bootstrap_form_errors form %}
-    {{ form.media }}
-    <div class="row">
-        <div class="col-md-6">
-            <h4 class="text-center">{% trans "I already have an account" %}</h4>
-            {% bootstrap_field form.login_email layout='inline' %}
-            {% bootstrap_field form.login_password layout='inline' %}
-            <button type="submit" class="btn btn-block btn-success btn-lg">
-                {% trans "Log in" %} &raquo;
-            </button>
-        </div>
-        <div class="col-md-6">
-            <h4 class="text-center">{% trans "I need a new account" %}</h4>
-            {% bootstrap_field form.register_email layout='inline' %}
-            {% bootstrap_field form.register_password layout='inline' %}
-            {% bootstrap_field form.register_password_repeat layout='inline' %}
-            <button type="submit" class="btn btn-block btn-success btn-lg">
-                {% trans "Register" %} &raquo;
-            </button>
-        </div>
-    </div>
-</form>
+{% if request.user.is_anonymous %}
+    {% include "common/auth.html" %}
+{% else %}
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-block btn-success font-weight-bold">
+            {% trans "Join the team!" %}
+        </button>
+    </form>
+{% endif %}
+
 {% endblock %}

@@ -14,6 +14,8 @@
   color: $brand-primary;
   background: lighten($gray-100, 2);
   text-align: center;
+  max-width: calc(100% - 16px);
+  overflow-wrap: break-word;
 
   &:hover {
     background: $gray-100;
@@ -62,7 +64,7 @@
     padding: 0.5em;
 
     &::after {
-      content: '  ';
+      content: "  ";
       position: absolute;
       top: 0;
       right: -50px;
@@ -76,7 +78,8 @@
       display: none;
     }
 
-    &:hover .timeline-text, .timeline-text:hover {
+    &:hover .timeline-text,
+    .timeline-text:hover {
       display: block;
       color: black;
       position: absolute;
@@ -177,7 +180,8 @@
   .timeline {
     margin-right: 8px;
 
-    .timeline-element.done, .timeline-element.next {
+    .timeline-element.done,
+    .timeline-element.next {
       display: none;
     }
 

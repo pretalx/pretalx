@@ -3,7 +3,7 @@ import re
 from cssutils import CSSParser
 from cssutils.css import CSSComment, CSSMediaRule
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 acceptable_css_keywords = set(
     [
@@ -34,6 +34,7 @@ acceptable_css_keywords = set(
         'normal',
         'nowrap',
         'olive',
+        'page',
         'pointer',
         'purple',
         'red',
@@ -62,6 +63,7 @@ acceptable_css_properties = set(
         'border-left-color',
         'border-right-color',
         'border-top-color',
+        'break-after',
         'clear',
         'color',
         'cursor',

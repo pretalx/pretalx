@@ -1,91 +1,111 @@
 {% extends "orga/submission/base.html" %}
 {% load bootstrap4 %}
+{% load compress %}
 {% load i18n %}
 {% load rich_text %}
+{% load rules %}
+{% load static %}
 
 {% block submission_content %}
+<script src="{% static "vendored/marked.min.js" %}" defer></script>
+<script src="{% static "common/js/markdown.js" %}" defer></script>
 
+{% has_perm 'orga.view_speakers' request.user request.event as can_view_speakers %}
+{% has_perm 'orga.view_reviews' request.user submission as can_view_other_reviews %}
 {% if request.user in submission.speakers.all %}
     <div class="alert alert-error"><span>
         {% blocktrans trimmed %}
-        You're not allowed to review your own submissions.
+        You're not allowed to review or see reviews for your own submissions.
         {% endblocktrans %}
     </div>
 {% else %}
-    <div class="alert alert-info">
-        <span>
-        {% if not read_only %}
+    {% if not read_only %}
+        <div class="alert alert-info">
+            <span>
             {{ request.event.settings.review_help_text|rich_text }}
-            {% if not form.instance.pk %}
+            {% if not form.instance.pk and not can_view_other_reviews and request.event.active_review_phase and request.event.active_review_phase.can_see_other_reviews == 'after_review' %}
                 {% blocktrans trimmed %}
                     You will be able to see other reviews once you have given yours.
                 {% endblocktrans %}
             {% endif %}
-        {% else %}
+            </span>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <span>
             {% blocktrans trimmed %}
-                This submission can no longer be reviewed, as a decision regarding its
-                role in this event has already been made, or the review deadline is over.
+                This submission can't be reviewed at the moment.
             {% endblocktrans %}
-        {% endif %}
-        </span>
-    </div>
+            </span>
+        </div>
+    {% endif %}
 
-<form method="post" action="">
+<form method="post">
     {% csrf_token %}
     {% bootstrap_form_errors form %}
     {% bootstrap_form_errors qform %}
     <div class="form-group row">
-        <label class="col-md-3 col-form-label" for="id_text">{% trans "Submission Type" %}</label>
+        <label class="col-md-3 col-form-label">{% trans "Submission Type" %}</label>
         <div class="col-md-9 mt-1">
             {{ submission.submission_type }}
         </div>
     </div>
+    {% if submission.track %}
     <div class="form-group row">
-        <label class="col-md-3 col-form-label" for="id_text">{% trans "Abstract" %}</label>
+        <label class="col-md-3 col-form-label">{% trans "Track" %}</label>
+        <div class="col-md-9 mt-1">
+            {{ submission.track.name|default:'-' }}
+        </div>
+    </div>
+    {% endif %}
+    {% if request.event.settings.cfp_request_abstract %}
+    <div class="form-group row">
+        <label class="col-md-3 col-form-label">{% trans "Abstract" %}</label>
         <div class="col-md-9 mt-1">
             {{ submission.abstract|rich_text|default:'-' }}
         </div>
     </div>
+    {% endif %}
+    {% if request.event.settings.cfp_request_description %}
     <div class="form-group row">
-        <label class="col-md-3 col-form-label" for="id_text">{% trans "Description" %}</label>
+        <label class="col-md-3 col-form-label">{% trans "Description" %}</label>
         <div class="col-md-9 mt-1">
             {{ submission.description|rich_text|default:'-' }}
         </div>
     </div>
+    {% endif %}
+    {% if request.event.settings.cfp_request_notes %}
     <div class="form-group row">
-        <label class="col-md-3 col-form-label" for="id_text">{% trans "Notes for the organiser" %}</label>
+        <label class="col-md-3 col-form-label">{% trans "Notes" %}</label>
         <div class="col-md-9 mt-1">
             {{ submission.notes|rich_text|default:'-' }}
         </div>
     </div>
-    {% for speaker in profiles %}
-    <div class="form-group row">
-        <label class="col-md-3 col-form-label" for="id_text">{% trans "Speaker" %}: {{ speaker.user.get_display_name }}</label>
-        <div class="col-md-9 mt-1">
-            {{ speaker.biography|rich_text|default:'-' }}
-            {% if speaker.submissions.count > 1 %}<br><strong>{% trans "Other submissions" %}:</strong>
-            {% for other_submission in speaker.submissions %}{% if other_submission != submission %}
-            <a href="{{ other_submission.orga_urls.base }}">{{ other_submission.title }}</a>{% if not forloop.last %}, {% endif %}
-            {% endif %}{% endfor %}
-            {% endif %}
+    {% endif %}
+    {% if can_view_speakers %}
+        {% for speaker in profiles %}
+        <div class="form-group row">
+            <label class="col-md-3 col-form-label">{% trans "Speaker" %}: {{ speaker.user.get_display_name }}</label>
+            <div class="col-md-9 mt-1">
+                {% if request.event.settings.cfp_request_biography %}
+                {{ speaker.biography|rich_text|default:'-' }}
+                {% endif %}
+                {% if speaker.submissions.count > 1 %}<br><strong>{% trans "Other submissions" %}:</strong>
+                {% for other_submission in speaker.submissions %}{% if other_submission != submission %}
+                <a href="{{ other_submission.orga_urls.base }}">{{ other_submission.title }}</a>{% if not forloop.last %}, {% endif %}
+                {% endif %}{% endfor %}
+                {% endif %}
+            </div>
         </div>
-    </div>
-    {% endfor %}
+        {% endfor %}
+    {% endif %}
 
     {% if not form.instance.pk and not read_only %}
         {% bootstrap_field form.score layout='event' %}
         {% bootstrap_form qform layout='event' %}
         {% bootstrap_field form.text layout='event' %}
-        <div class="submit-group"><span></span>
-            <div>
-                {% if skip_for_now %}
-                <a href="{{ skip_for_now.orga_urls.reviews }}" class="btn btn-lg btn-warning">{% trans "Skip for now" %}</a>
-                {% endif %}
-                <button type="submit" class="btn btn-lg btn-info">{% trans "Save" %}</button>
-                <button type="submit" class="btn btn-lg btn-success" name="show_next" value="1">{% trans "Save and next" %}</button>
-            </div>
-        </div>
-    {% else %}
+    {% endif %}
+    {% if can_view_other_reviews %}
     <table class="table review-table table-hover table-responsive-md">
             <tr>
                 <th>{% trans "Points" %}</th>
@@ -96,14 +116,14 @@
                 <th></th>
             </tr>
         <tbody>
-            {% if form.instance.pk or not read_only %}
+            {% if form.instance.pk %}
             <tr>
                 {% csrf_token %}
                 <td>{% bootstrap_field form.score layout="inline" %}</td>
                 {% for field in qform %}
                     <td>{% bootstrap_field field layout="inline" %}</td>
                 {% endfor %}
-                <td>{% bootstrap_field form.text layout="inline" %}</td>
+                <td class="markdown-table">{% bootstrap_field form.text layout="inline" %}</td>
                 <td>
                     {% if not read_only %}
                         <button type="submit" class="btn btn-success">{% trans "Save" %}
@@ -122,14 +142,36 @@
                                 {{ answer.answer }}
                             </td>
                         {% endfor %}
-                        <td>{{ review.text }}</td>
+                        <td>{{ review.text|rich_text }}</td>
                         <td>{{ review.user }}</td>
                     </tr>
                 {% endif %}
+            {% empty %}
+                <tr><td colspan="100">{% trans "Nobody else has submitted a review yet." %}</td></tr>
             {% endfor %}
         </tbody>
     </table>
     {% endif %}
+    {% if not read_only %}
+        <div class="progress" title="{% trans "Review progress" %}: {{ done }} / {{ total_reviews }}">
+            <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentage }}%" aria-valuenow="{{ done }}" aria-valuemin="0" aria-valuemax="{{ total_reviews }}" title="{% trans "Review progress" %}: {{ done }} / {{ total_reviews }}">
+            </div>
+        </div>
+        <div class="submit-group">
+            <div>
+                <button type="submit" class="btn btn-lg btn-outline-success">{% trans "Save" %}</button>
+            </div>
+            <div>
+                {% if skip_for_now %}
+                <a href="{{ skip_for_now.orga_urls.reviews }}" class="btn btn-lg btn-warning">{% trans "Skip for now" %}</a>
+                {% endif %}
+                {% if not request.event.settings.review_score_mandatory and not request.event.settings.review_text_mandatory %}
+                <button type="submit" class="btn btn-lg btn-info" name="show_next" value="1" data-toggle="tooltip" data-placement="bottom" title="{% trans "Go to random next unreviewed submission" %}">{% trans "Abstain" %}</button>
+                {% endif %}
+                <button type="submit" class="btn btn-lg btn-success" name="show_next" value="1" data-toggle="tooltip" data-placement="bottom" title="{% trans "Go to random next unreviewed submission" %}">{% trans "Save and next" %}</button>
+            </div>
+        </div>
+    {% endif %}
 </form>
-{% endif %}
+{% endif %}  {# endif: request.user in submission.speakers #}
 {% endblock %}

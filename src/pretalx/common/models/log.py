@@ -1,7 +1,8 @@
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
+from django_scopes import ScopedManager
 
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.submission.models import Answer, AnswerOption, CfP, Question, Submission
@@ -78,6 +79,9 @@ LOG_NAMES = {
     'pretalx.submission_type.delete': _('A submission type was deleted.'),
     'pretalx.submission_type.make_default': _('The submission type was made default.'),
     'pretalx.submission_type.update': _('A submission type was modified.'),
+    'pretalx.track.create': _('A track was added.'),
+    'pretalx.track.delete': _('A track was deleted.'),
+    'pretalx.track.update': _('A track was modified.'),
     'pretalx.speaker.arrived': _('A speaker has been marked as arrived.'),
     'pretalx.speaker.unarrived': _('A speaker has been marked as not arrived.'),
     'pretalx.user.token.reset': _('The API token was reset.'),
@@ -88,6 +92,9 @@ LOG_NAMES = {
 
 
 class ActivityLog(models.Model):
+    """This model logs actions within an event.
+
+    It is **not** designed to provide a complete or reliable audit trail."""
     event = models.ForeignKey(
         to='event.Event',
         on_delete=models.PROTECT,
@@ -110,6 +117,8 @@ class ActivityLog(models.Model):
     data = models.TextField(null=True, blank=True)
     is_orga_action = models.BooleanField(default=False)
 
+    objects = ScopedManager(event='event')
+
     class Meta:
         ordering = ('-timestamp',)
 
@@ -129,14 +138,16 @@ class ActivityLog(models.Model):
             return self.action_type
         return response
 
-    def get_public_url(self):
+    def get_public_url(self) -> str:
+        """Returns a public URL to the object in question (if any)."""
         if isinstance(self.content_object, Submission):
             return self.content_object.urls.public
         if isinstance(self.content_object, CfP):
             return self.content_object.urls.public
         return ''
 
-    def get_orga_url(self):
+    def get_orga_url(self) -> str:
+        """Returns an organiser backend URL to the object in question (if any)."""
         if isinstance(self.content_object, Submission):
             return self.content_object.orga_urls.base
         if isinstance(self.content_object, Question):

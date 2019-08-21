@@ -1,11 +1,12 @@
 import urllib
 
 from django.contrib import messages
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.http import is_safe_url
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.views.generic import View
 
 from pretalx.person.models import User
@@ -21,7 +22,8 @@ class UserList(View):
             can_change_submissions=True
         )
         queryset = User.objects.filter(
-            name__icontains=search, profiles__event__in=events
+            Q(name__icontains=search) | Q(email__icontains=search),
+            profiles__event__in=events,
         )
         if request.GET.get('orga', 'false').lower() == 'true':
             queryset = queryset.filter(teams__in=request.event.teams)
@@ -46,6 +48,6 @@ class SubuserView(View):
         )
         params = request.GET.copy()
         url = urllib.parse.unquote(params.pop('next', [''])[0])
-        if url and is_safe_url(url, request.get_host()):
+        if url and is_safe_url(url, allowed_hosts=None):
             return redirect(url + ('?' + params.urlencode() if params else ''))
-        return redirect(reverse('orga:dashboard'))
+        return redirect(reverse('orga:event.list'))

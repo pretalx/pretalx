@@ -3,7 +3,7 @@
 {% load i18n %}
 {% load rich_text %}
 
-{% block title %}{{ submission.title }}{% endblock %}
+{% block title %}{{ submission.title }} ::{% endblock %}
 {% block meta_title %}{{ submission.title }}{% endblock %}
 {% block social_title %}{{ submission.title }}{% endblock %}
 {% block meta_description %}{{ submission_description }}{% endblock %}
@@ -15,12 +15,14 @@
 {% block agenda_content %}
 <article>
     <h3 class="talk-title">
-        <div>
-        »{{ submission.title }}«
-        <div class="buttons float-right">
-            <a class="btn btn-outline-success" href="{{ submission.urls.ical }}">
+        <div class="heading-with-buttons">
+        {{ submission.title }}
+        <div class="buttons" id="talk-buttons">
+            {% if submission.state == 'confirmed' %}
+            <a class="btn btn-outline-primary" href="{{ submission.urls.ical }}">
                 <i class="fa fa-calendar"></i> .ical
             </a>
+            {% endif %}
             {% if submission.does_accept_feedback and not is_html_export %}
                 <a href="{{ submission.urls.feedback }}"
                         class="btn btn-success">
@@ -30,19 +32,19 @@
             {% if request.user in submission.speakers.all %}
                 <a href="{{ submission.urls.user_base }}"
                         class="btn btn-info">
-                    <i class="fa fa-edit"></i>{{ phrases.base.edit }}
+                    <i class="fa fa-edit"></i> {{ phrases.base.edit }}
                 </a>
             {% endif %}
         </div>
         </div>
         <small>
-            {% if talk %}
-                {{ talk.start.date|date:"c" }}, {{ talk.start|date:"H:i" }}–{{ talk.end|date:"H:i" }}, {{ talk.room.name }}
+            {% if talk_slots|length == 1 %}
+                {{ talk_slots.0.start.date|date:"c" }}, {{ talk_slots.0.start|date:"H:i" }}–{{ talk_slots.0.end|date:"H:i" }}, {{ talk_slots.0.room.name }}
             {% endif %}
             {% if submission.do_not_record %}
                 <span class="fa-stack">
                   <i class="fa fa-video-camera fa-stack-1x"></i>
-                  <i class="fa fa-ban do-not-record fa-stack-2x" aria-hidden="true" title="{{ phrases.agenda.schedule_do_not_record }}"></i>
+                  <i class="fa fa-ban do-not-record fa-stack-2x" aria-hidden="true" alt="{{ phrases.agenda.schedule_do_not_record }}"></i>
                 </span>
                 <em>{{ phrases.agenda.schedule.do_not_record }}</em>
             {% endif %}
@@ -50,24 +52,53 @@
     </h3>
     <div class="talk row">
         <div class="talk-content col-lg-8 col-md-6 col-xs-12">
-            {% if talk.submission.recording_url %}
-                {{ submission.rendered_recording_iframe|safe }}
+            {% if talk_slots|length > 1 %}
+            <ul class="talk-slots">
+                {% for talk in talk_slots %}
+                <li class="talk-slot">
+                    {{ talk.start.date|date:"c" }}, {{ talk.start|date:"H:i" }}–{{ talk.end|date:"H:i" }}, {{ talk.room.name }}
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% if recording_iframe %}
+                {{ recording_iframe|safe }}
             {% endif %}
             <section class="abstract">
                 {{ submission.abstract|rich_text }}
             </section>
+            {% if submission.abstract and submission.description %}
+            <hr />
+            {% endif %}
             <section class="description">
                 {{ submission.description|rich_text }}
             </section>
-            {% if submission.active_resources.count %}
+            {% if answers %}
+            <hr />
+            <section class="answers">
+            {% for answer in answers %}
+                <span class="question"><strong>{{ answer.question.question }}</strong></span>
+                <span class="answer">
+                {% if answer.question.variant == 'file' %}
+                    {% if answer.answer_file %}
+                        <i class="fa fa-file-o"></i> <a href="{{ answer.answer_file.url }}">{{ answer.answer_file }}</a>
+                    {% endif %}
+                {% else %}
+                    – {{ answer.answer }}
+                {% endif %}
+                </span>
+            {% endfor %}
+            {% endif %}
+            </section>
+            {% if submission.active_resources %}
                 <section class="resources">
                     {% trans "See also:" %}
-                    {% if submission.active_resources.count == 1 %}
-                        <a href="{{ submission.active_resources.first.resource.url }}">
+                    {% if submission.active_resources.count == 1 %}{% with resource=submission.active_resources.first %}
+                        <a href="{{ resource.resource.url }}">
                             <i class="fa fa-file-o"></i>
-                            {{ submission.active_resources.first.description }}
+                            {{ resource.description }}
                         </a>
-                    {% else %}
+                        {% endwith %}{% else %}
                         <ul>
                             {% for resource in submission.active_resources %}
                                 <li>
@@ -87,7 +118,7 @@
             {% if submission.image %}
             <div class="image speakers">
                 <a href="{{ submission.image.url }}">
-                    <img src="{{ submission.image.url }}"></img>
+                    <img src="{{ submission.image.url }}" alt="{% trans "This talk's header image" %}">
                 </a>
             </div>
             {% endif %}
@@ -96,7 +127,7 @@
                 <div class="speaker-header">
                     {% if speakers.1 %}
                         {% trans "Speakers" %}
-                    {% elif speakers.0 %}
+                    {% else %}
                         {% trans "Speaker" %}
                     {% endif %}
                 </div>
@@ -108,25 +139,29 @@
                             </div>
                         </a>
                         <div class="info">
-
-                            {% if speaker.other_talks.count > 1 %}
+                            {% if speaker.other_submissions.count > 1 %}
                                 {{ phrases.agenda.speaker_other_talks }}
                                 <ul class="speaker-talks">
-                                    {% for talk in speaker.other_talks %}
+                                    {% for submission in speaker.other_submissions %}
                                     <li class="speaker-talk">
-                                        <a href='{{ talk.submission.urls.public }}'>{{ talk.submission.title }}</a>
+                                        <a href='{{ submission.urls.public }}'>{{ submission.title }}</a>
                                     </li>
                                     {% endfor %}
                                 </ul>
-                            {% elif speaker.other_talks.count == 1 %}
+                            {% elif speaker.other_submissions.count == 1 %}
                                 <span class="speaker-talk">
                                     {{ phrases.agenda.speaker_other_talk }}
-                                    "<a href='{{ speaker.other_talks.0.submission.urls.public }}'>{{ speaker.other_talks.0.submission.title }}</a>".
+                                    "<a href='{{ speaker.other_submissions.0.urls.public }}'>{{ speaker.other_submissions.0.title }}</a>".
                                 </span>
                             {% endif %}
                         </div>
                     </div>
                 {% endfor %}
+            </div>
+            {% endif %}
+            {% if request.event.is_multilingual %}
+            <div class="speakers">
+                <strong>{% trans "Language" %}:</strong> {{ submission.get_content_locale_display }}
             </div>
             {% endif %}
         </aside>

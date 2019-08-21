@@ -3,8 +3,8 @@
 
 {% block content %}
     <h2>
-        {{ page_obj.paginator.count }}
-        {% blocktrans trimmed count count=page_obj.paginator.count %}
+        {{ information.count }}
+        {% blocktrans trimmed count count=information.count %}
         Speaker Information Note
         {% plural %}
         Speaker Information Notes
@@ -36,7 +36,7 @@
                     </td>
                     <td>{{ info.include_submitters|yesno }}</td>
                     <td>{{ info.exclude_unconfirmed|yesno }}</td>
-                    <td class="text-right">
+                    <td class="action-column">
                         <a href="{{ info.orga_urls.edit }}" class="btn btn-sm btn-info"><i class="fa fa-edit"></i></a>
                         <a href="{{ info.orga_urls.delete }}" class="btn btn-sm btn-danger"><i class="fa fa-trash"></i></a>
                     </td>

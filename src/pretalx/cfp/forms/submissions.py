@@ -1,7 +1,5 @@
 from django import forms
-from django.utils.translation import ugettext_lazy as _
-
-from pretalx.mail.models import QueuedMail
+from django.utils.translation import gettext_lazy as _
 
 
 class SubmissionInvitationForm(forms.Form):
@@ -19,7 +17,10 @@ class SubmissionInvitationForm(forms.Form):
         initial['text'] = _(
             '''Hi!
 
-I'd like to invite you to be a speaker in my talk »{title}«
+I'd like to invite you to be a speaker in the talk
+
+  “{title}”
+
 at {event}. Please follow this link to join:
 
   {url}
@@ -35,9 +36,8 @@ I'm looking forward to it!
         super().__init__(*args, **kwargs)
 
     def save(self):
-        QueuedMail(
-            event=self.submission.event,
-            to=self.cleaned_data['speaker'],
+        self.submission.send_invite(
+            to=self.cleaned_data['speaker'].strip(),
             subject=self.cleaned_data['subject'],
             text=self.cleaned_data['text'],
-        ).send()
+        )

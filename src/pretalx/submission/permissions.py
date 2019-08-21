@@ -1,4 +1,5 @@
 import rules
+from django.db.models import Q
 
 from pretalx.person.permissions import can_change_submissions, is_reviewer
 from pretalx.submission.models import SubmissionStates
@@ -71,21 +72,61 @@ def is_review_author(user, obj):
 
 @rules.predicate
 def can_be_reviewed(user, obj):
-    from django.utils.timezone import now
-
     if not obj:
         return False
     if hasattr(obj, 'submission'):
         obj = obj.submission
-    deadline = obj.event.settings.review_deadline
+    phase = obj.event.active_review_phase and obj.event.active_review_phase.can_review
     state = obj.state == SubmissionStates.SUBMITTED
-    time = True if not deadline else now() <= deadline
-    return state and time
+    return bool(state and phase)
 
 
+@rules.predicate
+def can_view_reviews(user, obj):
+    phase = obj.event.active_review_phase
+    if not phase:
+        return False
+    if phase.can_see_other_reviews == 'always':
+        return True
+    if phase.can_see_other_reviews == 'after_review':
+        return obj.reviews.filter(user=user).exists()
+    return False
+
+
+@rules.predicate
+def can_view_all_reviews(user, obj):
+    phase = obj.event.active_review_phase
+    if not phase:
+        return False
+    return phase.can_see_other_reviews == 'always'
+
+
+@rules.predicate
+def has_reviewer_access(user, obj):
+    from pretalx.submission.models import Submission
+
+    if hasattr(obj, 'submission'):
+        obj = obj.submission
+    if not isinstance(obj, Submission):
+        raise Exception('Incorrect use of reviewer permissions')
+    result = user.teams.filter(
+        Q(Q(all_events=True) | Q(limit_events__in=[obj.event]))
+        & Q(Q(limit_tracks__isnull=True) | Q(limit_tracks__in=[obj.track])),
+        is_reviewer=True,
+    )
+    return result.exists()
+
+
+@rules.predicate
+def reviewer_can_change_submissions(user, obj):
+    return obj.event.active_review_phase and obj.event.active_review_phase.can_change_submission_state
+
+
+rules.add_perm('submission.accept_or_reject_submissions', can_change_submissions | (is_reviewer & reviewer_can_change_submissions))
+rules.add_perm('submission.perform_actions', is_speaker)
 rules.add_perm('submission.withdraw_submission', can_be_withdrawn & is_speaker)
-rules.add_perm('submission.reject_submission', can_be_rejected & can_change_submissions)
-rules.add_perm('submission.accept_submission', can_be_accepted & can_change_submissions)
+rules.add_perm('submission.reject_submission', can_be_rejected & (can_change_submissions | (is_reviewer & reviewer_can_change_submissions)))
+rules.add_perm('submission.accept_submission', can_be_accepted & (can_change_submissions | (is_reviewer & reviewer_can_change_submissions)))
 rules.add_perm(
     'submission.confirm_submission',
     can_be_confirmed & (is_speaker | can_change_submissions),
@@ -99,12 +140,14 @@ rules.add_perm(
     'submission.edit_submission', (can_be_edited & is_speaker) | can_change_submissions
 )
 rules.add_perm(
-    'submission.view_submission', is_speaker | can_change_submissions | is_reviewer
+    'submission.view_submission',
+    is_speaker | can_change_submissions | has_reviewer_access,
 )
-rules.add_perm('submission.review_submission', is_reviewer & can_be_reviewed)
+rules.add_perm('submission.review_submission', has_reviewer_access & can_be_reviewed)
 rules.add_perm('submission.edit_review', can_be_reviewed & is_review_author)
-rules.add_perm('submission.view_reviews', is_reviewer & ~is_speaker)
+rules.add_perm('submission.view_reviews', has_reviewer_access | can_change_submissions)
 rules.add_perm('submission.edit_speaker_list', is_speaker | can_change_submissions)
 rules.add_perm(
-    'submission.view_feedback', is_speaker | can_change_submissions | is_reviewer
+    'submission.view_feedback',
+    is_speaker | can_change_submissions | has_reviewer_access,
 )

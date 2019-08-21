@@ -9,12 +9,22 @@ from django.utils import timezone, translation
 from django.utils.translation.trans_real import (
     get_supported_language_variant, language_code_re, parse_accept_lang_header,
 )
+from django_scopes import scope, scopes_disabled
 
 from pretalx.event.models import Event, Organiser, Team
 
 
 class EventPermissionMiddleware:
-    UNAUTHENTICATED_ORGA_URLS = ('invitation.view', 'auth', 'login')
+    UNAUTHENTICATED_ORGA_URLS = (
+        'invitation.view',
+        'auth',
+        'login',
+        'auth.reset',
+        'auth.recover',
+        'event.login',
+        'event.auth.reset',
+        'event.auth.recover',
+    )
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -35,10 +45,7 @@ class EventPermissionMiddleware:
                 )
                 if hasattr(request, 'event'):
                     request.is_orga = request.event in request.orga_events
-                    request.is_reviewer = (
-                        request.event
-                        in request.user.get_events_for_permission(is_reviewer=True)
-                    )
+                    request.is_reviewer = request.event.teams.filter(members__in=[request.user], is_reviewer=True).exists()
 
     def _handle_orga_url(self, request, url):
         if request.uses_custom_domain:
@@ -48,6 +55,13 @@ class EventPermissionMiddleware:
             and url.url_name not in self.UNAUTHENTICATED_ORGA_URLS
         ):
             params = '&' + request.GET.urlencode() if request.GET else ''
+            event = getattr(request, 'event', None)
+            if event:
+                return (
+                    reverse('orga:event.login', kwargs={'event': event.slug})
+                    + f'?next={quote(request.path)}'
+                    + params
+                )
             return reverse('orga:login') + f'?next={quote(request.path)}' + params
         return None
 
@@ -71,10 +85,17 @@ class EventPermissionMiddleware:
 
         event_slug = url.kwargs.get('event')
         if event_slug:
-            request.event = get_object_or_404(Event, slug__iexact=event_slug)
+            with scopes_disabled():
+                request.event = get_object_or_404(Event.objects.prefetch_related('schedules', 'submissions'), slug__iexact=event_slug)
+        event = getattr(request, 'event', None)
 
         self._set_orga_events(request)
         self._select_locale(request)
+        is_exempt = (
+            url.url_name == 'export'
+            if 'agenda' in url.namespaces
+            else request.path.startswith('/api/')
+        )
 
         if 'orga' in url.namespaces or (
             'plugins' in url.namespaces and request.path.startswith('/orga')
@@ -83,20 +104,24 @@ class EventPermissionMiddleware:
             if url:
                 return redirect(url)
         elif (
-            getattr(request, 'event', None)
+            event
             and request.event.settings.custom_domain
             and not request.uses_custom_domain
+            and not is_exempt
         ):
             return redirect(
                 urljoin(request.event.settings.custom_domain, request.get_full_path())
             )
+        if event:
+            with scope(event=event):
+                return self.get_response(request)
         return self.get_response(request)
 
     def _select_locale(self, request):
         supported = (
             request.event.locales
             if (hasattr(request, 'event') and request.event)
-            else settings.LANGUAGES
+            else settings.LANGUAGE_CODES
         )
         language = (
             self._language_from_user(request, supported)
@@ -121,7 +146,7 @@ class EventPermissionMiddleware:
 
     @staticmethod
     def _language_from_browser(request, supported):
-        accept_value = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
+        accept_value = request.headers.get('Accept-Language', '')
         for accept_lang, _ in parse_accept_lang_header(accept_value):
             if accept_lang == '*':
                 break
@@ -153,3 +178,4 @@ class EventPermissionMiddleware:
                 value = get_supported_language_variant(request.user.locale)
                 if value and value in supported:
                     return value
+        return None

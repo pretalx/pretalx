@@ -1,14 +1,21 @@
 {% extends "orga/cfp/base.html" %}
 {% load bootstrap4 %}
+{% load compress %}
 {% load i18n %}
 {% load rules %}
-{% load staticfiles %}
+{% load static %}
 
+{% block title %}{{ form.instance.user.get_display_name }} :: {{ request.event.name }}{% endblock %}
 {% block content %}
+{% if form.biography %}
+    <script src="{% static "vendored/marked.min.js" %}" defer></script>
+    <script src="{% static "common/js/markdown.js" %}" defer></script>
+{% endif %}
+
 {% has_perm 'orga.change_speaker' request.user form.instance as can_edit_speaker %}
     <h2>
-        {{ form.instance.user.get_display_name }} ({{ submission_count }}
-        {% blocktrans trimmed count count=submission_count %}
+        {{ form.instance.user.get_display_name }} ({{ submissions.count }}
+        {% blocktrans trimmed count count=submissions.count %}
         submission
         {% plural %}
         submissions
@@ -16,7 +23,13 @@
     </h2>
     <div class="alert alert-info col-md-9 ml-auto">
         <span>
-        <h5>{% if submission_count > 1 %}{% trans "Submissions" %}{% else %}{% trans "Submission" %}{% endif %}</h5>
+        <h5>
+            {% blocktrans trimmed count count=submissions.count %}
+            Submission
+            {% plural %}
+            Submissions
+            {% endblocktrans %})
+        </h5>
         <ul>
             {% for submission in submissions %}
             <li>
@@ -29,26 +42,30 @@
         </ul>
         </span>
     </div>
-    <form method="post" action="" enctype="multipart/form-data">
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {% bootstrap_form_errors form %}
-        <div class="speaker-info avatar-form">
+        <div class="speaker-info avatar-form form-group row">
             <div class="col-md-3 col-form-label">
-                <img
-                  class="avatar float-right"
-                  data-gravatar="{{ form.instance.user.gravatar_parameter }}"
-                  data-avatar="{% if form.instance.user.avatar %}{{ form.instance.user.avatar.url }}{% endif %}"
-                  {% if form.instance.user.get_gravatar %}
-                  src="https://www.gravatar.com/avatar/{{ form.instance.user.gravatar_parameter }}"
-                  {% elif form.instance.user.avatar and form.instance.user.avatar != 'False' %}
-                  src="{{ form.instance.user.avatar.url }}"
-                  {% endif %}
-                />
+                {% if form.instance.user.has_avatar %}
+                    <img
+                      class="avatar float-right"
+                      data-gravatar="{{ form.instance.user.gravatar_parameter }}"
+                      data-avatar="{% if form.instance.user.avatar %}{{ form.instance.user.avatar.url }}{% endif %}"
+                      alt="{% trans "The speaker's profile picture" %}"
+                      {% if form.instance.user.get_gravatar %}
+                      src="https://www.gravatar.com/avatar/{{ form.instance.user.gravatar_parameter }}"
+                      {% elif form.instance.user.has_local_avatar %}
+                      src="{{ form.instance.user.avatar.url }}"
+                      {% endif %}
+                    />
+                {% endif %}
             </div>
             <div class="avatar-form-fields col-md-9">
                 {% bootstrap_field form.get_gravatar layout='event-inline' %}
                 <div class="user-avatar-display">
                     {% bootstrap_field form.avatar layout='inline' %}
+                    <small class="form-text text-muted d-block">{{ form.avatar.help_text }}</small>
                 </div>
             </div>
         </div>
@@ -58,11 +75,40 @@
             <a href="{{ form.instance.orga_urls.password_reset }}" class="btn btn-info ml-auto">{% trans "Reset password" %}</a>
         </div>
         {% if form.biography %}{% bootstrap_field form.biography layout='event' %}{% endif %}
+        {% if form.availabilities %}
+        {% compress js %}
+            <script defer src="{% static "vendored/moment-with-locales.js" %}"></script>
+            <script defer src="{% static "vendored/moment-timezone-with-data-2012-2022.js" %}"></script>
+            <script defer src="{% static "vendored/fullcalendar/fullcalendar.min.js" %}"></script>
+            <script defer src="{% static "common/js/availabilities.js" %}"></script>
+        {% endcompress %}
         {% bootstrap_field form.availabilities layout='event' %}
+        {% endif %}
         {% bootstrap_form questions_form layout='event' %}
-    {% include "orga/submit_row.html" %}
+    <div class="submit-group panel">
+        <span>
+            <a class="btn btn-info btn-lg" href="{{ request.event.orga_urls.compose_mails }}?email={{ form.instance.user.email }}">
+            <i class="fa fa-envelope"></i>
+            {% trans "Compose mail" %}
+            </a>
+        </span>
+        <span>
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="fa fa-check"></i>
+                {% trans "Save" %}
+            </button>
+        </span>
+    </div>
     </form>
 
 
-    <script type="text/javascript" src="{% static "cfp/js/profile.js" %}"></script>
+    <h3>{% trans 'Emails' %}</h3>
+    {% if mails %}
+        {% include 'common/mail_log.html' %}
+    {% else %}
+        {% trans "No mails were sent to this speaker yet." %}
+    {% endif %}
+
+
+    <script defer src="{% static "cfp/js/profile.js" %}"></script>
 {% endblock %}

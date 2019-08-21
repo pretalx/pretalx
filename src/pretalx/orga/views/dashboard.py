@@ -1,92 +1,114 @@
 from django.http import JsonResponse
+from django.template.defaultfilters import timeuntil
 from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _, ngettext_lazy
 from django.views.generic import TemplateView
+from django_context_decorator import context
 
-from pretalx.common.mixins.views import PermissionRequired
+from pretalx.common.mixins.views import EventPermissionRequired, PermissionRequired
 from pretalx.common.models.log import ActivityLog
 from pretalx.event.models import Organiser
 from pretalx.event.stages import get_stages
+from pretalx.person.models import User
 from pretalx.submission.models.submission import SubmissionStates
 
 
-class DashboardView(TemplateView):
-    template_name = 'orga/dashboard.html'
+class DashboardEventListView(TemplateView):
+    template_name = 'orga/event_list.html'
 
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
+    @context
+    def current_orga_events(self):
+        return [e for e in self.request.orga_events if e.date_to >= now().date()]
+
+    @context
+    def past_orga_events(self):
+        return [e for e in self.request.orga_events if e.date_to < now().date()]
+
+
+class DashboardOrganiserListView(PermissionRequired, TemplateView):
+    template_name = 'orga/organiser/list.html'
+    permission_required = 'orga.view_organisers'
+
+    @context
+    def organisers(self):
         if self.request.user.is_administrator:
-            context['organisers'] = Organiser.objects.all()
-        else:
-            context['organisers'] = set(
-                team.organiser
-                for team in self.request.user.teams.filter(
-                    can_change_organiser_settings=True
-                )
+            return Organiser.objects.all()
+        return set(
+            team.organiser
+            for team in self.request.user.teams.filter(
+                can_change_organiser_settings=True
             )
-        now_date = now().date()
-        context['current_orga_events'] = [
-            e for e in self.request.orga_events if e.date_to >= now_date
-        ]
-        context['past_orga_events'] = [
-            e for e in self.request.orga_events if e.date_to < now_date
-        ]
-        return context
+        )
 
 
-class EventDashboardView(PermissionRequired, TemplateView):
+class EventDashboardView(EventPermissionRequired, TemplateView):
     template_name = 'orga/event/dashboard.html'
     permission_required = 'orga.view_orga_area'
-
-    def get_object(self):
-        return self.request.event
 
     def get_cfp_tiles(self, event, _now):
         result = []
         max_deadline = event.cfp.max_deadline
         if max_deadline and _now < max_deadline:
-            diff = max_deadline - _now
-            if diff.days >= 3:
-                result.append({'large': diff.days, 'small': _('days until CfP end')})
-            else:
-                hours = diff.seconds // 3600
-                minutes = (diff.seconds // 60) % 60
-                result.append(
-                    {'large': f'{hours}:{minutes}h', 'small': _('until CfP end')}
-                )
+            result.append(
+                {'large': timeuntil(max_deadline), 'small': _('until the CfP ends')}
+            )
         if event.cfp.is_open:
-            result.append({'url': event.urls.base, 'small': _('Go to CfP')})
+            result.append({'url': event.cfp.urls.public, 'large': _('Go to CfP')})
         return result
 
-    def get_context_data(self, event):
-        context = super().get_context_data()
+    def get_review_tiles(self):
+        result = []
+        review_count = self.request.event.reviews.count()
+        can_change_settings = self.request.user.has_perm('orga.change_settings', self.request.event)
+        if review_count:
+            active_reviewers = (
+                User.objects
+                .filter(
+                    teams__in=self.request.event.teams.filter(is_reviewer=True),
+                    reviews__isnull=False,
+                )
+                .order_by('user__id')
+                .distinct()
+                .count()
+            )
+            result.append({'large': review_count, 'small': _('Reviews')})
+            result.append({'large': active_reviewers, 'small': _('Active reviewers'), 'url': self.request.event.organiser.orga_urls.teams if can_change_settings else None})
+        return result
+
+    @context
+    def history(self):
+        return ActivityLog.objects.filter(event=self.request.event)[:20]
+
+    def get_context_data(self, **kwargs):
+        result = super().get_context_data(**kwargs)
         event = self.request.event
         stages = get_stages(event)
-        context['timeline'] = stages
-        context['go_to_target'] = (
-            'schedule' if stages['REVIEW']['state'] == 'done' else 'cfp'
+        result['timeline'] = stages.values()
+        result['go_to_target'] = (
+            'schedule' if stages['REVIEW']['phase'] == 'done' else 'cfp'
         )
-        context['history'] = ActivityLog.objects.filter(event=self.get_object())[:20]
         _now = now()
         today = _now.date()
-        context['tiles'] = self.get_cfp_tiles(event, _now)
+        result['tiles'] = self.get_cfp_tiles(event, _now)
         if today < event.date_from:
-            context['tiles'].append(
+            days = (event.date_from - today).days
+            result['tiles'].append(
                 {
-                    'large': (event.date_from - today).days,
-                    'small': _('days until event start'),
+                    'large': days,
+                    'small': ngettext_lazy('day until event start', 'days until event start', days),
                 }
             )
         elif today > event.date_to:
-            context['tiles'].append(
+            days = (today - event.date_from).days
+            result['tiles'].append(
                 {
-                    'large': (today - event.date_from).days,
-                    'small': _('days since event end'),
+                    'large': days,
+                    'small': ngettext_lazy('day since event end', 'days since event end', days),
                 }
             )
-        else:
+        elif event.date_to != event.date_from:
             day = (today - event.date_from).days + 1
-            context['tiles'].append(
+            result['tiles'].append(
                 {
                     'large': _('Day {number}').format(number=day),
                     'small': _('of {total_days} days').format(
@@ -96,7 +118,7 @@ class EventDashboardView(PermissionRequired, TemplateView):
                 }
             )
         if event.current_schedule:
-            context['tiles'].append(
+            result['tiles'].append(
                 {
                     'large': event.current_schedule.version,
                     'small': _('current schedule'),
@@ -104,51 +126,63 @@ class EventDashboardView(PermissionRequired, TemplateView):
                 }
             )
         if event.submissions.count():
-            context['tiles'].append(
+            count = event.submissions.count()
+            result['tiles'].append(
                 {
-                    'large': event.submissions.count(),
-                    'small': _('total submissions'),
+                    'large': count,
+                    'small': ngettext_lazy('submission', 'submissions', count),
                     'url': event.orga_urls.submissions,
+                }
+            )
+            submitter_count = event.submitters.count()
+            result['tiles'].append(
+                {
+                    'large': submitter_count,
+                    'small': ngettext_lazy('submitter', 'submitters', submitter_count),
+                    'url': event.orga_urls.speakers,
                 }
             )
             talk_count = event.talks.count()
             if talk_count:
-                context['tiles'].append(
+                result['tiles'].append(
                     {
                         'large': talk_count,
-                        'small': _('total talks'),
+                        'small': ngettext_lazy('talk', 'talks', talk_count),
                         'url': event.orga_urls.submissions
                         + f'?state={SubmissionStates.ACCEPTED}&state={SubmissionStates.CONFIRMED}',
                     }
                 )
-                confirmed_count = event.talks.filter(
-                    state=SubmissionStates.CONFIRMED
+                accepted_count = event.talks.filter(
+                    state=SubmissionStates.ACCEPTED
                 ).count()
-                if confirmed_count != talk_count:
-                    context['tiles'].append(
+                if accepted_count != 0:
+                    result['tiles'].append(
                         {
-                            'large': talk_count - confirmed_count,
-                            'small': _('unconfirmed talks'),
+                            'large': accepted_count,
+                            'small': ngettext_lazy('unconfirmed talk', 'unconfirmed talks', accepted_count),
                             'url': event.orga_urls.submissions
                             + f'?state={SubmissionStates.ACCEPTED}',
                         }
                     )
-        if event.speakers.count():
-            context['tiles'].append(
+        count = event.speakers.count()
+        if count:
+            result['tiles'].append(
                 {
-                    'large': event.speakers.count(),
-                    'small': _('speakers'),
+                    'large': count,
+                    'small': ngettext_lazy('speaker', 'speakers', count),
                     'url': event.orga_urls.speakers + '?role=true',
                 }
             )
-        context['tiles'].append(
+        count = event.queued_mails.filter(sent__isnull=False).count()
+        result['tiles'].append(
             {
-                'large': event.queued_mails.filter(sent__isnull=False).count(),
-                'small': _('sent emails'),
-                'url': event.orga_urls.compose_mails,
+                'large': count,
+                'small': ngettext_lazy('sent email', 'sent emails', count),
+                'url': event.orga_urls.sent_mails,
             }
         )
-        return context
+        result['tiles'] += self.get_review_tiles()
+        return result
 
 
 def url_list(request, event=None):
