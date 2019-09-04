@@ -90,7 +90,7 @@ class CfPSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
 class CfPForm(ReadOnlyFlag, I18nModelForm):
     class Meta:
         model = CfP
-        fields = ['headline', 'text', 'deadline']
+        fields = ['headline', 'text', 'deadline', 'help_text_track', 'help_text_abstract', 'help_text_description', 'help_text_notes', 'help_text_slot_count', 'help_text_image', 'help_text_additional_speaker']
         widgets = {
             'deadline': forms.DateTimeInput(attrs={'class': 'datetimepickerfield'})
         }

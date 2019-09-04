@@ -1,6 +1,7 @@
 from functools import partial
 
 from django import forms
+from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.forms.utils import get_help_text, validate_field_length
@@ -33,7 +34,35 @@ class PublicContent:
                 field.help_text = (field.help_text or '') + ' ' + str(phrases.base.public_content)
 
 
+class MarkdownHelp:
+    """Add 'You can use Markdown' phrase with a link to the documentation to the help text."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name in self.Meta.markdown_fields:
+            field = self.fields.get(field_name)
+            if field:
+                field.help_text = (field.help_text or '') + ' ' + str(phrases.base.use_markdown)
+
+
+class CustomiseHelpText:
+    """Replace help_text provided by the model class by one customisable by the organiser."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Insert customised help texts set by the organiser in front of generic help text like "you can use Markdown"
+        for key in self.Meta.customise_help_fields:
+            field = self.fields.get(key)
+            if not field:
+                continue
+            help_text_key = 'help_text_' + key
+            if help_text_key in self.event.cfp.__dict__.keys():
+                field = self.fields[key]
+                field.help_text = escape(str(self.event.cfp.__dict__[help_text_key]))
+
+
 class RequestRequire:
+    """Add minimal and maximal length of a form field to the help text."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

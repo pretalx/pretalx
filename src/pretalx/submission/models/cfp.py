@@ -42,6 +42,47 @@ class CfP(LogMixin, models.Model):
             'Please put in the last date you want to accept submissions from users.'
         ),
     )
+    help_text_track = I18nTextField(
+        null=True,
+        blank=True,
+        help_text=_('Help text for the track selection field'),
+    )
+    help_text_abstract = I18nTextField(
+        null=True,
+        blank=True,
+        help_text=_('Help text for the abstract field'),
+        default=_('A brief description of your talk. It should be a summary of a longer description if provided.'),
+    )
+    help_text_description = I18nTextField(
+        null=True,
+        blank=True,
+        help_text=_('Help text for the description field'),
+        default=_('A long description of your talk.'),
+    )
+    help_text_notes = I18nTextField(
+        null=True,
+        blank=True,
+        help_text=_('Help text for the notes for the organiser field'),
+        default=_('These notes are meant for the organiser and won\'t be made public.'),
+    )
+    help_text_slot_count = I18nTextField(
+        null=True,
+        blank=True,
+        help_text=_('Help text for the slot count field'),
+        default=_('How many times this talk will be held.'),
+    )
+    help_text_image = I18nTextField(
+        null=True,
+        blank=True,
+        help_text=_('Help text for the talk image field'),
+        default=_('Use this if you want an illustration to go with your submission. This content will be shown publicly.'),
+    )
+    help_text_additional_speaker = I18nTextField(
+        null=True,
+        blank=True,
+        help_text=_('Help text for the additional speaker field of the CfP form'),
+        default=_('If you have a co-speaker, please add their email address here, and we will invite them to create an account. If you have more than one co-speaker, you can add more speakers after finishing the submission process.'),
+    )
 
     objects = ScopedManager(event='event')
 

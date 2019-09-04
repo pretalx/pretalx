@@ -139,6 +139,25 @@
             </table>
             {% bootstrap_field sform.cfp_count_length_in layout='event' %}
             </fieldset>
+            <fieldset>
+            <legend id="information">{% trans "Submission form help texts" %}</legend>
+            <div class="offset-3 alert alert-info"><span>
+                {% trans "Customize the help texts of the CfP submission form. Pretalx will automatically append the following information to the help texts if appropriate:" %}
+                <ul>
+                    <li>{% trans "whether the field will be shown publicly" %}</li>
+                    <li>{% trans "minimum and maximum length" %}</li>
+                    <li>{% trans "whether Markdown can be used" %}</li>
+                </ul>
+                <a href="{{ request.event.cfp.urls.submit }}">{% trans "Click here to view the submission form." %}</a>
+            </span></div>
+            {% bootstrap_field form.help_text_track layout='event' %}
+            {% bootstrap_field form.help_text_abstract layout='event' %}
+            {% bootstrap_field form.help_text_description layout='event' %}
+            {% bootstrap_field form.help_text_notes layout='event' %}
+            {% bootstrap_field form.help_text_slot_count layout='event' %}
+            {% bootstrap_field form.help_text_image layout='event' %}
+            {% bootstrap_field form.help_text_additional_speaker layout='event' %}
+            </fieldset>
 
             {% include "orga/submit_row.html" %}
         </form>
