@@ -5,6 +5,8 @@ from django.utils.translation import gettext_noop
 from hierarkey.models import GlobalSettingsBase, Hierarkey
 from i18nfield.strings import LazyI18nString
 
+from pretalx.cfp.workflow import CfPWorkflow
+
 hierarkey = Hierarkey(attribute_name='settings')
 
 
@@ -27,6 +29,9 @@ def i18n_unserialise(value):
         return LazyI18nString(str(value))
 
 
+hierarkey.add_type(CfPWorkflow, CfPWorkflow.data, CfPWorkflow)
+
+
 hierarkey.add_type(
     LazyI18nString, serialize=lambda s: json.dumps(s.data), unserialize=i18n_unserialise
 )
@@ -44,6 +49,8 @@ hierarkey.add_default('use_tracks', 'True', bool)
 hierarkey.add_default('present_multiple_times', 'False', bool)
 
 hierarkey.add_default('display_header_pattern', '', str)
+
+hierarkey.add_default('cfp_workflow', '', CfPWorkflow)
 
 hierarkey.add_default('cfp_request_title', 'True', bool)
 hierarkey.add_default('cfp_request_abstract', 'True', bool)

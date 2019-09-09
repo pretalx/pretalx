@@ -1,0 +1,19 @@
+{% extends "cfp/event/submission_base.html" %}
+{% load bootstrap4 %}
+{% load i18n %}
+{% load orga_edit_link %}
+{% load rules %}
+
+{% block inner %}
+    <div class="d-flex">
+        <h2>{{ step_title }}</h2>
+        {% has_perm 'orga.edit_cfp' request.user request.event as can_edit_cfp %}
+        {% if can_edit_cfp %}{% orga_edit_link request.event.cfp.urls.workflow %}{% endif %}
+    </div>
+    <p>
+        {{ step_text }}
+    </p>
+    {% for field in wizard.form %}
+    {% bootstrap_field field layout='event' %}
+    {% endfor %}
+{% endblock %}
