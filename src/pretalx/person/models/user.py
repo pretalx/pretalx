@@ -336,3 +336,18 @@ the pretalx robot'''
         self.log_action(
             action='pretalx.user.password.reset', person=user, orga=bool(user)
         )
+
+    @classmethod
+    def cfp_fields(cls, event):
+        return [
+            {
+                "field_source": "user",
+                "field_name": field.name,
+                "widget": str(field.formfield().widget),
+                "hard_required": not (field.blank or field.null),
+                "title": field.verbose_name,
+                "help_text": field.help_text,
+            }
+            for field in cls._meta.fields
+            if field.name in ["name", "avatar"]
+        ]

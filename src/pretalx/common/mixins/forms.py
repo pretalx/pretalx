@@ -8,7 +8,6 @@ from django.utils.translation import gettext_lazy as _
 from pretalx.common.forms.utils import get_help_text, validate_field_length
 from pretalx.common.phrases import phrases
 from pretalx.common.templatetags.rich_text import rich_text
-from pretalx.submission.models import Answer, QuestionTarget, QuestionVariant
 
 
 class ReadOnlyFlag:
@@ -75,6 +74,7 @@ class RequestRequire:
 
 class QuestionFieldsMixin:
     def get_field(self, *, question, initial, initial_object, readonly):
+        from pretalx.submission.models import QuestionVariant
         help_text = rich_text(question.help_text)
         if question.is_public:
             help_text += ' ' + str(phrases.base.public_content)
@@ -201,6 +201,7 @@ class QuestionFieldsMixin:
 
     def save_questions(self, k, v):
         """Receives a key and value from cleaned_data."""
+        from pretalx.submission.models import Answer, QuestionTarget
         field = self.fields[k]
         if field.answer:
             # We already have a cached answer object, so we don't

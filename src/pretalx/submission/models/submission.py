@@ -624,3 +624,31 @@ I'm looking forward to it!
                 subject=subject,
                 text=text,
             ).send()
+
+    @classmethod
+    def cfp_fields(cls, event):
+        ignored_fields = [
+            'id',
+            'created',
+            'code',
+            'event',
+            'state',
+            'internal_notes',
+            'is_featured',
+            'invitation_token',
+            'review_code'
+        ]
+        if not event.settings.use_tracks:
+            ignored_fields.append("track")
+        return [
+            {
+                "field_source": "submission",
+                "field_name": field.name,
+                "widget": str(field.formfield().widget),
+                "hard_required": not (field.blank or field.null),
+                "title": field.verbose_name,
+                "help_text": field.help_text,
+            }
+            for field in cls._meta.fields
+            if field.name not in ignored_fields
+        ]

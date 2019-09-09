@@ -172,6 +172,9 @@ class CfPWorkflow:
             for index, step in enumerate(self.steps)
         ])
 
+    def to_json(self):
+        return self.data(self)
+
     @staticmethod
     def data(self):
         """Returns the canonical CfPWorkflow data format.

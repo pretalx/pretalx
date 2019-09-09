@@ -104,3 +104,18 @@ class SpeakerProfile(LogMixin, models.Model):
         return Answer.objects.filter(
             models.Q(submission__in=submissions) | models.Q(person=self.user)
         )
+
+    @classmethod
+    def cfp_fields(cls, event):
+        return [
+            {
+                "field_source": "user",
+                "field_name": field.name,
+                "widget": str(field.formfield().widget),
+                "hard_required": not (field.blank or field.null),
+                "title": field.verbose_name,
+                "help_text": field.help_text,
+            }
+            for field in cls._meta.fields
+            if field.name in ["biography"]
+        ]

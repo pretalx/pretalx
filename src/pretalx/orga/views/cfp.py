@@ -1,14 +1,19 @@
+import json
+
+from csp.decorators import csp_update
 from django.contrib import messages
 from django.db import models, transaction
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, ListView, TemplateView, UpdateView, View
 from django_context_decorator import context
 
+from pretalx.cfp.workflow import CfPWorkflow
 from pretalx.common.forms import I18nFormSet
 from pretalx.common.mixins.views import (
     ActionFromUrl, EventPermissionRequired, PermissionRequired,
@@ -19,9 +24,9 @@ from pretalx.orga.forms.cfp import (
     AccessCodeSendForm, AnswerOptionForm, CfPSettingsForm, SubmitterAccessCodeForm,
 )
 from pretalx.person.forms import SpeakerFilterForm
+from pretalx.person.models import User, SpeakerProfile
 from pretalx.submission.models import (
-    AnswerOption, CfP, Question, QuestionTarget,
-    SubmissionType, SubmitterAccessCode, Track,
+    AnswerOption, CfP, Question, QuestionTarget, SubmissionType, Track, Submission,
 )
 
 
@@ -643,3 +648,34 @@ class AccessCodeDelete(PermissionRequired, DetailView):
                 _('This access code has been used for a submission and cannot be deleted. To disable it, you can set its validity date to the past.'),
             )
         return redirect(self.request.event.cfp.urls.access_codes)
+
+
+@method_decorator(csp_update(SCRIPT_SRC="'self' 'unsafe-eval'"), name='dispatch')
+class CfPWorkflowEditor(EventPermissionRequired, TemplateView):
+    template_name = 'orga/cfp/workflow.html'
+    permission_required = 'orga.edit_cfp'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['current_configuration'] = self.request.event.settings.cfp_workflow.to_json()
+        context['all_fields'] = [
+            *Submission.cfp_fields(self.request.event),
+            *User.cfp_fields(self.request.event),
+            *SpeakerProfile.cfp_fields(self.request.event),
+            *Question.cfp_fields(self.request.event),
+        ]
+        return context
+
+    def post(self, request, *args, **kwargs):
+        # TODO: check validity
+        try:
+            data = json.loads(request.POST)
+            if 'action' in data and data['action'] == 'reset':
+                workflow = CfPWorkflow()
+            else:
+                workflow = CfPWorkflow(request.POST)
+        except Exception:
+            return JsonResponse({'error': 'Invalid data'}, status=400)
+
+        request.event.settings.cfp_workflow = workflow
+        return JsonResponse({'success': True})

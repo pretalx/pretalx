@@ -212,6 +212,22 @@ class Question(LogMixin, models.Model):
             return max(users.count() - answer_count, 0)
         return 0
 
+    @classmethod
+    def cfp_fields(cls, event):
+        from pretalx.common.mixins.forms import QuestionFieldsMixin
+        result = []
+        for question in event.questions.exclude(target=QuestionTarget.REVIEWER):
+            field = QuestionFieldsMixin.get_field(question=question, initial=None, initial_object=None, readonly=False)
+            result.append({
+                "field_source": "question",
+                "field_name": f"question_{question.pk}",
+                "widget": str(field.widget),
+                "hard_required": False,
+                "title": field.label,
+                "help_text": field.help_text,
+            })
+        return result
+
     class Meta:
         ordering = ['position']
 
