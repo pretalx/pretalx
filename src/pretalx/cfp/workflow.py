@@ -50,7 +50,7 @@ DEFAULT_CFP_STEPS = {
         {
             "title": "That's it about your submission! We now just need a way to contact you.",  # TODO: i18n
             "text": "To create your submission, you need an account on this page. This not only gives us a way to contact you, it also gives you the possibility to edit your submission or to view its current state.",
-            "icon": "paper-circle-o",
+            "icon": "user-circle-o",
             "icon_label": "Account",
             "identifier": "auth",
         },
@@ -117,9 +117,8 @@ class CfPWorkflowForm(QuestionFieldsMixin, forms.Form):
         if initial is not None:
             kwargs['initial'] = initial
         field = model._meta.get_field(field_source).formfield(**kwargs)
-        # TODO: help_text with min_length, max_length, required
+        # TODO: help_text with min_length, max_length, markdown
         # TODO: data migration from current model to this one
-        # TODO: UI
         return field_name, field
 
     def build_profile_field(self, field_data, initial):
@@ -175,6 +174,12 @@ class CfPWorkflow:
     def to_json(self):
         return self.data(self)
 
+    def all_data(self):
+        return {
+            "event": self.event.slug,
+            "steps": self.steps,
+        }
+
     @staticmethod
     def data(self):
         """Returns the canonical CfPWorkflow data format.
@@ -187,7 +192,4 @@ class CfPWorkflow:
             - For the types submission, user, and profile: a field_name
             - For the question type: a question_pk
             - The keys help_text and required"""
-        return json.dumps({
-            "event": self.event.slug,
-            "steps": self.steps,
-        })
+        return json.dumps(self.all_data())

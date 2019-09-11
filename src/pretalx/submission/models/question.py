@@ -219,9 +219,9 @@ class Question(LogMixin, models.Model):
         for question in event.questions.exclude(target=QuestionTarget.REVIEWER):
             field = QuestionFieldsMixin.get_field(question=question, initial=None, initial_object=None, readonly=False)
             result.append({
-                "field_source": "question",
-                "field_name": f"question_{question.pk}",
-                "widget": str(field.widget),
+                "field_type": "question",
+                "field_source": str(question.pk),
+                "widget": str(field.widget.__class__.__name__),
                 "hard_required": False,
                 "title": field.label,
                 "help_text": field.help_text,

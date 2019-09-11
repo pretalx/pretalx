@@ -657,7 +657,13 @@ class CfPWorkflowEditor(EventPermissionRequired, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['current_configuration'] = self.request.event.settings.cfp_workflow.to_json()
+        context['current_configuration'] = self.request.event.settings.cfp_workflow.all_data()
+        context['event_configuration'] = {
+            "header_pattern": self.request.event.settings.display_header_pattern or 'bg-primary',
+            "header_image": self.request.event.header_image.url if self.request.event.header_image else None,
+            "logo_image": self.request.event.logo.url if self.request.event.logo else None,
+            "primary_color": self.request.event.primary_color,
+        }
         context['all_fields'] = [
             *Submission.cfp_fields(self.request.event),
             *User.cfp_fields(self.request.event),
@@ -668,6 +674,7 @@ class CfPWorkflowEditor(EventPermissionRequired, TemplateView):
 
     def post(self, request, *args, **kwargs):
         # TODO: check validity
+        # TODO: clean all text input against XSS
         try:
             data = json.loads(request.POST)
             if 'action' in data and data['action'] == 'reset':

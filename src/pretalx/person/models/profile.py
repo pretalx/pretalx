@@ -109,9 +109,9 @@ class SpeakerProfile(LogMixin, models.Model):
     def cfp_fields(cls, event):
         return [
             {
-                "field_source": "user",
-                "field_name": field.name,
-                "widget": str(field.formfield().widget),
+                "field_type": "profile",
+                "field_source": field.name,
+                "widget": str(field.formfield().widget.__class__.__name__),
                 "hard_required": not (field.blank or field.null),
                 "title": field.verbose_name,
                 "help_text": field.help_text,

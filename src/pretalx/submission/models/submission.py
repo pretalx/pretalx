@@ -642,9 +642,9 @@ I'm looking forward to it!
             ignored_fields.append("track")
         return [
             {
-                "field_source": "submission",
-                "field_name": field.name,
-                "widget": str(field.formfield().widget),
+                "field_type": "submission",
+                "field_source": field.name,
+                "widget": str(field.formfield().widget.__class__.__name__),
                 "hard_required": not (field.blank or field.null),
                 "title": field.verbose_name,
                 "help_text": field.help_text,
