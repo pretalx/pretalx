@@ -110,6 +110,7 @@ def test_can_only_see_public_talks(
     response = client.get(submission.event.api_urls.talks, follow=True)
     content = json.loads(response.content.decode())
 
+    assert content['results'][0]['name'] == accepted_submission.speakers.first().name
     assert response.status_code == 200
     assert content['count'] == 1
     assert content['results'][0]['title'] == slot.submission.title
@@ -237,7 +238,6 @@ def test_can_only_see_public_speakers(
 
     assert response.status_code == 200
     assert content['count'] == 1
-    assert content['results'][0]['name'] == accepted_submission.speakers.first().name
     assert set(content['results'][0].keys()) == {
         'name',
         'code',
