@@ -98,7 +98,6 @@ def test_submission_serializer_for_organiser(submission, orga_user):
     class Request:
         user = orga_user
         event = submission.event
-<<<<<<< HEAD
     data = SubmissionOrgaSerializer(submission, context={'event': submission.event, 'request': Request()}).data
     assert set(data.keys()) == {
         'code',
