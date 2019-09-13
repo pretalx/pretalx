@@ -130,7 +130,7 @@ setup(
             'pytest-rerunfailures',
             'pytest-sugar',
             'pytest-tldr',
-            'semantic-version==2.6.0',  # https://github.com/bitprophet/releases/issues/84
+            'semantic-version==2.8.2',  # https://github.com/bitprophet/releases/issues/84
         ],
         'mysql': ['mysqlclient'],
         'postgres': ['psycopg2-binary'],
