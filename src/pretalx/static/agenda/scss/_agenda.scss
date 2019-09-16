@@ -95,7 +95,11 @@ header {
     background: $gray-lightest;
     margin-bottom: 16px;
     width: auto;
-    overflow: hidden; /* This hides the .nowline element. */
+    overflow-y: hidden; /* This hides the .nowline element. */
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-scroll-snap-type: x mandatory; /* Safari/MacOS in general */
+    -webkit-overflow-scrolling: touch; /* Safari/MacOS in general */
 
     .header-row {
       background: $gray-lightest;
@@ -117,11 +121,16 @@ header {
         padding: 8px 0;
         overflow-wrap: break-word;
         overflow: hidden;
+        min-width: 150px;
       }
     }
 
     .time-column {
       flex: 0 0 4em;
+      position: sticky;
+      left: 0px;
+      z-index: 40;
+      border-right: 2px solid lighten($gray-800, 55%);
 
       .hour {
         height: 120px;
@@ -143,13 +152,27 @@ header {
       );
     }
 
+    .rooms, .header-row {
+      min-width: min-content;
+    }
+
     .rooms {
       display: flex;
       flex-direction: row;
+      position: relative;
+
+      .nowline {
+        position: absolute;
+        width: 100%;
+      }
 
       .room {
         border-left: 2px solid #ccc;
         flex: 1 0;
+        min-width: 150px;
+        scroll-snap-align: center;
+        -webkit-scroll-snap-coordinate: 50% 0%; /* older (Safari) */
+        scroll-snap-stop: always;
         background: repeating-linear-gradient(
           to bottom,
           $gray-200,
@@ -283,7 +306,7 @@ header {
   display: inline-block;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 1200px) {
   header {
     text-align: right;
     flex-direction: column;
@@ -300,6 +323,11 @@ header {
     width: 100%;
 
     .day {
+      .rooms .room,
+      .header-row .room-header {
+        min-width: 200px;
+      }
+
       .no-talks {
         margin-top: 0;
         text-align: center;
@@ -310,17 +338,6 @@ header {
 }
 
 @media (max-width: 640px) {
-  #fahrplan {
-    .day {
-      overflow-y: hidden;
-      overflow-x: auto;
-    }
-
-    .room,
-    .room-header {
-      min-width: 150px;
-    }
-  }
 }
 @media print {
   body {

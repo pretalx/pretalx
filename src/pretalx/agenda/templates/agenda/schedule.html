@@ -98,8 +98,8 @@
                         <div class="room-header">{{ room.name }}</div>
                     {% endfor %}
                 </div>
-                <div class="nowline"></div>
                 <div class="rooms">
+                    <div class="nowline"></div>
                     <div class="time-column">
                         {% for hour in day.hours %}
                             <div class="hour">{{ hour }}</div>
@@ -117,7 +117,7 @@
                                      id="{{ talk.submission.code }}"
                                      title="{{ talk.submission.title }} ({{ talk.submission.display_speaker_names|default:'' }})"
                                      style="height: {{ talk.height }}px; min-height: {% if talk.height >= 30 %}{{ talk.height }}{% else %}30{% endif %}px; top: {{ talk.top }}px;{% if request.event.settings.use_tracks and talk.submission.track %} border-color: {{ talk.submission.track.color }}{% endif %}"
-                                     data-time="{% if talk.submission.state == 'confirmed' %}{{ talk.start|date:"H:i" }}–{{ talk.end|date:"H:i" }}{% else %}{% trans "Not confirmed yet!" %}{% endif %}"
+                                     data-time="{{ talk.start|date:"H:i" }}–{{ talk.end|date:"H:i" }}"
                                      data-start="{{ talk.start|date:"c" }}"
                                      data-end="{{ talk.end|date:"c" }}">
                                     <div class="talk-content">
@@ -158,6 +158,7 @@
 
 {% compress js %}
   <script defer src="{% static "agenda/js/time.js" %}"></script>
+  <script defer src="{% static "agenda/js/schedule.js" %}"></script>
   <script defer src="{% static "agenda/js/offline.js" %}"></script>
 {% endcompress %}
 {% endblock %}

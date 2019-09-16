@@ -46,10 +46,8 @@ def can_create_events(user, obj):
 
 @rules.predicate
 def can_change_teams(user, obj):
-    from pretalx.event.models import Organiser, Team
+    from pretalx.event.models import Organiser
 
-    if isinstance(obj, Team):
-        obj = obj.organiser
     if isinstance(obj, Organiser):
         return user.teams.filter(organiser=obj, can_change_teams=True).exists()
     event = getattr(obj, 'event', None)

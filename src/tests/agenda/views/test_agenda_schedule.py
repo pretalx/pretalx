@@ -77,11 +77,21 @@ def test_speaker_page(
 def test_speaker_redirect(
     client, django_assert_num_queries, event, speaker, slot, other_slot
 ):
-    target = reverse('agenda:speaker', kwargs={'code': speaker.code, 'event': event.slug})
-    url = reverse('agenda:speaker.redirect', kwargs={'pk': speaker.pk, 'event': event.slug})
+    target_url = reverse('agenda:speaker', kwargs={'code': speaker.code, 'event': event.slug})
+    url = event.urls.speakers + f'by-id/{speaker.pk}/'
     response = client.get(url)
     assert response.status_code == 302
-    assert response.url.endswith(target)
+    assert response._headers['location'][1] == target_url
+
+
+@pytest.mark.django_db
+def test_speaker_redirect_unknown(
+    client, django_assert_num_queries, event, submission
+):
+    with scope(event=event):
+        url = reverse('agenda:speaker.redirect', kwargs={'pk': submission.speakers.first().pk, 'event': event.slug})
+    response = client.get(url)
+    assert response.status_code == 404
 
 
 @pytest.mark.django_db
@@ -107,6 +117,37 @@ def test_schedule_page_text_table(
     content = response.content.decode()
     for line in title_lines:
         assert line in content
+
+
+@pytest.mark.django_db
+def test_schedule_page_text_table_explicit_header(
+    client, django_assert_num_queries, event, speaker, slot, schedule, other_slot,
+):
+    url = event.urls.schedule
+    with django_assert_num_queries(18):
+        response = client.get(url, follow=True, HTTP_ACCEPT='text/plain')
+    assert response.status_code == 200
+    title_lines = textwrap.wrap(slot.submission.title, width=16)
+    content = response.content.decode()
+    for line in title_lines:
+        assert line in content
+
+
+@pytest.mark.parametrize('header,target', (
+    ('application/json', 'frab_json'),
+    ('application/xml', 'frab_xml'),
+))
+@pytest.mark.django_db
+def test_schedule_page_redirects(
+    client, django_assert_num_queries, event, speaker, slot, schedule, other_slot,
+    header, target
+):
+    url = event.urls.schedule
+    with django_assert_num_queries(16):
+        response = client.get(url, HTTP_ACCEPT=header)
+    assert response.status_code == 303
+    assert response._headers['location'][1] == getattr(event.urls, target).full()
+    assert response.content.decode() == ''
 
 
 @pytest.mark.django_db

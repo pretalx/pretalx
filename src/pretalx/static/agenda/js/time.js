@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", function() {
   function updateNowlines() {
     const now = moment()
     document.querySelectorAll(".nowline").forEach(element => {
-      const start = moment(element.parentElement.dataset.start)
+      const start = moment(element.parentElement.parentElement.dataset.start)
       const diff_seconds = now.diff(start, "seconds")
       const diff_px = (diff_seconds / 60 / 60) * 120
       element.style.top = diff_px + "px"
@@ -29,6 +29,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
   updateCurrentTalk()
 
-  setInterval(updateNowlines, 60)
-  setInterval(updateCurrentTalk, 60)
+  setInterval(updateNowlines, 60 * 60)
+  setInterval(updateCurrentTalk, 60 * 60)
 })

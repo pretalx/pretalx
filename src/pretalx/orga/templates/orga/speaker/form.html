@@ -11,6 +11,9 @@
     <script src="{% static "vendored/marked.min.js" %}" defer></script>
     <script src="{% static "common/js/markdown.js" %}" defer></script>
 {% endif %}
+{% block alternate_link %}
+    <link rel="alternate" type="application/json" title="{{ request.event.name }} API" href="{{ request.event.api_urls.speakers.full }}{{ form.instance.code }}" />
+{% endblock %}
 
 {% has_perm 'orga.change_speaker' request.user form.instance as can_edit_speaker %}
     <h2>
@@ -61,13 +64,17 @@
                     />
                 {% endif %}
             </div>
+            {% if request.event.settings.cfp_request_avatar or form.instance.user.has_avatar %}
             <div class="avatar-form-fields col-md-9">
-                {% bootstrap_field form.get_gravatar layout='event-inline' %}
+                {% if form.get_gravatar %}{% bootstrap_field form.get_gravatar layout='event-inline' %}{% endif %}
+                {% if form.avatar %}
                 <div class="user-avatar-display">
                     {% bootstrap_field form.avatar layout='inline' %}
                     <small class="form-text text-muted d-block">{{ form.avatar.help_text }}</small>
                 </div>
+                {% endif %}
             </div>
+            {% endif %}
         </div>
         {% bootstrap_field form.name layout='event' %}
         {% bootstrap_field form.email layout='event' %}

@@ -3,6 +3,14 @@
 Release Notes
 =============
 
+- :feature:`-` Answers to boolean questions are not displayed as "yes", "no", and "maybe" in public display, instead of "true" or "false".
+- :bug:`775` When a speaker withdrew their already-accepted talk, the talk slot was not removed from the schedule editor. It did work when setting the state via the organiser interface.
+- :bug:`774` The API endpoint for events always returned a 404 on the detail view, even when event was visible in the list view.
+- :feature:`-` Speaker and talk detail pages now contain links to their respective API detail pages as alternate links.
+- :feature:`-` The main schedule page now returns a 303 See Also redirect if accessed with JSON or XML accept headers.
+- :bug:`773` In the ``/talks`` and ``/submissions`` endpoints, speaker biographies were not exposed. They were available in the ``/speakers`` endpoint as expected, so if you cannot currently upgrade, please be advised to use that endpoint.
+- :feature:`-` Organisers can now disable/remove the profile picture input field if they don't want any speaker pictures at all.
+- :feature:`-` The event creation assistant now suggests more sensible event slugs.
 - :feature:`-` The time(s), date(s) and location(s) of scheduled talks were added to the private speaker pages of those talks, making it easier for speakers to find out when and where their talk is taking place.
 - :feature:`-` The API is now also available as an HTML browsable API. Filters and searches should be working as well as just browsing around.
 - :feature:`-` The events API endpoint now comes with a ``urls`` field exposing links to the schedule page, and the login page, among other things.
