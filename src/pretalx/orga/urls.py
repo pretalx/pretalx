@@ -32,8 +32,10 @@ urlpatterns = [
         url('^teams/(?P<pk>[0-9]+)/$', organiser.TeamDetail.as_view(), name='organiser.teams.view'),
         url('^teams/(?P<pk>[0-9]+)/delete$', organiser.TeamDelete.as_view(), name='organiser.teams.delete'),
         url('^teams/(?P<pk>[0-9]+)/tracks$', organiser.TeamTracks.as_view(), name='organiser.teams.tracks'),
-        url('^teams/(?P<pk>[0-9]+)/delete/(?P<user_pk>[0-9]+)$', organiser.TeamDelete.as_view(), name='organiser.teams.delete_member'),
-        url('^teams/(?P<pk>[0-9]+)/reset/(?P<user_pk>[0-9]+)$', organiser.TeamResetPassword.as_view(), name='organiser.team.password_reset'),
+        url('^teams/(?P<pk>[0-9]+)/delete/(?P<user_pk>[0-9]+)$',
+            organiser.TeamDelete.as_view(), name='organiser.teams.delete_member'),
+        url('^teams/(?P<pk>[0-9]+)/reset/(?P<user_pk>[0-9]+)$',
+            organiser.TeamResetPassword.as_view(), name='organiser.team.password_reset'),
         url('^teams/(?P<pk>[0-9]+)/uninvite$', organiser.TeamUninvite.as_view(), name='organiser.teams.uninvite'),
     ])),
 
@@ -70,6 +72,7 @@ urlpatterns = [
         url('^cfp/tracks/new$', cfp.TrackDetail.as_view(), name='cfp.track.create'),
         url('^cfp/tracks/(?P<pk>[0-9]+)/$', cfp.TrackDetail.as_view(), name='cfp.track.view'),
         url('^cfp/tracks/(?P<pk>[0-9]+)/delete$', cfp.TrackDelete.as_view(), name='cfp.track.delete'),
+        url('^cfp/example/$', cfp.SubmissionExample.as_view(), name='cfp.create.example'),
 
         url('^mails/', include([
             url('^(?P<pk>[0-9]+)/$', mails.MailDetail.as_view(), name='mails.outbox.mail.view'),
@@ -113,7 +116,8 @@ urlpatterns = [
         url('^speakers/$', speaker.SpeakerList.as_view(), name='speakers.list'),
         url('^speakers/(?P<pk>[0-9]+)/$', speaker.SpeakerDetail.as_view(), name='speakers.view'),
         url('^speakers/(?P<pk>[0-9]+)/reset$', speaker.SpeakerPasswordReset.as_view(), name='speakers.reset'),
-        url('^speakers/(?P<pk>[0-9]+)/toggle-arrived$', speaker.SpeakerToggleArrived.as_view(), name='speakers.arrived'),
+        url('^speakers/(?P<pk>[0-9]+)/toggle-arrived$',
+            speaker.SpeakerToggleArrived.as_view(), name='speakers.arrived'),
         url('^info/$', speaker.InformationList.as_view(), name='speakers.information.list'),
         url('^info/new$', speaker.InformationDetail.as_view(), name='speakers.information.create'),
         url('^info/(?P<pk>[0-9]+)/$', speaker.InformationDetail.as_view(), name='speakers.information.view'),
@@ -129,8 +133,10 @@ urlpatterns = [
         url('^settings/review/$', event.EventReviewSettings.as_view(), name='settings.review'),
         url('^settings/review/phase/(?P<pk>[0-9]+)/up$', event.phase_move_up, name='settings.review.phase.up'),
         url('^settings/review/phase/(?P<pk>[0-9]+)/down$', event.phase_move_down, name='settings.review.phase.down'),
-        url('^settings/review/phase/(?P<pk>[0-9]+)/delete$', event.PhaseDelete.as_view(), name='settings.review.phasedelete'),
-        url('^settings/review/phase/(?P<pk>[0-9]+)/activate$', event.PhaseActivate.as_view(), name='settings.review.phasedelete'),
+        url('^settings/review/phase/(?P<pk>[0-9]+)/delete$',
+            event.PhaseDelete.as_view(), name='settings.review.phasedelete'),
+        url('^settings/review/phase/(?P<pk>[0-9]+)/activate$',
+            event.PhaseActivate.as_view(), name='settings.review.phasedelete'),
 
         url('^schedule/$', schedule.ScheduleView.as_view(), name='schedule.main'),
         url('^schedule/export/$', schedule.ScheduleExportView.as_view(), name='schedule.export'),

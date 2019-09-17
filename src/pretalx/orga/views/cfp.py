@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.db import models, transaction
 from django.db.models.deletion import ProtectedError
-from django.forms.models import inlineformset_factory
+from django.forms.models import inlineformset_factory, BaseModelFormSet
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
@@ -14,11 +14,13 @@ from pretalx.common.mixins.views import (
     ActionFromUrl, EventPermissionRequired, PermissionRequired,
 )
 from pretalx.common.views import CreateOrUpdateView
-from pretalx.orga.forms import CfPForm, QuestionForm, SubmissionTypeForm, TrackForm
+from pretalx.orga.forms import CfPForm, QuestionForm, SubmissionTypeForm, TrackForm, SubmissionForm
 from pretalx.orga.forms.cfp import AnswerOptionForm, CfPSettingsForm
+from pretalx.submission.forms import QuestionsForm, ResourceForm
+from pretalx.orga.views.submission import SubmissionViewMixin
 from pretalx.person.forms import SpeakerFilterForm
 from pretalx.submission.models import (
-    AnswerOption, CfP, Question, QuestionTarget, SubmissionType, Track,
+    AnswerOption, CfP, Question, QuestionTarget, SubmissionType, Track, Submission, Resource,
 )
 
 
@@ -545,3 +547,166 @@ class TrackDelete(PermissionRequired, DetailView):
                 _('This track is in use in a submission and cannot be deleted.'),
             )
         return redirect(self.request.event.cfp.urls.tracks)
+
+
+class SubmissionExample(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
+    model = Submission
+    form_class = SubmissionForm
+    template_name = 'orga/submission/content.html'
+    permission_required = 'orga.view_submissions'
+
+    def get_object(self):
+        try:
+            return super().get_object()
+        except Http404 as not_found:
+            if self.request.path.rstrip('/').endswith('/example'):
+                return None
+            return not_found
+
+    @cached_property
+    def write_permission_required(self):
+        if self.kwargs.get('code'):
+            return 'submission.edit_submission'
+        return 'orga.create_submission'
+
+    @cached_property
+    def _formset(self):
+        formset_class = inlineformset_factory(
+            Submission,
+            Resource,
+            form=ResourceForm,
+            formset=BaseModelFormSet,
+            can_delete=True,
+            extra=0,
+        )
+        submission = self.get_object()
+        return formset_class(
+            self.request.POST if self.request.method == 'POST' else None,
+            files=self.request.FILES if self.request.method == 'POST' else None,
+            queryset=submission.resources.all()
+            if submission
+            else Resource.objects.none(),
+            prefix='resource',
+        )
+
+    @context
+    def formset(self):
+        return self._formset
+
+    @cached_property
+    def _questions_form(self):
+        submission = self.get_object()
+        return QuestionsForm(
+            self.request.POST if self.request.method == 'POST' else None,
+            files=self.request.FILES if self.request.method == 'POST' else None,
+            target='submission',
+            submission=submission,
+            event=self.request.event,
+        )
+
+    @context
+    def questions_form(self):
+        return self._questions_form
+
+    def save_formset(self, obj):
+        if not self._formset.is_valid():
+            return False
+
+        for form in self._formset.initial_forms:
+            if form in self._formset.deleted_forms:
+                if not form.instance.pk:
+                    continue
+                obj.log_action(
+                    'pretalx.submission.resource.delete',
+                    person=self.request.user,
+                    data={'id': form.instance.pk},
+                )
+                form.instance.delete()
+                form.instance.pk = None
+            elif form.has_changed():
+                form.instance.submission = obj
+                form.save()
+                change_data = {k: form.cleaned_data.get(k) for k in form.changed_data}
+                change_data['id'] = form.instance.pk
+                obj.log_action(
+                    'pretalx.submission.resource.update', person=self.request.user
+                )
+
+        extra_forms = [
+            form
+            for form in self._formset.extra_forms
+            if form.has_changed and not self._formset._should_delete_form(form) and form.instance.resource
+        ]
+        for form in extra_forms:
+            form.instance.submission = obj
+            form.save()
+            obj.log_action(
+                'pretalx.submission.resource.create',
+                person=self.request.user,
+                orga=True,
+                data={'id': form.instance.pk},
+            )
+
+        return True
+
+    def get_permission_required(self):
+        if 'code' in self.kwargs:
+            return ['orga.view_submissions']
+        return ['orga.create_submission']
+
+    def get_permission_object(self):
+        return self.object or self.request.event
+
+    def get_success_url(self) -> str:
+        self.kwargs.update({'code': self.object.code})
+        return self.object.orga_urls.base
+
+    @transaction.atomic()
+    def form_valid(self, form):
+        created = not self.object
+        form.instance.event = self.request.event
+        form.save()
+        self.object = form.instance
+        self._questions_form.submission = self.object
+        if not self._questions_form.is_valid():
+            return self.get(self.request, *self.args, **self.kwargs)
+        self._questions_form.save()
+
+        if created:
+            email = form.cleaned_data['speaker']
+            try:
+                speaker = User.objects.get(email__iexact=email)  # TODO: send email!
+                messages.success(
+                    self.request,
+                    _(
+                        'The submission has been created; the speaker already had an account on this system.'
+                    ),
+                )
+            except User.DoesNotExist:
+                speaker = create_user_as_orga(
+                    email=email,
+                    name=form.cleaned_data['speaker_name'],
+                    submission=form.instance,
+                )
+                messages.success(
+                    self.request,
+                    _(
+                        'The submission has been created and the speaker has been invited to add an account!'
+                    ),
+                )
+
+            form.instance.speakers.add(speaker)
+        else:
+            formset_result = self.save_formset(form.instance)
+            if not formset_result:
+                return self.get(self.request, *self.args, **self.kwargs)
+            messages.success(self.request, _('The submission has been updated!'))
+        if form.has_changed():
+            action = 'pretalx.submission.' + ('create' if created else 'update')
+            form.instance.log_action(action, person=self.request.user, orga=True)
+        return redirect(self.get_success_url())
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['event'] = self.request.event
+        return kwargs

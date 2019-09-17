@@ -57,6 +57,7 @@ class CfP(LogMixin, models.Model):
         new_track = '{tracks}new'
         public = '{self.event.urls.base}cfp'
         submit = '{self.event.urls.base}submit/'
+        example = '{base}example/'
 
     def __str__(self) -> str:
         """Help with debugging."""
