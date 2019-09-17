@@ -60,6 +60,11 @@ class SpeakerProfile(LogMixin, models.Model):
         return self.user.submissions.filter(event=self.event)
 
     @cached_property
+    def confirmed_submissions(self):
+        """All non-deleted :class:`~pretalx.submission.models.submission.Submission` objects by this user that have been confirmed on this event."""
+        return self.user.submissions.filter(event=self.event, state='confirmed')
+
+    @cached_property
     def talks(self):
         """A queryset of :class:`~pretalx.submission.models.submission.Submission` objects.
 
