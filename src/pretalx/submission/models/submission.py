@@ -84,7 +84,7 @@ class SubmissionStates(Choices):
 
 class SubmissionManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().exclude(state=SubmissionStates.DELETED)
+        return super().get_queryset().exclude(state=SubmissionStates.DELETED).exclude(is_example=True)
 
 
 class DeletedSubmissionManager(models.Manager):
@@ -207,6 +207,13 @@ class Submission(LogMixin, models.Model):
     review_code = models.CharField(
         max_length=32, unique=True, null=True, blank=True, default=generate_invite_code
     )
+    is_example = models.BooleanField(
+        default=False,
+        verbose_name=_(
+            'Informs if this submission is a example.'
+        ),
+    )
+
     CODE_CHARSET = list('ABCDEFGHJKLMNPQRSTUVWXYZ3789')
 
     objects = ScopedManager(event='event', _manager_class=SubmissionManager)
@@ -370,16 +377,16 @@ class Submission(LogMixin, models.Model):
                     schedule=self.event.wip_schedule,
                 )
 
-    def make_submitted(self, person=None, force: bool=False, orga: bool=False):
+    def make_submitted(self, person=None, force: bool = False, orga: bool = False):
         """Sets the submission's state to 'submitted'."""
         self._set_state(SubmissionStates.SUBMITTED, force, person=person)
 
-    def confirm(self, person=None, force: bool=False, orga: bool=False):
+    def confirm(self, person=None, force: bool = False, orga: bool = False):
         """Sets the submission's state to 'confirmed'."""
         self._set_state(SubmissionStates.CONFIRMED, force, person=person)
         self.log_action('pretalx.submission.confirm', person=person, orga=orga)
 
-    def accept(self, person=None, force: bool=False, orga: bool=True):
+    def accept(self, person=None, force: bool = False, orga: bool = True):
         """Sets the submission's state to 'accepted'.
 
         Creates an acceptance :class:`~pretalx.mail.models.QueuedMail` unless
@@ -391,7 +398,7 @@ class Submission(LogMixin, models.Model):
         if previous != SubmissionStates.CONFIRMED:
             self.send_state_mail()
 
-    def reject(self, person=None, force: bool=False, orga: bool=True):
+    def reject(self, person=None, force: bool = False, orga: bool = True):
         """Sets the submission's state to 'rejected' and creates a rejection
         :class:`~pretalx.mail.models.QueuedMail`."""
         self._set_state(SubmissionStates.REJECTED, force, person=person)
@@ -414,17 +421,17 @@ class Submission(LogMixin, models.Model):
         for speaker in self.speakers.all():
             template.to_mail(user=speaker, **kwargs)
 
-    def cancel(self, person=None, force: bool=False, orga: bool=True):
+    def cancel(self, person=None, force: bool = False, orga: bool = True):
         """Sets the submission's state to 'canceled'."""
         self._set_state(SubmissionStates.CANCELED, force, person=person)
         self.log_action('pretalx.submission.cancel', person=person, orga=True)
 
-    def withdraw(self, person=None, force: bool=False, orga: bool=False):
+    def withdraw(self, person=None, force: bool = False, orga: bool = False):
         """Sets the submission's state to 'withdrawn'."""
         self._set_state(SubmissionStates.WITHDRAWN, force, person=person)
         self.log_action('pretalx.submission.withdraw', person=person, orga=orga)
 
-    def remove(self, person=None, force: bool=False, orga: bool=True):
+    def remove(self, person=None, force: bool = False, orga: bool = True):
         """Sets the submission's state to 'deleted'."""
         self._set_state(SubmissionStates.DELETED, force, person=person)
         for answer in self.answers.all():

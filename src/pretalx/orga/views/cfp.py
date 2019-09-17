@@ -19,6 +19,7 @@ from pretalx.orga.forms.cfp import AnswerOptionForm, CfPSettingsForm
 from pretalx.submission.forms import QuestionsForm, ResourceForm
 from pretalx.orga.views.submission import SubmissionViewMixin
 from pretalx.person.forms import SpeakerFilterForm
+from pretalx.person.models import User
 from pretalx.submission.models import (
     AnswerOption, CfP, Question, QuestionTarget, SubmissionType, Track, Submission, Resource,
 )
@@ -556,17 +557,10 @@ class SubmissionExample(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
     permission_required = 'orga.view_submissions'
 
     def get_object(self):
-        try:
-            return super().get_object()
-        except Http404 as not_found:
-            if self.request.path.rstrip('/').endswith('/example'):
-                return None
-            return not_found
+        return Submission.all_objects.filter(is_example=True, event=self.request.event).first()
 
     @cached_property
     def write_permission_required(self):
-        if self.kwargs.get('code'):
-            return 'submission.edit_submission'
         return 'orga.create_submission'
 
     @cached_property
@@ -650,8 +644,6 @@ class SubmissionExample(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
         return True
 
     def get_permission_required(self):
-        if 'code' in self.kwargs:
-            return ['orga.view_submissions']
         return ['orga.create_submission']
 
     def get_permission_object(self):
@@ -665,6 +657,7 @@ class SubmissionExample(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
     def form_valid(self, form):
         created = not self.object
         form.instance.event = self.request.event
+        form.instance.is_example = True
         form.save()
         self.object = form.instance
         self._questions_form.submission = self.object
@@ -672,31 +665,7 @@ class SubmissionExample(ActionFromUrl, SubmissionViewMixin, CreateOrUpdateView):
             return self.get(self.request, *self.args, **self.kwargs)
         self._questions_form.save()
 
-        if created:
-            email = form.cleaned_data['speaker']
-            try:
-                speaker = User.objects.get(email__iexact=email)  # TODO: send email!
-                messages.success(
-                    self.request,
-                    _(
-                        'The submission has been created; the speaker already had an account on this system.'
-                    ),
-                )
-            except User.DoesNotExist:
-                speaker = create_user_as_orga(
-                    email=email,
-                    name=form.cleaned_data['speaker_name'],
-                    submission=form.instance,
-                )
-                messages.success(
-                    self.request,
-                    _(
-                        'The submission has been created and the speaker has been invited to add an account!'
-                    ),
-                )
-
-            form.instance.speakers.add(speaker)
-        else:
+        if not created:
             formset_result = self.save_formset(form.instance)
             if not formset_result:
                 return self.get(self.request, *self.args, **self.kwargs)
