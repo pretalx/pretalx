@@ -2,7 +2,7 @@
 
 Release Notes
 =============
-
+- :bug:`781` When the timezone is changed for an event, the talk slots and availability times get shifted to the new time so that it doesn't break on the schedule.
 - :feature:`-` Answers to boolean questions are not displayed as "yes", "no", and "maybe" in public display, instead of "true" or "false".
 - :bug:`775` When a speaker withdrew their already-accepted talk, the talk slot was not removed from the schedule editor. It did work when setting the state via the organiser interface.
 - :bug:`774` The API endpoint for events always returned a 404 on the detail view, even when event was visible in the list view.
