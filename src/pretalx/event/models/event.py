@@ -169,6 +169,7 @@ class Event(LogMixin, models.Model):
         ),
     )
     locale_array = models.TextField(default=settings.LANGUAGE_CODE)
+    submission_locale_array = models.TextField(default=settings.LANGUAGE_CODE)
     locale = models.CharField(
         max_length=32,
         default=settings.LANGUAGE_CODE,
@@ -312,6 +313,11 @@ class Event(LogMixin, models.Model):
     def locales(self) -> list:
         """Is a list of active event locales."""
         return self.locale_array.split(",")
+
+    @cached_property
+    def submission_locales(self) -> list:
+        """Is a list of active submission locales."""
+        return self.submission_locale_array.split(",")
 
     @cached_property
     def is_multilingual(self) -> bool:

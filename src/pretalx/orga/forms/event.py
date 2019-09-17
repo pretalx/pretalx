@@ -1,6 +1,7 @@
 import socket
 from urllib.parse import urlparse
 
+import django.conf.global_settings
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -24,6 +25,10 @@ class EventForm(ReadOnlyFlag, I18nModelForm):
         label=_('Active languages'),
         choices=settings.LANGUAGES,
         widget=MultipleLanguagesWidget,
+    )
+    submission_locales = forms.MultipleChoiceField(
+        label=_('Submission languages'),
+        choices=django.conf.global_settings.LANGUAGES,
     )
     logo = ExtensionFileField(
         required=False,
@@ -55,6 +60,7 @@ class EventForm(ReadOnlyFlag, I18nModelForm):
         self.is_administrator = kwargs.pop('is_administrator', False)
         super().__init__(*args, **kwargs)
         self.initial['locales'] = self.instance.locale_array.split(',')
+        self.initial['submission_locales'] = self.instance.submission_locale_array.split(',')
         year = str(now().year)
         self.fields['name'].widget.attrs['placeholder'] = (
             _('The name of your conference, e.g. My Conference') + ' ' + year
@@ -102,6 +108,7 @@ class EventForm(ReadOnlyFlag, I18nModelForm):
 
     def save(self, *args, **kwargs):
         self.instance.locale_array = ','.join(self.cleaned_data['locales'])
+        self.instance.submission_locale_array = ','.join(self.cleaned_data['submission_locales'])
         result = super().save(*args, **kwargs)
         css_text = self.cleaned_data['custom_css_text']
         if css_text:

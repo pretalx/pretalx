@@ -184,7 +184,6 @@ class Submission(LogMixin, models.Model):
     content_locale = models.CharField(
         max_length=32,
         default=settings.LANGUAGE_CODE,
-        choices=settings.LANGUAGES,
         verbose_name=_('Language'),
     )
     is_featured = models.BooleanField(
