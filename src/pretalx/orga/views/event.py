@@ -1,6 +1,7 @@
 import json
 from contextlib import suppress
 from pathlib import Path
+import logging
 
 from django.conf import settings
 from django.contrib import messages
@@ -38,7 +39,10 @@ from pretalx.orga.forms.event import MailSettingsForm, ReviewSettingsForm
 from pretalx.orga.signals import activate_event
 from pretalx.person.forms import LoginInfoForm, OrgaProfileForm, UserForm
 from pretalx.person.models import User
+from pretalx.schedule.models import Schedule, TalkSlot, Availability
 from pretalx.submission.models import ReviewPhase
+
+logger = logging.getLogger(__name__)
 
 
 class EventSettingsPermission(EventPermissionRequired):
@@ -46,7 +50,7 @@ class EventSettingsPermission(EventPermissionRequired):
 
 
 class EventDetail(ActionFromUrl, EventSettingsPermission, UpdateView):
-    model = Event
+    momdel = Event
     form_class = EventForm
     permission_required = 'orga.change_settings'
     template_name = 'orga/settings/form.html'
@@ -83,9 +87,40 @@ class EventDetail(ActionFromUrl, EventSettingsPermission, UpdateView):
         return self.object.orga_urls.settings
 
     def form_valid(self, form):
+        """Validates the form.  If it's valid and the timezone has been changed, update the
+        times saved for availability and talk slots so the schedule times remain the same.
+        """
         if not self.sform.is_valid():
             return self.form_invalid(form)
         result = super().form_valid(form)
+
+        if 'timezone' in form.changed_data:
+            # This should get the current one out of the db.  It gets an updated
+            # version for some reason?
+            event_obj = Event.objects.get(id=self.request.event.id)
+
+            new_timezone = self.request.POST.get('timezone')
+
+            # Change the availability times of the rooms
+            for availability in Availability.objects.filter(event=event_obj):
+                logger.info(availability.start)
+                logger.info(availability.start.astimezone(timezone(new_timezone)))
+                availability.start = availability.start.astimezone(timezone(new_timezone))
+                availability.end = availability.end.astimezone(timezone(new_timezone))
+                # The object gets updated with a new time, but the save doesn't work.
+                # Maybe the time is in the wrong format?
+                availability.save(update_fields=['start', 'end'])
+
+            # Change the time of the talks
+            generalSchedule = Schedule.objects.filter(event_id=event_obj).first()
+            for talkSlot in TalkSlot.objects.filter(schedule=generalSchedule):
+                if talkSlot.start is not None:
+                    talkSlot.start = talkSlot.start.astimezone(timezone(new_timezone))
+                if talkSlot.end is not None:
+                    talkSlot.end = talkSlot.end.astimezone(timezone(new_timezone))
+                # The object gets updated with a new time, but the save doesn't work.
+                # Maybe the time is in the wrong format?
+                talkSlot.save(update_fields=['start', 'end'])
 
         self.sform.save()
         form.instance.log_action(
