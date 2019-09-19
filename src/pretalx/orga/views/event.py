@@ -50,7 +50,7 @@ class EventSettingsPermission(EventPermissionRequired):
 
 
 class EventDetail(ActionFromUrl, EventSettingsPermission, UpdateView):
-    momdel = Event
+    model = Event
     form_class = EventForm
     permission_required = 'orga.change_settings'
     template_name = 'orga/settings/form.html'
