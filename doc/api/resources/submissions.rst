@@ -31,7 +31,7 @@ image                                 string                     The submission 
 answers                               list                       The question answers given by the speakers. Available if the requesting user has organiser permissions.
 notes                                 string                     Notes the speaker left for the organisers. Available if the requesting user has organiser permissions.
 internal_notes                        string                     Notes the organisers left on the submission. Available if the requesting user has organiser permissions.
-resources                             object                     Files the speaker has uploaded for this submission. ``{"resource": "/path/to/file", "description": "Slides"}``
+resources                             object                     Files the speaker has uploaded for this submission. ``{"resource": "https://hostname.tld/path/to/file", "description": "Slides"}``
 ===================================== ========================== =======================================================
 
 .. versionadded:: 1.1.0

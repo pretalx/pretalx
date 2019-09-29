@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :bug:`788` Return URL, not internal storage path for resources of talks.
 - :feature:`-` Plugin authors will now have access to all configuration sections starting with ``[plugin:*]``, to ease the integration of system level settings.
 - :feature:`787` Provide the file uploads a speaker added to their submission via the ``/talks`` and ``/submissions`` API endpoint.
 - :feature:`-` Show speakers how many feedback notes have been left (if any) in their personal submission list view.
