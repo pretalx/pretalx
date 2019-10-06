@@ -12,7 +12,9 @@ from pretalx.common.urls import get_base_url
 
 
 class TalkSlot(LogMixin, models.Model):
-    """The TalkSlot object is the scheduled version of a :class:`~pretalx.submission.models.submission.Submission`.
+    """The TalkSlot object is the scheduled version of a.
+
+    :class:`~pretalx.submission.models.submission.Submission`.
 
     TalkSlots always belong to one submission and one :class:`~pretalx.schedule.models.schedule.Schedule`.
 
@@ -47,7 +49,8 @@ class TalkSlot(LogMixin, models.Model):
 
     @cached_property
     def duration(self) -> int:
-        """Returns the actual duration in minutes if the talk is scheduled, and the planned duration in minutes otherwise."""
+        """Returns the actual duration in minutes if the talk is scheduled, and
+        the planned duration in minutes otherwise."""
         if self.start and self.end:
             return int((self.end - self.start).total_seconds() / 60)
         return self.submission.get_duration()
@@ -68,14 +71,19 @@ class TalkSlot(LogMixin, models.Model):
 
     @cached_property
     def real_end(self):
-        """Guaranteed to provide a useful end datetime if ``start`` is set, even if ``end`` is empty."""
+        """Guaranteed to provide a useful end datetime if ``start`` is set,
+        even if ``end`` is empty."""
         return self.end or (
             self.start + timedelta(minutes=self.duration) if self.start else None
         )
 
     @cached_property
     def as_availability(self):
-        """ 'Casts' a slot as :class:`~pretalx.schedule.models.availability.Availability`, useful for availability arithmetics. """
+        """'Casts' a slot as.
+
+        :class:`~pretalx.schedule.models.availability.Availability`, useful for
+        availability arithmetics.
+        """
         from pretalx.schedule.models import Availability
 
         return Availability(
@@ -86,9 +94,9 @@ class TalkSlot(LogMixin, models.Model):
     def warnings(self) -> list:
         """A list of warnings that apply to this slot.
 
-        Warnings are dictionaries with a ``type`` (``room`` or ``speaker``, for
-        now) and a ``message`` fit for public display.  This property only
-        shows availability based warnings.
+        Warnings are dictionaries with a ``type`` (``room`` or
+        ``speaker``, for now) and a ``message`` fit for public display.
+        This property only shows availability based warnings.
         """
         if not self.start:
             return []
@@ -125,10 +133,34 @@ class TalkSlot(LogMixin, models.Model):
                         ),
                     }
                 )
+            overlaps = TalkSlot.objects.filter(
+                schedule=self.schedule, submission__speakers__in=[speaker]
+            ).filter(
+                models.Q(start__lt=self.start, end__gt=self.start)
+                | models.Q(start__lt=self.end, end__gt=self.end)
+            ).exists()
+            if overlaps:
+                warnings.append(
+                    {
+                        'type': 'speaker',
+                        'speaker': {
+                            'name': speaker.get_display_name(),
+                            'id': speaker.pk,
+                        },
+                        'message': _(
+                            'A speaker is giving another talk at the scheduled time.'
+                        ),
+                    }
+                )
+
         return warnings
 
     def copy_to_schedule(self, new_schedule, save=True):
-        """Create a new slot for the given :class:`~pretalx.schedule.models.schedule.Schedule` with all other fields identical to this one."""
+        """Create a new slot for the given.
+
+        :class:`~pretalx.schedule.models.schedule.Schedule` with all other
+        fields identical to this one.
+        """
         new_slot = TalkSlot(schedule=new_schedule)
 
         for field in [f for f in self._meta.fields if f.name not in ('id', 'schedule')]:

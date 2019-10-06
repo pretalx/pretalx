@@ -3,6 +3,11 @@
 Release Notes
 =============
 
+- :bug:`-` On the sneak peek preview page, markdown wasn't rendered correctly to HTML.
+- :feature:`-` If pretalx is running in development mode, its favicon will be red.
+- :feature:`-` Plugin authors will now have access to all configuration sections starting with ``[plugin:*]``, to ease the integration of system level settings.
+- :feature:`787` Provide the file uploads a speaker added to their submission via the ``/talks`` and ``/submissions`` API endpoint.
+- :feature:`-` Show speakers how many feedback notes have been left (if any) in their personal submission list view.
 - :feature:`-` Answers to boolean questions are not displayed as "yes", "no", and "maybe" in public display, instead of "true" or "false".
 - :bug:`775` When a speaker withdrew their already-accepted talk, the talk slot was not removed from the schedule editor. It did work when setting the state via the organiser interface.
 - :bug:`774` The API endpoint for events always returned a 404 on the detail view, even when event was visible in the list view.
