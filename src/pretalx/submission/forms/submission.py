@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from django import forms
-from django.conf import settings
+from django.conf import global_settings
 from django.db.models import Count
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -79,14 +79,14 @@ class InfoForm(RequestRequire, PublicContent, forms.ModelForm):
             self.fields['submission_type'].widget = forms.HiddenInput()
 
     def _set_locales(self):
-        if len(self.event.locales) == 1:
-            self.fields['content_locale'].initial = self.event.locales[0]
+        if len(self.event.submission_locales) == 1:
+            self.fields['content_locale'].initial = self.event.submission_locales[0]
             self.fields['content_locale'].widget = forms.HiddenInput()
         else:
-            locale_names = dict(settings.LANGUAGES)
-            self.fields['content_locale'].choices = [
-                (a, locale_names[a]) for a in self.event.locales
-            ]
+            locale_names = dict(global_settings.LANGUAGES)
+            self.fields['content_locale'] = forms.ChoiceField(
+                choices=[(a, locale_names[a]) for a in self.event.submission_locales]
+            )
 
     def _set_slot_count(self, instance=None):
         if not self.event.settings.present_multiple_times:

@@ -1,5 +1,5 @@
-import django.conf.global_settings
 from django import forms
+from django.conf import global_settings
 from django.utils.translation import gettext as _
 from django_scopes.forms import SafeModelChoiceField
 
@@ -14,9 +14,9 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
         self.fields['submission_type'].queryset = SubmissionType.objects.filter(
             event=event
         )
-        language_dict = dict(django.conf.global_settings.LANGUAGES)
+        locale_names = dict(global_settings.LANGUAGES)
         self.fields['content_locale'] = forms.ChoiceField(
-            choices=[(code, language_dict[code]) for code in event.submission_locale_array.split(',')]
+            choices=[(a, locale_names[a]) for a in event.submission_locales]
         )
 
         if not self.instance.pk:
