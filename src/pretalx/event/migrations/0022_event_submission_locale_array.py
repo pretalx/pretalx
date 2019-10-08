@@ -3,6 +3,16 @@
 from django.db import migrations, models
 
 
+def submission_locale_array_default_to_locale_array(apps, schema_editor):
+    Event = apps.get_model("event", "Event")
+    for event in Event.objects.all().iterator():
+        event.submission_locale_array = event.locale_array
+
+
+def dummy_reverse_func(apps, schema_editor):
+    pass
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -14,5 +24,9 @@ class Migration(migrations.Migration):
             model_name='event',
             name='submission_locale_array',
             field=models.TextField(default='en'),
+        ),
+        migrations.RunPython(
+            submission_locale_array_default_to_locale_array,
+            dummy_reverse_func
         ),
     ]
