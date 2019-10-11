@@ -17,7 +17,6 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views import View
 from formtools.wizard.views import NamedUrlSessionWizardView
-from i18nfield.strings import LazyI18nString
 
 from pretalx.cfp.views.event import EventPageMixin
 from pretalx.common.mail import SendMailException
@@ -140,8 +139,8 @@ class SubmitWizard(EventPageMixin, SensibleBackWizardMixin, NamedUrlSessionWizar
         context['step_list'] = step_list
 
         step_info = self.event.settings.cfp_workflow.steps_dict[step]
-        context['step_title'] = str(LazyI18nString(step_info.get('title')))
-        context['step_text'] = str(LazyI18nString(step_info.get('text')))
+        context['step_title'] = step_info.get('title')
+        context['step_text'] = step_info.get('text')
 
         if hasattr(self.request.user, 'email'):
             email = self.request.user.email

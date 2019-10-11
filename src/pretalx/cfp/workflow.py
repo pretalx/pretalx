@@ -3,8 +3,14 @@ import json
 from collections import OrderedDict
 
 from django import forms
+from i18nfield.strings import LazyI18nString
 
 from pretalx.common.mixins.forms import QuestionFieldsMixin
+from pretalx.common.forms.utils import validate_field_length
+
+MARKDOWN_SUPPORT = {
+    "submission_abstract", "submission_description", "submission_notes", "profile_biography",
+}
 
 DEFAULT_CFP_STEPS = {
     "event": None,
@@ -109,6 +115,8 @@ class CfPWorkflowForm(QuestionFieldsMixin, forms.Form):
         field_type = field_data["field_type"]
         field_name = f"{field_type}_{field_source}"
         initial = initial.get(field_name)
+        min_length = field_data.get("min_length")
+        max_length = field_data.get("max_length")
         kwargs = {
             key: value
             for key, value in field_data.items()
@@ -116,8 +124,26 @@ class CfPWorkflowForm(QuestionFieldsMixin, forms.Form):
         }
         if initial is not None:
             kwargs['initial'] = initial
+        help_text = get_help_text(
+            kwargs.get("help_text", ""),
+            min_length=field_data.get("min_length"),
+            max_length=field_data.get("max_length"),
+            count_in=self.event.settings.cfp_count_in,
+        )
+        if field_name in MARKDOWN_SUPPORT:
+            help_text += " " + str(phrases.base.markdown)
+            help_text = help_text.strip()
+        kwargs["help_text"] = help_text
         field = model._meta.get_field(field_source).formfield(**kwargs)
-        # TODO: help_text with min_length, max_length, markdown
+        if min_length or max_length:
+            field.validators.append(
+                partial(
+                    validate_field_length,
+                    min_length=min_length,
+                    max_length=max_length,
+                    count_in=self.event.settings.cfp_count_length_in,
+                )
+            )
         # TODO: data migration from current model to this one
         return field_name, field
 
@@ -155,6 +181,16 @@ class CfPWorkflow:
         else:
             data = copy.deepcopy(DEFAULT_CFP_STEPS)
             self.event = Event.objects.first()  # TODO: omg no
+        for step in data["steps"]:
+            for key in ("title", "text", "icon_label"):
+                value = step.get(key)
+                if value:
+                    field[key] = LazyI18nString(value)
+            title, text, icon_label
+            for field in step["fields"]:
+                help_text = field.get("help_text")
+                if help_text:
+                    field["help_text"] = LazyI18nString(help_text)
         self.steps = data["steps"]
         self.steps_dict = {
             step.get('identifier', str(index)): step
