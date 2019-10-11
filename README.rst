@@ -83,11 +83,13 @@ Previous conferences using pretalx include:
 - `MRMCD`_ (2017, 2018)
 - `Tools4AgileTeams`_ (2019)
 - `Camp++ 2019`_
-- `Klimacamp Leipziger Land`_ & `Degrowth Summerschool`_ (2019) 
+- `Klimacamp Leipziger Land`_ & `Degrowth Summerschool`_ (2019)
 - `OWASP Ukraine`_ (four events to date)
 - `NoNameCon`_
 - `ToxCon`_
 - `Technik Camp 2019`_
+- `EuroSciPy 2019`_
+- `PyCon DE 2019`_
 
 Note
   If you use pretalx for your event, please tell us about it!
@@ -127,3 +129,5 @@ Note
 .. _NoNameCon: https://cfp.nonamecon.org/
 .. _ToxCon: https://pretalx.tox.zoff.cc/toxcon2019/
 .. _Technik Camp 2019: https://ffbsee.net/camp/
+.. _EuroSciPy 2019: https://www.euroscipy.org/2019/
+.. _PyCon DE 2019: https://de.pycon.org/
