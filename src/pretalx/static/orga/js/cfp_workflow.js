@@ -54,6 +54,8 @@ var dragController = {
   },
 }
 
+let currentLanguage = "en"
+
 Vue.component("field", {
   template: `
     <div :class="['form-group', 'row', field.field_source, {dragged: isDragged}]" v-bind:style="style" @mousedown="onMouseDown">
@@ -68,7 +70,7 @@ Vue.component("field", {
         <select class="form-control" type="text" :placeholder="field.title" readonly v-else-if="field.widget === 'Select'"></select>
         <textarea class="form-control" type="text" :placeholder="field.title" readonly v-else-if="field.widget === 'Textarea'"></textarea>
 
-        <small class="form-text text-muted" v-if="help_text">{{ help_text }}</small>
+        <small class="form-text text-muted" v-if="help_text">{{ help_text[currentLanguage] }}</small>
       </div>
     </div>
   `, // TODO: file upload, checkboxes, help_text to html
@@ -124,10 +126,10 @@ Vue.component("step", { // TODO: introduce a modal, let steps be dragged
           </span>
         </div>
         <h2 @click="editingTitle=true" class="editable">
-          <span v-if="!editingTitle">{{ step.title }}</span>
+          <span v-if="!editingTitle">{{ step.title[currentLanguage] }}</span>
           <span v-else><input type="text" v-model="step.title"/></span>
         </h2>
-        {{ step.text }}
+        {{ step.text[currentLanguage] }}
         <form v-if="step.identifier != 'auth'">
           <field v-for="field in step.fields" :field="field" :key="field.title"></field>
         </form>
@@ -235,10 +237,13 @@ var app = new Vue({
       eventConfiguration: null,
       stepsConfiguration: null,
       originalConfiguration: null,
+      locales: null
     }
   },
   created() {
     this.eventConfiguration = JSON.parse(document.getElementById('eventConfiguration').textContent);
+    this.locales = this.eventConfiguration.locales;
+    if (!this.locales.includes("en")) currentLanguage = this.locales[0];
     let allFields = JSON.parse(document.getElementById('allFields').textContent);
     this.fieldLookup = allFields.reduce((accumulator, currentValue) => {
       currentValue.key = currentValue.field_type + '_' + currentValue.field_source

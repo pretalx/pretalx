@@ -1,12 +1,27 @@
 import copy
 import json
 from collections import OrderedDict
+from contextlib import contextmanager
 
 from django import forms
+from django.utils.translation import activate, gettext, get_language
 from i18nfield.strings import LazyI18nString
+from i18nfield.utils import I18nJSONEncoder
 
 from pretalx.common.mixins.forms import QuestionFieldsMixin
 from pretalx.common.forms.utils import validate_field_length
+
+
+
+@contextmanager
+def language(temporary_language):
+    original_language = get_language()
+    activate(temporary_language)
+    try:
+        yield
+    finally:
+        activate(original_language)
+
 
 MARKDOWN_SUPPORT = {
     "submission_abstract", "submission_description", "submission_notes", "profile_biography",
@@ -169,28 +184,36 @@ class CfPWorkflowForm(QuestionFieldsMixin, forms.Form):
         return field_name, field
 
 
+def i18n_string(data, locales):
+    if isinstance(data, str):
+        data = {"en": str(data)}
+    if not isinstance(data, dict):
+        data = {"en": ""}
+
+    english = data.get("en", "")
+    for locale in locales:
+        if locale not in data:
+            with language(locale):
+                data[locale] = gettext(english)
+    return LazyI18nString(data)
+
+
 class CfPWorkflow:
     steps = []
     event = None
 
-    def __init__(self, data):
-        from pretalx.event.models import Event
-        if data:
+    def __init__(self, data, event):
+        self.event = event
+        if isinstance(data, str) and data:
             data = json.loads(data)
-            self.event = Event.objects.get(slug__iexact=data["event"])
-        else:
+        elif not isinstance(data, dict):
             data = copy.deepcopy(DEFAULT_CFP_STEPS)
-            self.event = Event.objects.first()  # TODO: omg no
+        locales = self.event.locales
         for step in data["steps"]:
             for key in ("title", "text", "icon_label"):
-                value = step.get(key)
-                if value:
-                    field[key] = LazyI18nString(value)
-            title, text, icon_label
-            for field in step["fields"]:
-                help_text = field.get("help_text")
-                if help_text:
-                    field["help_text"] = LazyI18nString(help_text)
+                step[key] = i18n_string(step.get(key), locales)
+            for field in step.get("fields", []):
+                field["help_text"] = i18n_string(field.get("help_text"), locales)
         self.steps = data["steps"]
         self.steps_dict = {
             step.get('identifier', str(index)): step
@@ -206,9 +229,6 @@ class CfPWorkflow:
             )
             for index, step in enumerate(self.steps)
         ])
-
-    def to_json(self):
-        return self.data(self)
 
     def all_data(self):
         return {
@@ -228,4 +248,13 @@ class CfPWorkflow:
             - For the types submission, user, and profile: a field_name
             - For the question type: a question_pk
             - The keys help_text and required"""
-        return json.dumps(self.all_data())
+        return json.dumps(self.all_data(), cls=I18nJSONEncoder)
+
+    def to_json(self):
+        return self.data(self)
+
+    def json_safe_data(self):
+        return json.loads(self.to_json())
+
+    def save(self):
+        self.event.settings.cfp_workflow = self.to_json()

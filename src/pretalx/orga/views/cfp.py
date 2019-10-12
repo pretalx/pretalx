@@ -657,12 +657,13 @@ class CfPWorkflowEditor(EventPermissionRequired, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['current_configuration'] = self.request.event.settings.cfp_workflow.all_data()
+        context['current_configuration'] = self.request.event.cfp_workflow.json_safe_data()
         context['event_configuration'] = {
             "header_pattern": self.request.event.settings.display_header_pattern or 'bg-primary',
             "header_image": self.request.event.header_image.url if self.request.event.header_image else None,
             "logo_image": self.request.event.logo.url if self.request.event.logo else None,
             "primary_color": self.request.event.primary_color,
+            "locales": self.request.event.locales,
         }
         context['all_fields'] = [
             *Submission.cfp_fields(self.request.event),
@@ -678,11 +679,11 @@ class CfPWorkflowEditor(EventPermissionRequired, TemplateView):
         try:
             data = json.loads(request.POST)
             if 'action' in data and data['action'] == 'reset':
-                workflow = CfPWorkflow()
+                workflow = CfPWorkflow(None, self.event)
             else:
-                workflow = CfPWorkflow(request.POST)
+                workflow = CfPWorkflow(request.POST, self.event)
         except Exception:
             return JsonResponse({'error': 'Invalid data'}, status=400)
 
-        request.event.settings.cfp_workflow = workflow
+        workflow.save()
         return JsonResponse({'success': True})
