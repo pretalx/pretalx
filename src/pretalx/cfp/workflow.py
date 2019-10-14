@@ -8,9 +8,10 @@ from django.utils.translation import activate, gettext, get_language
 from i18nfield.strings import LazyI18nString
 from i18nfield.utils import I18nJSONEncoder
 
+from pretalx.common.phrases import phrases
 from pretalx.common.mixins.forms import QuestionFieldsMixin
-from pretalx.common.forms.utils import validate_field_length
-
+from pretalx.common.forms.utils import validate_field_length, get_help_text
+from pretalx.common.forms.widgets import MarkdownWidget
 
 
 @contextmanager
@@ -146,8 +147,9 @@ class CfPWorkflowForm(QuestionFieldsMixin, forms.Form):
             count_in=self.event.settings.cfp_count_in,
         )
         if field_name in MARKDOWN_SUPPORT:
-            help_text += " " + str(phrases.base.markdown)
+            help_text = str(help_text) + " " + str(phrases.base.use_markdown)
             help_text = help_text.strip()
+            kwargs["widget"] = MarkdownWidget
         kwargs["help_text"] = help_text
         field = model._meta.get_field(field_source).formfield(**kwargs)
         if min_length or max_length:

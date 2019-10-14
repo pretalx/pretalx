@@ -64,7 +64,7 @@ class SubmitWizard(EventPageMixin, SensibleBackWizardMixin, NamedUrlSessionWizar
     file_storage = FileSystemStorage(str(Path(settings.MEDIA_ROOT) / 'avatars'))
 
     def get_form_list(self):
-        form_list = self.event.settings.cfp_workflow.get_form_list()
+        form_list = self.event.cfp_workflow.get_form_list()
         result = OrderedDict()
         for form_key in form_list:
             condition = self.condition_dict.get(form_key, True)
@@ -95,7 +95,8 @@ class SubmitWizard(EventPageMixin, SensibleBackWizardMixin, NamedUrlSessionWizar
         kwargs = super().get_form_kwargs(step)
         if step == 'auth':
             return kwargs
-        kwargs['fields'] = self.event.settings.cfp_workflow.steps_dict[step]['fields']
+        kwargs['event'] = self.request.event
+        kwargs['fields'] = self.event.cfp_workflow.steps_dict[step]['fields']
         user_data = self.get_cleaned_data_for_step('auth') or dict()
         if user_data and user_data.get('user_id'):
             kwargs['user'] = User.objects.filter(pk=user_data['user_id']).first()
@@ -129,8 +130,8 @@ class SubmitWizard(EventPageMixin, SensibleBackWizardMixin, NamedUrlSessionWizar
                 {
                     'url': self.get_step_url(stp),
                     'phase': phase,
-                    'label': self.event.settings.cfp_workflow.steps_dict[stp]['icon_label'],
-                    'icon': self.event.settings.cfp_workflow.steps_dict[stp]['icon'],
+                    'label': self.event.cfp_workflow.steps_dict[stp]['icon_label'],
+                    'icon': self.event.cfp_workflow.steps_dict[stp]['icon'],
                 }
             )
             if phase == 'current':
@@ -138,7 +139,7 @@ class SubmitWizard(EventPageMixin, SensibleBackWizardMixin, NamedUrlSessionWizar
         step_list.append({'phase': 'todo', 'label': _('Done!'), 'icon': 'check'})
         context['step_list'] = step_list
 
-        step_info = self.event.settings.cfp_workflow.steps_dict[step]
+        step_info = self.event.cfp_workflow.steps_dict[step]
         context['step_title'] = step_info.get('title')
         context['step_text'] = step_info.get('text')
 

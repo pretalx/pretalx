@@ -677,12 +677,13 @@ class CfPWorkflowEditor(EventPermissionRequired, TemplateView):
         # TODO: check validity
         # TODO: clean all text input against XSS
         try:
-            data = json.loads(request.POST)
+            data = json.loads(request.body.decode())
             if 'action' in data and data['action'] == 'reset':
-                workflow = CfPWorkflow(None, self.event)
+                workflow = CfPWorkflow(None, self.request.event)
             else:
-                workflow = CfPWorkflow(request.POST, self.event)
-        except Exception:
+                workflow = CfPWorkflow(data, self.request.event)
+        except Exception as e:
+            print(e)
             return JsonResponse({'error': 'Invalid data'}, status=400)
 
         workflow.save()

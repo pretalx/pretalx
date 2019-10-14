@@ -8,7 +8,7 @@ var api = {
       method: "POST",
       headers: fullHeaders,
       credentials: "include",
-      body: data && JSON.stringify(data),
+      body: JSON.stringify(data),
     }
     return window
       .fetch(window.location, options)
@@ -29,48 +29,103 @@ var api = {
   },
 }
 
-var dragController = {
-  draggedField: null,
-  event: null,
-  stepWindow: null,
-  dragPosX: null,
-  dragPosY: null,
-  dragSource: null,
-
-  startDragging(field, dragSource, dragPosX, dragPosY) {
-    this.draggedField = JSON.parse(JSON.stringify(field))
-    this.dragPosX = dragPosX
-    this.dragSource = dragSource
-    this.dragPosY = dragPosY
-    this.dragSource.classList.add("drag-source")
-  },
-  stopDragging() {
-    if (this.stepWindow) {
-      this.stepWindow.classList.remove("hover-active")
-      this.stepWindow.classList.remove("drag-source")
-      this.draggedField = null
-      this.event = null
-    }
-  },
+let currentLanguage = "en"
+let currentModal = Vue.observable({
+  type: null,
+  data: null,
+  show: false,
+})
+document.onclick = (event) => {
+  if (currentModal.data) {
+    currentModal.data = null;
+  }
+}
+document.onkeypress = (event) => {
+  if (!currentModal.data) return
+  let isEscape = false;
+  if ("key" in evt) {
+    isEscape = (evt.key === "Escape" || evt.key === "Esc");
+  } else {
+    isEscape = (evt.keyCode === 27);
+  }
+  currentModal.data = null
 }
 
-let currentLanguage = "en"
+function areEqual () {
+  var i, l, leftChain, rightChain;
+
+  function compare2Objects (x, y) {
+    var p;
+    if (isNaN(x) && isNaN(y) && typeof x === 'number' && typeof y === 'number') return true;
+    if (x === y) return true;
+    if (!(x instanceof Object && y instanceof Object)) return false;
+    if (x.isPrototypeOf(y) || y.isPrototypeOf(x)) return false;
+    if (x.constructor !== y.constructor) return false;
+    if (x.prototype !== y.prototype) return false;
+
+    for (p in y) {
+        if (y.hasOwnProperty(p) !== x.hasOwnProperty(p)) return false;
+        else if (typeof y[p] !== typeof x[p]) return false;
+    }
+    for (p in x) {
+        if (y.hasOwnProperty(p) !== x.hasOwnProperty(p)) return false;
+        else if (typeof y[p] !== typeof x[p]) return false;
+
+        switch (typeof (x[p])) {
+            case 'object':
+            case 'function':
+
+                leftChain.push(x);
+                rightChain.push(y);
+
+                if (!compare2Objects (x[p], y[p])) {
+                    return false;
+                }
+
+                leftChain.pop();
+                rightChain.pop();
+                break;
+
+            default:
+                if (x[p] !== y[p]) {
+                    return false;
+                }
+                break;
+        }
+    }
+    return true;
+  }
+
+  for (i = 1, l = arguments.length; i < l; i++) {
+      leftChain = [];
+      rightChain = [];
+      if (!compare2Objects(arguments[0], arguments[i])) return false;
+  }
+  return true;
+}
 
 Vue.component("field", {
   template: `
-    <div :class="['form-group', 'row', field.field_source, {dragged: isDragged}]" v-bind:style="style" @mousedown="onMouseDown">
+    <div :class="['form-group', 'row', field.field_source].concat(isModal ? '' : 'editable')" v-bind:style="style" @click.stop="makeModal">
       <label class="col-md-3 col-form-label">
         {{ field.title }}
-        <span v-if="!field.required & !field.hard_required" class="optional" @click="field.required=true"><br>Optional</span>
-        <span v-else-if="!field.hard_required" class="optional" @click="field.required=false"><br><strong>Required</strong></span>
-        <span v-else class="optional"><br><strong>Required</strong></span>
+        <br>
+        <template v-if="isModal">
+          <span v-if="!field.required & !field.hard_required" :class="[editable ? 'editable' : '', 'optional']" @click.stop="field.required=true">Optional</span>
+          <span v-else-if="!field.hard_required" :class="[editable ? 'editable' : '', 'optional']" @click.stop="field.required=false"><strong>Required</strong></span>
+          <span v-else class="optional"><strong>Required</strong></span>
+        </template>
+        <template v-else>
+          <span v-if="!field.required" class="optional">Optional</span>
+          <span v-else class="optional"><strong>Required</strong></span>
+        </template>
       </label>
       <div class="col-md-9">
         <input class="form-control" type="text" :placeholder="field.title" readonly v-if="field.widget === 'TextInput'">
         <select class="form-control" type="text" :placeholder="field.title" readonly v-else-if="field.widget === 'Select'"></select>
         <textarea class="form-control" type="text" :placeholder="field.title" readonly v-else-if="field.widget === 'Textarea'"></textarea>
 
-        <small class="form-text text-muted" v-if="help_text">{{ help_text[currentLanguage] }}</small>
+        <small class="form-text text-muted" v-if="help_text">{{ field.help_text[currentLanguage] }}</small>
       </div>
     </div>
   `, // TODO: file upload, checkboxes, help_text to html
@@ -79,36 +134,39 @@ Vue.component("field", {
   },
   props: {
     field: Object,
-    isDragged: { type: Boolean, default: false },
-    isActive: { type: Boolean, default: false },
+    isModal: { type: Boolean, default: false },
   },
   computed: {
     style () {
-      if (this.isDragged) {
-        return {position: "absolute"}
-      }
       return ""
+    },
+    currentLanguage () {
+      return currentLanguage
+    },
+    editable () {
+      return !currentModal.data
     },
     help_text () {
       return this.field.help_text || this.field.defaultHelpText
     }
   },
   methods: {
-    onMouseDown(event) {
-      if (event.buttons === 1) {
-        var fieldRect = this.$el.getBoundingClientRect()
-        dragController.startDragging(
-          this.field,
-          this.$el,
-          event.clientX - fieldRect.left,
-          event.clientY - fieldRect.top
-        )
+    makeModal(event) {
+      if (this.isModal) return
+      if (!this.isModal && !this.editable) {
+        Vue.set(currentModal, 'data', null)
+        currentModal.type = null
+        currentModal.show = false
+      } else {
+        currentModal.data = this.field
+        currentModal.type = "field"
+        currentModal.show = true
       }
-    },
+    }
   },
 })
 
-Vue.component("step", { // TODO: introduce a modal, let steps be dragged
+Vue.component("step", {
   template: `
     <div class="step">
       <div :class="['step-header', 'header', eventConfiguration.header_pattern]" :style="headerStyle">
@@ -125,11 +183,14 @@ Vue.component("step", { // TODO: introduce a modal, let steps be dragged
               </div>
           </span>
         </div>
-        <h2 @click="editingTitle=true" class="editable">
-          <span v-if="!editingTitle">{{ step.title[currentLanguage] }}</span>
-          <span v-else><input type="text" v-model="step.title"/></span>
+        <h2 @click="editTitle" class="edit-container">
+          <span v-if="!editingTitle" :class="[editable ? 'editable' : '']">{{ step.title[currentLanguage] }}</span>
+          <span v-else><input type="text" v-model="step.title[currentLanguage]" @focusout="editingTitle=false"/></span>
         </h2>
-        {{ step.text[currentLanguage] }}
+        <div @click="editText" class="edit-container">
+          <span v-if="!editingText" :class="[editable ? 'editable' : '']">{{ step.text[currentLanguage] }}</span>
+          <span v-else><input type="text" v-model="step.text[currentLanguage]" @focusout="editingText=false"/></span>
+        </div>
         <form v-if="step.identifier != 'auth'">
           <field v-for="field in step.fields" :field="field" :key="field.title"></field>
         </form>
@@ -165,12 +226,26 @@ Vue.component("step", { // TODO: introduce a modal, let steps be dragged
     step: Object,
     steps: Array,
   },
+  methods: {
+    editTitle() {
+      if (this.editable) this.editingTitle = true
+    },
+    editText() {
+      if (this.editable) this.editingText = true
+    },
+  },
   computed: {
+    currentLanguage () {
+      return currentLanguage
+    },
     headerStyle () {
       // logo_image, header_image, header_pattern
       return {
         "background-color": this.eventConfiguration.primary_color || "#1a4c3b",
       }
+    },
+    editable () {
+      return !currentModal.data
     },
     stepPosition () {
       return this.steps.findIndex((element) => { return element.fields === this.fields })
@@ -199,9 +274,13 @@ Vue.component("step", { // TODO: introduce a modal, let steps be dragged
 var app = new Vue({
   el: "#workflow",
   template: `
-    <div @mousemove="onMouseMove" @mouseup="onMouseUp">
+    <div :class="currentModal.data ? 'defocused' : 'focused'">
+      <div id="workflow-modal" v-if="currentModal.data">
+        <form>
+          <field :field="currentModal.data" :isModal="true" key="modal"></field>
+        </form>
+      </div>
       <div id="workflow">
-        <field ref="draggedField" v-if="dragController.draggedField && dragController.event" :field="dragController.draggedField" :key="dragController.draggedField" :is-dragged="true"></field>
         <div id="loading" v-if="loading">
             <i class="fa fa-spinner fa-pulse fa-4x fa-fw text-primary mb-4 mt-4"></i>
             <h3 class="mt-2 mb-4">Loading talks, please wait.</h3>
@@ -223,6 +302,17 @@ var app = new Vue({
           </div>
         </div>
       </div>
+      <div id="dirty-workflow" class="alert alert-warning" v-if="configurationChanged">
+        Unsaved configuration changes!
+        <button class="btn btn-success" @click="save" :disabled="saving">
+          <span v-if="saving">
+            <i class="fa fa-spinner fa-pulse fa-fw text-success mb-2 mt-2"></i>
+          </span>
+          <span v-else>
+            Save now
+          </span>
+        </button>
+      </div>
     </div>
   `,
   data() {
@@ -231,8 +321,8 @@ var app = new Vue({
       fieldLookup: null,
       unassignedFields: null,
       search: "",
-      dragController: dragController,
       loading: true,
+      saving: false,
       eventSlug: "",
       eventConfiguration: null,
       stepsConfiguration: null,
@@ -261,13 +351,14 @@ var app = new Vue({
       step.fields.forEach((field) => {
         const defaultField = this.fieldLookup[field.field_type + '_' + field.field_source]
         field.key = defaultField.key
-        field.hardRequired = defaultField.hardRequired
+        field.hardRequired = (defaultField.hardRequired || false)
         field.defaultHelpText = defaultField.help_text
         field.title = defaultField.title
         field.widget = defaultField.widget
         delete this.unassignedFields[field.key]
       })
     })
+    this.originalConfiguration = JSON.parse(JSON.stringify(this.stepsConfiguration))
     this.loading = false
   },
   computed: {
@@ -278,97 +369,19 @@ var app = new Vue({
       })
     },
     configurationChanged() {
-      return false // TODO: compare this.originalConfiguration and this.stepsConfiguration
+      return !areEqual(this.stepsConfiguration, this.originalConfiguration)
+    },
+    currentModal () {
+      return currentModal
     },
   },
   methods: {
-    onMouseMove(event) {
-      if (dragController.draggedField) {
-        dragController.event = event
-        var newStep = document.elementFromPoint(
-          event.clientX,
-          event.clientY
-        )
-
-        while (
-          !newRoomColumn.className.match(/room-container/) &&
-          newRoomColumn.id !== "unassigned-container" &&
-          newRoomColumn.parentElement
-        ) {
-          newRoomColumn = newRoomColumn.parentElement
-        }
-
-        if (newRoomColumn.dataset.id) {
-          if (newRoomColumn && newRoomColumn !== dragController.roomColumn) {
-            if (dragController.roomColumn)
-              dragController.roomColumn.classList.remove("hover-active")
-          }
-          dragController.roomColumn = newRoomColumn
-          dragController.draggedTalk.room = newRoomColumn.dataset.id
-          dragController.roomColumn.classList.add("hover-active")
-          if (dragController.roomColumn && app.$refs.draggedTalk) {
-            var colRect = dragController.roomColumn.getBoundingClientRect()
-            var dragRect = app.$refs.draggedTalk.$el.getBoundingClientRect()
-            var position = dragRect.top - colRect.top
-            position -= position % 5
-            dragController.draggedTalk.start = moment(this.start)
-              .add(position, "minutes")
-              .format()
-          }
-        } else if (newRoomColumn.id === "unassigned-container") {
-          if (newRoomColumn && newRoomColumn !== dragController.roomColumn) {
-            if (dragController.roomColumn)
-              dragController.roomColumn.classList.remove("hover-active")
-          }
-          dragController.roomColumn = newRoomColumn
-          dragController.draggedTalk.room = null
-          dragController.draggedTalk.start = null
-          dragController.roomColumn.classList.add("hover-active")
-        }
-
-        if (event.clientY < 160) {
-          if (event.clientY < 110) {
-            window.scrollBy({
-              top: -100,
-              behavior: "smooth",
-            })
-          } else {
-            window.scrollBy({
-              top: -50,
-              behavior: "smooth",
-            })
-          }
-        } else if (event.clientY > window.innerHeight - 100) {
-          if (event.clientY > window.innerHeight - 40) {
-            window.scrollBy({
-              top: 100,
-              behavior: "smooth",
-            })
-          } else {
-            window.scrollBy({
-              top: 50,
-              behavior: "smooth",
-            })
-          }
-        }
-      }
-    },
-    onMouseUp(event) {
-      if (dragController.draggedTalk) {
-        if (dragController.event) {
-          api.saveTalk(dragController.draggedTalk).then(response => {
-            this.talks.forEach((talk, index) => {
-              if (talk.id == response.id) {
-                Object.assign(this.talks[index], response)
-              }
-            })
-          })
-        } else {
-          window.open(dragController.draggedTalk.url)
-          dragController.stopDragging()
-        }
-      }
-      dragController.stopDragging()
+    save() {
+      this.saving = true
+      api.submit(this.stepsConfiguration).then((response) => {
+        this.originalConfiguration = JSON.parse(JSON.stringify(this.stepsConfiguration))
+        this.saving = false
+      })
     },
   },
 })
