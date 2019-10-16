@@ -74,6 +74,7 @@ Previous conferences using pretalx include:
 - `Journées du Logiciel Libre 2019`_ (a good example of our French localisation)
 - `EasterHegg 2019`_
 - `PrivacyWeek`_ (2018, 2019)
+- `ZeroNights 2019`_
 - `hack.lu 2018`_
 - `DjangoCon 2018`_
 - `OsmoDevCon 2018`_
@@ -108,6 +109,7 @@ Note
 
 .. _MRMCD: https://talks.mrmcd.net/
 .. _deRSE19: https://derse19.uni-jena.de/derse19/schedule/
+.. _ZeroNights 2019: https://01x.cfp.zeronights.ru/zn2019/
 .. _TROOPERS 2018: https://cfp.ernw-insight.de/tr18/cfp
 .. _EasterHegg 2018: https://pretalx.eh18.easterhegg.eu/eh18/schedule/
 .. _GPN 2018: https://pretalx.entropia.de/gpn18/
