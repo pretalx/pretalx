@@ -1,0 +1,23 @@
+{% extends "orga/cfp/base.html" %}
+{% load i18n %}
+{% load rich_text %}
+
+{% block content %}
+    <h2 class="d-flex w-100 justify-content-between align-items-start">
+        {% trans "Event feedback" %}
+    </h2>
+    {% for entry in feedback %}
+    <div class="card feedback-card">
+        <div class="card-body">
+            {% trans "Submission" %}: <a href="{{ entry.talk.orga_urls.base }}">{{ entry.talk.title }}</a>
+            <br><br>
+
+            {{ entry.review|rich_text }}
+        </div>
+    </div>
+    {% empty %}
+        {% trans "There has been no feedback for this event yet." %}
+    {% endfor %}
+
+    {% include "orga/pagination.html" %}
+{% endblock %}

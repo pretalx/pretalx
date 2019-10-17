@@ -292,6 +292,7 @@ class Event(LogMixin, models.Model):
         plugins = '{settings}plugins'
         information = '{base}info/'
         new_information = '{base}info/new'
+        feedbacks = '{base}submissions/feedbacks/'
 
     class api_urls(EventUrls):
         base = '/api/events/{self.slug}/'
