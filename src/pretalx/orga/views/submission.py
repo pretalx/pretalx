@@ -590,12 +590,12 @@ class AllFeedbacksList(EventPermissionRequired, ListView):
     template_name = 'orga/submission/feedbacks_list.html'
 
     permission_required = 'submission.view_feedback'
-    paginate_by = 25
+    paginate_by = 5
 
     def get_queryset(self):
         qs = (
             Feedback.objects
-            .order_by('-pk', 'talk_id')
+            .order_by('-pk')
             .select_related('talk')
             .filter(talk__event=self.request.event)
         )
