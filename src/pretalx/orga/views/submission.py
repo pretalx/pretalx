@@ -595,7 +595,7 @@ class AllFeedbacksList(EventPermissionRequired, ListView):
     def get_queryset(self):
         qs = (
             Feedback.objects
-            .order_by('talk_id', '-pk')
+            .order_by('-pk', 'talk_id')
             .select_related('talk')
             .filter(talk__event=self.request.event)
         )
