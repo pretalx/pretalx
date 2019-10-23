@@ -590,7 +590,7 @@ class AllFeedbacksList(EventPermissionRequired, ListView):
     template_name = 'orga/submission/feedbacks_list.html'
 
     permission_required = 'submission.view_feedback'
-    paginate_by = 5
+    paginate_by = 25
 
     def get_queryset(self):
         qs = (
