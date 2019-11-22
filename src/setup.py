@@ -137,7 +137,7 @@ setup(
             'pytest-rerunfailures',
             'pytest-sugar',
             'pytest-tldr',
-            'semantic-version==2.6.0',  # https://github.com/bitprophet/releases/issues/84
+            'semantic-version==2.8.3',  # https://github.com/bitprophet/releases/issues/84
             'urllib3',
         ],
         'mysql': ['mysqlclient'],
