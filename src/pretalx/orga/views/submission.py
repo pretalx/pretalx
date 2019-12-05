@@ -585,7 +585,7 @@ class SubmissionStats(PermissionRequired, TemplateView):
 
 
 class AllFeedbacksList(EventPermissionRequired, ListView):
-    model = Submission
+    model = Feedback
     context_object_name = 'feedback'
     template_name = 'orga/submission/feedbacks_list.html'
 
