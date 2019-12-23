@@ -142,7 +142,7 @@ setup(
             "pytest-sugar",
             "pytest-tldr",
             "responses",
-            "semantic-version==2.6.0",  # https://github.com/bitprophet/releases/issues/84
+            "semantic-version==2.8.4",  # https://github.com/bitprophet/releases/issues/84
             "urllib3",
         ],
         "mysql": ["mysqlclient"],
