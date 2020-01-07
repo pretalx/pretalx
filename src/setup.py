@@ -107,7 +107,7 @@ setup(
         "django-formtools==2.2.*",  # http://django-formtools.readthedocs.io/en/latest/changelog.html
         "django-hierarkey==1.0.*",  # no changelog, https://github.com/raphaelm/django-hierarkey
         "django-i18nfield==1.6.*",  # 2017-11, no changelog, https://github.com/raphaelm/django-i18nfield/
-        "django-libsass==0.7",  # inactive, https://github.com/torchbox/django-libsass/blob/master/CHANGELOG.txt
+        "django-libsass==0.8",  # inactive, https://github.com/torchbox/django-libsass/blob/master/CHANGELOG.txt
         "django-scopes==1.2.*",  # https://github.com/raphaelm/django-scopes/releases
         "djangorestframework==3.11.*",  # http://www.django-rest-framework.org/community/release-notes/
         "inlinestyler==0.2.*",  # https://github.com/dlanger/inlinestyler/blob/master/CHANGELOG
