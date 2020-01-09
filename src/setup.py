@@ -101,7 +101,7 @@ setup(
         "django-bootstrap4==1.1.1",  # http://django-bootstrap4.readthedocs.io/en/latest/history.html
         "django-compressor==2.3.*",  # https://django-compressor.readthedocs.io/en/latest/changelog/
         "django-context-decorator",
-        "django-csp==3.5.*",  # https://github.com/mozilla/django-csp/blob/master/CHANGES
+        "django-csp>=3.5,<3.7",  # https://github.com/mozilla/django-csp/blob/master/CHANGES
         "django-filter==2.2.*",  # https://github.com/carltongibson/django-filter/blob/master/CHANGES.rst
         "django-formset-js-improved==0.5.0.2",  # no changelog, https://github.com/pretix/django-formset-js
         "django-formtools==2.2.*",  # http://django-formtools.readthedocs.io/en/latest/changelog.html
