@@ -64,6 +64,11 @@
             {% bootstrap_field form.tracks layout='event' %}
         </span>
         {% endif %}
+        {% if form.submission_types %}
+        <span id="limit-submission">
+            {% bootstrap_field form.submission_types layout='event' %}
+        </span>
+        {% endif %}
         <span id="limit-length">
             {% bootstrap_field form.min_length layout='event' %}
             {% bootstrap_field form.max_length layout='event' %}
