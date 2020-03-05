@@ -44,7 +44,8 @@ class QuestionsForm(CfPFormMixin, QuestionFieldsMixin, forms.Form):
             )
         if self.submission_type:
             self.queryset = self.queryset.filter(
-                Q(submission_types__in=[self.submission_type]) | Q(submission_types__isnull=True)
+                Q(submission_types__in=[self.submission_type])
+                | Q(submission_types__isnull=True)
             )
         if self.for_reviewers:
             self.queryset = self.queryset.filter(is_visible_to_reviewers=True)

@@ -371,7 +371,10 @@ class QuestionsStep(GenericFlowStep, FormFlowStep):
             Q(target=QuestionTarget.SUBMISSION)
             & (
                 (~Q(tracks__in=[info_data.get("track")]) & Q(tracks__isnull=False))
-                | (~Q(submission_types__in=[info_data.get("submission_type")]) & Q(submission_types__isnull=False))
+                | (
+                    ~Q(submission_types__in=[info_data.get("submission_type")])
+                    & Q(submission_types__isnull=False)
+                )
             )
         ).exists()
 
