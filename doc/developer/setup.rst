@@ -96,6 +96,10 @@ To run the local development server, execute::
 Now point your browser to http://localhost:8000/orga/ – You should be able to log in and play
 around!
 
+Alternatively, use this for a development server on a custom IP:port::
+
+    tox -e dev -- -m pretalx runserver 10.10.10.10:8888
+
 .. _`checksandtests`:
 
 Code checks and unit tests
