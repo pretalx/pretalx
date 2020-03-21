@@ -114,6 +114,7 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["event"] = self.request.event
+        kwargs["locales"] = self.request.event.locales
         return kwargs
 
     @context
@@ -141,6 +142,7 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
     def form_valid(self, form):
         self.request.event.release_schedule(
             form.cleaned_data["version"],
+            form.cleaned_data["comment"],
             user=self.request.user,
             notify_speakers=form.cleaned_data["notify_speakers"],
         )

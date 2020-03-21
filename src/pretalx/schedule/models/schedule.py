@@ -12,6 +12,7 @@ from django.utils.timezone import override as tzoverride
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import override
 from django_scopes import ScopedManager
+from i18nfield.fields import I18nTextField
 
 from pretalx.agenda.tasks import export_schedule_html
 from pretalx.common.mixins import LogMixin
@@ -37,6 +38,13 @@ class Schedule(LogMixin, models.Model):
         max_length=190, null=True, blank=True, verbose_name=_("version")
     )
     published = models.DateTimeField(null=True, blank=True)
+    comment = I18nTextField(
+        help_text=_(
+            "This text will be shown in the public changelog and the RSS feed."
+        ),
+        null=True,
+        blank=True
+    )
 
     objects = ScopedManager(event="event")
 
@@ -48,11 +56,12 @@ class Schedule(LogMixin, models.Model):
         public = "{self.event.urls.schedule}v/{self.url_version}/"
 
     @transaction.atomic
-    def freeze(self, name: str, user=None, notify_speakers: bool = True):
+    def freeze(self, name: str, comment: str, user=None, notify_speakers: bool = True):
         """Releases the current WIP schedule as a fixed schedule version.
 
         :param name: The new schedule name. May not be in use in this event,
             and cannot be 'wip' or 'latest'.
+        :param comment: Public comment for the release
         :param user: The :class:`~pretalx.person.models.user.User` initiating
             the freeze.
         :param notify_speakers: Should notification emails for speakers with
@@ -71,8 +80,9 @@ class Schedule(LogMixin, models.Model):
             raise Exception("Cannot create schedule version without a version name.")
 
         self.version = name
+        self.comment = comment
         self.published = now()
-        self.save(update_fields=["published", "version"])
+        self.save(update_fields=["published", "version", "comment"])
         self.log_action("pretalx.schedule.release", person=user, orga=True)
 
         wip_schedule = Schedule.objects.create(event=self.event)
