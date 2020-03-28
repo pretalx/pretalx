@@ -8,6 +8,9 @@ from django.conf.urls.static import static
 
 from pretalx.common.views import error_view
 
+from django.urls import path
+from django.contrib import admin
+
 plugin_patterns = []
 for app in apps.get_app_configs():
     if getattr(app, "PretalxPluginMeta", None):
@@ -22,6 +25,7 @@ for app in apps.get_app_configs():
             )
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
     url(r"^400$", error_view(400)),
     url(r"^403$", error_view(403)),
     url(r"^403/csrf$", error_view(4031)),
