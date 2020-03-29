@@ -16,6 +16,7 @@ from i18nfield.fields import I18nTextField
 
 from pretalx.agenda.tasks import export_schedule_html
 from pretalx.common.mixins import LogMixin
+from pretalx.common.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.mail.context import template_context_from_event
 from pretalx.person.models import User
@@ -39,11 +40,11 @@ class Schedule(LogMixin, models.Model):
     )
     published = models.DateTimeField(null=True, blank=True)
     comment = I18nTextField(
-        help_text=_(
-            "This text will be shown in the public changelog and the RSS feed."
-        ),
         null=True,
-        blank=True
+        blank=True,
+        help_text=_("This text will be shown in the public changelog and the RSS feed.")
+        + " "
+        + phrases.base.use_markdown,
     )
 
     objects = ScopedManager(event="event")
@@ -56,16 +57,18 @@ class Schedule(LogMixin, models.Model):
         public = "{self.event.urls.schedule}v/{self.url_version}/"
 
     @transaction.atomic
-    def freeze(self, name: str, comment: str, user=None, notify_speakers: bool = True):
+    def freeze(
+        self, name: str, user=None, notify_speakers: bool = True, comment: str = None
+    ):
         """Releases the current WIP schedule as a fixed schedule version.
 
         :param name: The new schedule name. May not be in use in this event,
             and cannot be 'wip' or 'latest'.
-        :param comment: Public comment for the release
         :param user: The :class:`~pretalx.person.models.user.User` initiating
             the freeze.
         :param notify_speakers: Should notification emails for speakers with
             changed slots be generated?
+        :param comment: Public comment for the release
         :rtype: Schedule
         """
         from pretalx.schedule.models import TalkSlot

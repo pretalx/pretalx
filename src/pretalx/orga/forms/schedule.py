@@ -27,4 +27,7 @@ class ScheduleReleaseForm(ModelForm, I18nModelForm):
 
     class Meta:
         model = Schedule
-        fields = ("version", "comment",)
+        fields = (
+            "version",
+            "comment",
+        )

@@ -142,9 +142,9 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
     def form_valid(self, form):
         self.request.event.release_schedule(
             form.cleaned_data["version"],
-            form.cleaned_data["comment"],
             user=self.request.user,
             notify_speakers=form.cleaned_data["notify_speakers"],
+            comment=form.cleaned_data["comment"],
         )
         messages.success(self.request, _("Nice, your schedule has been released!"))
         return redirect(self.request.event.orga_urls.schedule)
