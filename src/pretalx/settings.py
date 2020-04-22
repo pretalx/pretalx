@@ -3,6 +3,7 @@ from contextlib import suppress
 from urllib.parse import urlparse
 from pathlib import Path
 
+from django.conf.locale import LANG_INFO
 from django.contrib.messages import constants as messages
 from django.utils.crypto import get_random_string
 from django.utils.translation import gettext_lazy as _
@@ -354,6 +355,7 @@ for code, language in LANGUAGES_INFORMATION.items():
 LANGUAGES = [
     (language["code"], language["name"]) for language in LANGUAGES_INFORMATION.values()
 ]
+LANG_INFO.update(LANGUAGES_INFORMATION)
 
 
 ## AUTHENTICATION SETTINGS

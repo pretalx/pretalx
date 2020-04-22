@@ -6,6 +6,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect, reverse
 from django.urls import resolve
 from django.utils import timezone, translation
+from django.utils.cache import patch_vary_headers
 from django.utils.translation.trans_real import (
     get_supported_language_variant,
     language_code_re,
@@ -70,7 +71,7 @@ class EventPermissionMiddleware:
             return reverse("orga:login") + f"?next={quote(request.path)}" + params
         return None
 
-    def __call__(self, request):
+    def process_request(self, request):
         url = resolve(request.path_info)
 
         organiser_slug = url.kwargs.get("organiser")
@@ -126,21 +127,38 @@ class EventPermissionMiddleware:
         if event:
             with scope(event=event):
                 return self.get_response(request)
-        return self.get_response(request)
+
+    def process_response(self, response):
+        patch_vary_headers(response, ("Accept-Language",))
+        if "Content-Language" not in response:
+            language = translation.get_language()
+            response["Content-Language"] = language
+        return response
+
+    def __call__(self, request):
+        response = self.process_request(request) or self.get_response(request)
+        return self.process_response(response)
 
     def _select_locale(self, request):
-        supported = (
-            request.event.locales
-            if (hasattr(request, "event") and request.event)
-            else list(settings.LANGUAGES_INFORMATION)
-        )
+        event_locale = None
+        event = getattr(request, "event", None)
+        supported = list(settings.LANGUAGES_INFORMATION)
+        if event:
+            supported = {
+                lang
+                for lang in supported
+                if any(
+                    lang.split("-")[0] == event_lang.split("-")[0]
+                    for event_lang in event.locales
+                )
+            }
+            event_locale = event.locale
         language = (
             self._language_from_user(request, supported)
             or self._language_from_cookie(request, supported)
+            or event_locale
             or self._language_from_browser(request, supported)
         )
-        if hasattr(request, "event") and request.event:
-            language = language or request.event.locale
 
         translation.activate(language)
         request.LANGUAGE_CODE = translation.get_language()
