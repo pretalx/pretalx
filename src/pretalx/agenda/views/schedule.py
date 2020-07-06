@@ -1,7 +1,6 @@
 import datetime as dt
 import hashlib
 import textwrap
-from contextlib import suppress
 from itertools import repeat
 from urllib.parse import unquote
 
@@ -10,6 +9,7 @@ from dateutil import rrule
 from django.contrib import messages
 from django.http import (
     Http404,
+    HttpResponseServerError,
     HttpResponse,
     HttpResponseNotModified,
     HttpResponsePermanentRedirect,
@@ -28,6 +28,10 @@ from pretalx.common.mixins.views import EventPermissionRequired
 from pretalx.common.signals import register_data_exporters
 from pretalx.common.utils import safe_filename
 from pretalx.schedule.exporters import ScheduleData
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ScheduleDataView(EventPermissionRequired, TemplateView):
@@ -104,12 +108,14 @@ class ExporterView(ScheduleDataView):
 
     def get(self, request, *args, **kwargs):
         exporter = self.get_exporter(request)
+        if exporter is None:
+            return Http404()
         lang_code = request.GET.get("lang")
         if lang_code and lang_code in request.event.locales:
             activate(lang_code)
         elif "lang" in request.GET:
             activate(request.event.locale)
-        with suppress(Exception):
+        try:
             exporter.schedule = self.schedule
             exporter.is_orga = getattr(self.request, "is_orga", False)
             file_name, file_type, data = exporter.render()
@@ -126,8 +132,9 @@ class ExporterView(ScheduleDataView):
             if exporter.cors:
                 response["Access-Control-Allow-Origin"] = exporter.cors
             return response
-        raise Http404()
-
+        except Exception as e:
+            logger.exception(e)
+            return HttpResponseServerError()
 
 class ScheduleView(ScheduleDataView):
     template_name = "agenda/schedule.html"
