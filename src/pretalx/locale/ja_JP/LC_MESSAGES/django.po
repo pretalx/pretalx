@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-07-30 14:22+0000\n"
-"PO-Revision-Date: 2020-08-13 11:16+0900\n"
-"Last-Translator: Tobias Kunze <r@rixx.de>\n"
+"PO-Revision-Date: 2020-08-13 15:54+0900\n"
+"Last-Translator: Hal Seki <hal@code4japan.org>\n"
 "Language-Team: \n"
 "Language: de_DE\n"
 "MIME-Version: 1.0\n"
@@ -32,7 +32,7 @@ msgstr "John Doe"
 
 #: pretalx/agenda/phrases.py:8
 msgid "Thank you for your feedback!"
-msgstr "感想をありがとうございます！"
+msgstr "感想をありがとうございます!"
 
 #: pretalx/agenda/phrases.py:9
 msgid "Thanks, we (and our speakers) appreciate your feedback!"
@@ -42,11 +42,11 @@ msgstr ""
 
 #: pretalx/agenda/phrases.py:11
 msgid "We have new talks!"
-msgstr "新しい講演があります！"
+msgstr "新しい講演があります!"
 
 #: pretalx/agenda/phrases.py:12
 msgid "We have a new talk: "
-msgstr "新しい講演があります:"
+msgstr "新しい講演があります: "
 
 #: pretalx/agenda/phrases.py:13
 msgid "Sadly, we had to cancel talks:"
@@ -54,7 +54,7 @@ msgstr "残念ながら、講演をキャンセルする必要がありました
 
 #: pretalx/agenda/phrases.py:14
 msgid "We sadly had to cancel a talk: "
-msgstr "残念ながら、講演をキャンセルする必要がありました:"
+msgstr "残念ながら、講演をキャンセルする必要がありました: "
 
 #: pretalx/agenda/phrases.py:16
 msgid ""
@@ -62,11 +62,11 @@ msgid ""
 "their new dates or locations:"
 msgstr ""
 "いくつかの講演を移動しなければならなかったので、それらを見ようと思っていた人"
-"は、新しい日程や場所をチェックしてみてください。"
+"は、新しい日程や場所をチェックしてみてください: "
 
 #: pretalx/agenda/phrases.py:18
 msgid "We have moved a talk around: "
-msgstr "講演を移動させました :"
+msgstr "講演を移動させました : "
 
 #: pretalx/agenda/phrases.py:20
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:78
@@ -550,70 +550,69 @@ msgstr ""
 #: pretalx/cfp/templates/cfp/event/cfp.html:24
 #, python-format
 msgid "This Call for Papers closed on %(deadline)s (%(timezone)s)."
-msgstr ""
-"Einreichungen konnten bis %(deadline)s (%(timezone)s) abgegeben werden."
+msgstr "セッション公募は %(deadline)s (%(timezone)s) で締め切りました。"
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:34
 #: pretalx/cfp/templates/cfp/event/index.html:22
 msgid "View conference schedule"
-msgstr "Programm ansehen"
+msgstr "カンファレンススケジュールを見る"
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:38
 #: pretalx/cfp/templates/cfp/event/index.html:26
 msgid "View schedule preview"
-msgstr "Programm-Vorschau ansehen"
+msgstr "スケジュールのプレビューを見る"
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:43
 #: pretalx/cfp/templates/cfp/event/index.html:16
 msgid "Edit or view your submissions"
-msgstr "Meine Einreichungen ansehen/bearbeiten"
+msgstr "自分の提案を編集または閲覧する"
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:49
 msgid "Submit a proposal"
-msgstr "Zur Einreichung"
+msgstr "提案を送信する"
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:51
 msgid "Submissions are closed"
-msgstr "Der Einreichungszeitraum ist beendet"
+msgstr "提案期間は終了しました"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:3
 #: pretalx/submission/models/submission.py:50
 msgid "submitted"
-msgstr "eingereicht"
+msgstr "提出済"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:5
 msgid "not accepted"
-msgstr "abgelehnt"
+msgstr "受理されませんでした"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:7
 #: pretalx/submission/models/submission.py:51
 msgid "accepted"
-msgstr "angenommen"
+msgstr "受理されました"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:9
 #: pretalx/submission/models/submission.py:52
 msgid "confirmed"
-msgstr "bestätigt"
+msgstr "確定済"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:11
 #: pretalx/submission/models/submission.py:54
 msgid "canceled"
-msgstr "abgesagt"
+msgstr "キャンセル済"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:13
 #: pretalx/submission/models/submission.py:55
 msgid "withdrawn"
-msgstr "zurückgezogen"
+msgstr "取り下げ"
 
 #: pretalx/cfp/templates/cfp/event/index.html:31
 #: pretalx/orga/views/dashboard.py:96
 msgid "Go to CfP"
-msgstr "Zum CfP"
+msgstr "提案ページへ"
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:5
 #: pretalx/cfp/templates/cfp/event/invitation.html:8
 msgid "Accept invitation?"
-msgstr "Einladung annehmen?"
+msgstr "招待に応じますか？"
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:9
 #, python-format
@@ -621,32 +620,32 @@ msgid ""
 "You, %(name)s, have been invited to be a speaker for the submission "
 "“%(talk)s”. Do you accept the invitation?"
 msgstr ""
-"Du, %(name)s, wurdest eingeladen, den Vortrag „%(talk)s“ mitzuhalten. Nimmst "
-"du die Einladung an?"
+"%(name)s さんは、提案 “%(talk)s” の登壇者として招待されました。招待に応じます"
+"か？"
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:17
 msgid "Abstract:"
-msgstr "Zusammenfassung:"
+msgstr "概要: "
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:30
 #: pretalx/submission/models/question.py:320
 #: pretalx/submission/models/submission.py:631
 msgid "No"
-msgstr "Nein"
+msgstr "いいえ"
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:33
 #: pretalx/orga/templates/orga/review/dashboard.html:146
 #: pretalx/orga/templates/orga/review/dashboard.html:165
 msgid "Accept"
-msgstr "Annehmen"
+msgstr "受け入れる"
 
 #: pretalx/cfp/templates/cfp/event/login.html:5
 msgid "Login"
-msgstr "Login"
+msgstr "ログイン"
 
 #: pretalx/cfp/templates/cfp/event/login.html:8
 msgid "Welcome back!"
-msgstr "Willkommen zurück!"
+msgstr "おかえりなさい！"
 
 #: pretalx/cfp/templates/cfp/event/login.html:10
 msgid ""
@@ -654,63 +653,62 @@ msgid ""
 "schedule updates. You'll only need an account if you participate in the "
 "event as speaker or as an organiser."
 msgstr ""
-"Wenn du nur Veranstaltungen ansehen und bewerten möchtest, brauchst du "
-"keinen Account. Einen Account brauchst du nur, wenn du an der Veranstaltung "
-"als Veranstaltende oder Vortragende teilnimmst."
+"イベントを閲覧したり、感想を送ったり、イベントスケジュールを受け取るためにア"
+"カウントを作る必要はありません。イベントに登壇者として参加するか、主催者チー"
+"ムに入る場合のみこのサイトでのアカウント登録が必要です。"
 
 #: pretalx/cfp/templates/cfp/event/login.html:17
 msgid ""
 "If you already created a submission for a different event on this server, "
 "you can re-use your account to log in for this event."
 msgstr ""
-"Wenn du schon für eine andere Veranstaltung eine Einreichung auf diesem "
-"Server hast, kannst du deinen Account wiederbenutzen."
+"もしこのサーバ上の別のイベントに対して提案したことがあれば、その時のアカウン"
+"トでログインすることで再利用できます。"
 
 #: pretalx/cfp/templates/cfp/event/recover.html:5
 #: pretalx/cfp/templates/cfp/event/reset.html:5
 #: pretalx/orga/templates/orga/auth/recover.html:4
 #: pretalx/orga/templates/orga/auth/reset.html:4
 msgid "Password reset"
-msgstr "Passwort zurücksetzen"
+msgstr "パスワードリセット"
 
 #: pretalx/cfp/templates/cfp/event/recover.html:13
 #: pretalx/orga/templates/orga/auth/recover.html:12
 msgid "OK, this looks good!"
-msgstr "Das sieht doch gut aus!"
+msgstr "OK, いい感じです！"
 
 #: pretalx/cfp/templates/cfp/event/recover.html:15
 #: pretalx/orga/templates/orga/auth/recover.html:14
 msgid "Now you just need to choose your new password and you are ready to go."
-msgstr ""
-"Jetzt brauchst du nur noch ein neues Passwort und wir sind hier fertig."
+msgstr "新しいパスワードを設定してください。"
 
 #: pretalx/cfp/templates/cfp/event/recover.html:21
 #: pretalx/orga/templates/orga/auth/recover.html:20
 msgid "Save this!"
-msgstr "Speichern!"
+msgstr "保存する!"
 
 #: pretalx/cfp/templates/cfp/event/reset.html:8
 #: pretalx/orga/templates/orga/auth/reset.html:7
 msgid "Forgot your password?"
-msgstr "Passwort verlegt?"
+msgstr "パスワードを忘れましたか？"
 
 #: pretalx/cfp/templates/cfp/event/reset.html:14
 #: pretalx/orga/templates/orga/auth/reset.html:13
 msgid "Let me set a new one!"
-msgstr "Lasst mich ein neues setzen!"
+msgstr "新しいものをセットさせてください!"
 
 #: pretalx/cfp/templates/cfp/event/submission_base.html:6
 #: pretalx/orga/templates/orga/submission/content.html:19
 msgid "Create submission"
-msgstr "Einreichung erstellen"
+msgstr "提案を作成する"
 
 #: pretalx/cfp/templates/cfp/event/submission_base.html:28
 msgid "Done!"
-msgstr "Fertig!"
+msgstr "完了!"
 
 #: pretalx/cfp/templates/cfp/event/submission_base.html:41
 msgid "Continue"
-msgstr "Weiter"
+msgstr "続ける"
 
 #: pretalx/cfp/templates/cfp/event/submission_base.html:47
 #: pretalx/orga/templates/orga/cfp/access_code_delete.html:11
@@ -729,20 +727,20 @@ msgstr "Weiter"
 #: pretalx/orga/templates/orga/speaker/reset_password.html:15
 #: pretalx/orga/templates/orga/submission/state_change.html:18
 msgid "Back"
-msgstr "Zurück"
+msgstr "戻る"
 
 #: pretalx/cfp/templates/cfp/event/submission_questions.html:18
 msgid "… about your submission:"
-msgstr "… über deine Einreichung:"
+msgstr "… あなたの提案について"
 
 #: pretalx/cfp/templates/cfp/event/submission_questions.html:24
 msgid "… about yourself:"
-msgstr "… über dich:"
+msgstr "… あなたについて"
 
 #: pretalx/cfp/templates/cfp/event/user_mails.html:4
 #: pretalx/cfp/templates/cfp/event/user_mails.html:7
 msgid "Your E-mails"
-msgstr "Deine Post"
+msgstr "あなたのEメールアドレス"
 
 #: pretalx/cfp/templates/cfp/event/user_mails.html:9
 msgid ""
@@ -750,24 +748,22 @@ msgid ""
 "them in your email inbox, but this page serves as a helper in case your "
 "email address was unavailable or the emails got lost in some way."
 msgstr ""
-"Hier findest Du Kopien der E-Mails, die dir die Veranstaltenden geschickt "
-"haben. Du solltest sie auch alle in deinem E-Mail-Postfach finden können, "
-"aber auf dieser Seite kannst du nachsehen, falls deine Mailadresse mal nicht "
-"verfügbar war oder die E-Mails irgendwie verloren gingen."
+"主催者がメールを送っているので、必要な情報はメールボックスに入っているはずで"
+"すが、このページはメールアドレスが使えなかったり、メールが紛失したりした場合"
+"の補助としての役割を果たしています。"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:8
 #: pretalx/cfp/templates/cfp/event/user_profile.html:18
 msgid "Your Profile"
-msgstr "Dein Profil"
+msgstr "あなたのプロフィール"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:20
 msgid ""
 "This data will be displayed publicly if your talk is accepted. It is also "
 "visible to reviewers."
 msgstr ""
-"Diese Daten werden öffentlich neben deinem Beitrag im Programm angezeigt, "
-"wenn deine Einreichung angenommen wird. Vorher sind sie nur für Reviewer "
-"zugänglich."
+"あなたの講演が受理されればこのデータは一般に公開されます。レビュアーも閲覧可"
+"能です。"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:42
 #: pretalx/cfp/templates/cfp/event/user_profile.html:56
@@ -791,23 +787,23 @@ msgstr ""
 #: pretalx/orga/templates/orga/submit_row.html:11
 #: pretalx/orga/templates/orga/update.html:91
 msgid "Save"
-msgstr "Speichern"
+msgstr "保存"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:49
 msgid "We have some questions"
-msgstr "Wir haben ein paar Fragen"
+msgstr "いくつかの質問があります。"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:63
 msgid "Your Account"
-msgstr "Dein Account"
+msgstr "あなたのアカウント"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:65
 msgid "You can change your log in data here."
-msgstr "Du kannst deine Login-Daten hier anpassen."
+msgstr "ログイン情報をこちらから変更できます"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:84
 msgid "Account deletion"
-msgstr "Account löschen"
+msgstr "アカウント削除"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:88
 msgid ""
@@ -815,49 +811,48 @@ msgid ""
 "information will be overwritten. <strong>This action is irreversible.</"
 "strong>"
 msgstr ""
-"Du kannst deinen Account hier löschen – alle Namen, E-Mails, und sonstige "
-"personenbezogene Daten werden dann überschrieben. <strong>Das kannst du "
-"nicht mehr rückgängig machen.</strong>"
+"アカウント情報もこちらから削除できます。 - 全ての名前, emailその他の情報は上"
+"書きされます。<strong>これを実行すると元に戻せません。</strong>"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:92
 msgid ""
 "I really do want to delete my account, losing access to my submissions and "
 "talks, and overriding my public and private data."
 msgstr ""
-"Ich möchte wirklich meinen Account löschen, Zugriff auf meine Einreichungen "
-"und Vorträge verlieren, und meine öffentlichen und privaten Daten "
-"überschreiben."
+"私は自分のアカウントを確かに削除したいです。私が作成した講演や提案へのアクセ"
+"スやプロフィールページ、その他のプライベートなデータへのアクセスが失われても"
+"かまいません。"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:96
 msgid "Delete my account"
-msgstr "Account löschen"
+msgstr "アカウント削除"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm.html:7
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:9
 #: pretalx/cfp/templates/cfp/event/user_submission_invitation.html:5
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:4
 msgid "Your submission"
-msgstr "Deine Einreichung"
+msgstr "あなたの提案"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm.html:11
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:20
 #: pretalx/cfp/templates/cfp/event/user_submission_invitation.html:10
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:7
 msgid "Your submission:"
-msgstr "Deine Einreichung:"
+msgstr "あなたの提案: "
 
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm.html:13
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:29
 #: pretalx/cfp/templates/cfp/event/user_submission_invitation.html:14
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:9
 msgid "Current state of your submission:"
-msgstr "Aktueller Stand deiner Einreichung:"
+msgstr "あなたの提案の現在の状況"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm.html:16
 #: pretalx/orga/templates/orga/cfp/submission_type_view.html:16
 #: pretalx/submission/models/submission.py:129
 msgid "Submission type"
-msgstr "Einreichungsart"
+msgstr "提案のタイプ"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm.html:17
 #: pretalx/orga/templates/orga/cfp/access_code_view.html:31
@@ -868,19 +863,19 @@ msgstr "Einreichungsart"
 #: pretalx/submission/models/access_code.py:24
 #: pretalx/submission/models/submission.py:135
 msgid "Track"
-msgstr "Track"
+msgstr "トラック"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm.html:20
 msgid "Congratulations on your acceptance!"
-msgstr "Herzlichen Glückwunsch zur Annahme deiner Einreichung!"
+msgstr "提案が受け入れられ、おめでとうございます！"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm.html:24
 msgid ""
 "Please provide us with your available hours during the event, so that we can "
 "schedule your event accordingly:<p>"
 msgstr ""
-"Bitte trag hier ein, wann du während der Veranstaltung Zeit hast, damit wir "
-"dir einen geeigneten Zeitpunkt im Programm suchen können:<p>"
+"スケジュール作成の参考にしますので、イベント期間中あなたが参加可能な時間帯を"
+"入力してください。<p>"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm.html:41
 msgid ""
@@ -889,83 +884,76 @@ msgid ""
 "submission data, such as title, abstract, description, and any uploads you "
 "provided, can be made publicly available once the submission is confirmed."
 msgstr ""
-"Wenn du deine Einreichung bestätigst, sagst du damit, dass du an dieser "
-"Veranstaltung teilnimmst und deine Einreichung präsentieren wirst. Die "
-"Einreichungsdaten, wie Titel, Beschreibung, und Dateien, die du hochgeladen "
-"hast, können öffentlich im Programm angezeigt werden, sobald die Einreichung "
-"bestätigt ist."
+"提案を送信することで、このイベントに参加し、提案内容について発表を行うことを"
+"受諾したものとみなします。タイトルや概要、詳細、アップロード資料などの提出済"
+"のデータは、提案内奥が確定した時点で一般に公開されます。"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm.html:51
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:27
 msgid "Go back"
-msgstr "Zurück"
+msgstr "戻る"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm.html:55
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:162
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:23
 msgid "Withdraw"
-msgstr "Zurückziehen"
+msgstr "撤回する"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm.html:61
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:72
 msgid "Confirm"
-msgstr "Bestätigen"
+msgstr "確認"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:33
 msgid "Confirm your attendance"
-msgstr "Bestätige deine Teilnahme"
+msgstr "あなたの出席を確認"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:38
 msgid "Audience feedback"
-msgstr "Publikumsfeedback"
+msgstr "参加者の感想"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:40
 msgid "Attendees can leave feedback here after your talk has taken place."
-msgstr ""
-"Teilnehmende können hier Feedback abschicken, sobald der Vortrag "
-"stattgefunden hat."
+msgstr "あなたの講演実施後、参加者がここに感想を残すことができます"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:48
 msgid "Speaker:"
 msgid_plural "Speakers:"
-msgstr[0] "Vortragende:"
+msgstr[0] "登壇者: "
 msgstr[1] "Vortragende:"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:74
 #: pretalx/orga/templates/orga/submission/content.html:64
 msgid "Resources"
-msgstr "Ressourcen"
+msgstr "参考資料"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:78
 msgid ""
 "Resources will be publicly visible. Please try to keep your uploads below "
 "16MB."
-msgstr ""
-"Ressourcen sind öffentlich einsehbar. Bitte versuch, die Uploads kleiner als "
-"16MB zu halten."
+msgstr "参考資料は一般に公開されます。サイズは16MB以下に保ってください。"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:127
 #: pretalx/orga/templates/orga/submission/content.html:115
 msgid "Add another resource"
-msgstr "Einen weiteren Upload hinzufügen"
+msgstr "他の参考資料を追加する"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:143
 msgid "Share submission"
-msgstr "Einreichung teilen"
+msgstr "提案をシェアする"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:145
 msgid ""
 "If you need a review from a colleague or a friend here's a link that you can "
 "send out for viewing your submission:"
 msgstr ""
-"Wenn du deine Einreichung Freunden oder Kolleginnen zeigen möchtest, ist "
-"hier ein Link, den du für eine nicht-editierbare Ansicht deiner Einreichung "
-"verschicken kannst:"
+"もし同僚や友人からのレビューが必要な場合は、このリンクを送ることで提案内容を"
+"確認してもらうことができます。"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:151
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:14
 msgid "Withdraw submission"
-msgstr "Einreichung zurückziehen"
+msgstr "提案を撤回する"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:153
 msgid ""
@@ -973,14 +961,13 @@ msgid ""
 "undo this - if you are just uncertain if you can or should hold your talk, "
 "please contact the organiser instead."
 msgstr ""
-"Du kannst hier klicken, um deine Einreichung zurückzuziehen. Das kann nicht "
-"rückgängig gemacht werden - wenn du dir nur unsicher bist, ob du deine "
-"Veranstaltung abhalten kannst oder sollst, kontaktiere bitte lieber die "
-"Veranstalter."
+"選考中に、こちらからあなたの提案を撤回することができます。この動作はやり直し"
+"ができません。撤回しても良いかどうか確かでない場合は主催者に連絡してくださ"
+"い。"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:167
 msgid "Cancel submission"
-msgstr "Einreichung absagen"
+msgstr "提案をキャンセルする"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:169
 msgid ""
@@ -988,9 +975,9 @@ msgid ""
 "organising team to cancel it. The best way to reach out would be an answer "
 "to your acceptance mail."
 msgstr ""
-"Da deine Einreichung bereits angenommen wurde, nimm bitte Kontakt mit den "
-"Veranstaltern auf, wenn du sie absagen möchtest. Du erreichst uns am besten, "
-"indem du auf die Bestätigungsmail antwortest."
+"あなたの提案は既に受領されています。キャンセルについてはイベント主催者に確認"
+"してください。主催者に連絡を取る最も良い方法は、提案受領時のメールに記載され"
+"ています。"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_invitation.html:18
 msgid ""
@@ -998,38 +985,38 @@ msgid ""
 "an email, (which might get caught by spam filters) you can also give them "
 "this link:"
 msgstr ""
-"Lade hier eine weitere Vortragende ein. Statt eine Mail schicken zu lassen "
-"(die vielleicht im Spam-Filter landet), kannst du der betreffenden Person "
-"auch diesen Link geben:"
+"こちらから別の登壇者をあなたの提案に招待します。メールを我々経由で送るのでは"
+"なく（スパムフィルタに捕まる可能性が髙いです）、直接このリンクを相手に伝えて"
+"ください。"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_invitation.html:31
 #: pretalx/common/phrases.py:45
 msgid "Cancel"
-msgstr "Abbrechen"
+msgstr "取り消し"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_invitation.html:34
 #: pretalx/common/phrases.py:43
 #: pretalx/orga/templates/orga/cfp/access_code_send.html:26
 #: pretalx/orga/templates/orga/mails/send_form.html:22
 msgid "Send"
-msgstr "Abschicken"
+msgstr "送信"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:16
 msgid "Do you really want to withdraw your submission?"
-msgstr "Möchtest du deine Einreichung wirklich zurückziehen?"
+msgstr "本当に提案を撤回しますか？"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:29
 msgid "You will not be able to revert this action."
-msgstr "Das kannst du nicht mehr rückgängig machen."
+msgstr "この動作は取り消しが"
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:9
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:24
 msgid "Your submissions"
-msgstr "Deine Einreichungen"
+msgstr "あなたの提案: "
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:13
 msgid "Important Information"
-msgstr "Wichtige Informationen"
+msgstr "重要な情報"
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:29
 #: pretalx/orga/templates/orga/cfp/text.html:67
@@ -1039,26 +1026,25 @@ msgstr "Wichtige Informationen"
 #: pretalx/orga/templates/orga/submission/review.html:49
 #: pretalx/submission/models/submission.py:124
 msgid "Title"
-msgstr "Titel"
+msgstr "タイトル"
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:30
 #: pretalx/orga/templates/orga/review/dashboard.html:93
 #: pretalx/orga/templates/orga/submission/list.html:78
 msgid "State"
-msgstr "Status"
+msgstr "状態"
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:61
 msgid "Copy code for review"
-msgstr "Review-Link kopieren"
+msgstr "コードのコピーまたはレビュー"
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:90
 msgid "Create a new submission"
-msgstr "Neue Einreichung"
+msgstr "新しい提案を作る"
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:96
 msgid "It seems like you haven't submitted anything to this event yet."
-msgstr ""
-"Hm, du hast anscheinend noch nichts bei dieser Veranstaltung eingereicht."
+msgstr "まだあなたはこのイベントに対して提案を行っていないようです。"
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:99
 msgid "If you did, maybe you used a different account? Check your emails!"
@@ -1076,7 +1062,7 @@ msgstr ""
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:108
 msgid "Submit something now!"
-msgstr "Reich etwas ein!"
+msgstr "何か提案しましょう！"
 
 #: pretalx/cfp/templates/cfp/index.html:4
 #: pretalx/cfp/templates/cfp/index.html:8
@@ -1084,76 +1070,73 @@ msgstr "Reich etwas ein!"
 #: pretalx/orga/templates/orga/base.html:92
 #: pretalx/orga/templates/orga/base.html:376
 msgid "Events"
-msgstr "Veranstaltungen"
+msgstr "イベント"
 
 #: pretalx/cfp/templates/cfp/index.html:20
 msgid "No events are currently ongoing."
-msgstr "Derzeit finden keine Veranstaltungen statt."
+msgstr "現在予定されているイベントはありません。"
 
 #: pretalx/cfp/templates/cfp/index.html:23
 msgid "Upcoming events"
-msgstr "Kommende Veranstaltungen"
+msgstr "直近のイベント"
 
 #: pretalx/cfp/templates/cfp/index.html:34
 msgid "Past events"
-msgstr "Vergangene Veranstaltungen"
+msgstr "過去のイベント"
 
 #: pretalx/cfp/templates/widgets/track-select-widget.html:9
 #: pretalx/cfp/templates/widgets/track-select-widget.html:22
 msgid "Track descriptions"
-msgstr "Track-Beschreibungen"
+msgstr "トラックの説明"
 
 #: pretalx/cfp/templates/widgets/track-select-widget.html:33
 msgid "No description provided."
-msgstr "Keine Beschreibung verfügbar."
+msgstr "詳細がありません"
 
 #: pretalx/cfp/templates/widgets/track-select-widget.html:40
 msgid "Close"
-msgstr "Schließen"
+msgstr "閉じる"
 
 #: pretalx/cfp/views/auth.py:102 pretalx/cfp/views/auth.py:111
 #: pretalx/cfp/views/auth.py:114
 msgid "Please go back and try again."
-msgstr "Bitte geh zurück und versuch es noch einmal."
+msgstr "戻ってやり直してください。"
 
 #: pretalx/cfp/views/user.py:92 pretalx/orga/views/event.py:507
 msgid ""
 "Your API token has been regenerated. The previous token will not be usable "
 "any longer."
 msgstr ""
-"Das API-Token wurde zurückgesetzt, das bisherige Token kann nicht mehr "
-"verwendet werden."
+"APIトークンが再生成されました。以前のトークンはもう使うことができません。"
 
 #: pretalx/cfp/views/wizard.py:97
 msgid "New submission!"
-msgstr "Neue Einreichung!"
+msgstr "新しい提案! "
 
 #: pretalx/common/context_processors.py:37
 msgid "“"
-msgstr "„"
+msgstr "“"
 
 #: pretalx/common/context_processors.py:38
 msgid "”"
-msgstr "“"
+msgstr "”"
 
 #: pretalx/common/css.py:116
 #, python-brace-format
 msgid "\"{value}\" is not allowed as attribute of \"{key}\""
-msgstr "\"{value}\" ist kein erlaubtes Attribut von \"{key}\""
+msgstr "\"{value}\" は \"{key}\" の属性として認められません。"
 
 #: pretalx/common/css.py:122
 #, python-brace-format
 msgid "You are not allowed to include \"{key}\" keys in your CSS."
-msgstr "Du darfst \"{key}\" nicht in deinem CSS verwenden."
+msgstr "key \"{key}\" はあなたの CSS に含めることができません。"
 
 #: pretalx/common/forms/fields.py:65 pretalx/person/forms.py:184
 #, python-brace-format
 msgid ""
 "This filetype ({extension}) is not allowed, it has to be one of the "
 "following: "
-msgstr ""
-"Dieser Dateityp ({extension}) ist hier nicht erlaubt, die Datei muss eine "
-"dieser Endungen haben: "
+msgstr "拡張子 ({extension}) は許可されていません。以下のみ許可されています: "
 
 #: pretalx/common/forms/forms.py:7
 #: pretalx/common/templates/common/search_form.html:6
@@ -1163,320 +1146,319 @@ msgstr ""
 #: pretalx/orga/templates/orga/speaker/list.html:20
 #: pretalx/orga/templates/orga/submission/list.html:46
 msgid "Search"
-msgstr "Suche"
+msgstr "検索"
 
 #: pretalx/common/forms/renderers.py:28
 msgctxt "form"
 msgid "Optional"
-msgstr "Optional"
+msgstr "オプション"
 
 #: pretalx/common/forms/utils.py:15
 #, python-brace-format
 msgid "Please write between {min_length} and {max_length} words."
-msgstr "Bitte schreib zwischen {min_length} und {max_length} Wörtern."
+msgstr "{min_length} から {max_length} 単語の間で記述してください。"
 
 #: pretalx/common/forms/utils.py:17
 #, python-brace-format
 msgid "Please write between {min_length} and {max_length} characters."
-msgstr "Bitte schreib zwischen {min_length} und {max_length} Zeichen."
+msgstr "{min_length} から {max_length} までの文字数で記述してください。"
 
 #: pretalx/common/forms/utils.py:19
 #, python-brace-format
 msgid "Please write at least {min_length} words."
-msgstr "Bitte schreib mindestens {min_length} Wörter."
+msgstr "最低 {min_length} 単語を記述してください。"
 
 #: pretalx/common/forms/utils.py:20
 #, python-brace-format
 msgid "Please write at least {min_length} characters."
-msgstr "Bitte schreib mindestens {min_length} Zeichen."
+msgstr "最低 {min_length} 文字を記述してください。"
 
 #: pretalx/common/forms/utils.py:21
 #, python-brace-format
 msgid "Please write at most {max_length} words."
-msgstr "Bitte schreib höchstens {max_length} Wörter."
+msgstr "最大 {max_length} 単語までで記述してください。"
 
 #: pretalx/common/forms/utils.py:22
 #, python-brace-format
 msgid "Please write at most {max_length} characters."
-msgstr "Bitte schreib höchstens {max_length} Zeichen."
+msgstr "最大 {max_length} 文字までで記述して下さい。"
 
 #: pretalx/common/forms/utils.py:39
 #, python-brace-format
 msgid "You wrote {count} characters."
-msgstr "Du hast {count} Zeichen geschrieben."
+msgstr "{count} 文字使っています。"
 
 #: pretalx/common/forms/utils.py:40
 #, python-brace-format
 msgid "You wrote {count} words."
-msgstr "Du hast {count} Wörter geschrieben."
+msgstr "{count} ワード使っています。"
 
 #: pretalx/common/forms/widgets.py:19
 msgid "Choose one or more"
-msgstr "Wähle eins oder mehrere"
+msgstr "一つ以上選択してください"
 
 #: pretalx/common/forms/widgets.py:50
 msgid ""
 "This password would take <em class=\"password_strength_time\"></em> to crack."
 msgstr ""
-"Dein Passwort ließe sich in <em class=\"password_strength_time\"></em> "
-"erraten."
+"パスワードを解析するのに <em class=\"password_strength_time\"></em> が必要で"
+"す。"
 
 #: pretalx/common/forms/widgets.py:79
 msgid "Warning"
-msgstr "Warnung"
+msgstr "警告"
 
 #: pretalx/common/forms/widgets.py:79
 msgid "Your passwords don't match."
-msgstr "Die Passwörter stimmen nicht überein."
+msgstr "パスワードがマッチしません"
 
 #: pretalx/common/log_display.py:9
 msgid "The CfP has been modified."
-msgstr "Der CfP wurde geändert."
+msgstr "提案受付処理が変更されました。"
 
 #: pretalx/common/log_display.py:10
 msgid "The event has been added."
-msgstr "Die Veranstaltung wurde erstellt."
+msgstr "イベントが追加されました。"
 
 #: pretalx/common/log_display.py:11
 msgid "The event was modified."
-msgstr "Die Veranstaltung wurde geändert."
+msgstr "イベントが変更されました。"
 
 #: pretalx/common/log_display.py:12
 msgid "The event was made public."
-msgstr "Die Veranstaltung wurde veröffentlicht."
+msgstr "イベントが公開されました。"
 
 #: pretalx/common/log_display.py:13
 msgid "The event was deactivated."
-msgstr "Die Veranstaltung wurde privat geschaltet."
+msgstr "イベントが非公開になりました。"
 
 #: pretalx/common/log_display.py:14
 msgid "A plugin was enabled."
-msgstr "Das Plugin wurde aktiviert."
+msgstr "プラグインが有効になりました。"
 
 #: pretalx/common/log_display.py:15
 msgid "A plugin was disabled."
-msgstr "Das Plugin wurde deaktiviert."
+msgstr "プラグインが無効になりました。"
 
 #: pretalx/common/log_display.py:16 pretalx/common/log_display.py:24
 msgid "The invitation to the event orga was accepted."
-msgstr "Die Einladung zum Veranstalter-Team wurde angenommen."
+msgstr "イベント主催者への招待が受領されました。"
 
 #: pretalx/common/log_display.py:17 pretalx/common/log_display.py:27
 msgid "An invitation to the event orga was retracted."
-msgstr "Eine Einladung zum Veranstalter-Team wurde zurückgezogen."
+msgstr "イベント主催者への招待が撤回されました。"
 
 #: pretalx/common/log_display.py:18 pretalx/common/log_display.py:30
 msgid "An invitation to the event orga was sent."
-msgstr "Eine Einladung zum Veranstalter-Team wurde verschickt."
+msgstr "イベント主催者への招待が送信されました。"
 
 #: pretalx/common/log_display.py:20 pretalx/common/log_display.py:33
 msgid "The invitation to the review team was retracted."
-msgstr "Eine Einladung zum Review-Team wurde zurückgezogen."
+msgstr "レビューチームへの招待が撤回されました。"
 
 #: pretalx/common/log_display.py:22 pretalx/common/log_display.py:36
 msgid "The invitation to the review team was sent."
-msgstr "Eine Einladung zum Review-Team wurde verschickt."
+msgstr "レビューチームへの招待が送信されました。"
 
 #: pretalx/common/log_display.py:38 pretalx/common/log_display.py:42
 msgid "An email was modified."
-msgstr "Eine E-Mail wurde verändert."
+msgstr "Eメールが変更されました。"
 
 #: pretalx/common/log_display.py:39
 msgid "A pending email was deleted."
-msgstr "Eine ausstehende E-Mail wurde gelöscht."
+msgstr "送信待ちのEメールが削除されました。"
 
 #: pretalx/common/log_display.py:40
 msgid "All pending emails were deleted."
-msgstr "Alle ausstehenden E-Mails wurden gelöscht."
+msgstr "全ての送信待ちEメールが削除されました。"
 
 #: pretalx/common/log_display.py:41
 msgid "An email was sent."
-msgstr "Eine E-Mail wurde verschickt."
+msgstr "メールが送信されました。"
 
 #: pretalx/common/log_display.py:43
 msgid "A mail template was added."
-msgstr "Eine E-Mail-Vorlage wurde hinzugefügt."
+msgstr "メールテンプレートが追加されました。"
 
 #: pretalx/common/log_display.py:44
 msgid "A mail template was deleted."
-msgstr "Eine E-Mail-Vorlage wurde gelöscht."
+msgstr "メールテンプレートが削除されました。"
 
 #: pretalx/common/log_display.py:45
 msgid "A mail template was modified."
-msgstr "Eine E-Mail-Vorlage wurde verändert."
+msgstr "メールテンプレートが変更されました。"
 
 #: pretalx/common/log_display.py:46
 msgid "A question was added."
-msgstr "Eine Frage wurde hinzugefügt."
+msgstr "質問が追加されました。"
 
 #: pretalx/common/log_display.py:47
 msgid "A question was deleted."
-msgstr "Eine Frage wurde gelöscht."
+msgstr "質問が削除されました。"
 
 #: pretalx/common/log_display.py:48
 msgid "A question was modified."
-msgstr "Eine Frage wurde geändert."
+msgstr "質問が変更されました。"
 
 #: pretalx/common/log_display.py:49
 msgid "A question option was added."
-msgstr "Eine Frage-Option wurde hinzugefügt."
+msgstr "質問のオプションが追加されました。"
 
 #: pretalx/common/log_display.py:50
 msgid "A question option was deleted."
-msgstr "Eine Frage-Option wurde gelöscht."
+msgstr "質問のオプションが削除されました。"
 
 #: pretalx/common/log_display.py:51
 msgid "A question option was modified."
-msgstr "Eine Frage wurde verändert."
+msgstr "質問のオプションが変更されました。"
 
 #: pretalx/common/log_display.py:52
 msgid "A new room was added."
-msgstr "Ein Raum wurde hinzugefügt."
+msgstr "新しいルームが追加されました。"
 
 #: pretalx/common/log_display.py:53
 msgid "A new schedule version was released."
-msgstr "Eine neue Programmversion wurde veröffentlicht."
+msgstr "新しいスケジュールのバージョンがリリースされました。"
 
 #: pretalx/common/log_display.py:54
 msgid "The submission was accepted."
-msgstr "Die Einreichung wurde angenommen."
+msgstr "提案が受領されました。"
 
 #: pretalx/common/log_display.py:55
 msgid "The submission was cancelled."
-msgstr "Der Vortrag wurde abgesagt."
+msgstr "提案がキャンセルされました。"
 
 #: pretalx/common/log_display.py:56 pretalx/common/log_display.py:57
 msgid "The submission was confirmed."
-msgstr "Die Einreichung wurde bestätigt."
+msgstr "提案が確定されました。"
 
 #: pretalx/common/log_display.py:58
 msgid "The submission was added."
-msgstr "Die Einreichung wurde erstellt."
+msgstr "提案が追加されました。"
 
 #: pretalx/common/log_display.py:59
 msgid "The submission was deleted."
-msgstr "Die Einreichung wurde gelöscht."
+msgstr "提案が削除されました。"
 
 #: pretalx/common/log_display.py:60
 msgid "The submission was rejected."
-msgstr "Die Einreichung wurde abgelehnt."
+msgstr "提案が拒否されました。"
 
 #: pretalx/common/log_display.py:61
 msgid "A submission resource was added."
-msgstr "Eine Ressource wurde hinzugefügt."
+msgstr "提案の参考資料が追加されました。"
 
 #: pretalx/common/log_display.py:62
 msgid "A submission resource was deleted."
-msgstr "Eine Ressource wurde gelöscht."
+msgstr "提案の参考資料が削除されました。"
 
 #: pretalx/common/log_display.py:63
 msgid "A submission resource was modified."
-msgstr "Eine Ressource wurde verändert."
+msgstr "提案の参考資料が編集されました。"
 
 #: pretalx/common/log_display.py:64
 msgid "A speaker was added to the submission."
-msgstr "Eine weitere Vortragende wurde der Einreichung hinzugefügt."
+msgstr "登壇者が提案に追加されました。"
 
 #: pretalx/common/log_display.py:65
 msgid "A speaker was invited to the submission."
-msgstr "Eine weitere Vortragende wurde zur Einreichung eingeladen."
+msgstr "登壇者が提案に招待されました。"
 
 #: pretalx/common/log_display.py:67
 msgid "A speaker was removed from the submission."
-msgstr "Eine Vortragende wurde von der Einreichung entfernt."
+msgstr "登壇者が提案から削除されました。"
 
 #: pretalx/common/log_display.py:69
 msgid "The submission was unconfirmed."
-msgstr "Die Bestätigung der Einreichung wurde zurückgenommen."
+msgstr "この提案は未確定です。"
 
 #: pretalx/common/log_display.py:70
 msgid "The submission was modified."
-msgstr "Die Einreichung wurde verändert."
+msgstr "この提案は編集されています。"
 
 #: pretalx/common/log_display.py:71
 msgid "The submission was withdrawn."
-msgstr "Die Einreichung wurde zurückgezogen."
+msgstr "この提案は撤回されています。"
 
 #: pretalx/common/log_display.py:73 pretalx/common/log_display.py:75
 msgid "A submission answer was modified."
-msgstr "Eine Antwort wurde verändert."
+msgstr "この提案への回答は修正されています。"
 
 #: pretalx/common/log_display.py:76 pretalx/common/log_display.py:77
 msgid "A submission answer was added."
-msgstr "Eine Antwort wurde hinzugefügt."
+msgstr "提案への回答が追加されました。"
 
 #: pretalx/common/log_display.py:78
 msgid "A submission type was added."
-msgstr "Ein Einreichungstyp wurde hinzugefügt."
+msgstr "提案の種別が追加されました。"
 
 #: pretalx/common/log_display.py:79
 msgid "A submission type was deleted."
-msgstr "Ein Einreichungstyp wurde gelöscht."
+msgstr "提案の種別が削除されました。"
 
 #: pretalx/common/log_display.py:80
 msgid "The submission type was made default."
-msgstr "Der Einreichungstyp wurde zum Standard gemacht."
+msgstr "この提案種別がデフォルトになりました。"
 
 #: pretalx/common/log_display.py:81
 msgid "A submission type was modified."
-msgstr "Ein Einreichungstyp wurde verändert."
+msgstr "提案種別が追加されました。"
 
 #: pretalx/common/log_display.py:82
 msgid "An access code was added."
-msgstr "Ein Zugangscode wurde hinzugefügt."
+msgstr "アクセスコードが追加されました。"
 
 #: pretalx/common/log_display.py:83
 msgid "An access code was sent."
-msgstr "Der Zugangscode wurde verschickt."
+msgstr "アクセスコードが送信されました。"
 
 #: pretalx/common/log_display.py:84
 msgid "An access code was modified."
-msgstr "Das Zugangscode wurde verändert."
+msgstr "アクセスコードが編集されました。"
 
 #: pretalx/common/log_display.py:85
 msgid "An access code was deleted."
-msgstr "Der Zugangscode wurde gelöscht."
+msgstr "アクセスコードが削除されました。"
 
 #: pretalx/common/log_display.py:86
 msgid "A track was added."
-msgstr "Ein Track wurde hinzugefügt."
+msgstr "トラックが追加されました。"
 
 #: pretalx/common/log_display.py:87
 msgid "A track was deleted."
-msgstr "Ein Track wurde gelöscht."
+msgstr "トラックが削除されました。"
 
 #: pretalx/common/log_display.py:88
 msgid "A track was modified."
-msgstr "Ein Track wurde verändert."
+msgstr "トラックが編集されました。"
 
 #: pretalx/common/log_display.py:89
 msgid "A speaker has been marked as arrived."
-msgstr "Diese(r) Vortragende ist als angekommen markiert."
+msgstr "登壇者の状態が「到着」になりました。"
 
 #: pretalx/common/log_display.py:90
 msgid "A speaker has been marked as not arrived."
-msgstr "Diese(r) Vortragende ist als \"nicht angekommen\" markiert."
+msgstr "登壇者の状態が「未到着」になりました。"
 
 #: pretalx/common/log_display.py:91
 msgid "The API token was reset."
-msgstr "Das API-Token wurde zurückgesetzt."
+msgstr "APIトークンがリセットされました。"
 
 #: pretalx/common/log_display.py:92
 msgid "The password was reset."
-msgstr "Das Passwort wurde zurückgesetzt."
+msgstr "パスワードがリセットされました。"
 
 #: pretalx/common/log_display.py:93
 msgid "The password was modified."
-msgstr "Das Passwort wurde verändert."
+msgstr "パスワードが変更されました。"
 
 #: pretalx/common/log_display.py:94
 msgid "The profile was modified."
-msgstr "Das Profil wurde angepasst."
+msgstr "プロフィールが修正されました。"
 
 #: pretalx/common/management/commands/init.py:18
 msgid "This value is required, please enter some value to proceed: "
-msgstr ""
-"Diese Daten werden benötigt, um fortzufahren. Bitte gib etwas Valides ein: "
+msgstr "この項目は必須です。何かを入力してください。: "
 
 #: pretalx/common/management/commands/init.py:31
 msgid ""
@@ -1485,15 +1467,13 @@ msgid ""
 "once."
 msgstr ""
 "\n"
-"Willkommen zu pretalx! Ich bin der Initialsierungsbefehl. Bitte führ mich "
-"nur einmal aus."
+"pretalx へようこそ！ これは初期化コマンドなので、一度だけ実行してください。"
 
 #: pretalx/common/management/commands/init.py:37
 msgid ""
 "You can abort this command at any time using C-c, and it will save no data."
 msgstr ""
-"Du kannst diesen Befehl jederzeit durch C-c abbrechen, dann werden keine "
-"Daten gespeichert."
+"このコマンドは、C-c でいつでも中断できます。その場合データは保存されません。"
 
 #: pretalx/common/management/commands/init.py:43
 msgid ""
@@ -1502,9 +1482,8 @@ msgid ""
 "event on this pretalx instance."
 msgstr ""
 "\n"
-"Zuerst erstellen wir einen User für dich, der das Recht hat, neue "
-"Veranstaltungen anzulegen und alle Veranstaltungen dieser pretalx-Instanz "
-"einzusehen."
+"新しいイベントを作成し、この pretalx インスタンス上のすべてのイベントにアクセ"
+"スする権利を持つユーザを作成しましょう。"
 
 #: pretalx/common/management/commands/init.py:52
 msgid ""
@@ -1513,8 +1492,8 @@ msgid ""
 "people and create events."
 msgstr ""
 "\n"
-"Außerdem erstellen wir den ersten Veranstalter: Darüber kannst du dann "
-"andere Menschen einladen und Veranstaltungen erstellen."
+"最初の主催者を作成しましょう。イベントを作成するための人々を招待することがで"
+"きるようになります。"
 
 #: pretalx/common/management/commands/init.py:56
 msgid ""
@@ -1522,11 +1501,11 @@ msgid ""
 "Name (e.g. \"The Conference Organiser\"): "
 msgstr ""
 "\n"
-"Name (z.B. \"Der Konferenzveranstalter\"): "
+"名前 (例:  “イベント主催者”): "
 
 #: pretalx/common/management/commands/init.py:57
 msgid "Slug (e.g. \"conforg\", used in urls): "
-msgstr "Kurzform (z.B. \"conforga\", zur Verwendung in URLS): "
+msgstr "Slug (例: “conforg”, URL上で利用されます): "
 
 #: pretalx/common/management/commands/init.py:71
 msgid ""
@@ -1534,12 +1513,12 @@ msgid ""
 "Now that this is done, you can:"
 msgstr ""
 "\n"
-"Jetzt wo das erledigt ist, kannst du:"
+"これで終了です！以下のことができます: "
 
 #: pretalx/common/management/commands/init.py:73
 #, python-brace-format
 msgid " - Create your first event at {event_url}"
-msgstr " - Die erste Veranstaltung unter {event_url} erstellen"
+msgstr " - {event_url} から最初のイベントを作成する"
 
 #: pretalx/common/management/commands/init.py:77
 #, python-brace-format
@@ -1547,33 +1526,31 @@ msgid ""
 " - Invite somebody to the organiser team at {team_url} and let them create "
 "the event"
 msgstr ""
-" - Jemanden unter {team_url} in das Team einladen und die Veranstaltung "
-"erstellen lassen"
+" - {team_url} から、誰かを主催者チームに招待し、イベントを作成してもらう"
 
 #: pretalx/common/management/commands/init.py:82
 msgid ""
 " - Use the command \"import_schedule /path/to/schedule.xml\" if you want to "
 "import an event."
 msgstr ""
-" - Den Befehl \"import_schedule /path/to/schedule.xml\" nutzen, wenn du mit "
-"einem importierten Event beginnen möchtest."
+" - \"import_schedule /path/to/schedule.xml\" コマンドを使って、イベント情報を"
+"インポートする"
 
 #: pretalx/common/mixins/forms.py:23
 msgid "You are trying to change read-only data."
-msgstr "Diese Daten kannst du nicht anpassen."
+msgstr "読み取り専用データを変更しようとしています。"
 
 #: pretalx/common/mixins/views.py:228
 msgid "ManagementForm data is missing or has been tampered with."
-msgstr "ManagementForm-Daten fehlen oder wurden verändert."
+msgstr "ManagementForm データが無いか、改ざんされています。"
 
 #: pretalx/common/models/settings.py:104
 msgid ""
 "Please give a fair review on why you'd like to see this submission at the "
 "conference, or why you think it would not be a good fit."
 msgstr ""
-"Bitte gib eine faire Bewertung ab und erkläre, warum du diese Einreichung "
-"gerne bei der Veranstaltung sehen würdest, oder warum du meinst, dass sie "
-"eher nicht gut hineinpassen würde."
+"この提案をカンファレンスで見てみたいと思う理由や、それが合わないと思う理由に"
+"ついて、公平なレビューをお願いします。"
 
 #: pretalx/common/models/settings.py:127
 #, python-brace-format
@@ -1589,15 +1566,16 @@ msgid ""
 "All the best,\n"
 "your {event_name} CfP system.\n"
 msgstr ""
-"Hi,\n"
+"こんにちは。\n"
 "\n"
-"du hast eine neue Einreichung für die Veranstaltung {event_name} erhalten:\n"
-"„{submission_title}“ von {speakers}.\n"
+"あなたのイベント {event_name} に対して新しい提案が投稿されました: \n"
+"„{submission_title}“ by {speakers}.\n"
 "\n"
 "  {orga_url}\n"
 "\n"
-"Viele Grüße,\n"
-"Das {event_name}-System\n"
+"から確認できます。\n"
+"よろしくおねがいします！\n"
+"{event_name} カンファレンスシステムより。\n"
 
 #: pretalx/common/models/settings.py:150
 #, python-brace-format
@@ -1615,18 +1593,19 @@ msgid ""
 "at https://github.com/pretalx/pretalx/issues/new or via an\n"
 "email to support@pretalx.com!\n"
 msgstr ""
-"Hi,\n"
+"こんにちは！\n"
 "\n"
-"wir hoffen, dass dich pretalx als CfP- und Programmsystem zufriedenstellt.\n"
-"Diese Links werden dir in den nächsten Wochen hoffentlich nützen::\n"
+"イベントの提案管理システムとして pretalx に満足していただけていると嬉しいで"
+"す。\n"
+"下記のリンクは、今後のシステムの利用について役に立つかもしれません。\n"
 "\n"
-"- Dein Veranstaltungsdashboard: {event_dashboard}\n"
-"- Eine Liste der Einreichungen: {event_submissions}\n"
-"- Der Programmeditor: {event_schedule}\n"
+"- イベントダッシュボード: {event_dashboard}\n"
+"- 提案のリスト: {event_submissions}\n"
+"- スケジュールエディタ: {event_schedule}\n"
 "\n"
-"Wenn dir in pretalx noch etwas fehlt, schreib es uns gerne\n"
-"unter https://github.com/pretalx/pretalx/issues/new oder via\n"
-"Mail an support@pretalx.com!\n"
+"何かわからないことがあれば、下記から気軽にお問い合わせください。\n"
+"https://github.com/pretalx/pretalx/issues/new \n"
+"または support@pretalx.com までメールをください \n"
 
 #: pretalx/common/models/settings.py:171
 #, python-brace-format
