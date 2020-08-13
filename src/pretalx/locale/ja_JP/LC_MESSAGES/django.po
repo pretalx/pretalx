@@ -8,10 +8,10 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-07-30 14:22+0000\n"
-"PO-Revision-Date: 2020-08-13 11:16+0900\n"
-"Last-Translator: Hal Seki <hal@georepublic.co.jp>\n"
+"PO-Revision-Date: 2020-08-13 17:15+0900\n"
+"Last-Translator: Hal Seki <hal@code4japan.org>\n"
 "Language-Team: \n"
-"Language: ja_JP\n"
+"Language: de_DE\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -28,7 +28,7 @@ msgstr "主催者"
 
 #: tests/screenshots/conftest.py:83
 msgid "John Doe"
-msgstr "山田 太郎"
+msgstr "John Doe"
 
 #: pretalx/agenda/phrases.py:8
 msgid "Thank you for your feedback!"
@@ -1621,16 +1621,15 @@ msgid ""
 "And create your schedule here, once you have accepted submissions: "
 "{event_schedule}\n"
 msgstr ""
-"Hi,\n"
+"こんにちは！\n"
 "\n"
-"der CfP für deine Veranstaltung ist nun geschlossen. Du findest eine Liste\n"
-"aller {submission_count} Einreichungen hier:\n"
+"提案の受付期間が終了したので、ご連絡差し上げました。\n"
+"{submission_count} 個の提案をこちらのページから確認することができます:\n"
 "{event_submissions}\n"
 "\n"
-"Hier kannst du Reviewer hinzufügen: {event_team}\n"
-"Übersicht über Reviews gibt es hier: {event_review}\n"
-"Und hier kannst du ein Programm erstellen, wenn du die ersten Einreichungen\n"
-"angenommen hast: {event_schedule}\n"
+"レビュアーを追加するのはこちら: {event_team}\n"
+"提案をレビューするのはこちら: {event_review}\n"
+"提案を受け付けたあと、スケジュールを作成するのはこちら: {event_schedule}\n"
 
 #: pretalx/common/models/settings.py:189
 #, python-brace-format
@@ -1650,128 +1649,126 @@ msgid ""
 "at https://github.com/pretalx/pretalx/issues/new or via an\n"
 "email to support@pretalx.com!\n"
 msgstr ""
-"Hi,\n"
+"こんにちは！\n"
 "\n"
-"Glückwunsch, deine Veranstaltung ist vorbei! Hoffentlich lief alles glatt. "
-"Hier sind\n"
-"ein paar Fakten, die dich vielleicht interessieren:\n"
+"おめでとうございます。あなたのイベントは終了しました！盛会だったことを期待し"
+"ています。\n"
+"こちらがイベントの概要です。\n"
 "\n"
-"- Es gab {submission_count} Einreichungen,\n"
-"- von denen {talk_count} Vorträge ausgewählt wurden.\n"
-"- Die Reviewer haben {review_count} Reviews verfasst.\n"
-"- Es wurden {schedule_count} Programmversionen veröffentlicht.\n"
-"- Über dieses Event wurden {mail_count} Mails verschickt.\n"
+"- イベントに対して、 {submission_count} 個の提案を受け付けました。\n"
+"- そのうち {talk_count} 個の講演がセレクトされました。\n"
+"- レビュアーは、 {review_count} 個のレビューを書きました。\n"
+"- スケジュールは、 {schedule_count} 回発行されました。\n"
+"- イベント準備から期間中を含めて、 {mail_count} 通のメールが送信されまし"
+"た。\n"
 "\n"
-"Wenn dir in pretalx noch etwas fehlt, schreib es uns gerne\n"
-"unter https://github.com/pretalx/pretalx/issues/new oder via\n"
-"Mail an support@pretalx.com!\n"
+"もし何か不明点があれば、ぜひこちらからご意見をいただければと思います。\n"
+"https://github.com/pretalx/pretalx/issues/new\n"
+"または Eメール support@pretalx.com!\n"
 
 #: pretalx/common/phrases.py:46
 #: pretalx/orga/templates/orga/cfp/question_view.html:74
 #: pretalx/orga/templates/orga/organiser/detail.html:66
 #: pretalx/orga/templates/orga/submission/speakers.html:52
 msgid "Edit"
-msgstr "Bearbeiten"
+msgstr "編集"
 
 #: pretalx/common/phrases.py:48 pretalx/orga/views/admin.py:50
 #: pretalx/orga/views/event.py:496 pretalx/orga/views/event.py:500
 #: pretalx/orga/views/plugins.py:56
 msgid "Your changes have been saved."
-msgstr "Deine Änderungen wurden gespeichert."
+msgstr "変更が保存されました。"
 
 #: pretalx/common/phrases.py:51
 msgid "There was an error sending the mail. Please try again later."
-msgstr ""
-"Es gab ein Fehler beim Senden der E-Mail. Bitte probiere es später noch mal, "
-"wir sind dran."
+msgstr "メール送信中にエラーが発生しました。後ほどやり直してください。"
 
 #: pretalx/common/phrases.py:54
 msgid "Huh. We had trouble saving your input – Please see below for details. 🠯"
-msgstr ""
-"Oh :( Wir konnten deine Änderungen leider nicht speichern - unten mehr. 🠯"
+msgstr "ふむ。データの保存中に不具合が発生したようです。詳細をご確認ください。"
 
 #: pretalx/common/phrases.py:56
 msgid "You do not have permission to perform this action."
-msgstr "Dir fehlen Zugriffsrechte für diese Aktion."
+msgstr "この操作を実行する権限がありません。"
 
 #: pretalx/common/phrases.py:59 pretalx/common/templates/403.html:4
 msgid "Permission denied."
-msgstr "Keine Berechtigung."
+msgstr "アクセスが拒否されました。"
 
 #: pretalx/common/phrases.py:60
 msgid "Sorry, you do not have the required permissions to access this page."
-msgstr "Dir fehlen Zugriffsrechte für diese Seite."
+msgstr "すみません。このページにアクセスするための検眼がありません。"
 
 #: pretalx/common/phrases.py:61
 msgid "Access denied."
-msgstr "Kein Zugriff möglich."
+msgstr "アクセスが拒否されました。"
 
 #: pretalx/common/phrases.py:64 pretalx/common/templates/404.html:4
 msgid "Page not found."
-msgstr "Seite nicht gefunden."
+msgstr "ページが見つかりません。"
 
 #: pretalx/common/phrases.py:65
 msgid "This page does not exist."
-msgstr "Diese Seite gibt es nicht."
+msgstr "このページは存在しません。"
 
 #: pretalx/common/phrases.py:66
 msgid "Huh, I could have sworn there was something here."
-msgstr "Hm, ich dachte auch, hier wäre eine Seite."
+msgstr "ここに何かあると思っていたのですが・・・"
 
 #: pretalx/common/phrases.py:68
 msgid "This page is no more."
-msgstr "Diese Seite ist Vergangenheit."
+msgstr "このページは既にありません。"
 
 #: pretalx/common/phrases.py:69
 msgid "This page has ceased to be."
-msgstr "Diese Seite gibt es wohl nicht mehr."
+msgstr "このページは終了しました。"
 
 #: pretalx/common/phrases.py:70
 msgid "Huh."
-msgstr "Huch."
+msgstr "うーん。"
 
 #: pretalx/common/phrases.py:73 pretalx/person/forms.py:33
 #: pretalx/person/forms.py:42
 msgid "Email address"
-msgstr "E-Mail-Adresse"
+msgstr "Eメールアドレス"
 
 #: pretalx/common/phrases.py:74
 msgid "New password (again)"
-msgstr "Neues Passwort (nochmal)"
+msgstr "新パスワード（確認用）"
 
 #: pretalx/common/phrases.py:76
 msgid "You entered two different passwords. Please input the same one twice!"
-msgstr ""
-"Du hast zwei unterschiedliche Passwörter eingegeben. Bitte probier es noch "
-"einmal!"
+msgstr "2つのパスワードの内容が違います。同じものを2回入力してください。"
 
 #: pretalx/common/phrases.py:79
 msgid "Your password is too weak or too common, please choose another one."
 msgstr ""
-"Dein Passwort ist zu schwach oder zu üblich, bitte such ein anderes aus."
+"パスワードの強度が弱すぎるか、一般的すぎます。別の組み合わせを試してくださ"
+"い。"
 
 #: pretalx/common/phrases.py:80
 msgid ""
 "Sorry, this password is too weak or too common, please choose another one."
 msgstr ""
-"Dieses Passwort ist leider zu schwach oder zu üblich, bitte nimm ein anderes."
+"すみません。パスワードの強度が弱すぎるか、一般的すぎます。別の組み合わせを試"
+"してください。"
 
 #: pretalx/common/phrases.py:82
 msgid ""
 "Your password is the only thing protecting your account, so please choose a "
 "strong one."
 msgstr ""
-"Dein Passwort ist die beste Sicherung für deinen Account, bitte such dir ein "
-"hinreichend starkes."
+"パスワードは、あなたのアカウントを保護する唯一の手段です。できるだけ強度のあ"
+"るものにしてください。"
 
 #: pretalx/common/phrases.py:85
 #, python-brace-format
 msgid "You can use {link_start}Markdown{link_end} here."
-msgstr "Du kannst hier {link_start}Markdown{link_end} verwenden."
+msgstr "ここでは {link_start}Markdown{link_end} 形式を利用できます。"
 
 #: pretalx/common/phrases.py:89
 msgid "This content will be shown publicly."
-msgstr "Diese Eingabe wird öffentlich sein."
+msgstr "このコンテンツは公開されます。"
 
 #: pretalx/common/templates/400.html:4 pretalx/common/templates/400.html:6
 msgid "Bad request."
@@ -1782,14 +1779,13 @@ msgid ""
 "It looks as if the communication between you and pretalx went wrong in some "
 "way.<br>Please return to the last page and try again!"
 msgstr ""
-"Es sieht aus, als wäre die Kommunikation zwischen dir und pretalx irgendwie "
-"schief gelaufen.<br>Bitte geh zurück zur letzten Seite, und versuch es noch "
-"einmal!"
+"どうやらあなたと pretalx の間の通信が何かの形でうまくいかなかったようです。前"
+"のページに戻ってやり直してみて下さい。"
 
 #: pretalx/common/templates/403_csrf.html:4
 #: pretalx/common/templates/403_csrf.html:6
 msgid "Verification failed."
-msgstr "Prüfung fehlgeschlagen."
+msgstr "検証に失敗しました。"
 
 #: pretalx/common/templates/403_csrf.html:8
 msgid ""
@@ -1797,17 +1793,17 @@ msgid ""
 "reasons, we cannot process it.<br> Please go back to the last page, refresh, "
 "and then try again."
 msgstr ""
-"Wir konnten nicht sicherstellen, dass diese Anfrage wirklich von dir kam. "
-"Aus Sicherheitsgründen können wir sie deshalb nicht verarbeiten.<br>Bitte "
-"geh zurück zur letzten Seite, lad sie neu, und versuch es dann noch mal."
+"このリクエストが本当にあなたから送られたものかどうか確認できませんでした。セ"
+"キュリティ上の理由により、処理することができません。<br>前のページに戻り、リ"
+"フレッシュしてから試してみてください。"
 
 #: pretalx/common/templates/500.html:4
 msgid "Internal server error."
-msgstr "Interner Serverfehler."
+msgstr "Internal server error."
 
 #: pretalx/common/templates/500.html:6
 msgid "We have encountered an error."
-msgstr "Es ist gerade ein Fehler aufgetreten."
+msgstr "何らかのエラーが発生しました。"
 
 #: pretalx/common/templates/500.html:8
 #, python-format
@@ -1815,116 +1811,114 @@ msgid ""
 "Please help us to fix this by submitting <a href=\"%(link)s\" rel=noopener>a "
 "bug report</a>!"
 msgstr ""
-"Bitte hilf uns beim Beheben des Fehlers, indem du einen <a href=\"%(link)s\" "
-"rel=noopener>Bericht</a> erstellst!"
+"<a href=“%(link)s” rel=noopener>バグレポート</a>を提出して、この問題を解決す"
+"るのにご協力ください!"
 
 #: pretalx/common/templates/common/auth.html:20
 msgid "I already have an account"
-msgstr "Ich habe schon einen Account"
+msgstr "既にアカウントを持っています"
 
 #: pretalx/common/templates/common/auth.html:26
 msgid "Log in"
-msgstr "Einloggen"
+msgstr "ログイン"
 
 #: pretalx/common/templates/common/auth.html:31
 #: pretalx/orga/templates/orga/settings/team_detail.html:31
 #: pretalx/orga/templates/orga/speaker/form.html:56
 msgid "Reset password"
-msgstr "Passwort zurücksetzen"
+msgstr "パスワードリセット"
 
 #: pretalx/common/templates/common/auth.html:39
 msgid "I need a new account"
-msgstr "Ich brauche einen neuen Account"
+msgstr "新しいアカウントが必要"
 
 #: pretalx/common/templates/common/auth.html:47
 msgid "Register"
-msgstr "Registrieren"
+msgstr "登録"
 
 #: pretalx/common/templates/common/avatar.html:6
 #: pretalx/orga/templates/orga/cfp/text.html:104
 #: pretalx/person/models/user.py:116
 msgid "Profile picture"
-msgstr "Profilbild"
+msgstr "プロフィール画像"
 
 #: pretalx/common/templates/common/avatar.html:14
 msgid "Your avatar"
-msgstr "Dein Profilbild"
+msgstr "あなたのアバター"
 
 #: pretalx/common/templates/common/base.html:66
 msgid "This event is currently non-public. Only organisers can see it."
-msgstr ""
-"Die Veranstaltung ist derzeit nicht öffentlich. Nur die Veranstalter können "
-"sie sehen."
+msgstr "このイベントは現在公開されていません。主催者のみ閲覧できます。"
 
 #: pretalx/common/templates/common/base.html:76
 #: pretalx/orga/templates/orga/auth/base.html:31
 #: pretalx/orga/templates/orga/settings/form.html:74
 msgid "The event's logo"
-msgstr "Veranstaltungslogo"
+msgstr "イベントロゴ"
 
 #: pretalx/common/templates/common/base.html:101
 msgid "My submissions"
-msgstr "Meine Einreichungen"
+msgstr "私の提案"
 
 #: pretalx/common/templates/common/base.html:105
 msgid "My E-mails"
-msgstr "Meine Post"
+msgstr "私のEメール"
 
 #: pretalx/common/templates/common/base.html:109
 msgid "My profile"
-msgstr "Mein Profil"
+msgstr "私のプロフィール"
 
 #: pretalx/common/templates/common/base.html:115
 msgid "Organiser area"
-msgstr "Organisations-Bereich"
+msgstr "管理者向けエリア"
 
 #: pretalx/common/templates/common/base.html:121
 msgid "Logout"
-msgstr "Abmelden"
+msgstr "ログアウト"
 
 #: pretalx/common/templates/common/base.html:148
 #, python-format
 msgid "This is a static export generated at %(timestamp)s"
-msgstr "Dieser Export wurde um %(timestamp)s generiert"
+msgstr "これは %(timestamp)s の時点で生成された静的エクスポートです。"
 
 #: pretalx/common/templates/common/base.html:154
 #: pretalx/orga/templates/orga/auth/base.html:29
 #: pretalx/orga/templates/orga/base.html:58
 msgid "The pretalx logo"
-msgstr "Das pretalx-Logo"
+msgstr "The pretalx logo"
 
 #: pretalx/common/templates/common/base.html:158
 msgid "Contact us"
-msgstr "Kontakt"
+msgstr "お問い合わせ"
 
 #: pretalx/common/templates/common/base.html:162
 msgid "Imprint"
-msgstr "Impressum"
+msgstr "免責事項"
 
 #: pretalx/common/templates/common/logs.html:7
 #: pretalx/orga/templates/orga/event/dashboard.html:82
 msgid "History"
-msgstr "Verlauf"
+msgstr "履歴"
 
 #: pretalx/common/templates/common/logs.html:24
 msgid "This change was performed by a member of the event orga."
-msgstr "Diese Aktion wurde von einem Veranstalter durchgeführt."
+msgstr "この変更は、イベント主催者のメンバーによって行われました。"
 
 #: pretalx/common/templates/common/logs.html:30
 msgid "An orga member"
-msgstr "Ein Veranstalter"
+msgstr "主催者メンバー"
 
 #: pretalx/common/templates/common/question_answer.html:8
 msgid "No file provided"
-msgstr "Keine Datei"
+msgstr "ファイルが添付されていません"
 
 #: pretalx/common/templates/common/question_answer.html:15
 msgid "Not answered"
-msgstr "Nicht beantwortet"
+msgstr "回答がありません"
 
 #: pretalx/common/templates/common/user_api_token.html:8
 msgid "API Access"
-msgstr "API-Zugang"
+msgstr "APIアクセス"
 
 #: pretalx/common/templates/common/user_api_token.html:9
 #, python-format
@@ -1933,48 +1927,46 @@ msgid ""
 "generate a new token, which will invalidate the old one. To find out more, "
 "please have a look at the <a %(docurl)s> API documentation</a>."
 msgstr ""
-"Dieses Token kannst du zum Zugang zur <a %(apiurl)s>pretalx-API</a> nutzen. "
-"Du kannst hier ein neues Token erstellen, das das alte invalidieren wird. "
-"Für Details sieh dir bitte die <a %(docurl)s>API-Dokumentation</a> an."
+"このトークンを使って <a %(apiurl)s>pretalx API</a> を利用できます。新しいトー"
+"クンを生成すると、古いものは無効になります。詳細を知りたい場合 <a "
+"%(docurl)s> API documentation</a> をご覧ください。"
 
 #: pretalx/common/templates/common/user_api_token.html:17
 msgid "API Token"
-msgstr "API-Token"
+msgstr "APIトークン"
 
 #: pretalx/common/templates/common/user_api_token.html:23
 msgid "Use for authentication when accessing the API."
-msgstr "Verwende dieses Token, wenn du die API nutzen möchtest."
+msgstr "APIにアクセスする際の認証で利用します。"
 
 #: pretalx/common/templates/common/user_api_token.html:29
 msgid "Generate a new token. The current token will not be usable any longer."
-msgstr ""
-"Erstellt ein neues Token. Das bisherige Token wird nicht mehr verwendbar "
-"sein."
+msgstr "新しいトークンを生成します。現在のトークンは利用できなくなります。"
 
 #: pretalx/common/templates/common/user_api_token.html:30
 msgid "Invalidate and regenerate"
-msgstr "Zurücksetzen"
+msgstr "無効化と再生成"
 
 #: pretalx/common/templatetags/copyable.py:13
 msgid "Copy"
-msgstr "Kopieren"
+msgstr "コピー"
 
 #: pretalx/common/templatetags/times.py:14
 msgid "once"
-msgstr "einmal"
+msgstr "一度"
 
 #: pretalx/common/templatetags/times.py:16
 msgid "twice"
-msgstr "zweimal"
+msgstr "二度"
 
 #: pretalx/common/templatetags/times.py:17
 #, python-brace-format
 msgid "{number} times"
-msgstr "{number} mal"
+msgstr "{number} 回"
 
 #: pretalx/common/update_check.py:95
 msgid "pretalx update available"
-msgstr "pretalx-Update verfügbar"
+msgstr "pretalx のアップデート版が利用できます"
 
 #: pretalx/common/update_check.py:99
 #, python-brace-format
