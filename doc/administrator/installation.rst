@@ -152,7 +152,11 @@ the appropriate dependencies. Please note that you should also use
 We also need to create a data directory::
 
     $ mkdir -p /var/pretalx/data/media
-
+   
+Then, create the folder for the static files::
+    
+    $ mkdir /var/pretalx/static
+ 
 We compile static files and translation data and create the database structure::
 
     $ python -m pretalx migrate
