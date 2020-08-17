@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-07-30 14:22+0000\n"
-"PO-Revision-Date: 2020-08-13 17:15+0900\n"
+"PO-Revision-Date: 2020-08-17 16:06+0900\n"
 "Last-Translator: Hal Seki <hal@code4japan.org>\n"
 "Language-Team: \n"
 "Language: de_DE\n"
@@ -1991,30 +1991,28 @@ msgid ""
 "Best regards,\n"
 "your pretalx developers"
 msgstr ""
-"Hi!\n"
+"こんにちは！\n"
 "\n"
-"Für pretalx oder eines der Plugins, das du in deiner pretalx-Instanz unter "
-"{base_url} installiert hast, ist ein Update verfügbar.\n"
-"Bitte folge diesem Link, um weitere Informationen zu sehen:\n"
+"pretalx もしくは {base_url} でインストールしているプラグインのアップデートが"
+"あります。\n"
+"下記のリンクから詳細を確認してください:\n"
 "\n"
 "  {url}\n"
 "\n"
-"Du kannst weitere Informationen zu den neusten Updates in unserem Changelog "
-"nachlesen:\n"
+"Changelogs の Latest Updates から、いつでもこの情報を得ることが可能です。:\n"
 "\n"
 "  https://docs.pretalx.org/changelog.html\n"
 "\n"
-"Größere Updates werden auch zusätzlich mit Update-Hinweisen auf unserem Blog "
-"veröffentlicht:\n"
+"大きなアップデートは、 pretalx.com ブログからも確認することができます。: \n"
 "\n"
 "https://pretalx.com/p/news/\n"
 "\n"
-"Viele Grüße\n"
-"Deine pretalx-Entwickler"
+"よろしくおねがいします！\n"
+"pretalx 開発者より"
 
 #: pretalx/common/update_check.py:140 pretalx/common/update_check.py:147
 msgid "Plugin: {}"
-msgstr "Plugin: {}"
+msgstr "プラグイン: {}"
 
 #: pretalx/common/utils.py:77
 #, python-brace-format
@@ -2023,28 +2021,27 @@ msgstr "{date_from} – {date_to}"
 
 #: pretalx/event/forms.py:30
 msgid "Limit to certain tracks?"
-msgstr "Auf bestimmte Tracks beschränken?"
+msgstr "特定のトラックに限定しますか?"
 
 #: pretalx/event/forms.py:102
 msgid "Use languages"
-msgstr "Genutzte Sprachen"
+msgstr "使用言語"
 
 #: pretalx/event/forms.py:103
 msgid "Choose all languages that your event should be available in."
-msgstr "Wähle alle Sprachen, in denen die Website angeboten werden soll."
+msgstr "あなたのイベントで使われる全ての言語を選択してください。"
 
 #: pretalx/event/forms.py:110
 msgid "Organiser"
-msgstr "Veranstalter"
+msgstr "運営者"
 
 #: pretalx/event/forms.py:122
 msgid ""
 "The organiser running the event can copy settings from previous events and "
 "share team permissions across all or multiple events."
 msgstr ""
-"Die Entität, die die Veranstaltung ausrichtet, kann Einstellungen von "
-"vergangenen Veranstaltungen kopieren und Zugriffsrechte "
-"veranstaltungsübergreifend über Teams verwalten."
+"イベントを実行している主催者は、過去のイベントから設定をコピーして、すべての"
+"イベントまたは複数のイベントでチームの権限を共有することができます。"
 
 #: pretalx/event/forms.py:138
 msgid ""
@@ -2053,22 +2050,21 @@ msgid ""
 "kind of abbreviation with less than 10 characters that can be easily "
 "remembered."
 msgstr ""
-"Das ist die Adresse, unter der die Veranstaltung erreichbar sein wird. Sie "
-"sollte kurz sein, nur Zahlen und Buchstaben enthalten, und einmalig sein. "
-"Wir empfehlen eine Abkürzung mit unter 10 Buchstaben, die sich leicht merken "
-"lässt."
+"これは、あなたのイベントが利用可能になるアドレスです。短く、小文字と数字のみ"
+"を使用し、一意である必要があります。覚えやすいように10文字以内の略語をお勧め"
+"します。"
 
 #: pretalx/event/forms.py:144
 msgid "You cannot change the slug later on!"
-msgstr "Du kannst die Kurzform später nicht mehr ändern!"
+msgstr "Slug は後から変更することができません！"
 
 #: pretalx/event/forms.py:154
 msgid ""
 "This short name is already taken, please choose another one (or ask the "
 "owner of that event to add you to their team)."
 msgstr ""
-"Diese Kurzbezeichnung ist schon vergeben, bitte nimm eine andere (oder bitte "
-"den Admin des bestehenden Events, dich zum Team hinzuzufügen)."
+"この短い名前は既に取られています。別の名前を選択してください（または、そのイ"
+"ベントのオーナーにあなたをチームに加えるように依頼してください）。"
 
 #: pretalx/event/forms.py:169
 msgid ""
@@ -2076,21 +2072,20 @@ msgid ""
 "deadlines to individual submission types, which will take precedence over "
 "this deadline."
 msgstr ""
-"Die Standard-Einreichungsfrist des CfP. Du kannst einzelnen "
-"Einreichungstypen abweichende Einreichungsfristen zuweisen, die dann Vorrang "
-"haben."
+"論文募集のデフォルトの締切日です。個々の投稿タイプに追加の締切日を設定するこ"
+"とができます。"
 
 #: pretalx/event/forms.py:191 pretalx/event/models/event.py:144
 msgid "Main event colour"
-msgstr "Veranstaltungsfarbe"
+msgstr "メインのイベントカラー"
 
 #: pretalx/event/forms.py:193 pretalx/event/models/event.py:146
 msgid ""
 "Provide a hex value like #00ff00 if you want to style pretalx in your "
 "event's colour scheme."
 msgstr ""
-"Gib hier einen hex-Wert wie #00ff00 ein, wenn du pretalx im "
-"Veranstaltungsschema gestalten möchtest."
+"イベントの pretalx カラースキームを設定したい場合は、#00ff00 のような 16 進数"
+"の値を指定してください。"
 
 #: pretalx/event/forms.py:200 pretalx/event/models/event.py:162
 msgid "Logo"
@@ -2102,62 +2097,63 @@ msgid ""
 "and date in the page header. We will show your logo in its full size if "
 "possible, scaled down to the full header width otherwise."
 msgstr ""
-"Wenn ein Logo zur Verfügung steht, werden wir nicht den Namen der "
-"Veranstaltung im Header zeigen. Das Logo wird in voller Größe gezeigt, wenn "
-"möglich, und andernfalls auf die volle Breite des Headers geschrumpft."
+"ロゴ画像を提供した場合、デフォルトではイベント名と日付はヘッダーに表示されま"
+"せん。可能であればロゴはフルサイズで表示されますが、そうでない場合はヘッダー"
+"の幅いっぱいに縮小されます。"
 
 #: pretalx/event/forms.py:207 pretalx/orga/forms/event.py:244
 msgid "Frontpage header pattern"
-msgstr "Muster des Startseiten-Streifen"
+msgstr "フロントページのヘッダーパターン"
 
 #: pretalx/event/forms.py:209
 msgid ""
 "Choose how the frontpage header banner will be styled. Pattern source: <a "
 "href=\"http://www.heropatterns.com/\">heropatterns.com</a>, CC BY 4.0."
 msgstr ""
-"Wähle ein Muster für den farbigen Streifen für die Startseite. Quelle: <a "
-"href=\"http://www.heropatterns.com/\">heropatterns.com</a>, CC BY 4.0."
+"フロントページのヘッダーバナーがどのようにスタイリングされるかを選択します。"
+"パターンのソース: <a href=“http://www.heropatterns.com/“>heropatterns.com</"
+"a>, CC BY 4.0."
 
 #: pretalx/event/forms.py:212 pretalx/orga/forms/event.py:250
 msgid "Plain"
-msgstr "Kein Muster"
+msgstr "Plain"
 
 #: pretalx/event/forms.py:213 pretalx/orga/forms/event.py:251
 msgid "Circuits"
-msgstr "Platine"
+msgstr "Circuits"
 
 #: pretalx/event/forms.py:214 pretalx/orga/forms/event.py:252
 msgid "Circles"
-msgstr "Kreise"
+msgstr "Circles"
 
 #: pretalx/event/forms.py:215 pretalx/orga/forms/event.py:253
 msgid "Signal"
-msgstr "Signale"
+msgstr "Signal"
 
 #: pretalx/event/forms.py:216 pretalx/orga/forms/event.py:254
 msgid "Topography"
-msgstr "Höhenlinien"
+msgstr "Topography"
 
 #: pretalx/event/forms.py:217 pretalx/orga/forms/event.py:255
 msgid "Graph Paper"
-msgstr "Millimeterpapier"
+msgstr "Graph Paper"
 
 #: pretalx/event/forms.py:247
 msgid "Copy configuration from"
-msgstr "Konfiguration kopieren"
+msgstr "コンフィギュレーションを以下からコピーする"
 
 #: pretalx/event/forms.py:250
 msgid "Do not copy"
-msgstr "Nicht kopieren"
+msgstr "コピーしない"
 
 #: pretalx/event/forms.py:265
 msgid "The end of a phase has to be after its start."
-msgstr "Das Ende dieser Phase muss nach ihrem Beginn liegen."
+msgstr "フェーズの終わりは、その開始後でなければなりません。"
 
 #: pretalx/event/models/event.py:50
 #, python-brace-format
 msgid "Invalid event slug – this slug is reserved: {value}."
-msgstr "Kurzform nicht zulässig – diese Kurzform ist reserviert: {value}."
+msgstr "無効なイベント Slug - この Slug は予約されています: {value}"
 
 #: pretalx/event/models/event.py:101 pretalx/event/models/organiser.py:24
 #: pretalx/orga/templates/orga/admin.html:41
@@ -2169,54 +2165,55 @@ msgstr "Kurzform nicht zulässig – diese Kurzform ist reserviert: {value}."
 #: pretalx/schedule/models/room.py:20 pretalx/submission/models/review.py:117
 #: pretalx/submission/models/track.py:23
 msgid "Name"
-msgstr "Name"
+msgstr "名前"
 
 #: pretalx/event/models/event.py:110 pretalx/event/models/event.py:116
 #: pretalx/event/models/organiser.py:33
 msgid "The slug may only contain letters, numbers, dots and dashes."
 msgstr ""
-"Die Kurzform darf nur Buchstaben, Zahlen, Punkte und Bindestriche enthalten."
+"スラグには、文字、数字、ドット(.)、ダッシュ(-)のみを含めることができます。"
 
 #: pretalx/event/models/event.py:115 pretalx/event/models/organiser.py:37
 msgid "Short form"
-msgstr "Kurzform"
+msgstr "短いフォーム"
 
 #: pretalx/event/models/event.py:124
 msgid "Event is public"
-msgstr "Veranstaltung ist öffentlich"
+msgstr "イベントは公開中です"
 
 #: pretalx/event/models/event.py:125
 msgid "Event start date"
-msgstr "Veranstaltungsbeginn"
+msgstr "イベント開始日"
 
 #: pretalx/event/models/event.py:126
 msgid "Event end date"
-msgstr "Veranstaltungsende"
+msgstr "イベント終了日"
 
 #: pretalx/event/models/event.py:132
 msgid ""
 "All event dates will be localised and interpreted to be in this timezone."
-msgstr "Alle Veranstaltungsdaten werden in dieser Zeitzone angezeigt."
+msgstr ""
+"すべてのイベントの日付はローカライズされ、そのタイムゾーンで解釈されます。"
 
 #: pretalx/event/models/event.py:136
 msgid "Organiser email address"
-msgstr "Veranstalter-Adresse"
+msgstr "運営者のEメールアドレス"
 
 #: pretalx/event/models/event.py:137
 msgid "Will be used as Reply-To in emails."
-msgstr "Wird als Reply-To verwendet."
+msgstr "メールではReply-Toとして使用されます。"
 
 #: pretalx/event/models/event.py:153
 msgid "Custom Event CSS"
-msgstr "Veranstaltungs-CSS"
+msgstr "カスタムイベントCSS"
 
 #: pretalx/event/models/event.py:155
 msgid ""
 "Upload a custom CSS file if changing the primary colour is not sufficient "
 "for you."
 msgstr ""
-"Lad eine eigene CSS-Datei hoch, wenn dir das Ändern der Primärfarbe nicht "
-"reicht."
+"プライマリカラーの変更だけでは不十分な場合は、カスタムCSSファイルをアップロー"
+"ドしてください。"
 
 #: pretalx/event/models/event.py:164
 msgid ""
@@ -2224,14 +2221,14 @@ msgid ""
 "event header. The logo will be displayed left-aligned, and be allowed to "
 "grow up to the width of theevent content, if it is larger than that."
 msgstr ""
-"Wenn du ein Logo hochlädst, wird der Veranstaltungsname nicht mehr im Header "
-"angezeigt. Das Logo wird linksbündig angezeigt und dehnt sich bis zur "
-"eigenen Größe aus, höchstens aber bis auf die Breite des Inhalts der Website."
+"ロゴ画像を提供した場合、イベントヘッダーにはイベント名は表示されません。ロゴ"
+"は左寄せで表示され、それ以上の大きさの場合はイベント内容の横幅まで大きくなる"
+"ことがあります。"
 
 #: pretalx/event/models/event.py:173 pretalx/orga/forms/event.py:37
 #: pretalx/orga/forms/event.py:47
 msgid "Header image"
-msgstr "Header-Bild"
+msgstr "ヘッダイメージ"
 
 #: pretalx/event/models/event.py:175
 msgid ""
@@ -2240,32 +2237,31 @@ msgid ""
 "aligned, so when the window shrinks, the center parts will continue to be "
 "displayed, and not stretched."
 msgstr ""
-"Wenn du ein Header-Bild hochlädst, wird es statt der Veranstaltungsfarbe und/"
-"oder dem Header-Muster im oberen Teil aller öffentlichen Seiten angezeigt. "
-"Es wird zentriert, und nicht gestreckt, dh wenn das Fenster kleiner wird, "
-"werden die äußeren Teile abgeschnitten."
+"ヘッダー画像を提供した場合、イベントの色やヘッダーパターンの代わりに、すべて"
+"のイベントページの上部に表示されます。中央揃えになりますので、ウィンドウが縮"
+"小しても中央部分は表示され続け、引き伸ばされることはありません。"
 
 #: pretalx/event/models/event.py:185
 msgid "Default language"
-msgstr "Standardsprache"
+msgstr "デフォルト言語"
 
 #: pretalx/event/models/event.py:223
 msgid "Landing page text"
-msgstr "Starteseitentext"
+msgstr "ランディングページのテキスト"
 
 #: pretalx/event/models/event.py:225
 msgid ""
 "This text will be shown on the landing page, alongside with links to the CfP "
 "and schedule, if appropriate."
 msgstr ""
-"Dieser Text wird auf der Startseite gezeigt, zusammen mit Links zum CfP und "
-"zum Fahrplan (sofern verfügbar)."
+"このテキストは、必要に応じて、CfPやスケジュールへのリンクとともにランディング"
+"ページに表示されます。"
 
 #: pretalx/event/models/event.py:232 pretalx/orga/templates/orga/admin.html:63
 #: pretalx/orga/templates/orga/plugins.html:4
 #: pretalx/orga/templates/orga/plugins.html:6
 msgid "Plugins"
-msgstr "Plugins"
+msgstr "プラグイン"
 
 #: pretalx/event/models/event.py:484 pretalx/event/models/event.py:684
 #: pretalx/event/stages.py:68 pretalx/orga/templates/orga/base.html:203
@@ -2273,99 +2269,97 @@ msgstr "Plugins"
 #: pretalx/orga/templates/orga/submission/review.html:146
 #: pretalx/submission/models/feedback.py:35
 msgid "Review"
-msgstr "Review"
+msgstr "レビュー"
 
 #: pretalx/event/models/event.py:492
 msgid "Selection"
-msgstr "Auswahl"
+msgstr "セレクション"
 
 #: pretalx/event/models/event.py:825
 msgid "News from your content system"
-msgstr "Nachricht von deinem Vortrags-System"
+msgstr "コンテンツシステムからのニュース"
 
 #: pretalx/event/models/organiser.py:39
 msgid ""
 "Should be short, only contain lowercase letters and numbers, and must be "
 "unique, as it is used in URLs."
 msgstr ""
-"Sollte kurz sein, nur Kleinbuchstaben und Zahlen enthalten, und muss "
-"einmalig sein, weil sie in URLs verwendet wird."
+"短く、小文字と数字のみを含み、URLで使用されるように一意である必要があります。"
 
 #: pretalx/event/models/organiser.py:79
 msgid "Team name"
-msgstr "Team-Name"
+msgstr "チームネーム"
 
 #: pretalx/event/models/organiser.py:81
 msgid "Team members"
-msgstr "Team-Mitglieder"
+msgstr "チームメンバー"
 
 #: pretalx/event/models/organiser.py:86
 msgid ""
 "Apply permissions to all events by this organiser (including newly created "
 "ones)"
 msgstr ""
-"Auf alle Veranstaltungen dieses Veranstalters (inklusive zukünftiger) "
-"anwenden"
+"この主催者によるすべてのイベントに権限を適用する（新規作成されたイベントを含"
+"む）"
 
 #: pretalx/event/models/organiser.py:90
 msgid "Limit permissions to these events"
-msgstr "Auf diese Veranstaltungen beschränken"
+msgstr "以下のイベントのみに限定する"
 
 #: pretalx/event/models/organiser.py:93
 msgid "Limit to tracks"
-msgstr "Auf bestimmte Tracks beschränken"
+msgstr "トラックに限定"
 
 #: pretalx/event/models/organiser.py:96
 msgid "Can create events"
-msgstr "Darf Veranstaltung erstellen"
+msgstr "イベント作成可能"
 
 #: pretalx/event/models/organiser.py:99
 msgid "Can change teams and permissions"
-msgstr "Darf Teams und Berechtigungen ändern"
+msgstr "チームと権限の変更が可能"
 
 #: pretalx/event/models/organiser.py:102
 msgid "Can change organiser settings"
-msgstr "Darf Veranstalter-Einstellungen ändern"
+msgstr "運営者設定の変更が可能"
 
 #: pretalx/event/models/organiser.py:105
 msgid "Can change event settings"
-msgstr "Darf Veranstaltungseinstellungen ändern"
+msgstr "イベント設定の変更が可能"
 
 #: pretalx/event/models/organiser.py:108
 msgid "Can work with and change submissions"
-msgstr "Darf Einreichungen bearbeiten"
+msgstr "修正提案に取り組むことが可能"
 
 #: pretalx/event/models/organiser.py:110
 msgid "Is a reviewer"
-msgstr "Ist ein Reviewer"
+msgstr "レビュアーです"
 
 #: pretalx/event/models/organiser.py:113
 msgid "Override votes"
-msgstr "Override-Stimmen"
+msgstr "投票を上書き"
 
 #: pretalx/event/models/organiser.py:115
 msgid ""
 "Each member of this team will have this amount of override votes per event "
 "to indicate an absolute positive or negative opinion of a submission."
 msgstr ""
-"Alle Mitglieder dieses Teams können diese Menge an Override-Stimmen pro "
-"Veranstaltung vergeben, um eine absolut positive oder negative Meinung zu "
-"einer Einreichung auszudrücken."
+"このチームの各メンバーは、提出物に対する絶対的な肯定的または否定的な意見を示"
+"すために、イベントごとにこの量のオーバーライド投票を持つことになります。"
 
 #: pretalx/event/models/organiser.py:121
 #, python-brace-format
 msgid "{name} on {orga}"
-msgstr "{name} in {orga}"
+msgstr "{name} on {orga}"
 
 #: pretalx/event/models/organiser.py:152
 #: pretalx/orga/templates/orga/settings/team_detail.html:17
 msgid "Email"
-msgstr "E-Mail"
+msgstr "Eメール"
 
 #: pretalx/event/models/organiser.py:159
 #, python-brace-format
 msgid "Invite to team {team} for {email}"
-msgstr "Einladung zum Team {team} an {email}"
+msgstr "チーム {team} に {email} を招待する"
 
 #: pretalx/event/models/organiser.py:173
 #, python-brace-format
@@ -2379,134 +2373,133 @@ msgid ""
 "See you there,\n"
 "The {organiser} team"
 msgstr ""
-"Hi!\n"
+"こんにちは！\n"
 "\n"
-"Du wurdest zum Team von {name} eingeladen - Bitte klicke hier, um die "
-"Einladung anzunehmen:\n"
+"あなたは {name} イベントの運営チームに招待されました。 -こちらのリンクをク"
+"リックして参加してください。:\n"
 "\n"
 "    {invitation_link}\n"
 "\n"
-"Wir freuen uns auf dich\n"
-"Das {organiser}-Team"
+"あちらでお会いしましょう！\n"
+"チーム {organiser}"
 
 #: pretalx/event/models/organiser.py:185
 msgid "You have been invited to an organiser team"
-msgstr "Du wurdest zu einem Team eingeladen"
+msgstr "あなたは管理者チームに招待"
 
 #: pretalx/event/stages.py:41
 msgid "Preparation"
-msgstr "Vorbereitung"
+msgstr "準備"
 
 #: pretalx/event/stages.py:45
 msgid "Configure the event"
-msgstr "Richte die Veranstaltung ein"
+msgstr "イベントの設定"
 
 #: pretalx/event/stages.py:46
 msgid "Gather your team"
-msgstr "Lad das restliche Team ein"
+msgstr "チームを集める"
 
 #: pretalx/event/stages.py:47
 msgid "Write a CfP"
-msgstr "Schreib einen CfP"
+msgstr "CfPを書く"
 
 #: pretalx/event/stages.py:49
 msgid "Customize mail templates"
-msgstr "Pass die E-Mail-Vorlagen an"
+msgstr "Eメールテンプレートをカスタマイズする"
 
 #: pretalx/event/stages.py:55
 msgid "CfP is open"
-msgstr "CfP läuft"
+msgstr "CfP は実施中です"
 
 #: pretalx/event/stages.py:59
 msgid "Monitor submissions"
-msgstr "Warte Einreichungen ab"
+msgstr "投稿をモニタする"
 
 #: pretalx/event/stages.py:61
 msgid "Submit talks for your speakers"
-msgstr "Reich selber für die Vortragenden ein"
+msgstr "登壇者のために公園を投稿する"
 
 #: pretalx/event/stages.py:64
 msgid "Invite reviewers"
-msgstr "Lad Leute zum Review-Team ein"
+msgstr "レビュアーを招待する"
 
 #: pretalx/event/stages.py:72
 msgid "Let reviewers do their work"
-msgstr "Lass die Reviewerinnen ihre Arbeit machen"
+msgstr "レビュアーに作業依頼をする"
 
 #: pretalx/event/stages.py:74
 msgid "Accept or reject submissions"
-msgstr "Nimm Einreichungen an"
+msgstr "リジェクトされた提案を受け入れる"
 
 #: pretalx/event/stages.py:77
 msgid "Build your first schedule"
-msgstr "Erstell die erste Programmversion"
+msgstr "最初のスケジュールを作成する"
 
 #: pretalx/event/stages.py:86
 msgid "Release schedules as needed"
-msgstr "Veröffentliche weitere Programmversionen"
+msgstr "随時スケジュールをリリースする"
 
 #: pretalx/event/stages.py:90
 msgid "Inform your speakers about the infrastructure"
-msgstr "Schreib den Vortragenden, was sie erwartet"
+msgstr "登壇者にロジ周りについて連絡する"
 
 #: pretalx/event/stages.py:96
 msgid "Event"
-msgstr "Veranstaltung"
+msgstr "イベント"
 
 #: pretalx/event/stages.py:100
 msgid "Provide a point of contact for the speakers"
-msgstr "Hab einen guten Anlaufpunkt für die Vortragenden"
+msgstr "登壇者に連絡先を提供する"
 
 #: pretalx/event/stages.py:101
 msgid "Enjoy the event!"
-msgstr "Genieß die Veranstaltung!"
+msgstr "イベントを楽しんでください！"
 
 #: pretalx/event/stages.py:105
 msgid "Wrapup"
-msgstr "Abschluss"
+msgstr "ラップアップ"
 
 #: pretalx/event/stages.py:109
 msgid "Monitor incoming feedback"
-msgstr "Beobachte das Feedback"
+msgstr "届いている感想をモニターする"
 
 #: pretalx/event/stages.py:110
 msgid "Embed talk recordings if available"
-msgstr "Bette die Aufzeichnungen ein (wenn es welche gibt)"
+msgstr "録画された公園がある場合埋め込む"
 
 #: pretalx/event/stages.py:111
 msgid "Release next event date?"
-msgstr "Veröffentliche den nächsten Veranstaltungstermin?"
+msgstr "次のイベント日を公開しますか？"
 
 #: pretalx/mail/context.py:9
 msgid "Link to confirm a submission after it has been accepted."
-msgstr "Link, um eine angenommene Einreichung zu bestätigen."
+msgstr "受付後の投稿を確認するためのリンク"
 
 #: pretalx/mail/context.py:12
 msgid "The event's full name."
-msgstr "Der volle Name der Veranstaltung."
+msgstr "イベントのフルネーム"
 
 #: pretalx/mail/context.py:16
 msgid ""
 "The title of the submission in question. Only usable in default templates."
-msgstr ""
-"Der Titel der Einreichung. Kann nur in Standardvorlagen genutzt werden."
+msgstr "質問投稿のタイトル。デフォルトのテンプレートでのみ使用可能です。"
 
 #: pretalx/mail/context.py:22
 msgid "The link to a submission. Only usable in default templates."
-msgstr "Link zur Einreichung. Kann nur in Standardvorlagen genutzt werden."
+msgstr "投稿へのリンク。デフォルトのテンプレートでのみ使用可能です。"
 
 #: pretalx/mail/context.py:27
 msgid "The name(s) of all speakers in this submission."
-msgstr "Die Namen aller Vortragenden dieser Einreichung."
+msgstr "この提案における全ての登壇者の名前"
 
 #: pretalx/mail/context.py:31
 msgid "The track the submission falls under"
-msgstr "Der Track, zu dem die Einreichung gehört"
+msgstr "提案が該当するトラック"
 
 #: pretalx/mail/default_templates.py:4
 #, python-brace-format
 msgid "Your submission: {submission_title}"
-msgstr "Deine Einreichung: {submission_title}"
+msgstr "あなたの提案: {submission_title}"
 
 #: pretalx/mail/default_templates.py:8
 #, python-brace-format
@@ -2522,20 +2515,17 @@ msgid ""
 "\n"
 "The {event_name} organisers"
 msgstr ""
-"Hi!\n"
+"こんにちは!\n"
 "\n"
-"Deine Einreichung \"{submission_title}\" für\n"
-"{event_name} ist bei uns angekommen. Wir melden uns bei dir, sobald wir "
-"Zeit\n"
-"hatten alle Einreichungen anzusehen. In der Zwischenzeit kannst du deine "
-"Einreichung\n"
-"unter folgendem Link ansehen und bearbeiten:\n"
+"あなたの {event_name} への投稿 \"{submission_title}\" を受け取りました。\n"
+"私達が全ての投稿についてレビューが完了したら、ご連絡させていただきます。\n"
+"それまでお待ちいただく間に、以下のURLからドラフトの提案を確認いただくことがで"
+"きます。\n"
 "{submission_url}\n"
 "\n"
-"Bitte zögere nicht, dich bei uns zu melden, wenn du irgendwelche Fragen "
-"hast.\n"
+"何かご質問がある場合、お気軽に私達にご連絡ください\n"
 "\n"
-"Das {event_name}-Team"
+"{event_name} 運営チーム"
 
 #: pretalx/mail/default_templates.py:23
 #, python-brace-format
@@ -2558,24 +2548,21 @@ msgid ""
 "See you there!\n"
 "The {event_name} organisers"
 msgstr ""
-"Hi!\n"
+"こんにちは！\n"
 "\n"
-"wir freuen uns dir mitzuteilen, dass wir deine Einreichung "
-"\"{submission_title}\" für\n"
-"{event_name} akzeptiert haben. Bitte klicke auf den folgenden Link um zu "
-"bestätigen, dass\n"
-"du kommst und deinen Programmpunkt beisteuerst:\n"
+"あなたの {event_name} への”提案 {submission_title}\" が選考を通過したことを、"
+"喜びとともにお伝えします。\n"
+"下記のリンクから、あなたの参加を確認してください。: \n"
 "\n"
 "    {confirmation_link}\n"
 "\n"
-"Wir freuen uns dich zu sehen. Bitte melde dich bei uns, wenn du irgendwelche "
-"Fragen hast.\n"
-"Wir werden uns vor der Veranstaltung nochmal bei dir melden und dir Details "
-"zur Programmplanung\n"
-"und zu technischen und räumlichen Gegebenheiten mitteilen.\n"
+"{event_name} であなたにお会いできるのを楽しみにしています。\n"
+"もし何か質問がある場合はぜひお気軽にご連絡ください。\n"
+"カンファレンスの前に、イベント登壇の詳細やスケジュール、ルーム\n"
+"利用機器等について改めてご連絡させていただきます。\n"
 "\n"
-"Bis dann!\n"
-"Das {event_name}-Team"
+"それではまた！\n"
+"{event_name} 運営チーム"
 
 #: pretalx/mail/default_templates.py:42
 #, python-brace-format
@@ -2589,21 +2576,18 @@ msgid ""
 "\n"
 "The {event_name} organisers"
 msgstr ""
-"Hi!\n"
+"こんにちは！\n"
 "\n"
-"leider können wir deine Einreichung \"{submission_title}\" für\n"
-"{event_name} nicht akzeptieren. Es gab schlicht zu viele tolle "
-"Einreichungen,\n"
-"sodass wir nicht alle berücksichtigen konnten. Wir hoffen, dich als "
-"Teilnehmer trotzdem\n"
-"zu {event_name} begrüßen zu dürfen!\n"
+"大変残念ながら、 {event_name} にはとても多くの素晴らしい提案があり、\n"
+"あなたの提案 ”{submission_title}\" は今回選ばれませんでした。\n"
+"スピーカーとして登壇いただくことはできませんでしたが、\n"
+"ぜひ参加者としてお会いできることを楽しみにしています！\n"
 "\n"
-"Viele Grüße,\n"
-"Das {event_name}-Team"
+"{event_name} 運営チーム"
 
 #: pretalx/mail/default_templates.py:53
 msgid "New schedule!"
-msgstr "Neues Programm!"
+msgstr "新しいスケジュール！"
 
 #: pretalx/mail/default_templates.py:56
 #, python-brace-format
@@ -2619,22 +2603,20 @@ msgid ""
 "\n"
 "The {event_name} organisers"
 msgstr ""
-"Hi!\n"
+"こんにちは！\n"
 "\n"
-"Wir haben eine neue Programmversion veröffentlicht und wollten Dir "
-"mitteilen:\n"
+"新しいスケジュールが公開されましたので、お知らせします！:\n"
 "\n"
 "{notifications}\n"
 "\n"
-"Wir freuen uns schon darauf, Dich zu sehen. Bitte melde Dich jederzeit bei "
-"uns, wenn es ein Problem mit Deinem Vortrag oder Deinem Vortragstermin "
-"gibt.\n"
+"あなたにお会いできることを大変楽しみにしております。もしアサインされた公園そ"
+"の他に何か問題や懸念がある場合、お気軽にご連絡ください。\n"
 "\n"
-"Die {event_name} Veranstalter"
+"{event_name} 運営チーム"
 
 #: pretalx/mail/default_templates.py:69
 msgid "We have some questions about your submission"
-msgstr "Wir haben ein paar Fragen zu deiner Einreichung"
+msgstr "あなたの提案にたいしていくつか質問があります。"
 
 #: pretalx/mail/default_templates.py:73
 #, python-brace-format
@@ -2652,17 +2634,16 @@ msgid ""
 "\n"
 "The {event_name} orga"
 msgstr ""
-"Hi!\n"
+"こんにちは！\n"
 "\n"
-"Wir haben ein paar offene Fragen zu dir und deiner Einreichung – könntest "
-"du\n"
-"dir die kurz angucken und beantworten?\n"
+"あなたや提案について、いくつかの質問がありますので、\n"
+"下記、ご回答いただけますでしょうか。\n"
 "\n"
 "{questions}\n"
 "\n"
-"Die Antworten kannst du unter {url} eingeben.\n"
+"回答については、 {url} から入力することができます。\n"
 "\n"
-"Das {event_name}-Team"
+"{event_name} 運営チーム"
 
 #: pretalx/mail/models.py:37 pretalx/mail/models.py:176
 msgid "Reply-To"
@@ -2673,7 +2654,8 @@ msgid ""
 "Change the Reply-To address if you do not want to use the default organiser "
 "address"
 msgstr ""
-"Trag hier etwas ein, wenn nicht die Veranstalter-Adresse genutzt werden soll"
+"デフォルトの主催者アドレスを使用したくない場合は、Reply-Toアドレスを変更して"
+"ください。"
 
 #: pretalx/mail/models.py:46 pretalx/mail/models.py:190
 msgid "BCC"
@@ -2684,32 +2666,32 @@ msgid ""
 "Enter comma separated addresses. Will receive a blind copy of every mail "
 "sent from this template. This may be a LOT!"
 msgstr ""
-"E-Mail-Adressen durch Kommas getrennt. Diese Adressen werden eine Blindkopie "
-"jeder Mail erhalten, die von diesem Template erstellt werden. Das kann eine "
-"RIESEN-Menge sein!"
+"コンマで区切ったアドレスを入力してください。このテンプレートから送信されたす"
+"べてのメールのブラインドコピーを受け取ることができます。とてもたくさん受け取"
+"るかもしれません!"
 
 #: pretalx/mail/models.py:114
 msgid ""
 "Full submission content:\n"
 "\n"
 msgstr ""
-"Vollständiger Inhalt der Einreichung:\n"
+"投稿内容が充実しています。\n"
 "\n"
 
 #: pretalx/mail/models.py:166 pretalx/orga/forms/cfp.py:247
 #: pretalx/orga/templates/orga/mails/outbox_list.html:38
 #: pretalx/orga/templates/orga/mails/sent_list.html:21
 msgid "To"
-msgstr "An"
+msgstr "To"
 
 #: pretalx/mail/models.py:167 pretalx/mail/models.py:184
 #: pretalx/mail/models.py:191 pretalx/orga/forms/mails.py:121
 msgid "One email address or several addresses separated by commas."
-msgstr "Eine E-Mail-Adresse, oder mehrere durch Kommas getrennt."
+msgstr "1つのメールアドレス、またはカンマで区切られた複数のアドレス。"
 
 #: pretalx/mail/models.py:177
 msgid "By default, the organiser address is used as Reply-To."
-msgstr "Normalerweise wird die Veranstalter-Adresse als Reply-To verwendet."
+msgstr "デフォルトでは、Reply-Toとして主催者アドレスが使用されます。"
 
 #: pretalx/mail/models.py:183
 msgid "CC"
@@ -2717,17 +2699,15 @@ msgstr "CC"
 
 #: pretalx/mail/models.py:195
 msgid "Sent at"
-msgstr "Verschickt"
+msgstr "送信時間"
 
 #: pretalx/mail/models.py:250
 msgid "This mail has been sent already. It cannot be sent again."
-msgstr ""
-"Diese Mail wurde bereits verschickt, du kannst sie nicht noch mal "
-"verschicken."
+msgstr "このメールは既に送信済みです。再度送信することはできません。"
 
 #: pretalx/orga/forms/admin.py:17
 msgid "Perform update checks"
-msgstr "Update-Prüfung starten"
+msgstr "更新チェックの実行"
 
 #: pretalx/orga/forms/admin.py:19
 msgid ""
@@ -2738,16 +2718,16 @@ msgid ""
 "any IP addresses and we will not know who you are or where to find your "
 "instance. You can disable this behavior here at any time."
 msgstr ""
-"Wärend der Update-Prüfung schickt pretalx eine anonyme Installations-ID, die "
-"aktuelle pretalx-Version und die Versionen der installierten Plugins, sowie "
-"die Anzahl der aktiven und inaktiven Veranstaltungen an die Server, die von "
-"den Entwicklern betrieben werden. Wir speichern nur anonyme Daten, nie IP-"
-"Adressen, und wir werden nicht wissen, wer du bist, oder wo diese pretalx-"
-"Instanz zu finden ist. Du kannst diese Prüfung hier jederzeit abschalten."
+"アップデートチェックの間、pretalxは匿名のユニークなインストールID、pretalxの"
+"現在のバージョン、インストールされているプラグイン、インストール中のアクティ"
+"ブなイベントと非アクティブなイベントの数をpretalx開発者によって運営されている"
+"サーバーに報告します。私たちは匿名のデータのみを保存し、IPアドレスは一切保存"
+"せず、あなたが誰なのか、どこであなたのインスタンスを見つけたのかはわかりませ"
+"ん。この機能はいつでも無効にすることができます。"
 
 #: pretalx/orga/forms/admin.py:28
 msgid "E-mail notifications"
-msgstr "E-Mail-Benachrichtigungen"
+msgstr "メールでのお知らせ"
 
 #: pretalx/orga/forms/admin.py:30
 msgid ""
@@ -2755,80 +2735,80 @@ msgid ""
 "available. This address will not be transmitted to pretalx.com, the emails "
 "will be sent by your server locally."
 msgstr ""
-"Wir werden dich unter dieser Adresse informieren, wenn neue Updates "
-"verfügbar sind. Diese Adresse wird nicht an pretalx.com übertragen, alle E-"
-"Mails werden lokal von dieser Instanz verschickt."
+"新しいアップデートが利用可能になったことを検知した場合は、このアドレスでお知"
+"らせします。このアドレスは pretalx.com には送信されず、メールはローカルのサー"
+"バーから送信されます。"
 
 #: pretalx/orga/forms/cfp.py:20
 msgid "Use tracks"
-msgstr "Tracks verwenden"
+msgstr "トラックを利用する"
 
 #: pretalx/orga/forms/cfp.py:22
 msgid "Do you organise your talks by tracks?"
-msgstr "Werden die Vorträge dieser Veranstaltung in Tracks sortiert?"
+msgstr "講演は複数トラックで構成されていますか？"
 
 #: pretalx/orga/forms/cfp.py:25 pretalx/submission/models/submission.py:183
 msgid "Slot Count"
-msgstr "Anzahl"
+msgstr "スロット数"
 
 #: pretalx/orga/forms/cfp.py:27
 msgid "Can talks be held multiple times?"
-msgstr "Können Vorträge mehrfach gehalten werden?"
+msgstr "会談は複数回できますか？"
 
 #: pretalx/orga/forms/cfp.py:30
 msgid "Display deadline publicly"
-msgstr "Einreichungsschluss öffentlich anzeigen"
+msgstr "公開期限を表示する"
 
 #: pretalx/orga/forms/cfp.py:32
 msgid "Show the time and date the CfP ends to potential speakers."
-msgstr "Datum und Uhrzeit des CfP-Endes öffentlich anzeigen."
+msgstr "Show the time and date the CfP ends to potential speakers."
 
 #: pretalx/orga/forms/cfp.py:55 pretalx/orga/forms/cfp.py:58
 #: pretalx/orga/forms/cfp.py:61 pretalx/orga/templates/orga/cfp/text.html:61
 msgid "Minimum length"
-msgstr "Minimallänge"
+msgstr "最小長"
 
 #: pretalx/orga/forms/cfp.py:65 pretalx/orga/forms/cfp.py:68
 #: pretalx/orga/forms/cfp.py:71 pretalx/orga/templates/orga/cfp/text.html:62
 msgid "Maximum length"
-msgstr "Maximallänge"
+msgstr "最大長"
 
 #: pretalx/orga/forms/cfp.py:74
 msgid "Count text length in"
-msgstr "Textlänge zählen in"
+msgstr "テキストの長さをカウントする"
 
 #: pretalx/orga/forms/cfp.py:75
 msgid "Characters"
-msgstr "Zeichen"
+msgstr "文字数"
 
 #: pretalx/orga/forms/cfp.py:75
 msgid "Words"
-msgstr "Wörtern"
+msgstr "単語数"
 
 #: pretalx/orga/forms/cfp.py:79
 msgid "Send mail on new submission"
-msgstr "E-Mail für neue Einreichungen verschicken"
+msgstr "新規投稿のメール送信"
 
 #: pretalx/orga/forms/cfp.py:81
 msgid ""
 "If this setting is checked, you will receive an email to the organiser "
 "address for every received submission."
 msgstr ""
-"Wenn diese Einstellung aktiviert wird, erhält die Veranstalter-Mailadresse "
-"eine Benachrichtigung über jede neue Einreichung."
+"この設定にチェックを入れた場合、受信した投稿に対して主催者のアドレスにメール"
+"が送信されます。"
 
 #: pretalx/orga/forms/cfp.py:174
 msgid "You already have a submission type by this name!"
-msgstr "Ihr habt schon einen Einreichungstyp dieses Namens!"
+msgstr "すでにこの名前で投稿タイプがあります。"
 
 #: pretalx/orga/forms/cfp.py:203
 msgid "You already have a track by this name!"
-msgstr "Ihr habt schon einen Track dieses Namens!"
+msgstr "すでにこの名前のトラックがあります"
 
 #: pretalx/orga/forms/cfp.py:253
 #, python-brace-format
 msgid "Access code for the {event} CfP"
-msgstr "Zugangscode für den „{event}“-CfP"
+msgstr "{event} CfPのアクセスコード"
 
 #: pretalx/orga/forms/cfp.py:257
 #, python-brace-format
@@ -2837,28 +2817,28 @@ msgid ""
 "\n"
 "This is an access code for the {event} CfP."
 msgstr ""
-"H!\n"
+"こんにちは！\n"
 "\n"
-"Das ist ein Zugangscode für den „{event}“-CfP."
+"イベント {event} のCfP のアクセスコードです."
 
 #: pretalx/orga/forms/cfp.py:268
 #, python-brace-format
 msgid "It will allow you to submit a proposal to the “{track}” track."
-msgstr "Er erlaubt Dir, eine Einreichung zum „{track}“-Track einzureichen."
+msgstr "これにより、「{track}」トラックに提案を提出できるようになります。"
 
 #: pretalx/orga/forms/cfp.py:274
 msgid "It will allow you to submit a proposal to our CfP."
-msgstr "Er erlaubt es Dir, an unserem CfP teilzunehmen."
+msgstr "これにより、イベントのCfPに提案を提出することができます。"
 
 #: pretalx/orga/forms/cfp.py:278
 #, python-brace-format
 msgid "This access code is valid until {date}."
-msgstr "Dieser Code ist bis {date} gültig."
+msgstr "このアクセスコードは{date}まで有効です。"
 
 #: pretalx/orga/forms/cfp.py:290
 #, python-brace-format
 msgid "The code can be redeemed multiple times ({num})."
-msgstr "Dieser Code kann mehrfach ({num}) eingelöst werden."
+msgstr "コードは複数回({num}回)引き換え可能です。"
 
 #: pretalx/orga/forms/cfp.py:295
 #, python-brace-format
@@ -2872,28 +2852,28 @@ msgid ""
 "{name}"
 msgstr ""
 "\n"
-"Bitte folge dieser URL, um den Code zu nutzen:\n"
+"このコードを利用するには以下の URL にアクセスしてください。:\n"
 "\n"
 "  {url}\n"
 "\n"
-"Wir freuen uns auf Deine Einreichung!\n"
+"提案をお待ちしております！\n"
 "{name}"
 
 #: pretalx/orga/forms/cfp.py:320 pretalx/person/forms.py:327
 msgid "all"
-msgstr "alle"
+msgstr "全て"
 
 #: pretalx/orga/forms/cfp.py:321
 msgid "Accepted or confirmed speakers"
-msgstr "Angenommene oder zugesagte Vortragende"
+msgstr "承認された、または確認された講演者"
 
 #: pretalx/orga/forms/cfp.py:322
 msgid "Confirmed speakers"
-msgstr "Zugesagte Vortragende"
+msgstr "確認済みスピーカー"
 
 #: pretalx/orga/forms/event.py:25
 msgid "Active languages"
-msgstr "Verfügbare Sprachen"
+msgstr "アクティブな言語"
 
 #: pretalx/orga/forms/event.py:29
 msgid ""
@@ -2902,10 +2882,9 @@ msgid ""
 "language a user selects, it will be shown in your event's default language "
 "instead."
 msgstr ""
-"Nutzer werden pretalx in diesen Sprachen verwenden können, und ihr werdet "
-"Texte in diesen Sprachen hinterlegen können. Wenn ihr einen Text nicht in "
-"der Sprache hinterlegt habt, die ein Nutzer auswählt, wird er stattdessen in "
-"der nächstbesten Sprache angezeigt."
+"ユーザーはこれらの言語で pretalx を使用することができ、あなたはこれらの言語で"
+"すべてのテキストを提供することができます。ユーザーが選択した言語でテキストを"
+"提供しない場合、代わりにイベントのデフォルト言語で表示されます。"
 
 #: pretalx/orga/forms/event.py:39
 msgid ""
@@ -2914,30 +2893,27 @@ msgid ""
 "aligned, so when the window shrinks, the center parts will continue to be "
 "displayed, and not stretched."
 msgstr ""
-"Wenn du ein Header-Bild hochlädst, wird es statt der Veranstaltungsfarbe und/"
-"oder dem Header-Muster im oberen Teil aller öffentlichen Seiten angezeigt. "
-"Es wird zentriert, und nicht gestreckt, dh wenn das Fenster kleiner wird, "
-"werden die äußeren Teile abgeschnitten."
+"ヘッダー画像を提供すると、イベントの色やヘッダーパターンの代わりに、すべての"
+"イベントページの上部に表示されます。中央揃えになるので、ウィンドウが縮小して"
+"も中央部分は表示され続け、引き伸ばされることはありません。"
 
 #: pretalx/orga/forms/event.py:57
 msgid "You can type in your CSS instead of uploading it, too."
-msgstr "Du kannst das Veranstaltungs-CSS hochladen oder einfügen."
+msgstr "CSSをアップロードする代わりに入力することもできます。"
 
 #: pretalx/orga/forms/event.py:66
 msgid "The name of your conference, e.g. My Conference"
-msgstr "Der Name der Veranstaltung, z.B. Die Veranstaltung"
+msgstr "会議名（例：My Conference"
 
 #: pretalx/orga/forms/event.py:69
 msgid ""
 "Please contact your administrator if you need to change the short name of "
 "your event."
-msgstr ""
-"Bitte nimm Kontakt mit der Administration auf, wenn Du die Kurzform des "
-"Veranstaltungsnamens ändern musst."
+msgstr "イベントの略称を変更したい場合は、管理者までご連絡ください。"
 
 #: pretalx/orga/forms/event.py:72
 msgid "A color hex value, e.g. #ab01de"
-msgstr "Eine Farbe als Hex-Wert, z.B. #ab01de"
+msgstr "色の16進数値、例：#ab01de"
 
 #: pretalx/orga/forms/event.py:77
 msgid ""
@@ -2945,50 +2921,51 @@ msgid ""
 "dates. You will have to release a new schedule version to notify all "
 "speakers."
 msgstr ""
-"Alle Vorträge, die schon Teil des Programms sind, werden verschoben, wenn "
-"das Veranstaltungsdatum sich ändert. Um die Vortragenden zu benachrichtigen, "
-"müsst ihr eine neue Programmversion veröffentlichen."
+"すでに予定されている講演は、日程を変更した場合には移動されます。すべての講演"
+"者に通知するためには、新しいスケジュールバージョンをリリースする必要がありま"
+"す。"
 
 #: pretalx/orga/forms/event.py:107
 msgid "Your default language needs to be one of your active languages."
-msgstr "Deine Standardsprache muss aktiviert sein."
+msgstr ""
+"あなたのデフォルト言語は、あなたのアクティブな言語のいずれかである必要があり"
+"ます。"
 
 #: pretalx/orga/forms/event.py:190
 msgid "Custom domain"
-msgstr "Eigene Domain"
+msgstr "カスタムドメイン"
 
 #: pretalx/orga/forms/event.py:191
 msgid "Enter a custom domain, such as https://my.event.example.org"
-msgstr ""
-"Gib eine eigene Domain ein, zum Beispiel https://mein.event.example.org"
+msgstr "カスタムドメインを入力してください。例： https://my.event.example.org"
 
 #: pretalx/orga/forms/event.py:195
 msgid "Imprint URL"
-msgstr "Impressumslink"
+msgstr "免責事項URL"
 
 #: pretalx/orga/forms/event.py:197
 msgid ""
 "This should point e.g. to a part of your website that has your contact "
 "details and legal information."
 msgstr ""
-"Dieser Link sollte auf den Teil eurer Website zeigen, der Kontaktdaten und "
-"rechtliche Informationen enthält."
+"これは、例えば、あなたの連絡先の詳細と法的情報を持つあなたのウェブサイトの一"
+"部を指している必要があります。"
 
 #: pretalx/orga/forms/event.py:202
 msgid "Show schedule publicly"
-msgstr "Programm öffentlich zeigen"
+msgstr "スケジュールを公開"
 
 #: pretalx/orga/forms/event.py:204
 msgid ""
 "Unset to hide your schedule, e.g. if you want to use the HTML export "
 "exclusively."
 msgstr ""
-"Deaktiviere diese Option, um dein Programm nicht öffentlich zu zeigen, z.B. "
-"weil du den HTML-Export nutzt."
+"HTMLエクスポートのみを使用したい場合など、スケジュールを非表示にするには設定"
+"を解除します。"
 
 #: pretalx/orga/forms/event.py:209
 msgid "Schedule display format"
-msgstr "Programmformat"
+msgstr "スケジュール表示形式"
 
 #: pretalx/orga/forms/event.py:211
 msgid ""
@@ -2997,54 +2974,54 @@ msgid ""
 "their times in a single column, even if you have multiple rooms. Please note "
 "that the schedule widget will always be in the proportional schedule mode."
 msgstr ""
-"Die proportionale Darstellung des Programms zeigt jeden Eintrag so an, dass "
-"sichtbar ist, wann er anfängt und endet. Die Darstellung als Liste zeigt "
-"alle Programmpunkte untereinander, selbst wenn sie in verschiedenen Räumen "
-"stattfinden. Das Programm-Widget nutzt immer den proportionalen Modus."
+"プロポーショナルスケジュール表示では、各トークの開始時間と終了時間が一目瞭然"
+"になるようにサイズを調整して表示します。複数の部屋がある場合でも、リスト表示"
+"では1列にトークの時間が表示されます。スケジュールウィジェットは常にプロポー"
+"ショナルスケジュールモードになりますのでご注意ください。"
 
 #: pretalx/orga/forms/event.py:215
 msgid "Proportional"
-msgstr "Proportional"
+msgstr "プロポーショナル"
 
 #: pretalx/orga/forms/event.py:215
 msgid "List"
-msgstr "Liste"
+msgstr "リスト"
 
 #: pretalx/orga/forms/event.py:219
 msgid "Show featured talks"
-msgstr "Highlights zeigen"
+msgstr "ハイライト講演を表示する"
 
 #: pretalx/orga/forms/event.py:221 pretalx/submission/models/review.py:131
 msgid "Never"
-msgstr "Nie"
+msgstr "しない"
 
 #: pretalx/orga/forms/event.py:222
 msgid "Until the first schedule is released"
-msgstr "Bis das erste Programm veröffentlicht wird"
+msgstr "第1回目のスケジュールが公開されるまで"
 
 #: pretalx/orga/forms/event.py:223 pretalx/submission/models/review.py:130
 msgid "Always"
-msgstr "Immer"
+msgstr "常に"
 
 #: pretalx/orga/forms/event.py:225
 msgid "Should the talks marked as featured shown publicly?"
-msgstr "Sollen die als Highlight markierten Vorträge sichtbar sein?"
+msgstr "特集としてマークされた講演は公開されるべきか？"
 
 #: pretalx/orga/forms/event.py:229
 msgid "Generate HTML export on schedule release"
-msgstr "HTML-Export bei Veröffentlichung einer Programm-Version erstellen"
+msgstr "スケジュールリリース時にHTMLエクスポートを生成"
 
 #: pretalx/orga/forms/event.py:231
 msgid ""
 "The static HTML export will be provided as a .zip archive on the schedule "
 "export page."
 msgstr ""
-"Der statische HTML-Export wird als .zip-Archiv auf der Export-Seite "
-"bereitgestellt."
+"静的なHTMLエクスポートは、スケジュールエクスポートページの.zipアーカイブとし"
+"て提供されます。"
 
 #: pretalx/orga/forms/event.py:236
 msgid "HTML Export URL"
-msgstr "HTML-Export-Link"
+msgstr "HTML エクスポート URL"
 
 #: pretalx/orga/forms/event.py:238
 msgid ""
@@ -3052,9 +3029,9 @@ msgid ""
 "absolute URL to be set in various places. Please only set this value once "
 "you have published your schedule. Should end with a slash."
 msgstr ""
-"Falls das Programm über den HTML-Export publiziert wird, sollte an den "
-"passenden Stellen der korrekte Link stehen. Bitte setze diesen Wert erst, "
-"wenn das Programm publiziert wurde. Sollte mit einem / enden."
+"HTMLエクスポートでスケジュールを公開する場合、正しい絶対URLを様々な場所に設定"
+"する必要があります。この値はスケジュールを公開した後に設定してください。ス"
+"ラッシュで終わる必要があります。"
 
 #: pretalx/orga/forms/event.py:246
 msgid ""
@@ -3062,21 +3039,22 @@ msgid ""
 "image. Pattern source: <a href=\"http://www.heropatterns.com/\">heropatterns."
 "com</a>, CC BY 4.0."
 msgstr ""
-"Wähle ein Muster für den farbigen Streifen auf der Startseite. Es wird "
-"angezeigt, wenn kein Header-Bild zur Verfügung steht. Quelle: <a href="
-"\"http://www.heropatterns.com/\">heropatterns.com</a>, CC BY 4.0."
+"画像をアップロードしない場合のフロントページのヘッダーバナーのスタイリング方"
+"法を選択します。パターンのソース: <a href=“http://www.heropatterns."
+"com/“>heropatterns.com</a>, CC BY 4.0."
 
 #: pretalx/orga/forms/event.py:261
 msgid "Ask search engines not to index the event pages"
-msgstr "Veranstaltung von Indizierung in Suchmaschinen ausnehmen"
+msgstr "検索エンジンにイベントページをインデックスしないように依頼する"
 
 #: pretalx/orga/forms/event.py:271
 msgid "Please do not choose the default domain as custom event domain."
-msgstr "Bitte nutze nicht die Domain der Instanz als Veranstaltungs-Domain."
+msgstr ""
+"カスタムイベントのドメインとしてデフォルトのドメインを選択しないでください。"
 
 #: pretalx/orga/forms/event.py:285
 msgid "This domain is already in use for a different event."
-msgstr "Diese Domain wird schon für eine andere Veranstaltung verwendet."
+msgstr "このドメインはすでに別のイベントで使用されています。"
 
 #: pretalx/orga/forms/event.py:296
 #, python-brace-format
@@ -3084,102 +3062,101 @@ msgid ""
 "The domain \"{domain}\" does not have a name server entry at this time. "
 "Please make sure the domain is working before configuring it here."
 msgstr ""
-"Die Domain \"{domain}\" hat derzeit keinen DNS-Eintrag. Bitte stell sicher, "
-"dass die Domain funktioniert, bevor du sie hier einträgst."
+"ドメイン「{domain}」は、現時点ではネームサーバーのエントリがありません。ここ"
+"でドメインを設定する前に、ドメインが動作していることを確認してください。"
 
 #: pretalx/orga/forms/event.py:304
 msgid "Sender address"
-msgstr "Absender-Adresse"
+msgstr "送信者アドレス"
 
 #: pretalx/orga/forms/event.py:305
 msgid "Sender address for outgoing emails."
-msgstr "Absender-Adresse für ausgehende E-Mails."
+msgstr "送信メールの送信者アドレス"
 
 #: pretalx/orga/forms/event.py:309
 msgid "Contact address"
-msgstr "Kontaktadresse"
+msgstr "連絡先アドレス"
 
 #: pretalx/orga/forms/event.py:311
 msgid ""
 "Reply-To address. If this setting is empty and you have no custom sender, "
 "your event email address will be used as Reply-To address."
 msgstr ""
-"Reply-To-Adresse. Wenn dieses Feld leer ist und die Veranstaltung keinen "
-"eigenen Absender konfiguriert hat, wird die Veranstalter-Adresse als Reply-"
-"To verwendet."
+"返信先アドレスです。この設定が空で、カスタム送信者がない場合、イベントのメー"
+"ルアドレスがReply-Toアドレスとして使用されます。"
 
 #: pretalx/orga/forms/event.py:316
 msgid "Mail subject prefix"
-msgstr "Betreff-Präfix"
+msgstr "メール件名のプレフィックス"
 
 #: pretalx/orga/forms/event.py:318
 msgid "The prefix will be prepended to outgoing mail subjects in [brackets]."
-msgstr ""
-"Das Präfix wird dem Betreff ausgehender E-Mails in [eckigen Klammern] "
-"vorangestellt."
+msgstr "送信メールの件名には、[カッコ]の中に接頭辞が付加されます。"
 
 #: pretalx/orga/forms/event.py:323
 msgid "Mail signature"
-msgstr "E-Mail-Signatur"
+msgstr "メール署名"
 
 #: pretalx/orga/forms/event.py:325
 msgid "The signature will be added to outgoing mails, preceded by \"-- \"."
-msgstr "Die Signatur wird ausgehenden E-Mails nach einem \"-- \" angehängt."
+msgstr "送信メールには、”-“の後に署名が追加されます。"
 
 #: pretalx/orga/forms/event.py:331
 msgid "Use custom SMTP server"
-msgstr "Eigenen SMTP-Server verwenden"
+msgstr "カスタムSMTPサーバーを使用する"
 
 #: pretalx/orga/forms/event.py:333
 msgid ""
 "All mail related to your event will be sent over the SMTP server specified "
 "by you."
 msgstr ""
-"Alle E-Mails bezüglich deiner Veranstaltung werden über den von dir "
-"angegebenen SMTP-Server versendet."
+"イベントに関する全てのメールは、ここで指定したSMTPサーバーを経由して送信され"
+"ます。"
 
 #: pretalx/orga/forms/event.py:337
 msgid "Hostname"
-msgstr "Hostname"
+msgstr "ホストネーム"
 
 #: pretalx/orga/forms/event.py:338 pretalx/orga/templates/orga/admin.html:54
 msgid "Port"
-msgstr "Port"
+msgstr "ポート"
 
 #: pretalx/orga/forms/event.py:339
 msgid "Username"
-msgstr "Benutzername"
+msgstr "ユーザー名"
 
 #: pretalx/orga/forms/event.py:341 pretalx/orga/templates/orga/admin.html:56
 #: pretalx/person/forms.py:30 pretalx/person/forms.py:34
 msgid "Password"
-msgstr "Passwort"
+msgstr "パスワード"
 
 #: pretalx/orga/forms/event.py:350
 msgid "Use STARTTLS"
-msgstr "STARTTLS verwenden"
+msgstr "STARTTLS を使う"
 
 #: pretalx/orga/forms/event.py:351
 msgid "Commonly enabled on port 587."
-msgstr "Meistens auf Port 587 verfügbar."
+msgstr "通常 Port 587 で有効です。"
 
 #: pretalx/orga/forms/event.py:355
 msgid "Use SSL"
-msgstr "SSL verwenden"
+msgstr "SSL を使う"
 
 #: pretalx/orga/forms/event.py:355
 msgid "Commonly enabled on port 465."
-msgstr "Meistens auf Port 465 verfügbar."
+msgstr "通常 Port 465 で有効です"
 
 #: pretalx/orga/forms/event.py:363
 msgid "Leave empty to use the default address: {}"
-msgstr "Leer lassen, um die Standardadresse zu verwenden: {}"
+msgstr "デフォルトのアドレスを使用するには空のままにします。{}"
 
 #: pretalx/orga/forms/event.py:379
 msgid ""
 "You can activate either SSL or STARTTLS security, but not both at the same "
 "time."
-msgstr "Du kannst nur SSL oder STARTTLS aktivieren, nicht beides."
+msgstr ""
+"SSLまたはSTARTTLSセキュリティを有効にすることはできますが、同時に両方を有効に"
+"することはできません。"
 
 #: pretalx/orga/forms/event.py:396
 msgid ""
@@ -3188,99 +3165,97 @@ msgid ""
 "instance-wide bypass. If you use this bypass, please also adjust your "
 "Privacy Policy."
 msgstr ""
-"Bitte wähl entweder SSL oder STARTTLS aus, wenn ein nicht-lokaler Mailserver "
-"verwendet wird, um Datensicherheit zu gewährleisten. Die Administration "
-"dieser Instanz kann eine Ausnahme dazu durchsetzen – in diesem Fall sollte "
-"aber auch die Datenschutzerklärung angepasst werden."
+"データ保護のためにローカルではないメールサーバを使用している場合は、SSLまたは"
+"STARTTLSセキュリティを有効にする必要があります。管理者は、インスタンス全体の"
+"バイパスを追加することができます。このバイパスを使用する場合は、プライバシー"
+"ポリシーも調整してください。"
 
 #: pretalx/orga/forms/event.py:405
 msgid "Require a review score"
-msgstr "Eine Review-Wertung erfordern"
+msgstr "レビュースコアを要求する"
 
 #: pretalx/orga/forms/event.py:408
 msgid "Require a review text"
-msgstr "Einen Review-Text erfordern"
+msgstr "レビュー時のテキストを要求する"
 
 #: pretalx/orga/forms/event.py:411
 msgid "Help text for reviewers"
-msgstr "Hilfe-Text für Reviewer"
+msgstr "レビュアーのためのヘルプテキスト"
 
 #: pretalx/orga/forms/event.py:413
 msgid ""
 "This text will be shown at the top of every review, as long as reviews can "
 "be created or edited."
 msgstr ""
-"Dieser Text wird oberhalb jeder Review gezeigt, solange Reviews erstellt "
-"oder editiert werden können."
+"このテキストは、レビューの作成や編集が可能な限り、すべてのレビューの先頭に表"
+"示されます。"
 
 #: pretalx/orga/forms/event.py:421
 msgid "Allow override votes"
-msgstr "Vetos zulassen"
+msgstr "上書き投票を許可する"
 
 #: pretalx/orga/forms/event.py:423
 msgid ""
 "Review teams can be assigned a fixed amount of \"override votes\": Positive "
 "or negative vetos each reviewer can assign."
 msgstr ""
-"Mit dieser Einstellung können einzelne Reviewer eine bestimmte Anzahl an "
-"Override-Stimmen (ähnlich wie Vetos) erhalten."
+"レビューチームには、一定量の「上書き投票」を割り当てることができます。各レ"
+"ビュアーが割り当てることができる正または負の投票。"
 
 #: pretalx/orga/forms/event.py:428
 msgid "Minimum score"
-msgstr "Mindestwertung"
+msgstr "最低スコア"
 
 #: pretalx/orga/forms/event.py:428
 msgid "The minimum score reviewers can assign"
-msgstr "Die geringste Wertung, die vergeben werden kann"
+msgstr "レビュアーが割り当てることができる最小のスコア"
 
 #: pretalx/orga/forms/event.py:431
 msgid "Maximum score"
-msgstr "Höchstwertung"
+msgstr "最大スコア"
 
 #: pretalx/orga/forms/event.py:431
 msgid "The maximum score reviewers can assign"
-msgstr "Die höchste Wertung, die vergeben werden kann"
+msgstr "レビュアーが割り当てることができる最大のスコア"
 
 #: pretalx/orga/forms/event.py:438
 #, python-brace-format
 msgid ""
 "You can configure override votes <a href=\"{link}\">in the team settings</a>."
 msgstr ""
-"Du kannst Override-Stimmen in den <a href=\"{link}\">Team-Einstellungen</a> "
-"konfigurieren."
+"<a href=“{link}”>チームの設定</a>から、上交回投票を設定することができます。"
 
 #: pretalx/orga/forms/event.py:447
 msgid "Score label ({})"
-msgstr "Bezeichnung ({})"
+msgstr "スコアラベル ({})"
 
 #: pretalx/orga/forms/event.py:449
 msgid ""
 "Human readable explanation of what a score of \"{}\" actually means, e.g. "
 "\"great!\"."
 msgstr ""
-"Menschenlesbare Erklärung, was die Wertung \"{}\" bedeutet, z.B. \"super\"."
+"“{}”のスコアが実際に何を意味するのかを人間が読みやすく解説、例：「すご"
+"い！」。"
 
 #: pretalx/orga/forms/event.py:462
 msgid "Please assign a minimum score smaller than the maximum score!"
-msgstr ""
-"Bitte wähle eine Mindestwertung, die kleiner als die Höchstwertung ist!"
+msgstr "最高点よりも小さい最小点を割り当ててください"
 
 #: pretalx/orga/forms/event.py:470
 msgid "Show the widget even if the schedule is not public"
-msgstr "Widget anzeigen, auch wenn das Programm nicht öffentlich ist"
+msgstr "スケジュールが公開されていなくてもウィジェットを表示する"
 
 #: pretalx/orga/forms/event.py:472
 msgid ""
 "Set to allow external pages to show the schedule widget, even if the "
 "schedule is not shown here using pretalx."
 msgstr ""
-"Setze diesen Haken, um das Programm-Widget auch dann auf externen Seiten "
-"nutzen zu können, wenn das Programm nicht hier auf den pretalx-Seiten "
-"öffentlich ist."
+"pretalxを使ってここにスケジュールが表示されていなくても、外部ページにスケ"
+"ジュールウィジェットを表示させるように設定します。"
 
 #: pretalx/orga/forms/event.py:480
 msgid "Widget height"
-msgstr "Widget-Höhe"
+msgstr "ウィジェットの高さ"
 
 #: pretalx/orga/forms/event.py:482
 msgid ""
@@ -3288,226 +3263,218 @@ msgid ""
 "want the widget to have a limited height and a scroll bar, choose its height "
 "here."
 msgstr ""
-"Lass dieses Feld leer, um das Widget sich auf maximale Höhe ausdehnen zu "
-"lassen. Wenn das Widget eine beschränkte Höhe und eine Scrollbar haben soll, "
-"wähle seine Höhe hier."
+"ウィジェットを最大の高さまで拡大したい場合は空のままにしておきます。ウィ"
+"ジェットの高さを制限してスクロールバーを表示したい場合は、ここで高さを選択し"
+"ます。"
 
 #: pretalx/orga/forms/event.py:487
 msgid "Compatibility mode"
-msgstr "Kompatibilitätsmodus"
+msgstr "互換性モード"
 
 #: pretalx/orga/forms/event.py:489
 msgid ""
 "Our regular widget doesn't work in all website builders. If you run into "
 "trouble, try using this compatibility mode."
 msgstr ""
-"Das Widget funktioniert nicht mit allen Website-Programmen. Wenn das zu "
-"Problemen führt, versuch es mit diesem Kompatibilitätsmodus."
+"通常ウィジェットは、すべてのウェブサイトビルダーでは動作しません。問題が発生"
+"した場合は、この互換性モードを使用してみてください。"
 
 #: pretalx/orga/forms/event.py:499
 msgid "Widget language"
-msgstr "Widget-Sprache"
+msgstr "ウィジェット言語"
 
 #: pretalx/orga/forms/mails.py:62
 msgid "An email needs to have at least one recipient."
-msgstr "Eine E-Mail braucht mindestens einen Adressaten."
+msgstr "メールには、少なくとも1人の受信者が必要です。"
 
 #: pretalx/orga/forms/mails.py:91
 msgid "Recipient groups"
-msgstr "Empfängergruppen"
+msgstr "受信者グループ"
 
 #: pretalx/orga/forms/mails.py:96
 msgid "Everyone with submission(s) that have not been accepted/rejected yet"
-msgstr "Jeder mit Einreichungen, die noch nicht akzeptiert/abgelehnt wurden"
+msgstr "まだ採否が決まっていない提案のある方"
 
 #: pretalx/orga/forms/mails.py:101
 msgid "All accepted speakers (who have not confirmed their talk yet)"
-msgstr ""
-"Alle angenommenen Vortragenden (die ihre Teilnahme noch nicht bestätigt "
-"haben)"
+msgstr "受け入れられた講演者全員（まだ講演が確定していない方）"
 
 #: pretalx/orga/forms/mails.py:103
 msgid "All confirmed speakers"
-msgstr "Alle zugesagten Vortragenden"
+msgstr "すべての確認済みスピーカー"
 
 #: pretalx/orga/forms/mails.py:104
 msgid "All rejected speakers"
-msgstr "Alle abgelehnten Vortragenden"
+msgstr "すべての落選されたスピーカー"
 
 #: pretalx/orga/forms/mails.py:105
 msgid "All reviewers in your team"
-msgstr "Alle Reviewer"
+msgstr "あなたのチームのすべてのレビュアー"
 
 #: pretalx/orga/forms/mails.py:106
 msgid "All confirmed speakers who have not uploaded slides"
-msgstr "Alle bestätigten Vortragenden, die noch keine Folien hochgeladen haben"
+msgstr "スライドをアップロードしていない講演者全員"
 
 #: pretalx/orga/forms/mails.py:112
 msgid "All submissions in these tracks"
-msgstr "Alle Einreichungen in diesen Tracks"
+msgstr "これらのトラックのすべての投稿"
 
 #: pretalx/orga/forms/mails.py:115
 msgid "All submissions of these types"
-msgstr "Alle Einreichungen dieses Typs"
+msgstr "これらのタイプのすべての提出物"
 
 #: pretalx/orga/forms/mails.py:119
 msgid "Recipients"
-msgstr "Empfänger"
+msgstr "受信者"
 
 #: pretalx/orga/forms/mails.py:141
 msgid ""
 "Please note: Placeholders will not be substituted, this is an upcoming "
 "feature. Leave no placeholders in this field."
 msgstr ""
-"Achtung! Platzhalter werden momentan noch nicht ersetzt, dieses Feature ist "
-"noch in Arbeit. Bitte lass keine Platzhalter in diesem Feld."
+"注意：プレースホルダは代用されません。このフィールドにはプレースホルダーを入"
+"れないでください。"
 
 #: pretalx/orga/forms/review.py:29
 msgid "No score"
-msgstr "Keine Wertung"
+msgstr "スコア無し"
 
 #: pretalx/orga/forms/review.py:37 pretalx/submission/models/review.py:91
 msgid "Negative override (Veto)"
-msgstr "Negativer Override (Veto)"
+msgstr "拒否の上書き（拒否権）"
 
 #: pretalx/orga/forms/review.py:38 pretalx/submission/models/review.py:89
 msgid "Positive override"
-msgstr "Positiver Override"
+msgstr "賛成の上書き"
 
 #: pretalx/orga/forms/review.py:46
 #, python-brace-format
 msgid "You have {count} override vote left."
 msgid_plural "You have {count} override votes left."
-msgstr[0] "Du hast noch {count} Override-Stimme übrig."
-msgstr[1] "Du hast noch {count} Override-Stimmen übrig."
+msgstr[0] "あなたは {count} 件の上書き票があります。"
+msgstr[1] "あなたは {count} 件の上書き票があります。"
 
 #: pretalx/orga/forms/review.py:68
 #, python-brace-format
 msgid "Please assign a score between {self.min_value} and {self.max_value}!"
-msgstr ""
-"Bitte vergib eine Wertung zwischen {self.min_value} und {self.max_value}!"
+msgstr "{self.min_value}と{self.max_value}の間にスコアを割り振ってください!"
 
 #: pretalx/orga/forms/schedule.py:10
 msgid "Notify speakers of changes"
-msgstr "Vortragende über Änderungen informieren"
+msgstr "スピーカーに変更を通知する"
 
 #: pretalx/orga/forms/schedule.py:21
 msgid "We released a new schedule version!"
-msgstr "Wir eine neue Programmversion veröffentlicht!"
+msgstr "新しいスケジュールバージョンをリリースしました"
 
 #: pretalx/orga/forms/schedule.py:28
 msgid "This schedule version was used already, please choose a different one."
-msgstr "Dieser Versionsname wurde schon verwendet, bitte wähle einen anderen."
+msgstr ""
+"このスケジュール版はすでに使用されています。別のものを選択してください。"
 
 #: pretalx/orga/forms/submission.py:32
 msgid "Speaker email"
-msgstr "E-Mail der Vortragenden"
+msgstr "登壇者のメールアドレス"
 
 #: pretalx/orga/forms/submission.py:34
 msgid ""
 "The email address of the speaker holding the talk. They will be invited to "
 "create an account."
-msgstr ""
-"Füge die E-Mail-Adresse des Vortragenden ein. Der oder die Betreffende wird "
-"dann zur Account-Einrichtung eingeladen."
+msgstr "登壇者のメールアドレス。アカウントを作成するために招待されます。"
 
 #: pretalx/orga/forms/submission.py:38
 msgid "Speaker name"
-msgstr "Name der Vortragenden"
+msgstr "登壇者名"
 
 #: pretalx/orga/forms/submission.py:40
 msgid "The name of the speaker that should be displayed publicly."
-msgstr "Bitte gib den Namen ein, der öffentlich erscheinen soll."
+msgstr "公表すべき登壇者名。"
 
 #: pretalx/orga/phrases.py:9
 msgid "Hi, nice to see you!"
-msgstr "Hey, schön dich kennenzulernen!"
+msgstr "こんにちは、お会いできて嬉しいです。"
 
 #: pretalx/orga/phrases.py:10
 msgid "Welcome!"
-msgstr "Willkommen!"
+msgstr "ようこそ！"
 
 #: pretalx/orga/phrases.py:11
 msgid "I hope you are having a good day :)"
-msgstr "Ich hoffe, du hast einen schönen Tag :)"
+msgstr "良い一日であることを期待しています。"
 
 #: pretalx/orga/phrases.py:12
 msgid "Remember: organising events is lots of work, but it pays off."
 msgstr ""
-"Fakt: Veranstaltungen zu organisieren ist eine Menge Arbeit, aber am Ende "
-"lohnt sie sich."
+"覚えておいてください：イベントを企画することは多くの仕事ですが、それは報われ"
+"ます。"
 
 #: pretalx/orga/phrases.py:14
 msgid ""
 "If you are waiting for feedback from your speakers, try sending a mail to a "
 "subset of them."
 msgstr ""
-"Wenn du auf Feedback von Vortragenden wartest, schreib doch ein paar von "
-"ihnen an."
+"スピーカーからのフィードバックを待っている場合は、スピーカーのサブセットに"
+"メールを送ってみてください。"
 
 #: pretalx/orga/phrases.py:17
 msgid ""
 "Remember to provide your speakers with all information they need ahead of "
 "time."
-msgstr ""
-"Vergiss nicht, deinen Vortragenden alle wichtigen Informationen reichlich "
-"vor der Veranstaltung zukommen zu lassen."
+msgstr "スピーカに必要な情報を先回りして提供することを忘れないでください。"
 
 #: pretalx/orga/phrases.py:20
 msgid ""
 "Even the busiest event organisers should make time to see at least one "
 "talk ;)"
 msgstr ""
-"Sogar die Veranstalter, die nur am rotieren sind, sollte mindestens einen "
-"Vortrag anhören - welchen nimmst du?"
+"忙しいイベント主催者でも、少なくとも1つの講演を見るための時間を作るべきで"
+"す。)"
 
 #: pretalx/orga/phrases.py:31
 msgid "Pudding"
-msgstr "Pudding"
+msgstr "プリン"
 
 #: pretalx/orga/phrases.py:32
 msgid "Panna cotta"
-msgstr "Panna cotta"
+msgstr "パンナコッタ"
 
 #: pretalx/orga/phrases.py:33
 msgid "Chocolate chip cookies"
-msgstr "Schokokekse"
+msgstr "チョコチップクッキー"
 
 #: pretalx/orga/phrases.py:36
 msgid "I think this talk is well-suited to this conference, because ..."
-msgstr ""
-"Meiner Meinung nach passt diese Einreichung gut zur Veranstaltung, weil …"
+msgstr "この講演は、この会議に適していると思います。なぜなら…"
 
 #: pretalx/orga/phrases.py:37
 msgid "I think this talk might fit the conference better, if ..."
-msgstr "Ich denke dieser Vortrag könnte besser sein, wenn …"
+msgstr "私は、この話は会議に合うかもしれないと思いますが、もし…"
 
 #: pretalx/orga/phrases.py:38
 msgid "I think this talk sounds like a perfect fit for Day 2, since ..."
-msgstr ""
-"Dieser Vortrag passt meiner Ansicht nach sehr gut zum Programm an Tag 2, "
-"denn …"
+msgstr "この話は2日目にぴったりだと思います。"
 
 #: pretalx/orga/phrases.py:39
 msgid "I think this talk might be improved by adding ..."
-msgstr "Dieser Talk könnte vielleicht verbessert werden, indem …"
+msgstr "私はこの話が改善されるかもしれないと思います…"
 
 #: pretalx/orga/phrases.py:40
 msgid "I have heard a similar talk by this speaker, and I think ..."
-msgstr "Ich habe einen ähnlichen Vortrag dieses Speakers gehört, und denke …"
+msgstr "私はこのスピーカーで同じような話を聞いたことがあり、私は思う…"
 
 #: pretalx/orga/phrases.py:41
 msgid "In my opinion, this talk will appeal to ..."
-msgstr "Meiner Meinung nach wird dieser Vortrag besonders für … relevant sein."
+msgstr "私の意見では、この話はアピールするだろう..."
 
 #: pretalx/orga/phrases.py:42
 msgid "While I think the talk is a great fit, it might be improved by ..."
 msgstr ""
-"Dieser Vortrag passt gut, könnte aber vielleicht verbessert werden, indem …"
+"トークはとても合っていると思いますが、こうするともっと改善されるかもしれませ"
+"ん…"
 
 #: pretalx/orga/templates/orga/admin.html:15
 msgid "Administrator information"
-msgstr "Admin-Informationen"
+msgstr "管理者情報"
 
 #: pretalx/orga/templates/orga/admin.html:19
 msgid ""
@@ -3515,28 +3482,28 @@ msgid ""
 "and set the DEBUG variable to False if this page is in any way reachable "
 "from the internet."
 msgstr ""
-"Diese pretalx-Instanz läuft im Entwicklungsmodus. <strong>STOPP</strong>, "
-"lass alles stehen und liegen, und setz bitte die DEBUG-Variable auf False, "
-"wenn diese Seite auf irgendeine Weise aus dem Internet erreichbar ist."
+"あなたは開発モードで pretalx を実行しています。もしこのページがインターネット"
+"からアクセス可能な状態であれば、<strong>STOP</strong>とDEBUG変数をFalseに設定"
+"してください。"
 
 #: pretalx/orga/templates/orga/admin.html:28
 #: pretalx/orga/templates/orga/base.html:187
 #: pretalx/orga/templates/orga/organiser/detail.html:10
 #: pretalx/orga/templates/orga/settings/form.html:24
 msgid "Settings"
-msgstr "Einstellungen"
+msgstr "設定"
 
 #: pretalx/orga/templates/orga/admin.html:32
 msgid "Settings have been loaded from:"
-msgstr "Einstellung wurden von diesen Orten geladen:"
+msgstr "以下から設定が読み込まれました。:"
 
 #: pretalx/orga/templates/orga/admin.html:34
 msgid ""
 "No settings files were found, all settings are either set to their default "
 "value or have been read from environment variables."
 msgstr ""
-"Keine Einstellungen wurden gefunden. Alle Einstellungswerte sind entweder "
-"die Standardwerte oder wurden aus Umgebungsvariablen gelesen."
+"設定ファイルは見つかりませんでした。すべての設定がデフォルト値に設定されてい"
+"るか、環境変数から読み込まれています。"
 
 #: pretalx/orga/templates/orga/admin.html:38
 msgid "Database"
