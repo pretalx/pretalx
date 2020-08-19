@@ -143,7 +143,7 @@ setup(
             "pytest-mock",
             "pytest-rerunfailures",
             "pytest-sugar",
-            "pytest-xdist",
+            "pytest-xdist<2",
             "pywatchman",
             "responses",
             "urllib3",
