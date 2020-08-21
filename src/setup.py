@@ -143,7 +143,7 @@ setup(
             "pytest-mock",
             "pytest-rerunfailures",
             "pytest-sugar",
-            "pytest-xdist<2",  # Wait for a pytest-django newer than 3.9.0
+            "pytest-xdist<3",  # Wait for a pytest-django newer than 3.9.0
             "pywatchman",
             "responses",
             "urllib3",
