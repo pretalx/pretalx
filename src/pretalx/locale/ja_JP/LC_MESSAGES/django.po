@@ -6905,28 +6905,26 @@ msgstr ""
 
 #: pretalx/submission/models/question.py:146
 msgid "Minimum text length"
-msgstr "Minimallänge"
+msgstr "最低テキスト長"
 
 #: pretalx/submission/models/question.py:148
 msgid "Minimum allowed text in characters or words (set in CfP settings)."
 msgstr ""
-"Minimale Länge des Texts in Zeichen oder Wörtern (wie in den CfP-"
-"Einstellungen festgelegt)."
+"最短文字数あるいは最小単語数(CfP設定から変更可能)"
 
 #: pretalx/submission/models/question.py:154
 msgid "Maximum text length"
-msgstr "Maximallänge"
+msgstr "最大テキスト長"
 
 #: pretalx/submission/models/question.py:156
 msgid ""
 "Maximum allowed text length in characters or words (set in CfP settings)."
 msgstr ""
-"Maximale Länge des Texts in Zeichen oder Wörtern (wie in den CfP-"
-"Einstellungen festgelegt)."
+"最大文字数あるいは最大単語数(CfP設定から変更可能)"
 
 #: pretalx/submission/models/question.py:161
 msgid "Publish answers"
-msgstr "Antworten öffentlich machen"
+msgstr "回答を公開"
 
 #: pretalx/submission/models/question.py:163
 msgid ""
@@ -6934,413 +6932,395 @@ msgid ""
 "that you cannot make a question public after the first answers have been "
 "given, to allow speakers explicit consent before publishing information."
 msgstr ""
-"Antworten werden auf der Vortrags- oder Vortragendenseite angezeigt. Bitte "
-"beachte, dass Du Fragen nicht mehr öffentlich machen kannst, nachdem die "
-"erste Antwort gegeben wurde, damit sichergestellt ist, dass die Vortragenden "
-"in die Veröffentlichung eingewilligt haben."
+"回答は、適宜、講演や講演者のページに表示されます。"
+"質問を公開できるよう設定できるのは、質問に対して回答が行われていない状態のみであることに注意してください。"
+"これは、情報を公開する前に講演者から明示的な同意を得るためです。"
 
 #: pretalx/submission/models/question.py:168
 msgid "Show answers to reviewers"
-msgstr "Reviewer dürfen Antworten sehen"
+msgstr "回答をレビュアーに表示させる"
 
 #: pretalx/submission/models/question.py:170
 msgid ""
 "Should answers to this question be shown to reviewers? This is helpful if "
 "you want to collect personal information, but use anonymous reviews."
 msgstr ""
-"Sollen Antworten auf diese Frage Reviewern gezeigt werden? Das ist "
-"hilfreich, wenn persönliche Informationen gesammelt werden sollen, aber "
-"Reviewer sie wegen anonymer Reviews nicht sehen sollen."
+"この質問への回答をレビュアーに表示させますか？"
+"この機能は、個人情報を収集したいけれどもレビューは匿名にしたいという場合に有効です。"
 
 #: pretalx/submission/models/resource.py:28
 msgid "description"
-msgstr "Beschreibung"
+msgstr "解説"
 
 #: pretalx/submission/models/review.py:30
 msgid "What do you think?"
-msgstr "Was denkst du?"
+msgstr "どう思われますか？"
 
 #: pretalx/submission/models/review.py:118
 msgid "Phase start"
-msgstr "Beginn"
+msgstr "フェーズ開始"
 
 #: pretalx/submission/models/review.py:119
 msgid "Phase end"
-msgstr "Ende"
+msgstr "フェーズ終了"
 
 #: pretalx/submission/models/review.py:124
 msgid "Reviewers can write and edit reviews"
-msgstr "Reviewer können Reviews verfassen und editieren"
+msgstr "レビュアーはレビューの記入と編集が可能です"
 
 #: pretalx/submission/models/review.py:127
 msgid "Reviewers can see other reviews"
-msgstr "Reviewer können andere Reviews sehen"
+msgstr "レビュアーは自分以外のレビューも見ることが可能です"
 
 #: pretalx/submission/models/review.py:132
 msgid "After reviewing the submission"
-msgstr "Nach Bewertung der Einreichung"
+msgstr "投稿のレビュー後"
 
 #: pretalx/submission/models/review.py:137
 msgid "Reviewers can see speaker names"
-msgstr "Reviewer können die Namen der Vortragenden sehen"
+msgstr "レビュアーは講演者の氏名を見ることが可能です"
 
 #: pretalx/submission/models/review.py:140
 msgid "Reviewers can see the names of other reviewers"
-msgstr "Reviewer können die Namen anderer Reviewer sehen"
+msgstr "レビュアーは自分以外のレビュアーの名前を見ることが可能です"
 
 #: pretalx/submission/models/review.py:143
 msgid "Reviewers can accept and reject submissions"
-msgstr "Reviewer können Einreichungen annehmen und ablehnen"
+msgstr "レビュアーは投稿をアクセプトしたりリジェクトしたりできます"
 
 #: pretalx/submission/models/review.py:146
 msgid "Speakers can modify their submissions before acceptance"
 msgstr ""
-"Vortragende können ihre Einreichungen bearbeiten, bevor sie angenommen wurden"
+"投稿者は、投稿がアクセプトされる前であれば自身の投稿を修正可能です"
 
 #: pretalx/submission/models/review.py:148
 msgid ""
 "By default, modification of submissions is locked after the CfP ends, and is "
 "re-enabled once the submission was accepted."
 msgstr ""
-"Normalerweise wird die Bearbeitung von Einreichungen gesperrt, sobald der "
-"CfP beendet ist, und erst wieder freigegeben, wenn eine Einreichung "
-"angenommen wurde."
+"通常、CfJの終了後は投稿の修正がロックされ、投稿がアクセプトされると再び有効となります。"
 
 #: pretalx/submission/models/submission.py:53
 msgid "rejected"
-msgstr "abgelehnt"
+msgstr "リジェクト済"
 
 #: pretalx/submission/models/submission.py:143
 msgid "Submission state"
-msgstr "Einreichungsstatus"
+msgstr "投稿の状態"
 
 #: pretalx/submission/models/submission.py:162
 msgid "These notes are meant for the organiser and won't be made public."
 msgstr ""
-"Diese Notizen sind für die Veranstalter bestimmt und werden nicht "
-"veröffentlicht."
+"これらのノートは主催者のみが対象となっており、一般公開されません。"
 
 #: pretalx/submission/models/submission.py:168
 msgid "Internal notes"
-msgstr "Interner Vermerk"
+msgstr "内部ノート"
 
 #: pretalx/submission/models/submission.py:170
 msgid ""
 "Internal notes for other organisers/reviewers. Not visible to the speakers "
 "or the public."
 msgstr ""
-"Interner Vermerk der Veranstaltenden. Weder für Vortragende noch für die "
-"Öffentlichkeit einsehbar."
+"他の主催者/レビュアーに対する内部メモ。講演者からは閲覧できませんし、公開もされません。"
 
 #: pretalx/submission/models/submission.py:178
 msgid ""
 "The duration in minutes. Leave empty for default duration for this "
 "submission type."
 msgstr ""
-"Die Dauer in Minuten. Wenn du nichts einträgst, wird der Standard für diese "
-"Einreichungsart genommen."
+"待ち時間（分）。この投稿タイプには標準の待ち時間を適用する場合、空欄にしておいてください。"
 
 #: pretalx/submission/models/submission.py:184
 msgid "How many times this talk will be held."
-msgstr "Wie oft der Vortrag gehalten wird."
+msgstr "この講演が何回行われるか"
 
 #: pretalx/submission/models/submission.py:195
 msgid "Show this talk on list of featured talks, once it was accepted."
-msgstr ""
-"Zeige diese Einreichung in der Liste von Highlights, wenn sie angenommen "
-"wurde."
+msgstr "講演がアクセプトされた場合、特別講演の一覧にこの講演を加えます。"
 
 #: pretalx/submission/models/submission.py:199
 msgid "Don't record this talk."
-msgstr "Zeichnet meine Veranstaltung nicht auf."
+msgstr "動画や録音など記録を希望しません。"
 
 #: pretalx/submission/models/submission.py:349
 msgctxt ""
 "used in talk confirm/accept/reject/...-errors, like \"... must be accepted "
 "OR foo OR bar ...\""
 msgid " or "
-msgstr " oder "
+msgstr " あるいは "
 
 #: pretalx/submission/models/submission.py:357
 #, python-brace-format
 msgid "Submission must be {src_states} not {state} to be {new_state}."
-msgstr ""
-"Eine Einreichung muss {src_states} sein, nicht {state}, um {new_state} zu "
-"werden."
+msgstr "投稿は {state} ではなく {src_states} から {new_state} として記載する必要があります。"
 
 #: pretalx/submission/models/track.py:33
 msgid ""
 "This track will only be shown to submitters with a matching access code."
-msgstr "Dieser Track wird nur bei passendem Zugangscode angezeigt."
+msgstr "このトラックは特別なアクセスコードを所有する投稿者にのみ表示されます。"
 
 #: pretalx/submission/models/type.py:30
 msgid "name"
-msgstr "Name"
+msgstr "氏名"
 
 #: pretalx/submission/models/type.py:33
 msgid "default duration"
-msgstr "Standarddauer"
+msgstr "標準の待ち時間"
 
 #: pretalx/submission/models/type.py:34
 msgid "Default duration in minutes"
-msgstr "Standarddauer in Minuten"
+msgstr "標準の待ち時間（分）"
 
 #: pretalx/submission/models/type.py:41
 msgid ""
 "If you want a different deadline than the global deadline for this "
 "submission type, enter it here."
 msgstr ""
-"Wenn du für diesen Einreichungstyp eine abweichende Deadline möchtest, gib "
-"sie hier ein."
+"この投稿タイプに対し、もし通常の締切とは異なる締切日を希望する場合はここに日時を入力してください。"
 
 #: pretalx/submission/models/type.py:47
 msgid ""
 "This submission type will only be shown to submitters with a matching access "
 "code."
-msgstr "Der Einreichungstyp wird nur mit passendem Zugangscode angezeigt."
+msgstr "この投稿タイプの内容は、特別なアクセスコードを所有する投稿者にのみ表示されます。"
 
 #: pretalx/submission/models/type.py:63
 #, python-brace-format
 msgid "{name} ({duration} days)"
-msgstr "{name} ({duration} Tage)"
+msgstr "{name} ({duration} 日)"
 
 #: pretalx/submission/models/type.py:68
 #, python-brace-format
 msgid "{name} ({duration} hours)"
-msgstr "{name} ({duration} Stunden)"
+msgstr "{name} ({duration} 時間)"
 
 #: pretalx/submission/models/type.py:72
 #, python-brace-format
 msgid "{name} ({duration} minutes)"
-msgstr "{name} ({duration} Minuten)"
+msgstr "{name} ({duration} 分)"
 
 #~ msgid ""
 #~ "Our schedule is not live yet, but we have this list of featured talks "
 #~ "available!"
 #~ msgstr ""
-#~ "Unser Programm ist noch nicht fertig, aber wir haben bis dahin diese "
-#~ "Sammlung von Highlights zusammengestellt!"
+#~ "全スケジュールはまだ公開できないのですが、先にこの特別講演の一覧を御覧ください！"
 
 #~ msgid "Answers"
-#~ msgstr "Antworten"
+#~ msgstr "回答"
 
 #~ msgid ""
 #~ "Our sneak peek has been disabled because we have published a schedule!"
 #~ msgstr ""
-#~ "Die Programmvorschau ist jetzt abgeschaltet, weil wir einen Ablaufplan "
-#~ "veröffentlicht haben."
+#~ "スケジュールを既に公開したため、スニークピークは無効化されています！"
 
 #~ msgid "Show on dashboard"
-#~ msgstr "Auf dem Dashboard anzeigen"
+#~ msgstr "ダッシュボードに表示"
 
 #~ msgid "Show this event on this website's dashboard, once it is public?"
 #~ msgstr ""
-#~ "Soll diese Veranstaltung auf der Startseite dieser Website gezeigt "
-#~ "werden, wenn sie öffentlich ist?"
+#~ "公開状態となった場合、ウェブサイトの公開ダッシュボードにこのイベントを表示させますか？"
 
 #~ msgid ""
 #~ "Set to show this event on this website's public dashboard. Will only show "
 #~ "if the event is public."
 #~ msgstr ""
-#~ "Setzen, um die Veranstaltung auf der Startseite dieser Website zu zeigen. "
-#~ "Greift nur, wenn die Veranstaltung öffentlich ist."
+#~ "ウェブサイトの公開ダッシュボードにこのイベントを表示。"
+#~ "イベントが公開状態の場合にのみ表示は行われます。"
 
 #~ msgid "Show a sneak peek before schedule release"
-#~ msgstr "Programm-Vorschau anzeigen"
+#~ msgstr "スケジュール公開の前にスニークピークを表示"
 
 #~ msgid ""
 #~ "Set to publicly display a selected list of talks which you have marked to "
 #~ "be featured."
 #~ msgstr ""
-#~ "Aktiviere diese Option, um eine Auswahl von Einreichungen schon vor "
-#~ "Programmveröffentlichung zu zeigen."
+#~ "選択した講演リストのうち、特別講演としてマークしたものを公開表示するように設定します。"
 
 #~ msgid "You're on a roll!"
-#~ msgstr "Weiter so!"
+#~ msgstr "調子でてきた！"
 
 #~ msgid "\"Just ONE more review, promise …\""
-#~ msgstr "\"Nur noch EIN Review, versprochen …\""
+#~ msgstr "\"Just ONE more review, I promise …\""
 
 #~ msgid "Review saved, thanks!"
-#~ msgstr "Review gespeichert, danke!"
+#~ msgstr "レビューを保存しました、ありがとうございます！"
 
 #~ msgid "One down, ... some more to go!"
-#~ msgstr "Review für Review dem Ziel näher!"
+#~ msgstr "一人倒しました、 ... まだまだこれからです！"
 
 #~ msgid ""
 #~ "Conferences build on good talk selection – which builds on reviewers like "
 #~ "you!"
 #~ msgstr ""
-#~ "Veranstaltungen brauchen eine gute Inhaltsauswahl – die gibt es nur dank "
-#~ "Reviewern wie dir!"
+#~ "質の高い講演で整えられたカンファレンスになるかどうか、"
+#~ "それはみなさんのようなレビュアーの腕にかかっています。"
 
 #~ msgid "Remember to take a break between reviews, occasionally."
-#~ msgstr "Mach gelegentlich eine Pause zwischen zwei Reviews."
+#~ msgstr "レビュー中は意識的に休憩を挟むことを心がけてください。"
 
 #~ msgid "lost file"
-#~ msgstr "verlorene Datei"
+#~ msgstr "行方不明のファイル"
 
 #~ msgid "Empty answer"
-#~ msgstr "Leere Antwort"
+#~ msgstr "回答未入力"
 
 #~ msgid "Sneak peek"
-#~ msgstr "Vorschau"
+#~ msgstr "スニークピーク"
 
 #~ msgid ""
 #~ "Show this talk on the public sneak peek page, if the sneak peek page is "
 #~ "enabled and the talk was accepted."
 #~ msgstr ""
-#~ "Zeige diese Einreichung auf der Vorschauseite, wenn diese freigegeben ist "
-#~ "und der Vortrag angenommen wurde."
+#~ "もしスニークピークページが有効化されており、講演がアクセプトされた場合、"
+#~ "この講演をスニークピークページに公開表示させます。"
 
 #~ msgid "This stylesheet is not valid CSS."
-#~ msgstr "Diese Datei ist kein valides CSS."
+#~ msgstr "スタイルシートのCSSが有効ではありません。"
 
 #~ msgid "User account is deactivated."
-#~ msgstr "Dein Account wurde deaktiviert."
+#~ msgstr "ユーザアカウントが無効化されています。"
 
 #~ msgid "The email has already been sent, you cannot edit it anymore."
 #~ msgstr ""
-#~ "Diese Mail wurde schon verschickt, du kannst sie nicht mehr editieren."
+#~ "メールは既に送信されており、内容の変更はできません。"
 
 #~ msgid "There was nothing to do."
-#~ msgstr "Es gab nichts zu tun."
+#~ msgstr "特にするべきことはありません。"
 
 #~ msgid ""
 #~ "Nothing has changed, we just wanted to change the version name. It was "
 #~ "going out of style."
 #~ msgstr ""
-#~ "Es hat sich nichts verändert, wir fanden den Versionsnamen nur nicht mehr "
-#~ "cool."
+#~ "変更点はありません、ただ単にバージョン名を変更したかっただけです。流行遅れだったので。""
 
 #~ msgid ""
 #~ "No changes are visible in this version, but be assured we're working on "
 #~ "cool new versions behind the scenes."
 #~ msgstr ""
-#~ "Diese Version brachte keine sichtbaren Änderungen, aber hinter den "
-#~ "Kulissen haben wir fleißig gearbeitet."
+#~ "このバージョンでは目に見える変更点はありません、"
+#~ "ですが、裏ではクールな新バージョンに着手していますのでご安心ください。"
 
 #~ msgid "This is where it all began."
-#~ msgstr "Hier ging es los."
+#~ msgstr "ここが始まりです。"
 
 #~ msgid "Update Mail"
-#~ msgstr "E-Mail aktualisieren"
+#~ msgstr "更新メール"
 
 #~ msgid "Orga area"
-#~ msgstr "Veranstalter-Bereich"
+#~ msgstr "組織の領域"
 
 #~ msgid "Points"
-#~ msgstr "Wertung"
+#~ msgstr "ポイント"
 
 #~ msgid "A short version of your conference name, e.g. mycon"
-#~ msgstr "Eine Kurzform des Veranstaltungsnamens, z.B. diever"
+#~ msgstr "カンファレンスの略称, e.g. マイコン"
 
 #~ msgid "URL"
 #~ msgstr "URL"
 
 #~ msgid "Date"
-#~ msgstr "Datum"
+#~ msgstr "日付"
 
 #~ msgid "New organiser"
-#~ msgstr "Neuer Veranstalter"
+#~ msgstr "新規主催者"
 
 #~ msgid "You cannot choose the base domain of this installation."
 #~ msgstr ""
-#~ "Die Basisdomain kann nicht als Domain festgelegt werden, sie wird ohnehin "
-#~ "schon angeboten."
+#~ "インストールの際に、ドメインのベース部分を指定することはできません。"
 
 #, python-brace-format
 #~ msgid "Unknown template key: \"{key}\", locale: {locale}"
 #~ msgstr ""
-#~ "Unbekannter Template-Platzhalter \"{key}\" (in Sprache \"{locale}\")"
+#~ "未知のテンプレートキー: \"{key}\"、ロケールは \"{locale}\")"
 
 #~ msgid "Navigate"
-#~ msgstr "Navigieren"
+#~ msgstr "ナビゲート"
 
 #~ msgid "Submitters"
-#~ msgstr "Einreichende"
+#~ msgstr "投稿者"
 
 #~ msgid "Mail settings"
-#~ msgstr "E-Mail-Einstellungen"
+#~ msgstr "メール設定"
 
 #~ msgid "Room settings"
-#~ msgstr "Raum-Einstellungen"
+#~ msgstr "部屋設定"
 
 #~ msgid "Mail outbox"
-#~ msgstr "Postausgang"
+#~ msgstr "送信箱"
 
 #~ msgid "Mail templates"
-#~ msgstr "E-Mail-Vorlagen"
+#~ msgstr "メールテンプレート"
 
 #~ msgid "Sent mails"
-#~ msgstr "Verschickte E-Mails"
+#~ msgstr "送信済みメール"
 
 #~ msgid "Speaker information"
-#~ msgstr "Informationen für Vortragende"
+#~ msgstr "講演者情報"
 
 #~ msgid "Review dashboard"
-#~ msgstr "Review-Dashboard"
+#~ msgstr "レビューダッシュボード"
 
 #~ msgid "Please choose a different email address, this one is taken."
-#~ msgstr "Bitte wähle eine andere Adresse, diese ist schon in Nutzung."
+#~ msgstr "別のメールアドレスを入力ください。このアドレスは既に登録されています。"
 
 #~ msgid "Submit"
-#~ msgstr "Einreichen"
+#~ msgstr "投稿"
 
 #~ msgid "Internal error, sorry."
-#~ msgstr "Interner Serverfehler, 'tschuldigung."
+#~ msgstr "Internal errorが発生しました。すみません。"
 
 #~ msgid "Internal server error, we've informed the maintenance robot."
 #~ msgstr ""
-#~ "Interner Serverfehler, wir haben dem Hausmeisterroboter Bescheid gesagt."
+#~ "Internal server errorが発生しました。メンテナンスロボットに通知しました。"
 
 #~ msgid "Ouch, this page is broken."
-#~ msgstr "Autsch, diese Seite ist kaputt."
+#~ msgstr "おおう、ページが壊れています。"
 
 #~ msgid "This shouldn't happen, sorry. We're looking into it."
 #~ msgstr ""
-#~ "Das sollte nicht passieren, entschuldige bitte. Wir nehmen uns der Sache "
-#~ "an."
+#~ "想定外の事象が発生しました。調査中です。"
 
 #~ msgid "Huh. This seems broken. Please try again later."
-#~ msgstr "Hm, das sieht kaputt aus. Bitte probiere es später noch mal."
+#~ msgstr "すみません、故障してしまっているようです。時間をおいてもう一度お試しください。"
 
 #~ msgid "This seems broken. We're looking into it, please give us a bit."
 #~ msgstr ""
-#~ "Hm, das sieht kaputt aus. Bitte probiere es später noch mal, wir sind "
-#~ "dran."
+#~ "故障してしまっているようです。調査しますので、少々お待ちください。"
 
 #~ msgid "It's a bug, not a feature. We're looking into it."
 #~ msgstr ""
-#~ "Das ist ein Fehler, kein Feature – wir gucken es uns schnellstmöglich an."
+#~ "これはバグであり、機能ではありません。調査中です。"
 
 #~ msgid "The default deadline for your Call for Papers."
-#~ msgstr "Einreichungsschluss."
+#~ msgstr "講演公募の標準締め切り"
 
 #~ msgid ""
 #~ "If you provide a logo image, we will by default not show your events name "
 #~ "and date in the page header. We will show your logo in its full size if "
 #~ "possible, scaled down to the full header width otherwise."
 #~ msgstr ""
-#~ "Wenn ein Logo zur Verfügung steht, werden wir nicht den Namen der "
-#~ "Veranstaltung im Header zeigen. Das Logo wird in voller Größe gezeigt, "
-#~ "wenn möglich, und andernfalls auf die volle Breite des Headers "
-#~ "geschrumpft."
+#~ "ロゴ画像を提供した場合、デフォルトではページヘッダーにイベント名と日付を表示しません。"
+#~ "ロゴ画像は可能な限りフルサイズで表示されますが、ヘッダの横幅よりも大きい場合、その幅の大きさに補正されます。"
+
+#~ "ロゴ画像を提供した場合、デフォルトではページヘッダーにイベント名と日付を表示しません。"
+#~ "ロゴは最大120ピクセルの高さで表示されます。"
+
 
 #~ msgid "Import"
-#~ msgstr "Import"
+#~ msgstr "インポート"
 
 #~ msgid "Unable to parse XML file: "
-#~ msgstr "Fehler beim Parsen der XML-Datei: "
+#~ msgstr "XMLファイルのパースに失敗しました: "
 
 #~ msgid "Unable to release new schedule: "
-#~ msgstr "Fehler beim Veröffentlichen des neuen Programms: "
+#~ msgstr "新しいスケジュールのリリースに失敗しました: "
 
 #~ msgid "All speakers of the selected submissions below"
-#~ msgstr "Alle Vortragenden der unten ausgewählten Einreichungen"
+#~ msgstr "選定された投稿に関する講演者一覧"
 
 #~ msgid "%(event)s speaker:"
-#~ msgstr "%(event)s Vortragende:"
+#~ msgstr "%(event)講演者:"
 
 #~ msgid ""
 #~ "Hello {name},\n"
@@ -7357,121 +7337,113 @@ msgstr "{name} ({duration} Minuten)"
 #~ "All the best,\n"
 #~ "your {event} team.\n"
 #~ msgstr ""
-#~ "Hi {name},\n"
+#~ "{name}さん、こんにちは\n"
 #~ "\n"
-#~ "du hast ein neues Passwort für deinen Einreichungs-Account für {event} "
-#~ "angefordert.\n"
+#~ " {event} イベントに関連して、パスワードの再発行リクエストを受け付けました。"
 #~ "\n"
-#~ "Um dein Passwort zurückzusetzen, klick bitte den folgenden Link:\n"
+#~ "パスワードをリセットし、再発行するには、以下のリンクをクリックしてください:\n"
 #~ "\n"
 #~ "{url}\n"
 #~ "\n"
-#~ "Wenn du das nicht warst, oder dir dein Passwort wieder eingefallen ist, "
-#~ "ignorier diese Mail einfach.\n"
+#~ "もしこの内容に心当たりがない場合、本メールは無視してください。\n"
 #~ "\n"
-#~ "Grüße,\n"
-#~ "deine {event}-Orga\n"
+#~ "{event}開催チームより\n"
 
 #~ msgid "You are logged in as <a %(attr)s>%(name)s</a>."
-#~ msgstr "Du bist als <a %(attr)s>%(name)s</a> angemeldet."
+#~ msgstr "現在、<a %(attr)s>%(name)</a>アカウントでログインしています。"
 
 #~ msgid ""
 #~ "If you provide a logo image, we will by default not show your events name "
 #~ "and date in the page header. We will show your logo with a maximal height "
 #~ "of 120 pixels."
 #~ msgstr ""
-#~ "Wenn ein Logo zur Verfügung steht, werden wir nicht den Namen der "
-#~ "Veranstaltung im Header zeigen. Das Logo wird mit einer Maximalhöhe von "
-#~ "120 Pixeln dargestellt."
+#~ "ロゴ画像を提供した場合、デフォルトではページヘッダーにイベント名と日付を表示しません。"
+#~ "ロゴは最大120ピクセルの高さで表示されます。"
 
 #~ msgid "Offer data entry"
-#~ msgstr "Dateneingabe anbieten"
+#~ msgstr "任意項目"
 
 #~ msgid "Force data entry"
-#~ msgstr "Dateneingabe erfordern"
+#~ msgstr "必須項目"
 
 #~ msgid ""
 #~ "Please provide a contact address – your speakers and participants should "
 #~ "be able to reach you easily."
 #~ msgstr ""
-#~ "Bitte gib eine Kontaktadresse ein – deine Teilnehmer sollten dich "
-#~ "problemlos erreichen können."
+#~ "連絡用のメールアドレスを入力ください - 参加者が講演者と連絡を取る際に便利になります。"
 
 #~ msgid "Uh, a new event?<br>Head over here, please!"
-#~ msgstr "Ui, eine neue Veranstaltung?<br>Hier entlang, bitte!"
+#~ msgstr "すみません、新しいイベントでしょうか？<br>こちらからアクセスをお願いします！"
 
 #~ msgid "%(count)s Team"
 #~ msgid_plural "%(count)s Teams"
-#~ msgstr[0] "%(count)s Team"
-#~ msgstr[1] "%(count)s Teams"
+#~ msgstr[0] "%(count)チーム"
+#~ msgstr[1] "%(count)チーム"
 
 #~ msgid "Uh, a new organiser?<br>Head over here, please!"
-#~ msgstr "Ui, ein neuer Veranstalter?<br>Hier entlang, bitte!"
+#~ msgstr "すみません、新しい主催者メンバーでしょうか？<br>こちらからアクセスをお願いします！"
 
 #~ msgid "review"
 #~ msgid_plural "reviews"
-#~ msgstr[0] "Review"
-#~ msgstr[1] "Reviews"
+#~ msgstr[0] "レビュー"
+#~ msgstr[1] "レビュー"
 
 #~ msgid "%(avg)s reviews/reviewer"
-#~ msgstr "%(avg)s Reviews pro Reviewer"
+#~ msgstr "平均 %(avg)レビュー/レビュアー"
 
 #~ msgid "%(count)s total"
-#~ msgstr "%(count)s insgesamt"
+#~ msgstr "総数 %(count)"
 
 #~ msgid "Change settings"
-#~ msgstr "Einstellungen ändern"
+#~ msgstr "設定変更"
 
 #~ msgid "Set a review deadline"
-#~ msgstr "Reviewschluss setzen"
+#~ msgstr "レビュー期限の設定"
 
 #~ msgid "Determine the score range"
-#~ msgstr "Punkteintervall festlegen"
+#~ msgstr "スコアの範囲特定"
 
 #~ msgid "Bravo!"
-#~ msgstr "Super!"
+#~ msgstr "すばらしい！"
 
 #~ msgid "Average score"
-#~ msgstr "Durchschnittspunkte"
+#~ msgstr "平均スコア"
 
 #~ msgid "Once you release your schedule, it will be publicly visible."
 #~ msgstr ""
-#~ "Wenn du eine Programmversion erstellst, wird sie öffentlich einsehbar "
-#~ "sein."
+#~ "公演スケジュールが公開されると、内容が一般に公開されます。"
 
 #~ msgid "Your schedule is currently only visible to orga members."
-#~ msgstr "Das Programm ist derzeit nur für Orga-Mitglieder einsehbar."
+#~ msgstr "あなたのスケジュールは現在、組織メンバーにのみ公開されています。"
 
 #~ msgid ""
 #~ "Once you release your schedule, it will be only visible to orga members."
 #~ msgstr ""
-#~ "Wenn du eine Programmversion erstellst, wird sie nur für Orga-Mitglieder "
-#~ "einsehbar sein."
+#~ "講演スケジュールが公開されると、まずは組織メンバーのみが閲覧可能になります。"
 
 #~ msgid "Review score"
-#~ msgstr "Punkte"
+#~ msgstr "得点のレビュー"
 
 #~ msgid "Copy token"
-#~ msgstr "API-Token kopieren"
+#~ msgstr "コピートークン"
 
 #~ msgid "Please enter the name you wish to be displayed publicly."
-#~ msgstr "Bitte gib den Namen ein, der öffentlich erscheinen soll."
+#~ msgstr "公開時にあなたの名前として表示して欲しい名称を記入してください。"
 
 #~ msgid "A concise summary of your talk in one or two sentences."
-#~ msgstr "Eine Zusammenfassung deiner Veranstaltung in ein bis zwei Sätzen."
+#~ msgstr "あなたの講演内容に関する1-2行程度のサマリーです。"
 
 #~ msgid "A full-text description of your talk and its contents."
-#~ msgstr ""
-#~ "Eine umfassende Beschreibung deiner Veranstaltung und ihres Inhalts."
+#~ msgstr "あなたの講演とその内容に関する解説全文です。"
 
 #~ msgid "Recording URL"
-#~ msgstr "Aufzeichnungs-Link"
+#~ msgstr "録画URL"
 
 #~ msgid "Recording Source"
-#~ msgstr "Aufzeichnungsquelle"
+#~ msgstr "録画元"
 
 #~ msgid "Please write no more than {max} characters."
-#~ msgstr "Bitte schreib höchstens {max} Zeichen."
+#~ msgstr "必要文字数の {max} 文字を満たしていません。"
 
 #~ msgid ""
 #~ "Hi!\n"
@@ -7483,90 +7455,86 @@ msgstr "{name} ({duration} Minuten)"
 #~ "\n"
 #~ "The {event_name} organisers"
 #~ msgstr ""
-#~ "Hi!\n"
+#~ "こんにちは\n"
 #~ "\n"
-#~ "Wir haben eine neue Programmversion, und dein Vortrag wurde verlegt:\n"
-#~ "Von {old_datetime} ({old_room}) nach {new_datetime} ({new_room}).\n"
+#~ "スケジュールが更新され、あなたの講演のスロットが変更されました:\n"
+#~ "旧スロット {old_datetime} ({old_room}) から、新スロット {new_datetime} ({new_room})となっています。\n"
 #~ "\n"
-#~ "Wenn das ein Problem ist, melde dich einfach!\n"
+#~ "もしこの変更で不都合がありましたら、お早めにご連絡ください！\n"
 #~ "\n"
-#~ "Das {event_name}-Team"
+#~ "{event_name}チーム"
 
 #~ msgid "Review deadline"
-#~ msgstr "Reviewschluss"
+#~ msgstr "レビュー期限"
 
 #~ msgid ""
 #~ "Prevent reviewers from seeing speaker names. Please note that reviewers "
 #~ "who also have organiser rights will still see speaker names."
 #~ msgstr ""
-#~ "Reviewer können mit dieser Einstellung nicht die Namen der Einreichenden "
-#~ "sehen. Bitte beachte, dass Reviewer, die auch Veranstalterberechtigungen "
-#~ "haben, die Namen trotzdem sehen können."
+#~ "講演者の名前をレビュアーに表示させないようにします。"
+#~ "ただし、主催者の権限を有しているレビュアーには表示され続けてしまう点に注意してください。"
 
 #~ msgid "%(count)s member"
 #~ msgid_plural "%(count)s members"
-#~ msgstr[0] "%(count)s Mitglied"
-#~ msgstr[1] "%(count)s Mitglieder"
+#~ msgstr[0] "%(count)メンバー"
+#~ msgstr[1] "%(count)メンバー"
 
 #~ msgid "lonely review"
 #~ msgid_plural "total reviews"
-#~ msgstr[0] "einsame Review"
-#~ msgstr[1] "Reviews insgesamt"
+#~ msgstr[0] "単独レビュー"
+#~ msgstr[1] "総レビュー数"
 
 #~ msgid "Zero"
-#~ msgstr "Keine"
+#~ msgstr "ゼロ"
 
 #~ msgid "total reviews"
-#~ msgstr "Reviews insgesamt"
+#~ msgstr "総レビュー数"
 
 #~ msgid "Review!"
-#~ msgstr "Reviewen"
+#~ msgstr "レビュー！"
 
 #~ msgid ""
 #~ "Click here to submit more reviews, there are still %(count)s missing!"
 #~ msgstr ""
-#~ "Hier geht es lang, um mehr Reviews zu verfassen, es fehlen noch %(count)s!"
+#~ "レビューを続けるにはこちらをクリックしてください、残りの対象は%(count)個です！"
 
 #~ msgid "New Team"
-#~ msgstr "Team anlegen"
+#~ msgstr "新規チーム"
 
 #~ msgid ""
 #~ "This submission can no longer be reviewed, as a decision regarding its "
 #~ "role in this event has already been made, or the review deadline is over."
 #~ msgstr ""
-#~ "Diese Einreichung kann nicht mehr bewertet werden, über sie wurde schon "
-#~ "entschieden, oder die Bewertungsfrist ist verstrichen."
+#~ "この投稿は、イベントでの役割が既に確定しているか、レビュー期限が過ぎているため、レビューできません。"
 
 #~ msgid "You cannot delete the only track. Try creating another one first!"
-#~ msgstr ""
-#~ "Du kannst nicht den einzigen Track löschen. Erstell bitte vorher einen "
-#~ "anderen!"
+#~ msgstr "唯一のトラックを削除することはできません。もうひとつトラックを作成してから再度実施してください。"
 
 #~ msgid "total submissions"
-#~ msgstr "Einreichungen insgesamt"
+#~ msgstr "総投稿数"
 
 #~ msgid "total talks"
-#~ msgstr "Vorträge insgesamt"
+#~ msgstr "総講演数"
 
 #~ msgid "The submitted availability is not within the event timeframe."
-#~ msgstr "Die Verfügbarkeit liegt nicht im Veranstaltungszeitraum."
+#~ msgstr "入力された日時がイベントの日時と合致しません。"
 
 #~ msgid "Hi, %(name)s!"
-#~ msgstr "Hi, %(name)s!"
+#~ msgstr "%(name)さん、こんにちは！"
 
 #~ msgid "We have released a new schedule, and wanted to tell you:"
 #~ msgstr ""
-#~ "Wir haben eine neue Programmversion veröffentlicht und wollten dir sagen:"
+#~ "スケジュールが更新されましたので、ご連絡します:"
 
 #~ msgid "Optional. Will be displayed publicly."
-#~ msgstr "Optional. Wird öffentlich gezeigt."
+#~ msgstr "オプション情報。入力内容は公開されます。"
 
 #~ msgid ""
 #~ "There was an error with your user account. Please contact the organiser "
 #~ "for further help."
 #~ msgstr ""
-#~ "Es gab ein Problem mit deinem Account. Bitte wende dich an die "
-#~ "Veranstalter."
+#~ "ユーザアカウントにエラーが発生しました。"
+#~ "主催者までお問い合わせください。"
 
 #~ msgid "No user account matches the entered credentials."
-#~ msgstr "Die eingegebenen Benutzerdaten sind nicht bekannt."
+#~ msgstr "検索条件にヒットするユーザは存在しません。"
