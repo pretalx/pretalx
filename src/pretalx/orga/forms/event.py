@@ -362,6 +362,9 @@ class MailSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
             self.fields["mail_from"].help_text += " " + _(
                 "Leave empty to use the default address: {}"
             ).format(settings.MAIL_FROM)
+        # TODO: Refactor into its own method
+        if self.initial["smtp_password"]:
+            self.fields["smtp_password"].widget.attrs["placeholder"] = "*******"
 
     def clean(self):
         data = self.cleaned_data
