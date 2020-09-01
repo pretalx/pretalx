@@ -21,6 +21,7 @@ from pretalx.orga.forms.widgets import HeaderSelect, MultipleLanguagesWidget
 
 ENCRYPTED_PASSWORD_PLACEHOLDER = "*******"
 
+
 class EventForm(ReadOnlyFlag, I18nModelForm):
     locales = forms.MultipleChoiceField(
         label=_("Active languages"),
@@ -364,10 +365,12 @@ class MailSettingsForm(ReadOnlyFlag, I18nFormMixin, HierarkeyForm):
                 "Leave empty to use the default address: {}"
             ).format(settings.MAIL_FROM)
         self.set_encrypted_password_placeholder()
-        
+
     def set_encrypted_password_placeholder(self):
         if self.initial["smtp_password"]:
-            self.fields["smtp_password"].widget.attrs["placeholder"] = ENCRYPTED_PASSWORD_PLACEHOLDER
+            self.fields["smtp_password"].widget.attrs[
+                "placeholder"
+            ] = ENCRYPTED_PASSWORD_PLACEHOLDER
 
     def clean(self):
         data = self.cleaned_data
