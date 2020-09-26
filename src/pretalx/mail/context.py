@@ -26,6 +26,10 @@ def get_context_explanation():
             ),
         },
         {
+            "name": "submission_type",
+            "explanation": _("The type of the submission including the duration."),
+        },
+        {
             "name": "speakers",
             "explanation": _("The name(s) of all speakers in this submission."),
         },
@@ -50,6 +54,7 @@ def template_context_from_submission(submission):
             "confirmation_link": submission.urls.confirm.full(),
             "submission_title": submission.title,
             "submission_url": submission.urls.user_base.full(),
+            "submission_type": submission.submission_type,
             "speakers": submission.display_speaker_names,
             "orga_url": submission.orga_urls.base.full(),
             "track_name": str(submission.track.name) if submission.track else None,
