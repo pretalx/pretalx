@@ -113,7 +113,7 @@ setup(
         "djangorestframework~=3.11.1",  # http://www.django-rest-framework.org/community/release-notes/
         "inlinestyler~=0.2.0",  # https://github.com/dlanger/inlinestyler/blob/master/CHANGELOG
         "libsass~=0.20.0",  # https://sass.github.io/libsass-python/changes.html
-        "Markdown~=3.2.0",  # https://python-markdown.github.io/change_log/
+        "Markdown>=3.2,<3.4",  # https://python-markdown.github.io/change_log/
         "publicsuffixlist~=0.7.0",
         "python-dateutil~=2.8.0",  # https://dateutil.readthedocs.io/en/stable/changelog.html
         "pytz",
