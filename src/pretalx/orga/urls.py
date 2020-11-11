@@ -266,7 +266,7 @@ urlpatterns = [
                             ),
                             re_path(
                                 "^(?P<pk>[0-9]+)/delete$",
-                                mails.OutboxPurge.as_view(),
+                                mails.MailDelete.as_view(),
                                 name="mails.outbox.mail.delete",
                             ),
                             re_path(
