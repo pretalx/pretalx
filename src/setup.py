@@ -98,7 +98,7 @@ setup(
         "cssutils~=1.0.0",  # https://pythonhosted.org/cssutils/CHANGELOG.html
         "defusedcsv~=1.1.0",  # https://github.com/raphaelm/defusedcsv
         "Django~=3.1.0",  # https://docs.djangoproject.com/en/2.0/releases/
-        "django-bootstrap4~=2.0.0",  # http://django-bootstrap4.readthedocs.io/en/latest/history.html
+        "django-bootstrap4>=2.0,<3.1",  # http://django-bootstrap4.readthedocs.io/en/latest/history.html
         "django-compressor~=2.4.0",  # https://django-compressor.readthedocs.io/en/latest/changelog/
         "django-context-decorator",
         "django-countries~=7.0",  # https://github.com/SmileyChris/django-countries/blob/master/CHANGES.rst
