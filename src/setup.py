@@ -112,7 +112,7 @@ setup(
         "django-scopes~=1.2.0",  # https://github.com/raphaelm/django-scopes/releases
         "djangorestframework~=3.12.0",  # http://www.django-rest-framework.org/community/release-notes/
         "inlinestyler~=0.2.0",  # https://github.com/dlanger/inlinestyler/blob/master/CHANGELOG
-        "libsass~=0.20.0",  # https://sass.github.io/libsass-python/changes.html
+        "libsass>=0.20,<0.22",  # https://sass.github.io/libsass-python/changes.html
         "Markdown~=3.3.0",  # https://python-markdown.github.io/change_log/
         "Pillow~=8.1.0",
         "publicsuffixlist~=0.7.0",
