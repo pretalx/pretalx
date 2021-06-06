@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager
@@ -18,6 +20,11 @@ class Room(LogMixin, models.Model):
         to="event.Event", on_delete=models.PROTECT, related_name="rooms"
     )
     name = I18nCharField(max_length=100, verbose_name=_("Name"))
+    guid = models.UUIDField(
+        default=uuid4,
+        verbose_name=_("GUID"),
+        help_text=_("Unique room identifier across multiple systems (UUID)."),
+    )
     description = I18nCharField(
         max_length=1000,
         null=True,
