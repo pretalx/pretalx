@@ -23,7 +23,7 @@ class Room(LogMixin, models.Model):
     guid = models.UUIDField(
         default=uuid4,
         verbose_name=_("GUID"),
-        help_text=_("Unique room identifier across multiple systems (UUID)."),
+        help_text=_("Unique identifier (UUID) to help external tools identify the room."),
     )
     description = I18nCharField(
         max_length=1000,
@@ -60,6 +60,7 @@ class Room(LogMixin, models.Model):
 
     class Meta:
         ordering = ("position",)
+        unique_together = (("event", "guid"))
 
     class urls(EventUrls):
         settings_base = edit = "{self.event.orga_urls.room_settings}{self.pk}/"

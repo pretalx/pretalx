@@ -184,9 +184,6 @@ class RoomForm(AvailabilitiesFormMixin, ReadOnlyFlag, I18nModelForm):
         super().__init__(*args, **kwargs)
         self.resolution = "00:15:00"
         self.fields["name"].widget.attrs["placeholder"] = _("Room I")
-        self.fields["guid"].widget.attrs["placeholder"] = _(
-            "Leave empty if you do not know what to fill in."
-        )
         self.fields["description"].widget.attrs["placeholder"] = _(
             "Description, e.g.: Our main meeting place, Room I, enter from the right."
         )
