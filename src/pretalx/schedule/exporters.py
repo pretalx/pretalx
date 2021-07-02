@@ -233,7 +233,19 @@ class FrabJsonExporter(ScheduleData):
                                         for answer in talk.submission.answers.all()
                                     ]
                                     if getattr(self, "is_orga", False)
-                                    else [],
+                                    else [
+                                        {
+                                            "question": answer.question.id,
+                                            "answer": answer.answer,
+                                            "options": [
+                                                option.answer
+                                                for option in answer.options.all()
+                                            ],
+                                        }
+                                        for answer in talk.submission.answers.filter(
+                                            question__is_public=True
+                                        )
+                                    ],
                                 }
                                 for talk in room["talks"]
                             ]
