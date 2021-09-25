@@ -1,5 +1,3 @@
-from uuid import uuid4
-
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager
@@ -21,7 +19,7 @@ class Room(LogMixin, models.Model):
     )
     name = I18nCharField(max_length=100, verbose_name=_("Name"))
     guid = models.UUIDField(
-        default=uuid4,
+        null=True,
         verbose_name=_("GUID"),
         help_text=_(
             "Unique identifier (UUID) to help external tools identify the room."
