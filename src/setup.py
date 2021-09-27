@@ -105,7 +105,7 @@ setup(
         "django-context-decorator",
         "django-countries~=7.0",  # https://github.com/SmileyChris/django-countries/blob/master/CHANGES.rst
         "django-csp~=3.7.0",  # https://github.com/mozilla/django-csp/blob/master/CHANGES
-        "django-filter~=2.4.0",  # https://github.com/carltongibson/django-filter/blob/master/CHANGES.rst
+        "django-filter>=2.4,<21.2",  # https://github.com/carltongibson/django-filter/blob/master/CHANGES.rst
         "django-formset-js-improved==0.5.0.2",  # no changelog, https://github.com/pretix/django-formset-js
         "django-formtools~=2.3.0",
         "django-hierarkey~=1.0.0",  # no changelog, https://github.com/raphaelm/django-hierarkey
