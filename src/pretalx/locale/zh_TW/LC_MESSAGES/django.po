@@ -6644,7 +6644,7 @@ msgstr ""
 
 #: pretalx/person/forms.py:256
 msgid "Password (current)"
-msgstr ""
+msgstr "現在的密碼"
 
 #: pretalx/person/forms.py:342
 msgid "Non-accepted submitters"
