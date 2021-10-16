@@ -4489,7 +4489,7 @@ msgstr ""
 
 #: pretalx/orga/templates/orga/event_list.html:12
 msgid "Your upcoming events"
-msgstr ""
+msgstr "正在進行的活動"
 
 #: pretalx/orga/templates/orga/event_list.html:24
 #: pretalx/orga/templates/orga/event_list.html:60
