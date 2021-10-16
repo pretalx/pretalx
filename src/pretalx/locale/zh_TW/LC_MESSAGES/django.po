@@ -3896,7 +3896,7 @@ msgstr "徵求議程投稿"
 #: pretalx/orga/templates/orga/base.html:237
 #: pretalx/orga/templates/orga/submission/base.html:34
 msgid "Content"
-msgstr "內容-"
+msgstr "內容"
 
 #: pretalx/orga/templates/orga/base.html:240
 #: pretalx/orga/templates/orga/base.html:334
@@ -3913,7 +3913,7 @@ msgstr "存取代碼"
 #: pretalx/submission/forms/submission.py:261
 #: pretalx/submission/models/submission.py:138
 msgid "Tags"
-msgstr ""
+msgstr "標籤"
 
 #: pretalx/orga/templates/orga/base.html:279
 msgid "Statistics"
@@ -6092,7 +6092,7 @@ msgstr ""
 
 #: pretalx/orga/views/dashboard.py:97
 msgid "until the CfP ends"
-msgstr "直到徵求議程投稿階段結束"
+msgstr "後徵稿結束"
 
 #: pretalx/orga/views/dashboard.py:125
 msgid "Active reviewers"
@@ -6101,7 +6101,7 @@ msgstr ""
 #: pretalx/orga/views/dashboard.py:156
 msgid "day until event start"
 msgid_plural "days until event start"
-msgstr[0] ""
+msgstr[0] "天後活動開始"
 
 #: pretalx/orga/views/dashboard.py:166
 msgid "day since event end"
