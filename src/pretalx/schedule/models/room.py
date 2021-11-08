@@ -20,6 +20,7 @@ class Room(LogMixin, models.Model):
     name = I18nCharField(max_length=100, verbose_name=_("Name"))
     guid = models.UUIDField(
         null=True,
+        blank=True,
         verbose_name=_("GUID"),
         help_text=_(
             "Unique identifier (UUID) to help external tools identify the room."
