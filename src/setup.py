@@ -157,7 +157,7 @@ setup(
         "postgres": ["psycopg2-binary"],
         "redis": [
             "django_redis~=5.0.0",
-            "redis~=3.5.0",
+            "redis>=3.5,<4.1",
         ],
     },
     packages=find_packages(exclude=["tests", "tests.*"]),
