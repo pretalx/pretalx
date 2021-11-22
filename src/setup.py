@@ -137,7 +137,7 @@ setup(
             "djhtml",
             "docformatter",
             "Faker",
-            "flake8<4",
+            "flake8<5",
             "freezegun",
             "isort",
             "lxml",
