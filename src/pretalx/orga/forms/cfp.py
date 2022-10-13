@@ -6,6 +6,7 @@ from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceFie
 from i18nfield.forms import I18nFormMixin, I18nModelForm
 
 from pretalx.common.mixins.forms import I18nHelpText, JsonSubfieldMixin, ReadOnlyFlag
+from pretalx.schedule.forms import AvailabilitiesFormMixin
 from pretalx.submission.models import (
     AnswerOption,
     Question,
@@ -129,7 +130,13 @@ class CfPSettingsForm(
         }
 
 
-class CfPForm(ReadOnlyFlag, I18nHelpText, JsonSubfieldMixin, I18nModelForm):
+class CfPForm(
+    AvailabilitiesFormMixin,
+    ReadOnlyFlag,
+    I18nHelpText,
+    JsonSubfieldMixin,
+    I18nModelForm,
+):
     show_deadline = forms.BooleanField(
         label=_("Display deadline publicly"),
         required=False,

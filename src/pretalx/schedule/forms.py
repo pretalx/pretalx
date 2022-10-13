@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+from operator import attrgetter, itemgetter
 
 import pytz
 from django import forms
@@ -36,8 +37,36 @@ class AvailabilitiesFormMixin(forms.Form):
         else:
             availabilities = []
 
+        min_time = "00:00:00"
+        max_time = "24:00:00"
+        if self.availabilities_within:
+            tz = pytz.timezone(self.event.timezone)
+            exclude = AvailabilitySerializer(
+                self._invert_availability(event, self.availabilities_within), many=True
+            ).data
+            for availability in self.availabilities_within:
+                if (
+                    availability.start.astimezone(tz).date()
+                    != availability.end.astimezone(tz).date()
+                ):
+                    break
+            else:
+                min_time = min(
+                    a.start.astimezone(tz).time() for a in self.availabilities_within
+                ).strftime("%H:%M:%S")
+                max_time = max(
+                    a.end.astimezone(tz).time() for a in self.availabilities_within
+                ).strftime("%H:%M:%S")
+        else:
+            exclude = []
+
         result = {
-            "availabilities": [a for a in availabilities if is_valid(a)],
+            "availabilities": [
+                *(a for a in availabilities if is_valid(a)),
+                *({"block": True, **e} for e in exclude),
+            ],
+            "min_time": min_time,
+            "max_time": max_time,
             "event": {
                 "timezone": event.timezone,
                 "date_from": str(event.date_from),
@@ -48,9 +77,38 @@ class AvailabilitiesFormMixin(forms.Form):
             result["resolution"] = self.resolution
         return json.dumps(result)
 
+    def _invert_availability(self, event, availabilities):
+        tz = pytz.timezone(self.event.timezone)
+        start = tz.localize(dt.datetime.combine(event.date_from, dt.time(0, 0)))
+
+        inverted_availabilities = []
+        for availability in sorted(availabilities, key=attrgetter("start")):
+            if start < availability.start:
+                inverted_availabilities.append(
+                    Availability(
+                        start=start,
+                        end=availability.start,
+                    )
+                )
+            start = availability.end
+
+        end = tz.localize(
+            dt.datetime.combine(event.date_to + dt.timedelta(days=1), dt.time(0, 0))
+        )
+        if start < end:
+            inverted_availabilities.append(
+                Availability(
+                    start=start,
+                    end=end,
+                )
+            )
+
+        return inverted_availabilities
+
     def __init__(self, *args, event=None, **kwargs):
         self.event = event
         self.resolution = kwargs.pop("resolution", None)
+        self.availabilities_within = kwargs.pop("availabilities_within", [])
         initial = kwargs.pop("initial", dict())
         initial_instance = kwargs["instance"]
         initial["availabilities"] = self._serialize(self.event, initial_instance)
@@ -81,6 +139,7 @@ class AvailabilitiesFormMixin(forms.Form):
             raise forms.ValidationError(
                 f"Availability JSON does not comply with expected format: `availabilities` should be a list, but is {type(availabilities)}"
             )
+        availabilities = [a for a in availabilities if not a.get("block", False)]
         return availabilities
 
     def _parse_datetime(self, strdate):
@@ -130,6 +189,8 @@ class AvailabilitiesFormMixin(forms.Form):
         # If the submitted availability ended outside the event timeframe, fix it silently
         rawavail["end"] = min(rawavail["end"], timeframe_end)
 
+        return True
+
     def clean_availabilities(self):
         data = self.cleaned_data.get("availabilities")
         required = (
@@ -145,10 +206,37 @@ class AvailabilitiesFormMixin(forms.Form):
             if isinstance(self.data.get("availabilities"), list)
             else self._parse_availabilities_json(data)
         )
-        availabilities = []
 
+        # validate raw data and parse datetimes
         for rawavail in rawavailabilities:
             self._validate_availability(rawavail)
+
+        # sort availabilities, so we can merge ones that touch or overlap
+        rawavailabilities.sort(key=itemgetter("start"))
+
+        tz = pytz.timezone(self.event.timezone)
+
+        availabilities = []
+        for rawavail in rawavailabilities:
+            if self.availabilities_within:
+                # check if this availability entry is within availabilies_within
+                for availability in self.availabilities_within:
+                    if (
+                        availability.start.astimezone(tz) <= rawavail["start"]
+                        and availability.end.astimezone(tz) >= rawavail["start"]
+                    ):
+                        # found it, break the loop
+                        break
+                else:
+                    # loop wasn't broken, this is an invalid entry
+                    continue
+
+            # check if this availability touches or overlaps with the previous one. if so, merge them
+            if availabilities and rawavail['start'] <= availabilities[-1].end:
+                if availabilities[-1].end < rawavail['end']:
+                    availabilities[-1].end = rawavail['end']
+                continue
+
             availabilities.append(Availability(event_id=self.event.id, **rawavail))
         if not availabilities and required:
             raise forms.ValidationError(_("Please fill in your availability!"))

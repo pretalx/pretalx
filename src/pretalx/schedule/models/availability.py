@@ -38,6 +38,13 @@ class Availability(LogMixin, models.Model):
         null=True,
         blank=True,
     )
+    cfp = models.ForeignKey(
+        to="submission.CfP",
+        related_name="availabilities",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
     start = models.DateTimeField()
     end = models.DateTimeField()
 

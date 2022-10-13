@@ -29,6 +29,15 @@ input.availabilities-editor-data {
   color: white;
 }
 
+.fc-event.blocker {
+    background-color: rgba(200, 200, 200, 0.5) !important;
+    border-color: transparent !important;
+    pointer-events: none;
+}
+.fc-event.blocker > * {
+    display: none !important;
+}
+
 .fc-day-grid-event.delete::before {
   font-size: 100%;
   top: 0;

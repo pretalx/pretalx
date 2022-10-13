@@ -142,7 +142,12 @@ class SpeakerProfileForm(
             kwargs["instance"] = self.user.event_profile(self.event)
         else:
             kwargs["instance"] = SpeakerProfile()
-        super().__init__(*args, **kwargs, event=self.event)
+        super().__init__(
+            *args,
+            **kwargs,
+            event=self.event,
+            availabilities_within=self.event.cfp.availabilities.all()
+        )
         read_only = kwargs.get("read_only", False)
         initial = kwargs.get("initial", dict())
         initial["name"] = name

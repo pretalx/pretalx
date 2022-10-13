@@ -81,6 +81,11 @@ class CfPTextDetail(PermissionRequired, ActionFromUrl, UpdateView):
         self.sform.save()
         return result
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["event"] = self.request.event
+        return kwargs
+
 
 class CfPQuestionList(EventPermissionRequired, TemplateView):
     template_name = "orga/cfp/question_view.html"

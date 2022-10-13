@@ -150,6 +150,18 @@
                         </div>
                     </fieldset>
 
+                    {% include "common/availabilities.html" %}
+                    <fieldset>
+                        <legend id="text">{% translate "Availability" %}</legend>
+                        <div class="offset-md-3 alert alert-info"><span>
+                            {% translate "Select timeframes below during which the speaker is allowed to mark their availability." %}
+                            {% translate "The speaker will only be able to specify their availability within the timeframes you selected." %}
+                            {% translate "You can use this to prevent a speaker from only providing availability slots outside of the events opening times or before it starts on the first day." %}
+                            {% translate "If you don't specify any timeframes, the speaker can specify their availability freely within the entire duration of the event." %}
+                        </span></div>
+                        {% bootstrap_field form.availabilities layout='event' %}
+                    </fieldset>
+
                     {% include "orga/submit_row.html" %}
                 </form>
             </div>

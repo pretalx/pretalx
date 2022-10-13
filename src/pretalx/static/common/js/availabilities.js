@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function save_events() {
       data = {
-        availabilities: editor.fullCalendar("clientEvents").map(function(e) {
+        availabilities: editor.fullCalendar("clientEvents").filter(function(e) { return !e.block }).map(function(e) {
           if (e.allDay) {
             return {
               start: e.start.format("YYYY-MM-DD HH:mm:ss"),
@@ -40,6 +40,8 @@ document.addEventListener("DOMContentLoaded", function() {
       if (e.start.format("HHmmss") == 0 && e.end.format("HHmmss") == 0) {
         e.allDay = true
       }
+
+      e.className = e.block ? 'blocker' : ''
 
       return e
     })
@@ -71,7 +73,10 @@ document.addEventListener("DOMContentLoaded", function() {
       timeFormat: "H:mm",
       slotDuration: slotDuration,
       slotLabelFormat: "H:mm",
-      scrollTime: "09:00:00",
+      minTime: data.min_time,
+      maxTime: data.max_time,
+      scrollTime: (data.min_time == "00:00:00") ? "09:00:00" : data.min_time,
+      allDaySlot: (data.min_time == "00:00:00" && data.max_time == "24:00:00"),
       selectable: editable,
       locale: locale,
       selectHelper: true,
@@ -80,8 +85,8 @@ document.addEventListener("DOMContentLoaded", function() {
         editor.fullCalendar("clientEvents").forEach(function(e) {
           if (e.className.indexOf("delete") >= 0) {
             wasInDeleteMode = true
+            e.className = ""
           }
-          e.className = ""
           editor.fullCalendar("updateEvent", e)
         })
 
@@ -118,7 +123,7 @@ document.addEventListener("DOMContentLoaded", function() {
           editor.fullCalendar("clientEvents").forEach(function(e) {
             if (e._id == calEvent._id) {
               e.className = "delete"
-            } else {
+            } else if (e.className == "delete") {
               e.className = ""
             }
             editor.fullCalendar("updateEvent", e)
