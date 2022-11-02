@@ -140,7 +140,7 @@ setup(
             "djhtml",
             "docformatter",
             "Faker",
-            "flake8<4",
+            "flake8<6",
             "flake8-bugbear",
             "freezegun",
             "isort",
