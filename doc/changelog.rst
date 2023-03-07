@@ -3,6 +3,8 @@
 Release Notes
 =============
 
+- :release:`2.3.2 <2023-03-07>`
+- :bug:`` Fix a path traversal vulnerability in the static HTML schedule export.
 - :release:`2.3.1 <2021-12-26>`
 - :bug:`1243` Fix bug in setting proposal start times.
 - :feature:`-` The new pending state feature is now available in custom JSON and CSV exports.
