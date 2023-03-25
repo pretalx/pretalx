@@ -65,7 +65,10 @@ class TeamDetail(PermissionRequired, TeamMixin, CreateOrUpdateView):
     @context
     @cached_property
     def members(self):
-        return self.team.members.all().order_by("name")
+        if hasattr(self.team, "members"):
+            return self.team.members.all().order_by("name")
+        else:
+            return []
 
     def post(self, *args, **kwargs):
         if self.invite_form.is_bound:
