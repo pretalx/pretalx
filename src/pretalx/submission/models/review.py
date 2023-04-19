@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -42,8 +43,28 @@ class ReviewScoreCategory(models.Model):
 
     def save(self, *args, **kwargs):
         if self.is_independent:
+            if (
+                not ReviewScoreCategory.objects.exclude(pk=self.pk)
+                .filter(is_independent=False, event=self.event)
+                .exists()
+            ):
+                raise ValidationError(
+                    _("Atleast one non-independent score category is required."),
+                )
             self.weight = 0
         return super().save(*args, **kwargs)
+
+    def delete(self):
+        if (
+            self.is_independent
+            and not ReviewScoreCategory.objects.exclude(pk=self.pk)
+            .filter(is_independent=False, event=self.event)
+            .exists()
+        ):
+            raise ValidationError(
+                _("Atleast one non-independent score category is required."),
+            )
+        return super().delete()
 
 
 class ReviewScore(models.Model):
