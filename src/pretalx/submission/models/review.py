@@ -41,13 +41,17 @@ class ReviewScoreCategory(models.Model):
         for review in event.reviews.all():
             review.save(update_score=True)
 
+    @property
+    def _validate_independence(self):
+        return (
+            ReviewScoreCategory.objects.exclude(pk=self.pk)
+            .filter(is_independent=False, event=self.event)
+            .exists()
+        )
+
     def save(self, *args, **kwargs):
         if self.is_independent:
-            if (
-                not ReviewScoreCategory.objects.exclude(pk=self.pk)
-                .filter(is_independent=False, event=self.event)
-                .exists()
-            ):
+            if not self._validate_independence:
                 raise ValidationError(
                     _("Atleast one non-independent score category is required."),
                 )
@@ -55,12 +59,7 @@ class ReviewScoreCategory(models.Model):
         return super().save(*args, **kwargs)
 
     def delete(self):
-        if (
-            self.is_independent
-            and not ReviewScoreCategory.objects.exclude(pk=self.pk)
-            .filter(is_independent=False, event=self.event)
-            .exists()
-        ):
+        if not self._validate_independence:
             raise ValidationError(
                 _("Atleast one non-independent score category is required."),
             )
