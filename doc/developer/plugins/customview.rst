@@ -33,6 +33,9 @@ If you want to add a custom view to the organiser area of an event, register an 
             views.global_view, name='global-frontend'),
     ]
 
+If you just created your `urls.py` file and you already had the dev-server running, you'll
+now have to restart it for the new file to be recognized.
+
 If your view is event-specific, you have to name one parameter in your URL
 ``event``. By convention, all plugin URLs except for backend URLs start with
 a ``/p/`` to avoid namespace collisions with event names and reserved URLs.
