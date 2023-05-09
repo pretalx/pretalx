@@ -27,9 +27,9 @@ If you want to add a custom view to the organiser area of an event, register an 
     urlpatterns = [
         url(f'^orga/event/(?P<event>[{SLUG_CHARS}]+)/',
             views.admin_view, name='backend'),
-        url(r'^(?P<event>[{SLUG_CHARS}]+)/p/mypluginname/',
+        url(f'^(?P<event>[{SLUG_CHARS}]+)/p/mypluginname/',
             views.frontend_view, name='frontend'),
-        url(r'^p/mypluginname/',
+        url(f'^p/mypluginname/',
             views.global_view, name='global-frontend'),
     ]
 
