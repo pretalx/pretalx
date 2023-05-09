@@ -87,7 +87,7 @@ Frontend views
 --------------
 
 Frontend views work pretty much like organiser area views. Take care that your URL starts
-with ``/(P?P<event>[\]+)/``, or even better, ``/(P?P<event>[\]+)/p/``.
+with ``f'^(?P<event>[{SLUG_CHARS}]+)/``, or even better, ``f'^(?P<event>[{SLUG_CHARS}]+)/p/``.
 You can then write a regular view. It will be automatically ensured that:
 
 * The requested event exists
