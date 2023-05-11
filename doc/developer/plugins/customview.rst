@@ -71,7 +71,7 @@ There is also a signal that allows you to add the view to the event sidebar navi
     @receiver(nav_event, dispatch_uid='friends_tickets_nav')
     def navbar_info(sender, request, **kwargs):
         url = resolve(request.path_info)
-        if not request.user.has_perm('can_see_orga_area', request.event):
+        if not request.user.has_perm('orga.view_orga_area', request.event):
             return []
         return [{
             'label': _('My plugin view'),
