@@ -54,7 +54,7 @@ your views::
     from pretalx.common.mixins.views import PermissionRequired
 
     class AdminView(PermissionRequired, View):
-        permission_required = 'can_view_orders'
+        permission_required = 'orga.view_submissions'
 
         ...
 
