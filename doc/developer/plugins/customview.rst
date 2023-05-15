@@ -87,8 +87,8 @@ Frontend views
 --------------
 
 Frontend views work pretty much like organiser area views. Take care that your URL starts
-with ``f'^(?P<event>[{SLUG_CHARS}]+)/``
-You can then write a regular view. It will be automatically ensured that:
+with ``f'^(?P<event>[{SLUG_CHARS}]+)/p/mypluginname`` for event related urls or ``f'^p/mypluginname``
+for global views. You can then write a regular view. It will be automatically ensured that:
 
 * The requested event exists
 * The requested event is visible (either by being public, or if an organiser looks at it)
