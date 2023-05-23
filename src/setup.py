@@ -123,7 +123,7 @@ setup(
         "python-dateutil~=2.8.0",  # https://dateutil.readthedocs.io/en/stable/changelog.html
         "pytz",
         "qrcode~=7.0",
-        "reportlab~=3.6.0",  # https://www.reportlab.com/documentation/relnotes/
+        "reportlab>=3.6,<4.1",  # https://www.reportlab.com/documentation/relnotes/
         "requests~=2.31.0",  # https://2.python-requests.org/en/master/community/updates/#release-and-version-history
         "rules~=3.3.0",  # https://github.com/dfunckt/django-rules/blob/master/CHANGELOG.md
         "urlman~=2.0.1",  # https://github.com/andrewgodwin/urlman/blob/master/CHANGELOG
