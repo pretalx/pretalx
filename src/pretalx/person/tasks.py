@@ -2,9 +2,11 @@ import logging
 
 from django.core.files import File
 from django.core.files.temp import NamedTemporaryFile
+from django.dispatch import receiver
 from requests import get
 
 from pretalx.celery_app import app
+from pretalx.common.signals import periodic_task
 from pretalx.person.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -38,3 +40,11 @@ def gravatar_cache(person_id: int):
         user.save()
 
         logger.info(f"set avatar for user {user.name} to {user.avatar.url}")
+
+
+@receiver(periodic_task)
+def refetch_gravatars(sender, **kwargs):
+    users_with_gravatar = User.objects.filter(get_gravatar=True)
+
+    for user in users_with_gravatar:
+        gravatar_cache.apply_async(args=(user.pk,))
