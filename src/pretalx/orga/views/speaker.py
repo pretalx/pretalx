@@ -165,7 +165,6 @@ class SpeakerViewMixin(PermissionRequired):
         return self.get_permission_object()
 
 
-@method_decorator(csp_update(IMG_SRC="https://www.gravatar.com"), name="dispatch")
 class SpeakerDetail(SpeakerViewMixin, ActionFromUrl, CreateOrUpdateView):
     template_name = "orga/speaker/form.html"
     form_class = SpeakerProfileForm

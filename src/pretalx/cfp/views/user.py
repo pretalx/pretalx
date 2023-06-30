@@ -35,7 +35,6 @@ from pretalx.submission.forms import InfoForm, QuestionsForm, ResourceForm
 from pretalx.submission.models import Resource, Submission, SubmissionStates
 
 
-@method_decorator(csp_update(IMG_SRC="https://www.gravatar.com"), name="dispatch")
 class ProfileView(LoggedInEventPageMixin, TemplateView):
     template_name = "cfp/event/user_profile.html"
 

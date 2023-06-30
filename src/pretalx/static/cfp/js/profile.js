@@ -34,23 +34,6 @@ $(function () {
         }
     });
 
-    $useGravatar.on('change', function () {
-        let gravatarSelected = $useGravatar.prop('checked');
-
-        if (gravatarSelected) {
-            $fileInput.val('');
-            $image.removeClass('d-none');
-            $image.attr('src', "https://www.gravatar.com/avatar/" + $image.data('gravatar') + '?s=512');
-            $resetCheckbox.prop('checked', true);
-        } else if ($image.data('avatar')) {
-            $image.attr('src', $image.data('avatar'));
-            $image.removeClass('d-none');
-            $resetCheckbox.prop('checked', false);
-        } else {
-            $image.addClass('d-none');
-        }
-    });
-
     $resetCheckbox.on('change', function () {
         let isResetSelected = $resetCheckbox.prop('checked');
         if (isResetSelected) {

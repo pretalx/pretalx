@@ -31,7 +31,6 @@ class SubmitStartView(EventPageMixin, View):
         return redirect(url)
 
 
-@method_decorator(csp_update(IMG_SRC="https://www.gravatar.com"), name="dispatch")
 class SubmitWizard(EventPageMixin, View):
     @transaction.atomic
     def dispatch(self, request, *args, **kwargs):
