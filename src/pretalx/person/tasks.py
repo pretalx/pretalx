@@ -16,7 +16,10 @@ logger = logging.getLogger(__name__)
 def gravatar_cache(person_id: int):
     user = User.objects.filter(pk=person_id).first()
 
-    r = get(f"https://www.gravatar.com/avatar/{user.gravatar_parameter}?s=512")
+    r = get(
+        f"https://www.gravatar.com/avatar/{user.gravatar_parameter}?s=512",
+        timeout=10,
+    )
 
     logger.info(
         f"gravatar returned http {r.status_code} when getting avatar for user {user.name}"
