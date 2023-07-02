@@ -286,7 +286,7 @@ class User(PermissionsMixin, GenerateCode, FileCleanupMixin, AbstractBaseUser):
         """Returns the full avatar URL, where user.avatar_url returns the
         absolute URL."""
         if not self.avatar_url:
-            return self.avatar_url
+            return ""
         if event and event.custom_domain:
             return urljoin(event.custom_domain, self.avatar_url)
         return urljoin(settings.SITE_URL, self.avatar_url)
