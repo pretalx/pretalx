@@ -8,7 +8,8 @@
     <div class="avatar-form-fields col-md-9">
         <div class="d-flex align-items-start">
             <img
-                class="avatar {% if not user.avatar %}d-none{% endif %} order-1"
+                class="avatar {% if not user.avatar and not user.get_gravatar %}d-none{% endif %} order-1"
+                {% if request.event.feature_flags.use_gravatar %}data-gravatar="{{ user.gravatar_parameter }}"{% endif %}
                 data-avatar="{% if user.avatar %}{{ user.avatar.url }}{% endif %}"
                 alt="{% translate "Your avatar" %}"
                 {% if user.avatar %}
