@@ -14,7 +14,14 @@ logger = logging.getLogger(__name__)
 
 @app.task()
 def gravatar_cache(person_id: int):
-    user = User.objects.filter(pk=person_id).first()
+    user = User.objects.filter(pk=person_id, get_gravatar=True).first()
+
+    if not user:
+        logger.warning(
+            f"gravatar_cache() was called for user {person_id}, but "
+            "user was not found or user has gravatar disabled"
+        )
+        return
 
     r = get(
         f"https://www.gravatar.com/avatar/{user.gravatar_parameter}?s=512",
