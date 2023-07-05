@@ -100,7 +100,7 @@ setup(
         "cssutils~=2.7.0",
         "defusedcsv~=2.0.0",  # https://github.com/raphaelm/defusedcsv
         "Django~=4.2.0",  # https://docs.djangoproject.com/en/dev/releases/
-        "django-bootstrap4~=3.0.0",  # http://django-bootstrap4.readthedocs.io/en/latest/history.html
+        "django-bootstrap4>=3.0,<23.3",  # http://django-bootstrap4.readthedocs.io/en/latest/history.html
         "django-compressor~=4.4.0",  # https://django-compressor.readthedocs.io/en/latest/changelog/
         "django-context-decorator",
         "django-countries~=7.0",  # https://github.com/SmileyChris/django-countries/blob/master/CHANGES.rst
