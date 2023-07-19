@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 pretalx contributors <https://github.com/pretalx/pretalx/graphs/contributors>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from rest_framework.response import Response
 from rest_framework.views import APIView
 

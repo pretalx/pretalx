@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 pretalx contributors <https://github.com/pretalx/pretalx/graphs/contributors>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import string
 from collections import defaultdict
 from contextlib import suppress

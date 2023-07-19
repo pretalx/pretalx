@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 pretalx contributors <https://github.com/pretalx/pretalx/graphs/contributors>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from django.http import Http404
 from django.utils.functional import cached_property
 from django_filters import rest_framework as filters

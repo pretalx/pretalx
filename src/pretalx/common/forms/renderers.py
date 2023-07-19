@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 pretalx contributors <https://github.com/pretalx/pretalx/graphs/contributors>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from bootstrap4.renderers import FieldRenderer
 from bootstrap4.text import text_value
 from django.forms import CheckboxInput

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 pretalx contributors <https://github.com/pretalx/pretalx/graphs/contributors>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from i18nfield.rest_framework import I18nAwareModelSerializer
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 

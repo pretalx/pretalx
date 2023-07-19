@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 pretalx contributors <https://github.com/pretalx/pretalx/graphs/contributors>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager
