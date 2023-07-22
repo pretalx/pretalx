@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 pretalx contributors <https://github.com/pretalx/pretalx/graphs/contributors>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from .cfp import CfPForm, QuestionForm, SubmissionTypeForm, TrackForm
 from .event import EventForm
 from .review import ReviewForm

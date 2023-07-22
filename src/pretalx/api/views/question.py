@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 pretalx contributors <https://github.com/pretalx/pretalx/graphs/contributors>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from django_filters import rest_framework as filters
 from rest_framework import viewsets
 from rest_framework.permissions import SAFE_METHODS

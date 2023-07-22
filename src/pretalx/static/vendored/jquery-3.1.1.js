@@ -1,16 +1,8 @@
-/*!
- * jQuery JavaScript Library v3.1.1
- * https://jquery.com/
- *
- * Includes Sizzle.js
- * https://sizzlejs.com/
- *
- * Copyright jQuery Foundation and other contributors
- * Released under the MIT license
- * https://jquery.org/license
- *
- * Date: 2016-09-22T22:30Z
- */
+// Copyright jQuery Foundation and other contributors
+// SPDX-FileCopyrightText: 2023 pretalx contributors <https://github.com/pretalx/pretalx/graphs/contributors>
+//
+// SPDX-License-Identifier: Apache-2.0
+
 ( function( global, factory ) {
 
 	"use strict";

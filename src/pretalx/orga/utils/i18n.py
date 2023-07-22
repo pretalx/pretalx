@@ -1,5 +1,8 @@
-# Inspired by https://github.com/asaglimbeni/django-datetime-widget/blob/master/datetimewidget/widgets.py
 # Copyright (c) 2013, Alfredo Saglimbeni (BSD license)
+# SPDX-FileCopyrightText: 2023 pretalx contributors <https://github.com/pretalx/pretalx/graphs/contributors>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import re
 
 from django.conf import settings

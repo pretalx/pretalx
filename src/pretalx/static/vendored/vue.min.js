@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2023 pretalx contributors <https://github.com/pretalx/pretalx/graphs/contributors>
+//
+// SPDX-License-Identifier: Apache-2.0
+
 /*!
  * Vue.js v2.6.10
  * (c) 2014-2019 Evan You

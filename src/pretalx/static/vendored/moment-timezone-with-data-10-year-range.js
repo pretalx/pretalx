@@ -1,8 +1,7 @@
-//! moment-timezone.js
-//! version : 0.5.40
-//! Copyright (c) JS Foundation and other contributors
-//! license : MIT
-//! github.com/moment/moment-timezone
+// Copyright (c) JS Foundation and other contributors
+// SPDX-FileCopyrightText: 2023 pretalx contributors <https://github.com/pretalx/pretalx/graphs/contributors>
+//
+// SPDX-License-Identifier: Apache-2.0
 
 (function (root, factory) {
 	"use strict";
