@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from i18nfield.fields import I18nCharField
@@ -65,3 +67,16 @@ class Room(OrderedModel, PretalxModel):
     @staticmethod
     def get_order_queryset(event):
         return event.rooms.all()
+
+    def uuid(self):
+        """Either a UUID5 calculated from the submission code and the instance identifier; 
+        or GUID value of the room, if it was imported or set manually."""
+        if self.guid:
+            return self.guid
+
+        global INSTANCE_IDENTIFIER
+        if not INSTANCE_IDENTIFIER:
+            from pretalx.common.models.settings import GlobalSettings
+
+            INSTANCE_IDENTIFIER = GlobalSettings().get_instance_identifier()
+        return uuid.uuid5(INSTANCE_IDENTIFIER, f'room:{self.pk}')
