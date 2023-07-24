@@ -181,9 +181,9 @@ class FrabJsonExporter(ScheduleData):
                                 {
                                     "id": talk.submission.id,
                                     "guid": talk.uuid,
-                                    "logo": talk.submission.urls.image,
                                     "date": talk.local_start.isoformat(),
                                     "start": talk.local_start.strftime("%H:%M"),
+                                    "logo": talk.submission.image_url,
                                     "duration": talk.export_duration,
                                     "room": str(room["name"]),
                                     "slug": talk.frab_slug,
@@ -206,6 +206,7 @@ class FrabJsonExporter(ScheduleData):
                                             "id": person.id,
                                             "code": person.code,
                                             "public_name": person.get_display_name(),
+                                            "avatar": person.get_avatar_url,
                                             "biography": getattr(
                                                 person.profiles.filter(
                                                     event=self.event
