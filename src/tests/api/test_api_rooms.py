@@ -12,6 +12,7 @@ def test_room_serializer(room):
     assert set(data.keys()) == {
         "id",
         "guid",
+        "uuid",
         "name",
         "description",
         "capacity",
@@ -28,6 +29,7 @@ def test_room_orga_serializer(room):
         assert set(data.keys()) == {
             "id",
             "guid",
+            "uuid",
             "name",
             "description",
             "capacity",

@@ -23,7 +23,16 @@ class RoomSerializer(I18nAwareModelSerializer):
 
     class Meta:
         model = Room
-        fields = ("id", "guid", "name", "description", "capacity", "position", "url")
+        fields = (
+            "id",
+            "guid",
+            "uuid",
+            "name",
+            "description",
+            "capacity",
+            "position",
+            "url",
+        )
 
 
 class RoomOrgaSerializer(RoomSerializer):

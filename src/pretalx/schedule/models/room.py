@@ -1,10 +1,12 @@
 import uuid
+from functools import cached_property
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from i18nfield.fields import I18nCharField
 
 from pretalx.common.mixins.models import OrderedModel, PretalxModel
+from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.urls import EventUrls
 
 
@@ -24,7 +26,7 @@ class Room(OrderedModel, PretalxModel):
         blank=True,
         verbose_name=_("GUID"),
         help_text=_(
-            "Unique identifier (UUID) to help external tools identify the room."
+            "Unique identifier (UUID) to help external tools identify the room. When left empty, a UUID will be generated automatically from the pretalx instance identifier and local room id."
         ),
     )
     description = I18nCharField(
@@ -68,15 +70,11 @@ class Room(OrderedModel, PretalxModel):
     def get_order_queryset(event):
         return event.rooms.all()
 
+    @cached_property
     def uuid(self):
-        """Either a UUID5 calculated from the submission code and the instance identifier; 
+        """Either a UUID5 calculated from the submission code and the instance identifier;
         or GUID value of the room, if it was imported or set manually."""
         if self.guid:
             return self.guid
 
-        global INSTANCE_IDENTIFIER
-        if not INSTANCE_IDENTIFIER:
-            from pretalx.common.models.settings import GlobalSettings
-
-            INSTANCE_IDENTIFIER = GlobalSettings().get_instance_identifier()
-        return uuid.uuid5(INSTANCE_IDENTIFIER, f'room:{self.pk}')
+        return uuid.uuid5(GlobalSettings().get_instance_identifier(), f"room:{self.pk}")
