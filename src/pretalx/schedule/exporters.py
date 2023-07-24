@@ -264,7 +264,10 @@ class FrabJsonExporter(ScheduleData):
         return (
             f"{self.event.slug}.json".format(self.event.slug),
             "application/json",
-            json.dumps({"schedule": content}, cls=I18nJSONEncoder),
+            json.dumps({
+                "$schema": "https://c3voc.de/schedule/schema.json",
+                "schedule": content
+            }, cls=I18nJSONEncoder),
         )
 
 
