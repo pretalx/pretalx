@@ -161,6 +161,10 @@ class FrabJsonExporter(ScheduleData):
                 "daysCount": self.event.duration,
                 "timeslot_duration": "00:05",
                 "time_zone_name": self.event.timezone,
+                "colors": {
+                    "primary": self.event.primary_color
+                },
+                "url": self.event.urls.schedule.full(),
                 "rooms": [
                     {
                         "name": str(room.name),
@@ -169,6 +173,13 @@ class FrabJsonExporter(ScheduleData):
                         "capacity": room.capacity,
                     }
                     for room in self.event.rooms.all()
+                ],
+                "tracks": [
+                    {
+                        "name": str(track.name),
+                        "color": track.color,
+                    }
+                    for track in self.event.tracks.all()
                 ],
                 "days": [
                     {
