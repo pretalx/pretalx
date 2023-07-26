@@ -24,7 +24,11 @@ class ScheduleData(BaseExporter):
     def metadata(self):
         if not self.schedule:
             return []
-        return {"base_url": self.event.urls.schedule.full()}
+
+        return {
+            "url": self.event.urls.schedule.full(),
+            "base_url": get_base_url(self.event)
+        }
 
     @cached_property
     def data(self):
@@ -151,6 +155,7 @@ class FrabJsonExporter(ScheduleData):
     def get_data(self, **kwargs):
         schedule = self.schedule
         return {
+            "url": self.metadata["url"],
             "version": schedule.version,
             "base_url": self.metadata["base_url"],
             "conference": {
@@ -164,7 +169,7 @@ class FrabJsonExporter(ScheduleData):
                 "colors": {
                     "primary": self.event.primary_color
                 },
-                "url": self.event.urls.schedule.full(),
+                # "url": self.event.urls.base.full(),  # TODO this should be the URL of the conference website itself, but we do not have a field for this value yet
                 "rooms": [
                     {
                         "name": str(room.name),
@@ -190,15 +195,15 @@ class FrabJsonExporter(ScheduleData):
                         "rooms": {
                             str(room["name"]): [
                                 {
+                                    "url": talk.submission.urls.public.full(),
                                     "id": talk.submission.id,
                                     "guid": talk.uuid,
                                     "date": talk.local_start.isoformat(),
                                     "start": talk.local_start.strftime("%H:%M"),
-                                    "logo": talk.submission.image_url,
+                                    "logo": talk.submission.image_url or None,
                                     "duration": talk.export_duration,
                                     "room": str(room["name"]),
                                     "slug": talk.frab_slug,
-                                    "url": talk.submission.urls.public.full(),
                                     "title": talk.submission.title,
                                     "subtitle": "",
                                     "track": (
@@ -217,7 +222,7 @@ class FrabJsonExporter(ScheduleData):
                                             "id": person.id,
                                             "code": person.code,
                                             "public_name": person.get_display_name(),
-                                            "avatar": person.get_avatar_url,
+                                            "avatar": person.get_avatar_url(self.event) or None,
                                             "biography": getattr(
                                                 person.profiles.filter(
                                                     event=self.event
@@ -274,10 +279,14 @@ class FrabJsonExporter(ScheduleData):
     def render(self, **kwargs):
         content = self.get_data()
         return (
-            f"{self.event.slug}.json".format(self.event.slug),
+            f"{self.event.slug}.json",
             "application/json",
             json.dumps({
                 "$schema": "https://c3voc.de/schedule/schema.json",
+                "generator": {
+                    "name": "pretalx",
+                    "version": __version__
+                },
                 "schedule": content
             }, cls=I18nJSONEncoder),
         )
