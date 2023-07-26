@@ -7929,11 +7929,13 @@ msgstr ""
 msgid "GUID"
 msgstr "GUID"
 
-#: pretalx/schedule/models/room.py:25
-msgid "Unique identifier (UUID) to help external tools identify the room."
-msgstr ""
-"Eindeutiger Bezeichner (UUID), der externen Anwendungen hilft, diesen Raum "
-"zu identifizieren."
+#: pretalx/schedule/models/room.py:32
+msgid ""
+"Unique identifier (UUID) to help external tools identify the room. When left "
+"empty, a UUID will be generated automatically from the pretalx instance identifier "
+"and local room id."
+msgstr "Eindeutiger Bezeichner (UUID), der externen Anwendungen hilft diesen Raum "
+"zu identifizieren. Wenn leer, wird der Wert aus der pretalx Instanz UUID und der lokalen Raumnummer berechnet "
 
 #: pretalx/schedule/models/room.py:33
 msgid "A description for attendees, for example directions."
