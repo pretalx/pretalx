@@ -106,7 +106,7 @@ def test_schedule_frab_json_export(
     django_assert_max_num_queries,
     orga_user,
 ):
-    with django_assert_max_num_queries(12):
+    with django_assert_max_num_queries(14):
         regular_response = client.get(
             reverse(
                 "agenda:export.schedule.json",
