@@ -26,7 +26,7 @@ class Room(OrderedModel, PretalxModel):
         blank=True,
         verbose_name=_("GUID"),
         help_text=_(
-            "Unique identifier (UUID) to help external tools identify the room. When left empty, a UUID will be generated automatically from the pretalx instance identifier and local room id."
+            "Unique identifier (UUID) to help external tools identify the room."
         ),
     )
     description = I18nCharField(
