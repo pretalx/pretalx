@@ -27,7 +27,7 @@ class ScheduleData(BaseExporter):
 
         return {
             "url": self.event.urls.schedule.full(),
-            "base_url": get_base_url(self.event)
+            "base_url": get_base_url(self.event),
         }
 
     @cached_property
@@ -166,9 +166,7 @@ class FrabJsonExporter(ScheduleData):
                 "daysCount": self.event.duration,
                 "timeslot_duration": "00:05",
                 "time_zone_name": self.event.timezone,
-                "colors": {
-                    "primary": self.event.primary_color
-                },
+                "colors": {"primary": self.event.primary_color},
                 # "url": self.event.urls.base.full(),  # TODO this should be the URL of the conference website itself, but we do not have a field for this value yet
                 "rooms": [
                     {
@@ -222,7 +220,8 @@ class FrabJsonExporter(ScheduleData):
                                             "id": person.id,
                                             "code": person.code,
                                             "public_name": person.get_display_name(),
-                                            "avatar": person.get_avatar_url(self.event) or None,
+                                            "avatar": person.get_avatar_url(self.event)
+                                            or None,
                                             "biography": getattr(
                                                 person.profiles.filter(
                                                     event=self.event
@@ -281,14 +280,14 @@ class FrabJsonExporter(ScheduleData):
         return (
             f"{self.event.slug}.json",
             "application/json",
-            json.dumps({
-                "$schema": "https://c3voc.de/schedule/schema.json",
-                "generator": {
-                    "name": "pretalx",
-                    "version": __version__
+            json.dumps(
+                {
+                    "$schema": "https://c3voc.de/schedule/schema.json",
+                    "generator": {"name": "pretalx", "version": __version__},
+                    "schedule": content,
                 },
-                "schedule": content
-            }, cls=I18nJSONEncoder),
+                cls=I18nJSONEncoder,
+            ),
         )
 
 
