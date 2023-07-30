@@ -1,5 +1,5 @@
 from i18nfield.rest_framework import I18nAwareModelSerializer
-from rest_framework.serializers import ModelSerializer, SerializerMethodField
+from rest_framework.serializers import CharField, ModelSerializer, SerializerMethodField
 
 from pretalx.schedule.models import Availability, Room
 
@@ -17,6 +17,7 @@ class AvailabilitySerializer(ModelSerializer):
 
 class RoomSerializer(I18nAwareModelSerializer):
     url = SerializerMethodField()
+    guid = CharField(source="uuid")
 
     def get_url(self, obj):
         return obj.urls.edit
@@ -25,7 +26,7 @@ class RoomSerializer(I18nAwareModelSerializer):
         model = Room
         fields = (
             "id",
-            "uuid",
+            "guid",
             "name",
             "description",
             "capacity",
