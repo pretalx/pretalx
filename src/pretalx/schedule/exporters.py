@@ -198,7 +198,9 @@ class FrabJsonExporter(ScheduleData):
                                     "guid": talk.uuid,
                                     "date": talk.local_start.isoformat(),
                                     "start": talk.local_start.strftime("%H:%M"),
-                                    "logo": talk.submission.image_url or None,
+                                    "logo": talk.submission.urls.image.full()
+                                    if talk.submission.image
+                                    else None,
                                     "duration": talk.export_duration,
                                     "room": str(room["name"]),
                                     "slug": talk.frab_slug,
