@@ -11,7 +11,6 @@ def test_room_serializer(room):
     data = RoomSerializer(room).data
     assert set(data.keys()) == {
         "id",
-        "guid",
         "uuid",
         "name",
         "description",
@@ -28,7 +27,6 @@ def test_room_orga_serializer(room):
         data = RoomOrgaSerializer(room).data
         assert set(data.keys()) == {
             "id",
-            "guid",
             "uuid",
             "name",
             "description",

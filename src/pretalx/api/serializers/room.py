@@ -25,7 +25,6 @@ class RoomSerializer(I18nAwareModelSerializer):
         model = Room
         fields = (
             "id",
-            "guid",
             "uuid",
             "name",
             "description",
