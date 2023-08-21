@@ -159,7 +159,7 @@ setup(
         "mysql": ["mysqlclient"],
         "postgres": ["psycopg2-binary"],
         "redis": [
-            "redis~=4.5.0",
+            "redis>=4.5,<5.1",
         ],
     },
     packages=find_packages(exclude=["tests", "tests.*"]),
