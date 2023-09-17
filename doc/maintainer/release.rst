@@ -6,15 +6,16 @@ You are a pretalx maintainer and want to release a new version? Hold on to your 
 Boarding checks
 ---------------
 
-1. Are the translations up to date?
-2. If new translations were added, add new fullcalendar locales (you have to download the `release archive <https://github.com/fullcalendar/fullcalendar/releases/download/v6.1.5/fullcalendar-6.1.5.zip>`) and extract the locales from there).
-3. Are there warnings about missing migrations?
-4. Any blockers to see `here <https://github.com/pretalx/pretalx/issues?q=is%3Aopen+is%3Aissue+label%3A%22issue%3Abug+%F0%9F%90%9B%22>`_?
-5. Are there any TODOs that you have to be resolve?
-6. Are there any ``@pytest.mark.xfail`` that you have to resolve?
-7. Are the :ref:`changelog` well-phrased and complete?
-8. Are there `open pull requests <https://github.com/pretalx/pretalx/pulls>`_ that you should merge?
-9. Is the `code coverage <https://codecov.io/gh/pretalx/pretalx/commits>`_ all right?
+1. Are there pending migrations from `Weblate <https://translate.pretalx.com/projects/pretalx/pretalx/#repository>`_? Merge them.
+2. Are the translation files up to date?
+3. Are there pending checks for bad translations on Weblate?
+4. If new translations were added, add new fullcalendar locales (you have to download the `release archive <https://github.com/fullcalendar/fullcalendar/releases/download/v6.1.5/fullcalendar-6.1.5.zip>`_) and extract the locales from there), and make sure that flags (in input fields) for the new locale are shown.
+5. Are there warnings about missing migrations?
+6. Any blockers to see `here <https://github.com/pretalx/pretalx/issues?q=is%3Aopen+is%3Aissue+label%3A%22type%3A+bug%22+>`_?
+7. Are there any TODOs that you have to be resolve?
+8. Are there any ``@pytest.mark.xfail`` that you have to resolve?
+9. Are the :ref:`changelog` well-phrased and complete?
+10. Are there `open pull requests <https://github.com/pretalx/pretalx/pulls>`_ that you should merge?
 
 System checks
 -------------
