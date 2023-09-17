@@ -4,6 +4,7 @@ Release Notes
 =============
 
 - :release:`unreleased <????-??-??>`
+- :bug:`-` For users without a pretalx account, their browser's choice of language took precedence over their own language selection.
 - :bug:`-` When using non-standard languages, pretalx would only show those languages as available sometimes.
 - :bug:`1579` There was a bug in the `pretalx init` command, and also too verbose output.
 - :bug:`1577` The printable proposal cards showed broken characters for anything outside latin1.
