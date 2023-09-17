@@ -4,6 +4,7 @@ Release Notes
 =============
 
 - :release:`unreleased <????-??-??>`
+- :bug:`-` When using non-standard languages, pretalx would only show those languages as available sometimes.
 - :bug:`1579` There was a bug in the `pretalx init` command, and also too verbose output.
 - :bug:`1577` The printable proposal cards showed broken characters for anything outside latin1.
 - :bug:`-` Reordering questions while some of them were inactive could lead to 404 errors.
