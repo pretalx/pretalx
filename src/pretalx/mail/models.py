@@ -333,10 +333,10 @@ class QueuedMail(LogMixin, models.Model):
                 },
             )
             self.save()
-        queuedmail_post_send.send(
-            sender=self.event,
-            mail=self,
-        )
+            queuedmail_post_send.send(
+                sender=self.event,
+                mail=self,
+            )
 
     send.alters_data = True
 
