@@ -8,7 +8,7 @@ an instance of a subclass of pretalx.mail.placeholder.BaseMailTextPlaceholder or
 As with all event-plugin signals, the ``sender`` keyword argument will contain the event.
 """
 
-queuedmail_has_been_sent = EventPluginSignal()
+queuedmail_post_send = EventPluginSignal()
 """
 This signal is sent out after a ``QueuedMail`` has been sent. Return value
 of receivers will be ignored. Receivers must not alter any data of the
