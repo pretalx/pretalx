@@ -16,6 +16,7 @@ from pretalx.common.mixins.models import LogMixin
 from pretalx.common.templatetags.rich_text import ALLOWED_TAGS
 from pretalx.common.urls import EventUrls
 from pretalx.mail.context import get_mail_context
+from pretalx.mail.signals import queuedmail_has_been_sent
 
 
 class MailTemplate(LogMixin, models.Model):
@@ -322,6 +323,11 @@ class QueuedMail(LogMixin, models.Model):
         )
 
         self.sent = now()
+        queuedmail_has_been_sent.send(
+            sender=self.event,
+            mail=self,
+        )
+
         if self.pk:
             self.log_action(
                 "pretalx.mail.sent",
