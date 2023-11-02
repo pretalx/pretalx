@@ -2,7 +2,7 @@
 .c-grid-schedule()
 	.grid(ref="grid", :style="gridStyle", :class="gridClasses", @pointermove="updateHoverSlice($event)", @pointerup="stopDragging($event)")
 		template(v-for="slice of visibleTimeslices")
-			.timeslice(:ref="slice.name", :class="getSliceClasses(slice)", :data-slice="slice.date.format()", :style="getSliceStyle(slice)", @click="expandTimeslice(slice)") {{ getSliceLabel(slice) }}
+			.timeslice(:ref="slice.name", :class="getSliceClasses(slice)", :data-slice="slice.date.format()", :style="getSliceStyle(slice)", @click="expandTimeslice(slice)", @mouseenter="hoverTimeslices = getExpandedTimeslices(slice) || []", @mouseleave="leaveTimesliceHover(slice)") {{ getSliceLabel(slice) }}
 				svg(viewBox="0 0 10 10", v-if="isSliceExpandable(slice)").expand
 					path(d="M 0 4 L 5 0 L 10 4 z")
 					path(d="M 0 6 L 5 10 L 10 6 z")
@@ -64,6 +64,7 @@ export default {
 			dragScrollTimer: null,
 			dragStart: null,
 			hiddenRooms: [],
+			hoverTimeslices: [],
 		}
 	},
 	computed: {
@@ -159,6 +160,9 @@ export default {
 			for (const slice of this.expandedTimes) {
 				pushSlice(slice, {isExpanded: true})
 			}
+			for (const slice of this.hoverTimeslices) {
+				pushSlice(slice)
+			}
 			// Always show business hours
 			fillHalfHours(this.start, this.end)
 			if (this.hoverEndSlice) pushSlice(this.hoverEndSlice, {hasEnd: true})
@@ -190,7 +194,7 @@ export default {
 			slices.sort((a, b) => a.date.diff(b.date))
 			const compactedSlices = []
 			for (const [index, slice] of slices.entries()) {
-				if (sliceShouldDisplay(slice, index)) {
+				if (sliceShouldDisplay(slice, index) || (this.hoverTimeslices && this.hoverTimeslices.includes(slice.date))) {
 					compactedSlices.push(slice)
 					continue
 				}
@@ -206,8 +210,9 @@ export default {
 		visibleTimeslices () {
 			// Inside normal conference hours, from 9am to 6pm, we show all half and full hour marks, plus all dates that were click-expanded, plus all start times of talks
 			// Outside, we only show the first slice, which can be expanded
+			console.log(this.hoverTimeslices)
 		  return this.timeslices.filter(slice => {
-			  return slice.date.minute() % 30 === 0 || this.expandedTimes.includes(slice.date) || this.oddTimeslices.includes(slice.date)
+			  return slice.date.minute() % 30 === 0 || this.expandedTimes.includes(slice.date) || this.oddTimeslices.includes(slice.date)  || this.hoverTimeslices.includes(slice.date)
 		  })
 		},
 		oddTimeslices () {
@@ -358,12 +363,22 @@ export default {
 				this.$emit('rescheduleSession', {session: this.draggedSession, start: start.format(), end: end.format(), room: this.hoverSlice.room})
 			}
 		},
-		expandTimeslice (slice) {
+		leaveTimesliceHover (slice) {
+			if (this.hoverTimeslices.filter(s => s.date === slice.date)) {
+				return
+			}
+			console.log("not part of current hoverTimeslices: ")
+			console.log(slice.date)
+			this.hoverTimeslices = []
+		},
+		getExpandedTimeslices (slice) {
+			if (!this.isSliceExpandable(slice)) return []
 			// Find next visible timeslice
 			const index = this.visibleTimeslices.indexOf(slice)
+			const result = []
 			if (index + 1 >= this.visibleTimeslices.length) {
 				// last timeslice: add five more minutes
-				this.expandedTimes.push(slice.date.clone().add(5, 'm'))
+				result.push(slice.date.clone().add(5, 'm'))
 			} else {
 				const end = this.visibleTimeslices[index + 1].date.clone()
 				// if next time slice is within 30 minutes, set interval to 5 minutes, otherwise to 30 minutes
@@ -375,10 +390,15 @@ export default {
 				}
 				const time = slice.date.clone().add(interval, 'm')
 				while (time.isBefore(end)) {
-					this.expandedTimes.push(time.clone())
+					result.push(time.clone())
 					time.add(interval, 'm')
 				}
 			}
+			return result
+		},
+		expandTimeslice (slice) {
+			if (!this.isSliceExpandable(slice)) return
+			this.expandedTimes = this.expandedTimes.concat(this.getExpandedTimeslices(slice))
 			this.expandedTimes = [...new Set(this.expandedTimes)]
 		},
 		updateHoverSlice (e) {
