@@ -74,6 +74,7 @@ EXTERNAL_APPS = [
     "jquery",
     "rest_framework.authtoken",
     "rules",
+    "django_tables2",
 ]
 LOCAL_APPS = [
     "pretalx.api",
@@ -596,6 +597,7 @@ BOOTSTRAP4 = {
         "event-inline": "pretalx.common.forms.renderers.EventInlineFieldRenderer",
     }
 }
+DJANGO_TABLES2_TEMPLATE = "orga/tables/base.html"
 COMPRESS_ENABLED = COMPRESS_OFFLINE = not DEBUG
 COMPRESS_PRECOMPILERS = (("text/x-scss", "django_libsass.SassCompiler"),)
 COMPRESS_FILTERS = {

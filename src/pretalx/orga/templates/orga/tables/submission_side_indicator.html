@@ -1,0 +1,6 @@
+{% load i18n %}
+{% if record.track and not record.is_anonymised %}
+    <div class="color-square" style="background-color: {{ submission.track.color }}" title="{{ submission.track.name }}"></div>
+{% else %}
+    <i class="fa fa-user-secret" style="color: {{ submission.track.color|default:'#888' }}" title="{{ submission.track.name }}, {% translate "anonymised" %}" aria-hidden="true"></i>
+{% endif %}

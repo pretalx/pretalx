@@ -1,0 +1,7 @@
+{% extends 'django_tables2/bootstrap4-responsive.html' %}
+
+{% block pagination %}
+    {% if table.page and table.paginator.num_pages > 1 %}
+        {% include "orga/includes/pagination.html" with page_obj=table.page page=table.page is_paginated=True %}
+    {% endif %}
+{% endblock pagination %}

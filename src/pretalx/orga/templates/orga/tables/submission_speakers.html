@@ -1,0 +1,5 @@
+{% for speaker in record.speakers.all %}
+    <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.code %}">
+        {{ speaker.get_display_name }}
+    </a><br>
+{% endfor %}

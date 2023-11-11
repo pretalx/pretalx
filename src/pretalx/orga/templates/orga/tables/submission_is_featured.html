@@ -1,0 +1,14 @@
+{% load i18n %}
+<div class="mt-1 form-check" title="{% translate 'Show this proposal in the list of featured sessions.' %}">
+    <input
+        type="checkbox"
+        id="featured_{{ record.code }}"
+        data-id="{{ record.code }}"
+        class="submission_featured"
+        {% if record.is_featured %}checked{% endif %}
+    >
+    <label for="featured_{{ record.code }}"></label>
+</div>
+<i class="working fa fa-spinner fa-spin d-none"></i>
+<i class="done fa fa-check d-none"></i>
+<i class="fail fa fa-times d-none"></i>
