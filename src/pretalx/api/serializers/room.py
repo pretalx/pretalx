@@ -1,9 +1,11 @@
 from i18nfield.rest_framework import I18nAwareModelSerializer
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 
+from pretalx.api.versions import register_serializer
 from pretalx.schedule.models import Availability, Room
 
 
+@register_serializer()
 class AvailabilitySerializer(ModelSerializer):
     allDay = SerializerMethodField()
 
@@ -15,6 +17,7 @@ class AvailabilitySerializer(ModelSerializer):
         fields = ("id", "start", "end", "allDay")
 
 
+@register_serializer()
 class RoomSerializer(I18nAwareModelSerializer):
     url = SerializerMethodField()
 
@@ -26,6 +29,7 @@ class RoomSerializer(I18nAwareModelSerializer):
         fields = ("id", "guid", "name", "description", "capacity", "position", "url")
 
 
+@register_serializer()
 class RoomOrgaSerializer(RoomSerializer):
     availabilities = AvailabilitySerializer(many=True)
 
