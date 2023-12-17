@@ -219,6 +219,7 @@ class FrabJsonExporter(ScheduleData):
                                     "do_not_record": talk.submission.do_not_record,
                                     "persons": [
                                         {
+                                            "guid": person.guid,
                                             "id": person.id,
                                             "code": person.code,
                                             "public_name": person.get_display_name(),
