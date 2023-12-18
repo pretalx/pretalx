@@ -76,7 +76,7 @@ class InfoForm(CfPFormMixin, RequestRequire, PublicContent, forms.ModelForm):
                     requires_access_code=False
                 )
                 # ensure current track selection can be preserved
-                if instance and instance.track:
+                if instance and instance.track and instance.track.requires_access_code:
                     filter = self.event.tracks.filter(Q(requires_access_code=False)|Q(pk=instance.track.pk))
 
                 self.fields["track"].queryset = filter
