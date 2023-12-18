@@ -1064,6 +1064,8 @@ msgid ""
 "This is a draft proposal. It will never be visible to anybody else, unless "
 "you submit it or explicitly share it."
 msgstr ""
+"Ceci est un brouillon de proposition. Il ne sera visible de personne, sauf "
+"si vous le soumettez ou le partagez explicitement."
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:49
 msgid "Confirm your attendance"
@@ -1085,11 +1087,10 @@ msgstr[0] "Intervenant :"
 msgstr[1] "Intervenants :"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:67
-#, fuzzy
 msgid "Submitter"
 msgid_plural "Submitters"
-msgstr[0] "Intervenant :"
-msgstr[1] "Intervenants :"
+msgstr[0] "Intervenant"
+msgstr[1] "Intervenants"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:92
 #: pretalx/orga/forms/schedule.py:116
@@ -1108,13 +1109,12 @@ msgstr ""
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:148
 #: pretalx/orga/templates/orga/submission/content.html:131
 msgid "You can either provide a URL or upload a file."
-msgstr ""
+msgstr "Vous pouvez fournir une URL ou téléverser un fichier."
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:149
 #: pretalx/orga/templates/orga/submission/content.html:132
-#, fuzzy
 msgid "Max file size:"
-msgstr "Fichiers médias"
+msgstr "Taille maximale du fichier:"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:164
 #: pretalx/orga/templates/orga/submission/content.html:140
@@ -1122,14 +1122,12 @@ msgid "Add another resource"
 msgstr "Ajouter une nouvelle ressource"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:176
-#, fuzzy
 msgid "Save draft"
-msgstr "Sauvegardé !"
+msgstr "Enregistrer le brouillon"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:179
-#, fuzzy
 msgid "Submit proposal"
-msgstr "Proposer une intervention !"
+msgstr "Envoyer la proposition"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:192
 msgid "Share proposal"
@@ -1159,15 +1157,14 @@ msgstr ""
 "contacter l'organisateur à la place."
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:218
-#, fuzzy
 msgid ""
 "You can discard your draft proposal here. You cannot undo this - if you are "
 "just uncertain if you can or should submit your proposal, please contact the "
 "organiser instead."
 msgstr ""
-"Vous pouvez retirer votre proposition de la procédure de sélection. Vous ne "
-"pourrez pas annuler cette action - si vous avez des doutes, veuillez "
-"contacter l'organisateur à la place."
+"Vous pouvez annuler votre brouillon de proposition ici. Cette action n'est "
+"pas réversible, si vous n'êtes pas sûr de pouvoir ou de devoir soumettre "
+"votre proposition, contactez plutôt l'organisateur."
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:227
 #: pretalx/orga/templates/orga/mails/outbox_form.html:106
@@ -1231,9 +1228,8 @@ msgid "Important Information"
 msgstr "Informations importantes"
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:25
-#, fuzzy
 msgid "Your drafts"
-msgstr "Brouillon actuel"
+msgstr "Vos brouillons"
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:30
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:69
@@ -1339,9 +1335,8 @@ msgstr ""
 "Votre jeton d'API a été re-généré. Le précédent jeton n'est plus utilisable."
 
 #: pretalx/cfp/views/user.py:274
-#, fuzzy
 msgid "Your draft was discarded."
-msgstr "Brouillon actuel"
+msgstr "Votre brouillon a été supprimé"
 
 #: pretalx/cfp/views/user.py:410
 msgid "Your proposal has been submitted."
@@ -1751,18 +1746,16 @@ msgid "Question"
 msgstr "Question"
 
 #: pretalx/common/models/log.py:116
-#, fuzzy
 msgid "Answer to question"
-msgstr "Réponse à la question '{q}'"
+msgstr "Réponse à la question"
 
 #: pretalx/common/models/log.py:119 pretalx/orga/templates/orga/base.html:225
 msgid "CfP"
 msgstr "Appel à participation"
 
 #: pretalx/common/models/log.py:122
-#, fuzzy
 msgid "Mail template"
-msgstr "Modèles de courriels"
+msgstr "Modèle de courriel"
 
 #: pretalx/common/models/log.py:126 pretalx/event/models/organiser.py:157
 #: pretalx/orga/templates/orga/settings/team_detail.html:20
@@ -2015,22 +2008,19 @@ msgid "This content will be shown publicly."
 msgstr "Ce contenu sera affiché publiquement."
 
 #: pretalx/common/plugins.py:9
-#, fuzzy
 msgctxt "Type of plugin"
 msgid "Features"
-msgstr "En vedette"
+msgstr "Caractéristiques"
 
 #: pretalx/common/plugins.py:10
-#, fuzzy
 msgctxt "Type of plugin"
 msgid "Integrations"
-msgstr "Invitation"
+msgstr "Intégrations"
 
 #: pretalx/common/plugins.py:11
-#, fuzzy
 msgctxt "Type of plugin"
 msgid "Customizations"
-msgstr "Domaine personnalisé"
+msgstr "Personnalisations"
 
 #: pretalx/common/plugins.py:12 pretalx/common/plugins.py:11
 #, fuzzy
@@ -2050,7 +2040,7 @@ msgstr "Langue"
 #: pretalx/common/plugins.py:15
 msgctxt "Type of plugin"
 msgid "Other"
-msgstr ""
+msgstr "Autre"
 
 #: pretalx/common/templates/400.html:5 pretalx/common/templates/400.html:8
 msgid "Bad request."
@@ -3398,6 +3388,7 @@ msgstr "Langues actives"
 #: pretalx/orga/forms/event.py:49
 msgid "Users will be able to submit proposals in these languages."
 msgstr ""
+"Les utilisateurs pourront soumettre leurs propositions dans ces langues."
 
 #: pretalx/orga/forms/event.py:55
 msgid "You can type in your CSS instead of uploading it, too."
@@ -3651,6 +3642,8 @@ msgstr "Généralement sur le port 465."
 #: pretalx/orga/forms/event.py:452
 msgid "You have to provide a sender address if you use a custom SMTP server."
 msgstr ""
+"Vous devez fournir une adresse d'expéditeur si vous utilisez un serveur SMTP "
+"personnalisé."
 
 #: pretalx/orga/forms/event.py:461
 msgid ""
@@ -3687,11 +3680,11 @@ msgstr "Scores"
 
 #: pretalx/orga/forms/event.py:518
 msgid "Text and score, e.g “Good (3)”"
-msgstr ""
+msgstr "Texte et score, par ex. “Bien (3)”"
 
 #: pretalx/orga/forms/event.py:519
 msgid "Score and text, e.g “3 (good)”"
-msgstr ""
+msgstr "Score et texte, par ex. “3 (bien)”"
 
 #: pretalx/orga/forms/event.py:520
 #, fuzzy
@@ -3809,7 +3802,7 @@ msgstr ""
 
 #: pretalx/orga/forms/mails.py:81 pretalx/orga/forms/mails.py:113
 msgid "Unknown template key!"
-msgstr ""
+msgstr "Clé du modèle inconnue !"
 
 #: pretalx/orga/forms/mails.py:135 pretalx/orga/forms/mails.py:167
 msgid "An email needs to have at least one recipient."
@@ -3825,6 +3818,8 @@ msgid ""
 "If you check this, the emails will be sent immediately, instead of being put "
 "in the outbox."
 msgstr ""
+"Si vous cochez ceci, les courriels seront envoyés immédiatement, au lieu "
+"d'être placés dans la boîte d'envoi."
 
 #: pretalx/orga/forms/mails.py:199 pretalx/orga/templates/orga/base.html:199
 #: pretalx/orga/templates/orga/organiser/detail.html:34
@@ -3930,9 +3925,8 @@ msgid "Reviewer name"
 msgstr "Évaluateurs"
 
 #: pretalx/orga/forms/review.py:232
-#, fuzzy
 msgid "Reviewer email"
-msgstr "Date butoir des évaluations"
+msgstr "E-mail de l'évaluateur"
 
 #: pretalx/orga/forms/review.py:290 pretalx/orga/forms/review.py:297
 #, fuzzy, python-brace-format
@@ -4513,7 +4507,7 @@ msgid ""
 "you can always delete or invalidate it."
 msgstr ""
 "Les codes d'accès permettent d'accéder à votre appel à participation au delà "
-"de sa date butoir pour une ou une plusieurs proposition. Si le code a été "
+"de sa date butoir pour une ou une plusieurs propositions. Si le code a été "
 "diffusé plus largement que ce que vous vouliez, vous pouvez toujours le "
 "supprimer ou l'invalider."
 
@@ -4821,7 +4815,7 @@ msgstr "Dates et lieux"
 
 #: pretalx/orga/templates/orga/cfp/text.html:39
 msgid "Text and deadline"
-msgstr "Texte et date butoire"
+msgstr "Texte et date butoir"
 
 #: pretalx/orga/templates/orga/cfp/text.html:50
 msgid "Proposal information"
@@ -8548,7 +8542,7 @@ msgid ""
 "type, enter it here."
 msgstr ""
 "Si vous souhaitez une date butoir différente pour ce type d'intervention, "
-"entrez-là ici."
+"entrez-la ici."
 
 #: pretalx/submission/models/type.py:46
 msgid ""
@@ -8573,11 +8567,12 @@ msgstr "{name} ({duration} heures)"
 msgid "{name} ({duration} minutes)"
 msgstr "{name} ({duration} minutes)"
 
+#, fuzzy
 msgid "minutes"
-msgstr ""
+msgstr "minutes"
 
 msgid "Hidden rooms"
-msgstr ""
+msgstr "Salles cachées"
 
 #: pretalx/orga/forms/mails.py:200
 msgid "Everyone with proposal(s) that have not been accepted/rejected yet"
@@ -8642,7 +8637,7 @@ msgstr "Domaine personnalisé"
 
 #: pretalx/common/plugins.py:14
 msgid "Other"
-msgstr ""
+msgstr "Autre"
 
 #: pretalx/orga/forms/mails.py:41 pretalx/orga/forms/mails.py:44
 msgid "Available placeholders:"
