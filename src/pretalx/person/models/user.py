@@ -1,9 +1,9 @@
 import json
 import random
+import uuid
 from contextlib import suppress
 from hashlib import md5
 from urllib.parse import urljoin
-import uuid
 
 from django.conf import settings
 from django.contrib.auth.models import (
