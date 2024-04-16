@@ -54,15 +54,15 @@ do so automatically).
 If you are working on Ubuntu or Debian, we strongly recommend upgrading your pip and setuptools
 installation inside the virtual environment, otherwise some of the dependencies might fail::
 
-    pip3 install -U pip setuptools wheel
+    (env)$ pip3 install -U pip setuptools wheel
 
 
 Get a copy of the source code
 -----------------------------
 You can clone our git repository::
 
-    git clone https://github.com/pretalx/pretalx.git
-    cd pretalx/
+    (env)$ git clone https://github.com/pretalx/pretalx.git
+    (env)$ cd pretalx/
 
 
 Working with the code
