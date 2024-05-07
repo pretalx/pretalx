@@ -438,6 +438,7 @@ class Schedule(PretalxModel):
                     | models.Q(start__gt=talk.start, end__lt=talk.real_end)
                     | models.Q(start=talk.start, end=talk.real_end)
                 )
+                .exclude(pk=talk.pk)
                 .exists()
             )
             if overlaps:
