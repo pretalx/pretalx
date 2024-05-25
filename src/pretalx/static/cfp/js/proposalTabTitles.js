@@ -4,7 +4,7 @@ function updateTitle(newTitle) {
     if (newTitle === "") {
         document.title = titleParts.join("::");
     } else {
-        document.title = `${newTitle}::${titleParts[1]}::${titleParts[2]}`;
+        document.title = `${newTitle} ::${titleParts[1]}::${titleParts[2]}`;
     }
 }
 
