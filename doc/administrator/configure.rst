@@ -185,6 +185,7 @@ The database section
 
 The mail section
 ----------------
+Note that per-event mail settings can be set up in the web UI. The global mail settings are used for global notifications and for events if such per-event settings are not configured. If troubleshooting mail problems, be sure to check both the config file and the per-event settings in the web UI.
 
 ``from``
 ~~~~~~~~
