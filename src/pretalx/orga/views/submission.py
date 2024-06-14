@@ -18,29 +18,24 @@ from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.timezone import now
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 from django.utils.translation import override
-from django.views.generic import (
-    DetailView,
-    FormView,
-    ListView,
-    TemplateView,
-    UpdateView,
-    View,
-)
+from django.views.generic import FormView, ListView, TemplateView, UpdateView, View
+from django_context_decorator import context
 
 from pretalx.agenda.permissions import is_submission_visible
 from pretalx.common.exceptions import SubmissionError
-from pretalx.common.mixins.views import (
+from pretalx.common.models import ActivityLog
+from pretalx.common.urls import build_absolute_uri
+from pretalx.common.views import CreateOrUpdateView
+from pretalx.common.views.mixins import (
+    ActionConfirmMixin,
     ActionFromUrl,
     EventPermissionRequired,
     PaginationMixin,
     PermissionRequired,
     Sortable,
 )
-from pretalx.common.models import ActivityLog
-from pretalx.common.urls import build_absolute_uri
-from pretalx.common.views import CreateOrUpdateView, context
 from pretalx.mail.models import QueuedMail
 from pretalx.orga.forms.submission import (
     AnonymiseForm,
@@ -223,6 +218,9 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
         if pending:
             self.object.pending_state = self._target
             self.object.save()
+            if self.object.pending_state in SubmissionStates.accepted_states:
+                # allow configureability of pending accepted/confirmed talks
+                self.object.update_talk_slots()
         else:
             method = getattr(self.object, SubmissionStates.method_names[self._target])
             method(person=self.request.user, force=force, orga=True)
@@ -556,6 +554,13 @@ class SubmissionContent(
         kwargs["read_only"] = kwargs["read_only"] or kwargs["anonymise"]
         return kwargs
 
+    @context
+    @cached_property
+    def can_edit(self):
+        return self.object and self.request.user.has_perm(
+            "orga.change_submissions", self.request.event
+        )
+
 
 class BaseSubmissionList(Sortable, ReviewerSubmissionFilter, PaginationMixin, ListView):
     model = Submission
@@ -884,7 +889,7 @@ class SubmissionStats(PermissionRequired, TemplateView):
     @context
     def talk_timeline_data(self):
         talk_ids = self.request.event.submissions.filter(
-            state__in=[SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]
+            state__in=SubmissionStates.accepted_states
         ).values_list("id", flat=True)
         data = Counter(
             log.timestamp.astimezone(self.request.event.tz).date().isoformat()
@@ -909,7 +914,7 @@ class SubmissionStats(PermissionRequired, TemplateView):
         counter = Counter(
             submission.get_state_display()
             for submission in self.request.event.submissions.filter(
-                state__in=[SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]
+                state__in=SubmissionStates.accepted_states
             )
         )
         return json.dumps(
@@ -926,7 +931,7 @@ class SubmissionStats(PermissionRequired, TemplateView):
         counter = Counter(
             str(submission.submission_type)
             for submission in self.request.event.submissions.filter(
-                state__in=[SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]
+                state__in=SubmissionStates.accepted_states
             ).select_related("submission_type")
         )
         return json.dumps(
@@ -944,7 +949,7 @@ class SubmissionStats(PermissionRequired, TemplateView):
             counter = Counter(
                 str(submission.track)
                 for submission in self.request.event.submissions.filter(
-                    state__in=[SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]
+                    state__in=SubmissionStates.accepted_states
                 ).select_related("track")
             )
             return json.dumps(
@@ -1017,12 +1022,17 @@ class TagDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
         return result
 
 
-class TagDelete(PermissionRequired, DetailView):
+class TagDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
     permission_required = "orga.remove_tags"
-    template_name = "orga/submission/tag_delete.html"
 
     def get_object(self):
         return get_object_or_404(self.request.event.tags, pk=self.kwargs.get("pk"))
+
+    def action_object_name(self):
+        return _("Tag") + f": {self.get_object().tag}"
+
+    def action_back_url(self):
+        return self.request.event.orga_urls.tags
 
     def post(self, request, *args, **kwargs):
         tag = self.get_object()

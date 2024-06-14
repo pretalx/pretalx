@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from contextlib import suppress
@@ -11,7 +12,7 @@ from pkg_resources import iter_entry_points
 
 from pretalx import __version__
 from pretalx.common.settings.config import build_config
-from pretalx.common.settings.utils import log_initial
+from pretalx.common.text.console import log_initial
 
 config, CONFIG_FILES = build_config()
 CONFIG = config
@@ -268,6 +269,7 @@ LOGGING = {
         },
     },
 }
+logging.getLogger("MARKDOWN").setLevel(logging.WARNING)
 
 email_level = config.get("logging", "email_level", fallback="ERROR") or "ERROR"
 emails = config.get("logging", "email", fallback="").split(",")
@@ -499,6 +501,13 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
+PASSWORD_HASHERS = [
+    "django.contrib.auth.hashers.Argon2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
+    "django.contrib.auth.hashers.ScryptPasswordHasher",
+]
 
 
 ## MIDDLEWARE SETTINGS
@@ -670,6 +679,6 @@ else:
         config_files=CONFIG_FILES,
         db_name=db_name,
         db_backend=db_backend,
-        LOG_DIR=LOG_DIR,
+        log_dir=LOG_DIR,
         plugins=PLUGINS,
     )

@@ -2,8 +2,8 @@ from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.mixins.models import PretalxModel
-from pretalx.common.phrases import phrases
+from pretalx.common.models.mixins import PretalxModel
+from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 
 

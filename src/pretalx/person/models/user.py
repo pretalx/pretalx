@@ -22,10 +22,10 @@ from django.utils.translation import override
 from django_scopes import scopes_disabled
 from rest_framework.authtoken.models import Token
 
-from pretalx.common.mixins.models import FileCleanupMixin, GenerateCode
 from pretalx.common.models import TIMEZONE_CHOICES
+from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode
+from pretalx.common.text.path import path_with_hash
 from pretalx.common.urls import build_absolute_uri
-from pretalx.common.utils import path_with_hash
 
 
 def avatar_path(instance, filename):
@@ -84,7 +84,7 @@ class User(PermissionsMixin, GenerateCode, FileCleanupMixin, AbstractBaseUser):
     )
     email = models.EmailField(
         unique=True,
-        verbose_name=_("E-mail"),
+        verbose_name=_("Email"),
         help_text=_(
             "Your email address will be used for password resets and notification about your event/proposals."
         ),
@@ -155,7 +155,7 @@ class User(PermissionsMixin, GenerateCode, FileCleanupMixin, AbstractBaseUser):
 
     def get_display_name(self) -> str:
         """Returns a user's name or 'Unnamed user'."""
-        return self.name if self.name else str(_("Unnamed user"))
+        return str(self)
 
     def save(self, *args, **kwargs):
         self.email = self.email.lower().strip()

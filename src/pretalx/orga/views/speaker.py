@@ -11,7 +11,11 @@ from django.views.generic import DetailView, FormView, ListView, View
 from django_context_decorator import context
 
 from pretalx.common.exceptions import SendMailException
-from pretalx.common.mixins.views import (
+from pretalx.common.signals import register_data_exporters
+from pretalx.common.text.phrases import phrases
+from pretalx.common.views import CreateOrUpdateView
+from pretalx.common.views.mixins import (
+    ActionConfirmMixin,
     ActionFromUrl,
     EventPermissionRequired,
     Filterable,
@@ -19,8 +23,6 @@ from pretalx.common.mixins.views import (
     PermissionRequired,
     Sortable,
 )
-from pretalx.common.signals import register_data_exporters
-from pretalx.common.views import CreateOrUpdateView
 from pretalx.orga.forms.speaker import SpeakerExportForm
 from pretalx.person.forms import (
     SpeakerFilterForm,
@@ -80,11 +82,13 @@ class SpeakerList(
                 submission_count=Count(
                     "user__submissions",
                     filter=Q(user__submissions__event=self.request.event),
+                    distinct=True,
                 ),
                 accepted_submission_count=Count(
                     "user__submissions",
                     filter=Q(user__submissions__event=self.request.event)
-                    & Q(user__submissions__state__in=["accepted", "confirmed"]),
+                    & Q(user__submissions__state__in=SubmissionStates.accepted_states),
+                    distinct=True,
                 ),
             )
         )
@@ -94,19 +98,13 @@ class SpeakerList(
             if self.request.GET["role"] == "true":
                 qs = qs.filter(
                     user__submissions__in=self.request.event.submissions.filter(
-                        state__in=[
-                            SubmissionStates.ACCEPTED,
-                            SubmissionStates.CONFIRMED,
-                        ]
+                        state__in=SubmissionStates.accepted_states
                     )
                 )
             elif self.request.GET["role"] == "false":
                 qs = qs.exclude(
                     user__submissions__in=self.request.event.submissions.filter(
-                        state__in=[
-                            SubmissionStates.ACCEPTED,
-                            SubmissionStates.CONFIRMED,
-                        ]
+                        state__in=SubmissionStates.accepted_states
                     )
                 )
 
@@ -236,11 +234,23 @@ class SpeakerDetail(SpeakerViewMixin, ActionFromUrl, CreateOrUpdateView):
         return kwargs
 
 
-class SpeakerPasswordReset(SpeakerViewMixin, DetailView):
+class SpeakerPasswordReset(SpeakerViewMixin, ActionConfirmMixin, DetailView):
     permission_required = "orga.change_speaker"
-    template_name = "orga/speaker/reset_password.html"
     model = User
     context_object_name = "speaker"
+    action_confirm_icon = "key"
+    action_confirm_label = phrases.base.password_reset_heading
+    action_title = phrases.base.password_reset_heading
+    action_text = _(
+        "Do your really want to reset this user’s password? They won’t be able to log in until they set a new password."
+    )
+
+    def action_object_name(self):
+        user = self.get_object()
+        return f"{user.get_display_name()} ({user.email})"
+
+    def action_back_url(self):
+        return self.get_object().event_profile(self.request.event).orga_urls.base
 
     def post(self, request, *args, **kwargs):
         user = self.get_object()
@@ -251,16 +261,9 @@ class SpeakerPasswordReset(SpeakerViewMixin, DetailView):
                     user=self.request.user,
                     orga=False,
                 )
-                messages.success(
-                    self.request, _("The password was reset and the user was notified.")
-                )
+                messages.success(self.request, phrases.orga.password_reset_success)
         except SendMailException:  # pragma: no cover
-            messages.error(
-                self.request,
-                _(
-                    "The password reset email could not be sent, so the password was not reset."
-                ),
-            )
+            messages.error(self.request, phrases.orga.password_reset_fail)
         return redirect(user.event_profile(self.request.event).orga_urls.base)
 
 
@@ -323,10 +326,15 @@ class InformationDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
         return self.request.event.orga_urls.information
 
 
-class InformationDelete(PermissionRequired, DetailView):
+class InformationDelete(PermissionRequired, ActionConfirmMixin, DetailView):
     model = SpeakerInformation
     permission_required = "orga.change_information"
-    template_name = "orga/speaker/information_delete.html"
+
+    def action_object_name(self):
+        return _("Speaker information note") + f": {self.get_object().title}"
+
+    def action_back_url(self):
+        return self.request.event.orga_urls.information
 
     def get_queryset(self):
         return self.request.event.information.all()

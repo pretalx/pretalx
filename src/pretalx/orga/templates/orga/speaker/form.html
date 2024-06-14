@@ -30,11 +30,12 @@
     {% has_perm 'orga.send_mails' request.user request.event as can_send_mails %}
     <h2 class="d-flex justify-content-space-between">
         {{ form.instance.user.get_display_name }} ({{ submissions.count }}
-        {% blocktranslate trimmed count count=submissions.count %}
+        {% blocktranslate asvar proposal_title trimmed count count=submissions.count %}
             proposal
         {% plural %}
             proposals
-        {% endblocktranslate %})
+        {% endblocktranslate %}
+        {{ proposal_title }}
         {% if can_send_mails %}
             <a class="btn btn-outline-info ml-auto mb-1" href="{{ request.event.orga_urls.compose_mails_sessions }}?speakers={{ form.instance.user.code }}">
                 <i class="fa fa-envelope"></i>
@@ -45,11 +46,7 @@
     <div class="alert alert-info col-md-9 flip offset-md-3">
         <span>
             <h5>
-                {% blocktranslate trimmed count count=submissions.count %}
-                    Proposal
-                {% plural %}
-                    Proposals
-                {% endblocktranslate %})
+                {{ proposal_title|capfirst }}
             </h5>
             <ul>
                 {% for submission in submissions %}
@@ -73,7 +70,7 @@
         {% bootstrap_field form.name layout='event' %}
         {% bootstrap_field form.email layout='event' %}
         <div class="d-flex mb-4">
-            <a href="{{ form.instance.orga_urls.password_reset }}" class="btn btn-info flip flip ml-auto">{% translate "Reset password" %}</a>
+            <a href="{{ form.instance.orga_urls.password_reset }}" class="btn btn-info flip flip ml-auto">{{ phrases.base.password_reset_heading }}</a>
         </div>
         {% if form.biography %}{% bootstrap_field form.biography layout='event' %}{% endif %}
         {% if form.availabilities %}
@@ -85,16 +82,7 @@
             {% bootstrap_field form.availabilities layout='event' %}
         {% endif %}
         {% bootstrap_form questions_form layout='event' %}
-        <div class="submit-group panel">
-            <span>
-            </span>
-            <span>
-                <button type="submit" class="btn btn-success btn-lg">
-                    <i class="fa fa-check"></i>
-                    {% translate "Save" %}
-                </button>
-            </span>
-        </div>
+        {% include "orga/includes/submit_row.html" %}
     </form>
 
 

@@ -12,15 +12,16 @@ from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext
+from django.utils.translation import pgettext_lazy
 from django_scopes import ScopedManager
 
-from pretalx.common.choices import Choices
 from pretalx.common.exceptions import SubmissionError
-from pretalx.common.mixins.models import GenerateCode, PretalxModel
-from pretalx.common.phrases import phrases
+from pretalx.common.models.choices import Choices
+from pretalx.common.models.mixins import GenerateCode, PretalxModel
+from pretalx.common.text.path import path_with_hash
+from pretalx.common.text.phrases import phrases
+from pretalx.common.text.serialize import serialize_duration
 from pretalx.common.urls import EventUrls
-from pretalx.common.utils import path_with_hash
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.submission.signals import submission_state_change
 
@@ -46,7 +47,7 @@ class SubmissionStates(Choices):
     DRAFT = "draft"
 
     display_values = {
-        SUBMITTED: _("submitted"),
+        SUBMITTED: pgettext_lazy("proposal status", "submitted"),
         ACCEPTED: _("accepted"),
         CONFIRMED: _("confirmed"),
         REJECTED: _("rejected"),
@@ -77,6 +78,8 @@ class SubmissionStates(Choices):
         WITHDRAWN: "withdraw",
         DELETED: "remove",
     }
+
+    accepted_states = (ACCEPTED, CONFIRMED)
 
 
 class SubmissionManager(models.Manager):
@@ -297,7 +300,7 @@ class Submission(GenerateCode, PretalxModel):
             )
         if self.state == SubmissionStates.DRAFT:
             return self.cfp_open
-        return self.state in (SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED)
+        return self.state in SubmissionStates.accepted_states
 
     @property
     def anonymised(self):
@@ -393,7 +396,7 @@ class Submission(GenerateCode, PretalxModel):
             )
 
             # build an error message mentioning all states, which are valid source states for the desired new state.
-            trans_or = pgettext(
+            trans_or = pgettext_lazy(
                 'used in talk confirm/accept/reject/...-errors, like "... must be accepted OR foo OR bar ..."',
                 " or ",
             )
@@ -420,7 +423,12 @@ class Submission(GenerateCode, PretalxModel):
         """
         from pretalx.schedule.models import TalkSlot
 
-        if self.state not in [SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]:
+        scheduling_allowed = (
+            self.state in SubmissionStates.accepted_states
+            or self.pending_state in SubmissionStates.accepted_states
+        )
+
+        if not scheduling_allowed:
             TalkSlot.objects.filter(
                 submission=self, schedule=self.event.wip_schedule
             ).delete()
@@ -472,7 +480,7 @@ class Submission(GenerateCode, PretalxModel):
         if self.event.mail_settings["mail_on_new_submission"]:
             MailTemplate(
                 event=self.event,
-                subject=str(_("New proposal: {title}")).format(title=self.title),
+                subject=str(_("New proposal")) + f": {self.title}",
                 text=self.event.settings.mail_text_new_submission,
             ).to_mail(
                 user=self.event.email,
@@ -686,8 +694,8 @@ class Submission(GenerateCode, PretalxModel):
             raise SubmissionError(
                 "Submission is not in draft mode and cannot be deleted completely. Set the deleted flag instead."
             )
-        for answer in self.answers.all():
-            answer.delete()
+        self.answers.all().delete()
+        self.resources.all().delete()
         super().delete(**kwargs)
 
     @cached_property
@@ -755,6 +763,18 @@ class Submission(GenerateCode, PretalxModel):
         return ", ".join(speaker.get_display_name() for speaker in self.speakers.all())
 
     @cached_property
+    def display_title_with_speakers(self):
+        title = (
+            f"{phrases.base.quotation_open}{self.title}{phrases.base.quotation_close}"
+        )
+        if not self.speakers.exists():
+            return title
+        return _("{title_in_quotes} by {list_of_speakers}").format(
+            title_in_quotes=title,
+            list_of_speakers=self.display_speaker_names,
+        )
+
+    @cached_property
     def does_accept_feedback(self):
         slot = self.slot
         if slot and slot.start:
@@ -806,8 +826,6 @@ class Submission(GenerateCode, PretalxModel):
 
     @cached_property
     def export_duration(self):
-        from pretalx.common.serialize import serialize_duration
-
         return serialize_duration(minutes=self.get_duration())
 
     @cached_property
@@ -880,31 +898,15 @@ class Submission(GenerateCode, PretalxModel):
         if not _from and (not subject or not text):
             raise Exception("Please enter a sender for this invitation.")
 
-        subject = subject or _("{speaker} invites you to join their session!").format(
+        subject = subject or phrases.cfp.invite_subject.format(
             speaker=_from.get_display_name()
         )
         subject = f"[{self.event.slug}] {subject}"
-        text = (
-            text
-            or _(
-                """Hi!
-
-I’d like to invite you to be a speaker in the session
-
-  “{title}”
-
-at {event}. Please follow this link to join:
-
-  {url}
-
-I’m looking forward to it!
-{speaker}"""
-            ).format(
-                event=self.event.name,
-                title=self.title,
-                url=self.urls.accept_invitation.full(),
-                speaker=_from.get_display_name(),
-            )
+        text = text or phrases.cfp.invite_text.format(
+            event=self.event.name,
+            title=self.title,
+            url=self.urls.accept_invitation.full(),
+            speaker=_from.get_display_name(),
         )
         to = to.split(",") if isinstance(to, str) else to
         for invite in to:

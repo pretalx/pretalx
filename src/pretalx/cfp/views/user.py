@@ -27,7 +27,7 @@ from rest_framework.authtoken.models import Token
 from pretalx.cfp.forms.submissions import SubmissionInvitationForm
 from pretalx.cfp.views.event import LoggedInEventPageMixin
 from pretalx.common.middleware.event import get_login_redirect
-from pretalx.common.phrases import phrases
+from pretalx.common.text.phrases import phrases
 from pretalx.common.views import is_form_bound
 from pretalx.person.forms import LoginInfoForm, SpeakerProfileForm
 from pretalx.person.permissions import person_can_view_information
@@ -89,12 +89,7 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
     def post(self, request, *args, **kwargs):
         if request.POST.get("form") == "token":
             request.user.regenerate_token()
-            messages.success(
-                request,
-                _(
-                    "Your API token has been regenerated. The previous token will not be usable any longer."
-                ),
-            )
+            messages.success(request, phrases.cfp.token_regenerated)
             return super().get(request, *args, **kwargs)
         elif self.login_form.is_bound and self.login_form.is_valid():
             self.login_form.save()
@@ -425,9 +420,9 @@ class DeleteAccountView(LoggedInEventPageMixin, View):
         if request.POST.get("really"):
             request.user.deactivate()
             logout(request)
-            messages.success(request, phrases.cfp.account_deleted)
+            messages.success(request, _("Your account has now been deleted."))
             return redirect(request.event.urls.base)
-        messages.error(request, phrases.cfp.account_delete_confirm)
+        messages.error(request, _("Are you really sure? Please tick the box"))
         return redirect(request.event.urls.user + "?really")
 
 

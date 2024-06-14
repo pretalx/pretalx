@@ -19,9 +19,9 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 from django_context_decorator import context
 
-from pretalx.common.mixins.views import EventPermissionRequired
 from pretalx.common.signals import register_data_exporters
-from pretalx.common.utils import safe_filename
+from pretalx.common.text.path import safe_filename
+from pretalx.common.views.mixins import EventPermissionRequired
 from pretalx.schedule.ascii import draw_ascii_schedule
 from pretalx.schedule.exporters import ScheduleData
 
@@ -162,7 +162,10 @@ class ScheduleView(EventPermissionRequired, ScheduleMixin, TemplateView):
         output_format = request.GET.get("format", "table")
         if output_format not in ["list", "table"]:
             output_format = "table"
-        result = draw_ascii_schedule(data, output_format=output_format)
+        try:
+            result = draw_ascii_schedule(data, output_format=output_format)
+        except StopIteration:
+            result = draw_ascii_schedule(data, output_format="list")
         return HttpResponse(
             response_start + result, content_type="text/plain; charset=utf-8"
         )

@@ -1,5 +1,6 @@
 import copy
 import datetime as dt
+import json
 import zoneinfo
 
 from dateutil.relativedelta import relativedelta
@@ -17,13 +18,14 @@ from i18nfield.fields import I18nCharField, I18nTextField
 
 from pretalx.common.cache import ObjectRelatedCache
 from pretalx.common.language import LANGUAGE_NAMES
-from pretalx.common.mixins.models import PretalxModel
 from pretalx.common.models import TIMEZONE_CHOICES
+from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.models.settings import hierarkey
-from pretalx.common.phrases import phrases
 from pretalx.common.plugins import get_all_plugins
+from pretalx.common.text.daterange import daterange
+from pretalx.common.text.path import path_with_hash
+from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
-from pretalx.common.utils import daterange, path_with_hash
 
 # Slugs need to start and end with an alphanumeric character,
 # but may contain dashes and dots in between.
@@ -315,6 +317,14 @@ class Event(PretalxModel):
     template_names = [
         f"{t}_template" for t in ("accept", "ack", "reject", "update", "question")
     ]
+    HEADER_PATTERN_CHOICES = (
+        ("", _("Plain")),
+        ("pcb", _("Circuits")),
+        ("bubbles", _("Circles")),
+        ("signal", _("Signal")),
+        ("topo", _("Topography")),
+        ("graph", _("Graph Paper")),
+    )
 
     objects = models.Manager()
 
@@ -922,12 +932,13 @@ class Event(PretalxModel):
 
     @cached_property
     def active_review_phase(self):
-        phase = self.review_phases.filter(is_active=True).first()
-        if not phase and not self.review_phases.all().exists():
+        if phase := self.review_phases.filter(is_active=True).first():
+            return phase
+        if not self.review_phases.all().exists():
             from pretalx.submission.models import ReviewPhase
 
             cfp_deadline = self.cfp.deadline
-            phase = ReviewPhase.objects.create(
+            return ReviewPhase.objects.create(
                 event=self,
                 name=_("Review"),
                 start=cfp_deadline,
@@ -936,7 +947,6 @@ class Event(PretalxModel):
                 can_see_other_reviews="after_review",
                 can_see_speaker_names=True,
             )
-        return phase
 
     def update_review_phase(self):
         """This method activates the next review phase if the current one is
@@ -1076,7 +1086,7 @@ class Event(PretalxModel):
             ).send()
 
     @transaction.atomic
-    def shred(self):
+    def shred(self, person=None):
         """Irrevocably deletes an event and all related data."""
         from pretalx.common.models import ActivityLog
         from pretalx.person.models import SpeakerProfile
@@ -1090,6 +1100,21 @@ class Event(PretalxModel):
             Submission,
         )
 
+        ActivityLog.objects.create(
+            person=person,
+            action_type="pretalx.event.delete",
+            content_object=self.organiser,
+            is_orga_action=True,
+            data=json.dumps(
+                {
+                    "slug": self.slug,
+                    "name": str(self.name),
+                    # We log the organiser because events and organisers are
+                    # often deleted together.
+                    "organiser": str(self.organiser.name),
+                }
+            ),
+        )
         deletion_order = [
             (self.logged_actions(), False),
             (self.queued_mails.all(), False),

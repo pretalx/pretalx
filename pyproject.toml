@@ -29,12 +29,12 @@ classifiers = [
 dependencies = [
   "beautifulsoup4[lxml]~=4.12.0",
   "bleach~=6.1.0",
-  "celery~=5.3.0",
+  "celery~=5.4.0",
   "css_inline~=0.14.0",
   "csscompressor~=0.9.0",
   "cssutils~=2.10.0",
   "defusedcsv~=2.0.0",
-  "Django~=4.2.0",
+  "Django[argon2]~=4.2.0",
   "django-bootstrap4~=3.0.0",
   "django-compressor~=4.4.0",
   "django-context-decorator",
@@ -50,11 +50,11 @@ dependencies = [
   "djangorestframework~=3.15.0",
   "libsass~=0.23.0",
   "Markdown~=3.6.0",
-  "Pillow~=10.2.0",
+  "Pillow~=10.3.0",
   "publicsuffixlist~=0.10.0",
   "python-dateutil~=2.9.0",
   "qrcode~=7.0",
-  "reportlab~=4.1.0",
+  "reportlab~=4.2.0",
   "requests~=2.31.0",
   "rules~=3.3.0",
   "urlman~=2.0.1",
@@ -77,6 +77,7 @@ dev = [
   "isort",
   "jsonschema",
   "lxml",
+  "pep8-naming",
   "pytest",
   "pytest-cov",
   "pytest-django",
@@ -98,9 +99,9 @@ build-backend = "setuptools.build_meta"
 requires = ["setuptools", "wheel"]
 
 [project.urls]
-homepage = "https://pretalx.com"
-documentation = "https://docs.pretalx.org"
-repository = "https://github.com/pretalx/pretalx.git"
+Homepage = "https://pretalx.com"
+Documentation = "https://docs.pretalx.org"
+Repository = "https://github.com/pretalx/pretalx"
 Changelog = "https://docs.pretalx.org/en/latest/changelog.html"
 Issues = "https://github.com/pretalx/pretalx/issues"
 

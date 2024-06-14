@@ -24,8 +24,8 @@ from i18nfield.utils import I18nJSONEncoder
 
 from pretalx.cfp.signals import cfp_steps
 from pretalx.common.exceptions import SendMailException
-from pretalx.common.phrases import phrases
-from pretalx.common.utils import language
+from pretalx.common.language import language
+from pretalx.common.text.phrases import phrases
 from pretalx.person.forms import SpeakerProfileForm, UserForm
 from pretalx.person.models import User
 from pretalx.submission.forms import InfoForm, QuestionsForm
@@ -211,6 +211,8 @@ class FormFlowStep(TemplateFlowStep):
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
         result["form"] = self.get_form()
+        previous_data = self.cfp_session.get("data")
+        result["submission_title"] = previous_data.get("info", {}).get("title")
         return result
 
     def post(self, request):
@@ -310,7 +312,7 @@ class InfoStep(GenericFlowStep, FormFlowStep):
 
     @property
     def label(self):
-        return _("General")
+        return phrases.base.general
 
     @property
     def _title(self):
@@ -394,7 +396,7 @@ class QuestionsStep(GenericFlowStep, FormFlowStep):
 
     @property
     def label(self):
-        return _("Questions")
+        return phrases.cfp.questions
 
     @property
     def _title(self):

@@ -8,8 +8,13 @@ from django.utils.translation import ngettext_lazy
 from django.views.generic import FormView, ListView, TemplateView, View
 from django_context_decorator import context
 
+from pretalx.common.language import language
 from pretalx.common.mail import TolerantDict
-from pretalx.common.mixins.views import (
+from pretalx.common.templatetags.rich_text import rich_text
+from pretalx.common.text.phrases import phrases
+from pretalx.common.views import CreateOrUpdateView
+from pretalx.common.views.mixins import (
+    ActionConfirmMixin,
     ActionFromUrl,
     EventPermissionRequired,
     Filterable,
@@ -17,9 +22,6 @@ from pretalx.common.mixins.views import (
     PermissionRequired,
     Sortable,
 )
-from pretalx.common.templatetags.rich_text import rich_text
-from pretalx.common.utils import language
-from pretalx.common.views import CreateOrUpdateView
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.orga.forms.mails import (
     DraftRemindersForm,
@@ -86,15 +88,27 @@ class SentMail(
         return qs
 
 
-class OutboxSend(EventPermissionRequired, TemplateView):
+class OutboxSend(EventPermissionRequired, ActionConfirmMixin, TemplateView):
     permission_required = "orga.send_mails"
-    template_name = "orga/mails/confirm.html"
+    action_object_name = ""
+    action_confirm_label = phrases.base.send
+    action_confirm_color = "success"
+    action_confirm_icon = "envelope"
 
     @context
     def question(self):
         return _("Do you really want to send {count} mails?").format(
             count=self.queryset.count()
         )
+
+    def action_title(self):
+        return _("Send emails")
+
+    def action_text(self):
+        return self.question()
+
+    def action_back_url(self):
+        return self.request.event.orga_urls.outbox
 
     def dispatch(self, request, *args, **kwargs):
         if "pk" in self.kwargs:
@@ -104,7 +118,7 @@ class OutboxSend(EventPermissionRequired, TemplateView):
                 messages.error(
                     request,
                     _(
-                        "This mail either does not exist or cannot be discarded because it was sent already."
+                        "This mail either does not exist or cannot be sent because it was sent already."
                     ),
                 )
                 return redirect(self.request.event.orga_urls.outbox)
@@ -136,9 +150,9 @@ class OutboxSend(EventPermissionRequired, TemplateView):
         return redirect(self.request.event.orga_urls.outbox)
 
 
-class MailDelete(PermissionRequired, TemplateView):
+class MailDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
     permission_required = "orga.purge_mails"
-    template_name = "orga/mails/confirm.html"
+    action_object_name = ""
 
     def get_permission_object(self):
         return self.request.event
@@ -153,6 +167,12 @@ class MailDelete(PermissionRequired, TemplateView):
                 sent__isnull=True, template=mail.first().template
             )
         return mail
+
+    def action_text(self):
+        return self.question()
+
+    def action_back_url(self):
+        return self.request.event.orga_urls.outbox
 
     @context
     def question(self):
@@ -194,9 +214,9 @@ class MailDelete(PermissionRequired, TemplateView):
         return redirect(request.event.orga_urls.outbox)
 
 
-class OutboxPurge(PermissionRequired, TemplateView):
+class OutboxPurge(PermissionRequired, ActionConfirmMixin, TemplateView):
     permission_required = "orga.purge_mails"
-    template_name = "orga/mails/confirm.html"
+    action_object_name = ""
 
     def get_permission_object(self):
         return self.request.event
@@ -206,6 +226,12 @@ class OutboxPurge(PermissionRequired, TemplateView):
         return _("Do you really want to purge {count} mails?").format(
             count=self.queryset.count()
         )
+
+    def action_text(self):
+        return self.question()
+
+    def action_back_url(self):
+        return self.request.event.orga_urls.outbox
 
     @cached_property
     def queryset(self):
@@ -372,9 +398,7 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
             self.success_url = self.request.event.orga_urls.outbox
             messages.success(
                 self.request,
-                _(
-                    "{count} emails have been saved to the outbox – you can make individual changes there or just send them all."
-                ).format(count=len(result)),
+                phrases.orga.mails_in_outbox.format(count=len(result)),
             )
         return super().form_valid(form)
 

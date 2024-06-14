@@ -55,7 +55,7 @@
                 </div>
             </div>
             <div class="form-group row">
-                <label class="col-md-3 col-form-label">{% translate "Session Type" %}</label>
+                <label class="col-md-3 col-form-label">{% translate "Session type" %}</label>
                 <div class="col-md-9 mt-1">
                     {{ submission.submission_type }}
                 </div>
@@ -212,7 +212,9 @@
                         {% if form.instance.pk %}
                             <a href="{{ form.instance.urls.delete }}" class="btn btn-lg btn-outline-danger">{% translate "Delete review" %}</a>
                         {% endif %}
-                        <button type="submit" class="btn btn-lg btn-outline-success" name="review_submit" value="save">{% translate "Save" %}</button>
+                        <button type="submit" class="btn btn-lg btn-outline-success" name="review_submit" value="save">
+                            {{ phrases.base.save }}
+                        </button>
                     </div>
                     <div>
                         <div>

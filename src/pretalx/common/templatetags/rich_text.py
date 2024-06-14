@@ -95,6 +95,19 @@ NO_LINKS_CLEANER = bleach.Cleaner(
     strip=True,
 )
 
+
+STRIKETHROUGH_RE = r"(~{2})(.+?)(~{2})"
+
+
+class StrikeThroughExtension(markdown.Extension):
+    def extendMarkdown(self, md):
+        md.inlinePatterns.register(
+            markdown.inlinepatterns.SimpleTagPattern(STRIKETHROUGH_RE, "del"),
+            "strikethrough",
+            200,
+        )
+
+
 md = markdown.Markdown(
     extensions=[
         "markdown.extensions.nl2br",
@@ -103,11 +116,12 @@ md = markdown.Markdown(
         "markdown.extensions.fenced_code",
         "markdown.extensions.codehilite",
         "markdown.extensions.md_in_html",
+        StrikeThroughExtension(),
     ],
 )
 
 
-def _rich_text(text: str, cleaner):
+def render_markdown(text: str, cleaner=CLEANER):
     """Process markdown and cleans HTML in a text input."""
     if not text:
         return ""
@@ -117,10 +131,10 @@ def _rich_text(text: str, cleaner):
 
 @register.filter
 def rich_text(text: str):
-    return _rich_text(text, cleaner=CLEANER)
+    return render_markdown(text)
 
 
 @register.filter
 def rich_text_without_links(text: str):
     """Process markdown and cleans HTML in a text input, but without links."""
-    return _rich_text(text, cleaner=NO_LINKS_CLEANER)
+    return render_markdown(text, cleaner=NO_LINKS_CLEANER)

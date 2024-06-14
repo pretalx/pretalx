@@ -5,19 +5,19 @@
     <div class="card-header">
       <strong>
         {% if tag == "submission" %}
-          {% blocktranslate trimmed count count=1 %}
-            Session
-          {% plural %}
-            Sessions
-          {% endblocktranslate %}
+          {{ phrases.schedule.sessions }}
         {% elif tag == "slot" %}
-          {% translate "Schedule" %}
+          {{ phrases.schedule.schedule }}
         {% elif tag == "user" %}
           {% translate "User" %}
         {% elif tag == "event" %}
-          {% translate "Event" %}
+          {% blocktranslate trimmed count count=1 %}
+            Event
+          {% plural %}
+            Events
+          {% endblocktranslate %}
         {% elif tag == "other" %}
-          {% translate "Other" %}
+          {% translate "Other" context "category of items" %}
         {% else %}
           {{ tag }}
         {% endif %}

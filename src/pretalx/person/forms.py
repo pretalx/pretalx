@@ -14,17 +14,19 @@ from pretalx.common.forms.fields import (
     PasswordField,
     SizeFileField,
 )
-from pretalx.common.forms.widgets import MarkdownWidget
-from pretalx.common.mixins.forms import (
+from pretalx.common.forms.mixins import (
     I18nHelpText,
     PublicContent,
     ReadOnlyFlag,
     RequestRequire,
 )
-from pretalx.common.phrases import phrases
+from pretalx.common.forms.widgets import MarkdownWidget
+from pretalx.common.text.phrases import phrases
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
 from pretalx.schedule.forms import AvailabilitiesFormMixin
 from pretalx.submission.models import Question
+
+EMAIL_ADDRESS_ERROR = _("Please choose a different email address.")
 
 
 class UserForm(CfPFormMixin, forms.Form):
@@ -45,7 +47,7 @@ class UserForm(CfPFormMixin, forms.Form):
         widget=forms.TextInput(attrs={"autocomplete": "name"}),
     )
     register_email = forms.EmailField(
-        label=_("Email address"),
+        label=phrases.base.enter_email,
         required=False,
         widget=forms.EmailInput(attrs={"autocomplete": "email"}),
     )
@@ -61,10 +63,16 @@ class UserForm(CfPFormMixin, forms.Form):
         widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
     )
 
+    FIELDS_ERROR = _(
+        "Please fill all fields of either the login or the registration form."
+    )
+
     def __init__(self, *args, **kwargs):
         kwargs.pop("event", None)
         super().__init__(*args, **kwargs)
-        self.fields["register_email"].widget.attrs = {"placeholder": _("Email address")}
+        self.fields["register_email"].widget.attrs = {
+            "placeholder": phrases.base.enter_email
+        }
 
     def _clean_login(self, data):
         try:
@@ -117,11 +125,7 @@ class UserForm(CfPFormMixin, forms.Form):
         ):
             self._clean_register(data)
         else:
-            raise ValidationError(
-                _(
-                    "Please fill all fields of either the login or the registration form."
-                )
-            )
+            raise ValidationError(self.FIELDS_ERROR)
 
         return data
 
@@ -137,11 +141,7 @@ class UserForm(CfPFormMixin, forms.Form):
             and data.get("register_password")
             and data.get("register_name")
         ):
-            raise ValidationError(
-                _(
-                    "Please fill all fields of either the login or the registration form."
-                )
-            )
+            raise ValidationError(self.FIELDS_ERROR)
 
         user = User.objects.create_user(
             name=data.get("register_name").strip(),
@@ -216,7 +216,7 @@ class SpeakerProfileForm(
         if self.user:
             qs = qs.exclude(pk=self.user.pk)
         if qs.filter(email__iexact=email):
-            raise ValidationError(_("Please choose a different email address."))
+            raise ValidationError(EMAIL_ADDRESS_ERROR)
         return email
 
     def clean(self):
@@ -286,7 +286,7 @@ class LoginInfoForm(forms.ModelForm):
     old_password = forms.CharField(
         widget=forms.PasswordInput, label=_("Password (current)"), required=True
     )
-    password = PasswordField(label=_("New password"), required=False)
+    password = PasswordField(label=phrases.base.new_password, required=False)
     password_repeat = PasswordConfirmationField(
         label=phrases.base.password_repeat, required=False, confirm_with="password"
     )
@@ -302,7 +302,7 @@ class LoginInfoForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data.get("email")
         if User.objects.exclude(pk=self.user.pk).filter(email__iexact=email):
-            raise ValidationError(_("Please choose a different email address."))
+            raise ValidationError(EMAIL_ADDRESS_ERROR)
         return email
 
     def clean(self):
@@ -369,8 +369,8 @@ class SpeakerInformationForm(I18nHelpText, I18nModelForm):
 class SpeakerFilterForm(forms.Form):
     role = forms.ChoiceField(
         choices=(
-            ("", _("all")),
-            ("true", _("Speakers")),
+            ("", phrases.base.all_choices),
+            ("true", phrases.schedule.speakers),
             ("false", _("Non-accepted submitters")),
         ),
         required=False,

@@ -15,30 +15,26 @@ from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import (
-    DeleteView,
-    FormView,
-    ListView,
-    TemplateView,
-    UpdateView,
-    View,
-)
+from django.utils.translation import ngettext_lazy
+from django.views.generic import FormView, ListView, TemplateView, UpdateView, View
 from django_context_decorator import context
 from django_scopes import scope, scopes_disabled
 from formtools.wizard.views import SessionWizardView
 from rest_framework.authtoken.models import Token
 
 from pretalx.common.forms import I18nEventFormSet, I18nFormSet
-from pretalx.common.mixins.views import (
+from pretalx.common.models import ActivityLog
+from pretalx.common.tasks import regenerate_css
+from pretalx.common.templatetags.rich_text import rich_text
+from pretalx.common.text.phrases import phrases
+from pretalx.common.views import OrderModelView, is_form_bound
+from pretalx.common.views.mixins import (
+    ActionConfirmMixin,
     ActionFromUrl,
     EventPermissionRequired,
     PermissionRequired,
     SensibleBackWizardMixin,
 )
-from pretalx.common.models import ActivityLog
-from pretalx.common.tasks import regenerate_css
-from pretalx.common.templatetags.rich_text import rich_text
-from pretalx.common.views import OrderModelView, is_form_bound
 from pretalx.event.forms import (
     EventWizardBasicsForm,
     EventWizardCopyForm,
@@ -344,7 +340,7 @@ class EventReviewSettings(EventSettingsPermission, ActionFromUrl, FormView):
         return True
 
 
-class ScoreCategoryDelete(PermissionRequired, View):
+class ScoreCategoryDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
     permission_required = "orga.change_settings"
 
     def get_object(self):
@@ -352,7 +348,13 @@ class ScoreCategoryDelete(PermissionRequired, View):
             ReviewScoreCategory, event=self.request.event, pk=self.kwargs.get("pk")
         )
 
-    def dispatch(self, request, *args, **kwargs):
+    def action_object_name(self):
+        return _("Score category") + f": {self.get_object().name}"
+
+    def action_back_url(self):
+        return self.request.event.orga_urls.review_settings
+
+    def post(self, request, *args, **kwargs):
         super().dispatch(request, *args, **kwargs)
         category = self.get_object()
         category.delete()
@@ -367,7 +369,7 @@ class ReviewPhaseOrderView(OrderModelView):
         return self.request.event.orga_urls.review_settings
 
 
-class PhaseDelete(PermissionRequired, View):
+class PhaseDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
     permission_required = "orga.change_settings"
 
     def get_object(self):
@@ -375,8 +377,13 @@ class PhaseDelete(PermissionRequired, View):
             ReviewPhase, event=self.request.event, pk=self.kwargs.get("pk")
         )
 
-    def dispatch(self, request, *args, **kwargs):
-        super().dispatch(request, *args, **kwargs)
+    def action_object_name(self):
+        return _("Review phase") + f": {self.get_object().name}"
+
+    def action_back_url(self):
+        return self.request.event.orga_urls.review_settings
+
+    def post(self, request, *args, **kwargs):
         phase = self.get_object()
         phase.delete()
         return redirect(self.request.event.orga_urls.review_settings)
@@ -528,20 +535,15 @@ class UserSettings(TemplateView):
     def post(self, request, *args, **kwargs):
         if self.login_form.is_bound and self.login_form.is_valid():
             self.login_form.save()
-            messages.success(request, _("Your changes have been saved."))
+            messages.success(request, phrases.base.saved)
             request.user.log_action("pretalx.user.password.update")
         elif self.profile_form.is_bound and self.profile_form.is_valid():
             self.profile_form.save()
-            messages.success(request, _("Your changes have been saved."))
+            messages.success(request, phrases.base.saved)
             request.user.log_action("pretalx.user.profile.update")
         elif request.POST.get("form") == "token":
             request.user.regenerate_token()
-            messages.success(
-                request,
-                _(
-                    "Your API token has been regenerated. The previous token will not be usable any longer."
-                ),
-            )
+            messages.success(request, phrases.cfp.token_regenerated)
         else:
             messages.error(
                 self.request,
@@ -702,16 +704,29 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
         return redirect(event.orga_urls.base + "?congratulations")
 
 
-class EventDelete(PermissionRequired, DeleteView):
-    template_name = "orga/event/delete.html"
+class EventDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
     permission_required = "person.is_administrator"
     model = Event
+    action_text = (
+        _(
+            "ALL related data, such as proposals, and speaker profiles, and "
+            "uploads, will also be deleted and cannot be restored."
+        )
+        + " "
+        + phrases.base.delete_warning
+    )
 
     def get_object(self):
         return self.request.event
 
-    def form_valid(self, request, *args, **kwargs):
-        self.get_object().shred()
+    def action_object_name(self):
+        return ngettext_lazy("Event", "Events", 1) + f": {self.get_object().name}"
+
+    def action_back_url(self):
+        return self.get_object().orga_urls.settings
+
+    def post(self, request, *args, **kwargs):
+        self.get_object().shred(person=self.request.user)
         return redirect("/orga/")
 
 

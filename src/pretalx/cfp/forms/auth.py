@@ -1,9 +1,8 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.forms.fields import PasswordConfirmationField, PasswordField
-from pretalx.common.phrases import phrases
+from pretalx.common.text.phrases import phrases
 from pretalx.person.models import User
 
 
@@ -26,10 +25,7 @@ class ResetForm(forms.Form):
 
 
 class RecoverForm(forms.Form):
-    password = PasswordField(
-        label=_("New password"),
-        required=False,
-    )
+    password = PasswordField(label=phrases.base.new_password, required=False)
     password_repeat = PasswordConfirmationField(
         label=phrases.base.password_repeat,
         required=False,
