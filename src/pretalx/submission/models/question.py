@@ -30,28 +30,54 @@ class AllQuestionManager(models.Manager):
 
 
 class QuestionVariant(models.TextChoices):
-    NUMBER = "number", "Number"
-    STRING = "string", "Text (one-line)"
-    TEXT = "text", "Multi-line text"
-    URL = "url", "URL"
-    DATE = "date", "Date"
-    DATETIME = "datetime", "Date and time"
-    BOOLEAN = "boolean", "Yes/No"
-    FILE = "file", "File upload"
-    CHOICES = "choices", "Choose one from a list"
-    MULTIPLE = "multiple_choice", "Choose multiple from a list"
+    NUMBER = "number", _("Number")
+    STRING = "string", _("Text (one-line)")
+    TEXT = "text", _("Multi-line text")
+    URL = "url", _("URL")
+    DATE = "date", _("Date")
+    DATETIME = "datetime", _("Date and time")
+    BOOLEAN = "boolean", _("Yes/No")
+    FILE = "file", _("File upload")
+    CHOICES = "choices", _("Choose one from a list")
+    MULTIPLE = "multiple_choice", _("Choose multiple from a list")
+
+    @classmethod
+    def get_max_length(cls):
+        return max(len(val) for val, label in cls.choices)
+    
+    @classmethod
+    def get_choices(cls):
+        return cls.choices
+        
 
 
 class QuestionTarget(models.TextChoices):
-    SUBMISSION = "submission", "per proposal"
-    SPEAKER = "speaker", "per speaker"
-    REVIEWER = "reviewer", "for reviewers"
+    SUBMISSION = "submission", _("per proposal")
+    SPEAKER = "speaker", _("per speaker")
+    REVIEWER = "reviewer", _("for reviewers")
+
+    @classmethod
+    def get_max_length(cls):
+        return max(len(val) for val, label in cls.choices)
+    
+    @classmethod
+    def get_choices(cls):
+        return cls.choices
+
 
 
 class QuestionRequired(models.TextChoices):
-    OPTIONAL = "optional", "always optional"
-    REQUIRED = "required", "always required"
-    AFTER_DEADLINE = "after_deadline", "required after a deadline"
+    OPTIONAL = "optional", _("always optional")
+    REQUIRED = "required", _("always required")
+    AFTER_DEADLINE = "after_deadline", _("required after a deadline")
+
+    @classmethod
+    def get_max_length(cls):
+        return max(len(val) for val, label in cls.choices)
+    
+    @classmethod
+    def get_choices(cls):
+        return cls.choices
 
 
 class Question(OrderedModel, PretalxModel):
@@ -85,14 +111,15 @@ class Question(OrderedModel, PretalxModel):
     event = models.ForeignKey(
         to="event.Event", on_delete=models.PROTECT, related_name="questions"
     )
+    
     variant = models.CharField(
-        max_length=max(len(val) for val, label in QuestionVariant.choices),
-        choices=QuestionVariant.choices,
+        max_length=QuestionVariant.get_max_length(),
+        choices=QuestionVariant.get_choices(),
         default=QuestionVariant.STRING,
     )
     target = models.CharField(
-        max_length=max(len(val) for val, label in QuestionTarget.choices),
-        choices=QuestionTarget.choices,
+        max_length=QuestionTarget.get_max_length(),
+        choices=QuestionTarget.get_choices(),
         default=QuestionTarget.SUBMISSION,
         verbose_name=_("question type"),
         help_text=_(
@@ -114,8 +141,8 @@ class Question(OrderedModel, PretalxModel):
         help_text=_("Set a deadline to stop changes to answers after the given date."),
     )
     question_required = models.CharField(
-        max_length=max(len(val) for val, label in QuestionRequired.choices),
-        choices=QuestionRequired.choices,
+        max_length=QuestionRequired.get_max_length(),
+        choices=QuestionRequired.get_choices(),
         default=QuestionRequired.OPTIONAL,
         verbose_name=_("question required"),
     )
