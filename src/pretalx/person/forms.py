@@ -42,7 +42,7 @@ class UserForm(CfPFormMixin, forms.Form):
         widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
     )
     register_name = forms.CharField(
-        label=_("Name"),
+        label=_("Full name"),
         required=False,
         widget=forms.TextInput(attrs={"autocomplete": "name"}),
     )
