@@ -265,9 +265,7 @@ table .action-column {
 }
 
 .markdown-wrapper {
-  max-height: 160px;
   textarea {
-    max-height: 160px;
     border-top: none;
     border-top-left-radius: 0;
     border-top-right-radius: 0;
@@ -276,7 +274,6 @@ table .action-column {
     border: 1px solid #ced4da;
     border-top: none;
     min-height: 160px;
-    max-height: 160px;
     padding: 8px;
     overflow-y: auto;
     width: auto;
