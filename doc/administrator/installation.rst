@@ -158,6 +158,7 @@ pull in the appropriate dependencies. Please note that you should also use
 We also need to create a data directory::
 
     $ mkdir -p /var/pretalx/data/media
+    $ chmod 775 -R /var/pretalx
 
 We compile static files and translation data and create the database structure::
 
