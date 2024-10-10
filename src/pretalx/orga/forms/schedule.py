@@ -4,13 +4,18 @@ from django.utils.translation import gettext_lazy as _
 from i18nfield.forms import I18nModelForm
 
 from pretalx.common.forms.mixins import I18nHelpText
+from pretalx.common.forms.renderers import InlineFormRenderer
+from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
 from pretalx.orga.forms.export import ExportForm
 from pretalx.schedule.models import Schedule, TalkSlot
+from pretalx.schedule.utils import guess_schedule_version
 from pretalx.submission.models.submission import Submission, SubmissionStates
 
 
 class ScheduleReleaseForm(I18nHelpText, I18nModelForm):
+    default_renderer = InlineFormRenderer
+
     notify_speakers = forms.BooleanField(
         label=_("Notify speakers of changes"), required=False, initial=True
     )
@@ -28,6 +33,8 @@ class ScheduleReleaseForm(I18nHelpText, I18nModelForm):
             self.fields["comment"].initial = phrases.schedule.first_schedule
         else:
             self.fields["comment"].initial = _("We released a new schedule version!")
+        if not self.fields["version"].initial:
+            self.fields["version"].initial = guess_schedule_version(self.event)
 
     def clean_version(self):
         version = self.cleaned_data.get("version")
@@ -51,8 +58,13 @@ class ScheduleExportForm(ExportForm):
     target = forms.MultipleChoiceField(
         required=True,
         label=_("Target group"),
-        choices=[("all", phrases.base.all_choices)] + SubmissionStates.valid_choices,
-        widget=forms.CheckboxSelectMultiple,
+        choices=[("all", phrases.base.all_choices)]
+        + [
+            (state, name)
+            for (state, name) in SubmissionStates.valid_choices
+            if state != SubmissionStates.DRAFT
+        ],
+        widget=EnhancedSelectMultiple(color_field=SubmissionStates.get_color),
     )
 
     class Meta:

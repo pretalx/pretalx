@@ -89,7 +89,6 @@ LOCAL_APPS = [
     "pretalx.orga",
 ]
 FALLBACK_APPS = [
-    "bootstrap4",
     "django.forms",
     "rest_framework",
 ]
@@ -526,7 +525,7 @@ template_loaders = (
 if not DEBUG:
     template_loaders = (("django.template.loaders.cached.Loader", template_loaders),)
 
-FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
+FORM_RENDERER = "pretalx.common.forms.renderers.TabularFormRenderer"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -602,14 +601,6 @@ if DEBUG:
             "JQUERY_URL": "",
             "DISABLE_PANELS": toolbar_settings.PANELS_DEFAULTS,
         }
-BOOTSTRAP4 = {
-    "field_renderers": {
-        "default": "bootstrap4.renderers.FieldRenderer",
-        "inline": "bootstrap4.renderers.InlineFieldRenderer",
-        "event": "pretalx.common.forms.renderers.EventFieldRenderer",
-        "event-inline": "pretalx.common.forms.renderers.EventInlineFieldRenderer",
-    }
-}
 COMPRESS_ENABLED = COMPRESS_OFFLINE = not DEBUG
 COMPRESS_PRECOMPILERS = (("text/x-scss", "django_libsass.SassCompiler"),)
 COMPRESS_FILTERS = {

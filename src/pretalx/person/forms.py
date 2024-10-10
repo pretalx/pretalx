@@ -21,7 +21,12 @@ from pretalx.common.forms.mixins import (
     ReadOnlyFlag,
     RequestRequire,
 )
-from pretalx.common.forms.widgets import EnhancedSelectMultiple, MarkdownWidget
+from pretalx.common.forms.renderers import InlineFormLabelRenderer, InlineFormRenderer
+from pretalx.common.forms.widgets import (
+    EnhancedSelect,
+    EnhancedSelectMultiple,
+    MarkdownWidget,
+)
 from pretalx.common.text.phrases import phrases
 from pretalx.event.models import Event
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
@@ -32,6 +37,8 @@ EMAIL_ADDRESS_ERROR = _("Please choose a different email address.")
 
 
 class UserForm(CfPFormMixin, forms.Form):
+    default_renderer = InlineFormLabelRenderer
+
     login_email = forms.EmailField(
         max_length=60,
         label=phrases.base.enter_email,
@@ -379,6 +386,8 @@ class SpeakerInformationForm(I18nHelpText, I18nModelForm):
 
 
 class SpeakerFilterForm(forms.Form):
+    default_renderer = InlineFormRenderer
+
     role = forms.ChoiceField(
         choices=(
             ("", phrases.base.all_choices),
@@ -397,6 +406,8 @@ class SpeakerFilterForm(forms.Form):
 
 
 class UserSpeakerFilterForm(forms.Form):
+    default_renderer = InlineFormRenderer
+
     role = forms.ChoiceField(
         choices=(
             ("speaker", phrases.schedule.speakers),
@@ -404,6 +415,7 @@ class UserSpeakerFilterForm(forms.Form):
             ("all", phrases.base.all_choices),
         ),
         required=False,
+        widget=EnhancedSelect,
     )
     events = SafeModelMultipleChoiceField(
         queryset=Event.objects.none(),

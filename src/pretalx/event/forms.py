@@ -9,7 +9,12 @@ from i18nfield.forms import I18nModelForm
 
 from pretalx.common.forms.fields import ImageField
 from pretalx.common.forms.mixins import I18nHelpText, ReadOnlyFlag
-from pretalx.common.forms.widgets import EnhancedSelect, EnhancedSelectMultiple
+from pretalx.common.forms.renderers import InlineFormRenderer
+from pretalx.common.forms.widgets import (
+    EnhancedSelect,
+    EnhancedSelectMultiple,
+    TextInputWithAddon,
+)
 from pretalx.common.text.phrases import phrases
 from pretalx.event.models import Event, Organiser, Team, TeamInvite
 from pretalx.orga.forms.widgets import HeaderSelect, MultipleLanguagesWidget
@@ -83,7 +88,7 @@ class TeamForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
         ]
         widgets = {
             "limit_events": EnhancedSelectMultiple,
-            "limit_tracks": EnhancedSelectMultiple,
+            "limit_tracks": EnhancedSelectMultiple(color_field="color"),
         }
         field_classes = {
             "limit_tracks": SafeModelMultipleChoiceField,
@@ -91,6 +96,8 @@ class TeamForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
 
 
 class TeamInviteForm(ReadOnlyFlag, forms.ModelForm):
+    default_renderer = InlineFormRenderer
+
     bulk_email = forms.CharField(
         label=_("Email addresses"),
         help_text=_("Enter one email address per line."),
@@ -146,7 +153,7 @@ class OrganiserForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
     def __init__(self, *args, **kwargs):
         kwargs["locales"] = "en"
         super().__init__(*args, **kwargs)
-
+        self.fields["name"].required = True
         if kwargs.get("instance"):
             self.fields["slug"].disabled = True
 
@@ -224,6 +231,7 @@ class EventWizardBasicsForm(I18nHelpText, I18nModelForm):
         widgets = {
             "locale": EnhancedSelect,
             "timezone": EnhancedSelect,
+            "slug": TextInputWithAddon(addon_before=settings.SITE_URL + "/"),
         }
 
 
@@ -302,7 +310,11 @@ class EventWizardCopyForm(forms.Form):
         self.fields["copy_from_event"] = forms.ModelChoiceField(
             label=_("Copy configuration from"),
             queryset=EventWizardCopyForm.copy_from_queryset(user),
-            widget=forms.RadioSelect,
+            widget=EnhancedSelect(color_field="visible_primary_color"),
+            help_text=_(
+                "You can copy settings from previous events here, such as mail settings, session types, and email templates. "
+                "Please check those settings once the event has been created!"
+            ),
             empty_label=_("Do not copy"),
             required=False,
         )

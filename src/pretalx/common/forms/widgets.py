@@ -7,6 +7,7 @@ from django.forms import (
     Select,
     SelectMultiple,
     Textarea,
+    TextInput,
 )
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
@@ -137,6 +138,9 @@ class EnhancedSelectMixin(Select):
                 color := getattr(value.instance, self.color_field, None)
             ):
                 option["attrs"]["data-color"] = color
+        else:
+            if self.color_field and callable(self.color_field):
+                option["attrs"]["data-color"] = self.color_field(value)
         return option
 
 
@@ -193,3 +197,27 @@ class SelectMultipleWithCount(EnhancedSelectMultiple):
     def create_option(self, name, value, label, *args, count=0, **kwargs):
         label = f"{label} ({count})"
         return super().create_option(name, value, label, *args, **kwargs)
+
+
+class SearchInput(TextInput):
+    input_type = "search"
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context["widget"]["attrs"]["placeholder"] = _("Search")
+        return context
+
+
+class TextInputWithAddon(TextInput):
+    template_name = "common/widgets/text_input_with_addon.html"
+
+    def __init__(self, attrs=None, addon_before=None, addon_after=None):
+        super().__init__(attrs)
+        self.addon_before = addon_before
+        self.addon_after = addon_after
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context["widget"]["addon_before"] = self.addon_before
+        context["widget"]["addon_after"] = self.addon_after
+        return context

@@ -16,6 +16,17 @@ const updateTotal = () => {
     document.querySelector("#total-score").textContent = summands.join(" + ")
 }
 
+const hideScoreWeight = (input) => {
+    const scoreWeight = input.closest(".score-group").querySelector('input[name$="-weight"]')
+    scoreWeight.closest(".form-group").classList.toggle("d-none", input.checked)
+}
+const updateIndependentScoreWeight = () => {
+    document.querySelectorAll('input[name$="is_independent"]').forEach((input) => {
+        input.addEventListener("change", () => hideScoreWeight(input))
+        hideScoreWeight(input)
+    })
+}
+
 const addNewScores = (ev) => {
     const parentElement = event.target.closest(".score-group")
     const scoresList = parentElement.querySelector(
@@ -27,14 +38,13 @@ const addNewScores = (ev) => {
     const newID = `new` + Math.floor(Math.random() * 1000)
     const newRow = `
     <div class="row form-group">
-        <div class="col-md-9 ml-auto d-flex">
-            <div class="mr-2 ml-0 pl-0 col-md-1">
-                <input type="number" name="scores-${formID}-value_${newID}" step="0.1" class="form-control" id="id_scores-${formID}-value_${newID}">
+        <div class="col-md-9 flip ml-auto d-flex hide-label mb-1">
+            <div class="mr-2 score-score">
+                <input type="number" name="scores-${formID}-value_${newID}" step="0.1" class="form-control" id="id_scores-${formID}-value_${newID}" placeholder="2">
             </div>
-            <div class="">
-                <input type="text" name="scores-${formID}-label_${newID}" maxlength="20" class="form-control" id="id_scores-${formID}-label_${newID}">
+            <div class="score-label">
+                <input type="text" name="scores-${formID}-label_${newID}" maxlength="20" class="form-control" id="id_scores-${formID}-label_${newID}" placeholder="👍">
             </div>
-
         </div>
     </div>`
     const newElement = document.createElement("div")
@@ -88,6 +98,7 @@ document.querySelector("#phase-add").addEventListener("click", () => {
     }, 100)
 })
 
-addListener()
-updateTotal()
-clearOldNewScores()
+onReady(addListener)
+onReady(updateTotal)
+onReady(clearOldNewScores)
+onReady(updateIndependentScoreWeight)

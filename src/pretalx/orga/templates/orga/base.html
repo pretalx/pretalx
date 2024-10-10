@@ -149,7 +149,7 @@
             </div>
         {% endif %}
         <div id="page-wrapper">
-            <aside class="nav flex-column sidebar">
+            {% if not request.user.is_anonymous %}<aside class="nav flex-column sidebar">
                 <details class="dropdown nav-link p-0" id="nav-search-wrapper">
                     <summary id="nav-search" class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <span id="search-context-icon" class="fa-stack fa-lg">
@@ -435,6 +435,9 @@
                             <span>{% translate "Speakers" %}</span>
                         </a>
                     {% endif %}
+                    {% for nav_element in nav_global %}
+                        {% include "orga/includes/sidebar_nav.html" %}
+                    {% endfor %}
                 {% else %}  {# elif request.organiser #}
                     {% has_perm "orga.view_organiser_lists" request.user request as can_see_organiser_lists %}
                     {% if can_see_organiser_lists %}
@@ -474,7 +477,7 @@
                         {% include "orga/includes/sidebar_nav.html" %}
                     {% endfor %}
                 {% endif %}  {# if request.event #}
-            </aside>
+            </aside>{% endif %}  {# if not request.user.is_anonymous #}
             <div id="page-content">
                 <main>
                     {% if messages %}

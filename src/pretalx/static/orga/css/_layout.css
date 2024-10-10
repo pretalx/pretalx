@@ -545,15 +545,6 @@ footer {
     }
   }
 }
-.resource-option-row,
-.resource-option-input {
-  .resource-option-delete {
-    padding-right: 8px;
-  }
-  .form-group input {
-    height: 2rem;
-  }
-}
 
 .dashboard-history {
   max-height: none;
@@ -710,6 +701,8 @@ details.submission-state-dropdown {
 .submission-state-canceled {
   --submission-color-primary: var(--color-grey);
   --submission-color-secondary: var(--color-grey);
+  --highlight-color: var(--color-grey);
+  --highlight-color-text: var(--color-grey);
 }
 .submission-state-dropdown.submission-state-pending-deleted,
 .submission-state-dropdown.submission-state-pending-withdrawn,
@@ -720,6 +713,8 @@ details.submission-state-dropdown {
 .submission-state-submitted {
   --submission-color-primary: var(--color-info);
   --submission-color-secondary: var(--color-info);
+  --highlight-color: var(--color-info);
+  --highlight-color-text: var(--color-info-dark);
 }
 .submission-state-dropdown.submission-state-pending-submitted {
   --submission-color-secondary: var(--color-info);
@@ -728,6 +723,8 @@ details.submission-state-dropdown {
 .submission-state-accepted {
   --submission-color-primary: var(--color-primary);
   --submission-color-secondary: var(--color-primary);
+  --highlight-color: var(--color-success);
+  --highlight-color-text: var(--color-success-dark);
 }
 .submission-state-dropdown.submission-state-pending-accepted {
   --submission-color-secondary: var(--color-primary);
@@ -736,6 +733,8 @@ details.submission-state-dropdown {
 .submission-state-confirmed {
   --submission-color-primary: var(--color-primary-text);
   --submission-color-secondary: var(--color-primary-text);
+  --highlight-color: var(--color-success);
+  --highlight-color-text: var(--color-success-dark);
 }
 .submission-state-dropdown.submission-state-pending-confirmed {
   --submission-color-secondary: var(--color-primary-text);
@@ -744,6 +743,8 @@ details.submission-state-dropdown {
 .submission-state-rejected {
   --submission-color-primary: var(--color-danger);
   --submission-color-secondary: var(--color-danger);
+  --highlight-color: var(--color-danger);
+  --highlight-color-text: var(--color-danger);
 }
 .submission-state-dropdown.submission-state-pending-rejected {
   --submission-color-secondary: var(--color-danger);
@@ -770,6 +771,13 @@ details.submission-state-dropdown {
   }
   .form-group {
     margin-bottom: 0;
+  }
+  td > .form-group {
+    display: flex;
+    justify-content: center;
+  }
+  label {
+    display: none;
   }
 }
 #id_locales.checkbox,
@@ -936,11 +944,14 @@ table .color-square {
     border-bottom-left-radius: var(--size-border-radius);
   }
 }
-.i18n-form-single-language input[lang],
+.i18n-form-single-language input[lang][type="text"],
 .i18n-form-single-language textarea[lang],
-.i18n-form-single-language input[lang] + label {
+.i18n-form-single-language input[lang][type="text"] + label {
   background: none !important;
   padding: 0.375rem 0.75rem;
+  &::placeholder {
+    opacity: 0;
+  }
 }
 
 #fake-changelog {
@@ -955,9 +966,18 @@ table .color-square {
   }
 }
 #release #notify-speakers-check {
+  label {
+    display: inline-block !important;
+  }
+  .form-group {
+    margin-bottom: -8px;
+    padding-right: var(--size-spacer);
+    margin-right: var(--size-spacer);
+  }
   small {
-    margin-top: 0;
+    margin-top: -6px;
     font-size: 80%;
+    margin-left: 38px;
     a {
       color: var(--color-grey);
     }

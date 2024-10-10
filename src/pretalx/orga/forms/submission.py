@@ -7,10 +7,12 @@ from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceFie
 
 from pretalx.common.forms.fields import ImageField
 from pretalx.common.forms.mixins import ReadOnlyFlag, RequestRequire
+from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
     EnhancedSelect,
     EnhancedSelectMultiple,
     MarkdownWidget,
+    TextInputWithAddon,
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.schedule.models import TalkSlot
@@ -91,8 +93,15 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             if not anonymise:
                 self.fields["state"] = forms.ChoiceField(
                     label=_("Proposal state"),
-                    choices=SubmissionStates.get_choices(),
+                    choices=[
+                        (choice, name)
+                        for (choice, name) in SubmissionStates.get_choices()
+                        if choice != SubmissionStates.DELETED
+                        and choice != SubmissionStates.DRAFT
+                    ],
                     initial=SubmissionStates.SUBMITTED,
+                    required=True,
+                    widget=EnhancedSelect(color_field=SubmissionStates.get_color),
                 )
         if (
             not self.instance.pk
@@ -103,6 +112,7 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
                 queryset=event.rooms.all(),
                 label=TalkSlot._meta.get_field("room").verbose_name,
                 initial=initial_slot.get("room"),
+                widget=EnhancedSelect,
             )
             self.fields["start"] = forms.DateTimeField(
                 required=False,
@@ -210,6 +220,7 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             "abstract": MarkdownWidget,
             "description": MarkdownWidget,
             "notes": MarkdownWidget,
+            "duration": TextInputWithAddon(addon_after=_("minutes")),
         }
         field_classes = {
             "submission_type": SafeModelChoiceField,
@@ -230,6 +241,8 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
 
 
 class AnonymiseForm(SubmissionForm):
+    default_renderer = InlineFormRenderer
+
     def __init__(self, *args, **kwargs):
         instance = kwargs.get("instance")
         if not instance or not instance.pk:

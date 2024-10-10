@@ -12,6 +12,7 @@ from i18nfield.forms import I18nModelForm
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.forms.mixins import I18nHelpText, ReadOnlyFlag
+from pretalx.common.forms.renderers import TabularFormRenderer
 from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.language import language
 from pretalx.common.text.phrases import phrases
@@ -29,6 +30,8 @@ class MailTemplateForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
         if self.event:
             kwargs["locales"] = self.event.locales
         super().__init__(*args, **kwargs)
+        self.fields["subject"].required = True
+        self.fields["text"].required = True
 
     def _clean_for_placeholders(self, text, valid_placeholders):
         cleaned_data = super().clean()
@@ -307,13 +310,15 @@ class WriteTeamsMailForm(WriteMailBaseForm):
 
 
 class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
+    default_renderer = TabularFormRenderer
+
     submissions = forms.MultipleChoiceField(
         required=False,
         label=_("Proposals"),
         help_text=_(
             "Select proposals that should receive the email regardless of the other filters."
         ),
-        widget=EnhancedSelectMultiple,
+        widget=EnhancedSelectMultiple(attrs={"placeholder": _("Proposals")}),
     )
     speakers = forms.ModelMultipleChoiceField(
         queryset=User.objects.none(),
@@ -322,7 +327,7 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
         help_text=_(
             "Select speakers that should receive the email regardless of the other filters."
         ),
-        widget=EnhancedSelectMultiple,
+        widget=EnhancedSelectMultiple(attrs={"placeholder": phrases.schedule.speakers}),
     )
 
     def __init__(self, **kwargs):

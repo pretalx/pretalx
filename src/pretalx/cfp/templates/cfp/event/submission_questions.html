@@ -1,26 +1,19 @@
 {% extends "cfp/event/submission_base.html" %}
 
-{% load bootstrap4 %}
-{% load compress %}
 {% load i18n %}
 {% load orga_edit_link %}
-{% load rules %}
-{% load rich_text %}
-{% load static %}
+
+{% block orga_edit_link %}
+    {% orga_edit_link request.event.cfp.urls.questions %}
+{% endblock orga_edit_link %}
 
 {% block inner %}
-    <div class="d-flex align-items-start">
-        <h2>{{ title }}</h2>
-        {% has_perm "orga.edit_cfp" request.user request.event as can_edit_cfp %}
-        {% if can_edit_cfp %}{% orga_edit_link request.event.cfp.urls.questions %}{% endif %}
-    </div>
-    <p>{{ text|rich_text }}</p>
     {% if form.submission_fields %}
         {% if form.speaker_fields and form.submission_fields %}
             <h4>{% translate "… about your proposal:" %}</h4>
         {% endif %}
         {% for field in form.submission_fields %}
-            {% bootstrap_field field layout="event" %}
+            {{ field.as_field_group }}
         {% endfor %}
     {% endif %}
     {% if form.speaker_fields %}
@@ -28,7 +21,7 @@
             <h4>{% translate "… about yourself:" %}</h4>
         {% endif %}
         {% for field in form.speaker_fields %}
-            {% bootstrap_field field layout="event" %}
+            {{ field.as_field_group }}
         {% endfor %}
     {% endif %}
 {% endblock inner %}

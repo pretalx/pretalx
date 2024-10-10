@@ -10,7 +10,12 @@ from i18nfield.forms import I18nFormMixin, I18nModelForm
 from i18nfield.strings import LazyI18nString
 
 from pretalx.common.forms.mixins import I18nHelpText, JsonSubfieldMixin, ReadOnlyFlag
-from pretalx.common.forms.widgets import EnhancedSelect, EnhancedSelectMultiple
+from pretalx.common.forms.renderers import InlineFormRenderer
+from pretalx.common.forms.widgets import (
+    EnhancedSelect,
+    EnhancedSelectMultiple,
+    TextInputWithAddon,
+)
 from pretalx.common.text.phrases import phrases
 from pretalx.submission.models import (
     AnswerOption,
@@ -342,7 +347,10 @@ class SubmissionTypeForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
     class Meta:
         model = SubmissionType
         fields = ("name", "default_duration", "deadline", "requires_access_code")
-        widgets = {"deadline": forms.DateTimeInput(attrs={"type": "datetime-local"})}
+        widgets = {
+            "deadline": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "default_duration": TextInputWithAddon(addon_after=_("minutes")),
+        }
 
 
 class TrackForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
@@ -481,6 +489,8 @@ I’m looking forward to your proposal!
 
 
 class QuestionFilterForm(forms.Form):
+    default_renderer = InlineFormRenderer
+
     role = forms.ChoiceField(
         choices=(
             ("", phrases.base.all_choices),
@@ -561,6 +571,7 @@ class ReminderFilterForm(QuestionFilterForm):
         required=False,
         help_text=_("If you select no question, all questions will be used."),
         label=phrases.cfp.questions,
+        widget=EnhancedSelectMultiple,
     )
 
     def get_question_queryset(self):
