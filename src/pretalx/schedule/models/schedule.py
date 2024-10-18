@@ -673,6 +673,7 @@ class Schedule(PretalxModel):
                         "updated": talk.updated.isoformat(),
                         "state": talk.submission.state if all_talks else None,
                         "do_not_record": talk.submission.do_not_record,
+                        "tags": talk.submission.get_tag(),
                     }
                 )
             else:
