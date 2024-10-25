@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`orga` Added references to submissions to outgoing mails. This shall facilitate the integration with issue tracking systems.
 - :bug:`orga` Dragging and dropping questions and other elements to change their order was broken in Google Chrome.
 - :bug:`orga:schedule` The HTML export did not work and exported only 404 pages.
 - :bug:`cfp` The upload of files with very long file names would fail instead of showing an error message. pretalx will now truncate the filename instead.
