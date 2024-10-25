@@ -149,6 +149,12 @@ class MailTemplate(PretalxModel):
             if len(subject) > 200:
                 subject = subject[:198] + "…"
 
+            headers = {}
+            if 'event_slug' in context:
+                headers["X-Pretalx-Event"] = context['event_slug']
+            if 'code' in context:
+                headers["X-Pretalx-Code"] = context['code']
+
             mail = QueuedMail(
                 event=event or self.event,
                 template=self,
@@ -159,6 +165,7 @@ class MailTemplate(PretalxModel):
                 text=text,
                 locale=locale,
                 attachments=attachments,
+                headers=headers,
             )
             if commit:
                 mail.save()
@@ -237,6 +244,7 @@ class QueuedMail(PretalxModel):
     sent = models.DateTimeField(null=True, blank=True, verbose_name=_("Sent at"))
     locale = models.CharField(max_length=32, null=True, blank=True)
     attachments = models.JSONField(default=None, null=True, blank=True)
+    headers = models.JSONField(default=None, null=True, blank=True)
 
     class urls(EventUrls):
         base = edit = "{self.event.orga_urls.mail}{self.pk}/"
@@ -320,6 +328,7 @@ class QueuedMail(PretalxModel):
                 "cc": (self.cc or "").split(","),
                 "bcc": (self.bcc or "").split(","),
                 "attachments": self.attachments,
+                "headers": self.headers,
             },
             ignore_result=True,
         )
