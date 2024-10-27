@@ -150,10 +150,10 @@ class MailTemplate(PretalxModel):
                 subject = subject[:198] + "…"
 
             headers = {}
-            if 'event_slug' in context:
-                headers["X-Pretalx-Event"] = context['event_slug']
-            if 'code' in context:
-                headers["X-Pretalx-Code"] = context['code']
+            if "event_slug" in context:
+                headers["X-Pretalx-Event"] = context["event_slug"]
+            if "code" in context:
+                headers["X-Pretalx-Code"] = context["code"]
 
             mail = QueuedMail(
                 event=event or self.event,
