@@ -52,8 +52,8 @@ def test_mail_template_model_to_mail_shortens_subject(mail_template):
 @pytest.mark.django_db
 def test_mail_headers_event_always_present(mail_template):
     mail = mail_template.to_mail("testdummy@exacmple.com", None, commit=False)
-    assert "X-Pretalx-Event" in mail.headers
-    assert "X-Pretalx-Code" not in mail.headers
+    assert "Pretalx-Event" in mail.headers
+    assert "Pretalx-Submission" not in mail.headers
 
 
 @pytest.mark.django_db
@@ -66,8 +66,8 @@ def test_mail_headers_submission_present_in_context(mail_template, submission, e
             commit=False,
             context_kwargs={"submission": submission},
         )
-        assert "X-Pretalx-Event" in mail.headers
-        assert "X-Pretalx-Code" in mail.headers
+        assert "Pretalx-Event" in mail.headers
+        assert "Pretalx-Submission" in mail.headers
 
 
 @pytest.mark.django_db
