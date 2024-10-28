@@ -121,6 +121,7 @@ def default_mail_settings():
         "smtp_use_tls": "",
         "smtp_use_ssl": "",
         "mail_on_new_submission": False,
+        "mail_extra_headers": False,
     }
 
 

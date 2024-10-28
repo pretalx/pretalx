@@ -160,12 +160,12 @@ class MailTemplate(PretalxModel):
                 locale=locale,
                 attachments=attachments,
             )
-            if "submission" in context_kwargs:
-                mail.save()
-                submission = context_kwargs["submission"]
-                mail.submissions.set([submission])
             if commit:
                 mail.save()
+                if "submission" in context_kwargs:
+                    mail.save()
+                    submission = context_kwargs["submission"]
+                    mail.submissions.set([submission])
                 if users:
                     mail.to_users.set(users)
             if skip_queue:
@@ -311,12 +311,19 @@ class QueuedMail(PretalxModel):
         has_event = getattr(self, "event", None)
         headers = {}
         if has_event:
-            headers["Pretalx-Event"] = self.event.slug
-        if self.id:
-            headers["Pretalx-Submission"] = ""
-            for submission in self.submissions.all():
-                headers["Pretalx-Submission"] += f"{submission.code}, "
-            headers["Pretalx-Submission"] = headers["Pretalx-Submission"].strip(", ")
+            if self.event.mail_settings["mail_extra_headers"]:
+                headers["Pretalx-Event"] = self.event.slug
+                if self.id:
+                    headers["Pretalx-Submission"] = ""
+                    for submission in self.submissions.all():
+                        headers["Pretalx-Submission"] += f"{submission.code}, "
+                    headers["Pretalx-Submission"] = headers["Pretalx-Submission"].strip(
+                        ", "
+                    )
+                    headers["Pretalx-Person"] = ""
+                    for user in self.to_users.all():
+                        headers["Pretalx-Person"] += f"{user.code}, "
+                    headers["Pretalx-Person"] = headers["Pretalx-Person"].strip(", ")
 
         text = self.make_text()
         body_html = self.make_html()

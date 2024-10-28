@@ -419,6 +419,13 @@ class MailSettingsForm(
     smtp_use_ssl = forms.BooleanField(
         label=_("Use SSL"), help_text=_("Commonly enabled on port 465."), required=False
     )
+    mail_extra_headers = forms.BooleanField(
+        label=_("Add extra mail headers"),
+        help_text=_(
+            "Add extra headers containing Pretalx event slug and submission and peoples' ID codes to all outoing mails."
+        ),
+        required=False,
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
