@@ -149,12 +149,6 @@ class MailTemplate(PretalxModel):
             if len(subject) > 200:
                 subject = subject[:198] + "…"
 
-            headers = {}
-            if "event_slug" in context:
-                headers["Pretalx-Event"] = context["event_slug"]
-            if "code" in context:
-                headers["Pretalx-Submission"] = context["code"]
-
             mail = QueuedMail(
                 event=event or self.event,
                 template=self,
@@ -165,8 +159,11 @@ class MailTemplate(PretalxModel):
                 text=text,
                 locale=locale,
                 attachments=attachments,
-                headers=headers,
             )
+            if "submission" in context_kwargs:
+                mail.save()
+                submission = context_kwargs["submission"]
+                mail.submissions.set([submission])
             if commit:
                 mail.save()
                 if users:
@@ -244,7 +241,10 @@ class QueuedMail(PretalxModel):
     sent = models.DateTimeField(null=True, blank=True, verbose_name=_("Sent at"))
     locale = models.CharField(max_length=32, null=True, blank=True)
     attachments = models.JSONField(default=None, null=True, blank=True)
-    headers = models.JSONField(default=None, null=True, blank=True)
+    submissions = models.ManyToManyField(
+        to="submission.Submission",
+        related_name="mails",
+    )
 
     class urls(EventUrls):
         base = edit = "{self.event.orga_urls.mail}{self.pk}/"
@@ -309,6 +309,15 @@ class QueuedMail(PretalxModel):
             )
 
         has_event = getattr(self, "event", None)
+        headers = {}
+        if has_event:
+            headers["Pretalx-Event"] = self.event.slug
+        if self.id:
+            headers["Pretalx-Submission"] = ""
+            for submission in self.submissions.all():
+                headers["Pretalx-Submission"] += f"{submission.code}, "
+            headers["Pretalx-Submission"] = headers["Pretalx-Submission"].strip(", ")
+
         text = self.make_text()
         body_html = self.make_html()
 
@@ -328,7 +337,7 @@ class QueuedMail(PretalxModel):
                 "cc": (self.cc or "").split(","),
                 "bcc": (self.bcc or "").split(","),
                 "attachments": self.attachments,
-                "headers": self.headers,
+                "headers": headers,
             },
             ignore_result=True,
         )
