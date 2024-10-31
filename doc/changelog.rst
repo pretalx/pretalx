@@ -5,6 +5,7 @@ Release Notes
 
 - :feature:`orga:email,1596` Added the ``queuedmail_pre_send`` signal. This can be used to integrate with issue tracking systems. Receivers can set the ``sent`` timestamp on the queued mail object to skip sending mail via the regular backend.
 - :feature:`orga` Added references to submissions to outgoing mails. This shall facilitate the integration with issue tracking systems.
+- :bug:`schedule,1874` The calendar parts of the public schedule (day of week, month) were always in English, even if another language was selected.
 - :bug:`orga` Dragging and dropping questions and other elements to change their order was broken in Google Chrome.
 - :bug:`orga:schedule` The HTML export did not work and exported only 404 pages.
 - :bug:`cfp` The upload of files with very long file names would fail instead of showing an error message. pretalx will now truncate the filename instead.
