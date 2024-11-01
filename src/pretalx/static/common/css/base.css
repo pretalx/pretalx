@@ -316,35 +316,41 @@ small {
 /* Conventions and custom elements */
 
 .color-success,
+.badge-success,
 .btn-success,
 .alert-success {
   --highlight-color: var(--color-success);
   --highlight-color-text: var(--color-success-text-dark);
 }
 .color-info,
+.badge-info,
 .btn-info,
 .alert-info {
   --highlight-color: var(--color-info);
   --highlight-color-text: var(--color-info-text-dark);
 }
 .color-warning,
+.badge-warning,
 .btn-warning,
 .alert-warning {
   --highlight-color: var(--color-warning);
   --highlight-color-text: var(--color-warning-text-dark);
 }
 .color-danger,
+.badge-danger,
 .btn-danger,
 .alert-danger {
   --highlight-color: var(--color-danger);
   --highlight-color-text: var(--color-danger-text-dark);
 }
 .color-primary,
+.badge-primary,
 .btn-primary {
   --highlight-color: var(--color-primary);
   --highlight-color-text: var(--color-primary-text-dark);
 }
 .color-secondary,
+.badge-secondary,
 .btn-secondary {
   --highlight-color: var(--color-secondary);
   --highlight-color-text: var(--color-secondary);
