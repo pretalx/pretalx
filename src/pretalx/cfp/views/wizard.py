@@ -12,6 +12,8 @@ from django.views import View
 from pretalx.cfp.views.event import EventPageMixin
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.text.phrases import phrases
+from pretalx.submission.models import SubmissionStates
+from pretalx.submission.signals import submission_state_change
 
 
 class SubmitStartView(EventPageMixin, View):
@@ -96,6 +98,12 @@ class SubmitWizard(EventPageMixin, View):
                 step.done(request, draft=draft)
 
         if not draft:
+            submission_state_change.send_robust(
+                request.event,
+                submission=request.submission,
+                old_state=SubmissionStates.DRAFT,
+                user=request.user,
+            )
             try:
                 request.submission.send_initial_mails(person=request.user)
             except SendMailException as exception:
