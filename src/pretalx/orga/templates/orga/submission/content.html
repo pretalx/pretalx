@@ -3,6 +3,7 @@
 {% load compress %}
 {% load filesize %}
 {% load formset_tags %}
+{% load html_signal %}
 {% load i18n %}
 {% load static %}
 {% load rules %}
@@ -37,6 +38,7 @@
             {% include "common/forms/errors.html" %}
             {% csrf_token %}
 
+            {% html_signal "pretalx.submission.signals.html_above_submission_form" sender=request.event request=request submission=submission %}
             {{ form.title.as_field_group }}
             {% if action == "create" %}
                 {{ form.email.as_field_group }}
@@ -82,7 +84,6 @@
                 <div><legend>{% translate "Questions" %}</legend></div>
                 {{ questions_form }}
             {% endif %}
-
             {% if not form.read_only %}
                 <div class="submit-group panel">
                     <span></span>
@@ -94,6 +95,7 @@
                     </span>
                 </div>
             {% endif %}
+            {% html_signal "pretalx.submission.signals.html_below_submission_form" sender=request.event request=request submission=submission %}
         </fieldset></form>
 
     <span id="vars" remoteUrl="{{ request.event.organiser.orga_urls.user_search }}"></span>

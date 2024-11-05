@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`dev` Plugins can now inject content into pages in the organisers area with the ``pretalx.person.signals.html_above|below_person_form``, ``pretalx.mail.signals.html_after_mail_badge``, ``pretalx.mail.signals.html_below_mail_subject``, ``pretalx.submission.signals.html_above|below_submission_form`` and ``pretalx.submission.signals.html_below_submission_link`` signals.
 - :feature:`orga` You can now send or discard only a filtered list of emails from the outbox.
 - :feature:`dev,1596` With the new ``queuedmail_pre_send`` signal, your plugin can modify a `QueuedMail` object before it is sent out. You can handle the sending entirely by setting the object’s `sent` attribute, or e.g. modify the email text before it is sent out by pretalx.
 - :feature:`orga` Outgoing mails now know which proposals or sessions they are about. This information can’t be added to existing mails, but will be included in all new mails, which will link to the proposals in question, and will help you find relevant emails by showing the linked proposals and their track colours (if any).
