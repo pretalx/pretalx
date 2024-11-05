@@ -15,14 +15,17 @@ Core
 .. automodule:: pretalx.common.signals
    :members: periodic_task, register_locales
 
+.. automodule:: pretalx.person.signals
+   :members: html_above_person_form, html_below_person_form
+   
 .. automodule:: pretalx.submission.signals
-   :members: submission_state_change
+   :members: html_above_submission_form, html_below_submission_form, html_below_submission_link, submission_state_change
 
 .. automodule:: pretalx.schedule.signals
    :members: schedule_release
 
 .. automodule:: pretalx.mail.signals
-   :members: register_mail_placeholders, queuedmail_post_send, queuedmail_pre_send
+   :members: html_after_mail_badge, html_below_mail_subject, register_mail_placeholders, queuedmail_post_send, queuedmail_pre_send
 
 Exporters
 ---------
