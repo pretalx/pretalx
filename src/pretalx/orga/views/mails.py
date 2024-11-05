@@ -28,6 +28,7 @@ from pretalx.mail.models import (
     QueuedMail,
     get_prefixed_subject,
 )
+from pretalx.mail.signals import mail_forms
 from pretalx.orga.forms.mails import (
     DraftRemindersForm,
     MailDetailForm,
@@ -314,6 +315,22 @@ class MailDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
                 ),
             )
         return result
+
+    @context
+    @cached_property
+    def plugin_forms(self):
+        mail = self.get_object()
+        forms = []
+        for __, resp in mail_forms.send(
+            sender=self.request.event, request=self.request, mail=mail
+        ):
+            if not resp:
+                continue
+            if isinstance(resp, (list, tuple)):
+                forms.extend(resp)
+            else:
+                forms.append(resp)
+        return forms
 
 
 class MailCopy(PermissionRequired, View):
