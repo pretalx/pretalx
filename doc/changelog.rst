@@ -3,6 +3,8 @@
 Release Notes
 =============
 
+- :feature:`dev` Plugins can now inject additional form elements in the organisers area with the ``pretalx.person.signals.speaker_forms``, ``pretalx.mail.signals.mail_forms`` and ``pretalx.submission.signals.submission_forms`` signals.
+- :feature:`dev` Plugins can now inject HTML content into pages in the organisers area with the ``pretalx.person.signals.speaker_form_html``, ``pretalx.mail.signals.mail_form_html``, ``pretalx.submission.signals.submission_form_html`` and ``pretalx.submission.signals.submission_form_link`` signals.
 - :feature:`schedule` When you embed the pretalx widget on an external page, clicking on session links will open the sessions in a new tab, so attendees won't have to try to navigate back to your home page.
 - :feature:`schedule` Organisers can now configure additional links to show in the top menu next to "Schedule", "Sessions", "Speakers", handy for links back to the conference website, streams, etc.
 - :feature:`orga` Organisers can now configure footer links that will be shown on all schedule pages.
