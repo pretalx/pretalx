@@ -1,6 +1,7 @@
 {% extends "orga/base.html" %}
 
 {% load compress %}
+{% load html_signal %}
 {% load i18n %}
 {% load rules %}
 {% load static %}
@@ -72,6 +73,7 @@
         {% csrf_token %}
         {% include "common/forms/errors.html" %}
 
+        {% html_signal "pretalx.person.signals.html_above_person_form" sender=request.event request=request user=form.instance.user %}
         {{ form.name.as_field_group }}
         {{ form.email.as_field_group }}
         {% if form.avatar %}
@@ -91,6 +93,7 @@
 
         {% include "orga/includes/submit_row.html" %}
 
+        {% html_signal "pretalx.person.signals.html_below_person_form" sender=request.event request=request user=form.instance.user %}
     </form>
 
     <h3>{% translate "Emails" %}</h3>

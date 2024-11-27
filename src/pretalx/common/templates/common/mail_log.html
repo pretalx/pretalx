@@ -1,3 +1,4 @@
+{% load html_signal %}
 {% load rich_text %}
 {% if mails %}
     <div id="accordion">
@@ -11,6 +12,7 @@
                         </span>
                         <small class="text-muted">{{ mail.sent }}</small>
                     </h5>
+                    {% html_signal "pretalx.mail.signals.html_below_mail_subject" sender=request.event request=request mail=mail %}
                 </div>
 
                 <div id="mail-{{ mail.pk }}" class="collapse" aria-labelledby="subject-{{ subject.pk }}" aria-expanded="false" data-parent="#accordion">

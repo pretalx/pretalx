@@ -1,5 +1,6 @@
 {% extends "orga/mails/base.html" %}
 
+{% load html_signal %}
 {% load i18n %}
 
 {% block mail_content %}
@@ -74,6 +75,7 @@
                                     <span class="badge color-info">{% translate "Unanswered questions reminder" %}</span>
                                 {% endif %}
                             {% endif %}
+                            {% html_signal "pretalx.mail.signals.html_after_mail_badge" sender=request.event request=request mail=mail %}
                         </td>
                         <td class="numeric">{{ mail.sent }}</td>
                     </tr>
