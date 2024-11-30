@@ -1,5 +1,6 @@
 import contextlib
 import logging
+import os
 import re
 import shutil
 import urllib.parse
@@ -121,6 +122,21 @@ def get_content(response):
     )
 
 
+def make_relative(base_url, content):
+    def convert_to_relative(match):
+        absolute_link = match.group(0)
+        absolute_url = match.group(2)
+        relative_link = absolute_link.replace(
+            match.group(2), os.path.relpath(absolute_url, base_url)
+        )
+        return relative_link
+
+    absolute_link_pattern = re.compile(rf"(?>href|src)=([\"'])(\/.*?)\1")
+    return absolute_link_pattern.sub(
+        convert_to_relative, content.decode("utf-8")
+    ).encode()
+
+
 def dump_content(destination, path, getter):
     destination = Path(destination)
     logging.debug(path)
@@ -138,7 +154,10 @@ def dump_content(destination, path, getter):
     content = getter(path)
 
     with open(file_path, "wb") as output_file:
-        output_file.write(content)
+        if b"DOCTYPE html" in content:
+            output_file.write(make_relative(path, content))
+        else:
+            output_file.write(content)
     return content
 
 
