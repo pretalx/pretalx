@@ -131,7 +131,19 @@ def make_relative(base_url, content):
         )
         return relative_link
 
-    absolute_link_pattern = re.compile(rf"(?>href|src)=([\"'])(\/.*?)\1")
+    absolute_link_pattern = re.compile(r"(?>href|src)=([\"'])(\/.*?)\1")
+    return absolute_link_pattern.sub(
+        convert_to_relative, content.decode("utf-8")
+    ).encode()
+
+
+def make_relative_css(base_url, content):
+    def convert_to_relative(match):
+        absolute_link = match.group(0)
+        relative_link = absolute_link.replace("/static/", "../../../static/")
+        return relative_link
+
+    absolute_link_pattern = re.compile(r'url\("?(/[^")]+)"?\)')
     return absolute_link_pattern.sub(
         convert_to_relative, content.decode("utf-8")
     ).encode()
@@ -145,9 +157,9 @@ def dump_content(destination, path, getter):
     # that won't be found when the export is served by a web server.
     file_path = urllib.parse.unquote(path)
     if file_path.endswith("/"):
-        file_path += "index.js.html"
+        file_path += "index.html"
     if file_path.endswith("/nojs"):
-        file_path = file_path.rstrip("nojs") + "index.html"
+        file_path += ".html"
     file_path = (destination / file_path.lstrip("/")).resolve()
     if destination not in file_path.parents:
         raise CommandError("Path traversal detected, aborting.")
@@ -158,7 +170,9 @@ def dump_content(destination, path, getter):
     with open(file_path, "wb") as output_file:
         if path.endswith("/nojs"):
             output_file.write(make_relative(path.rstrip("/nojs"), content))
-        elif b"DOCTYPE html" in content:
+        elif path.endswith(".css"):
+            output_file.write(make_relative_css(path, content))
+        elif b"DOCTYPE html" in content[:20]:
             output_file.write(make_relative(path, content))
         else:
             output_file.write(content)
