@@ -145,7 +145,9 @@ def dump_content(destination, path, getter):
     # that won't be found when the export is served by a web server.
     file_path = urllib.parse.unquote(path)
     if file_path.endswith("/"):
-        file_path += "index.html"
+        file_path += "index.js.html"
+    if file_path.endswith("/nojs"):
+        file_path = file_path.rstrip("nojs") + "index.html"
     file_path = (destination / file_path.lstrip("/")).resolve()
     if destination not in file_path.parents:
         raise CommandError("Path traversal detected, aborting.")
@@ -154,7 +156,9 @@ def dump_content(destination, path, getter):
     content = getter(path)
 
     with open(file_path, "wb") as output_file:
-        if b"DOCTYPE html" in content:
+        if path.endswith("/nojs"):
+            output_file.write(make_relative(path.rstrip("/nojs"), content))
+        elif b"DOCTYPE html" in content:
             output_file.write(make_relative(path, content))
         else:
             output_file.write(content)
