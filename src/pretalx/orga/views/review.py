@@ -648,11 +648,20 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
             self.request.event,
             self.request.user,
             ignore=ignored_submissions,
+            track=self.submission.track
         ).first()
         if not next_submission:
             ignored_submissions = (
                 [self.submission.pk] if action == "skip_for_now" else []
             )
+            next_submission = Review.find_missing_reviews(
+                self.request.event,
+                self.request.user,
+                ignore=ignored_submissions,
+                track=self.submission.track
+            ).first()
+        if not next_submission:
+            # Finally switch to all tracks
             next_submission = Review.find_missing_reviews(
                 self.request.event,
                 self.request.user,
