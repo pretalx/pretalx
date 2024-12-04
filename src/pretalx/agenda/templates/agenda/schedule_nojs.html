@@ -15,6 +15,7 @@
 {% block agenda_content %}
     <div id="fahrplan" class="list">
 
+        {% if not is_html_export %}
         <div class="alert alert-info">
             <div></div>
             <div>
@@ -23,6 +24,7 @@
                 {% endblocktranslate %}
             </div>
         </div>
+        {% endif %}
         {% if schedule != schedule.event.current_schedule %}
             <div class="alert alert-warning m-3">
                 <span>
