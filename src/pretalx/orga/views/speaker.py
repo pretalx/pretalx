@@ -30,6 +30,7 @@ from pretalx.person.forms import (
     SpeakerProfileForm,
 )
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
+from pretalx.person.signals import person_forms
 from pretalx.submission.forms import QuestionsForm
 from pretalx.submission.models import Answer
 from pretalx.submission.models.submission import SubmissionStates
@@ -209,6 +210,22 @@ class SpeakerDetail(SpeakerViewMixin, ActionFromUrl, CreateOrUpdateView):
                 )
             ),
         )
+
+    @context
+    @cached_property
+    def plugin_forms(self):
+        speaker = self.get_object()
+        forms = []
+        for __, resp in person_forms.send(
+            sender=self.request.event, person=speaker, request=self.request
+        ):
+            if not resp:
+                continue
+            if isinstance(resp, (list, tuple)):
+                forms.extend(resp)
+            else:
+                forms.append(resp)
+        return forms
 
     @transaction.atomic()
     def form_valid(self, form):

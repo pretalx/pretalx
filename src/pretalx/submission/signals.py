@@ -46,3 +46,5 @@ event. Additionally, the signal will be called with the ``request`` it is
 processing, and the ``submission`` which is currently displayed.
 The receivers are expected to return HTML.
 """
+
+submission_forms = EventPluginSignal()

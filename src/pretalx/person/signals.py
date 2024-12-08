@@ -25,6 +25,9 @@ The receivers are expected to return HTML.
 """
 
 
+person_forms = EventPluginSignal()
+
+
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_csv_speaker")
 def register_speaker_csv_exporter(sender, **kwargs):
     from pretalx.person.exporters import CSVSpeakerExporter

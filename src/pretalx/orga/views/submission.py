@@ -60,6 +60,7 @@ from pretalx.submission.models import (
     SubmissionStates,
     Tag,
 )
+from pretalx.submission.signals import submission_forms
 
 
 def create_user_as_orga(email, submission=None, name=None):
@@ -443,6 +444,22 @@ class SubmissionContent(
     @context
     def questions_form(self):
         return self._questions_form
+
+    @context
+    @cached_property
+    def plugin_forms(self):
+        submission = self.get_object()
+        forms = []
+        for __, resp in submission_forms.send(
+            sender=self.request.event, submission=submission, request=self.request
+        ):
+            if not resp:
+                continue
+            if isinstance(resp, (list, tuple)):
+                forms.extend(resp)
+            else:
+                forms.append(resp)
+        return forms
 
     def save_formset(self, obj):
         if not self._formset.is_valid():
