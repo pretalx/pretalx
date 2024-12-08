@@ -14,7 +14,7 @@ When the submission is created or submitted from a draft state, ``old_state`` wi
 ``None``.
 """
 
-html_above_submission_form = EventPluginSignal()
+submission_form_html = EventPluginSignal()
 """
 This signal is sent out to display additional information on the submission
 pages in the internal organiser area.
@@ -25,7 +25,7 @@ processing, and the ``submission`` which is currently displayed.
 The receivers are expected to return HTML.
 """
 
-html_below_submission_form = EventPluginSignal()
+submission_form_link = EventPluginSignal()
 """
 This signal is sent out to display additional information on the submission
 pages in the internal organiser area.
@@ -36,13 +36,13 @@ processing, and the ``submission`` which is currently displayed.
 The receivers are expected to return HTML.
 """
 
-html_below_submission_link = EventPluginSignal()
+submission_forms = EventPluginSignal()
 """
-This signal is sent out to display additional information on the submission
+This signal is sent out to inject additional form fields on the submission
 pages in the internal organiser area.
 
 As with all plugin signals, the ``sender`` keyword argument will contain the
 event. Additionally, the signal will be called with the ``request`` it is
 processing, and the ``submission`` which is currently displayed.
-The receivers are expected to return HTML.
+The receivers are expected to return one or more forms.
 """

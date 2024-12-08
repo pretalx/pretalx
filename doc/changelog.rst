@@ -3,7 +3,8 @@
 Release Notes
 =============
 
-- :feature:`dev` Plugins can now inject content into pages in the organisers area with the ``pretalx.person.signals.html_above|below_person_form``, ``pretalx.mail.signals.html_after_mail_badge``, ``pretalx.mail.signals.html_below_mail_subject``, ``pretalx.submission.signals.html_above|below_submission_form`` and ``pretalx.submission.signals.html_below_submission_link`` signals.
+- :feature:`dev` Plugins can now inject additional form elements in the organisers area with the ``pretalx.person.signals.speaker_forms``, ``pretalx.mail.signals.mail_forms`` and ``pretalx.submission.signals.submission_forms`` signals.
+- :feature:`dev` Plugins can now inject HTML content into pages in the organisers area with the ``pretalx.person.signals.speaker_form_html``, ``pretalx.mail.signals.mail_form_html``, ``pretalx.submission.signals.submission_form_html`` and ``pretalx.submission.signals.submission_form_link`` signals.
 - :feature:`orga,1302` Organisers can now customise the template used to inform speakers when they are added to a proposal by an organiser. There are two new templates – one for speakers with an existing account, and one for speakers without account who need to set their password.
 - :feature:`orga,1311` Organisers can now customise the “New proposal” notification email contents.
 - :bug:`orga:schedule,1900` The HTML export did not work and exported only 404 pages if the schedule was not public.

@@ -101,7 +101,7 @@
                                     {% translate "Secret public link" %}
                                 </a>
                             {% endif %}
-                            {% html_signal "pretalx.submission.signals.html_below_submission_link" sender=request.event request=request submission=submission %}
+                            {% html_signal "pretalx.submission.signals.submission_form_link" sender=request.event request=request submission=submission %}
                         </div>
                     </details>
                 {% endif %}

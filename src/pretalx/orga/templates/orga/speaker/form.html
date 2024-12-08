@@ -73,7 +73,6 @@
         {% csrf_token %}
         {% include "common/forms/errors.html" %}
 
-        {% html_signal "pretalx.person.signals.html_above_person_form" sender=request.event request=request user=form.instance.user %}
         {{ form.name.as_field_group }}
         {{ form.email.as_field_group }}
         {% if form.avatar %}
@@ -91,9 +90,13 @@
 
         {{ questions_form }}
 
+        {% for plugin_form in plugin_forms %}
+            {{ plugin_form }}
+        {% endfor %}
+
         {% include "orga/includes/submit_row.html" %}
 
-        {% html_signal "pretalx.person.signals.html_below_person_form" sender=request.event request=request user=form.instance.user %}
+        {% html_signal "pretalx.person.signals.speaker_form_html" sender=request.event request=request user=form.instance.user %}
     </form>
 
     <h3>{% translate "Emails" %}</h3>

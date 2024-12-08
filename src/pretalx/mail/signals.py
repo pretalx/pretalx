@@ -38,7 +38,7 @@ contain the event. Additionally, the ``mail`` keyword argument contains
 the ``QueuedMail`` instance itself.
 """
 
-html_after_mail_badge = EventPluginSignal()
+mail_form_html = EventPluginSignal()
 """
 This signal is sent out to display additional information related to emails in
 the internal organiser area.
@@ -49,13 +49,13 @@ processing, and the ``mail`` which is currently displayed.
 The receivers are expected to return HTML.
 """
 
-html_below_mail_subject = EventPluginSignal()
+mail_forms = EventPluginSignal()
 """
-This signal is sent out to display additional information related to emails in
-the internal organiser area.
+This signal is sent out to inject additional form fields on the submission
+pages in the internal organiser area.
 
 As with all plugin signals, the ``sender`` keyword argument will contain the
 event. Additionally, the signal will be called with the ``request`` it is
 processing, and the ``mail`` which is currently displayed.
-The receivers are expected to return HTML.
+The receivers are expected to return one or more forms.
 """

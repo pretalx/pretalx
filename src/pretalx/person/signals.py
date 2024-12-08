@@ -2,7 +2,7 @@ from django.dispatch import receiver
 
 from pretalx.common.signals import EventPluginSignal, register_data_exporters
 
-html_above_person_form = EventPluginSignal()
+speaker_form_html = EventPluginSignal()
 """
 This signal is sent out to display additional information on the speaker
 pages in the internal organiser area.
@@ -13,15 +13,16 @@ processing, and the ``person`` which is currently displayed.
 The receivers are expected to return HTML.
 """
 
-html_below_person_form = EventPluginSignal()
+
+speaker_forms = EventPluginSignal()
 """
-This signal is sent out to display additional information on the speaker
+This signal is sent out to inject additional form fields on the submission
 pages in the internal organiser area.
 
 As with all plugin signals, the ``sender`` keyword argument will contain the
 event. Additionally, the signal will be called with the ``request`` it is
 processing, and the ``person`` which is currently displayed.
-The receivers are expected to return HTML.
+The receivers are expected to return one or more forms.
 """
 
 
