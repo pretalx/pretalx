@@ -113,7 +113,7 @@
                 {% endif %}
             {% endif %}
         </div>
-        {% html_signal "pretalx.mail.signals.mail_form_html" sender=request.event request=request mail=mail %}
+        {% html_signal "pretalx.mail.signals.mail_form_html" sender=request.event request=request mail=form.instance %}
     </form>
 
 {% endblock mail_content %}
