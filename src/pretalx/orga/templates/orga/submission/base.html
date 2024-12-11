@@ -2,6 +2,7 @@
 
 {% load compress %}
 {% load event_tags %}
+{% load html_signal %}
 {% load i18n %}
 {% load rules %}
 {% load static %}
@@ -100,6 +101,7 @@
                                     {% translate "Secret public link" %}
                                 </a>
                             {% endif %}
+                            {% html_signal "pretalx.submission.signals.submission_form_link" sender=request.event request=request submission=submission %}
                         </div>
                     </details>
                 {% endif %}
