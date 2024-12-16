@@ -1,4 +1,5 @@
 {% extends "orga/mails/base.html" %}
+{% load html_signal %}
 {% load i18n %}
 {% load rich_text %}
 
@@ -18,6 +19,9 @@
 
         {% if not form.read_only %}
             {{ form }}
+            {% for plugin_form in plugin_forms %}
+                {{ plugin_form }}
+            {% endfor %}
         {% else %}
             <div class="d-flex flex-column">
                 <div class="row form-group">
@@ -78,6 +82,17 @@
                     </div>
                     <div class="col col-md-9">{{ form.instance.text|rich_text }}</div>
                 </div>
+
+                {% for plugin_form in plugin_forms %}
+                    {% for field in plugin_form %}
+                    <div class="row form-group">
+                        <div class="col col-md-3 flip text-right font-weight-bold">
+                            <div class="font-weight-bold">{{ field.label }}</div>
+                        </div>
+                        <div class="col col-md-9">{{ field.value }}</div>
+                    </div>
+                    {% endfor %}
+                {% endfor %}
             </div>
         {% endif %}
 
@@ -98,6 +113,7 @@
                 {% endif %}
             {% endif %}
         </div>
+        {% html_signal "pretalx.mail.signals.mail_form_html" sender=request.event request=request mail=form.instance %}
     </form>
 
 {% endblock mail_content %}
