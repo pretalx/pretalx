@@ -225,7 +225,7 @@ class FrabJsonExporter(ScheduleData):
                                             "guid": person.guid,
                                             "id": person.id,
                                             "code": person.code,
-                                            "public_name": person.get_display_name(),
+                                            "name": person.get_display_name(),
                                             "avatar": person.get_avatar_url(self.event)
                                             or None,
                                             "biography": getattr(
