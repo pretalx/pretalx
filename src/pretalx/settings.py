@@ -485,6 +485,7 @@ AUTHENTICATION_BACKENDS = (
     "rules.permissions.ObjectPermissionBackend",
     "django.contrib.auth.backends.ModelBackend",
     "pretalx.common.auth.AuthenticationTokenBackend",
+    'social_core.backends.microsoft.MicrosoftOAuth2',
 )
 AUTH_PASSWORD_VALIDATORS = [
     {
