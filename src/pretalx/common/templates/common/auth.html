@@ -1,6 +1,7 @@
 {% load compress %}
 {% load i18n %}
 {% load static %}
+{% load html_signal %}
 
 {% include "common/forms/errors.html" %}
 {% if no_form %}
@@ -57,4 +58,5 @@
         {% endif %}
     </div>
 {% endif %}
+{% html_signal "pretalx.common.signals.auth_html" sender=request.event %}
 {% if no_form %}</div>{% else %}</form>{% endif %}
