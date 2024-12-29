@@ -237,6 +237,11 @@ Make sure that any user content in the HTML code you return is properly escaped!
 
 As with all event-plugin signals, the ``sender`` keyword argument will contain the event.
 """
+auth_html = EventPluginSignal()
+"""
+To display additional HTML content on the login page, the ``pretalx.common.signals.auth_html``
+signal will be sent out.
+"""
 register_locales = django.dispatch.Signal()
 """
 To provide additional languages via plugins, you will have to provide some settings in
