@@ -58,5 +58,5 @@
         {% endif %}
     </div>
 {% endif %}
-{% html_signal "pretalx.common.signals.auth_html" sender=request.event %}
+{% html_signal "pretalx.common.signals.auth_html" sender=request.event request=request %}
 {% if no_form %}</div>{% else %}</form>{% endif %}
