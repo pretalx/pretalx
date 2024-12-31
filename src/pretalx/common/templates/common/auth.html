@@ -40,6 +40,7 @@
                 {{ phrases.base.password_reset_heading }}
             </a>
         {% endif %}
+        {% html_signal "pretalx.common.signals.auth_html" sender=request.event request=request next_url=next_url %}
     </div>
 {% endif %}
 {% if not hide_register %}
@@ -58,5 +59,4 @@
         {% endif %}
     </div>
 {% endif %}
-{% html_signal "pretalx.common.signals.auth_html" sender=request.event request=request next_url=next_url %}
 {% if no_form %}</div>{% else %}</form>{% endif %}
