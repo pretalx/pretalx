@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-01-15 10:52+0000\n"
-"PO-Revision-Date: 2025-01-15 10:49+0000\n"
+"PO-Revision-Date: 2025-02-04 10:40+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: none\n"
 "Language: vi\n"
@@ -2360,16 +2360,12 @@ msgid "News from your content system"
 msgstr "Tin tức từ hệ thống nội dung"
 
 #: pretalx/event/models/event.py:1096
-#, fuzzy
-#| msgid "Landing page text"
 msgid "Link text"
-msgstr "Thông tin ở trang chủ"
+msgstr "Thông tin trên trang chính"
 
 #: pretalx/event/models/event.py:1097
-#, fuzzy
-#| msgid "Imprint URL"
 msgid "Link URL"
-msgstr "Đường dẫn thông tin BTC"
+msgstr "Đường dẫn thông tin về BTC"
 
 #: pretalx/event/models/organiser.py:34
 msgid ""
@@ -5177,7 +5173,7 @@ msgstr "Chưa công bố"
 
 #: pretalx/orga/templates/orga/includes/event_links_formset.html:47
 msgid "Add link"
-msgstr ""
+msgstr "Thêm liên kết"
 
 #: pretalx/orga/templates/orga/includes/mail_template_role.html:3
 msgid "Accept email"
@@ -6147,25 +6143,19 @@ msgstr "Vui lòng thêm ít nhất một địa điểm diễn ra phiên hội t
 
 #: pretalx/orga/templates/orga/settings/form.html:60
 msgid "Design"
-msgstr ""
+msgstr "Thiết kế"
 
 #: pretalx/orga/templates/orga/settings/form.html:78
-#, fuzzy
-#| msgid "Schedule update"
 msgid "Schedule"
-msgstr "Cập nhật lịch hội thảo"
+msgstr "Xếp lịch"
 
 #: pretalx/orga/templates/orga/settings/form.html:87
-#, fuzzy
-#| msgid "Export settings"
 msgid "Other settings"
-msgstr "Xuất cài đặt"
+msgstr "Cài đặt khác"
 
 #: pretalx/orga/templates/orga/settings/form.html:91
-#, fuzzy
-#| msgid "Header image"
 msgid "Header links"
-msgstr "Hỉnh ảnh tiêu đề"
+msgstr "Các liên kết đầu trang"
 
 #: pretalx/orga/templates/orga/settings/form.html:96
 msgid ""
@@ -6174,16 +6164,23 @@ msgid ""
 "example link to your home page, your registration page, or your livestream "
 "here."
 msgstr ""
+"Các liên kết này sẽ được hiển thị ở đầu tất cả các trang liên quan đến lịch "
+"trình của quý vị, ví dụ: lịch trình, trang diễn giả, trang phiên họp, v.v. "
+"Ví dụ, quý vị có thể liên kết đến trang chủ, trang đăng ký hoặc buổi phát "
+"trực tiếp của mình tại đây."
 
 #: pretalx/orga/templates/orga/settings/form.html:109
 msgid "Footer links"
-msgstr ""
+msgstr "Liên kết cuối trang"
 
 #: pretalx/orga/templates/orga/settings/form.html:114
 msgid ""
 "These links will be shown in the footer of all your public pages. You could "
 "for example link your terms of service, imprint, or privacy policy here."
 msgstr ""
+"Các liên kết này sẽ được hiển thị ở chân trang của tất cả các trang công "
+"khai của bạn. Ví dụ, quý vị có thể liên kết các điều khoản dịch vụ, thông "
+"tin về BTC hoặc chính sách bảo mật của mình tại đây."
 
 #: pretalx/orga/templates/orga/settings/form.html:129
 msgid "Delete event"
@@ -6340,22 +6337,28 @@ msgid ""
 "Using this form, you can generate code to copy and paste to your website "
 "source."
 msgstr ""
+"Sử dụng biểu mẫu này, quý vị có thể tạo mã để sao chép và dán vào nguồn "
+"trang web của mình."
 
 #: pretalx/orga/templates/orga/settings/widget.html:59
 msgid "Generate widget"
-msgstr ""
+msgstr "Tạo tiện ích"
 
 #: pretalx/orga/templates/orga/settings/widget.html:65
 msgid ""
 "To embed the widget into your website, copy the following code to the "
 "<code>&lt;head></code> section of your website:"
 msgstr ""
+"Để nhúng tiện ích vào trang web của quý vị, hãy sao chép mã sau vào phần "
+"<code>&lt;head></code> của trang web:"
 
 #: pretalx/orga/templates/orga/settings/widget.html:72
 msgid ""
 "Then, copy the following code to the place of your website where you want "
 "the widget to show up:"
 msgstr ""
+"Sau đó, sao chép đoạn mã sau vào vị trí trên trang web mà quý vị muốn hiển "
+"thị tiện ích:"
 
 #: pretalx/orga/templates/orga/settings/widget.html:90
 #, python-format
@@ -6363,45 +6366,49 @@ msgid ""
 "Please look at <a href=\"%(link)s\">our documentation</a> for more "
 "information."
 msgstr ""
+"Vui lòng xem <a href=\"%(link)s\">tài liệu của chúng tôi</a> để biết thêm "
+"thông tin."
 
 #: pretalx/orga/templates/orga/settings/widget.html:99
 msgid "Widget preview"
-msgstr ""
+msgstr "Xem trước tiện ích"
 
 #: pretalx/orga/templates/orga/settings/widget.html:101
 msgid ""
 "This is roughly what your widget will look like if you choose the grid "
 "format:"
-msgstr ""
+msgstr "Tiện ích của quý vị trông như thế này nếu quý vị chọn định dạng lưới:"
 
 #: pretalx/orga/templates/orga/speaker/export.html:6
 #: pretalx/orga/templates/orga/speaker/export.html:9
 msgid "Export speaker data"
-msgstr ""
+msgstr "Xuất dữ liệu diễn giả"
 
 #: pretalx/orga/templates/orga/speaker/export.html:64
 msgid "Schedule exports"
-msgstr ""
+msgstr "Lên lịch xuất dữ liệu"
 
 #: pretalx/orga/templates/orga/speaker/export.html:67
 msgid ""
 "You can either create exactly the export you need in the “Custom” tab, or "
 "use these pre-built exports:"
 msgstr ""
+"Quý vị có thể tạo chính xác bản xuất mà quý vị cần trong tab \"Tùy chỉnh\" "
+"hoặc sử dụng các bản xuất được dựng sẵn sau:"
 
 #: pretalx/orga/templates/orga/speaker/form.html:49
 #: pretalx/orga/templates/orga/submission/list.html:41
 #: pretalx/orga/templates/orga/submission/speakers.html:65
 msgid "Send email"
-msgstr ""
+msgstr "Gửi email"
 
 #: pretalx/orga/templates/orga/speaker/form.html:96
 msgid "Emails"
-msgstr ""
+msgstr "Email"
 
 #: pretalx/orga/templates/orga/speaker/form.html:102
 msgid "No mails were sent to this speaker yet."
-msgstr ""
+msgstr "Chưa có email nào được gửi tới diễn giả này."
 
 #: pretalx/orga/templates/orga/speaker/information_form.html:5
 #: pretalx/orga/templates/orga/speaker/information_form.html:9
@@ -6409,8 +6416,7 @@ msgstr ""
 #: pretalx/orga/templates/orga/speaker/information_list.html:24
 msgid "Speaker Information Note"
 msgid_plural "Speaker Information Notes"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Ghi chú thông tin dành cho diễn giả"
 
 #: pretalx/orga/templates/orga/speaker/information_list.html:35
 msgid ""
@@ -6418,47 +6424,50 @@ msgid ""
 "files (e.g. a conference styleguide). <br> They are shown to the selected "
 "speakers above the list of their submitted sessions."
 msgstr ""
+"Thêm các thông điệp quan trọng (ví dụ: \"Vui lòng mang theo bộ chuyển đổi "
+"HDMI nếu cần.\") hoặc các tệp (ví dụ: hướng dẫn về phong cách hội thảo). "
+"<br> Chúng được hiển thị cho những diễn giả đã được mời thuyết trình ở phía "
+"trên danh sách các phiên hội thảo mà họ đã nộp."
 
 #: pretalx/orga/templates/orga/speaker/information_list.html:45
 msgid "Add a new note"
-msgstr ""
+msgstr "Thêm một ghi chú"
 
 #: pretalx/orga/templates/orga/speaker/list.html:6
 #: pretalx/orga/templates/orga/speaker/list.html:11
 #: pretalx/orga/views/dashboard.py:359
 msgid "submitter"
 msgid_plural "submitters"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Người nộp"
 
 #: pretalx/orga/templates/orga/speaker/list.html:61
 msgid "Mark speaker as not arrived"
-msgstr ""
+msgstr "Đánh dấu diễn giả này vắng mặt"
 
 #: pretalx/orga/templates/orga/speaker/list.html:63
 msgid "Mark speaker as arrived"
-msgstr ""
+msgstr "Đánh dấu này diễn giả này đã có mặt"
 
 #: pretalx/orga/templates/orga/speaker/list.html:68
 msgid "Arrived"
-msgstr ""
+msgstr "Có mặt"
 
 #: pretalx/orga/templates/orga/speaker/list.html:70
 msgid "Not arrived"
-msgstr ""
+msgstr "Vắng mặt"
 
 #: pretalx/orga/templates/orga/submission/anonymise.html:9
 #: pretalx/orga/templates/orga/submission/base.html:62
 msgid "Anonymisation"
-msgstr ""
+msgstr "Ẩn danh"
 
 #: pretalx/orga/templates/orga/submission/anonymise.html:27
 msgid "Original"
-msgstr ""
+msgstr "Nguyên bản"
 
 #: pretalx/orga/templates/orga/submission/anonymise.html:31
 msgid "Anonymised"
-msgstr ""
+msgstr "Vô danh"
 
 #: pretalx/orga/templates/orga/submission/anonymise.html:40
 msgid ""
@@ -6466,19 +6475,21 @@ msgid ""
 "have no permissions to change this proposal will be shown the anonymised "
 "proposal content."
 msgstr ""
+"Nếu giai đoạn bình duyệt vô danh đang diễn ra, tất cả người bình duyệt không "
+"có quyền thay đổi đề xuất này sẽ được hiển thị nội dung đề xuất vô danh."
 
 #: pretalx/orga/templates/orga/submission/anonymise.html:65
 msgid "Save and go to next unanonymised"
-msgstr ""
+msgstr "Ghi và đi tiếp tới đề xuất vô danh tiếp theo"
 
 #: pretalx/orga/templates/orga/submission/anonymise.html:73
 msgid "Replace selection with █"
-msgstr ""
+msgstr "Thay thế lựa chọn với █"
 
 #: pretalx/orga/templates/orga/submission/apply_pending.html:11
 #, python-format
 msgid "Apply %(count)s pending changes?"
-msgstr ""
+msgstr "Thực thi %(count)s thay đổi đang chờ?"
 
 #: pretalx/orga/templates/orga/submission/apply_pending.html:17
 #, python-format
@@ -6486,94 +6497,99 @@ msgid ""
 "Please confirm that you really want to change the state of these %(count)s "
 "proposals."
 msgstr ""
+"Vui lòng xác nhận rằng quý vị thực sự muốn thay đổi trạng thái của %(count)s "
+"đề xuất này."
 
 #: pretalx/orga/templates/orga/submission/apply_pending.html:33
 #: pretalx/orga/templates/orga/submission/state_change.html:34
 msgid "Do it"
-msgstr ""
+msgstr "Thực thi"
 
 #: pretalx/orga/templates/orga/submission/apply_pending.html:38
 msgid "There are no pending changes to apply right now."
-msgstr ""
+msgstr "Hiện tại không có thay đổi nào đang chờ thực thi."
 
 #: pretalx/orga/templates/orga/submission/base.html:79
 msgid "Send email to speakers"
-msgstr ""
+msgstr "Gửi email tới diễn giả"
 
 #: pretalx/orga/templates/orga/submission/base.html:91
 msgid "Public link"
-msgstr ""
+msgstr "Liên kết công khai"
 
 #: pretalx/orga/templates/orga/submission/base.html:93
 msgid "not public yet"
-msgstr ""
+msgstr "chưa công khai"
 
 #: pretalx/orga/templates/orga/submission/base.html:100
 msgid "Secret public link"
-msgstr ""
+msgstr "Liên kết công khai bảo mật"
 
 #: pretalx/orga/templates/orga/submission/content.html:32
 msgid "This proposal was created using an access code:"
-msgstr ""
+msgstr "Đề xuất này được tạo bằng mã truy cập:"
 
 #: pretalx/orga/templates/orga/submission/content.html:50
-#, fuzzy
-#| msgid "Edit proposal"
 msgid "Proposal"
-msgstr "Sửa đề xuất"
+msgstr "Đề xuất"
 
 #: pretalx/orga/templates/orga/submission/content.html:66
 msgid "reviews"
-msgstr ""
+msgstr "bài bình duyệt"
 
 #: pretalx/orga/templates/orga/submission/feedback_list.html:6
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:7
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:10
 msgid "Attendee feedback"
-msgstr ""
+msgstr "Phản hồi của đại biểu tham dự"
 
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:30
 msgid "There has been no feedback for sessions in this event yet."
-msgstr ""
+msgstr "Hiện vẫn chưa có phản hồi nào cho các phiên của hội thảo này."
 
 #: pretalx/orga/templates/orga/submission/list.html:17
 #: pretalx/orga/templates/orga/submission/list.html:53
 msgid "Proposal feed"
-msgstr ""
+msgstr "Liên kết feed đề xuất tham luận"
 
 #: pretalx/orga/templates/orga/submission/list.html:21
 #: pretalx/orga/templates/orga/submission/list.html:31
 #: pretalx/orga/views/dashboard.py:301
 msgid "session"
 msgid_plural "sessions"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Phiên hội thảo"
 
 #: pretalx/orga/templates/orga/submission/list.html:51
 msgid "Add new session or proposal"
-msgstr ""
+msgstr "Thêm một phiên hoặc một đề xuất"
 
 #: pretalx/orga/templates/orga/submission/list.html:92
 msgid "Featured"
-msgstr ""
+msgstr "Nổi bật"
 
 #: pretalx/orga/templates/orga/submission/list.html:92
 msgid ""
 "Show this session on the list of featured sessions, once it was accepted"
 msgstr ""
+"Hiển thị phiên này trong danh sách các phiên nổi bật sau khi phiên này được "
+"chấp nhận"
 
 #: pretalx/orga/templates/orga/submission/list.html:109
 #: pretalx/orga/templates/orga/submission/list.html:113
 msgid "anonymised"
-msgstr ""
+msgstr "vô danh"
 
 #: pretalx/orga/templates/orga/submission/list.html:147
 msgid "Show this proposal in the list of featured sessions."
 msgstr ""
+"Hiển thị phiên này trong danh sách các phiên nổi bật sau khi phiên này được "
+"chấp nhận."
 
 #: pretalx/orga/templates/orga/submission/review.html:24
 msgid "You’re not allowed to review or see reviews for your own proposals."
 msgstr ""
+"Quý vị không được phép bình duyệt hoặc xem các bình duyệt cho đề xuất của "
+"chính quý vị."
 
 #: pretalx/orga/templates/orga/submission/review.html:40
 msgid "You will be able to see other reviews once you have given yours."
