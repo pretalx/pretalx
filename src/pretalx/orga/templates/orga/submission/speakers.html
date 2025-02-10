@@ -20,7 +20,7 @@
                 <div class="w-50">{{ form.name.as_field_group }}</div>
             </div>
             <div class="d-flex flex-row hide-optional">
-                <div class="w-50 hide-optional mr-4">{% if form.locale %}{{ form.locale.as_field_group }}{% endif %}</div>
+                <div class="w-50 hide-optional mr-4">{% if form.locale and form.locale|length > 1 %}{{ form.locale.as_field_group }}{% else %}{{ form.locale.as_hidden }}{% endif %}</div>
                 <div class="w-50 mt-4"><button type="submit" class="btn btn-sm btn-success btn-block btn-lg mt-2"><i class="fa fa-plus"></i> {% translate "Add speaker" %}</button></div>
             </div>
         </form>

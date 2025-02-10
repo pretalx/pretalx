@@ -302,6 +302,8 @@ class AddSpeakerForm(forms.Form):
 
     def __init__(self, *args, event=None, form_renderer=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if not event.named_locales or len(event.named_locales) < 2:
+            self.fields["locale"].widget = forms.HiddenInput()
         self.fields["locale"].choices = event.named_locales
         self.fields["locale"].initial = event.locale
 
