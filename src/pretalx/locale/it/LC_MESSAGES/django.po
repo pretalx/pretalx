@@ -1776,7 +1776,7 @@ msgid ""
 "website %(host)s."
 msgstr ""
 "Il link su cui hai fatto clic vuole reindirizzarti a una destinazione sul "
-"sito Web %(host)s".
+"sito Web %(host)s."
 
 #: pretalx/common/templates/common/redirect.html:18
 msgid "Please only proceed if you trust this website to be safe."
