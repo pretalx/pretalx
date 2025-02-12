@@ -1162,7 +1162,7 @@ msgstr "L'evento {name} ({slug}) di {organizer} è stato eliminato."
 #, fuzzy, python-brace-format
 #| msgid "The proposal was deleted."
 msgid "The organiser {name} was deleted."
-msgstr "La proposta è stata eliminata."
+msgstr "La proposta {name} è stata eliminata."
 
 #: pretalx/common/log_display.py:51
 msgid "The CfP has been modified."
