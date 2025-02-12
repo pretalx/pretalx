@@ -1056,7 +1056,7 @@ msgstr "La tua bozza è stata scartata."
 
 #: pretalx/cfp/views/user.py:419
 msgid "Your proposal has been submitted."
-msgstr "La tua proposta è stata inviata.."
+msgstr "La tua proposta è stata inviata."
 
 #: pretalx/cfp/views/user.py:434
 msgid "Your account has now been deleted."
