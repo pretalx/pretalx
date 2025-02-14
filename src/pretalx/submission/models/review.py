@@ -146,7 +146,7 @@ class Review(PretalxModel):
         return f"Review(event={self.submission.event.slug}, submission={self.submission.title}, user={self.user.get_display_name}, score={self.score})"
 
     @classmethod
-    def find_reviewable_submissions(cls, event, user, ignore=None):
+    def find_reviewable_submissions(cls, event, user, ignore=None, track=None):
         """Returns all :class:`~pretalx.submission.models.submission.Submission`
         objects this :class:`~pretalx.person.models.user.User` is allowed to review,
         regardless of whether they have already reviewed them.
@@ -158,6 +158,7 @@ class Review(PretalxModel):
 
         :type event: :class:`~pretalx.event.models.event.Event`
         :type user: :class:`~pretalx.person.models.user.User`
+        :type track :class:`~pretalx.submission.models.track.Track`
         :rtype: Queryset of :class:`~pretalx.submission.models.submission.Submission` objects
         """
         from pretalx.submission.models import SubmissionStates
@@ -191,22 +192,30 @@ class Review(PretalxModel):
                 queryset = queryset.filter(track__in=tracks)
         if ignore:
             queryset = queryset.exclude(pk__in=ignore)
+
+        # if a track is specified, filter by this track to show only results of
+        # the same track
+        if track:
+            queryset = queryset.filter(track=track)
+
         # This is not randomised, because order_by("review_count", "?") sets all annotated
         # review_count values to 1.
         return queryset.order_by("-is_assigned", "review_count")
 
     @classmethod
-    def find_missing_reviews(cls, event, user, ignore=None):
+    def find_missing_reviews(cls, event, user, ignore=None, track=None):
         """Returns all :class:`~pretalx.submission.models.submission.Submission`
         objects this :class:`~pretalx.person.models.user.User` still has to review
-        for the given :class:`~pretalx.event.models.event.Event`. A subset of
+        for the given :class:`~pretalx.event.models.event.Event` and within the
+        selected track (if defined). A subset of
         ``find_reviewable_submissions``.
 
         :type event: :class:`~pretalx.event.models.event.Event`
         :type user: :class:`~pretalx.person.models.user.User`
+        :type track :class:`~pretalx.submission.models.track.Track`
         :rtype: Queryset of :class:`~pretalx.submission.models.submission.Submission` objects
         """
-        return cls.find_reviewable_submissions(event, user, ignore).exclude(
+        return cls.find_reviewable_submissions(event, user, ignore, track).exclude(
             reviews__user=user
         )
 
