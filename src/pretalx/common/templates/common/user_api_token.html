@@ -4,6 +4,62 @@
 
 <form method="post">
     {% csrf_token %}
+    <fieldset class="m-2">
+        <legend>{% translate "API Access" %}</legend>
+        <div class="token-list mb-4">
+            <h5>{% translate "Your API tokens" %}</h5>
+            {% if tokens %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>{% translate "Name" %}</th>
+                            <th>{% translate "Created" %}</th>
+                            <th>{% translate "Last used" %}</th>
+                            <th>{% translate "Expires" %}</th>
+                            <th>{% translate "Version" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for token in tokens %}
+                          <tr class="{% if not token.active %}revoked{% endif %}">
+                                <td>{{ token.name }}</td>
+                                <td>{{ token.created|date:"SHORT_DATETIME_FORMAT" }}</td>
+                                <td>{{ token.last_used|date:"SHORT_DATETIME_FORMAT"|default:"-" }}</td>
+                                <td>{{ token.expires|date:"SHORT_DATETIME_FORMAT"|default:"-" }}</td>
+                                <td>
+                                    {% if token.active %}
+                                        <form method="post" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" name="revoke_token" value="{{ token.id }}"
+                                                    class="btn btn-danger btn-sm">
+                                                {% translate "Revoke" %}
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>{% translate "You don't have any API tokens yet." %}</p>
+            {% endif %}
+        </div>
+
+        <div class="create-token">
+            <h5>{% translate "Create new token" %}</h5>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="form" value="token">
+                {% bootstrap_form token_form layout='event' %}
+                <div class="submit-group">
+                    <button type="submit" class="btn btn-success">
+                        {% translate "Create token" %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </fieldset>
     <fieldset>
         <h3>{% translate "API Access" %}</h3>
         <div>
