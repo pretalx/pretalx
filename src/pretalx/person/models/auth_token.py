@@ -15,6 +15,18 @@ def generate_api_token():
     )
 
 
+def default_endpoint_permissions():
+    return {
+        "events": ["list", "retrieve"],
+        "submissions": ["list", "retrieve"],
+        "speakers": ["list", "retrieve"],
+        "reviews": ["list", "retrieve"],
+        "rooms": ["list", "retrieve"],
+        "questions": ["list", "retrieve"],
+        "answers": ["list", "retrieve"],
+    }
+
+
 class UserApiToken(PretalxModel):
     name = models.CharField(max_length=190, verbose_name=_("Name"))
     token = models.CharField(default=generate_api_token, max_length=64)
@@ -34,7 +46,13 @@ class UserApiToken(PretalxModel):
     # TODO: make sure we check token.expires before allowing access
     expires = models.DateTimeField(null=True, blank=True, verbose_name=_("Expiry date"))
     # TODO document field structure
-    endpoints = models.JSONField(default=dict, blank=True)
+    endpoints = models.JSONField(default=default_endpoint_permissions, blank=True)
     version = models.CharField(
         max_length=12, null=True, blank=True, verbose_name=_("API version")
     )
+
+    def has_endpoint_permission(self, endpoint, method):
+        perms = self.endpoints.get(
+            endpoint, default_endpoint_permissions().get(endpoint, [])
+        )
+        return method in perms
