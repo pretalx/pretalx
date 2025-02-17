@@ -63,6 +63,7 @@ class UserApiToken(PretalxModel):
     version = models.CharField(
         max_length=12, null=True, blank=True, verbose_name=_("API version")
     )
+    last_used = models.DateTimeField(null=True, blank=True)
 
     def has_endpoint_permission(self, endpoint, method):
         perms = self.endpoints.get(
