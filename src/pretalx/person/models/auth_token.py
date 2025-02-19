@@ -5,8 +5,6 @@ from django.utils.crypto import get_random_string
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.models.mixins import PretalxModel
-from pretalx.event.models import Team
-from pretalx.person.models import User
 
 
 def generate_api_token():
@@ -15,30 +13,43 @@ def generate_api_token():
     )
 
 
+READ_PERMISSIONS = ("list", "retrieve")
+WRITE_PERMISSIONS = READ_PERMISSIONS + ("create", "update", "delete", "actions")
+PERMISSION_CHOICES = (
+    ("list", _("List all resources")),
+    ("retrieve", _("Retrieve a single resource")),
+    ("create", _("Create a new resource")),
+    ("update", _("Update an existing resource")),
+    ("delete", _("Delete a resource")),
+    ("actions", _("Perform actions on a resource")),
+)
+ENDPOINTS = (
+    "events",
+    "submissions",
+    "speakers",
+    "reviews",
+    "rooms",
+    "questions",
+    "answers",
+)
+
+
 def default_endpoint_permissions():
-    return {
-        "events": ["list", "retrieve"],
-        "submissions": ["list", "retrieve"],
-        "speakers": ["list", "retrieve"],
-        "reviews": ["list", "retrieve"],
-        "rooms": ["list", "retrieve"],
-        "questions": ["list", "retrieve"],
-        "answers": ["list", "retrieve"],
-    }
+    return {endpoint: READ_PERMISSIONS for endpoint in ENDPOINTS}
 
 
 class UserApiToken(PretalxModel):
     name = models.CharField(max_length=190, verbose_name=_("Name"))
     token = models.CharField(default=generate_api_token, max_length=64)
     user = models.ForeignKey(
-        to=User,
+        to="person.User",
         related_name="api_tokens",
         on_delete=models.CASCADE,
     )
     # TODO: make sure the token is deactivated if the user is removed from the team
     # TODO: show that users have active tokens in team list
     team = models.ForeignKey(
-        to=Team,
+        to="event.Team",
         related_name="api_tokens",
         on_delete=models.CASCADE,
         verbose_name=_("Team"),
@@ -50,6 +61,7 @@ class UserApiToken(PretalxModel):
     version = models.CharField(
         max_length=12, null=True, blank=True, verbose_name=_("API version")
     )
+    last_used = models.DateTimeField(null=True, blank=True)
 
     def has_endpoint_permission(self, endpoint, method):
         perms = self.endpoints.get(
