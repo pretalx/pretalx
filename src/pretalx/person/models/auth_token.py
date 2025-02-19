@@ -16,12 +16,12 @@ def generate_api_token():
 READ_PERMISSIONS = ("list", "retrieve")
 WRITE_PERMISSIONS = READ_PERMISSIONS + ("create", "update", "delete", "actions")
 PERMISSION_CHOICES = (
-    ("list", _("List all resources")),
-    ("retrieve", _("Retrieve a single resource")),
-    ("create", _("Create a new resource")),
-    ("update", _("Update an existing resource")),
-    ("delete", _("Delete a resource")),
-    ("actions", _("Perform actions on a resource")),
+    ("list", _("Read list")),
+    ("retrieve", _("Read details")),
+    ("create", _("Create")),
+    ("update", _("Update")),
+    ("delete", _("Delete")),
+    ("actions", _("Additional actions")),
 )
 ENDPOINTS = (
     "events",

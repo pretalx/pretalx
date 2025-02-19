@@ -108,13 +108,13 @@ table {
   }
   tr {
     vertical-align: middle;
-    &:hover {
-      background-color: var(--color-grey-lightest);
-    }
   }
   a:hover {
     text-decoration: none;
   }
+}
+table:not(.no-hover) tr:hover {
+  background-color: var(--color-grey-lightest);
 }
 
 legend {

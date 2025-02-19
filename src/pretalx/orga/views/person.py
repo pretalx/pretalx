@@ -12,7 +12,7 @@ from rest_framework.authtoken.models import Token
 
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views import is_form_bound
-from pretalx.person.forms import LoginInfoForm, OrgaProfileForm
+from pretalx.person.forms import LoginInfoForm, OrgaProfileForm, AuthTokenForm
 
 
 class UserSettings(TemplateView):
@@ -36,6 +36,14 @@ class UserSettings(TemplateView):
         return OrgaProfileForm(
             instance=self.request.user,
             data=self.request.POST if is_form_bound(self.request, "profile") else None,
+        )
+
+    @context
+    @cached_property
+    def token_form(self):
+        return AuthTokenForm(
+            user=self.request.user,
+            data=self.request.POST if is_form_bound(self.request, "token") else None,
         )
 
     @context
