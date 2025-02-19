@@ -19,6 +19,31 @@ from pretalx.common.urls import get_base_url
 
 INSTANCE_IDENTIFIER = None
 
+# based on <https://github.com/voronind/awesome-slugify/blob/master/slugify/alt_translates.py>
+SLUG_ALTERNATIVE_TRANSLATIONS = {
+    # CYRILLIC
+    "ё": "e",  # io / yo
+    "у": "y",  # u
+    "х": "h",  # kh
+    "щ": "sch",  # shch
+    "ю": "u",  # iu / yu
+    "я": "ya",  # ia
+    # GERMAN
+    "ä": "ae",  # a
+    "ö": "oe",  # o
+    "ü": "ue",  # u
+    "ß": "ss",
+    "ẞ": "ss",
+    # GREEK
+    "Ξ": "x",  # Ks
+    "χ": "ch",  # kh
+    "ϒ": "y",  # U
+    "υ": "y",  # u
+    "ύ": "y",  # ...
+    "ϋ": "y",
+    "ΰ": "y",
+}
+
 
 class TalkSlot(PretalxModel):
     """The TalkSlot object is the scheduled version of a.
@@ -168,11 +193,13 @@ class TalkSlot(PretalxModel):
     @cached_property
     def frab_slug(self):
         title = re.sub(r"\W+", "-", self.submission.title)
+        title = title.lower()
+        for search, replace in SLUG_ALTERNATIVE_TRANSLATIONS.items():
+            title = title.replace(search, replace)
         legal_chars = string.ascii_letters + string.digits + "-"
         pattern = f"[^{legal_chars}]+"
         title = re.sub(pattern, "", title)
-        title = title.lower()
-        title = title.strip("_")
+        title = title.strip("-")
         return f"{self.event.slug}-{self.submission.pk}{self.id_suffix}-{title}"
 
     @cached_property
