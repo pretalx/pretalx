@@ -491,7 +491,13 @@ DEFAULT_AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
     "pretalx.common.auth.AuthenticationTokenBackend",
 ]
-EXTRA_AUTH_BACKENDS = [backend for backend in config.get("authentication", "additional_auth_backends", fallback="").split(",") if backend]
+EXTRA_AUTH_BACKENDS = [
+    backend
+    for backend in config.get(
+        "authentication", "additional_auth_backends", fallback=""
+    ).split(",")
+    if backend
+]
 AUTHENTICATION_BACKENDS = DEFAULT_AUTHENTICATION_BACKENDS + EXTRA_AUTH_BACKENDS
 AUTH_PASSWORD_VALIDATORS = [
     {

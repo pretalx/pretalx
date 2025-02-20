@@ -28,7 +28,7 @@ from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode
 from pretalx.common.text.path import path_with_hash
 from pretalx.common.urls import EventUrls, build_absolute_uri
 
-from ..signals import deactivate_user as deactivate_user_signal
+from ..signals import delete_user as delete_user_signal
 
 
 def avatar_path(instance, filename):
@@ -303,7 +303,7 @@ class User(PermissionsMixin, GenerateCode, FileCleanupMixin, AbstractBaseUser):
             answer.delete()  # Iterate to delete answer files, too
         for team in self.teams.all():
             team.members.remove(self)
-        deactivate_user_signal.send(None, user=self)
+        delete_user_signal.send(None, user=self, db_delete=True)
 
     deactivate.alters_data = True
 
@@ -324,6 +324,7 @@ class User(PermissionsMixin, GenerateCode, FileCleanupMixin, AbstractBaseUser):
             self.logged_actions().delete()
             self.own_actions().update(person=None)
             self._delete_files()
+            delete_user_signal.send(None, user=self, db_delete=True)
             self.delete()
 
     shred.alters_data = True
