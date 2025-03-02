@@ -1,6 +1,7 @@
 import datetime as dt
 import re
 import string
+import unicodedata
 import uuid
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
@@ -18,31 +19,6 @@ from pretalx.common.text.serialize import serialize_duration
 from pretalx.common.urls import get_base_url
 
 INSTANCE_IDENTIFIER = None
-
-# based on <https://github.com/voronind/awesome-slugify/blob/master/slugify/alt_translates.py>
-SLUG_ALTERNATIVE_TRANSLATIONS = {
-    # CYRILLIC
-    "ё": "e",  # io / yo
-    "у": "y",  # u
-    "х": "h",  # kh
-    "щ": "sch",  # shch
-    "ю": "u",  # iu / yu
-    "я": "ya",  # ia
-    # GERMAN
-    "ä": "ae",  # a
-    "ö": "oe",  # o
-    "ü": "ue",  # u
-    "ß": "ss",
-    "ẞ": "ss",
-    # GREEK
-    "Ξ": "x",  # Ks
-    "χ": "ch",  # kh
-    "ϒ": "y",  # U
-    "υ": "y",  # u
-    "ύ": "y",  # ...
-    "ϋ": "y",
-    "ΰ": "y",
-}
 
 
 class TalkSlot(PretalxModel):
@@ -194,13 +170,14 @@ class TalkSlot(PretalxModel):
     def frab_slug(self):
         title = re.sub(r"\W+", "-", self.submission.title)
         title = title.lower()
-        for search, replace in SLUG_ALTERNATIVE_TRANSLATIONS.items():
-            title = title.replace(search, replace)
+        title = unicodedata.normalize("NFD", title).encode("ASCII", "ignore").decode()
         legal_chars = string.ascii_letters + string.digits + "-"
         pattern = f"[^{legal_chars}]+"
         title = re.sub(pattern, "", title)
         title = title.strip("-")
-        return f"{self.event.slug}-{self.submission.pk}{self.id_suffix}-{title}"
+        if title:
+            return f"{self.event.slug}-{self.submission.pk}{self.id_suffix}-{title}"
+        return f"{self.event.slug}-{self.submission.pk}{self.id_suffix}"
 
     @cached_property
     def uuid(self):
