@@ -193,7 +193,7 @@ class CsrfViewMiddleware(BaseCsrfMiddleware):
     depending on whether we are on the main domain or a custom domain.
     """
 
-    def _set_cookie_csrf(self, request, response):
+    def _set_csrf_cookie(self, request, response):
         # If CSRF_COOKIE is unset, then CsrfViewMiddleware.process_view was
         # never called, probably because a request middleware returned a response
         # (for example, contrib.auth redirecting to a login page).
