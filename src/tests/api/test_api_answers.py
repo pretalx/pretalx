@@ -260,3 +260,4 @@ def test_objects_do_not_exist(event, orga_client, answer, is_detail, method):
     )
     assert response.data.get("review")[0] == 'Invalid pk "5" - object does not exist.'
     assert response.data.get("question")[0] == 'Invalid pk "4" - object does not exist.'
+    assert response.status_code == 400, response.content.decode()
