@@ -7,6 +7,7 @@
   width: 160px;
   height: 160px;
   position: absolute;
+  right: 0px;
   background: white;
   box-shadow: var(--shadow-light);
   svg {
