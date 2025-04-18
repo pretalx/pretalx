@@ -62,7 +62,7 @@
             </p>
             {% if can_edit_speakers %}
                 {% if can_mark_speaker and submission.state in 'accepted,confirmed' %}
-                    <a class="btn btn-{{ speaker.profile.has_arrived|yesno:"success,info" }}" href="{{ speaker.profile.orga_urls.toggle_arrived }}">
+                    <a class="btn btn-{{ speaker.profile.has_arrived|yesno:"success,info" }}" href="{{ speaker.profile.orga_urls.toggle_arrived }}?next={{ request.path }}">
                         {% if speaker.profile.has_arrived %}
                             {% translate "Mark speaker as not arrived" %}
                         {% else %}

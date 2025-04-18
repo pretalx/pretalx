@@ -3,8 +3,10 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, FormView, ListView, View
 from django_context_decorator import context
@@ -282,8 +284,9 @@ class SpeakerToggleArrived(SpeakerViewMixin, View):
             person=self.request.user,
             orga=True,
         )
-        if referer := request.META.get("HTTP_REFERER"):
-            return redirect(referer)
+        if url := self.request.GET.get("next"):
+            if url and url_has_allowed_host_and_scheme(url, allowed_hosts=None):
+                return redirect(url)
         return redirect(self.profile.orga_urls.base)
 
 
