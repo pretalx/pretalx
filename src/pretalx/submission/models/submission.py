@@ -880,9 +880,9 @@ class Submission(GenerateCode, PretalxModel):
                     & models.Q(resource__isnull=False)
                     & ~models.Q(resource="None")
                 )
-                | models.Q( # or the link exists
+                | models.Q(  # or the link exists
                     models.Q(link__isnull=False) & ~models.Q(link="")
-                ) 
+                )
             )
             & models.Q(private=False)
         ).order_by("link")
