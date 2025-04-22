@@ -14,6 +14,18 @@ The receivers are expected to return HTML.
 """
 
 
+speaker_forms = EventPluginSignal()
+"""
+This signal is sent out to inject additional form fields on the submission
+pages in the internal organiser area.
+
+As with all plugin signals, the ``sender`` keyword argument will contain the
+event. Additionally, the signal will be called with the ``request`` it is
+processing, and the ``person`` which is currently displayed.
+The receivers are expected to return one or more forms.
+"""
+
+
 @receiver(register_data_exporters, dispatch_uid="exporter_builtin_csv_speaker")
 def register_speaker_csv_exporter(sender, **kwargs):
     from pretalx.person.exporters import CSVSpeakerExporter

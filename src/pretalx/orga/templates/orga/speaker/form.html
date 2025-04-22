@@ -90,6 +90,10 @@
 
         {{ questions_form }}
 
+        {% for plugin_form in plugin_forms %}
+            {{ plugin_form }}
+        {% endfor %}
+
         {% include "orga/includes/submit_row.html" %}
 
         {% html_signal "pretalx.person.signals.speaker_form_html" sender=request.event request=request user=form.instance.user %}
