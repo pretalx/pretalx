@@ -1,6 +1,7 @@
 {% extends "orga/base.html" %}
 
 {% load compress %}
+{% load html_signal %}
 {% load i18n %}
 {% load rules %}
 {% load static %}
@@ -91,6 +92,7 @@
 
         {% include "orga/includes/submit_row.html" %}
 
+        {% html_signal "pretalx.person.signals.speaker_form_html" sender=request.event request=request user=form.instance.user %}
     </form>
 
     <h3>{% translate "Emails" %}</h3>
