@@ -56,6 +56,7 @@ from pretalx.submission.models import (
     SubmissionStates,
     Tag,
 )
+from pretalx.submission.signals import submission_forms
 
 
 class SubmissionViewMixin(PermissionRequired):
@@ -393,6 +394,22 @@ class SubmissionContent(
     def questions_form(self):
         return self._questions_form
 
+    @context
+    @cached_property
+    def plugin_forms(self):
+        submission = self.get_object()
+        forms = []
+        for __, resp in submission_forms.send(
+            sender=self.request.event, request=self.request, submission=submission
+        ):
+            if not resp:
+                continue
+            if isinstance(resp, (list, tuple)):
+                forms.extend(resp)
+            else:
+                forms.append(resp)
+        return forms
+
     def save_formset(self, obj):
         if not self._formset.is_valid():
             return False
@@ -464,6 +481,12 @@ class SubmissionContent(
         form.instance.event = self.request.event
         form.save()
         self._questions_form.save()
+        for plugin_form in self.plugin_forms:
+            if not plugin_form.is_valid():
+                if plugin_form.errors:
+                    messages.error(self.request, self.plugin_forms.errors[0])
+            else:
+                plugin_form.save()
 
         if created:
             if not self.new_speaker_form.is_valid():

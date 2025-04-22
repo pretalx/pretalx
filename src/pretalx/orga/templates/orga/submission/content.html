@@ -89,7 +89,9 @@
                 <div><legend id="custom">{{ phrases.cfp.custom_fields }}</legend></div>
                 {{ questions_form }}
             {% endif %}
-
+            {% for plugin_form in plugin_forms %}
+                {{ plugin_form }}
+            {% endfor %}
             {% if not form.read_only %}
                 <div class="submit-group panel">
                     <span></span>
