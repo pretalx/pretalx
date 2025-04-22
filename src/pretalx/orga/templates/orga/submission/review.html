@@ -129,12 +129,26 @@
                         </div>
                     </div>
                 {% endif %}
+                {% if submission.private_resources %}
+                    <div class="form-group row">
+                        <label class="col-md-3 col-form-label">{% translate "Non-public resources" %}
+                        </label>
+                        <div class="col-md-9 mt-2">
+                            {% for resource in submission.private_resources %}
+
+                                {% include "agenda/includes/submission_resource.html" %} <i class="fa fa-lock"></i>
+
+                                {% if not forloop.last %}<br>{% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
             {% endif %}
             {% if no_anonymisation %}
                 {% for speaker in profiles %}
                     <div class="form-group row">
                         <label class="col-md-3 col-form-label">
-                            {% translate "Biography" %}{% if profiles.count > 1 %}: {% include "orga/includes/user_name.html" with user=speaker.user lightbox=True %}{% endif %}
+                            {% translate "Biography" %}{% if profiles|length > 1 %}: {% include "orga/includes/user_name.html" with user=speaker.user lightbox=True %}{% endif %}
                         </label>
                         <div class="col-md-9 mt-2 markdown-mt-0">
                             {% if request.event.cfp.request_biography %}

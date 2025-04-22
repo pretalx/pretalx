@@ -17,7 +17,7 @@ class ResourceForm(forms.ModelForm):
 
     class Meta:
         model = Resource
-        fields = ["resource", "description", "link"]
+        fields = ["resource", "description", "link", "is_public"]
         field_classes = {"resource": SizeFileField}
 
     def clean(self):
