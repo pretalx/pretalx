@@ -984,14 +984,8 @@ msgid "Resources"
 msgstr "Recursos"
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:13
-#, fuzzy
-#| msgid ""
-#| "Resources will be publicly visible unless they are markes as non-public."
-#| "16MB."
 msgid "Resources will be publicly visible unless they are markes as non-public."
-msgstr ""
-"Los recursos serán visibles públicamente. Intente mantener sus envíos por "
-"debajo de 16 MB."
+msgstr "Los recursos serán visibles públicamente, a menos que estén marcados como no públicos."
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:62
 #, fuzzy
