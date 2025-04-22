@@ -1,4 +1,5 @@
 {% extends "orga/mails/base.html" %}
+{% load html_signal %}
 {% load i18n %}
 {% load rich_text %}
 
@@ -98,6 +99,7 @@
                 {% endif %}
             {% endif %}
         </div>
+        {% html_signal "pretalx.mail.signals.mail_form_html" sender=request.event request=request mail=form.instance %}
     </form>
 
 {% endblock mail_content %}

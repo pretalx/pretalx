@@ -37,3 +37,14 @@ As with all event-plugin signals, the ``sender`` keyword argument will
 contain the event. Additionally, the ``mail`` keyword argument contains
 the ``QueuedMail`` instance itself.
 """
+
+mail_form_html = EventPluginSignal()
+"""
+This signal is sent out to display additional information related to emails in
+the internal organiser area.
+
+As with all plugin signals, the ``sender`` keyword argument will contain the
+event. Additionally, the signal will be called with the ``request`` it is
+processing, and the ``mail`` which is currently displayed.
+The receivers are expected to return HTML.
+"""
