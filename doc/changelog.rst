@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`cfp` Uploaded resources can now be marked as private (available only to organisers).
 - :feature:`cfp` Organisers can now define an optional opening date before which no submissions can be made.
 - :feature:`orga` Shortcut links (``/redirect/<code>``) are now available. They will redirect to the corresponding organisers page if the requesting user is an organiser or to the public page if the requesting user is not logged in or does not have organiser permissions. The code can be a submission code or a user code.
 - :feature:`orga` Internal notes are now available for speaker profiles and access codes. The notes are only visible to organisers and reviewers.

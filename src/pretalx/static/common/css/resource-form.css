@@ -8,6 +8,12 @@
     flex-grow: 0;
   }
 
+  .resource-option-public {
+    .form-group-inline {
+      flex-direction: row;
+    }
+  }
+
   .form-group {
     display: flex;
     margin-bottom: 0;
@@ -16,12 +22,15 @@
     .bootstrap-multi-input {
       flex-grow: 1;
     }
+    label {
+      padding-right: 8px;
+    }
     label .optional {
       display: none;
     }
 
-    input {
-      height: 2rem;
+    input:not([type="checkbox"]):not([type="radio"]) {
+      	height: 2rem;
     }
     input[type="file"] + small {
       display: none;
