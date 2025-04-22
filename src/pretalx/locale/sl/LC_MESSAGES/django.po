@@ -952,9 +952,9 @@ msgstr "Viri"
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:13
 #, fuzzy
 #| msgid ""
-#| "Resources will be publicly visible. Please try to keep your uploads below "
+#| "Resources will be publicly visible unless they are markes as non-public."
 #| "16MB."
-msgid "Resources will be publicly visible."
+msgid "Resources will be publicly visible unless they are markes as non-public."
 msgstr ""
 "Viri bodo javno vidni. Prosimo, poskušajte oddati manj kot 16MB datotek."
 

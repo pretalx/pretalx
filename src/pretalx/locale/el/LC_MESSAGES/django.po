@@ -992,9 +992,9 @@ msgstr "Πόροι"
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:13
 #, fuzzy
 #| msgid ""
-#| "Resources will be publicly visible. Please try to keep your uploads below "
+#| "Resources will be publicly visible unless they are markes as non-public."
 #| "16MB."
-msgid "Resources will be publicly visible."
+msgid "Resources will be publicly visible unless they are markes as non-public."
 msgstr ""
 "Οι πόροι θα είναι δημόσια ορατοί. Παρακαλώ προσπαθήστε να κρατήσετε τα "
 "αρχεία σας κάτω από 16ΜΒ."

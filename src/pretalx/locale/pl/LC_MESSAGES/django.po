@@ -959,7 +959,7 @@ msgid "Resources"
 msgstr "Materiały"
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:13
-msgid "Resources will be publicly visible."
+msgid "Resources will be publicly visible unless they are markes as non-public."
 msgstr "Materiały będą widoczne publicznie."
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:62

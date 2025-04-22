@@ -32,6 +32,9 @@ class Resource(PretalxModel):
     description = models.CharField(
         null=True, blank=True, max_length=1000, verbose_name=_("Description")
     )
+    private = models.BooleanField(
+        default=False, verbose_name=_("Non-public resource")
+    )
 
     objects = ScopedManager(event="submission__event")
 

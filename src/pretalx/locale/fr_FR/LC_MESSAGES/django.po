@@ -985,7 +985,7 @@ msgstr "Ressources"
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:13
 #, fuzzy
 #| msgid "Once you release your schedule, it will be publicly visible."
-msgid "Resources will be publicly visible."
+msgid "Resources will be publicly visible unless they are markes as non-public."
 msgstr "Lorsque vous publierez votre planning, il sera visible publiquement."
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:62
@@ -9062,7 +9062,7 @@ msgstr ""
 #~ msgstr "Nouvelle proposition"
 
 #~ msgid ""
-#~ "Resources will be publicly visible. Please try to keep your uploads below "
+#~ "Resources will be publicly visible unless they are markes as non-public."
 #~ "16MB."
 #~ msgstr ""
 #~ "Les ressources seront accessibles publiquement. Veuillez effectuer des "

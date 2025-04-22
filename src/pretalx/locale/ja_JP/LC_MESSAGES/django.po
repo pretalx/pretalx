@@ -978,7 +978,7 @@ msgstr "参考資料"
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:13
 #, fuzzy
 #| msgid "Once you release your schedule, it will be publicly visible."
-msgid "Resources will be publicly visible."
+msgid "Resources will be publicly visible unless they are markes as non-public."
 msgstr "公演スケジュールが公開されると、内容が一般に公開されます。"
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:62
@@ -9199,7 +9199,7 @@ msgstr ""
 #~ msgstr "投稿ごと"
 
 #~ msgid ""
-#~ "Resources will be publicly visible. Please try to keep your uploads below "
+#~ "Resources will be publicly visible unless they are markes as non-public."
 #~ "16MB."
 #~ msgstr "参考資料は一般に公開されます。サイズは16MB以下に保ってください。"
 

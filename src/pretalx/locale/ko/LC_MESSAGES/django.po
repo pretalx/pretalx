@@ -917,7 +917,7 @@ msgid "Resources"
 msgstr "자료"
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:13
-msgid "Resources will be publicly visible."
+msgid "Resources will be publicly visible unless they are markes as non-public."
 msgstr "자료가 공개적으로 표시됩니다."
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:62
