@@ -84,14 +84,7 @@
                 </div>
 
                 {% for plugin_form in plugin_forms %}
-                    {% for field in plugin_form %}
-                    <div class="row form-group">
-                        <div class="col col-md-3 flip text-right font-weight-bold">
-                            <div class="font-weight-bold">{{ field.label }}</div>
-                        </div>
-                        <div class="col col-md-9">{{ field.value }}</div>
-                    </div>
-                    {% endfor %}
+                    {{ plugin_form }}
                 {% endfor %}
             </div>
         {% endif %}
