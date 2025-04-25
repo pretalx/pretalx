@@ -1,6 +1,7 @@
 {% extends "orga/submission/base.html" %}
 
 {% load compress %}
+{% load html_signal %}
 {% load i18n %}
 {% load rich_text %}
 {% load rules %}
@@ -134,7 +135,7 @@
                 {% for speaker in profiles %}
                     <div class="form-group row">
                         <label class="col-md-3 col-form-label">
-                            {% translate "Biography" %}{% if profiles.count > 1 %}: {% include "orga/includes/user_name.html" with user=speaker.user lightbox=True %}{% endif %}
+                            {% translate "Biography" %}{% if profiles|length > 1 %}: {% include "orga/includes/user_name.html" with user=speaker.user lightbox=True %}{% endif %}
                         </label>
                         <div class="col-md-9 mt-2 markdown-mt-0">
                             {% if request.event.cfp.request_biography %}
@@ -154,6 +155,9 @@
                     </div>
                 {% endfor %}
             {% endif %}
+            {% for plugin_form in plugin_forms %}
+                {{ plugin_form }}
+            {% endfor %}
 
             {% if not read_only %}
                 {% if tags_form %}{{ tags_form }}{% endif %}
@@ -234,6 +238,7 @@
                     </div>
                 </div>
             {% endif %}
+            {% html_signal "pretalx.submission.signals.review_form_html" sender=request.event request=request submission=submission %}
         </form>
     {% endif %}  {# endif: request.user in submission.speakers #}
 {% endblock submission_content %}

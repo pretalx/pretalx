@@ -46,3 +46,25 @@ event. Additionally, the signal will be called with the ``request`` it is
 processing, and the ``submission`` which is currently displayed.
 The receivers are expected to return one or more forms.
 """
+
+review_form_html = EventPluginSignal()
+"""
+This signal is sent out to display additional information on the review tab
+of the submission pages in the internal organiser area.
+
+As with all plugin signals, the ``sender`` keyword argument will contain the
+event. Additionally, the signal will be called with the ``request`` it is
+processing, and the ``submission`` which is currently displayed.
+The receivers are expected to return HTML.
+"""
+
+review_forms = EventPluginSignal()
+"""
+This signal is sent out to inject additional form fields on the review tab
+of the submission pages in the internal organiser area.
+
+As with all plugin signals, the ``sender`` keyword argument will contain the
+event. Additionally, the signal will be called with the ``request`` it is
+processing, and the ``submission`` which is currently displayed.
+The receivers are expected to return one or more forms.
+"""

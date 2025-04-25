@@ -49,7 +49,7 @@ Organiser area
    :members: speaker_form_html, speaker_forms
    
 .. automodule:: pretalx.submission.signals
-   :members: submission_form_html, submission_form_link, submission_forms
+   :members: review_forms, review_form_html, submission_form_html, submission_form_link, submission_forms
 
 Display
 -------
