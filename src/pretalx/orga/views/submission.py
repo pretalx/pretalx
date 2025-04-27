@@ -40,6 +40,7 @@ from pretalx.orga.forms.submission import (
     SubmissionForm,
     SubmissionStateChangeForm,
 )
+from pretalx.orga.views.plugins import PluginFormMixin
 from pretalx.person.models import User
 from pretalx.submission.forms import (
     QuestionsForm,
@@ -305,7 +306,11 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
 
 
 class SubmissionContent(
-    ActionFromUrl, ReviewerSubmissionFilter, SubmissionViewMixin, CreateOrUpdateView
+    ActionFromUrl,
+    ReviewerSubmissionFilter,
+    SubmissionViewMixin,
+    PluginFormMixin,
+    CreateOrUpdateView,
 ):
     model = Submission
     form_class = SubmissionForm
@@ -489,7 +494,11 @@ class SubmissionContent(
             action = "pretalx.submission." + ("create" if created else "update")
             form.instance.log_action(action, person=self.request.user, orga=True)
             self.request.event.cache.set("rebuild_schedule_export", True, None)
+        super().form_valid(form)
         return redirect(self.get_success_url())
+
+    def get_plugin_form_kwargs(self):
+        return {"submission": self.object}
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

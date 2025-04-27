@@ -36,6 +36,7 @@ from pretalx.orga.forms.mails import (
     WriteSessionMailForm,
     WriteTeamsMailForm,
 )
+from pretalx.orga.views.plugins import PluginFormMixin
 
 
 class OutboxList(
@@ -283,7 +284,9 @@ class OutboxPurge(ActionConfirmMixin, OutboxList):
         return redirect(self.request.event.orga_urls.outbox)
 
 
-class MailDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
+class MailDetail(
+    PermissionRequired, ActionFromUrl, PluginFormMixin, CreateOrUpdateView
+):
     model = QueuedMail
     form_class = MailDetailForm
     template_name = "orga/mails/outbox_form.html"
@@ -314,6 +317,9 @@ class MailDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
                 ),
             )
         return result
+
+    def get_plugin_form_kwargs(self):
+        return {"mail": self.object}
 
 
 class MailCopy(PermissionRequired, View):

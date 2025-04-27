@@ -3,6 +3,7 @@
 {% load compress %}
 {% load filesize %}
 {% load formset_tags %}
+{% load plugin_signal %}
 {% load i18n %}
 {% load static %}
 {% load rules %}
@@ -88,6 +89,10 @@
                 <div><legend id="custom">{{ phrases.cfp.custom_fields }}</legend></div>
                 {{ questions_form }}
             {% endif %}
+            {% get_plugin_forms submission=submission as plugin_forms %}
+            {% for plugin_form in plugin_forms %}
+                {{ plugin_form }}
+            {% endfor %}
 
             {% if not form.read_only %}
                 <div class="submit-group panel">
@@ -100,6 +105,7 @@
                     </span>
                 </div>
             {% endif %}
+            {% get_plugin_html submission=submission %}
         </fieldset></form>
 
     <span id="vars" remoteUrl="{{ request.event.organiser.orga_urls.user_search }}"></span>
