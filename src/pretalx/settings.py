@@ -641,7 +641,6 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 25,
     "SEARCH_PARAM": "q",
     "ORDERING_PARAM": "o",
-    "VERSIONING_PARAM": "v",
     "DATETIME_FORMAT": "iso-8601",
     "EXCEPTION_HANDLER": "pretalx.api.exceptions.api_exception_handler",
 }
@@ -667,6 +666,10 @@ SPECTACULAR_SETTINGS = {
         "drf_spectacular.hooks.postprocess_schema_enums",
         "pretalx.api.documentation.postprocess_schema",
     ],
+}
+REST_FLEX_FIELDS = {
+    "WILDCARD_VALUES": [],
+    "RECURSIVE_EXPANSION_PERMITTED": False,
 }
 
 WSGI_APPLICATION = "pretalx.wsgi.application"
