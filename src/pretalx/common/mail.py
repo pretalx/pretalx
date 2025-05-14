@@ -66,9 +66,14 @@ def mail_send_task(
         to = [to]
     to = [addr for addr in to if addr]
 
-    if not settings.DEBUG:
+    if (
+        not settings.DEBUG
+        and settings.EMAIL_BACKEND != "django.core.mail.backends.locmem.EmailBackend"
+    ):
         # We don't want to send emails to localhost or example.org in production,
         # but we'll allow it in development setups for easier testing.
+        # However, we do want to "send" mails in test environments where they go
+        # to the django test outbox.
         to = [
             addr
             for addr in to
@@ -76,7 +81,7 @@ def mail_send_task(
         ]
     if not to:
         return
-    reply_to = reply_to.split(",") if isinstance(reply_to, str) else reply_to
+    reply_to = reply_to.split(",") if isinstance(reply_to, str) else (reply_to or [])
     reply_to = [addr for addr in reply_to if addr]
     reply_to = reply_to or []
 
