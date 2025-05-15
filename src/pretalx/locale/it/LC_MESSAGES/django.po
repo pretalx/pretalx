@@ -1,16 +1,16 @@
-# SOME DESCRIPTIVE TITLE.
+# ITALIAN TRANSLATION.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Albano Battistella <albanobattistella@gmail.com>, 2025.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-04-08 14:38+0000\n"
-"PO-Revision-Date: 2025-04-13 12:51+0000\n"
-"Last-Translator: albanobattistella <albano_battistella@hotmail.com>\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2025-05-14 10:51+0100\n"
+"Last-Translator: Albano battistella <albano_battistella@gmail.com>\n"
+"Language-Team: Italian\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -8650,9 +8650,8 @@ msgstr "Disponibilità"
 #~ "account!"
 #~ msgstr "La proposta è stata aggiornata!"
 
-#, fuzzy
 #~ msgid "New proposal"
-#~ msgstr "per proposta"
+#~ msgstr "Nuova proposta"
 
 #~ msgid "No events"
 #~ msgstr "Non ci sono eventi"
@@ -8720,15 +8719,12 @@ msgstr "Disponibilità"
 #~ msgid "If possible, upload an image that is least 120 pixels wide."
 #~ msgstr "Carica un'immagine di almeno 120 pixel di larghezza."
 
-#, fuzzy
 #~ msgid "Sort (highest first)"
-#~ msgstr "Ordina per punteggio (prima il più alto)"
+#~ msgstr "Ordina (prima il più alto)"
 
-#, fuzzy
 #~ msgid "Sort (lowest first)"
-#~ msgstr "Ordina per punteggio (prima il più basso)"
+#~ msgstr "Ordina (prima il più basso)"
 
-#, fuzzy
 #~ msgctxt "form field"
 #~ msgid "Optional"
 #~ msgstr "Opzionale"
@@ -8852,9 +8848,8 @@ msgstr "Disponibilità"
 #~ msgid "Score category"
 #~ msgstr "Categoria del punteggio"
 
-#, fuzzy
 #~ msgid "Review phase"
-#~ msgstr "Fasi di revisione"
+#~ msgstr "Fase di revisione"
 
 #~ msgid "Please provide a valid email address!"
 #~ msgstr "Aggiungi un indirizzo mail valido!"
@@ -9049,7 +9044,6 @@ msgstr "Disponibilità"
 #~ msgid "All submitters"
 #~ msgstr "Tutti i contributori"
 
-#, fuzzy
 #~ msgid "Submitted"
 #~ msgstr "inviata"
 
@@ -9086,51 +9080,38 @@ msgstr "Disponibilità"
 #~ msgid "A list of notifications for this speaker"
 #~ msgstr "Una lista di notifiche per questo relatore"
 
-#, fuzzy
 #~ msgid "The page has been created."
-#~ msgstr "L'evento è stato aggiunto."
+#~ msgstr "La pagina è stata creata."
 
-#, fuzzy
 #~ msgid "The page has been modified."
-#~ msgstr "Il CfP è stato modificato."
+#~ msgstr "La pagina è stata modificata."
 
-#, fuzzy
 #~ msgid "Delete a page"
-#~ msgstr "Elimina il mio account"
+#~ msgstr "Elimina una pagina"
 
-#, fuzzy
 #~ msgid "Page history"
-#~ msgstr "Cronologia"
+#~ msgstr "Cronologia della pagina"
 
-#, fuzzy
 #~ msgid "Create a new page"
-#~ msgstr "Crea una nuova proposta"
+#~ msgstr "Crea una nuova pagina"
 
-#, fuzzy
 #~ msgid "The requested page does not exist."
-#~ msgstr "Questa pagina non esiste."
+#~ msgstr "La pagina richiesta non esiste."
 
-#, fuzzy
 #~ msgid "The order of pages has been updated."
-#~ msgstr "L'ordine delle fasi di revisione è stato aggiornato."
+#~ msgstr "L'ordine delle pagine è stato aggiornato."
 
-#, fuzzy
 #~ msgid "You already have a page on that URL."
-#~ msgstr "Ho già un account"
+#~ msgstr "Hai già una pagina su quell'URL."
 
-#, fuzzy
 #~ msgid "The selected page has been deleted."
-#~ msgstr "L'evento è stato aggiunto."
+#~ msgstr "La pagina selezionata è stata eliminata."
 
-#, fuzzy
 #~ msgid "We could not save your changes. See below for details."
-#~ msgstr ""
-#~ "Abbiamo riscontrato un problema nel salvare il tuo input - Per maggiori "
-#~ "dettagli, vedi sotto. 🠯"
+#~ msgstr "Impossibile salvare le modifiche. Vedi sotto per i dettagli."
 
-#, fuzzy
 #~ msgid "The new page has been created."
-#~ msgstr "L'evento è stato aggiunto."
+#~ msgstr "La nuova pagina è stata creata."
 
 #~ msgid "An orga member"
 #~ msgstr "Un membro dell'organizzazione"
@@ -9138,9 +9119,8 @@ msgstr "Disponibilità"
 #~ msgid "The selected review phase does not exist."
 #~ msgstr "La fase di revisione selezionata non esiste."
 
-#, fuzzy
 #~ msgid "Assign reviewer groups"
-#~ msgstr "Revisori assegnati"
+#~ msgstr "Assegna gruppi di revisori"
 
 #~ msgid "This value is required, please enter some value to proceed: "
 #~ msgstr "Questo valore è obbligatorio, inserisci un valore per procedere: "
@@ -9212,11 +9192,10 @@ msgstr "Disponibilità"
 #~ msgstr "E-mail del relatore"
 
 #~ msgid "John Doe"
-#~ msgstr "John Doe"
+#~ msgstr "Mario Rossi"
 
-#, fuzzy
 #~ msgid "proposals are waiting for your review."
-#~ msgstr "Copia il codice per le revisioni"
+#~ msgstr "le proposte attendono la tua revisione."
 
 #~ msgid "No speaker matches your search."
 #~ msgstr "Nessun relatore corrisponde alla tua ricerca."
