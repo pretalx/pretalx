@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :announcement:`api,1598` The pretalx API has now stopped supporting session authentication, which was never officially supported. If you need to use the authenticated API, please use the documented token authentication process.
 - :feature:`orga:submission` Organisers and reviewers can now leave comments on proposals. Comments are shown in chronological order, and users can of course comment multiple times, rather than leaving a single review.
 - :feature:`schedule` When you embed the pretalx widget on an external page, clicking on session links will open the session details (or speaker details) in a popup on the same page, instead of directing attendees to the pretalx schedule page.
 - :feature:`schedule` Organisers can now configure additional links to show in the top menu next to "Schedule", "Sessions", "Speakers", handy for links back to the conference website, streams, etc.
@@ -51,7 +52,7 @@ Release Notes
 - :feature:`orga` There is now an organiser-level dashboard with an events list and team list.
 - :feature:`schedule` The schedule page makes even better use of several caching methods in order to be smaller and faster to load and re-load.
 - :announcement:`admin` The ``regenerate_css`` command has been dropped without replacement, as it was not needed anymore.
-- :announcement:`admin` Due to a potentially tricky update in Django, and maintenance cost, pretalx is dropping support for MySQL/MariaDB. Please use either PostgreSQL or SQLite. If you are currently running MySLQ, please take a look at this exemplary `MySQL migration guide<https://pretix.readthedocs.io/en/latest/admin/mysql2postgres.html>`_ by the pretix project **BEFORE** starting your pretalx update, in order to migrate your data with ``pgloader`` to PostgreSQL!
+- :announcement:`admin` Due to a potentially tricky update in Django, and maintenance cost, pretalx is dropping support for MySQL/MariaDB. Please use either PostgreSQL or SQLite. If you are currently running MySLQ, please take a look at this exemplary `MySQL migration guide <https://docs.pretix.eu/self-hosting/mysql2postgres/>`_ by the pretix project **BEFORE** starting your pretalx update, in order to migrate your data with ``pgloader`` to PostgreSQL!
 - :announcement:`admin` pretalx now requires Python 3.10 or newer.
 - :feature:`orga` Organisers now have access to a list of all speakers / submitters for all of their events.
 - :bug:`orga:schedule,1828` When exporting an event to a HTML export, files with umlauts or other non-ASCII characters in their file name were saved with the encoded version of that name, so when the export was served by a web server, these files wouldn't be shown.

@@ -21,12 +21,14 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import override
 from django_scopes import scopes_disabled
 from rest_framework.authtoken.models import Token
+from rules.contrib.models import RulesModelBase, RulesModelMixin
 
 from pretalx.common.image import create_thumbnail
 from pretalx.common.models import TIMEZONE_CHOICES
 from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode
 from pretalx.common.text.path import path_with_hash
 from pretalx.common.urls import EventUrls, build_absolute_uri
+from pretalx.person.rules import is_administrator
 
 
 def avatar_path(instance, filename):
@@ -71,7 +73,14 @@ class UserManager(BaseUserManager):
         return user
 
 
-class User(PermissionsMixin, GenerateCode, FileCleanupMixin, AbstractBaseUser):
+class User(
+    PermissionsMixin,
+    RulesModelMixin,
+    GenerateCode,
+    FileCleanupMixin,
+    AbstractBaseUser,
+    metaclass=RulesModelBase,
+):
     """The pretalx user model.
 
     Users describe all kinds of persons who interact with pretalx: Organisers, reviewers, submitters, speakers.
@@ -161,6 +170,11 @@ class User(PermissionsMixin, GenerateCode, FileCleanupMixin, AbstractBaseUser):
     )
     pw_reset_time = models.DateTimeField(null=True, verbose_name="Password reset time")
 
+    class Meta:
+        rules_permissions = {
+            "administrator": is_administrator,
+        }
+
     def __str__(self) -> str:
         """For public consumption as it is used for Select widgets, e.g. on the
         feedback form."""
@@ -170,7 +184,7 @@ class User(PermissionsMixin, GenerateCode, FileCleanupMixin, AbstractBaseUser):
         super().__init__(*args, **kwargs)
         self.permission_cache = {}
         self.event_profile_cache = {}
-        self.team_permissions = {}
+        self.event_permission_cache = {}
 
     def has_perm(self, perm, obj, *args, **kwargs):
         cached_result = None
@@ -408,6 +422,8 @@ class User(PermissionsMixin, GenerateCode, FileCleanupMixin, AbstractBaseUser):
 
         :type event: :class:`~pretalx.event.models.event.Event`
         """
+        if permissions := self.event_permission_cache.get(event.pk):
+            return permissions
         if self.is_administrator:
             return {
                 "can_create_events",
@@ -417,10 +433,12 @@ class User(PermissionsMixin, GenerateCode, FileCleanupMixin, AbstractBaseUser):
                 "can_change_submissions",
                 "is_reviewer",
             }
+        permissions = set()
         teams = event.teams.filter(members__in=[self])
-        if not teams:
-            return set()
-        return set().union(*[team.permission_set for team in teams])
+        if teams:
+            permissions = set().union(*[team.permission_set for team in teams])
+        self.event_permission_cache[event.pk] = permissions
+        return permissions
 
     def regenerate_token(self) -> Token:
         """Generates a new API access token, deleting the old one."""
