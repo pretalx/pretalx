@@ -30,6 +30,7 @@ from pretalx.orga.forms.review import (
 )
 from pretalx.orga.forms.submission import SubmissionStateChangeForm
 from pretalx.orga.permissions import reviews_are_open
+from pretalx.orga.views.plugins import PluginFormMixin
 from pretalx.orga.views.submission import BaseSubmissionList
 from pretalx.submission.forms import QuestionsForm, SubmissionFilterForm
 from pretalx.submission.models import Review, Submission, SubmissionStates
@@ -486,7 +487,9 @@ class ReviewViewMixin:
         )
 
 
-class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
+class ReviewSubmission(
+    ReviewViewMixin, PermissionRequired, PluginFormMixin, CreateOrUpdateView
+):
     form_class = ReviewForm
     model = Review
     template_name = "orga/submission/review.html"
@@ -623,6 +626,9 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
         if self.tags_form:
             self.tags_form.save()
         return super().form_valid(form)
+
+    def get_plugin_form_kwargs(self):
+        return {"submission": self.submission}
 
     def post(self, request, *args, **kwargs):
         action = self.request.POST.get("review_submit") or "save"

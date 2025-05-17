@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.db import transaction
 from django.shortcuts import redirect
+from django.template import RequestContext
 from django.utils.functional import cached_property
 from django.views.generic import TemplateView
 from django_context_decorator import context
@@ -8,6 +9,7 @@ from django_context_decorator import context
 from pretalx.common.plugins import get_all_plugins_grouped
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import EventPermissionRequired
+from pretalx.orga.templatetags.plugin_signal import get_plugin_forms
 
 
 class EventPluginsView(EventPermissionRequired, TemplateView):
@@ -55,3 +57,19 @@ class EventPluginsView(EventPermissionRequired, TemplateView):
             self.request.event.save()
             messages.success(self.request, phrases.base.saved)
         return redirect(self.request.event.orga_urls.plugins)
+
+
+class PluginFormMixin:
+    def get_plugin_form_kwargs(self):
+        return None
+
+    def form_valid(self, form):
+        context = RequestContext(self.request)
+        kwargs = self.get_plugin_form_kwargs()
+        for plugin_form in get_plugin_forms(context, **kwargs):
+            if not plugin_form.is_valid():
+                if plugin_form.errors:
+                    messages.error(self.request, self.plugin_forms.errors[0])
+            else:
+                plugin_form.save()
+        return super().form_valid(form)

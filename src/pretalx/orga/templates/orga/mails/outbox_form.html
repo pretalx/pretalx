@@ -1,4 +1,5 @@
 {% extends "orga/mails/base.html" %}
+{% load plugin_signal %}
 {% load i18n %}
 {% load rich_text %}
 
@@ -18,6 +19,10 @@
 
         {% if not form.read_only %}
             {{ form }}
+            {% get_plugin_forms mail=form.instance as plugin_forms %}
+            {% for plugin_form in plugin_forms %}
+                {{ plugin_form }}
+            {% endfor %}
         {% else %}
             <div class="d-flex flex-column">
                 <div class="row form-group">
@@ -78,6 +83,10 @@
                     </div>
                     <div class="col col-md-9">{{ form.instance.text|rich_text }}</div>
                 </div>
+                {% get_plugin_forms mail=form.instance as plugin_forms %}
+                {% for plugin_form in plugin_forms %}
+                    {{ plugin_form }}
+                {% endfor %}
             </div>
         {% endif %}
 
@@ -98,6 +107,7 @@
                 {% endif %}
             {% endif %}
         </div>
+        {% get_plugin_html mail=form.instance %}
     </form>
 
 {% endblock mail_content %}

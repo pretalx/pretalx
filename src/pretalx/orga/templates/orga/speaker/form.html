@@ -1,6 +1,7 @@
 {% extends "orga/base.html" %}
 
 {% load compress %}
+{% load plugin_signal %}
 {% load i18n %}
 {% load rules %}
 {% load static %}
@@ -89,8 +90,14 @@
 
         {{ questions_form }}
 
+        {% get_plugin_forms speaker=form.instance.user as plugin_forms %}
+        {% for plugin_form in plugin_forms %}
+            {{ plugin_form }}
+        {% endfor %}
+
         {% include "orga/includes/submit_row.html" %}
 
+        {% get_plugin_html speaker=form.instance.user %}
     </form>
 
     <h3>{% translate "Emails" %}</h3>

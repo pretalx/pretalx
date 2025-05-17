@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`dev` Plugins can now inject additional form elements or HTML in the organisers area with the ``pretalx.orga.signals.plugin_forms`` and ``pretalx.orga.signals.plugin_html`` signals.
 - :feature:`orga:submission` Organisers and reviewers can now leave comments on proposals. Comments are shown in chronological order, and users can of course comment multiple times, rather than leaving a single review.
 - :feature:`schedule` When you embed the pretalx widget on an external page, clicking on session links will open the session details (or speaker details) in a popup on the same page, instead of directing attendees to the pretalx schedule page.
 - :feature:`schedule` Organisers can now configure additional links to show in the top menu next to "Schedule", "Sessions", "Speakers", handy for links back to the conference website, streams, etc.

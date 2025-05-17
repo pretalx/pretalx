@@ -24,6 +24,7 @@ from pretalx.common.views.mixins import (
     Sortable,
 )
 from pretalx.orga.forms.speaker import SpeakerExportForm
+from pretalx.orga.views.plugins import PluginFormMixin
 from pretalx.person.forms import (
     SpeakerFilterForm,
     SpeakerInformationForm,
@@ -160,7 +161,9 @@ class SpeakerViewMixin(PermissionRequired):
 
 
 @method_decorator(csp_update(IMG_SRC="https://www.gravatar.com"), name="dispatch")
-class SpeakerDetail(SpeakerViewMixin, ActionFromUrl, CreateOrUpdateView):
+class SpeakerDetail(
+    SpeakerViewMixin, ActionFromUrl, PluginFormMixin, CreateOrUpdateView
+):
     template_name = "orga/speaker/form.html"
     form_class = SpeakerProfileForm
     model = User
@@ -220,6 +223,9 @@ class SpeakerDetail(SpeakerViewMixin, ActionFromUrl, CreateOrUpdateView):
             self.request.event.cache.set("rebuild_schedule_export", True, None)
         messages.success(self.request, phrases.base.saved)
         return result
+
+    def get_plugin_form_kwargs(self):
+        return {"speaker": self.object}
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
