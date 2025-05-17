@@ -943,14 +943,8 @@ msgid "Resources"
 msgstr "Resurser"
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:13
-#, fuzzy
-#| msgid ""
-#| "Resources will be publicly visible. Please try to keep your uploads below "
-#| "16MB."
-msgid "Resources will be publicly visible."
-msgstr ""
-"Resurser är synliga offentligt. Vänligen se till att dina uppladdningar är "
-"mindre än 16MB."
+msgid "Resources will be publicly visible unless they are markes as non-public."
+msgstr "Resurser kommer att vara offentligt synliga, om de inte markeras som icke offentliga."
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:62
 #, fuzzy

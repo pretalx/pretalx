@@ -983,10 +983,8 @@ msgid "Resources"
 msgstr "Ressources"
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:13
-#, fuzzy
-#| msgid "Once you release your schedule, it will be publicly visible."
-msgid "Resources will be publicly visible."
-msgstr "Lorsque vous publierez votre planning, il sera visible publiquement."
+msgid "Resources will be publicly visible unless they are markes as non-public."
+msgstr "Lorsque vous publierez votre planning, il sera visible publiquement, sauf s'il est marqué comme non public."
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:62
 msgid "This proposal has no resources yet."
@@ -9060,13 +9058,6 @@ msgstr ""
 
 #~ msgid "New proposal"
 #~ msgstr "Nouvelle proposition"
-
-#~ msgid ""
-#~ "Resources will be publicly visible. Please try to keep your uploads below "
-#~ "16MB."
-#~ msgstr ""
-#~ "Les ressources seront accessibles publiquement. Veuillez effectuer des "
-#~ "envois de moins de 16 Mo."
 
 #~ msgid "No events"
 #~ msgstr "Aucun évènement"

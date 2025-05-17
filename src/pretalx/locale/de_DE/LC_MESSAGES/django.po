@@ -963,8 +963,8 @@ msgid "Resources"
 msgstr "Ressourcen"
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:13
-msgid "Resources will be publicly visible."
-msgstr "Ressourcen werden öffentlich einsehbar sein."
+msgid "Resources will be publicly visible unless they are markes as non-public."
+msgstr "Ressourcen werden öffentlich einsehbar sein, sofern sie nicht als nicht-öffentlich gekennzeichet sind."
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:62
 msgid "This proposal has no resources yet."
@@ -8329,6 +8329,10 @@ msgstr ""
 "wenn persönliche Informationen gesammelt werden sollen, aber Reviewer sie "
 "wegen anonymer Reviews nicht sehen sollen."
 
+#: pretalx/submission/models/resource.py:36
+msgid "Non-public resource"
+msgstr "Nicht öffentliche Resource"
+
 #: pretalx/submission/models/review.py:24
 msgid "Leave empty to use this category for all tracks."
 msgstr "Leer lassen, um die Standard-Kategorie zu verwenden."
@@ -8713,13 +8717,6 @@ msgstr ""
 
 #~ msgid "New proposal"
 #~ msgstr "Neue Einreichung"
-
-#~ msgid ""
-#~ "Resources will be publicly visible. Please try to keep your uploads below "
-#~ "16MB."
-#~ msgstr ""
-#~ "Ressourcen sind öffentlich einsehbar. Bitte versuch, die Uploads kleiner "
-#~ "als 16MB zu halten."
 
 #~ msgid "No events"
 #~ msgstr "Keine Veranstaltungen"

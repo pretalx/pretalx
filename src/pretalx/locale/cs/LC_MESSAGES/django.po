@@ -948,14 +948,8 @@ msgid "Resources"
 msgstr "Zdroje"
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:13
-#, fuzzy
-#| msgid ""
-#| "Resources will be publicly visible. Please try to keep your uploads below "
-#| "16MB."
-msgid "Resources will be publicly visible."
-msgstr ""
-"Zdroje budou veřejně přístupné. Prosíme, aby všechny soubory byly menší než "
-"16 MB."
+msgid "Resources will be publicly visible unless they are markes as non-public."
+msgstr "Zdroje budou veřejně viditelné, pokud nebudou označeny jako neveřejné."
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:62
 msgid "This proposal has no resources yet."
