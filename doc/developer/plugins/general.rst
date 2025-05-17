@@ -14,7 +14,7 @@ Core
 
 .. automodule:: pretalx.common.signals
    :members: periodic_task, register_locales
-
+  
 .. automodule:: pretalx.submission.signals
    :members: submission_state_change
 
@@ -44,6 +44,15 @@ Organiser area
 .. automodule:: pretalx.common.signals
    :no-index:
    :members: activitylog_display, activitylog_object_link
+
+.. automodule:: pretalx.mail.signals
+   :members: mail_form_html, mail_forms
+
+.. automodule:: pretalx.person.signals
+   :members: speaker_form_html, speaker_forms
+   
+.. automodule:: pretalx.submission.signals
+   :members: review_forms, review_form_html, submission_form_html, submission_form_link, submission_forms
 
 Display
 -------

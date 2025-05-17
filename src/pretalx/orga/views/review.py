@@ -33,6 +33,7 @@ from pretalx.orga.permissions import reviews_are_open
 from pretalx.orga.views.submission import BaseSubmissionList
 from pretalx.submission.forms import QuestionsForm, SubmissionFilterForm
 from pretalx.submission.models import Review, Submission, SubmissionStates
+from pretalx.submission.signals import review_forms
 
 
 class ReviewDashboard(EventPermissionRequired, BaseSubmissionList):
@@ -588,6 +589,21 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
             read_only=self.read_only,
         )
 
+    @context
+    @cached_property
+    def plugin_forms(self):
+        forms = []
+        for __, resp in review_forms.send(
+            sender=self.request.event, request=self.request, submission=self.submission
+        ):
+            if not resp:
+                continue
+            if isinstance(resp, (list, tuple)):
+                forms.extend(resp)
+            else:
+                forms.append(resp)
+        return forms
+
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
         result["done"] = self.request.user.reviews.filter(
@@ -622,6 +638,12 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
         self.qform.save()
         if self.tags_form:
             self.tags_form.save()
+        for plugin_form in self.plugin_forms:
+            if not plugin_form.is_valid():
+                if plugin_form.errors:
+                    messages.error(self.request, self.plugin_forms.errors[0])
+            else:
+                plugin_form.save()
         return super().form_valid(form)
 
     def post(self, request, *args, **kwargs):
