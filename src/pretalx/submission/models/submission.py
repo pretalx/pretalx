@@ -884,7 +884,7 @@ class Submission(GenerateCode, PretalxModel):
                     models.Q(link__isnull=False) & ~models.Q(link="")
                 )
             )
-            & models.Q(private=False)
+            & models.Q(is_public=True)
         ).order_by("link")
 
     @property

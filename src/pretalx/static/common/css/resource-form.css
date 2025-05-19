@@ -8,7 +8,7 @@
     flex-grow: 0;
   }
 
-  .resource-option-private {
+  .resource-option-public {
     .form-group-inline {
       flex-direction: row;
     }
