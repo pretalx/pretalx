@@ -976,7 +976,11 @@ msgid "Resources"
 msgstr "المصادر"
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:13
-msgid "Resources will be publicly visible unless they are markes as non-public."
+#, fuzzy
+#| msgid ""
+#| "Resources will be publicly visible. Please try to keep your uploads below "
+#| "16MB."
+msgid "Resources will be publicly visible."
 msgstr ""
 "ستكون الموارد متاحة للعامة. يرجى محاولة إبقاء التحميلات الخاصة بك أقل من 16 "
 "ميغا بايت."
