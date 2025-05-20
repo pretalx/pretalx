@@ -94,7 +94,7 @@
                         {% if request.event and request.event.locales|length > 1 and not is_html_export %}
                             <div class="locales">
                                 {% for l, name in request.event.named_locales %}
-                                    <a href="{% url "cfp:locale.set" event=request.event.slug %}?locale={{ l }}&next={{ request.path }}{% if request.META.QUERY_STRING %}{% querystring locale=None %}{% endif %}"
+                                    <a href="{% url "cfp:locale.set" event=request.event.slug %}?locale={{ l }}&next={{ request.path|urlencode }}{% if request.META.QUERY_STRING %}{% querystring locale=None %}{% endif %}"
                                        class="{% if l|lower == request.LANGUAGE_CODE|lower %}active{% endif %}">{{ name }}</a>
                                 {% endfor %}
                                 •&nbsp;
@@ -103,7 +103,7 @@
                         {% block header_right %}{% endblock header_right %}
                         {% if request.event and request.user.is_authenticated and not is_html_export %}
                             <details id="user-dropdown-label" class="dropdown" aria-haspopup="menu" role="menu">
-                                {% has_perm "orga.view_orga_area" request.user request.event as can_see_orga_area %}
+                                {% has_perm "event.orga_access_event" request.user request.event as can_see_orga_area %}
                                 <summary>
                                     {{ request.user.get_display_name }} <i class="fa fa-caret-down ml-1"></i>
                                 </summary>

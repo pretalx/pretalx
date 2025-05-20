@@ -3,7 +3,7 @@ name = "pretalx"
 dynamic = ["version"]
 description = "Conference organisation: CfPs, scheduling, much more"
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 keywords = ["conference", "event", "schedule", "talk", "cfp"]
 authors = [
   {name = "Tobias Kunze", email = "r@rixx.de"},
@@ -22,7 +22,8 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
 ]
 
@@ -48,13 +49,15 @@ dependencies = [
   "django-libsass~=0.8",
   "django-scopes~=2.0.0",
   "djangorestframework~=3.16.0",
+  "drf-flex-fields~=1.0.0",
+  "drf-spectacular~=0.28.0",
   "libsass~=0.23.0",
   "Markdown~=3.8.0",
   "Pillow~=11.2.0",
   "publicsuffixlist~=1.0.0",
   "python-dateutil~=2.9.0",
   "qrcode~=8.0",
-  "reportlab~=4.3.0",
+  "reportlab~=4.4.0",
   "requests~=2.32.0",
   "rules~=3.5.0",
   "setuptools",
@@ -71,7 +74,6 @@ dev = [
   "check-manifest",
   "coverage",
   "djhtml",
-  "Faker",
   "flake8",
   "flake8-bugbear",
   "freezegun",
