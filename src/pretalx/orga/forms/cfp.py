@@ -12,22 +12,12 @@ from i18nfield.strings import LazyI18nString
 from pretalx.common.forms.fields import ColorField
 from pretalx.common.forms.mixins import I18nHelpText, JsonSubfieldMixin, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
-from pretalx.common.forms.widgets import (
-    EnhancedSelect,
-    EnhancedSelectMultiple,
-    HtmlDateInput,
-    HtmlDateTimeInput,
-    TextInputWithAddon,
-)
+from pretalx.common.forms.widgets import (EnhancedSelect, EnhancedSelectMultiple,
+                                          HtmlDateInput, HtmlDateTimeInput,
+                                          TextInputWithAddon)
 from pretalx.common.text.phrases import phrases
-from pretalx.submission.models import (
-    AnswerOption,
-    Question,
-    QuestionVariant,
-    SubmissionType,
-    SubmitterAccessCode,
-    Track,
-)
+from pretalx.submission.models import (AnswerOption, Question, QuestionVariant,
+                                       SubmissionType, SubmitterAccessCode, Track)
 from pretalx.submission.models.cfp import CfP, default_fields
 from pretalx.submission.models.question import QuestionRequired
 
@@ -58,6 +48,13 @@ class CfPSettingsForm(
             "Allow submitters to share a secret link to their proposal with others."
         ),
         required=False,
+    )
+    show_duration_in_submission_type = forms.BooleanField(
+        label=_("Show duration in submission type names"),
+        help_text=_(
+            "If enabled, submission types will display their duration (e.g., 'Talk (30 minutes)'). If disabled, only the name will be shown (e.g., 'Talk')."
+        ),
+        required=True,
     )
 
     def __init__(self, *args, obj, **kwargs):
@@ -115,6 +112,9 @@ class CfPSettingsForm(
             )
         if not obj.is_multilingual:
             self.fields.pop("cfp_ask_content_locale", None)
+        self.fields["show_duration_in_submission_type"].initial = obj.cfp.fields.get(
+            "duration", {}
+        ).get("required_duration", True)
 
     def save(self, *args, **kwargs):
         for key in self.request_require_fields:
@@ -130,6 +130,11 @@ class CfPSettingsForm(
             self.instance.cfp.fields[key]["max_length"] = self.cleaned_data.get(
                 f"cfp_{key}_max_length"
             )
+        if "duration" not in self.instance.cfp.fields:
+            self.instance.cfp.fields["duration"] = default_fields()["duration"]
+        self.instance.cfp.fields["duration"]["required_duration"] = (
+            self.cleaned_data.get("show_duration_in_submission_type")
+        )
         self.instance.cfp.save()
         super().save(*args, **kwargs)
 
@@ -140,6 +145,7 @@ class CfPSettingsForm(
             "submission_public_review": "feature_flags",
             "present_multiple_times": "feature_flags",
             "mail_on_new_submission": "mail_settings",
+            "show_duration_in_submission_type": "feature_flags",
         }
 
 

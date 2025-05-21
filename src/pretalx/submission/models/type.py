@@ -75,6 +75,13 @@ class SubmissionType(PretalxModel):
         """Used in choice drop downs."""
         if not self.default_duration:
             return str(self.name)
+
+        if hasattr(self, "event") and hasattr(self.event, "cfp"):
+            if not self.event.cfp.fields.get("duration", {}).get(
+                "required_duration", True
+            ):
+                return str(self.name)
+
         if self.default_duration > 60 * 24:
             return _("{name} ({duration} days)").format(
                 name=self.name,

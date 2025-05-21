@@ -48,7 +48,10 @@ def default_fields():
         "do_not_record": {"visibility": "optional"},
         "image": {"visibility": "optional"},
         "track": {"visibility": "do_not_ask"},
-        "duration": {"visibility": "do_not_ask"},
+        "duration": {
+            "visibility": "do_not_ask",
+            "required_duration": True,
+        },
         "content_locale": {"visibility": "required"},
         "additional_speaker": {"visibility": "optional"},
     }
@@ -62,9 +65,10 @@ def field_helper(cls):
         )
 
     def is_field_required(self, field):
-        return (
-            self.fields.get(field, default_fields()[field])["visibility"] == "required"
-        )
+        field_config = self.fields.get(field, default_fields()[field])
+        if field == "duration" and "required_duration" in field_config:
+            return field_config["required_duration"]
+        return field_config.get("visibility") == "required"
 
     for field in default_fields().keys():
         setattr(
