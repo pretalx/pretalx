@@ -17,7 +17,8 @@ class CSVSpeakerExporter(CSVExporterMixin, BaseExporter):
 
     @property
     def filename(self):
-        return f"{self.event.slug}-speakers.csv"
+        base_filename = f"{self.event.slug}-speakers.csv"
+        return self.get_timestamp_filename(base_filename)
 
     def get_data(self, **kwargs):
         fieldnames = ["name", "email", "confirmed"]

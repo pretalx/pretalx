@@ -54,7 +54,7 @@ class SpeakerExportForm(ExportForm):
 
     @cached_property
     def filename(self):
-        return f"{self.event.slug}_speakers"
+        return self.get_timestamp_filename(f"{self.event.slug}_speakers")
 
     @cached_property
     def export_field_names(self):
