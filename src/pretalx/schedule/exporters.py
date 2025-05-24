@@ -130,7 +130,8 @@ class FrabXmlExporter(ScheduleData):
             "base_url": get_base_url(self.event),
         }
         content = get_template("agenda/schedule.xml").render(context=context)
-        return f"{self.event.slug}-schedule.xml", "text/xml", content
+        filename = self.get_timestamp_filename(f"{self.event.slug}-schedule.xml")
+        return filename, "text/xml", content
 
 
 class FrabXCalExporter(ScheduleData):
@@ -144,7 +145,8 @@ class FrabXCalExporter(ScheduleData):
         url = get_base_url(self.event)
         context = {"data": self.data, "url": url, "domain": urlparse(url).netloc}
         content = get_template("agenda/schedule.xcal").render(context=context)
-        return f"{self.event.slug}.xcal", "text/xml", content
+        filename = self.get_timestamp_filename(f"{self.event.slug}.xcal")
+        return filename, "text/xml", content
 
 
 class FrabJsonExporter(ScheduleData):
@@ -274,8 +276,9 @@ class FrabJsonExporter(ScheduleData):
 
     def render(self, **kwargs):
         content = self.get_data()
+        filename = self.get_timestamp_filename(f"{self.event.slug}.json")
         return (
-            f"{self.event.slug}.json",
+            filename,
             "application/json",
             json.dumps(
                 {
@@ -316,7 +319,9 @@ class ICalExporter(BaseExporter):
         for talk in talks:
             talk.build_ical(cal, creation_time=creation_time, netloc=netloc)
 
-        return f"{self.event.slug}.ics", "text/calendar", cal.serialize()
+        filename = self.get_timestamp_filename(f"{self.event.slug}.ics")
+
+        return filename, "text/calendar", cal.serialize()
 
 
 class FavedICalExporter(BaseExporter):
@@ -351,4 +356,5 @@ class FavedICalExporter(BaseExporter):
                 schedule=request.event.current_schedule
             ):
                 slot.build_ical(cal)
-        return f"{self.event.slug}-favs.ics", "text/calendar", cal.serialize()
+        filename = self.get_timestamp_filename(f"{self.event.slug}-favs.ics")
+        return filename, "text/calendar", cal.serialize()

@@ -353,7 +353,7 @@ class ReviewExportForm(ExportForm):
 
     @cached_property
     def filename(self):
-        return f"{self.event.slug}_reviews"
+        return self.get_timestamp_filename(f"{self.event.slug}_reviews")
 
     @cached_property
     def export_field_names(self):

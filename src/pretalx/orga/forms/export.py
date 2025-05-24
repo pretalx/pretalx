@@ -4,6 +4,7 @@ from io import StringIO
 from defusedcsv import csv
 from django import forms
 from django.http import HttpResponse
+from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from i18nfield.utils import I18nJSONEncoder
@@ -50,6 +51,18 @@ class ExportForm(forms.Form):
     @property
     def filename(self):
         raise NotImplementedError
+
+    def get_timestamp_filename(self, base_filename: str) -> str:
+        """Returns filename with -YYYY-MM-DD-HH-mm suffix.
+
+        File is timestamped in -YYYY-MM-DD-HH-mm format so that file system
+        sorting of the resulting files is possible.
+        """
+        timestamp = timezone.now().strftime("-%Y-%m-%d-%H-%M")
+        if "." in base_filename:
+            name, extension = base_filename.rsplit(".", 1)
+            return f"{name}{timestamp}.{extension}"
+        return f"{base_filename}{timestamp}"
 
     @cached_property
     def question_field_names(self):

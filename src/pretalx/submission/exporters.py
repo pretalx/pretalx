@@ -19,7 +19,7 @@ class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
 
     @property
     def filename(self):
-        return f"{self.event.slug}-speaker-questions.csv"
+        return self.get_timestamp_filename(f"{self.event.slug}-speaker-questions")
 
     def get_data(self, **kwargs):
         field_names = ["code", "name", "email", "question", "answer"]
@@ -64,7 +64,7 @@ class SubmissionQuestionData(CSVExporterMixin, BaseExporter):
 
     @property
     def filename(self):
-        return f"{self.event.slug}-submission-questions.csv"
+        return self.get_timestamp_filename(f"{self.event.slug}-submission-questions")
 
     def get_data(self, **kwargs):
         field_names = ["code", "title", "question", "answer"]

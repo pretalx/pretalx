@@ -5,6 +5,7 @@ import qrcode
 import qrcode.image.svg
 from defusedcsv import csv
 from defusedxml import ElementTree
+from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 
@@ -111,6 +112,18 @@ class BaseExporter:
             self.urls.base.full(), image_factory=qrcode.image.svg.SvgPathFillImage
         )
         return mark_safe(ElementTree.tostring(image.get_image()).decode())
+
+    def get_timestamp_filename(self, base_filename: str) -> str:
+        """Returns filename with -YYYY-MM-DD-HH-mm suffix.
+
+        File is timestamped in -YYYY-MM-DD-HH-mm format so that file system
+        sorting of the resulting files is possible.
+        """
+        timestamp = timezone.now().strftime("-%Y-%m-%d-%H-%M")
+        if "." in base_filename:
+            name, extension = base_filename.rsplit(".", 1)
+            return f"{name}{timestamp}.{extension}"
+        return f"{base_filename}{timestamp}"
 
 
 class CSVExporterMixin:
