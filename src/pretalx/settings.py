@@ -312,6 +312,7 @@ if HAS_REDIS:
         "LOCATION": config.get("redis", "location"),
         "TIMEOUT": 3600 * 24 * 30,
     }
+    REAL_CACHE_USED = True
     if config.getboolean("redis", "session"):
         SESSION_ENGINE = "django.contrib.sessions.backends.cache"
         SESSION_CACHE_ALIAS = "redis_sessions"
