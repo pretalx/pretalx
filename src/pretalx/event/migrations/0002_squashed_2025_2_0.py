@@ -55,10 +55,7 @@ class Migration(migrations.Migration):
     ]
 
     dependencies = [
-        ("event", "0001_initial"),
         ("mail", "0013_mailtemplate_role"),
-        ("person", "0001_initial"),
-        ("submission", "0077_answeroption_position"),
     ]
 
     operations = [

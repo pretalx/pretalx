@@ -13,7 +13,6 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("person", "0001_initial"),
-        ("event", "0001_initial"),
     ]
 
     operations = [
