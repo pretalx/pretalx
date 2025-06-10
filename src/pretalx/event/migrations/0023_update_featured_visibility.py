@@ -3,27 +3,9 @@
 from django.db import migrations
 
 
-def update_show_featured(apps, schema_editor):
-    Event = apps.get_model("event", "Event")
-    EventSettings = apps.get_model("event", "Event_SettingsStore")
-
-    for event in Event.objects.all():
-        old_value = EventSettings.objects.filter(
-            object=event, key="show_sneak_peek"
-        ).first()
-        if old_value and old_value.value == "False":
-            EventSettings.objects.create(
-                object=event,
-                key="show_featured",
-                value="never",
-            )
-
-
 class Migration(migrations.Migration):
     dependencies = [
         ("event", "0022_auto_20200124_1213"),
     ]
 
-    operations = [
-        migrations.RunPython(update_show_featured, migrations.RunPython.noop),
-    ]
+    operations = []
