@@ -3,19 +3,9 @@
 from django.db import migrations
 
 
-def fill_names(apps, schema_editor):
-    User = apps.get_model("person", "User")
-    for user in User.objects.all():
-        if not user.name:
-            user.nick = user.name
-            user.save()
-
-
 class Migration(migrations.Migration):
     dependencies = [
         ("person", "0018_auto_20180812_1523"),
     ]
 
-    operations = [
-        migrations.RunPython(code=fill_names, reverse_code=migrations.RunPython.noop)
-    ]
+    operations = []
