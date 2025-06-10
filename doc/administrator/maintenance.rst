@@ -11,8 +11,10 @@ updates. Keep all non-public ports closed. Follow best practices.
 Updates
 -------
 
-.. warning:: While we try hard not to issue breaking updates, **please perform
-             a backup before every upgrade**.
+.. warning:: We only support updates from the last major pretalx release, so please update
+             to each major release individually, instead of just updating to the latest release.
+             For example, if v2025.3.0 just came out, but you are on v2025.1.x, update to
+             v2025.2.x first.
 
 This guide assumes that you followed the :ref:`installation` documentation.
 

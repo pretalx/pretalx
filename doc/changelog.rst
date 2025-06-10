@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :announcement:`admin` We have always recommended to update from one pretalx release to the next even when you could skip versions (for example from v2025.1.0 to v2025.3.0). This is now a documented requirement – please make sure you do not leave out releases, as you may miss out on database updates and data migrations.
 - :announcement:`admin` As PostgreSQL 13 is soon EOL, pretalx support has changed to PostgreSQL 14 or higher.
 - :announcement:`admin` The ``shell_scoped`` command was removed – please use the ``shell`` command instead, which now requires you to either specify an ``--event`` or run with ``--unsafe-disable-scopes`` (matching the previous ``shell_scoped --scopes-disabled``).
 - :announcement:`admin` Attention, plugin developers and administrators: In the course of the development of the new API, many permissions have changed names (most notably: ``orga.change_settings`` to ``event.update_event``, ``agenda.view_schedule`` to ``schedule.list_schedule``, and ``orga.view_submissions`` to ``submission.orga_list_submission``), and some import paths have changed. Take a look at the changes to the official pretalx plugins for reference. Administrators, please make sure that your plugins work with the new pretalx release before updating to the new release.
