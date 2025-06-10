@@ -48,7 +48,6 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("event", "0039_alter_teaminvite_token"),
-        ("person", "0001_initial"),
     ]
 
     operations = [
