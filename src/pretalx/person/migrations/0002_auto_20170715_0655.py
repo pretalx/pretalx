@@ -6,6 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     dependencies = [
         ("person", "0001_initial"),
+        ("event", "0039_alter_teaminvite_token"),
     ]
 
     operations = [
