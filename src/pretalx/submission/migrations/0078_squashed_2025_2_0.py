@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
     ]
 
     dependencies = [
-        ("submission", "0077_answeroption_position"),
+        ("submission", "0002_squashed_2025_2_0"),
     ]
 
     operations = [

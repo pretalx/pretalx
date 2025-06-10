@@ -47,7 +47,7 @@ class Migration(migrations.Migration):
     ]
 
     dependencies = [
-        ("event", "0039_alter_teaminvite_token"),
+        ("event", "0002_squashed_2025_2_0"),
     ]
 
     operations = [

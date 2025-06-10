@@ -55,7 +55,7 @@ class Migration(migrations.Migration):
     ]
 
     dependencies = [
-        ("mail", "0013_mailtemplate_role"),
+        ("mail", "0001_squashed_2025_2_0"),
     ]
 
     operations = [

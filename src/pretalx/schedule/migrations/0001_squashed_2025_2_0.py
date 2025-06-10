@@ -30,9 +30,7 @@ class Migration(migrations.Migration):
     ]
 
     dependencies = [
-        ("event", "0039_alter_teaminvite_token"),
-        ("person", "0031_migrate_auth_tokens"),
-        ("submission", "0001_initial"),
+        ("person", "0002_squashed_2025_2_0"),
     ]
 
     operations = [
