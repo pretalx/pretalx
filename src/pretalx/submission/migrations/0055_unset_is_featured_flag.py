@@ -3,24 +3,9 @@
 from django.db import migrations
 
 
-def update_is_featured_flag(apps, schema_editor):
-    """We start showing proposals in all states in the public featured list.
-
-    That's something of a backwards-incompatible state, so we make sure
-    that no previously-invisible proposal becomes visible.
-    """
-
-    Submission = apps.get_model("submission", "Submission")
-    Submission.objects.filter(is_featured=True).exclude(
-        state__in=["confirmed", "accepted"]
-    ).update(is_featured=False)
-
-
 class Migration(migrations.Migration):
     dependencies = [
         ("submission", "0054_reviewscorecategory_limit_tracks"),
     ]
 
-    operations = [
-        migrations.RunPython(update_is_featured_flag, migrations.RunPython.noop)
-    ]
+    operations = []

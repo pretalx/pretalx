@@ -3,27 +3,9 @@
 from django.db import migrations
 
 
-def fix_update_template(apps, schema_editor):
-    from pretalx.mail.default_templates import (
-        UPDATE_SUBJECT,
-        UPDATE_TEXT,
-    )
-
-    Event = apps.get_model("event", "Event")
-    for event in Event.objects.all():
-        template = event.update_template
-        template.subject = UPDATE_SUBJECT
-        template.text = UPDATE_TEXT
-        template.save()
-
-
 class Migration(migrations.Migration):
     dependencies = [
         ("event", "0018_auto_20190223_1543"),
     ]
 
-    operations = [
-        migrations.RunPython(
-            code=fix_update_template, reverse_code=migrations.RunPython.noop
-        ),
-    ]
+    operations = []

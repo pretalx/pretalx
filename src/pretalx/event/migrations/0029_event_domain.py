@@ -3,18 +3,9 @@
 from django.db import migrations
 
 
-def update_custom_domain(apps, schema_editor):
-    EventSettings = apps.get_model("event", "Event_SettingsStore")
-    for setting in EventSettings.objects.filter(
-        key="custom_domain", value__isnull=False
-    ):
-        setting.object.custom_domain = setting.value
-        setting.object.save()
-
-
 class Migration(migrations.Migration):
     dependencies = [
         ("event", "0028_custom_event_data"),
     ]
 
-    operations = [migrations.RunPython(update_custom_domain, migrations.RunPython.noop)]
+    operations = []

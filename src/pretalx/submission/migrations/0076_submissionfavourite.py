@@ -10,7 +10,6 @@ import pretalx.common.models.mixins
 class Migration(migrations.Migration):
 
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ("submission", "0075_increase_resource_link_length"),
     ]
 
