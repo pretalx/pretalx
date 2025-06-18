@@ -1,15 +1,16 @@
-# SOME DESCRIPTIVE TITLE.
+# ITALIAN TRANSLATION.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Albano Battistella <albanobattistella@gmail.com>, 2025.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-06-12 14:01+0000\n"
-"PO-Revision-Date: 2025-04-13 12:51+0000\n"
-"Last-Translator: albanobattistella <albano_battistella@hotmail.com>\n"
+"PO-Revision-Date: 2025-06-18 19:51+0000\n"
+"Last-Translator: Albano Battistella <albanobattistella@gmail.com>\n"
 "Language-Team: none\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
@@ -4593,9 +4594,8 @@ msgid "Users"
 msgstr "Utenti"
 
 #: pretalx/orga/templates/orga/admin/user_list.html:20
-#, fuzzy
 msgid "Search users by name or email address"
-msgstr "Indirizzo email dell'utente destinatario"
+msgstr "Cerca gli utenti per nome o indirizzo email"
 
 #: pretalx/orga/templates/orga/admin/user_list.html:32
 #: pretalx/orga/templates/orga/base.html:221
@@ -7442,10 +7442,8 @@ msgstr ""
 "cancellati e non potranno essere recuperati."
 
 #: pretalx/orga/views/mails.py:48
-#, fuzzy
 msgid "You cannot send emails at this time."
-msgstr ""
-"Non puoi ancora fornire feedback per questa sessione in questo momento."
+msgstr "Al momento non è possibile inviare email."
 
 #: pretalx/orga/views/mails.py:147 pretalx/orga/views/mails.py:131
 #, python-brace-format
@@ -8998,21 +8996,17 @@ msgstr ""
 #~ msgid "Speaker information"
 #~ msgstr "Informazioni sul relatore"
 
-#, fuzzy
 #~ msgid "The API token has been revoked."
-#~ msgstr "Il token API è stato reimpostato."
+#~ msgstr "Il token API è stato revocato."
 
-#, fuzzy
 #~ msgid "Read details"
-#~ msgstr "Invia email"
+#~ msgstr "Leggi i dettagli"
 
-#, fuzzy
 #~ msgid "Update"
-#~ msgstr "data"
+#~ msgstr "Aggiorna"
 
-#, fuzzy
 #~ msgid "Additional actions"
-#~ msgstr "Informazioni aggiuntive"
+#~ msgstr "Azioni aggiuntive"
 
 #~ msgid "Use for authentication when accessing the API."
 #~ msgstr "Da utilizzare per l'autenticazione durante l'accesso all'API."
@@ -9211,9 +9205,8 @@ msgstr ""
 #~ "account!"
 #~ msgstr "La proposta è stata aggiornata!"
 
-#, fuzzy
 #~ msgid "New proposal"
-#~ msgstr "per proposta"
+#~ msgstr "Nuova proposta"
 
 #~ msgid "No events"
 #~ msgstr "Non ci sono eventi"
@@ -9271,15 +9264,12 @@ msgstr ""
 #~ msgid "If possible, upload an image that is least 120 pixels wide."
 #~ msgstr "Carica un'immagine di almeno 120 pixel di larghezza."
 
-#, fuzzy
 #~ msgid "Sort (highest first)"
-#~ msgstr "Ordina per punteggio (prima il più alto)"
+#~ msgstr "Ordina (prima il più alto)"
 
-#, fuzzy
 #~ msgid "Sort (lowest first)"
-#~ msgstr "Ordina per punteggio (prima il più basso)"
+#~ msgstr "Ordina (prima il più basso)"
 
-#, fuzzy
 #~ msgctxt "form field"
 #~ msgid "Optional"
 #~ msgstr "Opzionale"
@@ -9400,9 +9390,8 @@ msgstr ""
 #~ msgid "Score category"
 #~ msgstr "Categoria del punteggio"
 
-#, fuzzy
 #~ msgid "Review phase"
-#~ msgstr "Fasi di revisione"
+#~ msgstr "Fase di revisione"
 
 #~ msgid "Please provide a valid email address!"
 #~ msgstr "Aggiungi un indirizzo mail valido!"
@@ -9594,9 +9583,8 @@ msgstr ""
 #~ "un'immagine. Fonte dei pattern: <a href=\"http://www.heropatterns.com/"
 #~ "\">heropatterns.com</a>, CC BY 4.0."
 
-#, fuzzy
 #~ msgid "Submitted"
-#~ msgstr "inviata"
+#~ msgstr "inviato"
 
 #~ msgid "E-mail"
 #~ msgstr "Email"
@@ -9628,47 +9616,35 @@ msgstr ""
 #~ msgid "A list of notifications for this speaker"
 #~ msgstr "Una lista di notifiche per questo relatore"
 
-#, fuzzy
 #~ msgid "The page has been created."
-#~ msgstr "L'evento è stato aggiunto."
+#~ msgstr "La pagina è stata creata."
 
-#, fuzzy
 #~ msgid "The page has been modified."
-#~ msgstr "Il CfP è stato modificato."
+#~ msgstr "La pagina è stata modificata."
 
-#, fuzzy
 #~ msgid "Delete a page"
-#~ msgstr "Elimina il mio account"
+#~ msgstr "Elimina pagina"
 
-#, fuzzy
 #~ msgid "Page history"
-#~ msgstr "Cronologia"
+#~ msgstr "Cronologia della pagina"
 
-#, fuzzy
 #~ msgid "Create a new page"
-#~ msgstr "Crea una nuova proposta"
+#~ msgstr "Crea una nuova pagina"
 
-#, fuzzy
 #~ msgid "The requested page does not exist."
-#~ msgstr "Questa pagina non esiste."
+#~ msgstr "La pagina richiesta non esiste."
 
-#, fuzzy
 #~ msgid "The order of pages has been updated."
-#~ msgstr "L'ordine delle fasi di revisione è stato aggiornato."
+#~ msgstr "L'ordine delle pagine è stato aggiornato."
 
-#, fuzzy
 #~ msgid "You already have a page on that URL."
-#~ msgstr "Ho già un account"
+#~ msgstr "Hai già una pagina su quell'URL."
 
-#, fuzzy
 #~ msgid "We could not save your changes. See below for details."
-#~ msgstr ""
-#~ "Abbiamo riscontrato un problema nel salvare il tuo input - Per maggiori "
-#~ "dettagli, vedi sotto. 🠯"
+#~ msgstr "Impossibile salvare le modifiche. Vedi sotto per i dettagli."
 
-#, fuzzy
 #~ msgid "The new page has been created."
-#~ msgstr "L'evento è stato aggiunto."
+#~ msgstr "La nuova pagina è stata creata."
 
 #~ msgid "An orga member"
 #~ msgstr "Un membro dell'organizzazione"
@@ -9676,9 +9652,8 @@ msgstr ""
 #~ msgid "The selected review phase does not exist."
 #~ msgstr "La fase di revisione selezionata non esiste."
 
-#, fuzzy
 #~ msgid "Assign reviewer groups"
-#~ msgstr "Revisori assegnati"
+#~ msgstr "Assegna gruppi di revisori"
 
 #~ msgid "This value is required, please enter some value to proceed: "
 #~ msgstr "Questo valore è obbligatorio, inserisci un valore per procedere: "
@@ -9752,9 +9727,8 @@ msgstr ""
 #~ msgid "John Doe"
 #~ msgstr "John Doe"
 
-#, fuzzy
 #~ msgid "proposals are waiting for your review."
-#~ msgstr "Copia il codice per le revisioni"
+#~ msgstr "le proposte sono in attesa della tua revisione."
 
 #~ msgid "No speaker matches your search."
 #~ msgstr "Nessun relatore corrisponde alla tua ricerca."
