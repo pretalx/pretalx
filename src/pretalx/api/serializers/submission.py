@@ -201,13 +201,11 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         schedule = self.context.get("schedule")
         if not schedule:
             return []
-        public_slots = self.context.get("public_slots", True)
-        qs = obj.slots.filter(schedule=schedule)
-        if public_slots:
-            qs = qs.filter(is_visible=True)
-        if serializer := self.get_extra_flex_field("slots", qs):
+        # slots are prefetched already
+        slots = obj.slots.all()
+        if serializer := self.get_extra_flex_field("slots", slots):
             return serializer.data
-        return qs.values_list("pk", flat=True)
+        return [slot.pk for slot in slots]
 
     class Meta:
         model = Submission
