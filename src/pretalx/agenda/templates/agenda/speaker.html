@@ -36,18 +36,33 @@
         <div class="speaker-container">
             <section class="speaker-info">
                 <div class="speaker-bio">{{ profile.biography|rich_text }}</div>
-                {% if profile.user.avatar_url and request.event.cfp.request_avatar %}
-                    <div class="speaker-avatar">
-                        <a href="{{ profile.user.avatar.url }}" data-lightbox>
-                            <img loading="lazy" width="100%" src="{{ profile.user.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
-                        </a>
+                {% if show_sidebar %}
+                    <div class="speaker-avatar-container{% if short_answers %} outline-container{% endif %}">
+                        {% if show_avatar %}
+                            <div class="speaker-avatar">
+                                <a href="{{ profile.user.avatar.url }}" data-lightbox>
+                                    <img loading="lazy" width="100%" src="{{ profile.user.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
+                                </a>
+                            </div>
+                        {% endif %}
+                        {% if short_answers %}
+                            {% if show_avatar %}<hr />{% endif %}
+                            <section class="answers">
+                                {% for answer in short_answers %}
+                                    <div class="inline-answer">
+                                        <span class="question"><strong>{{ answer.question.question }}</strong>:</span>
+                                        <span class="answer">{% include "common/question_answer.html" with answer=answer %}</span>
+                                    </div>
+                                {% endfor %}
+                            </section>
+                        {% endif %}
                     </div>
                 {% endif %}
             </section>
-            {% if answers %}
+            {% if long_answers %}
                 <hr />
                 <section class="answers">
-                    {% for answer in answers %}
+                    {% for answer in long_answers %}
                         <span class="question"><strong>{{ answer.question.question }}</strong></span>
                         <span class="answer">– {% include "common/question_answer.html" with answer=answer %}</span>
                     {% endfor %}

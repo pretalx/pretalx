@@ -21,7 +21,7 @@ from pretalx.common.views.mixins import (
     SocialMediaCardMixin,
 )
 from pretalx.person.models import SpeakerProfile, User
-from pretalx.submission.models import QuestionTarget
+from pretalx.submission.models import QuestionTarget, QuestionVariant
 
 
 class SpeakerList(EventPermissionRequired, Filterable, ListView):
@@ -83,12 +83,34 @@ class SpeakerView(PermissionRequired, TemplateView):
         return self.profile
 
     @context
-    def answers(self):
+    @cached_property
+    def short_answers(self):
         return self.profile.user.answers.filter(
             question__is_public=True,
             question__event=self.request.event,
             question__target=QuestionTarget.SPEAKER,
+            question__variant__in=QuestionVariant.short_answers,
         ).select_related("question")
+
+    @context
+    @cached_property
+    def long_answers(self):
+        return self.profile.user.answers.filter(
+            question__is_public=True,
+            question__event=self.request.event,
+            question__target=QuestionTarget.SPEAKER,
+            question__variant__in=QuestionVariant.long_answers,
+        ).select_related("question")
+
+    @context
+    @cached_property
+    def show_avatar(self):
+        return self.profile.user.avatar_url and self.request.event.cfp.request_avatar
+
+    @context
+    @cached_property
+    def show_sidebar(self):
+        return self.show_avatar or len(self.short_answers) or len(self.long_answers)
 
 
 class SpeakerRedirect(DetailView):

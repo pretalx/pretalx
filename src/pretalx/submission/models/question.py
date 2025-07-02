@@ -48,6 +48,9 @@ class QuestionVariant(Choices):
     CHOICES = "choices"
     MULTIPLE = "multiple_choice"
 
+    short_answers = (NUMBER, STRING, URL, DATE, DATETIME, FILE, CHOICES, MULTIPLE)
+    long_answers = (TEXT,)
+
     valid_choices = [
         (NUMBER, _("Number")),
         (STRING, _("Text (one-line)")),
