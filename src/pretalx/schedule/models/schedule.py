@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict, namedtuple
 from contextlib import suppress
 from urllib.parse import quote
@@ -259,13 +260,173 @@ class Schedule(PretalxModel):
                     "submission": new_slot.submission,
                     "old_start": old_slot.local_start,
                     "new_start": new_slot.local_start,
-                    "old_room": old_slot.room.name,
-                    "new_room": new_slot.room.name,
-                    "new_info": new_slot.room.speaker_info,
+                    "old_room": old_slot.room,
+                    "new_room": new_slot.room,
+                    "new_info": str(new_slot.room.speaker_info),
                     "new_slot": new_slot,
                 }
             )
         return new, canceled, moved
+
+    def _serialize_changes(self, changes: dict) -> dict:
+        """Serialize changes data for caching by replacing submission/slot objects with IDs/codes."""
+        serialized = {
+            "count": changes["count"],
+            "action": changes["action"],
+            "new_talks": [],
+            "canceled_talks": [],
+            "moved_talks": [],
+        }
+
+        for talk in changes["new_talks"]:
+            serialized["new_talks"].append(
+                {
+                    "id": talk.id,
+                    "submission_code": (
+                        talk.submission.code if talk.submission else None
+                    ),
+                }
+            )
+
+        for talk in changes["canceled_talks"]:
+            serialized["canceled_talks"].append(
+                {
+                    "id": talk.id,
+                    "submission_code": (
+                        talk.submission.code if talk.submission else None
+                    ),
+                }
+            )
+
+        for moved in changes["moved_talks"]:
+            serialized["moved_talks"].append(
+                {
+                    "submission_code": (
+                        moved["submission"].code if moved["submission"] else None
+                    ),
+                    "old_start": (
+                        moved["old_start"].isoformat() if moved["old_start"] else None
+                    ),
+                    "new_start": (
+                        moved["new_start"].isoformat() if moved["new_start"] else None
+                    ),
+                    "old_room": moved["old_room"].pk if moved["old_room"] else None,
+                    "new_room": moved["new_room"].pk if moved["new_room"] else None,
+                    "new_info": moved["new_info"],
+                    "new_slot_id": moved["new_slot"].id if moved["new_slot"] else None,
+                }
+            )
+
+        return serialized
+
+    def _deserialize_changes(self, serialized: dict) -> dict:
+        """Deserialize cached changes data by replacing IDs/codes with actual objects."""
+        submission_codes = set()
+        slot_ids = set()
+        room_ids = set()
+
+        for item in serialized["new_talks"] + serialized["canceled_talks"]:
+            if item["submission_code"]:
+                submission_codes.add(item["submission_code"])
+            slot_ids.add(item["id"])
+
+        for item in serialized["moved_talks"]:
+            if item["submission_code"]:
+                submission_codes.add(item["submission_code"])
+            if item["new_slot_id"]:
+                slot_ids.add(item["new_slot_id"])
+            if item.get("new_room_id"):
+                room_ids.add(item["new_room_id"])
+
+        from pretalx.schedule.models import Room, TalkSlot
+        from pretalx.submission.models import Submission
+
+        submissions_by_code = {}
+        if submission_codes:
+            submissions_by_code = {
+                sub.code: sub
+                for sub in Submission.objects.filter(
+                    code__in=submission_codes, event=self.event
+                )
+                .select_related("event")
+                .prefetch_related("speakers")
+            }
+
+        slots_by_id = {}
+        if slot_ids:
+            slots_by_id = {
+                slot.id: slot
+                for slot in TalkSlot.objects.filter(id__in=slot_ids).select_related(
+                    "submission", "room", "schedule"
+                )
+            }
+
+        rooms_by_id = {}
+        if room_ids:
+            rooms_by_id = {
+                room.id: room
+                for room in Room.objects.filter(id__in=room_ids, event=self.event)
+            }
+
+        changes = {
+            "count": serialized["count"],
+            "action": serialized["action"],
+            "new_talks": [],
+            "canceled_talks": [],
+            "moved_talks": [],
+        }
+
+        for item in serialized["new_talks"]:
+            slot = slots_by_id.get(item["id"])
+            if slot:
+                changes["new_talks"].append(slot)
+
+        for item in serialized["canceled_talks"]:
+            slot = slots_by_id.get(item["id"])
+            if slot:
+                changes["canceled_talks"].append(slot)
+
+        for item in serialized["moved_talks"]:
+            submission = (
+                submissions_by_code.get(item["submission_code"])
+                if item["submission_code"]
+                else None
+            )
+            new_slot = (
+                slots_by_id.get(item["new_slot_id"]) if item["new_slot_id"] else None
+            )
+
+            if submission:
+                from django.utils.dateparse import parse_datetime
+
+                new_room = None
+                old_room = None
+                if item.get("new_room"):
+                    new_room = rooms_by_id.get(item["new_room"])
+                if item.get("old_room"):
+                    old_room = rooms_by_id.get(item["old_room"])
+
+                changes["moved_talks"].append(
+                    {
+                        "submission": submission,
+                        "old_start": (
+                            parse_datetime(item["old_start"])
+                            if item["old_start"]
+                            else None
+                        ),
+                        "new_start": (
+                            parse_datetime(item["new_start"])
+                            if item["new_start"]
+                            else None
+                        ),
+                        "old_room": old_room,
+                        "new_room": new_room,
+                        "new_info": item["new_info"],
+                        "new_slot": new_slot,
+                    }
+                )
+
+        return changes
 
     @cached_property
     def changes(self) -> dict:
@@ -275,7 +436,17 @@ class Schedule(PretalxModel):
         The ``action`` field is either ``create`` or ``update``. If it's
         an update, the ``count`` integer, and the ``new_talks``,
         ``canceled_talks`` and ``moved_talks`` lists are also present.
+
+        This property uses caching with different TTLs:
+        - WIP schedules: 60 seconds
+        - Released schedules: 10 minutes
         """
+        cache_key = f"schedule_{self.id}_changes"
+        cached_data = self.event.cache.get(cache_key)
+        if cached_data:
+            with suppress(json.JSONDecodeError, KeyError):
+                serialized = json.loads(cached_data)
+                return self._deserialize_changes(serialized)
         result = {
             "count": 0,
             "action": "update",
@@ -344,6 +515,15 @@ class Schedule(PretalxModel):
             + len(result["canceled_talks"])
             + len(result["moved_talks"])
         )
+
+        # WIP schedules: 60 seconds cache
+        # Released schedules: 10 minutes cache
+        timeout = 60 if self.version is None else 600
+
+        with suppress(Exception):
+            serialized = self._serialize_changes(result)
+            self.event.cache.set(cache_key, json.dumps(serialized), timeout)
+
         return result
 
     @cached_property

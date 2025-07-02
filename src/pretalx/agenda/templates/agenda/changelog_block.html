@@ -57,9 +57,9 @@
                         {% if talk.old_room == talk.new_room %}
                             ({{ talk.old_start }} → {{ talk.new_start }})
                         {% elif talk.old_start == talk.new_start %}
-                            ({{ talk.old_room }} → {{ talk.new_room }})
+                            ({{ talk.old_room.name }} → {{ talk.new_room.name }})
                         {% else %}
-                            ({{ talk.old_start }}, {{ talk.old_room }} → {{ talk.new_start }}, {{ talk.new_room }})
+                            ({{ talk.old_start }}, {{ talk.old_room.name }} → {{ talk.new_start }}, {{ talk.new_room.name }})
                         {% endif %}
                     </li>
                 {% endfor %}
@@ -72,9 +72,9 @@
                     {% if talk.old_room == talk.new_room %}
                         ({{ talk.old_start }} → {{ talk.new_start }})
                     {% elif talk.old_start == talk.new_start %}
-                        ({{ talk.old_room }} → {{ talk.new_room }})
+                        ({{ talk.old_room.name }} → {{ talk.new_room.name }})
                     {% else %}
-                        ({{ talk.old_start }}, {{ talk.old_room }} → {{ talk.new_start }}, {{ talk.new_room }}).
+                        ({{ talk.old_start }}, {{ talk.old_room.name }} → {{ talk.new_start }}, {{ talk.new_room.name }}).
                     {% endif %}
                 {% endfor %}
             </p>
