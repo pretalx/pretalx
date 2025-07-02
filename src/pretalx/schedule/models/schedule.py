@@ -530,7 +530,9 @@ class Schedule(PretalxModel):
     def use_room_availabilities(self):
         from pretalx.schedule.models import Availability
 
-        return Availability.objects.filter(room__isnull=False, event=self.event).exists
+        return Availability.objects.filter(
+            room__isnull=False, event=self.event
+        ).exists()
 
     def get_talk_warnings(
         self,
