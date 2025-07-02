@@ -3,6 +3,10 @@
   display: block;
 }
 
+#talk-buttons {
+    white-space: nowrap;
+}
+
 .talk {
   display: flex;
   flex-direction: row;
