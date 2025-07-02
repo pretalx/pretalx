@@ -1,8 +1,8 @@
 from django.urls import include, path, re_path
 
+from pretalx.agenda.views import featured, feed, schedule, speaker, talk, widget
 from pretalx.common.views import EventSocialMediaCard, get_static
-
-from .views import featured, feed, schedule, speaker, talk, widget
+from pretalx.orga.views import admin
 
 
 def get_schedule_urls(regex_prefix, name_prefix=""):
@@ -130,4 +130,5 @@ urlpatterns = [
             "content_type": "application/javascript",
         },
     ),
+    path("healthcheck/", admin.healthcheck, name="healthcheck"),
 ]

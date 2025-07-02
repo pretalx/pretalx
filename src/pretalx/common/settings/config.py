@@ -110,7 +110,7 @@ CONFIG = {
             "env": os.getenv("PRETALX_REDIS"),
         },
         "session": {
-            "default": "False",
+            "default": "True",
             "env": os.getenv("PRETALX_REDIS_SESSIONS"),
         },
     },

@@ -311,12 +311,12 @@ if HAS_REDIS:
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": config.get("redis", "location"),
     }
-    CACHES["redis_sessions"] = {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": config.get("redis", "location"),
-        "TIMEOUT": 3600 * 24 * 30,
-    }
     if config.getboolean("redis", "session"):
+        CACHES["redis_sessions"] = {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": config.get("redis", "location"),
+            "TIMEOUT": 3600 * 24 * 30,
+        }
         SESSION_ENGINE = "django.contrib.sessions.backends.cache"
         SESSION_CACHE_ALIAS = "redis_sessions"
 

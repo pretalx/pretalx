@@ -2,7 +2,9 @@ import sys
 
 from django.conf import settings
 from django.contrib import messages
+from django.core import cache
 from django.db.models import Count, Q
+from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -185,3 +187,13 @@ class AdminUserDelete(ActionConfirmMixin, AdminUserDetail):
 
     def get_success_url(self):
         return reverse("orga:admin.user.list")
+
+
+def healthcheck(request):
+    User.objects.exists()
+
+    cache.cache.set("_healthcheck", "1")
+    if not cache.cache.get("_healthcheck") == "1":
+        return HttpResponse("Cache not available.", status=503)
+
+    return HttpResponse()

@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`admin` pretalx now provides an endpoint at ``/healthcheck/``, which will return either an empty ``HTTP 200`` or an ``HTTP 5xx`` response, intended for uptime monitoring.
 - :feature:`orga:schedule` All times for which rooms are marked as available are now always visible in the schedule editor, which previously defaulted to only showing business hours.
 - :feature:`schedule` The stars allowing you to favourite a session are now always visible, rather than requiring hover input on devices with hover capabilities.
 - :bug:`api` The detail endpoint of the reviews resource always returned a 403 response, even though the list endpoint provided all data as expected.
