@@ -65,7 +65,7 @@ The error was {exception} at {location}.
     def get_extra_intro(self):
         if not self.request:
             return ""
-        intro = "\nIt occurred when {self.user} accessed {self.request.path}."
+        intro = f"\nIt occurred when {self.user} accessed {self.request.path}."
         event = getattr(self.request, "event", None)
         if event:
             intro += (
