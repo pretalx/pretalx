@@ -1,7 +1,9 @@
+import datetime as dt
 import textwrap
 from urllib.parse import quote
 
 import pytest
+from django.test import override_settings
 from django.urls import reverse
 from django_scopes import scope
 
@@ -24,6 +26,46 @@ def test_can_see_schedule(
         assert event.schedules.count() == 2
         test_string = "<pretalx-schedule" if version == "js" else slot.submission.title
         assert test_string in response.text
+
+
+@pytest.mark.django_db
+@override_settings(
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "lalala",
+        }
+    }
+)
+@pytest.mark.usefixtures("other_slot")
+def test_can_see_changelog(
+    client, django_assert_num_queries, user, event, slot, other_slot
+):
+    with scope(event=event):
+        assert user.has_perm("schedule.list_schedule", event)
+        wip_schedule = event.wip_schedule
+        wip_slot = wip_schedule.talks.filter(submission=slot.submission).first()
+        wip_slot.start += dt.timedelta(hours=1)
+        wip_slot.save()
+        event.release_schedule("v2")
+        wip_slot = wip_schedule.talks.filter(submission=slot.submission).first()
+        wip_slot.start += dt.timedelta(hours=1)
+        wip_slot.save()
+        event.release_schedule("v3")
+        url = event.urls.schedule + "changelog/"
+
+    with django_assert_num_queries(18):
+        response = client.get(url, follow=True, HTTP_ACCEPT="text/html")
+
+    assert response.status_code == 200
+    assert slot.submission.title in response.content.decode()
+
+    # Make sure that the next call uses fewer db queries, as the results are cached
+    with django_assert_num_queries(16):
+        response = client.get(url, follow=True, HTTP_ACCEPT="text/html")
+
+    assert response.status_code == 200
+    assert slot.submission.title in response.content.decode()
 
 
 @pytest.mark.django_db
