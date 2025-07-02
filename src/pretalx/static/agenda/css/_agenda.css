@@ -242,6 +242,14 @@ article .pretalx-session .pretalx-session-info .abstract {
   }
 }
 
+@media (max-width: 710px) {
+  /* 710px is the cutoff at which the schedule widget
+   * switches to mobile / single-column view */
+  #main-container.main-schedule {
+    min-width: 0;
+  }
+}
+
 @media print {
   header,
   footer {
