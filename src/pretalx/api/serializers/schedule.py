@@ -122,3 +122,12 @@ class TalkSlotOrgaSerializer(TalkSlotSerializer):
                 "Description can only be edited if there is no submission associated with the slot. Otherwise, update the submission abstract."
             )
         return value
+
+    def update(self, instance, validated_data):
+        from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
+
+        result = super().update(instance, validated_data)
+        task_update_unreleased_schedule_changes.apply_async(
+            kwargs={"event": instance.event.slug}
+        )
+        return result

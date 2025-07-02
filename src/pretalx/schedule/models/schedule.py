@@ -86,8 +86,8 @@ class Schedule(PretalxModel):
 
     freeze.alters_data = True
 
-    def unfreeze(self, name: str, user=None):
-        return unfreeze_schedule(self, name, user)
+    def unfreeze(self, user=None):
+        return unfreeze_schedule(self, user)
 
     unfreeze.alters_data = True
 

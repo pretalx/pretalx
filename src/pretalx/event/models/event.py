@@ -1038,6 +1038,19 @@ class Event(PretalxModel):
                 locale=self.locale,
             ).send()
 
+    @property
+    def has_unreleased_schedule_changes(self) -> bool:
+        """Returns True if there are unreleased changes in the WIP schedule.
+
+        This property is cached for 24 hours and automatically updated when:
+        - WIP schedule changes are recalculated
+        - Talks are rescheduled
+        - A schedule is released
+        """
+        from pretalx.schedule.services import has_unreleased_schedule_changes
+
+        return has_unreleased_schedule_changes(self)
+
     @transaction.atomic
     def shred(self, person=None):
         """Irrevocably deletes an event and all related data."""

@@ -173,7 +173,9 @@ aside.sidebar {
   &:hover {
     width: 250px;
     a.nav-link i + span {
-      display: inline-block;
+      display: flex;
+      flex-grow: 1;
+      align-items: center;
     }
     .nav-fold div > a {
       display: block;
@@ -209,7 +211,7 @@ aside.sidebar {
       justify-content: center;
 
       i {
-        padding-top: 4px;
+        padding-top: 2px;
         margin-right: 0;
         transform: rotate(90deg);
         transition: transform 0.2s;
@@ -235,15 +237,20 @@ aside.sidebar {
 
   .nav-link,
   .nav-fold {
-    display: block;
     border-top: 1px solid var(--color-grey-light);
     div > a {
       display: none;
     }
   }
 
+  .nav-fold {
+    display: block;
+  }
+
   .nav-link {
     padding: 10px 15px;
+    display: flex;
+    align-items: center;
 
     &:last-child {
       border-bottom: 1px solid var(--color-grey-light);
@@ -252,7 +259,7 @@ aside.sidebar {
 
   .nav-link {
     .fa {
-      margin-right: 5px;
+      margin-right: 9px;
     }
 
     i + span {
@@ -262,6 +269,10 @@ aside.sidebar {
     &.nav-link-second-level span {
       padding-left: 1.6em;
     }
+  }
+
+  .nav-link.nav-link-inner {
+    padding-right: 4px;
   }
 
   .nav-link.nav-link-second-level,
@@ -1432,13 +1443,26 @@ h2 .user-name-display img {
   }
 }
 
-.pending-mails {
+.sidebar-notification {
   background: var(--color-warning);
   color: var(--color-grey-lightest);
   border-radius: 20px;
+  min-width: 20px;
+  height: 20px;
+  font-size: 12px;
   font-weight: bold;
-  margin-left: 8px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  margin-left: auto;
   padding: 5px;
+  &.small {
+    width: 8px;
+    min-width: 0;
+    height: 8px;
+    margin-right: 6px;
+  }
 }
 
 #pending .form-group-inline {

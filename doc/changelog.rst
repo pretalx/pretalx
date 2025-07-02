@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`orga:schedule,958` When you have unreleased schedule changes, there is now an indicator in the sidebar.
 - :feature:`admin` pretalx now provides an endpoint at ``/healthcheck/``, which will return either an empty ``HTTP 200`` or an ``HTTP 5xx`` response, intended for uptime monitoring.
 - :feature:`orga:schedule` All times for which rooms are marked as available are now always visible in the schedule editor, which previously defaulted to only showing business hours.
 - :feature:`schedule` The stars allowing you to favourite a session are now always visible, rather than requiring hover input on devices with hover capabilities.

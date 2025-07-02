@@ -10,7 +10,6 @@ from django.utils.timezone import now
 
 from pretalx.agenda.tasks import export_schedule_html
 from pretalx.schedule.signals import schedule_release
-from pretalx.submission.models import SubmissionStates
 
 
 def serialize_schedule_changes(changes: dict) -> dict:
@@ -284,6 +283,11 @@ def _handle_submission_move(submission, old_slots, new_slots):
     return new, canceled, moved
 
 
+def invalidate_cached_schedule_changes(schedule):
+    cache_key = f"schedule_{schedule.id}_changes"
+    schedule.event.cache.delete(cache_key)
+
+
 def get_cached_schedule_changes(schedule) -> dict:
     cache_key = f"schedule_{schedule.id}_changes"
     cached_data = schedule.event.cache.get(cache_key)
@@ -304,7 +308,42 @@ def get_cached_schedule_changes(schedule) -> dict:
         serialized = serialize_schedule_changes(result)
         schedule.event.cache.set(cache_key, json.dumps(serialized), timeout)
 
+    # Update the unreleased changes flag when WIP schedule changes are recalculated
+    if schedule.version is None:
+        update_unreleased_schedule_changes(
+            schedule.event, _get_boolean_changes(schedule, result)
+        )
+
     return result
+
+
+def _get_boolean_changes(schedule, changes=None) -> bool:
+    changes = changes or schedule.changes
+    with suppress(ValueError, AttributeError):
+        if changes["action"] == "create":
+            return schedule.scheduled_talks.exists()
+        return changes["count"] > 0
+
+
+def has_unreleased_schedule_changes(event) -> bool:
+    cache_key = "has_unreleased_schedule_changes"
+    cached_value = event.cache.get(cache_key)
+
+    if cached_value is not None:
+        return cached_value
+
+    value = _get_boolean_changes(event.wip_schedule)
+    update_unreleased_schedule_changes(event, value)
+    return value
+
+
+def update_unreleased_schedule_changes(event, value=None):
+    cache_key = "has_unreleased_schedule_changes"
+    if value is None:
+        invalidate_cached_schedule_changes(event.wip_schedule)
+        value = _get_boolean_changes(event.wip_schedule)
+    # Cache for 24 hours
+    event.cache.set(cache_key, value, 24 * 60 * 60)
 
 
 def freeze_schedule(
@@ -322,6 +361,7 @@ def freeze_schedule(
         raise Exception("Cannot create schedule version without a version name.")
 
     from pretalx.schedule.models import TalkSlot
+    from pretalx.submission.models import SubmissionStates
 
     with transaction.atomic():
         schedule.version = name
@@ -397,6 +437,9 @@ def unfreeze_schedule(schedule, user=None):
 
         schedule.event.wip_schedule.talks.all().delete()
         schedule.event.wip_schedule.delete()
+
+    # Clear the unreleased changes flag since we just released a schedule
+    update_unreleased_schedule_changes(schedule.event, False)
 
     with suppress(AttributeError):
         del wip_schedule.event.wip_schedule

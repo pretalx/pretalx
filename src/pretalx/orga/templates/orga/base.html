@@ -372,7 +372,12 @@
                             <span class="has-children">
                                 <a class="nav-link nav-link-inner" href="{{ request.event.orga_urls.schedule }}">
                                     <i class="fa fa-calendar-o"></i>
-                                    <span class="sidebar-text">{{ phrases.schedule.schedule }}</span>
+                                    <span class="sidebar-text">
+                                        {{ phrases.schedule.schedule }}
+                                        {% if request.event.has_unreleased_schedule_changes %}
+                                            <span class="sidebar-notification small" title="{% translate "Unreleased schedule changes" %}">&nbsp;</span>
+                                        {% endif %}
+                                    </span>
                                 </a>
                                 <a class="arrow nav-link" data-toggle="collapse" data-target="#collapseSchedule" aria-controls="collapseSchedule">
                                     <i class="fa fa-angle-down"></i>
@@ -397,7 +402,7 @@
                                     <i class="fa fa-envelope"></i>
                                     <span class="sidebar-text">
                                         {% translate "Mails" %}
-                                        {% if request.event.pending_mails %}<span class="pending-mails">{{ request.event.pending_mails }}</span>{% endif %}
+                                        {% if request.event.pending_mails %}<span class="sidebar-notification">{{ request.event.pending_mails }}</span>{% endif %}
                                     </span>
                                 </a>
                                 <a class="arrow nav-link" data-toggle="collapse" data-target="#collapseMails" aria-controls="collapseMails">

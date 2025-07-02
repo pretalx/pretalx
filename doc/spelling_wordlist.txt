@@ -109,6 +109,7 @@ transactional
 txt
 typeahead
 uncheck
+uptime
 Venueless
 virtualenv
 Weblate
