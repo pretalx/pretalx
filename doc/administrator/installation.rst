@@ -3,35 +3,37 @@
 Installation
 ============
 
-This guide will help you to install pretalx on Linux. This setup is suitable to
-support events in usual sizes, but the guide does not go into performance
-tuning or customisation options beyond the standard settings.
+This guide will help you to install pretalx on a single Linux server.
+This setup is suitable to support events in usual sizes, but the guide does not
+go into performance tuning or customisation options beyond the standard
+settings.
 
-.. warning:: While we try to make it straightforward to run pretalx, it still
-             requires some Linux experience to get it right, particularly to
-             make sure that standard security practices are followed. If
+.. warning:: Even though we try to make it straightforward to run pretalx, it
+             still requires some Linux experience to get it right, particularly
+             to make sure that standard security practices are followed. If
              you’re not feeling comfortable managing a Linux server, check
              out our hosting and service offers at `pretalx.com`_.
 
 For the more automation-savvy, we also provide an `Ansible role`_ that follows
-this guide. If you prefer a docker setup, there is a `docker-compose setup`_.
-Please note that the docker setup is community provided and not officially
+this guide. If you prefer working with Docker, there is a `Docker setup`_.
+Please note that the Docker setup is community provided and not officially
 supported.
 
-Step 0: Prerequisites
----------------------
+Step 0: Requirements
+--------------------
 
-Please set up the following systems beforehand. We can’t go into their use
-and configuration here, but please have a look at the linked pages.
+To install pretalx, you will need to provide the following dependencies:
 
 * **Python 3.10 or newer**
-* An SMTP server to send out mails
-* An HTTP reverse proxy like nginx to allow HTTPS connections and serve
+* Access to an SMTP server to send out mails
+* A periodic task runner like ``cron``
+* A database: pretalx supports `PostgreSQL`_ 14+ and SQLite 3. For production
+  setups, we highly recommend using PostgreSQL.
+* A reverse proxy like nginx to allow HTTPS connections and serve
   files from the filesystem
-* A database server: `PostgreSQL`_ 14+, or SQLite 3. Given the choice, we’d
-  recommend to use PostgreSQL.
-* A `redis`_ server, if you want to use pretalx with an asynchronous task
-  runner or improved caching.
+* A `redis`_ server. You can technically run pretalx without it, but you will
+  experience major performance problems, as redis is used for caching and to
+  run asynchronous tasks.
 * `nodejs`_ and npm (usually bundled with nodejs). You’ll need a `supported
   version of nodejs`_.
 
@@ -46,31 +48,31 @@ with non-ASCII file names. You can check this by running::
 Step 1: Unix user
 -----------------
 
-.. hint:: All code lines prepended with a ``#`` symbol are commands that you
-          need to execute on your server as the ``root`` user (e.g. using
-          ``sudo``); you should run all lines prepended with a ``$`` symbol as
-          the ``pretalx`` user. If the prompt reads ``(env)$``, your virtual
-          Python environment should be active.
-
 As we do not want to run pretalx as root, we first create a new unprivileged user::
 
     # adduser pretalx --disabled-password --home /var/pretalx
 
+In this guide, all code lines prepended with a ``#`` symbol are commands that
+you need to execute on your server as the ``root`` user (e.g. using ``sudo``);
+you should run all lines prepended with a ``$`` symbol as the ``pretalx`` user.
+If the prompt reads ``(env)$``, your virtual Python environment should be
+active.
 
 Step 2: Database setup
 ----------------------
 
 pretalx runs with PostgreSQL or SQLite. If you’re using SQLite, you can skip
-this step, as there is no need to set up the database.
+this step, as there is no need to set up the database – but we highly recommend
+that you use PostgreSQL for any production setup.
 
-We recommend using PostgreSQL. This is how you can set up a database for your
-pretalx installation – if you do not use PostgreSQL, please refer to the
-appropriate documentation on how to set up a database::
+You will need a database and a user with full access to it. You can set them
+up like this, for example::
 
   # sudo -u postgres createuser pretalx -P
   # sudo -u postgres createdb -O pretalx pretalx
 
-Make sure that your database encoding is UTF-8. You can check with this command::
+Make sure that your database encoding is UTF-8. You can check with the
+following command::
 
   # sudo -u postgres psql -c 'SHOW SERVER_ENCODING'
 
@@ -78,7 +80,7 @@ Make sure that your database encoding is UTF-8. You can check with this command:
 Step 3: Package dependencies
 ----------------------------
 
-Besides the packages above, you might need local system packages to build and
+Besides the packages above, you will need local system packages to build and
 run pretalx. We cannot maintain an up-to-date dependency list for all Linux
 flavours – on Ubuntu-like systems, you will need packages like:
 
@@ -113,11 +115,14 @@ options above are only the ones you’ll likely need to get started.
 Step 5: Installation
 --------------------
 
-For your Python installation, you’ll want to use a virtual environment to
-isolate the installation from system packages. Set up your virtual environment
-like this – you’ll only have to run this command once (that is, only once per
-Python version – when you upgrade from Python 3.13 to 3.14, you’ll need to
-remove the old ``venv`` directory and create it again the same way)::
+Now we will install pretalx itself – make sure to run the following steps
+as the ``pretalx`` user.
+
+Before we actually install pretix, we will create a virtual environment to
+isolate the python packages from your global Python installation. You only have
+to run the following command once, but when your Python version changes (e.g.
+because you upgraded from Python 3.13 to 3.14), you will need to remove the old
+``venv`` directory and create it again the same way::
 
     $ python3 -m venv /var/pretalx/venv
 
@@ -129,37 +134,31 @@ per session whenever you’re interacting with ``python``, ``pip`` or
 
 Now, upgrade your pip and then install the required Python packages::
 
-    (venv)$ pip install -U pip setuptools wheel gunicorn
+    (venv)$ python -m pip install -U pip setuptools wheel gunicorn
 
-.. note:: You may need to replace all following mentions of ``pip`` with ``pip3``.
-
-+-----------------+------------------------------------------------------------------------+
-| Database        | Command                                                                |
-+=================+========================================================================+
-| SQLite          | ``pip install --upgrade-strategy eager -U pretalx``                    |
-+-----------------+------------------------------------------------------------------------+
-| PostgreSQL      | ``pip install --upgrade-strategy eager -U "pretalx[postgres]"``        |
-+-----------------+------------------------------------------------------------------------+
++-----------------+---------------------------------------------------------------------------+
+| Database        | Command                                                                   |
++=================+===========================================================================+
+| SQLite          | ``python -m pip install --upgrade-strategy eager -U pretalx``             |
++-----------------+---------------------------------------------------------------------------+
+| PostgreSQL      | ``python -m pip install --upgrade-strategy eager -U "pretalx[postgres]"`` |
++-----------------+---------------------------------------------------------------------------+
 
 If you intend to run pretalx with asynchronous task runners or with redis as
 cache server, you can add ``[redis]`` to the installation command, which will
 pull in the appropriate dependencies. Please note that you should also use
 ``pretalx[redis]`` when you upgrade pretalx in this case.
 
-We also need to create a data directory::
-
-    $ mkdir -p /var/pretalx/data/media
-
-Finally, check that your configuration is ready for production::
+Next, check that your configuration is ready for production::
 
     (venv)$ python -m pretalx check --deploy
 
-We compile static files and translation data and create the database structure::
+Now compile static files and translation data and create the database structure::
 
     (venv)$ python -m pretalx migrate
     (venv)$ python -m pretalx rebuild
 
-Now, create a user with administrator rights, an organiser and a team by running::
+Finally, create a user with administrator rights, an organiser and a team by running::
 
     (venv)$ python -m pretalx init
 
@@ -219,45 +218,8 @@ You can now run the following commands to enable and start the services::
     # systemctl enable pretalx-web pretalx-worker
     # systemctl start pretalx-web pretalx-worker
 
-Step 7: Reverse proxy
----------------------
 
-You’ll need to set up an HTTP reverse proxy to handle HTTPS connections. It
-does not particularly matter which one you use, as long as you make sure to use
-`strong encryption settings`_. Your proxy should
-
-* serve all requests exclusively over HTTPS,
-* follow established security practices regarding protocols and ciphers.
-* optionally set best-practice headers like ``Referrer-Policy`` and
-  ``X-Content-Type-Options``,
-* set the ``X-Forwarded-For`` and ``X-Forwarded-Proto`` headers,
-* set the ``Host`` header,
-* serve all requests for the ``/static/`` and ``/media/`` paths from the
-  directories you set up in the previous step, without permitting directory
-  listings or traversal. Files in the ``/media/`` directory should be served
-  as attachments. You can use fairly aggressive cache settings for these URLs, and
-* pass all other requests to the gunicorn server you set up in the previous step.
-
-
-Step 8: Check the installation
--------------------------------
-
-You can make sure the web interface is up and look for any issues with::
-
-    # journalctl -u pretalx-web
-
-If you use Celery, you can do the same for the worker processes (for example in
-case the emails are not sent)::
-
-    # journalctl -u pretalx-worker
-
-If you’re looking for errors, check the pretalx log. You can find the logging
-directory in the start-up output.
-
-Once pretalx is up and running, you can also find up to date administrator information
-at https://pretalx.yourdomain.com/orga/admin/.
-
-Step 9: Provide periodic tasks
+Step 7: Provide periodic tasks
 ------------------------------
 
 There are a couple of things in pretalx that should be run periodically. It
@@ -276,17 +238,54 @@ You could for example configure the ``pretalx`` user cron like this::
 
   */10 * * * * /var/pretalx/venv/bin/python -m pretalx runperiodic
 
+
+Step 8: Reverse proxy
+---------------------
+
+You’ll need to set up an HTTP reverse proxy to handle HTTPS connections. It
+does not particularly matter which one you use, as long as you make sure to use
+`strong encryption settings`_. Your proxy should
+
+* serve all requests exclusively over HTTPS,
+* follow established security practices regarding protocols and ciphers,
+* optionally set best-practice headers like ``Referrer-Policy`` and
+  ``X-Content-Type-Options``,
+* set the ``X-Forwarded-For`` and ``X-Forwarded-Proto`` headers,
+* set the ``Host`` header,
+* serve all requests for the ``/static/`` and ``/media/`` paths from the
+  directories you set up in the previous step, without permitting directory
+  listings or traversal. Files in the ``/media/`` directory should be served
+  as attachments. You can use fairly aggressive cache settings for these URLs, and
+* pass all other requests to the gunicorn server you set up in the previous step.
+
+
+Step 9: Check the installation
+-------------------------------
+
+You can make sure the web interface is up and look for any issues with::
+
+    # journalctl -u pretalx-web
+
+If you use Celery, you can do the same for the worker processes (for example in
+case the emails are not sent)::
+
+    # journalctl -u pretalx-worker
+
+If you’re looking for errors, check the pretalx log. You can find the logging
+directory in the start-up output.
+
+Once pretalx is up and running, you can also find up to date administrator information
+at https://pretalx.example.org/orga/admin/.
+
 Next Steps
 ----------
 
 You made it! You should now be able to reach pretalx at
-https://pretalx.yourdomain.com/orga/ Log in with the administrator account you
+https://pretalx.example.org/orga/ Log in with the administrator account you
 configured above, and create your first event!
 
-Check out :ref:`configure` for details on the available configuration options.
-
-If you want to read about updates, backups, and monitoring, head over to our
-:ref:`maintenance` documentation!
+Check out :ref:`configure` for details on the available configuration options,
+and read the :ref:`maintenance` documentation!
 
 .. _Ansible role: https://github.com/pretalx/ansible-pretalx
 .. _Let’s Encrypt: https://letsencrypt.org/
@@ -294,7 +293,7 @@ If you want to read about updates, backups, and monitoring, head over to our
 .. _redis: https://redis.io/docs/latest/
 .. _ufw: https://en.wikipedia.org/wiki/Uncomplicated_Firewall
 .. _strong encryption settings: https://mozilla.github.io/server-side-tls/ssl-config-generator/
-.. _docker-compose setup: https://github.com/pretalx/pretalx-docker
+.. _Docker setup: https://github.com/pretalx/pretalx-docker
 .. _pretalx.com: https://pretalx.com/p/about/
 .. _nodejs: https://github.com/nodesource/distributions/blob/master/README.md
 .. _supported version of nodejs: https://nodejs.org/en/about/previous-releases

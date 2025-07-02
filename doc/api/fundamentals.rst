@@ -175,7 +175,7 @@ of:
 
     {
         "count": 117,
-        "next": "https://pretalx.yourdomain.com/api/v1/organisers/?page=2",
+        "next": "https://pretalx.example.org/api/v1/organisers/?page=2",
         "previous": null,
         "results": []
     }
