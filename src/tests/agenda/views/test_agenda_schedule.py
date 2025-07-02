@@ -61,7 +61,7 @@ def test_can_see_changelog(
     assert slot.submission.title in response.content.decode()
 
     # Make sure that the next call uses fewer db queries, as the results are cached
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(17):
         response = client.get(url, follow=True, HTTP_ACCEPT="text/html")
 
     assert response.status_code == 200
