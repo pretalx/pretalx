@@ -76,7 +76,7 @@ class EventPermissionMiddleware:
                 try:
                     queryset = Event.objects.prefetch_related(
                         "submissions", "extra_links", "schedules"
-                    ).select_related("organiser")
+                    ).select_related("organiser", "cfp")
                     latest_schedule_subquery = (
                         Schedule.objects.filter(
                             event=OuterRef("pk"), published__isnull=False
