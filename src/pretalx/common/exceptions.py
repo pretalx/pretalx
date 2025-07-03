@@ -99,6 +99,12 @@ class PretalxCeleryExceptionReporter(PretalxExceptionReporter):
 class PretalxAdminEmailHandler(AdminEmailHandler):
     reporter_class = PretalxExceptionReporter
 
+    def format_subject(self, subject):
+        subject = super().format_subject(subject)
+        if subject.startswith(settings.EMAIL_SUBJECT_PREFIX):
+            subject = subject[len(settings.EMAIL_SUBJECT_PREFIX) :]
+        return subject
+
     def emit(self, record):  # pragma: no cover
         request = getattr(record, "request", None)
         if request and request.path == "/500":
