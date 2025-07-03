@@ -25,6 +25,7 @@ from django_scopes import scopes_disabled
 from rest_framework.authtoken.models import Token
 from rules.contrib.models import RulesModelBase, RulesModelMixin
 
+from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.image import create_thumbnail
 from pretalx.common.models import TIMEZONE_CHOICES
 from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode
@@ -344,7 +345,7 @@ class User(
                 or self.teams.count()
                 or self.answers.count()
             ):
-                raise Exception(
+                raise UserDeletionError(
                     f"Cannot delete user <{self.email}> because they have submissions, answers, or teams. Please deactivate this user instead."
                 )
             self.logged_actions().delete()

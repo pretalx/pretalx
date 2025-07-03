@@ -13,6 +13,7 @@ from django_context_decorator import context
 from django_scopes import scopes_disabled
 
 from pretalx.celery_app import app
+from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.image import gravatar_csp
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.phrases import phrases
@@ -180,7 +181,7 @@ class AdminUserDelete(ActionConfirmMixin, AdminUserDetail):
         user = self.get_object()
         try:
             user.shred()
-        except Exception:
+        except UserDeletionError:
             user.deactivate()
         messages.success(request, _("The user has been deleted."))
         return redirect(self.get_success_url())

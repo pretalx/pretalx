@@ -12,6 +12,10 @@ class SubmissionError(Exception):
     pass
 
 
+class UserDeletionError(Exception):
+    pass
+
+
 class PretalxExceptionReporter(ExceptionReporter):
 
     def get_traceback_text(self):  # pragma: no cover
