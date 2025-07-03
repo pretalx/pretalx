@@ -1,3 +1,5 @@
+from django_scopes import scope
+
 from pretalx.celery_app import app
 
 
@@ -7,4 +9,5 @@ def task_update_unreleased_schedule_changes(event=None, value=None):
     from pretalx.schedule.services import update_unreleased_schedule_changes
 
     event = Event.objects.get(slug=event)
-    update_unreleased_schedule_changes(event=event, value=value)
+    with scope(event=event):
+        update_unreleased_schedule_changes(event=event, value=value)
