@@ -86,7 +86,8 @@ class SpeakerView(PermissionRequired, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        answers = self.profile.user.answers.filter(
+        speaker = self.profile.user
+        answers = speaker.answers.filter(
             question__is_public=True,
             question__event=self.request.event,
             question__target=QuestionTarget.SPEAKER,
@@ -100,17 +101,11 @@ class SpeakerView(PermissionRequired, TemplateView):
                 long_answers.append(answer)
         context["short_answers"] = short_answers
         context["long_answers"] = long_answers
+        context["show_avatar"] = (
+            speaker.avatar_url and self.request.event.cfp.request_avatar
+        )
+        context["show_sidebar"] = context["show_avatar"] or len(short_answers)
         return context
-
-    @context
-    @cached_property
-    def show_avatar(self):
-        return self.profile.user.avatar_url and self.request.event.cfp.request_avatar
-
-    @context
-    @cached_property
-    def show_sidebar(self):
-        return self.show_avatar or len(self.short_answers) or len(self.long_answers)
 
 
 class SpeakerRedirect(DetailView):
