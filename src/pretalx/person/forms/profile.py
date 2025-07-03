@@ -1,5 +1,4 @@
 from django import forms
-from django.contrib.auth.hashers import check_password
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q
 from django.utils.functional import cached_property
@@ -8,12 +7,7 @@ from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceFie
 from i18nfield.forms import I18nModelForm
 
 from pretalx.cfp.forms.cfp import CfPFormMixin
-from pretalx.common.forms.fields import (
-    ImageField,
-    NewPasswordConfirmationField,
-    NewPasswordField,
-    SizeFileField,
-)
+from pretalx.common.forms.fields import ImageField, SizeFileField
 from pretalx.common.forms.mixins import (
     I18nHelpText,
     PublicContent,
@@ -175,59 +169,6 @@ class OrgaProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ("name", "locale")
-
-
-class LoginInfoForm(forms.ModelForm):
-    error_messages = {
-        "pw_current_wrong": _("The current password you entered was not correct.")
-    }
-
-    old_password = forms.CharField(
-        widget=forms.PasswordInput, label=_("Password (current)"), required=True
-    )
-    password = NewPasswordField(label=phrases.base.new_password, required=False)
-    password_repeat = NewPasswordConfirmationField(
-        label=phrases.base.password_repeat, required=False, confirm_with="password"
-    )
-
-    def clean_old_password(self):
-        old_pw = self.cleaned_data.get("old_password")
-        if not check_password(old_pw, self.user.password):
-            raise forms.ValidationError(
-                self.error_messages["pw_current_wrong"], code="pw_current_wrong"
-            )
-        return old_pw
-
-    def clean_email(self):
-        email = self.cleaned_data.get("email")
-        if User.objects.exclude(pk=self.user.pk).filter(email__iexact=email):
-            raise ValidationError(get_email_address_error())
-        return email
-
-    def clean(self):
-        data = super().clean()
-        password = self.cleaned_data.get("password")
-        if password and password != self.cleaned_data.get("password_repeat"):
-            self.add_error(
-                "password_repeat", ValidationError(phrases.base.passwords_differ)
-            )
-        return data
-
-    def __init__(self, user, *args, **kwargs):
-        self.user = user
-        kwargs["instance"] = user
-        super().__init__(*args, **kwargs)
-
-    def save(self):
-        if "email" in self.changed_data:
-            self.user.change_email(self.cleaned_data.get("email"))
-        password = self.cleaned_data.get("password")
-        if password:
-            self.user.change_password(password)
-
-    class Meta:
-        model = User
-        fields = ("email",)
 
 
 class SpeakerInformationForm(I18nHelpText, I18nModelForm):
