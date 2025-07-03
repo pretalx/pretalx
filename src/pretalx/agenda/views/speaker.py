@@ -75,32 +75,32 @@ class SpeakerView(PermissionRequired, TemplateView):
             self.request.event.current_schedule.talks.filter(
                 submission__speakers__code=self.kwargs["code"], is_visible=True
             )
-            .select_related("submission", "room", "submission__event")
+            .select_related(
+                "submission", "room", "submission__event", "submission__track"
+            )
             .prefetch_related("submission__speakers")
         )
 
     def get_permission_object(self):
         return self.profile
 
-    @context
-    @cached_property
-    def short_answers(self):
-        return self.profile.user.answers.filter(
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        answers = self.profile.user.answers.filter(
             question__is_public=True,
             question__event=self.request.event,
             question__target=QuestionTarget.SPEAKER,
-            question__variant__in=QuestionVariant.short_answers,
         ).select_related("question")
-
-    @context
-    @cached_property
-    def long_answers(self):
-        return self.profile.user.answers.filter(
-            question__is_public=True,
-            question__event=self.request.event,
-            question__target=QuestionTarget.SPEAKER,
-            question__variant__in=QuestionVariant.long_answers,
-        ).select_related("question")
+        short_answers = []
+        long_answers = []
+        for answer in answers:
+            if answer.question.variant in QuestionVariant.short_answers:
+                short_answers.append(answer)
+            else:
+                long_answers.append(answer)
+        context["short_answers"] = short_answers
+        context["long_answers"] = long_answers
+        return context
 
     @context
     @cached_property
