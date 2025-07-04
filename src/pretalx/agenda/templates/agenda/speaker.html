@@ -50,8 +50,7 @@
                             <section class="answers">
                                 {% for answer in short_answers %}
                                     <div class="inline-answer">
-                                        <span class="question"><strong>{{ answer.question.question }}</strong>:</span>
-                                        <span class="answer">{% include "common/question_answer.html" with answer=answer %}</span>
+                                        {% include "common/answer_block.html" with answer=answer %}
                                     </div>
                                 {% endfor %}
                             </section>

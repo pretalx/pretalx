@@ -10,7 +10,9 @@
     {% endif %}
 {% elif answer.question.variant == "boolean" %}
     {{ answer.boolean_answer|yesno }}
-{% elif answer %}
+{% elif answer.question.variant == "url" %}
+    <a href="{{ answer.answer }}">{{ answer.question.question }}</a>
+{% elif answer and answer.answer %}
     {{ answer.answer|rich_text }}
 {% else %}
     {% translate "No response" %}

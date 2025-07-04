@@ -975,6 +975,9 @@ pl-0 {
     }
   }
   .inline-answer {
+    .question {
+      font-weight: bold;
+    }
     .answer p {
       display: inline;
     }
