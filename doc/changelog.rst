@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`schedule` Short speaker answers (numbers, short texts, links) are now shown in a sidebar below the speaker profile picture.
 - :feature:`admin` Emails that pretalx sends to you containing error logs are now prefixed with ``[pretalx]`` rather than ``[Django]``.
 - :feature:`orga:schedule,958` When you have unreleased schedule changes, there is now an indicator in the sidebar.
 - :feature:`admin` pretalx now provides an endpoint at ``/healthcheck/``, which will return either an empty ``HTTP 200`` or an ``HTTP 5xx`` response, intended for uptime monitoring.
