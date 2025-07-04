@@ -1,5 +1,6 @@
 {% load i18n %}
 {% load rich_text %}
+{% load safelink %}
 
 {% if answer.question.variant == "file" %}
     <i class="fa fa-file-o"></i>
@@ -11,7 +12,7 @@
 {% elif answer.question.variant == "boolean" %}
     {{ answer.boolean_answer|yesno }}
 {% elif answer.question.variant == "url" %}
-    <a href="{{ answer.answer }}">{{ answer.question.question }}</a>
+    <a href="{% safelink answer.answer %}">{{ answer.question.question }}</a>
 {% elif answer and answer.answer %}
     {{ answer.answer|rich_text }}
 {% else %}

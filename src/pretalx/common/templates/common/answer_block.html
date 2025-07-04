@@ -1,6 +1,8 @@
+{% load safelink %}
+
 {% if answer.question.variant == "url" %}
   <span class="question">
-    <a href="{{ answer.answer }}">{{ answer.question.question }}</a>
+    <a href="{% safelink answer.answer %}">{{ answer.question.question }}</a>
   </span>
 {% else %}
   <span class="question">{{ answer.question.question }}:</span>
