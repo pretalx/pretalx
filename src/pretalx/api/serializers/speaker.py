@@ -47,10 +47,14 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     @extend_schema_field(list[int])
     def get_answers(self, obj):
         questions = self.context.get("questions", [])
-        qs = obj.answers.filter(
-            question__in=questions,
-            question__event=self.event,
-            question__target=QuestionTarget.SPEAKER,
+        qs = (
+            obj.answers.filter(
+                question__in=questions,
+                question__event=self.event,
+                question__target=QuestionTarget.SPEAKER,
+            )
+            .select_related("question")
+            .order_by("question__position")
         )
         if serializer := self.get_extra_flex_field("answers", qs):
             return serializer.data

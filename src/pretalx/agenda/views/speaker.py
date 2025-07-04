@@ -87,11 +87,15 @@ class SpeakerView(PermissionRequired, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         speaker = self.profile.user
-        answers = speaker.answers.filter(
-            question__is_public=True,
-            question__event=self.request.event,
-            question__target=QuestionTarget.SPEAKER,
-        ).select_related("question")
+        answers = (
+            speaker.answers.filter(
+                question__is_public=True,
+                question__event=self.request.event,
+                question__target=QuestionTarget.SPEAKER,
+            )
+            .select_related("question")
+            .order_by("question__position")
+        )
         short_answers = []
         long_answers = []
         for answer in answers:
