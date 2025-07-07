@@ -11,6 +11,7 @@
     {% compress js %}
         <script defer src="{% static "orga/js/reviewAssignment.js" %}"></script>
     {% endcompress %}
+    {{ review_mapping|json_script:"review-mapping" }}
     <h2>{% translate "Assign reviewers" %}</h2>
 
     {% include "orga/includes/tablist.html" %}

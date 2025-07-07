@@ -30,6 +30,7 @@ from pretalx.orga.forms.review import (
 )
 from pretalx.orga.forms.submission import SubmissionStateChangeForm
 from pretalx.orga.views.submission import BaseSubmissionList
+from pretalx.person.models import User
 from pretalx.submission.forms import QuestionsForm, SubmissionFilterForm
 from pretalx.submission.models import Review, Submission, SubmissionStates
 from pretalx.submission.rules import (
@@ -773,6 +774,50 @@ class ReviewAssignment(EventPermissionRequired, FormView):
             "individual": _("Assign reviewers individually"),
         }
 
+    @context
+    @cached_property
+    def review_mapping(self):
+        reviews = Review.objects.filter(
+            submission__event=self.request.event
+        ).values_list("user_id", "submission_id")
+        assignments = Submission.assigned_reviewers.through.objects.filter(
+            submission__event=self.request.event
+        ).values_list("submission_id", "user_id")
+
+        reviewer_to_submissions = defaultdict(list)
+        submission_to_reviewers = defaultdict(list)
+        reviewer_to_assigned_submissions = defaultdict(list)
+        submission_to_assigned_reviewers = defaultdict(list)
+
+        for user_id, submission_id in reviews:
+            reviewer_to_submissions[user_id].append(submission_id)
+            submission_to_reviewers[submission_id].append(user_id)
+
+        for submission_id, reviewer_id in assignments:
+            submission_to_assigned_reviewers[submission_id].append(reviewer_id)
+            reviewer_to_assigned_submissions[reviewer_id].append(submission_id)
+
+        submission_code_to_id = dict(
+            self.request.event.submissions.all().values_list("code", "id")
+        )
+
+        reviewer_code_to_id = dict(
+            User.objects.filter(
+                teams__in=self.request.event.teams.filter(is_reviewer=True)
+            )
+            .distinct()
+            .values_list("code", "id")
+        )
+
+        return {
+            "reviewer_to_submissions": reviewer_to_submissions,
+            "submission_to_reviewers": submission_to_reviewers,
+            "reviewer_to_assigned_submissions": reviewer_to_assigned_submissions,
+            "submission_to_assigned_reviewers": submission_to_assigned_reviewers,
+            "submission_code_to_id": submission_code_to_id,
+            "reviewer_code_to_id": reviewer_code_to_id,
+        }
+
     def get_form(self):
         if self.form_type == "submission":
             form_class = ReviewerForProposalForm
@@ -783,6 +828,7 @@ class ReviewAssignment(EventPermissionRequired, FormView):
             files=self.request.FILES if self.request.method == "POST" else None,
             event=self.request.event,
             prefix=self.form_type,
+            review_mapping=self.review_mapping,
         )
 
     def form_valid(self, form):

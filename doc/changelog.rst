@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`orga:review` In the review assignment form, you can now see which proposal was already reviewed by which reviewers.
 - :feature:`schedule` Short speaker answers (numbers, short texts, links) are now shown in a sidebar below the speaker profile picture.
 - :feature:`admin` Emails that pretalx sends to you containing error logs are now prefixed with ``[pretalx]`` rather than ``[Django]``.
 - :feature:`orga:schedule,958` When you have unreleased schedule changes, there is now an indicator in the sidebar.
