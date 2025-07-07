@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-06-12 14:01+0000\n"
-"PO-Revision-Date: 2025-06-03 17:35+0000\n"
+"PO-Revision-Date: 2025-06-28 11:13+0000\n"
 "Last-Translator: Vasil Kolew <vasil@ludost.net>\n"
 "Language-Team: none\n"
 "Language: bg\n"
@@ -1190,10 +1190,8 @@ msgid "The invitation to the review team was sent."
 msgstr "Поканата до рецензиращия екип беше изпратена."
 
 #: pretalx/common/log_display.py:67
-#, fuzzy
-#| msgid "The team was removed."
 msgid "A team member was removed"
-msgstr "Екипът е изтрит."
+msgstr "Член на екипа е изтрит"
 
 #: pretalx/common/log_display.py:68
 msgid "An email was created."
@@ -1268,16 +1266,12 @@ msgid "A new room was added."
 msgstr "Добавена нова стая."
 
 #: pretalx/common/log_display.py:86
-#, fuzzy
-#| msgid "A track was modified."
 msgid "A room was modified."
-msgstr "Променен е поток."
+msgstr "Променен е зала."
 
 #: pretalx/common/log_display.py:87
-#, fuzzy
-#| msgid "A track was deleted."
 msgid "A room was deleted."
-msgstr "Изтрит е поток."
+msgstr "Изтрит е зала."
 
 #: pretalx/common/log_display.py:88
 msgid "A new schedule version was released."
@@ -1320,22 +1314,16 @@ msgid "A proposal resource was modified."
 msgstr "Променен е ресурс към предложение."
 
 #: pretalx/common/log_display.py:98
-#, fuzzy
-#| msgid "A track was deleted."
 msgid "A review was deleted."
-msgstr "Изтрит е поток."
+msgstr "Изтрит е рецензия."
 
 #: pretalx/common/log_display.py:99
-#, fuzzy
-#| msgid "An email was modified."
 msgid "A review was modified."
-msgstr "Беше променено писмо."
+msgstr "Беше променена рецензия."
 
 #: pretalx/common/log_display.py:100
-#, fuzzy
-#| msgid "A track was added."
 msgid "A review was added."
-msgstr "Добавен е поток."
+msgstr "Добавен е рецензия."
 
 #: pretalx/common/log_display.py:101
 msgid "A speaker was added to the proposal."
@@ -1430,38 +1418,28 @@ msgid "A speaker has been marked as not arrived."
 msgstr "Лектор беше маркиран като непристигнал."
 
 #: pretalx/common/log_display.py:124
-#, fuzzy
-#| msgid "Speaker information note"
 msgid "A speaker information note was added."
-msgstr "Бележка с информация за лектора"
+msgstr "Бележка с информация за лектора беше добавена."
 
 #: pretalx/common/log_display.py:125
-#, fuzzy
-#| msgid "Speaker information note"
 msgid "A speaker information note was modified."
-msgstr "Бележка с информация за лектора"
+msgstr "Бележка с информация за лектора беше променена."
 
 #: pretalx/common/log_display.py:126
-#, fuzzy
-#| msgid "Speaker information note"
 msgid "A speaker information note was deleted."
-msgstr "Бележка с информация за лектора"
+msgstr "Бележка с информация за лектора беше изтрита."
 
 #: pretalx/common/log_display.py:127
 msgid "The API token was reset."
 msgstr "API токенът е променен."
 
 #: pretalx/common/log_display.py:128 pretalx/orga/views/person.py:94
-#, fuzzy
-#| msgid "The API token was reset."
 msgid "The API token was revoked."
-msgstr "API токенът е променен."
+msgstr "API токенът е отменен."
 
 #: pretalx/common/log_display.py:130
-#, fuzzy
-#| msgid "The API token was reset."
 msgid "The API token was upgraded to the latest version."
-msgstr "API токенът е променен."
+msgstr "API токенът беше обновен до последна версия."
 
 #: pretalx/common/log_display.py:133
 msgid "The password was modified."
@@ -1901,8 +1879,6 @@ msgstr ""
 "Моля, уверете се, че искате да изтриете точно това. Действието не е обратимо!"
 
 #: pretalx/common/text/phrases.py:61
-#, fuzzy
-#| msgid "The tag has been deleted."
 msgid "The item has been deleted."
 msgstr "Етикетът е изтрит."
 
@@ -2714,7 +2690,7 @@ msgstr "Потокът, в който предложението попада"
 
 #: pretalx/mail/context.py:225
 msgid "The session’s duration in minutes"
-msgstr "Продължителност на сесията в минути."
+msgstr "Продължителност на сесията в минути"
 
 #: pretalx/mail/context.py:232
 msgid ""
@@ -3799,10 +3775,6 @@ msgid "Data delimiter"
 msgstr "Разделител на данни"
 
 #: pretalx/orga/forms/export.py:31
-#, fuzzy
-#| msgid ""
-#| "How do you want to separate data within a single cell (for example, "
-#| "multiple speakers in one session)?"
 msgid ""
 "How do you want to separate data within a single cell (for example, multiple "
 "speakers in one session/multiple sessions for one speaker)?"
@@ -4048,10 +4020,8 @@ msgid "Resources provided by the speaker, either as links or as uploaded files"
 msgstr "Ресурси, подадени от лектора, били те връзки или качени файлове"
 
 #: pretalx/orga/forms/speaker.py:17
-#, fuzzy
-#| msgid "Reviewers can accept and reject proposals"
 msgid "Just speakers with accepted and confirmed proposals"
-msgstr "Рецензентите може да приемат и отхвърлят предложения"
+msgstr "Само лектори с приети и потвърдени предложения"
 
 #: pretalx/orga/forms/speaker.py:31
 msgid "Proposal IDs"
@@ -4508,10 +4478,8 @@ msgid "View event"
 msgstr "Преглед на събитие"
 
 #: pretalx/orga/templates/orga/base.html:128
-#, fuzzy
-#| msgid "Log in"
 msgid "Log out"
-msgstr "Влизане"
+msgstr "Изход от системата"
 
 #: pretalx/orga/templates/orga/base.html:137
 msgid "You’re using pretalx as a superuser. This is not recommended."
@@ -4806,8 +4774,6 @@ msgid "Responses"
 msgstr "О̀тговори"
 
 #: pretalx/orga/templates/orga/cfp/question/list.html:70
-#, fuzzy
-#| msgid "This field’s availability depends on a deadline."
 msgid "This field's availability depends on a deadline."
 msgstr "Наличието на полето зависи от крайния срок."
 
@@ -5401,12 +5367,6 @@ msgid "New custom template"
 msgstr "Нов персонализиран шаблон"
 
 #: pretalx/orga/templates/orga/mails/mailtemplate/list.html:25
-#, fuzzy
-#| msgid ""
-#| "You can edit the default templates and your custom templates for emails "
-#| "here. If you want to send emails to some or all of your speakers, head "
-#| "over to the “Send Emails” tab. Mails queued for sending are in the "
-#| "“Outbox” tab."
 msgid ""
 "You can edit the default templates and your custom templates for emails "
 "here. If you want to send emails to some or all of your speakers, head over "
@@ -5427,15 +5387,10 @@ msgstr ""
 "като започнете да редактирате шаблон."
 
 #: pretalx/orga/templates/orga/mails/mailtemplate/list.html:46
-#, fuzzy
-#| msgid "Templates"
 msgid "Template"
-msgstr "Шаблони"
+msgstr "Шаблон"
 
 #: pretalx/orga/templates/orga/mails/mailtemplate/list.html:47
-#, fuzzy
-#| msgctxt "email subject"
-#| msgid "Subject"
 msgid "Subject"
 msgstr "Тема"
 
@@ -6494,23 +6449,16 @@ msgid "Not arrived"
 msgstr "Не е пристигнал"
 
 #: pretalx/orga/templates/orga/speaker/speakerinformation/list.html:6
-#, fuzzy
-#| msgid "Speaker information"
 msgid "New speaker information"
-msgstr "Информация за лектора"
+msgstr "Информация за нов лектор"
 
 #: pretalx/orga/templates/orga/speaker/speakerinformation/list.html:23
-#, fuzzy
-#| msgid "Resources"
 msgid "Resource"
-msgstr "Ресурси"
+msgstr "Ресурс"
 
 #: pretalx/orga/templates/orga/speaker/speakerinformation/list.html:39
-#, fuzzy
-#| msgid "submitter"
-#| msgid_plural "submitters"
 msgid "All submitters"
-msgstr "предлагащ"
+msgstr "Всички предлагащи"
 
 #: pretalx/orga/templates/orga/speaker/speakerinformation/list.html:41
 #: pretalx/person/models/information.py:31
@@ -6523,16 +6471,12 @@ msgid "Only confirmed speakers"
 msgstr "Само потвърдилите лектори"
 
 #: pretalx/orga/templates/orga/speaker/speakerinformation/list.html:53
-#, fuzzy
-#| msgid "Use tracks"
 msgid "All tracks"
-msgstr "Организиране в потоци"
+msgstr "Всички потоци"
 
 #: pretalx/orga/templates/orga/speaker/speakerinformation/list.html:63
-#, fuzzy
-#| msgid "Session types"
 msgid "All session types"
-msgstr "Видове сесии"
+msgstr "Всички видове сесии"
 
 #: pretalx/orga/templates/orga/submission/anonymise.html:9
 #: pretalx/orga/templates/orga/submission/base.html:59
@@ -6803,29 +6747,20 @@ msgid "API Access"
 msgstr "API достъп"
 
 #: pretalx/orga/templates/orga/user.html:36
-#, fuzzy, python-format
-#| msgid ""
-#| "This token can be used to access the <a %(apiurl)s>pretalx API</a>. You "
-#| "can generate a new token, which will invalidate the old one. To find out "
-#| "more, please have a look at the <a %(docurl)s> API documentation</a>."
+#, python-format
 msgid ""
 "API tokens can be used to access the <a %(apiurl)s>pretalx API</a>. To find "
 "out more, please have a look at the <a %(docurl)s> API documentation</a>."
 msgstr ""
 "Този токен може да се използва за достъп до <a %(apiurl)s>pretalx API</a>. "
-"Може да генерирате нов токен, което ще анулира стария. За да разберете "
-"повече, моля, погледнете <a %(docurl)s> API документацията</a>."
+"За да разберете повече, моля, погледнете <a %(docurl)s> API "
+"документацията</a>."
 
 #: pretalx/orga/templates/orga/user.html:43
-#, fuzzy
-#| msgid "API Token"
 msgid "Your API tokens"
-msgstr "API токен"
+msgstr "Вашите API токени"
 
 #: pretalx/orga/templates/orga/user.html:48
-#, fuzzy
-#| msgctxt "Version of the conference schedule"
-#| msgid "Version"
 msgid "Version"
 msgstr "Версия"
 
@@ -6851,16 +6786,12 @@ msgid "Revoke"
 msgstr "Прекратяване"
 
 #: pretalx/orga/templates/orga/user.html:97
-#, fuzzy
-#| msgid "You don’t seem to have any proposals yet."
 msgid "You don't have any API tokens yet."
-msgstr "Все още нямате нито едно предложение."
+msgstr "Все още нямате нито един API токен."
 
 #: pretalx/orga/templates/orga/user.html:102
-#, fuzzy
-#| msgid "Create a new event"
 msgid "Create new token"
-msgstr "Създаване на ново събитие"
+msgstr "Създаване на нов токен"
 
 #: pretalx/orga/templates/orga/widgets/multi_languages_widget.html:8
 #, python-format
@@ -7246,16 +7177,12 @@ msgstr ""
 "няма да бъдат променени!"
 
 #: pretalx/orga/views/mails.py:559
-#, fuzzy
-#| msgid "Email template"
 msgid "New email template"
-msgstr "Шаблон за писма"
+msgstr "Нов шаблон за писма"
 
 #: pretalx/orga/views/mails.py:560
-#, fuzzy
-#| msgid "Email template"
 msgid "Email templates"
-msgstr "Шаблон за писма"
+msgstr "Шаблони за писма"
 
 #: pretalx/orga/views/organiser.py:96
 msgid "The invitation has been sent."
@@ -7312,28 +7239,20 @@ msgstr ""
 "възстановяване."
 
 #: pretalx/orga/views/organiser.py:351
-#, fuzzy
-#| msgid "The organiser {name} was deleted."
 msgid "The organiser and all related data have been deleted."
-msgstr "Организаторът {name} беше изтрит."
+msgstr "Организаторът и всички отнасящи се данни бяха изтрити."
 
 #: pretalx/orga/views/person.py:70
-#, fuzzy
-#| msgid ""
-#| "Your API token has been regenerated. The previous token will not be "
-#| "usable any longer."
 msgid ""
 "This is your new API token. Please make sure to save it, as it will not be "
 "shown again:"
 msgstr ""
-"Вашият API токен беше регенериран. Предишният вече няма да може да се "
-"използва."
+"Това е вашият нов API токен. Моля запазете го, понеже няма да бъде показван "
+"повече:"
 
 #: pretalx/orga/views/person.py:84
-#, fuzzy
-#| msgid "The event has been added."
 msgid "The API token has been upgraded."
-msgstr "Събитието беше добавено."
+msgstr "API токенът беше обновен."
 
 #: pretalx/orga/views/person.py:113
 msgid "You are now an administrator instead of a superuser."
@@ -7469,11 +7388,8 @@ msgid "There is or was a session scheduled in this room. It cannot be deleted."
 msgstr "Сега или преди има сесия в тази стая. Тя не може да бъде изтрита."
 
 #: pretalx/orga/views/speaker.py:286
-#, fuzzy
-#| msgid "Speaker Information Note"
-#| msgid_plural "Speaker Information Notes"
 msgid "Speaker Information Notes"
-msgstr "Бележа с информация за лектора"
+msgstr "Бележки с информация за лектора"
 
 #: pretalx/orga/views/submission.py:173
 msgid ""
@@ -7568,20 +7484,16 @@ msgid "Password (current)"
 msgstr "Парола (текуща)"
 
 #: pretalx/person/forms/auth_token.py:23
-#, fuzzy
-#| msgid "Send all"
 msgid "Read all endpoints"
-msgstr "Пращане на всичко"
+msgstr "Прочитане на всички крайни точки"
 
 #: pretalx/person/forms/auth_token.py:24
 msgid "Read and write all endpoints"
 msgstr "Четене и запис по всички входни точки"
 
 #: pretalx/person/forms/auth_token.py:25
-#, fuzzy
-#| msgid "Permissions"
 msgid "Customize permissions and endpoints"
-msgstr "Права̀"
+msgstr "Настройка на права и крайни точки"
 
 #: pretalx/person/forms/auth_token.py:27
 msgid "Choose a preset or configure detailed permissions below."
@@ -7653,11 +7565,8 @@ msgid "Expiry date"
 msgstr "Дата на изтичане"
 
 #: pretalx/person/models/auth_token.py:75
-#, fuzzy
-#| msgctxt "Version of the conference schedule"
-#| msgid "Version"
 msgid "API version"
-msgstr "Версия"
+msgstr "Версия на API"
 
 #: pretalx/person/models/information.py:41
 msgid "Leave empty to show this information to all tracks."
@@ -7684,6 +7593,8 @@ msgstr "Лекторът е пристигнал"
 #: pretalx/person/models/user.py:86
 msgid "Your username must not contain HTML or other markup."
 msgstr ""
+"Вашето потребителско име не трябва да съдържа HTML или други специални "
+"символи."
 
 #: pretalx/person/models/user.py:125
 msgid ""
