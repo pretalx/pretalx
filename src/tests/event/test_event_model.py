@@ -264,13 +264,13 @@ def test_event_create_review_phase(event):
 
 
 @pytest.mark.django_db
-def test_event_update_review_phase_keep_outdated_phase(event):
+def test_event_update_review_phase_do_not_keep_outdated_phase(event):
     with scope(event=event):
         event.review_phases.all().delete()
         active_phase = event.active_review_phase
         active_phase.end = now() - dt.timedelta(days=3)
         active_phase.save()
-        assert event.update_review_phase() == active_phase
+        assert event.update_review_phase() is None
 
 
 @pytest.mark.django_db

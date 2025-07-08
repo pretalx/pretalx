@@ -341,10 +341,7 @@ class EventReviewSettings(EventSettingsPermission, ActionFromUrl, FormView):
             # Now that everything is saved, check for overlapping review phases,
             # and show an error message if any exist. Raise an exception to
             # get out of the transaction.
-            self.request.event.reorder_review_phases()
-            review_phases = list(
-                self.request.event.review_phases.all().order_by("position")
-            )
+            review_phases = self.request.event.reorder_review_phases()
             for phase, next_phase in zip(review_phases, review_phases[1:]):
                 if not phase.end:
                     raise ValidationError(
