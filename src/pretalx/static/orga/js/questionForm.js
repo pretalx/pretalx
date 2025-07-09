@@ -1,5 +1,7 @@
 const question_page_toggle_view = () => {
     const variant = document.querySelector("#id_variant").value
+    const isPublic = document.querySelector("#id_is_public").checked
+
     setVisibility(
         "#answer-options",
         variant === "choices" || variant === "multiple_choice",
@@ -15,6 +17,7 @@ const question_page_toggle_view = () => {
     setVisibility("#limit-number", variant === "number")
     setVisibility("#limit-date", variant === "date")
     setVisibility("#limit-datetime", variant === "datetime")
+    setVisibility("#icon-field", variant === "url" && isPublic)
 }
 
 const question_page_toggle_target_view = () => {
@@ -75,6 +78,9 @@ onReady(() => {
         .forEach((e) =>
             e.addEventListener("change", question_page_toggle_deadline),
         )
+    document
+        .querySelector("#id_is_public")
+        .addEventListener("change", question_page_toggle_view)
     question_page_toggle_view()
     question_page_toggle_target_view()
     question_page_toggle_deadline()

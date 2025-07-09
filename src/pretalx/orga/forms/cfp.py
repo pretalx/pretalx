@@ -20,6 +20,7 @@ from pretalx.common.forms.widgets import (
     TextInputWithAddon,
 )
 from pretalx.common.text.phrases import phrases
+from pretalx.orga.forms.widgets import IconSelect
 from pretalx.submission.models import (
     AnswerOption,
     Question,
@@ -319,6 +320,7 @@ class QuestionForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
             "variant",
             "is_public",
             "is_visible_to_reviewers",
+            "icon",
             "tracks",
             "submission_types",
             "contains_personal_data",
@@ -341,6 +343,7 @@ class QuestionForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
             "max_date": HtmlDateInput,
             "tracks": EnhancedSelectMultiple,
             "submission_types": EnhancedSelectMultiple,
+            "icon": IconSelect,
         }
         field_classes = {
             "variant": SafeModelChoiceField,

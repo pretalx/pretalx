@@ -38,9 +38,10 @@
                 accepted. If you want to allow both options, do not make this field required.
             {% endblocktranslate %}
         </div>
-        {{ form.is_public.as_field_group }}
         {{ form.contains_personal_data.as_field_group }}
         <span id="is-visible-to-reviewers">{{ form.is_visible_to_reviewers.as_field_group }}</span>
+        {{ form.is_public.as_field_group }}
+        <span id="icon-field">{{ form.icon.as_field_group }}</span>
         <fieldset class="limit-submission">
             <legend id="limit">{% translate "Limit to specific proposals" %}</legend>
             {% if form.tracks %}

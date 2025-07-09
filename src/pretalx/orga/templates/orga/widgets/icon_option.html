@@ -1,0 +1,18 @@
+{% include "django/forms/widgets/input.html" %}
+{% load i18n %}
+
+<label {% if widget.attrs.id %}for="{{ widget.attrs.id }}"{% endif %} class="icon-option-label">
+    <div class="icon-preview" data-label="{{ widget.label }}">
+        {% if widget.value %}
+            <div class="icon-svg">
+                <img src="/api/static/icons/{{ widget.value }}/" alt="{{ widget.label }}" width="24" height="24">
+            </div>
+            <span class="icon-label">{{ widget.label }}</span>
+        {% else %}
+            <div class="icon-svg">
+                <i class="fa fa-ban" style="font-size: 24px; color: #6c757d;"></i>
+            </div>
+            <span class="icon-label">{% translate "No icon" %}</span>
+        {% endif %}
+    </div>
+</label>
