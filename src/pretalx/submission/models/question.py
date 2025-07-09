@@ -337,7 +337,9 @@ class Question(OrderedModel, PretalxModel):
     @cached_property
     def icon_url(self):
         if self.icon:
-            return reverse("api:static_icon", kwargs={"icon": self.icon})
+            return reverse(
+                "api:question-icon", kwargs={"event": self.event.slug, "pk": self.pk}
+            )
 
     class urls(EventUrls):
         base = "{self.event.cfp.urls.questions}{self.pk}/"

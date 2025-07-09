@@ -93,7 +93,6 @@ urlpatterns = [
         name="submission.favourite",
     ),
     path("upload/", upload.UploadView.as_view(), name="upload"),
-    path("static/icons/<str:icon>/", question.icon_view, name="static_icon"),
     path("events/<slug:event>/", include(event_router.urls)),
     path("organisers/<slug:organiser>/", include(organiser_router.urls)),
 ]

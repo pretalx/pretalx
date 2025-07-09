@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import exceptions, viewsets
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, AllowAny
 
 from pretalx.api.documentation import build_expand_docs, build_search_docs
@@ -79,6 +79,22 @@ class QuestionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
             raise exceptions.ValidationError(
                 "You cannot delete a question object that has answers."
             )
+
+    @action(
+        detail=True,
+        methods=["get"],
+        permission_classes=[AllowAny],
+        url_path="icon",
+    )
+    def icon(self, request, *args, **kwargs):
+        """
+        Returns the icon for this question as an SVG image if the question has an icon.
+        """
+        question = self.get_object()
+        if not question.icon or question.icon not in PLATFORM_ICONS:
+            return HttpResponse(status=404)
+
+        return HttpResponse(PLATFORM_ICONS[question.icon], content_type="image/svg+xml")
 
 
 @extend_schema_view(
@@ -236,16 +252,3 @@ class AnswerViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
             defaults={"answer": serializer.validated_data["answer"]},
         )
         return answer
-
-
-@api_view(["GET"])
-@permission_classes([AllowAny])
-def icon_view(request, icon):
-    """
-    Returns the requested icon as an SVG image. Currently only in use
-    for questions with publicly visible icons.
-    """
-    if icon not in PLATFORM_ICONS:
-        return HttpResponse(status=404)
-
-    return HttpResponse(PLATFORM_ICONS[icon], content_type="image/svg+xml")
