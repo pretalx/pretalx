@@ -981,6 +981,52 @@ pl-0 {
     .answer p {
       display: inline;
     }
+    &.icon-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+      justify-content: center;
+      .icon-link {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 8px;
+        &:last-child {
+          margin-right: 0;
+        }
+        a {
+          display: flex;
+          align-items: center;
+          text-decoration: none;
+          img {
+            margin-right: 4px;
+          }
+        }
+      }
+    }
+  }
+
+  .icon-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+    .icon-link {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 8px;
+      &:last-child {
+        margin-right: 0;
+      }
+      a {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        img {
+          margin-right: 4px;
+        }
+      }
+    }
   }
 }
 

@@ -98,17 +98,27 @@ class SpeakerView(PermissionRequired, TemplateView):
         )
         short_answers = []
         long_answers = []
+        icon_answers = []
         for answer in answers:
             if answer.question.variant in QuestionVariant.short_answers:
-                short_answers.append(answer)
+                if (
+                    answer.question.variant == QuestionVariant.URL
+                    and answer.question.icon
+                ):
+                    icon_answers.append(answer)
+                else:
+                    short_answers.append(answer)
             else:
                 long_answers.append(answer)
         context["short_answers"] = short_answers
         context["long_answers"] = long_answers
+        context["icon_answers"] = icon_answers
         context["show_avatar"] = (
             speaker.avatar_url and self.request.event.cfp.request_avatar
         )
-        context["show_sidebar"] = context["show_avatar"] or len(short_answers)
+        context["show_sidebar"] = (
+            context["show_avatar"] or len(short_answers) or len(icon_answers)
+        )
         return context
 
 

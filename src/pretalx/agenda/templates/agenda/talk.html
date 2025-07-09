@@ -118,13 +118,23 @@
                 <section class="description">
                     {{ submission.description|rich_text }}
                 </section>
-                {% if answers %}
+                {% if answers or icon_answers %}
                     <hr />
                     <section class="answers">
+                        {% if icon_answers %}
+                            <div class="icon-group">
+                                {% for answer in icon_answers %}
+                                    <span class="icon-link">
+                                        {% include "common/question_answer.html" with answer=answer %}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                         {% for answer in answers %}
                             <span class="question"><strong>{{ answer.question.question }}:</strong></span>
-                            <span class="answer {% if question.variant != "text" %}answer-strip-paragraph{% endif %}">{% include "common/question_answer.html" with answer=answer %}</span>
+                            <span class="answer {% if answer.question.variant != "text" %}answer-strip-paragraph{% endif %}">{% include "common/question_answer.html" with answer=answer %}</span>
                         {% endfor %}
+                    </section>
                 {% endif %}
             </section>
             {% if submission.active_resources %}

@@ -131,7 +131,33 @@ class TalkView(TalkMixin, TemplateView):
     @context
     @cached_property
     def answers(self):
-        return self.submission.public_answers
+        from pretalx.submission.models.question import QuestionVariant
+
+        all_answers = self.submission.public_answers
+        regular_answers = []
+        icon_answers = []
+
+        for answer in all_answers:
+            if answer.question.variant == QuestionVariant.URL and answer.question.icon:
+                icon_answers.append(answer)
+            else:
+                regular_answers.append(answer)
+
+        return regular_answers
+
+    @context
+    @cached_property
+    def icon_answers(self):
+        from pretalx.submission.models.question import QuestionVariant
+
+        all_answers = self.submission.public_answers
+        icon_answers = []
+
+        for answer in all_answers:
+            if answer.question.variant == QuestionVariant.URL and answer.question.icon:
+                icon_answers.append(answer)
+
+        return icon_answers
 
 
 class TalkReviewView(TalkView):

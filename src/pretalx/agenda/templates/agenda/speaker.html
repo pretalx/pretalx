@@ -45,9 +45,18 @@
                                 </a>
                             </div>
                         {% endif %}
-                        {% if short_answers %}
+                        {% if short_answers or icon_answers %}
                             {% if show_avatar %}<hr />{% endif %}
                             <section class="answers">
+                                {% if icon_answers %}
+                                    <div class="inline-answer icon-group">
+                                        {% for answer in icon_answers %}
+                                            <span class="icon-link">
+                                                {% include "common/answer_block.html" with answer=answer %}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                                 {% for answer in short_answers %}
                                     <div class="inline-answer">
                                         {% include "common/answer_block.html" with answer=answer %}

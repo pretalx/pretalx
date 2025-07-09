@@ -12,7 +12,13 @@
 {% elif answer.question.variant == "boolean" %}
     {{ answer.boolean_answer|yesno }}
 {% elif answer.question.variant == "url" %}
-    <a href="{% safelink answer.answer %}">{{ answer.question.question }}</a>
+    <a href="{% safelink answer.answer %}">
+        {% if answer.question.icon_url %}
+            <img src="{{ answer.question.icon_url }}" alt="{{ answer.question.question }}" width="16" height="16">
+        {% else %}
+            {{ answer.question.question }}
+        {% endif %}
+    </a>
 {% elif answer and answer.answer %}
     {{ answer.answer|rich_text }}
 {% else %}
