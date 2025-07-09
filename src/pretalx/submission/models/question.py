@@ -1,4 +1,5 @@
 from django.db import models
+from django.urls import reverse
 from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -86,6 +87,28 @@ class QuestionRequired(Choices):
         (OPTIONAL, _("always optional")),
         (REQUIRED, _("always required")),
         (AFTER_DEADLINE, _("required after a deadline")),
+    ]
+
+
+class QuestionIcon(Choices):
+    DISCORD = "discord"
+    GITHUB = "github"
+    INSTAGRAM = "instagram"
+    LINKEDIN = "linkedin"
+    MASTODON = "mastodon"
+    TWITTER = "twitter"
+    WEB = "web"
+    YOUTUBE = "youtube"
+
+    valid_choices = [
+        (DISCORD, _("Discord")),
+        (GITHUB, _("GitHub")),
+        (INSTAGRAM, _("Instagram")),
+        (LINKEDIN, _("LinkedIn")),
+        (MASTODON, _("Mastodon")),
+        (TWITTER, _("Twitter")),
+        (WEB, _("Website")),
+        (YOUTUBE, _("YouTube")),
     ]
 
 
@@ -272,6 +295,16 @@ class Question(OrderedModel, PretalxModel):
             "Should responses to this field be shown to reviewers? This is helpful if you want to collect personal information, but use anonymous reviews."
         ),
     )
+    icon = models.CharField(
+        max_length=QuestionIcon.get_max_length(),
+        choices=QuestionIcon.get_choices(),
+        null=True,
+        blank=True,
+        verbose_name=_("Icon"),
+        help_text=_(
+            "Custom URL fields that are shown publicly can use an icon when displaying the link."
+        ),
+    )
     objects = ScopedManager(event="event", _manager_class=QuestionManager)
     all_objects = ScopedManager(event="event", _manager_class=AllQuestionManager)
 
@@ -300,6 +333,11 @@ class Question(OrderedModel, PretalxModel):
     @property
     def read_only(self):
         return self.freeze_after and (self.freeze_after <= now())
+
+    @cached_property
+    def icon_url(self):
+        if self.icon:
+            return reverse("api:static_icon", kwargs={"icon": self.icon})
 
     class urls(EventUrls):
         base = "{self.event.cfp.urls.questions}{self.pk}/"
