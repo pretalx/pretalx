@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`schedule` Organisers can now configure icons for public custom fields of type URL. Responses to this custom field will be shown on the session or speaker page as a link with the selected icon. Available icons for now include GitHub, LinkedIn, Twitter, Mastodon, YouTube, Discord, Instagram, and a generic web icon. Happy to add more icons as needed, please request them on GitHub.
 - :feature:`orga:review` In the review assignment form, you can now see which proposal was already reviewed by which reviewers.
 - :feature:`schedule` Short speaker answers (numbers, short texts, links) are now shown in a sidebar below the speaker profile picture.
 - :feature:`admin` Emails that pretalx sends to you containing error logs are now prefixed with ``[pretalx]`` rather than ``[Django]``.
