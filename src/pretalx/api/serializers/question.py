@@ -89,6 +89,7 @@ class QuestionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             "max_date",
             "min_datetime",
             "max_datetime",
+            "icon",
         )
         expandable_fields = {
             "options": (

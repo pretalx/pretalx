@@ -1,9 +1,11 @@
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
+from django.http import HttpResponse
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import exceptions, viewsets
-from rest_framework.permissions import SAFE_METHODS
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import SAFE_METHODS, AllowAny
 
 from pretalx.api.documentation import build_expand_docs, build_search_docs
 from pretalx.api.mixins import PretalxViewSetMixin
@@ -15,6 +17,7 @@ from pretalx.api.serializers.question import (
     QuestionOrgaSerializer,
     QuestionSerializer,
 )
+from pretalx.submission.icons import PLATFORM_ICONS
 from pretalx.submission.models import Answer, AnswerOption, Question, QuestionVariant
 from pretalx.submission.rules import questions_for_user
 
@@ -233,3 +236,16 @@ class AnswerViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
             defaults={"answer": serializer.validated_data["answer"]},
         )
         return answer
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def icon_view(request, icon):
+    """
+    Returns the requested icon as an SVG image. Currently only in use
+    for questions with publicly visible icons.
+    """
+    if icon not in PLATFORM_ICONS:
+        return HttpResponse(status=404)
+
+    return HttpResponse(PLATFORM_ICONS[icon], content_type="image/svg+xml")
