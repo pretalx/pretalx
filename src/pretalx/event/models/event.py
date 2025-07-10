@@ -472,11 +472,11 @@ class Event(PretalxModel):
         """
         return ObjectRelatedCache(self, field="slug")
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, skip_initial_data=False, **kwargs):
         was_created = not bool(self.pk)
         super().save(*args, **kwargs)
 
-        if was_created:
+        if was_created and not skip_initial_data:
             self.build_initial_data()
 
     @property

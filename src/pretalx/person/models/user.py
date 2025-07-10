@@ -215,7 +215,7 @@ class User(
         """Returns a user's name or 'Unnamed user'."""
         return str(self)
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, skip_gravatar_processing=False, **kwargs):
         self.email = self.email.lower().strip()
         result = super().save(*args, **kwargs)
 
@@ -223,7 +223,7 @@ class User(
         update_gravatar = (
             not kwargs.get("update_fields") or "get_gravatar" in kwargs["update_fields"]
         )
-        if self.get_gravatar and update_gravatar:
+        if self.get_gravatar and update_gravatar and not skip_gravatar_processing:
             from pretalx.person.tasks import gravatar_cache
 
             gravatar_cache.apply_async(args=(self.pk,), ignore_result=True)
