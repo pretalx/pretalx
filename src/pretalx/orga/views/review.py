@@ -97,6 +97,8 @@ class ReviewDashboard(EventPermissionRequired, BaseSubmissionList):
                 "reviews__scores",
                 "tags",
                 "answers",
+                "answers__options",
+                "answers__question",
             )
         )
 
