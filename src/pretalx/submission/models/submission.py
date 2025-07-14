@@ -20,6 +20,7 @@ from pretalx.agenda.rules import (
     event_uses_feedback,
     is_agenda_submission_visible,
     is_agenda_visible,
+    is_submission_visible_via_schedule,
 )
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.models.choices import Choices
@@ -334,6 +335,7 @@ class Submission(GenerateCode, PretalxModel):
             "cancel": can_be_canceled & orga_can_change_submissions,
             "remove": can_be_removed & orga_can_change_submissions,
             "view_feedback_page": event_uses_feedback & is_agenda_submission_visible,
+            "view_scheduling_details": is_submission_visible_via_schedule,
             "view_feedback": is_speaker
             | has_reviewer_access
             | orga_can_change_submissions,

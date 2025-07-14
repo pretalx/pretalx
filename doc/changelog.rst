@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`schedule,1662` Featured sessions will now also have a public detail page, rather than just appearing in the featured list view. The page will however not link to related speakers and sessions.
 - :feature:`schedule` Organisers can now configure icons for public custom fields of type URL. Responses to this custom field will be shown on the session or speaker page as a link with the selected icon. Available icons for now include GitHub, LinkedIn, Twitter, Mastodon, YouTube, Discord, Instagram, and a generic web icon. Happy to add more icons as needed, please request them on GitHub.
 - :feature:`orga:review` In the review assignment form, you can now see which proposal was already reviewed by which reviewers.
 - :feature:`schedule` Short speaker answers (numbers, short texts, links) are now shown in a sidebar below the speaker profile picture.

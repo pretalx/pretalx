@@ -44,6 +44,18 @@ class TalkMixin(PermissionRequired):
     def get_permission_object(self):
         return self.submission
 
+    @context
+    @cached_property
+    def scheduling_information_visible(self):
+        return self.request.user.has_perm(
+            "submission.view_scheduling_details_submission", self.submission
+        )
+
+    @context
+    @cached_property
+    def hide_speaker_links(self):
+        return not self.scheduling_information_visible
+
 
 class TalkView(TalkMixin, TemplateView):
     template_name = "agenda/talk.html"
