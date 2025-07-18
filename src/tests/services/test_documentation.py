@@ -40,7 +40,12 @@ def test_documentation_includes_management_commands(app):
     # devserver is not relevant for administrators, and spectacular is a
     # third-party command for API doc generation that we only have as a
     # local command in order to wrap it in scopes_disabled()
-    excluded_commands = ("__init__.py", "devserver.py", "spectacular.py")
+    excluded_commands = (
+        "__init__.py",
+        "devserver.py",
+        "spectacular.py",
+        "update_translation_percentages.py",
+    )
     with suppress(ImportError):
         importlib.import_module(app + ".management.commands")
         path = base_dir / app.partition(".")[-1] / "management/commands"
