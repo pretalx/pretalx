@@ -344,25 +344,33 @@ FORMAT_MODULE_PATH = ["pretalx.common.formats"]
 
 LANGUAGE_CODE = config.get("locale", "language_code")
 LANGUAGE_COOKIE_NAME = "pretalx_language"
+
+# Load translation percentages from JSON file
+try:
+    import json
+
+    translation_percentages_path = LOCALE_PATHS[0] / "translation_percentages.json"
+    with open(translation_percentages_path) as f:
+        translation_percentages = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    translation_percentages = {}
+
 LANGUAGES_INFORMATION = {
     "en": {
         "name": _("English"),
         "natural_name": "English",
         "official": True,
-        "percentage": 100,
     },
     "de": {
         "name": _("German"),
         "natural_name": "Deutsch",
         "official": True,
-        "percentage": 100,
         "path": "de_DE",
     },
     "de-formal": {
         "name": _("German (formal)"),
         "natural_name": "Deutsch",
         "official": True,
-        "percentage": 100,
         "public_code": "de",
         "path": "de_Formal",
     },
@@ -370,99 +378,87 @@ LANGUAGES_INFORMATION = {
         "name": _("Arabic"),
         "natural_name": "اَلْعَرَبِيَّةُ",
         "official": False,
-        "percentage": 65,
     },
     "cs": {
         "name": _("Czech"),
         "natural_name": "Čeština",
         "official": False,
-        "percentage": 87,
     },
     "el": {
         "name": _("Greek"),
         "natural_name": "Ελληνικά",
         "official": False,
-        "percentage": 80,
     },
     "es": {
         "name": _("Spanish"),
         "natural_name": "Español",
         "official": False,
-        "percentage": 71,
     },
     "fr": {
         "name": _("French"),
         "natural_name": "Français",
         "official": False,
-        "percentage": 87,
         "path": "fr_FR",
     },
     "it": {
         "name": _("Italian"),
         "natural_name": "Italiano",
         "official": False,
-        "percentage": 96,
     },
     "ja-jp": {
         "name": _("Japanese"),
         "natural_name": "日本語",
         "official": False,
-        "percentage": 62,
         "public_code": "jp",
     },
     "ko": {
         "name": _("Korean"),
         "natural_name": "한국어",
         "official": False,
-        "percentage": 100,
     },
     "nl": {
         "name": _("Dutch"),
         "natural_name": "Nederlands",
         "official": False,
-        "percentage": 89,
     },
     "pl": {
         "name": _("Polish"),
         "natural_name": "Polski",
         "official": False,
-        "percentage": 95,
     },
     "pt-br": {
         "name": _("Brasilian Portuguese"),
         "natural_name": "Português brasileiro",
         "official": False,
-        "percentage": 99,
         "public_code": "pt",
     },
     "pt-pt": {
         "name": _("Portuguese"),
         "natural_name": "Português",
         "official": False,
-        "percentage": 80,
         "public_code": "pt",
     },
     "vi": {
         "name": _("Vietnamese"),
         "natural_name": "người Việt",
         "official": False,
-        "percentage": 75,
     },
     "zh-hant": {
         "name": _("Traditional Chinese (Taiwan)"),
         "natural_name": "漢語",
         "official": False,
-        "percentage": 59,
         "public_code": "zh",
     },
     "zh-hans": {
         "name": _("Simplified Chinese"),
         "natural_name": "简体中文",
         "official": False,
-        "percentage": 76,
         "public_code": "zh",
     },
 }
+
+for lang_code, info in LANGUAGES_INFORMATION.items():
+    info["percentage"] = translation_percentages.get(lang_code, 0)
 
 for section in config.sections():
     # Plugins can add languages, which will not be visible
