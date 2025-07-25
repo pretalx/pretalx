@@ -540,6 +540,31 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",  # Protects against clickjacking
 ]
 
+if "middlewares" in config:
+    additional_middlewares = {}
+    for key, value in config["middlewares"].items():
+        prefix, attr = key.split("_", 1)
+        additional_middlewares.setdefault(prefix, {})[attr] = value
+
+    for value in additional_middlewares.values():
+        middleware = value["path"]
+        # position is optional
+        position = value.get("position", "")
+        if position.startswith("insert_after:"):
+            position = position.split("insert_after:")[1]
+            MIDDLEWARE.insert(
+                MIDDLEWARE.index(position) + 1,
+                middleware,
+            )
+        elif position.startswith("insert_before:"):
+            position = position.split("insert_before:")[1]
+            MIDDLEWARE.insert(
+                MIDDLEWARE.index(position),
+                middleware,
+            )
+        else:
+            MIDDLEWARE.append(middleware)
+
 
 ## TEMPLATE AND STATICFILES SETTINGS
 template_loaders = (

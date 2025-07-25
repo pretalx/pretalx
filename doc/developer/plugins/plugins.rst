@@ -176,6 +176,23 @@ the “Writing a … plugin” pages.
    and more. You can use mixins and permissions from pretalx to help you with this,
    but by default, all views are public to all users, authenticated or not.
 
+Middleware
+----------
+
+.. highlight:: ini
+
+   Sometimes a plugin may require adding middleware. To add your middleware to Pretalx, create
+   ``middlewares`` section in the ``pretalx.cfg``. It is possible to add more than one middleware.
+   Each middleware is defined by its ``path``, and optionally a ``position``. If position is not
+   specified, the middleware will be added at the end of the middleware stack. For example::
+
+   [middleware]
+   midleware1_path=plugin.middleware.Plugin2Middleware
+   middleware1_position = insert_after:django.middleware.common.CommonMiddleware
+   middleware2_path = plugin.middleware.Plugin1Middleware
+   middleware2_position = insert_before:django.middleware.common.CommonMiddleware
+
+
 Configuration
 -------------
 
