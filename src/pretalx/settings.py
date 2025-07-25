@@ -697,11 +697,6 @@ if DEBUG:
             .strip()
         )
 
-if "--no-pretalx-information" in sys.argv:
-    sys.argv.remove("--no-pretalx-information")
-elif not os.environ.get("PRETALX_NO_INITIAL_LOG"):
-    log_initial()
-
 SILENCED_SYSTEM_CHECKS = [
     "security.W003",  # CsrfMiddleware modified but in use
     "security.W004",  # HSTS belongs to the proxy, not Django
@@ -712,3 +707,8 @@ SILENCED_SYSTEM_CHECKS = [
 
 with suppress(ImportError):
     from .override_settings import *  # noqa
+
+if "--no-pretalx-information" in sys.argv:
+    sys.argv.remove("--no-pretalx-information")
+elif not os.environ.get("PRETALX_NO_INITIAL_LOG"):
+    log_initial()
