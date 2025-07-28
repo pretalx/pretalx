@@ -27,7 +27,7 @@ class LogMixin:
     def log_action(
         self, action, data=None, person=None, orga=False, content_object=None
     ):
-        if not self.pk:
+        if not self.pk or not isinstance(self.pk, int):
             return
 
         if action.startswith("."):
