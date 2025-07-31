@@ -193,11 +193,10 @@ class EnhancedSelectMultiple(EnhancedSelectMixin, forms.SelectMultiple):
 
 
 def get_count(value, label):
-    count = None
     instance = getattr(value, "instance", None)
-    if instance:
-        count = getattr(instance, "count", 0)
-    count = count or getattr(label, "count", 0)
+    if instance and hasattr(instance, "count"):
+        return instance.count
+    count = getattr(label, "count", 0)
     if callable(count):
         return count(label)
     return count
