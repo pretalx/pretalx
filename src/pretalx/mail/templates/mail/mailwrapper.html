@@ -133,7 +133,7 @@
             </tr>
             {% if signature and signature.strip %}
                 <tr class="signature">
-                    <td>{{ signature|rich_text }}</td>
+                    <td>{{ signature|rich_text_abslinks }}</td>
                 </tr>
             {% else %}
                 <tr class="last"></tr>

@@ -182,3 +182,8 @@ def rich_text(text: str):
 def rich_text_without_links(text: str):
     """Process markdown and cleans HTML in a text input, but without links."""
     return render_markdown(text, cleaner=NO_LINKS_CLEANER)
+
+
+@register.filter
+def rich_text_abslinks(text: str) -> str:
+    return render_markdown_abslinks(text)
