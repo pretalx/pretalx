@@ -1331,7 +1331,7 @@ div.mail-preview {
 }
 #placeholder-column {
   width: 270px;
-  max-height: calc(100vh - 55px);
+  max-height: calc(100vh - 50px);
   overflow-y: auto;
   position: fixed;
   right: 0;
