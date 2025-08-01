@@ -140,6 +140,13 @@ def base_placeholders(sender, **kwargs):
             _("URL to a user’s list of proposals"),
         ),
         SimpleFunctionalMailTextPlaceholder(
+            "profile_page_url",
+            ["event", "user"],
+            lambda event, user: event.urls.user.full(),
+            "https://pretalx.example.com/democon/me/",
+            _("URL to a user’s private profile page."),
+        ),
+        SimpleFunctionalMailTextPlaceholder(
             "deadline",
             ["event"],
             lambda event: (
