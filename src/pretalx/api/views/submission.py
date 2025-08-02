@@ -1,3 +1,4 @@
+from django.db.models import Prefetch
 from django.http import Http404
 from django.utils.functional import cached_property
 from django_filters import rest_framework as filters
@@ -32,6 +33,7 @@ from pretalx.api.serializers.submission import (
 from pretalx.api.versions import LEGACY
 from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
+from pretalx.schedule.models import TalkSlot
 from pretalx.submission.models import (
     Submission,
     SubmissionStates,
@@ -232,9 +234,24 @@ class SubmissionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
             return context
         context["questions"] = questions_for_user(self.event, self.request.user)
         context["speakers"] = self.speaker_profiles_for_user
-        context["schedule"] = self.event.current_schedule
-        context["public_slots"] = not self.has_perm("delete")
+        context["schedule"] = self.current_schedule
         return context
+
+    @cached_property
+    def current_schedule(self):
+        return self.event.current_schedule
+
+    @property
+    def prefetched_slots(self):
+        filters = {}
+        if self.current_schedule:
+            filters["schedule"] = self.current_schedule
+        if not self.has_perm("delete"):
+            filters["is_visible"] = True
+        queryset = TalkSlot.objects.filter(**filters)
+        if self.check_expanded_fields("slots.room"):
+            queryset = queryset.select_related("room")
+        return Prefetch("slots", queryset=queryset)
 
     def get_queryset(self):
         if self.api_version == LEGACY:  # pragma: no cover
@@ -245,7 +262,13 @@ class SubmissionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
         queryset = (
             submissions_for_user(self.event, self.request.user)
             .select_related("event", "track", "submission_type")
-            .prefetch_related("speakers", "answers", "slots")
+            .prefetch_related(
+                "speakers",
+                "answers",
+                "tags",
+                "resources",
+                self.prefetched_slots,
+            )
             .order_by("code")
         )
         if self.check_expanded_fields("speakers.user"):
@@ -254,7 +277,6 @@ class SubmissionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
             "answers.question",
             "answers.question.tracks",
             "answers.question.submission_types",
-            "slots.room",
         ):
             queryset = queryset.prefetch_related(
                 *[field.replace(".", "__") for field in fields]
