@@ -72,8 +72,8 @@ The receivers are expected to return HTML.
 
 html_above_orga_page = EventPluginSignal()
 """
-This signal is sent out to display additional information on orga pages,
-above all other content.
+This signal is sent out to display additional information on every page in the
+organiser backend, above all other content.
 
 This is intended for important, somewhat urgent messages that should be displayed
 prominently, such as a warning about an upcoming deadline or a change in the event
@@ -86,8 +86,8 @@ The receivers are expected to return HTML.
 
 html_below_orga_page = EventPluginSignal()
 """
-This signal is sent out to display additional information on orga pages,
-below all other content.
+This signal is sent out to display additional information on every page in the
+organiser backend, below all other content.
 
 This is intended to show additional information that is not as urgent as the
 information displayed by the ``html_above_orga_page`` signal, such as additional
