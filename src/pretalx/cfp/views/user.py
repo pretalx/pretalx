@@ -76,6 +76,7 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
             data=self.request.POST if bind else None,
             files=self.request.FILES if bind else None,
             speaker=self.request.user,
+            readonly=not self.can_edit_profile,
             event=self.request.event,
             target="speaker",
         )
