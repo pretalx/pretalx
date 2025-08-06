@@ -65,7 +65,7 @@
                                             <form method="post">
                                                 {% csrf_token %}
                                                 <button name="tokenupgrade" value="{{ token.pk }}" class="btn btn-outline-info btn-sm">
-                                                    {% translate "Updgrade" %}&nbsp;({{ current_version }})
+                                                    {% translate "Upgrade" %}&nbsp;({{ current_version }})
                                                 </button>
                                             </form>
                                         {% endif %}
