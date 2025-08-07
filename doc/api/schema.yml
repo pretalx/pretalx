@@ -69,7 +69,7 @@ paths:
             enum:
             - submission_type
             - track
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - name: page
         required: false
         in: query
@@ -141,7 +141,7 @@ paths:
             enum:
             - submission_type
             - track
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: path
         name: id
         schema:
@@ -262,7 +262,7 @@ paths:
             - question
             - question.submission_types
             - question.tracks
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - name: page
         required: false
         in: query
@@ -352,7 +352,7 @@ paths:
             - question
             - question.submission_types
             - question.tracks
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: path
         name: id
         schema:
@@ -647,7 +647,7 @@ paths:
             - question
             - question.submission_types
             - question.tracks
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - name: page
         required: false
         in: query
@@ -724,7 +724,7 @@ paths:
             - question
             - question.submission_types
             - question.tracks
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: path
         name: id
         schema:
@@ -846,7 +846,7 @@ paths:
             - options
             - submission_types
             - tracks
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: query
         name: is_public
         schema:
@@ -968,7 +968,7 @@ paths:
             - options
             - submission_types
             - tracks
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: path
         name: id
         schema:
@@ -1098,7 +1098,7 @@ paths:
             - submission.tags
             - submission.track
             - user
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - name: page
         required: false
         in: query
@@ -1186,7 +1186,7 @@ paths:
             - scores.category
             - submission
             - user
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: path
         name: id
         schema:
@@ -1519,13 +1519,13 @@ paths:
           items:
             type: string
             enum:
-            - room
             - slots
+            - slots.room
             - slots.submission
             - slots.submission.speakers
             - slots.submission.submission_type
             - slots.submission.track
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: path
         name: id
         schema:
@@ -1667,7 +1667,7 @@ paths:
             - submission.speakers
             - submission.submission_type
             - submission.track
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: query
         name: is_visible
         schema:
@@ -1746,7 +1746,7 @@ paths:
             - submission.speakers
             - submission.submission_type
             - submission.track
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: path
         name: id
         schema:
@@ -1875,7 +1875,7 @@ paths:
             enum:
             - limit_tracks
             - limit_types
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - name: page
         required: false
         in: query
@@ -1947,7 +1947,7 @@ paths:
             enum:
             - limit_tracks
             - limit_types
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: path
         name: id
         schema:
@@ -2067,7 +2067,7 @@ paths:
             - answers
             - answers.question
             - submissions
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - name: page
         required: false
         in: query
@@ -2116,7 +2116,7 @@ paths:
             - answers
             - answers.question
             - submissions
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: path
         name: user__code__iexact
         schema:
@@ -2394,7 +2394,7 @@ paths:
             - submission_type
             - tags
             - track
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: query
         name: is_featured
         schema:
@@ -2411,6 +2411,34 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: pending_state
+        schema:
+          type: array
+          items:
+            type: string
+            nullable: true
+            title: Pending proposal state
+            enum:
+            - accepted
+            - canceled
+            - confirmed
+            - deleted
+            - draft
+            - rejected
+            - submitted
+            - withdrawn
+        description: |-
+          * `submitted` - submitted
+          * `accepted` - accepted
+          * `confirmed` - confirmed
+          * `rejected` - rejected
+          * `canceled` - canceled
+          * `withdrawn` - withdrawn
+          * `deleted` - deleted
+          * `draft` - draft
+        explode: true
+        style: form
       - in: query
         name: q
         schema:
@@ -2515,7 +2543,7 @@ paths:
             - submission_type
             - tags
             - track
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       tags:
       - submissions
       responses:
@@ -3252,7 +3280,7 @@ paths:
             - invites
             - limit_tracks
             - members
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: path
         name: organiser
         schema:
@@ -3325,7 +3353,7 @@ paths:
             - invites
             - limit_tracks
             - members
-        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expansion">expand</a>.
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
       - in: path
         name: id
         schema:
@@ -3979,7 +4007,6 @@ components:
       - vi
       - zh-hant
       - zh-hans
-      - en-mozilla
       type: string
       description: |-
         * `en` - English
@@ -3999,7 +4026,6 @@ components:
         * `vi` - Vietnamese
         * `zh-hant` - Traditional Chinese (Taiwan)
         * `zh-hans` - Simplified Chinese
-        * `en-mozilla` - English (mozilla)
     MailTemplate:
       type: object
       description: |-
@@ -6236,8 +6262,8 @@ components:
           type: boolean
           title: Always hide speaker names
           description: Normally, anonymisation is configured in the event review settings.
-            This setting will <b>override the event settings</b> and always hide speaker
-            names for this team.
+            This setting will <strong>override the event settings</strong> and always
+            hide speaker names for this team.
       required:
       - id
       - name
@@ -6315,8 +6341,8 @@ components:
           type: boolean
           title: Always hide speaker names
           description: Normally, anonymisation is configured in the event review settings.
-            This setting will <b>override the event settings</b> and always hide speaker
-            names for this team.
+            This setting will <strong>override the event settings</strong> and always
+            hide speaker names for this team.
       required:
       - name
     TimezoneEnum:
@@ -6447,7 +6473,7 @@ tags:
     This is the only API endpoint that does not use the event setting on your access
     token, as teams exist outside the event structure.
 - name: submissions
-  description: Submissions are the central component of pretalx. The subissions available
+  description: Submissions are the central component of pretalx. The submissions available
     to an authenticated user via the API depend on their permissions within the event,
     the current review phase, and so on. To a non-authenticated user, only submissions
     that are a part of the current public schedule will be visible. Note that changing
@@ -6470,7 +6496,7 @@ tags:
     redirect offered at ``by-version/?version=latest`` to check for a new release.
 - name: slots
   description: Every block in a published pretalx schedule is a talk slot. Note that
-    there are talk slots without associalted submission (e.g. breaks). Each slot belongs
+    there are talk slots without associated submission (e.g. breaks). Each slot belongs
     to a schedule version – refer to the schedule endpoint for further documentation.
     Note that slots cannot be created or deleted via the API – this happens automatically
     when a submission’s state changes.

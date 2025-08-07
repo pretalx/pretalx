@@ -60,7 +60,7 @@ html_context = {
 }
 
 linkcheck_ignore = [
-    "https://pretalx.yourdomain.com",
+    "https://pretalx.example.org",
     "http://localhost",
     "http://127.0.0.1",
     "/schema.yml",

@@ -44,6 +44,18 @@ class TalkMixin(PermissionRequired):
     def get_permission_object(self):
         return self.submission
 
+    @context
+    @cached_property
+    def scheduling_information_visible(self):
+        return self.request.user.has_perm(
+            "submission.view_scheduling_details_submission", self.submission
+        )
+
+    @context
+    @cached_property
+    def hide_speaker_links(self):
+        return not self.scheduling_information_visible
+
 
 class TalkView(TalkMixin, TemplateView):
     template_name = "agenda/talk.html"
@@ -67,9 +79,7 @@ class TalkView(TalkMixin, TemplateView):
 
     def get(self, request, *args, **kwargs):
         response = super().get(request, *args, **kwargs)
-        csp_update = {}
-        if self.recording.get("csp_header"):
-            csp_update["frame-src"] = self.recording.get("csp_header")
+        csp_update = {"frame-src": self.recording.get("csp_header")}
         response._csp_update = csp_update
         return response
 
@@ -133,7 +143,33 @@ class TalkView(TalkMixin, TemplateView):
     @context
     @cached_property
     def answers(self):
-        return self.submission.public_answers
+        from pretalx.submission.models.question import QuestionVariant
+
+        all_answers = self.submission.public_answers
+        regular_answers = []
+        icon_answers = []
+
+        for answer in all_answers:
+            if answer.question.variant == QuestionVariant.URL and answer.question.icon:
+                icon_answers.append(answer)
+            else:
+                regular_answers.append(answer)
+
+        return regular_answers
+
+    @context
+    @cached_property
+    def icon_answers(self):
+        from pretalx.submission.models.question import QuestionVariant
+
+        all_answers = self.submission.public_answers
+        icon_answers = []
+
+        for answer in all_answers:
+            if answer.question.variant == QuestionVariant.URL and answer.question.icon:
+                icon_answers.append(answer)
+
+        return icon_answers
 
 
 class TalkReviewView(TalkView):

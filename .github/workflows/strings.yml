@@ -18,8 +18,12 @@ jobs:
   compile:
     runs-on: ubuntu-latest
     name: Check that translation files compile
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -34,3 +38,21 @@ jobs:
       - name: Compile locales
         run: python manage.py compilemessages
         working-directory: ./src
+
+      - name: Update translation percentages
+        if: github.event_name == 'pull_request'
+        run: python manage.py update_translation_percentages
+        working-directory: ./src
+
+      - name: Commit updated translation percentages
+        if: github.event_name == 'pull_request'
+        run: |
+          git config --local user.email "translate@pretalx.com"
+          git config --local user.name "pretalx-translations"
+          git add src/pretalx/locale/translation_percentages.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update translation percentages
+            git push
+          fi

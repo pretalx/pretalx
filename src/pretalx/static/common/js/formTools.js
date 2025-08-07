@@ -146,7 +146,7 @@ const initSelect = (element) => {
         maxItemText: "",
         allowHTML: true,
     }
-    if (element.querySelectorAll("option[data-description]").length || element.querySelectorAll("option[data-color]").length) {
+    if (element.querySelectorAll("option[data-description]").length || element.querySelectorAll("option[data-color]").length || element.querySelectorAll("option[data-highlight]").length) {
         choicesOptions.callbackOnCreateTemplates = (strToEl, escapeForTemplates, getClassNames) => ({
             choice: (allowHTML, classNames, choice, selectedText, groupName) => {
                 let originalResult = Choices.defaults.templates.choice(allowHTML, classNames, choice, selectedText, groupName)
@@ -161,6 +161,9 @@ const initSelect = (element) => {
                     originalResult.classList.add("choice-item-color")
                     originalResult.style.setProperty("--choice-color", color)
                 }
+                if (classNames.element && classNames.element.dataset.highlight === "true") {
+                    originalResult.classList.add("choice-item-highlight")
+                }
                 return originalResult
             },
             item: (_a, choice, removeItemButton) => {
@@ -173,11 +176,15 @@ const initSelect = (element) => {
                     originalResult.classList.add("choice-item-color")
                     originalResult.style.setProperty("--choice-color", color)
                 }
+                if (choice.element && choice.element.dataset.highlight === "true") {
+                    originalResult.classList.add("choice-item-highlight")
+                }
                 return originalResult
             }
         })
     }
-    new Choices(element, choicesOptions)
+    const choicesInstance = new Choices(element, choicesOptions)
+    element._choicesInstance = choicesInstance
 }
 
 const originalData = {}

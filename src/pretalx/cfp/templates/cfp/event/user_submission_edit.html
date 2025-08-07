@@ -66,10 +66,21 @@
             {% include "common/forms/errors.html" %}
             {% include "common/forms/errors.html" with form=qform %}
             {% csrf_token %}
+            {% if not can_edit %}
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle"></i> {{ phrases.cfp.submission_uneditable }}
+                </div>
+            {% endif %}
             {{ form }}
             {{ qform }}
-            {% if can_edit or form.instance.resources.count %}
+            {% if can_edit %}
                 {% include "cfp/includes/submission_resources_form.html" %}
+            {% elif form.instance.active_resources.count %}
+                <ul>
+                    {% for resource in form.instance.active_resources %}
+                        <li>{% include "agenda/includes/submission_resource.html" %}</li>
+                    {% endfor %}
+                </ul>
             {% endif %}
             {% if can_edit %}
                 <div class="row mt-4">

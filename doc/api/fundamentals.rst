@@ -135,6 +135,8 @@ is available within the event context, the strings will be coerced to be in the
 chosen language, falling back on other available strings if the string is empty
 in the selected language.
 
+.. _`api-expansion`:
+
 Expanding linked resources
 --------------------------
 
@@ -173,7 +175,7 @@ of:
 
     {
         "count": 117,
-        "next": "https://pretalx.yourdomain.com/api/v1/organisers/?page=2",
+        "next": "https://pretalx.example.org/api/v1/organisers/?page=2",
         "previous": null,
         "results": []
     }

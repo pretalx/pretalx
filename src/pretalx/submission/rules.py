@@ -170,13 +170,16 @@ def can_view_reviewer_names(user, obj):
 
 @rules.predicate
 def can_view_reviews(user, obj):
+    from pretalx.submission.models import Review
+
     if can_view_all_reviews(user, obj):
         return True
     phase = obj.event.active_review_phase
+    submission = obj.submission if isinstance(obj, Review) else obj
     return bool(
         phase
         and phase.can_see_other_reviews == "after_review"
-        and obj.reviews.filter(user=user).exists()
+        and submission.reviews.filter(user=user).exists()
     )
 
 
@@ -333,7 +336,7 @@ def get_reviewable_submissions(event, user, queryset=None):
     """
     from pretalx.submission.models import SubmissionStates
 
-    if not queryset:
+    if queryset is None:
         queryset = event.submissions.filter(state=SubmissionStates.SUBMITTED)
     queryset = limit_for_reviewers(queryset, event, user, add_assignments=True)
     queryset = queryset.annotate(review_count=Count("reviews"))

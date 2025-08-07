@@ -13,6 +13,7 @@ Bcc
 boolean
 booleans
 browsable
+bugfix
 canceled
 categorys
 ccc
@@ -55,6 +56,7 @@ iframes
 informations
 installable
 integrations
+IPython
 iterable
 Jorian
 jQuery
@@ -86,6 +88,7 @@ px
 pytest
 queryset
 redis
+referer
 ro
 scrollbar
 slugified
@@ -101,10 +104,12 @@ subtractive
 systemd
 templating
 textboxes
+tracebacks
 transactional
 txt
 typeahead
 uncheck
+uptime
 Venueless
 virtualenv
 Weblate

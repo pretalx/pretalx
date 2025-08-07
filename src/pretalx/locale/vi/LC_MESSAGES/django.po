@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-19 08:18+0000\n"
+"POT-Creation-Date: 2025-06-12 14:01+0000\n"
 "PO-Revision-Date: 2025-04-08 14:25+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: none\n"
@@ -112,8 +112,8 @@ msgstr "Chương trình đầu tiên của Hội thảo %(event_name)s đã đư
 
 #: pretalx/agenda/templates/agenda/feedback.html:9
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:137
-#: pretalx/orga/templates/orga/base.html:299
-#: pretalx/orga/templates/orga/submission/base.html:75
+#: pretalx/orga/templates/orga/base.html:301
+#: pretalx/orga/templates/orga/submission/base.html:64
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:16
 #: pretalx/submission/models/feedback.py:36
 msgid "Feedback"
@@ -176,44 +176,44 @@ msgstr "Không có phiên nào diễn ra vào %(weekday)s, %(current_day)s."
 msgid "%(minutes)smin"
 msgstr "%(minutes)sphút"
 
-#: pretalx/agenda/templates/agenda/speaker.html:51
+#: pretalx/agenda/templates/agenda/speaker.html:42
 #: pretalx/agenda/templates/agenda/speakers.html:18
 #: pretalx/agenda/templates/agenda/speakers.html:20
-#: pretalx/agenda/templates/agenda/talk.html:161
+#: pretalx/agenda/templates/agenda/talk.html:156
 #: pretalx/orga/templates/orga/submission/speakers.html:39
 msgid "The speaker’s profile picture"
 msgstr "Ảnh chân dung diễn giả"
 
-#: pretalx/agenda/templates/agenda/speaker.html:69
+#: pretalx/agenda/templates/agenda/speaker.html:60
 msgid "Session"
 msgid_plural "Sessions"
 msgstr[0] "Phiên"
 
-#: pretalx/agenda/templates/agenda/talk.html:48
+#: pretalx/agenda/templates/agenda/talk.html:44
 msgid "Favourite this session"
 msgstr "Đưa phiên này vào danh sách yêu thích"
 
-#: pretalx/agenda/templates/agenda/talk.html:49
+#: pretalx/agenda/templates/agenda/talk.html:45
 msgid "Remove this session from your favourites"
 msgstr "Loại phiên này khỏi danh mục yêu thích"
 
-#: pretalx/agenda/templates/agenda/talk.html:100
+#: pretalx/agenda/templates/agenda/talk.html:95
 msgid "This session’s header image"
 msgstr "Hình ảnh tiêu đề"
 
-#: pretalx/agenda/templates/agenda/talk.html:137
+#: pretalx/agenda/templates/agenda/talk.html:132
 msgid "See also:"
 msgstr "Xem thêm:"
 
-#: pretalx/agenda/templates/agenda/talk.html:174
+#: pretalx/agenda/templates/agenda/talk.html:169
 msgid "This speaker also appears in:"
 msgstr "Diễn giả này cũng thuyết trình ở phiên:"
 
-#: pretalx/agenda/views/schedule.py:144
+#: pretalx/agenda/views/schedule.py:128
 msgid "Our schedule is not live yet."
 msgstr "Chương trình hội thảo chưa được công bố."
 
-#: pretalx/agenda/views/schedule.py:203
+#: pretalx/agenda/views/schedule.py:189
 msgid ""
 "You're currently not logged in, so your favourited talks will only be stored "
 "locally in your browser."
@@ -221,18 +221,18 @@ msgstr ""
 "Quý vị hiện chưa đăng nhập, vì vậy các phiên yêu thích của quý vị hiện mới "
 "chỉ lưu trữ tạm thời trên trình duyệt."
 
-#: pretalx/agenda/views/schedule.py:206
+#: pretalx/agenda/views/schedule.py:192
 msgid "Your favourites could only be saved locally in your browser."
 msgstr "Các phiên yêu thích chỉ có thể lưu ở trình duyệt trên máy tính này."
 
-#: pretalx/agenda/views/talk.py:128
+#: pretalx/agenda/views/talk.py:126
 #, python-brace-format
 msgid "The session “{title}” at {event}"
 msgstr "Phiên “{title}” của Hội thảo {event}"
 
 #: pretalx/api/templates/rest_framework/api.html:18
 #: pretalx/orga/templates/orga/auth/base.html:29
-#: pretalx/orga/templates/orga/base.html:75
+#: pretalx/orga/templates/orga/base.html:76
 msgid "The pretalx logo"
 msgstr "Logo của pretalx"
 
@@ -349,16 +349,10 @@ msgid "Awesome! You can now log in using your new password."
 msgstr "Tuyệt vời! Quý vị có thể đăng nhập ngay bây giờ với mật khẩu mới."
 
 #: pretalx/cfp/phrases.py:19
-msgid ""
-"Your API token has been regenerated. The previous token will not be usable "
-"any longer."
-msgstr "Token API đã được khởi tạo. Token trước đây không còn dùng được nữa."
-
-#: pretalx/cfp/phrases.py:23
 msgid "Your proposal has been withdrawn."
 msgstr "Đề xuất tham luận của quý vị đã được thu hồi."
 
-#: pretalx/cfp/phrases.py:25
+#: pretalx/cfp/phrases.py:21
 msgid ""
 "Your proposal can’t be withdrawn at this time – please contact us if you "
 "need to withdraw your proposal!"
@@ -366,19 +360,19 @@ msgstr ""
 "Diễn giả không thể thu hồi đề xuất tham luận vào lúc này – vui lòng liên hệ "
 "với chúng tôi nếu quý vị cần thu hồi đề xuất!"
 
-#: pretalx/cfp/phrases.py:28
+#: pretalx/cfp/phrases.py:24
 msgid "Your session has been confirmed – we’re looking forward to seeing you!"
 msgstr ""
 "Phiên của quý vị đã được chốt - chúng tôi mong được đón quý vị tại hội thảo!"
 
-#: pretalx/cfp/phrases.py:31
+#: pretalx/cfp/phrases.py:27
 msgid ""
 "This proposal has already been confirmed – we’re looking forward to seeing "
 "you!"
 msgstr ""
 "Phiên này vốn đã được chốt rồi - hân hạnh được chào đón quý vị tại hội thảo!"
 
-#: pretalx/cfp/phrases.py:34
+#: pretalx/cfp/phrases.py:30
 msgid ""
 "This proposal cannot be confirmed at this time – please contact us if you "
 "think this is an error."
@@ -386,20 +380,20 @@ msgstr ""
 "Hiện tại không thể chốt phiên này - vui lòng liên lạc với chúng tôi nếu quý "
 "vị cho rằng đây là sai sót."
 
-#: pretalx/cfp/phrases.py:36
+#: pretalx/cfp/phrases.py:32
 msgid "This proposal cannot be edited anymore."
 msgstr "Đề xuất tham luận không còn chỉnh sửa được nữa."
 
-#: pretalx/cfp/phrases.py:38
+#: pretalx/cfp/phrases.py:34
 msgid "Speaker email"
 msgstr "Email của diễn giả"
 
-#: pretalx/cfp/phrases.py:39
+#: pretalx/cfp/phrases.py:35
 #, python-brace-format
 msgid "{speaker} invites you to join their session!"
 msgstr "Diễn giả {speaker} mời quý vị tham dự phiên thuyết trình của họ!"
 
-#: pretalx/cfp/phrases.py:41
+#: pretalx/cfp/phrases.py:37
 #, python-brace-format
 msgid ""
 "Hi!\n"
@@ -428,21 +422,21 @@ msgstr ""
 "Tôi rất mong đợi được đồng hành cùng quý vị!\n"
 "Diễn giả {speaker}"
 
-#: pretalx/cfp/phrases.py:54
+#: pretalx/cfp/phrases.py:50
 msgid "Please provide a valid email address."
 msgstr "Vui lòng cung cấp một địa chỉ email hợp lệ."
 
-#: pretalx/cfp/phrases.py:55
+#: pretalx/cfp/phrases.py:51
 msgid "The invitation was sent!"
 msgstr "Lời mời đã được gửi!"
 
-#: pretalx/cfp/phrases.py:57
+#: pretalx/cfp/phrases.py:53
 msgid "You are now part of this proposal! Please fill in your profile below."
 msgstr ""
 "Quý vị hiện đang tham gia vào đề xuất tham luận này. Vui lòng tạo hồ sơ của "
 "quý vị dưới đây."
 
-#: pretalx/cfp/phrases.py:61
+#: pretalx/cfp/phrases.py:57
 msgid ""
 "We are experiencing difficulties when sending mails, but your session was "
 "submitted successfully!"
@@ -450,7 +444,7 @@ msgstr ""
 "Chúng tôi đang gặp khó khăn khi gửi thư, nhưng phiên của quý vị đã được gửi "
 "thành công!"
 
-#: pretalx/cfp/phrases.py:64 pretalx/orga/views/cfp.py:132
+#: pretalx/cfp/phrases.py:60 pretalx/orga/views/cfp.py:132
 msgid "Custom fields"
 msgstr "Trường tuỳ chỉnh"
 
@@ -646,11 +640,11 @@ msgstr ""
 "thất lạc vì lý do nào đó."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:7
-#: pretalx/cfp/templates/cfp/event/user_profile.html:21
+#: pretalx/cfp/templates/cfp/event/user_profile.html:20
 msgid "Your Profile"
 msgstr "Hồ sơ"
 
-#: pretalx/cfp/templates/cfp/event/user_profile.html:23
+#: pretalx/cfp/templates/cfp/event/user_profile.html:22
 msgid ""
 "This data will be displayed publicly if your proposal is accepted. It is "
 "also visible to reviewers."
@@ -658,23 +652,23 @@ msgstr ""
 "Dữ liệu này sẽ được hiển thị công khai nếu đề xuất của quý vị được duyệt. "
 "Người bình duyệt cũng có thể xem được."
 
-#: pretalx/cfp/templates/cfp/event/user_profile.html:51
+#: pretalx/cfp/templates/cfp/event/user_profile.html:50
 msgid "We have some questions"
 msgstr "Chúng tôi có một số câu hỏi"
 
-#: pretalx/cfp/templates/cfp/event/user_profile.html:66
+#: pretalx/cfp/templates/cfp/event/user_profile.html:65
 msgid "Your Account"
 msgstr "Tài khoản"
 
-#: pretalx/cfp/templates/cfp/event/user_profile.html:67
+#: pretalx/cfp/templates/cfp/event/user_profile.html:66
 msgid "You can change your log in data here."
 msgstr "Quý vị có thể thay đổi dữ liệu đăng nhập ở đây."
 
-#: pretalx/cfp/templates/cfp/event/user_profile.html:88
+#: pretalx/cfp/templates/cfp/event/user_profile.html:87
 msgid "Account deletion"
 msgstr "Xoá tài khoản"
 
-#: pretalx/cfp/templates/cfp/event/user_profile.html:93
+#: pretalx/cfp/templates/cfp/event/user_profile.html:92
 msgid ""
 "You can delete your account here – all names, emails, and other personal "
 "information will be overwritten. <strong>This action is irreversible.</"
@@ -684,7 +678,7 @@ msgstr ""
 "tin cá nhân khác sẽ bị ghi đè. <strong>Tác vụ này không thể phục hồi lại "
 "được.</strong>"
 
-#: pretalx/cfp/templates/cfp/event/user_profile.html:99
+#: pretalx/cfp/templates/cfp/event/user_profile.html:98
 msgid ""
 "I really do want to delete my account, losing access to my proposals and "
 "sessions, and overriding my public and private data."
@@ -692,7 +686,7 @@ msgstr ""
 "Tôi thực sự muốn xóa tài khoản của mình, mất quyền truy cập vào các đề xuất "
 "và phiên họp, cũng như ghi đè lên dữ liệu công khai và riêng tư của mình."
 
-#: pretalx/cfp/templates/cfp/event/user_profile.html:106
+#: pretalx/cfp/templates/cfp/event/user_profile.html:105
 msgid "Delete my account"
 msgstr "Xoá tài khoản của tôi"
 
@@ -878,11 +872,11 @@ msgstr "Dự thảo của quý vị"
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:42
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:84
-#: pretalx/orga/templates/orga/admin/user_detail.html:134
-#: pretalx/orga/templates/orga/cfp/text.html:108
-#: pretalx/orga/templates/orga/review/bulk.html:47
-#: pretalx/orga/templates/orga/review/dashboard.html:190
-#: pretalx/orga/templates/orga/speaker/information_list.html:52
+#: pretalx/orga/templates/orga/admin/user_detail.html:126
+#: pretalx/orga/templates/orga/cfp/text.html:102
+#: pretalx/orga/templates/orga/review/bulk.html:42
+#: pretalx/orga/templates/orga/review/dashboard.html:188
+#: pretalx/orga/templates/orga/speaker/information_list.html:46
 #: pretalx/orga/templates/orga/speaker/speakerinformation/list.html:17
 #: pretalx/orga/templates/orga/submission/list.html:73
 #: pretalx/orga/templates/orga/submission/review.html:53
@@ -903,9 +897,9 @@ msgid "Open draft"
 msgstr "Mở dự thảo"
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:85
-#: pretalx/orga/templates/orga/admin/user_detail.html:136
-#: pretalx/orga/templates/orga/review/dashboard.html:107
-#: pretalx/orga/templates/orga/review/dashboard.html:199
+#: pretalx/orga/templates/orga/admin/user_detail.html:128
+#: pretalx/orga/templates/orga/review/dashboard.html:105
+#: pretalx/orga/templates/orga/review/dashboard.html:197
 #: pretalx/orga/templates/orga/submission/list.html:86
 msgid "State"
 msgstr "Trạng thái"
@@ -983,20 +977,20 @@ msgstr ""
 "khác, trừ khi quý vị gửi cho Ban Tổ chức hoặc chủ động chia sẻ."
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:46
-#: pretalx/orga/templates/orga/cfp/submissiontype/list.html:42
-#: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:49
-#: pretalx/orga/templates/orga/review/dashboard.html:97
+#: pretalx/orga/templates/orga/cfp/submissiontype/list.html:36
+#: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:43
+#: pretalx/orga/templates/orga/review/dashboard.html:95
 #: pretalx/orga/templates/orga/submission/review.html:63
 #: pretalx/orga/views/cfp.py:399 pretalx/submission/models/submission.py:194
 msgid "Session type"
 msgstr "Loại phiên hội thảo"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:52
-#: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:47
-#: pretalx/orga/templates/orga/cfp/text.html:126
-#: pretalx/orga/templates/orga/cfp/track/list.html:44
-#: pretalx/orga/templates/orga/review/dashboard.html:89
-#: pretalx/orga/templates/orga/review/dashboard.html:195
+#: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:41
+#: pretalx/orga/templates/orga/cfp/text.html:120
+#: pretalx/orga/templates/orga/cfp/track/list.html:43
+#: pretalx/orga/templates/orga/review/dashboard.html:87
+#: pretalx/orga/templates/orga/review/dashboard.html:193
 #: pretalx/orga/templates/orga/submission/review.html:68
 #: pretalx/orga/views/cfp.py:453 pretalx/submission/models/access_code.py:29
 #: pretalx/submission/models/submission.py:200
@@ -1004,20 +998,20 @@ msgid "Track"
 msgstr "Kênh hội thảo"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:63
-#: pretalx/orga/templates/orga/cfp/text.html:164
-#: pretalx/orga/templates/orga/review/dashboard.html:93
-#: pretalx/orga/templates/orga/review/dashboard.html:197
+#: pretalx/orga/templates/orga/cfp/text.html:158
+#: pretalx/orga/templates/orga/review/dashboard.html:91
+#: pretalx/orga/templates/orga/review/dashboard.html:195
 #: pretalx/submission/models/submission.py:254
 msgid "Duration"
 msgstr "Thời lượng"
 
 #: pretalx/cfp/templates/cfp/index.html:4
 #: pretalx/cfp/templates/cfp/index.html:8
-#: pretalx/orga/templates/orga/admin/user_detail.html:89
+#: pretalx/orga/templates/orga/admin/user_detail.html:81
 #: pretalx/orga/templates/orga/admin/user_list.html:33
-#: pretalx/orga/templates/orga/base.html:455
-#: pretalx/orga/templates/orga/user.html:51
-#: pretalx/person/models/auth_token.py:69
+#: pretalx/orga/templates/orga/base.html:457
+#: pretalx/orga/templates/orga/user.html:49
+#: pretalx/person/models/auth_token.py:70
 msgid "Events"
 msgstr "Các sự kiện"
 
@@ -1033,23 +1027,23 @@ msgstr "Sự kiện sắp diễn ra"
 msgid "Past events"
 msgstr "Các sự kiện đã diễn ra"
 
-#: pretalx/cfp/views/user.py:277
+#: pretalx/cfp/views/user.py:276
 msgid "Your draft was discarded."
 msgstr "Dự thảo của quý vị đã được huỷ."
 
-#: pretalx/cfp/views/user.py:426
+#: pretalx/cfp/views/user.py:425
 msgid "Your proposal has been submitted."
 msgstr "Dự thảo của quý vị đã được nộp."
 
-#: pretalx/cfp/views/user.py:441
+#: pretalx/cfp/views/user.py:440
 msgid "Your account has now been deleted."
 msgstr "Tài khoản của quý vị đã được xoá."
 
-#: pretalx/cfp/views/user.py:443
+#: pretalx/cfp/views/user.py:442
 msgid "Are you really sure? Please tick the box"
 msgstr "Quý vị có chắc không? Vui lòng đánh dấu vào ô"
 
-#: pretalx/cfp/views/user.py:502
+#: pretalx/cfp/views/user.py:501
 msgid "You cannot accept this invitation."
 msgstr "Quý vị không thể chấp nhận lời mời này."
 
@@ -1069,7 +1063,7 @@ msgstr ""
 
 #: pretalx/common/forms/forms.py:12 pretalx/common/forms/widgets.py:208
 #: pretalx/common/templates/common/includes/search_form.html:7
-#: pretalx/orga/templates/orga/base.html:182
+#: pretalx/orga/templates/orga/base.html:184
 #: pretalx/orga/templates/orga/event_list.html:21
 #: pretalx/orga/templates/orga/includes/submission_filter_form.html:21
 #: pretalx/orga/templates/orga/organiser/list.html:18
@@ -1134,13 +1128,13 @@ msgstr "Cảnh báo"
 msgid "Your passwords don’t match."
 msgstr "Mật khẩu không khớp nhau."
 
-#: pretalx/common/image.py:38 pretalx/common/image.py:46
+#: pretalx/common/image.py:46 pretalx/common/image.py:54
 msgid ""
 "The file you uploaded has a very large number of pixels, please upload a "
 "picture with smaller dimensions."
 msgstr ""
 
-#: pretalx/common/image.py:54
+#: pretalx/common/image.py:62
 msgid ""
 "Upload a valid image. The file you uploaded was either not an image or a "
 "corrupted image."
@@ -1475,7 +1469,7 @@ msgstr "Một loại phiên hội thảo đã được xoá."
 msgid "The API token was reset."
 msgstr "Mã API token đã được tạo lại."
 
-#: pretalx/common/log_display.py:128
+#: pretalx/common/log_display.py:128 pretalx/orga/views/person.py:94
 #, fuzzy
 #| msgid "The API token was reset."
 msgid "The API token was revoked."
@@ -1496,8 +1490,8 @@ msgid "The profile was modified."
 msgstr "Hồ sơ đã được chỉnh sửa."
 
 #: pretalx/common/log_display.py:185 pretalx/common/log_display.py:189
-#: pretalx/orga/templates/orga/cfp/question/list.html:52
-#: pretalx/orga/templates/orga/review/dashboard.html:84
+#: pretalx/orga/templates/orga/cfp/question/list.html:51
+#: pretalx/orga/templates/orga/review/dashboard.html:82
 #: pretalx/orga/views/cfp.py:127
 #, fuzzy
 #| msgid "Custom Mail"
@@ -1508,9 +1502,9 @@ msgstr "Email tuỳ chỉnh"
 msgid "Response to custom field"
 msgstr ""
 
-#: pretalx/common/log_display.py:199 pretalx/orga/templates/orga/base.html:245
-#: pretalx/orga/templates/orga/cfp/text.html:20
-#: pretalx/orga/templates/orga/cfp/text.html:24
+#: pretalx/common/log_display.py:199 pretalx/orga/templates/orga/base.html:247
+#: pretalx/orga/templates/orga/cfp/text.html:14
+#: pretalx/orga/templates/orga/cfp/text.html:18
 msgid "Call for Proposals"
 msgstr "Thông báo mời viết Đề xuất tham luận"
 
@@ -1519,12 +1513,12 @@ msgid "Mail template"
 msgstr "Mẫu email"
 
 #: pretalx/common/log_display.py:206 pretalx/event/models/organiser.py:290
-#: pretalx/orga/templates/orga/admin/user_detail.html:49
+#: pretalx/orga/templates/orga/admin/user_detail.html:41
 #: pretalx/orga/templates/orga/admin/user_list.html:30
-#: pretalx/orga/templates/orga/base.html:226
-#: pretalx/orga/templates/orga/organiser/speaker_list.html:41
+#: pretalx/orga/templates/orga/base.html:228
+#: pretalx/orga/templates/orga/organiser/speaker_list.html:30
 #: pretalx/orga/templates/orga/organiser/team/update.html:14
-#: pretalx/person/models/user.py:119
+#: pretalx/person/models/user.py:131
 msgid "Email"
 msgstr "Email"
 
@@ -1535,7 +1529,7 @@ msgid "Speaker profile"
 msgstr "Email của diễn giả"
 
 #: pretalx/common/log_display.py:214 pretalx/event/stages.py:98
-#: pretalx/orga/templates/orga/admin/user_detail.html:135
+#: pretalx/orga/templates/orga/admin/user_detail.html:127
 #: pretalx/orga/templates/orga/mails/_placeholder_group.html:14
 #: pretalx/orga/templates/orga/organiser/list.html:32
 #: pretalx/orga/views/event.py:692
@@ -1736,9 +1730,9 @@ msgid "Register"
 msgstr "Đăng ký"
 
 #: pretalx/common/templates/common/avatar.html:7
-#: pretalx/orga/templates/orga/admin/user_detail.html:73
-#: pretalx/orga/templates/orga/cfp/text.html:198
-#: pretalx/person/models/user.py:152
+#: pretalx/orga/templates/orga/admin/user_detail.html:65
+#: pretalx/orga/templates/orga/cfp/text.html:192
+#: pretalx/person/models/user.py:164
 msgid "Profile picture"
 msgstr "Ảnh hồ sơ"
 
@@ -1746,53 +1740,57 @@ msgstr "Ảnh hồ sơ"
 msgid "Your avatar"
 msgstr "Ảnh đại diện"
 
-#: pretalx/common/templates/common/base.html:73
+#: pretalx/common/templates/common/base.html:74
 msgid "This event is currently non-public. Only organisers can see it."
 msgstr "Hội thảo này hiện không công bố. Chỉ Ban Tổ chức mới có thể xem."
 
-#: pretalx/common/templates/common/base.html:83
+#: pretalx/common/templates/common/base.html:84
 #: pretalx/orga/templates/orga/auth/base.html:31
 msgid "The event’s logo"
 msgstr "Logo của hội thảo"
 
-#: pretalx/common/templates/common/base.html:113
+#: pretalx/common/templates/common/base.html:114
 msgid "My proposals"
 msgstr "Các đề xuất tham luận của tôi"
 
-#: pretalx/common/templates/common/base.html:117
+#: pretalx/common/templates/common/base.html:118
 msgid "My Emails"
 msgstr "Email gửi cho tôi"
 
-#: pretalx/common/templates/common/base.html:121
+#: pretalx/common/templates/common/base.html:122
 msgid "My profile"
 msgstr "Hồ sơ của tôi"
 
-#: pretalx/common/templates/common/base.html:127
+#: pretalx/common/templates/common/base.html:128
 msgid "Organiser area"
 msgstr "Dành cho Ban Tổ chức"
 
-#: pretalx/common/templates/common/base.html:135
+#: pretalx/common/templates/common/base.html:136
 msgid "Logout"
 msgstr "Đăng xuất"
 
-#: pretalx/common/templates/common/base.html:163
+#: pretalx/common/templates/common/base.html:164
 #, python-format
 msgid "This is a static export generated at %(timestamp)s"
 msgstr "Đây là một xuất tĩnh được tạo ra tại %(timestamp)s"
 
-#: pretalx/common/templates/common/base.html:171
+#: pretalx/common/templates/common/base.html:172
 msgid "Contact us"
 msgstr "Liên hệ"
 
-#: pretalx/common/templates/common/base.html:175
+#: pretalx/common/templates/common/base.html:176
 msgid "Imprint"
 msgstr "Dường dẫn thông tin hội thảo"
 
 #: pretalx/common/templates/common/forms/field.html:7
-#: pretalx/orga/templates/orga/settings/form.html:91
-#: pretalx/orga/templates/orga/settings/form.html:109
+#: pretalx/orga/templates/orga/settings/form.html:87
+#: pretalx/orga/templates/orga/settings/form.html:105
 msgid "Optional"
 msgstr "Không bắt buộc"
+
+#: pretalx/common/templates/common/includes/modals.html:10
+msgid "Close"
+msgstr ""
 
 #: pretalx/common/templates/common/logs.html:15
 #, fuzzy
@@ -1800,7 +1798,7 @@ msgstr "Không bắt buộc"
 msgid "This change was performed by an event organiser."
 msgstr "Thay đổi này được thực hiện bởi một thành viên Ban Tổ chức."
 
-#: pretalx/common/templates/common/powered_by.html:36
+#: pretalx/common/templates/common/powered_by.html:38
 #, python-format
 msgid "powered by <a %(a_attr)s>pretalx</a>"
 msgstr "Vận hành trên phần mềm <a %(a_attr)s>pretalx</a>"
@@ -1910,7 +1908,7 @@ msgid "Back"
 msgstr "Quay lại"
 
 #. Translators: This is a label on delete buttons.
-#: pretalx/common/text/phrases.py:55 pretalx/person/models/auth_token.py:26
+#: pretalx/common/text/phrases.py:55
 msgid "Delete"
 msgstr "Xoá"
 
@@ -2161,7 +2159,7 @@ msgid "Choose all languages that your event should be available in."
 msgstr "Chọn tất cả ngôn ngữ mà hội thảo của quý vị sẽ sử dụng."
 
 #: pretalx/event/forms.py:178
-#: pretalx/orga/templates/orga/admin/user_detail.html:88
+#: pretalx/orga/templates/orga/admin/user_detail.html:80
 #: pretalx/orga/templates/orga/organiser/detail.html:5
 #: pretalx/orga/views/organiser.py:341
 msgid "Organiser"
@@ -2235,12 +2233,12 @@ msgstr "Slug hội thảo không hợp lệ – slug này được dành riêng:
 #: pretalx/event/models/event.py:163 pretalx/event/models/organiser.py:93
 #: pretalx/orga/templates/orga/admin/admin.html:59
 #: pretalx/orga/templates/orga/admin/user_list.html:29
-#: pretalx/orga/templates/orga/organiser/speaker_list.html:36
+#: pretalx/orga/templates/orga/organiser/speaker_list.html:25
 #: pretalx/orga/templates/orga/organiser/team/update.html:13
 #: pretalx/orga/templates/orga/schedule/room/list.html:26
 #: pretalx/orga/templates/orga/speaker/list.html:38
-#: pretalx/orga/templates/orga/user.html:49 pretalx/person/forms/user.py:29
-#: pretalx/person/models/auth_token.py:59 pretalx/person/models/user.py:112
+#: pretalx/orga/templates/orga/user.html:47 pretalx/person/forms/user.py:29
+#: pretalx/person/models/auth_token.py:60 pretalx/person/models/user.py:123
 #: pretalx/schedule/models/room.py:29 pretalx/submission/models/review.py:227
 #: pretalx/submission/models/track.py:31
 msgid "Name"
@@ -2371,7 +2369,7 @@ msgstr ""
 
 #: pretalx/event/models/event.py:281
 #: pretalx/orga/templates/orga/admin/admin.html:106
-#: pretalx/orga/templates/orga/base.html:232
+#: pretalx/orga/templates/orga/base.html:234
 #: pretalx/orga/templates/orga/plugins.html:6
 #: pretalx/orga/templates/orga/plugins.html:8
 msgid "Plugins"
@@ -2402,10 +2400,10 @@ msgid "Graph Paper"
 msgstr "Giấy đồ hoạ"
 
 #: pretalx/event/models/event.py:578 pretalx/event/models/event.py:886
-#: pretalx/event/stages.py:70 pretalx/orga/templates/orga/base.html:223
-#: pretalx/orga/templates/orga/base.html:314
-#: pretalx/orga/templates/orga/base.html:322
-#: pretalx/orga/templates/orga/base.html:335
+#: pretalx/event/stages.py:70 pretalx/orga/templates/orga/base.html:225
+#: pretalx/orga/templates/orga/base.html:316
+#: pretalx/orga/templates/orga/base.html:324
+#: pretalx/orga/templates/orga/base.html:337
 #: pretalx/orga/templates/orga/submission/review.html:180
 msgid "Review"
 msgstr "Bình duyệt"
@@ -2415,7 +2413,7 @@ msgid "Selection"
 msgstr "Lựa chọn"
 
 #: pretalx/event/models/event.py:599
-#: pretalx/orga/templates/orga/review/dashboard.html:60
+#: pretalx/orga/templates/orga/review/dashboard.html:58
 #: pretalx/orga/templates/orga/submission/review.html:175
 #: pretalx/submission/models/review.py:143
 msgid "Score"
@@ -2543,12 +2541,12 @@ msgstr "Luôn ẩn tên của diễn giả"
 #: pretalx/event/models/organiser.py:224
 msgid ""
 "Normally, anonymisation is configured in the event review settings. This "
-"setting will <b>override the event settings</b> and always hide speaker "
-"names for this team."
+"setting will <strong>override the event settings</strong> and always hide "
+"speaker names for this team."
 msgstr ""
 "Thông thường, ẩn danh được cấu hình trong cài đặt quy trình bình duyệt của "
-"hội thảo. Cài đặt này sẽ <b>vô hiệu cài đặt của hội thảo</b> và luôn ẩn tên "
-"diễn giả đối với nhóm này."
+"hội thảo. Cài đặt này sẽ <strong>vô hiệu cài đặt của hội thảo</strong> và "
+"luôn ẩn tên diễn giả đối với nhóm này."
 
 #: pretalx/event/models/organiser.py:237
 #, python-brace-format
@@ -3430,19 +3428,19 @@ msgstr "Người nhận"
 msgid "If you select no custom field, all will be used."
 msgstr "Nếu quý vị không chọn trường tuỳ biến, tất cả sẽ được sử dụng."
 
-#: pretalx/orga/forms/event.py:42
+#: pretalx/orga/forms/event.py:44
 msgid "Grid"
 msgstr "Lưới"
 
-#: pretalx/orga/forms/event.py:43
+#: pretalx/orga/forms/event.py:45
 msgid "List"
 msgstr "Danh mục"
 
-#: pretalx/orga/forms/event.py:59
+#: pretalx/orga/forms/event.py:61
 msgid "Active languages"
 msgstr "Ngôn ngữ đang dùng"
 
-#: pretalx/orga/forms/event.py:63
+#: pretalx/orga/forms/event.py:65
 msgid ""
 "Users will be able to use pretalx in these languages, and you will be able "
 "to provide all texts in these languages. If you don’t provide a text in the "
@@ -3454,23 +3452,23 @@ msgstr ""
 "cấp văn bản bằng ngôn ngữ mà người dùng chọn, văn bản đó sẽ được hiển thị "
 "bằng ngôn ngữ mặc định của sự kiện."
 
-#: pretalx/orga/forms/event.py:69
+#: pretalx/orga/forms/event.py:71
 msgid "Content languages"
 msgstr "Ngôn ngữ nội dung"
 
-#: pretalx/orga/forms/event.py:72
+#: pretalx/orga/forms/event.py:74
 msgid "Users will be able to submit proposals in these languages."
 msgstr "Người dùng có thể nộp đề xuất tham luận ở các ngôn ngữ sau."
 
-#: pretalx/orga/forms/event.py:78
+#: pretalx/orga/forms/event.py:80
 msgid "You can type in your CSS instead of uploading it, too."
 msgstr "Bạn cũng có thể nhập mã CSS thay vì tải nó lên."
 
-#: pretalx/orga/forms/event.py:81
+#: pretalx/orga/forms/event.py:83
 msgid "Imprint URL"
 msgstr "Đường dẫn thông tin BTC"
 
-#: pretalx/orga/forms/event.py:83
+#: pretalx/orga/forms/event.py:85
 msgid ""
 "This should point e.g. to a part of your website that has your contact "
 "details and legal information."
@@ -3478,11 +3476,11 @@ msgstr ""
 "Ví dụ, phần này sẽ trỏ đến một phần trên trang web có thông tin liên lạc và "
 "thông tin pháp lý của Ban Tổ chức."
 
-#: pretalx/orga/forms/event.py:88
+#: pretalx/orga/forms/event.py:90
 msgid "Show schedule publicly"
 msgstr "Hiển thị lịch hội thảo công khai"
 
-#: pretalx/orga/forms/event.py:90
+#: pretalx/orga/forms/event.py:92
 msgid ""
 "Unset to hide your schedule, e.g. if you want to use the HTML export "
 "exclusively."
@@ -3490,24 +3488,24 @@ msgstr ""
 "Bỏ chọn để ẩn lịch hội thảo, ví dụ: nếu quý vị chỉ muốn sử dụng chức năng "
 "xuất HTML."
 
-#: pretalx/orga/forms/event.py:100
+#: pretalx/orga/forms/event.py:102
 msgid "Show featured sessions"
 msgstr "Hiển thị các phiên nổi bật"
 
-#: pretalx/orga/forms/event.py:102 pretalx/submission/models/review.py:255
+#: pretalx/orga/forms/event.py:104 pretalx/submission/models/review.py:255
 #: pretalx/submission/models/review.py:276
 msgid "Never"
 msgstr "Không bao giờ"
 
-#: pretalx/orga/forms/event.py:103
+#: pretalx/orga/forms/event.py:105
 msgid "Until the first schedule is released"
 msgstr "Tới khi phiên bản lịch đầu tiên được công bố"
 
-#: pretalx/orga/forms/event.py:104 pretalx/submission/models/review.py:254
+#: pretalx/orga/forms/event.py:106 pretalx/submission/models/review.py:254
 msgid "Always"
 msgstr "Luôn luôn"
 
-#: pretalx/orga/forms/event.py:107
+#: pretalx/orga/forms/event.py:109
 msgid ""
 "Marking sessions as “featured” is a good way to show them before the first "
 "schedule release, or to highlight them once the schedule is visible."
@@ -3516,19 +3514,19 @@ msgstr ""
 "khi phát hành lịch trình đầu tiên hoặc để làm nổi bật chúng sau khi lịch "
 "trình hiển thị."
 
-#: pretalx/orga/forms/event.py:112
+#: pretalx/orga/forms/event.py:114
 msgid "Enable anonymous feedback"
 msgstr "Cho phép phản hồi ẩn danh"
 
-#: pretalx/orga/forms/event.py:114
+#: pretalx/orga/forms/event.py:116
 msgid "Attendees will be able to send in feedback after a session is over."
 msgstr "Người tham dự có thể gửi phản hồi sau khi phiên hội thảo kết thúc."
 
-#: pretalx/orga/forms/event.py:119
+#: pretalx/orga/forms/event.py:121
 msgid "Generate HTML export on schedule release"
 msgstr "Tạo bản xuất định dạng HTML mỗi khi lịch hội thảo được phát hành"
 
-#: pretalx/orga/forms/event.py:121
+#: pretalx/orga/forms/event.py:123
 msgid ""
 "The static HTML export will be provided as a .zip archive on the schedule "
 "export page."
@@ -3536,11 +3534,11 @@ msgstr ""
 "Tệp xuất HTML tĩnh sẽ được cung cấp dưới dạng tệp .zip trên trang xuất lịch "
 "trình."
 
-#: pretalx/orga/forms/event.py:126
+#: pretalx/orga/forms/event.py:128
 msgid "HTML Export URL"
 msgstr "Đường dẫn URL của bản xuất HTML"
 
-#: pretalx/orga/forms/event.py:128
+#: pretalx/orga/forms/event.py:130
 msgid ""
 "If you publish your schedule via the HTML export, you will want the correct "
 "absolute URL to be set in various places. Please only set this value once "
@@ -3551,21 +3549,21 @@ msgstr ""
 "này sau khi bạn đã xuất bản lịch trình của mình. Nên kết thúc bằng dấu gạch "
 "chéo."
 
-#: pretalx/orga/forms/event.py:141
+#: pretalx/orga/forms/event.py:143
 msgid "Ask search engines not to index the event pages"
 msgstr "Yêu cầu các công cụ tìm kiếm không lập chỉ mục các trang của hội thảo"
 
-#: pretalx/orga/forms/event.py:150
+#: pretalx/orga/forms/event.py:152
 #, python-brace-format
 msgid "Make sure to point a CNAME record from your domain to {site_url}."
 msgstr "Đảm bảo trỏ bản ghi CNAME từ tên miền của bạn tới {site_url}."
 
-#: pretalx/orga/forms/event.py:160
+#: pretalx/orga/forms/event.py:162
 #, python-brace-format
 msgid "You can find the page <a {href}>here</a>."
 msgstr "Quý vị có thể tìm trang ở <a {href}>đây</a>."
 
-#: pretalx/orga/forms/event.py:169
+#: pretalx/orga/forms/event.py:171
 msgid ""
 "Please contact your administrator if you need to change the short name of "
 "your event."
@@ -3573,7 +3571,7 @@ msgstr ""
 "Vui lòng liên hệ với người quản trị nếu quý vị cần đổi tên viết tắt của sự "
 "kiện."
 
-#: pretalx/orga/forms/event.py:172
+#: pretalx/orga/forms/event.py:174
 msgid ""
 "Any sessions you have scheduled already will be moved if you change the "
 "event dates. You will have to release a new schedule version to notify all "
@@ -3583,11 +3581,11 @@ msgstr ""
 "đổi ngày sự kiện. Quý vị sẽ phải phát hành phiên bản lịch hội thảo mới để "
 "thông báo cho tất cả diễn giả."
 
-#: pretalx/orga/forms/event.py:189
+#: pretalx/orga/forms/event.py:191
 msgid "Please do not choose the default domain as custom event domain."
 msgstr "Vui lòng không chọn tên miền mặc định làm tên miền sự kiện tùy chỉnh."
 
-#: pretalx/orga/forms/event.py:200
+#: pretalx/orga/forms/event.py:202
 #, python-brace-format
 msgid ""
 "The domain “{domain}” does not have a name server entry at this time. Please "
@@ -3596,17 +3594,17 @@ msgstr ""
 "Tên miền “{domain}” hiện không có mục nhập máy chủ tên. Vui lòng đảm bảo tên "
 "miền đang hoạt động trước khi cấu hình ở đây."
 
-#: pretalx/orga/forms/event.py:237
+#: pretalx/orga/forms/event.py:239
 msgid "Your default language needs to be one of your active languages."
 msgstr ""
 "Ngôn ngữ mặc định của quý vị phải là một trong những ngôn ngữ đang được sử "
 "dụng."
 
-#: pretalx/orga/forms/event.py:373
+#: pretalx/orga/forms/event.py:375
 msgid "Contact address"
 msgstr "Địa chỉ liên hệ"
 
-#: pretalx/orga/forms/event.py:375
+#: pretalx/orga/forms/event.py:377
 msgid ""
 "Reply-To address. If this setting is empty and you have no custom sender, "
 "your event email address will be used as Reply-To address."
@@ -3615,27 +3613,27 @@ msgstr ""
 "người gửi tùy chỉnh, địa chỉ email của hội thảo sẽ được sử dụng làm địa chỉ "
 "nhận hồi âm."
 
-#: pretalx/orga/forms/event.py:380
+#: pretalx/orga/forms/event.py:382
 msgid "Mail subject prefix"
 msgstr "Tiền tố chủ đề thư"
 
-#: pretalx/orga/forms/event.py:382
+#: pretalx/orga/forms/event.py:384
 msgid "The prefix will be prepended to outgoing mail subjects in [brackets]."
 msgstr "Tiền tố sẽ được thêm vào trước tiêu đề thư gửi đi trong [ngoặc vuông]."
 
-#: pretalx/orga/forms/event.py:387
+#: pretalx/orga/forms/event.py:389
 msgid "Mail signature"
 msgstr "Chữ ký email"
 
-#: pretalx/orga/forms/event.py:389
+#: pretalx/orga/forms/event.py:391
 msgid "The signature will be added to outgoing mails, preceded by “-- ”."
 msgstr "Chữ ký sẽ được thêm vào thư gửi đi, bắt đầu bằng dấu “--”."
 
-#: pretalx/orga/forms/event.py:397
+#: pretalx/orga/forms/event.py:399
 msgid "Use custom SMTP server"
 msgstr "Sủ dụng máy chủ SMTP dùng riêng"
 
-#: pretalx/orga/forms/event.py:399
+#: pretalx/orga/forms/event.py:401
 msgid ""
 "All mail related to your event will be sent over the SMTP server specified "
 "by you."
@@ -3643,55 +3641,62 @@ msgstr ""
 "Mọi email liên quan đến hội thảo này sẽ được gửi qua máy chủ SMTP được chỉ "
 "định dưới đây."
 
-#: pretalx/orga/forms/event.py:404
+#: pretalx/orga/forms/event.py:406
 msgid "Sender address"
 msgstr "Địa chỉ người gửi"
 
-#: pretalx/orga/forms/event.py:405
+#: pretalx/orga/forms/event.py:407
 msgid "Sender address for outgoing emails."
 msgstr "Địa chỉ người gửi cho email gửi ra."
 
-#: pretalx/orga/forms/event.py:408
+#: pretalx/orga/forms/event.py:410
 msgid "Hostname"
 msgstr "Tên máy chủ"
 
-#: pretalx/orga/forms/event.py:409
+#: pretalx/orga/forms/event.py:411
 #: pretalx/orga/templates/orga/admin/admin.html:84
 msgid "Port"
 msgstr "Cổng"
 
-#: pretalx/orga/forms/event.py:410
+#: pretalx/orga/forms/event.py:412
 msgid "Username"
 msgstr "Tên tài khoản (username)"
 
-#: pretalx/orga/forms/event.py:412
+#: pretalx/orga/forms/event.py:414
 #: pretalx/orga/templates/orga/admin/admin.html:90
 #: pretalx/person/forms/user.py:24 pretalx/person/forms/user.py:39
 msgid "Password"
 msgstr "Mật khẩu (password)"
 
-#: pretalx/orga/forms/event.py:420
+#: pretalx/orga/forms/event.py:425
+#, python-brace-format
+msgid ""
+"The password contains unsupported letters. Please only use characters A-Z, a-"
+"z, 0-9, and common special characters ({characters})."
+msgstr ""
+
+#: pretalx/orga/forms/event.py:434
 msgid "Use STARTTLS"
 msgstr "Sử dụng STARTTLS"
 
-#: pretalx/orga/forms/event.py:421
+#: pretalx/orga/forms/event.py:435
 msgid "Commonly enabled on port 587."
 msgstr "Thường được bật trên cổng 587."
 
-#: pretalx/orga/forms/event.py:425
+#: pretalx/orga/forms/event.py:439
 msgid "Use SSL"
 msgstr "Sử dụng SSL"
 
-#: pretalx/orga/forms/event.py:425
+#: pretalx/orga/forms/event.py:439
 msgid "Commonly enabled on port 465."
 msgstr "Thường được bật trên cổng 465."
 
-#: pretalx/orga/forms/event.py:453
+#: pretalx/orga/forms/event.py:467
 msgid "You have to provide a sender address if you use a custom SMTP server."
 msgstr ""
 "Bạn phải cung cấp địa chỉ người gửi nếu bạn sử dụng máy chủ SMTP tùy chỉnh."
 
-#: pretalx/orga/forms/event.py:462
+#: pretalx/orga/forms/event.py:476
 msgid ""
 "You can activate either SSL or STARTTLS security, but not both at the same "
 "time."
@@ -3699,7 +3704,7 @@ msgstr ""
 "Bạn có thể kích hoạt bảo mật SSL hoặc STARTTLS, nhưng không thể kích hoạt cả "
 "hai cùng một lúc."
 
-#: pretalx/orga/forms/event.py:479
+#: pretalx/orga/forms/event.py:493
 msgid ""
 "You have to activate either SSL or STARTTLS security if you use a non-local "
 "mailserver due to data protection reasons. Your administrator can add an "
@@ -3711,11 +3716,11 @@ msgstr ""
 "độ bỏ qua toàn phiên bản. Nếu bạn sử dụng chế độ bỏ qua này, vui lòng điều "
 "chỉnh Chính sách bảo mật của bạn."
 
-#: pretalx/orga/forms/event.py:510
+#: pretalx/orga/forms/event.py:524
 msgid "Enable submission comments"
 msgstr "Cho phép bình luận vào bài nộp"
 
-#: pretalx/orga/forms/event.py:512
+#: pretalx/orga/forms/event.py:526
 msgid ""
 "Allow organisers and reviewers to comment on submissions, separate from "
 "reviews."
@@ -3723,35 +3728,35 @@ msgstr ""
 "Cho phép người tổ chức và người bình duyệt bình luận về bài nộp, tách biệt "
 "với phần bình duyệt."
 
-#: pretalx/orga/forms/event.py:517
+#: pretalx/orga/forms/event.py:531
 msgid "Require a review score"
 msgstr "Yêu cầu điểm đánh giá"
 
-#: pretalx/orga/forms/event.py:520
+#: pretalx/orga/forms/event.py:534
 msgid "Require a review text"
 msgstr "Yêu cầu lời nhận xét bình duyệt"
 
-#: pretalx/orga/forms/event.py:523
+#: pretalx/orga/forms/event.py:537
 msgid "Score display"
 msgstr "Hiển thị điểm"
 
-#: pretalx/orga/forms/event.py:526
+#: pretalx/orga/forms/event.py:540
 msgid "Text and score, e.g “Good (3)”"
 msgstr "Nhận xét và điểm, ví dụ \"Tốt (3)\""
 
-#: pretalx/orga/forms/event.py:527
+#: pretalx/orga/forms/event.py:541
 msgid "Score and text, e.g “3 (good)”"
 msgstr "Điểm và Nhận xét, ví dụ \"3 (Tốt)\""
 
-#: pretalx/orga/forms/event.py:528
+#: pretalx/orga/forms/event.py:542
 msgid "Just scores"
 msgstr "Chỉ hiện điểm"
 
-#: pretalx/orga/forms/event.py:529
+#: pretalx/orga/forms/event.py:543
 msgid "Just text"
 msgstr "Chỉ hiện nhận xét"
 
-#: pretalx/orga/forms/event.py:533
+#: pretalx/orga/forms/event.py:547
 msgid ""
 "This is how the score will look like on the review interface. The dashboard "
 "will always show numerical scores."
@@ -3759,24 +3764,24 @@ msgstr ""
 "Đây là cách điểm số sẽ hiển thị trên giao diện bình duyệt. Bảng điều khiển "
 "sẽ luôn hiển thị điểm số."
 
-#: pretalx/orga/forms/event.py:538
+#: pretalx/orga/forms/event.py:552
 msgid "Score aggregation method"
 msgstr "Phương pháp tổng hợp điểm"
 
-#: pretalx/orga/forms/event.py:540
-#: pretalx/orga/templates/orga/review/dashboard.html:162
+#: pretalx/orga/forms/event.py:554
+#: pretalx/orga/templates/orga/review/dashboard.html:160
 msgid "Median"
 msgstr "Trung vị"
 
-#: pretalx/orga/forms/event.py:540
+#: pretalx/orga/forms/event.py:554
 msgid "Average (mean)"
 msgstr "Trung bình (mean)"
 
-#: pretalx/orga/forms/event.py:544
+#: pretalx/orga/forms/event.py:558
 msgid "Help text for reviewers"
 msgstr "Thông tin hướng dẫn cho người bình duyệt"
 
-#: pretalx/orga/forms/event.py:546
+#: pretalx/orga/forms/event.py:560
 msgid ""
 "This text will be shown at the top of every review, as long as reviews can "
 "be created or edited."
@@ -3784,11 +3789,11 @@ msgstr ""
 "Văn bản này sẽ được hiển thị ở đầu mỗi bài bình duyệt, miễn là bài bình "
 "duyệt có thể được tạo hoặc chỉnh sửa."
 
-#: pretalx/orga/forms/event.py:567
+#: pretalx/orga/forms/event.py:581
 msgid "Show the widget even if the schedule is not public"
 msgstr "Hiển thị tiện ích (widget) ngay cả khi lịch trình không được công khai"
 
-#: pretalx/orga/forms/event.py:569
+#: pretalx/orga/forms/event.py:583
 msgid ""
 "Set to allow external pages to show the schedule widget, even if the "
 "schedule is not shown here using pretalx."
@@ -3796,22 +3801,22 @@ msgstr ""
 "Đặt để cho phép các trang bên ngoài hiển thị tiện ích lịch hội thảo, ngay cả "
 "khi lịch hội thảo không được hiển thị ở đây bằng pretalx."
 
-#: pretalx/orga/forms/event.py:585
+#: pretalx/orga/forms/event.py:599
 msgid "Limit days"
 msgstr "Ngày giới hạn"
 
-#: pretalx/orga/forms/event.py:590
+#: pretalx/orga/forms/event.py:604
 msgid ""
 "You can limit the days shown in the widget. Leave empty to show all days."
 msgstr ""
 "Quý vị có thể giới hạn số ngày hiển thị trong tiện ích. Để trống để hiển thị "
 "tất cả các ngày."
 
-#: pretalx/orga/forms/event.py:596
+#: pretalx/orga/forms/event.py:610
 msgid "Widget language"
 msgstr "Ngôn ngữ của tiện ích"
 
-#: pretalx/orga/forms/event.py:622
+#: pretalx/orga/forms/event.py:636
 msgid "The end of a phase has to be after its start."
 msgstr "Ngày kết thúc giai đoạn phải sau ngày bắt đầu."
 
@@ -3836,9 +3841,13 @@ msgid "Data delimiter"
 msgstr "Ký hiệu tách dữ liệu"
 
 #: pretalx/orga/forms/export.py:31
+#, fuzzy
+#| msgid ""
+#| "How do you want to separate data within a single cell (for example, "
+#| "multiple speakers in one session)?"
 msgid ""
 "How do you want to separate data within a single cell (for example, multiple "
-"speakers in one session)?"
+"speakers in one session/multiple sessions for one speaker)?"
 msgstr ""
 "Quý vị muốn phân tách dữ liệu trong một ô như thế nào (ví dụ: nhiều người "
 "nói trong một phiên)?"
@@ -3851,7 +3860,7 @@ msgstr "Dòng mới"
 msgid "Comma"
 msgstr "Dấu phẩy"
 
-#: pretalx/orga/forms/export.py:89
+#: pretalx/orga/forms/export.py:91
 msgid "Please select a delimiter for your CSV export."
 msgstr "Vui lòng chọn dấu phân cách cho tệp xuất CSV của bạn."
 
@@ -3888,22 +3897,22 @@ msgstr ""
 "Nếu quý vị chọn mục này, email sẽ được gửi ngay lập tức thay vì được đưa vào "
 "hộp thư đi."
 
-#: pretalx/orga/forms/mails.py:213
+#: pretalx/orga/forms/mails.py:218
 msgid "Recipient groups"
 msgstr "Nhóm người nhận"
 
-#: pretalx/orga/forms/mails.py:230
+#: pretalx/orga/forms/mails.py:235
 msgid "Reviewers"
 msgstr "Người bình duyệt"
 
-#: pretalx/orga/forms/mails.py:234
+#: pretalx/orga/forms/mails.py:239
 msgid "Other teams"
 msgstr "Các nhóm khác"
 
-#: pretalx/orga/forms/mails.py:279 pretalx/orga/forms/mails.py:283
-#: pretalx/orga/templates/orga/cfp/submissiontype/list.html:43
-#: pretalx/orga/templates/orga/cfp/track/list.html:46
-#: pretalx/orga/templates/orga/organiser/speaker_list.html:51
+#: pretalx/orga/forms/mails.py:284 pretalx/orga/forms/mails.py:288
+#: pretalx/orga/templates/orga/cfp/submissiontype/list.html:37
+#: pretalx/orga/templates/orga/cfp/track/list.html:45
+#: pretalx/orga/templates/orga/organiser/speaker_list.html:40
 #: pretalx/orga/templates/orga/speaker/list.html:40
 #: pretalx/orga/templates/orga/submission/stats.html:25
 #: pretalx/orga/templates/orga/submission/stats.html:37
@@ -3912,19 +3921,19 @@ msgstr "Các nhóm khác"
 msgid "Proposals"
 msgstr "Đề xuất"
 
-#: pretalx/orga/forms/mails.py:281
+#: pretalx/orga/forms/mails.py:286
 msgid ""
 "Select proposals that should receive the email regardless of the other "
 "filters."
 msgstr "Chọn các đề xuất sẽ nhận được email bất kể các bộ lọc khác."
 
-#: pretalx/orga/forms/mails.py:290
+#: pretalx/orga/forms/mails.py:295
 msgid ""
 "Select speakers that should receive the email regardless of the other "
 "filters."
 msgstr "Chọn những diễn giả sẽ nhận được email bất kể các bộ lọc khác."
 
-#: pretalx/orga/forms/mails.py:317
+#: pretalx/orga/forms/mails.py:322
 msgid ""
 "If you provide only one language, that language will be used for all emails. "
 "If you provide multiple languages, the best fit for each speaker will be "
@@ -3934,7 +3943,7 @@ msgstr ""
 "các email. Nếu quý vị cung cấp nhiều ngôn ngữ, ngôn ngữ phù hợp nhất cho "
 "từng diễn giả sẽ được sử dụng."
 
-#: pretalx/orga/forms/mails.py:456 pretalx/orga/templates/orga/base.html:263
+#: pretalx/orga/forms/mails.py:461 pretalx/orga/templates/orga/base.html:265
 #: pretalx/orga/templates/orga/speaker/speakerinformation/list.html:20
 #: pretalx/orga/views/cfp.py:458 pretalx/submission/forms/submission.py:265
 #: pretalx/submission/models/question.py:172
@@ -4018,7 +4027,7 @@ msgstr "Cập nhật cho diễn giả về các thay đổi"
 #: pretalx/orga/forms/schedule.py:31
 #: pretalx/orga/templates/orga/cfp/question/remind.html:17
 #: pretalx/orga/templates/orga/schedule/release.html:51
-#: pretalx/orga/views/mails.py:512 pretalx/orga/views/mails.py:514
+#: pretalx/orga/views/mails.py:555 pretalx/orga/views/mails.py:557
 msgid "Email template"
 msgstr "Mẫu email"
 
@@ -4031,8 +4040,8 @@ msgid "This schedule version was used already, please choose a different one."
 msgstr ""
 "Phiên bản lịch trình hội thảo đã được sử dụng, vui lòng chọn phiên bản khác."
 
-#: pretalx/orga/forms/schedule.py:61 pretalx/orga/forms/speaker.py:13
-#: pretalx/orga/templates/orga/speaker/information_list.html:53
+#: pretalx/orga/forms/schedule.py:61 pretalx/orga/forms/speaker.py:14
+#: pretalx/orga/templates/orga/speaker/information_list.html:47
 #: pretalx/orga/templates/orga/speaker/speakerinformation/list.html:18
 msgid "Target group"
 msgstr "Nhóm mục tiêu"
@@ -4080,39 +4089,33 @@ msgid "Resources provided by the speaker, either as links or as uploaded files"
 msgstr ""
 "Tài nguyên do diễn giả cung cấp, dưới dạng liên kết hoặc tệp đã tải lên"
 
-#: pretalx/orga/forms/speaker.py:16
-msgid "With accepted proposals"
-msgstr "Với các đề xuất được chấp nhận"
-
 #: pretalx/orga/forms/speaker.py:17
-msgid "With confirmed proposals"
-msgstr "Với các đề xuất được xác nhận"
+#, fuzzy
+#| msgid "A speaker was removed from the proposal."
+msgid "Just speakers with accepted and confirmed proposals"
+msgstr "Một diễn giả đã được bỏ ra khỏi đề xuất tham luận."
 
-#: pretalx/orga/forms/speaker.py:18
-msgid "With rejected proposals"
-msgstr "Với các đề xuất bị từ chối"
-
-#: pretalx/orga/forms/speaker.py:32
+#: pretalx/orga/forms/speaker.py:31
 msgid "Proposal IDs"
 msgstr "Mã (ID) của đề xuất"
 
-#: pretalx/orga/forms/speaker.py:37
+#: pretalx/orga/forms/speaker.py:36
 msgid "Proposal titles"
 msgstr "Tiêu đề của đề xuất"
 
-#: pretalx/orga/forms/speaker.py:41
-#: pretalx/orga/templates/orga/cfp/text.html:192
+#: pretalx/orga/forms/speaker.py:40
+#: pretalx/orga/templates/orga/cfp/text.html:186
 #: pretalx/orga/templates/orga/submission/review.html:137
 #: pretalx/orga/templates/orga/submission/speakers.html:46
 #: pretalx/person/models/profile.py:39
 msgid "Biography"
 msgstr "Tiểu sử"
 
-#: pretalx/orga/forms/speaker.py:45
+#: pretalx/orga/forms/speaker.py:44
 msgid "Picture"
 msgstr "Ảnh"
 
-#: pretalx/orga/forms/speaker.py:46
+#: pretalx/orga/forms/speaker.py:45
 msgid "The link to the speaker’s profile picture"
 msgstr "Liên kết đến ảnh hồ sơ của diễn giả"
 
@@ -4131,12 +4134,12 @@ msgid "The end time has to be after the start time."
 msgstr "Thời gian kết thúc phải sau thời gian bắt đầu."
 
 #: pretalx/orga/forms/submission.py:268
-#: pretalx/orga/templates/orga/review/dashboard.html:306
+#: pretalx/orga/templates/orga/review/dashboard.html:304
 msgid "Mark the new state as “pending”"
 msgstr "Đánh dấu trạng thái mới là “đang xử lý”"
 
 #: pretalx/orga/forms/submission.py:270
-#: pretalx/orga/templates/orga/review/dashboard.html:308
+#: pretalx/orga/templates/orga/review/dashboard.html:306
 msgid ""
 "If you mark state changes as pending, they won’t be visible to speakers "
 "right away. You can always apply pending changes for some or all proposals "
@@ -4260,11 +4263,11 @@ msgid "You can check for updates <a href=\"%(url)s\">here</a>."
 msgstr "Bạn có thể kiểm tra các bản cập nhật <a href=\"%(url)s\">tại đây</a>."
 
 #: pretalx/orga/templates/orga/admin/admin.html:39
-#: pretalx/orga/templates/orga/base.html:207
-#: pretalx/orga/templates/orga/base.html:431
+#: pretalx/orga/templates/orga/base.html:209
+#: pretalx/orga/templates/orga/base.html:433
 #: pretalx/orga/templates/orga/organiser/detail.html:8
-#: pretalx/orga/templates/orga/settings/form.html:26
-#: pretalx/orga/templates/orga/settings/form.html:29
+#: pretalx/orga/templates/orga/settings/form.html:22
+#: pretalx/orga/templates/orga/settings/form.html:25
 msgid "Settings"
 msgstr "Cài đặt"
 
@@ -4305,7 +4308,7 @@ msgid "Media files"
 msgstr "File đa phương tiện"
 
 #: pretalx/orga/templates/orga/admin/admin.html:78
-#: pretalx/orga/templates/orga/base.html:397
+#: pretalx/orga/templates/orga/base.html:399
 msgid "Mails"
 msgstr "Email"
 
@@ -4368,7 +4371,7 @@ msgid "Current queue length"
 msgstr "Chiều dài hàng đợi hiện tại"
 
 #: pretalx/orga/templates/orga/admin/admin.html:152
-#: pretalx/orga/templates/orga/submission/base.html:108
+#: pretalx/orga/templates/orga/submission/base.html:97
 msgid "Links"
 msgstr "Liên kết"
 
@@ -4462,63 +4465,69 @@ msgstr "Phiên bản mới nhất"
 msgid "Update check settings"
 msgstr "Cài đặt kiểm tra cập nhật"
 
-#: pretalx/orga/templates/orga/admin/user_detail.html:34
+#: pretalx/orga/templates/orga/admin/user_detail.html:26
 msgid "Deactivate account"
 msgstr "Vô hiệu tài khoản"
 
-#: pretalx/orga/templates/orga/admin/user_detail.html:39
+#: pretalx/orga/templates/orga/admin/user_detail.html:31
 msgid "Activate account"
 msgstr "Kích hoạt tài khoản"
 
-#: pretalx/orga/templates/orga/admin/user_detail.html:53
+#: pretalx/orga/templates/orga/admin/user_detail.html:45
 #: pretalx/orga/templates/orga/admin/user_list.html:35
 msgid "Last login"
 msgstr "Đăng nhập lần cuối"
 
-#: pretalx/orga/templates/orga/admin/user_detail.html:57
+#: pretalx/orga/templates/orga/admin/user_detail.html:49
 #: pretalx/orga/templates/orga/admin/user_list.html:36
 msgid "Password reset time"
 msgstr "Thời gian đặt lại mật khẩu"
 
-#: pretalx/orga/templates/orga/admin/user_detail.html:65
+#: pretalx/orga/templates/orga/admin/user_detail.html:57
 msgid "Timezone"
 msgstr "Múi giờ"
 
-#: pretalx/orga/templates/orga/admin/user_detail.html:87
+#: pretalx/orga/templates/orga/admin/user_detail.html:79
 #: pretalx/orga/templates/orga/organiser/team/list.html:12
-#: pretalx/orga/templates/orga/review/assignment.html:49
+#: pretalx/orga/templates/orga/review/assignment.html:38
 #: pretalx/orga/views/organiser.py:67
 msgid "Team"
 msgstr "Nhóm/Tiểu ban"
 
-#: pretalx/orga/templates/orga/admin/user_detail.html:90
-#: pretalx/orga/templates/orga/organiser/team/_form.html:21
+#: pretalx/orga/templates/orga/admin/user_detail.html:82
+#: pretalx/orga/templates/orga/organiser/team/_form.html:10
 #: pretalx/person/forms/auth_token.py:20
 msgid "Permissions"
 msgstr "Quyền"
 
-#: pretalx/orga/templates/orga/admin/user_detail.html:104
+#: pretalx/orga/templates/orga/admin/user_detail.html:96
 #: pretalx/orga/templates/orga/organiser/team/list.html:14
 msgid "All events"
 msgstr "Tất cả hội thảo"
 
-#: pretalx/orga/templates/orga/admin/user_detail.html:121
+#: pretalx/orga/templates/orga/admin/user_detail.html:113
 msgid "User isn't in any teams"
 msgstr "Người dụng hiện không thuộc nhóm nào"
 
-#: pretalx/orga/templates/orga/admin/user_detail.html:150
+#: pretalx/orga/templates/orga/admin/user_detail.html:142
 msgid "User hasn't submitted any proposals"
 msgstr "Người dùng chưa nộp đề xuất nào"
 
 #: pretalx/orga/templates/orga/admin/user_list.html:8
 #: pretalx/orga/templates/orga/admin/user_list.html:17
-#: pretalx/orga/templates/orga/base.html:480
+#: pretalx/orga/templates/orga/base.html:482
 msgid "Users"
 msgstr "Người dùng"
 
+#: pretalx/orga/templates/orga/admin/user_list.html:20
+#, fuzzy
+#| msgid "The addressed user’s email address"
+msgid "Search users by name or email address"
+msgstr "Email của người dùng được giải quyết"
+
 #: pretalx/orga/templates/orga/admin/user_list.html:32
-#: pretalx/orga/templates/orga/base.html:219
-#: pretalx/orga/templates/orga/base.html:438
+#: pretalx/orga/templates/orga/base.html:221
+#: pretalx/orga/templates/orga/base.html:440
 #: pretalx/orga/templates/orga/organiser/list.html:8
 #: pretalx/orga/views/admin.py:154 pretalx/orga/views/organiser.py:72
 msgid "Teams"
@@ -4532,22 +4541,28 @@ msgstr "Bài đã nộp"
 msgid "Sign in"
 msgstr "Đăng nhập"
 
-#: pretalx/orga/templates/orga/base.html:91
-#: pretalx/orga/templates/orga/base.html:100
+#: pretalx/orga/templates/orga/base.html:92
+#: pretalx/orga/templates/orga/base.html:101
 msgid "View event"
 msgstr "Xem hội thảo"
 
-#: pretalx/orga/templates/orga/base.html:135
+#: pretalx/orga/templates/orga/base.html:128
+#, fuzzy
+#| msgid "Log in"
+msgid "Log out"
+msgstr "Đăng nhập"
+
+#: pretalx/orga/templates/orga/base.html:137
 msgid "You’re using pretalx as a superuser. This is not recommended."
 msgstr ""
 "Bạn đang sử dụng pretalx như một siêu người dùng. Điều này không được khuyến "
 "khích."
 
-#: pretalx/orga/templates/orga/base.html:139
+#: pretalx/orga/templates/orga/base.html:141
 msgid "Please click here to switch to an administrator account."
 msgstr "Vui lòng nhấp vào đây để chuyển sang tài khoản quản trị viên."
 
-#: pretalx/orga/templates/orga/base.html:146
+#: pretalx/orga/templates/orga/base.html:148
 msgid ""
 "Starting with version 1.1.0, pretalx automatically checks for updates in the "
 "background. During this check, anonymous data is transmitted to servers "
@@ -4562,119 +4577,121 @@ msgstr ""
 "thông báo qua email nếu có bản cập nhật mới. Thông báo này sẽ biến mất sau "
 "khi bạn nhấp vào."
 
-#: pretalx/orga/templates/orga/base.html:170
+#: pretalx/orga/templates/orga/base.html:172
 msgid "Organiser account"
 msgstr "Tài khoản Ban tổ chức"
 
-#: pretalx/orga/templates/orga/base.html:198
-#: pretalx/orga/templates/orga/base.html:427
+#: pretalx/orga/templates/orga/base.html:200
+#: pretalx/orga/templates/orga/base.html:429
 #: pretalx/orga/templates/orga/event_list.html:8
 msgid "Dashboard"
 msgstr "Bảng điều khiển"
 
-#: pretalx/orga/templates/orga/base.html:229
+#: pretalx/orga/templates/orga/base.html:231
 msgid "Widget"
 msgstr "Tiện ích"
 
-#: pretalx/orga/templates/orga/base.html:253
+#: pretalx/orga/templates/orga/base.html:255
 #: pretalx/orga/templates/orga/mails/_mail_editor.html:31
-#: pretalx/orga/templates/orga/submission/base.html:61
+#: pretalx/orga/templates/orga/submission/base.html:50
 msgid "Content"
 msgstr "Nội dung"
 
-#: pretalx/orga/templates/orga/base.html:256
-#: pretalx/orga/templates/orga/base.html:381
+#: pretalx/orga/templates/orga/base.html:258
+#: pretalx/orga/templates/orga/base.html:383
 msgid "Editor"
 msgstr "Soạn lịch"
 
-#: pretalx/orga/templates/orga/base.html:267
+#: pretalx/orga/templates/orga/base.html:269
 #: pretalx/orga/templates/orga/speaker/speakerinformation/list.html:22
 #: pretalx/orga/views/cfp.py:404 pretalx/submission/forms/submission.py:251
 msgid "Session types"
 msgstr "Loại phiên"
 
-#: pretalx/orga/templates/orga/base.html:270 pretalx/orga/views/cfp.py:490
+#: pretalx/orga/templates/orga/base.html:272 pretalx/orga/views/cfp.py:490
 msgid "Access codes"
 msgstr "Mã truy cập"
 
-#: pretalx/orga/templates/orga/base.html:292
-#: pretalx/orga/templates/orga/review/dashboard.html:102
-#: pretalx/orga/templates/orga/review/dashboard.html:196
+#: pretalx/orga/templates/orga/base.html:294
+#: pretalx/orga/templates/orga/review/dashboard.html:100
+#: pretalx/orga/templates/orga/review/dashboard.html:194
 #: pretalx/orga/views/submission.py:975
 #: pretalx/submission/forms/submission.py:271
 #: pretalx/submission/models/submission.py:207
 msgid "Tags"
 msgstr "Thẻ"
 
-#: pretalx/orga/templates/orga/base.html:295
+#: pretalx/orga/templates/orga/base.html:297
 #: pretalx/orga/templates/orga/submission/stats.html:18
 msgid "Statistics"
 msgstr "Thống kê"
 
-#: pretalx/orga/templates/orga/base.html:304
-#: pretalx/orga/templates/orga/base.html:360
-#: pretalx/orga/templates/orga/base.html:387
+#: pretalx/orga/templates/orga/base.html:306
+#: pretalx/orga/templates/orga/base.html:362
+#: pretalx/orga/templates/orga/base.html:389
 msgid "Export"
 msgstr "Xuất"
 
-#: pretalx/orga/templates/orga/base.html:325
+#: pretalx/orga/templates/orga/base.html:327
 #: pretalx/orga/templates/orga/review/assignment-import.html:8
 #: pretalx/orga/templates/orga/review/assignment-import.html:11
 #: pretalx/orga/templates/orga/review/assignment.html:8
-#: pretalx/orga/templates/orga/review/assignment.html:25
+#: pretalx/orga/templates/orga/review/assignment.html:14
 msgid "Assign reviewers"
 msgstr "Chỉ định người bình duyệt"
 
-#: pretalx/orga/templates/orga/base.html:328
+#: pretalx/orga/templates/orga/base.html:330
 msgid "Export reviews"
 msgstr "Xuất các nhận xét"
 
-#: pretalx/orga/templates/orga/base.html:355 pretalx/schedule/models/room.py:49
+#: pretalx/orga/templates/orga/base.html:357
+#: pretalx/orga/templates/orga/cfp/text.html:169
+#: pretalx/schedule/models/room.py:49
 msgid "Speaker Information"
 msgstr "Thông tin dành cho diễn giả"
 
-#: pretalx/orga/templates/orga/base.html:384 pretalx/orga/views/schedule.py:535
+#: pretalx/orga/templates/orga/base.html:386 pretalx/orga/views/schedule.py:535
 msgid "Rooms"
 msgstr "Phòng"
 
-#: pretalx/orga/templates/orga/base.html:407
+#: pretalx/orga/templates/orga/base.html:409
 msgid "Outbox"
 msgstr "Hộp thư đi"
 
-#: pretalx/orga/templates/orga/base.html:410
+#: pretalx/orga/templates/orga/base.html:412
 msgid "Compose emails"
 msgstr "Soạn email"
 
-#: pretalx/orga/templates/orga/base.html:413
+#: pretalx/orga/templates/orga/base.html:415
 msgid "Sent emails"
 msgstr "Email đã gửi"
 
-#: pretalx/orga/templates/orga/base.html:416
+#: pretalx/orga/templates/orga/base.html:418
 msgid "Templates"
 msgstr "Mẫu"
 
 #. Translators: Ideally a term that is as broad as possible, to refer to anybody who
 #. presents/owns a session. This word is also used to differentiate accepted „speakers“
 #. from not-yet-accepted „submitters“. Plural, used in headings.
-#: pretalx/orga/templates/orga/base.html:444
+#: pretalx/orga/templates/orga/base.html:446
 #: pretalx/orga/templates/orga/submission/speakers.html:10
 #: pretalx/schedule/phrases.py:18
 msgid "Speakers"
 msgstr "Diễn giả"
 
-#: pretalx/orga/templates/orga/base.html:459
+#: pretalx/orga/templates/orga/base.html:461
 msgid "Organisers"
 msgstr "Ban Tổ chức"
 
-#: pretalx/orga/templates/orga/base.html:468
+#: pretalx/orga/templates/orga/base.html:470
 msgid "Administration"
 msgstr "Quản trị viên"
 
-#: pretalx/orga/templates/orga/base.html:477
+#: pretalx/orga/templates/orga/base.html:479
 msgid "Admin information"
 msgstr "Thông tin quản trị"
 
-#: pretalx/orga/templates/orga/base.html:506
+#: pretalx/orga/templates/orga/base.html:508
 msgid "running in development mode"
 msgstr "chạy ở chế độ phát triển phần mềm"
 
@@ -4720,8 +4737,8 @@ msgid "Response options"
 msgstr "Tùy chọn trả lời"
 
 #: pretalx/orga/templates/orga/cfp/question/_form.html:102
-#: pretalx/orga/templates/orga/cfp/question/list.html:80
-#: pretalx/orga/templates/orga/cfp/track/list.html:66
+#: pretalx/orga/templates/orga/cfp/question/list.html:79
+#: pretalx/orga/templates/orga/cfp/track/list.html:65
 #: pretalx/orga/templates/orga/schedule/room/list.html:41
 msgid "Move item"
 msgstr "Di chuyển mục"
@@ -4798,13 +4815,13 @@ msgstr "%%"
 msgid "New custom field"
 msgstr "Trường tuỳ biến mới"
 
-#: pretalx/orga/templates/orga/cfp/question/list.html:32
+#: pretalx/orga/templates/orga/cfp/question/list.html:31
 #, fuzzy
 #| msgid "Send out reminders for unanswered questions"
 msgid "Send out reminders for custom fields without responses"
 msgstr "Gửi lời nhắc cho những câu hỏi chưa được trả lời"
 
-#: pretalx/orga/templates/orga/cfp/question/list.html:39
+#: pretalx/orga/templates/orga/cfp/question/list.html:38
 msgid ""
 "Custom fields can help you sort out additional details with speakers, such "
 "as clothing sizes, special requirements such as dietary needs, or "
@@ -4816,30 +4833,30 @@ msgstr ""
 "kiêng hoặc chỗ ở. Các trường tuỳ biến có thể được hỏi đối với từng đề xuất "
 "tham luận, hoặc đối với từng diễn giả, tùy theo quý vị thấy phù hợp."
 
-#: pretalx/orga/templates/orga/cfp/question/list.html:53
+#: pretalx/orga/templates/orga/cfp/question/list.html:52
 msgid "Target"
 msgstr "Mục tiêu"
 
-#: pretalx/orga/templates/orga/cfp/question/list.html:54
+#: pretalx/orga/templates/orga/cfp/question/list.html:53
 msgid "required"
 msgstr "bắt buộc"
 
-#: pretalx/orga/templates/orga/cfp/question/list.html:55
+#: pretalx/orga/templates/orga/cfp/question/list.html:54
 #: pretalx/submission/models/question.py:200
 msgid "active"
 msgstr "đang hoạt động"
 
-#: pretalx/orga/templates/orga/cfp/question/list.html:56
+#: pretalx/orga/templates/orga/cfp/question/list.html:55
 msgid "Responses"
 msgstr "Các phản hồi"
 
-#: pretalx/orga/templates/orga/cfp/question/list.html:71
+#: pretalx/orga/templates/orga/cfp/question/list.html:70
 #, fuzzy
 #| msgid "This field’s availability depends on a deadline."
 msgid "This field's availability depends on a deadline."
 msgstr "Trường này có sẵn sàng hay không tùy thuộc vào thời hạn."
 
-#: pretalx/orga/templates/orga/cfp/question/list.html:93
+#: pretalx/orga/templates/orga/cfp/question/list.html:92
 #: pretalx/orga/views/event.py:190
 msgid "You have configured no custom fields yet."
 msgstr "Quý vị chưa cấu hình trường tuỳ biến nào."
@@ -4871,7 +4888,7 @@ msgstr ""
 msgid "New type"
 msgstr "Loại mới"
 
-#: pretalx/orga/templates/orga/cfp/submissiontype/list.html:31
+#: pretalx/orga/templates/orga/cfp/submissiontype/list.html:25
 msgid ""
 "Different session types may help to guide speakers into different slot "
 "lengths (short sessions vs long sessions) or different presentation formats "
@@ -4881,22 +4898,22 @@ msgstr ""
 "gian khác nhau (phiên ngắn so với phiên dài) hoặc các định dạng thuyết trình "
 "khác nhau (buổi nói chuyện so với workshop hoặc so với buổi hòa nhạc metal)."
 
-#: pretalx/orga/templates/orga/cfp/submissiontype/list.html:44
+#: pretalx/orga/templates/orga/cfp/submissiontype/list.html:38
 msgid "Default duration"
 msgstr "Thời lượng mặc định"
 
-#: pretalx/orga/templates/orga/cfp/submissiontype/list.html:53
-#: pretalx/orga/templates/orga/cfp/track/list.html:56
+#: pretalx/orga/templates/orga/cfp/submissiontype/list.html:47
+#: pretalx/orga/templates/orga/cfp/track/list.html:55
 #: pretalx/submission/models/track.py:50 pretalx/submission/models/type.py:47
 msgid "Requires access code"
 msgstr "Yêu cầu mã truy cập"
 
-#: pretalx/orga/templates/orga/cfp/submissiontype/list.html:63
+#: pretalx/orga/templates/orga/cfp/submissiontype/list.html:57
 msgid "Default"
 msgstr "Mặc định"
 
-#: pretalx/orga/templates/orga/cfp/submissiontype/list.html:68
-#: pretalx/orga/templates/orga/cfp/track/list.html:70
+#: pretalx/orga/templates/orga/cfp/submissiontype/list.html:62
+#: pretalx/orga/templates/orga/cfp/track/list.html:69
 msgid "Go to pre-filled CfP form"
 msgstr "Đi đến mẫu Thông báo mời viết Đề xuất tham luận đã điền sẵn"
 
@@ -4905,7 +4922,7 @@ msgstr "Đi đến mẫu Thông báo mời viết Đề xuất tham luận đã 
 msgid "New access code"
 msgstr "Mã truy cập mới"
 
-#: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:34
+#: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:28
 msgid ""
 "Access codes can be used to allow proposals even when the CfP is over. You "
 "can also use them for hidden tracks or hidden session types, which can only "
@@ -4916,19 +4933,19 @@ msgstr ""
 "các kênh ẩn hoặc các loại phiên ẩn, chỉ có thể nhìn thấy bằng mã truy cập "
 "phù hợp."
 
-#: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:45
+#: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:39
 msgid "Code"
 msgstr "Mã"
 
-#: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:50
+#: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:44
 msgid "Uses"
 msgstr "Sử dụng"
 
-#: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:78
+#: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:72
 msgid "Copy access code link"
 msgstr "Copy đường dẫn mã truy cập"
 
-#: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:83
+#: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:77
 msgid "Send access code as email"
 msgstr "Gửi mã truy cập qua email"
 
@@ -4937,7 +4954,7 @@ msgstr "Gửi mã truy cập qua email"
 msgid "Send access code"
 msgstr "Gửi mã truy cập"
 
-#: pretalx/orga/templates/orga/cfp/text.html:32
+#: pretalx/orga/templates/orga/cfp/text.html:26
 msgid ""
 "A good Call for Participation will engage potential speakers. Remember to "
 "include:"
@@ -4945,29 +4962,29 @@ msgstr ""
 "Một Thông báo mời viết Đề xuất tham luận tốt sẽ thu hút được những diễn giả "
 "tiềm năng. Hãy nhớ đưa vào những nội dung sau:"
 
-#: pretalx/orga/templates/orga/cfp/text.html:35
+#: pretalx/orga/templates/orga/cfp/text.html:29
 msgid "The formats (sessions, workshops, panels) and their durations"
 msgstr ""
 "Các hình thức (phiên thuyết trình, workshop, bàn tròn) và thời lượng của "
 "chúng"
 
-#: pretalx/orga/templates/orga/cfp/text.html:36
+#: pretalx/orga/templates/orga/cfp/text.html:30
 msgid "Topics you are looking for"
 msgstr "Chủ đề quý vị đang tìm kiếm"
 
-#: pretalx/orga/templates/orga/cfp/text.html:37
+#: pretalx/orga/templates/orga/cfp/text.html:31
 msgid "How open you are to alternative topics"
 msgstr "Quý vị có sẵn sàng chọn với các chủ đề thay thế"
 
-#: pretalx/orga/templates/orga/cfp/text.html:38
+#: pretalx/orga/templates/orga/cfp/text.html:32
 msgid "The people coming to your conference: interests, experience level …"
 msgstr "Những người tham dự hội thảo: sở thích, trình độ kinh nghiệm…"
 
-#: pretalx/orga/templates/orga/cfp/text.html:39
+#: pretalx/orga/templates/orga/cfp/text.html:33
 msgid "Link your Code of Conduct and Data Protection statements."
 msgstr "Đường dẫn tới các tuyên bố về Quy tắc Ứng xử và Bảo vệ Dữ liệu."
 
-#: pretalx/orga/templates/orga/cfp/text.html:40
+#: pretalx/orga/templates/orga/cfp/text.html:34
 msgid ""
 "Do you offer financial or other support, e.g. support for first time "
 "speakers?"
@@ -4975,46 +4992,46 @@ msgstr ""
 "Quý vị có cung cấp hỗ trợ tài chính hoặc hỗ trợ khác không, ví dụ như hỗ trợ "
 "cho diễn giả lần đầu?"
 
-#: pretalx/orga/templates/orga/cfp/text.html:41
+#: pretalx/orga/templates/orga/cfp/text.html:35
 msgid "Dates and location"
 msgstr "Thời gian và địa điểm"
 
-#: pretalx/orga/templates/orga/cfp/text.html:60
+#: pretalx/orga/templates/orga/cfp/text.html:54
 msgid "Some of your session types have different deadlines:"
 msgstr "Những loại phiên hội thảo có thời hạn nhận bài khác nhau:"
 
-#: pretalx/orga/templates/orga/cfp/text.html:86
+#: pretalx/orga/templates/orga/cfp/text.html:80
 msgid "Proposal information"
 msgstr "Thông tin về Đề xuất tham luận"
 
-#: pretalx/orga/templates/orga/cfp/text.html:93
+#: pretalx/orga/templates/orga/cfp/text.html:87
 msgid ""
 "Select which information should be requested and/or required during CfP "
 "proposal."
 msgstr ""
 "Chọn thông tin nào cần được yêu cầu và/hoặc bắt buộc trong Đề xuất tham luận."
 
-#: pretalx/orga/templates/orga/cfp/text.html:94
+#: pretalx/orga/templates/orga/cfp/text.html:88
 msgid "Click here to view the proposal form."
 msgstr "Nhấp chuột vào đây để xem mẫu điền Đề xuất tham luận."
 
-#: pretalx/orga/templates/orga/cfp/text.html:102
-#: pretalx/orga/templates/orga/cfp/text.html:186
+#: pretalx/orga/templates/orga/cfp/text.html:96
+#: pretalx/orga/templates/orga/cfp/text.html:180
 msgid "Minimum length"
 msgstr "Độ dài tối thiểu"
 
-#: pretalx/orga/templates/orga/cfp/text.html:103
-#: pretalx/orga/templates/orga/cfp/text.html:187
+#: pretalx/orga/templates/orga/cfp/text.html:97
+#: pretalx/orga/templates/orga/cfp/text.html:181
 msgid "Maximum length"
 msgstr "Độ dài tối đa"
 
-#: pretalx/orga/templates/orga/cfp/text.html:114
+#: pretalx/orga/templates/orga/cfp/text.html:108
 #: pretalx/orga/templates/orga/submission/review.html:74
 #: pretalx/submission/models/submission.py:226
 msgid "Abstract"
 msgstr "Tóm tắt"
 
-#: pretalx/orga/templates/orga/cfp/text.html:120
+#: pretalx/orga/templates/orga/cfp/text.html:114
 #: pretalx/orga/templates/orga/submission/review.html:86
 #: pretalx/schedule/models/room.py:42 pretalx/submission/models/resource.py:33
 #: pretalx/submission/models/submission.py:232
@@ -5022,31 +5039,27 @@ msgstr "Tóm tắt"
 msgid "Description"
 msgstr "Miêu tả chi tiết"
 
-#: pretalx/orga/templates/orga/cfp/text.html:140
+#: pretalx/orga/templates/orga/cfp/text.html:134
 msgid "Additional speakers"
 msgstr "Các diễn giả khác"
 
-#: pretalx/orga/templates/orga/cfp/text.html:146
+#: pretalx/orga/templates/orga/cfp/text.html:140
 #: pretalx/orga/templates/orga/submission/review.html:98
 #: pretalx/submission/models/submission.py:238
 msgid "Notes"
 msgstr "Ghi chú"
 
-#: pretalx/orga/templates/orga/cfp/text.html:152
+#: pretalx/orga/templates/orga/cfp/text.html:146
 msgid "Recording opt-out"
 msgstr "Lựa chọn không ghi hình phiên này"
 
-#: pretalx/orga/templates/orga/cfp/text.html:158
+#: pretalx/orga/templates/orga/cfp/text.html:152
 #: pretalx/submission/forms/submission.py:39
 #: pretalx/submission/models/submission.py:279
 msgid "Session image"
 msgstr "Ảnh đại diện cho phiên này"
 
-#: pretalx/orga/templates/orga/cfp/text.html:175
-msgid "Speaker information"
-msgstr "Thông tin dành cho diễn giả"
-
-#: pretalx/orga/templates/orga/cfp/text.html:204 pretalx/schedule/forms.py:18
+#: pretalx/orga/templates/orga/cfp/text.html:198 pretalx/schedule/forms.py:18
 msgid "Availability"
 msgstr "Thời gian có thể thuyết trình"
 
@@ -5055,7 +5068,7 @@ msgstr "Thời gian có thể thuyết trình"
 msgid "New track"
 msgstr "Kênh mới"
 
-#: pretalx/orga/templates/orga/cfp/track/list.html:33
+#: pretalx/orga/templates/orga/cfp/track/list.html:32
 msgid ""
 "Tracks are used to sort your sessions into categories. You can use the CfP "
 "settings to determine if speakers can select the track for their session "
@@ -5068,7 +5081,7 @@ msgstr ""
 "không. Màu của kênh hữu ích để giúp người tham dự theo dõi lịch hội thảo dễ "
 "dàng hơn."
 
-#: pretalx/orga/templates/orga/cfp/track/list.html:45
+#: pretalx/orga/templates/orga/cfp/track/list.html:44
 #: pretalx/orga/templates/orga/submission/tag/list.html:13
 #: pretalx/submission/models/tag.py:29 pretalx/submission/models/track.py:39
 msgid "Color"
@@ -5102,7 +5115,7 @@ msgid "Click here to change"
 msgstr "Nhấp chuột vào đây để thay đổi"
 
 #: pretalx/orga/templates/orga/event/dashboard.html:113
-#: pretalx/orga/templates/orga/submission/base.html:95
+#: pretalx/orga/templates/orga/submission/base.html:84
 msgid "History"
 msgstr "Lịch sử"
 
@@ -5208,7 +5221,7 @@ msgstr ""
 "bản thân quý vị đã nộp, vui lòng truy cập trực tiếp vào chính của hội thảo:"
 
 #: pretalx/orga/templates/orga/includes/dashboard_block_event.html:13
-#: pretalx/orga/templates/orga/speaker/form.html:38
+#: pretalx/orga/templates/orga/speaker/form.html:29
 #: pretalx/orga/views/dashboard.py:340
 msgid "proposal"
 msgid_plural "proposals"
@@ -5359,13 +5372,13 @@ msgstr ""
 #: pretalx/orga/templates/orga/mails/_mail_editor.html:85
 #, python-brace-format
 msgid ""
-"Emails where placeholders are invalid will <b>not</b> be created! For "
-"example, if you are using {session_room}, but some proposals don’t have a "
-"room yet, only emails for proposals with a scheduled room will be created."
+"Emails where placeholders are invalid will <strong>not</strong> be created! "
+"For example, if you are using {session_room}, but some proposals don’t have "
+"a room yet, only emails for proposals with a scheduled room will be created."
 msgstr ""
-"Email có nơi giữ chỗ không hợp lệ sẽ <b>không</b> được tạo! Ví dụ, nếu quý "
-"vị đang sử dụng {session_room}, nhưng một số đề xuất chưa có phòng, chỉ "
-"những email cho các đề xuất có phòng đã lên lịch mới được tạo."
+"Email có nơi giữ chỗ không hợp lệ sẽ <strong>không</strong> được tạo! Ví dụ, "
+"nếu quý vị đang sử dụng {session_room}, nhưng một số đề xuất chưa có phòng, "
+"chỉ những email cho các đề xuất có phòng đã lên lịch mới được tạo."
 
 #: pretalx/orga/templates/orga/mails/_mail_editor.html:118
 msgid "Preview email"
@@ -5385,7 +5398,7 @@ msgstr "v.d."
 
 #: pretalx/orga/templates/orga/mails/compose_choice.html:5
 #: pretalx/orga/templates/orga/mails/compose_choice.html:8
-#: pretalx/orga/views/mails.py:136
+#: pretalx/orga/views/mails.py:152
 msgid "Send emails"
 msgstr "Gửi email"
 
@@ -5431,11 +5444,11 @@ msgstr "Người nhận lọc theo phản hồi cho trường tuỳ biến “%(
 msgid "Recipients filtered by search “%(search)s”."
 msgstr "Người nhận lọc theo tìm kiếm “%(search)s”."
 
-#: pretalx/orga/templates/orga/mails/mailtemplate/list.html:14
+#: pretalx/orga/templates/orga/mails/mailtemplate/list.html:11
 msgid "New custom template"
 msgstr "Mẫu tuỳ biến mới"
 
-#: pretalx/orga/templates/orga/mails/mailtemplate/list.html:28
+#: pretalx/orga/templates/orga/mails/mailtemplate/list.html:25
 #, fuzzy
 #| msgid ""
 #| "You can edit the default templates and your custom templates for emails "
@@ -5453,7 +5466,7 @@ msgstr ""
 "chuyển đến tab \"Gửi email\". Các email được xếp hàng để gửi sẽ nằm trong "
 "tab \"Hộp chờ chuyển\"."
 
-#: pretalx/orga/templates/orga/mails/mailtemplate/list.html:35
+#: pretalx/orga/templates/orga/mails/mailtemplate/list.html:32
 msgid ""
 "There are different placeholders available depending on the template type. "
 "They are explained in detail once you start editing a template."
@@ -5461,24 +5474,24 @@ msgstr ""
 "Có nhiều chỗ giữ chỗ khác nhau tùy thuộc vào loại mẫu. Chúng được giải thích "
 "chi tiết khi bạn bắt đầu chỉnh sửa mẫu."
 
-#: pretalx/orga/templates/orga/mails/mailtemplate/list.html:49
+#: pretalx/orga/templates/orga/mails/mailtemplate/list.html:46
 #, fuzzy
 #| msgid "Templates"
 msgid "Template"
 msgstr "Mẫu"
 
-#: pretalx/orga/templates/orga/mails/mailtemplate/list.html:50
+#: pretalx/orga/templates/orga/mails/mailtemplate/list.html:47
 #, fuzzy
 #| msgctxt "email subject"
 #| msgid "Subject"
 msgid "Subject"
 msgstr "Chủ đề"
 
-#: pretalx/orga/templates/orga/mails/mailtemplate/list.html:63
+#: pretalx/orga/templates/orga/mails/mailtemplate/list.html:60
 msgid "Custom Mail"
 msgstr "Email tuỳ chỉnh"
 
-#: pretalx/orga/templates/orga/mails/mailtemplate/list.html:72
+#: pretalx/orga/templates/orga/mails/mailtemplate/list.html:69
 msgid "Send mails"
 msgstr "Gửi email"
 
@@ -5529,8 +5542,8 @@ msgstr "Các bộ lọc hiện tại sẽ được sử dụng khi gửi/hủy e
 #: pretalx/orga/templates/orga/mails/outbox_list.html:55
 #: pretalx/orga/templates/orga/mails/sent_list.html:17
 #: pretalx/orga/templates/orga/mails/sent_list.html:22
-#: pretalx/orga/templates/orga/organiser/speaker_list.html:37
-#: pretalx/orga/templates/orga/organiser/speaker_list.html:42
+#: pretalx/orga/templates/orga/organiser/speaker_list.html:26
+#: pretalx/orga/templates/orga/organiser/speaker_list.html:31
 #: pretalx/orga/templates/orga/submission/list.html:68
 #: pretalx/orga/templates/orga/submission/list.html:74
 #: pretalx/orga/templates/orga/submission/list.html:81
@@ -5542,8 +5555,8 @@ msgstr "Lọc (a-z)"
 #: pretalx/orga/templates/orga/mails/outbox_list.html:56
 #: pretalx/orga/templates/orga/mails/sent_list.html:18
 #: pretalx/orga/templates/orga/mails/sent_list.html:23
-#: pretalx/orga/templates/orga/organiser/speaker_list.html:38
-#: pretalx/orga/templates/orga/organiser/speaker_list.html:43
+#: pretalx/orga/templates/orga/organiser/speaker_list.html:27
+#: pretalx/orga/templates/orga/organiser/speaker_list.html:32
 #: pretalx/orga/templates/orga/submission/list.html:69
 #: pretalx/orga/templates/orga/submission/list.html:75
 #: pretalx/orga/templates/orga/submission/list.html:82
@@ -5599,48 +5612,48 @@ msgid "There are no organisers you can edit."
 msgstr "Không có thành viên Ban tổ chức nào quý vị có thể sửa."
 
 #: pretalx/orga/templates/orga/organiser/speaker_list.html:6
-#: pretalx/orga/templates/orga/organiser/speaker_list.html:22
+#: pretalx/orga/templates/orga/organiser/speaker_list.html:11
 #: pretalx/orga/views/dashboard.py:376
 msgid "speaker"
 msgid_plural "speakers"
 msgstr[0] "diễn giả"
 
-#: pretalx/orga/templates/orga/organiser/speaker_list.html:46
+#: pretalx/orga/templates/orga/organiser/speaker_list.html:35
 #: pretalx/orga/templates/orga/speaker/list.html:39
 msgid "Accepted Proposals"
 msgstr "Đề xuất được chấp nhận"
 
-#: pretalx/orga/templates/orga/organiser/speaker_list.html:47
-#: pretalx/orga/templates/orga/organiser/speaker_list.html:52
-#: pretalx/orga/templates/orga/review/dashboard.html:166
-#: pretalx/orga/templates/orga/review/dashboard.html:176
-#: pretalx/orga/templates/orga/review/dashboard.html:187
+#: pretalx/orga/templates/orga/organiser/speaker_list.html:36
+#: pretalx/orga/templates/orga/organiser/speaker_list.html:41
+#: pretalx/orga/templates/orga/review/dashboard.html:164
+#: pretalx/orga/templates/orga/review/dashboard.html:174
+#: pretalx/orga/templates/orga/review/dashboard.html:185
 msgid "Sort (high-low)"
 msgstr "Lọc (cao-thấp)"
 
-#: pretalx/orga/templates/orga/organiser/speaker_list.html:48
-#: pretalx/orga/templates/orga/organiser/speaker_list.html:53
-#: pretalx/orga/templates/orga/review/dashboard.html:167
-#: pretalx/orga/templates/orga/review/dashboard.html:177
-#: pretalx/orga/templates/orga/review/dashboard.html:188
+#: pretalx/orga/templates/orga/organiser/speaker_list.html:37
+#: pretalx/orga/templates/orga/organiser/speaker_list.html:42
+#: pretalx/orga/templates/orga/review/dashboard.html:165
+#: pretalx/orga/templates/orga/review/dashboard.html:175
+#: pretalx/orga/templates/orga/review/dashboard.html:186
 msgid "Sort (low-high)"
 msgstr "Lọc (thấp-cao)"
 
-#: pretalx/orga/templates/orga/organiser/team/_form.html:35
+#: pretalx/orga/templates/orga/organiser/team/_form.html:24
 #: pretalx/orga/templates/orga/settings/review.html:8
-#: pretalx/orga/templates/orga/settings/review.html:30
+#: pretalx/orga/templates/orga/settings/review.html:24
 msgid "Review settings"
 msgstr "Cài đặt bình duyệt"
 
 #: pretalx/orga/templates/orga/organiser/team/list.html:5
-#: pretalx/orga/templates/orga/review/assignment.html:43
+#: pretalx/orga/templates/orga/review/assignment.html:32
 #: pretalx/orga/views/organiser.py:71
 msgid "New team"
 msgstr "Tiểu ban mới"
 
 #: pretalx/orga/templates/orga/organiser/team/list.html:13
 #: pretalx/orga/templates/orga/organiser/team/update.html:7
-#: pretalx/orga/templates/orga/review/assignment.html:50
+#: pretalx/orga/templates/orga/review/assignment.html:39
 msgid "Members"
 msgstr "Thành viên"
 
@@ -5649,7 +5662,7 @@ msgid "Reviewer"
 msgstr "Người bình duyệt"
 
 #: pretalx/orga/templates/orga/organiser/team/list.html:26
-#: pretalx/orga/templates/orga/review/assignment.html:64
+#: pretalx/orga/templates/orga/review/assignment.html:53
 msgid "You are a member of this team"
 msgstr "Quý vị là thành viên của Tiểu ban"
 
@@ -5662,6 +5675,7 @@ msgid "pending Invitation"
 msgstr "chờ được mời"
 
 #: pretalx/orga/templates/orga/organiser/team/update.html:52
+#: pretalx/orga/views/organiser.py:202
 msgid "Resend invite"
 msgstr "Gửi lại thư mời"
 
@@ -5714,7 +5728,7 @@ msgstr ""
 msgid "Import"
 msgstr "Nhập"
 
-#: pretalx/orga/templates/orga/review/assignment.html:31
+#: pretalx/orga/templates/orga/review/assignment.html:20
 msgid ""
 "Reviewers can be assigned to tracks by way of review teams. If you require "
 "more granular assignments, you can also assign reviewers to proposals "
@@ -5724,7 +5738,7 @@ msgstr ""
 "bình duyệt. Nếu quý vị cần phân công chi tiết hơn, quý vị cũng có thể phân "
 "công người bình duyệt vào từng đề xuất riêng lẻ."
 
-#: pretalx/orga/templates/orga/review/assignment.html:37
+#: pretalx/orga/templates/orga/review/assignment.html:26
 msgid ""
 "As teams can belong to multiple events, teams are managed in your organiser "
 "settings."
@@ -5732,34 +5746,35 @@ msgstr ""
 "Vì các tiểu ban có thể tham gia nhiều hội thảo nên các tiểu ban sẽ được quản "
 "lý trong phần cài đặt dành cho Ban tổ chức."
 
-#: pretalx/orga/templates/orga/review/assignment.html:52
+#: pretalx/orga/templates/orga/review/assignment.html:41
 msgid "Limited to tracks"
 msgstr "Giới hạn trong các kênh"
 
-#: pretalx/orga/templates/orga/review/assignment.html:108
+#: pretalx/orga/templates/orga/review/assignment.html:97
 #, python-format
 msgid ""
-"Reviewers will be able to see and review <b>only their assigned</b> "
-"proposals. You can change this in your <a href=\"%(href)s\">review settings</"
-"a>."
+"Reviewers will be able to see and review <strong>only their assigned</"
+"strong> proposals. You can change this in your <a href=\"%(href)s\">review "
+"settings</a>."
 msgstr ""
-"Người bình duyệt sẽ có thể xem và đánh giá <b>chỉ những đề xuất được giao</"
-"b>. Quý vị có thể thay đổi điều này trong <a href=\"%(href)s\">cài đặt bình "
-"duyệt</a> của mình."
+"Người bình duyệt sẽ có thể xem và đánh giá <strong>chỉ những đề xuất được "
+"giao</strong>. Quý vị có thể thay đổi điều này trong <a "
+"href=\"%(href)s\">cài đặt bình duyệt</a> của mình."
 
-#: pretalx/orga/templates/orga/review/assignment.html:113
+#: pretalx/orga/templates/orga/review/assignment.html:102
 #, python-format
 msgid ""
-"Reviewers will be able to see and review <b>all proposals</b>, but their "
-"assigned reviews will appear highlighted, and they will be directed to them "
-"first. You can change this in your <a href=\"%(href)s\">review settings</a>."
+"Reviewers will be able to see and review <strong>all proposals</strong>, but "
+"their assigned reviews will appear highlighted, and they will be directed to "
+"them first. You can change this in your <a href=\"%(href)s\">review "
+"settings</a>."
 msgstr ""
-"Người bình duyệt sẽ có thể xem và đánh giá <b>tất cả các đề xuất</b>, nhưng "
-"nhận xét của họ đối với các bài được giao sẽ được đánh dấu nổi bật và họ sẽ "
-"được chuyển hướng đến các đánh giá đó trước. Quý vị có thể thay đổi điều này "
-"trong <a href=\"%(href)s\">cài đặt bình duyệt</a> ."
+"Người bình duyệt sẽ có thể xem và đánh giá <strong>tất cả các đề xuất</"
+"strong>, nhưng nhận xét của họ đối với các bài được giao sẽ được đánh dấu "
+"nổi bật và họ sẽ được chuyển hướng đến các đánh giá đó trước. Quý vị có thể "
+"thay đổi điều này trong <a href=\"%(href)s\">cài đặt bình duyệt</a> ."
 
-#: pretalx/orga/templates/orga/review/assignment.html:122
+#: pretalx/orga/templates/orga/review/assignment.html:111
 msgid ""
 "This is where you can assign reviewers to specific proposals! Please use "
 "this drop-down to switch between the two assignment modes (assigning "
@@ -5770,7 +5785,7 @@ msgstr ""
 "(chỉ định người bình duyệt cho các đề xuất hoặc đề xuất cho người bình "
 "duyệt)."
 
-#: pretalx/orga/templates/orga/review/assignment.html:126
+#: pretalx/orga/templates/orga/review/assignment.html:115
 msgid ""
 "You can also use the Actions menu above to import your assignments from a "
 "prepared file."
@@ -5778,148 +5793,148 @@ msgstr ""
 "Quý vị cũng có thể sử dụng menu Hành động ở trên để nhập bài tập từ tệp đã "
 "chuẩn bị."
 
-#: pretalx/orga/templates/orga/review/assignment.html:133
-#: pretalx/orga/templates/orga/review/dashboard.html:114
+#: pretalx/orga/templates/orga/review/assignment.html:122
+#: pretalx/orga/templates/orga/review/dashboard.html:112
 #: pretalx/orga/templates/orga/schedule/index.html:40
 msgid "Actions"
 msgstr "Hành động"
 
-#: pretalx/orga/templates/orga/review/assignment.html:138
+#: pretalx/orga/templates/orga/review/assignment.html:127
 msgid "Import assignments"
 msgstr "Nhập bài giao bình duyệt"
 
-#: pretalx/orga/templates/orga/review/bulk.html:20
-#: pretalx/orga/templates/orga/review/dashboard.html:23
-#: pretalx/orga/templates/orga/review/dashboard.html:72
-#: pretalx/orga/templates/orga/review/dashboard.html:186
-#: pretalx/orga/templates/orga/submission/base.html:80
+#: pretalx/orga/templates/orga/review/bulk.html:15
+#: pretalx/orga/templates/orga/review/dashboard.html:21
+#: pretalx/orga/templates/orga/review/dashboard.html:70
+#: pretalx/orga/templates/orga/review/dashboard.html:184
+#: pretalx/orga/templates/orga/submission/base.html:69
 #: pretalx/orga/templates/orga/submission/content.html:62
 #: pretalx/orga/templates/orga/submission/review.html:9
 #: pretalx/orga/views/dashboard.py:190
 msgid "Reviews"
 msgstr "Bài bình duyệt"
 
-#: pretalx/orga/templates/orga/review/bulk.html:26
+#: pretalx/orga/templates/orga/review/bulk.html:21
 #, python-format
 msgid "Or review the missing proposal here."
 msgid_plural "Or review the missing %(count)s proposals one-by-one."
 msgstr[0] "Hoặc bình duyệt %(count)s đề xuất còn thiếu tại đây, từng bài một."
 
-#: pretalx/orga/templates/orga/review/bulk.html:35
-#: pretalx/orga/templates/orga/review/dashboard.html:40
+#: pretalx/orga/templates/orga/review/bulk.html:30
+#: pretalx/orga/templates/orga/review/dashboard.html:38
 msgid "You’ve got no proposals left to review!"
 msgstr "Không còn đề xuất nào quý vị cần bình duyệt!"
 
-#: pretalx/orga/templates/orga/review/bulk.html:50
+#: pretalx/orga/templates/orga/review/bulk.html:45
 #: pretalx/submission/models/comment.py:30
 msgid "Comment"
 msgstr "Bình luận"
 
-#: pretalx/orga/templates/orga/review/bulk.html:79
-#: pretalx/orga/templates/orga/review/dashboard.html:297
+#: pretalx/orga/templates/orga/review/bulk.html:74
+#: pretalx/orga/templates/orga/review/dashboard.html:295
 #: pretalx/orga/views/cards.py:140
 msgid "You don’t seem to have any proposals yet."
 msgstr "Dường như quý vị chưa có đề xuất tham luận nào."
 
-#: pretalx/orga/templates/orga/review/dashboard.html:31
+#: pretalx/orga/templates/orga/review/dashboard.html:29
 #, python-format
 msgid "%(count)s proposal is waiting for your review."
 msgid_plural "%(count)s proposals are waiting for your review."
 msgstr[0] "%(count)s đề xuất tham luận đang chờ quý vị bình duyệt."
 
-#: pretalx/orga/templates/orga/review/dashboard.html:36
+#: pretalx/orga/templates/orga/review/dashboard.html:34
 msgid "Click here to get started!"
 msgstr "Nhấp chuột vào đây để bắt đầu!"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:38
+#: pretalx/orga/templates/orga/review/dashboard.html:36
 #: pretalx/orga/templates/orga/submission/review.html:223
 msgid "Or review all proposals at once."
 msgstr "Hoặc bình duyệt tất cả đề xuất cùng một lúc."
 
-#: pretalx/orga/templates/orga/review/dashboard.html:43
+#: pretalx/orga/templates/orga/review/dashboard.html:41
 msgid "Reviews are currently closed."
 msgstr "Bình duyệt hiện đã đóng."
 
-#: pretalx/orga/templates/orga/review/dashboard.html:45
+#: pretalx/orga/templates/orga/review/dashboard.html:43
 msgid "You don’t have reviewer permissions for this event."
 msgstr "Quý vị chưa được giao nhiệm vụ bình duyệt trong hội thảo này."
 
-#: pretalx/orga/templates/orga/review/dashboard.html:54
+#: pretalx/orga/templates/orga/review/dashboard.html:52
 msgid "Columns"
 msgstr "Cột"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:66
-#: pretalx/orga/templates/orga/review/dashboard.html:175
+#: pretalx/orga/templates/orga/review/dashboard.html:64
+#: pretalx/orga/templates/orga/review/dashboard.html:173
 msgid "Your score"
 msgstr "Điểm"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:118
+#: pretalx/orga/templates/orga/review/dashboard.html:116
 #: pretalx/orga/views/review.py:704 pretalx/orga/views/review.py:705
 msgid "Regenerate decision emails"
 msgstr "Tái tạo email thông báo quyết định"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:121
+#: pretalx/orga/templates/orga/review/dashboard.html:119
 #: pretalx/orga/templates/orga/submission/apply_pending.html:5
-#: pretalx/orga/templates/orga/submission/base.html:50
+#: pretalx/orga/templates/orga/submission/base.html:39
 #: pretalx/orga/templates/orga/submission/list.html:46
 msgid "Apply pending changes"
 msgstr "Thực thi các thay đổi đang chờ"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:164
+#: pretalx/orga/templates/orga/review/dashboard.html:162
 msgid "Average"
 msgstr "Trung bình cộng"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:198
+#: pretalx/orga/templates/orga/review/dashboard.html:196
 #: pretalx/orga/templates/orga/submission/list.html:80
 msgid "Type"
 msgstr "Loại"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:204
+#: pretalx/orga/templates/orga/review/dashboard.html:202
 msgid "Accept all"
 msgstr "Chấp nhận tất cả"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:208
+#: pretalx/orga/templates/orga/review/dashboard.html:206
 msgid "Reject all"
 msgstr "Từ chối tất cả"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:210
+#: pretalx/orga/templates/orga/review/dashboard.html:208
 msgid "Unset accept/reject vote for all"
 msgstr "Bỏ chọn chấp nhận/từ chối cho tất cả"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:240
+#: pretalx/orga/templates/orga/review/dashboard.html:238
 msgid "You have reviewed this proposal"
 msgstr "Quý vị đã bình duyệt đề xất này"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:242
+#: pretalx/orga/templates/orga/review/dashboard.html:240
 msgid "You cannot review this proposal"
 msgstr "Quý vị không thể bình duyệt đề xuất này"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:245
+#: pretalx/orga/templates/orga/review/dashboard.html:243
 msgid "You have been assigned to this proposal"
 msgstr "Quý vị đã được giao bình duyệt đề xuất này"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:276
-#: pretalx/orga/templates/orga/speaker/form.html:68
+#: pretalx/orga/templates/orga/review/dashboard.html:274
+#: pretalx/orga/templates/orga/speaker/form.html:59
 msgid "pending"
 msgstr "đang xử lý"
 
 #. Translators: This is a button to mark a proposal as accepted
-#: pretalx/orga/templates/orga/review/dashboard.html:284
-#: pretalx/orga/templates/orga/review/dashboard.html:310
+#: pretalx/orga/templates/orga/review/dashboard.html:282
+#: pretalx/orga/templates/orga/review/dashboard.html:308
 msgid "Accept"
 msgstr "Chấp nhận"
 
 #. Translators: This is a button to mark a proposal as rejected
-#: pretalx/orga/templates/orga/review/dashboard.html:289
-#: pretalx/orga/templates/orga/review/dashboard.html:311
+#: pretalx/orga/templates/orga/review/dashboard.html:287
+#: pretalx/orga/templates/orga/review/dashboard.html:309
 msgid "Reject"
 msgstr "Từ chối"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:291
+#: pretalx/orga/templates/orga/review/dashboard.html:289
 msgid "Unset accept/reject vote"
 msgstr "Bỏ chọn chấp nhận/từ chối bỏ phiếu"
 
-#: pretalx/orga/templates/orga/review/dashboard.html:313
+#: pretalx/orga/templates/orga/review/dashboard.html:311
 msgid "Go!"
 msgstr "Bắt đầu!"
 
@@ -6227,23 +6242,23 @@ msgstr "Công suất"
 msgid "Please add at least one place in which sessions can take place."
 msgstr "Vui lòng thêm ít nhất một địa điểm diễn ra phiên hội thảo."
 
-#: pretalx/orga/templates/orga/settings/form.html:59
+#: pretalx/orga/templates/orga/settings/form.html:55
 msgid "Design"
 msgstr "Thiết kế"
 
-#: pretalx/orga/templates/orga/settings/form.html:77
+#: pretalx/orga/templates/orga/settings/form.html:73
 msgid "Schedule"
 msgstr "Xếp lịch"
 
-#: pretalx/orga/templates/orga/settings/form.html:86
+#: pretalx/orga/templates/orga/settings/form.html:82
 msgid "Other settings"
 msgstr "Cài đặt khác"
 
-#: pretalx/orga/templates/orga/settings/form.html:90
+#: pretalx/orga/templates/orga/settings/form.html:86
 msgid "Header links"
 msgstr "Các liên kết đầu trang"
 
-#: pretalx/orga/templates/orga/settings/form.html:95
+#: pretalx/orga/templates/orga/settings/form.html:91
 msgid ""
 "These links will be shown at the top of all your schedule-related pages, "
 "e.g. the schedule itself, speaker pages, session pages, etc. You could for "
@@ -6255,11 +6270,11 @@ msgstr ""
 "Ví dụ, quý vị có thể liên kết đến trang chủ, trang đăng ký hoặc buổi phát "
 "trực tiếp của mình tại đây."
 
-#: pretalx/orga/templates/orga/settings/form.html:108
+#: pretalx/orga/templates/orga/settings/form.html:104
 msgid "Footer links"
 msgstr "Liên kết cuối trang"
 
-#: pretalx/orga/templates/orga/settings/form.html:113
+#: pretalx/orga/templates/orga/settings/form.html:109
 msgid ""
 "These links will be shown in the footer of all your public pages. You could "
 "for example link your terms of service, imprint, or privacy policy here."
@@ -6268,16 +6283,16 @@ msgstr ""
 "khai của bạn. Ví dụ, quý vị có thể liên kết các điều khoản dịch vụ, thông "
 "tin về BTC hoặc chính sách bảo mật của mình tại đây."
 
-#: pretalx/orga/templates/orga/settings/form.html:127
+#: pretalx/orga/templates/orga/settings/form.html:123
 msgid "Delete event"
 msgstr "Xoá hội thảo"
 
+#: pretalx/orga/templates/orga/settings/mail.html:14
 #: pretalx/orga/templates/orga/settings/mail.html:20
-#: pretalx/orga/templates/orga/settings/mail.html:26
 msgid "Email settings"
 msgstr "Cài đặt email"
 
-#: pretalx/orga/templates/orga/settings/mail.html:33
+#: pretalx/orga/templates/orga/settings/mail.html:27
 msgid ""
 "If you don’t configure custom email settings, the global configuration for "
 "this server will be used (ask your administrator for details).<br> We "
@@ -6287,11 +6302,11 @@ msgstr ""
 "chủ này sẽ được sử dụng (hãy hỏi quản trị viên của quý vị để biết chi tiết)."
 "<br> Chúng tôi khuyên quý vị nên thêm cài đặt email tại đây một cách rõ ràng."
 
-#: pretalx/orga/templates/orga/settings/mail.html:46
+#: pretalx/orga/templates/orga/settings/mail.html:40
 msgid "Save and test custom SMTP connection"
 msgstr "Lưu và kiểm tra kết nối SMTP tùy chỉnh"
 
-#: pretalx/orga/templates/orga/settings/review.html:41
+#: pretalx/orga/templates/orga/settings/review.html:35
 #, python-format
 msgid ""
 "If you require neither a review score nor a review text, reviewers will be "
@@ -6302,7 +6317,7 @@ msgstr ""
 "bình duyệt sẽ được cung cấp thêm nút %(quotation_open)sBỏ "
 "qua%(quotation_close)s khi đánh giá đề xuất."
 
-#: pretalx/orga/templates/orga/settings/review.html:57
+#: pretalx/orga/templates/orga/settings/review.html:51
 msgid ""
 "You can ask reviewers to provide one or multiple scores. If you ask for "
 "multiple scores, they will be added up to a final total score. If you want, "
@@ -6314,25 +6329,25 @@ msgstr ""
 "quý vị muốn, tổng điểm này có thể được tính trọng số. Hiện tại, tổng điểm "
 "được tính như sau:"
 
-#: pretalx/orga/templates/orga/settings/review.html:76
+#: pretalx/orga/templates/orga/settings/review.html:70
 msgid "Review Score category"
 msgstr "Thể loại Điểm bình duyệt"
 
-#: pretalx/orga/templates/orga/settings/review.html:109
-#: pretalx/orga/templates/orga/settings/review.html:127
-#: pretalx/orga/templates/orga/settings/review.html:163
+#: pretalx/orga/templates/orga/settings/review.html:103
+#: pretalx/orga/templates/orga/settings/review.html:121
+#: pretalx/orga/templates/orga/settings/review.html:157
 msgid "Scores"
 msgstr "Điểm"
 
-#: pretalx/orga/templates/orga/settings/review.html:142
+#: pretalx/orga/templates/orga/settings/review.html:136
 msgid "Score Category"
 msgstr "Thể loại Điểm số"
 
-#: pretalx/orga/templates/orga/settings/review.html:178
+#: pretalx/orga/templates/orga/settings/review.html:172
 msgid "Add another score category"
 msgstr "Thêm một thể loại điểm số"
 
-#: pretalx/orga/templates/orga/settings/review.html:187
+#: pretalx/orga/templates/orga/settings/review.html:181
 msgid ""
 "Review phases allow you to structure your review process. By default, there "
 "are two review phases: The review itself, and the selection process once the "
@@ -6345,33 +6360,33 @@ msgstr ""
 "vị có thể thêm một giai đoạn bình duyệt và lựa chọn khác sau đó, nếu quý vị "
 "cần thêm các vòng bình duyệt bổ sung."
 
-#: pretalx/orga/templates/orga/settings/review.html:203
-#: pretalx/orga/templates/orga/settings/review.html:251
+#: pretalx/orga/templates/orga/settings/review.html:197
+#: pretalx/orga/templates/orga/settings/review.html:245
 msgid "Review Phase"
 msgstr "Vòng bình duyệt"
 
-#: pretalx/orga/templates/orga/settings/review.html:215
+#: pretalx/orga/templates/orga/settings/review.html:209
 msgid "Activate phase"
 msgstr "Kích hoạt vòng"
 
-#: pretalx/orga/templates/orga/settings/review.html:221
+#: pretalx/orga/templates/orga/settings/review.html:215
 msgid "Phase is active"
 msgstr "Vòng này đang hoạt động"
 
-#: pretalx/orga/templates/orga/settings/review.html:276
+#: pretalx/orga/templates/orga/settings/review.html:270
 msgid "Add another phase"
 msgstr "Thêm một vòng mới"
 
 #: pretalx/orga/templates/orga/settings/widget.html:8
-#: pretalx/orga/templates/orga/settings/widget.html:42
+#: pretalx/orga/templates/orga/settings/widget.html:36
 msgid "Widget generation"
 msgstr "Tạo công cụ widget"
 
-#: pretalx/orga/templates/orga/settings/widget.html:25
+#: pretalx/orga/templates/orga/settings/widget.html:19
 msgid "Widget settings"
 msgstr "Cài đặt công cụ widget"
 
-#: pretalx/orga/templates/orga/settings/widget.html:32
+#: pretalx/orga/templates/orga/settings/widget.html:26
 msgid ""
 "You can configure a pretalx schedule widget to show your event schedule on "
 "your homepage, instead of using this page. If you want to disable the "
@@ -6381,7 +6396,7 @@ msgstr ""
 "thảo của quý vị trên trang chủ, thay vì sử dụng trang này. Nếu quý vị muốn "
 "tắt hoàn toàn lịch hội thảo ở đây, vui lòng kích hoạt cài đặt bên dưới."
 
-#: pretalx/orga/templates/orga/settings/widget.html:44
+#: pretalx/orga/templates/orga/settings/widget.html:38
 msgid ""
 "The pretalx schedule widget is a way to embed your schedule into your event "
 "website. This way, your attendees can see your schedule without leaving your "
@@ -6392,7 +6407,7 @@ msgstr ""
 "thảo của quý vị mà không cần rời khỏi trang web của quý vị và quý vị có thể "
 "định dạng lịch hội thảo để phù hợp với trang web của mình."
 
-#: pretalx/orga/templates/orga/settings/widget.html:51
+#: pretalx/orga/templates/orga/settings/widget.html:45
 msgid ""
 "Using this form, you can generate code to copy and paste to your website "
 "source."
@@ -6400,11 +6415,11 @@ msgstr ""
 "Sử dụng biểu mẫu này, quý vị có thể tạo mã để sao chép và dán vào nguồn "
 "trang web của mình."
 
-#: pretalx/orga/templates/orga/settings/widget.html:59
+#: pretalx/orga/templates/orga/settings/widget.html:53
 msgid "Generate widget"
 msgstr "Tạo tiện ích"
 
-#: pretalx/orga/templates/orga/settings/widget.html:65
+#: pretalx/orga/templates/orga/settings/widget.html:59
 msgid ""
 "To embed the widget into your website, copy the following code to the "
 "<code>&lt;head></code> section of your website:"
@@ -6412,7 +6427,7 @@ msgstr ""
 "Để nhúng tiện ích vào trang web của quý vị, hãy sao chép mã sau vào phần "
 "<code>&lt;head></code> của trang web:"
 
-#: pretalx/orga/templates/orga/settings/widget.html:72
+#: pretalx/orga/templates/orga/settings/widget.html:66
 msgid ""
 "Then, copy the following code to the place of your website where you want "
 "the widget to show up:"
@@ -6420,7 +6435,7 @@ msgstr ""
 "Sau đó, sao chép đoạn mã sau vào vị trí trên trang web mà quý vị muốn hiển "
 "thị tiện ích:"
 
-#: pretalx/orga/templates/orga/settings/widget.html:90
+#: pretalx/orga/templates/orga/settings/widget.html:84
 #, python-format
 msgid ""
 "Please look at <a href=\"%(link)s\">our documentation</a> for more "
@@ -6429,11 +6444,11 @@ msgstr ""
 "Vui lòng xem <a href=\"%(link)s\">tài liệu của chúng tôi</a> để biết thêm "
 "thông tin."
 
-#: pretalx/orga/templates/orga/settings/widget.html:99
+#: pretalx/orga/templates/orga/settings/widget.html:93
 msgid "Widget preview"
 msgstr "Xem trước tiện ích"
 
-#: pretalx/orga/templates/orga/settings/widget.html:101
+#: pretalx/orga/templates/orga/settings/widget.html:95
 msgid ""
 "This is roughly what your widget will look like if you choose the grid "
 "format:"
@@ -6456,30 +6471,30 @@ msgstr ""
 "Quý vị có thể tạo chính xác bản xuất mà quý vị cần trong tab \"Tùy chỉnh\" "
 "hoặc sử dụng các bản xuất được dựng sẵn sau:"
 
-#: pretalx/orga/templates/orga/speaker/form.html:53
+#: pretalx/orga/templates/orga/speaker/form.html:44
 #: pretalx/orga/templates/orga/submission/list.html:41
 #: pretalx/orga/templates/orga/submission/speakers.html:70
 msgid "Send email"
 msgstr "Gửi email"
 
-#: pretalx/orga/templates/orga/speaker/form.html:100
+#: pretalx/orga/templates/orga/speaker/form.html:91
 msgid "Emails"
 msgstr "Email"
 
-#: pretalx/orga/templates/orga/speaker/form.html:106
+#: pretalx/orga/templates/orga/speaker/form.html:97
 msgid "No mails were sent to this speaker yet."
 msgstr "Chưa có email nào được gửi tới diễn giả này."
 
 #: pretalx/orga/templates/orga/speaker/information_form.html:5
 #: pretalx/orga/templates/orga/speaker/information_form.html:9
-#: pretalx/orga/templates/orga/speaker/information_list.html:19
-#: pretalx/orga/templates/orga/speaker/information_list.html:24
+#: pretalx/orga/templates/orga/speaker/information_list.html:13
+#: pretalx/orga/templates/orga/speaker/information_list.html:18
 #: pretalx/orga/views/speaker.py:285
 msgid "Speaker Information Note"
 msgid_plural "Speaker Information Notes"
 msgstr[0] "Ghi chú thông tin dành cho diễn giả"
 
-#: pretalx/orga/templates/orga/speaker/information_list.html:35
+#: pretalx/orga/templates/orga/speaker/information_list.html:29
 msgid ""
 "Add important messages (e.g. “Please bring an HDMI adapter if required.”) or "
 "files (e.g. a conference styleguide). <br> They are shown to the selected "
@@ -6490,7 +6505,7 @@ msgstr ""
 "<br> Chúng được hiển thị cho những diễn giả đã được mời thuyết trình ở phía "
 "trên danh sách các phiên hội thảo mà họ đã nộp."
 
-#: pretalx/orga/templates/orga/speaker/information_list.html:45
+#: pretalx/orga/templates/orga/speaker/information_list.html:39
 msgid "Add a new note"
 msgstr "Thêm một ghi chú"
 
@@ -6551,7 +6566,7 @@ msgid "All session types"
 msgstr "Loại phiên"
 
 #: pretalx/orga/templates/orga/submission/anonymise.html:9
-#: pretalx/orga/templates/orga/submission/base.html:70
+#: pretalx/orga/templates/orga/submission/base.html:59
 msgid "Anonymisation"
 msgstr "Ẩn danh"
 
@@ -6603,25 +6618,25 @@ msgstr "Thực thi"
 msgid "There are no pending changes to apply right now."
 msgstr "Hiện tại không có thay đổi nào đang chờ thực thi."
 
-#: pretalx/orga/templates/orga/submission/base.html:85
+#: pretalx/orga/templates/orga/submission/base.html:74
 #, fuzzy
 #| msgid "Comment"
 msgid "Comments"
 msgstr "Bình luận"
 
-#: pretalx/orga/templates/orga/submission/base.html:102
+#: pretalx/orga/templates/orga/submission/base.html:91
 msgid "Send email to speakers"
 msgstr "Gửi email tới diễn giả"
 
-#: pretalx/orga/templates/orga/submission/base.html:114
+#: pretalx/orga/templates/orga/submission/base.html:103
 msgid "Public link"
 msgstr "Liên kết công khai"
 
-#: pretalx/orga/templates/orga/submission/base.html:116
+#: pretalx/orga/templates/orga/submission/base.html:105
 msgid "not public yet"
 msgstr "chưa công khai"
 
-#: pretalx/orga/templates/orga/submission/base.html:123
+#: pretalx/orga/templates/orga/submission/base.html:112
 msgid "Secret public link"
 msgstr "Liên kết công khai bảo mật"
 
@@ -6831,54 +6846,54 @@ msgstr "Truy cập API"
 #| "can generate a new token, which will invalidate the old one. To find out "
 #| "more, please have a look at the <a %(docurl)s> API documentation</a>."
 msgid ""
-"API tokens can be used to access the <a %(apiurl)s>pretalx API</a>. You can "
-"generate a new token, which will invalidate the old one. To find out more, "
-"please have a look at the <a %(docurl)s> API documentation</a>."
+"API tokens can be used to access the <a %(apiurl)s>pretalx API</a>. To find "
+"out more, please have a look at the <a %(docurl)s> API documentation</a>."
 msgstr ""
 "Mã thông báo này có thể được sử dụng để truy cập <a %(apiurl)s>API pretalx</"
 "a>. Bạn có thể tạo một mã thông báo mới, mã thông báo này sẽ vô hiệu hóa mã "
 "thông báo cũ. Để tìm hiểu thêm, vui lòng xem tài liệu <a %(docurl)s> API</a>."
 
-#: pretalx/orga/templates/orga/user.html:45
+#: pretalx/orga/templates/orga/user.html:43
 #, fuzzy
 #| msgid "API Token"
 msgid "Your API tokens"
 msgstr "API Token"
 
-#: pretalx/orga/templates/orga/user.html:50
+#: pretalx/orga/templates/orga/user.html:48
 #, fuzzy
 #| msgid "Session"
 #| msgid_plural "Sessions"
 msgid "Version"
 msgstr "Phiên"
 
-#: pretalx/orga/templates/orga/user.html:52
+#: pretalx/orga/templates/orga/user.html:50
 msgid "Last used"
 msgstr ""
 
-#: pretalx/orga/templates/orga/user.html:53
+#: pretalx/orga/templates/orga/user.html:51
 msgid "Created"
 msgstr ""
 
-#: pretalx/orga/templates/orga/user.html:54
-msgid "Expires"
+#: pretalx/orga/templates/orga/user.html:52
+#: pretalx/submission/models/access_code.py:49
+msgid "Valid until"
 msgstr ""
 
-#: pretalx/orga/templates/orga/user.html:70
-msgid "Updgrade"
+#: pretalx/orga/templates/orga/user.html:68
+msgid "Upgrade"
 msgstr ""
 
-#: pretalx/orga/templates/orga/user.html:89
+#: pretalx/orga/templates/orga/user.html:87
 msgid "Revoke"
 msgstr ""
 
-#: pretalx/orga/templates/orga/user.html:99
+#: pretalx/orga/templates/orga/user.html:97
 #, fuzzy
 #| msgid "You don’t seem to have any proposals yet."
 msgid "You don't have any API tokens yet."
 msgstr "Dường như quý vị chưa có đề xuất tham luận nào."
 
-#: pretalx/orga/templates/orga/user.html:104
+#: pretalx/orga/templates/orga/user.html:102
 #, fuzzy
 #| msgid "Create a new event"
 msgid "Create new token"
@@ -7153,104 +7168,110 @@ msgid ""
 "also be deleted and cannot be restored."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:131
+#: pretalx/orga/views/mails.py:48
+#, fuzzy
+#| msgid "You can’t give feedback for this session at this time."
+msgid "You cannot send emails at this time."
+msgstr "Hiện tại quý vị không thể đưa ra phản hồi cho phiên này."
+
+#: pretalx/orga/views/mails.py:147
 #, python-brace-format
 msgid "Do you really want to send {count} mails?"
 msgstr ""
 
-#: pretalx/orga/views/mails.py:153
+#: pretalx/orga/views/mails.py:169
 msgid ""
 "This mail either does not exist or cannot be sent because it was sent "
 "already."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:158
+#: pretalx/orga/views/mails.py:174
 msgid "This mail had been sent already."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:161
+#: pretalx/orga/views/mails.py:182
 msgid "The mail has been sent."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:180
+#: pretalx/orga/views/mails.py:206
 #, python-brace-format
 msgid "{count} mails have been sent."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:215
+#: pretalx/orga/views/mails.py:241
 #, python-brace-format
 msgid "Do you really want to delete this mail?"
 msgid_plural "Do you really want to purge {count} mails?"
 msgstr[0] ""
 msgstr[1] ""
 
-#: pretalx/orga/views/mails.py:228
+#: pretalx/orga/views/mails.py:254
 msgid ""
 "This mail either does not exist or cannot be discarded because it was sent "
 "already."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:240
+#: pretalx/orga/views/mails.py:266
 #, python-brace-format
 msgid "The mail has been discarded."
 msgid_plural "{count} mails have been discarded."
 msgstr[0] ""
 msgstr[1] ""
 
-#: pretalx/orga/views/mails.py:256
+#: pretalx/orga/views/mails.py:282
 #, python-brace-format
 msgid "Do you really want to purge {count} mails?"
 msgstr ""
 
-#: pretalx/orga/views/mails.py:276
+#: pretalx/orga/views/mails.py:302
 #, python-brace-format
 msgid "{count} mails have been purged."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:303
+#: pretalx/orga/views/mails.py:334
 msgid "The email has been sent."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:308
+#: pretalx/orga/views/mails.py:339
 msgid ""
 "The email has been saved. When you send it, the updated text will be used."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:325
+#: pretalx/orga/views/mails.py:356
 msgid "The mail has been copied, you can edit it now."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:388
+#: pretalx/orga/views/mails.py:422
 msgid "There are no recipients matching this selection."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:400
+#: pretalx/orga/views/mails.py:434
 msgid "This value will be replaced based on dynamic parameters."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:417
+#: pretalx/orga/views/mails.py:451
 #, python-brace-format
 msgid "Subject: {subject}"
 msgstr ""
 
-#: pretalx/orga/views/mails.py:431 pretalx/orga/views/mails.py:489
+#: pretalx/orga/views/mails.py:465 pretalx/orga/views/mails.py:532
 #, python-brace-format
 msgid "{count} emails have been sent."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:501
+#: pretalx/orga/views/mails.py:544
 msgid ""
 "The template has been saved - note that already pending emails that are "
 "based on this template will not be changed!"
 msgstr ""
 
-#: pretalx/orga/views/mails.py:516
+#: pretalx/orga/views/mails.py:559
 #, fuzzy
 #| msgid "Email template"
 msgid "New email template"
 msgstr "Mẫu email"
 
-#: pretalx/orga/views/mails.py:517
+#: pretalx/orga/views/mails.py:560
 #, fuzzy
 #| msgid "Email template"
 msgid "Email templates"
@@ -7278,10 +7299,6 @@ msgstr ""
 
 #: pretalx/orga/views/organiser.py:197
 msgid "The team invitation was retracted."
-msgstr ""
-
-#: pretalx/orga/views/organiser.py:202
-msgid "Resend invitation"
 msgstr ""
 
 #: pretalx/orga/views/organiser.py:203
@@ -7320,8 +7337,8 @@ msgstr "Ban Tổ chức {name} đã bị xoá."
 #| "Your API token has been regenerated. The previous token will not be "
 #| "usable any longer."
 msgid ""
-"Your API token has been regenerated. Please make sure to save it, as it will "
-"not be shown again:"
+"This is your new API token. Please make sure to save it, as it will not be "
+"shown again:"
 msgstr "Token API đã được khởi tạo. Token trước đây không còn dùng được nữa."
 
 #: pretalx/orga/views/person.py:84
@@ -7329,12 +7346,6 @@ msgstr "Token API đã được khởi tạo. Token trước đây không còn d
 #| msgid "The event has been added."
 msgid "The API token has been upgraded."
 msgstr "Hội thảo này đã được tạo mới."
-
-#: pretalx/orga/views/person.py:94
-#, fuzzy
-#| msgid "The API token was reset."
-msgid "The API token has been revoked."
-msgstr "Mã API token đã được tạo lại."
 
 #: pretalx/orga/views/person.py:113
 msgid "You are now an administrator instead of a superuser."
@@ -7541,32 +7552,32 @@ msgstr ""
 msgid "Speaker CSV"
 msgstr ""
 
-#: pretalx/person/forms/auth.py:10 pretalx/person/forms/profile.py:41
+#: pretalx/person/forms/auth.py:10 pretalx/person/forms/profile.py:42
 msgid "Please choose a different email address."
 msgstr ""
 
-#: pretalx/person/forms/auth.py:15 pretalx/person/forms/profile.py:181
+#: pretalx/person/forms/auth.py:15 pretalx/person/forms/profile.py:182
 msgid "The current password you entered was not correct."
 msgstr ""
 
-#: pretalx/person/forms/auth.py:19 pretalx/person/forms/profile.py:185
+#: pretalx/person/forms/auth.py:19 pretalx/person/forms/profile.py:186
 msgid "Password (current)"
 msgstr ""
 
 #: pretalx/person/forms/auth_token.py:23
 #, fuzzy
 #| msgid "Send all"
-msgid "Read all"
+msgid "Read all endpoints"
 msgstr "Gửi tất cả"
 
 #: pretalx/person/forms/auth_token.py:24
-msgid "Read and write all"
+msgid "Read and write all endpoints"
 msgstr ""
 
 #: pretalx/person/forms/auth_token.py:25
 #, fuzzy
 #| msgid "Permissions"
-msgid "Custom permissions"
+msgid "Customize permissions and endpoints"
 msgstr "Quyền"
 
 #: pretalx/person/forms/auth_token.py:27
@@ -7578,7 +7589,7 @@ msgstr ""
 msgid "Invalid permissions selected: {perms}"
 msgstr ""
 
-#: pretalx/person/forms/profile.py:39
+#: pretalx/person/forms/profile.py:40
 msgid "There already exists an account for this email address."
 msgstr ""
 
@@ -7588,17 +7599,17 @@ msgid ""
 "gravatar!"
 msgstr ""
 
-#: pretalx/person/forms/profile.py:273 pretalx/person/forms/profile.py:323
+#: pretalx/person/forms/profile.py:274 pretalx/person/forms/profile.py:324
 msgid "Non-accepted submitters"
 msgstr ""
 
-#: pretalx/person/forms/profile.py:281
+#: pretalx/person/forms/profile.py:282
 #, fuzzy
 #| msgid "Mark speaker as arrived"
 msgid "Marked as arrived"
 msgstr "Đánh dấu này diễn giả này đã có mặt"
 
-#: pretalx/person/forms/profile.py:282
+#: pretalx/person/forms/profile.py:283
 #, fuzzy
 #| msgid "Not arrived"
 msgid "Not yet arrived"
@@ -7632,37 +7643,11 @@ msgid ""
 "before and just need to log in?"
 msgstr ""
 
-#: pretalx/person/models/auth_token.py:22
-msgid "Read list"
-msgstr ""
-
-#: pretalx/person/models/auth_token.py:23
-#, fuzzy
-#| msgid "Send emails"
-msgid "Read details"
-msgstr "Gửi email"
-
-#: pretalx/person/models/auth_token.py:24
-msgid "Create"
-msgstr ""
-
-#: pretalx/person/models/auth_token.py:25
-#, fuzzy
-#| msgid "date"
-msgid "Update"
-msgstr "ngày"
-
-#: pretalx/person/models/auth_token.py:27
-#, fuzzy
-#| msgid "Additional information"
-msgid "Additional actions"
-msgstr "Thông tin khác"
-
-#: pretalx/person/models/auth_token.py:71
+#: pretalx/person/models/auth_token.py:72
 msgid "Expiry date"
 msgstr ""
 
-#: pretalx/person/models/auth_token.py:74
+#: pretalx/person/models/auth_token.py:75
 #, fuzzy
 #| msgid "Installed version"
 msgid "API version"
@@ -7688,43 +7673,47 @@ msgstr ""
 msgid "The speaker has arrived"
 msgstr ""
 
-#: pretalx/person/models/user.py:114
+#: pretalx/person/models/user.py:86
+msgid "Your username must not contain HTML or other markup."
+msgstr ""
+
+#: pretalx/person/models/user.py:125
 msgid ""
 "Please enter the name you wish to be displayed publicly. This name will be "
 "used for all events you are participating in on this server."
 msgstr ""
 
-#: pretalx/person/models/user.py:121
+#: pretalx/person/models/user.py:133
 msgid ""
 "Your email address will be used for password resets and notification about "
 "your event/proposals."
 msgstr ""
 
-#: pretalx/person/models/user.py:142
+#: pretalx/person/models/user.py:154
 msgid "Preferred language"
 msgstr ""
 
-#: pretalx/person/models/user.py:154
+#: pretalx/person/models/user.py:166
 msgid ""
 "We recommend uploading an image at least 400px wide. A square image works "
 "best, as we display it in a circle in several places."
 msgstr ""
 
-#: pretalx/person/models/user.py:165
+#: pretalx/person/models/user.py:177
 msgid "Retrieve profile picture via gravatar"
 msgstr ""
 
-#: pretalx/person/models/user.py:167
+#: pretalx/person/models/user.py:179
 msgid ""
 "If you have registered with an email address that has a gravatar account, we "
 "can retrieve your profile picture from there."
 msgstr ""
 
-#: pretalx/person/models/user.py:183
+#: pretalx/person/models/user.py:195
 msgid "Unnamed user"
 msgstr ""
 
-#: pretalx/person/models/user.py:482
+#: pretalx/person/models/user.py:494
 #, python-brace-format
 msgid ""
 "Hi {name},\n"
@@ -7740,11 +7729,11 @@ msgid ""
 "the pretalx robot"
 msgstr ""
 
-#: pretalx/person/models/user.py:497
+#: pretalx/person/models/user.py:509
 msgid "Password recovery"
 msgstr ""
 
-#: pretalx/person/models/user.py:524
+#: pretalx/person/models/user.py:536
 #, python-brace-format
 msgid ""
 "Hi {name},\n"
@@ -7758,7 +7747,7 @@ msgid ""
 "the pretalx team"
 msgstr ""
 
-#: pretalx/person/models/user.py:536
+#: pretalx/person/models/user.py:548
 msgid "[pretalx] Password changed"
 msgstr ""
 
@@ -7944,71 +7933,71 @@ msgstr ""
 msgid "- Your session “%(title)s” has been moved to %(start)s in %(location)s"
 msgstr ""
 
-#: pretalx/settings.py:356
+#: pretalx/settings.py:342
 msgid "English"
 msgstr ""
 
-#: pretalx/settings.py:362
+#: pretalx/settings.py:348
 msgid "German"
 msgstr ""
 
-#: pretalx/settings.py:369
+#: pretalx/settings.py:355
 msgid "German (formal)"
 msgstr ""
 
-#: pretalx/settings.py:377
+#: pretalx/settings.py:363
 msgid "Arabic"
 msgstr ""
 
-#: pretalx/settings.py:383
+#: pretalx/settings.py:369
 msgid "Czech"
 msgstr ""
 
-#: pretalx/settings.py:389
+#: pretalx/settings.py:375
 msgid "Greek"
 msgstr ""
 
-#: pretalx/settings.py:395
+#: pretalx/settings.py:381
 msgid "Spanish"
 msgstr ""
 
-#: pretalx/settings.py:401
+#: pretalx/settings.py:387
 msgid "French"
 msgstr ""
 
-#: pretalx/settings.py:408
+#: pretalx/settings.py:394
 msgid "Italian"
 msgstr ""
 
-#: pretalx/settings.py:414
+#: pretalx/settings.py:400
 msgid "Japanese"
 msgstr ""
 
-#: pretalx/settings.py:421
+#: pretalx/settings.py:407
 msgid "Dutch"
 msgstr ""
 
-#: pretalx/settings.py:427
+#: pretalx/settings.py:413
 msgid "Polish"
 msgstr ""
 
-#: pretalx/settings.py:433
+#: pretalx/settings.py:419
 msgid "Brasilian Portuguese"
 msgstr ""
 
-#: pretalx/settings.py:440
+#: pretalx/settings.py:426
 msgid "Portuguese"
 msgstr ""
 
-#: pretalx/settings.py:447
+#: pretalx/settings.py:433
 msgid "Vietnamese"
 msgstr ""
 
-#: pretalx/settings.py:453
+#: pretalx/settings.py:439
 msgid "Traditional Chinese (Taiwan)"
 msgstr ""
 
-#: pretalx/settings.py:460
+#: pretalx/settings.py:446
 msgid "Simplified Chinese"
 msgstr ""
 
@@ -8096,10 +8085,6 @@ msgstr ""
 msgid ""
 "You can restrict the access code to a single session type, or leave it open "
 "for all session types."
-msgstr ""
-
-#: pretalx/submission/models/access_code.py:49
-msgid "Valid until"
 msgstr ""
 
 #: pretalx/submission/models/access_code.py:51
@@ -8589,6 +8574,40 @@ msgstr ""
 
 msgid "Hidden rooms"
 msgstr ""
+
+#~ msgid ""
+#~ "Your API token has been regenerated. The previous token will not be "
+#~ "usable any longer."
+#~ msgstr ""
+#~ "Token API đã được khởi tạo. Token trước đây không còn dùng được nữa."
+
+#~ msgid "With accepted proposals"
+#~ msgstr "Với các đề xuất được chấp nhận"
+
+#~ msgid "With confirmed proposals"
+#~ msgstr "Với các đề xuất được xác nhận"
+
+#~ msgid "With rejected proposals"
+#~ msgstr "Với các đề xuất bị từ chối"
+
+#~ msgid "Speaker information"
+#~ msgstr "Thông tin dành cho diễn giả"
+
+#, fuzzy
+#~ msgid "The API token has been revoked."
+#~ msgstr "Mã API token đã được tạo lại."
+
+#, fuzzy
+#~ msgid "Read details"
+#~ msgstr "Gửi email"
+
+#, fuzzy
+#~ msgid "Update"
+#~ msgstr "ngày"
+
+#, fuzzy
+#~ msgid "Additional actions"
+#~ msgstr "Thông tin khác"
 
 #~ msgid "Use for authentication when accessing the API."
 #~ msgstr "Sử dụng để xác thực khi truy cập API."

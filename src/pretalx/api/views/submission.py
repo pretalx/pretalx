@@ -33,7 +33,6 @@ from pretalx.api.versions import LEGACY
 from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
 from pretalx.submission.models import (
-    QuestionTarget,
     Submission,
     SubmissionStates,
     SubmissionType,
@@ -61,10 +60,19 @@ with scopes_disabled():
 
     class SubmissionFilter(filters.FilterSet):
         state = filters.MultipleChoiceFilter(choices=SubmissionStates.get_choices())
+        pending_state = filters.MultipleChoiceFilter(
+            choices=SubmissionStates.get_choices()
+        )
 
         class Meta:
             model = Submission
-            fields = ("state", "content_locale", "submission_type", "is_featured")
+            fields = (
+                "state",
+                "pending_state",
+                "content_locale",
+                "submission_type",
+                "is_featured",
+            )
 
 
 @extend_schema_view(
@@ -222,9 +230,7 @@ class SubmissionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
         context = super().get_serializer_context()
         if not self.event:
             return context
-        context["questions"] = questions_for_user(self.event, self.request.user).filter(
-            target=QuestionTarget.SUBMISSION
-        )
+        context["questions"] = questions_for_user(self.event, self.request.user)
         context["speakers"] = self.speaker_profiles_for_user
         context["schedule"] = self.event.current_schedule
         context["public_slots"] = not self.has_perm("delete")

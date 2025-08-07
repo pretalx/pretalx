@@ -189,8 +189,9 @@ class DirectionForm(forms.Form):
 
 
 class ReviewAssignmentForm(forms.Form):
-    def __init__(self, *args, event=None, **kwargs):
+    def __init__(self, *args, event=None, review_mapping=None, **kwargs):
         self.event = event
+        self.review_mapping = review_mapping or {}
         self.reviewers = (
             User.objects.filter(teams__in=self.event.teams.filter(is_reviewer=True))
             .order_by("name")
@@ -218,12 +219,14 @@ class ReviewerForProposalForm(ReviewAssignmentForm):
         super().__init__(*args, **kwargs)
         self._review_choices_by_track = {}
         for submission in self.submissions:
+            initial_assignments = self.review_mapping[
+                "submission_to_assigned_reviewers"
+            ].get(submission.id, [])
+
             self.fields[submission.code] = forms.MultipleChoiceField(
                 choices=self.get_review_choices_by_track(submission.track),
                 widget=EnhancedSelectMultiple,
-                initial=list(
-                    submission.assigned_reviewers.values_list("id", flat=True)
-                ),
+                initial=initial_assignments,
                 label=submission.title,
                 required=False,
             )
@@ -264,10 +267,14 @@ class ProposalForReviewerForm(ReviewAssignmentForm):
                 for track, reviewers in self.reviewers_by_track.items():
                     if reviewer in reviewers:
                         track_limit.append(track.id)
+            initial_assignments = self.review_mapping[
+                "reviewer_to_assigned_submissions"
+            ].get(reviewer.id, [])
+
             self.fields[reviewer.code] = forms.MultipleChoiceField(
                 choices=self.get_submission_choices_by_tracks(track_limit),
                 widget=EnhancedSelectMultiple,
-                initial=list(reviewer.assigned_reviews.values_list("id", flat=True)),
+                initial=initial_assignments,
                 label=reviewer.name,
                 required=False,
             )

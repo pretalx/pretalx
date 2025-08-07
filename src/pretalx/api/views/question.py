@@ -1,9 +1,11 @@
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
+from django.http import HttpResponse
 from django_filters import rest_framework as filters
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import exceptions, viewsets
-from rest_framework.permissions import SAFE_METHODS
+from rest_framework.decorators import action
+from rest_framework.permissions import SAFE_METHODS, AllowAny
 
 from pretalx.api.documentation import build_expand_docs, build_search_docs
 from pretalx.api.mixins import PretalxViewSetMixin
@@ -15,6 +17,7 @@ from pretalx.api.serializers.question import (
     QuestionOrgaSerializer,
     QuestionSerializer,
 )
+from pretalx.submission.icons import PLATFORM_ICONS
 from pretalx.submission.models import Answer, AnswerOption, Question, QuestionVariant
 from pretalx.submission.rules import questions_for_user
 
@@ -76,6 +79,22 @@ class QuestionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
             raise exceptions.ValidationError(
                 "You cannot delete a question object that has answers."
             )
+
+    @action(
+        detail=True,
+        methods=["get"],
+        permission_classes=[AllowAny],
+        url_path="icon",
+    )
+    def icon(self, request, *args, **kwargs):
+        """
+        Returns the icon for this question as an SVG image if the question has an icon.
+        """
+        question = self.get_object()
+        if not question.icon or question.icon not in PLATFORM_ICONS:
+            return HttpResponse(status=404)
+
+        return HttpResponse(PLATFORM_ICONS[question.icon], content_type="image/svg+xml")
 
 
 @extend_schema_view(

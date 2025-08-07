@@ -18,10 +18,6 @@ def gravatar_cache(person_id: int):
     user = User.objects.filter(pk=person_id, get_gravatar=True).first()
 
     if not user:
-        logger.warning(
-            f"gravatar_cache() was called for user {person_id}, but "
-            "user was not found or user has gravatar disabled"
-        )
         return
 
     response = get(
@@ -46,9 +42,17 @@ def gravatar_cache(person_id: int):
             tmp_img.write(chunk)
         tmp_img.flush()
 
+        content_type = response.headers.get("Content-Type")
+        if content_type == "image/png":
+            extension = "png"
+        elif content_type == "image/gif":
+            extension = "gif"
+        else:
+            extension = "jpg"
+
         user.get_gravatar = False
         user.save()
-        user.avatar.save(f"{user.gravatar_parameter}.jpg", File(tmp_img))
+        user.avatar.save(f"{user.gravatar_parameter}.{extension}", File(tmp_img))
 
         logger.info(f"set avatar for user {user.name} to {user.avatar.url}")
 

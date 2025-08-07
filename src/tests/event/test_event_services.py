@@ -2,6 +2,7 @@ import datetime as dt
 
 import pytest
 from django.core import mail as djmail
+from django.core.cache import cache
 from django.test import override_settings
 from django.utils.timezone import now
 from django_scopes import scopes_disabled
@@ -124,6 +125,7 @@ def test_periodic_event_services_schedule_export(
 ):
     ActivityLog.objects.create(event=event, content_object=event, action_type="test")
     event.feature_flags["export_html_on_release"] = True
+    event.cache.cache = cache
     event.save()
     event.cache.set("rebuild_schedule_export", should_rebuild_schedule)
     assert event.cache.get("rebuild_schedule_export") is should_rebuild_schedule

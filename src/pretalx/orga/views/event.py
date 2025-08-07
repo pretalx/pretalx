@@ -21,7 +21,7 @@ from django_context_decorator import context
 from django_scopes import scope, scopes_disabled
 from formtools.wizard.views import SessionWizardView
 
-from pretalx.common.forms import I18nEventFormSet, I18nFormSet
+from pretalx.common.forms import I18nEventFormSet
 from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import (
@@ -301,7 +301,7 @@ class EventReviewSettings(EventSettingsPermission, ActionFromUrl, FormView):
             Event,
             ReviewPhase,
             form=ReviewPhaseForm,
-            formset=I18nFormSet,
+            formset=I18nEventFormSet,
             can_delete=True,
             extra=0,
         )
@@ -341,10 +341,7 @@ class EventReviewSettings(EventSettingsPermission, ActionFromUrl, FormView):
             # Now that everything is saved, check for overlapping review phases,
             # and show an error message if any exist. Raise an exception to
             # get out of the transaction.
-            self.request.event.reorder_review_phases()
-            review_phases = list(
-                self.request.event.review_phases.all().order_by("position")
-            )
+            review_phases = self.request.event.reorder_review_phases()
             for phase, next_phase in zip(review_phases, review_phases[1:]):
                 if not phase.end:
                     raise ValidationError(
@@ -700,7 +697,7 @@ class EventDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
         return redirect(reverse("orga:event.list"))
 
 
-@method_decorator(csp_update(SCRIPT_SRC="'self' 'unsafe-eval'"), name="dispatch")
+@method_decorator(csp_update({"script-src": "'self' 'unsafe-eval'"}), name="dispatch")
 class WidgetSettings(EventSettingsPermission, FormView):
     form_class = WidgetSettingsForm
     template_name = "orga/settings/widget.html"

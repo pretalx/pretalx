@@ -9,7 +9,14 @@ from pretalx.api.mixins import PretalxSerializer
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import SpeakerProfile, User
-from pretalx.submission.models import Resource, Submission, SubmissionType, Tag, Track
+from pretalx.submission.models import (
+    QuestionTarget,
+    Resource,
+    Submission,
+    SubmissionType,
+    Tag,
+    Track,
+)
 
 
 @register_serializer()
@@ -180,7 +187,15 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     @extend_schema_field(list[int])
     def get_answers(self, obj):
         questions = self.context.get("questions", [])
-        qs = obj.answers.filter(question__in=questions, question__event=self.event)
+        qs = (
+            obj.answers.filter(
+                question__in=questions,
+                question__event=self.event,
+                question__target=QuestionTarget.SUBMISSION,
+            )
+            .select_related("question")
+            .order_by("question__position")
+        )
         if serializer := self.get_extra_flex_field("answers", qs):
             return serializer.data
         return qs.values_list("pk", flat=True)
@@ -235,7 +250,7 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             ),
             "resources": (
                 "pretalx.api.serializers.submission.ResourceSerializer",
-                {"source": "resources", "many": True, "read_only": True},
+                {"many": True, "read_only": True},
             ),
         }
         extra_expandable_fields = {
@@ -299,7 +314,8 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
         if tags_data:
             submission.tags.set(tags_data)
         if image:
-            submission.image.save(Path(image.name).name, image)
+            submission.image.save(Path(image.name).name, image, save=True)
+            submission.save(update_fields=("image",))
             submission.process_image("image", generate_thumbnail=True)
         return submission
 

@@ -16,6 +16,7 @@ from pretalx.common.forms.widgets import (
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.schedule.models import TalkSlot
+from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 from pretalx.submission.models import Submission, SubmissionStates
 
 
@@ -177,6 +178,9 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             slot.start = self.cleaned_data.get("start")
             slot.end = self.cleaned_data.get("end")
             slot.save()
+            task_update_unreleased_schedule_changes.apply_async(
+                kwargs={"event": self.event.slug}
+            )
         return instance
 
     class Meta:

@@ -1,25 +1,24 @@
-from collections import defaultdict, namedtuple
-from contextlib import suppress
+from collections import defaultdict
 from urllib.parse import quote
 
-from django.conf import settings
-from django.db import models, transaction
-from django.db.utils import DatabaseError
+from django.db import models
 from django.utils.functional import cached_property
-from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 from i18nfield.fields import I18nTextField
 
 from pretalx.agenda.rules import can_view_schedule, is_agenda_visible, is_widget_visible
-from pretalx.agenda.tasks import export_schedule_html
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import is_reviewer
 from pretalx.schedule.notifications import render_notifications
-from pretalx.schedule.signals import schedule_release
+from pretalx.schedule.services import (
+    freeze_schedule,
+    get_cached_schedule_changes,
+    unfreeze_schedule,
+)
 from pretalx.submission.rules import is_wip, orga_can_change_submissions
 
 
@@ -69,7 +68,6 @@ class Schedule(PretalxModel):
         widget_data = "{public}widgets/schedule.json"
         nojs = "{public}nojs"
 
-    @transaction.atomic
     def freeze(
         self, name: str, user=None, notify_speakers: bool = True, comment: str = None
     ):
@@ -84,93 +82,12 @@ class Schedule(PretalxModel):
         :param comment: Public comment for the release
         :rtype: Schedule
         """
-        from pretalx.schedule.models import TalkSlot
-        from pretalx.submission.models import SubmissionStates
-
-        if name in ("wip", "latest"):
-            raise Exception(f'Cannot use reserved name "{name}" for schedule version.')
-        if self.version:
-            raise Exception(
-                f'Cannot freeze schedule version: already versioned as "{self.version}".'
-            )
-        if not name:
-            raise Exception("Cannot create schedule version without a version name.")
-
-        self.version = name
-        self.comment = comment
-        self.published = now()
-
-        # Create WIP schedule first, to avoid race conditions
-        wip_schedule = Schedule.objects.create(event=self.event)
-
-        self.save(update_fields=["published", "version", "comment"])
-        self.log_action("pretalx.schedule.release", person=user, orga=True)
-
-        # Set visibility
-        self.talks.all().update(is_visible=False)
-        self.talks.filter(
-            models.Q(submission__state=SubmissionStates.CONFIRMED)
-            | models.Q(submission__isnull=True),
-            start__isnull=False,
-        ).update(is_visible=True)
-
-        talks = []
-        for talk in self.talks.select_related("submission", "room").all():
-            talks.append(talk.copy_to_schedule(wip_schedule, save=False))
-        TalkSlot.objects.bulk_create(talks)
-
-        if notify_speakers:
-            self.generate_notifications(save=True)
-
-        with suppress(AttributeError):
-            del wip_schedule.event.wip_schedule
-        with suppress(AttributeError):
-            del wip_schedule.event.current_schedule
-
-        schedule_release.send_robust(self.event, schedule=self, user=user)
-
-        if self.event.get_feature_flag("export_html_on_release"):
-            if settings.HAS_CELERY:
-                export_schedule_html.apply_async(
-                    kwargs={"event_id": self.event.id}, ignore_result=True
-                )
-            else:
-                self.event.cache.set("rebuild_schedule_export", True, None)
-        return self, wip_schedule
+        return freeze_schedule(self, name, user, notify_speakers, comment)
 
     freeze.alters_data = True
 
-    @transaction.atomic
     def unfreeze(self, user=None):
-        """Resets the current WIP schedule to an older schedule version."""
-        from pretalx.schedule.models import TalkSlot
-
-        if not self.version:
-            raise Exception("Cannot unfreeze schedule version: not released yet.")
-
-        # collect all talks, which have been added since this schedule (#72)
-        submission_ids = self.talks.all().values_list("submission_id", flat=True)
-        talks = self.event.wip_schedule.talks.exclude(submission_id__in=submission_ids)
-        try:
-            talks = list(
-                talks.union(self.talks.all())
-            )  # We force evaluation to catch the DatabaseError early
-        except DatabaseError:  # SQLite cannot deal with ordered querysets in union()
-            talks = set(talks) | set(self.talks.all())
-
-        wip_schedule = Schedule.objects.create(event=self.event)
-        new_talks = []
-        for talk in talks:
-            new_talks.append(talk.copy_to_schedule(wip_schedule, save=False))
-        TalkSlot.objects.bulk_create(new_talks)
-
-        self.event.wip_schedule.talks.all().delete()
-        self.event.wip_schedule.delete()
-
-        with suppress(AttributeError):
-            del wip_schedule.event.wip_schedule
-
-        return self, wip_schedule
+        return unfreeze_schedule(self, user)
 
     unfreeze.alters_data = True
 
@@ -259,9 +176,9 @@ class Schedule(PretalxModel):
                     "submission": new_slot.submission,
                     "old_start": old_slot.local_start,
                     "new_start": new_slot.local_start,
-                    "old_room": old_slot.room.name,
-                    "new_room": new_slot.room.name,
-                    "new_info": new_slot.room.speaker_info,
+                    "old_room": old_slot.room,
+                    "new_room": new_slot.room,
+                    "new_info": str(new_slot.room.speaker_info),
                     "new_slot": new_slot,
                 }
             )
@@ -275,82 +192,20 @@ class Schedule(PretalxModel):
         The ``action`` field is either ``create`` or ``update``. If it's
         an update, the ``count`` integer, and the ``new_talks``,
         ``canceled_talks`` and ``moved_talks`` lists are also present.
+
+        This property uses caching with different TTLs:
+        - WIP schedules: 60 seconds
+        - Released schedules: 10 minutes
         """
-        result = {
-            "count": 0,
-            "action": "update",
-            "new_talks": [],
-            "canceled_talks": [],
-            "moved_talks": [],
-        }
-        if not self.previous_schedule:
-            result["action"] = "create"
-            return result
-
-        Slot = namedtuple("Slot", ["submission", "room", "local_start"])
-        old_slots = {
-            Slot(slot.submission, slot.room, slot.local_start): slot
-            for slot in self.previous_schedule.scheduled_talks
-        }
-        new_slots = {
-            Slot(slot.submission, slot.room, slot.local_start): slot
-            for slot in self.scheduled_talks
-        }
-
-        old_slot_set = set(old_slots.keys())
-        new_slot_set = set(new_slots.keys())
-        old_submissions = {slot.submission for slot in old_slots}
-        new_submissions = {slot.submission for slot in new_slots}
-        handled_submissions = set()
-        new_by_submission = defaultdict(list)
-        old_by_submission = defaultdict(list)
-        for slot in new_slot_set:
-            new_by_submission[slot.submission].append(new_slots[slot])
-        for slot in old_slot_set:
-            old_by_submission[slot.submission].append(old_slots[slot])
-
-        moved_or_missing = old_slot_set - new_slot_set - {None}
-        moved_or_new = new_slot_set - old_slot_set - {None}
-
-        for entry in moved_or_missing:
-            if entry.submission in handled_submissions or not entry.submission:
-                continue
-            if entry.submission not in new_submissions:
-                result["canceled_talks"] += old_by_submission[entry.submission]
-            else:
-                new, canceled, moved = self._handle_submission_move(
-                    entry.submission, old_slots, new_slots
-                )
-                result["new_talks"] += new
-                result["canceled_talks"] += canceled
-                result["moved_talks"] += moved
-            handled_submissions.add(entry.submission)
-        for entry in moved_or_new:
-            if entry.submission in handled_submissions:
-                continue
-            if entry.submission not in old_submissions:
-                result["new_talks"] += new_by_submission[entry.submission]
-            else:
-                new, canceled, moved = self._handle_submission_move(
-                    entry.submission, old_slots, new_slots
-                )
-                result["new_talks"] += new
-                result["canceled_talks"] += canceled
-                result["moved_talks"] += moved
-            handled_submissions.add(entry.submission)
-
-        result["count"] = (
-            len(result["new_talks"])
-            + len(result["canceled_talks"])
-            + len(result["moved_talks"])
-        )
-        return result
+        return get_cached_schedule_changes(self)
 
     @cached_property
     def use_room_availabilities(self):
         from pretalx.schedule.models import Availability
 
-        return Availability.objects.filter(room__isnull=False, event=self.event).exists
+        return Availability.objects.filter(
+            room__isnull=False, event=self.event
+        ).exists()
 
     def get_talk_warnings(
         self,

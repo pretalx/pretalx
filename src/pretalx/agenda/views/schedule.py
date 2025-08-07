@@ -73,22 +73,6 @@ class ScheduleMixin:
 class ExporterView(EventPermissionRequired, ScheduleMixin, TemplateView):
     permission_required = "schedule.list_schedule"
 
-    def get_context_data(self, **kwargs):
-        result = super().get_context_data(**kwargs)
-        schedule = self.schedule
-
-        if not schedule and self.version:
-            result["version"] = self.version
-            result["error"] = f'Schedule "{self.version}" not found.'
-            return result
-        if not schedule:
-            result["error"] = "Schedule not found."
-            return result
-        result["schedules"] = self.request.event.schedules.filter(
-            published__isnull=False
-        ).values_list("version")
-        return result
-
     def get(self, request, *args, **kwargs):
         url = resolve(self.request.path_info)
         if url.url_name == "export":
@@ -130,7 +114,7 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
             output_format = "table"
         try:
             result = draw_ascii_schedule(data, output_format=output_format)
-        except StopIteration:
+        except StopIteration:  # pragma: no cover
             result = draw_ascii_schedule(data, output_format="list")
         result += "\n\n  📆 powered by pretalx"
         return HttpResponse(
@@ -146,11 +130,13 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
         return super().dispatch(request, **kwargs)
 
     def get(self, request, **kwargs):
-        accept_header = request.headers.get("Accept", "")
-        if getattr(self, "is_html_export", False) or "text/html" in accept_header:
+        accept_header = request.headers.get("Accept") or ""
+        if getattr(self, "is_html_export", False) or (
+            accept_header and request.accepts("text/html")
+        ):
             return super().get(request, **kwargs)
 
-        if not accept_header or accept_header in ("plain", "text/plain"):
+        if not accept_header or request.accepts("text/plain"):
             return self.get_text(request, **kwargs)
 
         export_headers = {
@@ -158,7 +144,7 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
             "frab_json": ["application/json"],
         }
         for url_name, headers in export_headers.items():
-            if any(header in accept_header for header in headers):
+            if any(request.accepts(header) for header in headers):
                 target_url = getattr(self.request.event.urls, url_name).full()
                 response = HttpResponseRedirect(target_url)
                 response.status_code = 303
@@ -183,7 +169,7 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
     def exporters(self):
         return [
             exporter
-            for exporter in get_schedule_exporters(self.request)
+            for exporter in get_schedule_exporters(self.request, public=True)
             if exporter.show_public
         ]
 
@@ -221,10 +207,11 @@ class ScheduleNoJsView(ScheduleView):
     template_name = "agenda/schedule_nojs.html"
 
     def get_schedule_data(self):
+        schedule = self.get_object()
         data = ScheduleData(
             event=self.request.event,
-            schedule=self.schedule,
-            with_accepted=self.schedule and not self.schedule.version,
+            schedule=schedule,
+            with_accepted=schedule and not schedule.version,
             with_breaks=True,
         ).data
         for date in data:
@@ -236,11 +223,8 @@ class ScheduleNoJsView(ScheduleView):
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
-        if "schedule" not in result:
-            return result
-
         result.update(**self.get_schedule_data())
-        result["day_count"] = len(result["data"])
+        result["day_count"] = len(result.get("data", []))
         return result
 
 

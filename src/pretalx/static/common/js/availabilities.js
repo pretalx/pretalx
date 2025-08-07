@@ -36,7 +36,7 @@ const initAvailabilities = (element) => {
         element.setAttribute("value", JSON.stringify(data))
     }
 
-    const editable = !Boolean(element.getAttribute("disabled"))
+    const editable = !(element.hasAttribute("disabled"))
     const constraints = data.constraints || null
 
     const slotDuration = data.resolution || "00:30:00"

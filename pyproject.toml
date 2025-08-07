@@ -14,7 +14,7 @@ maintainers = [
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Environment :: Web Environment",
-  "Framework :: Django :: 5.1",
+  "Framework :: Django :: 5.2",
   "Intended Audience :: Developers",
   "Intended Audience :: Other Audience",
   "License :: OSI Approved :: Apache Software License",
@@ -31,16 +31,16 @@ dependencies = [
   "beautifulsoup4[lxml]~=4.13.0",
   "bleach~=6.2.0",
   "celery~=5.5.0",
-  "css_inline~=0.14.0",
+  "css_inline~=0.15.0",
   "csscompressor~=0.9.0",
   "cssutils~=2.11.0",
   "defusedcsv~=2.0.0",
   "defusedxml~=0.7.0",
-  "Django[argon2]~=5.1.0",
+  "Django[argon2]~=5.2.2",
   "django-compressor~=4.5.0",
   "django-context-decorator",
   "django-countries~=7.0",
-  "django-csp~=3.8.0",
+  "django-csp~=4.0.0",
   "django-filter==25.1",
   "django-formset-js-improved==0.5.0.3",
   "django-formtools~=2.5.1",
@@ -53,7 +53,7 @@ dependencies = [
   "drf-spectacular~=0.28.0",
   "libsass~=0.23.0",
   "Markdown~=3.8.0",
-  "Pillow~=11.2.0",
+  "Pillow~=11.3.0",
   "publicsuffixlist~=1.0.0",
   "python-dateutil~=2.9.0",
   "qrcode~=8.0",
@@ -91,7 +91,7 @@ dev = [
   "urllib3",
 ]
 postgres = ["psycopg2-binary~=2.9.0"]
-redis = ["redis~=5.2.0"]
+redis = ["redis~=6.2.0"]
 
 [build-system]
 build-backend = "setuptools.build_meta"

@@ -11,7 +11,7 @@
             {{ request.event.featured_sessions_text|rich_text }}
         {% else %}
             {% if talks %}
-                <b>{% translate "Welcome to our list of featured sessions!" %}</b>
+                <strong>{% translate "Welcome to our list of featured sessions!" %}</strong>
                 <br>
                 <br>
                 {% blocktranslate trimmed %}
@@ -32,7 +32,11 @@
         {% for talk in talks %}
             <section>
                 <h3 class="talk-title">
-                    <div>{{ quotation_open }}{{ talk.title }}{{ quotation_close }}</div>
+                    <div>
+                        <a href="{{ talk.urls.public }}">
+                            {{ quotation_open }}{{ talk.title }}{{ quotation_close }}
+                        </a>
+                    </div>
                     <small class="text-muted">
                         {% if talk.display_speaker_names %}{{ talk.display_speaker_names }};{% endif %}
                         <i>{{ talk.submission_type.name }}</i>

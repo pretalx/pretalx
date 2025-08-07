@@ -1,7 +1,6 @@
 import textwrap
 import urllib
 
-from csp.decorators import csp_update
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.core.exceptions import ValidationError
@@ -26,6 +25,7 @@ from django_context_decorator import context
 from pretalx.cfp.forms.submissions import SubmissionInvitationForm
 from pretalx.cfp.views.event import LoggedInEventPageMixin
 from pretalx.common.forms.fields import SizeFileInput
+from pretalx.common.image import gravatar_csp
 from pretalx.common.middleware.event import get_login_redirect
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views import is_form_bound
@@ -36,7 +36,7 @@ from pretalx.submission.forms import InfoForm, QuestionsForm, ResourceForm
 from pretalx.submission.models import Resource, Submission, SubmissionStates
 
 
-@method_decorator(csp_update(IMG_SRC="https://www.gravatar.com"), name="dispatch")
+@method_decorator(gravatar_csp(), name="dispatch")
 class ProfileView(LoggedInEventPageMixin, TemplateView):
     template_name = "cfp/event/user_profile.html"
 
@@ -48,6 +48,10 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
             data=self.request.POST if is_form_bound(self.request, "login") else None,
         )
 
+    @cached_property
+    def can_edit_profile(self):
+        return self.request.event.get_feature_flag("speakers_can_edit_submissions")
+
     @context
     @cached_property
     def profile_form(self):
@@ -55,7 +59,7 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
         return SpeakerProfileForm(
             user=self.request.user,
             event=self.request.event,
-            read_only=False,
+            read_only=not self.can_edit_profile,
             with_email=False,
             field_configuration=self.request.event.cfp_flow.config.get(
                 "profile", {}
@@ -72,6 +76,7 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
             data=self.request.POST if bind else None,
             files=self.request.FILES if bind else None,
             speaker=self.request.user,
+            readonly=not self.can_edit_profile,
             event=self.request.event,
             target="speaker",
         )
@@ -97,7 +102,6 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
             if self.questions_form.has_changed():
                 self.request.event.cache.set("rebuild_schedule_export", True, None)
         else:
-            messages.error(self.request, phrases.base.error_saving_changes)
             return super().get(request, *args, **kwargs)
 
         messages.success(self.request, phrases.base.saved)

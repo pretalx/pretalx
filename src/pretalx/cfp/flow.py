@@ -104,7 +104,7 @@ class BaseCfPStep:
     def is_applicable(self, request):
         return True
 
-    def is_completed(self, request, warn=False):
+    def is_completed(self, request):
         raise NotImplementedError()
 
     @cached_property
@@ -246,15 +246,13 @@ class FormFlowStep(TemplateFlowStep):
         return redirect(next_url) if next_url else None
 
     def set_data(self, data):
+        serialize_data = {}
+        for key, value in data.items():
+            with suppress(FileNotFoundError):
+                if not getattr(value, "file", None):
+                    serialize_data[key] = value
         self.cfp_session["data"][self.identifier] = json.loads(
-            json.dumps(
-                {
-                    key: value
-                    for key, value in data.items()
-                    if not getattr(value, "file", None)
-                },
-                default=serialize_value,
-            )
+            json.dumps(serialize_data, default=serialize_value)
         )
 
     def get_files(self):
@@ -569,7 +567,10 @@ class ProfileStep(GenericFlowStep, FormFlowStep):
         )
 
     def get_csp_update(self, request):
-        return {"img-src": "https://www.gravatar.com"}
+        return {
+            "img-src": "https://www.gravatar.com",
+            "connect-src": "'self' https://www.gravatar.com",
+        }
 
 
 DEFAULT_STEPS = (

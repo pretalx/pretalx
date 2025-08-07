@@ -9,6 +9,7 @@ from django.utils.translation import ngettext_lazy
 from django.views.generic import FormView, ListView, TemplateView, View
 from django_context_decorator import context
 
+from pretalx.common.exceptions import SendMailException
 from pretalx.common.language import language
 from pretalx.common.mail import TolerantDict
 from pretalx.common.text.phrases import phrases
@@ -23,6 +24,7 @@ from pretalx.common.views.mixins import (
     Sortable,
 )
 from pretalx.mail.models import MailTemplate, QueuedMail, get_prefixed_subject
+from pretalx.mail.signals import request_pre_send
 from pretalx.orga.forms.mails import (
     DraftRemindersForm,
     MailDetailForm,
@@ -31,6 +33,20 @@ from pretalx.orga.forms.mails import (
     WriteSessionMailForm,
     WriteTeamsMailForm,
 )
+
+
+def get_send_mail_exceptions(request):
+    exceptions = [
+        result[1]
+        for result in request_pre_send.send_robust(
+            sender=request.event, request=request
+        )
+        if len(result) == 2 and isinstance(result[1], SendMailException)
+    ]
+    if exceptions:
+        errors = [str(e) for e in exceptions]
+        errors = errors or [_("You cannot send emails at this time.")]
+        return errors
 
 
 class OutboxList(
@@ -157,6 +173,11 @@ class OutboxSend(ActionConfirmMixin, OutboxList):
             if mail.sent:
                 messages.error(request, _("This mail had been sent already."))
             else:
+                errors = get_send_mail_exceptions(request)
+                if errors:
+                    for error in errors:
+                        messages.error(request, error)
+                    return redirect(self.request.event.orga_urls.outbox)
                 mail.send(requestor=self.request.user)
                 messages.success(request, _("The mail has been sent."))
             return redirect(self.request.event.orga_urls.outbox)
@@ -173,6 +194,11 @@ class OutboxSend(ActionConfirmMixin, OutboxList):
 
     def post(self, request, *args, **kwargs):
         mails = self.queryset
+        errors = get_send_mail_exceptions(request)
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return redirect(self.request.event.orga_urls.outbox)
         count = mails.count()
         for mail in mails:
             mail.send(requestor=self.request.user)
@@ -299,6 +325,11 @@ class MailDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
             form.instance.log_action(action, person=self.request.user, orga=True)
         action = form.data.get("form", "save")
         if action == "send":
+            errors = get_send_mail_exceptions(self.request)
+            if errors:
+                for error in errors:
+                    messages.error(self.request, error)
+                return redirect(self.get_success_url())
             form.instance.send()
             messages.success(self.request, _("The email has been sent."))
         else:  # action == 'save'
@@ -364,6 +395,9 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
             if key in self.request.GET:
                 initial[key] = self.request.GET.get(key)
         kwargs["initial"] = initial
+
+        errors = get_send_mail_exceptions(self.request)
+        kwargs["may_skip_queue"] = not bool(errors)
         return kwargs
 
     def get_success_url(self):
@@ -443,6 +477,15 @@ class ComposeTeamsMail(ComposeMailBaseView):
     form_class = WriteTeamsMailForm
     template_name = "orga/mails/compose_reviewer_mail_form.html"
     permission_required = "event.update_team"
+
+    def dispatch(self, request, *args, **kwargs):
+        # Gotta handle errors directly here, as these emails are always sent directly
+        errors = get_send_mail_exceptions(request)
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return redirect(self.request.event.orga_urls.outbox)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
         return self.request.event.orga_urls.outbox

@@ -1,0 +1,21 @@
+{% extends "orga/generic/_form.html" %}
+
+{% load i18n %}
+
+{% block content %}
+  <div id="placeholder-neighbour">
+    {% with form_class="form-with-placeholder" %}
+      {{ block.super }}
+    {% endwith %}
+  </div>
+  <div class="col col-md-2" id="placeholder-column">
+    <legend>{% translate "Placeholders" %}</legend>
+
+    {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.submission tag="submission" %}
+    {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.slot tag="slot" %}
+    {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.user tag="user" %}
+    {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.event tag="event" %}
+    {% include "orga/mails/_placeholder_group.html" with placeholders=form.grouped_placeholders.other tag="other" %}
+  </div>
+
+{% endblock content %}

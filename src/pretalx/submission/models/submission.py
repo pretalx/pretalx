@@ -20,6 +20,7 @@ from pretalx.agenda.rules import (
     event_uses_feedback,
     is_agenda_submission_visible,
     is_agenda_visible,
+    is_submission_visible_via_schedule,
 )
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.models.choices import Choices
@@ -334,6 +335,7 @@ class Submission(GenerateCode, PretalxModel):
             "cancel": can_be_canceled & orga_can_change_submissions,
             "remove": can_be_removed & orga_can_change_submissions,
             "view_feedback_page": event_uses_feedback & is_agenda_submission_visible,
+            "view_scheduling_details": is_submission_visible_via_schedule,
             "view_feedback": is_speaker
             | has_reviewer_access
             | orga_can_change_submissions,
@@ -390,13 +392,17 @@ class Submission(GenerateCode, PretalxModel):
 
     @cached_property
     def editable(self):
+        if self.state == SubmissionStates.DRAFT:
+            return self.cfp_open
+
+        if not self.event.get_feature_flag("speakers_can_edit_submissions"):
+            return False
+
         if self.state == SubmissionStates.SUBMITTED:
             return self.cfp_open or (
                 self.event.active_review_phase
                 and self.event.active_review_phase.speakers_can_change_submissions
             )
-        if self.state == SubmissionStates.DRAFT:
-            return self.cfp_open
         return self.state in SubmissionStates.accepted_states
 
     @property

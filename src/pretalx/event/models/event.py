@@ -91,6 +91,7 @@ def default_feature_flags():
         "use_submission_comments": True,
         "present_multiple_times": False,
         "submission_public_review": True,
+        "speakers_can_edit_submissions": True,
     }
 
 
@@ -471,11 +472,11 @@ class Event(PretalxModel):
         """
         return ObjectRelatedCache(self, field="slug")
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, skip_initial_data=False, **kwargs):
         was_created = not bool(self.pk)
         super().save(*args, **kwargs)
 
-        if was_created:
+        if was_created and not skip_initial_data:
             self.build_initial_data()
 
     @property
@@ -900,6 +901,7 @@ class Event(PretalxModel):
         for i, phase in enumerate(phases):
             phase.position = i
             phase.save(update_fields=["position"])
+        return phases
 
     def update_review_phase(self):
         """This method activates the next review phase if the current one is
@@ -909,16 +911,24 @@ class Event(PretalxModel):
         activate.
         """
         _now = now()
-        future_phases = self.review_phases.all()
-        old_phase = self.active_review_phase
-        if old_phase and old_phase.end and old_phase.end > _now:
-            return old_phase
+        active_phase = self.active_review_phase
+        if active_phase and (not active_phase.end or active_phase.end >= _now):
+            return active_phase
         self.reorder_review_phases()
-        old_position = old_phase.position if old_phase else -1
-        future_phases = future_phases.filter(position__gt=old_position)
-        next_phase = future_phases.order_by("position").first()
-        if not next_phase or not next_phase.start or next_phase.start > _now:
-            return old_phase
+        next_phase = (
+            self.review_phases.all()
+            .filter(
+                models.Q(start__isnull=True) | models.Q(start__lte=_now),
+                models.Q(end__isnull=True) | models.Q(end__gte=_now),
+            )
+            .order_by("position")
+            .first()
+        )
+        if not next_phase:
+            if active_phase:
+                active_phase.is_active = False
+                active_phase.save()
+            return
         next_phase.activate()
         return next_phase
 
@@ -1036,6 +1046,19 @@ class Event(PretalxModel):
                 to=self.email,
                 locale=self.locale,
             ).send()
+
+    @property
+    def has_unreleased_schedule_changes(self) -> bool:
+        """Returns True if there are unreleased changes in the WIP schedule.
+
+        This property is cached for 24 hours and automatically updated when:
+        - WIP schedule changes are recalculated
+        - Talks are rescheduled
+        - A schedule is released
+        """
+        from pretalx.schedule.services import has_unreleased_schedule_changes
+
+        return has_unreleased_schedule_changes(self)
 
     @transaction.atomic
     def shred(self, person=None):

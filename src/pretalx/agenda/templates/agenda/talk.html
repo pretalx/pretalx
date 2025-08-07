@@ -27,13 +27,9 @@
     <script id="pretalx-messages" data-logged-in="{% if request.user.is_anonymous %}false{% else %}true{% endif %}" src="{{ request.event.urls.schedule }}widget/messages.js"></script>
     {% compress js %}
         <script defer src="{% static "agenda/js/favourite.js" %}"></script>
-        <script defer src="{% static "common/js/lightbox.js" %}"></script>
         <script defer src="{% static "vendored/moment-with-locales.js" %}"></script>
         <script defer src="{% static "vendored/moment-timezone-with-data-10-year-range.js" %}"></script>
         <script defer src="{% static "agenda/js/datetime-local.js" %}"></script>
-    {% endcompress %}
-    {% compress css %}
-        <link rel="stylesheet" type="text/css" href="{% static "common/css/dialog.css" %}">
     {% endcompress %}
 {% endblock agenda_custom_header %}
 
@@ -51,12 +47,12 @@
                 </span>
                 <div class="buttons d-flex justify-content-end" id="talk-buttons">
                     {% if submission.state == "confirmed" and request.event.current_schedule %}
-                        <a class="btn btn-outline-primary ml-2" href="{{ submission.urls.ical }}">
+                        <a class="btn btn-outline-primary" href="{{ submission.urls.ical }}">
                             <i class="fa fa-calendar"></i> .ical
                         </a>
                     {% endif %}
                     {% if submission.does_accept_feedback and request.event|get_feature_flag:"use_feedback" and not is_html_export %}
-                        <a href="{{ submission.urls.feedback }}" class="btn btn-success">
+                        <a href="{{ submission.urls.feedback }}" class="btn btn-success ml-1">
                             <i class="fa fa-comments"></i> {{ phrases.agenda.feedback }}
                         </a>
                     {% endif %}
@@ -68,10 +64,12 @@
                 </div>
             </div>
             <small class="text-muted">
-                {% if talk_slots|length == 1 %}
-                    {{ talk_slots.0.start|datetimerange:talk_slots.0.end }}, {{ talk_slots.0.room.name }}
-                    {% if talk_slots.0.room.description %}
-                        <i class="fa fa-question-circle" data-toggle="tooltip" title="{{ talk_slots.0.room.description }}"></i>
+                {% if scheduling_information_visible %}
+                    {% if talk_slots|length == 1 %}
+                        {{ talk_slots.0.start|datetimerange:talk_slots.0.end }}, {{ talk_slots.0.room.name }}
+                        {% if talk_slots.0.room.description %}
+                            <i class="fa fa-question-circle" data-toggle="tooltip" title="{{ talk_slots.0.room.description }}"></i>
+                        {% endif %}
                     {% endif %}
                 {% endif %}
                 {% if request.event.is_multilingual and request.event.cfp.request_content_locale %}
@@ -93,28 +91,29 @@
                 {% if recording_iframe %}{{ recording_iframe|safe }}{% endif %}
                 {% if submission.image %}
                     <div class="talk-image">
-                        <a href="{{ submission.image.url }}"
-                           data-lightbox="{{ submission.image.url }}">
+                        <a href="{{ submission.image.url }}" data-lightbox>
                             <img loading="lazy"
                                  src="{{ submission.image.url }}"
                                  alt="{% translate "This session’s header image" %}">
                         </a>
                     </div>
                 {% endif %}
-                {% if talk_slots|length > 1 %}
-                    <ul class="talk-slots">
-                        {% for talk in talk_slots %}
-                            <li class="text-muted">
-                                {{ talk.start|datetimerange:talk.end }}, {{ talk.room.name }}
-                                {% if room.description %}
-                                    <i class="fa fa-question-circle" data-toggle="tooltip" title="{{ room.description }}"></i>
-                                {% endif %}
-                            </li>
-                        {% endfor %}
-                    </ul>
-                    <p>
-                        <i>{% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone %}</i>
-                    </p>
+                {% if scheduling_information_visible %}
+                    {% if talk_slots|length > 1 %}
+                        <ul class="talk-slots">
+                            {% for talk in talk_slots %}
+                                <li class="text-muted">
+                                    {{ talk.start|datetimerange:talk.end }}, {{ talk.room.name }}
+                                    {% if room.description %}
+                                        <i class="fa fa-question-circle" data-toggle="tooltip" title="{{ room.description }}"></i>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        <p>
+                            <i>{% phrase "phrases.schedule.timezone_hint" tz=request.event.timezone %}</i>
+                        </p>
+                    {% endif %}
                 {% endif %}
                 <section class="abstract">
                     {{ submission.abstract|rich_text }}
@@ -123,13 +122,23 @@
                 <section class="description">
                     {{ submission.description|rich_text }}
                 </section>
-                {% if answers %}
+                {% if answers or icon_answers %}
                     <hr />
                     <section class="answers">
+                        {% if icon_answers %}
+                            <div class="icon-group">
+                                {% for answer in icon_answers %}
+                                    <span class="icon-link">
+                                        {% include "common/question_answer.html" with answer=answer %}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                         {% for answer in answers %}
                             <span class="question"><strong>{{ answer.question.question }}:</strong></span>
-                            <span class="answer {% if question.variant != "text" %}answer-strip-paragraph{% endif %}">{% include "common/question_answer.html" with answer=answer %}</span>
+                            <span class="answer {% if answer.question.variant != "text" %}answer-strip-paragraph{% endif %}">{% include "common/question_answer.html" with answer=answer %}</span>
                         {% endfor %}
+                    </section>
                 {% endif %}
             </section>
             {% if submission.active_resources %}
@@ -151,38 +160,40 @@
             </section>
         </div>
     </div>
-    {% if not hide_speaker_links %}
-        {% for speaker in speakers %}
-            <div class="pretalx-session">
-                <div class="pretalx-session-time-box avatar">
-                    <a href="{{ speaker.talk_profile.urls.public }}">
-                        <div class="avatar-wrapper">
-                            {% if speaker.avatar_url and request.event.cfp.request_avatar %}
-                                <img loading="lazy" src="{{ speaker.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
-                            {% else %}
-                                <img loading="lazy" src="{{ request.event.urls.speakers }}avatar.svg" alt="The speaker’s profile picture">
-                            {% endif %}
-                        </div>
-                    </a>
-                </div>
-                <div class="pretalx-session-info">
-                    <div class="title">
-                        <a href="{{ speaker.talk_profile.urls.public }}">{{ speaker.get_display_name }}</a>
-                    </div>
-                    <div class="abstract">{{ speaker.talk_profile.biography|default:""|rich_text }}</div>
-                    {% if speaker.other_submissions %}
-                        {% translate "This speaker also appears in:" %}
-                        <ul>
-                            {% for talk in speaker.other_submissions %}
-                                <li>
-                                    <a href="{{ talk.urls.public }}">{{ talk.title }}</a>
-                                </li>
-                            {% endfor %}
-                        </ul>
+    {% for speaker in speakers %}
+        <div class="pretalx-session">
+            <div class="pretalx-session-time-box avatar">
+                {% if not hide_speaker_links %}<a href="{{ speaker.talk_profile.urls.public }}">{% endif %}
+                <div class="avatar-wrapper">
+                    {% if speaker.avatar_url and request.event.cfp.request_avatar %}
+                        <img loading="lazy" src="{{ speaker.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
+                    {% else %}
+                        <img loading="lazy" src="{{ request.event.urls.speakers }}avatar.svg" alt="The speaker’s profile picture">
                     {% endif %}
                 </div>
+                {% if not hide_speaker_links %}</a>{% endif %}
             </div>
-        {% endfor %}
-    {% endif %}
+            <div class="pretalx-session-info">
+                <div class="title">
+                    {% if hide_speaker_links %}
+                        {{ speaker.get_display_name }}
+                    {% else %}
+                        <a href="{{ speaker.talk_profile.urls.public }}">{{ speaker.get_display_name }}</a>
+                    {% endif %}
+                </div>
+                <div class="abstract">{{ speaker.talk_profile.biography|default:""|rich_text }}</div>
+                {% if speaker.other_submissions and not hide_speaker_links %}
+                    {% translate "This speaker also appears in:" %}
+                    <ul>
+                        {% for talk in speaker.other_submissions %}
+                            <li>
+                                <a href="{{ talk.urls.public }}">{{ talk.title }}</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
     </article>
 {% endblock agenda_content %}

@@ -110,7 +110,7 @@ CONFIG = {
             "env": os.getenv("PRETALX_REDIS"),
         },
         "session": {
-            "default": "False",
+            "default": "True",
             "env": os.getenv("PRETALX_REDIS_SESSIONS"),
         },
     },
@@ -166,10 +166,11 @@ def read_config_files(config):
             ],
             encoding="utf-8",
         )
+    # .read() returns None if there are no config files
     return (
         config,
         config_files or [],
-    )  # .read() returns None if there are no config files
+    )
 
 
 def reduce_dict(data):

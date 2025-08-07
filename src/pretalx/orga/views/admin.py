@@ -1,9 +1,10 @@
 import sys
 
-from csp.decorators import csp_update
 from django.conf import settings
 from django.contrib import messages
+from django.core import cache
 from django.db.models import Count, Q
+from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -12,6 +13,8 @@ from django_context_decorator import context
 from django_scopes import scopes_disabled
 
 from pretalx.celery_app import app
+from pretalx.common.exceptions import UserDeletionError
+from pretalx.common.image import gravatar_csp
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.phrases import phrases
 from pretalx.common.update_check import check_result_table, update_check
@@ -26,7 +29,7 @@ class AdminDashboard(PermissionRequired, TemplateView):
 
     @context
     def queue_length(self):
-        if not settings.HAS_CELERY:
+        if settings.CELERY_TASK_ALWAYS_EAGER:
             return None
         try:
             client = app.broker_connection().channel().client
@@ -123,7 +126,7 @@ class AdminUserDetail(PermissionRequired, DetailView):
     slug_url_kwarg = "code"
     slug_field = "code"
 
-    @csp_update(IMG_SRC="https://www.gravatar.com")
+    @gravatar_csp()
     def dispatch(self, *args, **kwargs):
         with scopes_disabled():
             return super().dispatch(*args, **kwargs)
@@ -133,16 +136,6 @@ class AdminUserDetail(PermissionRequired, DetailView):
         if action == "pw-reset":
             self.get_object().reset_password(event=None)
             messages.success(request, phrases.base.password_reset_success)
-        elif action == "deactivate":
-            user = self.get_object()
-            user.is_active = False
-            user.save()
-            messages.success(request, _("The user has been deactivated."))
-        elif action == "activate":
-            user = self.get_object()
-            user.is_active = True
-            user.save()
-            messages.success(request, _("The user has been activated."))
         return redirect(self.get_success_url())
 
     def get_success_url(self):
@@ -185,9 +178,23 @@ class AdminUserDelete(ActionConfirmMixin, AdminUserDetail):
             return super().dispatch(*args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        self.get_object().shred()
+        user = self.get_object()
+        try:
+            user.shred()
+        except UserDeletionError:
+            user.deactivate()
         messages.success(request, _("The user has been deleted."))
         return redirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse("orga:admin.user.list")
+
+
+def healthcheck(request):
+    User.objects.exists()
+
+    cache.cache.set("_healthcheck", "1")
+    if not cache.cache.get("_healthcheck") == "1":
+        return HttpResponse("Cache not available.", status=503)
+
+    return HttpResponse()

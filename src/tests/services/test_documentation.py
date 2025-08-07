@@ -11,17 +11,12 @@ here = Path(__file__).parent
 doc_dir = here / "../../../doc"
 base_dir = here / "../../pretalx"
 
-with (doc_dir / "developer/plugins/general.rst").open() as doc_file:
-    plugin_docs = doc_file.read()
-
-
-with (doc_dir / "administrator/commands.rst").open() as doc_file:
-    command_docs = doc_file.read()
+plugin_docs = (doc_dir / "developer/plugins/general.rst").read_text()
+command_docs = (doc_dir / "administrator/commands.rst").read_text()
 
 
 def test_documentation_includes_config_options():
-    with (doc_dir / "administrator/configure.rst").open() as doc_file:
-        doc_text = doc_file.read()
+    doc_text = (doc_dir / "administrator/configure.rst").read_text()
     config = configparser.RawConfigParser()
     config = config.read(here / "../../pretalx.example.cfg")
 
@@ -45,7 +40,12 @@ def test_documentation_includes_management_commands(app):
     # devserver is not relevant for administrators, and spectacular is a
     # third-party command for API doc generation that we only have as a
     # local command in order to wrap it in scopes_disabled()
-    excluded_commands = ("__init__.py", "devserver.py", "spectacular.py")
+    excluded_commands = (
+        "__init__.py",
+        "devserver.py",
+        "spectacular.py",
+        "update_translation_percentages.py",
+    )
     with suppress(ImportError):
         importlib.import_module(app + ".management.commands")
         path = base_dir / app.partition(".")[-1] / "management/commands"

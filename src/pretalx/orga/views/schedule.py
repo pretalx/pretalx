@@ -33,6 +33,7 @@ from pretalx.common.views.mixins import (
 from pretalx.orga.forms.schedule import ScheduleExportForm, ScheduleReleaseForm
 from pretalx.schedule.forms import QuickScheduleForm, RoomForm
 from pretalx.schedule.models import Availability, Room, TalkSlot
+from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 
 SCRIPT_SRC = "'self' 'unsafe-eval'"
 DEFAULT_SRC = "'self'"
@@ -46,7 +47,10 @@ if settings.VITE_DEV_MODE:
 
 
 @method_decorator(
-    csp_update(SCRIPT_SRC=SCRIPT_SRC, DEFAULT_SRC=DEFAULT_SRC), name="dispatch"
+    csp_update(
+        {"script-src": SCRIPT_SRC, "default-src": DEFAULT_SRC}, DEFAULT_SRC=DEFAULT_SRC
+    ),
+    name="dispatch",
 )
 class ScheduleView(EventPermissionRequired, TemplateView):
     template_name = "orga/schedule/index.html"
@@ -108,7 +112,7 @@ class ScheduleExportTriggerView(EventPermissionRequired, View):
     permission_required = "event.update_event"
 
     def post(self, request, event):
-        if settings.HAS_CELERY:
+        if not settings.CELERY_TASK_ALWAYS_EAGER:
             export_schedule_html.apply_async(
                 kwargs={"event_id": self.request.event.id}, ignore_result=True
             )
@@ -353,6 +357,9 @@ class TalkList(EventPermissionRequired, View):
             start=start,
             end=end,
         )
+        task_update_unreleased_schedule_changes.apply_async(
+            kwargs={"event": request.event.slug}
+        )
         return JsonResponse(serialize_break(slot))
 
 
@@ -474,6 +481,9 @@ class TalkUpdate(PermissionRequired, View):
 
         with_speakers = self.request.event.cfp.request_availabilities
         warnings = talk.schedule.get_talk_warnings(talk, with_speakers=with_speakers)
+        task_update_unreleased_schedule_changes.apply_async(
+            kwargs={"event": request.event.slug}
+        )
 
         return JsonResponse(serialize_slot(talk, warnings=warnings))
 
@@ -484,6 +494,9 @@ class TalkUpdate(PermissionRequired, View):
         if talk.submission:
             return JsonResponse({"error": "Cannot delete talk."})
         talk.delete()
+        task_update_unreleased_schedule_changes.apply_async(
+            kwargs={"event": request.event.slug}
+        )
         return JsonResponse({"success": True})
 
 
@@ -505,6 +518,9 @@ class QuickScheduleView(PermissionRequired, UpdateView):
     def form_valid(self, form):
         form.save()
         messages.success(self.request, _("The session has been scheduled."))
+        task_update_unreleased_schedule_changes.apply_async(
+            kwargs={"event": self.request.event.slug}
+        )
         return super().form_valid(form)
 
     def get_success_url(self):

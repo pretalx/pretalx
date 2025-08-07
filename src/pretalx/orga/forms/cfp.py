@@ -20,6 +20,7 @@ from pretalx.common.forms.widgets import (
     TextInputWithAddon,
 )
 from pretalx.common.text.phrases import phrases
+from pretalx.orga.forms.widgets import IconSelect
 from pretalx.submission.models import (
     AnswerOption,
     Question,
@@ -59,13 +60,22 @@ class CfPSettingsForm(
         ),
         required=False,
     )
+    speakers_can_edit_submissions = forms.BooleanField(
+        label=_("Allow speakers to edit their proposals and profiles"),
+        required=False,
+    )
 
     def __init__(self, *args, obj, **kwargs):
-        kwargs.pop(
-            "read_only"
-        )  # added in ActionFromUrl view mixin, but not needed here.
+        # added in ActionFromUrl view mixin, but not needed here.
+        kwargs.pop("read_only")
         self.instance = obj
         super().__init__(*args, **kwargs)
+
+        review_phase_link = f'<a href="{obj.orga_urls.review_settings}#tab-phases">{_("Review settings")}</a>'
+        self.fields["speakers_can_edit_submissions"].help_text = _(
+            "If disabled, speakers cannot edit their proposals regardless of the proposal state. "
+            "This setting overrides the {review_phase_link} for speaker editing."
+        ).format(review_phase_link=review_phase_link)
         if getattr(obj, "email", None):
             self.fields[
                 "mail_on_new_submission"
@@ -139,6 +149,7 @@ class CfPSettingsForm(
             "use_tracks": "feature_flags",
             "submission_public_review": "feature_flags",
             "present_multiple_times": "feature_flags",
+            "speakers_can_edit_submissions": "feature_flags",
             "mail_on_new_submission": "mail_settings",
         }
 
@@ -285,7 +296,7 @@ class QuestionForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
         new_options = []
         changed_options = []
         for index, option in enumerate(options):
-            if option not in existing_options:
+            if str(option) not in existing_options:
                 new_options.append(
                     AnswerOption(question=instance, answer=option, position=index + 1)
                 )
@@ -309,6 +320,7 @@ class QuestionForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
             "variant",
             "is_public",
             "is_visible_to_reviewers",
+            "icon",
             "tracks",
             "submission_types",
             "contains_personal_data",
@@ -331,6 +343,7 @@ class QuestionForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
             "max_date": HtmlDateInput,
             "tracks": EnhancedSelectMultiple,
             "submission_types": EnhancedSelectMultiple,
+            "icon": IconSelect,
         }
         field_classes = {
             "variant": SafeModelChoiceField,

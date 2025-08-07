@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.utils.crypto import get_random_string
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy as _p
 
 from pretalx.api.versions import CURRENT_VERSIONS
 from pretalx.common.models.mixins import PretalxModel
@@ -19,12 +20,12 @@ def generate_api_token():
 READ_PERMISSIONS = ("list", "retrieve")
 WRITE_PERMISSIONS = READ_PERMISSIONS + ("create", "update", "destroy", "actions")
 PERMISSION_CHOICES = (
-    ("list", _("Read list")),
-    ("retrieve", _("Read details")),
-    ("create", _("Create")),
-    ("update", _("Update")),
-    ("destroy", _("Delete")),
-    ("actions", _("Additional actions")),
+    ("list", _p("API endpoint permissions", "Read list")),
+    ("retrieve", _p("API endpoint permissions", "Read details")),
+    ("create", _p("API endpoint permissions", "Create")),
+    ("update", _p("API endpoint permissions", "Update")),
+    ("destroy", _p("API endpoint permissions", "Delete")),
+    ("actions", _p("API endpoint permissions", "Additional actions")),
 )
 ENDPOINTS = (
     "teams",

@@ -1,6 +1,8 @@
+from functools import partial
 from io import BytesIO
 from pathlib import Path
 
+from csp.decorators import csp_update
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
@@ -12,6 +14,14 @@ THUMBNAIL_SIZES = {
     "tiny": (64, 64),
     "default": (460, 460),
 }
+
+gravatar_csp = partial(
+    csp_update,
+    {
+        "img-src": "https://www.gravatar.com",
+        "connect-src": ("'self'", "https://www.gravatar.com"),
+    },
+)
 
 
 def validate_image(f):
