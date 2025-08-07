@@ -1,6 +1,7 @@
 {% extends "orga/submission/base.html" %}
 
 {% load compress %}
+{% load form_signal %}
 {% load i18n %}
 {% load rich_text %}
 {% load rules %}
@@ -180,6 +181,14 @@
                     {{ form.text.as_field_group }}
                 </div>
             {% endif %}
+
+            {% form_signal "pretalx.orga.signals.review_form" instance=form.instance as extra_forms %}
+            {% for form in extra_forms %}
+                <fieldset>
+                    {% if form.label %}<legend>{{ form.label }}</legend>{% endif %}
+                    {{ form }}
+                </fieldset>
+            {% endfor %}
 
             {% if can_view_other_reviews or form.instance.pk %}
                 <div class="table-responsive-always">

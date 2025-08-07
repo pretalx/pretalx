@@ -461,6 +461,9 @@ class SubmissionContent(
     def get_success_url(self) -> str:
         return self.object.orga_urls.base
 
+    def get_form_signal_name(self):
+        return "pretalx.orga.signals.submission_form"
+
     @transaction.atomic()
     def form_valid(self, form):
         created = not self.object
@@ -492,7 +495,7 @@ class SubmissionContent(
             action = "pretalx.submission." + ("create" if created else "update")
             form.instance.log_action(action, person=self.request.user, orga=True)
             self.request.event.cache.set("rebuild_schedule_export", True, None)
-        return redirect(self.get_success_url())
+        return super().form_valid(form)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

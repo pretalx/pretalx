@@ -12,7 +12,7 @@ def html_signal(signal_name: str, **kwargs):
 
     Usage::
 
-        {% html_signal event "path.to.signal" argument="value" ... %}
+        {% html_signal "path.to.signal" argument="value" ... %}
     """
     signal = import_string(signal_name)
     _html = []

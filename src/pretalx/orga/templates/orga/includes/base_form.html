@@ -1,5 +1,13 @@
+{% load form_signal %}
 <form method="post" {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}{% if form_class %} class="{{ form_class }}"{% endif %}>
     {% csrf_token %}
     {{ form }}
+    {% form_signal "pretalx.orga.signals.extra_form" instance=form.instance as extra_forms %}
+    {% for form in extra_forms %}
+        <fieldset>
+            {% if form.label %}<legend>{{ form.label }}</legend>{% endif %}
+            {{ form }}
+        </fieldset>
+    {% endfor %}
     {% include "orga/includes/submit_row.html" %}
 </form>
