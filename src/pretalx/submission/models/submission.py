@@ -976,7 +976,7 @@ class Submission(GenerateCode, PretalxModel):
             )
             & models.Q(is_public=True)
         ).order_by("link")
-    
+
     @cached_property
     def private_resources(self):
         return self.resources.filter(
