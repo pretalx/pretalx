@@ -185,6 +185,9 @@ class SpeakerDetail(SpeakerViewMixin, ActionFromUrl, CreateOrUpdateView):
             ),
         )
 
+    def get_form_signal_name(self):
+        return "pretalx.orga.signals.speaker_form"
+
     @transaction.atomic()
     def form_valid(self, form):
         result = super().form_valid(form)

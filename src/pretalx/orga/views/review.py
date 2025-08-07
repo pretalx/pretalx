@@ -618,6 +618,9 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
         kwargs["categories"] = self.score_categories
         return kwargs
 
+    def get_form_signal_name(self):
+        return "pretalx.orga.signals.review_form"
+
     def form_valid(self, form):
         if not self.qform.is_valid():
             messages.error(self.request, phrases.base.error_saving_changes)

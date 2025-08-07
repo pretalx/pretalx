@@ -1,6 +1,7 @@
 {% extends "orga/base.html" %}
 
 {% load compress %}
+{% load form_signal %}
 {% load i18n %}
 {% load rules %}
 {% load static %}
@@ -85,6 +86,14 @@
         {{ form.internal_notes.as_field_group }}
 
         {{ questions_form }}
+
+        {% form_signal "pretalx.orga.signals.speaker_form" instance=form.instance as extra_forms %}
+        {% for form in extra_forms %}
+            <fieldset>
+                {% if form.label %}<legend>{{ form.label }}</legend>{% endif %}
+                {{ form }}
+            </fieldset>
+        {% endfor %}
 
         {% include "orga/includes/submit_row.html" %}
 

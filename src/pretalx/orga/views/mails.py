@@ -324,6 +324,9 @@ class MailDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
     def get_success_url(self):
         return self.object.event.orga_urls.outbox
 
+    def get_form_signal_name(self):
+        return "pretalx.orga.signals.mail_form"
+
     def form_valid(self, form):
         form.instance.event = self.request.event
         result = super().form_valid(form)
