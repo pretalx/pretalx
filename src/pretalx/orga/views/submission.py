@@ -441,12 +441,15 @@ class SubmissionContent(
     def get_success_url(self) -> str:
         return self.object.orga_urls.base
 
+    def get_form_signal_name(self):
+        return "pretalx.orga.signals.submission_form"
+
     @transaction.atomic()
     def form_valid(self, form):
         created = not self.object
         self.object = form.instance
         self._questions_form.submission = self.object
-        if not self._questions_form.is_valid():
+        if not (super().form_valid(form) and self._questions_form.is_valid()):
             messages.error(self.request, phrases.base.error_saving_changes)
             return self.get(self.request, *self.args, **self.kwargs)
         form.instance.event = self.request.event
