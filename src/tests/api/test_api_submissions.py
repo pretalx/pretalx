@@ -174,6 +174,7 @@ def test_answer_is_visible_to_reviewers(
     orga_user_token,
     review_user,
     submission,
+    resource,
     answer,
     event,
     is_visible_to_reviewers,
@@ -189,7 +190,7 @@ def test_answer_is_visible_to_reviewers(
         question.save()
 
     response = client.get(
-        submission.event.api_urls.submissions + "?expand=answers.question",
+        submission.event.api_urls.submissions + "?expand=answers.question,resources",
         follow=True,
         headers={"Authorization": f"Token {token.token}"},
     )
@@ -198,6 +199,7 @@ def test_answer_is_visible_to_reviewers(
     assert response.status_code == 200, content
     assert content["count"] == 1
     assert content["results"][0]["title"] == submission.title
+    assert content["results"][0]["resources"][0]["id"] == resource.id
     assert len(content["results"][0]["answers"]) == length
 
 
