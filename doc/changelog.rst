@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`cfp` Organisers can now also change the label of the recording-opt-out field.
 - :feature:`orga:email` The URL to the private speaker profile page (where speakers can e.g. edit their biography) is now available as an email placeholder.
 - :bug:`orga:email` The list of available email placeholders was hidden when editing email templates.
 - :bug:`orga:email` If the email signature contained URLs, those URLs were broken in the HTML version of the email.
