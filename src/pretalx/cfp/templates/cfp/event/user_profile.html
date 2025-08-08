@@ -36,14 +36,16 @@
             {% include "common/availabilities.html" %}
             {{ profile_form.availabilities.as_field_group }}
         {% endif %}
-        <div class="row">
-            <div class="col-md-4 flip ml-auto">
-                <input type="hidden" name="form" value="profile">
-                <button type="submit" class="btn btn-block btn-success btn-lg">
-                    {{ phrases.base.save }}
-                </button>
+        {% if not profile_form.read_only %}
+            <div class="row">
+                <div class="col-md-4 flip ml-auto">
+                    <input type="hidden" name="form" value="profile">
+                    <button type="submit" class="btn btn-block btn-success btn-lg">
+                        {{ phrases.base.save }}
+                    </button>
+                </div>
             </div>
-        </div>
+        {% endif %}
     </form>
 
     {% if questions_exist %}

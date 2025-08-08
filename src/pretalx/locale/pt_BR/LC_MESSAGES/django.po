@@ -6827,7 +6827,7 @@ msgid "Valid until"
 msgstr "Válido até"
 
 #: pretalx/orga/templates/orga/user.html:68
-msgid "Updgrade"
+msgid "Upgrade"
 msgstr "Atualizado"
 
 #: pretalx/orga/templates/orga/user.html:87

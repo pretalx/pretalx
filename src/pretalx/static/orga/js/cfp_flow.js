@@ -134,24 +134,27 @@ Vue.component("field", {
       <div :class="['form-group', 'row', field.field_source].concat(isModal ? '' : 'editable')" v-bind:style="style" @click.stop="makeModal" v-if="!(isModal && isQuestion)">
       <label class="col-md-3 col-form-label pt-0">
         <template v-if="field.widget !== 'CheckboxInput'">
-          <template v-if="isModal">
-            <div class="i18n-form-group mb-2 title-input" @click.stop="">
-              <input type="text" class="form-control" :title="locale" :lang="locale" v-model="field.label[locale]" v-for="locale in locales">
-            </div>
-          </template>
-          <template v-else>
-            {{ field.label[currentLanguage] }}
-            <br>
-          </template>
-          <template v-if="isModal && editRequirement">
-            <span v-if="!field.required & !field.hard_required" :class="[editable ? 'editable' : '', 'optional']" @click.stop="field.required=true">Optional</span>
-            <span v-else-if="!field.hard_required" :class="[editable ? 'editable' : '', 'optional']" @click.stop="field.required=false"><strong>Required</strong></span>
-            <span v-else class="optional"><strong>Required</strong></span>
-          </template>
-          <template v-else>
-            <span v-if="!field.required" class="optional">Optional</span>
-            <span v-else class="optional"><strong>Required</strong></span>
-          </template>
+            <template v-if="isModal">
+              <div class="i18n-form-group mb-2 title-input" @click.stop="">
+                <input type="text" class="form-control" :title="locale" :lang="locale" v-model="field.label[locale]" v-for="locale in locales">
+              </div>
+            </template>
+            <template v-else>
+              {{ field.label[currentLanguage] }}
+              <br>
+            </template>
+            <template v-if="isModal && editRequirement">
+              <span v-if="!field.required & !field.hard_required" :class="[editable ? 'editable' : '', 'optional']" @click.stop="field.required=true">Optional</span>
+              <span v-else-if="!field.hard_required" :class="[editable ? 'editable' : '', 'optional']" @click.stop="field.required=false"><strong>Required</strong></span>
+              <span v-else class="optional"><strong>Required</strong></span>
+            </template>
+            <template v-else>
+              <span v-if="!field.required" class="optional">Optional</span>
+              <span v-else class="optional"><strong>Required</strong></span>
+            </template>
+        </template>
+        <template v-else-if="isModal">
+            <input type="checkbox" class="form-check-input ml-auto mt-3">
         </template>
       </label>
       <div class="col-md-9">
@@ -159,8 +162,15 @@ Vue.component("field", {
         <select class="form-control" type="text" :placeholder="field.title" readonly disabled v-else-if="field.widget === 'Select'"></select>
         <textarea class="form-control" type="text" :placeholder="field.title" readonly disabled v-else-if="field.widget === 'Textarea' || field.widget === 'MarkdownWidget'"></textarea>
         <div class="form-check" v-else-if="field.widget === 'CheckboxInput'">
-          <input type="checkbox" class="form-check-input">
-          <label class="form-check-label">{{ field.label[currentLanguage] }}</label>
+          <template v-if="isModal">
+            <div class="i18n-form-group mb-2 font-weight-bold" @click.stop="">
+              <input type="text" class="form-control" :title="locale" :lang="locale" v-model="field.label[locale]" v-for="locale in locales">
+            </div>
+          </template>
+          <template v-else>
+            <input type="checkbox" class="form-check-input">
+            <label class="form-check-label">{{ field.label[currentLanguage] }}</label>
+          </template>
         </div>
         <div class="row bootstrap4-multi-input" v-else-if="field.widget === 'ClearableFileInput'">
           <div class="col-12"><input type="file"></div>
@@ -242,10 +252,9 @@ Vue.component("field", {
         },
     },
     created() {
-        this.fixed_help_text = this.field.full_help_text.replace(
-            this.field.help_text[currentLanguage],
-            "",
-        )
+        const fullHelpText = typeof this.field.full_help_text === 'string' ? this.field.full_help_text : ""
+        const currentHelpText = this.field.help_text && typeof this.field.help_text[currentLanguage] === 'string' ? this.field.help_text[currentLanguage] : ""
+        this.fixed_help_text = fullHelpText.replace(currentHelpText, "")
     },
 })
 
