@@ -6533,7 +6533,7 @@ msgid "Valid until"
 msgstr "유효 기간"
 
 #: pretalx/orga/templates/orga/user.html:68
-msgid "Updgrade"
+msgid "Upgrade"
 msgstr "업그레이드"
 
 #: pretalx/orga/templates/orga/user.html:87

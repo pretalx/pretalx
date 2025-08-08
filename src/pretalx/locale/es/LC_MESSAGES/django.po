@@ -7289,7 +7289,7 @@ msgid "Valid until"
 msgstr "Válido hasta"
 
 #: pretalx/orga/templates/orga/user.html:68
-msgid "Updgrade"
+msgid "Upgrade"
 msgstr ""
 
 #: pretalx/orga/templates/orga/user.html:87

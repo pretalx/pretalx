@@ -48,6 +48,10 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
             data=self.request.POST if is_form_bound(self.request, "login") else None,
         )
 
+    @cached_property
+    def can_edit_profile(self):
+        return self.request.event.get_feature_flag("speakers_can_edit_submissions")
+
     @context
     @cached_property
     def profile_form(self):
@@ -55,7 +59,7 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
         return SpeakerProfileForm(
             user=self.request.user,
             event=self.request.event,
-            read_only=False,
+            read_only=not self.can_edit_profile,
             with_email=False,
             field_configuration=self.request.event.cfp_flow.config.get(
                 "profile", {}
@@ -72,6 +76,7 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
             data=self.request.POST if bind else None,
             files=self.request.FILES if bind else None,
             speaker=self.request.user,
+            readonly=not self.can_edit_profile,
             event=self.request.event,
             target="speaker",
         )

@@ -61,7 +61,7 @@ class CfPSettingsForm(
         required=False,
     )
     speakers_can_edit_submissions = forms.BooleanField(
-        label=_("Allow speakers to edit their proposals"),
+        label=_("Allow speakers to edit their proposals and profiles"),
         required=False,
     )
 

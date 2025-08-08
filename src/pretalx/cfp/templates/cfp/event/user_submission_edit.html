@@ -73,8 +73,14 @@
             {% endif %}
             {{ form }}
             {{ qform }}
-            {% if can_edit or form.instance.resources.count %}
+            {% if can_edit %}
                 {% include "cfp/includes/submission_resources_form.html" %}
+            {% elif form.instance.active_resources.count %}
+                <ul>
+                    {% for resource in form.instance.active_resources %}
+                        <li>{% include "agenda/includes/submission_resource.html" %}</li>
+                    {% endfor %}
+                </ul>
             {% endif %}
             {% if can_edit %}
                 <div class="row mt-4">
