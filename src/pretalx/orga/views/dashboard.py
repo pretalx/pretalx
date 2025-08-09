@@ -15,6 +15,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import EventPermissionRequired, PermissionRequired
 from pretalx.event.models import Event, Organiser
 from pretalx.event.stages import get_stages
+from pretalx.orga.signals import dashboard_tile
 from pretalx.submission.models import Submission, SubmissionStates
 from pretalx.submission.rules import get_missing_reviews
 
@@ -223,6 +224,15 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
                 )
         return result
 
+    def get_plugin_tiles(self):
+        tiles = []
+        for __, response in dashboard_tile.send_robust(sender=self.request.event):
+            if isinstance(response, list):
+                tiles.extend(response)
+            else:
+                tiles.append(response)
+        return tiles
+
     @context
     def history(self):
         return ActivityLog.objects.filter(event=self.request.event).select_related(
@@ -409,5 +419,6 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
         result["tiles"] += self.get_review_tiles(
             can_change_settings=can_change_settings
         )
+        result["tiles"] += self.get_plugin_tiles()
         result["tiles"].sort(key=lambda tile: tile.get("priority") or 100)
         return result

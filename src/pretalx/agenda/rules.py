@@ -21,9 +21,7 @@ def is_submission_visible_via_schedule(user, submission):
     return bool(
         submission
         and is_agenda_visible(user, submission.event)
-        and submission.slots.filter(
-            schedule=submission.event.current_schedule, is_visible=True
-        ).exists()
+        and submission.slot.is_visible
     )
 
 

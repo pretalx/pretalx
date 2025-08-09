@@ -6753,8 +6753,8 @@ msgid ""
 "out more, please have a look at the <a %(docurl)s> API documentation</a>."
 msgstr ""
 "Този токен може да се използва за достъп до <a %(apiurl)s>pretalx API</a>. "
-"За да разберете повече, моля, погледнете <a %(docurl)s> API "
-"документацията</a>."
+"За да разберете повече, моля, погледнете <a %(docurl)s> API документацията</"
+"a>."
 
 #: pretalx/orga/templates/orga/user.html:43
 msgid "Your API tokens"

@@ -113,3 +113,23 @@ keyword argument will contain the event slug to **copy from**. The keyword argum
 mappings from object IDs in the original event to objects in the new event of the respective
 types.
 """
+
+dashboard_tile = EventPluginSignal()
+"""
+This signal is sent out to collect additional tiles for the main dashboard of an
+event. Receivers are expected to return a dictionary or a list of dictionaries.
+
+The dictionaries should contain at least the keys ``large`` for a tile heading and
+``small`` for a subtitle or content. Optionally, you can return a ``url`` key to make
+the tile clickable and a ``priority`` to determine the order in which tiles are
+displayed. The ``priority`` should be a number between 0 and 100, with lower numbers
+being displayed first. Actions should be between 10 and 30, with 20 being the
+"go to cfp" action. General statistics start at 50.
+The tile dictionary may optionally also contain a ``left`` or ``right`` key, which
+should contain a dictionary with the keys ``text`` and optionally ``url`` and
+``color``. The ``text`` key will be displayed as a button on the left or right side
+of the tile, the optional ``url`` key will make the button clickable, and the
+``color`` key should be one of ``success``, `info``, ``error`` or ``secondary``.
+
+As with all plugin signals, the ``sender`` keyword argument will contain the event.
+"""
