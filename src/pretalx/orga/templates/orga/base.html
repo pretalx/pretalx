@@ -1,5 +1,6 @@
 {% load compress %}
 {% load event_tags %}
+{% load html_signal %}
 {% load i18n %}
 {% load rules %}
 {% load static %}
@@ -504,8 +505,10 @@
                         {% endfor %}
                     {% endif %}
 
+                    {% html_signal "pretalx.orga.signals.html_above_orga_page" sender=request.event request=request %}
                     {% block content %}
                     {% endblock content %}
+                    {% html_signal "pretalx.orga.signals.html_below_orga_page" sender=request.event request=request %}
                 </main>
                 <footer>
                     {% include "common/powered_by.html" %}

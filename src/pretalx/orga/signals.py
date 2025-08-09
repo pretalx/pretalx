@@ -70,6 +70,34 @@ Additionally, the signal will be called with the ``request`` it is processing.
 The receivers are expected to return HTML.
 """
 
+html_above_orga_page = EventPluginSignal()
+"""
+This signal is sent out to display additional information on every page in the
+organiser backend, above all other content.
+
+This is intended for important, somewhat urgent messages that should be displayed
+prominently, such as a warning about an upcoming deadline or a change in the event
+schedule.
+
+As with all plugin signals, the ``sender`` keyword argument will contain the event.
+Additionally, the signal will be called with the ``request`` it is processing.
+The receivers are expected to return HTML.
+"""
+
+html_below_orga_page = EventPluginSignal()
+"""
+This signal is sent out to display additional information on every page in the
+organiser backend, below all other content.
+
+This is intended to show additional information that is not as urgent as the
+information displayed by the ``html_above_orga_page`` signal, such as additional
+information about individual sessions or speakers.
+
+As with all plugin signals, the ``sender`` keyword argument will contain the event.
+Additionally, the signal will be called with the ``request`` it is processing.
+The receivers are expected to return HTML.
+"""
+
 event_copy_data = EventPluginSignal()
 """
 This signal is sent out when a new event is created as a clone of an existing event, i.e.
