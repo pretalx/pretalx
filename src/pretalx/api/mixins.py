@@ -2,12 +2,44 @@ from django.utils.functional import cached_property
 from drf_spectacular.utils import extend_schema_field
 from i18nfield.fields import I18nCharField, I18nTextField
 from i18nfield.rest_framework import I18nField
-from rest_flex_fields import is_expanded
+from rest_flex_fields import EXPAND_PARAM, WILDCARD_VALUES
 from rest_flex_fields.utils import split_levels
 from rest_framework import exceptions
 from rest_framework.serializers import ModelSerializer
 
 from pretalx.api.versions import get_api_version_from_request, get_serializer_by_version
+
+
+# unfortunately original rest_flex_fields.is_expanded doesn't work with dot notation
+# https://github.com/rsinger86/drf-flex-fields/issues/48
+# https://github.com/rsinger86/drf-flex-fields/pull/122
+def is_expanded(request, field):
+    """Examines request object to return boolean of whether
+    passed field is expanded.
+    """
+    expand_value = request.query_params.get(EXPAND_PARAM)
+    if not expand_value:
+        return False
+
+    expand_fields = []
+
+    # first split on commas to get each expand
+    for full in expand_value.split(","):
+        # than split on dots to get each component that is expanded
+        parts = full.split(".")
+        for i in range(len(parts)):
+            # add each prefix, as each prefix is expanded, ie
+            # a.b.c will add a, a.b and a.b.c to the expand_fields list
+            # we do this to differentiate a.b from b
+            expand_fields.append(".".join(parts[: i + 1]))
+
+    # WILDCARD_VALUES only expands top level fields
+    if "." not in field and any(
+        field for field in expand_fields if field in WILDCARD_VALUES
+    ):
+        return True
+
+    return field in expand_fields
 
 
 class ApiVersionException(exceptions.APIException):
