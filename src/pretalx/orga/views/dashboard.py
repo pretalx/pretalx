@@ -19,6 +19,7 @@ from pretalx.orga.signals import dashboard_tile
 from pretalx.submission.models import Submission, SubmissionStates
 from pretalx.submission.rules import get_missing_reviews
 
+
 def start_redirect_view(request):
     with scopes_disabled():
         orga_events = set(request.user.get_events_with_any_permission())
@@ -225,7 +226,7 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
 
     def get_plugin_tiles(self):
         tiles = []
-        for receiver, response in dashboard_tile.send_robust(sender=self.request.event):
+        for __, response in dashboard_tile.send_robust(sender=self.request.event):
             if isinstance(response, list):
                 tiles.extend(response)
             else:
