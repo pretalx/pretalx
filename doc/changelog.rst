@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :bug:`cfp` Draft proposals were created and saved as submitted instead of draft, then changed to draft and saved again. This has been fixed to prevent the submitted state from appearing in the database, even briefly.
 - :feature:`dev,2017` Plugins can now inject additional HTML in the organisers area with the ``pretalx.orga.signals.html_above_orga_page`` and ``pretalx.orga.signals.html_below_orga_page`` signals.
 - :feature:`dev` Plugins can now inject additional tiles on the main dashboard of the organisers area with the ``dashboard_tile`` signal.
 - :feature:`cfp` Organisers can now also change the label of the recording-opt-out field.

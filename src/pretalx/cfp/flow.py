@@ -340,12 +340,12 @@ class InfoStep(GenericFlowStep, FormFlowStep):
         self.request = request
         form = self.get_form(from_storage=True)
         form.instance.event = self.event
+        if draft:
+            form.instance.state = SubmissionStates.DRAFT
         form.save()
         submission = form.instance
         submission.speakers.add(request.user)
         if draft:
-            submission.state = SubmissionStates.DRAFT
-            submission.save()
             messages.success(
                 self.request,
                 _(
