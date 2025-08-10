@@ -177,14 +177,14 @@ def test_orga_can_edit_speaker_status(orga_client, speaker, event, submission):
     with scope(event=event):
         assert speaker.profiles.first().has_arrived is False
         url = speaker.profiles.first().orga_urls.toggle_arrived
-    response = orga_client.get(url, follow=True)
+    response = orga_client.post(url, follow=True)
     assert response.status_code == 200
     with scope(event=event):
         speaker.refresh_from_db()
         assert speaker.profiles.first().has_arrived is True
     with scopes_disabled():
         assert speaker.logged_actions().count() == logs + 1
-    response = orga_client.get(url + "?from=list", follow=True)
+    response = orga_client.post(url + "?from=list", follow=True)
     assert response.status_code == 200
     with scope(event=event):
         speaker.refresh_from_db()

@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :bug:`orga:speaker` Speakers could not be marked as arrived from their detail page.
 - :bug:`cfp` Draft proposals were created and saved as submitted instead of draft, then changed to draft and saved again. This has been fixed to prevent the submitted state from appearing in the database, even briefly.
 - :feature:`dev,2017` Plugins can now inject additional HTML in the organisers area with the ``pretalx.orga.signals.html_above_orga_page`` and ``pretalx.orga.signals.html_below_orga_page`` signals.
 - :feature:`dev` Plugins can now inject additional tiles on the main dashboard of the organisers area with the ``dashboard_tile`` signal.
