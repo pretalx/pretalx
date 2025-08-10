@@ -21,7 +21,7 @@ def is_submission_visible_via_schedule(user, submission):
     return bool(
         submission
         and is_agenda_visible(user, submission.event)
-        and submission.slot.is_visible
+        and (submission.slot and submission.slot.is_visible)
     )
 
 
