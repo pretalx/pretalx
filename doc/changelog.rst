@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :bug:`orga:speaker` Speakers could not be marked as arrived from their detail page.
 - :feature:`dev,2017` Plugins can now inject additional HTML in the organisers area with the ``pretalx.orga.signals.html_above_orga_page`` and ``pretalx.orga.signals.html_below_orga_page`` signals.
 - :feature:`dev` Plugins can now inject additional tiles on the main dashboard of the organisers area with the ``dashboard_tile`` signal.
 - :feature:`cfp` Organisers can now also change the label of the recording-opt-out field.
