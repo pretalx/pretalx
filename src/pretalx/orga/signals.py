@@ -124,7 +124,7 @@ The dictionaries should contain at least the keys ``large`` for a tile heading a
 the tile clickable and a ``priority`` to determine the order in which tiles are
 displayed. The ``priority`` should be a number between 0 and 100, with lower numbers
 being displayed first. Actions should be between 10 and 30, with 20 being the
-"go to cfp" action. General statistics start at 50.
+"Go to CfP" action. General statistics start at 50.
 The tile dictionary may optionally also contain a ``left`` or ``right`` key, which
 should contain a dictionary with the keys ``text`` and optionally ``url`` and
 ``color``. The ``text`` key will be displayed as a button on the left or right side
