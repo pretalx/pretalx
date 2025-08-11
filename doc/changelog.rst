@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`orga` Shortcut links (``/redirect/<code>``) are now available. They will redirect to the corresponding organisers page if the requesting user is an organiser or to the public page if the requesting user is not logged in or does not have organiser permissions. The code can be a submission code or a user code.
 - :bug:`orga:email,2116` The email outbox could not be sorted by email recipient name or by sent date.
 - :bug:`orga:speaker` Speakers could not be marked as arrived from their detail page.
 - :bug:`cfp` Draft proposals were created and saved as submitted instead of draft, then changed to draft and saved again. This has been fixed to prevent the submitted state from appearing in the database, even briefly.
