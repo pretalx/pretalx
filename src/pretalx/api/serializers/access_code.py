@@ -17,7 +17,7 @@ class SubmitterAccessCodeSerializer(FlexFieldsSerializerMixin, PretalxSerializer
             "valid_until",
             "maximum_uses",
             "redeemed",
-            "internal_notes"
+            "internal_notes",
         )
         expandable_fields = {
             "track": (
