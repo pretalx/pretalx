@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`cfp,2084` Internal notes are now available for access codes.
 - :feature:`orga:speaker,2031` Internal notes are now available for speaker profiles.
 - :bug:`orga:speaker` Speakers could not be marked as arrived from their detail page.
 - :bug:`cfp` Draft proposals were created and saved as submitted instead of draft, then changed to draft and saved again. This has been fixed to prevent the submitted state from appearing in the database, even briefly.
