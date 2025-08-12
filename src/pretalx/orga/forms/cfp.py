@@ -441,6 +441,7 @@ class SubmitterAccessCodeForm(forms.ModelForm):
             "maximum_uses",
             "track",
             "submission_type",
+            "internal_notes",
         )
         field_classes = {
             "track": SafeModelChoiceField,
