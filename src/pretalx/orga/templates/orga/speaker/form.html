@@ -82,6 +82,8 @@
             {{ form.availabilities.as_field_group }}
         {% endif %}
 
+        {{ form.internal_notes.as_field_group }}
+
         {{ questions_form }}
 
         {% include "orga/includes/submit_row.html" %}
