@@ -42,6 +42,14 @@ class SpeakerProfile(PretalxModel):
     has_arrived = models.BooleanField(
         default=False, verbose_name=_("The speaker has arrived")
     )
+    internal_notes = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name=_("Internal notes"),
+        help_text=_(
+            "Internal notes for other organisers/reviewers. Not visible to the speakers or the public."
+        ),
+    )
 
     log_prefix = "pretalx.user.profile"
 

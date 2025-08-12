@@ -21,6 +21,7 @@ def test_access_code_serializer(submission_type, event, track):
             "valid_until",
             "maximum_uses",
             "redeemed",
+            "internal_notes",
         }
         assert data["track"] == track.pk
 

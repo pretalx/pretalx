@@ -63,6 +63,14 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
         blank=True,
     )
     redeemed = models.PositiveIntegerField(default=0, editable=False)
+    internal_notes = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name=_("Internal notes"),
+        help_text=_(
+            "Internal notes for other organisers/reviewers. Not visible to the speakers or the public."
+        ),
+    )
 
     _code_length = 32
 

@@ -119,6 +119,7 @@ class SpeakerOrgaSerializer(AvailabilitiesMixin, SpeakerSerializer):
             "locale",
             "has_arrived",
             "availabilities",
+            "internal_notes",
         )
         expandable_fields = {
             "submissions": (
