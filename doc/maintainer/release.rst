@@ -10,7 +10,7 @@ Boarding checks
 2. Are there pending checks for bad translations on Weblate?
 3. Are there pending translations from `Weblate <https://translate.pretalx.com/projects/pretalx/pretalx/#repository>`_? Merge them.
 4. Are all locales with more than 75% coverage included in the release?
-5. Update the translation percentages from `translate.pretalx.com <https://translate.pretalx.com/projects/pretalx/pretalx/#translations>`_.
+5. Update the translation percentages from `translate.pretalx.com <https://translate.pretalx.com/projects/pretalx/pretalx/>`_.
 6. If new translations were added, add new calendar locales (you have to download the `release archive <https://github.com/fullcalendar/fullcalendar/releases/download/v6.1.5/fullcalendar-6.1.5.zip>`_) and extract the locales from there), and make sure that flags (in input fields) for the new locale are shown.
 7. Are there warnings about missing migrations?
 8. Any blockers to see `in our issues <https://github.com/pretalx/pretalx/issues?q=is%3Aopen+is%3Aissue+label%3A%22type%3A+bug%22+>`_?

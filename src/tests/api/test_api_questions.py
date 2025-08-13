@@ -22,6 +22,7 @@ def test_question_serializer(answer):
         "target",
         "options",
         "help_text",
+        "icon",
         "default_answer",
         "min_length",
         "max_length",

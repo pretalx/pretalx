@@ -22,11 +22,11 @@ from pretalx.submission.models import Submission, SubmissionStates
 
 class TalkMixin(PermissionRequired):
     permission_required = "submission.view_public_submission"
+    prefetches = ("slots", "resources", "speakers")
 
     def get_queryset(self):
         return self.request.event.submissions.prefetch_related(
-            "slots",
-            "resources",
+            *self.prefetches
         ).select_related("submission_type", "track", "event")
 
     @cached_property
@@ -201,6 +201,7 @@ class TalkReviewView(TalkView):
 
 
 class SingleICalView(EventPageMixin, TalkMixin, View):
+    prefetches = ("slots",)
 
     def get(self, request, event, **kwargs):
         code = self.submission.code
@@ -225,13 +226,6 @@ class SingleICalView(EventPageMixin, TalkMixin, View):
 class FeedbackView(TalkMixin, FormView):
     form_class = FeedbackForm
     permission_required = "submission.view_feedback_page_submission"
-
-    def get_queryset(self):
-        return self.request.event.submissions.prefetch_related(
-            "slots",
-            "feedback",
-            "speakers",
-        ).select_related("submission_type")
 
     @context
     @cached_property

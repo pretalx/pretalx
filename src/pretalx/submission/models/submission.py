@@ -421,13 +421,13 @@ class Submission(GenerateCode, PretalxModel):
             return bool(self.anonymised.get("_anonymised", False))
         return False
 
-    @property
+    @cached_property
     def reviewer_answers(self):
         return self.answers.filter(question__is_visible_to_reviewers=True).order_by(
             "question__position"
         )
 
-    @property
+    @cached_property
     def public_answers(self):
         from pretalx.submission.models.question import QuestionTarget
 
