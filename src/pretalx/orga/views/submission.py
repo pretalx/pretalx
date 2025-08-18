@@ -449,7 +449,7 @@ class SubmissionContent(
         created = not self.object
         self.object = form.instance
         self._questions_form.submission = self.object
-        if not (super().form_valid(form) and self._questions_form.is_valid()):
+        if not self._questions_form.is_valid():
             messages.error(self.request, phrases.base.error_saving_changes)
             return self.get(self.request, *self.args, **self.kwargs)
         form.instance.event = self.request.event
@@ -480,7 +480,7 @@ class SubmissionContent(
             action = "pretalx.submission." + ("create" if created else "update")
             form.instance.log_action(action, person=self.request.user, orga=True)
             self.request.event.cache.set("rebuild_schedule_export", True, None)
-        return redirect(self.get_success_url())
+        return super().form_valid(form)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

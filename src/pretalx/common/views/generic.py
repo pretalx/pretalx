@@ -49,7 +49,6 @@ class FormSignalMixin:
         return "pretalx.orga.signals.extra_form"
 
     def form_valid(self, form):
-        valid = super().form_valid(form)
         forms = form_signal(
             {"request": self.request}, self.get_form_signal_name(), instance=self.object
         )
@@ -59,7 +58,7 @@ class FormSignalMixin:
                     messages.error(self.request, f.errors[0])
             else:
                 f.save()
-        return valid
+        return super().form_valid(form)
 
 
 class CreateOrUpdateView(
