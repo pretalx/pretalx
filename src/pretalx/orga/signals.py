@@ -143,7 +143,8 @@ forms for tracks, session tags and types, access codes, and rooms, for example.
 
 As with all plugin signals, the ``sender`` keyword argument will contain the
 event. Additionally, the signal will be called with the ``request`` it is
-processing and the ``instance`` that the form is working on.
+processing and the ``instance`` that the form is working on. ``sender`` could be
+``None`` if the form is not related to an event, such as the team settings form.
 
 Receivers of this generic signal must identify the kind of form and the type
 of data they are working on by checking the ``request`` or the type of the

@@ -15,7 +15,7 @@ def form_signal(context, signal_name: str, **kwargs):
     """
     signal = import_string(signal_name)
     request = kwargs.pop("request", context.get("request"))
-    sender = kwargs.pop("sender", request.event)
+    sender = kwargs.pop("sender", getattr(request, "event", None))
     forms = []
     for _, response in signal.send_robust(sender=sender, request=request, **kwargs):
         if isinstance(response, Exception):
