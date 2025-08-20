@@ -130,17 +130,11 @@ def event_css(request, event):
     # If this event has custom colours, we send back a simple CSS file that sets the
     # root colours for the event.
     result = ""
-    if request.event.primary_color:
+    if color := request.event.primary_color:
+        variable = "--color-primary"
         if request.GET.get("target") == "orga":
             # The organiser area sometimes needs the event’s colour, but shouldn’t use
             # it as primary colour automatically.
-            result = (
-                ":root {"
-                + f"--color-primary-event: {request.event.primary_color};"
-                + "}"
-            )
-        else:
-            result = (
-                ":root {" + f"--color-primary: {request.event.primary_color};" + "}"
-            )
+            variable = f"{variable}-event"
+        result = ":root { " + f"{variable}: {color};" + " }"
     return HttpResponse(result, content_type="text/css")
