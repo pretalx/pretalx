@@ -22,7 +22,6 @@ from pretalx.common.views.mixins import (
 )
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.models import QuestionTarget, QuestionVariant
-from pretalx.submission.models.question import QuestionVisibility
 
 
 class SpeakerList(EventPermissionRequired, Filterable, ListView):
@@ -90,7 +89,7 @@ class SpeakerView(PermissionRequired, TemplateView):
         speaker = self.profile.user
         answers = (
             speaker.answers.filter(
-                question__visibility=QuestionVisibility.PUBLIC,
+                question__is_public=True,
                 question__event=self.request.event,
                 question__target=QuestionTarget.SPEAKER,
             )
