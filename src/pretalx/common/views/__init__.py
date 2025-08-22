@@ -8,6 +8,7 @@ from .generic import (
 )
 from .helpers import get_static, is_form_bound
 from .redirect import redirect_view
+from .shortlink import shortlink_view
 
 __all__ = [
     "CreateOrUpdateView",
@@ -20,4 +21,5 @@ __all__ = [
     "handle_500",
     "is_form_bound",
     "redirect_view",
+    "shortlink_view",
 ]
