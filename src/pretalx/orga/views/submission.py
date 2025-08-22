@@ -978,7 +978,7 @@ class TagView(OrgaCRUDView):
 class CommentList(SubmissionViewMixin, FormView):
     template_name = "orga/submission/comments.html"
     permission_required = "submission.view_submissioncomment"
-    write_permission_required = "submission.add_submissioncomment"
+    write_permission_required = "submission.create_submissioncomment"
     form_class = SubmissionCommentForm
 
     def get_form_kwargs(self):

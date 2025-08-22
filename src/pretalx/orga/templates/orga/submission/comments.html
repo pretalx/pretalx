@@ -13,7 +13,7 @@
 {% endblock scripts %}
 
 {% block submission_content %}
-    {% has_perm 'submission.add_submissioncomment' request.user submission as can_add_comment %}
+    {% has_perm 'submission.create_submissioncomment' request.user submission as can_add_comment %}
 
     <div class="comments-list">
         {% if not comments %}
