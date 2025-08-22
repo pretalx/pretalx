@@ -354,6 +354,7 @@ aside.sidebar {
     border-radius: 0;
     background: var(--color-offwhite);
     overflow-y: auto;
+    left: 0;
 
     &:after {
       display: none;
