@@ -28,6 +28,7 @@
 
         {% block warnings %}{% endblock warnings %}
 
+        {{ form.visibility.as_field_group }}
         {{ form.target.as_field_group }}
         {{ form.variant.as_field_group }}
         {{ form.question.as_field_group }}
@@ -40,7 +41,6 @@
         </div>
         {{ form.contains_personal_data.as_field_group }}
         <span id="is-visible-to-reviewers">{{ form.is_visible_to_reviewers.as_field_group }}</span>
-        {{ form.is_public.as_field_group }}
         <span id="icon-field">{{ form.icon.as_field_group }}</span>
         <fieldset class="limit-submission">
             <legend id="limit">{% translate "Limit to specific proposals" %}</legend>

@@ -430,13 +430,16 @@ class Submission(GenerateCode, PretalxModel):
 
     @cached_property
     def public_answers(self):
-        from pretalx.submission.models.question import QuestionTarget
+        from pretalx.submission.models.question import (
+            QuestionTarget,
+            QuestionVisibility,
+        )
 
         qs = (
             self.answers.filter(
                 Q(question__submission_types__in=[self.submission_type])
                 | Q(question__submission_types__isnull=True),
-                question__is_public=True,
+                question__visibility=QuestionVisibility.PUBLIC,
                 question__event=self.event,
                 question__target=QuestionTarget.SUBMISSION,
             )

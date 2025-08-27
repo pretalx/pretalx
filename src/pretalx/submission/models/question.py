@@ -28,7 +28,7 @@ class QuestionManager(models.Manager):
         return (
             super()
             .get_queryset()
-            .exclude(active=False)
+            .exclude(visibility=QuestionVisibility.HIDDEN)
             .exclude(target=QuestionTarget.REVIEWER)
         )
 
@@ -88,6 +88,13 @@ class QuestionRequired(Choices):
         (REQUIRED, _("always required")),
         (AFTER_DEADLINE, _("required after a deadline")),
     ]
+
+
+class QuestionVisibility(models.TextChoices):
+    PUBLIC = "public", _("Public")
+    SPEAKERS_ORGANISERS = "speakers_organisers", _("Speakers and organisers")
+    ORGANISERS_ONLY = "organisers_only", _("Organisers only")
+    HIDDEN = "hidden", _("Hidden")
 
 
 class QuestionIcon(Choices):
@@ -221,11 +228,6 @@ class Question(OrderedModel, PretalxModel):
         null=True, blank=True, verbose_name=_("default answer")
     )
     position = models.IntegerField(default=0)
-    active = models.BooleanField(
-        default=True,
-        verbose_name=_("active"),
-        help_text=_("Inactive fields will no longer be shown."),
-    )
     contains_personal_data = models.BooleanField(
         default=True,
         verbose_name=_("Responses contain personal data"),
@@ -281,11 +283,13 @@ class Question(OrderedModel, PretalxModel):
     max_datetime = models.DateTimeField(
         null=True, blank=True, verbose_name=_("Maximum value")
     )
-    is_public = models.BooleanField(
-        default=False,
-        verbose_name=_("Publish answers"),
+    visibility = models.CharField(
+        max_length=20,
+        choices=QuestionVisibility.choices,
+        default=QuestionVisibility.SPEAKERS_ORGANISERS,
+        verbose_name=_("Visibility"),
         help_text=_(
-            "Responses will be shown on session or speaker pages as appropriate. Please note that you cannot make a field public after the first answers have been given, to allow speakers explicit consent before publishing information."
+            "Fields with 'Speakers and organisers' visibility are included in the CfP."
         ),
     )
     is_visible_to_reviewers = models.BooleanField(
@@ -333,6 +337,11 @@ class Question(OrderedModel, PretalxModel):
     @property
     def read_only(self):
         return self.freeze_after and (self.freeze_after <= now())
+
+    @property
+    def active(self):
+        """Backwards compatibility property - question is active if not hidden."""
+        return self.visibility != QuestionVisibility.HIDDEN
 
     @cached_property
     def icon_url(self):

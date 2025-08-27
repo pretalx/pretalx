@@ -1,11 +1,15 @@
 from django.db import transaction
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions
-from rest_framework.serializers import PrimaryKeyRelatedField, SlugRelatedField
+from rest_framework.serializers import (
+    PrimaryKeyRelatedField,
+    SerializerMethodField,
+    SlugRelatedField,
+)
 
 from pretalx.api.mixins import PretalxSerializer
 from pretalx.api.serializers.fields import UploadedFileField
-from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.api.versions import CURRENT_VERSIONS, DEV_PREVIEW, register_serializer
 from pretalx.person.models import User
 from pretalx.submission.models import (
     Answer,
@@ -18,6 +22,7 @@ from pretalx.submission.models import (
     SubmissionType,
     Track,
 )
+from pretalx.submission.models.question import QuestionVisibility
 from pretalx.submission.rules import questions_for_user
 
 
@@ -117,16 +122,15 @@ class NestedAnswerOptionSerializer(AnswerOptionSerializer):
     pass
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
-class QuestionOrgaSerializer(QuestionSerializer):
+class QuestionOrgaBaseSerializer(QuestionSerializer):
+
     options = NestedAnswerOptionSerializer(
         many=True, required=False, fields=("id", "answer", "position")
     )
 
     class Meta(QuestionSerializer.Meta):
         fields = QuestionSerializer.Meta.fields + (
-            "active",
-            "is_public",
+            "visibility",
             "contains_personal_data",
             "is_visible_to_reviewers",
         )
@@ -164,6 +168,32 @@ class QuestionOrgaSerializer(QuestionSerializer):
             question.options.all().delete()
             for option_data in options_data:
                 AnswerOption.objects.create(question=question, **option_data)
+
+
+@register_serializer(versions=CURRENT_VERSIONS)
+class QuestionOrgaSerializer(QuestionOrgaBaseSerializer):
+    """Question serializer with backwards-compatible is_public and active fields."""
+
+    is_public = SerializerMethodField()
+    active = SerializerMethodField()
+
+    class Meta(QuestionOrgaBaseSerializer.Meta):
+        fields = QuestionOrgaBaseSerializer.Meta.fields + ("is_public", "active")
+
+    def get_is_public(self, obj):
+        """Backwards compatibility - maps the new visibility field to the old is_public field."""
+        return obj.visibility == QuestionVisibility.PUBLIC
+
+    def get_active(self, obj):
+        """Backwards compatibility - maps the new visibility field to the old active field."""
+        return obj.visibility != QuestionVisibility.HIDDEN
+
+
+
+@register_serializer(versions=[DEV_PREVIEW], class_name="QuestionOrgaSerializer")
+class QuestionOrgaDevSerializer(QuestionOrgaBaseSerializer):
+    """DEV_PREVIEW version of the Question serializer, which drops the deprecated is_public field."""
+    pass
 
 
 @register_serializer(versions=CURRENT_VERSIONS)

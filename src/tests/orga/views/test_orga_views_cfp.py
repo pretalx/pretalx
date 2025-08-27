@@ -8,7 +8,7 @@ from django_scopes import scope
 from pretalx.event.models import Event
 from pretalx.mail.models import QueuedMail
 from pretalx.submission.models import Question
-from pretalx.submission.models.question import QuestionRequired
+from pretalx.submission.models.question import QuestionRequired, QuestionVisibility
 
 
 @pytest.mark.django_db
@@ -278,6 +278,7 @@ def test_can_add_simple_question(orga_client, event):
             "active": True,
             "help_text_0": "Answer if you want to reach the other side!",
             "question_required": QuestionRequired.OPTIONAL,
+            "visibility": QuestionVisibility.SPEAKERS_ORGANISERS,
         },
         follow=True,
     )
@@ -310,6 +311,7 @@ def test_can_add_simple_question_required_freeze(orga_client, event):
             "help_text_0": "Answer if you want to reach the other side!",
             "question_required": QuestionRequired.REQUIRED,
             "freeze_after": "2021-06-22T12:44:42Z",
+            "visibility": QuestionVisibility.SPEAKERS_ORGANISERS,
         },
         follow=True,
     )
@@ -342,6 +344,7 @@ def test_can_add_simple_question_after_deadline(orga_client, event):
             "help_text_0": "Answer if you want to reach the other side!",
             "question_required": QuestionRequired.AFTER_DEADLINE,
             "deadline": "2021-06-22T12:44:42Z",
+            "visibility": QuestionVisibility.SPEAKERS_ORGANISERS,
         },
         follow=True,
     )
@@ -405,6 +408,7 @@ def test_can_add_choice_question(orga_client, event):
             "form-2-id": "",
             "form-2-answer_0": "",
             "question_required": QuestionRequired.OPTIONAL,
+            "visibility": QuestionVisibility.SPEAKERS_ORGANISERS,
         },
         follow=True,
     )
@@ -446,6 +450,7 @@ def test_can_edit_choice_question(orga_client, event, choice_question):
             "form-3-id": "",
             "form-3-answer_0": "",
             "question_required": QuestionRequired.OPTIONAL,
+            "visibility": QuestionVisibility.SPEAKERS_ORGANISERS,
         },
         follow=True,
     )
@@ -594,14 +599,14 @@ def test_can_hide_question(orga_client, question):
 
 
 @pytest.mark.django_db
-def test_can_activate_inactive_question(orga_client, inactive_question):
+def test_cannot_activate_inactive_question_via_toggle(orga_client, inactive_question):
     assert not inactive_question.active
 
     response = orga_client.get(inactive_question.urls.toggle, follow=True)
     inactive_question.refresh_from_db()
 
     assert response.status_code == 200
-    assert inactive_question.active
+    assert not inactive_question.active
 
 
 @pytest.mark.django_db

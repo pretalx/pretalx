@@ -50,6 +50,7 @@
                 <tr>
                     <th>{% translate "Custom field" %}</th>
                     <th>{% translate "Target" %}</th>
+                    <th>{% translate "Visibility" %}</th>
                     <th class="text-center">{% translate "required" %}</th>
                     <th class="text-center">{% translate "active" %}</th>
                     <th class="numeric">{% translate "Responses" %}</th>
@@ -63,6 +64,7 @@
                             <a href="{{ question.urls.base }}">{{ question.question }}</a>
                         </td>
                         <td>{{ question.get_target_display }}</td>
+                        <td>{{ question.get_visibility_display }}</td>
                         <td class="text-center">
                             <i class="fa fa-{{ question.required|yesno:"check-circle text-success,times-circle text-danger" }}">
                             </i>
@@ -89,7 +91,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan=4 class="w-75">{% translate "You have configured no custom fields yet." %}</td>
+                        <td colspan=7 class="w-75">{% translate "You have configured no custom fields yet." %}</td>
                     </tr>
                 {% endfor %}
             </tbody>

@@ -11,6 +11,7 @@ from pretalx.api.serializers.submission import (
     TrackSerializer,
 )
 from pretalx.submission.models import SubmissionStates
+from pretalx.submission.models.question import QuestionVisibility
 
 
 @pytest.mark.django_db
@@ -1373,10 +1374,10 @@ def test_public_submission_expandable_fields(
         answer.submission = slot.submission
         answer.person = speaker_user
         answer.save()
-        answer.question.is_public = True
+        answer.question.visibility = QuestionVisibility.PUBLIC
         answer.question.target = "submission"
         answer.question.save()
-        speaker_answer.question.is_public = True
+        speaker_answer.question.visibility = QuestionVisibility.PUBLIC
         speaker_answer.question.save()
 
     expand_fields = [

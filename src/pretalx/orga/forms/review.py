@@ -341,9 +341,11 @@ class ReviewExportForm(ExportForm):
 
     @cached_property
     def questions(self):
-        return Question.all_objects.filter(
+        from pretalx.submission.models.question import QuestionVisibility
+        return Question.all_objects.exclude(
+            visibility=QuestionVisibility.HIDDEN
+        ).filter(
             target="reviewer",
-            active=True,
             event=self.event,
         ).prefetch_related("answers", "answers__review", "options")
 

@@ -39,7 +39,12 @@
     {% endif %}
 
     <p>
-        {% if question.active %}
+        {% if question.visibility == "hidden" %}
+            <span class="text-warning">
+                <i class="fa fa-exclamation-triangle"></i>
+                {% translate "This field is currently hidden and will not be asked during submission." %}
+            </span>
+        {% elif question.active %}
             {% translate "This field is currently active, it will be asked during submission." %}
             <a class="btn btn-sm btn-danger" href="{{ question.urls.toggle }}">{% translate "Hide field" %}</a>
         {% else %}

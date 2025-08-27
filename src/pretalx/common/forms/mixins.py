@@ -145,11 +145,15 @@ class QuestionFieldsMixin:
     def get_field(self, *, question, initial, initial_object, readonly):
         from pretalx.common.templatetags.rich_text import rich_text
         from pretalx.submission.models import QuestionVariant
+        from pretalx.submission.models.question import QuestionVisibility
 
         read_only = readonly or question.read_only
         original_help_text = question.help_text
         help_text = rich_text(question.help_text)[len("<p>") : -len("</p>")]
-        if question.is_public and self.event.get_feature_flag("show_schedule"):
+        if (
+            question.visibility == QuestionVisibility.PUBLIC
+            and self.event.get_feature_flag("show_schedule")
+        ):
             help_text += " " + str(phrases.base.public_content)
         count_chars = self.event.cfp.settings["count_length_in"] == "chars"
         if question.variant == QuestionVariant.BOOLEAN:

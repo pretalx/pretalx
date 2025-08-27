@@ -224,9 +224,11 @@ def questions_for_user(event, user):
         and is_only_reviewer(user, event)
         and can_view_speaker_names(user, event)
     ):
-        return event.questions(manager="all_objects").filter(
+        from pretalx.submission.models.question import QuestionVisibility
+        return event.questions(manager="all_objects").exclude(
+            visibility=QuestionVisibility.HIDDEN
+        ).filter(
             Q(is_visible_to_reviewers=True) | Q(target=QuestionTarget.REVIEWER),
-            active=True,
         )
     if user.has_perm("submission.orga_list_question", event):
         # Other team members can either view all active questions
@@ -237,7 +239,9 @@ def questions_for_user(event, user):
     # They can see all public (non-reviewer) questions if they are already publicly
     # visible in the schedule. Otherwise, nothing.
     if user.has_perm("submission.list_question", event):
-        return event.questions.all().filter(is_public=True)
+        from pretalx.submission.models.question import QuestionVisibility
+
+        return event.questions.all().filter(visibility=QuestionVisibility.PUBLIC)
     return event.questions.none()
 
 

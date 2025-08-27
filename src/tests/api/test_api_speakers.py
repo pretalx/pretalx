@@ -5,6 +5,7 @@ from django_scopes import scope
 
 from pretalx.person.models import SpeakerProfile, UserApiToken
 from pretalx.submission.models import Answer, Question, QuestionTarget, Submission
+from pretalx.submission.models.question import QuestionVisibility
 
 
 @pytest.fixture
@@ -14,7 +15,7 @@ def personal_answer(event, speaker):
             event=event,
             question="Personal question?",
             target=QuestionTarget.SPEAKER,
-            active=True,
+            visibility=QuestionVisibility.SPEAKERS_ORGANISERS,
         )
         return Answer.objects.create(
             answer="foo",
@@ -579,7 +580,7 @@ def test_speaker_retrieve_answers_scoped_to_event(
             event=other_event,
             question="Question for Event 2?",
             target=QuestionTarget.SPEAKER,
-            active=True,
+            visibility=QuestionVisibility.SPEAKERS_ORGANISERS,
         )
         answer2 = Answer.objects.create(
             answer="Answer 2", question=question2, person=speaker

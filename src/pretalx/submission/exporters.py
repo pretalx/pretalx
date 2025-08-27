@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from pretalx.common.exporter import BaseExporter, CSVExporterMixin
 from pretalx.common.signals import register_data_exporters
 from pretalx.submission.models import Answer
+from pretalx.submission.models.question import QuestionVisibility
 
 
 class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
@@ -28,9 +29,9 @@ class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
             Answer.objects.filter(
                 question__target="speaker",
                 question__event=self.event,
-                question__active=True,
                 person__isnull=False,
             )
+            .exclude(question__visibility=QuestionVisibility.HIDDEN)
             .select_related("question", "person")
             .order_by("person__name")
         )
@@ -69,11 +70,14 @@ class SubmissionQuestionData(CSVExporterMixin, BaseExporter):
     def get_data(self, **kwargs):
         field_names = ["code", "title", "question", "answer"]
         data = []
-        qs = Answer.objects.filter(
-            question__target="submission",
-            question__event=self.event,
-            question__active=True,
-        ).order_by("submission__title")
+        qs = (
+            Answer.objects.filter(
+                question__target="submission",
+                question__event=self.event,
+            )
+            .exclude(question__visibility=QuestionVisibility.HIDDEN)
+            .order_by("submission__title")
+        )
         for answer in qs:
             data.append(
                 {

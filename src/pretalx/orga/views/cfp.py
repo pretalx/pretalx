@@ -45,6 +45,7 @@ from pretalx.submission.models import (
     SubmitterAccessCode,
     Track,
 )
+from pretalx.submission.models.question import QuestionVisibility
 from pretalx.submission.rules import questions_for_user
 
 
@@ -290,7 +291,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
                 self.object.logged_actions().delete()
                 super().perform_delete()
         except ProtectedError:
-            self.object.active = False
+            self.object.visibility = QuestionVisibility.HIDDEN
             self.object.save()
             messages.error(
                 self.request,
@@ -312,8 +313,9 @@ class CfPQuestionToggle(PermissionRequired, View):
         super().dispatch(request, *args, **kwargs)
         question = self.get_object()
 
-        question.active = not question.active
-        question.save(update_fields=["active"])
+        if question.visibility != QuestionVisibility.HIDDEN:
+            question.visibility = QuestionVisibility.HIDDEN
+            question.save(update_fields=["visibility"])
         return redirect(question.urls.base)
 
 

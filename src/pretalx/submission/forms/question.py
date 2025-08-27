@@ -5,6 +5,7 @@ from django.utils.functional import cached_property
 from pretalx.cfp.forms.cfp import CfPFormMixin
 from pretalx.common.forms.mixins import QuestionFieldsMixin
 from pretalx.submission.models import Question, QuestionTarget, QuestionVariant
+from pretalx.submission.models.question import QuestionVisibility
 
 
 class QuestionsForm(CfPFormMixin, QuestionFieldsMixin, forms.Form):
@@ -33,7 +34,9 @@ class QuestionsForm(CfPFormMixin, QuestionFieldsMixin, forms.Form):
 
         super().__init__(*args, **kwargs)
 
-        self.queryset = Question.all_objects.filter(event=self.event, active=True)
+        self.queryset = Question.all_objects.filter(event=self.event).exclude(
+            visibility=QuestionVisibility.HIDDEN
+        )
         if self.target_type:
             self.queryset = self.queryset.filter(target=self.target_type)
         else:

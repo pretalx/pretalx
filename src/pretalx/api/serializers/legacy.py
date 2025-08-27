@@ -25,6 +25,7 @@ from pretalx.submission.models import (
     SubmissionStates,
     Tag,
 )
+from pretalx.submission.models.question import QuestionVisibility
 
 
 class LegacySubmitterSerializer(ModelSerializer):
@@ -83,7 +84,7 @@ class LegacySpeakerSerializer(ModelSerializer):
 
     def answers_queryset(self, obj):
         return obj.answers.all().filter(
-            question__is_public=True, question__active=True, question__target="speaker"
+            question__visibility=QuestionVisibility.PUBLIC, question__target="speaker"
         )
 
     def get_answers(self, obj):
@@ -201,8 +202,7 @@ class LegacySubmissionSerializer(I18nAwareModelSerializer):
 
     def answers_queryset(self, obj):
         return obj.answers.all().filter(
-            question__is_public=True,
-            question__active=True,
+            question__visibility=QuestionVisibility.PUBLIC,
             question__target="submission",
         )
 

@@ -6,6 +6,7 @@ from django_scopes import scope
 from pretalx.api.serializers.question import AnswerOptionSerializer, QuestionSerializer
 from pretalx.api.versions import LEGACY
 from pretalx.submission.models import AnswerOption, QuestionVariant
+from pretalx.submission.models.question import QuestionVisibility
 
 
 @pytest.mark.django_db
@@ -52,7 +53,11 @@ def test_answer_option_serializer(choice_question):
 @pytest.mark.parametrize("is_public", (True, False))
 def test_questions_not_visible_by_default(client, question, schedule, is_public):
     with scope(event=question.event):
-        question.is_public = is_public
+        question.visibility = (
+            QuestionVisibility.PUBLIC
+            if is_public
+            else QuestionVisibility.SPEAKERS_ORGANISERS
+        )
         question.save()
     response = client.get(question.event.api_urls.questions, follow=True)
     content = json.loads(response.text)
@@ -63,7 +68,7 @@ def test_questions_not_visible_by_default(client, question, schedule, is_public)
 @pytest.mark.django_db
 def test_public_questions_fewer_fields(client, question, schedule):
     with scope(event=question.event):
-        question.is_public = True
+        question.visibility = QuestionVisibility.PUBLIC
         question.save()
     response = client.get(question.event.api_urls.questions, follow=True)
     content = json.loads(response.text)
@@ -809,7 +814,7 @@ def test_anonymous_cannot_access_question_options_nonpublic_question(
     event, client, choice_question
 ):
     with scope(event=event):
-        choice_question.is_public = False
+        choice_question.visibility = QuestionVisibility.SPEAKERS_ORGANISERS
         choice_question.save()
 
     response = client.get(event.api_urls.question_options)
@@ -821,7 +826,7 @@ def test_anonymous_cannot_access_question_options_nonpublic_question(
 @pytest.mark.django_db
 def test_anonymous_can_access_question_options_public(event, client, choice_question):
     with scope(event=event):
-        choice_question.is_public = True
+        choice_question.visibility = QuestionVisibility.PUBLIC
         choice_question.save()
         count = choice_question.options.all().count()
 

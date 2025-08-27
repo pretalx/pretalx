@@ -5,6 +5,7 @@ from django_scopes import scope
 
 from pretalx.api.serializers.question import AnswerSerializer
 from pretalx.submission.models import Answer
+from pretalx.submission.models.question import QuestionVisibility
 
 
 @pytest.mark.django_db
@@ -30,7 +31,11 @@ def test_answer_serializer(answer):
 @pytest.mark.parametrize("is_public", (True, False))
 def test_answers_not_visible_unauthenticated(client, answer, schedule, is_public):
     with scope(event=answer.event):
-        answer.question.is_public = is_public
+        answer.question.visibility = (
+            QuestionVisibility.PUBLIC
+            if is_public
+            else QuestionVisibility.SPEAKERS_ORGANISERS
+        )
         answer.question.save()
     response = client.get(answer.event.api_urls.answers, follow=True)
     assert response.status_code == 401

@@ -47,8 +47,11 @@ class SpeakerExportForm(ExportForm):
 
     @cached_property
     def questions(self):
-        return self.event.questions.filter(
-            target="speaker", active=True
+        from pretalx.submission.models.question import QuestionVisibility
+        return self.event.questions.exclude(
+            visibility=QuestionVisibility.HIDDEN
+        ).filter(
+            target="speaker"
         ).prefetch_related("answers", "answers__person", "options")
 
     @cached_property

@@ -50,7 +50,7 @@ OPTIONS_HELP = (
 class QuestionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     queryset = Question.objects.none()
     serializer_class = QuestionSerializer
-    filterset_fields = ("is_public", "is_visible_to_reviewers", "target", "variant")
+    filterset_fields = ("visibility", "is_visible_to_reviewers", "target", "variant")
     search_fields = ("question",)
     endpoint = "questions"
 

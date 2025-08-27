@@ -215,13 +215,6 @@ class QuestionForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
             self.fields.pop("submission_types")
         else:
             self.fields["submission_types"].queryset = event.submission_types.all()
-        if (
-            instance
-            and instance.pk
-            and instance.answers.count()
-            and not instance.is_public
-        ):
-            self.fields["is_public"].disabled = True
 
     def clean_options(self):
         # read uploaded file, return list of strings or list of i18n strings
@@ -319,7 +312,7 @@ class QuestionForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
             "deadline",
             "freeze_after",
             "variant",
-            "is_public",
+            "visibility",
             "is_visible_to_reviewers",
             "icon",
             "tracks",

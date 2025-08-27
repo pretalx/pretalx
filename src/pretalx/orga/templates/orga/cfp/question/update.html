@@ -12,9 +12,12 @@
             {% endblocktranslate %}
         </div>
     {% endif %}
-    <div class="alert alert-info col-md-9 offset-md-3">
+    <div class="alert alert-{% if question.visibility == 'hidden' %}warning{% else %}info{% endif %} col-md-9 offset-md-3">
         <span>
-            {% if question.active %}
+            {% if question.visibility == "hidden" %}
+                <i class="fa fa-exclamation-triangle"></i>
+                {% translate "This field is currently hidden and will not be asked during submission." %}
+            {% elif question.active %}
                 {% translate "This field is currently active, it will be asked during submission." %}
                 <a class="btn btn-sm btn-outline-danger"
                    href="{{ question.urls.toggle }}">{% translate "Hide field" %}</a>

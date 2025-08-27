@@ -14,12 +14,13 @@ Boarding checks
 6. If new translations were added, add new calendar locales (you have to download the `release archive <https://github.com/fullcalendar/fullcalendar/releases/download/v6.1.5/fullcalendar-6.1.5.zip>`_) and extract the locales from there), and make sure that flags (in input fields) for the new locale are shown.
 7. Are there warnings about missing migrations?
 8. Any blockers to see `in our issues <https://github.com/pretalx/pretalx/issues?q=is%3Aopen+is%3Aissue+label%3A%22type%3A+bug%22+>`_?
-9. Are there any TODOs that you have to resolve?
-10. Are there any ``@pytest.mark.xfail`` that you have to resolve?
-11. Are the :ref:`changelog` well-phrased and complete?
-12. Are there `open pull requests <https://github.com/pretalx/pretalx/pulls>`_ that you should merge?
-13. Are all tests passing in CI?
-14. Have you written (and not pushed) a blog post? It should contain at least major features and all contributors involved in the release.
+9. Is the ``DEV_PREVIEW`` API version in use anywhere? If so, increment the API version, replace the use of ``DEV_PREVIEW``, and update the API changelog.
+10. Are there any TODOs that you have to resolve?
+11. Are there any ``@pytest.mark.xfail`` that you have to resolve?
+12. Are the :ref:`changelog` well-phrased and complete?
+13. Are there `open pull requests <https://github.com/pretalx/pretalx/pulls>`_ that you should merge?
+14. Are all tests passing in CI?
+15. Have you written (and not pushed) a blog post? It should contain at least major features and all contributors involved in the release.
 
 System checks
 -------------

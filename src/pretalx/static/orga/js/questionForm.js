@@ -1,6 +1,7 @@
 const question_page_toggle_view = () => {
     const variant = document.querySelector("#id_variant").value
-    const isPublic = document.querySelector("#id_is_public").checked
+    const visibility = document.querySelector("#id_visibility").value
+    const isPublic = visibility === "public"
 
     setVisibility(
         "#answer-options",
@@ -79,7 +80,7 @@ onReady(() => {
             e.addEventListener("change", question_page_toggle_deadline),
         )
     document
-        .querySelector("#id_is_public")
+        .querySelector("#id_visibility")
         .addEventListener("change", question_page_toggle_view)
     question_page_toggle_view()
     question_page_toggle_target_view()
