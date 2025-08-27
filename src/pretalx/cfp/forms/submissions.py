@@ -1,6 +1,7 @@
 from django import forms
 
 from pretalx.common.text.phrases import phrases
+from pretalx.mail.models import get_prefixed_subject
 
 
 class SubmissionInvitationForm(forms.Form):
@@ -12,7 +13,7 @@ class SubmissionInvitationForm(forms.Form):
         self.submission = submission
         initial = kwargs.get("initial", {})
         subject = phrases.cfp.invite_subject.format(speaker=speaker.get_display_name())
-        initial["subject"] = f"[{submission.event.slug}] {subject}"
+        initial["subject"] = get_prefixed_subject(submission.event, subject)
         initial["text"] = phrases.cfp.invite_text.format(
             event=submission.event.name,
             title=submission.title,

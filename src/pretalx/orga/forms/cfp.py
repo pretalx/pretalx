@@ -20,6 +20,7 @@ from pretalx.common.forms.widgets import (
     TextInputWithAddon,
 )
 from pretalx.common.text.phrases import phrases
+from pretalx.mail.models import get_prefixed_subject
 from pretalx.orga.forms.widgets import IconSelect
 from pretalx.submission.models import (
     AnswerOption,
@@ -513,7 +514,7 @@ I’m looking forward to your proposal!
             name=user.get_display_name(),
         )
         initial = kwargs.get("intial", {})
-        initial["subject"] = f"[{instance.event.slug}] {subject}"
+        initial["subject"] = get_prefixed_subject(instance.event, subject)
         initial["text"] = text
         kwargs["initial"] = initial
         super().__init__(*args, **kwargs)
