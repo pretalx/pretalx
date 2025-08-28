@@ -22,10 +22,15 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
         if: github.event_name != 'pull_request'
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
         if: github.event_name == 'pull_request'
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
