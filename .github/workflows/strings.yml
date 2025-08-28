@@ -22,8 +22,11 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        if: github.event_name != 'pull_request'
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
+        if: github.event_name == 'pull_request'
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
