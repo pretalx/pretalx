@@ -21,11 +21,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ secrets.ACCESS_TOKEN_COMMITS }}
         if: github.event_name != 'pull_request'
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ secrets.ACCESS_TOKEN_COMMITS }}
           fetch-depth: 0
