@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`orga` Internal notes are now available for speaker profiles and access codes. The notes are only visible to organisers and reviewers.
 - :bug:`orga:speaker` Speakers could not be marked as arrived from their detail page.
 - :bug:`cfp` Draft proposals were created and saved as submitted instead of draft, then changed to draft and saved again. This has been fixed to prevent the submitted state from appearing in the database, even briefly.
 - :feature:`dev,2017` Plugins can now inject additional HTML in the organisers area with the ``pretalx.orga.signals.html_above_orga_page`` and ``pretalx.orga.signals.html_below_orga_page`` signals.
