@@ -29,6 +29,7 @@ from pretalx.common.text.path import path_with_hash
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import serialize_duration
 from pretalx.common.urls import EventUrls
+from pretalx.mail.models import get_prefixed_subject
 from pretalx.person.rules import is_reviewer
 from pretalx.submission.rules import (
     are_featured_submissions_visible,
@@ -421,13 +422,13 @@ class Submission(GenerateCode, PretalxModel):
             return bool(self.anonymised.get("_anonymised", False))
         return False
 
-    @property
+    @cached_property
     def reviewer_answers(self):
         return self.answers.filter(question__is_visible_to_reviewers=True).order_by(
             "question__position"
         )
 
-    @property
+    @cached_property
     def public_answers(self):
         from pretalx.submission.models.question import QuestionTarget
 
@@ -1137,7 +1138,7 @@ class Submission(GenerateCode, PretalxModel):
         subject = subject or phrases.cfp.invite_subject.format(
             speaker=_from.get_display_name()
         )
-        subject = f"[{self.event.slug}] {subject}"
+        subject = get_prefixed_subject(self.event, subject)
         text = text or phrases.cfp.invite_text.format(
             event=self.event.name,
             title=self.title,

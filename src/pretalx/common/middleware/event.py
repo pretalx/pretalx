@@ -95,7 +95,7 @@ class EventPermissionMiddleware:
 
         self._select_locale(request)
         is_exempt = (
-            url.url_name == "export"
+            url.url_name in ("export", "event.css")
             if "agenda" in url.namespaces
             else request.path.startswith("/api/")
         )

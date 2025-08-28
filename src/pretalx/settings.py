@@ -427,7 +427,7 @@ LANGUAGES_INFORMATION = {
         "official": False,
     },
     "pt-br": {
-        "name": _("Brasilian Portuguese"),
+        "name": _("Brazilian Portuguese"),
         "natural_name": "Português brasileiro",
         "official": False,
         "public_code": "pt",

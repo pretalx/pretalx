@@ -97,6 +97,10 @@ flag, it replaces all static files with ones compiled from scratch. Run this
 command after every upgrade, and make sure to use your production environment
 (production settings and Python environment).
 
+This command also compiles translation files from the core project and all
+installed plugins, so if translations are not showing up, re-running the
+``rebuild`` command is a good first debugging step.
+
 Run this command with ``--npm-install`` to install or update all frontend
 dependencies. This option will automatically be used the first time when
 pretalx detects that you don’t have a ``node_modules`` directory, but it’s your

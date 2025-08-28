@@ -44,6 +44,9 @@ def orga_events(request):
     context["nav_settings"] = collect_signal(
         nav_event_settings, {"sender": request.event, "request": request}
     )
+    context["nav_settings_expanded"] = any(
+        request.path == setting["url"] for setting in context["nav_settings"]
+    )
     context["html_head"] = "".join(
         collect_signal(html_head, {"sender": request.event, "request": request})
     )
