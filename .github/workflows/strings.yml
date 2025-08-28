@@ -24,6 +24,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.head_ref }}
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -46,13 +47,10 @@ jobs:
 
       - name: Commit updated translation percentages
         if: github.event_name == 'pull_request'
-        run: |
-          git config --local user.email "translate@pretalx.com"
-          git config --local user.name "pretalx-translations"
-          git add src/pretalx/locale/translation_percentages.json
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update translation percentages
-            git push
-          fi
+        uses: stefanzweifel/git-auto-commit-action@v6
+        with:
+          commit_message: "Update translation percentages"
+          file_pattern: "*translation_percentages.json"
+          commit_user_name: "pretalx-translations"
+          commit_user_email: "translate@pretalx.com"
+          commit_author: "pretalx-translations <translate@pretalx.com>"
