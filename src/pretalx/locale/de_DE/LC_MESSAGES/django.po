@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-06-12 14:01+0000\n"
-"PO-Revision-Date: 2025-04-02 09:36+0000\n"
+"PO-Revision-Date: 2025-08-28 08:44+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: \n"
 "Language: de_DE\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.9.2\n"
+"X-Generator: Weblate 5.12.2\n"
 
 #: pretalx/agenda/phrases.py:8
 msgid "Thank you for your feedback!"
@@ -4521,10 +4521,8 @@ msgid "Users"
 msgstr "Benutzer"
 
 #: pretalx/orga/templates/orga/admin/user_list.html:20
-#, fuzzy
-#| msgid "The addressed user’s email address"
 msgid "Search users by name or email address"
-msgstr "E-Mail-Adresse der Addressat:in"
+msgstr "User nach Name oder E-Mail-Adresse suchen"
 
 #: pretalx/orga/templates/orga/admin/user_list.html:32
 #: pretalx/orga/templates/orga/base.html:221
@@ -4540,7 +4538,7 @@ msgstr "Einreichungen"
 
 #: pretalx/orga/templates/orga/auth/login.html:4
 msgid "Sign in"
-msgstr "Einloggen"
+msgstr "Login"
 
 #: pretalx/orga/templates/orga/base.html:92
 #: pretalx/orga/templates/orga/base.html:101
@@ -7171,10 +7169,8 @@ msgstr ""
 "werden."
 
 #: pretalx/orga/views/mails.py:48
-#, fuzzy
-#| msgid "You can’t give feedback for this session at this time."
 msgid "You cannot send emails at this time."
-msgstr "Derzeit kann für diese Veranstaltung kein Feedback gegeben werden."
+msgstr "Derzeit können für diese Veranstaltung keine E-Mails versandt werden."
 
 #: pretalx/orga/views/mails.py:147
 #, python-brace-format
