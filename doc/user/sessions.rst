@@ -168,11 +168,32 @@ Tags are internal labels that help organisers categorise and filter sessions.
 Only organisers and reviewers can see tags, they will not appear on the public schedule.
 
 You can use them for any organisational purpose that comes to mind, from state
-markers like “needs work”, organisational notes like “requires mentor”, or
-thematic labels like “beginner-friendly”.
+markers like "needs work", organisational notes like "requires mentor", or
+thematic labels like "beginner-friendly".
 
 We hope to make allow tags to show up in the public schedule in the future, but
 any tags existing prior to that point will remain internal.
+
+.. _`user-guide-featured-sessions`:
+
+Featured Sessions
+^^^^^^^^^^^^^^^^^
+
+Featured sessions are sessions that you want to highlight to your audience.
+They appear on a dedicated "Featured Sessions" page at ``/{event}/featured/``
+that can be made publicly accessible even before the full schedule is released.
+
+To mark a session as featured, check the "Featured" checkbox on the session detail page,
+or use the checkboxes on the session list page to mark multiple sessions as featured.
+You can control when the featured sessions page is visible to the public through the
+"Show featured sessions page" setting in your event's display settings. The options are:
+
+- Never: The featured sessions page is never visible to the public
+- Before schedule release: The page is visible until you release a public schedule
+- Always: The page is always publicly accessible
+
+This feature is particularly useful for highlighting keynotes, special presentations,
+or other important sessions you want to promote early in your event marketing.
 
 Speakers
 --------
