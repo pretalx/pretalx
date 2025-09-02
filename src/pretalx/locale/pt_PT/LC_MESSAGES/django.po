@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-06-12 14:01+0000\n"
-"PO-Revision-Date: 2025-06-19 09:33+0000\n"
+"PO-Revision-Date: 2025-09-02 08:34+0000\n"
 "Last-Translator: Tiago Carreira <tiago.g.carreira+git@gmail.com>\n"
 "Language-Team: none\n"
 "Language: pt_PT\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.9.2\n"
+"X-Generator: Weblate 5.12.2\n"
 
 #: pretalx/agenda/phrases.py:8
 msgid "Thank you for your feedback!"
@@ -24,11 +24,11 @@ msgstr "Obrigado pelo seu feedback!"
 
 #: pretalx/agenda/phrases.py:9
 msgid "Thanks, we (and our speakers) appreciate your feedback!"
-msgstr "Obrigado, nós (e nossos oradores) apreciam seus comentários!"
+msgstr "Obrigado, nós (e nossos oradores) agradecemos os seus comentários!"
 
 #: pretalx/agenda/phrases.py:11
 msgid "This session will not be recorded."
-msgstr "Esta sessão não será registrada."
+msgstr "Esta sessão não será gravada."
 
 #: pretalx/agenda/phrases.py:13
 msgid "View conference schedule"
@@ -36,11 +36,11 @@ msgstr "Ver o cronograma da conferência"
 
 #: pretalx/agenda/phrases.py:14
 msgid "View schedule preview"
-msgstr "Visualizar a pré-visualização do cronograma"
+msgstr "Pré-visualizar o cronograma"
 
 #: pretalx/agenda/phrases.py:15
 msgid "Edit or view your proposals"
-msgstr "Editar ou visualizar as suas propostas"
+msgstr "Editar ou ver as suas propostas"
 
 #: pretalx/agenda/templates/agenda/base.html:52
 msgid "This schedule-related page is non-public. Only organisers can see it."
@@ -78,7 +78,7 @@ msgstr "Mudámos uma sessão: "
 
 #: pretalx/agenda/templates/agenda/featured.html:14
 msgid "Welcome to our list of featured sessions!"
-msgstr "Bem -vindo à lista de sessões em destaque!"
+msgstr "Boas-vindas à nossa lista de sessões em destaque!"
 
 #: pretalx/agenda/templates/agenda/featured.html:17
 msgid ""
@@ -86,9 +86,9 @@ msgid ""
 "conference. Please keep in mind that this is not our full schedule. We will "
 "follow up with the full schedule in time, stay tuned!"
 msgstr ""
-"Preparamos uma lista de sessões emocionantes, para que possa ter uma idéia "
-"da nossa conferência. Por favor, lembre -se que esta não é a nossa agenda "
-"completa. Vamos enviar a agenda completa a tempo, fique atento!"
+"Preparamos uma lista de sessões emocionantes, para que possa ter uma ideia "
+"da nossa conferência. Por favor, lembre-se que esta não é a nossa agenda "
+"completa. Vamos enviar a agenda completa a seu tempo, fique atento!"
 
 #: pretalx/agenda/templates/agenda/featured.html:23
 msgid ""
@@ -4262,7 +4262,7 @@ msgstr "Ficheiros Multimédia"
 #: pretalx/orga/templates/orga/admin/admin.html:78
 #: pretalx/orga/templates/orga/base.html:399
 msgid "Mails"
-msgstr "E -mails"
+msgstr "E-mails"
 
 #: pretalx/orga/templates/orga/admin/admin.html:81
 msgid "Host"
@@ -4472,9 +4472,8 @@ msgid "Users"
 msgstr "Utilizadores"
 
 #: pretalx/orga/templates/orga/admin/user_list.html:20
-#, fuzzy
 msgid "Search users by name or email address"
-msgstr "O endereço de e -mail do utilizador endereçado"
+msgstr "Procurar utilizadores por nome ou endereço de email"
 
 #: pretalx/orga/templates/orga/admin/user_list.html:32
 #: pretalx/orga/templates/orga/base.html:221
@@ -6433,7 +6432,7 @@ msgstr "Enviar e-mail"
 
 #: pretalx/orga/templates/orga/speaker/form.html:91
 msgid "Emails"
-msgstr "E -mails"
+msgstr "E-mails"
 
 #: pretalx/orga/templates/orga/speaker/form.html:97
 msgid "No mails were sent to this speaker yet."
@@ -7114,9 +7113,8 @@ msgstr ""
 "também serão eliminados e não podem ser restaurados."
 
 #: pretalx/orga/views/mails.py:48
-#, fuzzy
 msgid "You cannot send emails at this time."
-msgstr "Não pode dar feedback para esta sessão neste momento."
+msgstr "Não pode enviar emails neste momento."
 
 #: pretalx/orga/views/mails.py:147
 #, python-brace-format
