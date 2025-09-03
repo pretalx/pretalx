@@ -1,6 +1,6 @@
 from contextlib import suppress
 
-from django.http import HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect
 from django_scopes import scopes_disabled
 
 from pretalx.person.models.user import User
@@ -28,4 +28,4 @@ def shortlink_view(request, code, *args, **kwargs):
             if request.user == user:
                 return HttpResponseRedirect(profile.event.urls.user)
             return HttpResponseRedirect(profile.urls.public)
-    return HttpResponseRedirect("/404")
+    raise Http404()

@@ -25,7 +25,7 @@ urlpatterns = [
     path("orga/", include("pretalx.orga.urls", namespace="orga")),
     path("api/", include("pretalx.api.urls", namespace="api")),
     path("redirect/", redirect_view, name="redirect"),
-    path("goto/<code>", shortlink_view, name="shortlink"),
+    path("redirect/<code>", shortlink_view, name="shortlink"),
     # Root patterns are ordered by precedence:
     # Plugins last, so that they cannot break anything
     path("", include("pretalx.agenda.urls", namespace="agenda")),
