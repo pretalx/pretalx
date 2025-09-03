@@ -292,6 +292,8 @@ class QueuedMail(PretalxModel):
         to users.
     """
 
+    log_prefix = "pretalx.mail"
+
     event = models.ForeignKey(
         to="event.Event",
         on_delete=models.PROTECT,

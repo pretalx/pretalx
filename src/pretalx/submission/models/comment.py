@@ -20,6 +20,8 @@ class SubmissionComment(PretalxModel):
     They are separate from reviews and provide a forum-style discussion space.
     """
 
+    log_prefix = "pretalx.submission.comment"
+
     submission = models.ForeignKey(
         to="submission.Submission", related_name="comments", on_delete=models.CASCADE
     )

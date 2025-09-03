@@ -84,6 +84,8 @@ class CfP(PretalxModel):
     :param deadline: The regular deadline. Please note that submissions can be available for longer than this if different deadlines are configured on single submission types.
     """
 
+    log_prefix = "pretalx.cfp"
+
     event = models.OneToOneField(to="event.Event", on_delete=models.PROTECT)
     headline = I18nCharField(
         max_length=300, null=True, blank=True, verbose_name=_("headline")

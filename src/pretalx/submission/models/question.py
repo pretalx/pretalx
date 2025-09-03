@@ -430,6 +430,8 @@ class Answer(PretalxModel):
     :class:`~pretalx.submission.models.review.Review`.
     """
 
+    log_prefix = "pretalx.submission.answer"
+
     question = models.ForeignKey(
         to="submission.Question", on_delete=models.PROTECT, related_name="answers"
     )
