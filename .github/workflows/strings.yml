@@ -33,7 +33,7 @@ jobs:
           repository: ${{github.event.pull_request.head.repo.full_name}}
         if: github.event_name == 'pull_request'
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version-file: ".github/workflows/python-version.txt"
           cache: "pip"
