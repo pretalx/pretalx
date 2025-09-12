@@ -23,7 +23,9 @@ jobs:
   compile:
     runs-on: ubuntu-latest
     name: Check that translation files compile
-    working-directory: ./src
+    defaults:
+        run:
+            working-directory: ./src
     steps:
       - uses: actions/checkout@v5
         with:
