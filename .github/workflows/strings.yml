@@ -23,9 +23,6 @@ jobs:
   compile:
     runs-on: ubuntu-latest
     name: Check that translation files compile
-    defaults:
-        run:
-            working-directory: ./src
     steps:
       - uses: actions/checkout@v5
         with:
@@ -45,10 +42,12 @@ jobs:
         run: python -m pip install uv && uv pip install --system -e ".[dev]"
       - name: Compile locales
         run: python manage.py compilemessages
+        working-directory: ./src
 
       - name: Update translation percentages
         if: github.event_name == 'pull_request_target'
         run: python manage.py update_translation_percentages
+        working-directory: ./src
 
       - name: Commit updated translation percentages
         if: github.event_name == 'pull_request_target'
