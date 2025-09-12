@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-06-12 14:01+0000\n"
-"PO-Revision-Date: 2025-04-11 12:14+0000\n"
+"PO-Revision-Date: 2025-09-02 08:34+0000\n"
 "Last-Translator: Renne Rocha <renne@rocha.dev.br>\n"
 "Language-Team: none\n"
 "Language: pt_BR\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.9.2\n"
+"X-Generator: Weblate 5.12.2\n"
 
 #: pretalx/agenda/phrases.py:8
 msgid "Thank you for your feedback!"
@@ -6828,7 +6828,7 @@ msgstr "Válido até"
 
 #: pretalx/orga/templates/orga/user.html:68
 msgid "Upgrade"
-msgstr "Atualizado"
+msgstr "Atualizar"
 
 #: pretalx/orga/templates/orga/user.html:87
 msgid "Revoke"
