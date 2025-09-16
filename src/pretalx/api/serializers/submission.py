@@ -3,7 +3,7 @@ from pathlib import Path
 from drf_spectacular.utils import extend_schema_field
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions, serializers
-from rest_framework.serializers import ModelSerializer, SerializerMethodField
+from rest_framework.serializers import SerializerMethodField
 
 from pretalx.api.mixins import PretalxSerializer
 from pretalx.api.serializers.fields import UploadedFileField
@@ -19,8 +19,8 @@ from pretalx.submission.models import (
 )
 
 
-@register_serializer()
-class ResourceSerializer(ModelSerializer):
+@register_serializer(versions=CURRENT_VERSIONS)
+class ResourceSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     resource = SerializerMethodField()
 
     @staticmethod
@@ -127,7 +127,6 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         queryset=Tag.objects.none(), many=True, required=False
     )
     image = UploadedFileField(required=False)
-    resources = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     duration = serializers.IntegerField(
         source="get_duration",
         required=False,
@@ -143,6 +142,7 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     speakers = serializers.SerializerMethodField()
     answers = serializers.SerializerMethodField()
     slots = serializers.SerializerMethodField()
+    resources = serializers.SerializerMethodField()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -213,6 +213,16 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             return serializer.data
         return qs.values_list("pk", flat=True)
 
+    @extend_schema_field(list[int])
+    def get_resources(self, obj):
+        public_resources = self.context.get("public_resources", True)
+        qs = obj.resources.all()
+        if public_resources:
+            qs = qs.filter(is_public=True)
+        if serializer := self.get_extra_flex_field("resources", qs):
+            return serializer.data
+        return qs.values_list("pk", flat=True)
+
     class Meta:
         model = Submission
         fields = [
@@ -248,10 +258,6 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
                 "pretalx.api.serializers.submission.TrackSerializer",
                 {"read_only": True},
             ),
-            "resources": (
-                "pretalx.api.serializers.submission.ResourceSerializer",
-                {"many": True, "read_only": True},
-            ),
         }
         extra_expandable_fields = {
             "slots": (
@@ -264,6 +270,10 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             ),
             "speakers": (
                 "pretalx.api.serializers.speaker.SpeakerSerializer",
+                {"many": True, "read_only": True},
+            ),
+            "resources": (
+                "pretalx.api.serializers.submission.ResourceSerializer",
                 {"many": True, "read_only": True},
             ),
         }
