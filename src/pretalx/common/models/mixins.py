@@ -73,7 +73,7 @@ class LogMixin:
     def delete(self, *args, log_kwargs=None, **kwargs):
         parent = self.log_parent
         result = super().delete(*args, **kwargs)
-        if parent and getattr(parent, "log_action", None):
+        if parent and getattr(parent, "log_action", None) and self.log_prefix:
             log_kwargs = log_kwargs or {}
             parent.log_action(f"{self.log_prefix}.delete", **log_kwargs)
         return result

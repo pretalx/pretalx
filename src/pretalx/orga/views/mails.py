@@ -62,7 +62,11 @@ class OutboxList(
         "to_users__name__icontains",
         "to_users__email__icontains",
     )
-    sortable_fields = ("to", "subject", "pk")
+    sortable_fields = ("to_users__name", "subject", "pk")
+    secondary_sort = {
+        "to_users__name": ["to"],
+        "-to_users__name": ["-to"],
+    }
     paginate_by = 25
     permission_required = "mail.list_queuedmail"
 
@@ -109,7 +113,11 @@ class SentMail(
         "to_users__email__icontains",
     )
     default_sort_field = "-sent"
-    sortable_fields = ("to", "subject", "sent")
+    sortable_fields = ("to_users__name", "subject", "pk")
+    secondary_sort = {
+        "to_users__name": ["to"],
+        "-to_users__name": ["-to"],
+    }
     paginate_by = 25
     permission_required = "mail.list_queuedmail"
 
