@@ -113,7 +113,7 @@ class SentMail(
         "to_users__email__icontains",
     )
     default_sort_field = "-sent"
-    sortable_fields = ("to_users__name", "subject", "pk")
+    sortable_fields = ("to_users__name", "subject", "sent")
     secondary_sort = {
         "to_users__name": ["to"],
         "-to_users__name": ["-to"],
