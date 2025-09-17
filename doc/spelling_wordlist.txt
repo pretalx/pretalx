@@ -20,6 +20,7 @@ ccc
 center
 CfP
 changelog
+checkboxes
 color
 config
 cron
