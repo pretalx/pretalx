@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :bug:`cfp,2131` Access codes are now checked for validity when editing draft proposals.
 - :bug:`orga:email,2116` The email outbox could not be sorted by email recipient name or by sent date.
 - :bug:`orga:speaker` Speakers could not be marked as arrived from their detail page.
 - :bug:`cfp` Draft proposals were created and saved as submitted instead of draft, then changed to draft and saved again. This has been fixed to prevent the submitted state from appearing in the database, even briefly.

@@ -1,8 +1,11 @@
+import datetime as dt
+
 import pytest
 from django.conf import settings
 from django.core import mail as djmail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from django.utils.timezone import now
 from django_scopes import scope
 
 from pretalx.submission.models import SubmissionStates
@@ -392,6 +395,56 @@ def test_draft_submission_still_editable_when_feature_disabled(
         # Verify the submission was changed
         submission.refresh_from_db()
         assert submission.title == "Changed draft title"
+
+
+def setup_submission_with_access_code(submission, track):
+    with scope(event=submission.event):
+        access_code = submission.event.submitter_access_codes.create(code="testcode")
+        track.requires_access_code = True
+        track.save()
+        submission.track = track
+        submission.access_code = access_code
+        submission.state = SubmissionStates.DRAFT
+        submission.save()
+    return submission
+
+
+@pytest.mark.django_db
+def test_draft_submission_still_editable_when_access_code_is_valid(submission, track):
+    """Test that draft submissions remain editable when access codes are required and a valid code is used."""
+    submission = setup_submission_with_access_code(submission, track)
+    assert submission.editable is True
+
+
+@pytest.mark.django_db
+def test_draft_submission_not_editable_when_access_code_is_for_other_track(
+    submission, track, other_track
+):
+    """Test that draft submissions aren't editable when access codes are required and an invalid code is used."""
+    submission = setup_submission_with_access_code(submission, track)
+    submission.access_code.track = other_track
+    submission.access_code.save()
+    assert submission.editable is False
+
+
+@pytest.mark.django_db
+def test_draft_submission_not_editable_when_access_code_is_for_other_type(
+    submission, track, default_submission_type
+):
+    """Test that draft submissions aren't editable when access codes are required and an invalid code is used."""
+    submission = setup_submission_with_access_code(submission, track)
+    submission.access_code.submission_type = default_submission_type
+    submission.access_code.save()
+    assert submission.editable is False
+
+
+@pytest.mark.django_db
+def test_draft_submission_not_editable_when_access_code_is_expired(submission, track):
+    """Test that draft submissions aren't editable when access codes are required and an expired code is used."""
+    submission = setup_submission_with_access_code(submission, track)
+    submission.access_code.valid_until = now() - dt.timedelta(days=1)
+    submission.access_code.save()
+    assert submission.editable is False
 
 
 @pytest.mark.django_db

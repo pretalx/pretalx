@@ -392,8 +392,33 @@ class Submission(GenerateCode, PretalxModel):
         return (not deadline) or now() <= deadline
 
     @cached_property
+    def access_code_required(self):
+        return self.submission_type.requires_access_code or bool(
+            self.track and self.track.requires_access_code
+        )
+
+    @cached_property
+    def access_code_valid(self):
+        if self.access_code:
+            if (
+                self.access_code.submission_type
+                and self.access_code.submission_type != self.submission_type
+            ):
+                return False
+            if self.access_code.track and self.access_code.track != self.track:
+                return False
+            return (
+                now() < self.access_code.valid_until
+                if self.access_code.valid_until
+                else True
+            )
+        return False
+
+    @cached_property
     def editable(self):
         if self.state == SubmissionStates.DRAFT:
+            if self.access_code_required:
+                return self.access_code_valid
             return self.cfp_open
 
         if not self.event.get_feature_flag("speakers_can_edit_submissions"):
