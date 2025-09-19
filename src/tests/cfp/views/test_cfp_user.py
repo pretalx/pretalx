@@ -779,3 +779,112 @@ def test_submission_withdraw_if_rejected(speaker_client, submission):
     with scope(event=submission.event):
         submission.refresh_from_db()
         assert submission.state != SubmissionStates.WITHDRAWN
+
+
+@pytest.mark.django_db
+def test_draft_submission_prevented_when_access_code_required(
+    speaker_client, submission, track
+):
+
+    with scope(event=submission.event):
+        submission.state = SubmissionStates.DRAFT
+        submission.track = track
+        submission.save()
+
+        submission.track.requires_access_code = True
+        submission.track.save()
+
+        assert not submission.editable
+
+        data = {
+            "action": "dedraft",
+            "title": submission.title,
+            "submission_type": submission.submission_type.pk,
+            "content_locale": submission.content_locale,
+            "description": submission.description,
+            "abstract": submission.abstract,
+            "notes": submission.notes,
+            "resource-TOTAL_FORMS": 0,
+            "resource-INITIAL_FORMS": 0,
+            "resource-MIN_NUM_FORMS": 0,
+            "resource-MAX_NUM_FORMS": 1000,
+        }
+        response = speaker_client.post(
+            submission.urls.user_base, data=data, follow=True
+        )
+
+        assert response.status_code == 200
+        submission.refresh_from_db()
+        assert submission.state == SubmissionStates.DRAFT
+
+
+@pytest.mark.django_db
+def test_draft_submission_allowed_with_access_code(
+    speaker_client, speaker, submission, track
+):
+    from pretalx.submission.models import SubmitterAccessCode
+
+    with scope(event=submission.event):
+        submission.state = SubmissionStates.DRAFT
+        submission.track = track
+        submission.access_code = SubmitterAccessCode.objects.create(
+            event=submission.event, code="VALID123", track=submission.track
+        )
+        submission.save()
+
+        submission.track.requires_access_code = True
+        submission.track.save()
+
+        data = {
+            "action": "dedraft",
+            "title": submission.title,
+            "submission_type": submission.submission_type.pk,
+            "content_locale": submission.content_locale,
+            "description": submission.description,
+            "abstract": submission.abstract,
+            "notes": submission.notes,
+            "resource-TOTAL_FORMS": 0,
+            "resource-INITIAL_FORMS": 0,
+            "resource-MIN_NUM_FORMS": 0,
+            "resource-MAX_NUM_FORMS": 1000,
+        }
+        response = speaker_client.post(
+            submission.urls.user_base, data=data, follow=True
+        )
+
+        assert response.status_code == 200
+        submission.refresh_from_db()
+        assert submission.state == SubmissionStates.SUBMITTED
+        assert submission.access_code.is_valid
+
+
+@pytest.mark.django_db
+def test_draft_submission_prevented_when_submission_type_requires_access_code(
+    speaker_client, speaker, submission
+):
+    with scope(event=submission.event):
+        submission.state = SubmissionStates.DRAFT
+        submission.save()
+        submission.submission_type.requires_access_code = True
+        submission.submission_type.save()
+
+        data = {
+            "action": "dedraft",
+            "title": submission.title,
+            "submission_type": submission.submission_type.pk,
+            "content_locale": submission.content_locale,
+            "description": submission.description,
+            "abstract": submission.abstract,
+            "notes": submission.notes,
+            "resource-TOTAL_FORMS": 0,
+            "resource-INITIAL_FORMS": 0,
+            "resource-MIN_NUM_FORMS": 0,
+            "resource-MAX_NUM_FORMS": 1000,
+        }
+        response = speaker_client.post(
+            submission.urls.user_base, data=data, follow=True
+        )
+
+        assert response.status_code == 200
+        submission.refresh_from_db()
+        assert submission.state == SubmissionStates.DRAFT

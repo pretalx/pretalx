@@ -455,3 +455,63 @@ def test_pending_state(submission, state, pending_state):
         if pending_state == "accepted" and state == "submitted":
             assert submission.event.queued_mails.count() == 1
             assert submission.event.wip_schedule.talks.count() == 1
+
+
+@pytest.mark.django_db
+def test_editable_with_access_code_requirement(submission, track):
+    from pretalx.submission.models import SubmitterAccessCode
+
+    with scope(event=submission.event):
+        submission.state = SubmissionStates.DRAFT
+        submission.save()
+
+        assert submission.editable
+
+        submission.track = track
+        submission.track.requires_access_code = True
+        submission.track.save()
+        submission.save()
+
+        del submission.editable
+        assert not submission.editable
+
+        access_code = SubmitterAccessCode.objects.create(
+            event=submission.event, code="TEST123", track=submission.track
+        )
+        submission.access_code = access_code
+        submission.save()
+
+        del submission.editable
+        assert submission.editable
+
+        from django.utils.timezone import now, timedelta
+
+        access_code.valid_until = now() - timedelta(hours=1)
+        access_code.save()
+
+        del submission.editable
+        assert not submission.editable
+
+
+@pytest.mark.django_db
+def test_editable_with_access_code_for_submission_type(submission):
+    from pretalx.submission.models import SubmitterAccessCode
+
+    with scope(event=submission.event):
+        submission.state = SubmissionStates.DRAFT
+        submission.save()
+        submission.submission_type.requires_access_code = True
+        submission.submission_type.save()
+
+        assert not submission.editable
+
+        access_code = SubmitterAccessCode.objects.create(
+            event=submission.event,
+            code="TYPE123",
+            submission_type=submission.submission_type,
+        )
+        submission.access_code = access_code
+        submission.save()
+
+        del submission.editable
+        assert submission.editable

@@ -387,20 +387,38 @@ class Submission(GenerateCode, PretalxModel):
         return self.image.url if self.image else ""
 
     @cached_property
-    def cfp_open(self):
-        deadline = self.submission_type.deadline or self.event.cfp.deadline
-        return (not deadline) or now() <= deadline
-
-    @cached_property
     def editable(self):
+        deadline = self.submission_type.deadline or self.event.cfp.deadline
+        deadline_open = (not deadline) or now() <= deadline
+
         if self.state == SubmissionStates.DRAFT:
-            return self.cfp_open
+            # We have to check if we comply with the standard submission requirements if
+            # we are in a draft state, as drafts should only be editable when they could
+            # also be submitted.
+            access_code = (
+                self.access_code
+                if (self.access_code and self.access_code.is_valid)
+                else None
+            )
+            if self.track and self.track.requires_access_code:
+                if not access_code or not access_code.track == self.track:
+                    return False
+            if self.submission_type.requires_access_code:
+                if (
+                    not access_code
+                    or not access_code.submission_type == self.submission_type
+                ):
+                    return False
+
+            # We are not missing an access code, so we can just check if we hit the
+            # deadline or can ignore it safely
+            return deadline_open or access_code
 
         if not self.event.get_feature_flag("speakers_can_edit_submissions"):
             return False
 
         if self.state == SubmissionStates.SUBMITTED:
-            return self.cfp_open or (
+            return deadline_open or (
                 self.event.active_review_phase
                 and self.event.active_review_phase.speakers_can_change_submissions
             )
@@ -981,7 +999,9 @@ class Submission(GenerateCode, PretalxModel):
 
     @property
     def user_state(self):
-        if self.state == SubmissionStates.SUBMITTED and not self.cfp_open:
+        deadline = self.submission_type.deadline or self.event.cfp.deadline
+        cfp_open = (not deadline) or now() <= deadline
+        if self.state == SubmissionStates.SUBMITTED and not cfp_open:
             return "review"
         return self.state
 
