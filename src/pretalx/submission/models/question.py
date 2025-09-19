@@ -91,6 +91,7 @@ class QuestionRequired(Choices):
 
 
 class QuestionIcon(Choices):
+    BSKY = "bsky"
     DISCORD = "discord"
     GITHUB = "github"
     INSTAGRAM = "instagram"
@@ -101,6 +102,7 @@ class QuestionIcon(Choices):
     YOUTUBE = "youtube"
 
     valid_choices = [
+        (BSKY, _("Bluesky")),
         (DISCORD, _("Discord")),
         (GITHUB, _("GitHub")),
         (INSTAGRAM, _("Instagram")),
