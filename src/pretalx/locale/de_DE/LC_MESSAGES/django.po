@@ -380,8 +380,12 @@ msgstr ""
 "direkt an uns, wenn das verkehrt ist."
 
 #: pretalx/cfp/phrases.py:32
-msgid "This proposal cannot be edited anymore."
-msgstr "Die Einreichung kann nicht mehr bearbeitet werden."
+msgid ""
+"This proposal cannot be edited at this time. Please contact the organisers "
+"if you need to make changes."
+msgstr ""
+"Die Einreichung kann zur Zeit nicht bearbeitet werden – bitte wende dich an die "
+"Veranstalter, wenn Änderungen nötig sind."
 
 #: pretalx/cfp/phrases.py:34
 msgid "Speaker email"
