@@ -181,9 +181,8 @@ Vue.component("field", {
         </template>
         <template v-else>
           <div class="i18n-form-group" @click.stop="">
-            <input type="text" class="form-control" :title="locale" :lang="locale" v-model="field.help_text[locale]" v-for="locale in locales">
+            <textarea class="form-control" :title="locale" :lang="locale" v-model="field.help_text[locale]" v-for="locale in locales"></textarea>
           </div>
-          <div class="text-muted" v-if="fixed_help_text">{{ fixed_help_text }}</div>
         </template>
       </div>
       </div>
