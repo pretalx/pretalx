@@ -33,7 +33,6 @@ let currentLanguage = "en"
 let currentModal = Vue.observable({
     type: null,
     data: null,
-    show: false,
 })
 const markedOptions = {
     baseUrl: null,
@@ -56,17 +55,9 @@ const markedOptions = {
 document.onclick = (event) => {
     if (currentModal.data) {
         currentModal.data = null
+        const dialog = document.getElementById('flow-modal')
+        if (dialog) dialog.close()
     }
-}
-document.onkeypress = (event) => {
-    if (!currentModal.data) return
-    let isEscape = false
-    if ("key" in evt) {
-        isEscape = evt.key === "Escape" || evt.key === "Esc"
-    } else {
-        isEscape = evt.keyCode === 27
-    }
-    currentModal.data = null
 }
 
 function areEqual() {
@@ -242,11 +233,11 @@ Vue.component("field", {
             if (!this.isModal && !this.editable) {
                 Vue.set(currentModal, "data", null)
                 currentModal.type = null
-                currentModal.show = false
             } else {
                 currentModal.data = this.field
                 currentModal.type = "field"
-                currentModal.show = true
+                const dialog = document.getElementById('flow-modal')
+                if (dialog) dialog.showModal()
             }
         },
     },
@@ -389,12 +380,13 @@ Vue.component("step", {
 var app = new Vue({
     el: "#flow",
     template: `
-    <div :class="currentModal.data ? 'defocused' : 'focused'" :style="{'--color': eventConfiguration.primary_color || '#3aa57c'}">
-      <div id="flow-modal" v-if="currentModal.data">
+    <div :style="{'--color': eventConfiguration.primary_color || '#3aa57c'}">
+      <dialog id="flow-modal" v-if="currentModal.data" ref="flowModal">
+        <button id="dialog-close" class="btn btn-default btn-xs"><i class="fa fa-times"></i></button>
         <form>
           <field :field="currentModal.data" :isModal="true" key="modal" :locales="locales"></field>
         </form>
-      </div>
+      </dialog>
       <div id="flow">
         <div id="loading" v-if="loading">
             <i class="fa fa-spinner fa-pulse fa-4x fa-fw text-primary mb-4 mt-4"></i>

@@ -83,19 +83,6 @@
     }
   }
 }
-.defocused {
-  #flow {
-    background-color: var(--color-grey-light);
-    opacity: 0.5;
-    * {
-      cursor: default !important;
-      &:hover {
-        color: default !important;
-        background-color: default !important;
-      }
-    }
-  }
-}
 #dirty-flow {
   z-index: 400;
   position: fixed;
@@ -110,18 +97,9 @@
   }
 }
 #flow-modal {
-  position: fixed;
   width: 800px;
   max-width: 100%;
-  left: 0;
-  right: 0;
-  top: 300px;
-  margin-left: auto;
-  margin-right: auto;
   padding: 16px 32px;
-  background: white;
-  z-index: 50;
-  box-shadow: var(--shadow-dialog);
   .i18n-form-group {
     margin-top: 8px;
   }
