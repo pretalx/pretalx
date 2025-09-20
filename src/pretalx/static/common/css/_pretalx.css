@@ -70,6 +70,16 @@ dialog {
   & > .alert {
     margin: 0;
   }
+  #dialog-close {
+    position: absolute;
+    top: -4px;
+    right: 0;
+    cursor: pointer;
+    color: rgb(0 0 0 / 0.7);
+    font-size: 20px;
+    border: none;
+    background: transparent;
+  }
 }
 
 @keyframes fade-in {
@@ -103,16 +113,6 @@ dialog#lightbox-dialog {
       max-width: 80vw;
       height: 100%;
       width: 100%;
-    }
-    #lightbox-close {
-      position: absolute;
-      top: -4px;
-      right: 0;
-      cursor: pointer;
-      color: rgb(0 0 0 / 0.7);
-      font-size: 20px;
-      border: none;
-      background: transparent;
     }
   }
 }
