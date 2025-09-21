@@ -109,15 +109,22 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
 
     @extend_schema(
         summary="Redirect to a schedule by its version",
-        description="This endpoint redirects to a specific schedule using its version name (e.g., '1.0', 'My Release') instead of its numeric ID.",
+        description="This endpoint redirects to a specific schedule using its version name (e.g., '1.0', 'My Release') instead of its numeric ID. You have to pass either a version or request the latest version.",
         parameters=[
+            OpenApiParameter(
+                name="latest",
+                type=bool,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Pass this parameter to be redirected to the current schedule.",
+            ),
             OpenApiParameter(
                 name="version",
                 type=str,
                 location=OpenApiParameter.QUERY,
-                required=True,
+                required=False,
                 description="The version string/name of the schedule (e.g., '1.0', 'Final Version').",
-            )
+            ),
         ],
         responses={
             302: OpenApiResponse(),
@@ -126,9 +133,12 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
     )
     @action(detail=False, url_path="by-version")
     def redirect_version(self, request, event):
-        version = request.query_params.get("version")
-        schedule = get_object_or_404(self.event.schedules, version=version)
-        if not self.has_perm("view", schedule):
+        if request.query_params.get("latest"):
+            schedule = self.event.current_schedule
+        else:
+            version = request.query_params.get("version")
+            schedule = get_object_or_404(self.event.schedules, version=version)
+        if not schedule or not self.has_perm("view", schedule):
             raise Http404
         redirect_url = reverse(
             "api:schedule-detail", kwargs={"event": event, "pk": schedule.pk}

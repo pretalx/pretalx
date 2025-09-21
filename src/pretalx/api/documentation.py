@@ -87,7 +87,7 @@ def postprocess_schema(result, generator, request, public):
                 "In addition to the normal ID based routing, you can use the `latest` shortcut to see the current public schedule, "
                 "and as organiser, the `wip` shortcut will show the current unpublished working copy. "
                 "As retrieving the fully expanded endpoint is expensive on the pretalx side, "
-                "consider using the redirect offered at ``by-version/?version=latest`` to check for a new release."
+                "consider using the redirect offered at ``by-version/?latest=1`` to check for a new release."
             ),
         },
         {
