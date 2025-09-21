@@ -524,6 +524,7 @@ class Schedule(PretalxModel):
         result = {
             "talks": [],
             "version": self.version,
+            "schedule_id": self.pk,
             "timezone": self.event.timezone,
             "event_start": self.event.date_from.isoformat(),
             "event_end": self.event.date_to.isoformat(),
