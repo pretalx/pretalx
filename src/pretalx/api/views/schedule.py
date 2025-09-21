@@ -1,4 +1,4 @@
-from django.http import Http404, HttpResponse, HttpResponseRedirect
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -108,15 +108,15 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
         return super().get_object()
 
     @extend_schema(
-        summary="Redirect to a schedule by its version",
-        description="This endpoint redirects to a specific schedule using its version name (e.g., '1.0', 'My Release') instead of its numeric ID. You have to pass either a version or request the latest version.",
+        summary="Get schedule URL by version",
+        description="This endpoint returns a plain string URL for a specific schedule using its version name (e.g., '1.0', 'My Release') instead of its numeric ID. You have to pass either a version or request the latest version. Returns an empty string if the schedule is not found or not accessible.",
         parameters=[
             OpenApiParameter(
                 name="latest",
                 type=bool,
                 location=OpenApiParameter.QUERY,
                 required=False,
-                description="Pass this parameter to be redirected to the current schedule.",
+                description="Pass this parameter to get the URL for the current schedule.",
             ),
             OpenApiParameter(
                 name="version",
@@ -127,8 +127,8 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
             ),
         ],
         responses={
-            302: OpenApiResponse(),
-            404: OpenApiResponse(),
+            200: OpenApiResponse(description="Returns a plain text URL"),
+            404: OpenApiResponse(description="Schedule not found or not accessible"),
         },
     )
     @action(detail=False, url_path="by-version")
@@ -143,7 +143,7 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
         redirect_url = reverse(
             "api:schedule-detail", kwargs={"event": event, "pk": schedule.pk}
         )
-        return HttpResponseRedirect(redirect_url)
+        return HttpResponse(redirect_url, content_type="text/plain")
 
     @extend_schema(
         summary="Release a new schedule version",
