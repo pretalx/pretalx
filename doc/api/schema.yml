@@ -1073,6 +1073,35 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/events/{event}/questions/{id}/icon/:
+    get:
+      operationId: questions_icon_retrieve
+      description: Returns the icon for this question as an SVG image if the question
+        has an icon.
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this question.
+        required: true
+      tags:
+      - questions
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+          description: ''
   /api/events/{event}/reviews/:
     get:
       operationId: reviews_list
@@ -1581,7 +1610,8 @@ paths:
     get:
       operationId: schedules_by_version_retrieve
       description: This endpoint redirects to a specific schedule using its version
-        name (e.g., '1.0', 'My Release') instead of its numeric ID.
+        name (e.g., '1.0', 'My Release') instead of its numeric ID. You have to pass
+        either a version or request the latest version.
       summary: Redirect to a schedule by its version
       parameters:
       - in: path
@@ -1591,12 +1621,16 @@ paths:
           description: The event’s slug
         required: true
       - in: query
+        name: latest
+        schema:
+          type: boolean
+        description: Pass this parameter to be redirected to the current schedule.
+      - in: query
         name: version
         schema:
           type: string
         description: The version string/name of the schedule (e.g., '1.0', 'Final
           Version').
-        required: true
       tags:
       - schedules
       responses:
@@ -3988,6 +4022,28 @@ components:
           description: Cached file identifier
       required:
       - id
+    IconEnum:
+      enum:
+      - bsky
+      - discord
+      - github
+      - instagram
+      - linkedin
+      - mastodon
+      - twitter
+      - web
+      - youtube
+      type: string
+      description: |-
+        * `bsky` - Bluesky
+        * `discord` - Discord
+        * `github` - GitHub
+        * `instagram` - Instagram
+        * `linkedin` - LinkedIn
+        * `mastodon` - Mastodon
+        * `twitter` - Twitter
+        * `web` - Website
+        * `youtube` - YouTube
     LocaleEnum:
       enum:
       - en
@@ -4000,6 +4056,7 @@ components:
       - fr
       - it
       - ja-jp
+      - ko
       - nl
       - pl
       - pt-br
@@ -4019,6 +4076,7 @@ components:
         * `fr` - French
         * `it` - Italian
         * `ja-jp` - Japanese
+        * `ko` - Korean
         * `nl` - Dutch
         * `pl` - Polish
         * `pt-br` - Brazilian Portuguese
@@ -4652,6 +4710,24 @@ components:
           format: date-time
           nullable: true
           title: Maximum value
+        icon:
+          nullable: true
+          description: |-
+            Custom URL fields that are shown publicly can use an icon when displaying the link.
+
+            * `bsky` - Bluesky
+            * `discord` - Discord
+            * `github` - GitHub
+            * `instagram` - Instagram
+            * `linkedin` - LinkedIn
+            * `mastodon` - Mastodon
+            * `twitter` - Twitter
+            * `web` - Website
+            * `youtube` - YouTube
+          oneOf:
+          - $ref: '#/components/schemas/IconEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
       required:
       - id
       - options
@@ -4778,6 +4854,24 @@ components:
           format: date-time
           nullable: true
           title: Maximum value
+        icon:
+          nullable: true
+          description: |-
+            Custom URL fields that are shown publicly can use an icon when displaying the link.
+
+            * `bsky` - Bluesky
+            * `discord` - Discord
+            * `github` - GitHub
+            * `instagram` - Instagram
+            * `linkedin` - LinkedIn
+            * `mastodon` - Mastodon
+            * `twitter` - Twitter
+            * `web` - Website
+            * `youtube` - YouTube
+          oneOf:
+          - $ref: '#/components/schemas/IconEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
         active:
           type: boolean
           description: Inactive fields will no longer be shown.
@@ -4921,6 +5015,24 @@ components:
           format: date-time
           nullable: true
           title: Maximum value
+        icon:
+          nullable: true
+          description: |-
+            Custom URL fields that are shown publicly can use an icon when displaying the link.
+
+            * `bsky` - Bluesky
+            * `discord` - Discord
+            * `github` - GitHub
+            * `instagram` - Instagram
+            * `linkedin` - LinkedIn
+            * `mastodon` - Mastodon
+            * `twitter` - Twitter
+            * `web` - Website
+            * `youtube` - YouTube
+          oneOf:
+          - $ref: '#/components/schemas/IconEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
         active:
           type: boolean
           description: Inactive fields will no longer be shown.
@@ -6493,7 +6605,7 @@ tags:
     use the `latest` shortcut to see the current public schedule, and as organiser,
     the `wip` shortcut will show the current unpublished working copy. As retrieving
     the fully expanded endpoint is expensive on the pretalx side, consider using the
-    redirect offered at ``by-version/?version=latest`` to check for a new release.
+    redirect offered at ``by-version/?latest=1`` to check for a new release.
 - name: slots
   description: Every block in a published pretalx schedule is a talk slot. Note that
     there are talk slots without associated submission (e.g. breaks). Each slot belongs
