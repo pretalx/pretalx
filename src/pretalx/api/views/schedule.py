@@ -143,7 +143,8 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
         redirect_url = reverse(
             "api:schedule-detail", kwargs={"event": event, "pk": schedule.pk}
         )
-        return HttpResponse(redirect_url, content_type="text/plain")
+        full_url = request.build_absolute_uri(redirect_url)
+        return HttpResponse(full_url, content_type="text/plain")
 
     @extend_schema(
         summary="Release a new schedule version",

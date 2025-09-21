@@ -186,7 +186,9 @@ def test_redirect_version_success(client, event):
     response = client.get(event.api_urls.schedules + "by-version/?version=v2.0")
     assert response.status_code == 200
     assert response["Content-Type"] == "text/plain"
-    assert response.content.decode().endswith(f"/schedules/{schedule.pk}/")
+    url_content = response.content.decode()
+    assert url_content.startswith("http://")
+    assert url_content.endswith(f"/schedules/{schedule.pk}/")
 
 
 @pytest.mark.django_db
@@ -225,7 +227,9 @@ def test_redirect_version_latest_param(client, event):
     response = client.get(event.api_urls.schedules + "by-version/?latest=true")
     assert response.status_code == 200
     assert response["Content-Type"] == "text/plain"
-    assert response.content.decode().endswith(f"/schedules/{current_schedule.pk}/")
+    url_content = response.content.decode()
+    assert url_content.startswith("http://")
+    assert url_content.endswith(f"/schedules/{current_schedule.pk}/")
 
 
 @pytest.mark.django_db
