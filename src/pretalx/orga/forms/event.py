@@ -779,7 +779,9 @@ class BaseEventExtraLinkFormSet(I18nFormSetMixin, forms.BaseInlineFormSet):
         super().__init__(*args, **kwargs)
 
     def get_queryset(self):
-        return super().get_queryset().filter(role=self.role)
+        if not hasattr(self, "_queryset"):
+            self._queryset = super().get_queryset().filter(role=self.role)
+        return self._queryset
 
     def save_new(self, form, commit=True):
         instance = super().save_new(form, commit=False)

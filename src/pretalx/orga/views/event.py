@@ -76,7 +76,9 @@ class EventDetail(EventSettingsPermission, ActionFromUrl, UpdateView):
 
     @cached_property
     def object(self):
-        return self.request.event
+        return Event.objects.prefetch_related("extra_links").get(
+            pk=self.request.event.pk
+        )
 
     def get_form_kwargs(self, *args, **kwargs):
         response = super().get_form_kwargs(*args, **kwargs)
