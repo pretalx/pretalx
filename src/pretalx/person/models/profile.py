@@ -4,7 +4,6 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.agenda.rules import can_view_schedule, is_speaker_viewable
 from pretalx.common.models.mixins import PretalxModel
-from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import (
@@ -37,7 +36,6 @@ class SpeakerProfile(PretalxModel):
     )
     biography = models.TextField(
         verbose_name=_("Biography"),
-        help_text=phrases.base.use_markdown,
         null=True,
         blank=True,
     )

@@ -4,7 +4,6 @@ from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager
 
 from pretalx.common.models.mixins import PretalxModel
-from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.submission.rules import (
     has_reviewer_access,
@@ -28,10 +27,7 @@ class SubmissionComment(PretalxModel):
     user = models.ForeignKey(
         to="person.User", related_name="submission_comments", on_delete=models.CASCADE
     )
-    text = models.TextField(
-        verbose_name=_("Comment"),
-        help_text=phrases.base.use_markdown,
-    )
+    text = models.TextField(verbose_name=_("Comment"))
     reply_to = models.ForeignKey(
         to="submission.SubmissionComment",
         related_name="replies",

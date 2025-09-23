@@ -16,6 +16,8 @@ from django.forms import (
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.text.phrases import phrases
+
 
 def add_class(attrs, css_class):
     attrs = attrs or {}
@@ -105,6 +107,11 @@ class ImageInput(ClearableBasenameFileInput):
 
 class MarkdownWidget(Textarea):
     template_name = "common/widgets/markdown.html"
+
+    def get_context(self, name, value, attrs):
+        ctx = super().get_context(name, value, attrs)
+        ctx["preview_help"] = phrases.base.use_markdown
+        return ctx
 
 
 class EnhancedSelectMixin(Select):

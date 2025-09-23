@@ -84,7 +84,6 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
                 hide_optional=self.event.review_settings["score_mandatory"],
             )
         self.fields["text"].widget.attrs["rows"] = 2
-        self.fields["text"].help_text += " " + phrases.base.use_markdown
 
     def build_score_field(
         self, category, read_only=False, initial=None, hide_optional=False

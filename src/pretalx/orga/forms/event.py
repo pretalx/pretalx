@@ -29,6 +29,7 @@ from pretalx.common.forms.widgets import (
     EnhancedSelectMultiple,
     HtmlDateInput,
     HtmlDateTimeInput,
+    MarkdownWidget,
     TextInputWithAddon,
 )
 from pretalx.common.text.css import validate_css
@@ -389,11 +390,9 @@ class MailSettingsForm(
         label=_("Mail signature"),
         help_text=str(
             _("The signature will be added to outgoing mails, preceded by “-- ”.")
-        )
-        + " "
-        + phrases.base.use_markdown,
+        ),
         required=False,
-        widget=forms.Textarea,
+        widget=MarkdownWidget,
     )
     smtp_use_custom = forms.BooleanField(
         label=_("Use custom SMTP server"),

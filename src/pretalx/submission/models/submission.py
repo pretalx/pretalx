@@ -226,13 +226,11 @@ class Submission(GenerateCode, PretalxModel):
         null=True,
         blank=True,
         verbose_name=_("Abstract"),
-        help_text=phrases.base.use_markdown,
     )
     description = models.TextField(
         null=True,
         blank=True,
         verbose_name=_("Description"),
-        help_text=phrases.base.use_markdown,
     )
     notes = models.TextField(
         null=True,
