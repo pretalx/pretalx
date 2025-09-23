@@ -381,10 +381,10 @@ var app = new Vue({
     el: "#flow",
     template: `
     <div :style="{'--color': eventConfiguration.primary_color || '#3aa57c'}">
-      <dialog id="flow-modal" v-if="currentModal.data" ref="flowModal">
+      <dialog id="flow-modal" ref="flowModal">
         <button id="dialog-close" class="btn btn-default btn-xs"><i class="fa fa-times"></i></button>
         <form>
-          <field :field="currentModal.data" :isModal="true" key="modal" :locales="locales"></field>
+          <field v-if="currentModal.data" :field="currentModal.data" :isModal="true" key="modal" :locales="locales"></field>
         </form>
       </dialog>
       <div id="flow">
