@@ -67,22 +67,35 @@ from pretalx.submission.rules import (
 
 class SubmissionViewMixin(PermissionRequired):
     def get_queryset(self):
-        return Submission.objects.filter(event=self.request.event)
+        return (
+            Submission.objects.filter(event=self.request.event)
+            .select_related(
+                "event", "event__cfp", "submission_type", "track", "event__organiser"
+            )
+            .prefetch_related(
+                "speakers",
+                "tags",
+                "slots",
+                "answers",
+                "answers__question",
+            )
+        )
 
     def get_object(self):
-        return get_object_or_404(
-            self.get_queryset(),
-            code__iexact=self.kwargs.get("code"),
-        )
+        return self.object
 
     def get_permission_object(self):
         return self.object
 
     @cached_property
     def object(self):
-        return self.get_object()
+        return get_object_or_404(
+            self.get_queryset(),
+            code__iexact=self.kwargs.get("code"),
+        )
 
     @context
+    @cached_property
     def submission(self):
         return self.object
 
@@ -298,9 +311,13 @@ class SubmissionContent(
     template_name = "orga/submission/content.html"
     permission_required = "submission.orga_list_submission"
 
-    def get_object(self):
+    @cached_property
+    def object(self):
         try:
-            return super().get_object()
+            return get_object_or_404(
+                self.get_queryset(),
+                code__iexact=self.kwargs.get("code"),
+            )
         except Http404 as not_found:
             if self.request.path.rstrip("/").endswith("/new"):
                 return None
