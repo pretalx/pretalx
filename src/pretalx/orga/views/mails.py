@@ -73,8 +73,9 @@ class OutboxList(
     def get_queryset(self):
         qs = (
             self.request.event.queued_mails.prefetch_related(
-                "to_users", "submissions", "submissions__track"
+                "to_users", "submissions", "submissions__track", "submissions__event"
             )
+            .select_related("template")
             .filter(sent__isnull=True)
             .order_by("-id")
         )
@@ -89,10 +90,7 @@ class OutboxList(
     @context
     @cached_property
     def is_filtered(self):
-        return (
-            self.get_queryset().count()
-            != self.request.event.queued_mails.filter(sent__isnull=True).count()
-        )
+        return self.get_queryset().count() != self.request.event.pending_mails
 
     def get_filter_form(self):
         return QueuedMailFilterForm(
@@ -129,8 +127,9 @@ class SentMail(
     def get_queryset(self):
         qs = (
             self.request.event.queued_mails.prefetch_related(
-                "to_users", "submissions", "submissions__track"
+                "to_users", "submissions", "submissions__track", "submissions__event"
             )
+            .select_related("template")
             .filter(sent__isnull=False)
             .order_by("-sent")
         )
