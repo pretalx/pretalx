@@ -346,12 +346,13 @@ class SubmissionContent(
             can_delete=True,
             extra=0,
         )
-        submission = self.get_object()
         return formset_class(
             self.request.POST if self.request.method == "POST" else None,
             files=self.request.FILES if self.request.method == "POST" else None,
             queryset=(
-                submission.resources.all() if submission else Resource.objects.none()
+                self.submission.resources.all()
+                if self.submission
+                else Resource.objects.none()
             ),
             prefix="resource",
         )
@@ -363,7 +364,7 @@ class SubmissionContent(
     @context
     @cached_property
     def new_speaker_form(self):
-        if not self.get_object():
+        if not self.submission:
             return AddSpeakerForm(
                 data=self.request.POST if self.request.method == "POST" else None,
                 event=self.request.event,
@@ -372,13 +373,12 @@ class SubmissionContent(
 
     @cached_property
     def _questions_form(self):
-        submission = self.get_object()
         form_kwargs = self.get_form_kwargs()
         kwargs = {
             "data": self.request.POST if self.request.method == "POST" else None,
             "files": self.request.FILES if self.request.method == "POST" else None,
             "target": "submission",
-            "submission": submission,
+            "submission": self.submission,
             "event": self.request.event,
             "for_reviewers": (
                 not self.request.user.has_perm(
@@ -391,7 +391,7 @@ class SubmissionContent(
             "readonly": form_kwargs["read_only"],
         }
         # When creating a new submission, filter out track/type specific questions
-        if not submission:
+        if not self.submission:
             kwargs["skip_limited_questions"] = True
         return QuestionsForm(**kwargs)
 
@@ -464,6 +464,9 @@ class SubmissionContent(
     @transaction.atomic()
     def form_valid(self, form):
         created = not self.object
+        speaker_form = self.new_speaker_form
+        if speaker_form and not speaker_form.is_valid():
+            return self.form_invalid(form)
         self.object = form.instance
         self._questions_form.submission = self.object
         if not self._questions_form.is_valid():
@@ -473,22 +476,14 @@ class SubmissionContent(
         form.save()
         self._questions_form.save()
 
-        if created:
-            if not self.new_speaker_form.is_valid():
-                if self.new_speaker_form.errors:
-                    for field, errors in self.new_speaker_form.errors.items():
-                        for error in errors:
-                            messages.error(self.request, f"{field}: {error}")
-                        break  # Only show errors for the first field
-                return self.form_invalid(form)
-            elif email := self.new_speaker_form.cleaned_data["email"]:
-                form.instance.add_speaker(
-                    email=email,
-                    name=self.new_speaker_form.cleaned_data["name"],
-                    locale=self.new_speaker_form.cleaned_data.get("locale"),
-                    user=self.request.user,
-                )
-        else:
+        if created and speaker_form and (email := speaker_form.cleaned_data["email"]):
+            form.instance.add_speaker(
+                email=email,
+                name=self.new_speaker_form.cleaned_data["name"],
+                locale=self.new_speaker_form.cleaned_data.get("locale"),
+                user=self.request.user,
+            )
+        elif not created:
             formset_result = self.save_formset(form.instance)
             if not formset_result:
                 return self.get(self.request, *self.args, **self.kwargs)
