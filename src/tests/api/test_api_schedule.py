@@ -196,13 +196,13 @@ def test_redirect_version_nonexistent_version(client, event):
     response = client.get(
         event.api_urls.schedules + "by-version/?version=nonexistent_version_name"
     )
-    assert response.status_code == 404
+    assert response.status_code == 401
 
 
 @pytest.mark.django_db
 def test_redirect_version_missing_query_param(client, event):
     response = client.get(event.api_urls.schedules + "by-version/")
-    assert response.status_code == 404
+    assert response.status_code == 401
 
 
 @pytest.mark.django_db
@@ -216,11 +216,11 @@ def test_redirect_version_followed_by_user_schedule_not_public(client, event):
     response = client.get(
         event.api_urls.schedules + "by-version/?version=v2.0", follow=True
     )
-    assert response.status_code == 404
+    assert response.status_code == 401
 
 
 @pytest.mark.django_db
-def test_redirect_version_latest_param(client, event):
+def test_redirect_version_latest_param(client, event, slot):
     with scope(event=event):
         current_schedule = event.current_schedule
         assert current_schedule is not None
