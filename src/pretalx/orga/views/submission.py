@@ -66,7 +66,7 @@ from pretalx.submission.rules import (
 
 
 class SubmissionViewMixin(PermissionRequired):
-    def get_queryset(self):
+    def _get_submission_queryset(self):
         return (
             Submission.objects.filter(event=self.request.event)
             .select_related(
@@ -80,6 +80,9 @@ class SubmissionViewMixin(PermissionRequired):
                 "answers__question",
             )
         )
+
+    def get_queryset(self):
+        return self._get_submission_queryset()
 
     def get_object(self):
         return self.object
@@ -597,15 +600,18 @@ class FeedbackList(SubmissionViewMixin, PaginationMixin, ListView):
     def get_queryset(self):
         return self.submission.feedback.all().order_by("pk")
 
-    def get_object(self):
+    @context
+    @cached_property
+    def submission(self):
         return get_object_or_404(
-            Submission.objects.filter(event=self.request.event),
+            self._get_submission_queryset(),
             code__iexact=self.kwargs.get("code"),
         )
 
+    @context
     @cached_property
-    def submission(self):
-        return self.get_object()
+    def object(self):
+        return self.submission
 
     def get_permission_object(self):
         return self.submission
