@@ -22,6 +22,7 @@ from i18nfield.forms import I18nModelForm
 
 from pretalx.cfp.forms.auth import ResetForm
 from pretalx.common.exceptions import SendMailException
+from pretalx.common.templatetags.form_signal import form_signal
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import (
     Filterable,
@@ -43,8 +44,25 @@ def get_next_url(request):
     return url
 
 
+class FormSignalMixin:
+    def get_form_signal_name(self):
+        return "pretalx.orga.signals.extra_form"
+
+    def form_valid(self, form):
+        forms = form_signal(
+            {"request": self.request}, self.get_form_signal_name(), instance=self.object
+        )
+        for f in forms:
+            if not f.is_valid():
+                if f.errors:
+                    messages.error(self.request, f.errors[0])
+            else:
+                f.save()
+        return super().form_valid(form)
+
+
 class CreateOrUpdateView(
-    SingleObjectTemplateResponseMixin, ModelFormMixin, ProcessFormView
+    SingleObjectTemplateResponseMixin, FormSignalMixin, ModelFormMixin, ProcessFormView
 ):
     def set_object(self):
         with suppress(self.model.DoesNotExist, AttributeError):
@@ -471,7 +489,7 @@ class CRUDView(PaginationMixin, Filterable, View):
         ]
 
 
-class OrgaCRUDView(CRUDView):
+class OrgaCRUDView(FormSignalMixin, CRUDView):
 
     @cached_property
     def event(self):
