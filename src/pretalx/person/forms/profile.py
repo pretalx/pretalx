@@ -153,7 +153,10 @@ class SpeakerProfileForm(
 
     class Meta:
         model = SpeakerProfile
-        fields = ("biography",)
+        fields = (
+            "biography",
+            "internal_notes",
+        )
         public_fields = ["name", "biography", "avatar"]
         widgets = {
             "biography": MarkdownWidget,
