@@ -43,7 +43,7 @@ class TeamView(OrgaCRUDView):
     permission_required = "event.update_team"
 
     def get_queryset(self):
-        return self.request.organiser.teams.all().order_by("-all_events", "-id")
+        return self.request.organiser.teams.all().order_by("-all_events", "name")
 
     def get_permission_required(self):
         return self.permission_required
