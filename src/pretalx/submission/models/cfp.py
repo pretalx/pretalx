@@ -102,6 +102,15 @@ class CfP(PretalxModel):
         related_name="+",
         verbose_name=_("Default session type"),
     )
+    opening = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("Opening"),
+        help_text=_(
+            "Please put in the date you want to start accepting proposals from users."
+            "Leave the date empty to start accepting proposals immediately once the event is live."
+        ),
+    )
     deadline = models.DateTimeField(
         null=True,
         blank=True,
@@ -138,6 +147,7 @@ class CfP(PretalxModel):
         clonable_attributes = [
             "headline",
             "text",
+            "opening",
             "deadline",
             "settings",
             "fields",
@@ -151,12 +161,25 @@ class CfP(PretalxModel):
         self.save()
 
     @cached_property
+    def before_opening(self) -> bool:
+        """Returns True if an opening date is set
+        and the current time is before that date.
+        """
+        return self.opening and now() < self.opening
+
+    @cached_property
+    def after_deadline(self) -> bool:
+        """Returns True if a (maximum) deadline is set
+        and the current time is after that deadline.
+        """
+        return self.deadline and self.max_deadline and self.max_deadline < now()
+
+    @cached_property
     def is_open(self) -> bool:
-        """``True`` if ``max_deadline`` is not over yet, or if no deadline is
-        set."""
-        if self.deadline is None:
-            return True
-        return self.max_deadline >= now() if self.max_deadline else True
+        """Returns True if the CfP is currently open,
+        i.e. not before the opening date and not after the deadline.
+        """
+        return not (self.before_opening or self.after_deadline)
 
     @cached_property
     def max_deadline(self) -> dt.datetime:

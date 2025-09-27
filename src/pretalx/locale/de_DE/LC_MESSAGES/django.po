@@ -448,17 +448,21 @@ msgstr "Zusatzfelder"
 #: pretalx/cfp/templates/cfp/event/cfp.html:24
 #, python-format
 msgid ""
-"You can enter proposals until %(deadline)s (%(timezone)s), %(until_string)s "
+"Submissions close on %(deadline)s (%(timezone)s), %(until_string)s "
 "from now."
 msgstr ""
-"Du kannst Einreichungen bis %(deadline)s (%(timezone)s) abschicken – noch "
+"Einreichungen sind bis %(deadline)s (%(timezone)s) möglich – noch "
 "%(until_string)s."
 
-#: pretalx/cfp/templates/cfp/event/cfp.html:28
+#: pretalx/cfp/templates/cfp/event/cfp.html:29
 #, python-format
-msgid "This Call for Papers closed on %(deadline)s (%(timezone)s)."
-msgstr ""
-"Einreichungen konnten bis %(deadline)s (%(timezone)s) abgegeben werden."
+msgid "Submissions open on %(opening)s (%(timezone)s)."
+msgstr "Einreichungen sind ab %(opening)s (%(timezone)s) möglich."
+
+#: pretalx/cfp/templates/cfp/event/cfp.html:33
+#, python-format
+msgid "Submissions closed on %(deadline)s (%(timezone)s)."
+msgstr "Einreichungen waren bis %(deadline)s (%(timezone)s) möglich."
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:53
 msgid "Submit a proposal"
@@ -466,7 +470,7 @@ msgstr "Zur Einreichung"
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:55 pretalx/cfp/views/wizard.py:45
 msgid "Proposals are closed"
-msgstr "Der Einreichungszeitraum ist beendet"
+msgstr "Einreichung geschlossen"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:11
 #: pretalx/submission/models/submission.py:75

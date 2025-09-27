@@ -169,8 +169,8 @@ class CfPForm(ReadOnlyFlag, I18nHelpText, JsonSubfieldMixin, I18nModelForm):
 
     class Meta:
         model = CfP
-        fields = ["headline", "text", "deadline"]
-        widgets = {"deadline": HtmlDateTimeInput}
+        fields = ["headline", "text", "opening", "deadline"]
+        widgets = {"opening": HtmlDateTimeInput(), "deadline": HtmlDateTimeInput()}
         # These are JSON fields on cfp.settings
         json_fields = {
             "show_deadline": "settings",

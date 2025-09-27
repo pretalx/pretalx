@@ -491,8 +491,15 @@ class TestWizard:
         self.assert_mail(submission, user)
 
     @pytest.mark.django_db
-    def test_wizard_cfp_closed(self, event, client, user):
+    def test_wizard_cfp_closed_after_deadline(self, event, client, user):
         event.cfp.deadline = now() - dt.timedelta(days=1)
+        event.cfp.save()
+        client.force_login(user)
+        self.perform_init_wizard(client, success=False, event=event)
+
+    @pytest.mark.django_db
+    def test_wizard_cfp_closed_before_opening(self, event, client, user):
+        event.cfp.opening = now() + dt.timedelta(days=1)
         event.cfp.save()
         client.force_login(user)
         self.perform_init_wizard(client, success=False, event=event)

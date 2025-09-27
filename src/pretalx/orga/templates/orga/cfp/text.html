@@ -47,6 +47,7 @@
         <section role="tabpanel" id="tabpanel-general" aria-labelledby="tab-general" tabindex="0" aria-hidden="false">
             {{ form.headline.as_field_group }}
             {{ form.text.as_field_group }}
+            {{ form.opening.as_field_group }}
             {{ form.deadline.as_field_group }}
             {% if different_deadlines %}
                 <div class="offset-md-3 alert alert-info">
