@@ -19,7 +19,7 @@ from pretalx.submission.models import (
 )
 
 
-@register_serializer(versions=CURRENT_VERSIONS)
+@register_serializer()
 class ResourceSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     resource = SerializerMethodField()
 
