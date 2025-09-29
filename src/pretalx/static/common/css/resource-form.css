@@ -30,7 +30,7 @@
     }
 
     input:not([type="checkbox"]):not([type="radio"]) {
-      	height: 2rem;
+      height: 2rem;
     }
     input[type="file"] + small {
       display: none;

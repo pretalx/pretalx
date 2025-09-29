@@ -271,4 +271,4 @@ class ScheduleExportForm(ExportForm):
         return [tag.tag for tag in obj.tags.all()] or None
 
     def _get_resources_value(self, obj):
-        return [resource.url for resource in obj.active_resources if resource.url]
+        return [resource.url for resource in obj.public_resources if resource.url]

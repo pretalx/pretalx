@@ -116,11 +116,11 @@
                 </div>
             {% endfor %}
             {% if no_anonymisation %}
-                {% if submission.active_resources %}
+                {% if submission.public_resources %}
                     <div class="form-group row">
                         <label class="col-md-3 col-form-label">{% translate "Resources" %}</label>
                         <div class="col-md-9 mt-2">
-                            {% for resource in submission.active_resources %}
+                            {% for resource in submission.public_resources %}
 
                                 {% include "agenda/includes/submission_resource.html" %}
 

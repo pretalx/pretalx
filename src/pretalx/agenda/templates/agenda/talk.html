@@ -141,14 +141,14 @@
                     </section>
                 {% endif %}
             </section>
-            {% if submission.active_resources %}
+            {% if submission.public_resources %}
                 <section class="resources">
                     {% translate "See also:" %}
-                    {% if submission.active_resources.count == 1 %}{% with resource=submission.active_resources.first %}
+                    {% if submission.public_resources.count == 1 %}{% with resource=submission.public_resources.first %}
                         {% include "agenda/includes/submission_resource.html" %}
                     {% endwith %}{% else %}
                         <ul>
-                            {% for resource in submission.active_resources %}
+                            {% for resource in submission.public_resources %}
                                 <li>{% include "agenda/includes/submission_resource.html" %}</li>
                             {% endfor %}
                         </ul>

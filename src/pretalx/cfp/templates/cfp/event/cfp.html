@@ -28,7 +28,7 @@
                         {% if cfp.before_opening %}
                             {% blocktranslate with opening=cfp.opening|date:"SHORT_DATETIME_FORMAT" timezone=request.timezone trimmed %}
                                 Submissions open on {{ opening }} ({{ timezone }}).
-                                {% endblocktranslate %}
+                            {% endblocktranslate %}
                         {% elif cfp.after_deadline %}
                             {% blocktranslate with deadline=cfp.max_deadline|date:"SHORT_DATETIME_FORMAT" timezone=request.timezone trimmed %}
                                 Submissions closed on {{ deadline }} ({{ timezone }}).
