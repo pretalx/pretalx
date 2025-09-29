@@ -3,6 +3,7 @@ import re
 import string
 import unicodedata
 import uuid
+from contextlib import contextmanager
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
@@ -21,6 +22,28 @@ from pretalx.common.urls import get_base_url
 from pretalx.submission.rules import is_break, is_wip, orga_can_change_submissions
 
 INSTANCE_IDENTIFIER = None
+
+
+@contextmanager
+def patch_out_timezone_cache(tzinfo):
+    """Context manager to clear vobject's timezone cache during ICS generation.
+
+    This prevents vobject from using cached ambiguous timezone abbreviations like "PST"
+    which could be interpreted as either Pacific Standard Time (-08:00) or
+    Philippine Standard Time (+08:00). By clearing the cache, vobject is forced to
+    re-register timezones every time.
+    """
+    import vobject.icalendar as ical
+
+    try:
+        minimal_tzid_map = {"UTC": ical.__tzidMap["UTC"]}
+    except KeyError:
+        minimal_tzid_map = {}
+
+    try:
+        yield
+    finally:
+        ical.__tzidMap = minimal_tzid_map
 
 
 class TalkSlot(PretalxModel):
@@ -211,20 +234,21 @@ class TalkSlot(PretalxModel):
         creation_time = creation_time or dt.datetime.now(ZoneInfo("UTC"))
         netloc = netloc or urlparse(get_base_url(self.event)).netloc
 
-        vevent = calendar.add("vevent")
-        vevent.add("summary").value = (
-            f"{self.submission.title} - {self.submission.display_speaker_names}"
-        )
-        vevent.add("dtstamp").value = creation_time
-        vevent.add("location").value = str(self.room.name)
-        vevent.add("uid").value = "pretalx-{}-{}{}@{}".format(
-            self.submission.event.slug, self.submission.code, self.id_suffix, netloc
-        )
+        with patch_out_timezone_cache(self.event.tz):
+            vevent = calendar.add("vevent")
+            vevent.add("summary").value = (
+                f"{self.submission.title} - {self.submission.display_speaker_names}"
+            )
+            vevent.add("dtstamp").value = creation_time
+            vevent.add("location").value = str(self.room.name)
+            vevent.add("uid").value = "pretalx-{}-{}{}@{}".format(
+                self.submission.event.slug, self.submission.code, self.id_suffix, netloc
+            )
 
-        vevent.add("dtstart").value = self.local_start
-        vevent.add("dtend").value = self.local_end
-        vevent.add("description").value = self.submission.abstract or ""
-        vevent.add("url").value = self.submission.urls.public.full()
+            vevent.add("dtstart").value = self.local_start
+            vevent.add("dtend").value = self.local_end
+            vevent.add("description").value = self.submission.abstract or ""
+            vevent.add("url").value = self.submission.urls.public.full()
 
     def full_ical(self):
         netloc = urlparse(settings.SITE_URL).netloc
