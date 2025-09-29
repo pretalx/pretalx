@@ -4,7 +4,7 @@ import re
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
@@ -141,6 +141,28 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
             event=self.event, name=f"{name} Room", position=self.fake.random_digit()
         )
 
+    def create_user_with_retry(
+        self, name, email_base, locale="en", timezone="Europe/Berlin", max_retries=10
+    ):
+        """Create a user with retry logic for handling IntegrityError on non-unique emails."""
+        for attempt in range(max_retries):
+            try:
+                if attempt == 0:
+                    email = email_base
+                else:
+                    email = f"{email_base.split('@')[0]}{attempt}@{email_base.split('@')[1]}"
+
+                return User.objects.create_user(
+                    name=name,
+                    email=email,
+                    locale=locale,
+                    timezone=timezone,
+                )
+            except IntegrityError:
+                if attempt == max_retries - 1:
+                    raise
+                continue
+
     def build_cfp_stage(self):
         """Targeting 53-85 total submissions, with at least some speakers with
         double submissions and some with multiple speakers.
@@ -211,11 +233,9 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
         user = User.objects.filter(email__iexact=email).first()
         if user:  # pragma: no cover
             return user
-        user = User.objects.create_user(
+        user = self.create_user_with_retry(
             name=self.fake.name(),
-            email=email,
-            locale="en",
-            timezone="Europe/Berlin",
+            email_base=email,
             # TODO: generate avatar,
         )
         SpeakerProfile.objects.create(
@@ -243,11 +263,9 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
         """We will go with only three reviewers: One to review all submissions,
         one to review more positively, one to review more negatively."""
         reviewers = [
-            User.objects.create_user(
+            self.create_user_with_retry(
                 name=self.fake.name(),
-                email=self.fake.user_name() + "@example.org",
-                locale="en",
-                timezone="Europe/Berlin",
+                email_base=self.fake.user_name() + "@example.org",
             )
             for _ in range(3)
         ]
