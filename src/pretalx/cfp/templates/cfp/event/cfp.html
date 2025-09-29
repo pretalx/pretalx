@@ -17,17 +17,23 @@
             {% endif %}
         </div>
         {{ cfp.text|rich_text }}
-        {% if request.event.cfp.settings.show_deadline and request.event.cfp.max_deadline %}
+        {% if request.event.cfp.settings.show_deadline %}
             <p>
                 <strong>
-                    {% if cfp.is_open %}
+                    {% if cfp.is_open and request.event.cfp.max_deadline %}
                         {% blocktranslate with deadline=cfp.max_deadline|date:"SHORT_DATETIME_FORMAT" timezone=request.timezone until_string=cfp.max_deadline|timeuntil trimmed %}
-                            You can enter proposals until {{ deadline }} ({{ timezone }}), {{ until_string }} from now.
+                            Submissions close on {{ deadline }} ({{ timezone }}), {{ until_string }} from now.
                         {% endblocktranslate %}
                     {% else %}
-                        {% blocktranslate with deadline=cfp.max_deadline|date:"SHORT_DATETIME_FORMAT" timezone=request.timezone trimmed %}
-                            This Call for Papers closed on {{ deadline }} ({{ timezone }}).
-                        {% endblocktranslate %}
+                        {% if cfp.before_opening %}
+                            {% blocktranslate with opening=cfp.opening|date:"SHORT_DATETIME_FORMAT" timezone=request.timezone trimmed %}
+                                Submissions open on {{ opening }} ({{ timezone }}).
+                                {% endblocktranslate %}
+                        {% elif cfp.after_deadline %}
+                            {% blocktranslate with deadline=cfp.max_deadline|date:"SHORT_DATETIME_FORMAT" timezone=request.timezone trimmed %}
+                                Submissions closed on {{ deadline }} ({{ timezone }}).
+                            {% endblocktranslate %}
+                        {% endif %}
                     {% endif %}
                 </strong>
             </p>
