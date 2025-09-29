@@ -1360,6 +1360,49 @@ def test_orga_cannot_remove_speaker_from_submission_readonly_token(
 
 
 @pytest.mark.django_db
+def test_public_can_only_see_public_resources(client, slot, resource, private_resource):
+    with scope(event=slot.event):
+        submission = slot.submission
+        resource.submission = submission
+        resource.save()
+        private_resource.submission = submission
+        private_resource.save()
+
+    response = client.get(
+        submission.event.api_urls.submissions + "?expand=resources", follow=True
+    )
+    content = json.loads(response.text)
+
+    assert response.status_code == 200
+    assert content["count"] == 1
+    submission_data = content["results"][0]
+    # Only public resource should be visible
+    assert len(submission_data["resources"]) == 1
+    assert submission_data["resources"][0]["id"] == resource.id
+
+
+@pytest.mark.django_db
+def test_orga_can_see_all_resources(
+    client, orga_user_token, submission, resource, private_resource
+):
+    response = client.get(
+        submission.event.api_urls.submissions + "?expand=resources",
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_token.token}"},
+    )
+    content = json.loads(response.text)
+
+    assert response.status_code == 200
+    assert content["count"] == 1
+    submission_data = content["results"][0]
+    # Both public and private resources should be visible
+    assert len(submission_data["resources"]) == 2
+    resource_ids = {r["id"] for r in submission_data["resources"]}
+    assert resource.id in resource_ids
+    assert private_resource.id in resource_ids
+
+
+@pytest.mark.django_db
 def test_public_submission_expandable_fields(
     client, event, slot, answer, track, speaker_answer
 ):

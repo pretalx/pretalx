@@ -174,10 +174,12 @@ def multilingual_event(organiser):
 @pytest.fixture
 def resource(submission):
     f = SimpleUploadedFile("testresource.txt", b"a resource")
-    with scope(event=submission.event):
-        return Resource.objects.create(
-            submission=submission, resource=f, description="Test resource"
-        )
+    return Resource.objects.create(
+        submission=submission,
+        resource=f,
+        description="Test resource",
+        is_public=True,
+    )
 
 
 @pytest.fixture
@@ -197,6 +199,16 @@ def other_resource(submission):
         return Resource.objects.create(
             submission=submission, resource=f, description="Test resource 2"
         )
+
+
+@pytest.fixture
+def private_resource(submission):
+    return Resource.objects.create(
+        submission=submission,
+        link="https://example.com/private",
+        description="Private resource",
+        is_public=False,
+    )
 
 
 @pytest.fixture

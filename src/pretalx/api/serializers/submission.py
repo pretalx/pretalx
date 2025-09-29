@@ -216,9 +216,9 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     @extend_schema_field(list[int])
     def get_resources(self, obj):
         public_resources = self.context.get("public_resources", True)
-        qs = obj.resources.all()
+        qs = obj.active_resources
         if public_resources:
-            qs = qs.filter(is_public=True)
+            qs = obj.public_resources
         if serializer := self.get_extra_flex_field("resources", qs):
             return serializer.data
         return qs.values_list("pk", flat=True)

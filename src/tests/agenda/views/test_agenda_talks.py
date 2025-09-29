@@ -260,6 +260,25 @@ def test_talk_speaker_other_submissions_only_if_visible(
 
 
 @pytest.mark.django_db
+def test_public_talk_only_shows_public_resources(
+    client, slot, resource, private_resource
+):
+    with scope(event=slot.submission.event):
+        resource.submission = slot.submission
+        resource.save()
+        private_resource.submission = slot.submission
+        private_resource.save()
+
+    response = client.get(slot.submission.urls.public, follow=True)
+    assert response.status_code == 200
+    content = response.text
+
+    assert resource.url in content
+    assert private_resource.description not in content
+    assert private_resource.url not in content
+
+
+@pytest.mark.django_db
 def test_talk_review_page(client, django_assert_num_queries, submission):
     with django_assert_num_queries(14):
         response = client.get(submission.urls.review, follow=True)
