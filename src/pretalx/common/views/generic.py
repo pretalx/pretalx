@@ -532,6 +532,7 @@ class CRUDView(PaginationMixin, Filterable, View):
 
 class OrgaTableMixin(SingleTableMixin):
     pagination_class = LazyPaginator
+    table_class = None
 
     def get_paginate_by(self, queryset=None):
         skey = "stored_page_size_" + self.request.resolver_match.url_name
@@ -554,6 +555,11 @@ class OrgaTableMixin(SingleTableMixin):
         kwargs = super().get_table_kwargs()
         kwargs["event"] = getattr(self.request, "event", None)
         return kwargs
+
+    def get_table(self, *args, **kwargs):
+        if not self.table_class:
+            return
+        return super().get_table(*args, **kwargs)
 
 
 class OrgaCRUDView(OrgaTableMixin, FormSignalMixin, CRUDView):
