@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.syndication.views import Feed
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -40,7 +40,7 @@ from pretalx.orga.forms.submission import (
     SubmissionForm,
     SubmissionStateChangeForm,
 )
-from pretalx.orga.tables.submission import SubmissionTable
+from pretalx.orga.tables.submission import SubmissionTable, TagTable
 from pretalx.person.models import User
 from pretalx.person.rules import is_only_reviewer
 from pretalx.submission.forms import (
@@ -1000,10 +1000,16 @@ class AllFeedbacksList(EventPermissionRequired, PaginationMixin, ListView):
 class TagView(OrgaCRUDView):
     model = Tag
     form_class = TagForm
+    table_class = TagTable
     template_namespace = "orga/submission"
+    create_button_label = _("New tag")
 
     def get_queryset(self):
-        return self.request.event.tags.all().order_by("tag")
+        return (
+            self.request.event.tags.all()
+            .order_by("tag")
+            .annotate(submission_count=Count("submissions"))
+        )
 
     def get_generic_title(self, instance=None):
         if instance:

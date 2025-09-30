@@ -2,7 +2,7 @@ import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import ActionsColumn, ContextTemplateColumn
-from pretalx.submission.models import Submission
+from pretalx.submission.models import Submission, Tag
 
 
 class SubmissionTable(tables.Table):
@@ -76,4 +76,32 @@ class SubmissionTable(tables.Table):
         fields = (
             # "code",
             # "is_anonymised",
+        )
+
+
+class TagTable(tables.Table):
+    tag = tables.Column(
+        linkify=lambda record: record.urls.edit,
+        verbose_name=_("Tag"),
+    )
+    color = tables.TemplateColumn(
+        verbose_name=_("Colour"),
+        template_code='<div class="color-square" style="background: {{ record.color }}"></div>',
+    )
+    proposals = tables.Column(
+        verbose_name=_("Proposals"),
+        accessor="submission_count",
+    )
+    actions = ActionsColumn(actions={"edit": {}, "delete": {}})
+
+    def __init__(self, *args, event=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    class Meta:
+        model = Tag
+        fields = (
+            "tag",
+            "color",
+            "proposals",
+            "actions",
         )
