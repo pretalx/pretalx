@@ -9,4 +9,6 @@
     <span class="badge color-warning">{% translate "Custom fields reminder" %}</span>
 {% elif template.role %}
     <span class="badge color-info">{{ template.get_role_display }}</span>
+{% elif show_custom %}
+    <span class="badge color-secondary">{% translate "Custom Mail" %}</span>
 {% endif %}
