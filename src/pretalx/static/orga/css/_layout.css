@@ -1567,9 +1567,6 @@ table th.orderable {
   a {
     color: var(--color-text) !important;
     text-decoration: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     width: 100%;
 
     &::after {
@@ -1577,7 +1574,7 @@ table th.orderable {
       color: var(--color-grey);
       opacity: 0.6;
       flex-shrink: 0;
-      margin-left: auto;
+      margin-left: 0.2em;
       padding-right: 0.2em;
       &:hover {
         color: var(--color-success);
