@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
@@ -30,6 +30,7 @@ from pretalx.event.models.organiser import (
     TeamInvite,
     check_access_permissions,
 )
+from pretalx.orga.tables.organiser import TeamTable
 from pretalx.person.forms import UserSpeakerFilterForm
 from pretalx.person.models import User
 
@@ -37,13 +38,19 @@ from pretalx.person.models import User
 class TeamView(OrgaCRUDView):
     model = Team
     form_class = TeamForm
+    table_class = TeamTable
     template_namespace = "orga/organiser"
     url_name = "organiser.teams"
     context_object_name = "team"
     permission_required = "event.update_team"
+    create_button_label = _("New team")
 
     def get_queryset(self):
-        return self.request.organiser.teams.all().order_by("-all_events", "name")
+        return (
+            self.request.organiser.teams.all()
+            .annotate(member_count=Count("members"))
+            .order_by("-all_events", "name")
+        )
 
     def get_permission_required(self):
         return self.permission_required
