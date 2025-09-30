@@ -33,6 +33,7 @@ from pretalx.orga.forms.mails import (
     WriteSessionMailForm,
     WriteTeamsMailForm,
 )
+from pretalx.orga.tables.mail import MailTemplateTable
 
 
 def get_send_mail_exceptions(request):
@@ -545,6 +546,7 @@ class ComposeDraftReminders(EventPermissionRequired, FormView):
 class MailTemplateView(OrgaCRUDView):
     model = MailTemplate
     form_class = MailTemplateForm
+    table_class = MailTemplateTable
     template_namespace = "orga/mails"
     messages = {
         "create": phrases.base.saved,
@@ -553,6 +555,7 @@ class MailTemplateView(OrgaCRUDView):
         ),
         "delete": phrases.base.deleted,
     }
+    create_button_label = _("New custom template")
 
     def get_queryset(self):
         return self.request.event.mail_templates.all().order_by("role")
