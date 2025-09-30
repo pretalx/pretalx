@@ -8,8 +8,6 @@
     <script defer src="{% static "common/js/modalDialog.js" %}"></script>
 {% endblock scripts %}
 
-{% block create_button_label %}{% translate "New custom template" %}{% endblock create_button_label %}
-
 {% block page_title %}
     {{ generic_title }}
     <span data-dialog-target="#info-dialog" data-toggle="dialog">
@@ -38,51 +36,5 @@
         </div>
     </dialog>
 
-    <div class="accordion form" id="template-accordion">
-        <div class="table-responsive-sm">
-            <table class="table table-sm table-flip table-sticky">
-                <thead>
-                    <tr>
-                        <th>{% translate "Template" %}</th>
-                        <th>{% translate "Subject" %}</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for template in mailtemplate_list %}
-                        <tr>
-                            <td>
-                                <a href="{{ template.urls.edit }}">
-                                    {% if template.role %}
-                                        {% include "orga/includes/mail_template_role.html" with template=template %}
-                                    {% else %}
-                                        <span class="badge color-secondary">
-                                            {% translate "Custom Mail" %}
-                                        </span>
-                                    {% endif %}
-                                </a>
-                            </td>
-                            <td>{{ template.subject }}</td>
-                            <td class="text-right">
-                                {% if not template.role %}
-                                    {% if has_update_permission %}
-                                        <a href="{{ request.event.orga_urls.compose_mails_sessions }}?template={{ template.pk }}" class="btn btn-sm btn-success mr-1 nowrap">{% translate "Send mails" %}</a>
-                                    {% endif %}
-                                    {% if has_delete_permission %}
-                                        <a href="{{ template.urls.delete }}" class="btn btn-sm btn-danger">
-                                            <i class="fa fa-trash"></i>
-                                        </a>
-                                    {% endif %}
-                                {% endif %}
-                                {% if has_update_permission %}
-                                    <a href="{{ template.urls.edit }}" class="btn btn-sm btn-info">
-                                        <i class="fa fa-edit"></i>
-                                    </a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    {{ block.super }}
 {% endblock list_content %}
