@@ -1561,6 +1561,47 @@ h2 .user-name-display img {
   cursor: pointer;
 }
 
+table th.orderable {
+  cursor: pointer;
+
+  a {
+    color: var(--color-text) !important;
+    text-decoration: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+
+    &::after {
+      content: "▲";
+      color: var(--color-grey);
+      opacity: 0.6;
+      flex-shrink: 0;
+      margin-left: auto;
+      padding-right: 0.2em;
+      &:hover {
+        color: var(--color-success);
+      }
+    }
+  }
+}
+
+table th.orderable.asc a {
+  &::after {
+    content: "▲";
+    color: var(--color-success);
+    opacity: 1;
+  }
+}
+
+table th.orderable.desc a {
+  &::after {
+    content: "▼";
+    color: var(--color-success);
+    opacity: 1;
+  }
+}
+
 .comments-list {
   margin-bottom: 2rem;
 }

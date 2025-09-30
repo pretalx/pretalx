@@ -77,6 +77,7 @@ EXTERNAL_APPS = [
     "rest_framework.authtoken",
     "rules",
     "csp",
+    "django_tables2",
 ]
 LOCAL_APPS = [
     "pretalx.api",
@@ -624,6 +625,8 @@ if DEBUG:
             "JQUERY_URL": "",
             "DISABLE_PANELS": toolbar_settings.PANELS_DEFAULTS,
         }
+
+DJANGO_TABLES2_TEMPLATE = "common/table.html"
 COMPRESS_ENABLED = COMPRESS_OFFLINE = not DEBUG
 COMPRESS_PRECOMPILERS = (("text/x-scss", "django_libsass.SassCompiler"),)
 COMPRESS_FILTERS = {
