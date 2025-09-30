@@ -8,7 +8,7 @@ from django.db.models import Count, Max, OuterRef, Q, Subquery
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import FormView, TemplateView
+from django.views.generic import FormView, ListView, TemplateView
 from django_context_decorator import context
 
 from pretalx.common.forms.renderers import InlineFormRenderer
@@ -29,7 +29,7 @@ from pretalx.orga.forms.review import (
     TagsForm,
 )
 from pretalx.orga.forms.submission import SubmissionStateChangeForm
-from pretalx.orga.views.submission import BaseSubmissionList
+from pretalx.orga.views.submission import SubmissionListMixin
 from pretalx.person.models import User
 from pretalx.submission.forms import QuestionsForm, SubmissionFilterForm
 from pretalx.submission.models import Review, Submission, SubmissionStates
@@ -40,7 +40,7 @@ from pretalx.submission.rules import (
 )
 
 
-class ReviewDashboard(EventPermissionRequired, BaseSubmissionList):
+class ReviewDashboard(EventPermissionRequired, SubmissionListMixin, ListView):
     template_name = "orga/review/dashboard.html"
     permission_required = "submission.list_review"
     paginate_by = 100

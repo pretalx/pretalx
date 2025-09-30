@@ -20,6 +20,8 @@ from django.views.generic import FormView, View
 from django.views.generic.detail import SingleObjectTemplateResponseMixin
 from django.views.generic.edit import ModelFormMixin, ProcessFormView
 from django_context_decorator import context
+from django_tables2 import LazyPaginator
+from django_tables2.views import SingleTableMixin
 from i18nfield.forms import I18nModelForm
 
 from pretalx.cfp.forms.auth import ResetForm
@@ -203,8 +205,8 @@ class CRUDView(PaginationMixin, Filterable, View):
     """
     Provides a list, create, detail and update, delete view.
 
-    For use with standard /orga/ views, permissions, and logging,
-    use the OrgaCRUDView subclass below.
+    For use with standard /orga/ views, permissions, logging, and
+    tables, use the OrgaCRUDView subclass below.
 
     Implementation partially vendored from the excellent Neapolitan
     project (MIT licenced) by Carlton Gibson, with thanks for both
@@ -521,7 +523,33 @@ class CRUDView(PaginationMixin, Filterable, View):
         ]
 
 
-class OrgaCRUDView(FormSignalMixin, CRUDView):
+class OrgaTableMixin(SingleTableMixin):
+    pagination_class = LazyPaginator
+
+    def get_paginate_by(self, queryset=None):
+        skey = "stored_page_size_" + self.request.resolver_match.url_name
+        default = (
+            self.request.session.get(skey)
+            or getattr(self, "paginate_by", None)
+            or self.DEFAULT_PAGINATION
+        )
+        if self.request.GET.get("page_size"):
+            try:
+                max_page_size = getattr(self, "max_page_size", 250)
+                size = min(max_page_size, int(self.request.GET.get("page_size")))
+                self.request.session[skey] = size
+                return size
+            except ValueError:
+                return default
+        return default
+
+    def get_table_kwargs(self):
+        kwargs = super().get_table_kwargs()
+        kwargs["event"] = getattr(self.request, "event", None)
+        return kwargs
+
+
+class OrgaCRUDView(OrgaTableMixin, FormSignalMixin, CRUDView):
 
     @cached_property
     def event(self):

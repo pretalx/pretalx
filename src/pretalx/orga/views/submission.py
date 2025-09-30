@@ -24,14 +24,13 @@ from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views import CreateOrUpdateView
-from pretalx.common.views.generic import OrgaCRUDView
+from pretalx.common.views.generic import OrgaCRUDView, OrgaTableMixin
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     ActionFromUrl,
     EventPermissionRequired,
     PaginationMixin,
     PermissionRequired,
-    Sortable,
 )
 from pretalx.mail.models import MailTemplateRoles
 from pretalx.orga.forms.submission import (
@@ -41,6 +40,7 @@ from pretalx.orga.forms.submission import (
     SubmissionForm,
     SubmissionStateChangeForm,
 )
+from pretalx.orga.tables.submission import SubmissionTable
 from pretalx.person.models import User
 from pretalx.person.rules import is_only_reviewer
 from pretalx.submission.forms import (
@@ -129,7 +129,13 @@ class ReviewerSubmissionFilter:
     def get_queryset(self, for_review=False):
         queryset = (
             self.request.event.submissions.all()
-            .select_related("submission_type", "event", "track")
+            .select_related(
+                "submission_type",
+                "event",
+                "track",
+                "submission_type__event",
+                "submission_type__event__cfp",
+            )
             .prefetch_related("speakers")
         )
         if self.is_only_reviewer:
@@ -515,18 +521,11 @@ class SubmissionContent(
         )
 
 
-class BaseSubmissionList(Sortable, ReviewerSubmissionFilter, PaginationMixin, ListView):
+class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
     model = Submission
+    table_class = SubmissionTable
     context_object_name = "submissions"
     filter_fields = ()
-    sortable_fields = (
-        "code",
-        "title",
-        "state",
-        "is_featured",
-        "submission_type__name",
-        "track__name",
-    )
     usable_states = None
 
     def get_filter_form(self):
@@ -560,31 +559,54 @@ class BaseSubmissionList(Sortable, ReviewerSubmissionFilter, PaginationMixin, Li
         return self.filter_form.filter_queryset(qs)
 
     def get_queryset(self):
-        return self.sort_queryset(self._get_base_queryset()).distinct()
+        return (
+            self._get_base_queryset().distinct().select_related("event", "event__cfp")
+        )
+
+    def get_table_kwargs(self):
+        kwargs = super().get_table_kwargs()
+        kwargs.update(
+            {
+                "can_view_speakers": self.request.user.has_perm(
+                    "person.orga_list_speakerprofile", self.request.event
+                ),
+                "can_change_submission": self.request.user.has_perm(
+                    "submission.orga_update_submission", self.request.event
+                ),
+                "limit_tracks": self.limit_tracks,
+                "show_tracks": self.show_tracks,
+                "show_submission_types": self.show_submission_types,
+            }
+        )
+        return kwargs
+
+    @context
+    @cached_property
+    def show_tracks(self):
+        if self.request.event.feature_flags["use_tracks"]:
+            if self.limit_tracks:
+                return len(self.limit_tracks) > 1
+            return self.request.event.tracks.all().count() > 1
+
+    @context
+    @cached_property
+    def show_submission_types(self):
+        return self.request.event.submission_types.all().count() > 1
 
 
-class SubmissionList(EventPermissionRequired, BaseSubmissionList):
+class SubmissionList(SubmissionListMixin, EventPermissionRequired, ListView):
     template_name = "orga/submission/list.html"
     permission_required = "submission.orga_list_submission"
     paginate_by = 25
-    default_sort_field = "state"
-    secondary_sort = {"state": ("pending_state",)}
 
-    @context
-    def show_submission_types(self):
-        return self.request.event.submission_types.all().count() > 1
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.order_by("state", "pending_state")
 
     @context
     @cached_property
     def pending_changes(self):
         return self.get_queryset().filter(pending_state__isnull=False).count()
-
-    @context
-    def show_tracks(self):
-        if self.request.event.get_feature_flag("use_tracks"):
-            if self.limit_tracks:
-                return len(self.limit_tracks) > 1
-            return self.request.event.tracks.all().count() > 1
 
 
 class FeedbackList(SubmissionViewMixin, PaginationMixin, ListView):
@@ -1045,7 +1067,7 @@ class CommentDelete(SubmissionViewMixin, ActionConfirmMixin, TemplateView):
         return redirect(comment.submission.orga_urls.comments)
 
 
-class ApplyPendingBulk(EventPermissionRequired, BaseSubmissionList):
+class ApplyPendingBulk(EventPermissionRequired, SubmissionListMixin, ListView):
     permission_required = "submission.state_change_submission"
     template_name = "orga/submission/apply_pending.html"
 
