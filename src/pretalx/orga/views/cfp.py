@@ -36,6 +36,7 @@ from pretalx.orga.forms.cfp import (
     ReminderFilterForm,
     SubmitterAccessCodeForm,
 )
+from pretalx.orga.tables.cfp import SubmitterAccessCodeTable
 from pretalx.submission.models import (
     AnswerOption,
     CfP,
@@ -474,10 +475,12 @@ class TrackView(OrderActionMixin, OrgaCRUDView):
 class AccessCodeView(OrderActionMixin, OrgaCRUDView):
     model = SubmitterAccessCode
     form_class = SubmitterAccessCodeForm
+    table_class = SubmitterAccessCodeTable
     template_namespace = "orga/cfp"
     context_object_name = "access_code"
     lookup_field = "code"
     path_converter = "str"
+    create_button_label = _("New access code")
 
     def get_queryset(self):
         return self.request.event.submitter_access_codes.all().order_by("valid_until")
