@@ -14,17 +14,21 @@ class ActionsColumn(tables.Column):
             "title": _("edit"),
             "icon": "edit",
             "url": "edit",
-            "permission": None,
-            "next": False,
             "color": "info",
         },
         "delete": {
             "title": _("Delete"),
             "icon": "trash",
             "url": "delete",
-            "permission": None,
-            "next": True,
+            "next_url": True,
             "color": "danger",
+        },
+        "sort": {
+            "title": _("Move item"),
+            "icon": "arrows",
+            "color": "primary",
+            "extra_class": "dragsort-button",
+            "extra_attrs": 'draggable="true"',
         },
     }
 
@@ -50,17 +54,19 @@ class ActionsColumn(tables.Column):
 
         html = ""
         for action in self.actions.values():
-            if user and action["permission"]:
-                if not user.has_perm(action["permission"], record):
+            if user and (permission := action.get("permission")):
+                if not user.has_perm(permission, record):
                     continue
 
-            inner_html = (
-                f'title="{action["title"]}" class="btn btn-sm btn-{action["color"]}">'
-            )
+            extra_class = action.get("extra_class") or ""
+            extra_class = f" {extra_class}" if extra_class else ""
+            extra_attrs = action.get("extra_attrs") or ""
+            extra_attrs = f" {extra_attrs}" if extra_attrs else ""
+            inner_html = f'title="{action["title"]}" class="btn btn-sm btn-{action["color"]}{extra_class}"{extra_attrs}>'
             inner_html += f'<i class="fa fa-{action["icon"]}"></i>'
 
             # url is a dotted string to be accessed on the record
-            url = action["url"]
+            url = action.get("url")
             if not url:
                 # Render button and hope there is some JS to handle it
                 html += f"<button {inner_html}</button>"
@@ -71,7 +77,7 @@ class ActionsColumn(tables.Column):
                     url = getattr(url, part)
                     if callable(url):
                         url = url()
-                if action["next"] and request:
+                if action.get("next_url") and request:
                     url = f"{url}?next={quote(request.get_full_path())}"
                 html += f'<a href="{url}" {inner_html}</a>'
         html = f'<div class="action-column">{html}</div>'
