@@ -2,7 +2,7 @@ import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import ActionsColumn
-from pretalx.submission.models import SubmitterAccessCode
+from pretalx.submission.models import SubmitterAccessCode, Track
 
 
 class SubmitterAccessCodeTable(tables.Table):
@@ -57,3 +57,45 @@ class SubmitterAccessCodeTable(tables.Table):
             "uses",
             "actions",
         )
+
+
+class TrackTable(tables.Table):
+    name = tables.TemplateColumn(
+        linkify=lambda record: record.urls.edit,
+        verbose_name=_("Track"),
+        template_code='{{ record.name }} {% if record.requires_access_code %}{% load i18n %}<i class="fa fa-lock ml-1" title="{% translate "Requires access code" %}"></i>{% endif %}',
+        orderable=False,
+    )
+    color = tables.TemplateColumn(
+        verbose_name=_("Colour"),
+        template_code='<div class="color-square" style="background: {{ record.color }}"></div>',
+        orderable=False,
+    )
+    proposals = tables.TemplateColumn(
+        verbose_name=_("Proposals"),
+        linkify=lambda record: f"{record.event.orga_urls.submissions}?track={record.id}",
+        template_code="{{ record.submissions.all.count }}",
+        orderable=False,
+    )
+    actions = ActionsColumn(
+        actions={
+            "sort": {},
+            "link": {
+                "title": _("Go to pre-filled CfP form"),
+                "icon": "link",
+                "url": "urls.prefilled_cfp.full",
+                "color": "info",
+            },
+            "edit": {},
+            "delete": {},
+        }
+    )
+
+    def __init__(self, *args, event=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.attrs["dragsort-url"] = event.cfp.urls.tracks
+
+    class Meta:
+        model = Track
+        fields = ("name", "color", "proposals", "actions")
+        row_attrs = {"dragsort-id": lambda record: record.pk}
