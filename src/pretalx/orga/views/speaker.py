@@ -24,6 +24,7 @@ from pretalx.common.views.mixins import (
     Sortable,
 )
 from pretalx.orga.forms.speaker import SpeakerExportForm
+from pretalx.orga.tables.speaker import SpeakerInformationTable
 from pretalx.person.forms import (
     SpeakerFilterForm,
     SpeakerInformationForm,
@@ -266,8 +267,10 @@ class SpeakerToggleArrived(SpeakerViewMixin, View):
 class SpeakerInformationView(OrgaCRUDView):
     model = SpeakerInformation
     form_class = SpeakerInformationForm
+    table_class = SpeakerInformationTable
     template_namespace = "orga/speaker"
     context_object_name = "information"
+    create_button_label = _("New speaker information")
 
     def get_queryset(self):
         return (
