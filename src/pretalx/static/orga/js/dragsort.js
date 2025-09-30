@@ -61,7 +61,8 @@ const unstyleDragIndicators = (parentElement) => {
 };
 
 const dragStart = (el) => {
-    const parentElement = el.closest("[dragsort-url]");
+    let parentElement = el.closest("[dragsort-url]");
+    if (parentElement.tagName === "TABLE") parentElement = parentElement.querySelector("tbody") || parentElement
 
     const sortableElements = getSortableElements(parentElement);
     const listDirection = predictDirection(...sortableElements);
@@ -110,7 +111,8 @@ const dragStart = (el) => {
 };
 
 const pushOrder = (parentElement) => {
-    const url = parentElement.getAttribute("dragsort-url");
+    let url = parentElement.getAttribute("dragsort-url");
+    if (!url?.length) {url = parentElement.closest("[dragsort-url]").getAttribute("dragsort-url")}
     const data = new URLSearchParams();
     const ids = Array.from(parentElement.querySelectorAll("[dragsort-id]")).map(
         (el) => el.getAttribute("dragsort-id"),
