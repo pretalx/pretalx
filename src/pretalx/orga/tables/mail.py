@@ -28,7 +28,6 @@ class MailTemplateTable(tables.Table):
             "edit": {},
         }
     )
-    empty_text = _("Please add at least one place in which sessions can take place.")
 
     def __init__(self, *args, event=None, **kwargs):
         super().__init__(*args, **kwargs)
