@@ -19,7 +19,7 @@ from pretalx.cfp.flow import CfPFlow
 from pretalx.common.forms import I18nFormSet
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import I18nStrJSONEncoder
-from pretalx.common.views.generic import OrgaCRUDView
+from pretalx.common.views.generic import OrgaCRUDView, get_next_url
 from pretalx.common.views.mixins import (
     ActionFromUrl,
     EventPermissionRequired,
@@ -36,7 +36,11 @@ from pretalx.orga.forms.cfp import (
     ReminderFilterForm,
     SubmitterAccessCodeForm,
 )
-from pretalx.orga.tables.cfp import SubmitterAccessCodeTable, TrackTable
+from pretalx.orga.tables.cfp import (
+    SubmissionTypeTable,
+    SubmitterAccessCodeTable,
+    TrackTable,
+)
 from pretalx.submission.models import (
     AnswerOption,
     CfP,
@@ -387,10 +391,16 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
 class SubmissionTypeView(OrderActionMixin, OrgaCRUDView):
     model = SubmissionType
     form_class = SubmissionTypeForm
+    table_class = SubmissionTypeTable
     template_namespace = "orga/cfp"
+    create_button_label = _("New type")
 
     def get_queryset(self):
-        return self.request.event.submission_types.all().order_by("default_duration")
+        return (
+            self.request.event.submission_types.all()
+            .order_by("default_duration")
+            .annotate(submission_count=Count("submissions"))
+        )
 
     def get_permission_required(self):
         permission_map = {"list": "orga_list", "detail": "orga_detail"}
@@ -435,7 +445,8 @@ class SubmissionTypeDefault(PermissionRequired, View):
             "pretalx.submission_type.make_default", person=self.request.user, orga=True
         )
         messages.success(request, _("The Session Type has been made default."))
-        return redirect(self.request.event.cfp.urls.types)
+        url = get_next_url(request)
+        return redirect(url or self.request.event.cfp.urls.types)
 
 
 class TrackView(OrderActionMixin, OrgaCRUDView):
