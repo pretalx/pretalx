@@ -2,7 +2,7 @@ import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import ActionsColumn
-from pretalx.submission.models import SubmitterAccessCode, Track
+from pretalx.submission.models import SubmissionType, SubmitterAccessCode, Track
 
 
 class SubmitterAccessCodeTable(tables.Table):
@@ -99,3 +99,43 @@ class TrackTable(tables.Table):
         model = Track
         fields = ("name", "color", "proposals", "actions")
         row_attrs = {"dragsort-id": lambda record: record.pk}
+
+
+class SubmissionTypeTable(tables.Table):
+    name = tables.TemplateColumn(
+        linkify=lambda record: record.urls.edit,
+        verbose_name=_("Session type"),
+        template_code='{{ record.name }} {% if record.requires_access_code %}{% load i18n %}<i class="fa fa-lock ml-1" title="{% translate "Requires access code" %}"></i>{% endif %}',
+    )
+    proposals = tables.TemplateColumn(
+        verbose_name=_("Proposals"),
+        linkify=lambda record: f"{record.event.orga_urls.submissions}?submission_type={record.id}",
+        template_code="{{ record.submissions.all.count }}",
+        order_by="submission_count",
+    )
+    actions = ActionsColumn(
+        actions={
+            "default": {
+                "url": "urls.default",
+                "color": "info",
+                "label": _("Make default"),
+                "condition": lambda record: not record.event.cfp.default_type == record,
+                "next_url": True,
+            },
+            "link": {
+                "title": _("Go to pre-filled CfP form"),
+                "icon": "link",
+                "url": "urls.prefilled_cfp.full",
+                "color": "info",
+            },
+            "edit": {},
+            "delete": {},
+        }
+    )
+
+    def __init__(self, *args, event=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    class Meta:
+        model = SubmissionType
+        fields = ("name", "proposals", "default_duration", "actions")
