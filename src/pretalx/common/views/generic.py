@@ -253,10 +253,15 @@ class CRUDView(PaginationMixin, Filterable, View):
             return self.permission_denied()
         return super().dispatch(request, *args, **kwargs)
 
+    def get_table_data(self):
+        return self.filter_queryset(self.get_queryset())
+
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        filtered_queryset = self.filter_queryset(queryset)
-        if paginate_by := self.get_paginate_by():
+        filtered_queryset = self.get_table_data()
+        if not getattr(self, "table_class", None) and (
+            paginate_by := self.get_paginate_by()
+        ):
             page = self.paginate_queryset(filtered_queryset, paginate_by)
             self.object_list = page.object_list
             context = self.get_context_data(
@@ -265,6 +270,8 @@ class CRUDView(PaginationMixin, Filterable, View):
                 queryset=queryset,
             )
         else:
+            # Tables handle their own pagination, but we pass the object list
+            # to the template regardless
             self.object_list = filtered_queryset
             context = self.get_context_data(queryset=queryset)
         return self.render_to_response(context)
