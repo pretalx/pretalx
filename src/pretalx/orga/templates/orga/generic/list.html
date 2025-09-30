@@ -1,5 +1,7 @@
 {% extends "orga/base.html" %}
 
+{% load render_table from django_tables2 %}
+
 {% block extra_title %}{{ generic_title }} :: {% endblock extra_title %}
 
 {% block content %}
@@ -9,11 +11,13 @@
             <div class="ml-auto mb-3">
                 <a class="btn btn-success" href="{{ create_url }}">
                     <i class="fa fa-plus"></i>
-                    {% block create_button_label %}{% endblock create_button_label %}
+                    {% block create_button_label %}{{ create_button_label }}{% endblock create_button_label %}
                 </a>
                 {% block title_actions %}{% endblock title_actions %}
             </div>
         {% endif %}
     </h2>
-    {% block list_content %}{% endblock list_content %}
+    {% block list_content %}
+        {% render_table table %}
+    {% endblock list_content %}
 {% endblock %}

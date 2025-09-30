@@ -396,6 +396,10 @@ class CRUDView(PaginationMixin, Filterable, View):
             return str(instance)
         return self.model._meta.object_name
 
+    @property
+    def create_button_label(self):
+        return _("New")
+
     def get_generic_permission_object(self):
         """Used to determine non-object permissions like list, create, and generic delete"""
         raise NotImplementedError
@@ -433,7 +437,6 @@ class CRUDView(PaginationMixin, Filterable, View):
 
         elif getattr(self, "object_list", None) is not None:
             kwargs["object_list"] = self.object_list
-            kwargs["generic_title"] = self.get_generic_title()
             generic_permission_object = self.get_generic_permission_object()
             kwargs["has_create_permission"] = self.request.user.has_perm(
                 self.model.get_perm("create"), generic_permission_object
@@ -447,8 +450,9 @@ class CRUDView(PaginationMixin, Filterable, View):
             if name := self.get_context_object_name():
                 kwargs[name] = self.object_list
 
-        else:
+        if "generic_title" not in kwargs:
             kwargs["generic_title"] = self.get_generic_title()
+        kwargs["create_button_label"] = self.create_button_label
 
         return kwargs
 

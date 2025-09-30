@@ -1037,7 +1037,7 @@ pl-0 {
   border-radius: var(--size-border-radius);
 }
 
-.table-responsive-always {
+.table-responsive-always, .table-container {
   display: block;
   width: 100%;
   overflow-x: auto;
