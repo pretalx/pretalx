@@ -36,7 +36,7 @@ from pretalx.orga.forms.cfp import (
     ReminderFilterForm,
     SubmitterAccessCodeForm,
 )
-from pretalx.orga.tables.cfp import SubmitterAccessCodeTable
+from pretalx.orga.tables.cfp import SubmitterAccessCodeTable, TrackTable
 from pretalx.submission.models import (
     AnswerOption,
     CfP,
@@ -441,10 +441,16 @@ class SubmissionTypeDefault(PermissionRequired, View):
 class TrackView(OrderActionMixin, OrgaCRUDView):
     model = Track
     form_class = TrackForm
+    table_class = TrackTable
     template_namespace = "orga/cfp"
+    create_button_label = _("New track")
 
     def get_queryset(self):
-        return self.request.event.tracks.all()
+        return (
+            self.request.event.tracks.all()
+            .annotate(submission_count=Count("submissions"))
+            .order_by("position")
+        )
 
     def get_permission_required(self):
         permission_map = {"list": "orga_list", "detail": "orga_view"}
