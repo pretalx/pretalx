@@ -1,8 +1,13 @@
 import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.tables import ActionsColumn
-from pretalx.submission.models import SubmissionType, SubmitterAccessCode, Track
+from pretalx.common.tables import ActionsColumn, BooleanIconColumn
+from pretalx.submission.models import (
+    Question,
+    SubmissionType,
+    SubmitterAccessCode,
+    Track,
+)
 
 
 class SubmitterAccessCodeTable(tables.Table):
@@ -41,7 +46,6 @@ class SubmitterAccessCodeTable(tables.Table):
             },
         }
     )
-    empty_text = _("Please add at least one place in which sessions can take place.")
 
     def __init__(self, *args, event=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -139,3 +143,39 @@ class SubmissionTypeTable(tables.Table):
     class Meta:
         model = SubmissionType
         fields = ("name", "proposals", "default_duration", "actions")
+
+
+class QuestionTable(tables.Table):
+    question = tables.Column(
+        verbose_name=_("Custom field"),
+        linkify=lambda record: record.urls.base,
+        orderable=False,
+    )
+    target = tables.Column(verbose_name=_("Target"), orderable=False)
+    variant = tables.Column(verbose_name=_("Field type"), orderable=False)
+    required = BooleanIconColumn(orderable=False)
+    active = BooleanIconColumn(orderable=False)
+    answer_count = tables.Column(
+        verbose_name=_("Responses"),
+        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
+        orderable=False,
+    )
+    actions = ActionsColumn(actions={"sort": {}, "edit": {}, "delete": {}})
+    empty_text = _("You have configured no custom fields yet.")
+
+    def __init__(self, *args, event=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.attrs["dragsort-url"] = event.cfp.urls.questions
+
+    class Meta:
+        model = Question
+        fields = (
+            "question",
+            "target",
+            "variant",
+            "required",
+            "active",
+            "answer_count",
+            "actions",
+        )
+        row_attrs = {"dragsort-id": lambda record: record.pk}

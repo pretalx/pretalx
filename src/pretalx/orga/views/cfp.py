@@ -37,6 +37,7 @@ from pretalx.orga.forms.cfp import (
     SubmitterAccessCodeForm,
 )
 from pretalx.orga.tables.cfp import (
+    QuestionTable,
     SubmissionTypeTable,
     SubmitterAccessCodeTable,
     TrackTable,
@@ -115,9 +116,11 @@ class CfPTextDetail(PermissionRequired, ActionFromUrl, UpdateView):
 class QuestionView(OrderActionMixin, OrgaCRUDView):
     model = Question
     form_class = QuestionForm
+    table_class = QuestionTable
     template_namespace = "orga/cfp"
     context_object_name = "question"
     detail_is_update = False
+    create_button_label = _("New custom field")
 
     def get_queryset(self):
         return (
