@@ -244,12 +244,14 @@ class CRUDView(PaginationMixin, Filterable, View):
             )
         raise Http404()
 
+    @cached_property
+    def is_generic(self):
+        return self.action in ("list", "create")
+
     def dispatch(self, request, *args, **kwargs):
-        generic = self.action in ("list", "create")
-        if not generic:
+        if not self.is_generic:
             self.object = self.get_object()
-        permission = self.get_permission_required()
-        if not self.has_permission(permission, generic=generic):
+        if not self.has_permission(self.get_permission_required()):
             return self.permission_denied()
         return super().dispatch(request, *args, **kwargs)
 
@@ -419,49 +421,49 @@ class CRUDView(PaginationMixin, Filterable, View):
     def get_permission_required(self):
         return self.model.get_perm(self.action)
 
-    def has_permission(self, permission, generic=False):
-        if generic:
-            permission_object = self.get_generic_permission_object()
-        else:
-            permission_object = self.get_permission_object()
-        return self.request.user.has_perm(permission, permission_object)
+    @cached_property
+    def permission_object(self):
+        if self.is_generic:
+            return self.get_generic_permission_object()
+        return self.get_permission_object()
+
+    def has_permission(self, permission):
+        return self.request.user.has_perm(permission, self.permission_object)
+
+    @cached_property
+    def has_create_permission(self):
+        return self.has_permission(self.model.get_perm("create"))
+
+    @cached_property
+    def has_update_permission(self):
+        return self.has_permission(self.model.get_perm("update"))
+
+    @cached_property
+    def has_delete_permission(self):
+        return self.has_permission(self.model.get_perm("delete"))
 
     def get_context_data(self, **kwargs):
         kwargs["view"] = self
         kwargs["action"] = self.action
-        kwargs["create_url"] = self.reverse("create")
-        kwargs["list_url"] = self.reverse("list")
+        if hasattr(self, "create"):
+            kwargs["create_url"] = self.reverse("create")
+        if hasattr(self, "list"):
+            kwargs["list_url"] = self.reverse("list")
+        kwargs["has_update_permission"] = self.has_update_permission
+        kwargs["has_delete_permission"] = self.has_delete_permission
+        kwargs["generic_title"] = self.get_generic_title(instance=self.object)
+        kwargs["create_button_label"] = self.create_button_label
 
         if self.object:
             kwargs["object"] = self.object
-            kwargs["generic_title"] = self.get_generic_title(instance=self.object)
-            kwargs["has_update_permission"] = self.request.user.has_perm(
-                self.model.get_perm("update"), self.object
-            )
-            kwargs["has_delete_permission"] = self.request.user.has_perm(
-                self.model.get_perm("delete"), self.object
-            )
             if name := self.get_context_object_name():
                 kwargs[name] = self.object
 
         elif getattr(self, "object_list", None) is not None:
             kwargs["object_list"] = self.object_list
-            generic_permission_object = self.get_generic_permission_object()
-            kwargs["has_create_permission"] = self.request.user.has_perm(
-                self.model.get_perm("create"), generic_permission_object
-            )
-            kwargs["has_update_permission"] = self.request.user.has_perm(
-                self.model.get_perm("update"), generic_permission_object
-            )
-            kwargs["has_delete_permission"] = self.request.user.has_perm(
-                self.model.get_perm("delete"), generic_permission_object
-            )
+            kwargs["has_create_permission"] = self.has_create_permission
             if name := self.get_context_object_name():
                 kwargs[name] = self.object_list
-
-        if "generic_title" not in kwargs:
-            kwargs["generic_title"] = self.get_generic_title()
-        kwargs["create_button_label"] = self.create_button_label
 
         return kwargs
 

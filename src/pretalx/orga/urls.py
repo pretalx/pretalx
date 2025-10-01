@@ -28,17 +28,12 @@ urlpatterns = [
     path("", RedirectView.as_view(url="event", permanent=False)),
     path("admin/", admin.AdminDashboard.as_view(), name="admin.dashboard"),
     path("admin/update/", admin.UpdateCheckView.as_view(), name="admin.update"),
-    path(
-        "admin/users/<slug:code>/",
-        admin.AdminUserDetail.as_view(),
-        name="admin.user.view",
+    *admin.AdminUserView.get_urls(
+        url_base="admin/users",
+        url_name="admin.user",
+        namespace="orga",
+        actions=("list", "detail", "delete"),
     ),
-    path(
-        "admin/users/<slug:code>/delete/",
-        admin.AdminUserDelete.as_view(),
-        name="admin.user.delete",
-    ),
-    path("admin/users/", admin.AdminUserList.as_view(), name="admin.user.list"),
     path("me", person.UserSettings.as_view(), name="user.view"),
     path("me/subuser", person.SubuserView.as_view(), name="user.subuser"),
     path(
