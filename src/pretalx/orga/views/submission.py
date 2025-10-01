@@ -1073,7 +1073,9 @@ class CommentDelete(SubmissionViewMixin, ActionConfirmMixin, TemplateView):
         return redirect(comment.submission.orga_urls.comments)
 
 
-class ApplyPendingBulk(EventPermissionRequired, SubmissionListMixin, ListView):
+class ApplyPendingBulk(
+    EventPermissionRequired, SubmissionListMixin, PaginationMixin, ListView
+):
     permission_required = "submission.state_change_submission"
     template_name = "orga/submission/apply_pending.html"
 
