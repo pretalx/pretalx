@@ -1,11 +1,17 @@
-import django_tables2 as tables
+from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.tables import ActionsColumn, ContextTemplateColumn
+from pretalx.common.tables import (
+    ActionsColumn,
+    ContextTemplateColumn,
+    PretalxTable,
+    SortableColumn,
+)
 from pretalx.mail.models import MailTemplate
+from pretalx.orga.utils.i18n import Translate
 
 
-class MailTemplateTable(tables.Table):
+class MailTemplateTable(PretalxTable):
     role = ContextTemplateColumn(
         linkify=lambda record: record.urls.edit,
         template_name="orga/includes/mail_template_role.html",
@@ -13,6 +19,7 @@ class MailTemplateTable(tables.Table):
         extra_context={"show_custom": True},
         verbose_name=_("Template"),
     )
+    subject = SortableColumn(order_by=Lower(Translate(("subject"))))
     actions = ActionsColumn(
         actions={
             "send": {
@@ -28,9 +35,6 @@ class MailTemplateTable(tables.Table):
             "edit": {},
         }
     )
-
-    def __init__(self, *args, event=None, **kwargs):
-        super().__init__(*args, **kwargs)
 
     class Meta:
         model = MailTemplate

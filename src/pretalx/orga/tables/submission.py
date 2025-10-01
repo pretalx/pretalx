@@ -1,14 +1,22 @@
 import django_tables2 as tables
+from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.tables import ActionsColumn, ContextTemplateColumn
+from pretalx.common.tables import (
+    ActionsColumn,
+    ContextTemplateColumn,
+    PretalxTable,
+    SortableColumn,
+    SortableTemplateColumn,
+)
+from pretalx.orga.utils.i18n import Translate
 from pretalx.submission.models import Submission, Tag
 
 
-class SubmissionTable(tables.Table):
-    indicator = tables.TemplateColumn(
+class SubmissionTable(PretalxTable):
+    indicator = SortableTemplateColumn(
         template_name="orga/submission/table/submission_side_indicator.html",
-        order_by="track__name",
+        order_by=Lower(Translate("track__name")),
         verbose_name="",
         exclude_from_export=True,
     )
@@ -21,11 +29,11 @@ class SubmissionTable(tables.Table):
         verbose_name=_("Speakers"),
         order_by=("speakers__name"),
     )
-    submission_type = tables.Column(
+    submission_type = SortableColumn(
         verbose_name=_("Type"),
         linkify=lambda record: record.submission_type.urls.base,
         accessor="submission_type.name",
-        order_by=("submission_type__name"),
+        order_by=Lower(Translate("submission_type__name")),
     )
     state = ContextTemplateColumn(
         template_name="orga/submission/state_dropdown.html",
@@ -46,7 +54,6 @@ class SubmissionTable(tables.Table):
     def __init__(
         self,
         *args,
-        event,
         can_view_speakers=False,
         can_change_submission=False,
         show_tracks=False,
@@ -79,7 +86,7 @@ class SubmissionTable(tables.Table):
         )
 
 
-class TagTable(tables.Table):
+class TagTable(PretalxTable):
     tag = tables.Column(
         linkify=lambda record: record.urls.edit,
         verbose_name=_("Tag"),
@@ -93,9 +100,6 @@ class TagTable(tables.Table):
         accessor="submission_count",
     )
     actions = ActionsColumn(actions={"edit": {}, "delete": {}})
-
-    def __init__(self, *args, event=None, **kwargs):
-        super().__init__(*args, **kwargs)
 
     class Meta:
         model = Tag
