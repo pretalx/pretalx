@@ -103,12 +103,15 @@ class ActionsColumn(tables.Column):
                 # Render button and hope there is some JS to handle it
                 html += f"<button {inner_html}</button>"
             else:
-                url_parts = url.split(".")
-                url = record
-                for part in url_parts:
-                    url = getattr(url, part)
-                    if callable(url):
-                        url = url()
+                if callable(url):
+                    url = url(record)
+                else:
+                    url_parts = url.split(".")
+                    url = record
+                    for part in url_parts:
+                        url = getattr(url, part)
+                        if callable(url):
+                            url = url()
                 if action.get("next_url") and request:
                     url = f"{url}?next={quote(request.get_full_path())}"
                 html += f'<a href="{url}" {inner_html}</a>'
