@@ -1,8 +1,8 @@
-# Inspired by https://github.com/asaglimbeni/django-datetime-widget/blob/master/datetimewidget/widgets.py
-# Copyright (c) 2013, Alfredo Saglimbeni (BSD license)
 import re
 
 from django.conf import settings
+from django.db import connection
+from django.db.models.lookups import Transform
 from django.utils import translation
 from django.utils.formats import get_format
 
@@ -158,3 +158,44 @@ def get_moment_locale(locale=None):
         if main in moment_locales:
             return main
     return settings.LANGUAGE_CODE
+
+
+class Translate(Transform):
+    name = "translate"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if connection.vendor == "postgresql":
+            self.base_template = (
+                "CASE "
+                "WHEN %(expressions)s IS JSON OBJECT THEN "
+                "COALESCE("
+                "NULLIF(%(expressions)s::json->>'{locale}', ''), "
+                "%(expressions)s::json->>'en',"
+                "(SELECT value FROM json_each_text(%(expressions)s::json) LIMIT 1)"
+                ")"
+                "ELSE %(expressions)s::text "
+                "END"
+            )
+        elif connection.vendor == "sqlite":
+            self.base_template = (
+                "CASE "
+                "WHEN json_valid(%(expressions)s) THEN "
+                "COALESCE("
+                "NULLIF(json_extract(%(expressions)s, '$.{locale}'), ''), "
+                "json_extract(%(expressions)s, '$.en'), "
+                "(SELECT value FROM json_each(%(expressions)s) WHERE json_each.type != 'object' LIMIT 1)"
+                ")"
+                "ELSE %(expressions)s "
+                "END"
+            )
+        else:
+            raise NotImplementedError(
+                f"Translate not supported for {connection.vendor}"
+            )
+
+    @property
+    def template(self):
+        # Lazy template eval in order to get the actual current language
+        current_locale = translation.get_language()
+        return self.base_template.format(locale=current_locale)

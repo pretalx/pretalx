@@ -1,7 +1,14 @@
 import django_tables2 as tables
+from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.tables import ActionsColumn, BooleanIconColumn
+from pretalx.common.tables import (
+    ActionsColumn,
+    BooleanIconColumn,
+    PretalxTable,
+    SortableColumn,
+)
+from pretalx.orga.utils.i18n import Translate
 from pretalx.submission.models import (
     Question,
     SubmissionType,
@@ -10,21 +17,21 @@ from pretalx.submission.models import (
 )
 
 
-class SubmitterAccessCodeTable(tables.Table):
+class SubmitterAccessCodeTable(PretalxTable):
     code = tables.TemplateColumn(
         template_code="{% load copyable %}{{ record.code|copyable }}",
         verbose_name=_("Code"),
     )
-    track = tables.Column(
+    track = SortableColumn(
         linkify=lambda record: record.track and record.track.urls.base,
         verbose_name=_("Track"),
-        order_by="track__name",
+        order_by=Lower(Translate("track__name")),
     )
-    submission_type = tables.Column(
+    submission_type = SortableColumn(
         linkify=lambda record: record.submission_type
         and record.submission_type.urls.base,
         verbose_name=_("Session type"),
-        order_by="submission_type__name",
+        order_by=Lower(Translate("submission_type__name")),
     )
     uses = tables.TemplateColumn(
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
@@ -47,9 +54,9 @@ class SubmitterAccessCodeTable(tables.Table):
         }
     )
 
-    def __init__(self, *args, event=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not event.get_feature_flag("use_tracks"):
+        if not self.event.get_feature_flag("use_tracks"):
             self.columns["track"].hide()
 
     class Meta:
@@ -63,7 +70,7 @@ class SubmitterAccessCodeTable(tables.Table):
         )
 
 
-class TrackTable(tables.Table):
+class TrackTable(PretalxTable):
     name = tables.TemplateColumn(
         linkify=lambda record: record.urls.edit,
         verbose_name=_("Track"),
@@ -95,9 +102,9 @@ class TrackTable(tables.Table):
         }
     )
 
-    def __init__(self, *args, event=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.attrs["dragsort-url"] = event.cfp.urls.tracks
+        self.attrs["dragsort-url"] = self.event.cfp.urls.tracks
 
     class Meta:
         model = Track
@@ -105,7 +112,7 @@ class TrackTable(tables.Table):
         row_attrs = {"dragsort-id": lambda record: record.pk}
 
 
-class SubmissionTypeTable(tables.Table):
+class SubmissionTypeTable(PretalxTable):
     name = tables.TemplateColumn(
         linkify=lambda record: record.urls.edit,
         verbose_name=_("Session type"),
@@ -137,15 +144,12 @@ class SubmissionTypeTable(tables.Table):
         }
     )
 
-    def __init__(self, *args, event=None, **kwargs):
-        super().__init__(*args, **kwargs)
-
     class Meta:
         model = SubmissionType
         fields = ("name", "proposals", "default_duration", "actions")
 
 
-class QuestionTable(tables.Table):
+class QuestionTable(PretalxTable):
     question = tables.Column(
         verbose_name=_("Custom field"),
         linkify=lambda record: record.urls.base,
@@ -163,9 +167,9 @@ class QuestionTable(tables.Table):
     actions = ActionsColumn(actions={"sort": {}, "edit": {}, "delete": {}})
     empty_text = _("You have configured no custom fields yet.")
 
-    def __init__(self, *args, event=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.attrs["dragsort-url"] = event.cfp.urls.questions
+        self.attrs["dragsort-url"] = self.event.cfp.urls.questions
 
     class Meta:
         model = Question
