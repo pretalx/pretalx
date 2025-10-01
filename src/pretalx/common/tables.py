@@ -1,6 +1,7 @@
 from urllib.parse import quote
 
 import django_tables2 as tables
+from django.db.models.lookups import Transform
 from django.template import Context
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -10,6 +11,56 @@ from django_tables2.utils import AttributeDict
 
 def get_icon(icon):
     return mark_safe(f'<i class="fa fa-{icon}"></i>')
+
+
+class PretalxTable(tables.Table):
+    def __init__(self, *args, event=None, **kwargs):
+        self.event = event
+        super().__init__(*args, **kwargs)
+
+
+class FunctionOrderMixin:
+
+    def __init__(self, *args, order_by=None, **kwargs):
+        self.order_function_lookup = {}
+        if order_by and not isinstance(order_by, str):
+            if isinstance(order_by, Transform):
+                order_by = (order_by,)
+            plain_order_by = []
+            for key in order_by:
+                if isinstance(key, Transform):
+                    plain_field = key.source_expressions[0].name
+                    self.order_function_lookup[plain_field] = key
+                    plain_order_by.append(plain_field)
+            order_by = plain_order_by
+
+        super().__init__(*args, order_by=order_by, **kwargs)
+
+    def order(self, queryset, is_descending):
+        if not self.order_function_lookup:
+            return (queryset, False)
+        mapped_order_by = []
+        for index, field in enumerate(self.order_by):
+            if func := self.order_function_lookup.get(field):
+                mapped_key = f"sort{index}"
+                queryset = queryset.annotate(**{mapped_key: func})
+                if is_descending:
+                    mapped_key = f"-{mapped_key}"
+                    func = func.desc()
+                # mapped_order_by.append(func)
+                mapped_order_by.append(mapped_key)
+            else:
+                mapped_order_by.append(field)
+        queryset = queryset.order_by(*mapped_order_by)
+        return (queryset, True)
+
+
+class SortableColumn(FunctionOrderMixin, tables.Column):
+    pass
+
+
+class SortableTemplateColumn(FunctionOrderMixin, tables.TemplateColumn):
+    pass
 
 
 class ActionsColumn(tables.Column):

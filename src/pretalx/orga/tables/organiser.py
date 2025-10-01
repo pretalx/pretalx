@@ -1,11 +1,11 @@
 import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.tables import ActionsColumn, BooleanIconColumn
+from pretalx.common.tables import ActionsColumn, BooleanIconColumn, PretalxTable
 from pretalx.event.models import Team
 
 
-class TeamTable(tables.Table):
+class TeamTable(PretalxTable):
     name = tables.TemplateColumn(
         linkify=lambda record: record.orga_urls.base,
         verbose_name=_("Name"),
@@ -24,9 +24,6 @@ class TeamTable(tables.Table):
         }
     )
     empty_text = _("Please add at least one place in which sessions can take place.")
-
-    def __init__(self, *args, event=None, **kwargs):
-        super().__init__(*args, **kwargs)
 
     class Meta:
         model = Team

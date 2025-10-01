@@ -1,11 +1,11 @@
 import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.tables import ActionsColumn
+from pretalx.common.tables import ActionsColumn, PretalxTable
 from pretalx.schedule.models import Room
 
 
-class RoomTable(tables.Table):
+class RoomTable(PretalxTable):
     name = tables.Column(
         linkify=lambda record: record.urls.settings_base,
         verbose_name=_("Name"),
@@ -25,9 +25,9 @@ class RoomTable(tables.Table):
     )
     empty_text = _("Please add at least one place in which sessions can take place.")
 
-    def __init__(self, *args, event=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.attrs["dragsort-url"] = event.orga_urls.room_settings
+        self.attrs["dragsort-url"] = self.event.orga_urls.room_settings
 
     class Meta:
         model = Room

@@ -1,14 +1,17 @@
 import django_tables2 as tables
+from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.tables import ActionsColumn
+from pretalx.common.tables import ActionsColumn, PretalxTable, SortableColumn
+from pretalx.orga.utils.i18n import Translate
 from pretalx.person.models import SpeakerInformation
 
 
-class SpeakerInformationTable(tables.Table):
-    title = tables.Column(
+class SpeakerInformationTable(PretalxTable):
+    title = SortableColumn(
         linkify=lambda record: record.orga_urls.edit,
         verbose_name=_("Title"),
+        order_by=Lower(Translate("title")),
     )
     resource = tables.TemplateColumn(
         linkify=lambda record: record.resource.url if record.resource else None,
@@ -21,9 +24,9 @@ class SpeakerInformationTable(tables.Table):
         }
     )
 
-    def __init__(self, *args, event=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not event.get_feature_flag("use_tracks"):
+        if not self.event.get_feature_flag("use_tracks"):
             self.columns["limit_tracks"].hide()
 
     class Meta:
