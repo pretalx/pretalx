@@ -132,10 +132,13 @@ const initAvailabilities = (element) => {
             if (info.el.classList.contains("delete")) {
                 info.event.remove()
                 save_events()
-            } else {
+            } else if (!info.jsEvent.target.classList.contains("fc-event-time")) {
+                // Only add the delete indicator if an existing element was clicked, not
+                // if an element wasnewly created
                 info.el.classList.add("delete")
             }
         },
+        longPressDelay: 0,
     })
     // initialDate is not respected, so we have to set it manually
     calendar.gotoDate(data.event.date_from)
