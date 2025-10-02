@@ -24,6 +24,7 @@ from pretalx.agenda.rules import (
 )
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.models.choices import Choices
+from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
 from pretalx.common.text.path import path_with_hash
 from pretalx.common.text.phrases import phrases
@@ -222,17 +223,17 @@ class Submission(GenerateCode, PretalxModel):
         default=None,
         verbose_name=_("Pending proposal state"),
     )
-    abstract = models.TextField(
+    abstract = MarkdownField(
         null=True,
         blank=True,
         verbose_name=_("Abstract"),
     )
-    description = models.TextField(
+    description = MarkdownField(
         null=True,
         blank=True,
         verbose_name=_("Description"),
     )
-    notes = models.TextField(
+    notes = MarkdownField(
         null=True,
         blank=True,
         verbose_name=_("Notes"),

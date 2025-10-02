@@ -11,7 +11,7 @@ from django_scopes.forms import SafeModelMultipleChoiceField
 
 from pretalx.common.forms.mixins import ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer, TabularFormRenderer
-from pretalx.common.forms.widgets import EnhancedSelectMultiple, MarkdownWidget
+from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
 from pretalx.orga.forms.export import ExportForm
 from pretalx.person.models import User
@@ -170,9 +170,6 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
     class Meta:
         model = Review
         fields = ("text",)
-        widgets = {
-            "text": MarkdownWidget,
-        }
 
 
 class DirectionForm(forms.Form):

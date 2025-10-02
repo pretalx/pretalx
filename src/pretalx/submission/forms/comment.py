@@ -1,7 +1,6 @@
 from django import forms
 
 from pretalx.common.forms.renderers import InlineFormRenderer
-from pretalx.common.forms.widgets import MarkdownWidget
 from pretalx.submission.models import SubmissionComment
 
 
@@ -11,7 +10,6 @@ class SubmissionCommentForm(forms.ModelForm):
     class Meta:
         model = SubmissionComment
         fields = ("text",)
-        widgets = {"text": MarkdownWidget}
 
     def __init__(self, *args, submission=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)

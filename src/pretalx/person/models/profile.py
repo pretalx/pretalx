@@ -3,6 +3,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.agenda.rules import can_view_schedule, is_speaker_viewable
+from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.orga.rules import can_view_speaker_names
@@ -34,7 +35,7 @@ class SpeakerProfile(PretalxModel):
     event = models.ForeignKey(
         to="event.Event", related_name="+", on_delete=models.CASCADE
     )
-    biography = models.TextField(
+    biography = MarkdownField(
         verbose_name=_("Biography"),
         null=True,
         blank=True,

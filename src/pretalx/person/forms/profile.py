@@ -19,7 +19,6 @@ from pretalx.common.forms.widgets import (
     ClearableBasenameFileInput,
     EnhancedSelect,
     EnhancedSelectMultiple,
-    MarkdownWidget,
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.event.models import Event
@@ -159,7 +158,6 @@ class SpeakerProfileForm(
         )
         public_fields = ["name", "biography", "avatar"]
         widgets = {
-            "biography": MarkdownWidget,
             "avatar": ClearableBasenameFileInput,
         }
         field_classes = {
