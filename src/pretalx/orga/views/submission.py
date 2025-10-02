@@ -13,7 +13,6 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import feedgenerator
 from django.utils.functional import cached_property
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, ListView, TemplateView, UpdateView, View
 from django_context_decorator import context
@@ -24,7 +23,7 @@ from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views import CreateOrUpdateView
-from pretalx.common.views.generic import OrgaCRUDView, OrgaTableMixin
+from pretalx.common.views.generic import OrgaCRUDView, OrgaTableMixin, get_next_url
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     ActionFromUrl,
@@ -237,18 +236,16 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
         return redirect(self.get_success_url())
 
     def get_success_url(self):
-        url = self.request.GET.get("next")
         if self.object.state == SubmissionStates.DELETED and (
-            not url or self.object.code in url
+            not self.next_url or self.object.code in self.next_url
         ):
             return self.request.event.orga_urls.submissions
-        elif url and url_has_allowed_host_and_scheme(url, allowed_hosts=None):
-            return url
-        return self.request.event.orga_urls.submissions
+        return self.next_url or self.request.event.orga_urls.submissions
 
     @context
-    def next(self):
-        return self.request.GET.get("next")
+    @cached_property
+    def next_url(self):
+        return get_next_url(self.request)
 
 
 class SubmissionSpeakersDelete(SubmissionViewMixin, View):
@@ -1100,11 +1097,10 @@ class ApplyPendingBulk(
                 count=self.submission_count
             ),
         )
-        url = self.request.GET.get("next")
-        if url and url_has_allowed_host_and_scheme(url, allowed_hosts=None):
+        if url := get_next_url(request):
             return redirect(url)
         return redirect(self.request.event.orga_urls.submissions)
 
     @context
-    def next(self):
+    def next_url(self):
         return self.request.GET.get("next")

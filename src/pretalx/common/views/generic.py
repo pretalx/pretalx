@@ -36,8 +36,11 @@ from pretalx.person.forms import UserForm
 from pretalx.person.models import User
 
 
-def get_next_url(request):
+def get_next_url(request, omit_params=None):
     params = request.GET.copy()
+    omit_params = omit_params or []
+    for param in omit_params:
+        params.pop(param, None)
     if not (url := params.pop("next", [""])[0]):
         return
     if not url_has_allowed_host_and_scheme(url, allowed_hosts=None):

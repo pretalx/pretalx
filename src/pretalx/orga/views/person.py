@@ -1,10 +1,7 @@
-import urllib
-
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.functional import cached_property
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView, View
@@ -14,6 +11,7 @@ from django_scopes import scopes_disabled
 from pretalx.api.versions import CURRENT_VERSION
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views import is_form_bound
+from pretalx.common.views.generic import get_next_url
 from pretalx.person.forms import AuthTokenForm, LoginInfoForm, OrgaProfileForm
 
 
@@ -112,8 +110,6 @@ class SubuserView(View):
         messages.success(
             request, _("You are now an administrator instead of a superuser.")
         )
-        params = request.GET.copy()
-        url = urllib.parse.unquote(params.pop("next", [""])[0])
-        if url and url_has_allowed_host_and_scheme(url, allowed_hosts=None):
-            return redirect(url + ("?" + params.urlencode() if params else ""))
+        if url := get_next_url(request):
+            return redirect(url)
         return redirect(reverse("orga:event.list"))
