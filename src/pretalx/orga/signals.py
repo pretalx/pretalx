@@ -114,99 +114,46 @@ mappings from object IDs in the original event to objects in the new event of th
 types.
 """
 
-extra_form = EventPluginSignal()
-"""
-This signal allows you to add custom form elements to existing forms in the
-organiser backend. The signal is sent for all forms that use the
-``basic_form.html`` template, which includes — but is not limited to — the
-forms for tracks, session tags and types, access codes, and rooms, for example.
-
-As with all plugin signals, the ``sender`` keyword argument will contain the
-event. Additionally, the signal will be called with the ``request`` it is
-processing and the ``instance`` that the form is working on. ``sender`` could be
-``None`` if the form is not related to an event, such as the team settings form.
-
-Receivers of this generic signal must identify the kind of form and the type
-of data they are working on by checking the ``request`` or the type of the
-``instance`` argument. The form extension should be used to edit data related
-to the instance of the main form.
-
-The elements of the form will be rendered inside a ``<fieldset>`` below the
-existing fields of the form. If you want to add a label, you can return a form
-with a ``label`` attribute set, which will be rendered as a ``<legend>``
-element for the fieldset.
-
-Separate signals are sent for submission-, speaker-, review-, and email-related
-forms, which are documented in the respective sections below. These signals
-are sent with the ``speaker_form``, ``submission_form``, ``review_form``, and
-``mail_form`` names.
-
-Receivers may return either a single form or a list of forms.
-"""
-
 speaker_form = EventPluginSignal()
 """
-This signal allows you to add custom form elements to speaker-related forms in
-the organiser backend. Unlike the generic ``extra_form`` signal, this signal is
-only sent for forms that specifically deal with speakers.
+This signal allows you to add custom form elements to the speaker form in the organiser
+backend.
 
-As with all plugin signals, the ``sender`` keyword argument will contain the
-event. Additionally, the signal will be called with the ``request`` it is
-processing and the ``instance`` the form is working on. The ``instance``
-argument is always an instance of ``SpeakerProfile``.
+Receivers may return either a single form or a list of forms. Forms with a ``label``
+attribute will be rendered with this label as heading.
 
-This signal is only sent for speaker-related forms. For generic form
-extensions, use the ``extra_form`` signal instead.
-
-The person associated with the speaker profile is accessible via the ``user``
-attribute of the ``instance`` argument. This signal is well-suited for adding
-personal data fields related to the speaker, potentially even pulling
-information from external systems such as ticketing platforms or CRMs.
-
-Receivers may return either a single form or a list of forms.
+As with all plugin signals, the ``sender`` keyword argument will contain the event.
+Additionally, the signal will be called with the ``request`` it is processing and the
+``instance`` the form is working on. The ``instance`` argument is a ``SpeakerProfile``
+object, and you can use its ``user`` attribute to access the speaker's user account.
 """
 
 submission_form = EventPluginSignal()
 """
-This signal allows you to add custom form elements to submission-related forms
-in the organiser backend. Unlike the generic ``extra_form`` signal, this signal
-is only sent for forms that specifically deal with submissions.
+This signal allows you to add custom form elements to the submission detail form in the
+organiser backend.
 
-As with all plugin signals, the ``sender`` keyword argument will contain the
-event. Additionally, the signal will be called with the ``request`` it is
-processing and the ``instance`` the form is working on. The ``instance``
-argument is always an instance of ``Submission``.
+Receivers may return either a single form or a list of forms. Forms with a ``label``
+attribute will be rendered with this label as heading.
 
-This signal is only sent for submission-related forms. For generic form
-extensions, use the ``extra_form`` signal instead.
-
-This signal is well-suited for integrating with external ticketing or support
-systems to track submission-specific communication or requirements — both
-during the preparation phase and throughout the event itself. Possible use
-cases include special technical arrangements or billing-related coordination.
-
-Receivers may return either a single form or a list of forms.
+As with all plugin signals, the ``sender`` keyword argument will contain the event.
+Additionally, the signal will be called with the ``request`` it is processing and the
+``instance`` (of type ``Submission``) the form is working on.
 """
 
 review_form = EventPluginSignal()
 """
-This signal allows you to add custom form elements to review-related forms in
-the organiser backend. Unlike the generic ``extra_form`` signal, this signal is
-only sent for forms that specifically deal with reviews.
 
-As with all plugin signals, the ``sender`` keyword argument will contain the
-event. Additionally, the signal will be called with the ``request`` it is
-processing and the ``instance`` the form is working on. The ``instance``
-argument is always an instance of ``Review``.
+This signal allows you to add custom form elements to the review form that reviewers are
+presented with when reviewing proposals in the organiser backend.
 
-This signal is only sent for review-related forms. For generic form
-extensions, use the ``extra_form`` signal instead.
+Receivers may return either a single form or a list of forms. Forms with a ``label``
+attribute will be rendered with this label as heading.
 
-This signal is useful for capturing additional information about speakers and
-submissions during the review phase. Similar to the custom fields that submitters
-fill out during the CFP phase, these fields are intended solely for internal use.
-
-Receivers may return either a single form or a list of forms.
+As with all plugin signals, the ``sender`` keyword argument will contain the event.
+Additionally, the signal will be called with the ``request`` it is processing and the
+``instance`` the form is working on. The ``instance`` argument is always an instance of
+``Review``, and you can access ``instance.submission`` to access the submission.
 """
 
 mail_form = EventPluginSignal()
