@@ -28,7 +28,6 @@ from pretalx.common.forms.widgets import (
     EnhancedSelect,
     EnhancedSelectMultiple,
     HtmlDateInput,
-    HtmlDateTimeInput,
     MarkdownWidget,
     TextInputWithAddon,
 )
@@ -663,10 +662,6 @@ class ReviewPhaseForm(I18nHelpText, I18nModelForm):
             "can_tag_submissions",
             "speakers_can_change_submissions",
         ]
-        widgets = {
-            "start": HtmlDateTimeInput,
-            "end": HtmlDateTimeInput,
-        }
 
 
 def strip_zeroes(value):

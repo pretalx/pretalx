@@ -8,6 +8,7 @@ from i18nfield.fields import I18nCharField
 
 from pretalx.agenda.rules import is_agenda_visible
 from pretalx.common.models.choices import Choices
+from pretalx.common.models.fields import DateField, DateTimeField
 from pretalx.common.models.mixins import OrderedModel, PretalxModel
 from pretalx.common.text.path import path_with_hash
 from pretalx.common.text.phrases import phrases
@@ -171,13 +172,13 @@ class Question(OrderedModel, PretalxModel):
             "Do you require an answer from every speaker or for every session?"
         ),
     )
-    deadline = models.DateTimeField(
+    deadline = DateTimeField(
         null=True,
         blank=True,
         verbose_name=_("Deadline"),
         help_text=_("Set a deadline to make this field required after the given date."),
     )
-    freeze_after = models.DateTimeField(
+    freeze_after = DateTimeField(
         null=True,
         blank=True,
         verbose_name=_("freeze after"),
@@ -265,24 +266,22 @@ class Question(OrderedModel, PretalxModel):
         blank=True,
         verbose_name=_("Maximum value"),
     )
-    min_date = models.DateField(
+    min_date = DateField(
         null=True,
         blank=True,
         verbose_name=_("Minimum value"),
     )
-    max_date = models.DateField(
+    max_date = DateField(
         null=True,
         blank=True,
         verbose_name=_("Maximum value"),
     )
-    min_datetime = models.DateTimeField(
+    min_datetime = DateTimeField(
         null=True,
         blank=True,
         verbose_name=_("Minimum value"),
     )
-    max_datetime = models.DateTimeField(
-        null=True, blank=True, verbose_name=_("Maximum value")
-    )
+    max_datetime = DateTimeField(null=True, blank=True, verbose_name=_("Maximum value"))
     is_public = models.BooleanField(
         default=False,
         verbose_name=_("Publish answers"),

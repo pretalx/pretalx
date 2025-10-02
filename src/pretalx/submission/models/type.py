@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from i18nfield.fields import I18nCharField
 
 from pretalx.agenda.rules import is_agenda_visible
+from pretalx.common.models.fields import DateTimeField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import can_change_event_settings
@@ -35,7 +36,7 @@ class SubmissionType(PretalxModel):
         verbose_name=_("default duration"),
         help_text=_("Default duration in minutes"),
     )
-    deadline = models.DateTimeField(
+    deadline = DateTimeField(
         null=True,
         blank=True,
         verbose_name=_("Deadline"),

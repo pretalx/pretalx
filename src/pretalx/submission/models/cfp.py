@@ -7,6 +7,7 @@ from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from i18nfield.fields import I18nCharField, I18nTextField
 
+from pretalx.common.models.fields import DateTimeField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
@@ -102,7 +103,7 @@ class CfP(PretalxModel):
         related_name="+",
         verbose_name=_("Default session type"),
     )
-    opening = models.DateTimeField(
+    opening = DateTimeField(
         null=True,
         blank=True,
         verbose_name=_("Opening"),
@@ -111,7 +112,7 @@ class CfP(PretalxModel):
             "Leave the date empty to start accepting proposals immediately once the event is live."
         ),
     )
-    deadline = models.DateTimeField(
+    deadline = DateTimeField(
         null=True,
         blank=True,
         verbose_name=_("Deadline"),
