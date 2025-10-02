@@ -4,7 +4,6 @@ from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, FormView, ListView, View
 from django_context_decorator import context
@@ -13,7 +12,7 @@ from pretalx.agenda.views.utils import get_schedule_exporters
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.image import gravatar_csp
 from pretalx.common.text.phrases import phrases
-from pretalx.common.views.generic import CreateOrUpdateView, OrgaCRUDView
+from pretalx.common.views.generic import CreateOrUpdateView, OrgaCRUDView, get_next_url
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     ActionFromUrl,
@@ -258,9 +257,8 @@ class SpeakerToggleArrived(SpeakerViewMixin, View):
             person=self.request.user,
             orga=True,
         )
-        if url := self.request.GET.get("next"):
-            if url and url_has_allowed_host_and_scheme(url, allowed_hosts=None):
-                return redirect(url)
+        if url := get_next_url(request):
+            return redirect(url)
         return redirect(self.profile.orga_urls.base)
 
 

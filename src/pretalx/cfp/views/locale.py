@@ -1,27 +1,15 @@
 import datetime as dt
-from urllib.parse import parse_qs, urlencode, urlparse
 
 from django.conf import settings
 from django.http import HttpResponseRedirect
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import View
+
+from pretalx.common.views.generic import get_next_url
 
 
 class LocaleSet(View):
     def get(self, request, *args, **kwargs):
-        url = request.GET.get("next", request.headers.get("Referer", "/"))
-        if url_has_allowed_host_and_scheme(url, allowed_hosts=None):
-            parsed = urlparse(url)
-            url = parsed.path
-            if parsed.query:
-                query = parse_qs(parsed.query)
-                query.pop("lang", None)
-                query = urlencode(query, doseq=True)
-                if query:
-                    url = f"{url}?{query}"
-        else:
-            url = "/"
-
+        url = get_next_url(request, omit_params=["lang"]) or "/"
         resp = HttpResponseRedirect(url)
         locale = request.GET.get("locale")
         if locale in (lc for lc, __ in settings.LANGUAGES):
