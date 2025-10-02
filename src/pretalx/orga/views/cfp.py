@@ -517,10 +517,11 @@ class AccessCodeView(OrderActionMixin, OrgaCRUDView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        if track := self.request.GET.get("track"):
-            if track := self.request.event.tracks.filter(pk=track).first():
-                kwargs["initial"] = kwargs.get("initial", {})
-                kwargs["initial"]["track"] = track
+        if (track := self.request.GET.get("track")) and (
+            track := self.request.event.tracks.filter(pk=track).first()
+        ):
+            kwargs["initial"] = kwargs.get("initial", {})
+            kwargs["initial"]["track"] = track
         return kwargs
 
     def delete_handler(self, request, *args, **kwargs):

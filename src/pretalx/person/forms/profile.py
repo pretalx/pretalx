@@ -310,5 +310,4 @@ class UserSpeakerFilterForm(forms.Form):
             qs = qs.filter(accepted_submission_count__gt=0)
         elif role == "submitter":
             qs = qs.filter(accepted_submission_count=0)
-        qs = qs.order_by("id").distinct()
-        return qs
+        return qs.order_by("id").distinct()

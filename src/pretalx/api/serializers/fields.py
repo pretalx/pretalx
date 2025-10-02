@@ -25,7 +25,7 @@ class UploadedFileField(serializers.Field):
         super().__init__(*args, **kwargs)
 
     def to_internal_value(self, data):
-        request = self.context.get("request", None)
+        request = self.context.get("request")
         try:
             cf = CachedFile.objects.get(
                 session_key=f"api-upload-{request.auth.token}",

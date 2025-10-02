@@ -91,7 +91,7 @@ class FileCleanupMixin:
         ]
 
     def save(self, *args, **kwargs):
-        update_fields = kwargs.get("update_fields", None)
+        update_fields = kwargs.get("update_fields")
         if not self.pk or (
             update_fields and not set(self._file_fields) & set(update_fields)
         ):

@@ -26,7 +26,7 @@ gravatar_csp = partial(
 
 def validate_image(f):
     if f is None:
-        return None
+        return
 
     if hasattr(f, "temporary_file_path"):
         file = f.temporary_file_path()

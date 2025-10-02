@@ -399,15 +399,14 @@ class Submission(GenerateCode, PretalxModel):
                 if (self.access_code and self.access_code.is_valid)
                 else None
             )
-            if self.track and self.track.requires_access_code:
-                if not access_code or not access_code.track == self.track:
-                    return False
-            if self.submission_type.requires_access_code:
-                if (
-                    not access_code
-                    or not access_code.submission_type == self.submission_type
-                ):
-                    return False
+            if (self.track and self.track.requires_access_code) and (
+                not access_code or access_code.track != self.track
+            ):
+                return False
+            if self.submission_type.requires_access_code and (
+                not access_code or access_code.submission_type != self.submission_type
+            ):
+                return False
 
             # We are not missing an access code, so we can just check if we hit the
             # deadline or can ignore it safely
@@ -495,7 +494,7 @@ class Submission(GenerateCode, PretalxModel):
     def save(self, *args, **kwargs):
         is_creating = not self.pk
         super().save(*args, **kwargs)
-        if is_creating and not self.state == SubmissionStates.DRAFT:
+        if is_creating and self.state != SubmissionStates.DRAFT:
             submission_state_change.send_robust(
                 self.event,
                 submission=self,

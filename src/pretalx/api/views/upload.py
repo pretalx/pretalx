@@ -65,9 +65,7 @@ class UploadView(APIView):
             raise ValidationError("Content type is not allowed.")
         if not any(file_obj.name.endswith(ext) for ext in allowed_extensions):
             raise ValidationError(
-                'File name "{name}" has an invalid extension for type "{type}"'.format(
-                    name=file_obj.name, type=content_type
-                )
+                f'File name "{file_obj.name}" has an invalid extension for type "{content_type}"'
             )
 
         if content_type != "application/pdf":

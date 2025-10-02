@@ -46,7 +46,7 @@ def get_next_url(request, omit_params=None):
     if not url_has_allowed_host_and_scheme(url, allowed_hosts=None):
         return
     if params:
-        url = f"{url}?{params.urlencode()}"
+        return f"{url}?{params.urlencode()}"
     return url
 
 
@@ -619,7 +619,4 @@ class OrgaCRUDView(OrgaTableMixin, FormSignalMixin, CRUDView):
 
     def get_template_names(self):
         result = super().get_template_names()
-        result = result[:-1] + [
-            f"orga/generic/{self.action}.html",
-        ]
-        return result
+        return result[:-1] + [f"orga/generic/{self.action}.html"]

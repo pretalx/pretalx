@@ -8,10 +8,9 @@ from pretalx.api.serializers.team import TeamSerializer
 
 @pytest.fixture
 def other_team(other_organiser):
-    team = other_organiser.teams.create(
+    return other_organiser.teams.create(
         name="Other Test Team", organiser=other_organiser, can_change_submissions=True
     )
-    return team
 
 
 @pytest.mark.django_db

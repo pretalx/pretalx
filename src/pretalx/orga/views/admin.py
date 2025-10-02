@@ -163,7 +163,7 @@ def healthcheck(request):
     User.objects.exists()
 
     cache.cache.set("_healthcheck", "1")
-    if not cache.cache.get("_healthcheck") == "1":
+    if cache.cache.get("_healthcheck") != "1":
         return HttpResponse("Cache not available.", status=503)
 
     return HttpResponse()
