@@ -20,8 +20,9 @@
             {{ form }}
             {% for form in extra_forms %}
                 <fieldset>
-                    {% if form.label %}<legend>{{ form.label }}</legend>{% endif %}
-                    {{ form }}
+                    {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
+                    {{ extra_form }}
+                    {{ extra_form.media }}
                 </fieldset>
             {% endfor %}
         {% else %}

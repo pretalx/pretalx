@@ -183,10 +183,11 @@ Your plugin may define custom forms, which can be used to extend existing forms 
 the organisers area.
 
 pretalx will add the additional form fields to the form that is being rendered.
-Receivers for the ``pretalx.orga.signals.extra_form`` signal can return Django
-forms, which will then be rendered in the template. If your form defines a
-``label`` attribute, it will be used to render a separate heading for the form
-fields to set them apart from the regular pretalx part of the form.
+Receivers for the various form signals can return Django forms, which will then
+be rendered in the template. If your form defines a ``label`` attribute, it
+will be used to render a separate heading for the form fields to set them apart
+from the regular pretalx part of the form. pretalx will also include any
+JavaScript or CSS files defined in ``form.Media``.
 
 Your form should behave like a normal Django form. On a ``POST`` request, its
 ``is_valid`` method will be called to check if the input data is valid, and if
