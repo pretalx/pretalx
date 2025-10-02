@@ -48,16 +48,13 @@ def get_next_url(request):
 class FormSignalMixin:
     extra_forms_signal = None
 
-    def get_extra_forms_kwargs(self):
-        return {}
-
     @cached_property
     def extra_forms(self):
         if not self.extra_forms_signal:
             return []
         signal = import_string(self.extra_forms_signal)
         sender = getattr(self.request, "event", None)
-        kwargs = self.get_extra_forms_kwargs()
+        kwargs = self.get_form_kwargs()
         forms = []
         for _receiver, response in signal.send_robust(
             sender=sender, request=self.request, **kwargs
