@@ -1,3 +1,5 @@
+from contextlib import suppress
+
 from rest_framework.serializers import ModelSerializer
 
 from pretalx.api.serializers.fields import UploadedFileField
@@ -21,13 +23,11 @@ class EventListSerializer(ModelSerializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         request = self.context.get("request")
-        try:
+        with suppress(Exception):
             if not request or not request.user or not request.user.is_authenticated:
                 # Keep API docs small; doesn’t matter for validation with unauthenticated
                 # users.
                 self.fields["timezone"].choices = []
-        except Exception as e:
-            print(e)
 
 
 @register_serializer()

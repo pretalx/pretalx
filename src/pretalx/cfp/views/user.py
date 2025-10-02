@@ -429,8 +429,7 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
                 )
                 messages.success(self.request, _("Your proposal has been submitted."))
                 return redirect(self.request.event.urls.user_submissions)
-            else:
-                messages.success(self.request, phrases.base.saved)
+            messages.success(self.request, phrases.base.saved)
         else:
             messages.error(self.request, phrases.cfp.submission_uneditable)
         return redirect(self.object.urls.user_base)

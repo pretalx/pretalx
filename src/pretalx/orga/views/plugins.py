@@ -21,7 +21,7 @@ class EventPluginsView(EventPermissionRequired, TemplateView):
 
     @context
     def tablist(self):
-        return {key: value for key, value in self.grouped_plugins.keys()}
+        return dict(self.grouped_plugins.keys())
 
     @context
     @cached_property

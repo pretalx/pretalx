@@ -373,8 +373,7 @@ def get_speaker_access_events_for_user(*, user, organiser):
                 # This user has access to all speakers for all events,
                 # so we can cut our logic short here.
                 return organiser.events.all()
-            else:
-                events.update(team.limit_events.values_list("pk", flat=True))
+            events.update(team.limit_events.values_list("pk", flat=True))
         elif team.is_reviewer and not team.limit_tracks.exists():
             # Reviewers *can* have access to speakers, but they do not necessarily
             # do, so we need to check permissions for each event. We do skip teams

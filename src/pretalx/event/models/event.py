@@ -538,9 +538,9 @@ class Event(PretalxModel):
         from pretalx.submission.models import SubmissionType
 
         sub_type = SubmissionType.objects.filter(event=self).first()
-        if not sub_type:
-            sub_type = SubmissionType.objects.create(event=self, name="Talk")
-        return sub_type
+        if sub_type:
+            return sub_type
+        return SubmissionType.objects.create(event=self, name="Talk")
 
     def get_mail_template(self, role):
         from pretalx.mail.default_templates import get_default_template

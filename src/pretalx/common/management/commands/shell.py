@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 import tempfile
+from pathlib import Path
 
 from django.core.management.commands import shell
 from django.db import connection
@@ -91,8 +92,9 @@ class Command(shell.Command):  # pragma: no cover
             if "PYTHONSTARTUP" in os.environ:
                 del os.environ["PYTHONSTARTUP"]
 
-            if startup_file_name and os.path.exists(startup_file_name):
-                os.unlink(startup_file_name)
+            startup_file = Path(startup_file_name)
+            if startup_file_name and startup_file.exists():
+                startup_file.unlink()
 
     def ipython(self, options):
         from IPython import start_ipython

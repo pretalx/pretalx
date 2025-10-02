@@ -115,12 +115,12 @@ def etag_cache_page(
 
     if cache_key and (cached_response := cache.get(cache_key)):
         return patched_response(HttpResponse(cached_response), timeout, headers=headers)
-    else:
-        response = cache_page(
-            timeout=server_timeout, cache=cache_alias, key_prefix=key_prefix
-        )(handler)(request, *request_args, **request_kwargs)
-        if not should_cache(request, response):
-            return patched_response(response, timeout, headers=headers)
+
+    response = cache_page(
+        timeout=server_timeout, cache=cache_alias, key_prefix=key_prefix
+    )(handler)(request, *request_args, **request_kwargs)
+    if not should_cache(request, response):
+        return patched_response(response, timeout, headers=headers)
 
     cache_key = cache_key or learn_cache_key(
         request, response, timeout, key_prefix, cache=cache_alias

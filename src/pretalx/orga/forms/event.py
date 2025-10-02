@@ -736,9 +736,7 @@ class ReviewScoreCategoryForm(I18nHelpText, I18nModelForm):
             value = self.cleaned_data.get(f"value_{score}")
             label = self.cleaned_data.get(f"label_{score}")
             if (value is not None) and label:
-                ReviewScore.objects.create(
-                    category=self.instance, value=value, label=label
-                )
+                ReviewScore.objects.create(category=instance, value=value, label=label)
         return instance
 
     class Meta:

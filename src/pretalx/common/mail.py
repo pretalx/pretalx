@@ -77,7 +77,7 @@ def mail_send_task(
         to = [
             addr
             for addr in to
-            if not any([addr.endswith(domain) for domain in DEBUG_DOMAINS])
+            if not any(addr.endswith(domain) for domain in DEBUG_DOMAINS)
         ]
     if not to:
         return

@@ -29,7 +29,10 @@ def add_class(attrs, css_class):
 
 class PasswordStrengthInput(PasswordInput):
     def render(self, name, value, attrs=None, renderer=None):
-        markup = """
+        message = _(
+            'This password would take <em class="password_strength_time"></em> to crack.'
+        )
+        markup = f"""
         <div class="password-progress">
             <div class="password-progress-bar progress">
                 <div class="progress-bar bg-warning password_strength_bar"
@@ -45,11 +48,7 @@ class PasswordStrengthInput(PasswordInput):
                 </span>
             </p>
         </div>
-        """.format(
-            message=_(
-                'This password would take <em class="password_strength_time"></em> to crack.'
-            )
-        )
+        """
 
         self.attrs = add_class(self.attrs, "password_strength")
         self.attrs["autocomplete"] = "new-password"
@@ -68,17 +67,17 @@ class PasswordConfirmationInput(PasswordInput):
 
     def render(self, name, value, attrs=None, renderer=None):
         self.attrs["data-confirm-with"] = str(self.confirm_with)
+        warning = _("Warning")
+        content = _("Your passwords don’t match.")
 
-        markup = """
+        markup = f"""
         <div class="d-none password_strength_info">
             <p class="text-muted">
                 <span class="label label-danger">{warning}</span>
                 <span>{content}</span>
             </p>
         </div>
-        """.format(
-            warning=_("Warning"), content=_("Your passwords don’t match.")
-        )
+        """
 
         self.attrs = add_class(self.attrs, "password_confirmation")
         return mark_safe(super().render(name, value, self.attrs) + markup)
