@@ -98,7 +98,21 @@ document.querySelector("#phase-add").addEventListener("click", () => {
     }, 100)
 })
 
+const initScrollPosition = () => {
+    document.querySelectorAll(".keep-scroll-position").forEach((el) => {
+        el.addEventListener("click", () => {
+            sessionStorage.setItem("scroll-position", window.scrollY)
+        })
+    })
+    const oldScrollY = sessionStorage.getItem("scroll-position")
+    if (oldScrollY) {
+        window.scroll(window.scrollX, Math.max(oldScrollY, window.innerHeight))
+        sessionStorage.removeItem("scroll-position")
+    }
+}
+
 onReady(addListener)
 onReady(updateTotal)
 onReady(clearOldNewScores)
 onReady(updateIndependentScoreWeight)
+onReady(initScrollPosition)

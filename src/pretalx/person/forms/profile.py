@@ -150,6 +150,10 @@ class SpeakerProfileForm(
             self.user.process_image("avatar", generate_thumbnail=True)
         return result
 
+    class Media:
+        js = [forms.Script("cfp/js/profile.js", defer="")]
+        css = {"all": ["common/css/avatar.css"]}
+
     class Meta:
         model = SpeakerProfile
         fields = (

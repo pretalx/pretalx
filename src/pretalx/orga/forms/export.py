@@ -181,3 +181,6 @@ class ExportForm(forms.Form):
                 "Access-Control-Allow-Origin": "*",
             },
         )
+
+    class Media:
+        js = [forms.Script("orga/js/export.js", defer="")]

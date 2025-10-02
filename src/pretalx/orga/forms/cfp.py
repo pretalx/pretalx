@@ -144,6 +144,9 @@ class CfPSettingsForm(
         self.instance.cfp.save()
         super().save(*args, **kwargs)
 
+    class Media:
+        js = [forms.Script("orga/js/cfp.js", defer="")]
+
     class Meta:
         # These are JSON fields on event.settings
         json_fields = {
@@ -307,6 +310,9 @@ class QuestionForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
                     changed_options.append(existing_option)
         AnswerOption.objects.bulk_create(new_options)
         AnswerOption.objects.bulk_update(changed_options, ["position"])
+
+    class Media:
+        js = [forms.Script("orga/js/questionForm.js", defer="")]
 
     class Meta:
         model = Question
