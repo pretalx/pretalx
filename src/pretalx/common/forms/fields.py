@@ -24,27 +24,18 @@ IMAGE_EXTENSIONS = {
 }
 
 
-class GlobalValidator:
-    def __call__(self, value):
-        return validate_password(value)
-
-
 class NewPasswordField(CharField):
-    default_validators = [GlobalValidator()]
+    default_validators = [validate_password]
 
     def __init__(self, *args, **kwargs):
-        kwargs["widget"] = kwargs.get(
-            "widget", PasswordStrengthInput(render_value=False)
-        )
+        kwargs.setdefault("widget", PasswordStrengthInput(render_value=False))
         super().__init__(*args, **kwargs)
 
 
 class NewPasswordConfirmationField(CharField):
     def __init__(self, *args, **kwargs):
-        kwargs["widget"] = kwargs.get(
-            "widget",
-            PasswordConfirmationInput(confirm_with=kwargs.pop("confirm_with", None)),
-        )
+        confirm = kwargs.pop("confirm_with", None)
+        kwargs.setdefault("widget", PasswordConfirmationInput(confirm_with=confirm))
         super().__init__(*args, **kwargs)
 
 
@@ -115,11 +106,11 @@ class SizeFileField(SizeFileInput, FileField):
     pass
 
 
-class ExtensionFileField(ExtensionFileInput, SizeFileInput, FileField):
+class ExtensionFileField(ExtensionFileInput, SizeFileField):
     pass
 
 
-class ImageField(ExtensionFileInput, SizeFileInput, FileField):
+class ImageField(ExtensionFileField):
     widget = ImageInput
     extensions = IMAGE_EXTENSIONS
 
