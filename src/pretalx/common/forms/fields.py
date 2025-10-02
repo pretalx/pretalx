@@ -9,6 +9,7 @@ from django_scopes.forms import SafeModelChoiceField
 
 from pretalx.common.forms.widgets import (
     ClearableBasenameFileInput,
+    ColorPickerWidget,
     ImageInput,
     PasswordConfirmationInput,
     PasswordStrengthInput,
@@ -116,15 +117,17 @@ class ImageField(ExtensionFileField):
 
 
 class ColorField(RegexField):
-    color_regex = "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
+    regex = "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
     max_length = 7
+    widget = ColorPickerWidget
 
     def __init__(self, *args, **kwargs):
-        kwargs["regex"] = kwargs.get("regex", self.color_regex)
-        super().__init__(*args, **kwargs)
-        widget_class = self.widget.attrs.get("class", "")
-        self.widget.attrs["class"] = f"{widget_class} colorpicker".strip()
-        self.widget.attrs["pattern"] = self.color_regex[1:-1]
+        super().__init__(*args, regex=self.regex, **kwargs)
+
+    def widget_attrs(self, widget):
+        attrs = super().widget_attrs(widget)
+        attrs["pattern"] = self.regex[1:-1]
+        return attrs
 
 
 class SubmissionTypeField(SafeModelChoiceField):

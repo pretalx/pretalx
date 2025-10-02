@@ -1,5 +1,6 @@
 {% extends "orga/auth/base.html" %}
 
+{% load form_media %}
 {% load i18n %}
 
 {% block title %}{{ phrases.base.password_reset_heading }}{% endblock title %}
@@ -13,4 +14,5 @@
             <button type="submit" class="btn btn-block btn-success">{{ phrases.base.password_reset_action }}</button>
         </form>
     </div>
+    {% form_media %}
 {% endblock content %}

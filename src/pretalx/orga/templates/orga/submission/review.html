@@ -1,17 +1,10 @@
 {% extends "orga/submission/base.html" %}
 
-{% load compress %}
 {% load i18n %}
 {% load rich_text %}
 {% load rules %}
-{% load static %}
 
 {% block submission_title %}{% translate "Reviews" %} :: {% endblock submission_title %}
-
-{% block scripts %}
-    {{ block.super }}
-    <script src="{% static "orga/js/reviewSubmission.js" %}" defer></script>
-{% endblock scripts %}
 
 {% block submission_content %}
     {% has_perm "submission.view_all_reviews_submission" request.user submission as can_view_other_reviews %}
@@ -182,7 +175,6 @@
                 <fieldset>
                     {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
                     {{ extra_form }}
-                    {{ extra_form.media }}
                 </fieldset>
             {% endfor %}
 

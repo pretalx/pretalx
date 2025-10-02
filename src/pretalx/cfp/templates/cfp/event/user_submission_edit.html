@@ -3,6 +3,7 @@
 {% load compress %}
 {% load event_tags %}
 {% load filesize %}
+{% load form_media %}
 {% load formset_tags %}
 {% load i18n %}
 {% load rules %}
@@ -11,7 +12,6 @@
 {% block title %}{{ submission.title }} :: {% endblock title %}
 
 {% block cfp_header %}
-    {% include "cfp/includes/forms_header.html" %}
     {% compress js %}
         <script defer src="{% static "js/jquery.js" %}"></script>
         <script defer src="{% static "js/jquery.formset.js" %}"></script>
@@ -72,9 +72,7 @@
             </div>
         {% endif %}
         {{ form }}
-        {{ form.media }}
         {{ qform }}
-        {{ qform.media }}
         {% if can_edit %}
             {% include "cfp/includes/submission_resources_form.html" %}
         {% elif form.instance.active_resources.count %}
@@ -160,4 +158,5 @@
         </p>
     {% endif %}
 
+    {% form_media %}
 {% endblock content %}

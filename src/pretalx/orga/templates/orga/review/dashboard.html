@@ -1,19 +1,17 @@
 {% extends "orga/base.html" %}
 
 {% load compress %}
+{% load form_media %}
 {% load i18n %}
 {% load review_score %}
 {% load rules %}
 {% load static %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" type="text/css" href="{% static "vendored/rslider/rSlider.min.css" %}" />
 {% endblock stylesheets %}
 
 {% block scripts %}
     {% compress js %}
-        <script defer src="{% static "vendored/rslider/rSlider.min.js" %}"></script>
-        <script defer src="{% static "orga/js/submission_filter.js" %}"></script>
         <script defer src="{% static "orga/js/review.js" %}"></script>
     {% endcompress %}
 {% endblock scripts %}
@@ -316,4 +314,5 @@
         {% include "orga/includes/pagination.html" %}
 
     {% endif %}
+    {% form_media %}
 {% endblock content %}

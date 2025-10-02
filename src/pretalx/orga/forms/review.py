@@ -167,6 +167,9 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
         instance.save()
         return instance
 
+    class Media:
+        js = [forms.Script("orga/js/reviewSubmission.js", defer="")]
+
     class Meta:
         model = Review
         fields = ("text",)
@@ -208,6 +211,9 @@ class ReviewAssignmentForm(forms.Form):
             else:
                 self.reviewers_by_track[None].update(team.members.all())
         super().__init__(*args, **kwargs)
+
+    class Media:
+        js = [forms.Script("orga/js/reviewAssignment.js", defer="")]
 
 
 class ReviewerForProposalForm(ReviewAssignmentForm):

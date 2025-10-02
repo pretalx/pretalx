@@ -1,9 +1,8 @@
 {% extends "orga/base.html" %}
 
-{% load compress %}
+{% load form_media %}
 {% load i18n %}
 {% load rules %}
-{% load static %}
 
 {% block extra_title %}{{ form.instance.user.get_display_name }} :: {% endblock extra_title %}
 
@@ -76,7 +75,6 @@
         {% endif %}
 
         {{ form.internal_notes.as_field_group }}
-        {{ form.media }}
 
         {{ questions_form }}
 
@@ -84,7 +82,6 @@
             <fieldset>
                 {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
                 {{ extra_form }}
-                {{ extra_form.media }}
             </fieldset>
         {% endfor %}
 
@@ -94,11 +91,10 @@
 
     <h3>{% translate "Emails" %}</h3>
     {% if mails %}
-
         {% include "common/mail_log.html" %}
-
     {% else %}
         {% translate "No mails were sent to this speaker yet." %}
     {% endif %}
 
+    {% form_media %}
 {% endblock content %}

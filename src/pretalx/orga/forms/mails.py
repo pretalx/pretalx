@@ -212,6 +212,9 @@ class WriteMailBaseForm(MailTemplateForm):
         if not may_skip_queue:
             self.fields.pop("skip_queue", None)
 
+    class Media:
+        js = [forms.Script("orga/js/placeholder.js", defer="")]
+
 
 class WriteTeamsMailForm(WriteMailBaseForm):
     recipients = forms.MultipleChoiceField(

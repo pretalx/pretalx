@@ -1,13 +1,17 @@
 {% extends "orga/includes/submission_filter_form.html" %}
 {% load i18n %}
+{% load static %}
 
 {% block form_attrs %} id="review-filter-form"{% endblock form_attrs %}
 
 {% block extra_filter_fields %}
+    {# this should be a custom django form field tbh, but ehhh #}
     {% if max_review_count and max_review_count > 1 %}
         <div id="range-wrapper">
             <input type="text" id="review-count" name="review-count" data-max="{{ max_review_count }}"/>
             <label for="review-count" class="pt-0">{% translate "Number of reviews" %}</label>
         </div>
     {% endif %}
+    <link rel="stylesheet" type="text/css" href="{% static "vendored/rslider/rSlider.min.css" %}" />
+    <script defer src="{% static "vendored/rslider/rSlider.min.js" %}"></script>
 {% endblock extra_filter_fields %}
