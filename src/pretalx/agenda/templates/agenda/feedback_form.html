@@ -26,6 +26,7 @@
                     <form method="post">
                         {% csrf_token %}
                         {{ form }}
+                        {{ form.media }}
                         <button type="submit" class="btn-success float-right">{{ phrases.base.send }}</button>
                     </form>
                 {% endif %}

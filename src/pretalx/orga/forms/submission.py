@@ -256,6 +256,9 @@ class AnonymiseForm(SubmissionForm):
         self._instance.anonymised_data = json.dumps(anonymised_data)
         self._instance.save(update_fields=["anonymised_data"])
 
+    class Media:
+        js = [forms.Script("orga/js/anonymise.js", defer="")]
+
     class Meta:
         model = Submission
         fields = [

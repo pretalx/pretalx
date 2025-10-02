@@ -57,6 +57,9 @@ class AuthTokenForm(forms.ModelForm):
         self.instance.endpoints = self.cleaned_data["endpoints"]
         return super().save(*args, **kwargs)
 
+    class Media:
+        js = [forms.Script("common/js/user_token.js", defer="")]
+
     class Meta:
         model = UserApiToken
         fields = ["name", "events", "expires", "permission_preset"]

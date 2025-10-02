@@ -36,6 +36,7 @@
             {% include "common/availabilities.html" %}
             {{ profile_form.availabilities.as_field_group }}
         {% endif %}
+        {{ profile_form.media }}
         {% if not profile_form.read_only %}
             <div class="row">
                 <div class="col-md-4 flip ml-auto">

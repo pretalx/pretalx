@@ -72,7 +72,9 @@
             </div>
         {% endif %}
         {{ form }}
+        {{ form.media }}
         {{ qform }}
+        {{ qform.media }}
         {% if can_edit %}
             {% include "cfp/includes/submission_resources_form.html" %}
         {% elif form.instance.active_resources.count %}

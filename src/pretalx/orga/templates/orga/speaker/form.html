@@ -5,13 +5,6 @@
 {% load rules %}
 {% load static %}
 
-{% block scripts %}
-    {% if form.biography %}
-        <script src="{% static "vendored/marked.min.js" %}" defer></script> {# do not compress #}
-        <script defer src="{% static "vendored/purify.min.js" %}"></script>
-    {% endif %}
-{% endblock scripts %}
-
 {% block extra_title %}{{ form.instance.user.get_display_name }} :: {% endblock extra_title %}
 
 {% block alternate_link %}
@@ -83,14 +76,15 @@
         {% endif %}
 
         {{ form.internal_notes.as_field_group }}
+        {{ form.media }}
 
         {{ questions_form }}
 
-        {% for form in extra_forms %}
+        {% for extra_form in extra_forms %}
             <fieldset>
-                {% if form.label %}<legend>{{ form.label }}</legend>{% endif %}
-                {{ form }}
-                {{ form.media }}
+                {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
+                {{ extra_form }}
+                {{ extra_form.media }}
             </fieldset>
         {% endfor %}
 
