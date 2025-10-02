@@ -1,5 +1,4 @@
 {% extends "orga/mails/base.html" %}
-{% load form_signal %}
 {% load i18n %}
 {% load rich_text %}
 
@@ -19,7 +18,6 @@
 
         {% if not form.read_only %}
             {{ form }}
-            {% form_signal "pretalx.orga.signals.mail_form" instance=form.instance as extra_forms %}
             {% for form in extra_forms %}
                 <fieldset>
                     {% if form.label %}<legend>{{ form.label }}</legend>{% endif %}
@@ -74,7 +72,6 @@
                 </div>
             </div>
 
-            {% form_signal "pretalx.orga.signals.mail_form" instance=form.instance as extra_forms %}
             {% for form in extra_forms %}
                 <fieldset>
                     {% if form.label %}<legend>{{ form.label }}</legend>{% endif %}

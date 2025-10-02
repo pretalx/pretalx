@@ -180,37 +180,27 @@ Forms
 -----
 
 Your plugin may define custom forms, which can be used to extend existing forms in
-the organisers area. To do this, you can use the ``form_signal`` template tag
-to add additional form elements to existing forms. This works similar to the
-``html_signal`` template tag, but instead of adding HTML, it adds form fields.
+the organisers area.
 
-.. highlight:: html+django
+pretalx will add the additional form fields to the form that is being rendered.
+Receivers for the ``pretalx.orga.signals.extra_form`` signal can return Django
+forms, which will then be rendered in the template. If your form defines a
+``label`` attribute, it will be used to render a separate heading for the form
+fields to set them apart from the regular pretalx part of the form.
 
-You can use the ``form_signal`` tag in your templates like this::
+Your form should behave like a normal Django form. On a ``POST`` request, its
+``is_valid`` method will be called to check if the input data is valid, and if
+so, its ``save()`` method will be called. Please note that this will often
+happen inside a transaction, so if an exception occurs while the main form is
+being saved, or while another plugin form is being saved, your form's changes
+may also be rolled back. We'd recommend that you wait to take action (e.g. send
+data to external systems) until the transaction is guaranteed to be successful.
 
-    {% form_signal "pretalx.orga.signals.extra_form" instance=form.instance as extra_forms %}
-    {% for form in extra_forms %}
-        <fieldset>
-            {% if form.label %}<legend>{{ form.label }}</legend>{% endif %}
-            {{ form }}
-        </fieldset>
-    {% endfor %}
-
-This will add additional form fields to the form that is being rendered.
-Receivers for the ``pretalx.orga.signals.extra_form`` signal can return
-Django forms, which will then be rendered in the template. The ``instance``
-parameter is the instance of the form that is being rendered, so you can use it
-to pre-fill the form fields with data from the instance.
-
-The plugin can define its own models and forms, which can then be used in the
-signal receiver to create forms that are specific to the plugin. For example,
-you can create a form that allows users to add additional notes to a review by
-listening to the ``pretalx.orga.signals.review_form`` signal and returning a
-form that contains a text field for the notes.
-
-.. highlight:: python
-
-You can create a signal receiver like this::
+In combination with defining your own models, form signals are a powerful tool
+that allows you to enrich pretalx forms with additional information. For
+example, you can create a form that allows users to add additional notes to a
+review by listening to the ``pretalx.orga.signals.review_form`` signal and
+returning a form that contains a text field for the notes::
 
     from django import forms
     from django.db import models
@@ -233,7 +223,7 @@ You can create a signal receiver like this::
     def review_form(sender, request, instance, **kwargs):
         review = instance
         notes = None
-        if instance.pk:
+        if instance and instance.pk:
             notes, created = ReviewNotes.objects.get_or_create(review=review)
         return ReviewNotesForm(
             instance=notes,

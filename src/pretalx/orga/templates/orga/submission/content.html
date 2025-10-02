@@ -2,7 +2,6 @@
 
 {% load compress %}
 {% load filesize %}
-{% load form_signal %}
 {% load formset_tags %}
 {% load i18n %}
 {% load static %}
@@ -89,7 +88,6 @@
                 <div><legend id="custom">{{ phrases.cfp.custom_fields }}</legend></div>
                 {{ questions_form }}
             {% endif %}
-            {% form_signal "pretalx.orga.signals.submission_form" instance=submission as extra_forms %}
             {% for form in extra_forms %}
                 <fieldset>
                     {% if form.label %}<legend>{{ form.label }}</legend>{% endif %}
