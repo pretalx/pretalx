@@ -364,7 +364,7 @@ class QuestionFieldsMixin:
             if question.max_date:
                 field.validators.append(MaxDateValidator(question.max_date))
             return field
-        elif question.variant == QuestionVariant.DATETIME:
+        if question.variant == QuestionVariant.DATETIME:
             attrs = {}
             if question.min_datetime:
                 attrs["min"] = question.min_datetime.isoformat()

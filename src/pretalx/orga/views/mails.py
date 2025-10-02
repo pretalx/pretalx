@@ -46,8 +46,7 @@ def get_send_mail_exceptions(request):
     ]
     if exceptions:
         errors = [str(e) for e in exceptions]
-        errors = errors or [_("You cannot send emails at this time.")]
-        return errors
+        return errors or [_("You cannot send emails at this time.")]
 
 
 class OutboxList(
@@ -436,14 +435,13 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
             for locale in self.request.event.locales:
                 with language(locale):
                     context_dict = TolerantDict()
+                    title = _(
+                        "This value will be replaced based on dynamic parameters."
+                    )
                     for key, value in form.get_valid_placeholders().items():
+                        content = escape(value.render_sample(self.request.event))
                         context_dict[key] = (
-                            '<span class="placeholder" title="{title}">{content}</span>'.format(
-                                title=_(
-                                    "This value will be replaced based on dynamic parameters."
-                                ),
-                                content=escape(value.render_sample(self.request.event)),
-                            )
+                            f'<span class="placeholder" title="{title}">{content}</span>'
                         )
 
                     subject = bleach.clean(
@@ -564,8 +562,7 @@ class MailTemplateView(OrgaCRUDView):
         if instance:
             if not instance.role:
                 return _("Email template") + f": {instance.subject}"
-            else:
-                return _("Email template") + f": {instance.get_role_display()}"
+            return _("Email template") + f": {instance.get_role_display()}"
         if self.action == "create":
             return _("New email template")
         return _("Email templates")

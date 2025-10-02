@@ -106,9 +106,8 @@ Feel free to look around, but don\'t be alarmed if something doesn\'t quite make
                     name=self.fake.catch_phrase().split()[0],
                     color=self.fake.hex_color(),
                 )
-            event.cfp.headline = "DemoCon submissions are {state}!".format(
-                state="open" if end_stage == "cfp" else "closed"
-            )
+            state = "open" if end_stage == "cfp" else "closed"
+            event.cfp.headline = f"DemoCon submissions are {state}!"
             track_text = "\n".join(f"- {track.name}" for track in event.tracks.all())
             event.cfp.text = f"""This is the Call for Participation for DemoCon!\n\n{intro}\n\n
 

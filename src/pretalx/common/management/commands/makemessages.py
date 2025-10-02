@@ -62,7 +62,7 @@ class Command(Parent):
             moves.append((translation_path, new_dir))
 
             if not translation_file.exists():
-                print(f"{translation_file} does not exist, regenerating.")
+                self.stdout.write(f"{translation_file} does not exist, regenerating.")
                 continue
 
             if new_dir.exists():

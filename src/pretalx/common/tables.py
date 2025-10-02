@@ -124,9 +124,12 @@ class ActionsColumn(tables.Column):
 
         html = ""
         for action in self.actions.values():
-            if user and (permission := action.get("permission")):
-                if not user.has_perm(permission, record):
-                    continue
+            if (
+                user
+                and (permission := action.get("permission"))
+                and not user.has_perm(permission, record)
+            ):
+                continue
             if (condition := action.get("condition")) and not condition(record):
                 continue
 

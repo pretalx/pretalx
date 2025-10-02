@@ -105,7 +105,7 @@ class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         }
 
     def validate_scores(self, value):
-        if not len(value) == len(set([s.category for s in value])):
+        if not len(value) == len({s.category for s in value}):
             raise ValidationError("You can only assign one score per category!")
         return value
 

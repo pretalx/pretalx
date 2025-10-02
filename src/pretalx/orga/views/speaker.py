@@ -156,8 +156,7 @@ class SpeakerDetail(SpeakerViewMixin, ActionFromUrl, CreateOrUpdateView):
     @context
     @cached_property
     def accepted_submissions(self, **kwargs):
-        qs = self.submissions.filter(state__in=SubmissionStates.accepted_states)
-        return qs
+        return self.submissions.filter(state__in=SubmissionStates.accepted_states)
 
     @context
     @cached_property
