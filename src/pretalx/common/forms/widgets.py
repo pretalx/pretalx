@@ -55,6 +55,11 @@ class PasswordStrengthInput(PasswordInput):
         self.attrs["autocomplete"] = "new-password"
         return mark_safe(super().render(name, value, self.attrs) + markup)
 
+    class Media:
+        js = [
+            forms.Script("vendored/zxcvbn.js", defer=""),
+            forms.Script("common/js/password_strength.js", defer=""),
+        ]
 
 class PasswordConfirmationInput(PasswordInput):
     def __init__(self, confirm_with=None, attrs=None, render_value=False):
@@ -99,6 +104,9 @@ class ClearableBasenameFileInput(ClearableFileInput):
         ctx = super().get_context(name, value, attrs)
         ctx["widget"]["value"] = self.FakeFile(value)
         return ctx
+
+    class Media:
+        js = [forms.Script("common/js/filesize.js", defer="")]
 
 
 class ImageInput(ClearableBasenameFileInput):
