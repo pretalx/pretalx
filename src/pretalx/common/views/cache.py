@@ -73,7 +73,6 @@ def should_cache(request, response):
         return False
     if not request.COOKIES and response.cookies and has_vary_header(response, "Cookie"):
         return False
-    # Don't cache a response with 'Cache-Control: private'
     if "private" in response.get("Cache-Control", ()):
         return False
     return True

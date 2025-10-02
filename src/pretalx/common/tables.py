@@ -47,7 +47,6 @@ class FunctionOrderMixin:
                 if is_descending:
                     mapped_key = f"-{mapped_key}"
                     func = func.desc()
-                # mapped_order_by.append(func)
                 mapped_order_by.append(mapped_key)
             else:
                 mapped_order_by.append(field)

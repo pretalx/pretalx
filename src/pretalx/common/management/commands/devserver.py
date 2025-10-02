@@ -34,5 +34,4 @@ class Command(Parent):
             super().handle(*args, **options)
         finally:
             if settings.VITE_DEV_MODE:
-                # Kill the vite server
                 vite_server.kill()
