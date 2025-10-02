@@ -190,11 +190,9 @@ fields to set them apart from the regular pretalx part of the form.
 
 Your form should behave like a normal Django form. On a ``POST`` request, its
 ``is_valid`` method will be called to check if the input data is valid, and if
-so, its ``save()`` method will be called. Please note that this will often
-happen inside a transaction, so if an exception occurs while the main form is
-being saved, or while another plugin form is being saved, your form's changes
-may also be rolled back. We'd recommend that you wait to take action (e.g. send
-data to external systems) until the transaction is guaranteed to be successful.
+so, its ``save()`` method will be called. Please note that this will happen
+*after* the main form's ``save()`` method has been called, so you will only see
+the new data on the instance.
 
 In combination with defining your own models, form signals are a powerful tool
 that allows you to enrich pretalx forms with additional information. For

@@ -76,6 +76,7 @@ class FormSignalMixin:
         return result
 
     def form_valid(self, form):
+        result = super().form_valid(form)
         for f in self.extra_forms:
             if not f.is_valid():
                 if f.errors:
@@ -88,7 +89,7 @@ class FormSignalMixin:
                     if label := getattr(f, "label", None):
                         message = f"[{label}] {message}"
                     messages.error(self.request, message)
-        return super().form_valid(form)
+        return result
 
 
 class CreateOrUpdateView(
