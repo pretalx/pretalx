@@ -313,6 +313,7 @@ class SubmissionContent(
     form_class = SubmissionForm
     template_name = "orga/submission/content.html"
     permission_required = "submission.orga_list_submission"
+    extra_forms_signal = "pretalx.orga.signals.submission_form"
 
     @cached_property
     def object(self):
@@ -460,9 +461,6 @@ class SubmissionContent(
 
     def get_success_url(self) -> str:
         return self.object.orga_urls.base
-
-    def get_form_signal_name(self):
-        return "pretalx.orga.signals.submission_form"
 
     @transaction.atomic()
     def form_valid(self, form):

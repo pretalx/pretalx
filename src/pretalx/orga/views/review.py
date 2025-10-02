@@ -500,6 +500,7 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
     template_name = "orga/submission/review.html"
     permission_required = "submission.view_reviews_submission"
     write_permission_required = "submission.review_submission"
+    extra_forms_signal = "pretalx.orga.signals.review_form"
 
     @context
     @cached_property
@@ -617,9 +618,6 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
         kwargs["read_only"] = self.read_only
         kwargs["categories"] = self.score_categories
         return kwargs
-
-    def get_form_signal_name(self):
-        return "pretalx.orga.signals.review_form"
 
     def form_valid(self, form):
         if not self.qform.is_valid():

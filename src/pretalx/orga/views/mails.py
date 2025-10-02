@@ -317,15 +317,13 @@ class MailDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
     template_name = "orga/mails/outbox_form.html"
     write_permission_required = "mail.update_queuedmail"
     permission_required = "mail.view_queuedmail"
+    extra_forms_signal = "pretalx.orga.signals.mail_form"
 
     def get_object(self, queryset=None) -> QueuedMail:
         return self.request.event.queued_mails.filter(pk=self.kwargs.get("pk")).first()
 
     def get_success_url(self):
         return self.object.event.orga_urls.outbox
-
-    def get_form_signal_name(self):
-        return "pretalx.orga.signals.mail_form"
 
     def form_valid(self, form):
         form.instance.event = self.request.event

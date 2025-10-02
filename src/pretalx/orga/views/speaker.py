@@ -137,6 +137,7 @@ class SpeakerViewMixin(PermissionRequired):
 class SpeakerDetail(SpeakerViewMixin, ActionFromUrl, CreateOrUpdateView):
     template_name = "orga/speaker/form.html"
     form_class = SpeakerProfileForm
+    extra_forms_signal = "pretalx.orga.signals.speaker_form"
     model = User
     permission_required = "person.orga_list_speakerprofile"
     write_permission_required = "person.update_speakerprofile"
@@ -184,9 +185,6 @@ class SpeakerDetail(SpeakerViewMixin, ActionFromUrl, CreateOrUpdateView):
                 )
             ),
         )
-
-    def get_form_signal_name(self):
-        return "pretalx.orga.signals.speaker_form"
 
     @transaction.atomic()
     def form_valid(self, form):

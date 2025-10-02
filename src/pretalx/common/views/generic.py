@@ -13,7 +13,9 @@ from django.urls import NoReverseMatch, path, reverse
 from django.utils.decorators import classonlymethod
 from django.utils.functional import cached_property
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.module_loading import import_string
 from django.utils.timezone import now
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, View
 from django.views.generic.detail import SingleObjectTemplateResponseMixin
 from django.views.generic.edit import ModelFormMixin, ProcessFormView
@@ -22,7 +24,6 @@ from i18nfield.forms import I18nModelForm
 
 from pretalx.cfp.forms.auth import ResetForm
 from pretalx.common.exceptions import SendMailException
-from pretalx.common.templatetags.form_signal import form_signal
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import (
     Filterable,
@@ -45,19 +46,46 @@ def get_next_url(request):
 
 
 class FormSignalMixin:
-    def get_form_signal_name(self):
-        return "pretalx.orga.signals.extra_form"
+    extra_forms_signal = "pretalx.orga.signals.extra_form"
+
+    def get_extra_forms_kwargs(self):
+        return {}
+
+    @cached_property
+    def extra_forms(self):
+        signal = import_string(self.extra_forms_signal)
+        sender = getattr(self.request, "event", None)
+        kwargs = self.get_extra_forms_kwargs()
+        forms = []
+        for _receiver, response in signal.send_robust(
+            sender=sender, request=self.request, **kwargs
+        ):
+            if isinstance(response, Exception):
+                continue
+            if isinstance(response, list):
+                forms.extend(response)
+            elif response:
+                forms.append(response)
+        return forms
+
+    def get_context_data(self, **kwargs):
+        result = super().get_context_data(**kwargs)
+        result["extra_forms"] = self.extra_forms
+        return result
 
     def form_valid(self, form):
-        forms = form_signal(
-            {"request": self.request}, self.get_form_signal_name(), instance=self.object
-        )
-        for f in forms:
+        for f in self.extra_forms:
             if not f.is_valid():
                 if f.errors:
                     messages.error(self.request, f.errors[0])
             else:
-                f.save()
+                try:
+                    f.save()
+                except Exception:
+                    message = _("Some changes could not be saved.")
+                    if label := getattr(f, "label", None):
+                        message = f"[{label}] {message}"
+                    messages.error(self.request, message)
         return super().form_valid(form)
 
 
