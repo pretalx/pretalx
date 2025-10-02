@@ -13,7 +13,6 @@
         <script defer src="{% static 'vendored/zxcvbn.js' %}"></script>
         <script defer src="{% static 'common/js/password_strength.js' %}"></script>
         <script defer src="{% static "common/js/copy.js" %}"></script>
-        <script defer src="{% static "common/js/user_token.js" %}"></script>
     {% endcompress %}
 {% endblock %}
 
@@ -135,6 +134,8 @@
                             </table>
                         </div>
                     </div>
+
+                    {{ token_form.media }}
 
                     {% include "orga/includes/submit_row.html" with submit_name="form" submit_value="token" %}
                 </form>

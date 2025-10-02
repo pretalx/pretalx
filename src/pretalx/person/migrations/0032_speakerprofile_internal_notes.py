@@ -2,6 +2,8 @@
 
 from django.db import migrations, models
 
+import pretalx.common.models.fields
+
 
 class Migration(migrations.Migration):
 
@@ -14,5 +16,10 @@ class Migration(migrations.Migration):
             model_name="speakerprofile",
             name="internal_notes",
             field=models.TextField(null=True),
+        ),
+        migrations.AlterField(
+            model_name="speakerprofile",
+            name="biography",
+            field=pretalx.common.models.fields.MarkdownField(null=True),
         ),
     ]

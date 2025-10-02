@@ -10,7 +10,6 @@ from pretalx.common.forms.mixins import PublicContent, RequestRequire
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
     EnhancedSelect,
-    MarkdownWidget,
     SearchInput,
     SelectMultipleWithCount,
 )
@@ -211,9 +210,6 @@ class InfoForm(CfPFormMixin, RequestRequire, PublicContent, forms.ModelForm):
         ]
         public_fields = ["title", "abstract", "description", "image"]
         widgets = {
-            "abstract": MarkdownWidget,
-            "description": MarkdownWidget,
-            "notes": MarkdownWidget,
             "track": EnhancedSelect(
                 description_field="description", color_field="color"
             ),

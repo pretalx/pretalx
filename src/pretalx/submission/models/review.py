@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField
 
+from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import OrderedModel, PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.person.rules import is_administrator, is_reviewer
@@ -139,7 +140,7 @@ class Review(PretalxModel):
     user = models.ForeignKey(
         to="person.User", related_name="reviews", on_delete=models.CASCADE
     )
-    text = models.TextField(verbose_name=_("What do you think?"), null=True, blank=True)
+    text = MarkdownField(verbose_name=_("What do you think?"), null=True, blank=True)
     score = models.DecimalField(
         max_digits=10, decimal_places=2, verbose_name=_("Score"), null=True, blank=True
     )
