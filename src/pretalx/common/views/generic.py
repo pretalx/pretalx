@@ -470,11 +470,19 @@ class CRUDView(PaginationMixin, Filterable, View):
     def get_template_names(self):
         namespace = self.template_namespace or "common"
         object_name = self.model._meta.object_name.lower()
-        return [
+        templates = [
             f"{namespace}/{object_name}/{self.action}.html",
             f"{namespace}/{object_name}_{self.action}.html",
-            f"common/generic/{self.action}.html",
         ]
+        if self.action in ("create", "update"):
+            # Make it easy to use a shared base form template for create and update.
+            # Useful for including the same static files in each
+            templates += [
+                f"{namespace}/{object_name}/_form.html",
+                f"{namespace}/{object_name}_form.html",
+            ]
+        # Finally, fall back to the generic template for this action
+        templates.append(f"common/generic/{self.action}.html")
 
     def render_to_response(self, context):
         return TemplateResponse(
