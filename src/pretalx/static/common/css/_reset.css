@@ -15,7 +15,7 @@
 body {
   margin: 0;
   color: var(--color-text);
-  background-color: white;
+  background-color: var(--color-bg);
 
   font-size: 1rem;
   font-weight: normal;
@@ -125,7 +125,7 @@ hr {
   overflow: visible;
   margin: var(--size-spacer) 0;
   border: 0;
-  border-top: 1px solid rgb(0 0 0 / 0.1);
+  border-top: 1px solid var(--color-card-border);
 }
 
 code {
@@ -144,7 +144,7 @@ pre {
   word-break: break-all;
   word-wrap: break-word;
   overflow: auto;
-  color: #333;
+  color: var(--color-text);
   background-color: var(--color-grey-lightest);
   border: 1px solid var(--color-border);
   border-radius: var(--size-border-radius);

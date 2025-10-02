@@ -445,10 +445,19 @@ export default {
 			padding-right: 8px
 		.timezone-label
 			cursor: default
-			color: $clr-secondary-text-light
+			color: var(--color-text-muted)
 	.days
-		background-color: $clr-white
-		tabs-style(active-color: var(--color-primary), indicator-color: var(--color-primary), background-color: transparent)
+		background-color: var(--color-bg)
+		/* Tabs styling */
+		.bunt-tabs-header {
+			border-bottom: 1px solid var(--color-grey-lighter);
+		}
+		.bunt-tab-header-item.active {
+			color: var(--color-primary);
+		}
+		.bunt-tabs-header-indicator {
+			background-color: var(--color-primary);
+		}
 		overflow-x: auto
 		position: sticky
 		left: 0
@@ -479,8 +488,8 @@ export default {
 			padding 4px 0
 			font-size: 18px
 			text-align: center
-			background-color: $clr-white
-			border-bottom: 4px solid $clr-dividers-light
+			background-color: var(--color-bg)
+			border-bottom: 4px solid var(--color-grey-lighter)
 			display: flex
 			align-items: flex-end
 			margin-left: 8px
@@ -497,17 +506,17 @@ export default {
 				border-radius: 4px
 				margin-bottom: 8px
 				margin-left: 4px
-				color: $clr-secondary-text-light
+				color: var(--color-text-muted)
 				&:hover, &.active
 					opacity: 0.8
-					background-color: $clr-dividers-light
+					background-color: var(--color-grey-lighter)
 		.new-break.c-linear-schedule-session
 			min-height: 48px
 		#unassigned-sort-menu
-			color: $clr-primary-text-light
+			color: var(--color-text)
 			display: flex
 			flex-direction: column
-			background-color: white
+			background-color: var(--color-bg)
 			position: absolute
 			top: 53px
 			right: 15px
@@ -515,7 +524,7 @@ export default {
 			font-size: 16px
 			cursor: pointer
 			z-index: 1000
-			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5)
+			box-shadow: 0 2px 4px var(--color-card-border)
 			text-align: left;
 			.sort-method
 				padding: 8px 16px
@@ -523,7 +532,7 @@ export default {
 				justify-content: space-between
 				align-items: center
 				&:hover
-					background-color: $clr-dividers-light
+					background-color: var(--color-grey-lighter)
 	#schedule-wrapper
 		width: 100%
 		margin-right: 40px
@@ -534,10 +543,10 @@ export default {
 		left: 0
 		width: 100%
 		height: 100%
-		background-color: rgba(0, 0, 0, 0.5)
+		background-color: var(--color-card-header)
 
 		#session-editor
-			background-color: $clr-white
+			background-color: var(--color-bg)
 			border-radius: 4px
 			padding: 32px 40px
 			position: absolute
@@ -562,12 +571,14 @@ export default {
 				.bunt-button-content
 					font-size: 16px !important
 				#btn-delete
-					button-style(color: $clr-danger, text-color: $clr-white)
+					background-color: var(--color-danger);
+					color: var(--color-white);
 					font-weight: bold;
 				#btn-save
 					margin-left: auto
 					font-weight: bold;
-					button-style(color: #3aa57c)
+					background-color: var(--color-primary);
+					color: var(--color-white);
 				[type=submit]
 					display: none
 			.data
@@ -581,5 +592,5 @@ export default {
 							list-style: none
 							padding: 0
 		.warning
-			color: #b23e65
+			color: var(--color-danger)
 </style>
