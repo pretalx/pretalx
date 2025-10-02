@@ -16,6 +16,7 @@ from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField
 
 from pretalx.agenda.rules import is_agenda_submission_visible, is_agenda_visible
+from pretalx.common.models.fields import DateTimeField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.serialize import serialize_duration
 from pretalx.common.urls import get_base_url
@@ -76,12 +77,12 @@ class TalkSlot(PretalxModel):
         to="schedule.Schedule", on_delete=models.PROTECT, related_name="talks"
     )
     is_visible = models.BooleanField(default=False)
-    start = models.DateTimeField(
+    start = DateTimeField(
         null=True,
         verbose_name=_("Start"),
         help_text=_("When the talk starts, if it is currently scheduled"),
     )
-    end = models.DateTimeField(
+    end = DateTimeField(
         null=True,
         verbose_name=_("End"),
         help_text=_("When the talk ends, if it is currently scheduled"),

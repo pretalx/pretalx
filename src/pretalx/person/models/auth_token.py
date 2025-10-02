@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy as _p
 
 from pretalx.api.versions import CURRENT_VERSIONS
+from pretalx.common.models.fields import DateTimeField
 from pretalx.common.models.mixins import PretalxModel
 
 
@@ -69,7 +70,7 @@ class UserApiToken(PretalxModel):
         related_name="+",
         verbose_name=_("Events"),
     )
-    expires = models.DateTimeField(null=True, blank=True, verbose_name=_("Expiry date"))
+    expires = DateTimeField(null=True, blank=True, verbose_name=_("Expiry date"))
     endpoints = models.JSONField(default=dict, blank=True)
     version = models.CharField(
         max_length=12, null=True, blank=True, verbose_name=_("API version")

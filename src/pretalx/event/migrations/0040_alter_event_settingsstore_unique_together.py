@@ -3,6 +3,8 @@
 from django.db import migrations
 from hierarkey.utils import CleanHierarkeyDuplicates
 
+import pretalx.common.models.fields
+
 
 class Migration(migrations.Migration):
 
@@ -15,5 +17,15 @@ class Migration(migrations.Migration):
         migrations.AlterUniqueTogether(
             name="event_settingsstore",
             unique_together={("object", "key")},
+        ),
+        migrations.AlterField(
+            model_name="event",
+            name="date_from",
+            field=pretalx.common.models.fields.DateField(),
+        ),
+        migrations.AlterField(
+            model_name="event",
+            name="date_to",
+            field=pretalx.common.models.fields.DateField(),
         ),
     ]

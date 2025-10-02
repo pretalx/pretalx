@@ -193,15 +193,6 @@ const initFormButton = (form) => {
     })
 }
 
-const addDateLimit = (element, other, limit) => {
-    const otherElement = document.querySelector(other)
-    if (otherElement) {
-        otherElement.addEventListener("change", () => {
-            element.setAttribute(limit, otherElement.value)
-        })
-        element.setAttribute(limit, otherElement.value)
-    }
-}
 
 const initTextarea = (element, other, limit) => {
     const submitButtons = Array.from(element.form.querySelectorAll("button, input[type=submit]")).filter(button => !button.disabled && button.type === "submit")
@@ -229,25 +220,6 @@ const initTextarea = (element, other, limit) => {
     }
 }
 
-// Handle date and datetime fields:
-// - Make sure the picker opens on focus
-// - Use the data-date-after and data-date-before attributes to set min/max dynamically on change
-const initDateFields = () => {
-    document
-        .querySelectorAll("input[type=date], input[type=datetime-local]")
-        .forEach((element) => {
-            if (element.readOnly || element.disabled) return
-            // Delay, because otherwise clicking the *icon* in FF will make the picker immediately disappear again
-            element.addEventListener("focus", () =>
-                setTimeout(() => element.showPicker(), 70),
-            )
-            if (element.dataset.dateBefore)
-                addDateLimit(element, element.dataset.dateBefore, "max")
-            if (element.dataset.dateAfter)
-                addDateLimit(element, element.dataset.dateAfter, "min")
-        })
-}
-
 /* Register handlers */
 onReady(() => {
     document
@@ -263,5 +235,4 @@ onReady(() => {
             initFormButton(form)
         })
     document.querySelectorAll("form textarea").forEach(element => initTextarea(element))
-    initDateFields()
 })

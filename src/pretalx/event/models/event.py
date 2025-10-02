@@ -19,6 +19,7 @@ from i18nfield.fields import I18nCharField, I18nTextField
 from pretalx.common.cache import ObjectRelatedCache
 from pretalx.common.language import LANGUAGE_NAMES
 from pretalx.common.models import TIMEZONE_CHOICES
+from pretalx.common.models.fields import DateField
 from pretalx.common.models.mixins import OrderedModel, PretalxModel
 from pretalx.common.models.settings import hierarkey
 from pretalx.common.plugins import get_all_plugins
@@ -185,8 +186,8 @@ class Event(PretalxModel):
         on_delete=models.PROTECT,
     )
     is_public = models.BooleanField(default=False, verbose_name=_("Event is public"))
-    date_from = models.DateField(verbose_name=_("Event start date"))
-    date_to = models.DateField(verbose_name=_("Event end date"))
+    date_from = DateField(verbose_name=_("Event start date"))
+    date_to = DateField(verbose_name=_("Event end date"))
     timezone = models.CharField(
         choices=[(tz, tz) for tz in TIMEZONE_CHOICES],
         max_length=32,

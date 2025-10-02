@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField
 
-from pretalx.common.models.fields import MarkdownField
+from pretalx.common.models.fields import DateTimeField, MarkdownField
 from pretalx.common.models.mixins import OrderedModel, PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.person.rules import is_administrator, is_reviewer
@@ -230,8 +230,8 @@ class ReviewPhase(OrderedModel, PretalxModel):
         to="event.Event", related_name="review_phases", on_delete=models.CASCADE
     )
     name = models.CharField(verbose_name=_("Name"), max_length=100)
-    start = models.DateTimeField(verbose_name=_("Phase start"), null=True, blank=True)
-    end = models.DateTimeField(verbose_name=_("Phase end"), null=True, blank=True)
+    start = DateTimeField(verbose_name=_("Phase start"), null=True, blank=True)
+    end = DateTimeField(verbose_name=_("Phase end"), null=True, blank=True)
     position = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=False)
 

@@ -1,11 +1,7 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.forms.widgets import (
-    EnhancedSelect,
-    EnhancedSelectMultiple,
-    HtmlDateTimeInput,
-)
+from pretalx.common.forms.widgets import EnhancedSelect, EnhancedSelectMultiple
 from pretalx.person.models.auth_token import (
     ENDPOINTS,
     PERMISSION_CHOICES,
@@ -64,7 +60,6 @@ class AuthTokenForm(forms.ModelForm):
         model = UserApiToken
         fields = ["name", "events", "expires", "permission_preset"]
         widgets = {
-            "expires": HtmlDateTimeInput,
             "events": EnhancedSelectMultiple,
         }
 
