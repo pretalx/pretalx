@@ -1,57 +1,3 @@
-const handleFeaturedChange = (element) => {
-    const resetStatus = () => {
-        statusWrapper.querySelectorAll("i").forEach((element) => {
-            element.classList.add("d-none")
-        })
-    }
-    const setStatus = (statusName) => {
-        resetStatus()
-        statusWrapper.querySelector("." + statusName).classList.remove("d-none")
-        setTimeout(resetStatus, 3000)
-    }
-    const fail = () => {
-        element.checked = !element.checked
-        setStatus("fail")
-    }
-
-    const id = element.dataset.id
-    const statusWrapper = element.parentElement.parentElement
-    setStatus("working")
-
-    const url = window.location.pathname + id + "/toggle_featured"
-    const options = {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": getCookie("pretalx_csrftoken"),
-        },
-        credentials: "include",
-    }
-
-    fetch(url, options)
-        .then((response) => {
-            if (response.status === 200) {
-                setStatus("done")
-            } else {
-                fail()
-            }
-        })
-        .catch((error) => fail())
-}
-
-const initScrollPosition = () => {
-    document.querySelectorAll(".keep-scroll-position").forEach((el) => {
-        el.addEventListener("click", () => {
-            sessionStorage.setItem("scroll-position", window.scrollY)
-        })
-    })
-    const oldScrollY = sessionStorage.getItem("scroll-position")
-    if (oldScrollY) {
-        window.scroll(window.scrollX, Math.max(oldScrollY, window.innerHeight))
-        sessionStorage.removeItem("scroll-position")
-    }
-}
-
 const getCookie = (name) => {
     let cookieValue = null
     if (document.cookie && document.cookie !== "") {
@@ -69,14 +15,3 @@ const getCookie = (name) => {
     }
     return cookieValue
 }
-
-onReady(() => {
-    initScrollPosition()
-    document
-        .querySelectorAll("input.submission_featured")
-        .forEach((element) =>
-            element.addEventListener("change", () =>
-                handleFeaturedChange(element),
-            ),
-        )
-})

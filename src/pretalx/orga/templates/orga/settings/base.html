@@ -1,3 +1,8 @@
 {% extends "orga/base.html" %}
 
-{% block content %}{% block settings_content %}{% endblock settings_content %}{% endblock content %}
+{% load form_media %}
+
+{% block content %}
+  {% block settings_content %}{% endblock settings_content %}
+  {% form_media %}
+{% endblock content %}

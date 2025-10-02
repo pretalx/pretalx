@@ -13,12 +13,12 @@
         <script defer src="{% static "js/jquery.js" %}"></script>
         <script defer src="{% static "js/jquery.formset.js" %}"></script>
         <script defer src="{% static "cfp/js/animateFormset.js" %}"></script>
-        <script defer src="{% static "orga/js/speakers.js" %}"></script>
-        <script defer src="{% static "orga/js/submission_form.js" %}"></script>
     {% endcompress %}
 {% endblock scripts %}
 
 {% block submission_content %}
+    <span id="vars" remoteUrl="{{ request.event.organiser.orga_urls.user_search }}"></span>
+
     {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
     {% has_perm "submission.list_all_review" request.user request.event as can_view_all_reviews %}
     <form method="post" enctype="multipart/form-data">
@@ -92,7 +92,6 @@
                 <fieldset>
                     {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
                     {{ extra_form }}
-                    {{ extra_form.media }}
                 </fieldset>
             {% endfor %}
 
@@ -108,6 +107,4 @@
                 </div>
             {% endif %}
         </fieldset></form>
-
-    <span id="vars" remoteUrl="{{ request.event.organiser.orga_urls.user_search }}"></span>
 {% endblock submission_content %}

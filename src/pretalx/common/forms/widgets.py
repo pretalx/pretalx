@@ -1,33 +1,23 @@
 import datetime as dt
 from pathlib import Path
 
+from django import forms
 from django.core.files import File
-from django.forms import (
-    ClearableFileInput,
-    DateInput,
-    DateTimeInput,
-    PasswordInput,
-    Select,
-    SelectMultiple,
-    Textarea,
-    TextInput,
-    TimeInput,
-)
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.text.phrases import phrases
 
 
-def add_class(attrs, css_class):
+def add_attribute(attrs, attr, css_class):
     attrs = attrs or {}
-    class_str = (attrs.get("class", "") or "").strip()
+    class_str = (attrs.get(attr, "") or "").strip()
     class_str += " " + css_class
-    attrs["class"] = class_str.strip()
+    attrs[attr] = class_str.strip()
     return attrs
 
 
-class PasswordStrengthInput(PasswordInput):
+class PasswordStrengthInput(forms.PasswordInput):
     def render(self, name, value, attrs=None, renderer=None):
         message = _(
             'This password would take <em class="password_strength_time"></em> to crack.'
@@ -50,7 +40,7 @@ class PasswordStrengthInput(PasswordInput):
         </div>
         """
 
-        self.attrs = add_class(self.attrs, "password_strength")
+        self.attrs = add_attribute(self.attrs, "class", "password_strength")
         self.attrs["autocomplete"] = "new-password"
         return mark_safe(super().render(name, value, self.attrs) + markup)
 
@@ -60,7 +50,8 @@ class PasswordStrengthInput(PasswordInput):
             forms.Script("common/js/password_strength.js", defer=""),
         ]
 
-class PasswordConfirmationInput(PasswordInput):
+
+class PasswordConfirmationInput(forms.PasswordInput):
     def __init__(self, confirm_with=None, attrs=None, render_value=False):
         super().__init__(attrs, render_value)
         self.confirm_with = confirm_with
@@ -79,11 +70,11 @@ class PasswordConfirmationInput(PasswordInput):
         </div>
         """
 
-        self.attrs = add_class(self.attrs, "password_confirmation")
+        self.attrs = add_attribute(self.attrs, "class", "password_confirmation")
         return mark_safe(super().render(name, value, self.attrs) + markup)
 
 
-class ClearableBasenameFileInput(ClearableFileInput):
+class ClearableBasenameFileInput(forms.ClearableFileInput):
     class FakeFile(File):
         def __init__(self, file):
             self.file = file
@@ -112,7 +103,7 @@ class ImageInput(ClearableBasenameFileInput):
     template_name = "common/widgets/image_input.html"
 
 
-class MarkdownWidget(Textarea):
+class MarkdownWidget(forms.Textarea):
     template_name = "common/widgets/markdown.html"
 
     def get_context(self, name, value, attrs):
@@ -120,8 +111,17 @@ class MarkdownWidget(Textarea):
         ctx["preview_help"] = phrases.base.use_markdown
         return ctx
 
+    class Media:
+        js = [
+            forms.Script("vendored/marked.min.js", defer=""),
+            forms.Script("vendored/purify.min.js", defer=""),
+            forms.Script("common/js/tabs.js", defer=""),
+            forms.Script("common/js/markdown.js", defer=""),
+        ]
+        css = {"all": ["common/css/tabs.css", "common/css/markdown.css"]}
 
-class EnhancedSelectMixin(Select):
+
+class EnhancedSelectMixin(forms.Select):
     # - add the "class: enhanced" attribute to the select widget
     # - if `description_field` is set, set data-description on options
     # - if `color_field` is set, set data-color on options
@@ -134,7 +134,9 @@ class EnhancedSelectMixin(Select):
 
     def get_context(self, name, value, attrs):
         ctx = super().get_context(name, value, attrs)
-        ctx["widget"]["attrs"] = add_class(ctx["widget"]["attrs"], "enhanced")
+        ctx["widget"]["attrs"] = add_attribute(
+            ctx["widget"]["attrs"], "class", "enhanced"
+        )
         ctx["widget"]["attrs"]["tabindex"] = "-1"
         return ctx
 
@@ -159,11 +161,11 @@ class EnhancedSelectMixin(Select):
         return option
 
 
-class EnhancedSelect(EnhancedSelectMixin, Select):
+class EnhancedSelect(EnhancedSelectMixin, forms.Select):
     pass
 
 
-class EnhancedSelectMultiple(EnhancedSelectMixin, SelectMultiple):
+class EnhancedSelectMultiple(EnhancedSelectMixin, forms.SelectMultiple):
     pass
 
 
@@ -214,7 +216,7 @@ class SelectMultipleWithCount(EnhancedSelectMultiple):
         return super().create_option(name, value, label, *args, **kwargs)
 
 
-class SearchInput(TextInput):
+class SearchInput(forms.TextInput):
     input_type = "search"
 
     def get_context(self, name, value, attrs):
@@ -223,7 +225,7 @@ class SearchInput(TextInput):
         return context
 
 
-class TextInputWithAddon(TextInput):
+class TextInputWithAddon(forms.TextInput):
     template_name = "common/widgets/text_input_with_addon.html"
 
     def __init__(self, attrs=None, addon_before=None, addon_after=None):
@@ -238,7 +240,7 @@ class TextInputWithAddon(TextInput):
         return context
 
 
-class HtmlDateInput(DateInput):
+class HtmlDateInput(forms.DateInput):
     input_type = "date"
 
     def format_value(self, value):
@@ -246,8 +248,11 @@ class HtmlDateInput(DateInput):
             return value.strftime("%Y-%m-%d")
         return value
 
+    class Media:
+        js = [forms.Script("common/js/datefield.js", defer="")]
 
-class HtmlDateTimeInput(DateTimeInput):
+
+class HtmlDateTimeInput(forms.DateTimeInput):
     input_type = "datetime-local"
 
     def format_value(self, value):
@@ -255,11 +260,30 @@ class HtmlDateTimeInput(DateTimeInput):
             return value.strftime("%Y-%m-%dT%H:%M")
         return value
 
+    class Media:
+        js = [forms.Script("common/js/datefield.js", defer="")]
 
-class HtmlTimeInput(TimeInput):
+
+class HtmlTimeInput(forms.TimeInput):
     input_type = "time"
 
     def format_value(self, value):
         if value and isinstance(value, (dt.time, dt.datetime)):
             return value.strftime("%H:%M")
         return value
+
+    class Meta:
+        js = [forms.Script("common/js/datefield.js", defer="")]
+
+
+class ColorPickerWidget(forms.TextInput):
+
+    def __init__(self, attrs=None):
+        attrs = add_attribute(attrs, "class", "colorpicker")
+        super().__init__(attrs=attrs)
+
+    class Media:
+        js = [
+            forms.Script("vendored/vanilla-picker/vanilla-picker.min.js", defer=""),
+            forms.Script("orga/js/colorpicker.js", defer=""),
+        ]

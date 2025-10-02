@@ -486,6 +486,7 @@ class CRUDView(PaginationMixin, Filterable, View):
             ]
         # Finally, fall back to the generic template for this action
         templates.append(f"common/generic/{self.action}.html")
+        return templates
 
     def render_to_response(self, context):
         return TemplateResponse(

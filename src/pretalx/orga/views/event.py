@@ -545,7 +545,10 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
     condition_dict = {"copy": condition_copy}
 
     def get_template_names(self):
-        return [f"orga/event/wizard/{self.steps.current}.html"]
+        return [
+            f"orga/event/wizard/{self.steps.current}.html",
+            "orga/event/wizard/base.html",
+        ]
 
     @context
     def organiser(self):

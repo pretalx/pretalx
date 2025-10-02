@@ -325,6 +325,9 @@ class EventForm(ReadOnlyFlag, I18nHelpText, JsonSubfieldMixin, I18nModelForm):
                 **update
             )
 
+    class Media:
+        js = [forms.Script("orga/js/eventSettings.js", defer="")]
+
     class Meta:
         model = Event
         fields = [
@@ -494,6 +497,9 @@ class MailSettingsForm(
                 ),
             )
 
+    class Media:
+        js = [forms.Script("orga/js/mailSettings.js", defer="")]
+
     class Meta:
         json_fields = {
             "reply_to": "mail_settings",
@@ -563,6 +569,9 @@ class ReviewSettingsForm(
         required=False,
     )
 
+    class Media:
+        js = [forms.Script("orga/js/reviewSettings.js", defer="")]
+
     class Meta:
         json_fields = {
             "score_mandatory": "review_settings",
@@ -582,6 +591,9 @@ class WidgetSettingsForm(JsonSubfieldMixin, forms.Form):
         ),
         required=False,
     )
+
+    class Media:
+        js = [forms.Script("orga/js/widgetSettings.js", defer="")]
 
     class Meta:
         json_fields = {"show_widget_if_not_public": "feature_flags"}

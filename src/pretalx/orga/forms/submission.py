@@ -182,6 +182,9 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             )
         return instance
 
+    class Media:
+        js = [forms.Script("orga/js/submission_form.js", defer="")]
+
     class Meta:
         model = Submission
         fields = [
@@ -318,3 +321,6 @@ class AddSpeakerForm(forms.Form):
 
 class AddSpeakerInlineForm(AddSpeakerForm):
     default_renderer = InlineFormLabelRenderer
+
+    class Media:
+        js = [forms.Script("orga/js/speakers.js", defer="")]

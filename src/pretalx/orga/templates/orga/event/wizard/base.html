@@ -1,5 +1,6 @@
 {% extends "orga/base.html" %}
 
+{% load form_media %}
 {% load i18n %}
 
 {% block extra_title %}{% translate "New event" %} :: {% endblock extra_title %}
@@ -29,4 +30,5 @@
             {% endif %}
         </div>
     </fieldset></form>
+    {% form_media %}
 {% endblock content %}

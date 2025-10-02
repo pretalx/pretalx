@@ -1,16 +1,9 @@
 {% extends "orga/base.html" %}
 
-{% load compress %}
+{% load form_media %}
 {% load i18n %}
 {% load review_score %}
 {% load rules %}
-{% load static %}
-
-{% block scripts %}
-    {% compress js %}
-        <script src="{% static "orga/js/submission_filter.js" %}"></script>
-    {% endcompress %}
-{% endblock scripts %}
 
 {% block extra_title %}{% translate "Reviews" %} :: {% endblock extra_title %}
 
@@ -81,5 +74,5 @@
             <button type="submit" class="btn btn-success">{{ phrases.base.save }}</button>
         </div>
     </form>
-    {{ table.0.form.media }}
+    {% form_media %}
 {% endblock content %}

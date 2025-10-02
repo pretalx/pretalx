@@ -454,3 +454,6 @@ class SubmissionFilterForm(forms.Form):
         if not self.cleaned_data.get("state"):
             qs = qs.exclude(state="deleted")
         return qs
+
+    class Media:
+        js = [forms.Script("orga/js/submission_filter.js", defer="")]

@@ -1,6 +1,7 @@
 {% extends "orga/generic/_form.html" %}
 
 {% load compress %}
+{% load form_media %}
 {% load formset_tags %}
 {% load i18n %}
 {% load static %}
@@ -16,7 +17,6 @@
         <script defer src="{% static "js/jquery.js" %}"></script>
         <script defer src="{% static "js/jquery.formset.js" %}"></script>
         <script defer src="{% static "cfp/js/animateFormset.js" %}"></script>
-        <script defer src="{% static "orga/js/questionForm.js" %}"></script>
         <script defer src="{% static "orga/js/dragsort.js" %}"></script>
     {% endcompress %}
 {% endblock scripts %}
@@ -145,4 +145,5 @@
         {% include "orga/includes/submit_row.html" %}
 
     </form>
+    {% form_media %}
 {% endblock form %}
