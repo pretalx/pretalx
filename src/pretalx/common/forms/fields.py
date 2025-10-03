@@ -1,13 +1,17 @@
+import datetime as dt
+import json
 from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.uploadedfile import UploadedFile
 from django.forms import CharField, FileField, RegexField, ValidationError
+from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField
 
 from pretalx.common.forms.widgets import (
+    AvailabilitiesWidget,
     ClearableBasenameFileInput,
     ColorPickerWidget,
     ImageInput,
@@ -15,6 +19,7 @@ from pretalx.common.forms.widgets import (
     PasswordStrengthInput,
 )
 from pretalx.common.templatetags.filesize import filesize
+from pretalx.schedule.models import Availability, Room
 
 IMAGE_EXTENSIONS = {
     ".png": ["image/png", ".png"],
@@ -148,3 +153,159 @@ class SubmissionTypeField(SafeModelChoiceField):
         if self.show_duration:
             return str(obj)
         return str(obj.name)
+
+
+class AvailabilitiesField(CharField):
+    widget = AvailabilitiesWidget
+    default_error_messages = {
+        "invalid_json": _("Submitted availabilities are not valid json: %(error)s."),
+        "invalid_format": _(
+            "Availability JSON does not comply with expected format: %(detail)s"
+        ),
+        "invalid_availability_format": _(
+            "The submitted availability does not comply with the required format."
+        ),
+        "invalid_date": _("The submitted availability contains an invalid date."),
+        "required_availability": _("Please fill in your availability!"),
+    }
+
+    def __init__(self, *args, event=None, instance=None, resolution=None, **kwargs):
+        self.event = event
+        self.instance = instance
+        self.resolution = resolution
+
+        if "initial" not in kwargs and self.instance and self.event:
+            kwargs["initial"] = self._serialize(self.event, self.instance)
+
+        super().__init__(*args, **kwargs)
+
+    def set_initial_from_instance(self):
+        if self.instance and self.event and not self.initial:
+            self.initial = self._serialize(self.event, self.instance)
+
+    def _serialize(self, event, instance):
+        availabilities = []
+        if instance and instance.pk:
+            availabilities = [av.serialize() for av in instance.availabilities.all()]
+
+        result = {
+            "availabilities": [
+                avail for avail in availabilities if avail["end"] > avail["start"]
+            ],
+            "event": {
+                "timezone": event.timezone,
+                "date_from": str(event.date_from),
+                "date_to": str(event.date_to),
+            },
+        }
+        if self.resolution:
+            result["resolution"] = self.resolution
+        if event and self.instance and not isinstance(self.instance, Room):
+            # Speakers are limited to room availabilities, if any exist
+            room_avails = event.availabilities.filter(room__isnull=False)
+            if room_avails:
+                merged_avails = Availability.union(room_avails)
+                result["constraints"] = [
+                    {
+                        "start": avail.start.astimezone(event.tz).isoformat(),
+                        "end": avail.end.astimezone(event.tz).isoformat(),
+                    }
+                    for avail in merged_avails
+                ]
+
+        return json.dumps(result)
+
+    def _parse_availabilities_json(self, jsonavailabilities):
+        try:
+            rawdata = json.loads(jsonavailabilities)
+        except ValueError as e:
+            raise ValidationError(
+                self.error_messages["invalid_json"],
+                code="invalid_json",
+                params={"error": e},
+            )
+        if not isinstance(rawdata, dict):
+            raise ValidationError(
+                self.error_messages["invalid_format"],
+                code="invalid_format",
+                params={"detail": f"Should be object, but is {type(rawdata)}"},
+            )
+        availabilities = rawdata.get("availabilities")
+        if not isinstance(availabilities, list):
+            raise ValidationError(
+                self.error_messages["invalid_format"],
+                code="invalid_format",
+                params={
+                    "detail": f"`availabilities` should be a list, but is {type(availabilities)}"
+                },
+            )
+        return availabilities
+
+    def _parse_datetime(self, strdate):
+        obj = parse_datetime(strdate)
+        if not obj:
+            raise TypeError
+        if obj.tzinfo is None:
+            obj = obj.replace(tzinfo=self.event.tz)
+        return obj
+
+    def _validate_availability(self, rawavail):
+        if not isinstance(rawavail, dict):
+            raise ValidationError(
+                self.error_messages["invalid_availability_format"],
+                code="invalid_availability_format",
+            )
+        rawavail.pop("id", None)
+        rawavail.pop("allDay", None)
+        if set(rawavail.keys()) != {"start", "end"}:
+            raise ValidationError(
+                self.error_messages["invalid_availability_format"],
+                code="invalid_availability_format",
+            )
+
+        try:
+            for key in ("start", "end"):
+                raw_value = rawavail[key]
+                if not isinstance(raw_value, dt.datetime):
+                    rawavail[key] = self._parse_datetime(raw_value)
+        except (TypeError, ValueError):
+            raise ValidationError(
+                self.error_messages["invalid_date"], code="invalid_date"
+            )
+
+        timeframe_start = dt.datetime.combine(
+            self.event.date_from, dt.time(), tzinfo=self.event.tz
+        )
+        if rawavail["start"] < timeframe_start:
+            rawavail["start"] = timeframe_start
+
+        timeframe_end = dt.datetime.combine(
+            self.event.date_to, dt.time(), tzinfo=self.event.tz
+        )
+        timeframe_end = timeframe_end + dt.timedelta(days=1)
+        rawavail["end"] = min(rawavail["end"], timeframe_end)
+
+    def clean(self, value):
+        value = super().clean(value)
+        if not value:
+            if self.required:
+                raise ValidationError(
+                    self.error_messages["required_availability"],
+                    code="required_availability",
+                )
+            return []
+
+        rawavailabilities = self._parse_availabilities_json(value)
+        availabilities = []
+
+        for rawavail in rawavailabilities:
+            self._validate_availability(rawavail)
+            availabilities.append(Availability(event_id=self.event.id, **rawavail))
+
+        if not availabilities and self.required:
+            raise ValidationError(
+                self.error_messages["required_availability"],
+                code="required_availability",
+            )
+
+        return Availability.union(availabilities)

@@ -3,31 +3,25 @@ import json
 from zoneinfo import ZoneInfo
 
 import pytest
-from django.forms import ModelForm, ValidationError
+from django.forms import ValidationError
 from django.utils import timezone
 from django_scopes import scope
 
-from pretalx.person.models import SpeakerProfile
-from pretalx.schedule.forms import AvailabilitiesFormMixin
+from pretalx.common.forms.fields import AvailabilitiesField
 from pretalx.schedule.models import Availability, Room
 
 timezone.activate(ZoneInfo("UTC"))
 
 
-class AvailabilitiesForm(AvailabilitiesFormMixin, ModelForm):
-    class Meta:
-        model = Room
-        fields = []
-
-
 @pytest.fixture
-def availabilitiesform(event):
+def availabilities_field(event):
     event.date_from = dt.date(2017, 1, 1)
     event.date_to = dt.date(2017, 1, 2)
 
-    return AvailabilitiesForm(
+    return AvailabilitiesField(
         event=event,
         instance=None,
+        required=False,
     )
 
 
@@ -42,9 +36,9 @@ def availabilitiesform(event):
         ('{"availabilities": {}}', "format"),  # availabilities not a list
     ),
 )
-def test_parse_availabilities_json_fail(availabilitiesform, json, error):
+def test_parse_availabilities_json_fail(availabilities_field, json, error):
     with pytest.raises(ValidationError) as excinfo:
-        availabilitiesform._parse_availabilities_json(json)
+        availabilities_field._parse_availabilities_json(json)
 
     assert error in str(excinfo.value)
 
@@ -57,8 +51,8 @@ def test_parse_availabilities_json_fail(availabilitiesform, json, error):
         ('{"availabilities": [1]}'),
     ),
 )
-def test_parse_availabilities_json_success(availabilitiesform, json):
-    availabilitiesform._parse_availabilities_json(json)
+def test_parse_availabilities_json_success(availabilities_field, json):
+    availabilities_field._parse_availabilities_json(json)
 
 
 @pytest.mark.django_db
@@ -73,9 +67,9 @@ def test_parse_availabilities_json_success(availabilitiesform, json):
         ({"start": True, "end": True, "foo": True}),  # extra attributes
     ),
 )
-def test_validate_availability_fail_format(availabilitiesform, avail):
+def test_validate_availability_fail_format(availabilities_field, avail):
     with pytest.raises(ValidationError) as excinfo:
-        availabilitiesform._validate_availability(avail)
+        availabilities_field._validate_availability(avail)
 
     assert "format" in str(excinfo.value)
 
@@ -89,9 +83,9 @@ def test_validate_availability_fail_format(availabilitiesform, avail):
         ({"start": "2017", "end": "2017"}),  # missing month
     ),
 )
-def test_validate_availability_fail_date(availabilitiesform, avail):
+def test_validate_availability_fail_date(availabilities_field, avail):
     with pytest.raises(ValidationError) as excinfo:
-        availabilitiesform._validate_availability(avail)
+        availabilities_field._validate_availability(avail)
 
     assert "invalid date" in str(excinfo.value)
 
@@ -108,8 +102,8 @@ def test_validate_availability_fail_date(availabilitiesform, avail):
         ({"start": "2017-01-02 00:00:00", "end": "2017-01-03 00:00:00"}),  # all day end
     ),
 )
-def test_validate_availability_success(availabilitiesform, avail):
-    availabilitiesform._validate_availability(avail)
+def test_validate_availability_success(availabilities_field, avail):
+    availabilities_field._validate_availability(avail)
 
 
 @pytest.mark.django_db
@@ -136,20 +130,20 @@ def test_validate_availability_success(availabilitiesform, avail):
         ),  # UTC, end
     ),
 )
-def test_validate_availability_tz_success(availabilitiesform, avail):
-    availabilitiesform.event.timezone = "America/New_York"
-    availabilitiesform.event.save()
-    availabilitiesform._validate_availability(avail)
+def test_validate_availability_tz_success(availabilities_field, avail):
+    availabilities_field.event.timezone = "America/New_York"
+    availabilities_field.event.save()
+    availabilities_field._validate_availability(avail)
 
 
 @pytest.mark.django_db
-def test_validate_availability_daylightsaving(availabilitiesform):
+def test_validate_availability_daylightsaving(availabilities_field):
     # https://github.com/pretalx/pretalx/issues/460
-    availabilitiesform.event.timezone = "Europe/Berlin"
-    availabilitiesform.event.date_from = dt.date(2018, 10, 22)
-    availabilitiesform.event.date_to = dt.date(2018, 10, 28)
-    availabilitiesform.event.save()
-    availabilitiesform._validate_availability(
+    availabilities_field.event.timezone = "Europe/Berlin"
+    availabilities_field.event.date_from = dt.date(2018, 10, 22)
+    availabilities_field.event.date_to = dt.date(2018, 10, 28)
+    availabilities_field.event.save()
+    availabilities_field._validate_availability(
         {"start": "2018-10-22 00:00:00", "end": "2018-10-29 00:00:00"}
     )
 
@@ -163,14 +157,14 @@ def test_validate_availability_daylightsaving(availabilitiesform):
         ("2017-01-01 10:00:00-04:00", dt.datetime(2017, 1, 1, 9)),
     ),
 )
-def test_parse_datetime(availabilitiesform, strdate, expected):
-    availabilitiesform.event.timezone = "America/New_York"
-    availabilitiesform.event.save()
-    del availabilitiesform.event.tz
+def test_parse_datetime(availabilities_field, strdate, expected):
+    availabilities_field.event.timezone = "America/New_York"
+    availabilities_field.event.save()
+    del availabilities_field.event.tz
 
-    assert availabilitiesform.event.tz == ZoneInfo("America/New_York")
+    assert availabilities_field.event.tz == ZoneInfo("America/New_York")
     expected = expected.replace(tzinfo=ZoneInfo("America/New_York"))
-    actual = availabilitiesform._parse_datetime(strdate)
+    actual = availabilities_field._parse_datetime(strdate)
     assert actual == expected
 
 
@@ -182,10 +176,9 @@ def test_parse_datetime(availabilitiesform, strdate, expected):
         ('{"availabilities": [1]}', "format"),
     ),
 )
-def test_clean_availabilities_fail(availabilitiesform, json, error):
+def test_clean_availabilities_fail(availabilities_field, json, error):
     with pytest.raises(ValidationError) as excinfo:
-        availabilitiesform.cleaned_data = {"availabilities": json}
-        availabilitiesform.clean_availabilities()
+        availabilities_field.clean(json)
 
     assert error in str(excinfo.value)
 
@@ -209,87 +202,16 @@ def test_clean_availabilities_fail(availabilitiesform, json, error):
         ),
     ),
 )
-def test_clean_availabilities_success(availabilitiesform, json, expected):
-    availabilitiesform.cleaned_data = {"availabilities": json}
-    actual = availabilitiesform.clean_availabilities()
+def test_clean_availabilities_success(availabilities_field, json, expected):
+    actual = availabilities_field.clean(json)
 
     assert len(actual) == len(expected)
 
     for act, exp in zip(actual, expected):
         assert act.start.replace(tzinfo=None) == exp.start
         assert act.end.replace(tzinfo=None) == exp.end
-        assert act.event_id == availabilitiesform.event.id
+        assert act.event_id == availabilities_field.event.id
         assert act.id is None
-
-
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    "instancegen,fk_name",
-    (
-        (lambda event_id: Room.objects.create(event_id=event_id), "room_id"),
-        (
-            lambda event_id: SpeakerProfile.objects.create(event_id=event_id),
-            "person_id",
-        ),
-    ),
-)
-def test_set_foreignkeys(availabilitiesform, instancegen, fk_name):
-    availabilities = [
-        Availability(
-            start=dt.datetime(2017, 1, 1, 10), end=dt.datetime(2017, 1, 1, 12)
-        ),
-        Availability(
-            start=dt.datetime(2017, 1, 2, 10), end=dt.datetime(2017, 1, 2, 15)
-        ),
-    ]
-    instance = instancegen(availabilitiesform.event.id)
-    availabilitiesform._set_foreignkeys(instance, availabilities)
-
-    for avail in availabilities:
-        assert getattr(avail, fk_name) == instance.id
-
-
-@pytest.mark.django_db
-def test_replace_availabilities(availabilitiesform):
-    with scope(event=availabilitiesform.event):
-        instance = Room.objects.create(event_id=availabilitiesform.event.id)
-        Availability.objects.bulk_create(
-            [
-                Availability(
-                    room_id=instance.id,
-                    event_id=availabilitiesform.event.id,
-                    start=dt.datetime(2017, 1, 1, 10, tzinfo=ZoneInfo("UTC")),
-                    end=dt.datetime(2017, 1, 1, 12, tzinfo=ZoneInfo("UTC")),
-                ),
-                Availability(
-                    room_id=instance.id,
-                    event_id=availabilitiesform.event.id,
-                    start=dt.datetime(2017, 1, 2, 10, tzinfo=ZoneInfo("UTC")),
-                    end=dt.datetime(2017, 1, 2, 15, tzinfo=ZoneInfo("UTC")),
-                ),
-            ]
-        )
-
-        expected = [
-            Availability(
-                room_id=instance.id,
-                event_id=availabilitiesform.event.id,
-                start=dt.datetime(2017, 1, 1, 12, tzinfo=ZoneInfo("UTC")),
-                end=dt.datetime(2017, 1, 1, 12, tzinfo=ZoneInfo("UTC")),
-            ),
-            Availability(
-                room_id=instance.id,
-                event_id=availabilitiesform.event.id,
-                start=dt.datetime(2017, 1, 2, 12, tzinfo=ZoneInfo("UTC")),
-                end=dt.datetime(2017, 1, 2, 15, tzinfo=ZoneInfo("UTC")),
-            ),
-        ]
-
-        availabilitiesform._replace_availabilities(instance, expected)
-
-        actual = instance.availabilities.all()
-        for act, exp in zip(actual, expected):
-            assert act.start == exp.start
 
 
 @pytest.mark.django_db
@@ -353,7 +275,7 @@ def test_replace_availabilities(availabilitiesform):
         ),
     ),
 )
-def test_serialize_availability(availabilitiesform, avail, expected):
+def test_serialize_availability(avail, expected):
     with timezone.override(ZoneInfo("UTC")):
         actual = avail.serialize(full=True)
     del actual["id"]
@@ -426,15 +348,15 @@ def test_serialize_availability(availabilitiesform, avail, expected):
         ),
     ),
 )
-def test_serialize(availabilitiesform, avails, expected, tzname):
-    with scope(event=availabilitiesform.event), timezone.override(ZoneInfo("UTC")):
-        availabilitiesform.event.timezone = tzname
-        availabilitiesform.event.save()
+def test_serialize(availabilities_field, avails, expected, tzname):
+    with scope(event=availabilities_field.event), timezone.override(ZoneInfo("UTC")):
+        availabilities_field.event.timezone = tzname
+        availabilities_field.event.save()
 
         if avails is not None:
-            instance = Room.objects.create(event_id=availabilitiesform.event.id)
+            instance = Room.objects.create(event_id=availabilities_field.event.id)
             for avail in avails:
-                avail.event_id = availabilitiesform.event.id
+                avail.event_id = availabilities_field.event.id
                 avail.room_id = instance.id
                 avail.save()
         else:
@@ -445,45 +367,6 @@ def test_serialize(availabilitiesform, avails, expected, tzname):
                 j["id"] = a.pk
 
         actual = json.loads(
-            availabilitiesform._serialize(availabilitiesform.event, instance)
+            availabilities_field._serialize(availabilities_field.event, instance)
         )
         assert actual == expected
-
-
-@pytest.mark.django_db
-def test_chained(availabilitiesform, room):
-    """make sure the Mixin can actually deserialize the data it serialized."""
-    with scope(event=room.event):
-        room.event.timezone = "America/New_York"
-        room.event.save()
-        del room.event.tz
-        room.save()
-        # normal
-        Availability.objects.create(
-            event=availabilitiesform.event,
-            room=room,
-            start=dt.datetime(2017, 1, 1, 10, tzinfo=room.event.tz),
-            end=dt.datetime(2017, 1, 1, 12, tzinfo=room.event.tz),
-        )
-        # all day
-        Availability.objects.create(
-            event=availabilitiesform.event,
-            room=room,
-            start=dt.datetime(2017, 1, 1, tzinfo=room.event.tz),
-            end=dt.datetime(2017, 1, 3, tzinfo=room.event.tz),
-        )
-
-        form = AvailabilitiesForm(
-            event=availabilitiesform.event,
-            instance=room,
-        )
-
-        form.cleaned_data = form.initial
-        form.cleaned_data["availabilities"] = form.clean_availabilities()
-        form.save()
-
-        avails = Room.objects.first().availabilities.order_by("-start")
-        # One of these is contained in the other!
-        assert len(avails) == 1
-        assert avails[0].start == dt.datetime(2017, 1, 1, 5, tzinfo=ZoneInfo("UTC"))
-        assert avails[0].end == dt.datetime(2017, 1, 3, 5, tzinfo=ZoneInfo("UTC"))

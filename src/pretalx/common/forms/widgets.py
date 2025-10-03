@@ -287,3 +287,19 @@ class ColorPickerWidget(forms.TextInput):
             forms.Script("vendored/vanilla-picker/vanilla-picker.min.js", defer=""),
             forms.Script("orga/js/colorpicker.js", defer=""),
         ]
+
+
+class AvailabilitiesWidget(forms.TextInput):
+
+    def __init__(self, attrs=None):
+        attrs = add_attribute(attrs, "class", "availabilities-editor-data")
+        super().__init__(attrs=attrs)
+
+    class Media:
+        js = [
+            forms.Script("vendored/luxon.min.js", defer=""),
+            forms.Script("vendored/fullcalendar/fullcalendar.min.js", defer=""),
+            forms.Script("vendored/fullcalendar/luxon-plugin.min.js", defer=""),
+            forms.Script("common/js/availabilities.js", defer=""),
+        ]
+        css = {"all": ["common/css/availabilities.css"]}

@@ -7,7 +7,7 @@ from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceFie
 from i18nfield.forms import I18nModelForm
 
 from pretalx.cfp.forms.cfp import CfPFormMixin
-from pretalx.common.forms.fields import ImageField, SizeFileField
+from pretalx.common.forms.fields import AvailabilitiesField, ImageField, SizeFileField
 from pretalx.common.forms.mixins import (
     I18nHelpText,
     PublicContent,
@@ -23,9 +23,10 @@ from pretalx.common.forms.widgets import (
 from pretalx.common.text.phrases import phrases
 from pretalx.event.models import Event
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
-from pretalx.schedule.forms import AvailabilitiesFormMixin
 from pretalx.submission.models import Question
 from pretalx.submission.models.submission import SubmissionStates
+from pretalx.schedule.models import Availability
+
 
 
 def get_email_address_error():
@@ -38,7 +39,6 @@ def get_email_address_error():
 
 class SpeakerProfileForm(
     CfPFormMixin,
-    AvailabilitiesFormMixin,
     ReadOnlyFlag,
     PublicContent,
     RequestRequire,
@@ -46,6 +46,8 @@ class SpeakerProfileForm(
 ):
     USER_FIELDS = ["name", "email", "avatar", "get_gravatar"]
     FIRST_TIME_EXCLUDE = ["email"]
+
+    availabilities = AvailabilitiesField()
 
     def __init__(self, *args, name=None, **kwargs):
         self.user = kwargs.pop("user", None)
@@ -55,7 +57,15 @@ class SpeakerProfileForm(
         kwargs["instance"] = None
         if self.user:
             kwargs["instance"] = self.user.event_profile(self.event)
-        super().__init__(*args, **kwargs, event=self.event, limit_to_rooms=True)
+        super().__init__(*args, **kwargs)
+
+        if self.event and "availabilities" in self.fields:
+            self.fields["availabilities"].event = self.event
+            self.fields["availabilities"].instance = kwargs.get("instance")
+            self.fields["availabilities"].set_initial_from_instance()
+            # Also set form-level initial data for error handling
+            if self.fields["availabilities"].initial:
+                self.initial["availabilities"] = self.fields["availabilities"].initial
         read_only = kwargs.get("read_only", False)
         initial = kwargs.get("initial", {})
         initial["name"] = name
@@ -85,7 +95,8 @@ class SpeakerProfileForm(
             # Replace self.data with a version that uses initial["availabilities"]
             # in order to have event and timezone data available
             self.data = self.data.copy()
-            self.data["availabilities"] = self.initial["availabilities"]
+            if "availabilities" in self.initial:
+                self.data["availabilities"] = self.initial["availabilities"]
 
     @cached_property
     def user_fields(self):
@@ -146,6 +157,10 @@ class SpeakerProfileForm(
         self.instance.user = self.user
         result = super().save(**kwargs)
 
+        availabilities = self.cleaned_data.get("availabilities")
+        if availabilities is not None:
+            Availability.replace_for_instance(self.instance, availabilities)
+
         if self.user.avatar and "avatar" in self.changed_data:
             self.user.process_image("avatar", generate_thumbnail=True)
         return result
@@ -168,6 +183,29 @@ class SpeakerProfileForm(
             "avatar": ImageField,
         }
         request_require = {"biography", "availabilities"}
+
+
+class SpeakerAvailabilityForm(forms.Form):
+    """Form for handling speaker availability during submission confirmation."""
+
+    def __init__(self, *args, event=None, speaker_profile=None, **kwargs):
+        self.event = event
+        self.speaker_profile = speaker_profile
+        super().__init__(*args, **kwargs)
+
+        if self.event and self.speaker_profile:
+            self.fields["availabilities"] = AvailabilitiesField(
+                event=self.event, instance=self.speaker_profile
+            )
+
+    def save(self):
+        if not hasattr(self, "cleaned_data"):
+            return None
+
+        availabilities = self.cleaned_data.get("availabilities")
+        if availabilities is not None and self.speaker_profile:
+            Availability.replace_for_instance(self.speaker_profile, availabilities)
+        return self.speaker_profile
 
 
 class OrgaProfileForm(forms.ModelForm):
