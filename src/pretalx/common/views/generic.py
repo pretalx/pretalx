@@ -22,10 +22,10 @@ from django.views.generic.edit import ModelFormMixin, ProcessFormView
 from django_context_decorator import context
 from django_tables2 import LazyPaginator
 from django_tables2.views import SingleTableMixin
-from i18nfield.forms import I18nModelForm
 
 from pretalx.cfp.forms.auth import ResetForm
 from pretalx.common.exceptions import SendMailException
+from pretalx.common.forms.mixins import PretalxI18nModelForm
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import (
     Filterable,
@@ -336,7 +336,7 @@ class CRUDView(PaginationMixin, Filterable, View):
     def get_form_kwargs(self):
         kwargs = {}
         event = getattr(self.request, "event", None)
-        if event and issubclass(self.form_class, I18nModelForm):
+        if event and issubclass(self.form_class, PretalxI18nModelForm):
             kwargs["locales"] = event.locales
         return kwargs
 

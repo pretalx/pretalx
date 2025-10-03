@@ -4,12 +4,11 @@ from django.db.models import Count, Q
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
-from i18nfield.forms import I18nModelForm
 
 from pretalx.cfp.forms.cfp import CfPFormMixin
 from pretalx.common.forms.fields import AvailabilitiesField, ImageField, SizeFileField
 from pretalx.common.forms.mixins import (
-    I18nHelpText,
+    PretalxI18nModelForm,
     PublicContent,
     ReadOnlyFlag,
     RequestRequire,
@@ -213,7 +212,7 @@ class OrgaProfileForm(forms.ModelForm):
         fields = ("name", "locale")
 
 
-class SpeakerInformationForm(I18nHelpText, I18nModelForm):
+class SpeakerInformationForm(PretalxI18nModelForm):
     def __init__(self, *args, event=None, **kwargs):
         self.event = event
         super().__init__(*args, **kwargs)

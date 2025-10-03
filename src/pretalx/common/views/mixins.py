@@ -16,10 +16,10 @@ from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
 from django_context_decorator import context
 from formtools.wizard.forms import ManagementForm
-from i18nfield.forms import I18nModelForm
 from rules.contrib.views import PermissionRequiredMixin
 
 from pretalx.common.forms import SearchForm
+from pretalx.common.forms.mixins import PretalxI18nModelForm
 from pretalx.common.text.phrases import phrases
 
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
@@ -59,7 +59,7 @@ class ActionFromUrl:
         kwargs = super().get_form_kwargs()
         kwargs["read_only"] = self.action == "view"
         event = getattr(self.request, "event", None)
-        if event and issubclass(self.form_class, I18nModelForm):
+        if event and issubclass(self.form_class, PretalxI18nModelForm):
             kwargs["locales"] = event.locales
         return kwargs
 

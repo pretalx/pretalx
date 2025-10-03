@@ -14,13 +14,14 @@ from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelMultipleChoiceField
 from i18nfield.fields import I18nFormField, I18nTextarea
-from i18nfield.forms import I18nFormMixin, I18nFormSetMixin, I18nModelForm
+from i18nfield.forms import I18nFormSetMixin
 
 from pretalx.common.forms.fields import ColorField, ImageField
 from pretalx.common.forms.mixins import (
     HierarkeyMixin,
-    I18nHelpText,
     JsonSubfieldMixin,
+    PretalxI18nFormMixin,
+    PretalxI18nModelForm,
     ReadOnlyFlag,
 )
 from pretalx.common.forms.renderers import InlineFormLabelRenderer
@@ -56,7 +57,7 @@ def make_naive(moment):
     )
 
 
-class EventForm(ReadOnlyFlag, I18nHelpText, JsonSubfieldMixin, I18nModelForm):
+class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
     locales = forms.MultipleChoiceField(
         label=_("Active languages"),
         choices=[],
@@ -372,7 +373,7 @@ class EventForm(ReadOnlyFlag, I18nHelpText, JsonSubfieldMixin, I18nModelForm):
 
 
 class MailSettingsForm(
-    ReadOnlyFlag, I18nFormMixin, I18nHelpText, JsonSubfieldMixin, forms.Form
+    ReadOnlyFlag, PretalxI18nFormMixin, JsonSubfieldMixin, forms.Form
 ):
     reply_to = forms.EmailField(
         label=_("Contact address"),
@@ -518,8 +519,7 @@ class MailSettingsForm(
 
 class ReviewSettingsForm(
     ReadOnlyFlag,
-    I18nFormMixin,
-    I18nHelpText,
+    PretalxI18nFormMixin,
     HierarkeyMixin,
     JsonSubfieldMixin,
     forms.Form,
@@ -633,7 +633,7 @@ class WidgetGenerationForm(forms.ModelForm):
         widgets = {"locale": EnhancedSelect}
 
 
-class ReviewPhaseForm(I18nHelpText, I18nModelForm):
+class ReviewPhaseForm(PretalxI18nModelForm):
     def __init__(self, *args, event=None, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -683,7 +683,7 @@ def strip_zeroes(value):
     return Decimal(value.rstrip("0"))
 
 
-class ReviewScoreCategoryForm(I18nHelpText, I18nModelForm):
+class ReviewScoreCategoryForm(PretalxI18nModelForm):
     new_scores = forms.CharField(required=False, initial="")
 
     def __init__(self, *args, event=None, **kwargs):
@@ -767,7 +767,7 @@ class ReviewScoreCategoryForm(I18nHelpText, I18nModelForm):
         widgets = {"limit_tracks": EnhancedSelectMultiple(color_field="color")}
 
 
-class EventExtraLinkForm(I18nModelForm):
+class EventExtraLinkForm(PretalxI18nModelForm):
     default_renderer = InlineFormLabelRenderer
 
     class Meta:

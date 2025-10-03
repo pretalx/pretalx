@@ -5,10 +5,9 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from django_scopes import scopes_disabled
 from django_scopes.forms import SafeModelMultipleChoiceField
-from i18nfield.forms import I18nModelForm
 
 from pretalx.common.forms.fields import ColorField, ImageField
-from pretalx.common.forms.mixins import I18nHelpText, ReadOnlyFlag
+from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
     EnhancedSelect,
@@ -23,7 +22,7 @@ from pretalx.orga.forms.widgets import HeaderSelect, MultipleLanguagesWidget
 from pretalx.submission.models import Track
 
 
-class TeamForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
+class TeamForm(ReadOnlyFlag, PretalxI18nModelForm):
     @scopes_disabled()
     def __init__(self, *args, organiser=None, instance=None, **kwargs):
         self.organiser = organiser
@@ -157,7 +156,7 @@ class TeamInviteForm(ReadOnlyFlag, forms.ModelForm):
         fields = ("email",)
 
 
-class OrganiserForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
+class OrganiserForm(ReadOnlyFlag, PretalxI18nModelForm):
     def __init__(self, *args, **kwargs):
         kwargs["locales"] = "en"
         super().__init__(*args, **kwargs)
@@ -201,7 +200,7 @@ class EventWizardInitialForm(forms.Form):
         self.fields["organiser"].initial = self.fields["organiser"].queryset.first()
 
 
-class EventWizardBasicsForm(I18nHelpText, I18nModelForm):
+class EventWizardBasicsForm(PretalxI18nModelForm):
     def __init__(self, *args, user=None, locales=None, organiser=None, **kwargs):
         self.locales = locales or []
         super().__init__(*args, **kwargs, locales=locales)

@@ -3,15 +3,14 @@ import datetime as dt
 from django import forms
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField
-from i18nfield.forms import I18nModelForm
 
 from pretalx.common.forms.fields import AvailabilitiesField
-from pretalx.common.forms.mixins import ReadOnlyFlag
+from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.widgets import HtmlDateInput, HtmlTimeInput
 from pretalx.schedule.models import Availability, Room, TalkSlot
 
 
-class RoomForm(ReadOnlyFlag, I18nModelForm):
+class RoomForm(ReadOnlyFlag, PretalxI18nModelForm):
     availabilities = AvailabilitiesField(
         resolution="00:15:00",
         label=_("Availability"),
