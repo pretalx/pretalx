@@ -87,3 +87,5 @@ LANGUAGES_INFORMATION["en-mozilla"] = {
     "natural_name": "Testlocale",
     "percentage": 94,
 }
+
+WHITENOISE_AUTOREFRESH = True

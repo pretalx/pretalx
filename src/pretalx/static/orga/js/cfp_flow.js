@@ -163,7 +163,7 @@ Vue.component("field", {
             <label class="form-check-label">{{ field.label[currentLanguage] }}</label>
           </template>
         </div>
-        <div class="row bootstrap4-multi-input" v-else-if="field.widget === 'ClearableFileInput'">
+        <div class="row m-auto" v-else-if="field.widget === 'ClearableFileInput'">
           <div class="col-12"><input type="file"></div>
         </div>
 

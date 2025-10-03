@@ -132,3 +132,6 @@ class UserForm(CfPFormMixin, forms.Form):
         )
         data["user_id"] = user.pk
         return user.pk
+
+    class Media:
+        css = {"all": ["common/css/_form_auth.css"]}

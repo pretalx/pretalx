@@ -62,6 +62,8 @@ for directory in (BASE_DIR, DATA_DIR, LOG_DIR, MEDIA_ROOT, HTMLEXPORT_ROOT):
 
 ## APP SETTINGS
 DJANGO_APPS = [
+    # Handle staticfiles in development, must go before staticfiles
+    "whitenoise.runserver_nostatic",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",

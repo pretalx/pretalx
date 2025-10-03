@@ -1009,30 +1009,6 @@ table .color-square {
     margin-right: 32px;
   }
 }
-.i18n-form-group input[lang],
-.i18n-form-group textarea {
-  border-top-width: 0;
-  border-radius: 0;
-
-  &:first-child {
-    border-top-width: 1px;
-    border-top-left-radius: var(--size-border-radius);
-    border-top-right-radius: var(--size-border-radius);
-  }
-  &:last-child {
-    border-bottom-right-radius: var(--size-border-radius);
-    border-bottom-left-radius: var(--size-border-radius);
-  }
-}
-.i18n-form-single-language input[lang][type="text"],
-.i18n-form-single-language textarea[lang],
-.i18n-form-single-language input[lang][type="text"] + label {
-  background: none !important;
-  padding: 0.375rem 0.75rem;
-  &::placeholder {
-    opacity: 0;
-  }
-}
 
 #fake-changelog {
   margin: 0 42px 24px 42px;

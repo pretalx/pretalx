@@ -1,10 +1,13 @@
 from django.conf import settings
-from django.forms import CheckboxSelectMultiple, RadioSelect
+from django.forms import CheckboxSelectMultiple, RadioSelect, Script
 from django.utils.translation import gettext_lazy as _
 
 
 class HeaderSelect(RadioSelect):
     option_template_name = "orga/widgets/header_option.html"
+
+    class Media:
+        css = {"all": [Script("common/css/headers-uncompressed.css")]}
 
 
 class IconSelect(RadioSelect):
