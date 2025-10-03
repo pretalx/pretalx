@@ -1,7 +1,7 @@
 from django.urls import include, path, re_path
 
 from pretalx.agenda.views import featured, feed, schedule, speaker, talk, widget
-from pretalx.common.views import EventSocialMediaCard, get_static
+from pretalx.common.views import EventSocialMediaCard
 from pretalx.orga.views import admin
 
 
@@ -121,14 +121,6 @@ urlpatterns = [
                 ),
             ]
         ),
-    ),
-    path(
-        "sw.js",
-        get_static,
-        {
-            "path": "agenda/js/serviceworker.js",
-            "content_type": "application/javascript",
-        },
     ),
     path("healthcheck/", admin.healthcheck, name="healthcheck"),
 ]

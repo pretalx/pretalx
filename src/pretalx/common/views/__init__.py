@@ -6,7 +6,7 @@ from .generic import (
     GenericLoginView,
     GenericResetView,
 )
-from .helpers import get_static, is_form_bound
+from .helpers import is_form_bound
 from .redirect import redirect_view
 from .shortlink import shortlink_view
 
@@ -17,7 +17,6 @@ __all__ = [
     "GenericResetView",
     "conditional_cache_page",
     "error_view",
-    "get_static",
     "handle_500",
     "is_form_bound",
     "redirect_view",
