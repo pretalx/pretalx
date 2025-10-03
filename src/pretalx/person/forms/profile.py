@@ -23,10 +23,9 @@ from pretalx.common.forms.widgets import (
 from pretalx.common.text.phrases import phrases
 from pretalx.event.models import Event
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
+from pretalx.schedule.models import Availability
 from pretalx.submission.models import Question
 from pretalx.submission.models.submission import SubmissionStates
-from pretalx.schedule.models import Availability
-
 
 
 def get_email_address_error():

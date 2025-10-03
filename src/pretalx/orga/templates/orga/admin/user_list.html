@@ -1,15 +1,6 @@
 {% extends "orga/generic/list.html" %}
 
-{% load copyable %}
-{% load compress %}
 {% load i18n %}
-{% load static %}
-
-{% block scripts %}
-    {% compress js %}
-        <script defer src="{% static "common/js/copy.js" %}"></script>
-    {% endcompress %}
-{% endblock %}
 
 {% block list_content %}
 

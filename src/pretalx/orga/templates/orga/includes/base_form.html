@@ -1,4 +1,3 @@
-{% load form_media %}
 <form method="post" {% if form.is_multipart %}enctype="multipart/form-data"{% endif %}{% if form_class %} class="{{ form_class }}"{% endif %}>
     {% csrf_token %}
     {{ form }}
@@ -10,4 +9,3 @@
     {% endfor %}
     {% include "orga/includes/submit_row.html" %}
 </form>
-{% form_media %}

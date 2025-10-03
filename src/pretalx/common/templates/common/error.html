@@ -1,4 +1,3 @@
-{% load compress %}
 {% load i18n %}
 {% load static %}
 
@@ -6,13 +5,11 @@
 <html>
     <head>
         <title>{% block title %}{% endblock title %} :: pretalx</title>
-        {% compress css %}
-            <link rel="stylesheet" type="text/css" href="{% static "common/css/_reset.css" %}" />
-            <link rel="stylesheet" type="text/css" href="{% static "common/css/base.css" %}" />
-            <link rel="stylesheet" type="text/css" href="{% static "common/css/_variables.css" %}" />
-            <link rel="stylesheet" type="text/css" href="{% static "common/css/_fonts.css" %}" />
-            <link rel="stylesheet" type="text/css" href="{% static "common/css/error.css" %}" />
-        {% endcompress %}
+        <link rel="stylesheet" type="text/css" href="{% static "common/css/_reset.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "common/css/base.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "common/css/_variables.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "common/css/_fonts.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "common/css/error.css" %}" />
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta charset="UTF-8">
 

@@ -1,6 +1,5 @@
 {% extends "orga/base.html" %}
 
-{% load form_media %}
 {% load i18n %}
 {% load rules %}
 
@@ -88,6 +87,4 @@
     {% else %}
         {% translate "No mails were sent to this speaker yet." %}
     {% endif %}
-
-    {% form_media %}
 {% endblock content %}

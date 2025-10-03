@@ -1,7 +1,6 @@
 {% extends "orga/base.html" %}
 
 {% load event_tags %}
-{% load form_media %}
 {% load i18n %}
 {% load render_table from django_tables2 %}
 {% load rules %}
@@ -60,5 +59,4 @@
 
     {% render_table table %}
 
-    {% form_media %}
 {% endblock %}

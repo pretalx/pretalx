@@ -1,6 +1,5 @@
 {% extends "orga/base.html" %}
 
-{% load compress %}
 {% load i18n %}
 {% load static %}
 
@@ -9,10 +8,8 @@
 {% endblock stylesheets %}
 
 {% block scripts %}
-    {% compress js %}
-        <script defer src="{% static "vendored/apexcharts/apexcharts.min.js" %}"></script>
-        <script defer src="{% static "orga/js/stats.js" %}"></script>
-    {% endcompress %}
+    <script defer src="{% static "vendored/apexcharts/apexcharts.min.js" %}"></script>
+    <script defer src="{% static "orga/js/stats.js" %}"></script>
 {% endblock scripts %}
 
 {% block extra_title %}{% translate "Statistics" %} :: {% endblock extra_title %}

@@ -1,7 +1,6 @@
 {% extends "orga/base.html" %}
 
 {% load event_tags %}
-{% load form_media %}
 {% load i18n %}
 {% load rules %}
 
@@ -118,5 +117,4 @@
         </div>
     {% endif %}
     {% block submission_content %}{% endblock submission_content %}
-    {% form_media %}
 {% endblock content %}

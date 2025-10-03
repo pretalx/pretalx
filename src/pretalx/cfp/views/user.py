@@ -1,12 +1,10 @@
 import textwrap
 import urllib
 
-from django import forms
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.db import transaction
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
@@ -26,17 +24,19 @@ from django_context_decorator import context
 
 from pretalx.cfp.forms.submissions import SubmissionInvitationForm
 from pretalx.cfp.views.event import LoggedInEventPageMixin
-from pretalx.common.forms.fields import AvailabilitiesField, SizeFileInput
+from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.image import gravatar_csp
 from pretalx.common.middleware.event import get_login_redirect
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views import is_form_bound
-from pretalx.person.forms import LoginInfoForm, SpeakerAvailabilityForm, SpeakerProfileForm
+from pretalx.person.forms import (
+    LoginInfoForm,
+    SpeakerAvailabilityForm,
+    SpeakerProfileForm,
+)
 from pretalx.person.rules import can_view_information
 from pretalx.submission.forms import InfoForm, QuestionsForm, ResourceForm
 from pretalx.submission.models import Resource, Submission, SubmissionStates
-
-
 
 
 @method_decorator(gravatar_csp(), name="dispatch")

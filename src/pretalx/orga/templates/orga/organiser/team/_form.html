@@ -1,6 +1,5 @@
 {% extends "orga/generic/_form.html" %}
 
-{% load form_media %}
 {% load i18n %}
 
 {% block form %}
@@ -31,5 +30,4 @@
         {% include "orga/includes/submit_row.html" with submit_value="team" submit_name="form" %}
 
     </form>
-    {% form_media %}
 {% endblock form %}

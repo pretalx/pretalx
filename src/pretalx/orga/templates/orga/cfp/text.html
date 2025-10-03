@@ -1,14 +1,10 @@
 {% extends "orga/base.html" %}
 
-{% load compress %}
-{% load form_media %}
 {% load i18n %}
 {% load static %}
 
 {% block scripts %}
-    {% compress js %}
-        <script defer src="{% static "common/js/modalDialog.js" %}"></script>
-    {% endcompress %}
+    <script defer src="{% static "common/js/modalDialog.js" %}"></script>
 {% endblock scripts %}
 
 {% block extra_title %}{% translate "Call for Proposals" %} :: {% endblock extra_title %}
@@ -208,5 +204,4 @@
         </section>
         {% include "orga/includes/submit_row.html" %}
     </form>
-    {% form_media %}
 {% endblock content %}

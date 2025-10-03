@@ -1,19 +1,12 @@
 {% extends "orga/base.html" %}
 
-{% load compress %}
-{% load form_media %}
 {% load i18n %}
 {% load review_score %}
 {% load rules %}
 {% load static %}
 
-{% block stylesheets %}
-{% endblock stylesheets %}
-
 {% block scripts %}
-    {% compress js %}
-        <script defer src="{% static "orga/js/review.js" %}"></script>
-    {% endcompress %}
+    <script defer src="{% static "orga/js/review.js" %}"></script>
 {% endblock scripts %}
 
 {% block extra_title %}{% translate "Reviews" %} :: {% endblock extra_title %}
@@ -314,5 +307,4 @@
         {% include "orga/includes/pagination.html" %}
 
     {% endif %}
-    {% form_media %}
 {% endblock content %}

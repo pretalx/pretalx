@@ -1,4 +1,5 @@
 {% load compress %}
+{% load form_media %}
 {% load i18n %}
 {% load static %}
 
@@ -41,5 +42,6 @@
                 {% block content %}{% endblock content %}
             </div>
         </div>
+        {% form_media %}
     </body>
 </html>

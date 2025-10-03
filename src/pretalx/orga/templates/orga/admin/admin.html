@@ -1,14 +1,11 @@
 {% extends "orga/base.html" %}
 
-{% load compress %}
 {% load copyable %}
 {% load i18n %}
 {% load static %}
 
 {% block scripts %}
-    {% compress js %}
-        <script defer src="{% static "common/js/copy.js" %}"></script>
-    {% endcompress %}
+    <script defer src="{% static "common/js/copy.js" %}"></script>
 {% endblock scripts %}
 
 {% block extra_title %}{% translate "Administrator information" %} :: {% endblock extra_title %}

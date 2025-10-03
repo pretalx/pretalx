@@ -1,15 +1,12 @@
 {% extends "orga/generic/_form.html" %}
 
 {% load compress %}
-{% load form_media %}
 {% load formset_tags %}
 {% load i18n %}
 {% load static %}
 
 {% block stylesheets %}
-    {% compress css %}
-        <link rel="stylesheet" href="{% static "orga/css/dragsort.css" %}">
-    {% endcompress %}
+    <link rel="stylesheet" href="{% static "orga/css/dragsort.css" %}">
 {% endblock stylesheets %}
 
 {% block scripts %}
@@ -145,5 +142,4 @@
         {% include "orga/includes/submit_row.html" %}
 
     </form>
-    {% form_media %}
 {% endblock form %}
