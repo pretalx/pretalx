@@ -1,9 +1,8 @@
 from django import forms
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from i18nfield.forms import I18nModelForm
 
-from pretalx.common.forms.mixins import I18nHelpText
+from pretalx.common.forms.mixins import PretalxI18nModelForm
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
@@ -14,7 +13,7 @@ from pretalx.schedule.utils import guess_schedule_version
 from pretalx.submission.models.submission import Submission, SubmissionStates
 
 
-class ScheduleReleaseForm(I18nHelpText, I18nModelForm):
+class ScheduleReleaseForm(PretalxI18nModelForm):
     default_renderer = InlineFormRenderer
 
     notify_speakers = forms.BooleanField(

@@ -10,7 +10,7 @@ from django.core.files.uploadedfile import UploadedFile
 from django.utils.crypto import get_random_string
 from django.utils.translation import gettext_lazy as _
 from hierarkey.forms import HierarkeyForm
-from i18nfield.forms import I18nFormField
+from i18nfield.forms import I18nFormField, I18nFormMixin, I18nModelForm
 
 from pretalx.common.forms.fields import ExtensionFileField
 from pretalx.common.forms.validators import (
@@ -454,16 +454,6 @@ class QuestionFieldsMixin:
         answer.save()
 
 
-class I18nHelpText:
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            if isinstance(field, I18nFormField) and not field.widget.attrs.get(
-                "placeholder"
-            ):
-                field.widget.attrs["placeholder"] = field.label
-
-
 class JsonSubfieldMixin:
     def __init__(self, *args, **kwargs):
         obj = kwargs.pop("obj", None)
@@ -551,3 +541,21 @@ class HierarkeyMixin:
         nonce = get_random_string(length=8)
         suffix = name.split(".")[-1]
         return f"{self.obj._meta.model_name}-{self.attribute_name}/{self.obj.pk}/{name}.{nonce}.{suffix}"
+
+
+class PretalxI18nFormMixin(I18nFormMixin):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            if isinstance(field, I18nFormField) and not field.widget.attrs.get(
+                "placeholder"
+            ):
+                field.widget.attrs["placeholder"] = field.label
+
+    class Media:
+        css = {"all": ["orga/css/_flags.css"]}
+
+
+class PretalxI18nModelForm(PretalxI18nFormMixin, I18nModelForm):
+    pass

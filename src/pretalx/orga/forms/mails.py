@@ -8,10 +8,9 @@ from django.db.models import Count, Q
 from django.utils.functional import cached_property
 from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
-from i18nfield.forms import I18nModelForm
 
 from pretalx.common.exceptions import SendMailException
-from pretalx.common.forms.mixins import I18nHelpText, ReadOnlyFlag
+from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer, TabularFormRenderer
 from pretalx.common.forms.widgets import EnhancedSelectMultiple, SelectMultipleWithCount
 from pretalx.common.language import language
@@ -24,7 +23,7 @@ from pretalx.submission.models import Track
 from pretalx.submission.models.submission import Submission, SubmissionStates
 
 
-class MailTemplateForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
+class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
     def __init__(self, *args, event=None, **kwargs):
         self.event = getattr(self, "event", None) or event
         if self.event:

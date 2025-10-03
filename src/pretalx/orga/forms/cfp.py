@@ -6,11 +6,15 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import override
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
-from i18nfield.forms import I18nFormMixin, I18nModelForm
 from i18nfield.strings import LazyI18nString
 
 from pretalx.common.forms.fields import ColorField
-from pretalx.common.forms.mixins import I18nHelpText, JsonSubfieldMixin, ReadOnlyFlag
+from pretalx.common.forms.mixins import (
+    JsonSubfieldMixin,
+    PretalxI18nFormMixin,
+    PretalxI18nModelForm,
+    ReadOnlyFlag,
+)
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
     EnhancedSelect,
@@ -35,7 +39,7 @@ from pretalx.submission.models.question import QuestionRequired
 
 
 class CfPSettingsForm(
-    ReadOnlyFlag, I18nFormMixin, I18nHelpText, JsonSubfieldMixin, forms.Form
+    ReadOnlyFlag, PretalxI18nFormMixin, JsonSubfieldMixin, forms.Form
 ):
     use_tracks = forms.BooleanField(
         label=_("Use tracks"),
@@ -158,7 +162,7 @@ class CfPSettingsForm(
         }
 
 
-class CfPForm(ReadOnlyFlag, I18nHelpText, JsonSubfieldMixin, I18nModelForm):
+class CfPForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
     show_deadline = forms.BooleanField(
         label=_("Display deadline publicly"),
         required=False,
@@ -180,7 +184,7 @@ class CfPForm(ReadOnlyFlag, I18nHelpText, JsonSubfieldMixin, I18nModelForm):
         }
 
 
-class QuestionForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
+class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
     options = forms.FileField(
         label=_("Upload options"),
         help_text=_(
@@ -358,13 +362,13 @@ class QuestionForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
         }
 
 
-class AnswerOptionForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
+class AnswerOptionForm(ReadOnlyFlag, PretalxI18nModelForm):
     class Meta:
         model = AnswerOption
         fields = ["answer"]
 
 
-class SubmissionTypeForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
+class SubmissionTypeForm(ReadOnlyFlag, PretalxI18nModelForm):
     def __init__(self, *args, event=None, **kwargs):
         self.event = event
         super().__init__(*args, **kwargs)
@@ -395,7 +399,7 @@ class SubmissionTypeForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
         }
 
 
-class TrackForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
+class TrackForm(ReadOnlyFlag, PretalxI18nModelForm):
     def __init__(self, *args, event=None, **kwargs):
         self.event = event
         super().__init__(*args, **kwargs)
