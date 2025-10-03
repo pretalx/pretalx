@@ -1,6 +1,5 @@
 {% extends "cfp/event/base.html" %}
 
-{% load compress %}
 {% load datetimerange %}
 {% load event_tags %}
 {% load html_signal %}
@@ -12,12 +11,8 @@
 {% block title %}{% translate "Your proposals" %} :: {% endblock title %}
 
 {% block scripts %}
-    {% compress js %}
-        <script defer src="{% static "common/js/copy.js" %}"></script>
-        <script defer src="{% static "vendored/moment-with-locales.js" %}"></script>
-        <script defer src="{% static "vendored/moment-timezone-with-data-10-year-range.js" %}"></script>
-        <script defer src="{% static "agenda/js/datetime-local.js" %}"></script>
-    {% endcompress %}
+    <script defer src="{% static "common/js/copy.js" %}"></script>
+    <script defer src="{% static "agenda/js/datetime-local.js" %}"></script>
 {% endblock scripts %}
 
 {% block content %}
