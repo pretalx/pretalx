@@ -393,13 +393,15 @@ def test_edit_room(orga_client, event, room):
         assert event.rooms.count() == 1
         assert event.rooms.first().availabilities.count() == 1
         assert str(event.rooms.first().name) != "A room"
+    import json
+
     response = orga_client.post(
         room.urls.edit,
         follow=True,
         data={
             "name_0": "A room",
             "guid": uuid4(),
-            "availabilities": '{"availabilities": []}',
+            "availabilities": json.dumps({"availabilities": []}),
         },
     )
     assert response.status_code == 200
@@ -479,9 +481,8 @@ def test_orga_cant_export_answers_csv_empty(orga_client, speaker, event, submiss
         },
     )
     assert response.status_code == 200
-    assert response.text.strip().startswith(
-        "<!DOCTYPE"
-    )  # HTML response instead of empty download
+    # HTML response instead of empty download
+    assert response.text.strip().startswith("<!doctype")
 
 
 @pytest.mark.django_db
@@ -501,7 +502,8 @@ def test_orga_cant_export_answers_csv_without_delimiter(
         },
     )
     assert response.status_code == 200
-    assert response.text.strip().startswith("<!DOCTYPE")
+    # HTML response instead of empty download
+    assert response.text.strip().startswith("<!doctype")
 
 
 @pytest.mark.django_db

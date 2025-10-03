@@ -1,6 +1,7 @@
 {% extends "cfp/event/base.html" %}
 
 {% load compress %}
+{% load form_media %}
 {% load i18n %}
 {% load static %}
 
@@ -24,13 +25,7 @@
         </div>
         <form method="post" class="availability-form">
             {% csrf_token %}
-            {% if form.availabilities %}
-
-                {% include "common/availabilities.html" %}
-                {{ form.availabilities.as_field_group }}
-
-                <div class="text-muted">{{ form.availabilities.help_text }}</div>
-            {% endif %}
+            {{ form.availabilities.as_field_group }}
             <p></p>
             {% blocktranslate trimmed %}
                 By confirming your proposal, you agree that you are able and willing to participate in this event and
@@ -50,4 +45,5 @@
             </div>
         </form>
     </div>
+    {% form_media %}
 {% endblock content %}

@@ -10,18 +10,10 @@
 {% block inner %}
 
     {{ form.name.as_field_group }}
-    {% if form.biography %}
-        {{ form.biography.as_field_group }}
-    {% endif %}
-
+    {{ form.biography.as_field_group }}
     {% if form.avatar or form.get_gravatar %}
         {% include "common/avatar.html" with user=user form=form %}
     {% endif %}
-
-    {% if form.availabilities %}
-        {% include "common/availabilities.html" %}
-
-        {{ form.availabilities.as_field_group }}
-    {% endif %}
+    {{ form.availabilities.as_field_group }}
 
 {% endblock inner %}

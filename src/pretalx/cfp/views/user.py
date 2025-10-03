@@ -1,10 +1,12 @@
 import textwrap
 import urllib
 
+from django import forms
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.db import transaction
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
@@ -24,16 +26,17 @@ from django_context_decorator import context
 
 from pretalx.cfp.forms.submissions import SubmissionInvitationForm
 from pretalx.cfp.views.event import LoggedInEventPageMixin
-from pretalx.common.forms.fields import SizeFileInput
+from pretalx.common.forms.fields import AvailabilitiesField, SizeFileInput
 from pretalx.common.image import gravatar_csp
 from pretalx.common.middleware.event import get_login_redirect
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views import is_form_bound
-from pretalx.person.forms import LoginInfoForm, SpeakerProfileForm
+from pretalx.person.forms import LoginInfoForm, SpeakerAvailabilityForm, SpeakerProfileForm
 from pretalx.person.rules import can_view_information
-from pretalx.schedule.forms import AvailabilitiesFormMixin
 from pretalx.submission.forms import InfoForm, QuestionsForm, ResourceForm
 from pretalx.submission.models import Resource, Submission, SubmissionStates
+
+
 
 
 @method_decorator(gravatar_csp(), name="dispatch")
@@ -214,7 +217,7 @@ class SubmissionsWithdrawView(LoggedInEventPageMixin, SubmissionViewMixin, Detai
 
 class SubmissionConfirmView(LoggedInEventPageMixin, SubmissionViewMixin, FormView):
     template_name = "cfp/event/user_submission_confirm.html"
-    form_class = AvailabilitiesFormMixin
+    form_class = SpeakerAvailabilityForm
 
     def get_object(self):
         return get_object_or_404(
@@ -236,9 +239,8 @@ class SubmissionConfirmView(LoggedInEventPageMixin, SubmissionViewMixin, FormVie
 
     def get_form_kwargs(self):
         result = super().get_form_kwargs()
-        result["instance"] = self.speaker_profile
+        result["speaker_profile"] = self.speaker_profile
         result["event"] = self.request.event
-        result["limit_to_rooms"] = True
         return result
 
     def get_form(self):
@@ -268,7 +270,7 @@ class SubmissionDraftDiscardView(
     LoggedInEventPageMixin, SubmissionViewMixin, TemplateView
 ):
     template_name = "cfp/event/user_submission_discard.html"
-    form_class = AvailabilitiesFormMixin
+    form_class = SpeakerAvailabilityForm
 
     def get_object(self):
         submission = super().get_object()

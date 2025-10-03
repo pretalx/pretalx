@@ -1,6 +1,6 @@
 import datetime as dt
 
-from django.db import models
+from django.db import models, transaction
 from django.utils.functional import cached_property
 
 from pretalx.common.models.mixins import PretalxModel
@@ -202,3 +202,15 @@ class Availability(PretalxModel):
             # ... subtract each of the other sets
             result = cls._pair_intersection(result, availset)
         return result
+
+    @classmethod
+    def replace_for_instance(cls, instance, availabilities):
+        """Replace all availabilities for an instance with new ones."""
+
+        reference_name = instance.availabilities.field.name + "_id"
+        for avail in availabilities:
+            setattr(avail, reference_name, instance.id)
+
+        with transaction.atomic():
+            instance.availabilities.all().delete()
+            cls.objects.bulk_create(availabilities)

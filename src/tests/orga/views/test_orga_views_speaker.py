@@ -277,9 +277,8 @@ def test_orga_cant_export_answers_csv_empty(orga_client, speaker, event, submiss
         },
     )
     assert response.status_code == 200
-    assert response.text.strip().startswith(
-        "<!DOCTYPE"
-    )  # HTML response instead of empty download
+    # HTML response instead of empty download
+    assert response.text.strip().lower().startswith("<!doctype")
 
 
 @pytest.mark.django_db
@@ -299,7 +298,8 @@ def test_orga_cant_export_answers_csv_without_delimiter(
         },
     )
     assert response.status_code == 200
-    assert response.text.strip().startswith("<!DOCTYPE")
+    # HTML response instead of empty download
+    assert response.text.strip().lower().startswith("<!doctype")
 
 
 @pytest.mark.django_db
