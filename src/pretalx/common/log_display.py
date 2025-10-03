@@ -154,8 +154,7 @@ def _submission_label_text(submission: Submission) -> str:
         SubmissionStates.CONFIRMED,
     ):
         return _n("Session", "Sessions", 1)
-    else:
-        return _n("Proposal", "Proposals", 1)
+    return _n("Proposal", "Proposals", 1)
 
 
 @receiver(activitylog_object_link)

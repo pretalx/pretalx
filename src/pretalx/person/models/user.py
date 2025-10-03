@@ -468,15 +468,11 @@ class User(
     def get_password_reset_url(self, event=None, orga=False):
         if event:
             path = "orga:event.auth.recover" if orga else "cfp:event.recover"
-            url = build_absolute_uri(
-                path,
-                kwargs={"token": self.pw_reset_token, "event": event.slug},
-            )
+            kwargs = {"token": self.pw_reset_token, "event": event.slug}
         else:
-            url = build_absolute_uri(
-                "orga:auth.recover", kwargs={"token": self.pw_reset_token}
-            )
-        return url
+            path = "orga:auth.recover"
+            kwargs = {"token": self.pw_reset_token}
+        return build_absolute_uri(path, kwargs=kwargs)
 
     @transaction.atomic
     def reset_password(self, event, user=None, mail_text=None, orga=False):

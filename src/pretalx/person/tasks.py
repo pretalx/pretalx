@@ -34,7 +34,7 @@ def gravatar_cache(person_id: int):
         user.get_gravatar = False
         user.save()
         return
-    elif response.status_code != 200:
+    if response.status_code != 200:
         return
 
     with NamedTemporaryFile(delete=True) as tmp_img:

@@ -4,7 +4,6 @@ from django.db.models import Count, Exists, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, FormView, ListView, View
 from django_context_decorator import context
@@ -13,7 +12,7 @@ from pretalx.agenda.views.utils import get_schedule_exporters
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.image import gravatar_csp
 from pretalx.common.text.phrases import phrases
-from pretalx.common.views.generic import CreateOrUpdateView, OrgaCRUDView
+from pretalx.common.views.generic import CreateOrUpdateView, OrgaCRUDView, get_next_url
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     ActionFromUrl,
@@ -24,6 +23,7 @@ from pretalx.common.views.mixins import (
     Sortable,
 )
 from pretalx.orga.forms.speaker import SpeakerExportForm
+from pretalx.orga.tables.speaker import SpeakerInformationTable
 from pretalx.person.forms import (
     SpeakerFilterForm,
     SpeakerInformationForm,
@@ -156,8 +156,7 @@ class SpeakerDetail(SpeakerViewMixin, ActionFromUrl, CreateOrUpdateView):
     @context
     @cached_property
     def accepted_submissions(self, **kwargs):
-        qs = self.submissions.filter(state__in=SubmissionStates.accepted_states)
-        return qs
+        return self.submissions.filter(state__in=SubmissionStates.accepted_states)
 
     @context
     @cached_property
@@ -257,17 +256,18 @@ class SpeakerToggleArrived(SpeakerViewMixin, View):
             person=self.request.user,
             orga=True,
         )
-        if url := self.request.GET.get("next"):
-            if url and url_has_allowed_host_and_scheme(url, allowed_hosts=None):
-                return redirect(url)
+        if url := get_next_url(request):
+            return redirect(url)
         return redirect(self.profile.orga_urls.base)
 
 
 class SpeakerInformationView(OrgaCRUDView):
     model = SpeakerInformation
     form_class = SpeakerInformationForm
+    table_class = SpeakerInformationTable
     template_namespace = "orga/speaker"
     context_object_name = "information"
+    create_button_label = _("New speaker information")
 
     def get_queryset(self):
         return (

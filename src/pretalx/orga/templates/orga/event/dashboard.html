@@ -1,14 +1,11 @@
 {% extends "orga/base.html" %}
 
-{% load compress %}
 {% load i18n %}
 {% load rules %}
 {% load static %}
 
 {% block stylesheets %}
-    {% compress css %}
-        <link rel="stylesheet" href="{% static "orga/css/dashboard.css" %}">
-    {% endcompress %}
+    <link rel="stylesheet" href="{% static "orga/css/dashboard.css" %}">
 {% endblock stylesheets %}
 
 {% block content %}

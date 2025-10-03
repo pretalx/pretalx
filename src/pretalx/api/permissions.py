@@ -43,16 +43,15 @@ class ApiPermission(BasePermission):
             if event:
                 if event not in request.auth.events.all():
                     return False
-                if is_only_reviewer(request.user, request.event):
-                    # Reviewers can only access the API if there is an active review
-                    # phase AND no anonymisation is active, as otherwise, we can’t fully
-                    # guarantee that we’d accidentally expose speaker names or other
-                    # non-anonymised information through ?expand= lookups.
-                    if (
-                        not event.active_review_phase
-                        or not event.active_review_phase.can_see_speaker_names
-                    ):
-                        return False
+                # Reviewers can only access the API if there is an active review
+                # phase AND no anonymisation is active, as otherwise, we can’t fully
+                # guarantee that we’d accidentally expose speaker names or other
+                # non-anonymised information through ?expand= lookups.
+                if is_only_reviewer(request.user, request.event) and (
+                    not event.active_review_phase
+                    or not event.active_review_phase.can_see_speaker_names
+                ):
+                    return False
             endpoint = getattr(view, "endpoint", None)
             if not request.auth.has_endpoint_permission(endpoint, view.action):
                 return False

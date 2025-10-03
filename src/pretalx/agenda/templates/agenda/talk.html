@@ -1,6 +1,5 @@
 {% extends "agenda/base.html" %}
 
-{% load compress %}
 {% load datetimerange %}
 {% load event_tags %}
 {% load html_signal %}
@@ -25,12 +24,8 @@
 
 {% block agenda_custom_header %}
     <script id="pretalx-messages" data-logged-in="{% if request.user.is_anonymous %}false{% else %}true{% endif %}" src="{{ request.event.urls.schedule }}widget/messages.js"></script>
-    {% compress js %}
-        <script defer src="{% static "agenda/js/favourite.js" %}"></script>
-        <script defer src="{% static "vendored/moment-with-locales.js" %}"></script>
-        <script defer src="{% static "vendored/moment-timezone-with-data-10-year-range.js" %}"></script>
-        <script defer src="{% static "agenda/js/datetime-local.js" %}"></script>
-    {% endcompress %}
+    <script defer src="{% static "agenda/js/favourite.js" %}"></script>
+    <script defer src="{% static "agenda/js/datetime-local.js" %}"></script>
 {% endblock agenda_custom_header %}
 
 {% block agenda_content %}

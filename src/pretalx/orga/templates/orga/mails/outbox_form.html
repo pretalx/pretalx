@@ -1,4 +1,5 @@
 {% extends "orga/mails/base.html" %}
+
 {% load i18n %}
 {% load rich_text %}
 
@@ -18,10 +19,10 @@
 
         {% if not form.read_only %}
             {{ form }}
-            {% for form in extra_forms %}
+            {% for extra_form in extra_forms %}
                 <fieldset>
-                    {% if form.label %}<legend>{{ form.label }}</legend>{% endif %}
-                    {{ form }}
+                    {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
+                    {{ extra_form }}
                 </fieldset>
             {% endfor %}
         {% else %}
@@ -72,10 +73,10 @@
                 </div>
             </div>
 
-            {% for form in extra_forms %}
+            {% for extra_form in extra_forms %}
                 <fieldset>
-                    {% if form.label %}<legend>{{ form.label }}</legend>{% endif %}
-                    {{ form }}
+                    {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
+                    {{ extra_form }}
                 </fieldset>
             {% endfor %}
         {% endif %}

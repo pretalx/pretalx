@@ -3,6 +3,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager
 
+from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.submission.rules import (
@@ -27,7 +28,7 @@ class SubmissionComment(PretalxModel):
     user = models.ForeignKey(
         to="person.User", related_name="submission_comments", on_delete=models.CASCADE
     )
-    text = models.TextField(verbose_name=_("Comment"))
+    text = MarkdownField(verbose_name=_("Comment"))
     reply_to = models.ForeignKey(
         to="submission.SubmissionComment",
         related_name="replies",

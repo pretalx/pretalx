@@ -73,6 +73,12 @@ class TeamForm(ReadOnlyFlag, I18nHelpText, I18nModelForm):
             self.add_error(None, error)
         return data
 
+    class Media:
+        js = [
+            forms.Script("orga/js/speakers.js", defer=""),
+            forms.Script("orga/js/teamSettings.js", defer=""),
+        ]
+
     class Meta:
         model = Team
         fields = [
@@ -226,6 +232,9 @@ class EventWizardBasicsForm(I18nHelpText, I18nModelForm):
             )
 
         return slug.lower()
+
+    class Media:
+        js = [forms.Script("orga/js/event_wizard.js", defer="")]
 
     class Meta:
         model = Event

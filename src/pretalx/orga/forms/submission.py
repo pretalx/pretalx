@@ -11,7 +11,6 @@ from pretalx.common.forms.widgets import (
     EnhancedSelect,
     EnhancedSelectMultiple,
     HtmlDateTimeInput,
-    MarkdownWidget,
     TextInputWithAddon,
 )
 from pretalx.common.text.phrases import phrases
@@ -183,6 +182,9 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             )
         return instance
 
+    class Media:
+        js = [forms.Script("orga/js/submission_form.js", defer="")]
+
     class Meta:
         model = Submission
         fields = [
@@ -205,9 +207,6 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             "tags": EnhancedSelectMultiple(color_field="color"),
             "track": EnhancedSelect(color_field="color"),
             "submission_type": EnhancedSelect,
-            "abstract": MarkdownWidget,
-            "description": MarkdownWidget,
-            "notes": MarkdownWidget,
             "duration": TextInputWithAddon(addon_after=_("minutes")),
         }
         field_classes = {
@@ -255,6 +254,9 @@ class AnonymiseForm(SubmissionForm):
                 anonymised_data[key] = value
         self._instance.anonymised_data = json.dumps(anonymised_data)
         self._instance.save(update_fields=["anonymised_data"])
+
+    class Media:
+        js = [forms.Script("orga/js/anonymise.js", defer="")]
 
     class Meta:
         model = Submission
@@ -319,3 +321,6 @@ class AddSpeakerForm(forms.Form):
 
 class AddSpeakerInlineForm(AddSpeakerForm):
     default_renderer = InlineFormLabelRenderer
+
+    class Media:
+        js = [forms.Script("orga/js/speakers.js", defer="")]

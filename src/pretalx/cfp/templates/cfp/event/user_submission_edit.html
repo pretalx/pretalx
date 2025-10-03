@@ -2,7 +2,7 @@
 
 {% load compress %}
 {% load event_tags %}
-{% load filesize %}
+{% load form_media %}
 {% load formset_tags %}
 {% load i18n %}
 {% load rules %}
@@ -11,7 +11,6 @@
 {% block title %}{{ submission.title }} :: {% endblock title %}
 
 {% block cfp_header %}
-    {% include "cfp/includes/forms_header.html" %}
     {% compress js %}
         <script defer src="{% static "js/jquery.js" %}"></script>
         <script defer src="{% static "js/jquery.formset.js" %}"></script>
@@ -158,4 +157,5 @@
         </p>
     {% endif %}
 
+    {% form_media %}
 {% endblock content %}

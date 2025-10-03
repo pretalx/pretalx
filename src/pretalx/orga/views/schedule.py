@@ -31,6 +31,7 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
 )
 from pretalx.orga.forms.schedule import ScheduleExportForm, ScheduleReleaseForm
+from pretalx.orga.tables.schedule import RoomTable
 from pretalx.schedule.forms import QuickScheduleForm, RoomForm
 from pretalx.schedule.models import Availability, Room, TalkSlot
 from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
@@ -530,7 +531,9 @@ class QuickScheduleView(PermissionRequired, UpdateView):
 class RoomView(OrderActionMixin, OrgaCRUDView):
     model = Room
     form_class = RoomForm
+    table_class = RoomTable
     template_namespace = "orga/schedule"
+    create_button_label = _("New room")
 
     def get_queryset(self):
         return self.request.event.rooms.all()

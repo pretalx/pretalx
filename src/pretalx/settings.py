@@ -77,6 +77,8 @@ EXTERNAL_APPS = [
     "rest_framework.authtoken",
     "rules",
     "csp",
+    "django_tables2",
+    "django_minify_html",
 ]
 LOCAL_APPS = [
     "pretalx.api",
@@ -538,6 +540,7 @@ MIDDLEWARE = [
     "pretalx.common.middleware.CsrfViewMiddleware",  # Protect against CSRF attacks before forms/data are processed
     "django.contrib.messages.middleware.MessageMiddleware",  # Uses sessions
     "django.middleware.clickjacking.XFrameOptionsMiddleware",  # Protects against clickjacking
+    "django_minify_html.middleware.MinifyHtmlMiddleware",
 ]
 
 
@@ -624,6 +627,8 @@ if DEBUG:
             "JQUERY_URL": "",
             "DISABLE_PANELS": toolbar_settings.PANELS_DEFAULTS,
         }
+
+DJANGO_TABLES2_TEMPLATE = "common/table.html"
 COMPRESS_ENABLED = COMPRESS_OFFLINE = not DEBUG
 COMPRESS_PRECOMPILERS = (("text/x-scss", "django_libsass.SassCompiler"),)
 COMPRESS_FILTERS = {

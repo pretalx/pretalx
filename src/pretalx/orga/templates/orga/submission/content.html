@@ -1,11 +1,10 @@
 {% extends "orga/submission/base.html" %}
 
 {% load compress %}
-{% load filesize %}
 {% load formset_tags %}
 {% load i18n %}
-{% load static %}
 {% load rules %}
+{% load static %}
 
 {% block scripts %}
     {{ block.super }}
@@ -13,12 +12,12 @@
         <script defer src="{% static "js/jquery.js" %}"></script>
         <script defer src="{% static "js/jquery.formset.js" %}"></script>
         <script defer src="{% static "cfp/js/animateFormset.js" %}"></script>
-        <script defer src="{% static "orga/js/speakers.js" %}"></script>
-        <script defer src="{% static "orga/js/submission_form.js" %}"></script>
     {% endcompress %}
 {% endblock scripts %}
 
 {% block submission_content %}
+    <span id="vars" remoteUrl="{{ request.event.organiser.orga_urls.user_search }}"></span>
+
     {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
     {% has_perm "submission.list_all_review" request.user request.event as can_view_all_reviews %}
     <form method="post" enctype="multipart/form-data">
@@ -88,10 +87,10 @@
                 <div><legend id="custom">{{ phrases.cfp.custom_fields }}</legend></div>
                 {{ questions_form }}
             {% endif %}
-            {% for form in extra_forms %}
+            {% for extra_form in extra_forms %}
                 <fieldset>
-                    {% if form.label %}<legend>{{ form.label }}</legend>{% endif %}
-                    {{ form }}
+                    {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
+                    {{ extra_form }}
                 </fieldset>
             {% endfor %}
 
@@ -107,6 +106,4 @@
                 </div>
             {% endif %}
         </fieldset></form>
-
-    <span id="vars" remoteUrl="{{ request.event.organiser.orga_urls.user_search }}"></span>
 {% endblock submission_content %}

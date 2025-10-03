@@ -1,16 +1,7 @@
 {% extends "orga/base.html" %}
 
-{% load compress %}
 {% load i18n %}
 {% load rules %}
-{% load static %}
-
-{% block scripts %}
-    {% if form.biography %}
-        <script src="{% static "vendored/marked.min.js" %}" defer></script> {# do not compress #}
-        <script defer src="{% static "vendored/purify.min.js" %}"></script>
-    {% endif %}
-{% endblock scripts %}
 
 {% block extra_title %}{{ form.instance.user.get_display_name }} :: {% endblock extra_title %}
 
@@ -73,23 +64,16 @@
             {% include "common/avatar.html" with user=form.instance.user form=form %}
         {% endif %}
 
-        {% if form.biography %}
-            {{ form.biography.as_field_group }}
-        {% endif %}
-        {% if form.availabilities %}
-            {% include "common/availabilities.html" %}
-
-            {{ form.availabilities.as_field_group }}
-        {% endif %}
-
+        {{ form.biography.as_field_group }}
+        {{ form.availabilities.as_field_group }}
         {{ form.internal_notes.as_field_group }}
 
         {{ questions_form }}
 
-        {% for form in extra_forms %}
+        {% for extra_form in extra_forms %}
             <fieldset>
-                {% if form.label %}<legend>{{ form.label }}</legend>{% endif %}
-                {{ form }}
+                {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
+                {{ extra_form }}
             </fieldset>
         {% endfor %}
 
@@ -99,11 +83,8 @@
 
     <h3>{% translate "Emails" %}</h3>
     {% if mails %}
-
         {% include "common/mail_log.html" %}
-
     {% else %}
         {% translate "No mails were sent to this speaker yet." %}
     {% endif %}
-
 {% endblock content %}

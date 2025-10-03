@@ -19,7 +19,7 @@ from pretalx.cfp.flow import CfPFlow
 from pretalx.common.forms import I18nFormSet
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import I18nStrJSONEncoder
-from pretalx.common.views.generic import OrgaCRUDView
+from pretalx.common.views.generic import OrgaCRUDView, get_next_url
 from pretalx.common.views.mixins import (
     ActionFromUrl,
     EventPermissionRequired,
@@ -35,6 +35,12 @@ from pretalx.orga.forms.cfp import (
     QuestionFilterForm,
     ReminderFilterForm,
     SubmitterAccessCodeForm,
+)
+from pretalx.orga.tables.cfp import (
+    QuestionTable,
+    SubmissionTypeTable,
+    SubmitterAccessCodeTable,
+    TrackTable,
 )
 from pretalx.submission.models import (
     AnswerOption,
@@ -110,9 +116,11 @@ class CfPTextDetail(PermissionRequired, ActionFromUrl, UpdateView):
 class QuestionView(OrderActionMixin, OrgaCRUDView):
     model = Question
     form_class = QuestionForm
+    table_class = QuestionTable
     template_namespace = "orga/cfp"
     context_object_name = "question"
     detail_is_update = False
+    create_button_label = _("New custom field")
 
     def get_queryset(self):
         return (
@@ -386,10 +394,16 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
 class SubmissionTypeView(OrderActionMixin, OrgaCRUDView):
     model = SubmissionType
     form_class = SubmissionTypeForm
+    table_class = SubmissionTypeTable
     template_namespace = "orga/cfp"
+    create_button_label = _("New type")
 
     def get_queryset(self):
-        return self.request.event.submission_types.all().order_by("default_duration")
+        return (
+            self.request.event.submission_types.all()
+            .order_by("default_duration")
+            .annotate(submission_count=Count("submissions"))
+        )
 
     def get_permission_required(self):
         permission_map = {"list": "orga_list", "detail": "orga_detail"}
@@ -434,16 +448,23 @@ class SubmissionTypeDefault(PermissionRequired, View):
             "pretalx.submission_type.make_default", person=self.request.user, orga=True
         )
         messages.success(request, _("The Session Type has been made default."))
-        return redirect(self.request.event.cfp.urls.types)
+        url = get_next_url(request)
+        return redirect(url or self.request.event.cfp.urls.types)
 
 
 class TrackView(OrderActionMixin, OrgaCRUDView):
     model = Track
     form_class = TrackForm
+    table_class = TrackTable
     template_namespace = "orga/cfp"
+    create_button_label = _("New track")
 
     def get_queryset(self):
-        return self.request.event.tracks.all()
+        return (
+            self.request.event.tracks.all()
+            .annotate(submission_count=Count("submissions"))
+            .order_by("position")
+        )
 
     def get_permission_required(self):
         permission_map = {"list": "orga_list", "detail": "orga_view"}
@@ -474,10 +495,12 @@ class TrackView(OrderActionMixin, OrgaCRUDView):
 class AccessCodeView(OrderActionMixin, OrgaCRUDView):
     model = SubmitterAccessCode
     form_class = SubmitterAccessCodeForm
+    table_class = SubmitterAccessCodeTable
     template_namespace = "orga/cfp"
     context_object_name = "access_code"
     lookup_field = "code"
     path_converter = "str"
+    create_button_label = _("New access code")
 
     def get_queryset(self):
         return self.request.event.submitter_access_codes.all().order_by("valid_until")
@@ -494,10 +517,11 @@ class AccessCodeView(OrderActionMixin, OrgaCRUDView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        if track := self.request.GET.get("track"):
-            if track := self.request.event.tracks.filter(pk=track).first():
-                kwargs["initial"] = kwargs.get("initial", {})
-                kwargs["initial"]["track"] = track
+        if (track := self.request.GET.get("track")) and (
+            track := self.request.event.tracks.filter(pk=track).first()
+        ):
+            kwargs["initial"] = kwargs.get("initial", {})
+            kwargs["initial"]["track"] = track
         return kwargs
 
     def delete_handler(self, request, *args, **kwargs):

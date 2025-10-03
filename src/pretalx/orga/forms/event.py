@@ -28,7 +28,6 @@ from pretalx.common.forms.widgets import (
     EnhancedSelect,
     EnhancedSelectMultiple,
     HtmlDateInput,
-    HtmlDateTimeInput,
     MarkdownWidget,
     TextInputWithAddon,
 )
@@ -326,6 +325,9 @@ class EventForm(ReadOnlyFlag, I18nHelpText, JsonSubfieldMixin, I18nModelForm):
                 **update
             )
 
+    class Media:
+        js = [forms.Script("orga/js/eventSettings.js", defer="")]
+
     class Meta:
         model = Event
         fields = [
@@ -495,6 +497,9 @@ class MailSettingsForm(
                 ),
             )
 
+    class Media:
+        js = [forms.Script("orga/js/mailSettings.js", defer="")]
+
     class Meta:
         json_fields = {
             "reply_to": "mail_settings",
@@ -564,6 +569,9 @@ class ReviewSettingsForm(
         required=False,
     )
 
+    class Media:
+        js = [forms.Script("orga/js/reviewSettings.js", defer="")]
+
     class Meta:
         json_fields = {
             "score_mandatory": "review_settings",
@@ -583,6 +591,9 @@ class WidgetSettingsForm(JsonSubfieldMixin, forms.Form):
         ),
         required=False,
     )
+
+    class Media:
+        js = [forms.Script("orga/js/widgetSettings.js", defer="")]
 
     class Meta:
         json_fields = {"show_widget_if_not_public": "feature_flags"}
@@ -663,10 +674,6 @@ class ReviewPhaseForm(I18nHelpText, I18nModelForm):
             "can_tag_submissions",
             "speakers_can_change_submissions",
         ]
-        widgets = {
-            "start": HtmlDateTimeInput,
-            "end": HtmlDateTimeInput,
-        }
 
 
 def strip_zeroes(value):
@@ -741,9 +748,7 @@ class ReviewScoreCategoryForm(I18nHelpText, I18nModelForm):
             value = self.cleaned_data.get(f"value_{score}")
             label = self.cleaned_data.get(f"label_{score}")
             if (value is not None) and label:
-                ReviewScore.objects.create(
-                    category=self.instance, value=value, label=label
-                )
+                ReviewScore.objects.create(category=instance, value=value, label=label)
         return instance
 
     class Meta:

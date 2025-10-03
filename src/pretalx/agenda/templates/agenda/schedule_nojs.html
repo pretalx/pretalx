@@ -1,15 +1,12 @@
 {% extends "agenda/base.html" %}
 
-{% load compress %}
 {% load i18n %}
 {% load rich_text %}
 {% load static %}
 {% load phrases %}
 
 {% block stylesheets %}
-    {% compress css %}
-        <link rel="stylesheet" type="text/css" href="{% static "agenda/css/agenda_nojs.css" %}" />
-    {% endcompress %}
+    <link rel="stylesheet" type="text/css" href="{% static "agenda/css/agenda_nojs.css" %}" />
 {% endblock stylesheets %}
 
 {% block agenda_content %}

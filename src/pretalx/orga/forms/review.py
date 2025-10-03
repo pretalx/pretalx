@@ -11,7 +11,7 @@ from django_scopes.forms import SafeModelMultipleChoiceField
 
 from pretalx.common.forms.mixins import ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer, TabularFormRenderer
-from pretalx.common.forms.widgets import EnhancedSelectMultiple, MarkdownWidget
+from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
 from pretalx.orga.forms.export import ExportForm
 from pretalx.person.models import User
@@ -167,12 +167,12 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
         instance.save()
         return instance
 
+    class Media:
+        js = [forms.Script("orga/js/reviewSubmission.js", defer="")]
+
     class Meta:
         model = Review
         fields = ("text",)
-        widgets = {
-            "text": MarkdownWidget,
-        }
 
 
 class DirectionForm(forms.Form):
@@ -211,6 +211,9 @@ class ReviewAssignmentForm(forms.Form):
             else:
                 self.reviewers_by_track[None].update(team.members.all())
         super().__init__(*args, **kwargs)
+
+    class Media:
+        js = [forms.Script("orga/js/reviewAssignment.js", defer="")]
 
 
 class ReviewerForProposalForm(ReviewAssignmentForm):
@@ -287,9 +290,7 @@ class ProposalForReviewerForm(ReviewAssignmentForm):
         submissions = set()
         for track in track_limit:
             submissions.update(self.submissions_by_track[track])
-        return sorted(
-            list(submissions), key=lambda submission: (submission[1] or "").lower()
-        )
+        return sorted(submissions, key=lambda submission: (submission[1] or "").lower())
 
     def save(self, *args, **kwargs):
         for reviewer in self.reviewers:

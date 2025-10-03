@@ -20,6 +20,8 @@ from django.views.generic import FormView, View
 from django.views.generic.detail import SingleObjectTemplateResponseMixin
 from django.views.generic.edit import ModelFormMixin, ProcessFormView
 from django_context_decorator import context
+from django_tables2 import LazyPaginator
+from django_tables2.views import SingleTableMixin
 from i18nfield.forms import I18nModelForm
 
 from pretalx.cfp.forms.auth import ResetForm
@@ -34,14 +36,17 @@ from pretalx.person.forms import UserForm
 from pretalx.person.models import User
 
 
-def get_next_url(request):
+def get_next_url(request, omit_params=None):
     params = request.GET.copy()
+    omit_params = omit_params or []
+    for param in omit_params:
+        params.pop(param, None)
     if not (url := params.pop("next", [""])[0]):
         return
     if not url_has_allowed_host_and_scheme(url, allowed_hosts=None):
         return
     if params:
-        url = f"{url}?{params.urlencode()}"
+        return f"{url}?{params.urlencode()}"
     return url
 
 
@@ -203,8 +208,8 @@ class CRUDView(PaginationMixin, Filterable, View):
     """
     Provides a list, create, detail and update, delete view.
 
-    For use with standard /orga/ views, permissions, and logging,
-    use the OrgaCRUDView subclass below.
+    For use with standard /orga/ views, permissions, logging, and
+    tables, use the OrgaCRUDView subclass below.
 
     Implementation partially vendored from the excellent Neapolitan
     project (MIT licenced) by Carlton Gibson, with thanks for both
@@ -242,19 +247,26 @@ class CRUDView(PaginationMixin, Filterable, View):
             )
         raise Http404()
 
+    @cached_property
+    def is_generic(self):
+        return self.action in ("list", "create")
+
     def dispatch(self, request, *args, **kwargs):
-        generic = self.action in ("list", "create")
-        if not generic:
+        if not self.is_generic:
             self.object = self.get_object()
-        permission = self.get_permission_required()
-        if not self.has_permission(permission, generic=generic):
+        if not self.has_permission(self.get_permission_required()):
             return self.permission_denied()
         return super().dispatch(request, *args, **kwargs)
 
+    def get_table_data(self):
+        return self.filter_queryset(self.get_queryset())
+
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        filtered_queryset = self.filter_queryset(queryset)
-        if paginate_by := self.get_paginate_by():
+        filtered_queryset = self.get_table_data()
+        if not getattr(self, "table_class", None) and (
+            paginate_by := self.get_paginate_by()
+        ):
             page = self.paginate_queryset(filtered_queryset, paginate_by)
             self.object_list = page.object_list
             context = self.get_context_data(
@@ -263,6 +275,8 @@ class CRUDView(PaginationMixin, Filterable, View):
                 queryset=queryset,
             )
         else:
+            # Tables handle their own pagination, but we pass the object list
+            # to the template regardless
             self.object_list = filtered_queryset
             context = self.get_context_data(queryset=queryset)
         return self.render_to_response(context)
@@ -396,6 +410,10 @@ class CRUDView(PaginationMixin, Filterable, View):
             return str(instance)
         return self.model._meta.object_name
 
+    @property
+    def create_button_label(self):
+        return _("New")
+
     def get_generic_permission_object(self):
         """Used to determine non-object permissions like list, create, and generic delete"""
         raise NotImplementedError
@@ -406,60 +424,69 @@ class CRUDView(PaginationMixin, Filterable, View):
     def get_permission_required(self):
         return self.model.get_perm(self.action)
 
-    def has_permission(self, permission, generic=False):
-        if generic:
-            permission_object = self.get_generic_permission_object()
-        else:
-            permission_object = self.get_permission_object()
-        return self.request.user.has_perm(permission, permission_object)
+    @cached_property
+    def permission_object(self):
+        if self.is_generic:
+            return self.get_generic_permission_object()
+        return self.get_permission_object()
+
+    def has_permission(self, permission):
+        return self.request.user.has_perm(permission, self.permission_object)
+
+    @cached_property
+    def has_create_permission(self):
+        return self.has_permission(self.model.get_perm("create"))
+
+    @cached_property
+    def has_update_permission(self):
+        return self.has_permission(self.model.get_perm("update"))
+
+    @cached_property
+    def has_delete_permission(self):
+        return self.has_permission(self.model.get_perm("delete"))
 
     def get_context_data(self, **kwargs):
         kwargs["view"] = self
         kwargs["action"] = self.action
-        kwargs["create_url"] = self.reverse("create")
-        kwargs["list_url"] = self.reverse("list")
+        if hasattr(self, "create"):
+            kwargs["create_url"] = self.reverse("create")
+        if hasattr(self, "list"):
+            kwargs["list_url"] = self.reverse("list")
+        kwargs["has_update_permission"] = self.has_update_permission
+        kwargs["has_delete_permission"] = self.has_delete_permission
+        kwargs["generic_title"] = self.get_generic_title(instance=self.object)
+        kwargs["create_button_label"] = self.create_button_label
 
         if self.object:
             kwargs["object"] = self.object
-            kwargs["generic_title"] = self.get_generic_title(instance=self.object)
-            kwargs["has_update_permission"] = self.request.user.has_perm(
-                self.model.get_perm("update"), self.object
-            )
-            kwargs["has_delete_permission"] = self.request.user.has_perm(
-                self.model.get_perm("delete"), self.object
-            )
             if name := self.get_context_object_name():
                 kwargs[name] = self.object
 
         elif getattr(self, "object_list", None) is not None:
             kwargs["object_list"] = self.object_list
-            kwargs["generic_title"] = self.get_generic_title()
-            generic_permission_object = self.get_generic_permission_object()
-            kwargs["has_create_permission"] = self.request.user.has_perm(
-                self.model.get_perm("create"), generic_permission_object
-            )
-            kwargs["has_update_permission"] = self.request.user.has_perm(
-                self.model.get_perm("update"), generic_permission_object
-            )
-            kwargs["has_delete_permission"] = self.request.user.has_perm(
-                self.model.get_perm("delete"), generic_permission_object
-            )
+            kwargs["has_create_permission"] = self.has_create_permission
             if name := self.get_context_object_name():
                 kwargs[name] = self.object_list
-
-        else:
-            kwargs["generic_title"] = self.get_generic_title()
 
         return kwargs
 
     def get_template_names(self):
         namespace = self.template_namespace or "common"
         object_name = self.model._meta.object_name.lower()
-        return [
+        templates = [
             f"{namespace}/{object_name}/{self.action}.html",
             f"{namespace}/{object_name}_{self.action}.html",
-            f"common/generic/{self.action}.html",
         ]
+        if self.action in ("create", "update"):
+            # Make it easy to use a shared base form template for create and update.
+            # Useful for including the same static files in each
+            templates += [
+                f"{namespace}/{object_name}/_form.html",
+                f"{namespace}/{object_name}_form.html",
+            ]
+        # Finally, fall back to the generic template for this action
+        templates.append(f"common/generic/{self.action}.html")
+        return templates
 
     def render_to_response(self, context):
         return TemplateResponse(
@@ -517,7 +544,39 @@ class CRUDView(PaginationMixin, Filterable, View):
         ]
 
 
-class OrgaCRUDView(FormSignalMixin, CRUDView):
+class OrgaTableMixin(SingleTableMixin):
+    pagination_class = LazyPaginator
+    table_class = None
+
+    def get_paginate_by(self, queryset=None):
+        skey = "stored_page_size_" + self.request.resolver_match.url_name
+        default = (
+            self.request.session.get(skey)
+            or getattr(self, "paginate_by", None)
+            or self.DEFAULT_PAGINATION
+        )
+        if self.request.GET.get("page_size"):
+            try:
+                max_page_size = getattr(self, "max_page_size", 250)
+                size = min(max_page_size, int(self.request.GET.get("page_size")))
+                self.request.session[skey] = size
+                return size
+            except ValueError:
+                return default
+        return default
+
+    def get_table_kwargs(self):
+        kwargs = super().get_table_kwargs()
+        kwargs["event"] = getattr(self.request, "event", None)
+        return kwargs
+
+    def get_table(self, *args, **kwargs):
+        if not self.table_class:
+            return
+        return super().get_table(*args, **kwargs)
+
+
+class OrgaCRUDView(OrgaTableMixin, FormSignalMixin, CRUDView):
 
     @cached_property
     def event(self):
@@ -561,7 +620,4 @@ class OrgaCRUDView(FormSignalMixin, CRUDView):
 
     def get_template_names(self):
         result = super().get_template_names()
-        result = result[:-1] + [
-            f"orga/generic/{self.action}.html",
-        ]
-        return result
+        return result[:-1] + [f"orga/generic/{self.action}.html"]

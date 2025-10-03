@@ -6,6 +6,7 @@ from django.utils.timezone import now
 from django.utils.translation import get_language
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.models.fields import DateTimeField
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import can_change_event_settings
@@ -45,7 +46,7 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
         null=True,
         blank=True,
     )
-    valid_until = models.DateTimeField(
+    valid_until = DateTimeField(
         verbose_name=_("Valid until"),
         help_text=_(
             "You can set or change this date later to invalidate the access code."
