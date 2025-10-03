@@ -1,17 +1,8 @@
 {% extends "orga/base.html" %}
 
-{% load compress %}
-{% load copyable %}
-{% load form_media %}
 {% load html_signal %}
 {% load i18n %}
 {% load static %}
-
-{% block scripts %}
-    {% compress js %}
-        <script defer src="{% static "common/js/copy.js" %}"></script>
-    {% endcompress %}
-{% endblock %}
 
 {% block extra_title %}{% translate "User settings" %} :: {% endblock extra_title %}
 {% block content %}
@@ -140,5 +131,4 @@
     {% endif %}
 
     {% html_signal "pretalx.common.signals.profile_bottom_html" sender=request.event user=user orga="true" %}
-    {% form_media %}
 {% endblock content %}

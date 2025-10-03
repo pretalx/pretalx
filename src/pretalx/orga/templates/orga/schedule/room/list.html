@@ -1,16 +1,11 @@
 {% extends "orga/generic/list.html" %}
 
-{% load compress %}
 {% load static %}
 
 {% block stylesheets %}
-    {% compress css %}
-        <link rel="stylesheet" href="{% static "orga/css/dragsort.css" %}">
-    {% endcompress %}
+    <link rel="stylesheet" href="{% static "orga/css/dragsort.css" %}">
 {% endblock stylesheets %}
 
 {% block scripts %}
-    {% compress js %}
-        <script defer src="{% static "orga/js/dragsort.js" %}"></script>
-    {% endcompress %}
+    <script defer src="{% static "orga/js/dragsort.js" %}"></script>
 {% endblock scripts %}

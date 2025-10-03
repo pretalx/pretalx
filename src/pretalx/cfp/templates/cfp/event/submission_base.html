@@ -1,6 +1,5 @@
 {% extends "cfp/event/base.html" %}
 
-{% load compress %}
 {% load form_media %}
 {% load i18n %}
 {% load orga_edit_link %}
@@ -11,9 +10,7 @@
 {% block title %}{% if submission_title %}{{ submission_title }}{% else %}{% translate "Create proposal" %}{% endif %} :: {{ request.event.name }}{% endblock title %}
 
 {% block cfp_header %}
-    {% compress js %}
-        <script defer src="{% static "cfp/js/proposalTabTitles.js" %}"></script>
-    {% endcompress %}
+    <script defer src="{% static "cfp/js/proposalTabTitles.js" %}"></script>
     {% block cfp_submission_header %}{% endblock cfp_submission_header %}
 {% endblock cfp_header %}
 

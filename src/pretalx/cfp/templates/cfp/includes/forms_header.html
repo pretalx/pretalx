@@ -1,9 +1,0 @@
-{% load compress %}
-{% load static %}
-
-{% compress css %}
-    <link rel="stylesheet" type="text/css" href="{% static "vendored/choices/choices.min.css" %}" />
-{% endcompress %}
-{% compress js %}
-    <script defer src="{% static "vendored/choices/choices.min.js" %}"></script>
-{% endcompress %}

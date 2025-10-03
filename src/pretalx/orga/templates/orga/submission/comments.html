@@ -1,15 +1,13 @@
 {% extends "orga/submission/base.html" %}
-{% load compress %}
+
 {% load i18n %}
+{% load rich_text %}
 {% load rules %}
 {% load static %}
-{% load rich_text %}
 
 {% block scripts %}
     {{ block.super }}
-    {% compress js %}
-        <script defer src="{% static "orga/js/highlightComment.js" %}"></script>
-    {% endcompress %}
+    <script defer src="{% static "orga/js/highlightComment.js" %}"></script>
 {% endblock scripts %}
 
 {% block submission_content %}
