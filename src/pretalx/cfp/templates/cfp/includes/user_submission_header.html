@@ -1,13 +1,8 @@
-{% load compress %}
 {% load datetimerange %}
 {% load i18n %}
 {% load static %}
 
-{% compress js %}
-    <script defer src="{% static "vendored/moment-with-locales.js" %}"></script>
-    <script defer src="{% static "vendored/moment-timezone-with-data-10-year-range.js" %}"></script>
-    <script defer src="{% static "agenda/js/datetime-local.js" %}"></script>
-{% endcompress %}
+<script defer src="{% static "agenda/js/datetime-local.js" %}"></script>
 
 <h2>
     {{ quotation_open }}{{ submission.title }}{{ quotation_close }}

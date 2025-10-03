@@ -15,21 +15,9 @@ const initAvailabilities = (element) => {
         const data = {
             availabilities: calendar
                 .getEvents()
-                .map(function (e) {
+                .map((e) => {
                     if (e.groupId) return
-                    if (e.allDay) {
-                        return {
-                            start: moment(e.start).format(
-                                "YYYY-MM-DD HH:mm:ss",
-                            ),
-                            end: moment(e.end).format("YYYY-MM-DD HH:mm:ss"),
-                        }
-                    } else {
-                        return {
-                            start: e.start.toISOString(),
-                            end: e.end.toISOString(),
-                        }
-                    }
+                    return {start: e.start.toISOString(), end: e.end.toISOString()}
                 })
                 .filter((a) => !!a),
         }
@@ -41,16 +29,7 @@ const initAvailabilities = (element) => {
 
     const slotDuration = data.resolution || "00:30:00"
     let events = data.availabilities.map((e) => {
-        const start = moment(e.start)
-        const end = moment(e.end)
-        if (start.format("HHmmss") == 0 && end.format("HHmmss") == 0) {
-            e.allDay = true
-        }
-        e.start = start.toISOString()
-        e.end = end.toISOString()
-        if (constraints) {
-            e.constraint = "mainConstraint"
-        }
+        if (constraints) { e.constraint = "mainConstraint" }
         return e
     })
     if (constraints) {
@@ -71,11 +50,7 @@ const initAvailabilities = (element) => {
         initialView: "timeGrid",
         initialDate: data.event.date_from,
         duration: {
-            days:
-                moment(data.event.date_to).diff(
-                    moment(data.event.date_from),
-                    "days",
-                ) + 1,
+            days: Math.floor((new Date(data.event.date_to) - new Date(data.event.date_from)) / (1000 * 60 * 60 * 24)) + 1,
         },
         headerToolbar: false,
         events: events,
