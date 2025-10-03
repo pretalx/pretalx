@@ -65,15 +65,8 @@
             {% include "common/avatar.html" with user=form.instance.user form=form %}
         {% endif %}
 
-        {% if form.biography %}
-            {{ form.biography.as_field_group }}
-        {% endif %}
-        {% if form.availabilities %}
-            {% include "common/availabilities.html" %}
-
-            {{ form.availabilities.as_field_group }}
-        {% endif %}
-
+        {{ form.biography.as_field_group }}
+        {{ form.availabilities.as_field_group }}
         {{ form.internal_notes.as_field_group }}
 
         {{ questions_form }}

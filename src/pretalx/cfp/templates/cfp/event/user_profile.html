@@ -17,16 +17,11 @@
         {% include "common/forms/errors.html" with form=profile_form %}
 
         {{ profile_form.name.as_field_group }}
-        {% if profile_form.biography %}
-            {{ profile_form.biography.as_field_group }}
-        {% endif %}
+        {{ profile_form.biography.as_field_group }}
         {% if request.event.cfp.request_avatar %}
             {% include "common/avatar.html" with user=request.user form=profile_form %}
         {% endif %}
-        {% if profile_form.availabilities %}
-            {% include "common/availabilities.html" %}
-            {{ profile_form.availabilities.as_field_group }}
-        {% endif %}
+        {{ profile_form.availabilities.as_field_group }}
         {% if not profile_form.read_only %}
             <div class="row">
                 <div class="col-md-4 flip ml-auto">
