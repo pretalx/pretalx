@@ -14,10 +14,7 @@ def form_media(context):
         return ""
     context[singleton_key] = True
 
-    media = forms.Media(
-        js=[forms.Script("common/js/formTools.js", defer="")],
-        css={"all": ["common/css/_forms.css"]},
-    )
+    media = forms.Media()
     for name, item in context.flatten().items():
         if isinstance(item, forms.BaseForm):
             media += item.media
@@ -34,4 +31,12 @@ def form_media(context):
                     # For all other form lists, let's assume that they are formset-like,
                     # and all require the same media files.
                     media += first_item.media
-    return media
+    if not media._js and not media._css:
+        return forms.Media()
+    return (
+        forms.Media(
+            js=[forms.Script("common/js/formTools.js", defer="")],
+            css={"all": ["common/css/_forms.css"]},
+        )
+        + media
+    )

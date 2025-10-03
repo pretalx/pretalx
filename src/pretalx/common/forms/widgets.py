@@ -160,6 +160,13 @@ class EnhancedSelectMixin(forms.Select):
                 option["attrs"]["data-color"] = self.color_field(value)
         return option
 
+    class Media:
+        js = [
+            forms.Script("vendored/choices/choices.min.js"),
+            forms.Script("common/js/select.js"),
+        ]
+        css = {"all": ["vendored/choices/choices.min.css"]}
+
 
 class EnhancedSelect(EnhancedSelectMixin, forms.Select):
     pass

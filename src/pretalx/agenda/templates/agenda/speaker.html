@@ -1,10 +1,8 @@
 {% extends "agenda/base.html" %}
 
-{% load compress %}
 {% load i18n %}
 {% load rich_text %}
 {% load thumbnail %}
-{% load static %}
 
 {% block title %}{{ profile.user.get_display_name }} ::{% endblock title %}
 {% block meta_title %}{{ profile.user.get_display_name }}{% endblock meta_title %}

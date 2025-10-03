@@ -1,7 +1,6 @@
 {% extends "orga/base.html" %}
-{% load compress %}
+
 {% load i18n %}
-{% load static %}
 
 {% block extra_title %}{{ page_obj.paginator.count }} {% blocktranslate trimmed count count=page_obj.paginator.count %}speaker{% plural %}speakers{% endblocktranslate %} :: {% endblock extra_title %}
 
