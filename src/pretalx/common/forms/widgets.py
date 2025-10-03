@@ -49,6 +49,7 @@ class PasswordStrengthInput(forms.PasswordInput):
             forms.Script("vendored/zxcvbn.js", defer=""),
             forms.Script("common/js/password_strength.js", defer=""),
         ]
+        css = {"all": ["common/css/_form_password.css"]}
 
 
 class PasswordConfirmationInput(forms.PasswordInput):
@@ -101,6 +102,9 @@ class ClearableBasenameFileInput(forms.ClearableFileInput):
 
 class ImageInput(ClearableBasenameFileInput):
     template_name = "common/widgets/image_input.html"
+
+    class Media:
+        css = {"all": ["common/css/_form_image.css"]}
 
 
 class MarkdownWidget(forms.Textarea):
@@ -165,7 +169,9 @@ class EnhancedSelectMixin(forms.Select):
             forms.Script("vendored/choices/choices.min.js"),
             forms.Script("common/js/select.js"),
         ]
-        css = {"all": ["vendored/choices/choices.min.css"]}
+        css = {
+            "all": ["vendored/choices/choices.min.css", "common/css/_form_select.css"]
+        }
 
 
 class EnhancedSelect(EnhancedSelectMixin, forms.Select):

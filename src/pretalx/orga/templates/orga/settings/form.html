@@ -4,10 +4,6 @@
 {% load i18n %}
 {% load static %}
 
-{% block stylesheets %}
-    <link rel="stylesheet" type="text/css" href="{% static "common/css/headers-uncompressed.css" %}" />
-{% endblock stylesheets %}
-
 {% block scripts %}
     {% compress js %}
         <script defer src="{% static "js/jquery.js" %}"></script>

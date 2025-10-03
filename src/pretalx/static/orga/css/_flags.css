@@ -1,25 +1,50 @@
-input[type="text"][lang],
-textarea[lang],
-.mail-preview[lang] {
-  background-repeat: no-repeat;
-  background-position: 10px center;
-  padding-left: 34px;
-}
-
-textarea[lang],
-.mail-preview[lang] {
-  background-position: 10px 12px;
-}
-
-.i18n-form-single-language {
+.i18n-form-group {
   input[lang],
   textarea[lang],
-  input[lang] + label {
-    background: none !important;
-    padding: 0.375rem 0.75rem;
+  .mail-preview[lang] {
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    padding-left: 34px;
+  }
+
+  textarea[lang],
+  .mail-preview[lang] {
+    background-position: 10px 12px;
+  }
+
+  .i18n-form-single-language {
+    input[lang],
+    textarea[lang],
+    input[lang] + label {
+      background: none !important;
+      padding: 0.375rem 0.75rem;
+    }
   }
 }
+.i18n-form-group input[lang],
+.i18n-form-group textarea {
+  border-top-width: 0;
+  border-radius: 0;
 
+  &:first-child {
+    border-top-width: 1px;
+    border-top-left-radius: var(--size-border-radius);
+    border-top-right-radius: var(--size-border-radius);
+  }
+  &:last-child {
+    border-bottom-right-radius: var(--size-border-radius);
+    border-bottom-left-radius: var(--size-border-radius);
+  }
+}
+.i18n-form-single-language input[lang][type="text"],
+.i18n-form-single-language textarea[lang],
+.i18n-form-single-language input[lang][type="text"] + label {
+  background: none !important;
+  padding: 0.375rem 0.75rem;
+  &::placeholder {
+    opacity: 0;
+  }
+}
 div[lang="ad"],
 input[lang="ad"],
 textarea[lang="ad"] {

@@ -1,0 +1,13 @@
+#auth-form {
+  flex-direction: row;
+  .form-group {
+    flex-direction: column;
+  }
+  .auth-form-block {
+    margin: 12px;
+    flex-basis: 100%;
+  }
+  .optional {
+    display: none;
+  }
+}
