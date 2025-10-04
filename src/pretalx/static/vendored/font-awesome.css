@@ -5,6 +5,7 @@
     url("/static/fonts/fontawesome-webfont.woff") format('woff');
   font-weight: normal;
   font-style: normal;
+  font-display: swap;
 }
 .fa {
   display: inline-block;
