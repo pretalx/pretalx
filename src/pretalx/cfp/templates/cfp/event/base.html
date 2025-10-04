@@ -1,7 +1,15 @@
 {% extends "common/base.html" %}
 
+{% load static %}
+
 {% block custom_header %}
     {% block cfp_header %}{% endblock cfp_header %}
 {% endblock custom_header %}
+
+
+{% block stylesheets %}
+    <link rel="stylesheet" type="text/css" href="{% static "cfp/css/base.css" %}" />
+    {% block cfp_stylesheets %}{% endblock cfp_stylesheets %}
+{% endblock stylesheets %}
 
 {% block nav_link %}{{ request.event.urls.base }}{% endblock nav_link %}

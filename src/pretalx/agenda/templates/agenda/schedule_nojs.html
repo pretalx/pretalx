@@ -5,9 +5,9 @@
 {% load static %}
 {% load phrases %}
 
-{% block stylesheets %}
-    <link rel="stylesheet" type="text/css" href="{% static "agenda/css/agenda_nojs.css" %}" />
-{% endblock stylesheets %}
+{% block agenda_stylesheets %}
+    <link rel="stylesheet" type="text/css" href="{% static "agenda/css/schedule_nojs.css" %}" />
+{% endblock agenda_stylesheets %}
 
 {% block agenda_content %}
     <div id="fahrplan" class="list">

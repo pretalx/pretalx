@@ -286,7 +286,7 @@ class Question(OrderedModel, PretalxModel):
         default=False,
         verbose_name=_("Publish answers"),
         help_text=_(
-            "Responses will be shown on session or speaker pages as appropriate. Please note that you cannot make a field public after the first answers have been given, to allow speakers explicit consent before publishing information."
+            "Responses will be shown on session or speaker pages as appropriate."
         ),
     )
     is_visible_to_reviewers = models.BooleanField(

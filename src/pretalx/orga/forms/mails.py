@@ -212,7 +212,8 @@ class WriteMailBaseForm(MailTemplateForm):
             self.fields.pop("skip_queue", None)
 
     class Media:
-        js = [forms.Script("orga/js/placeholder.js", defer="")]
+        js = [forms.Script("orga/js/forms/placeholder.js", defer="")]
+        css = {"all": ["orga/css/forms/email.css"]}
 
 
 class WriteTeamsMailForm(WriteMailBaseForm):
@@ -491,3 +492,6 @@ class QueuedMailFilterForm(forms.Form):
         if tracks:
             qs = qs.filter(submissions__track__in=tracks)
         return qs.distinct()
+
+    class Media:
+        css = {"all": ["orga/css/forms/search.css"]}

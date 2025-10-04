@@ -1,0 +1,27 @@
+.form-plugins {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: stretch;
+  align-content: stretch;
+
+  .plugin-card {
+    margin: 16px;
+    width: 40%;
+    flex-grow: 1;
+    flex-shrink: 0;
+
+    .card-header {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: baseline;
+      font-weight: bold;
+
+      .btn {
+        max-width: 150px;
+      }
+    }
+  }
+}

@@ -3,8 +3,13 @@
 {% load i18n %}
 {% load review_score %}
 {% load rules %}
+{% load static %}
 
 {% block extra_title %}{% translate "Reviews" %} :: {% endblock extra_title %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static "orga/css/ui/reviews.css" %}" />
+{% endblock stylesheets %}
 
 {% block content %}
     {% has_perm "person.reviewer_list_speakerprofile" request.user request.event as can_view_speakers %}

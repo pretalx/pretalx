@@ -164,8 +164,8 @@ class SpeakerProfileForm(
         return result
 
     class Media:
-        js = [forms.Script("cfp/js/profile.js", defer="")]
-        css = {"all": ["common/css/avatar.css"]}
+        js = [forms.Script("common/js/forms/avatar.js", defer="")]
+        css = {"all": ["common/css/forms/avatar.css"]}
 
     class Meta:
         model = SpeakerProfile
@@ -297,6 +297,9 @@ class SpeakerFilterForm(forms.Form):
             queryset = queryset.filter(has_arrived=(has_arrived == "true"))
         return queryset
 
+    class Media:
+        css = {"all": ["orga/css/forms/search.css"]}
+
 
 class UserSpeakerFilterForm(forms.Form):
     default_renderer = InlineFormRenderer
@@ -351,3 +354,6 @@ class UserSpeakerFilterForm(forms.Form):
         elif role == "submitter":
             qs = qs.filter(accepted_submission_count=0)
         return qs.order_by("id").distinct()
+
+    class Media:
+        css = {"all": ["orga/css/forms/search.css"]}

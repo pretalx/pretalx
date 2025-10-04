@@ -117,9 +117,6 @@ include = ["pretalx*"]
 exclude = ["pretalx/frontend/node_modules"]
 namespaces = false
 
-[project.entry-points."flake8.extension"]
-DS = "flake8_django_script_defer:DjangoScriptDeferChecker"
-
 [tool.check-manifest]
 ignore = [
   ".*",

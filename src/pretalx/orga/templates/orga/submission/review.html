@@ -6,6 +6,12 @@
 
 {% block submission_title %}{% translate "Reviews" %} :: {% endblock submission_title %}
 
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static "common/css/ui/tooltip.css" %}" />
+    <link rel="stylesheet" href="{% static "orga/css/ui/review.css" %}" />
+{% endblock stylesheets %}
+
 {% block submission_content %}
     {% has_perm "submission.view_all_reviews_submission" request.user submission as can_view_other_reviews %}
     {% has_perm "submission.list_reviewers_review" request.user submission as can_view_reviewer_names %}

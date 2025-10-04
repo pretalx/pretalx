@@ -1,0 +1,22 @@
+.submission-featured {
+  position: relative;
+  text-align: center;
+
+  i {
+    position: absolute;
+    right: 30%;
+    top: 12px;
+  }
+
+  input[type="checkbox"] {
+    margin-right: 16px;
+  }
+
+  .done {
+    color: var(--color-success);
+  }
+
+  .fail {
+    color: var(--color-danger);
+  }
+}

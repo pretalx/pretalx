@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.forms import CheckboxSelectMultiple, RadioSelect, Script
+from django.forms import CheckboxSelectMultiple, RadioSelect
 from django.utils.translation import gettext_lazy as _
 
 
@@ -7,11 +7,23 @@ class HeaderSelect(RadioSelect):
     option_template_name = "orga/widgets/header_option.html"
 
     class Media:
-        css = {"all": [Script("common/css/headers-uncompressed.css")]}
+        css = {
+            "all": [
+                "common/css/headers/pcb.css",
+                "common/css/headers/bubbles.css",
+                "common/css/headers/signal.css",
+                "common/css/headers/topo.css",
+                "common/css/headers/graph.css",
+                "orga/css/forms/header.css",
+            ]
+        }
 
 
 class IconSelect(RadioSelect):
     option_template_name = "orga/widgets/icon_option.html"
+
+    class Media:
+        css = {"all": ["orga/css/forms/icon.css"]}
 
 
 class MultipleLanguagesWidget(CheckboxSelectMultiple):

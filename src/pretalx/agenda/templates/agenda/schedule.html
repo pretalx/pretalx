@@ -9,6 +9,12 @@
     <script id="pretalx-messages" data-logged-in="{% if request.user.is_anonymous %}false{% else %}true{% endif %}" src="{{ request.event.urls.schedule }}widget/messages.js"></script>
 {% endblock agenda_custom_header %}
 
+{% block agenda_stylesheets %}
+    <link rel="stylesheet" type="text/css" href="{% static "common/css/ui/dropdown.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "common/css/ui/export.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "agenda/css/schedule.css" %}" />
+{% endblock agenda_stylesheets %}
+
 {% block header_right %}
     <details class="dropdown mr-2" aria-haspopup="menu" role="menu">
         <summary>

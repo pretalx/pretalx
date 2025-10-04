@@ -1,0 +1,118 @@
+.mail-preview-group {
+  margin-bottom: -15px;
+}
+div.mail-preview {
+  border: 1px solid #ccc;
+  border-top-width: 1px;
+  border-radius: 3px;
+  padding: 4px 36px;
+
+  .placeholder {
+    background: transparentize(var(--color-primary), 0.7);
+  }
+}
+
+.mail-preview-group div[lang] {
+  border-radius: 0;
+  border-top-width: 0;
+  margin-bottom: 0;
+  padding-right: 15px;
+  padding-bottom: 15px;
+
+  &:first-child {
+    border-top-left-radius: var(--size-border-radius);
+    border-top-right-radius: var(--size-border-radius);
+    border-top-width: 1px;
+  }
+  &:last-child {
+    border-bottom-left-radius: var(--size-border-radius);
+    border-bottom-right-radius: var(--size-border-radius);
+    margin-bottom: 20px;
+  }
+  h2,
+  h3 {
+    margin-bottom: 20px;
+    margin-top: 10px;
+  }
+  p {
+    margin: 0 0 10px;
+
+    /* These are technically the same, but use both */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+
+    -ms-word-break: break-all;
+    /* This is the dangerous one in WebKit, as it breaks things wherever */
+    word-break: break-all;
+    /* Instead use this non-standard one: */
+    word-break: break-word;
+
+    /* Adds a hyphen where the word breaks, if supported (No Blink) */
+    -ms-hyphens: auto;
+    -moz-hyphens: auto;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+  }
+  p:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.list-group .list-group-item-action h4 {
+  /* This is in the email editor placeholder sidebar */
+  color: var(--color-primary);
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  .fa-chevron-right {
+    position: absolute;
+    right: 24px;
+    height: 24px;
+    top: calc(50% - 12px);
+  }
+}
+.form-with-placeholder {
+  margin-right: 300px;
+}
+#placeholder-column {
+  width: 270px;
+  max-height: calc(100vh - 50px);
+  overflow-y: auto;
+  position: fixed;
+  right: 0;
+  padding: 0 12px;
+  top: 50px;
+  border-left: 1px solid var(--color-grey-lighter);
+  box-shadow: var(--shadow-wide);
+
+  legend {
+    background: white;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 16px 0 8px 0;
+  }
+
+  .list-group-item.placeholder {
+    cursor: pointer;
+
+    .placeholder-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      .placeholder-text {
+        white-space: nowrap;
+      }
+    }
+
+    i {
+      padding: 8px;
+      width: 30px;
+      border-radius: 50%;
+      text-align: center;
+    }
+    i:hover {
+      background: var(--color-grey-lighter);
+    }
+  }
+}

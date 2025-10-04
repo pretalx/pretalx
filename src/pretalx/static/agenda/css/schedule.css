@@ -1,0 +1,86 @@
+#main-container.list-schedule {
+  min-width: 0;
+}
+
+#main-container.main-schedule {
+  min-width: min-content;
+  margin: 0 auto;
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+  #main-card {
+    min-width: 1200px;
+    margin: 0 auto;
+    main {
+      padding: 1rem 0;
+      width: 100%;
+    }
+  }
+}
+
+#fahrplan noscript {
+  max-width: 80vw;
+  min-width: 360px;
+  margin: 0 auto;
+}
+
+.export-icon {
+  width: 1.5em;
+  display: inline-block;
+}
+
+@media (max-width: 1200px) {
+  #main-container.main-schedule #main-card {
+    min-width: 1000px;
+  }
+  #fahrplan {
+    width: 100%;
+
+    #schedule-nav {
+      align-items: baseline;
+
+      & > .navigation {
+        margin-bottom: 16px;
+        display: flex;
+        justify-content: stretch;
+      }
+      .header-right {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        .btn-outline-info {
+          display: none;
+        }
+      }
+    }
+  }
+}
+@media (max-width: 992px) {
+  #fahrplan #schedule-nav {
+    flex-direction: column;
+  }
+  #main-container.main-schedule {
+    max-width: 100%;
+  }
+  #main-container.main-schedule #main-card {
+    min-width: 90vw;
+  }
+}
+@media (max-width: 800px) {
+  #main-container.main-schedule #main-card {
+    main {
+      max-width: inherit;
+    }
+  }
+  .talk-content {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 710px) {
+  /* 710px is the cutoff at which the schedule widget
+   * switches to mobile / single-column view */
+  #main-container.main-schedule {
+    min-width: 0;
+  }
+}

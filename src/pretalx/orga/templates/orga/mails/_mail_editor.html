@@ -6,7 +6,6 @@
 {% block extra_title %}{% translate "Email editor" %} :: {% endblock extra_title %}
 
 {% block mail_content %}
-    <script defer src="{% static "common/js/tabs.js" %}"></script>
     <form method="post" class="form-with-placeholder">
         {% csrf_token %}
         <div class="mb-2">

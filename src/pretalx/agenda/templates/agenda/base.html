@@ -4,6 +4,12 @@
 {% load i18n %}
 {% load rules %}
 {% load safelink %}
+{% load static %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" type="text/css" href="{% static "agenda/css/base.css" %}" />
+    {% block agenda_stylesheets %}{% endblock agenda_stylesheets %}
+{% endblock stylesheets %}
 
 {% block custom_header %}
     {% block alternate_link %}

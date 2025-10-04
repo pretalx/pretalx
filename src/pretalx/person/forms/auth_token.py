@@ -54,7 +54,7 @@ class AuthTokenForm(forms.ModelForm):
         return super().save(*args, **kwargs)
 
     class Media:
-        js = [forms.Script("common/js/user_token.js", defer="")]
+        js = [forms.Script("common/js/forms/token.js", defer="")]
 
     class Meta:
         model = UserApiToken

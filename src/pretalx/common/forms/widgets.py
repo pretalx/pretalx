@@ -47,9 +47,9 @@ class PasswordStrengthInput(forms.PasswordInput):
     class Media:
         js = [
             forms.Script("vendored/zxcvbn.js", defer=""),
-            forms.Script("common/js/password_strength.js", defer=""),
+            forms.Script("common/js/forms/password.js", defer=""),
         ]
-        css = {"all": ["common/css/_form_password.css"]}
+        css = {"all": ["common/css/forms/password.css"]}
 
 
 class PasswordConfirmationInput(forms.PasswordInput):
@@ -97,14 +97,14 @@ class ClearableBasenameFileInput(forms.ClearableFileInput):
         return ctx
 
     class Media:
-        js = [forms.Script("common/js/filesize.js", defer="")]
+        js = [forms.Script("common/js/forms/filesize.js", defer="")]
 
 
 class ImageInput(ClearableBasenameFileInput):
     template_name = "common/widgets/image_input.html"
 
     class Media:
-        css = {"all": ["common/css/_form_image.css"]}
+        css = {"all": ["common/css/forms/image.css"]}
 
 
 class MarkdownWidget(forms.Textarea):
@@ -119,10 +119,10 @@ class MarkdownWidget(forms.Textarea):
         js = [
             forms.Script("vendored/marked.min.js", defer=""),
             forms.Script("vendored/purify.min.js", defer=""),
-            forms.Script("common/js/tabs.js", defer=""),
-            forms.Script("common/js/markdown.js", defer=""),
+            forms.Script("common/js/ui/tabs.js", defer=""),
+            forms.Script("common/js/forms/markdown.js", defer=""),
         ]
-        css = {"all": ["common/css/tabs.css", "common/css/markdown.css"]}
+        css = {"all": ["common/css/ui/tabs.css", "common/css/forms/markdown.css"]}
 
 
 class EnhancedSelectMixin(forms.Select):
@@ -166,11 +166,11 @@ class EnhancedSelectMixin(forms.Select):
 
     class Media:
         js = [
-            forms.Script("vendored/choices/choices.min.js"),
-            forms.Script("common/js/select.js"),
+            forms.Script("vendored/choices/choices.min.js", defer=""),
+            forms.Script("common/js/forms/select.js", defer=""),
         ]
         css = {
-            "all": ["vendored/choices/choices.min.css", "common/css/_form_select.css"]
+            "all": ["vendored/choices/choices.min.css", "common/css/forms/select.css"]
         }
 
 
@@ -262,7 +262,7 @@ class HtmlDateInput(forms.DateInput):
         return value
 
     class Media:
-        js = [forms.Script("common/js/datefield.js", defer="")]
+        js = [forms.Script("common/js/forms/datefield.js", defer="")]
 
 
 class HtmlDateTimeInput(forms.DateTimeInput):
@@ -274,7 +274,7 @@ class HtmlDateTimeInput(forms.DateTimeInput):
         return value
 
     class Media:
-        js = [forms.Script("common/js/datefield.js", defer="")]
+        js = [forms.Script("common/js/forms/datefield.js", defer="")]
 
 
 class HtmlTimeInput(forms.TimeInput):
@@ -286,7 +286,7 @@ class HtmlTimeInput(forms.TimeInput):
         return value
 
     class Meta:
-        js = [forms.Script("common/js/datefield.js", defer="")]
+        js = [forms.Script("common/js/forms/datefield.js", defer="")]
 
 
 class ColorPickerWidget(forms.TextInput):
@@ -297,9 +297,10 @@ class ColorPickerWidget(forms.TextInput):
 
     class Media:
         js = [
-            forms.Script("vendored/vanilla-picker/vanilla-picker.min.js", defer=""),
-            forms.Script("orga/js/colorpicker.js", defer=""),
+            forms.Script("vendored/vanilla-picker.min.js", defer=""),
+            forms.Script("orga/js/ui/colorpicker.js", defer=""),
         ]
+        css = {"all": ["orga/css/forms/colorpicker.css"]}
 
 
 class AvailabilitiesWidget(forms.TextInput):
@@ -313,6 +314,6 @@ class AvailabilitiesWidget(forms.TextInput):
             forms.Script("vendored/luxon.min.js", defer=""),
             forms.Script("vendored/fullcalendar/fullcalendar.min.js", defer=""),
             forms.Script("vendored/fullcalendar/luxon-plugin.min.js", defer=""),
-            forms.Script("common/js/availabilities.js", defer=""),
+            forms.Script("common/js/forms/availabilities.js", defer=""),
         ]
-        css = {"all": ["common/css/availabilities.css"]}
+        css = {"all": ["common/css/forms/availabilities.css"]}

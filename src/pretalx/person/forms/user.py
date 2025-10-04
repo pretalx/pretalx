@@ -134,4 +134,4 @@ class UserForm(CfPFormMixin, forms.Form):
         return user.pk
 
     class Media:
-        css = {"all": ["common/css/_form_auth.css"]}
+        css = {"all": ["common/css/forms/auth.css"]}

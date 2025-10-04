@@ -1,0 +1,30 @@
+.url-links {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  align-content: stretch;
+  padding: 10px;
+  margin-right: -15px;
+  margin-left: -15px;
+  margin-bottom: var(--size-spacer);
+
+  a,
+  button {
+    margin: 5px;
+    flex-basis: 100px;
+    flex-grow: 1;
+  }
+}
+
+@media (max-width: 576px) {
+  .url-links {
+    flex-direction: column-reverse;
+
+    a {
+      flex-basis: 0;
+      margin-left: 0;
+      margin-right: 0;
+    }
+  }
+}

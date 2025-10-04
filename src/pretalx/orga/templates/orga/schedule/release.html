@@ -4,6 +4,10 @@
 
 {% block extra_title %}{% translate "Release new schedule" %} :: {% endblock extra_title %}
 
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static "orga/css/ui/release.css" %}" />
+{% endblock %}
+
 {% block schedule_content %}
     <form method="post">
         {% include "common/forms/errors.html" %}

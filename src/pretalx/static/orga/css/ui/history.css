@@ -1,0 +1,52 @@
+.dashboard-history {
+  max-height: none;
+
+  .list-group {
+    .logentry {
+      flex-direction: row;
+      & > * {
+        display: inline-block;
+      }
+
+      > span {
+        padding-right: 8px;
+        width: 350px;
+
+        &.time,
+        &.person {
+          width: 200px;
+        }
+
+        &.log-object {
+          width: 250px;
+        }
+        br {
+          display: none;
+        }
+      }
+    }
+  }
+}
+.list-group .logentry.list-group-item {
+  display: flex;
+  flex-direction: column;
+  .time {
+    color: var(--color-text-muted);
+  }
+  span i.fa {
+    padding-right: 4px;
+  }
+}
+@media (max-width: 768px) {
+  .dashboard-history .list-group .logentry {
+    flex-direction: column;
+    border-bottom: 1px solid var(--color-grey-light);
+    padding-top: 16px;
+    .meta {
+      flex-direction: column;
+      .time {
+        padding-bottom: 16px;
+      }
+    }
+  }
+}

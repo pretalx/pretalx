@@ -1,0 +1,28 @@
+form #id_header_pattern,
+form #id_display-header_pattern {
+  display: flex;
+  padding: 0;
+  overflow-x: auto;
+
+  & > div {
+    position: relative;
+  }
+
+  input[type="radio"] {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    & + label.header-pattern-label {
+      padding: 0;
+    }
+  }
+
+  .mini-header {
+    width: 100px;
+    height: 100px;
+    background-color: var(--color, var(--color-primary));
+    border-radius: var(--size-border-radius);
+    margin-right: 8px;
+    margin-bottom: -10px;
+  }
+}
