@@ -5,6 +5,8 @@
 
 {% block title %}{% translate "Your Profile" %} :: {% endblock title %}
 
+{% block cfp_stylesheets %}{% form_media %}{% endblock %}
+
 {% block content %}
     {% html_signal "pretalx.cfp.signals.html_above_profile_page" sender=request.event request=request %}
 
@@ -94,5 +96,4 @@
             </div>
         </div>
     </form>
-    {% form_media %}
 {% endblock content %}

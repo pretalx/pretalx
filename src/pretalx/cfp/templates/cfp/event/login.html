@@ -1,6 +1,9 @@
 {% extends "cfp/event/base.html" %}
 
+{% load form_media %}
 {% load i18n %}
+
+{% block cfp_stylesheets %}{% form_media %}{% endblock cfp_stylesheets %}
 
 {% block title %}{% translate "Login" %} :: {% endblock title %}
 
