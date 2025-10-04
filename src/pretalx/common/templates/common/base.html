@@ -1,4 +1,3 @@
-{% load compress %}
 {% load safelink %}
 {% load i18n %}
 {% load rules %}
@@ -38,23 +37,19 @@
                 <link rel="stylesheet" type="text/css" href="{% static header_path %}" />
             {% endwith %}
         {% endif %}
-        {% compress css %}
-            <link rel="stylesheet" type="text/css" href="{% static "vendored/font-awesome.css" %}" />
-            <link rel="stylesheet" type="text/css" href="{% static "common/css/base.css" %}" />
-            <link rel="stylesheet" type="text/css" href="{% static "common/css/ui/dropdown.css" %}" />
-            <link rel="stylesheet" type="text/css" href="{% static "common/css/ui/dialog.css" %}" />
-            <link rel="stylesheet" type="text/css" href="{% static "common/css/public.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "vendored/font-awesome.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "common/css/base.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "common/css/ui/dropdown.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "common/css/ui/dialog.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "common/css/public.css" %}" />
 
-            <link rel="stylesheet" type="text/css" href="{% static "common/css/_variables.css" %}" />
-            <link rel="stylesheet" type="text/css" href="{% static "common/css/rtl.css" %}" />
-        {% endcompress %}
+        <link rel="stylesheet" type="text/css" href="{% static "common/css/_variables.css" %}" />
+        <link rel="stylesheet" type="text/css" href="{% static "common/css/rtl.css" %}" />
         {% block stylesheets %}{% endblock stylesheets %}
         {% if request.event and request.event.primary_color %}<link rel="stylesheet" type="text/css" href="{{ request.event.urls.settings_css }}" />{% endif %}
         {% if request.event and request.event.custom_css %}<link rel="stylesheet" type="text/css" href="{{ request.event.custom_css.url }}"/>{% endif %}
-        {% compress js %}
-            <script defer src="{% static "common/js/base.js" %}"></script>
-            <script defer src="{% static "common/js/ui/lightbox.js" %}"></script>
-        {% endcompress %}
+        <script defer src="{% static "common/js/base.js" %}"></script>
+        <script defer src="{% static "common/js/ui/lightbox.js" %}"></script>
         {% block scripts %}{% endblock scripts %}
         {% block custom_header %}{% endblock custom_header %}
     </head>

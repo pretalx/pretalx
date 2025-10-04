@@ -53,9 +53,6 @@ class Command(BaseCommand):
                 subprocess.check_call(["npm", "ci"], cwd=frontend_dir)
             subprocess.check_call(["npm", "run", "build"], cwd=frontend_dir, env=env)
 
-        # We're setting the verbosity to 0 when calling compress on account of https://github.com/django-compressor/django-compressor/issues/881
-        call_command("compress", verbosity=0)
-
         # This fails if we don't have db access, which is fine
         with suppress(Exception):
             gs = GlobalSettings()

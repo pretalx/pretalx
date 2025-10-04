@@ -32,13 +32,10 @@ atexit.register(tmpdir.cleanup)
 EMAIL_BACKEND = "django.core.mail.outbox"
 MAIL_FROM = "orga@orga.org"
 
-COMPRESS_ENABLED = COMPRESS_OFFLINE = False
 STORAGES["staticfiles"][
     "BACKEND"
 ] = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
-COMPRESS_PRECOMPILERS_ORIGINAL = COMPRESS_PRECOMPILERS  # NOQA
-COMPRESS_PRECOMPILERS = ()  # NOQA
 TEMPLATES[0]["OPTIONS"]["loaders"] = (  # NOQA
     ("django.template.loaders.cached.Loader", template_loaders),  # NOQA
 )

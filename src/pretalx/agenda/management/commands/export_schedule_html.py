@@ -8,7 +8,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-from django.test import Client, override_settings
+from django.test import Client
 from django.utils.timezone import override as override_timezone
 from django_scopes import scope, scopes_disabled
 
@@ -175,7 +175,6 @@ def get_mediastatic_content(url):
 
 def export_event(event, destination):
     with (
-        override_settings(COMPRESS_ENABLED=True, COMPRESS_OFFLINE=True),
         override_timezone(event.timezone),
         fake_admin(event) as get,
     ):

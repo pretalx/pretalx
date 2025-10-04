@@ -72,7 +72,6 @@ DJANGO_APPS = [
     "django.contrib.humanize",
 ]
 EXTERNAL_APPS = [
-    "compressor",
     "django_filters",
     "rest_framework.authtoken",
     "rules",
@@ -584,7 +583,6 @@ TEMPLATES = [
 STATICFILES_FINDERS = (
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
-    "compressor.finders.CompressorFinder",
 )
 static_path = BASE_DIR / "pretalx" / "static"
 STATICFILES_DIRS = [static_path] if static_path.exists() else []
@@ -629,15 +627,6 @@ if DEBUG:
         }
 
 DJANGO_TABLES2_TEMPLATE = "orga/generic/table.html"
-COMPRESS_ENABLED = COMPRESS_OFFLINE = not DEBUG
-COMPRESS_PRECOMPILERS = (("text/x-scss", "django_libsass.SassCompiler"),)
-COMPRESS_FILTERS = {
-    "js": ["compressor.filters.jsmin.rJSMinFilter"],
-    "css": (
-        "compressor.filters.css_default.CssAbsoluteFilter",
-        "compressor.filters.cssmin.rCSSMinFilter",
-    ),
-}
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ("i18nfield.rest_framework.I18nJSONRenderer",),
