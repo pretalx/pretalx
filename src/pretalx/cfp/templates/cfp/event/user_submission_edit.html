@@ -9,9 +9,9 @@
 
 {% block title %}{{ submission.title }} :: {% endblock title %}
 
-{% block cfp_header %}
+{% block cfp_stylesheets %}
     {% form_media %}
-{% endblock cfp_header %}
+{% endblock cfp_stylesheets %}
 
 {% block content %}
     {% has_perm "submission.add_speaker_submission" request.user submission as can_invite_speakers %}

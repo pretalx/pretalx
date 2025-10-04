@@ -5,6 +5,10 @@
 
 {% block title %}{{ submission.title }} :: {% endblock title %}
 
+{% block cfp_stylesheets %}
+    {% form_media %}
+{% endblock cfp_stylesheets %}
+
 {% block content %}
     <div class="col-md-10 ml-auto mr-auto">
 
@@ -43,5 +47,4 @@
             </div>
         </form>
     </div>
-    {% form_media %}
 {% endblock content %}

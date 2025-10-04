@@ -9,6 +9,7 @@
         <link rel="stylesheet" type="text/css" href="{% static "common/css/base.css" %}" />
         <link rel="stylesheet" type="text/css" href="{% static "common/css/_variables.css" %}" />
         <link rel="stylesheet" type="text/css" href="{% static "orga/css/auth.css" %}" />
+        {% form_media %}
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#3aa57c">
 
@@ -37,6 +38,5 @@
                 {% block content %}{% endblock content %}
             </div>
         </div>
-        {% form_media %}
     </body>
 </html>

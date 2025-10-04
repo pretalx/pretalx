@@ -3,6 +3,8 @@
 {% load form_media %}
 {% load i18n %}
 
+{% block cfp_stylesheets %}{% form_media %}{% endblock cfp_stylesheets %}
+
 {% block title %}{{ phrases.base.password_reset_heading }}{% endblock title %}
 
 {% block content %}
@@ -20,5 +22,4 @@
             <button type="submit" class="btn btn-block btn-success">{{ phrases.base.save }}</button>
         </div>
     </form>
-    {% form_media %}
 {% endblock content %}

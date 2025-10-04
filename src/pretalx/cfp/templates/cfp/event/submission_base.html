@@ -13,6 +13,7 @@
     <script defer src="{% static "cfp/js/cfp-tabtitle.js" %}"></script>
     <link rel="stylesheet" href="{% static "common/css/ui/stages.css" %}" />
     <link rel="stylesheet" href="{% static "common/css/ui/tooltip.css" %}" />
+    {% form_media %}
     {% block cfp_submission_header %}{% endblock cfp_submission_header %}
 {% endblock cfp_header %}
 
@@ -80,5 +81,4 @@
             {% endblock buttons %}
         </form>
     {% endblock cfp_form %}
-    {% form_media %}
 {% endblock content %}

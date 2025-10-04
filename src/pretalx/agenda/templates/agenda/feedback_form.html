@@ -3,6 +3,10 @@
 {% load form_media %}
 {% load i18n %}
 
+{% block agenda_stylesheets %}
+    {% form_media %}
+{% endblock %}
+
 {% block content %}
 
     <h3 class="talk-title">
@@ -29,5 +33,4 @@
             </div>
         </div>
     </div>
-    {% form_media %}
 {% endblock content %}
