@@ -364,9 +364,8 @@ def test_html_export_language(event):
     event.locale = "de"
     event.locale_array = "de,en"
     event.save()
-    with override_settings(COMPRESS_ENABLED=True, COMPRESS_OFFLINE=True):
-        call_command("rebuild")
-        call_command("export_schedule_html", event.slug)
+    call_command("rebuild")
+    call_command("export_schedule_html", event.slug)
 
     export_path = settings.HTMLEXPORT_ROOT / "test" / "test/schedule/index.html"
     schedule_html = export_path.read_text()
