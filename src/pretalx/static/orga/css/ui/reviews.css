@@ -46,7 +46,7 @@
       input {
         position: relative;
         &:before {
-          font-family: ForkAwesome;
+          font-family: FontAwesome;
           font-weight: bold;
           color: rgb(0 0 0 / 0.3);
           text-align: center;
