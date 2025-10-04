@@ -168,7 +168,7 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
         return instance
 
     class Media:
-        js = [forms.Script("orga/js/reviewSubmission.js", defer="")]
+        js = [forms.Script("orga/js/review.js", defer="")]
 
     class Meta:
         model = Review
@@ -213,7 +213,7 @@ class ReviewAssignmentForm(forms.Form):
         super().__init__(*args, **kwargs)
 
     class Media:
-        js = [forms.Script("orga/js/reviewAssignment.js", defer="")]
+        js = [forms.Script("orga/js/forms/assignment.js", defer="")]
 
 
 class ReviewerForProposalForm(ReviewAssignmentForm):

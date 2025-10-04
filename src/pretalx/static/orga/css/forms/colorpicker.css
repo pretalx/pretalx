@@ -1,0 +1,42 @@
+.colorpicker-wrapper {
+  .input-group-prepend .input-group-text {
+    background-color: var(--color-grey-lighter);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    padding: 0;
+    .colorpicker-preview {
+      width: 20px;
+      height: 20px;
+      border-radius: 2px;
+    }
+  }
+  .picker_wrapper.popup {
+    border-radius: var(--size-border-radius);
+    box-shadow: var(--shadow-big);
+    .picker_arrow {
+      display: none;
+    }
+    .picker_hue,
+    .picker_sl,
+    .picker_sample {
+      border-radius: var(--size-border-radius);
+    }
+    button {
+      border: 1px solid var(--color-success);
+      background: var(--color-success);
+      font-family: var(--font-family-title);
+      border-radius: var(--size-border-radius);
+      text-transform: uppercase;
+    }
+  }
+}
+
+.colorpicker-saturation .colorpicker-guide {
+  height: 10px;
+  width: 10px;
+  border-radius: 10px;
+  margin: -5px 0 0 -5px;
+}

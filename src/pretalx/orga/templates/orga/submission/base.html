@@ -3,6 +3,7 @@
 {% load event_tags %}
 {% load i18n %}
 {% load rules %}
+{% load static %}
 
 {% block extra_title %}
     {% block submission_title %}{% endblock submission_title %}
@@ -13,6 +14,10 @@
 {% block alternate_link %}
     <link rel="alternate" type="application/json" title="{{ request.event.name }} API" href="{{ request.event.api_urls.talks.full }}{{ submission.code }}" />
 {% endblock alternate_link %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static "orga/css/ui/submission.css" %}" />
+{% endblock %}
 
 {% block content %}
     {% if submission %}

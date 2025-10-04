@@ -10,7 +10,9 @@
 {% block title %}{% if submission_title %}{{ submission_title }}{% else %}{% translate "Create proposal" %}{% endif %} :: {{ request.event.name }}{% endblock title %}
 
 {% block cfp_header %}
-    <script defer src="{% static "cfp/js/proposalTabTitles.js" %}"></script>
+    <script defer src="{% static "cfp/js/cfp-tabtitle.js" %}"></script>
+    <link rel="stylesheet" href="{% static "common/css/ui/stages.css" %}" />
+    <link rel="stylesheet" href="{% static "common/css/ui/tooltip.css" %}" />
     {% block cfp_submission_header %}{% endblock cfp_submission_header %}
 {% endblock cfp_header %}
 

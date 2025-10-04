@@ -1,11 +1,11 @@
 {% load i18n %}
-<div class="submission_featured">
+<div class="submission-featured">
     <div class="mt-1 form-check" title="{% translate 'Show this proposal in the list of featured sessions.' %}">
         <input
             type="checkbox"
             id="featured_{{ record.code }}"
             data-id="{{ record.code }}"
-            class="submission_featured"
+            class="submission-featured"
             {% if record.is_featured %}checked{% endif %}
         >
         <label for="featured_{{ record.code }}"></label>

@@ -8,8 +8,14 @@
 {% block extra_title %}{{ user.name }} :: {% endblock extra_title %}
 
 {% block scripts %}
-  <script defer src="{% static "common/js/copy.js" %}"></script>
+  <script defer src="{% static "common/js/ui/copy.js" %}"></script>
+  <script defer src="{% static "common/js/ui/tabs.js" %}"></script>
 {% endblock scripts %}
+
+{% block stylesheets %}
+  <link rel="stylesheet" href="{% static "common/css/ui/tabs.css" %}" />
+  <link rel="stylesheet" href="{% static "orga/css/ui/history.css" %}" />
+{% endblock stylesheets %}
 
 {% block content %}
   <h2 class="d-flex">{{ user.name }}
@@ -48,7 +54,7 @@
     </table>
     <div class="ml-auto">
       {% if user.avatar %}
-        <div class="speaker-avatar">
+        <div class="float-right">
           <a href="{{ user.avatar.url }}" data-lightbox>
             <img loading="lazy" width="100%" src="{{ user.avatar|thumbnail:"default" }}" alt="{% translate "Profile picture" %}">
           </a>

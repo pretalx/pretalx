@@ -183,4 +183,4 @@ class ExportForm(forms.Form):
         )
 
     class Media:
-        js = [forms.Script("orga/js/export.js", defer="")]
+        js = [forms.Script("orga/js/forms/export.js", defer="")]

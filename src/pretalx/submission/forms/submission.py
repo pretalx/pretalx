@@ -181,6 +181,9 @@ class InfoForm(CfPFormMixin, RequestRequire, PublicContent, forms.ModelForm):
             self.instance.process_image("image")
         return result
 
+    class Media:
+        css = {"all": ["common/css/forms/resource.css"]}
+
     class Meta:
         model = Submission
         fields = [
@@ -456,4 +459,5 @@ class SubmissionFilterForm(forms.Form):
         return qs
 
     class Media:
-        js = [forms.Script("orga/js/submission_filter.js", defer="")]
+        js = [forms.Script("orga/js/forms/submissionfilter.js", defer="")]
+        css = {"all": ["orga/css/forms/search.css"]}

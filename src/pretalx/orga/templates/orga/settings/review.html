@@ -2,19 +2,18 @@
 
 {% load compress %}
 {% load i18n %}
-{% load formset_tags %}
+{% load formsets %}
 {% load static %}
 
 {% block extra_title %}{% translate "Review settings" %} :: {% endblock extra_title %}
 
 {% block scripts %}
-    {% compress js %}
-        <script defer src="{% static "js/jquery.js" %}"></script>
-        <script defer src="{% static "js/jquery.formset.js" %}"></script>
-        <script defer src="{% static "cfp/js/animateFormset.js" %}"></script>
-        <script defer src="{% static "common/js/modalDialog.js" %}"></script>
-    {% endcompress %}
+    <script defer src="{% static "common/js/ui/dialog.js" %}"></script>
 {% endblock scripts %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static "orga/css/ui/settings.css" %}" />
+{% endblock %}
 
 {% block settings_content %}
     <form method="post" class="d-flex flex-column">

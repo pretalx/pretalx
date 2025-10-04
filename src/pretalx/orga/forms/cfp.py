@@ -149,7 +149,7 @@ class CfPSettingsForm(
         super().save(*args, **kwargs)
 
     class Media:
-        js = [forms.Script("orga/js/cfp.js", defer="")]
+        js = [forms.Script("orga/js/forms/cfp.js", defer="")]
 
     class Meta:
         # These are JSON fields on event.settings
@@ -208,7 +208,6 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     def __init__(self, *args, event=None, **kwargs):
         super().__init__(*args, **kwargs)
-        instance = kwargs.get("instance")
         if not (
             event.get_feature_flag("use_tracks")
             and event.tracks.all().count()
@@ -221,13 +220,6 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
             self.fields.pop("submission_types")
         else:
             self.fields["submission_types"].queryset = event.submission_types.all()
-        if (
-            instance
-            and instance.pk
-            and instance.answers.count()
-            and not instance.is_public
-        ):
-            self.fields["is_public"].disabled = True
 
     def clean_options(self):
         # read uploaded file, return list of strings or list of i18n strings
@@ -316,7 +308,7 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
         AnswerOption.objects.bulk_update(changed_options, ["position"])
 
     class Media:
-        js = [forms.Script("orga/js/questionForm.js", defer="")]
+        js = [forms.Script("orga/js/forms/question.js", defer="")]
 
     class Meta:
         model = Question
@@ -612,6 +604,9 @@ class QuestionFilterForm(forms.Form):
             )
         result["grouped_answers"] = grouped_answers
         return result
+
+    class Media:
+        css = {"all": ["orga/css/forms/search.css"]}
 
 
 class ReminderFilterForm(QuestionFilterForm):

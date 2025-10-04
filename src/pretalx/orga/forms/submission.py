@@ -200,7 +200,8 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
         return instance
 
     class Media:
-        js = [forms.Script("orga/js/submission_form.js", defer="")]
+        js = [forms.Script("orga/js/forms/submission.js", defer="")]
+        css = {"all": ["common/css/forms/resource.css"]}
 
     class Meta:
         model = Submission
@@ -273,7 +274,8 @@ class AnonymiseForm(SubmissionForm):
         self._instance.save(update_fields=["anonymised_data"])
 
     class Media:
-        js = [forms.Script("orga/js/anonymise.js", defer="")]
+        js = [forms.Script("orga/js/forms/anonymise.js", defer="")]
+        css = {"all": ["orga/css/forms/anonymise.css"]}
 
     class Meta:
         model = Submission
@@ -340,4 +342,4 @@ class AddSpeakerInlineForm(AddSpeakerForm):
     default_renderer = InlineFormLabelRenderer
 
     class Media:
-        js = [forms.Script("orga/js/speakers.js", defer="")]
+        js = [forms.Script("orga/js/forms/usersearch.js", defer="")]

@@ -11,9 +11,13 @@
 {% block title %}{% translate "Your proposals" %} :: {% endblock title %}
 
 {% block scripts %}
-    <script defer src="{% static "common/js/copy.js" %}"></script>
-    <script defer src="{% static "agenda/js/datetime-local.js" %}"></script>
+    <script defer src="{% static "common/js/ui/copy.js" %}"></script>
+    <script defer src="{% static "common/js/ui/datetime-local.js" %}"></script>
 {% endblock scripts %}
+
+{% block cfp_stylesheets %}
+    <link rel="stylesheet" href="{% static "common/css/ui/tooltip.css" %}" />
+{% endblock cfp_stylesheets %}
 
 {% block content %}
     {% if information %}

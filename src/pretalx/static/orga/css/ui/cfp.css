@@ -1,0 +1,30 @@
+.cfp-option-table {
+  display: table;
+  input:not([type="checkbox"]):not([type="radio"]),
+  select {
+    margin: 4px auto;
+  }
+  thead th {
+    line-height: 1;
+    vertical-align: top;
+    text-align: center;
+  }
+  tbody th {
+    text-align: right;
+    padding-right: 8px;
+    padding-top: 16px;
+  }
+  input[type="number"] {
+    width: 64px;
+  }
+  .form-group {
+    margin-bottom: 0;
+  }
+  td > .form-group {
+    display: flex;
+    justify-content: center;
+  }
+  label {
+    display: none;
+  }
+}

@@ -3,7 +3,7 @@
     <div id="accordion">
         {% for mail in mails %}
             <div class="card mail-card">
-                <div class="card-header" id="subject-{{ mail.pk }}">
+                <div class="card-header cursor-pointer" id="subject-{{ mail.pk }}">
                     <h5 class="mb-0 d-flex justify-content-between align-items-baseline w-100" data-toggle="collapse" data-target="#mail-{{ mail.pk }}" aria-controls="mail-{{ mail.pk }}">
                         <span class="mb-2 mt-2">
                             <i class="fa fa-envelope mr-2"></i>

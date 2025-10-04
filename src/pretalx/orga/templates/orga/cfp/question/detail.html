@@ -6,11 +6,12 @@
 
 {% block stylesheets %}
     <link rel="stylesheet" type="text/css" href="{% static "vendored/apexcharts/apexcharts.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "orga/css/ui/stats.css" %}" />
 {% endblock stylesheets %}
 
 {% block scripts %}
     <script defer src="{% static "vendored/apexcharts/apexcharts.min.js" %}"></script>
-    <script defer src="{% static "orga/js/question_stats.js" %}"></script>
+    <script defer src="{% static "orga/js/questionstats.js" %}"></script>
 {% endblock scripts %}
 
 {% block extra_title %}{{ quotation_open }}{{ question.question }}{{ quotation_close }} :: {% endblock extra_title %}

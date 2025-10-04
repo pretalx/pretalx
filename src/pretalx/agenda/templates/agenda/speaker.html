@@ -16,6 +16,9 @@
 {% block alternate_link %}
     <link rel="alternate" type="application/json" title="{{ request.event.name }} API" href="{{ request.event.api_urls.speakers.full }}{{ profile.code }}" />
 {% endblock alternate_link %}
+{% block agenda_stylesheets %}
+    <link rel="stylesheet" href="{% static "agenda/css/speaker.css" %}" />
+{% endblock agenda_stylesheets %}
 
 {% block agenda_content %}
     <article>

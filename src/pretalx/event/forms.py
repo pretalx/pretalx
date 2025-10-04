@@ -74,8 +74,8 @@ class TeamForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     class Media:
         js = [
-            forms.Script("orga/js/speakers.js", defer=""),
-            forms.Script("orga/js/teamSettings.js", defer=""),
+            forms.Script("orga/js/forms/usersearch.js", defer=""),
+            forms.Script("orga/js/forms/team.js", defer=""),
         ]
 
     class Meta:
@@ -233,7 +233,7 @@ class EventWizardBasicsForm(PretalxI18nModelForm):
         return slug.lower()
 
     class Media:
-        js = [forms.Script("orga/js/event_wizard.js", defer="")]
+        js = [forms.Script("orga/js/forms/wizard.js", defer="")]
 
     class Meta:
         model = Event

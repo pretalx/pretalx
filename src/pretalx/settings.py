@@ -73,9 +73,7 @@ DJANGO_APPS = [
 ]
 EXTERNAL_APPS = [
     "compressor",
-    "djangoformsetjs",
     "django_filters",
-    "jquery",
     "rest_framework.authtoken",
     "rules",
     "csp",
@@ -630,7 +628,7 @@ if DEBUG:
             "DISABLE_PANELS": toolbar_settings.PANELS_DEFAULTS,
         }
 
-DJANGO_TABLES2_TEMPLATE = "common/table.html"
+DJANGO_TABLES2_TEMPLATE = "orga/generic/table.html"
 COMPRESS_ENABLED = COMPRESS_OFFLINE = not DEBUG
 COMPRESS_PRECOMPILERS = (("text/x-scss", "django_libsass.SassCompiler"),)
 COMPRESS_FILTERS = {

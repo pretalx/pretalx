@@ -327,7 +327,8 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             )
 
     class Media:
-        js = [forms.Script("orga/js/eventSettings.js", defer="")]
+        js = [forms.Script("orga/js/forms/settings.js", defer="")]
+        css = {"all": ["orga/css/ui/settings.css"]}
 
     class Meta:
         model = Event
@@ -499,7 +500,7 @@ class MailSettingsForm(
             )
 
     class Media:
-        js = [forms.Script("orga/js/mailSettings.js", defer="")]
+        js = [forms.Script("orga/js/forms/mail.js", defer="")]
 
     class Meta:
         json_fields = {
@@ -570,7 +571,7 @@ class ReviewSettingsForm(
     )
 
     class Media:
-        js = [forms.Script("orga/js/reviewSettings.js", defer="")]
+        js = [forms.Script("orga/js/forms/reviewsettings.js", defer="")]
 
     class Meta:
         json_fields = {
@@ -593,7 +594,7 @@ class WidgetSettingsForm(JsonSubfieldMixin, forms.Form):
     )
 
     class Media:
-        js = [forms.Script("orga/js/widgetSettings.js", defer="")]
+        js = [forms.Script("orga/js/forms/widget.js", defer="")]
 
     class Meta:
         json_fields = {"show_widget_if_not_public": "feature_flags"}

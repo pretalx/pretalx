@@ -554,7 +554,7 @@ class PretalxI18nFormMixin(I18nFormMixin):
                 field.widget.attrs["placeholder"] = field.label
 
     class Media:
-        css = {"all": ["orga/css/_flags.css"]}
+        css = {"all": ["orga/css/forms/i18n.css"]}
 
 
 class PretalxI18nModelForm(PretalxI18nFormMixin, I18nModelForm):

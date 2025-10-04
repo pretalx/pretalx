@@ -1,0 +1,23 @@
+.export-qrcode {
+  display: inline-block;
+}
+.export-qrcode-image,
+.qrcode-image {
+  display: none;
+  width: 160px;
+  height: 160px;
+  position: absolute;
+  background: white;
+  box-shadow: var(--shadow-light);
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+}
+.export-qrcode-image {
+  right: 0;
+}
+.export-qrcode:hover .export-qrcode-image,
+.qrcode:hover .qrcode-image {
+  display: block;
+}

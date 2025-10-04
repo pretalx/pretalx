@@ -3,7 +3,7 @@
 {% load compress %}
 {% load event_tags %}
 {% load form_media %}
-{% load formset_tags %}
+{% load formsets %}
 {% load i18n %}
 {% load rules %}
 {% load static %}
@@ -11,11 +11,7 @@
 {% block title %}{{ submission.title }} :: {% endblock title %}
 
 {% block cfp_header %}
-    {% compress js %}
-        <script defer src="{% static "js/jquery.js" %}"></script>
-        <script defer src="{% static "js/jquery.formset.js" %}"></script>
-        <script defer src="{% static "cfp/js/animateFormset.js" %}"></script>
-    {% endcompress %}
+    {% form_media %}
 {% endblock cfp_header %}
 
 {% block content %}
@@ -156,6 +152,4 @@
             {% endblocktranslate %}
         </p>
     {% endif %}
-
-    {% form_media %}
 {% endblock content %}

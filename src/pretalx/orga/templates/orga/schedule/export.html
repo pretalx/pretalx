@@ -1,8 +1,13 @@
 {% extends "orga/schedule/base.html" %}
 
 {% load i18n %}
+{% load static %}
 
 {% block extra_title %}{% translate "Export schedule data" %} :: {% endblock extra_title %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" type="text/css" href="{% static "common/css/ui/export.css" %}" />
+{% endblock stylesheets %}
 
 {% block schedule_content %}
     <h2>{% translate "Export schedule data" %}</h2>

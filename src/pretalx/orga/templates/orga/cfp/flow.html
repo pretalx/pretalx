@@ -4,8 +4,12 @@
 {% load static %}
 
 {% block stylesheets %}
-    <link rel="stylesheet" type="text/css" href="{% static "common/css/headers-uncompressed.css" %}" />
-    <link rel="stylesheet" href="{% static "orga/css/flow.css" %}">
+    {% if request.event.display_settings.header_pattern %}
+        {% with "common/css/headers/"|add:request.event.display_settings.header_pattern|add:".css" as header_path %}
+            <link rel="stylesheet" type="text/css" href="{% static header_path %}" />
+        {% endwith %}
+    {% endif %}
+    <link rel="stylesheet" type="text/css" href="{% static "orga/css/ui/flow.css" %}" />
 {% endblock stylesheets %}
 
 {% block scripts %}
@@ -17,7 +21,7 @@
     {% else %}
         <script defer src="{% static "vendored/vue.min.js" %}"></script>
     {% endif %}
-    <script defer src="{% static "orga/js/cfp_flow.js" %}"></script>
+    <script defer src="{% static "orga/js/ui/flow.js" %}"></script>
 {% endblock scripts %}
 
 {% block extra_title %}{% translate "CfP Editor" %} :: {% endblock extra_title %}

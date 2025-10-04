@@ -2,6 +2,16 @@
 
 {% load i18n %}
 {% load rich_text %}
+{% load static %}
+
+{% block scripts %}
+    <script defer src="{% static "common/js/ui/tabs.js" %}"></script>
+{% endblock scripts %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static "common/css/ui/tabs.css" %}" />
+    <link rel="stylesheet" href="{% static "orga/css/ui/plugins.css" %}" />
+{% endblock stylesheets %}
 
 {% block extra_title %}{% translate "Plugins" %} :: {% endblock extra_title %}
 {% block content %}
