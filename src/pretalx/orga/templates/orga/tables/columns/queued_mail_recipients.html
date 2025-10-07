@@ -1,0 +1,8 @@
+{% load i18n %}
+{% for user in record.to_users.all %}
+    {% if user in request.event.submitters %}
+        <a href="{% url "orga:speakers.view" event=request.event.slug code=user.code %}">
+            {{ user }}
+        </a>{% else %}{{ user }}{% endif %}{% if not forloop.last or record.to %},<br>{% endif %}
+{% endfor %}
+{% if record.to %}{{ record.to }}{% endif %}

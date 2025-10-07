@@ -547,6 +547,7 @@ class CRUDView(PaginationMixin, Filterable, View):
 class OrgaTableMixin(SingleTableMixin):
     pagination_class = LazyPaginator
     table_class = None
+    DEFAULT_PAGINATION = 50
 
     def get_paginate_by(self, queryset=None):
         skey = "stored_page_size_" + self.request.resolver_match.url_name

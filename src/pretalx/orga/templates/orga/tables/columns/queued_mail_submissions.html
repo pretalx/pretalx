@@ -1,0 +1,12 @@
+{% load i18n %}
+{% for submission in record.submissions.all %}
+    <div class="d-flex align-items-center">
+        {% if show_tracks and submission.track %}
+            <div class="color-square" style="background-color: {{ submission.track.color }}" title="{{ submission.track.name }}">
+            </div>
+        {% endif %}
+        <a href="{{ submission.orga_urls.base }}">
+            {{ submission.title }}
+        </a>
+    </div>
+{% endfor %}
