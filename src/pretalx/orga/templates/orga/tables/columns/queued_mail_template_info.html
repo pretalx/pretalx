@@ -1,0 +1,9 @@
+{% load i18n %}
+<div class="text-right d-flex align-items-center justify-content-end">
+    {% if mail.attachments %}
+        <i class="fa fa-paperclip mr-2" title="{% translate "Contains an attachment" %}"></i>
+    {% endif %}
+    {% if mail.template and mail.template.role %}
+        {% include "orga/includes/mail_template_role.html" with template=mail.template %}
+    {% endif %}
+</div>

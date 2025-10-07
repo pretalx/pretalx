@@ -208,6 +208,7 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     def __init__(self, *args, event=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["icon"].required = False
         if not (
             event.get_feature_flag("use_tracks")
             and event.tracks.all().count()

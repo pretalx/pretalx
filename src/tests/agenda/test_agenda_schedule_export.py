@@ -479,13 +479,12 @@ def test_html_export_full(
         slot.submission.save()
         image_filename = slot.submission.image.name.split("/")[-1]
 
-    with override_settings(COMPRESS_ENABLED=True, COMPRESS_OFFLINE=True):
-        call_command("rebuild")
-        event = Event.objects.get(slug=event.slug)
-        args = ["export_schedule_html", event.slug]
-        if zip:
-            args.append("--zip")
-        call_command(*args)
+    call_command("rebuild")
+    event = Event.objects.get(slug=event.slug)
+    args = ["export_schedule_html", event.slug]
+    if zip:
+        args.append("--zip")
+    call_command(*args)
 
     if zip:
         full_path = settings.HTMLEXPORT_ROOT / "test.zip"

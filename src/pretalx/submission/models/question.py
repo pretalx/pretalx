@@ -299,8 +299,9 @@ class Question(OrderedModel, PretalxModel):
     icon = models.CharField(
         max_length=QuestionIcon.get_max_length(),
         choices=QuestionIcon.get_choices(),
+        default=None,
         null=True,
-        blank=True,
+        blank=False,
         verbose_name=_("Icon"),
         help_text=_(
             "Custom URL fields that are shown publicly can use an icon when displaying the link."

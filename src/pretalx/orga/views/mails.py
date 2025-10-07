@@ -13,15 +13,17 @@ from pretalx.common.exceptions import SendMailException
 from pretalx.common.language import language
 from pretalx.common.mail import TolerantDict
 from pretalx.common.text.phrases import phrases
-from pretalx.common.views.generic import CreateOrUpdateView, OrgaCRUDView
+from pretalx.common.views.generic import (
+    CreateOrUpdateView,
+    OrgaCRUDView,
+    OrgaTableMixin,
+)
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     ActionFromUrl,
     EventPermissionRequired,
     Filterable,
-    PaginationMixin,
     PermissionRequired,
-    Sortable,
 )
 from pretalx.mail.models import MailTemplate, QueuedMail, get_prefixed_subject
 from pretalx.mail.signals import request_pre_send
@@ -33,7 +35,7 @@ from pretalx.orga.forms.mails import (
     WriteSessionMailForm,
     WriteTeamsMailForm,
 )
-from pretalx.orga.tables.mail import MailTemplateTable
+from pretalx.orga.tables.mail import MailTemplateTable, OutboxMailTable, SentMailTable
 
 
 def get_send_mail_exceptions(request):
@@ -49,25 +51,17 @@ def get_send_mail_exceptions(request):
         return errors or [_("You cannot send emails at this time.")]
 
 
-class OutboxList(
-    EventPermissionRequired, Sortable, Filterable, PaginationMixin, ListView
-):
+class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     model = QueuedMail
+    table_class = OutboxMailTable
     context_object_name = "mails"
     template_name = "orga/mails/outbox_list.html"
-    default_sort_field = "-pk"
     default_filters = (
         "to__icontains",
         "subject__icontains",
         "to_users__name__icontains",
         "to_users__email__icontains",
     )
-    sortable_fields = ("to_users__name", "subject", "pk")
-    secondary_sort = {
-        "to_users__name": ["to"],
-        "-to_users__name": ["-to"],
-    }
-    paginate_by = 25
     permission_required = "mail.list_queuedmail"
 
     def get_queryset(self):
@@ -80,7 +74,7 @@ class OutboxList(
             .order_by("-id")
         )
         qs = self.filter_queryset(qs)
-        return self.sort_queryset(qs)
+        return qs
 
     @context
     @cached_property
@@ -98,10 +92,9 @@ class OutboxList(
         )
 
 
-class SentMail(
-    EventPermissionRequired, Sortable, Filterable, PaginationMixin, ListView
-):
+class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     model = QueuedMail
+    table_class = SentMailTable
     context_object_name = "mails"
     template_name = "orga/mails/sent_list.html"
     default_filters = (
@@ -110,13 +103,6 @@ class SentMail(
         "to_users__name__icontains",
         "to_users__email__icontains",
     )
-    default_sort_field = "-sent"
-    sortable_fields = ("to_users__name", "subject", "sent")
-    secondary_sort = {
-        "to_users__name": ["to"],
-        "-to_users__name": ["-to"],
-    }
-    paginate_by = 25
     permission_required = "mail.list_queuedmail"
 
     def get_filter_form(self):
@@ -134,7 +120,7 @@ class SentMail(
             .order_by("-sent")
         )
         qs = self.filter_queryset(qs)
-        return self.sort_queryset(qs)
+        return qs
 
     @context
     @cached_property
