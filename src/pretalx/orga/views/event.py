@@ -24,6 +24,7 @@ from formtools.wizard.views import SessionWizardView
 from pretalx.common.forms import I18nEventFormSet
 from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
+from pretalx.common.ui import Button, delete_link
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     ActionFromUrl,
@@ -117,6 +118,17 @@ class EventDetail(EventSettingsPermission, ActionFromUrl, UpdateView):
     def get_success_url(self) -> str:
         return self.object.orga_urls.settings
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["submit_buttons"] = [Button()]
+        if self.request.user.is_administrator:
+            context["submit_buttons_extra"] = [
+                delete_link(
+                    self.request.event.orga_urls.delete, label=_("Delete event")
+                )
+            ]
+        return context
+
     @transaction.atomic
     def form_valid(self, form):
         if (
@@ -195,6 +207,15 @@ class EventLive(EventSettingsPermission, TemplateView):
             )
         result["warnings"] = warnings
         result["suggestions"] = suggestions
+        button_kwargs = {"name": "action", "icon": None}
+        if self.request.event.is_public:
+            button_kwargs["value"] = "deactivate"
+            button_kwargs["color"] = "danger"
+            button_kwargs["label"] = _("Go offline")
+        else:
+            button_kwargs["value"] = "activate"
+            button_kwargs["label"] = _("Go live")
+        result["submit_buttons"] = [Button(**button_kwargs)]
         return result
 
     def post(self, request, *args, **kwargs):
@@ -444,6 +465,15 @@ class EventMailSettings(EventSettingsPermission, ActionFromUrl, FormView):
         kwargs["locales"] = self.request.event.locales
         return kwargs
 
+    @context
+    def submit_buttons(self):
+        return [
+            Button(
+                name="test", value="1", label=_("Save and test custom SMTP connection")
+            ),
+            Button(color="info", icon=None),
+        ]
+
     def form_valid(self, form):
         form.save()
 
@@ -549,6 +579,21 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
             f"orga/event/wizard/{self.steps.current}.html",
             "orga/event/wizard/base.html",
         ]
+
+    def get_context_data(self, *args, **kwargs):
+        result = super().get_context_data(*args, **kwargs)
+        result["submit_buttons"] = [Button(label=_("Next step"), icon=None)]
+        if step := result["wizard"]["steps"].prev:
+            result["submit_buttons_extra"] = [
+                Button(
+                    label=_("Previous step"),
+                    color="info",
+                    name="wizard_goto_step",
+                    value=step,
+                    icon="None",
+                )
+            ]
+        return result
 
     @context
     def organiser(self):
@@ -720,6 +765,9 @@ class WidgetSettings(EventSettingsPermission, FormView):
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
         result["extra_form"] = WidgetGenerationForm(instance=self.request.event)
+        result["generate_submit"] = [
+            Button(id="generate-widget", _type=None, label=_("Generate widget"))
+        ]
         return result
 
     def get_success_url(self) -> str:

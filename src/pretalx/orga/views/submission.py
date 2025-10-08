@@ -22,6 +22,7 @@ from pretalx.common.exceptions import SubmissionError
 from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
+from pretalx.common.ui import Button, back_button
 from pretalx.common.views import CreateOrUpdateView
 from pretalx.common.views.generic import OrgaCRUDView, OrgaTableMixin, get_next_url
 from pretalx.common.views.mixins import (
@@ -247,6 +248,14 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
     def next_url(self):
         return get_next_url(self.request)
 
+    @context
+    def submit_buttons_extra(self):
+        return [back_button(self.next_url or self.object.orga_urls.base)]
+
+    @context
+    def submit_buttons(self):
+        return [Button(label=_("Do it"))]
+
 
 class SubmissionSpeakersDelete(SubmissionViewMixin, View):
     permission_required = "submission.update_submission"
@@ -402,6 +411,10 @@ class SubmissionContent(
     @context
     def questions_form(self):
         return self._questions_form
+
+    @context
+    def submit_buttons(self):
+        return [Button()]
 
     def save_formset(self, obj):
         if not self._formset.is_valid():
@@ -664,7 +677,6 @@ class Anonymise(SubmissionViewMixin, UpdateView):
     def get_permission_object(self):
         return self.object or self.request.event
 
-    @context
     @cached_property
     def next_unanonymised(self):
         return self.request.event.submissions.filter(
@@ -681,6 +693,21 @@ class Anonymise(SubmissionViewMixin, UpdateView):
         if self.request.POST.get("action", "save") == "next" and self.next_unanonymised:
             return redirect(self.next_unanonymised.orga_urls.anonymise)
         return redirect(self.object.orga_urls.anonymise)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["submit_buttons"] = [Button(name="action", value="save")]
+        if self.next_unanonymised:
+            context["submit_buttons"] += [
+                Button(
+                    name="action",
+                    value="next",
+                    label=_("Save and go to next unanonymised"),
+                    icon="arrow-right",
+                    color="info",
+                )
+            ]
+        return context
 
 
 class SubmissionHistory(SubmissionViewMixin, ListView):
@@ -1097,10 +1124,15 @@ class ApplyPendingBulk(
                 count=self.submission_count
             ),
         )
-        if url := get_next_url(request):
-            return redirect(url)
-        return redirect(self.request.event.orga_urls.submissions)
+        return redirect(self.next_url)
 
-    @context
+    @cached_property
     def next_url(self):
-        return self.request.GET.get("next")
+        return get_next_url(self.request) or self.request.event.orga_urls.submissions
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["submit_buttons_extra"] = [back_button(self.next_url)]
+        if self.submission_count:
+            context["submit_buttons"] = [Button(label=_("Do it"))]
+        return context

@@ -19,6 +19,7 @@ from pretalx.cfp.flow import CfPFlow
 from pretalx.common.forms import I18nFormSet
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import I18nStrJSONEncoder
+from pretalx.common.ui import send_button
 from pretalx.common.views.generic import OrgaCRUDView, get_next_url
 from pretalx.common.views.mixins import (
     ActionFromUrl,
@@ -355,6 +356,10 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
         return missing
 
     @context
+    def submit_buttons(self):
+        return [send_button()]
+
+    @context
     def reminder_template(self):
         return self.request.event.get_mail_template(MailTemplateRoles.QUESTION_REMINDER)
 
@@ -551,6 +556,10 @@ class AccessCodeSend(PermissionRequired, UpdateView):
         return self.request.event.submitter_access_codes.filter(
             code__iexact=self.kwargs.get("code")
         ).first()
+
+    @context
+    def submit_buttons(self):
+        return [send_button()]
 
     def get_permission_object(self):
         return self.get_object()

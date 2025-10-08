@@ -99,20 +99,6 @@
                 </div>
             </fieldset>
         </section>
-        <div class="submit-group panel">
-            <span>
-                {% if request.user.is_administrator %}
-                    <a class="btn btn-outline-danger btn-lg" href="{{ request.event.orga_urls.delete }}">
-                        {% translate "Delete event" %}
-                    </a>
-                {% endif %}
-            </span>
-            <span>
-                <button type="submit" class="btn btn-success btn-lg">
-                    <i class="fa fa-check"></i>
-                    {{ phrases.base.save }}
-                </button>
-            </span>
-        </div>
+        {% include "orga/includes/submit_row.html" %}
     </form>
 {% endblock settings_content %}

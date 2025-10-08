@@ -397,8 +397,8 @@ class ActionConfirmMixin:
         ctx["action_text"] = self.action_text
         ctx["action_title"] = self.action_title
         ctx["action_object_name"] = self.action_object_name
-        ctx["submit_row_left"] = [back_button(self.action_back_url or "..")]
-        ctx["submit_row_right"] = [
+        ctx["submit_buttons_extra"] = [back_button(self.action_back_url or "..")]
+        ctx["submit_buttons"] = [
             Button(
                 color=self.action_confirm_color,
                 icon=self.action_confirm_icon,

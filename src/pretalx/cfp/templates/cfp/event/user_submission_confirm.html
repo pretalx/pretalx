@@ -5,9 +5,9 @@
 
 {% block title %}{{ submission.title }} :: {% endblock title %}
 
-{% block cfp_stylesheets %}
-    {% form_media %}
-{% endblock cfp_stylesheets %}
+{% block scripts %}
+    {% form_media always_base=True %}
+{% endblock scripts %}
 
 {% block content %}
     <div class="col-md-10 ml-auto mr-auto">
@@ -15,9 +15,21 @@
         {% include "cfp/includes/user_submission_header.html" %}
 
         <div class="text">
-            {% blocktranslate trimmed %}
-                Congratulations on your acceptance!
-            {% endblocktranslate %}
+            <p><strong>
+                {% blocktranslate trimmed %}
+                    Congratulations on your acceptance!
+                {% endblocktranslate %}
+            </strong></p>
+            <p>
+                {% blocktranslate trimmed %}
+                    By confirming your proposal, you agree that you are able and willing to participate in this event and
+                    present the content of this proposal.
+                    The proposal data, such as title, abstract, description, and any uploads you provided, can be made
+                    publicly available once the proposal is confirmed.
+                {% endblocktranslate %}
+            </p>
+        </div>
+        <div>
             {% if form.availabilities %}
                 {% blocktranslate trimmed %}
                     Please provide us with your available hours during the event, so that we can schedule your event accordingly:
@@ -25,26 +37,8 @@
                 <p></p>
             {% endif %}
         </div>
-        <form method="post" class="availability-form">
-            {% csrf_token %}
-            {{ form.availabilities.as_field_group }}
-            <p></p>
-            {% blocktranslate trimmed %}
-                By confirming your proposal, you agree that you are able and willing to participate in this event and
-                present the content of this proposal.
-                The proposal data, such as title, abstract, description, and any uploads you provided, can be made
-                publicly available once the proposal is confirmed.
-            {% endblocktranslate %}
-            <p></p>
-            <div class="submit-group">
-                <span>
-                    <a href="{{ submission.urls.user_base }}" class="btn btn-lg btn-info">{{ phrases.base.back_button }}</a>
-                    <a href="{{ submission.urls.withdraw }}" class="btn btn-lg btn-danger">{% translate "Withdraw" %}</a>
-                </span>
-                <span>
-                    <button type="submit" class="btn btn-lg btn-success">{% translate "Confirm" %}</button>
-                </span>
-            </div>
-        </form>
+        <div class="availability-form hide-label">
+            {% include "orga/includes/base_form.html" %}
+        </div>
     </div>
 {% endblock content %}

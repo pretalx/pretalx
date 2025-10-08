@@ -13,6 +13,7 @@ from django_scopes import scopes_disabled
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.text.phrases import phrases
+from pretalx.common.ui import Button, delete_link
 from pretalx.common.views import CreateOrUpdateView
 from pretalx.common.views.generic import OrgaCRUDView
 from pretalx.common.views.mixins import (
@@ -312,6 +313,15 @@ class OrganiserDetail(PermissionRequired, CreateOrUpdateView):
     @cached_property
     def object(self):
         return self.get_object()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_administrator:
+            context["submit_buttons_extra"] = [
+                delete_link(self.request.organiser.orga_urls.delete)
+            ]
+        context["submit_buttons"] = [Button()]
+        return context
 
     def get_permission_object(self):
         return self.object

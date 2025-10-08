@@ -1,11 +1,14 @@
 <div class="submit-group flex-row-reverse">
   <span>
-    {% for button in submit_row_right %}
+    {{ extra_content_right }}
+    {% for button in submit_buttons %}
       {{ button }}
+    {% empty %}
+      {% include "common/ui/button.html" with type="submit" size="lg" color="success" icon="check" label=phrases.base.save %}
     {% endfor %}
   </span>
   <span>
-    {% for button in submit_row_left %}
+    {% for button in submit_buttons_extra %}
       {{ button }}
     {% endfor %}
   </span>

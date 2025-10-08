@@ -84,15 +84,7 @@
             {% endfor %}
 
             {% if not form.read_only %}
-                <div class="submit-group panel">
-                    <span></span>
-                    <span>
-                        <button type="submit" class="btn btn-success btn-lg">
-                            <i class="fa fa-check"></i>
-                            {{ phrases.base.save }}
-                        </button>
-                    </span>
-                </div>
+                {% include "orga/includes/submit_row.html" %}
             {% endif %}
         </fieldset></form>
 {% endblock submission_content %}

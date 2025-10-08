@@ -88,9 +88,9 @@
                             </span>
                         </div>
                     {% endif %}
-                    <div class="tab-pane mail-preview-group">
+                    <div class="tab-pane mail-preview-group i18n-form-group">
                         {% for locale, out in output.items %}
-                            <div lang="{{ locale }}" class="mail-preview">
+                            <div {% if output|length > 1 %}lang="{{ locale }}"{% endif %} class="mail-preview">
                                 <strong>{{ out.subject|safe }}</strong>
                                 <br>
                                 <br>
@@ -109,22 +109,6 @@
             {% endif %}
         {% endblock skip_queue %}
 
-        {% block email_editor_actions %}
-            <div class="submit-group mt-3">
-                <span></span>
-                <span>
-                    <button type="submit" class="btn btn-lg btn-outline-info btn-save mr-2" name="action" value="preview">
-                        {% translate "Preview email" %}
-                    </button>
-                    {% if request.method == "POST" %}
-                        <button type="submit" class="btn btn-lg btn-success">
-                            {% block send_button_label %}
-                                {% translate "Send to outbox" %}
-                            {% endblock send_button_label %}
-                        </button>
-                    {% endif %}
-                </span>
-            </div>
-        {% endblock email_editor_actions %}
+        {% include "orga/includes/submit_row.html" %}
     </form>
 {% endblock mail_content %}

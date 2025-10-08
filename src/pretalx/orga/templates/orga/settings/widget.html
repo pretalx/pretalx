@@ -43,12 +43,7 @@
             {% endblocktranslate %}
         </p>
         {{ extra_form }}
-        <div class="submit-group panel">
-            <span></span>
-            <span>
-                <button id="generate-widget" class="btn btn-info btn-lg">{% translate "Generate widget" %}</button>
-            </span>
-        </div>
+        {% include "orga/includes/submit_row.html" with submit_buttons=generate_submit %}
     </div>
     <div id="generated-widget" class="d-none">
         <p>
