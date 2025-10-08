@@ -150,6 +150,22 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             )
         return data
 
+    def clean_room(self):
+        data = self.cleaned_data.get("room")
+        if data and not self.data.get("start"):
+            raise forms.ValidationError(
+                _("You cannot assign a room without setting the start time as well.")
+            )
+        return data
+
+    def clean_start(self):
+        data = self.cleaned_data.get("start")
+        if data and not self.data.get("room"):
+            raise forms.ValidationError(
+                _("You cannot set a start time without assigning the room as well.")
+            )
+        return data
+
     def save(self, *args, **kwargs):
         if "content_locale" not in self.fields:
             self.instance.content_locale = self.event.locale
@@ -178,6 +194,17 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             slot.start = self.cleaned_data.get("start")
             slot.end = self.cleaned_data.get("end")
             slot.save()
+            task_update_unreleased_schedule_changes.apply_async(
+                kwargs={"event": self.event.slug}
+            )
+        if (
+            instance.state in SubmissionStates.accepted_states
+            and not self.cleaned_data.get("room")
+            and not self.cleaned_data.get("start")
+            and any(field in self.changed_data for field in ("room", "start", "end"))
+        ):
+            instance.slots.filter(schedule=instance.event.wip_schedule).delete()
+            instance.update_talk_slots()
             task_update_unreleased_schedule_changes.apply_async(
                 kwargs={"event": self.event.slug}
             )
