@@ -21,6 +21,7 @@ from rules.contrib.views import PermissionRequiredMixin
 from pretalx.common.forms import SearchForm
 from pretalx.common.forms.mixins import PretalxI18nModelForm
 from pretalx.common.text.phrases import phrases
+from pretalx.common.ui import Button, back_button
 
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
 
@@ -382,19 +383,6 @@ class ActionConfirmMixin:
     action_confirm_color = "danger"
     action_confirm_icon = "trash"
     action_confirm_label = phrases.base.delete_button
-    action_confirm_name = None
-    action_confirm_value = None
-    action_back_color = "outline-info"
-    action_back_icon = None
-    action_back_label = phrases.base.back_button
-
-    @property
-    def additional_actions(self):
-        # Actions can be links or buttons, and should be a list of dicts:
-        # optional attributes: label, color, icon
-        # links additionally have href
-        # buttons additionall have name, value
-        return []
 
     @property
     def action_back_url(self):
@@ -406,19 +394,17 @@ class ActionConfirmMixin:
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["action_additional_actions"] = self.additional_actions
-        ctx["action_back_color"] = self.action_back_color
-        ctx["action_back_icon"] = self.action_back_icon
-        ctx["action_back_label"] = self.action_back_label
-        ctx["action_back_url"] = self.action_back_url
-        ctx["action_confirm_color"] = self.action_confirm_color
-        ctx["action_confirm_icon"] = self.action_confirm_icon
-        ctx["action_confirm_label"] = self.action_confirm_label
-        ctx["action_confirm_name"] = self.action_confirm_name
-        ctx["action_confirm_value"] = self.action_confirm_value
         ctx["action_text"] = self.action_text
         ctx["action_title"] = self.action_title
         ctx["action_object_name"] = self.action_object_name
+        ctx["submit_row_left"] = [back_button(self.action_back_url or "..")]
+        ctx["submit_row_right"] = [
+            Button(
+                color=self.action_confirm_color,
+                icon=self.action_confirm_icon,
+                label=self.action_confirm_label,
+            )
+        ]
         return ctx
 
 

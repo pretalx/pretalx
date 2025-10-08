@@ -27,7 +27,7 @@ from pretalx.cfp.forms.auth import ResetForm
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.forms.mixins import PretalxI18nModelForm
 from pretalx.common.text.phrases import phrases
-from pretalx.common.ui import Button, back_button
+from pretalx.common.ui import Button, back_button, delete_button
 from pretalx.common.views.mixins import (
     Filterable,
     PaginationMixin,
@@ -450,8 +450,8 @@ class CRUDView(PaginationMixin, Filterable, View):
     def has_delete_permission(self):
         return self.has_permission(self.model.get_perm("delete"))
 
-    def get_submit_buttons(self):
-        return [back_button(self.next_url or self.reverse("list"))], [Button()]
+    def get_back_button(self):
+        return back_button(self.next_url or self.reverse("list"))
 
     def get_context_data(self, **kwargs):
         kwargs["view"] = self
@@ -477,9 +477,11 @@ class CRUDView(PaginationMixin, Filterable, View):
                 kwargs[name] = self.object_list
 
         if kwargs.get("form"):
-            kwargs["submit_row_left"], kwargs["submit_row_right"] = (
-                self.get_submit_buttons()
-            )
+            kwargs["submit_row_left"] = [self.get_back_button()]
+            kwargs["submit_row_right"] = Button()
+        elif self.action == "delete":
+            kwargs["submit_row_left"] = [self.get_back_button()]
+            kwargs["submit_row_right"] = [delete_button()]
 
         return kwargs
 

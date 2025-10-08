@@ -71,13 +71,17 @@ class LinkButton(Button):
         )
 
 
-def delete_button(href, label=None, color=None):
+def delete_link(href, label=None, color=None):
     return LinkButton(
         href=href,
         label=label or phrases.base.delete_button,
         color=color or "outline-danger",
         icon="trash",
     )
+
+
+def delete_button(label=None, color=None):
+    return Button(color="danger", icon="trash", label=phrases.base.delete_button)
 
 
 def back_button(href):
