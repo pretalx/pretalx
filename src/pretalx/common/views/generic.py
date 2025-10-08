@@ -27,6 +27,7 @@ from pretalx.cfp.forms.auth import ResetForm
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.forms.mixins import PretalxI18nModelForm
 from pretalx.common.text.phrases import phrases
+from pretalx.common.ui import Button, back_button
 from pretalx.common.views.mixins import (
     Filterable,
     PaginationMixin,
@@ -362,9 +363,13 @@ class CRUDView(PaginationMixin, Filterable, View):
         context = self.get_context_data(instance=self.object, form=form)
         return self.render_to_response(context)
 
+    @cached_property
+    def next_url(self):
+        return get_next_url(self.request)
+
     def get_success_url(self):
-        if next_url := get_next_url(self.request):
-            return next_url
+        if self.next_url:
+            return self.next_url
         if self.action == "delete" or self.detail_is_update:
             return self.reverse("list")
         return self.reverse("detail", instance=self.object)
@@ -445,6 +450,9 @@ class CRUDView(PaginationMixin, Filterable, View):
     def has_delete_permission(self):
         return self.has_permission(self.model.get_perm("delete"))
 
+    def get_submit_buttons(self):
+        return [back_button(self.next_url or self.reverse("list"))], [Button()]
+
     def get_context_data(self, **kwargs):
         kwargs["view"] = self
         kwargs["action"] = self.action
@@ -467,6 +475,11 @@ class CRUDView(PaginationMixin, Filterable, View):
             kwargs["has_create_permission"] = self.has_create_permission
             if name := self.get_context_object_name():
                 kwargs[name] = self.object_list
+
+        if kwargs.get("form"):
+            kwargs["submit_row_left"], kwargs["submit_row_right"] = (
+                self.get_submit_buttons()
+            )
 
         return kwargs
 

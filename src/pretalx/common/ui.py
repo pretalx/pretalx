@@ -1,4 +1,5 @@
 from django.template.loader import get_template
+from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.text.phrases import phrases
 
@@ -23,15 +24,17 @@ class Button:
         name="",
         value="",
         _type="",
+        id=None,
     ):
         self.label = label or self.label
         self.name = name
         self.value = value
         self.color = color or self.color
         self.size = size or self.size
-        self.icon = icon or self.icon
+        self.icon = icon or (self.icon if icon is not None else None)
         self.extra_classes = extra_classes
         self.type = _type or self._type
+        self.id = id
         self.template_context = (
             "label",
             "color",
@@ -41,6 +44,7 @@ class Button:
             "name",
             "value",
             "type",
+            "id",
         )
 
     def __str__(self):
@@ -54,9 +58,9 @@ class LinkButton(Button):
     href = ""
     template_name = "common/ui/linkbutton.html"
 
-    def __init__(self, *, href="", **kwargs):
+    def __init__(self, *, href="", icon=None, **kwargs):
         self.href = href
-        super().__init__(**kwargs)
+        super().__init__(icon=icon, **kwargs)
         self.template_context = (
             "label",
             "color",
@@ -67,14 +71,35 @@ class LinkButton(Button):
         )
 
 
-def save_button():
-    return Button()
-
-
-def delete_button(href):
+def delete_button(href, label=None, color=None):
     return LinkButton(
         href=href,
-        label=phrases.base.delete_button,
-        color="outline-danger",
+        label=label or phrases.base.delete_button,
+        color=color or "outline-danger",
         icon="trash",
     )
+
+
+def back_button(href):
+    return LinkButton(
+        href=href,
+        icon=None,
+        label=phrases.base.back_button,
+        color="outline-info",
+    )
+
+
+def send_button():
+    return Button(icon="envelope", label=phrases.base.send)
+
+
+def api_buttons(event):
+    return [
+        LinkButton(
+            href="https://docs.pretalx.org/api/",
+            color="info",
+            icon="book",
+            label=_("Documentation"),
+        ),
+        LinkButton(href=event.api_urls.base, label=_("Go to API")),
+    ]

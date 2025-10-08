@@ -1,4 +1,4 @@
-<button type="{{ type }}" class="btn btn-{{ size }} btn-{{ color }}{% if extra_classes %} {{ extra_classes }}{% endif %}" name="{{ name }}" value="{{ value }}">
+<button {% if type %}type="{{ type }}"{% endif %} {% if id %}id="{{ id }}"{% endif %} class="btn btn-{{ size }} btn-{{ color }}{% if extra_classes %} {{ extra_classes }}{% endif %}" name="{{ name }}" value="{{ value }}">
   {% if icon %}<i class="fa fa-{{ icon }}"></i>{% endif %}
   {{ label }}
 </button>

@@ -62,21 +62,22 @@
                                             {% for event in token.events.all %}
                                                 <li><a href="{{ event.orga_urls.base }}">{{ event.name }}</a></li>
                                             {% endfor %}
-                                        </td>
-                                        <td>{{ token.last_used|date:"SHORT_DATETIME_FORMAT"|default:"-" }}</td>
-                                        <td>{{ token.created|date:"SHORT_DATETIME_FORMAT" }}</td>
-                                        <td>{{ token.expires|date:"SHORT_DATETIME_FORMAT"|default:"-" }}</td>
-                                        <td>
-                                            {% if token.is_active %}
-                                                <form method="post" class="d-inline">
-                                                    {% csrf_token %}
-                                                    <button type="submit" name="revoke" value="{{ token.id }}" class="btn btn-danger btn-sm">
-                                                        {% translate "Revoke" %}
-                                                    </button>
-                                                </form>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
+                                        </ul>
+                                    </td>
+                                    <td>{{ token.last_used|date:"SHORT_DATETIME_FORMAT"|default:"-" }}</td>
+                                    <td>{{ token.created|date:"SHORT_DATETIME_FORMAT" }}</td>
+                                    <td>{{ token.expires|date:"SHORT_DATETIME_FORMAT"|default:"-" }}</td>
+                                    <td>
+                                        {% if token.is_active %}
+                                            <form method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" name="revoke" value="{{ token.id }}" class="btn btn-danger btn-sm">
+                                                    {% translate "Revoke" %}
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
                             {% endfor %}
                         </tbody>
                     </table>
