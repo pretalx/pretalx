@@ -13,6 +13,7 @@ from django_context_decorator import context
 
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.text.phrases import phrases
+from pretalx.common.ui import Button, api_buttons
 from pretalx.common.views import CreateOrUpdateView
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
@@ -850,6 +851,10 @@ class ReviewAssignmentImport(EventPermissionRequired, FormView):
         result["event"] = self.request.event
         return result
 
+    @context
+    def submit_buttons(self):
+        return [Button(label=_("Import"))]
+
     @transaction.atomic
     def form_valid(self, form):
         form.save()
@@ -881,3 +886,8 @@ class ReviewExport(EventPermissionRequired, FormView):
             messages.success(self.request, _("No data to be exported"))
             return redirect(self.request.path)
         return result
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["api_buttons"] = api_buttons(self.request.event)
+        return context

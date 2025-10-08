@@ -10,6 +10,7 @@ from django.db.models.deletion import ProtectedError
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
+from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
@@ -24,6 +25,7 @@ from pretalx.agenda.views.utils import get_schedule_exporters
 from pretalx.common.language import get_current_language_information
 from pretalx.common.text.path import safe_filename
 from pretalx.common.text.phrases import phrases
+from pretalx.common.ui import Button, LinkButton, api_buttons, back_button
 from pretalx.common.views.generic import OrgaCRUDView
 from pretalx.common.views.mixins import (
     EventPermissionRequired,
@@ -92,6 +94,20 @@ class ScheduleExportView(EventPermissionRequired, FormView):
             for exporter in get_schedule_exporters(self.request)
             if exporter.group != "speaker"
         ]
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["zip_buttons"] = [
+            LinkButton(
+                href=self.request.event.orga_urls.schedule_export_download,
+                color="info",
+                label=_("Download ZIP"),
+                icon="download",
+            ),
+            Button(icon="refresh", label=_("Regenerate Export")),
+        ]
+        context["api_buttons"] = api_buttons(self.request.event)
+        return context
 
     @context
     def tablist(self):
@@ -165,15 +181,26 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
         kwargs["locales"] = self.request.event.locales
         return kwargs
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["submit_buttons_extra"] = [
+            back_button(self.request.event.orga_urls.schedule)
+        ]
+        context["submit_buttons"] = [Button(label=_("Release"), icon=None)]
+        return context
+
     @context
+    @cached_property
     def warnings(self):
         return self.request.event.wip_schedule.warnings
 
     @context
+    @cached_property
     def changes(self):
         return self.request.event.wip_schedule.changes
 
     @context
+    @cached_property
     def notifications(self):
         return len(self.request.event.wip_schedule.generate_notifications(save=False))
 

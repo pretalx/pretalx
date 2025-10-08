@@ -12,6 +12,7 @@ from pretalx.agenda.views.utils import get_schedule_exporters
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.image import gravatar_csp
 from pretalx.common.text.phrases import phrases
+from pretalx.common.ui import api_buttons
 from pretalx.common.views.generic import CreateOrUpdateView, OrgaCRUDView, get_next_url
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
@@ -312,6 +313,10 @@ class SpeakerExport(EventPermissionRequired, FormView):
             "general": _("More exports"),
             "api": _("API"),
         }
+
+    @context
+    def api_buttons(self):
+        return api_buttons(self.request.event)
 
     def form_valid(self, form):
         result = form.export_data()

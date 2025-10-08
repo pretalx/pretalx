@@ -48,21 +48,7 @@
                 </div>
             {% endfor %}
         </div>
-        <div class="submit-group panel">
-            <span></span>
-            <span>
-                <button type="submit" class="btn btn-success btn-lg" name="action" value="save">
-                    <i class="fa fa-check"></i>
-                    {{ phrases.base.save }}
-                </button>
-                {% if next_unanonymised %}
-                    <button type="submit" class="btn btn-info btn-lg" name="action" value="next">
-                        <i class="fa fa-arrow-right"></i>
-                        {% translate "Save and go to next unanonymised" %}
-                    </button>
-                {% endif %}
-            </span>
-        </div>
+        {% include "orga/includes/submit_row.html" %}
     </fieldset></form>
 
     <div id="anon-menu" class="d-none">

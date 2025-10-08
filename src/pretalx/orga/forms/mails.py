@@ -114,6 +114,9 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
                         )
         return text
 
+    class Media:
+        css = {"all": ["orga/css/forms/email.css"]}
+
     class Meta:
         model = MailTemplate
         fields = ["subject", "text", "reply_to", "bcc"]

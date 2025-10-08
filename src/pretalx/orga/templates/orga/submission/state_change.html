@@ -18,21 +18,5 @@
         <p>{% translate "Please confirm that you really want to change the state of this proposal." %}</p>
 
     </div>
-    <form method="post">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ next }}">
-        {{ form.pending.as_field_group }}
-
-        <div class="submit-group" id="submission-state-change"><span></span><span>
-            <a
-                class="btn btn-lg btn-outline-info"
-                href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{{ submission.orga_urls.base }}{% endif %}"
-            >
-                {{ phrases.base.back_button }}
-            </a>
-            <button type="submit" class="btn btn-lg submission-state-{{ target }}">
-                {% translate "Do it" %}
-            </button>
-        </span></div>
-    </form>
+    {% include "orga/includes/base_form.html" %}
 {% endblock submission_content %}

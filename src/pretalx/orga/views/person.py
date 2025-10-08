@@ -10,6 +10,7 @@ from django_scopes import scopes_disabled
 
 from pretalx.api.versions import CURRENT_VERSION
 from pretalx.common.text.phrases import phrases
+from pretalx.common.ui import Button
 from pretalx.common.views import is_form_bound
 from pretalx.common.views.generic import get_next_url
 from pretalx.person.forms import AuthTokenForm, LoginInfoForm, OrgaProfileForm
@@ -49,6 +50,13 @@ class UserSettings(TemplateView):
             user=self.request.user,
             data=self.request.POST if is_form_bound(self.request, "token") else None,
         )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["profile_submit"] = [Button(name="form", value="profile")]
+        context["login_submit"] = [Button(name="form", value="login")]
+        context["token_submit"] = [Button(name="form", value="token")]
+        return context
 
     def post(self, request, *args, **kwargs):
         if self.login_form.is_bound and self.login_form.is_valid():

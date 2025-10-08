@@ -20,13 +20,6 @@
         {% block wizard_form %}
             {{ wizard.form }}
         {% endblock %}
-        <div class="submit-group flex-row-reverse">
-            <button type="submit" class="btn btn-success btn-lg float-right flip ml-auto">{% translate "Next step" %}</button>
-            {% if wizard.steps.prev %}
-                <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}" class="btn btn-lg btn-info">{% translate "Previous step" %}</button>
-            {% else %}
-                <span></span>
-            {% endif %}
-        </div>
+        {% include "orga/includes/submit_row.html" %}
     </fieldset></form>
 {% endblock content %}

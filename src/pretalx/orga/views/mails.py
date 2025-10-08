@@ -13,6 +13,7 @@ from pretalx.common.exceptions import SendMailException
 from pretalx.common.language import language
 from pretalx.common.mail import TolerantDict
 from pretalx.common.text.phrases import phrases
+from pretalx.common.ui import Button, LinkButton, delete_link, send_button
 from pretalx.common.views.generic import (
     CreateOrUpdateView,
     OrgaCRUDView,
@@ -335,6 +336,38 @@ class MailDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
             )
         return result
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.action == "edit":
+            context["submit_buttons"] = [
+                Button(),
+                Button(
+                    name="form",
+                    value="send",
+                    color="info",
+                    label=_("Save and send"),
+                    icon="envelope",
+                ),
+            ]
+            context["submit_buttons_extra"] = [
+                delete_link(
+                    color="danger", href=self.object.urls.delete, label=_("Discard")
+                ),
+                delete_link(
+                    href=f"{self.object.urls.delete}?all",
+                    label=_("Discard all from this template"),
+                ),
+            ]
+        elif self.object.sent:
+            if pk := self.object.template_id:
+                href = f"{self.request.event.orga_urls.compose_mails_sessions}?template={pk}"
+            else:
+                href = self.object.urls.copy
+            context["submit_buttons"] = [
+                LinkButton(href=href, label=_("Copy to draft"))
+            ]
+        return context
+
 
 class MailCopy(PermissionRequired, View):
     permission_required = "mail.send_queuedmail"
@@ -401,6 +434,17 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
         ctx = super().get_context_data(*args, **kwargs)
         ctx["output"] = getattr(self, "output", None)
         ctx["mail_count"] = getattr(self, "mail_count", None) or 0
+        ctx["submit_buttons"] = [
+            Button(
+                color="outline-info",
+                name="action",
+                value="preview",
+                label=_("Preview email"),
+                icon=None,
+            )
+        ]
+        if self.request.method == "POST" and ctx["form"].is_valid():
+            ctx["submit_buttons"].append(Button(label=_("Send to outbox")))
         return ctx
 
     def form_valid(self, form):
@@ -514,6 +558,10 @@ class ComposeDraftReminders(EventPermissionRequired, FormView):
         kwargs = super().get_form_kwargs()
         kwargs["event"] = self.request.event
         return kwargs
+
+    @context
+    def submit_buttons(self):
+        return [send_button()]
 
     def get_success_url(self):
         return self.request.event.orga_urls.base

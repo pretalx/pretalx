@@ -477,11 +477,11 @@ class CRUDView(PaginationMixin, Filterable, View):
                 kwargs[name] = self.object_list
 
         if kwargs.get("form"):
-            kwargs["submit_row_left"] = [self.get_back_button()]
-            kwargs["submit_row_right"] = Button()
+            kwargs["submit_buttons_extra"] = [self.get_back_button()]
+            kwargs["submit_buttons"] = [Button()]
         elif self.action == "delete":
-            kwargs["submit_row_left"] = [self.get_back_button()]
-            kwargs["submit_row_right"] = [delete_button()]
+            kwargs["submit_buttons_extra"] = [self.get_back_button()]
+            kwargs["submit_buttons"] = [delete_button()]
 
         return kwargs
 

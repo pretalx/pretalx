@@ -28,6 +28,7 @@ from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.image import gravatar_csp
 from pretalx.common.middleware.event import get_login_redirect
 from pretalx.common.text.phrases import phrases
+from pretalx.common.ui import Button, LinkButton, back_button, delete_button
 from pretalx.common.views import is_form_bound
 from pretalx.person.forms import (
     LoginInfoForm,
@@ -253,6 +254,20 @@ class SubmissionConfirmView(LoggedInEventPageMixin, SubmissionViewMixin, FormVie
             )
         return form
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["submit_buttons"] = [Button(label=_("Confirm"))]
+        context["submit_buttons_extra"] = [
+            back_button(self.submission.urls.user_base),
+            LinkButton(
+                href=self.submission.urls.withdraw,
+                color="danger",
+                icon=None,
+                label=_("Withdraw"),
+            ),
+        ]
+        return context
+
     def form_valid(self, form):
         submission = self.submission
         form.save()
@@ -277,6 +292,12 @@ class SubmissionDraftDiscardView(
         if submission.state != SubmissionStates.DRAFT:
             raise Http404()
         return submission
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["submit_buttons"] = [delete_button()]
+        context["submit_buttons_extra"] = [back_button(self.submission.urls.user_base)]
+        return context
 
     def post(self, request, *args, **kwargs):
         self.submission.delete()
