@@ -9,7 +9,10 @@
     width: 100%;
   }
 }
-#release #notify-speakers-check {
+#release {
+  .submit-group > span:first-child {
+    display: flex;
+  }
   .form-group {
     display: grid;
     margin-bottom: -8px;
@@ -27,14 +30,12 @@
     }
     small {
       grid-area: 2 / 2 / 3 / 3;
-    }
-  }
-  small {
-    margin-top: -6px;
-    font-size: 80%;
-    padding-left: 9px;
-    a {
-      color: var(--color-grey);
+      margin-top: -6px;
+      font-size: 80%;
+      padding-left: 9px;
+      a {
+        color: var(--color-grey);
+      }
     }
   }
 }
