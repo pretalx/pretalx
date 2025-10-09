@@ -141,6 +141,7 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
         data = super().clean()
         start = data.get("start")
         end = data.get("end")
+        room = data.get("room")
         if start and end and start > end:
             self.add_error(
                 "end",
@@ -148,21 +149,19 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
                     _("The end time has to be after the start time."),
                 ),
             )
-        return data
-
-    def clean_room(self):
-        data = self.cleaned_data.get("room")
-        if data and not self.data.get("start"):
-            raise forms.ValidationError(
-                _("You cannot assign a room without setting the start time as well.")
+        if room and not start:
+            self.add_error(
+                "room",
+                forms.ValidationError(
+                    _("You cannot assign a room without setting the start time as well.")
+                ),
             )
-        return data
-
-    def clean_start(self):
-        data = self.cleaned_data.get("start")
-        if data and not self.data.get("room"):
-            raise forms.ValidationError(
-                _("You cannot set a start time without assigning the room as well.")
+        if start and not room:
+            self.add_error(
+                "start",
+                forms.ValidationError(
+                    _("You cannot set a start time without assigning the room as well.")
+                ),
             )
         return data
 
@@ -197,11 +196,8 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             task_update_unreleased_schedule_changes.apply_async(
                 kwargs={"event": self.event.slug}
             )
-        if (
-            instance.state in SubmissionStates.accepted_states
-            and not self.cleaned_data.get("room")
-            and not self.cleaned_data.get("start")
-            and any(field in self.changed_data for field in ("room", "start", "end"))
+        if not self.cleaned_data.get("start") and any(
+            field in self.changed_data for field in ("room", "start", "end")
         ):
             instance.slots.filter(schedule=instance.event.wip_schedule).delete()
             instance.update_talk_slots()
