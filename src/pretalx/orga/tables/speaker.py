@@ -32,8 +32,9 @@ class SpeakerInformationTable(PretalxTable):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.exclude = list(self.exclude)
         if not self.event.get_feature_flag("use_tracks"):
-            self.columns["limit_tracks"].hide()
+            self.exclude.append("limit_tracks")
 
     class Meta:
         model = SpeakerInformation
