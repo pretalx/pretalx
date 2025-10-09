@@ -317,10 +317,10 @@ class OrganiserDetail(PermissionRequired, CreateOrUpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.request.user.is_administrator:
-            context["submit_buttons_extra"] = [
-                delete_link(self.request.organiser.orga_urls.delete)
-            ]
+        if self.request.user.is_administrator and (
+            organiser := getattr(self.request, "organiser", None)
+        ):
+            context["submit_buttons_extra"] = [delete_link(organiser.orga_urls.delete)]
         context["submit_buttons"] = [Button()]
         return context
 
@@ -412,8 +412,6 @@ class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListV
     context_object_name = "speakers"
     table_class = SpeakerOrgaTable
     default_filters = ("email__icontains", "name__icontains")
-    sortable_fields = ("email", "name", "accepted_submission_count", "submission_count")
-    default_sort_field = "name"
     pagination_class = Paginator
 
     def get_permission_object(self):

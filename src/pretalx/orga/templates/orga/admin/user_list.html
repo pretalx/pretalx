@@ -1,9 +1,17 @@
 {% extends "orga/generic/list.html" %}
 
 {% load i18n %}
+{% load static %}
+
+{% block scripts %}
+    <script defer src="{% static "common/js/ui/copy.js" %}"></script>
+{% endblock scripts %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static "common/css/ui/tooltip.css" %}" />
+{% endblock stylesheets %}
 
 {% block list_content %}
-
     <form class="mb-3 mt-2">
         <input name="q" type="text" {% if request.GET.q %} value="{{ request.GET.q }}" {% endif %} placeholder="{% translate "Search users by name or email address" %}">
     </form>

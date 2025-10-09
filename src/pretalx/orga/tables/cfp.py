@@ -7,6 +7,7 @@ from pretalx.common.tables import (
     BooleanIconColumn,
     PretalxTable,
     SortableColumn,
+    UnsortableMixin,
 )
 from pretalx.orga.utils.i18n import Translate
 from pretalx.submission.models import (
@@ -19,7 +20,7 @@ from pretalx.submission.models import (
 
 class SubmitterAccessCodeTable(PretalxTable):
     code = tables.TemplateColumn(
-        template_code="{% load copyable %}{{ record.code|copyable }}",
+        template_name="orga/tables/columns/copyable.html",
         verbose_name=_("Code"),
     )
     track = SortableColumn(
@@ -33,11 +34,18 @@ class SubmitterAccessCodeTable(PretalxTable):
         verbose_name=_("Session type"),
         order_by=Lower(Translate("submission_type__name")),
     )
-    uses = tables.TemplateColumn(
+    uses = tables.Column(
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
-        template_code="{{ record.redeemed|default:0 }} / {{ record.maximum_uses|default:'∞ '}}",
         order_by="redeemed",
+        empty_values=[""],
+        initial_sort_descending=True,
     )
+
+    def render_uses(self, record):
+        redeemed = record.redeemed or 0
+        maximum = record.maximum_uses if record.maximum_uses else "∞ "
+        return f"{redeemed} / {maximum}"
+
     actions = ActionsColumn(
         actions={
             "copy": {
@@ -71,23 +79,20 @@ class SubmitterAccessCodeTable(PretalxTable):
         )
 
 
-class TrackTable(PretalxTable):
+class TrackTable(UnsortableMixin, PretalxTable):
     name = tables.TemplateColumn(
         linkify=lambda record: record.urls.edit,
         verbose_name=_("Track"),
-        template_code='{{ record.name }} {% if record.requires_access_code %}{% load i18n %}<i class="fa fa-lock ml-1" title="{% translate "Requires access code" %}"></i>{% endif %}',
-        orderable=False,
+        template_name="orga/tables/columns/track_name.html",
     )
     color = tables.TemplateColumn(
         verbose_name=_("Colour"),
-        template_code='<div class="color-square" style="background: {{ record.color }}"></div>',
-        orderable=False,
+        template_name="orga/tables/columns/color_square.html",
     )
-    proposals = tables.TemplateColumn(
+    proposals = tables.Column(
         verbose_name=_("Proposals"),
         linkify=lambda record: f"{record.event.orga_urls.submissions}?track={record.id}",
-        template_code="{{ record.submissions.all.count }}",
-        orderable=False,
+        accessor="submission_count",
     )
     actions = ActionsColumn(
         actions={
@@ -117,13 +122,14 @@ class SubmissionTypeTable(PretalxTable):
     name = tables.TemplateColumn(
         linkify=lambda record: record.urls.edit,
         verbose_name=_("Session type"),
-        template_code='{{ record.name }} {% if record.requires_access_code %}{% load i18n %}<i class="fa fa-lock ml-1" title="{% translate "Requires access code" %}"></i>{% endif %}',
+        template_name="orga/tables/columns/submission_type_name.html",
     )
-    proposals = tables.TemplateColumn(
+    proposals = tables.Column(
         verbose_name=_("Proposals"),
         linkify=lambda record: f"{record.event.orga_urls.submissions}?submission_type={record.id}",
-        template_code="{{ record.submissions.all.count }}",
+        accessor="submission_count",
         order_by="submission_count",
+        initial_sort_descending=True,
     )
     actions = ActionsColumn(
         actions={
@@ -151,20 +157,19 @@ class SubmissionTypeTable(PretalxTable):
         fields = ("name", "proposals", "default_duration", "actions")
 
 
-class QuestionTable(PretalxTable):
+class QuestionTable(UnsortableMixin, PretalxTable):
     question = tables.Column(
         verbose_name=_("Custom field"),
         linkify=lambda record: record.urls.base,
-        orderable=False,
     )
-    target = tables.Column(verbose_name=_("Target"), orderable=False)
-    variant = tables.Column(verbose_name=_("Field type"), orderable=False)
-    required = BooleanIconColumn(orderable=False)
-    active = BooleanIconColumn(orderable=False)
+    target = tables.Column(verbose_name=_("Target"))
+    variant = tables.Column(verbose_name=_("Field type"))
+    required = BooleanIconColumn()
+    active = BooleanIconColumn()
     answer_count = tables.Column(
         verbose_name=_("Responses"),
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
-        orderable=False,
+        initial_sort_descending=True,
     )
     actions = ActionsColumn(actions={"sort": {}, "edit": {}, "delete": {}})
     empty_text = _("You have configured no custom fields yet.")

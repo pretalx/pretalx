@@ -2,40 +2,49 @@ import django_tables2 as tables
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.tables import ActionsColumn, PretalxTable, SortableTemplateColumn
+from pretalx.common.tables import (
+    ActionsColumn,
+    ContextTemplateColumn,
+    PretalxTable,
+    SortableTemplateColumn,
+)
 from pretalx.person.models import User
 
 
 class AdminUserTable(PretalxTable):
-    name = SortableTemplateColumn(
+    name = ContextTemplateColumn(
         linkify=lambda record: reverse(
             "orga:admin.user.detail", kwargs={"code": record.code}
         ),
-        template_code='{% include "orga/includes/user_name.html" with user=record %}',
+        template_name="orga/includes/user_name.html",
+        context_object_name="user",
     )
     email = SortableTemplateColumn(
-        template_code="{% load copyable %}{{ record.email|copyable }}",
+        template_name="orga/tables/columns/copyable.html",
     )
     teams = tables.TemplateColumn(
-        template_code='<ul>{% for team in record.teams.all %}<li><a href="{{ team.urls.base }}">{{ team.name }}</a></li>{% endfor %}',
+        template_name="orga/tables/columns/admin_user_teams.html",
         verbose_name=_("Teams"),
         orderable=False,
     )
     events = tables.TemplateColumn(
-        template_code='<ul>{% for event in record.get_events_with_any_permission %}<li><a href="{{ event.orga_urls.base }}">{{ event.name }}</a></li>{% endfor %}',
+        template_name="orga/tables/columns/admin_user_events.html",
         orderable=False,
     )
     submission_count = tables.Column(
         verbose_name=_("Submissions"),
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
+        initial_sort_descending=True,
     )
     last_login = tables.TemplateColumn(
-        template_code="{% load i18n %}{{ record.last_login|timesince }} {% if record.last_login %}{% translate 'ago'%}{% endif %}",
+        template_name="orga/tables/columns/timesince.html",
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
+        initial_sort_descending=True,
     )
     pw_reset_time = tables.TemplateColumn(
-        template_code="{% load i18n %}{{ record.pw_reset_time|timesince }} {% if record.pw_reset_time %}{% translate 'ago'%}{% endif %}",
+        template_name="orga/tables/columns/timesince.html",
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
+        initial_sort_descending=True,
     )
     actions = ActionsColumn(
         actions={

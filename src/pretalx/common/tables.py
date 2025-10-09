@@ -28,19 +28,35 @@ class PretalxTable(tables.Table):
         super().__init__(*args, **kwargs)
 
 
+class UnsortableMixin:
+    def __init__(self, *args, **kwargs):
+        # Prevent ordering of dragsort tables
+        kwargs["orderable"] = False
+        kwargs["order_by"] = None
+        super().__init__(*args, **kwargs)
+
+
 class FunctionOrderMixin:
 
     def __init__(self, *args, order_by=None, **kwargs):
         self.order_function_lookup = {}
-        if order_by and not isinstance(order_by, str):
-            if isinstance(order_by, Transform):
+        if order_by:
+            if not isinstance(order_by, (list, tuple)):
                 order_by = (order_by,)
             plain_order_by = []
             for key in order_by:
-                if isinstance(key, Transform):
-                    plain_field = key.source_expressions[0].name
-                    self.order_function_lookup[plain_field] = key
-                    plain_order_by.append(plain_field)
+                if isinstance(key, str):
+                    plain_order_by.append(key)
+                    continue
+
+                lookup = key
+                if getattr(lookup, "source_expressions", None):
+                    while isinstance(lookup.source_expressions[0], Transform):
+                        lookup = lookup.source_expressions[0]
+
+                plain_field = lookup.source_expressions[0].name
+                self.order_function_lookup[plain_field] = key
+                plain_order_by.append(plain_field)
             order_by = plain_order_by
 
         super().__init__(*args, order_by=order_by, **kwargs)
@@ -67,7 +83,27 @@ class SortableColumn(FunctionOrderMixin, tables.Column):
     pass
 
 
-class SortableTemplateColumn(FunctionOrderMixin, tables.TemplateColumn):
+class ContextTemplateColumn(tables.TemplateColumn):
+    """Allow to change the context_object_name."""
+
+    context_object_name = "record"
+
+    def __init__(self, *args, template_context=None, **kwargs):
+        if name := kwargs.pop("context_object_name", None):
+            self.context_object_name = name
+        self.template_context = template_context or {}
+        super().__init__(*args, **kwargs)
+
+    def render(self, record, table, value, bound_column, **kwargs):
+        context = getattr(table, "context", Context())
+        for key, value in self.template_context.items():
+            if callable(value):
+                context[key] = value(record)
+        context[self.context_object_name] = record
+        return super().render(record, table, value, bound_column, **kwargs)
+
+
+class SortableTemplateColumn(FunctionOrderMixin, ContextTemplateColumn):
     pass
 
 
@@ -185,22 +221,6 @@ class ActionsColumn(tables.Column):
                 html += f'<a href="{url}" {inner_html}</a>'
         html = f'<div class="action-column">{html}</div>'
         return mark_safe(html)
-
-
-class ContextTemplateColumn(tables.TemplateColumn):
-    """Allow to change the context_object_name."""
-
-    context_object_name = "record"
-
-    def __init__(self, *args, **kwargs):
-        if name := kwargs.pop("context_object_name", None):
-            self.context_object_name = name
-        super().__init__(*args, **kwargs)
-
-    def render(self, record, table, value, bound_column, **kwargs):
-        context = getattr(table, "context", Context())
-        context[self.context_object_name] = record
-        return super().render(record, table, value, bound_column, **kwargs)
 
 
 class BooleanIconColumn(tables.BooleanColumn):

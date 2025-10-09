@@ -4,7 +4,7 @@ from collections import defaultdict
 from csp.decorators import csp_update
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
 from django.http import JsonResponse
@@ -48,6 +48,7 @@ from pretalx.submission.models import (
     CfP,
     Question,
     QuestionTarget,
+    SubmissionStates,
     SubmissionType,
     SubmitterAccessCode,
     Track,
@@ -407,7 +408,17 @@ class SubmissionTypeView(OrderActionMixin, OrgaCRUDView):
         return (
             self.request.event.submission_types.all()
             .order_by("default_duration")
-            .annotate(submission_count=Count("submissions"))
+            .annotate(
+                submission_count=Count(
+                    "submissions",
+                    filter=~Q(
+                        submissions__state__in=[
+                            SubmissionStates.DELETED,
+                            SubmissionStates.DRAFT,
+                        ]
+                    ),
+                )
+            )
         )
 
     def get_permission_required(self):
@@ -467,7 +478,17 @@ class TrackView(OrderActionMixin, OrgaCRUDView):
     def get_queryset(self):
         return (
             self.request.event.tracks.all()
-            .annotate(submission_count=Count("submissions"))
+            .annotate(
+                submission_count=Count(
+                    "submissions",
+                    filter=~Q(
+                        submissions__state__in=[
+                            SubmissionStates.DELETED,
+                            SubmissionStates.DRAFT,
+                        ]
+                    ),
+                )
+            )
             .order_by("position")
         )
 

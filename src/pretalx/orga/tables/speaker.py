@@ -1,6 +1,7 @@
 import django_tables2 as tables
 from django.db.models.functions import Lower
 from django.utils.functional import cached_property
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import (
@@ -19,9 +20,8 @@ class SpeakerInformationTable(PretalxTable):
         verbose_name=_("Title"),
         order_by=Lower(Translate("title")),
     )
-    resource = tables.TemplateColumn(
+    resource = tables.Column(
         linkify=lambda record: record.resource.url if record.resource else None,
-        template_code='<i class="fa fa-file-o"></i>',
     )
     actions = ActionsColumn(
         actions={
@@ -35,6 +35,9 @@ class SpeakerInformationTable(PretalxTable):
         self.exclude = list(self.exclude)
         if not self.event.get_feature_flag("use_tracks"):
             self.exclude.append("limit_tracks")
+
+    def render_resource(self, record):
+        return mark_safe('<i class="fa fa-file-o"></i>')
 
     class Meta:
         model = SpeakerInformation
@@ -51,11 +54,20 @@ class SpeakerTable(PretalxTable):
     name = SortableTemplateColumn(
         verbose_name=_("Name"),
         linkify=lambda record: record.orga_urls.base,
+        accessor=("user__name"),
+        empty_values=[""],
         order_by=Lower("user__name"),
-        template_code='{% include "orga/includes/user_name.html" with user=record.user %}',
+        template_name="orga/includes/user_name.html",
+        template_context={"user": lambda record: record.user},
     )
-    accepted_submission_count = tables.Column(verbose_name=_("Accepted Proposals"))
-    submission_count = tables.Column(verbose_name=_("Proposals"))
+    accepted_submission_count = tables.Column(
+        verbose_name=_("Accepted Proposals"),
+        initial_sort_descending=True,
+    )
+    submission_count = tables.Column(
+        verbose_name=_("Proposals"),
+        initial_sort_descending=True,
+    )
     has_arrived = tables.TemplateColumn(
         verbose_name="", template_name="orga/tables/columns/speaker_arrived.html"
     )
@@ -78,7 +90,8 @@ class SpeakerOrgaTable(SpeakerTable):
     name = SortableTemplateColumn(
         verbose_name=_("Name"),
         order_by=Lower("name"),
-        template_code='{% include "orga/includes/user_name.html" with user=record %}',
+        template_name="orga/includes/user_name.html",
+        context_object_name="user",
     )
     email = tables.Column(linkify=lambda record: f"mailto:{record.email}")
     has_arrived = None

@@ -2,6 +2,11 @@
 
 {% load i18n %}
 {% load rich_text %}
+{% load static %}
+
+{% block agenda_stylesheets %}
+    <link rel="stylesheet" href="{% static "agenda/css/feedback.css" %}" />
+{% endblock agenda_stylesheets %}
 
 {% block content %}
     <h3 class="talk-title">

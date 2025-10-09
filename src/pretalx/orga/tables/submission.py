@@ -84,27 +84,34 @@ class SubmissionTable(PretalxTable):
 
 
 class ReviewTable(PretalxTable):
-    median_score = tables.TemplateColumn(
+    median_score = tables.Column(
         verbose_name=_("Median"),
-        template_code="{{ record.mean_score|floatformat:1 }}",
         order_by=("median_score",),
         initial_sort_descending=True,
         attrs={"td": {"class": "text-center numeric"}},
     )
-    mean_score = tables.TemplateColumn(
+    mean_score = tables.Column(
         verbose_name=_("Average"),
-        template_code="{{ record.mean_score|floatformat:1 }}",
         order_by=("mean_score",),
         initial_sort_descending=True,
         attrs={"td": {"class": "text-center numeric"}},
     )
-    user_score = tables.TemplateColumn(
+    user_score = tables.Column(
         verbose_name=_("Your score"),
-        template_code="{{ record.user_score|floatformat:1 }}",
         order_by=("user_score",),
         initial_sort_descending=True,
         attrs={"td": {"class": "text-center numeric"}},
     )
+
+    def render_median_score(self, value):
+        return f"{value:.1f}"
+
+    def render_mean_score(self, value):
+        return f"{value:.1f}"
+
+    def render_user_score(self, value):
+        return f"{value:.1f}"
+
     review_count = tables.TemplateColumn(
         verbose_name=_("Reviews"),
         template_name="orga/tables/columns/review_count.html",
@@ -311,11 +318,12 @@ class TagTable(PretalxTable):
     )
     color = tables.TemplateColumn(
         verbose_name=_("Colour"),
-        template_code='<div class="color-square" style="background: {{ record.color }}"></div>',
+        template_name="orga/tables/columns/color_square.html",
     )
     proposals = tables.Column(
         verbose_name=_("Proposals"),
         accessor="submission_count",
+        initial_sort_descending=True,
     )
     actions = ActionsColumn(actions={"edit": {}, "delete": {}})
 
