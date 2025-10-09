@@ -11,7 +11,7 @@
     <form method="post">
         {% csrf_token %}
         <h3>{% translate "Withdraw proposal" %}</h3>
-        <div class="alert alert-danger">
+        <div class="alert danger">
             {% blocktranslate trimmed %}
                 Do you really want to withdraw your proposal?
             {% endblocktranslate %}

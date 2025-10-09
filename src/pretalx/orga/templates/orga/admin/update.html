@@ -9,9 +9,9 @@
     <h2>{% translate "Update check results" %}</h2>
 
     {% if not gs.settings.update_check_enabled %}
-        <div class="alert alert-warning">{% translate "Update checks are disabled." %}</div>
+        <div class="alert warning">{% translate "Update checks are disabled." %}</div>
     {% elif not gs.settings.update_check_last %}
-        <div class="alert alert-info">
+        <div class="alert info">
             {% translate "No update check has been performed yet since the last update of this installation. Update checks are performed on a daily basis if your cronjob is set up properly." %}
         </div>
         <form action="" method="post">
@@ -24,7 +24,7 @@
             </p>
         </form>
     {% elif "error" in gs.settings.update_check_result %}
-        <div class="alert alert-danger">
+        <div class="alert danger">
             {% translate "The last update check was not successful." %}
             {% if gs.settings.update_check_result.error == "http_error" %}
                 {% translate "The pretalx.com server returned an error code." %}

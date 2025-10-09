@@ -66,13 +66,13 @@
             {% if request.method == "POST" %}
                 <fieldset class="mt-4">
                     <legend id="preview">{% translate "Email preview" %}</legend>
-                    <div class="alert alert-info">
+                    <div class="alert info">
                         {% blocktranslate trimmed with count=mail_count %}
                             Roughly {{ count }} emails will be generated.
                         {% endblocktranslate %}
                     </div>
                     {% if form.warnings %}
-                        <div class="alert alert-warning">
+                        <div class="alert warning">
                             <span>
                                 {% blocktranslate trimmed %}
                                     You have placeholders in your email that are either not valid or not valid for every email!

@@ -4,7 +4,7 @@
 
 {% block warnings %}
     {% if question.answers.count %}
-        <div class="alert alert-warning col-md-9 offset-md-3">
+        <div class="alert warning col-md-9 offset-md-3">
             {% blocktranslate trimmed %}
                 This custom field already has responses from some speakers – please consider
                 carefully if modifying it would render those answers obsolete. You could also
@@ -12,7 +12,7 @@
             {% endblocktranslate %}
         </div>
     {% endif %}
-    <div class="alert alert-info col-md-9 offset-md-3">
+    <div class="alert info col-md-9 offset-md-3">
         <span>
             {% if question.active %}
                 {% translate "This field is currently active, it will be asked during submission." %}

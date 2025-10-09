@@ -378,25 +378,25 @@ a {
 
 .color-success,
 .btn-success,
-.alert-success {
+.alert.success {
   --highlight-color: var(--color-success);
   --highlight-color-text: var(--color-success-text-dark);
 }
 .color-info,
 .btn-info,
-.alert-info {
+.alert.info {
   --highlight-color: var(--color-info);
   --highlight-color-text: var(--color-info-text-dark);
 }
 .color-warning,
 .btn-warning,
-.alert-warning {
+.alert.warning {
   --highlight-color: var(--color-warning);
   --highlight-color-text: var(--color-warning-text-dark);
 }
 .color-danger,
 .btn-danger,
-.alert-danger {
+.alert.danger {
   --highlight-color: var(--color-danger);
   --highlight-color-text: var(--color-danger-text-dark);
 }
@@ -410,19 +410,19 @@ a {
   --highlight-color: var(--color-secondary);
   --highlight-color-text: var(--color-secondary);
 }
-.alert.alert-success:before {
+.alert.success:before {
   content: "";
 }
-.alert.alert-info:before {
+.alert.info:before {
   content: "";
 }
-.alert.alert-info.key:before {
+.alert.info.key:before {
     content: "";
 }
-.alert.alert-warning:before {
+.alert.warning:before {
   content: "";
 }
-.alert.alert-danger:before {
+.alert.danger:before {
   content: "";
 }
 

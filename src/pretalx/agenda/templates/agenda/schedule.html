@@ -51,7 +51,7 @@
 {% block agenda_content %}
     <div id="fahrplan" class="{% if show_talk_list %}list{% else %}grid{% endif %}">
         {% if schedule != schedule.event.current_schedule %}
-            <div class="alert alert-warning m-3">
+            <div class="alert warning m-3">
                 <span>
                     {% if not schedule.version %}
                         {{ phrases.schedule.wip_version }}
@@ -76,7 +76,7 @@
             style="--pretalx-clr-primary: {{ request.event.visible_primary_color }}"
         ></pretalx-schedule>
         <noscript class="d-block">
-            <div class="alert alert-info m-4">
+            <div class="alert info m-4">
                 <div></div>
                 <div>
                     {% blocktranslate trimmed with href=request.event.urls.schedule_nojs %}

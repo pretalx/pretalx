@@ -18,7 +18,7 @@
     {% has_perm "submission.list_reviewers_review" request.user submission as can_view_reviewer_names %}
     {% has_perm "person.reviewer_list_speakerprofile" request.user submission as no_anonymisation %}
     {% if request.user in submission.speakers.all %}
-        <div class="alert alert-error">
+        <div class="alert error">
             <span>
                 {% blocktranslate trimmed %}
                     You’re not allowed to review or see reviews for your own proposals.
@@ -28,13 +28,13 @@
     {% else %}
         {% if not read_only %}
             {% if request.event.settings.review_help_text %}
-                <div class="alert alert-info">
+                <div class="alert info">
                     <div>
                         <p>{{ request.event.settings.review_help_text|rich_text }}</p>
                     </div>
                 </div>
             {% elif not form.instance.pk and not can_view_other_reviews and request.event.active_review_phase and request.event.active_review_phase.can_see_other_reviews == "after_review" %}
-                <div class="alert alert-info">
+                <div class="alert info">
                     <p>
                         {% blocktranslate trimmed %}
                             You will be able to see other reviews once you have given yours.
