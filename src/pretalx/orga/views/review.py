@@ -286,7 +286,6 @@ class ReviewDashboard(EventPermissionRequired, SubmissionListMixin, ListView):
         # Do NOT use len() here! It yields a different result.
         result["missing_reviews"] = missing_reviews.count()
         result["next_submission"] = missing_reviews[0] if missing_reviews else None
-        result["pagination_sizes"] = [50, 100, 250, 100_000]
         return result
 
     def get_pending(self, request):

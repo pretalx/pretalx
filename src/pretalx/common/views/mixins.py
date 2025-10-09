@@ -352,7 +352,6 @@ class PaginationMixin:
         ctx = super().get_context_data(**kwargs)
         if isinstance(self, CRUDView) and self.action != "list":
             return ctx
-        ctx["pagination_sizes"] = [50, 100, 250]
         return ctx
 
 

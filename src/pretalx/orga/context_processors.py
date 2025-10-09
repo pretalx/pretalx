@@ -71,4 +71,6 @@ def orga_events(request):
             context["new_session"] = child_session
             request.session["event_access"] = True
 
+    context["pagination_sizes"] = [50, 100, 250]
+
     return context
