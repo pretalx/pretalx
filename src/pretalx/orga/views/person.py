@@ -73,7 +73,7 @@ class UserSettings(TemplateView):
         elif self.token_form.is_bound and self.token_form.is_valid():
             token = self.token_form.save()
             if token:
-                messages.success(
+                messages.info(
                     request,
                     _(
                         "This is your new API token. Please make sure to save it, as it will not be shown again:"

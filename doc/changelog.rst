@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`orga,2151` Generated API tokens are now shown as info instead of success message in a different color to make them easier to recognize.
 - :developer:`dev,1964` If your plugin provides an exporter, you can likely simplify it. If you split up the ``identifier`` into a ``filename_identifier`` and an ``extension`` property, you can then use the ``filename`` property to get a standardised filename including the event name, your exporter's name, and a timestamp, just like all pretalx exporters now do. You can also delegate that part to pretalx by implementing the new ``get_data`` method instead of ``render`` if you set a ``content_type`` attribute on your exporter class.
 - :feature:`administrator,2155` Administrators of self-hosted instances can now change the maximum page size of API responses.
 - :announcement:`dev` In an effort to make our pages smaller and faster, we reworked our static files. They are now broken up into smaller chunks, and are placed in different locations. If you use any upstream static files explicitly, please check if they are impacted. Please also do a quick visual inspection of your plugin pages to make sure that you were not relying on styles or scripts that used to be included in all pages and are now only included on the relevant pages. You can a detailed list of changes in our `2025.2.0 release notes <https://gist.github.com/rixx/0dc12119daf467d93b7bc822f63f90e3>`_.
