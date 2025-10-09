@@ -538,7 +538,7 @@ export default {
 .c-grid-schedule
 	flex: auto
 	.grid
-		background-color: $clr-grey-50
+		background-color: var(--color-grey-lightest)
 		display: grid
 		grid-template-columns: 78px repeat(var(--total-rooms), 1fr) auto
 		// grid-gap: 8px
@@ -555,49 +555,49 @@ export default {
 			justify-content: center
 			align-items: center
 			font-size: 18px
-			background-color: $clr-white
-			border-bottom: border-separator()
+			background-color: var(--color-bg)
+			border-bottom: 1px solid var(--color-grey-lighter)
 			z-index: 20
 			.hide-room
-				color: $clr-secondary-text-light
+				color: var(--color-text-muted)
 				font-size: 14px
 				margin-left: 16px
 				cursor: pointer
 				padding: 4px 8px
 				border-radius: 4px
 				&:hover
-					background-color: $clr-grey-200
+					background-color: var(--color-grey-lighter)
 		.c-linear-schedule-session
 			z-index: 10
 	.timeslice
-		color: $clr-secondary-text-light
+		color: var(--color-text-muted)
 		padding: 8px 10px 0 10px
 		white-space: nowrap
 		position: sticky
 		left: 0
 		text-align: center
-		background-color: $clr-grey-50
-		border-top: 1px solid $clr-dividers-light
+		background-color: var(--color-grey-lightest)
+		border-top: 1px solid var(--color-grey-light)
 		z-index: 20
 		.expand
 			display: none
 		&.datebreak
 			font-weight: 600
-			border-top: 3px solid $clr-dividers-light
+			border-top: 3px solid var(--color-grey-light)
 			white-space: pre
 		&.expandable:hover
-			background-color: $clr-grey-200
+			background-color: var(--color-grey-lighter)
 			cursor: pointer
 			.expand
 				display: block
 				width: 20px
 				margin: 4px auto
 				path
-					fill: $clr-grey-500
+					fill: var(--color-grey-medium)
 
 	.timeseparator
 		height: 1px
-		background-color: $clr-dividers-light
+		background-color: var(--color-grey-light)
 		position: absolute
 		// transform: translate(-16px, -8px)
 		width: 100%
@@ -606,19 +606,19 @@ export default {
 .bunt-scrollbar-rail-wrapper-x, .bunt-scrollbar-rail-wrapper-y
 	z-index: 30
 .availability
-	background-color: white
+	background-color: var(--color-bg)
 	pointer-events: none
 	&.active
-		background-color: rgba(56, 158, 119, 0.1)
+		background-color: s("color-mix(in srgb, var(--color-primary), transparent 90%)")
 #hiddenRooms
 	position: fixed
 	z-index: 500
 	bottom: 0
 	right: 0
 	width: 300px;
-	background-color: $clr-white
+	background-color: var(--color-bg)
 	padding: 8px 16px
-	box-shadow: 0 0 10px rgba(0, 0, 0, 0.3)
+	box-shadow: 0 0 10px var(--color-card-border)
 	border-top-left-radius: 8px
 	font-size: 16px
 
@@ -630,7 +630,7 @@ export default {
 			display: block
 
 	.room-entry
-		border-bottom: border-separator()
+		border-bottom: 1px solid var(--color-grey-lighter)
 		display: flex
 		justify-content: space-between
 		align-items: center
@@ -638,11 +638,11 @@ export default {
 		padding: 4px 0
 		cursor: pointer
 		.show-room
-			color: $clr-secondary-text-light
+			color: var(--color-text-muted)
 			font-size: 14px
 			margin-left: 16px
 			padding: 4px 8px
 			border-radius: 4px
 		&:hover
-			background-color: $clr-grey-100
+			background-color: var(--color-grey-lightest)
 </style>

@@ -121,7 +121,7 @@ export default {
 	min-height: 96px
 	margin: 8px
 	overflow: hidden
-	color: $clr-primary-text-light
+	color: var(--color-text)
 	position: relative
 	cursor: pointer
 	&.clone
@@ -130,33 +130,34 @@ export default {
 		filter: opacity(0.3)
 		cursor: inherit
 	&.isbreak
-		background-color: $clr-grey-200
+		background-color: var(--color-grey-lighter)
 		border-radius: 6px
 		.time-box
-			background-color: $clr-grey-500
+			background-color: var(--color-grey-medium)
 			.start
-				color: $clr-primary-text-dark
+				color: var(--color-text)
 			.duration
-				color: $clr-secondary-text-dark
+				color: var(--color-white)
 		.info
 			justify-content: center
 			align-items: center
 			.title
 				font-size: 20px
-				color: $clr-secondary-text-light
+				color: var(--color-text-muted)
 				align: center
 	&.istalk
 		.time-box
 			background-color: var(--track-color)
 			.start
-				color: $clr-primary-text-dark
+				color: var(--color-text)
 			.duration
-				color: $clr-secondary-text-dark
+				color: var(--color-white)
+				font-weight: 500
 		.info
-			border: border-separator()
+			border: 1px solid var(--color-grey-lighter)
 			border-left: none
 			border-radius: 0 6px 6px 0
-			background-color: $clr-white
+			background-color: var(--color-bg)
 			.title
 				font-size: 16px
 				margin-bottom: 4px
@@ -170,7 +171,7 @@ export default {
 		.time-box
 			opacity: 0.5
 		.info
-			background-image: repeating-linear-gradient(-38deg, $clr-grey-100, $clr-grey-100 10px, $clr-white 10px, $clr-white 20px)
+			background-image: repeating-linear-gradient(-38deg, var(--color-grey-lightest), var(--color-grey-lightest) 10px, var(--color-bg) 10px, var(--color-bg) 20px)
 		&:hover
 			.info
 				border: 1px solid var(--track-color)
@@ -209,7 +210,7 @@ export default {
 		.title
 			font-weight: 500
 		.speakers
-			color: $clr-secondary-text-light
+			color: var(--color-text-muted)
 		.bottom-info
 			flex: auto
 			display: flex
@@ -220,7 +221,7 @@ export default {
 				ellipsis()
 				margin-right: 4px
 	.pending-line
-		color: $clr-warning
+		color: var(--color-warning)
 		.fa
 			margin-right: 4px
 	.warning
@@ -229,13 +230,13 @@ export default {
 		right: 0
 		padding: 4px 4px
 		margin: 4px
-		color: #b23e65
+		color: var(--color-danger)
 		font-size: 16px
 		.warning-icon span
 			padding-right: 4px
 @media print
 	.c-linear-schedule-session.isbreak
-		border: 2px solid $clr-grey-300 !important
+		border: 2px solid var(--color-grey-light) !important
 	.c-linear-schedule-session.istalk .time-box
 		border: 2px solid var(--track-color) !important
 	.c-linear-schedule-session.istalk .info

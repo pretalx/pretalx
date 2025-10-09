@@ -19,9 +19,9 @@
   }
 
   &:after {
-    background: rgb(17 17 17 / 0.9);
+    background: var(--color-grey-dark);
     border-radius: var(--size-border-radius);
-    color: #ffffff;
+    color: var(--color-white);
     content: attr(title);
     font-size: 13px;
     font-weight: normal;
