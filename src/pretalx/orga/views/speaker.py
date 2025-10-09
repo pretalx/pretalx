@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
@@ -13,18 +14,21 @@ from pretalx.common.exceptions import SendMailException
 from pretalx.common.image import gravatar_csp
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import api_buttons
-from pretalx.common.views.generic import CreateOrUpdateView, OrgaCRUDView, get_next_url
+from pretalx.common.views.generic import (
+    CreateOrUpdateView,
+    OrgaCRUDView,
+    OrgaTableMixin,
+    get_next_url,
+)
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     ActionFromUrl,
     EventPermissionRequired,
     Filterable,
-    PaginationMixin,
     PermissionRequired,
-    Sortable,
 )
 from pretalx.orga.forms.speaker import SpeakerExportForm
-from pretalx.orga.tables.speaker import SpeakerInformationTable
+from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
 from pretalx.person.forms import (
     SpeakerFilterForm,
     SpeakerInformationForm,
@@ -38,11 +42,10 @@ from pretalx.submission.models.submission import SubmissionStates
 from pretalx.submission.rules import limit_for_reviewers, speaker_profiles_for_user
 
 
-class SpeakerList(
-    EventPermissionRequired, Sortable, Filterable, PaginationMixin, ListView
-):
+class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     template_name = "orga/speaker/list.html"
     context_object_name = "speakers"
+    table_class = SpeakerTable
     default_filters = ("user__email__icontains", "user__name__icontains")
     sortable_fields = ("user__email", "user__name")
     default_sort_field = "user__name"
@@ -100,8 +103,20 @@ class SpeakerList(
                 question_id=question, person_id=OuterRef("user_id")
             )
             qs = qs.annotate(has_answer=Exists(answers)).filter(has_answer=False)
-        qs = qs.order_by("id").distinct()
-        return self.sort_queryset(qs)
+        return qs.order_by("id").distinct().order_by(Lower("user__name"))
+
+    def get_table_data(self):
+        return self.get_queryset()
+
+    def get_table_kwargs(self):
+        result = super().get_table_kwargs()
+        result["has_arrived_permission"] = self.request.user.has_perm(
+            "person.mark_arrived_speakerprofile", self.request.event
+        )
+        result["has_update_permission"] = self.request.user.has_perm(
+            "person.update_speakerprofile", self.request.event
+        )
+        return result
 
 
 class SpeakerViewMixin(PermissionRequired):
