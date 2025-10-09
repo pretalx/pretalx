@@ -1,0 +1,14 @@
+{% load i18n %}
+
+{% if record.accepted_submission_count %}
+    {% if table.has_arrived_permission %}
+        {% include "orga/includes/mark_speakers_arrived.html" with speaker=record arrived_btn_class="btn-sm" %}
+    {% else %}
+        {% if record.has_arrived %}
+            <a><i class="fa fa-check"></i> {% translate "Arrived" %}</a>
+        {% else %}
+            <a><i class="fa fa-times"></i> {% translate "Not arrived" %}</a>
+        {% endif %}
+    {% endif %}
+    </td>
+{% endif %}
