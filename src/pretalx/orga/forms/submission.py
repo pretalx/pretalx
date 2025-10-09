@@ -145,7 +145,9 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             self.add_error(
                 "room",
                 forms.ValidationError(
-                    _("You cannot assign a room without setting the start time as well.")
+                    _(
+                        "You cannot assign a room without setting the start time as well."
+                    )
                 ),
             )
         if start and not room:

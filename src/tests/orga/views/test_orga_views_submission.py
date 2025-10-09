@@ -553,7 +553,9 @@ def test_orga_can_edit_submission_wrong_answer(
 
 
 @pytest.mark.django_db
-def test_orga_can_edit_submission_duration(orga_client, event, accepted_submission, room):
+def test_orga_can_edit_submission_duration(
+    orga_client, event, accepted_submission, room
+):
     with scope(event=event):
         slot = accepted_submission.slots.filter(schedule=event.wip_schedule).first()
         slot.start = event.datetime_from + dt.timedelta(hours=10)
