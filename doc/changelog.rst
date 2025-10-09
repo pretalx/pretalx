@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :bug:`orga:submission,2147` The room, start and end times of submissions can now be edited.
 - :feature:`dev` Plugins can now inject additional form elements in the organisers area with the ``form_signal`` similar to ``html_signal``.
 - :feature:`cfp` Uploaded resources can now be marked as private (available only to organisers).
 - :feature:`cfp` Organisers can now define an optional opening date before which no submissions can be made.
