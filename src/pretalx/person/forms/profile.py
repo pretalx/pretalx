@@ -1,6 +1,5 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from django.db.models import Count, Q
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
@@ -327,28 +326,12 @@ class UserSpeakerFilterForm(forms.Form):
         else:
             self.fields.pop("events")
 
-    def filter_queryset(self, queryset):
+    def filter_queryset(self, qs):
         data = self.cleaned_data
-        events = data.get("events") or self.events
         role = data.get("role") or "speaker"
 
-        qs = (
-            queryset.filter(profiles__event__in=events)
-            .prefetch_related("profiles", "profiles__event")
-            .annotate(
-                submission_count=Count(
-                    "submissions",
-                    filter=Q(submissions__event__in=events),
-                    distinct=True,
-                ),
-                accepted_submission_count=Count(
-                    "submissions",
-                    filter=Q(submissions__event__in=events)
-                    & Q(submissions__state__in=SubmissionStates.accepted_states),
-                    distinct=True,
-                ),
-            )
-        )
+        if events := data.get("events"):
+            qs = qs.filter(profiles__event__in=events)
         if role == "speaker":
             qs = qs.filter(accepted_submission_count__gt=0)
         elif role == "submitter":
