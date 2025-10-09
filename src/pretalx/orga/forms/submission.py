@@ -38,16 +38,8 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             if slot:
                 initial_slot = {
                     "room": slot.room,
-                    "start": (
-                        slot.local_start.strftime("%Y-%m-%dT%H:%M")
-                        if slot.local_start
-                        else ""
-                    ),
-                    "end": (
-                        slot.local_end.strftime("%Y-%m-%dT%H:%M")
-                        if slot.real_end
-                        else ""
-                    ),
+                    "start": slot.local_start,
+                    "end": slot.local_end,
                 }
         if anonymise:
             kwargs.pop("initial", None)
@@ -141,11 +133,28 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
         data = super().clean()
         start = data.get("start")
         end = data.get("end")
+        room = data.get("room")
         if start and end and start > end:
             self.add_error(
                 "end",
                 forms.ValidationError(
                     _("The end time has to be after the start time."),
+                ),
+            )
+        if room and not start:
+            self.add_error(
+                "room",
+                forms.ValidationError(
+                    _(
+                        "You cannot assign a room without setting the start time as well."
+                    )
+                ),
+            )
+        if start and not room:
+            self.add_error(
+                "start",
+                forms.ValidationError(
+                    _("You cannot set a start time without assigning the room as well.")
                 ),
             )
         return data
@@ -178,6 +187,14 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             slot.start = self.cleaned_data.get("start")
             slot.end = self.cleaned_data.get("end")
             slot.save()
+            task_update_unreleased_schedule_changes.apply_async(
+                kwargs={"event": self.event.slug}
+            )
+        if not self.cleaned_data.get("start") and any(
+            field in self.changed_data for field in ("room", "start", "end")
+        ):
+            instance.slots.filter(schedule=instance.event.wip_schedule).delete()
+            instance.update_talk_slots()
             task_update_unreleased_schedule_changes.apply_async(
                 kwargs={"event": self.event.slug}
             )
