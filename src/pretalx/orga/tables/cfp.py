@@ -56,8 +56,9 @@ class SubmitterAccessCodeTable(PretalxTable):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.exclude = list(self.exclude)
         if not self.event.get_feature_flag("use_tracks"):
-            self.columns["track"].hide()
+            self.exclude.append("track")
 
     class Meta:
         model = SubmitterAccessCode
