@@ -20,7 +20,6 @@ from django.views.generic import FormView, View
 from django.views.generic.detail import SingleObjectTemplateResponseMixin
 from django.views.generic.edit import ModelFormMixin, ProcessFormView
 from django_context_decorator import context
-from django_tables2 import LazyPaginator
 from django_tables2.views import SingleTableMixin
 
 from pretalx.cfp.forms.auth import ResetForm
@@ -560,7 +559,6 @@ class CRUDView(PaginationMixin, Filterable, View):
 
 
 class OrgaTableMixin(SingleTableMixin):
-    pagination_class = LazyPaginator
     table_class = None
     DEFAULT_PAGINATION = 50
 

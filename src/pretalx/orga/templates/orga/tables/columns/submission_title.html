@@ -1,0 +1,5 @@
+{% if not table.can_view_speakers and record.is_anonymised %}
+  {{ record.anonymised.title|default:record.title }}
+{% else %}
+  {{ record.title }}
+{% endif %}

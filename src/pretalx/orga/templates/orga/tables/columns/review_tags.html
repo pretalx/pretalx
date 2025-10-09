@@ -1,0 +1,5 @@
+<div class="d-flex flex-column">
+  {% for tag in record.tags.all %}
+    {{ tag.tag }}
+  {% endfor %}
+</div>

@@ -1,20 +1,33 @@
-import statistics
 from collections import defaultdict
 from contextlib import suppress
 
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Count, Max, OuterRef, Q, Subquery
+from django.db.models import (
+    Avg,
+    Case,
+    Count,
+    Exists,
+    F,
+    IntegerField,
+    Max,
+    OuterRef,
+    Q,
+    Subquery,
+    When,
+)
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, ListView, TemplateView
 from django_context_decorator import context
 
+from pretalx.common.db import Median
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, api_buttons
 from pretalx.common.views import CreateOrUpdateView
+from pretalx.common.views.generic import OrgaTableMixin
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     EventPermissionRequired,
@@ -30,6 +43,7 @@ from pretalx.orga.forms.review import (
     TagsForm,
 )
 from pretalx.orga.forms.submission import SubmissionStateChangeForm
+from pretalx.orga.tables.submission import ReviewTable
 from pretalx.orga.views.submission import SubmissionListMixin
 from pretalx.person.models import User
 from pretalx.submission.forms import QuestionsForm, SubmissionFilterForm
@@ -41,11 +55,13 @@ from pretalx.submission.rules import (
 )
 
 
-class ReviewDashboard(EventPermissionRequired, SubmissionListMixin, ListView):
+class ReviewDashboard(
+    EventPermissionRequired, SubmissionListMixin, OrgaTableMixin, ListView
+):
     template_name = "orga/review/dashboard.html"
     permission_required = "submission.list_review"
-    paginate_by = 100
-    max_page_size = 100_000
+    table_class = ReviewTable
+    paginate_by = 250
     usable_states = (
         SubmissionStates.SUBMITTED,
         SubmissionStates.ACCEPTED,
@@ -71,7 +87,9 @@ class ReviewDashboard(EventPermissionRequired, SubmissionListMixin, ListView):
         return queryset
 
     def get_queryset(self):
-        aggregate_method = self.request.event.review_settings["aggregate_method"]
+        user_reviews = Review.objects.filter(
+            user=self.request.user, submission_id=OuterRef("pk")
+        ).values("score")
         queryset = (
             self._get_base_queryset(for_review=True)
             .filter(state__in=self.usable_states)
@@ -80,119 +98,58 @@ class ReviewDashboard(EventPermissionRequired, SubmissionListMixin, ListView):
                 review_nonnull_count=Count(
                     "reviews", distinct=True, filter=Q(reviews__score__isnull=False)
                 ),
+                state_rank=Case(
+                    When(state=SubmissionStates.SUBMITTED, then=1),
+                    When(state=SubmissionStates.ACCEPTED, then=2),
+                    When(state=SubmissionStates.CONFIRMED, then=3),
+                    When(state=SubmissionStates.REJECTED, then=4),
+                    default=5,
+                    output_field=IntegerField(),
+                ),
+                is_assigned=Exists(
+                    self.request.user.assigned_reviews.filter(pk=OuterRef("pk"))
+                ),
+                user_score=Subquery(user_reviews),
             )
         )
         queryset = self.filter_range(queryset)
 
-        user_reviews = Review.objects.filter(
-            user=self.request.user, submission_id=OuterRef("pk")
-        ).values("score")
-
-        queryset = (
-            queryset.annotate(user_score=Subquery(user_reviews))
-            .select_related("track", "submission_type")
-            .prefetch_related(
-                "speakers",
-                "reviews",
-                "reviews__user",
-                "reviews__scores",
-                "tags",
-                "answers",
-                "answers__options",
-                "answers__question",
+        if self.can_see_all_reviews:
+            queryset = queryset.annotate(
+                median_score=Median(
+                    "reviews__score",
+                    filter=Q(reviews__score__isnull=False),
+                ),
+                mean_score=Avg(
+                    "reviews__score", filter=Q(reviews__score__isnull=False)
+                ),
             )
+
+        queryset = queryset.select_related("track", "submission_type").prefetch_related(
+            "speakers",
+            "reviews",
+            "reviews__user",
+            "reviews__scores",
+            "tags",
+            "answers",
+            "answers__options",
+            "answers__question",
         )
 
-        for submission in queryset:
+        if not self.request.GET.get("sort"):
             if self.can_see_all_reviews:
-                submission.current_score = (
-                    submission.median_score
-                    if aggregate_method == "median"
-                    else submission.mean_score
-                )
-                if (
-                    self.independent_categories
-                ):  # Assemble medians/means on the fly. Yay.
-                    independent_ids = [cat.pk for cat in self.independent_categories]
-                    mapping = defaultdict(list)
-                    for review in submission.reviews.all():
-                        for score in review.scores.all():
-                            if score.category_id in independent_ids:
-                                mapping[score.category_id].append(score.value)
-                    mapping = {
-                        key: round(statistics.fmean(value), 1)
-                        for key, value in mapping.items()
-                    }
-                    result = []
-                    for category in self.independent_categories:
-                        result.append(mapping.get(category.pk))
-                    submission.independent_scores = result
+                aggregate_method = self.request.event.review_settings[
+                    "aggregate_method"
+                ]
+                score_field = f"{aggregate_method}_score"
             else:
-                reviews = [
-                    review
-                    for review in submission.reviews.all()
-                    if review.user == self.request.user
-                ]
-                submission.current_score = None
-                if reviews:
-                    review = reviews[0]
-                    submission.current_score = review.score
-                    if self.independent_categories:
-                        mapping = {
-                            score.category_id: score.value
-                            for score in review.scores.all()
-                        }
-                        result = []
-                        for category in self.independent_categories:
-                            result.append(mapping.get(category.pk))
-                        submission.independent_scores = result
-                elif self.independent_categories:
-                    submission.independent_scores = [
-                        None for _ in range(len(self.independent_categories))
-                    ]
-            if self.short_questions:
-                answers = {
-                    answer.question_id: answer for answer in submission.answers.all()
-                }
-                submission.short_answers = [
-                    answers.get(
-                        question.id,
-                        {"question_id": question.id, "answer_string": ""},
-                    )
-                    for question in self.short_questions
-                ]
+                score_field = "user_score"
 
-        return self.sort_queryset(queryset)
+            queryset = queryset.order_by(
+                "state_rank", "state", F(score_field).desc(nulls_last=True), "code"
+            )
 
-    def sort_queryset(self, qs):
-        order_prevalence = {
-            "default": ("is_assigned", "state", "current_score", "code"),
-            "score": ("current_score", "state", "code"),
-            "my_score": ("user_score", "current_score", "state", "code"),
-            "count": ("review_nonnull_count", "code"),
-        }
-        ordering = self.request.GET.get("sort", "default")
-        reverse = True
-        if ordering.startswith("-"):
-            reverse = False
-            ordering = ordering[1:]
-
-        order = order_prevalence.get(ordering, order_prevalence["default"])
-
-        def get_order_tuple(obj):
-            result = []
-            for key in order:
-                value = getattr(obj, key)
-                if value is None:
-                    value = 100 * -int(reverse or -1)
-                result.append(value)
-            return tuple(result)
-
-        return sorted(
-            qs,
-            key=get_order_tuple,
-            reverse=reverse,
-        )
+        return queryset
 
     @context
     @cached_property
@@ -279,6 +236,45 @@ class ReviewDashboard(EventPermissionRequired, SubmissionListMixin, ListView):
     @cached_property
     def reviews_open(self):
         return reviews_are_open(None, self.request.event)
+
+    def get_table_kwargs(self):
+        """Pass additional kwargs to the ReviewTable."""
+        kwargs = super().get_table_kwargs()
+
+        # Build exclude list for columns that shouldn't be shown
+        exclude = []
+        if not self.show_tracks:
+            exclude.append("track")
+        if not (
+            bool(self.filter_form.cleaned_data.get("tags"))
+            if hasattr(self.filter_form, "cleaned_data")
+            else False
+        ):
+            exclude.append("tags")
+        if not self.show_submission_types:
+            exclude.append("submission_type")
+
+        kwargs.update(
+            {
+                "can_see_all_reviews": self.can_see_all_reviews,
+                "is_reviewer": self.request.user.has_perm(
+                    "submission.create_review", self.request.event
+                )
+                or self.submissions_reviewed,
+                "can_view_speakers": self.request.user.has_perm(
+                    "person.reviewer_list_speakerprofile", self.request.event
+                ),
+                "can_accept_submissions": self.can_accept_submissions,
+                "independent_categories": self.independent_categories,
+                "short_questions": list(self.short_questions),
+                "aggregate_method": self.request.event.review_settings[
+                    "aggregate_method"
+                ],
+                "request_user": self.request.user,
+                "exclude": exclude,
+            }
+        )
+        return kwargs
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)

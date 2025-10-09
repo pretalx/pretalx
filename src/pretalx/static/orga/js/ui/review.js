@@ -25,26 +25,6 @@ if (slider) {
         set: [parseInt(minInitial), parseInt(maxInitial)],
     })
 }
-/*
- * COLUMN SELECTION
- */
-
-const updateColumnVisibility = (ev) => {
-    if (ev.target.checked) {
-        document
-            .querySelectorAll(`.${ev.target.id}`)
-            .forEach((e) => e.classList.remove("d-none"))
-    } else {
-        document
-            .querySelectorAll(`.${ev.target.id}`)
-            .forEach((e) => e.classList.add("d-none"))
-    }
-}
-document
-    .querySelectorAll("#column-select input[type=checkbox]")
-    .forEach((element) =>
-        element.addEventListener("change", updateColumnVisibility),
-    )
 
 /*
  * REVIEW SELECTION
