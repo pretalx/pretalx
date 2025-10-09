@@ -9,11 +9,12 @@ class TeamTable(PretalxTable):
     name = tables.TemplateColumn(
         linkify=lambda record: record.orga_urls.base,
         verbose_name=_("Name"),
-        template_code='{% load i18n %}{{ record.name }} {% if request.user in record.members.all %}<i class="fa fa-star text-warning" title="{% translate "You are a member of this team" %}"></i>{% endif %}',
+        template_name="orga/tables/columns/team_name.html",
     )
     member_count = tables.Column(
         verbose_name=_("Members"),
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
+        initial_sort_descending=True,
     )
     all_events = BooleanIconColumn(verbose_name=_("All events"))
     is_reviewer = BooleanIconColumn(verbose_name=_("Reviewer"))

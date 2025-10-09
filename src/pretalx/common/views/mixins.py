@@ -6,9 +6,7 @@ from urllib.parse import quote
 from csp.decorators import csp_exempt
 from django import forms
 from django.conf import settings
-from django.core.exceptions import FieldDoesNotExist
-from django.db.models import CharField, Q
-from django.db.models.functions import Lower
+from django.db.models import Q
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
@@ -63,70 +61,6 @@ class ActionFromUrl:
         if event and issubclass(self.form_class, PretalxI18nModelForm):
             kwargs["locales"] = event.locales
         return kwargs
-
-
-class Sortable:
-    """
-    Handles queryset sorting. Will figure out if a field is a text field and sort by
-    Lower() if so.
-
-    In the main class, you'll have to call sort_queryset() in get_queryset.
-    In the template, do this:
-
-    <th>
-        {% trans "Title" %}
-        <a href="{% querystring sort='-title' %}"><i class="fa fa-caret-down"></i></a>
-        <a href="{% querystring sort='title' %}"><i class="fa fa-caret-up"></i></a>
-    </th>
-    """
-
-    sortable_fields = []
-    secondary_sort = {}
-    default_sort_field = None
-
-    def _get_secondary_sort(self, key):
-        secondary_sort_config = getattr(self, "secondary_sort", None) or {}
-        return list(secondary_sort_config.get(key, []) or [])
-
-    def _sort_queryset(self, qs, fields):
-        fields = [key for key in fields if key]
-        # If the model does not have a Meta.ordering, we need to add a
-        # final sort key to make sure the sorting is stable.
-        if not qs.model._meta.ordering and "pk" not in fields and "-pk" not in fields:
-            fields += ["pk"]
-        if fields:
-            qs = qs.order_by(*fields)
-        return qs
-
-    def sort_queryset(self, qs):
-        sort_key = self.request.GET.get("sort") or ""
-        if not sort_key or sort_key == "default":
-            sort_key = getattr(self, "default_sort_field", None) or ""
-        plain_key = sort_key[1:] if sort_key.startswith("-") else sort_key
-        if plain_key not in self.sortable_fields:
-            return self._sort_queryset(qs, self._get_secondary_sort(""))
-
-        is_text = False
-        if "__" not in plain_key:
-            with suppress(FieldDoesNotExist):
-                is_text = isinstance(qs.model._meta.get_field(plain_key), CharField)
-        else:
-            split_key = plain_key.split("__")
-            if len(split_key) == 2:
-                is_text = isinstance(
-                    qs.model._meta.get_field(
-                        split_key[0]
-                    ).related_model._meta.get_field(split_key[1]),
-                    CharField,
-                )
-
-        if is_text:
-            # TODO: this only sorts direct lookups case insensitively
-            # A sorting field like 'speaker__name' will not be found
-            qs = qs.annotate(key=Lower(plain_key))
-            sort_key = "-key" if plain_key != sort_key else "key"
-
-        return self._sort_queryset(qs, [sort_key] + self._get_secondary_sort(plain_key))
 
 
 class Filterable:

@@ -1159,9 +1159,13 @@ pre {
 .copyable-text {
   cursor: pointer;
   &:hover {
-    background: $gray-lightest;
-    box-shadow: 0px 0px 4px 4px $gray-lightest;
+    background: var(--color-grey-lightest);
+    box-shadow: 0px 0px 4px 4px var(--color-grey-lightest);
   }
+}
+table .copyable-text:hover {
+  background: var(--color-grey-lighter);
+  box-shadow: 0px 0px 4px 4px var(--color-grey-lighter);
 }
 
 /* Media queries */

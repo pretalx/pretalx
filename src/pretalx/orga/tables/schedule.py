@@ -1,20 +1,18 @@
 import django_tables2 as tables
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.tables import ActionsColumn, PretalxTable
+from pretalx.common.tables import ActionsColumn, PretalxTable, UnsortableMixin
 from pretalx.schedule.models import Room
 
 
-class RoomTable(PretalxTable):
+class RoomTable(UnsortableMixin, PretalxTable):
     name = tables.Column(
         linkify=lambda record: record.urls.settings_base,
         verbose_name=_("Name"),
-        orderable=False,
     )
     capacity = tables.Column(
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
         default="",
-        orderable=False,
     )
     actions = ActionsColumn(
         actions={

@@ -1,0 +1,9 @@
+<ul>
+  {% for team in record.teams.all %}
+    <li>
+      <a href="{{ team.urls.base }}">
+        {{ team.name }}
+      </a>
+    </li>
+  {% endfor %}
+</ul>

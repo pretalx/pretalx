@@ -1,0 +1,9 @@
+<ul>
+  {% for event in record.get_events_with_any_permission %}
+    <li>
+      <a href="{{ event.orga_urls.base }}">
+        {{ event.name }}
+      </a>
+    </li>
+  {% endfor %}
+</ul>
