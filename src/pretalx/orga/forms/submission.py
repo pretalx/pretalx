@@ -38,16 +38,8 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             if slot:
                 initial_slot = {
                     "room": slot.room,
-                    "start": (
-                        slot.local_start.strftime("%Y-%m-%dT%H:%M")
-                        if slot.local_start
-                        else ""
-                    ),
-                    "end": (
-                        slot.local_end.strftime("%Y-%m-%dT%H:%M")
-                        if slot.real_end
-                        else ""
-                    ),
+                    "start": slot.local_start,
+                    "end": slot.local_end,
                 }
         if anonymise:
             kwargs.pop("initial", None)
