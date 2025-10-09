@@ -1,5 +1,6 @@
 import django_tables2 as tables
 from django.db.models.functions import Lower
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import (
@@ -70,3 +71,22 @@ class SpeakerTable(PretalxTable):
             "submission_count",
             "has_arrived",
         )
+
+
+class SpeakerOrgaTable(SpeakerTable):
+    name = SortableTemplateColumn(
+        verbose_name=_("Name"),
+        order_by=Lower("name"),
+        template_code='{% include "orga/includes/user_name.html" with user=record %}',
+    )
+    email = tables.Column(linkify=lambda record: f"mailto:{record.email}")
+    has_arrived = None
+
+    @cached_property
+    def paginated_rows(self):
+        # We need to cache this data to stay inside the scopes_disabled context
+        return super().paginated_rows
+
+    class Meta:
+        model = SpeakerProfile
+        fields = ("name", "email", "submission_count", "accepted_submission_count")

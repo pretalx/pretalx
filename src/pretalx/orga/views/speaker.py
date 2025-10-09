@@ -47,8 +47,6 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
     context_object_name = "speakers"
     table_class = SpeakerTable
     default_filters = ("user__email__icontains", "user__name__icontains")
-    sortable_fields = ("user__email", "user__name")
-    default_sort_field = "user__name"
     permission_required = "person.orga_list_speakerprofile"
 
     def get_filter_form(self):

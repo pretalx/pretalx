@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponseRedirect, JsonResponse
@@ -15,13 +16,11 @@ from pretalx.common.exceptions import SendMailException
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, delete_link
 from pretalx.common.views import CreateOrUpdateView
-from pretalx.common.views.generic import OrgaCRUDView
+from pretalx.common.views.generic import OrgaCRUDView, OrgaTableMixin
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     Filterable,
-    PaginationMixin,
     PermissionRequired,
-    Sortable,
 )
 from pretalx.event.forms import OrganiserForm, TeamForm, TeamInviteForm
 from pretalx.event.models import Event
@@ -32,8 +31,10 @@ from pretalx.event.models.organiser import (
     check_access_permissions,
 )
 from pretalx.orga.tables.organiser import TeamTable
+from pretalx.orga.tables.speaker import SpeakerOrgaTable
 from pretalx.person.forms import UserSpeakerFilterForm
 from pretalx.person.models import User
+from pretalx.submission.models.submission import SubmissionStates
 
 
 class TeamView(OrgaCRUDView):
@@ -405,15 +406,15 @@ def get_speaker_access_events_for_user(*, user, organiser):
 
 
 @method_decorator(scopes_disabled(), "dispatch")
-class OrganiserSpeakerList(
-    PermissionRequired, Sortable, Filterable, PaginationMixin, ListView
-):
+class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListView):
     template_name = "orga/organiser/speaker_list.html"
     permission_required = "event.view_organiser"
     context_object_name = "speakers"
+    table_class = SpeakerOrgaTable
     default_filters = ("email__icontains", "name__icontains")
     sortable_fields = ("email", "name", "accepted_submission_count", "submission_count")
     default_sort_field = "name"
+    pagination_class = Paginator
 
     def get_permission_object(self):
         return self.request.organiser
@@ -429,8 +430,36 @@ class OrganiserSpeakerList(
         )
 
     def get_queryset(self):
-        qs = self.filter_queryset(User.objects.all())
-        return self.sort_queryset(qs)
+        qs = (
+            User.objects.all()
+            .filter(profiles__event__in=self.events)
+            .prefetch_related("profiles", "profiles__event")
+            .annotate(
+                submission_count=Count(
+                    "submissions",
+                    filter=Q(submissions__event__in=self.events),
+                    distinct=True,
+                ),
+                accepted_submission_count=Count(
+                    "submissions",
+                    filter=Q(submissions__event__in=self.events)
+                    & Q(submissions__state__in=SubmissionStates.accepted_states),
+                    distinct=True,
+                ),
+            )
+        )
+        qs = self.filter_queryset(qs)
+        return qs
+
+    def get_table_data(self):
+        return self.get_queryset()
+
+    def get_table(self, *args, **kwargs):
+        table = super().get_table(*args, **kwargs)
+        len(
+            table.paginated_rows
+        )  # access property to force fetching while scopes disabled
+        return table
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
