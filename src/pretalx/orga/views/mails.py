@@ -92,6 +92,15 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
             self.request.GET, event=self.request.event, sent=False
         )
 
+    def get_table_kwargs(self):
+        kwargs = super().get_table_kwargs()
+        permission = self.request.user.has_perm(
+            "mail.send_queuedmail", self.request.event
+        )
+        kwargs["has_update_permission"] = permission
+        kwargs["has_delete_permission"] = permission
+        return kwargs
+
 
 class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     model = QueuedMail

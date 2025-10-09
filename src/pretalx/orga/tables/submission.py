@@ -55,10 +55,8 @@ class SubmissionTable(PretalxTable):
         self,
         *args,
         can_view_speakers=False,
-        can_change_submission=False,
         show_tracks=False,
         show_submission_types=False,
-        limit_tracks=None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -70,7 +68,7 @@ class SubmissionTable(PretalxTable):
             self.exclude += ["speakers"]
         if not show_tracks:
             self.exclude += ["track"]
-        if not can_change_submission:
+        if not kwargs.get("has_update_permission"):
             self.exclude += ["is_featured", "actions"]
 
         # These values are only for exports

@@ -637,3 +637,9 @@ class OrgaCRUDView(OrgaTableMixin, FormSignalMixin, CRUDView):
     def get_template_names(self):
         result = super().get_template_names()
         return result[:-1] + [f"orga/generic/{self.action}.html"]
+
+    def get_table_kwargs(self):
+        kwargs = super().get_table_kwargs()
+        kwargs["has_update_permission"] = self.has_update_permission
+        kwargs["has_delete_permission"] = self.has_delete_permission
+        return kwargs

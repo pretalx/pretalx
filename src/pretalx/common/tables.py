@@ -14,8 +14,17 @@ def get_icon(icon):
 
 
 class PretalxTable(tables.Table):
-    def __init__(self, *args, event=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        event=None,
+        has_update_permission=False,
+        has_delete_permission=False,
+        **kwargs,
+    ):
         self.event = event
+        self.has_update_permission = has_update_permission
+        self.has_delete_permission = has_delete_permission
         super().__init__(*args, **kwargs)
 
 
@@ -72,6 +81,7 @@ class ActionsColumn(tables.Column):
             "url": "urls.edit",
             "color": "info",
             "condition": None,
+            "permission": "update",
         },
         "delete": {
             "title": _("Delete"),
@@ -80,6 +90,7 @@ class ActionsColumn(tables.Column):
             "next_url": True,
             "color": "danger",
             "condition": None,
+            "permission": "delete",
         },
         "sort": {
             "title": _("Move item"),
@@ -88,17 +99,20 @@ class ActionsColumn(tables.Column):
             "extra_class": "dragsort-button",
             "extra_attrs": 'draggable="true"',
             "condition": None,
+            "permission": "update",
         },
         "copy": {
             "icon": "copy",
             "title": _("Copy access code link"),
             "extra_class": "copyable-text",
             "color": "info",
+            "permission": "update",
         },
         "send": {
             "icon": "envelope",
             "color": "info",
             "url": "urls.send",
+            "permission": "update",
         },
     }
 
@@ -124,12 +138,13 @@ class ActionsColumn(tables.Column):
 
         html = ""
         for action in self.actions.values():
-            if (
-                user
-                and (permission := action.get("permission"))
-                and not user.has_perm(permission, record)
-            ):
-                continue
+            if user and (permission := action.get("permission")):
+                perm_name = f"has_{permission}_permission"
+                if hasattr(table, perm_name):
+                    if not getattr(table, perm_name):
+                        continue
+                elif not user.has_perm(permission, record):
+                    continue
             if (condition := action.get("condition")) and not condition(record):
                 continue
 
