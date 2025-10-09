@@ -76,6 +76,7 @@ class UserSettings(TemplateView):
                         "This is your new API token. Please make sure to save it, as it will not be shown again:"
                     )
                     + f" {token.token}",
+                    extra_tags="info key",
                 )
                 request.user.log_action(
                     "pretalx.user.token.create", data=token.serialize()
