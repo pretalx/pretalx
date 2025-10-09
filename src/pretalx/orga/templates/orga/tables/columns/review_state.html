@@ -1,0 +1,7 @@
+{% load i18n %}
+
+{% include "cfp/event/fragment_state.html" with state=record.state %}
+{% if record.pending_state %}
+    <br>
+    ({% translate "pending" %} {% include "cfp/event/fragment_state.html" with state=record.pending_state %})
+{% endif %}

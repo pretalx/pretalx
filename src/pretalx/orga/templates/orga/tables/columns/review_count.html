@@ -1,0 +1,12 @@
+{% load i18n %}
+
+{{ record.review_nonnull_count|default:"-" }}
+{% if record.review_count != record.review_nonnull_count %} ({{ record.review_count|default:"-" }}){% endif %}
+{% if record.pk in table.submissions_reviewed %}
+    <i class="fa fa-check text-success" title="{% translate "You have reviewed this proposal" %}"></i>
+{% elif request.user in record.speakers.all %}
+    <i class="fa fa-check text-muted" title="{% translate "You cannot review this proposal" %}"></i>
+{% endif %}
+{% if record.is_assigned %}
+    <i class="fa fa-star text-warning" title="{% translate "You have been assigned to this proposal" %}"></i>
+{% endif %}

@@ -1,0 +1,17 @@
+{% load i18n %}
+
+{% if record.state == "submitted" and table.can_accept_submissions %}
+  <div class="action-row d-flex justify-space-around">
+    <div class="radio form-check accept">
+      <input type="radio" id="a-{{ record.code }}" name="s-{{ record.code }}" value="accept">
+      <label for="a-{{ record.code }}" title="{% translate "Accept" %}"></label>
+    </div>
+    <div class="radio form-check reject">
+      <input type="radio" id="r-{{ record.code }}" name="s-{{ record.code }}" value="reject">
+      <label for="r-{{ record.code }}" title="{% translate "Reject" %}"></label>
+    </div>
+    <div class="unmark-radio" title="{% translate "Unset accept/reject vote" %}">
+      <i class="fa fa-ban"></i>
+    </div>
+  </div>
+{% endif %}

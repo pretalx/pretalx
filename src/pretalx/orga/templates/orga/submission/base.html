@@ -41,6 +41,7 @@
                             <button type="submit" class="btn btn-info" href="{{ request.event.orga_urls.apply_pending }}">
                                 {% translate "Apply pending changes" %}
                             </button>
+                        </form>
                     {% endif %}
                 {% else %}
                     {% include "cfp/event/fragment_state.html" with state=submission.state as_badge=True %}

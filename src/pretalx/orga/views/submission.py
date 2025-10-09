@@ -570,7 +570,10 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
 
     def get_queryset(self):
         return (
-            self._get_base_queryset().distinct().select_related("event", "event__cfp")
+            self._get_base_queryset()
+            .order_by("id")
+            .distinct()
+            .select_related("event", "event__cfp")
         )
 
     def get_table_kwargs(self):
@@ -578,15 +581,21 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
         can_change_submission = self.request.user.has_perm(
             "submission.orga_update_submission", self.request.event
         )
+
+        exclude = []
+        if not self.show_tracks:
+            exclude.append("track")
+        if not self.show_submission_types:
+            exclude.append("submission_type")
+
         kwargs.update(
             {
                 "can_view_speakers": self.request.user.has_perm(
                     "person.orga_list_speakerprofile", self.request.event
                 ),
-                "show_tracks": self.show_tracks,
-                "show_submission_types": self.show_submission_types,
                 "has_update_permission": can_change_submission,
                 "has_delete_permission": can_change_submission,
+                "exclude": exclude,
             }
         )
         return kwargs
