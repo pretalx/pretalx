@@ -7,9 +7,9 @@ let apiBaseUrl = null
 let setupRun = false
 
 const spinStar = (star) => {
-    star.classList.add('fa-spin')
+    star.classList.add('animate-spin')
     setTimeout(() => {
-        star.classList.remove('fa-spin')
+        star.classList.remove('animate-spin')
     }, 400)
 }
 

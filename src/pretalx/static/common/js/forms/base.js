@@ -51,7 +51,7 @@ const initFormButton = (form) => {
             // We can't disable the button immediately, because then, the browser will
             // not send the button's value to the server. Instead, we'll just delay the
             // disabling a bit.
-            submitButton.innerHTML = `<i class="fa fa-spinner fa-spin pr-0"></i> ${submitButtonText}`
+            submitButton.innerHTML = `<i class="fa fa-spinner animate-spin pr-0"></i> ${submitButtonText}`
             lastSubmit = Date.now()
             setTimeout(() => {
                 submitButton.classList.add("disabled")
