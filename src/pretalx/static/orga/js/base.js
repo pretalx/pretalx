@@ -26,7 +26,9 @@ const initNavSearch = () => {
 
     let loadIndicatorTimeout = null
     const showLoadIndicator = () => {
-        searchWrapper.querySelector("ul").innerHTML = '<li class="loading"><span class="fa fa-4x fa-cog animate-spin"></span></li>'
+        if (!searchWrapper.querySelector(".loading")) {
+            searchWrapper.querySelector("ul").innerHTML = '<li class="loading"><span class="fa fa-4x fa-cog animate-spin"></span></li>'
+        }
     }
 
     let lastQuery = null
