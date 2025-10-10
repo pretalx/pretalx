@@ -455,10 +455,8 @@ class CRUDView(PaginationMixin, Filterable, View):
     def get_context_data(self, **kwargs):
         kwargs["view"] = self
         kwargs["action"] = self.action
-        if hasattr(self, "create"):
+        if self.has_create_permission:
             kwargs["create_url"] = self.reverse("create")
-        if hasattr(self, "list"):
-            kwargs["list_url"] = self.reverse("list")
         kwargs["has_update_permission"] = self.has_update_permission
         kwargs["has_delete_permission"] = self.has_delete_permission
         kwargs["generic_title"] = self.get_generic_title(instance=self.object)
