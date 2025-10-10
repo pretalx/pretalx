@@ -19,13 +19,36 @@ from pretalx.orga.utils.i18n import Translate
 from pretalx.submission.models import Submission, Tag
 
 
+def render_independent_score(record, table, category_id):
+    if not hasattr(record, "_independent_scores_cache"):
+        record._independent_scores_cache = table.get_independent_scores_for_submission(
+            record
+        )
+    score = record._independent_scores_cache.get(category_id)
+    return score if score is not None else "-"
+
+
+def render_question_answer(record, table, question_id):
+    if not hasattr(record, "_short_answers_cache"):
+        record._short_answers_cache = table.get_short_answers_for_submission(record)
+    return record._short_answers_cache.get(question_id, "")
+
+
 class CallableColumn(tables.Column):
+    """Column that renders using a callable function.
+
+    To avoid pickling issues, stores the callable directly without binding to self.
+    The callable should accept (record, column) as arguments, where column has
+    a table_ref attribute set after initialization.
+    """
+
     def __init__(self, *args, callable_func=None, **kwargs):
         self.callable_func = callable_func
+        self.table_ref = None
         super().__init__(*args, **kwargs)
 
     def render(self, record):
-        return self.callable_func(record)
+        return self.callable_func(record, self.table_ref)
 
 
 class SubmissionTable(PretalxTable):
@@ -196,7 +219,7 @@ class ReviewTable(PretalxTable):
                     accessor="pk",
                     orderable=False,
                     callable_func=partial(
-                        self.get_independent_score, category_id=category.pk
+                        render_independent_score, category_id=category.pk
                     ),
                     attrs={"td": {"class": "numeric text-center"}},
                 )
@@ -212,7 +235,7 @@ class ReviewTable(PretalxTable):
                     accessor="pk",
                     orderable=False,
                     callable_func=partial(
-                        self.get_question_answer, question_id=question.pk
+                        render_question_answer, question_id=question.pk
                     ),
                 )
 
@@ -228,6 +251,10 @@ class ReviewTable(PretalxTable):
             )
 
         super().__init__(*args, **kwargs)
+
+        for bound_column in self.columns:
+            if isinstance(bound_column.column, CallableColumn):
+                bound_column.column.table_ref = self
 
         self.exclude = list(self.exclude) if hasattr(self, "exclude") else []
 
