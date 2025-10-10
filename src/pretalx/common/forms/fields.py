@@ -286,6 +286,10 @@ class AvailabilitiesField(CharField):
         rawavail["end"] = min(rawavail["end"], timeframe_end)
 
     def clean(self, value):
+        if isinstance(value, list):
+            value = {"availabilities": value}
+        if isinstance(value, dict):
+            value = json.dumps(value)
         value = super().clean(value)
         if not value:
             if self.required:

@@ -1,4 +1,5 @@
 import datetime as dt
+import json
 from urllib.parse import urlparse
 
 import bs4
@@ -698,6 +699,65 @@ class TestWizard:
         with scope(event=event):
             assert event.submissions.count() == 2
             assert speaker_question.answers.count() == 1
+
+    @pytest.mark.django_db
+    def test_wizard_with_availabilities(self, event, client):
+        """Test that submitting with availabilities doesn't return None."""
+
+        with scope(event=event):
+            submission_type = SubmissionType.objects.filter(event=event).first().pk
+            event.cfp.fields["availabilities"]["visibility"] = "required"
+            event.cfp.save()
+
+        response, current_url = self.perform_init_wizard(client, event=event)
+        response, current_url = self.perform_info_wizard(
+            client,
+            response,
+            current_url,
+            submission_type=submission_type,
+            next_step="user",
+            event=event,
+        )
+        response, current_url = self.perform_user_wizard(
+            client,
+            response,
+            current_url,
+            password="testpassw0rd!",
+            email="testuser@example.com",
+            register=True,
+            event=event,
+        )
+
+        # Submit profile with availabilities
+        avail_data = {
+            "availabilities": [
+                {
+                    "start": f"{event.date_from}T10:00:00.000Z",
+                    "end": f"{event.date_from}T18:00:00.000Z",
+                }
+            ],
+            "event": {
+                "timezone": str(event.timezone),
+                "date_from": str(event.date_from),
+                "date_to": str(event.date_to),
+            },
+        }
+        data = {
+            "name": "Jane Doe",
+            "biography": "l337 hax0r",
+            "availabilities": json.dumps(avail_data),
+        }
+        response, current_url = self.get_response_and_url(
+            client, current_url, data=data
+        )
+
+        # This should redirect to submissions page, not return None
+        assert response.status_code == 200
+        assert "/me/submissions/" in current_url
+
+        submission = self.assert_submission(event)
+        user = self.assert_user(submission, email="testuser@example.com")
+        self.assert_mail(submission, user)
 
 
 @pytest.mark.django_db
