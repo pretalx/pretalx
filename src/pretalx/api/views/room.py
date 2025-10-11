@@ -40,6 +40,8 @@ class RoomViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     pagination_class = RoomPagination
     endpoint = "rooms"
     search_fields = ("name",)
+    ordering_fields = ("id", "name", "position", "capacity")
+    ordering = ("position", "id")
 
     def get_queryset(self):
         return self.event.rooms.all().select_related("event")

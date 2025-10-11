@@ -52,6 +52,14 @@ class QuestionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     serializer_class = QuestionSerializer
     filterset_fields = ("is_public", "is_visible_to_reviewers", "target", "variant")
     search_fields = ("question",)
+    ordering_fields = (
+        "id",
+        "question",
+        "position",
+        "is_public",
+        "is_visible_to_reviewers",
+    )
+    ordering = ("position", "id")
     endpoint = "questions"
 
     def get_queryset(self):
@@ -128,6 +136,8 @@ class AnswerOptionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     serializer_class = AnswerOptionSerializer
     filterset_fields = ("question",)
     search_fields = ("answer",)
+    ordering_fields = ("id", "answer")
+    ordering = ("id",)
     endpoint = "question-options"
 
     def get_queryset(self):
@@ -209,6 +219,8 @@ class AnswerViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     serializer_class = AnswerSerializer
     filterset_class = AnswerFilterSet
     search_fields = ("answer",)
+    ordering_fields = ("id", "answer")
+    ordering = ("id",)
     endpoint = "answers"
     permission_map = {
         "list": "submission.api_answer",

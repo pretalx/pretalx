@@ -60,6 +60,8 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
     queryset = Schedule.objects.none()
     endpoint = "schedules"
     search_fields = ("version",)
+    ordering_fields = ("id", "version", "published")
+    ordering = ("-published", "id")
     # We look up schedules by IDs, but we permit the special names "wip" and "latest"
     lookup_value_regex = "[^/]+"
     permission_map = {
@@ -274,6 +276,8 @@ class TalkSlotViewSet(
     endpoint = "slots"
     search_fields = ("submission__title", "submission__speakers__name")
     filterset_class = TalkSlotFilter
+    ordering_fields = ("start", "end", "room__name", "submission__title")
+    ordering = ("start", "room__position")
     permission_map = {"ical": "schedule.view_talkslot"}
 
     @cached_property

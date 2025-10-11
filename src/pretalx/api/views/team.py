@@ -54,6 +54,8 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     queryset = Team.objects.none()
     endpoint = "teams"
     search_fields = ("name",)
+    ordering_fields = ("id", "name")
+    ordering = ("id",)
 
     def get_queryset(self):
         queryset = (

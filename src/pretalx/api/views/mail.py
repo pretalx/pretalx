@@ -22,6 +22,8 @@ class MailTemplateViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     queryset = MailTemplate.objects.none()
     endpoint = "mail-templates"
     search_fields = ("role", "subject")
+    ordering_fields = ("id", "subject")
+    ordering = ("id",)
 
     def get_queryset(self):
         return self.event.mail_templates.all().select_related("event").order_by("pk")

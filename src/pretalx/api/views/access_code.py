@@ -31,6 +31,8 @@ class SubmitterAccessCodeViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     queryset = SubmitterAccessCode.objects.none()
     endpoint = "access-codes"
     search_fields = ("code",)
+    ordering_fields = ("id", "code", "valid_until")
+    ordering = ("id",)
 
     def get_queryset(self):
         queryset = (

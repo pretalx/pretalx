@@ -55,6 +55,8 @@ class ReviewViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     queryset = Review.objects.none()
     search_fields = ("submission__title", "user__name")
     filterset_class = ReviewFilter
+    ordering_fields = ("id", "created")
+    ordering = ("id",)
     endpoint = "reviews"
     # We only permit access to this endpoint if the user can see all reviews,
     # as otherwise we would potentially have to filter for reviews to submissions

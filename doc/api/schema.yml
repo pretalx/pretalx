@@ -12,6 +12,12 @@ paths:
         name: is_public
         schema:
           type: boolean
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - in: query
         name: q
         schema:
@@ -70,6 +76,12 @@ paths:
             - submission_type
             - track
         description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -263,6 +275,12 @@ paths:
             - question.submission_types
             - question.tracks
         description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -466,6 +484,12 @@ paths:
           type: string
           description: The event’s slug
         required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -648,6 +672,12 @@ paths:
             - question.submission_types
             - question.tracks
         description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -855,6 +885,12 @@ paths:
         name: is_visible_to_reviewers
         schema:
           type: boolean
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -1128,6 +1164,12 @@ paths:
             - submission.track
             - user
         description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -1331,6 +1373,12 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: offset
         required: false
         in: query
@@ -1500,6 +1548,12 @@ paths:
           type: string
           description: The event’s slug
         required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -1609,10 +1663,11 @@ paths:
   /api/events/{event}/schedules/by-version/:
     get:
       operationId: schedules_by_version_retrieve
-      description: This endpoint redirects to a specific schedule using its version
-        name (e.g., '1.0', 'My Release') instead of its numeric ID. You have to pass
-        either a version or request the latest version.
-      summary: Redirect to a schedule by its version
+      description: This endpoint returns a plain string URL for a specific schedule
+        using its version name (e.g., '1.0', 'My Release') instead of its numeric
+        ID. You have to pass either a version or request the latest version. Returns
+        an empty string if the schedule is not found or not accessible.
+      summary: Get schedule URL by version
       parameters:
       - in: path
         name: event
@@ -1624,7 +1679,7 @@ paths:
         name: latest
         schema:
           type: boolean
-        description: Pass this parameter to be redirected to the current schedule.
+        description: Pass this parameter to get the URL for the current schedule.
       - in: query
         name: version
         schema:
@@ -1634,10 +1689,10 @@ paths:
       tags:
       - schedules
       responses:
-        '302':
-          description: No response body
+        '200':
+          description: Returns a plain text URL
         '404':
-          description: No response body
+          description: Schedule not found or not accessible
   /api/events/{event}/schedules/release/:
     post:
       operationId: schedules_release_create
@@ -1706,6 +1761,12 @@ paths:
         name: is_visible
         schema:
           type: boolean
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -1910,6 +1971,12 @@ paths:
             - limit_tracks
             - limit_types
         description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -2236,6 +2303,12 @@ paths:
           type: string
           description: The event’s slug
         required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -2433,6 +2506,12 @@ paths:
         name: is_featured
         schema:
           type: boolean
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -2968,6 +3047,12 @@ paths:
           type: string
           description: The event’s slug
         required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -3139,6 +3224,12 @@ paths:
           type: string
           description: The event’s slug
         required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -3315,6 +3406,12 @@ paths:
             - limit_tracks
             - members
         description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - in: path
         name: organiser
         schema:
@@ -4726,7 +4823,6 @@ components:
             * `youtube` - YouTube
           oneOf:
           - $ref: '#/components/schemas/IconEnum'
-          - $ref: '#/components/schemas/BlankEnum'
           - $ref: '#/components/schemas/NullEnum'
       required:
       - id
@@ -4870,7 +4966,6 @@ components:
             * `youtube` - YouTube
           oneOf:
           - $ref: '#/components/schemas/IconEnum'
-          - $ref: '#/components/schemas/BlankEnum'
           - $ref: '#/components/schemas/NullEnum'
         active:
           type: boolean
@@ -4879,9 +4974,6 @@ components:
           type: boolean
           title: Publish answers
           description: Responses will be shown on session or speaker pages as appropriate.
-            Please note that you cannot make a field public after the first answers
-            have been given, to allow speakers explicit consent before publishing
-            information.
         contains_personal_data:
           type: boolean
           title: Responses contain personal data
@@ -5031,7 +5123,6 @@ components:
             * `youtube` - YouTube
           oneOf:
           - $ref: '#/components/schemas/IconEnum'
-          - $ref: '#/components/schemas/BlankEnum'
           - $ref: '#/components/schemas/NullEnum'
         active:
           type: boolean
@@ -5040,9 +5131,6 @@ components:
           type: boolean
           title: Publish answers
           description: Responses will be shown on session or speaker pages as appropriate.
-            Please note that you cannot make a field public after the first answers
-            have been given, to allow speakers explicit consent before publishing
-            information.
         contains_personal_data:
           type: boolean
           title: Responses contain personal data
@@ -5409,8 +5497,6 @@ components:
         biography:
           type: string
           nullable: true
-          description: You can use <a href="https://docs.pretalx.org/user/markdown/"
-            target="_blank" rel="noopener">Markdown</a> here.
         submissions:
           type: array
           items:
@@ -5533,8 +5619,6 @@ components:
         biography:
           type: string
           nullable: true
-          description: You can use <a href="https://docs.pretalx.org/user/markdown/"
-            target="_blank" rel="noopener">Markdown</a> here.
         submissions:
           type: array
           items:
@@ -5565,6 +5649,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Availability'
+        internal_notes:
+          type: string
+          nullable: true
+          description: Internal notes for other organisers/reviewers. Not visible
+            to the speakers or the public.
       required:
       - answers
       - avatar_url
@@ -5588,8 +5677,6 @@ components:
         biography:
           type: string
           nullable: true
-          description: You can use <a href="https://docs.pretalx.org/user/markdown/"
-            target="_blank" rel="noopener">Markdown</a> here.
         email:
           type: string
           format: email
@@ -5601,6 +5688,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AvailabilityRequest'
+        internal_notes:
+          type: string
+          nullable: true
+          description: Internal notes for other organisers/reviewers. Not visible
+            to the speakers or the public.
         avatar:
           type: str
           description: When reading data, a URL pointing to a downloadable file. When
@@ -5666,13 +5758,9 @@ components:
         abstract:
           type: string
           nullable: true
-          description: You can use <a href="https://docs.pretalx.org/user/markdown/"
-            target="_blank" rel="noopener">Markdown</a> here.
         description:
           type: string
           nullable: true
-          description: You can use <a href="https://docs.pretalx.org/user/markdown/"
-            target="_blank" rel="noopener">Markdown</a> here.
         duration:
           type: integer
           description: Defaults to the submission type’s duration
@@ -5754,13 +5842,9 @@ components:
         abstract:
           type: string
           nullable: true
-          description: You can use <a href="https://docs.pretalx.org/user/markdown/"
-            target="_blank" rel="noopener">Markdown</a> here.
         description:
           type: string
           nullable: true
-          description: You can use <a href="https://docs.pretalx.org/user/markdown/"
-            target="_blank" rel="noopener">Markdown</a> here.
         duration:
           type: integer
           description: Defaults to the submission type’s duration
@@ -5887,13 +5971,9 @@ components:
         abstract:
           type: string
           nullable: true
-          description: You can use <a href="https://docs.pretalx.org/user/markdown/"
-            target="_blank" rel="noopener">Markdown</a> here.
         description:
           type: string
           nullable: true
-          description: You can use <a href="https://docs.pretalx.org/user/markdown/"
-            target="_blank" rel="noopener">Markdown</a> here.
         duration:
           type: integer
           description: Defaults to the submission type’s duration
@@ -5986,13 +6066,9 @@ components:
         abstract:
           type: string
           nullable: true
-          description: You can use <a href="https://docs.pretalx.org/user/markdown/"
-            target="_blank" rel="noopener">Markdown</a> here.
         description:
           type: string
           nullable: true
-          description: You can use <a href="https://docs.pretalx.org/user/markdown/"
-            target="_blank" rel="noopener">Markdown</a> here.
         duration:
           type: integer
           description: Defaults to the submission type’s duration
@@ -6122,6 +6198,11 @@ components:
         redeemed:
           type: integer
           readOnly: true
+        internal_notes:
+          type: string
+          nullable: true
+          description: Internal notes for other organisers/reviewers. Not visible
+            to the speakers or the public.
       required:
       - code
       - id
@@ -6164,6 +6245,11 @@ components:
           nullable: true
           description: Numbers of times this access code can be used to submit a proposal.
             Leave empty for no limit.
+        internal_notes:
+          type: string
+          nullable: true
+          description: Internal notes for other organisers/reviewers. Not visible
+            to the speakers or the public.
       required:
       - code
     Tag:

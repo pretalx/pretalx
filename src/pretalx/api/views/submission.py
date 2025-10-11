@@ -151,6 +151,8 @@ class SubmissionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     lookup_field = "code__iexact"
     search_fields = ("title", "speakers__name")
     filterset_class = SubmissionFilter
+    ordering_fields = ("code", "title", "state", "created", "is_featured")
+    ordering = ("code",)
     permission_map = {
         "make_submitted": "submission.state_change_submission",
         "add_speaker": "submission.update_submission",
@@ -425,6 +427,8 @@ class TagViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     queryset = Tag.objects.none()
     endpoint = "tags"
     search_fields = ("tag",)
+    ordering_fields = ("id", "tag")
+    ordering = ("id",)
 
     def get_queryset(self):
         return self.event.tags.all().order_by("pk")
@@ -445,6 +449,8 @@ class SubmissionTypeViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     queryset = SubmissionType.objects.none()
     endpoint = "submission-types"
     search_fields = ("name",)
+    ordering_fields = ("id", "name", "default_duration")
+    ordering = ("id",)
 
     def get_queryset(self):
         return self.event.submission_types.all()
@@ -463,6 +469,8 @@ class TrackViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     queryset = Track.objects.none()
     endpoint = "tracks"
     search_fields = ("name",)
+    ordering_fields = ("id", "name")
+    ordering = ("id",)
 
     def get_queryset(self):
         return self.event.tracks.all()

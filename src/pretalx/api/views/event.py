@@ -23,6 +23,8 @@ class EventViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
     search_fields = ("name",)
     filterset_fields = ("is_public",)
+    ordering_fields = ("date_from", "date_to", "name", "slug")
+    ordering = ("-date_from",)
 
     def get_unversioned_serializer_class(self):
         if self.action == "list":

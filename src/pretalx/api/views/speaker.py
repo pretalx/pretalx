@@ -71,6 +71,8 @@ class SpeakerViewSet(
     queryset = SpeakerProfile.objects.none()
     lookup_field = "user__code__iexact"
     search_fields = ("user__name", "user__email")
+    ordering_fields = ("user__code", "user__name")
+    ordering = ("user__code",)
     endpoint = "speakers"
     filter_backends = (SpeakerSearchFilter, DjangoFilterBackend)
 
