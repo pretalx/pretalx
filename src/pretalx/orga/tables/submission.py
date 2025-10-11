@@ -72,7 +72,7 @@ class SubmissionTable(PretalxTable):
     submission_type = SortableColumn(
         verbose_name=_("Type"),
         linkify=lambda record: record.submission_type.urls.base,
-        accessor="submission_type.name",
+        accessor="submission_type__name",
         order_by=Lower(Translate("submission_type__name")),
     )
     state = ContextTemplateColumn(
@@ -157,7 +157,7 @@ class ReviewTable(PretalxTable):
     )
     track = SortableColumn(
         verbose_name=_("Track"),
-        accessor="track.name",
+        accessor="track__name",
         order_by=Lower(Translate("track__name")),
         attrs={"td": {"class": "nowrap"}},
     )
@@ -175,7 +175,7 @@ class ReviewTable(PretalxTable):
     )
     submission_type = SortableColumn(
         verbose_name=_("Type"),
-        accessor="submission_type.name",
+        accessor="submission_type__name",
         order_by=Lower(Translate("submission_type__name")),
         attrs={"td": {"class": "nowrap"}},
     )
