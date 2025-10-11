@@ -188,7 +188,9 @@ page.
 
 By default, the page size (that is, the length of the ``results`` field) is 50.
 You can decrease the page size with the ``page_size`` parameter, but for
-performance reasons, you cannot increase it past 50.
+performance reasons, you cannot increase it past the configured maximum (50 by
+default). Self-hosted instances can configure this limit in the ``api`` section
+of their configuration file (see :ref:`configure`).
 
 File uploads
 ------------

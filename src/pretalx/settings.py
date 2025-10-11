@@ -628,6 +628,11 @@ if DEBUG:
 
 DJANGO_TABLES2_TEMPLATE = "orga/generic/table.html"
 
+## API SETTINGS
+API_MAX_PAGINATION_LIMIT = int(config.get("api", "max_pagination_limit"))
+if API_MAX_PAGINATION_LIMIT == -1:
+    API_MAX_PAGINATION_LIMIT = None
+
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ("i18nfield.rest_framework.I18nJSONRenderer",),
     "DEFAULT_AUTHENTICATION_CLASSES": ("pretalx.common.auth.UserTokenAuthentication",),

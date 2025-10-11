@@ -3,6 +3,7 @@
 Release Notes
 =============
 
+- :feature:`administrator,2155` Administrators of self-hosted instances can now change the maximum page size of API responses.
 - :announcement:`dev` In an effort to make our pages smaller and faster, we reworked our static files. They are now broken up into smaller chunks, and are placed in different locations. If you use any upstream static files explicitly, please check if they are impacted. Please also do a quick visual inspection of your plugin pages to make sure that you were not relying on styles or scripts that used to be included in all pages and are now only included on the relevant pages. You can a detailed list of changes in our `2025.2.0 release notes <https://gist.github.com/rixx/0dc12119daf467d93b7bc822f63f90e3>`_.
 - :bug:`orga:submission,2147` The room, start and end times of submissions can now be edited.
 - :feature:`dev` Plugins can now inject additional form elements in the organisers area with the ``form_signal`` similar to ``html_signal``.

@@ -1,9 +1,10 @@
+from django.conf import settings
 from django.utils.functional import cached_property
 from rest_framework import pagination
 
 
 class LimitOffsetPagination(pagination.LimitOffsetPagination):
-    max_limit = 50
+    max_limit = settings.API_MAX_PAGINATION_LIMIT
 
 
 class PageNumberPagination(pagination.PageNumberPagination):
@@ -14,7 +15,7 @@ class PageNumberPagination(pagination.PageNumberPagination):
     """
 
     page_size_query_param = "page_size"
-    max_page_size = 50
+    max_page_size = settings.API_MAX_PAGINATION_LIMIT
 
     @cached_property
     def is_limit_offset(self):
