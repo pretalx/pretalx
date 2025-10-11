@@ -12,7 +12,7 @@
 {% block agenda_content %}
     <div id="fahrplan" class="list">
 
-        <div class="alert alert-info">
+        <div class="alert info">
             <div></div>
             <div>
                 {% blocktranslate trimmed with href=request.event.urls.schedule %}
@@ -21,7 +21,7 @@
             </div>
         </div>
         {% if schedule != schedule.event.current_schedule %}
-            <div class="alert alert-warning m-3">
+            <div class="alert warning m-3">
                 <span>
                     {% if not schedule.version %}
                         {{ phrases.schedule.wip_version }}

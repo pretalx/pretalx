@@ -304,7 +304,7 @@ Vue.component("step", {
             </div>
           </div>
         </form>
-        <div v-if="step.identifier == 'questions'" class="alert alert-info">
+        <div v-if="step.identifier == 'questions'" class="alert info">
           This step will only be shown if you have questions configured.
         </div>
       </div>
@@ -409,7 +409,7 @@ var app = new Vue({
           </div>
         </div>
       </div>
-      <div id="dirty-flow" class="alert alert-warning" v-if="configurationChanged">
+      <div id="dirty-flow" class="alert warning" v-if="configurationChanged">
         <span>
           Unsaved configuration changes!
         </span>

@@ -16,7 +16,7 @@
             {% endif %}
 
             {% if submission.access_code %}
-                <div class="alert alert-info"><span></span><span>
+                <div class="alert info"><span></span><span>
                     {% blocktranslate trimmed %}
                         This proposal was created using an access code:
                     {% endblocktranslate %} <a href="{{ submission.access_code.urls.edit }}">{{ submission.access_code.code }}</a>

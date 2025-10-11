@@ -13,7 +13,7 @@
 
 {% block content %}
     {% has_perm "person.reviewer_list_speakerprofile" request.user request.event as can_view_speakers %}
-    <div class="alert alert-info">
+    <div class="alert info">
         {% if next_submission %}
             {% blocktranslate trimmed count count=missing_reviews %}
                 Or review the missing proposal here.

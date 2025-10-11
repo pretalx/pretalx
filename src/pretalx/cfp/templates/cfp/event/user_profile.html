@@ -76,7 +76,7 @@
     <h3>{% translate "Account deletion" %}</h3>
     <form action="{{ request.event.urls.user_delete }}" method="post" class="form">
         {% csrf_token %}
-        <div class="alert alert-danger">
+        <div class="alert danger">
             <div>
                 {% translate "You can delete your account here – all names, emails, and other personal information will be overwritten. <strong>This action is irreversible.</strong>" %}
             </div>

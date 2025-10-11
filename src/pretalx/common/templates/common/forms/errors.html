@@ -1,6 +1,6 @@
 {% load phrases %}
 {% if form.non_field_errors or form.errors %}
-  <div class="alert alert-danger" role="alert">
+  <div class="alert danger" role="alert">
     <div>
       {% if form.non_field_errors %}
         {% if form.non_field_errors|length > 1 %}

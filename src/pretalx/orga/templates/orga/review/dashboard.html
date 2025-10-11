@@ -22,7 +22,7 @@
 {% block content %}
     {% has_perm "submission.create_review" request.user request.event as can_review %}
     {% has_perm "person.reviewer_list_speakerprofile" request.user request.event as can_view_speakers %}
-    <div class="alert alert-info">
+    <div class="alert info">
         <div>
             {% if can_review and next_submission %}
                 {% blocktranslate trimmed count count=missing_reviews %}

@@ -374,6 +374,74 @@ a {
   }
 }
 
+/* Conventions and custom elements */
+
+.color-success,
+.btn-success,
+.alert.success {
+  --highlight-color: var(--color-success);
+  --highlight-color-text: var(--color-success-text-dark);
+}
+.color-info,
+.btn-info,
+.alert.info {
+  --highlight-color: var(--color-info);
+  --highlight-color-text: var(--color-info-text-dark);
+}
+.color-warning,
+.btn-warning,
+.alert.warning {
+  --highlight-color: var(--color-warning);
+  --highlight-color-text: var(--color-warning-text-dark);
+}
+.color-danger,
+.btn-danger,
+.alert.danger {
+  --highlight-color: var(--color-danger);
+  --highlight-color-text: var(--color-danger-text-dark);
+}
+.color-primary,
+.btn-primary {
+  --highlight-color: var(--color-primary);
+  --highlight-color-text: var(--color-primary-text-dark);
+}
+.color-secondary,
+.btn-secondary {
+  --highlight-color: var(--color-secondary);
+  --highlight-color-text: var(--color-secondary);
+}
+.alert.success:before {
+  content: "";
+}
+.alert.info:before {
+  content: "";
+}
+.alert.info.key:before {
+    content: "";
+}
+.alert.warning:before {
+  content: "";
+}
+.alert.danger:before {
+  content: "";
+}
+
+.btn-outline-success {
+  --highlight-color: var(--color-success);
+}
+.btn-outline-primary {
+  --highlight-color: var(--color-primary);
+}
+.btn-outline-info {
+  --highlight-color: var(--color-info);
+}
+.btn-outline-warning {
+  --highlight-color: var(--color-warning);
+}
+.btn-outline-danger {
+  --highlight-color: var(--color-danger);
+}
+
 .alert {
   display: flex;
   align-items: center;

@@ -19,7 +19,7 @@
                 granular assignments, you can also assign reviewers to proposals individually.
             {% endblocktranslate %}
         </p>
-        <div class="alert alert-info">
+        <div class="alert info">
             {% blocktranslate trimmed %}
                 As teams can belong to multiple events, teams are managed in your organiser settings.
             {% endblocktranslate %}
@@ -89,7 +89,7 @@
     </section>
     <section role="tabpanel" id="tabpanel-individual" aria-labelledby="tab-individual" tabindex="0" aria-hidden="false">
 
-        <div class="alert alert-info"><p>
+        <div class="alert info"><p>
             {% if request.event.active_review_phase.proposal_visibility == "assigned" %}
                 {% blocktranslate trimmed with href=request.event.orga_urls.review_settings %}
                     Reviewers will be able to see and review <strong>only their assigned</strong> proposals.
