@@ -2070,7 +2070,7 @@ msgstr ""
 "  https://pretalx.com/p/news\n"
 "\n"
 "Atenciosamente,\n"
-"os desenvolvedores do pretix"
+"os desenvolvedores do pretalx"
 
 #: pretalx/common/update_check.py:145 pretalx/common/update_check.py:152
 msgid "Plugin"
