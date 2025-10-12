@@ -1,3 +1,6 @@
+.. SPDX-FileCopyrightText: 2018-present Tobias Kunze
+.. SPDX-License-Identifier: CC-BY-SA-4.0
+
 .. _markdown-guide:
 
 Markdown Guide

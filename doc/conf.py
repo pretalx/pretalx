@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2017-present Tobias Kunze
+# SPDX-License-Identifier: Apache-2.0
+
 import os
 import sys
 from datetime import date
@@ -12,7 +15,8 @@ import django
 django.setup()
 
 project = "pretalx"
-copyright = "2017-{}, Tobias Kunze".format(date.today().year)
+copyright = "2017-present, Tobias Kunze. "
+copyright += 'Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target=_blank>CC BY-SA 4.0</a>'
 author = "Tobias Kunze"
 version = ".".join(__version__.split(".")[:2])
 release = __version__
@@ -46,7 +50,12 @@ language = "en"
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 pygments_style = "sphinx"
-html_static_path = ["_themes/pretalx_theme/static", "_static"]
+html_static_path = [
+    "_themes/pretalx_theme/static",
+    "_static",
+    "../src/pretalx/static/fonts/",
+    "../src/pretalx/static/common/img/icons/",
+]
 html_additional_pages = {"index": "index.html"}
 html_extra_path = ["api/schema.yml"]
 html_theme = "pretalx_theme"

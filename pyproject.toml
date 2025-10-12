@@ -88,6 +88,15 @@ dev = [
   "responses",
   "urllib3",
 ]
+devdocs = [
+  "sphinx",
+  "sphinx-autobuild",
+  "sphinx-autodoc-typehints",
+  "sphinx-copybutton",
+  "sphinxcontrib-django",
+  "sphinxcontrib-httpdomain",
+  "sphinxcontrib-spelling",
+]
 postgres = ["psycopg2-binary~=2.9.0"]
 redis = ["redis~=6.4.0"]
 

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2017-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const reset = function () {
     // Get anchor from URL and open up nested nav
     var anchor = encodeURI(window.location.hash);

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const spec = "/schema.yml";
 Redoc.init(spec, {
     hideLoading: true,
