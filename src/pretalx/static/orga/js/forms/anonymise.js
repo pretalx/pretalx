@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2020-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 let activeElement = null
 let menu = null
 

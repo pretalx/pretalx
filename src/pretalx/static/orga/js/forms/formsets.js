@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 /* Heavily inspired by django-formset-js/django-formset-js-improved,
  * with some functionality removed that I did not need, and rewritten
  * as a vanilla JS script to remove my last jQuery dependency. */

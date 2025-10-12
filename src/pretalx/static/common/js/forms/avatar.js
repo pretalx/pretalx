@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2017-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 function setImage(url) {
     const image = document.querySelector('.avatar-form img');
     const imageWrapper = document.querySelector('.avatar-form .form-image-preview');

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 /* Makes a table sortable by drag and drop, sending the new state to the server.
  * This implementation is hugely indebted to Julik Tarkhanov and his blog post at
  * https://blog.julik.nl/2022/10/drag-reordering */

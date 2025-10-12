@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const globalData = document.getElementById("global-data")
 const dataMapping = JSON.parse(globalData.dataset.mapping)
 let searchUrl = globalData.dataset.url

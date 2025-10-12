@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const getCookie = (name) => {
     let cookieValue = null
     if (document.cookie && document.cookie !== "") {

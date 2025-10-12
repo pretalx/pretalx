@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2023-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 // Add a lightbox to images and links with data-lightbox attribute.
 // Currently loaded on every pretalx page
 

@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2022-present Tobias Kunze
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <template lang="pug">
 .c-grid-schedule()
 	.grid(ref="grid", :style="gridStyle", :class="gridClasses", @pointermove="updateHoverSlice($event)", @pointerup="stopDragging($event)")

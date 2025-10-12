@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const utcoffset = new Date().getTimezoneOffset()
 const FORMAT_ARGS = { hour: "numeric", minute: "2-digit" }
 

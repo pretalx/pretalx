@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2019-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const renderChart = (data) => {
     const serverData = document.getElementById("question-data")
     const canvas = document.getElementById("question-answers")

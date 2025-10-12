@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 function highlightComment() {
     const fragment = window.location.hash;
     if (fragment && fragment.startsWith('#comment-')) {

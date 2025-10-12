@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2023-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 let isFaved = false
 let eventSlug = null
 let submissionId = null

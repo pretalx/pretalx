@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2022-present Tobias Kunze
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <template lang="pug">
 .pretalx-schedule(:style="{'--scrollparent-width': scrollParentWidth + 'px'}", :class="draggedSession ? ['is-dragging'] : []", @pointerup="stopDragging")
 	template(v-if="schedule")

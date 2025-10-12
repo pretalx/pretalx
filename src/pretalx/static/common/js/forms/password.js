@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const matchPasswords = (passwordField, confirmationFields) => {
     // Optional parameter: if no specific confirmation field is given, check all
     if (confirmationFields === undefined) {

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const titleParts = document.title.split("::")
 
 const updateTitle = (newTitle) => {

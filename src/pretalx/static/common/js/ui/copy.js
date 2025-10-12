@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const performCopy = (element) => {
     navigator.clipboard.writeText(element.dataset.destination).then(() => {
         const wasTooltip = element.getAttribute('data-toggle') === 'tooltip'
