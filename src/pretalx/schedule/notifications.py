@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
 from django.template.loader import get_template
 from django.utils.formats import get_format
 from django.utils.timezone import override as tzoverride

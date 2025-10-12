@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2018-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
+
 def guess_schedule_version(event):
     if not event.current_schedule:
         return "0.1"

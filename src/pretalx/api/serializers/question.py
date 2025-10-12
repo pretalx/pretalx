@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2018-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
 from django.db import transaction
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions

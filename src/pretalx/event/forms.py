@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2018-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
 from django import forms
 from django.conf import settings
 from django.core.validators import validate_email

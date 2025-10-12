@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
 """This command supersedes the Django-inbuilt runserver command.
 
 It runs the local frontend server, if node is installed and the setting

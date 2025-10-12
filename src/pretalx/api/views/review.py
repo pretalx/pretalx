@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2018-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
 from django.utils.functional import cached_property
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets

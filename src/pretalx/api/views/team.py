@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2025-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django_scopes import scopes_disabled

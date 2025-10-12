@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2019-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.exporter import BaseExporter, CSVExporterMixin
