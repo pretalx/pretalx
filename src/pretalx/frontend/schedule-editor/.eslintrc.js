@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022-present NONE
+// SPDX-License-Identifier: CC0-1.0
+
 module.exports = {
 	extends: [
 		'plugin:vue/vue3-recommended',

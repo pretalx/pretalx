@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2022-present Tobias Kunze
+# SPDX-License-Identifier: CC-BY-SA-4.0
+
 name: Feature idea
 description: Suggest a new pretalx feature.
 labels: ["type: feature"]

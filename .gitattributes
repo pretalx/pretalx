@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2017-present NONE
+# SPDX-License-Identifier: CC0-1.0
+
 src/pretalx/static/vendored/* linguist-vendored
 doc/* linguist-documentation
 *.py diff=python

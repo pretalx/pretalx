@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2022-present NONE
+# SPDX-License-Identifier: CC0-1.0
+
 [*.{js,jsx,ts,tsx,vue}]
 indent_style = tab
 indent_size = 2
