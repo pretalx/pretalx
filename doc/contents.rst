@@ -11,6 +11,7 @@ Documentation contents
    administrator/index
    api/index
    developer/index
+   legal/index
 
    changelog
    funding
