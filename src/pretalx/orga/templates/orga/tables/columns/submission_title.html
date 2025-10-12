@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2025-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+
 {% if not table.can_view_speakers and record.is_anonymised %}
   {{ record.anonymised.title|default:record.title }}
 {% else %}
