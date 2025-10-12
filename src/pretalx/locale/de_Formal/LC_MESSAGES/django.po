@@ -1,8 +1,5 @@
-# pretalx translation files
-# Copyright (C) Tobias 'rixx' Kunze 2017
-# This file is distributed under the same license as the pretalx package.
-# Tobias Kunze <r@rixx.de>, 2017.
-#
+# SPDX-FileCopyrightText: 2017-present Tobias Kunze and contributors
+# SPDX-License-Identifier: Apache-2.0
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"

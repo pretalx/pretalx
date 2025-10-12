@@ -1,4 +1,5 @@
-#
+# SPDX-FileCopyrightText: 2017-present Tobias Kunze and contributors
+# SPDX-License-Identifier: Apache-2.0
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
