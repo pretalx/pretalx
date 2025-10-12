@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 /* This file will be loaded on all pretalx pages.
  * It will be loaded before all other scripts. */
 

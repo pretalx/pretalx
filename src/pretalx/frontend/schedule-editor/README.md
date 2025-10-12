@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2022-present Tobias Kunze
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # pretalx-schedule-editor
 
 ## Project setup

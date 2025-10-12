@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2017-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
 
 const handleFeaturedChange = (element) => {
     const resetStatus = () => {

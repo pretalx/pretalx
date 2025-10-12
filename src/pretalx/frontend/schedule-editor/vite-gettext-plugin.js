@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2023-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 import { gettextToI18next } from 'i18next-conv'
 import {readFileSync} from 'fs'
 

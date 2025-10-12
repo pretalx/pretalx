@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2019-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const number = new Date().getYear() + 1900
 const updateSlug = (ev) => {
     const value = ev.target.value

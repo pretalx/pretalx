@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 // Immediate sidebar state application to prevent layout shift
 (function() {
     'use strict';

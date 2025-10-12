@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2024-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 /* Minimal enhancement to native modals, by making them close when the user clicks outside the dialog. */
 
 const setupModals = () => {

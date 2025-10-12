@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2023-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 // Loads the translation file with `locale` from the head of files in /src/pretalx/locale/*
 // and exposes the i18next api into global vue.
 // Usable with `this.$t` or just `{{ $t('plz translate me') }}` in templates

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 import path from 'path'
 import vue from '@vitejs/plugin-vue'
 import gettext from './vite-gettext-plugin'

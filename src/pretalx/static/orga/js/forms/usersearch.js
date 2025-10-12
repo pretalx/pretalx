@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2017-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const initUserSearch = () => {
     const remoteURL = document.getElementById("vars").getAttribute("remoteUrl")
     let select = document.querySelector("#id_email")

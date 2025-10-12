@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2021-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const dependents = [
     "mail_from",
     "smtp_host",

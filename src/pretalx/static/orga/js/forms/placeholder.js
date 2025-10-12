@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2023-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 /* These functions are used in the email editor, in order to insert clicked
  * placeholders into the currently focused input field. */
 

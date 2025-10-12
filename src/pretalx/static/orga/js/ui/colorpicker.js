@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2019-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const initColorPicker = (field) => {
     // We're creating a parent element to hold the colorpicker/preview and the input field
     const parentEl = document.createElement("div")

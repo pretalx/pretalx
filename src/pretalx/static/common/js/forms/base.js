@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2019-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 /* This script will be included on all pages with forms.
  * It adds a form handler warning when a form was modified when a tab is being closed,
  * and deactivates submit button in order to prevent accidental double submits.

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2019-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const TAB_SELECTOR = "input[role=tab][name=tablist]"
 
 const updateTabPanels = () => {

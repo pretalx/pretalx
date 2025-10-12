@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 const question_page_toggle_view = () => {
     const variant = document.querySelector("#id_variant").value
     const isPublic = document.querySelector("#id_is_public").checked

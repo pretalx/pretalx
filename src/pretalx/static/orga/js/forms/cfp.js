@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2019-present Tobias Kunze
+// SPDX-License-Identifier: Apache-2.0
+
 document
     .querySelectorAll(".cfp-option-table .require input")
     .forEach((element) => {
