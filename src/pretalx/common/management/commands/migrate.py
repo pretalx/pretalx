@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2020-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
 """Django tries to be helpful by suggesting to run "makemigrations" in
 alarmingly red font on every "migrate" run.
 

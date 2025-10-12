@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
+
 class BaseMailTextPlaceholder:
     """This is the base class for for all email text placeholders."""
 

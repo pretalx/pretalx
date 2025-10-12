@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2025-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
 """
 Vendored from django-formset-js, provided under BSD-2-Clause:
 Copyright (c) 2013, Ionata Web Solutions

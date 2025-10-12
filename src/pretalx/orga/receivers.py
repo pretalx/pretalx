@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2022-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
 from django.dispatch import receiver
 
 from pretalx.agenda.signals import html_above_session_pages, html_below_session_pages
