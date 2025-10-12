@@ -323,6 +323,15 @@ class AddSpeakerForm(forms.Form):
         widget=EnhancedSelect,
     )
 
+    class Media:
+        js = [
+            forms.Script("vendored/choices/choices.min.js", defer=""),
+            forms.Script("orga/js/forms/usersearch.js", defer=""),
+        ]
+        css = {
+            "all": ["vendored/choices/choices.min.css", "common/css/forms/select.css"]
+        }
+
     def __init__(self, *args, event=None, form_renderer=None, **kwargs):
         super().__init__(*args, **kwargs)
         if not event.named_locales or len(event.named_locales) < 2:
@@ -340,6 +349,3 @@ class AddSpeakerForm(forms.Form):
 
 class AddSpeakerInlineForm(AddSpeakerForm):
     default_renderer = InlineFormLabelRenderer
-
-    class Media:
-        js = [forms.Script("orga/js/forms/usersearch.js", defer="")]
