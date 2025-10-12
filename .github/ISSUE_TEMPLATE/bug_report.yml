@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2022-present Tobias Kunze
+# SPDX-License-Identifier: CC-BY-SA-4.0
+
 name: Bug Report
 description: Create a report about incorrect or unhelpful behaviour.
 labels: ["type: bug"]

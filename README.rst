@@ -1,3 +1,6 @@
+.. SPDX-FileCopyrightText: 2017-present Tobias Kunze
+.. SPDX-License-Identifier: Apache-2.0
+
 |logo|
 
 .. image:: https://img.shields.io/github/actions/workflow/status/pretalx/pretalx/tests.yml?branch=main

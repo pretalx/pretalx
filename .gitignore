@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2017-present NONE
+# SPDX-License-Identifier: CC0-1.0
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -53,8 +56,10 @@ coverage.xml
 *.log
 local_settings.py
 *.sqlite3
+*.sqlite
 *.db
 _static/
+static.sdist/
 .secret
 
 # Sphinx documentation
@@ -85,10 +90,12 @@ atlassian-ide-plugin.xml
 
 # generic local files
 local/
+data/
 *.xml
 pretalx.cfg
 override_settings.py
 pyrightconfig.json
+tests/locale/
 
 # OS X
 .DS_Store

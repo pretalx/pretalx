@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2022-present NONE
+# SPDX-License-Identifier: CC0-1.0
+
 .DS_Store
 node_modules
 /dist

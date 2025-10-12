@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2023-present Tobias Kunze
+# SPDX-License-Identifier: Apache-2.0
+
 [project]
 name = "pretalx"
 dynamic = ["version"]
@@ -71,6 +74,7 @@ dev = [
   "build",
   "check-manifest",
   "coverage",
+  "django-watchfiles",
   "djhtml",
   "flake8",
   "flake8-bugbear",
@@ -84,7 +88,6 @@ dev = [
   "pytest-mock",
   "pytest-sugar",
   "pytest-xdist",
-  "pywatchman",
   "responses",
   "urllib3",
 ]
@@ -130,7 +133,6 @@ ignore = [
   "CODE_OF_CONDUCT.md",
   "CONTRIBUTORS",
   "docs/*",
-  "src/.watchmanconfig",
   "src/local/*",
   "src/tests",
   "src/tests/*",
