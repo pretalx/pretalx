@@ -1,3 +1,6 @@
+.. SPDX-FileCopyrightText: 2018-present Tobias Kunze and contributors
+.. SPDX-License-Identifier: CC-BY-SA-4.0
+
 Management commands
 ===================
 

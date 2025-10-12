@@ -1,3 +1,6 @@
+.. SPDX-FileCopyrightText: 2021-present Tobias Kunze
+.. SPDX-License-Identifier: CC-BY-SA-4.0
+
 .. _`user-index`:
 
 User Guide

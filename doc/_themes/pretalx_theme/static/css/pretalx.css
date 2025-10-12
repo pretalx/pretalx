@@ -1,3 +1,7 @@
+/*
+ * SPDX-FileCopyrightText: 2017-present Tobias Kunze
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 /* Font styles */
 
@@ -9,7 +13,7 @@
   src:
     local("Titillium Web SemiBold"),
     local("TitilliumWeb-SemiBold"),
-    url("/_static/fonts/titillium-web-v17-latin-ext-600.woff2") format("woff2");
+    url("/_static/titillium-web-v17-latin-ext-600.woff2") format("woff2");
 }
 @font-face {
   font-family: "Titillium Web";
@@ -19,7 +23,7 @@
   src:
     local("Titillium Web Bold"),
     local("TitilliumWeb-Bold"),
-    url("/_static/fonts/titillium-web-v17-latin-ext-700.woff2") format("woff2");
+    url("/_static/titillium-web-v17-latin-ext-700.woff2") format("woff2");
 }
 @font-face {
   font-family: "Titillium Web";
@@ -29,7 +33,7 @@
   src:
     local("Titillium Web SemiBold Italic"),
     local("TitilliumWeb-SemiBoldItalic"),
-    url("/_static/fonts/titillium-web-v17-latin-ext-600italic.woff2") format("woff2");
+    url("/_static/titillium-web-v17-latin-ext-600italic.woff2") format("woff2");
 }
 @font-face {
   font-family: "Titillium Web";
@@ -39,7 +43,7 @@
   src:
     local("Titillium Web Bold Italic"),
     local("TitilliumWeb-BoldItalic"),
-    url("/_static/fonts/titillium-web-v17-latin-ext-700italic.woff2") format("woff2");
+    url("/_static/titillium-web-v17-latin-ext-700italic.woff2") format("woff2");
 }
 @font-face {
   font-family: "Muli";
@@ -48,8 +52,8 @@
   font-display: swap;
   src:
     local(""),
-    url("/_static/fonts/mulish-v12-latin-ext-regular.woff2") format("woff2"),
-    url("/_static/fonts/mulish-v12-latin-ext-regular.woff") format("woff");
+    url("/_static/mulish-v12-latin-ext-regular.woff2") format("woff2"),
+    url("/_static/mulish-v12-latin-ext-regular.woff") format("woff");
 }
 @font-face {
   font-family: "Muli";
@@ -58,8 +62,8 @@
   font-display: swap;
   src:
     local(""),
-    url("/_static/fonts/mulish-v12-latin-ext-700.woff2") format("woff2"),
-    url("/_static/fonts/mulish-v12-latin-ext-700.woff") format("woff");
+    url("/_static/mulish-v12-latin-ext-700.woff2") format("woff2"),
+    url("/_static/mulish-v12-latin-ext-700.woff") format("woff");
 }
 @font-face {
   font-family: "Muli";
@@ -68,8 +72,8 @@
   font-display: swap;
   src:
     local(""),
-    url("/_static/fonts/mulish-v12-latin-ext-italic.woff2") format("woff2"),
-    url("/_static/fonts/mulish-v12-latin-ext-italic.woff") format("woff");
+    url("/_static/mulish-v12-latin-ext-italic.woff2") format("woff2"),
+    url("/_static/mulish-v12-latin-ext-italic.woff") format("woff");
 }
 @font-face {
   font-family: "Muli";
@@ -77,14 +81,14 @@
   font-weight: 700;
   font-display: swap;
   src:
-    url("/_static/fonts/mulish-v12-latin-ext-700italic.woff2") format("woff2"),
-    url("/_static/fonts/mulish-v12-latin-ext-700italic.woff") format("woff");
+    url("/_static/mulish-v12-latin-ext-700italic.woff2") format("woff2"),
+    url("/_static/mulish-v12-latin-ext-700italic.woff") format("woff");
 }
 @font-face {
   font-family: 'FontAwesome';
   src:
-    url("/_static/fonts/fontawesome-webfont.woff2") format('woff2'),
-    url("/_static/fonts/fontawesome-webfont.woff") format('woff');
+    url("/_static/fontawesome-webfont.woff2") format('woff2'),
+    url("/_static/fontawesome-webfont.woff") format('woff');
   font-weight: normal;
   font-style: normal;
 }

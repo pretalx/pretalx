@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2017-present Tobias Kunze
+SPDX-License-Identifier: Apache-2.0
+-->
+
 {# TEMPLATE VAR SETTINGS #}
 {%- set url_root = pathto('', 1) %}
 {%- if url_root == '#' %}{% set url_root = '' %}{% endif %}
@@ -14,7 +19,7 @@
   {% block htmltitle %}
   <title>{{ title|striptags|e }}{{ titlesuffix }}</title>
   {% endblock %}
-  <link rel="shortcut icon" href="{{ pathto('_static/images/favicon.png', 1) }}"/>
+  <link rel="shortcut icon" href="{{ pathto('_static/favicon.png', 1) }}"/>
 
   <link rel="stylesheet" href="{{ pathto('_static/pretalx.css', 1) }}" type="text/css" />
   {% for cssfile in css_files %}
@@ -33,8 +38,6 @@
 
   {%- block extrahead %} {% endblock %}
 
-  {# Keep modernizr in head - http://modernizr.com/docs/#installing #}
-  <script src="{{ pathto('_static/js/modernizr.min.js', 1) }}"></script>
 </head>
 
 <body role="document">

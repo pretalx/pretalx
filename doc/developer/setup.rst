@@ -1,3 +1,6 @@
+.. SPDX-FileCopyrightText: 2017-present Tobias Kunze
+.. SPDX-License-Identifier: CC-BY-SA-4.0
+
 .. _`devsetup`:
 
 The development setup
@@ -198,7 +201,7 @@ Working with the documentation
 To build the documentation, you will have to install the documentation dependencies. Go to the root
 directory of your git repository, and then run::
 
-    (env)$ pip install --upgrade-strategy eager -Ur doc/requirements.txt
+    (env)$ pip install --upgrade-strategy eager -Ue ".[devdocs]"
 
 Then, go to the ``doc`` directory and run ``make html`` to build the documentation::
 

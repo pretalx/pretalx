@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2017-present Tobias Kunze
+# SPDX-License-Identifier: Apache-2.0
+
 """Sphinx theme for pretalx docs. Based on the ReadTheDocs theme."""
 import os
 
