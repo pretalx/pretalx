@@ -372,6 +372,9 @@ class OrganiserDelete(PermissionRequired, ActionConfirmMixin, DetailView):
 
 
 def get_speaker_access_events_for_user(*, user, organiser):
+    if user.is_administrator:
+        return organiser.events.all()
+
     events = set()
     no_access_events = set()
     # Use prefetch_related for efficiency if called often
