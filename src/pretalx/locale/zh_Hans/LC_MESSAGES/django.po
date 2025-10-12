@@ -1,8 +1,5 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# Joel (Jiawei) Wang <joel.bradley.w@gmail.com>, 2023.
-#
+# SPDX-FileCopyrightText: 2017-present Tobias Kunze and contributors
+# SPDX-License-Identifier: Apache-2.0
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"

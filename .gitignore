@@ -95,7 +95,7 @@ data/
 pretalx.cfg
 override_settings.py
 pyrightconfig.json
-tests/locale/
+src/tests/locale/
 
 # OS X
 .DS_Store
