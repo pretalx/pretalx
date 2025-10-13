@@ -14,9 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block title %}{{ submission.title }} :: {% endblock title %}
 
-{% block cfp_stylesheets %}
-    {% form_media %}
-{% endblock cfp_stylesheets %}
+{% block scripts %}{% form_media %}{% endblock scripts %}
 
 {% block content %}
     {% has_perm "submission.add_speaker_submission" request.user submission as can_invite_speakers %}

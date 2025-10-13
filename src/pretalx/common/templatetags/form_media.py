@@ -38,7 +38,7 @@ def form_media(context, always_base=False, extra_js=None, extra_css=None):
             except StopIteration:
                 with suppress(Exception):
                     media += item.empty_form.media
-            media += DEFAULT_FORMSET_MEDIA + DEFAULT_FORM_MEDIA
+            media = DEFAULT_FORM_MEDIA + DEFAULT_FORMSET_MEDIA + media
         elif isinstance(item, forms.BaseForm):
             media += item.media
         elif item and isinstance(item, (list, set)):

@@ -18,9 +18,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <script defer src="{% static "cfp/js/cfp-tabtitle.js" %}"></script>
     <link rel="stylesheet" href="{% static "common/css/ui/stages.css" %}" />
     <link rel="stylesheet" href="{% static "common/css/ui/tooltip.css" %}" />
-    {% form_media %}
     {% block cfp_submission_header %}{% endblock cfp_submission_header %}
 {% endblock cfp_header %}
+
+{% block scripts %}
+    {% form_media %}
+{% endblock scripts %}
 
 {% block content %}
     <div id="submission-steps" class="stages">
