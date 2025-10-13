@@ -3,6 +3,7 @@
 
 include _build/backend.py
 include LICENSE
+recursive-include LICENSES *.txt
 include README.rst
 include src/pretalx.example.cfg
 
@@ -29,6 +30,7 @@ recursive-include src/pretalx/orga/templates *
 recursive-include src/pretalx/schedule/templates *
 recursive-exclude src/tests *
 recursive-include src *.py
+recursive-include src *.license
 
 global-exclude *.py[co]
 global-exclude __pycache__
