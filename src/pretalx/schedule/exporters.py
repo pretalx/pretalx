@@ -126,8 +126,9 @@ class FrabXmlExporter(ScheduleData):
     cors = "*"
     extension = "xml"
     filename_identifier = "schedule"
+    content_type = "text/xml"
 
-    def render(self, **kwargs):
+    def get_data(self, **kwargs):
         context = {
             "data": self.data,
             "metadata": self.metadata,
@@ -136,8 +137,7 @@ class FrabXmlExporter(ScheduleData):
             "version": __version__,
             "base_url": get_base_url(self.event),
         }
-        content = get_template("agenda/schedule.xml").render(context=context)
-        return self.filename, "text/xml", content
+        return get_template("agenda/schedule.xml").render(context=context)
 
 
 class FrabXCalExporter(ScheduleData):
@@ -147,12 +147,12 @@ class FrabXCalExporter(ScheduleData):
     cors = "*"
     filename_identifier = "schedule"
     extension = "xcal"
+    content_type = "text/xml"
 
-    def render(self, **kwargs):
+    def get_data(self, **kwargs):
         url = get_base_url(self.event)
         context = {"data": self.data, "url": url, "domain": urlparse(url).netloc}
-        content = get_template("agenda/schedule.xcal").render(context=context)
-        return self.filename, "text/xml", content
+        return get_template("agenda/schedule.xcal").render(context=context)
 
 
 class FrabJsonExporter(ScheduleData):
@@ -162,8 +162,9 @@ class FrabJsonExporter(ScheduleData):
     cors = "*"
     filename_identifier = "schedule"
     extension = "json"
+    content_type = "application/json"
 
-    def get_data(self, **kwargs):
+    def _get_data(self, **kwargs):
         schedule = self.schedule
         return {
             "url": self.metadata["url"],
@@ -281,19 +282,14 @@ class FrabJsonExporter(ScheduleData):
             },
         }
 
-    def render(self, **kwargs):
-        content = self.get_data()
-        return (
-            self.filename,
-            "application/json",
-            json.dumps(
-                {
-                    "$schema": "https://c3voc.de/schedule/schema.json",
-                    "generator": {"name": "pretalx", "version": __version__},
-                    "schedule": content,
-                },
-                cls=I18nJSONEncoder,
-            ),
+    def get_data(self, **kwargs):
+        return json.dumps(
+            {
+                "$schema": "https://c3voc.de/schedule/schema.json",
+                "generator": {"name": "pretalx", "version": __version__},
+                "schedule": self._get_data(**kwargs),
+            },
+            cls=I18nJSONEncoder,
         )
 
 
@@ -306,12 +302,13 @@ class ICalExporter(BaseExporter):
     cors = "*"
     filename_identifier = "schedule"
     extension = "ics"
+    content_type = "text/calendar"
 
     def __init__(self, event, schedule=None):
         super().__init__(event)
         self.schedule = schedule
 
-    def render(self, **kwargs):
+    def get_data(self, **kwargs):
         netloc = urlparse(get_base_url(self.event)).netloc
         cal = vobject.iCalendar()
         cal.add("prodid").value = f"-//pretalx//{netloc}//"
@@ -325,8 +322,7 @@ class ICalExporter(BaseExporter):
         )
         for talk in talks:
             talk.build_ical(cal, creation_time=creation_time, netloc=netloc)
-
-        return self.filename, "text/calendar", cal.serialize()
+        return cal.serialize()
 
 
 class FavedICalExporter(BaseExporter):
@@ -338,6 +334,7 @@ class FavedICalExporter(BaseExporter):
     cors = "*"
     filename_identifier = "faved"
     extension = "ics"
+    content_type = "text/calendar"
 
     def is_public(self, request, **kwargs):
         return (
@@ -346,7 +343,7 @@ class FavedICalExporter(BaseExporter):
             and request.user.has_perm("schedule.list_schedule", request.event)
         )
 
-    def render(self, request, **kwargs):
+    def get_data(self, request, **kwargs):
         if not request.user.is_authenticated:
             return None
 
@@ -360,4 +357,4 @@ class FavedICalExporter(BaseExporter):
 
         for slot in slots:
             slot.build_ical(cal)
-        return self.filename, "text/calendar", cal.serialize()
+        return cal.serialize()

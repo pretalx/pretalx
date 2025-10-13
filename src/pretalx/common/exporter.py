@@ -57,6 +57,14 @@ class BaseExporter:
         raise NotImplementedError()  # NOQA
 
     @property
+    def content_type(self) -> str:
+        """The content type to be used when returning data.
+
+        You do not need to implement this property if you override ``render``.
+        """
+        raise NotImplementedError()  # NOQA
+
+    @property
     def identifier(self) -> str:
         """A short and unique identifier for this exporter.
 
@@ -136,10 +144,16 @@ class BaseExporter:
         """
         return "submission"
 
-    def render(self, request, **kwargs) -> tuple[str, str, str]:
-        """Render the exported file and return a tuple consisting of a file
-        name, a file type and file content."""
+    def get_data(self, request, **kwargs) -> str:
+        """Return the file contents that ``render`` should return."""
         raise NotImplementedError()  # NOQA
+
+    def render(self, request, **kwargs) -> tuple[str, str, str]:
+        return (
+            self.filename,
+            self.content_type,
+            self.get_data(request=request, **kwargs),
+        )
 
     class urls(EventUrls):
         """The base attribute of this class contains the relative URL where
@@ -158,12 +172,12 @@ class BaseExporter:
 
 class CSVExporterMixin:
     extension = "csv"
+    content_type = "text/plain"
 
-    def render(self, request, **kwargs):
-        fieldnames, data = self.get_data()
+    def get_data(self, request, **kwargs):
+        fieldnames, data = self.get_data(request, **kwargs)
         output = StringIO()
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(data)
-        content = output.getvalue()
-        return self.filename, "text/plain", content
+        return output.getvalue()
