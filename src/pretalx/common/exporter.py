@@ -10,6 +10,7 @@ from defusedcsv import csv
 from defusedxml import ElementTree
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
+from django.utils.timezone import now
 
 from pretalx.common.urls import EventUrls
 
@@ -34,13 +35,52 @@ class BaseExporter:
         raise NotImplementedError()  # NOQA
 
     @property
+    def filename_identifier(self) -> str:
+        """A short and unique identifier for this exporter.
+
+        This should only contain lower-case letters and in most cases
+        will be the same as your package name. By default, it will be
+        used in the generated filename.
+        You do not have to implement this property if you set both
+        ``identifier`` and ``filename`` instead.
+        """
+        raise NotImplementedError()  # NOQA
+
+    @property
+    def extension(self) -> str:
+        """The file extension to be used for this exporter.
+
+        By default, it will be used in the generated filename.
+        You do not have to implement this property if you implement
+        ``filename`` instead.
+        """
+        raise NotImplementedError()  # NOQA
+
+    @property
     def identifier(self) -> str:
         """A short and unique identifier for this exporter.
 
         This should only contain lower-case letters and in most cases
         will be the same as your package name.
+        By default, this will return "{filename_identifier}.{extension}"
         """
-        raise NotImplementedError()  # NOQA
+        return f"{self.filename_identifier}.{self.extension}"
+
+    def get_timestamp(self):
+        return now().strftime("-%Y-%m-%d-%H-%M")
+
+    @property
+    def filename(self) -> str:
+        """
+        If you define an ``extension`` attribute on your exporter,
+        you can use the ``filename`` property in your ``get_data`` method.
+        It will return a filename including the event slug, your exporter's
+        identifier (or the ``filename_identifier``) and a timestamp
+        for reliable sorting.
+        """
+        identifier = self.filename_identifier or self.identifier
+        timestamp = self.get_timestamp()
+        return f"{self.event.slug}-{identifier}-{timestamp}.{self.extension}"
 
     @cached_property
     def quoted_identifier(self) -> str:
@@ -117,7 +157,9 @@ class BaseExporter:
 
 
 class CSVExporterMixin:
-    def render(self, **kwargs):
+    extension = "csv"
+
+    def render(self, request, **kwargs):
         fieldnames, data = self.get_data()
         output = StringIO()
         writer = csv.DictWriter(output, fieldnames=fieldnames)

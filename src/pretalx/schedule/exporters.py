@@ -119,12 +119,13 @@ class ScheduleData(BaseExporter):
 
 
 class FrabXmlExporter(ScheduleData):
-    identifier = "schedule.xml"
     verbose_name = "XML (frab compatible)"
     public = True
     show_qrcode = True
     icon = "fa-code"
     cors = "*"
+    extension = "xml"
+    filename_identifier = "schedule"
 
     def render(self, **kwargs):
         context = {
@@ -136,29 +137,31 @@ class FrabXmlExporter(ScheduleData):
             "base_url": get_base_url(self.event),
         }
         content = get_template("agenda/schedule.xml").render(context=context)
-        return f"{self.event.slug}-schedule.xml", "text/xml", content
+        return self.filename, "text/xml", content
 
 
 class FrabXCalExporter(ScheduleData):
-    identifier = "schedule.xcal"
     verbose_name = "XCal (frab compatible)"
     public = True
     icon = "fa-calendar"
     cors = "*"
+    filename_identifier = "schedule"
+    extension = "xcal"
 
     def render(self, **kwargs):
         url = get_base_url(self.event)
         context = {"data": self.data, "url": url, "domain": urlparse(url).netloc}
         content = get_template("agenda/schedule.xcal").render(context=context)
-        return f"{self.event.slug}.xcal", "text/xml", content
+        return self.filename, "text/xml", content
 
 
 class FrabJsonExporter(ScheduleData):
-    identifier = "schedule.json"
     verbose_name = "JSON (frab compatible)"
     public = True
     icon = "{ }"
     cors = "*"
+    filename_identifier = "schedule"
+    extension = "json"
 
     def get_data(self, **kwargs):
         schedule = self.schedule
@@ -281,7 +284,7 @@ class FrabJsonExporter(ScheduleData):
     def render(self, **kwargs):
         content = self.get_data()
         return (
-            f"{self.event.slug}.json",
+            self.filename,
             "application/json",
             json.dumps(
                 {
@@ -295,13 +298,14 @@ class FrabJsonExporter(ScheduleData):
 
 
 class ICalExporter(BaseExporter):
-    identifier = "schedule.ics"
     verbose_name = _("iCal (full event)")
     public = True
     show_public = False
     show_qrcode = True
     icon = "fa-calendar"
     cors = "*"
+    filename_identifier = "schedule"
+    extension = "ics"
 
     def __init__(self, event, schedule=None):
         super().__init__(event)
@@ -322,7 +326,7 @@ class ICalExporter(BaseExporter):
         for talk in talks:
             talk.build_ical(cal, creation_time=creation_time, netloc=netloc)
 
-        return f"{self.event.slug}.ics", "text/calendar", cal.serialize()
+        return self.filename, "text/calendar", cal.serialize()
 
 
 class FavedICalExporter(BaseExporter):
@@ -332,6 +336,8 @@ class FavedICalExporter(BaseExporter):
     icon = "fa-calendar"
     show_public = True
     cors = "*"
+    filename_identifier = "faved"
+    extension = "ics"
 
     def is_public(self, request, **kwargs):
         return (
@@ -354,4 +360,4 @@ class FavedICalExporter(BaseExporter):
 
         for slot in slots:
             slot.build_ical(cal)
-        return f"{self.event.slug}-favs.ics", "text/calendar", cal.serialize()
+        return self.filename, "text/calendar", cal.serialize()

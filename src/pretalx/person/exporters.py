@@ -13,14 +13,11 @@ class CSVSpeakerExporter(CSVExporterMixin, BaseExporter):
     identifier = "speakers.csv"
     cors = "*"
     group = "speaker"
+    filename_identifier = "speakers"
 
     @property
     def verbose_name(self):
         return _("Speaker CSV")
-
-    @property
-    def filename(self):
-        return f"{self.event.slug}-speakers.csv"
 
     def get_data(self, **kwargs):
         fieldnames = ["name", "email", "confirmed"]

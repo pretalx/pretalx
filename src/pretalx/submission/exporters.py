@@ -10,19 +10,15 @@ from pretalx.submission.models import Answer
 
 
 class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
-    identifier = "speaker-questions.csv"
     public = False
     icon = "fa-question-circle"
     cors = "*"
     group = "speaker"
+    filename_identifier = "speaker-questions"
 
     @property
     def verbose_name(self):
         return _("Custom fields data") + " (" + _("speakers") + ")"
-
-    @property
-    def filename(self):
-        return f"{self.event.slug}-speaker-questions.csv"
 
     def get_data(self, **kwargs):
         field_names = ["code", "name", "email", "question", "answer"]
@@ -56,18 +52,14 @@ def register_speaker_question_exporter(sender, **kwargs):
 
 
 class SubmissionQuestionData(CSVExporterMixin, BaseExporter):
-    identifier = "submission-questions.csv"
     public = False
     icon = "fa-question-circle-o"
     cors = "*"
+    filename_identifier = "submission-questions"
 
     @property
     def verbose_name(self):
         return _("Custom fields data") + " (" + _("submissions") + ")"
-
-    @property
-    def filename(self):
-        return f"{self.event.slug}-submission-questions.csv"
 
     def get_data(self, **kwargs):
         field_names = ["code", "title", "question", "answer"]
