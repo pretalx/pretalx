@@ -37,6 +37,7 @@ class SubmitterAccessCodeTable(PretalxTable):
         verbose_name=_("Session type"),
         order_by=Lower(Translate("submission_type__name")),
     )
+    valid_until = tables.Column()
     uses = tables.Column(
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
         order_by="redeemed",
@@ -65,6 +66,9 @@ class SubmitterAccessCodeTable(PretalxTable):
         }
     )
 
+    def render_valid_until(self, record):
+        return record.valid_until.strftime("%Y-%m-%d %H:%M")
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.exclude = list(self.exclude)
@@ -77,6 +81,7 @@ class SubmitterAccessCodeTable(PretalxTable):
             "code",
             "track",
             "submission_type",
+            "valid_until",
             "uses",
             "actions",
         )
