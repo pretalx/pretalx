@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2019-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+
 def is_html_export(request):
     """We tell templates that they are rendering a static export if the request
     META is set.
