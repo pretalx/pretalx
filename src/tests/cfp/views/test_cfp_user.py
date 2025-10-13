@@ -1,11 +1,14 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import datetime as dt
+
 import pytest
 from django.conf import settings
 from django.core import mail as djmail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from django.utils.timezone import now
 from django_scopes import scope
 
 from pretalx.submission.models import SubmissionStates
@@ -891,3 +894,171 @@ def test_draft_submission_prevented_when_submission_type_requires_access_code(
         assert response.status_code == 200
         submission.refresh_from_db()
         assert submission.state == SubmissionStates.DRAFT
+
+
+@pytest.mark.parametrize("max_uses,exhausted", ((1, True), (2, False)))
+@pytest.mark.django_db
+def test_draft_with_deadline_access_code_exhausted(
+    event, access_code, submission, max_uses, exhausted
+):
+
+    event.cfp.deadline = now() - dt.timedelta(days=1)
+    event.cfp.save()
+
+    with scope(event=event):
+        submission.state = "draft"
+        submission.access_code = access_code
+        submission.save()
+        access_code.maximum_uses = max_uses
+        access_code.redeemed = 1
+        access_code.save()
+
+        assert access_code.is_valid is not exhausted
+        assert access_code.time_valid
+
+        assert (
+            submission.editable
+        ), "Draft should be editable even after access code redemptions are exhausted"
+
+
+@pytest.mark.django_db
+def test_draft_with_deadline_access_code_expired(event, access_code, submission):
+    event.cfp.deadline = now() - dt.timedelta(days=1)
+    event.cfp.save()
+    access_code.valid_until = now() - dt.timedelta(hours=1)
+    access_code.save()
+
+    with scope(event=event):
+        submission.state = "draft"
+        submission.access_code = access_code
+        submission.save()
+
+        assert not access_code.is_valid
+        assert not access_code.time_valid
+        assert (
+            not submission.editable
+        ), "Draft should not be editable after access code time limit expires"
+
+
+@pytest.mark.parametrize("max_uses,exhausted", ((1, True), (2, False)))
+@pytest.mark.django_db
+def test_draft_with_track_access_code_exhausted(
+    event, speaker, access_code, submission, track, max_uses, exhausted
+):
+    """Test that a draft for a track requiring access code CAN still be edited
+    even after the access code is exhausted (redemption count reached)."""
+    with scope(event=event):
+        track.requires_access_code = True
+        track.save()
+        access_code.track = track
+        access_code.maximum_uses = max_uses
+        access_code.redeemed = 1
+        access_code.save()
+        submission.state = "draft"
+        submission.track = track
+        submission.access_code = access_code
+        submission.save()
+
+        assert access_code.is_valid is not exhausted
+        assert access_code.time_valid
+
+        assert (
+            submission.editable
+        ), "Draft should be editable even after track access code redemptions are exhausted"
+
+
+@pytest.mark.django_db
+def test_access_code_redeemed_on_draft_creation(event, client, access_code):
+    event.cfp.deadline = now() - dt.timedelta(days=1)
+    event.cfp.save()
+    access_code.maximum_uses = 5
+    access_code.redeemed = 0
+    access_code.save()
+
+    with scope(event=event):
+        submission_type = event.cfp.default_type.id
+
+    url = f"/test/submit/?access_code={access_code.code}"
+    response = client.get(url, follow=True)
+    assert response.status_code == 200
+    current_url = response.redirect_chain[-1][0]
+    info_data = {
+        "title": "Test Draft",
+        "content_locale": "en",
+        "description": "Description",
+        "abstract": "Abstract",
+        "notes": "Notes",
+        "slot_count": 1,
+        "submission_type": submission_type,
+        "additional_speaker": "",
+    }
+    response = client.post(current_url, data=info_data, follow=True)
+    current_url = (
+        response.redirect_chain[-1][0] if response.redirect_chain else current_url
+    )
+    user_data = {
+        "register_name": "testuser@example.com",
+        "register_email": "testuser@example.com",
+        "register_password": "testpassw0rd!",
+        "register_password_repeat": "testpassw0rd!",
+    }
+    response = client.post(current_url, data=user_data, follow=True)
+    current_url = (
+        response.redirect_chain[-1][0] if response.redirect_chain else current_url
+    )
+    profile_data = {
+        "name": "Jane Doe",
+        "biography": "Bio",
+        "action": "draft",
+    }
+    response = client.post(current_url, data=profile_data, follow=True)
+    access_code.refresh_from_db()
+    assert (
+        access_code.redeemed == 1
+    ), "Access code should be redeemed when creating a draft"
+
+
+@pytest.mark.django_db
+def test_access_code_not_redeemed_again_on_dedraft(
+    event,
+    speaker,
+    speaker_client,
+    access_code,
+    submission,
+):
+    event.cfp.deadline = now() - dt.timedelta(days=1)
+    event.cfp.save()
+    access_code.maximum_uses = 5
+    access_code.redeemed = 1
+    access_code.save()
+
+    with scope(event=event):
+        submission.access_code = access_code
+        submission.state = "draft"
+        submission.save()
+        assert access_code.is_valid
+        assert submission.editable
+
+    data = {
+        "action": "dedraft",
+        "title": submission.title,
+        "submission_type": submission.submission_type.pk,
+        "content_locale": submission.content_locale,
+        "description": submission.description or "",
+        "abstract": "test",
+        "notes": submission.notes or "",
+        "resource-TOTAL_FORMS": 0,
+        "resource-INITIAL_FORMS": 0,
+        "resource-MIN_NUM_FORMS": 0,
+        "resource-MAX_NUM_FORMS": 1000,
+    }
+    response = speaker_client.post(submission.urls.user_base, data=data, follow=True)
+    assert response.status_code == 200
+
+    access_code.refresh_from_db()
+    assert (
+        access_code.redeemed == 1
+    ), "Access code should NOT be redeemed again when submitting a draft"
+
+    submission.refresh_from_db()
+    assert submission.state == SubmissionStates.SUBMITTED

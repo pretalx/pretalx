@@ -101,12 +101,16 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
         return self.event
 
     @property
+    def redemptions_valid(self):
+        return self.maximum_uses - self.redeemed > 0 if self.maximum_uses else True
+
+    @property
+    def time_valid(self):
+        return now() < self.valid_until if self.valid_until else True
+
+    @property
     def is_valid(self):
-        time_valid = now() < self.valid_until if self.valid_until else True
-        redemptions_valid = (
-            self.maximum_uses - self.redeemed > 0 if self.maximum_uses else True
-        )
-        return time_valid and redemptions_valid
+        return self.time_valid and self.redemptions_valid
 
     @property
     def redemptions_left(self):

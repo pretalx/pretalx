@@ -402,9 +402,11 @@ class Submission(GenerateCode, PretalxModel):
             # We have to check if we comply with the standard submission requirements if
             # we are in a draft state, as drafts should only be editable when they could
             # also be submitted.
+            # For existing drafts with access codes, we ignore the redemption count
+            # since the code was already redeemed when creating the draft.
             access_code = (
                 self.access_code
-                if (self.access_code and self.access_code.is_valid)
+                if (self.access_code and self.access_code.time_valid)
                 else None
             )
             if (self.track and self.track.requires_access_code) and (
