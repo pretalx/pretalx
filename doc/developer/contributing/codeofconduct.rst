@@ -33,13 +33,13 @@ Behaviour that exemplifies our standards and values includes:
 * Repairing harm when it occurs.
 
 In contrast, the following behaviours have no place in our community.
-Instances, threats, and promotion of these behaviors are violations of this Code of Conduct.
+Instances, threats, and promotion of these behaviours are violations of this Code of Conduct.
 
 * Violating explicitly expressed boundaries or engaging in unnecessary personal
   attention after any clear request to stop.
 * Making insulting, demeaning, or pejorative comments directed at a community
   member or group of people.
-* The use of unwelcome sexualized language or imagery, and unwelcome sexual
+* The use of unwelcome sexual language or imagery, and unwelcome sexual
   attention or advances of any kind.
 * Sharing or acting on someone's personal or private information without their
   permission.
@@ -72,7 +72,7 @@ appointed representative at an online or offline event.
 Enforcement
 -----------
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be
+Instances of abusive, harassing, or otherwise unacceptable behaviour may be
 reported to the project team at support@pretalx.com. The project team will
 review and investigate all complaints, and will respond in a way that it deems
 appropriate to the circumstances. The project team is obligated to respect the
