@@ -548,6 +548,16 @@ class AccessCodeView(OrderActionMixin, OrgaCRUDView):
             return _("New access code")
         return _("Access codes")
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.action in ("detail", "update"):
+            context["submissions"] = (
+                self.object.submissions.all()
+                .exclude(state__in=[SubmissionStates.DRAFT, SubmissionStates.DELETED])
+                .prefetch_related("speakers")
+            )
+        return context
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         if (track := self.request.GET.get("track")) and (
