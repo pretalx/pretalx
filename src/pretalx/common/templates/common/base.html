@@ -137,7 +137,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             </details>
                         {% elif not is_html_export %}
                             {% if request.event %}
-                                <a href="{{ request.event.urls.login }}?next={{ request.path|urlencode }}">login</a>
+                                <a href="{{ request.event.urls.login }}?next={{ request.path|urlencode }}{% querystring %}">login</a>
                             {% else %}
                                 <a href="{% url "orga:login" %}">login</a>
                             {% endif %}
