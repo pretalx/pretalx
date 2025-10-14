@@ -153,6 +153,12 @@ CONFIG = {
             "env": os.getenv("PRETALX_FILE_UPLOAD_LIMIT"),
         }
     },
+    "ui": {
+        "max_pagination_limit": {
+            "default": 250,
+            "env": os.getenv("PRETALX_MAX_PAGINATION_LIMIT"),
+        }
+    },
     "api": {
         "max_pagination_limit": {
             "default": 50,
