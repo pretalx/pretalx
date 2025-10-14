@@ -127,7 +127,9 @@ def test_event_model_slug_uniqueness():
 
 
 @pytest.mark.django_db
-def test_event_copy_settings(event, submission_type, choice_question, track):
+def test_event_copy_settings(
+    event, submission_type, choice_question, track, room_availability
+):
     with scope(event=event):
         event.custom_domain = "https://testeventcopysettings.example.org"
         event.settings.random_value = "testcopysettings"
@@ -139,6 +141,10 @@ def test_event_copy_settings(event, submission_type, choice_question, track):
         event.cfp.deadline = now()
         event.cfp.save()
         assert event.submission_types.count() == 2
+        assert event.rooms.count() == 1
+        assert event.rooms.first().availabilities.count() == 1
+        original_room = event.rooms.first()
+        original_availability = original_room.availabilities.first()
     with scopes_disabled():
         new_event = Event.objects.create(
             organiser=event.organiser,
@@ -165,6 +171,16 @@ def test_event_copy_settings(event, submission_type, choice_question, track):
         assert new_event.cfp.deadline == event.cfp.deadline
         assert new_event.questions.count()
         assert new_event.questions.first().options.count()
+        # Check rooms and availabilities are copied
+        assert new_event.rooms.count() == 1
+        copied_room = new_event.rooms.first()
+        assert str(copied_room.name) == str(original_room.name)
+        assert copied_room.availabilities.count() == 1
+        copied_availability = copied_room.availabilities.first()
+        # Check that the availability was shifted by the date delta
+        delta = new_event.date_from - event.date_from
+        assert copied_availability.start == original_availability.start + delta
+        assert copied_availability.end == original_availability.end + delta
 
 
 @pytest.mark.django_db

@@ -682,6 +682,20 @@ class Event(PretalxModel):
             track.event = self
             track.save()
 
+        if not self.rooms.exists():
+            for room in other_event.rooms.all():
+                availabilities = list(room.availabilities.all())
+                room.pk = None
+                room.event = self
+                room.save()
+                for availability in availabilities:
+                    availability.pk = None
+                    availability.room = room
+                    availability.event = self
+                    availability.start += delta
+                    availability.end += delta
+                    availability.save()
+
         question_map = {}
         for question in other_event.questions.all():
             question_map[question.pk] = question
