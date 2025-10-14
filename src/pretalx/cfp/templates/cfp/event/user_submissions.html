@@ -31,12 +31,13 @@ SPDX-FileContributor: akoskaaa
     {% if information %}
         <h2>{% translate "Important Information" %}</h2>
         {% for info in information %}
-            <h4>{{ info.title }}</h4>
-            {{ info.text|rich_text }}
-            {% if info.resource %}
-                <a href="{{ info.resource.url }}"><i class="fa fa-file-o"></i> {{ info.resource.name }}</a>
-            {% endif %}
-            {% if not forloop.last %}<hr>{% endif %}
+            <div class="alert alert-info"><div>
+                <h4>{{ info.title }}</h4>
+                {{ info.text|rich_text }}
+                {% if info.resource %}
+                    <a href="{{ info.resource.url }}"><i class="fa fa-file-o"></i> {{ info.resource.name }}</a>
+                {% endif %}
+            </div></div>
         {% endfor %}
     {% endif %}
     {% html_signal "pretalx.cfp.signals.html_above_submission_list" sender=request.event request=request %}
