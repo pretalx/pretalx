@@ -96,7 +96,7 @@ If you want to look at conferences using pretalx, head over to the wiki for a
 `list of events`_. And if you use pretalx for your event, please add it to the
 list (or tell us about it, and we'll add it)!
 
-.. |logo| image:: https://raw.githubusercontent.com/pretalx/pretalx/main/src/pretalx/static/common/img/logo.svg
+.. |logo| image:: https://raw.githubusercontent.com/pretalx/pretalx/main/src/pretalx/static/common/img/logo.png
    :alt: pretalx logo
    :target: https://pretalx.com
 .. |screenshots| image:: https://img.pretalx.com/docs/screenshots.png
