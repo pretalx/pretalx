@@ -462,7 +462,8 @@ class CRUDView(PaginationMixin, Filterable, View):
         kwargs["view"] = self
         kwargs["action"] = self.action
         if self.has_create_permission:
-            kwargs["create_url"] = self.reverse("create")
+            with suppress(NoReverseMatch):
+                kwargs["create_url"] = self.reverse("create")
         kwargs["has_update_permission"] = self.has_update_permission
         kwargs["has_delete_permission"] = self.has_delete_permission
         kwargs["generic_title"] = self.get_generic_title(instance=self.object)
