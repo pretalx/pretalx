@@ -109,6 +109,7 @@ LOG_NAMES = {
     "pretalx.submission.withdraw": _("The proposal was withdrawn."),
     "pretalx.submission.answer.update": _("A custom field response was modified."),
     "pretalx.submission.answer.create": _("A custom field response was added."),
+    "pretalx.submission.answer.delete": _("A custom field response was removed."),
     "pretalx.submission.comment.create": _("A proposal comment was added."),
     "pretalx.submission.comment.delete": _("A proposal comment was deleted."),
     "pretalx.submission_type.create": _("A session type was added."),
