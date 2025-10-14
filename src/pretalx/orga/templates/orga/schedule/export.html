@@ -127,8 +127,8 @@ SPDX-FileContributor: luto
             {% endblocktranslate %}
         </p>
 
-            <pre> curl -H "Authorization: Token {{ request.user.auth_token.key }}" {{ request.event.urls.frab_xml.full }}
- curl -H "Authorization: Token {{ request.user.auth_token.key }}" {{ request.event.api_urls.submissions.full }} </pre>
+            <pre> curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.urls.frab_xml.full }}
+ curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.api_urls.submissions.full }} </pre>
 
         {% include "orga/includes/submit_row.html" with submit_buttons=api_buttons %}
     </section>
