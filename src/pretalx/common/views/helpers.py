@@ -10,7 +10,7 @@ def is_form_bound(request, form_name, form_param="form"):
 
 
 def get_static(
-    request, path, content_type, as_attachment=False, filename=None
+    path, content_type, as_attachment=False, filename=None
 ):  # pragma: no cover
     try:
         return FileResponse(
