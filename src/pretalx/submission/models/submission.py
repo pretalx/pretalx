@@ -394,7 +394,7 @@ class Submission(GenerateCode, PretalxModel):
         return self.image.url if self.image else ""
 
     @cached_property
-    def editable(self):
+    def editable(self) -> bool:
         deadline = self.submission_type.deadline or self.event.cfp.deadline
         deadline_open = (not deadline) or now() <= deadline
 
@@ -420,7 +420,7 @@ class Submission(GenerateCode, PretalxModel):
 
             # We are not missing an access code, so we can just check if we hit the
             # deadline or can ignore it safely
-            return deadline_open or access_code
+            return bool(deadline_open or access_code)
 
         if not self.event.get_feature_flag("speakers_can_edit_submissions"):
             return False
