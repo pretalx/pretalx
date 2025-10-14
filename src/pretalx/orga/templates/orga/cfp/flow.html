@@ -14,6 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <link rel="stylesheet" type="text/css" href="{% static header_path %}" />
         {% endwith %}
     {% endif %}
+    <link rel="stylesheet" href="{% static "common/css/ui/stages.css" %}">
     <link rel="stylesheet" type="text/css" href="{% static "orga/css/ui/flow.css" %}" />
 {% endblock stylesheets %}
 
@@ -26,6 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% else %}
         <script defer src="{% static "vendored/vue.min.js" %}"></script>
     {% endif %}
+    <script defer src="{% static "vendored/marked.min.js" %}"></script>
     <script defer src="{% static "orga/js/ui/flow.js" %}"></script>
 {% endblock scripts %}
 
