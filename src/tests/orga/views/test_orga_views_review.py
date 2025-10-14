@@ -593,3 +593,55 @@ def test_orga_can_export_reviews(review, orga_client):
     )
     assert response.status_code == 200
     assert review.text in response.text
+
+
+@pytest.mark.django_db
+def test_orga_can_bulk_tag_submissions(
+    orga_client, submission, other_submission, tag, event
+):
+    with scope(event=event):
+        tag2 = event.tags.create(tag="anothertag", color="#ff0000")
+        assert submission.tags.count() == 0
+        assert other_submission.tags.count() == 0
+
+    # Add tags to submissions
+    response = orga_client.post(
+        event.orga_urls.reviews + "bulk-tag/",
+        {
+            f"s-{submission.code}": "on",
+            f"s-{other_submission.code}": "on",
+            "tags": [tag.id, tag2.id],
+            "action": "add",
+        },
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    with scope(event=event):
+        submission.refresh_from_db()
+        other_submission.refresh_from_db()
+        assert submission.tags.count() == 2
+        assert set(submission.tags.all()) == {tag, tag2}
+        assert other_submission.tags.count() == 2
+        assert set(other_submission.tags.all()) == {tag, tag2}
+
+    # Remove tags from submissions
+    response = orga_client.post(
+        event.orga_urls.reviews + "bulk-tag/",
+        {
+            f"s-{submission.code}": "on",
+            f"s-{other_submission.code}": "on",
+            "tags": [tag.id],
+            "action": "remove",
+        },
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    with scope(event=event):
+        submission.refresh_from_db()
+        other_submission.refresh_from_db()
+        assert submission.tags.count() == 1
+        assert submission.tags.first() == tag2
+        assert other_submission.tags.count() == 1
+        assert other_submission.tags.first() == tag2

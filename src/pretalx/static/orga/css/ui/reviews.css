@@ -113,3 +113,17 @@
     margin: 16px;
   }
 }
+.bulk-tag-controls {
+  .form-group-inline {
+    margin-bottom: 0;
+    #id_action {
+      display: flex;
+      & > div {
+        margin-right: 8px;
+      }
+    }
+  }
+  .col-md-3.button-container {
+    padding-right: 0;
+  }
+}

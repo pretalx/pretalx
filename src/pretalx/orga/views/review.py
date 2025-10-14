@@ -37,6 +37,7 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
 )
 from pretalx.orga.forms.review import (
+    BulkTagForm,
     DirectionForm,
     ProposalForReviewerForm,
     ReviewAssignImportForm,
@@ -454,6 +455,89 @@ class BulkReview(EventPermissionRequired, TemplateView):
                 form.save()
         messages.success(self.request, phrases.base.saved)
         return super().get(request, *args, **kwargs)
+
+
+class BulkTagging(EventPermissionRequired, SubmissionListMixin, TemplateView):
+    template_name = "orga/review/bulk_tag.html"
+    permission_required = "submission.orga_update_submission"
+    paginate_by = None
+    usable_states = (
+        SubmissionStates.SUBMITTED,
+        SubmissionStates.ACCEPTED,
+        SubmissionStates.REJECTED,
+        SubmissionStates.CONFIRMED,
+    )
+
+    @context
+    @cached_property
+    def tag_form(self):
+        return BulkTagForm(
+            event=self.request.event,
+            data=self.request.POST if self.request.method == "POST" else None,
+        )
+
+    @context
+    @cached_property
+    def submissions(self):
+        return (
+            self._get_base_queryset()
+            .select_related("submission_type", "track")
+            .prefetch_related("speakers", "tags")
+        )
+
+    @context
+    @cached_property
+    def can_view_speakers(self):
+        return self.request.user.has_perm(
+            "person.reviewer_list_speakerprofile", self.request.event
+        )
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        if not self.tag_form.is_valid():
+            messages.error(request, phrases.base.error_saving_changes)
+            return self.get(request, *args, **kwargs)
+
+        tags = self.tag_form.cleaned_data["tags"]
+        action = self.tag_form.cleaned_data["action"]
+        submission_codes = [
+            key.strip("s-")
+            for key, value in request.POST.items()
+            if key.startswith("s-") and value == "on"
+        ]
+
+        if not submission_codes:
+            messages.warning(request, _("No proposals were selected."))
+            return self.get(request, *args, **kwargs)
+
+        submissions = self.submissions.filter(code__in=submission_codes)
+        count = 0
+        for submission in submissions:
+            if action == "add":
+                submission.tags.add(*tags)
+            else:
+                submission.tags.remove(*tags)
+            count += 1
+
+        if count:
+            if action == "add":
+                messages.success(
+                    request,
+                    _("Added tags to {count} proposals.").format(count=count),
+                )
+            else:
+                messages.success(
+                    request,
+                    _("Removed tags from {count} proposals.").format(count=count),
+                )
+
+        # Redirect to next_url if available, otherwise stay on page
+        from pretalx.common.views.generic import get_next_url
+
+        next_url = get_next_url(request)
+        if next_url:
+            return redirect(next_url)
+        return self.get(request, *args, **kwargs)
 
 
 class ReviewViewMixin:

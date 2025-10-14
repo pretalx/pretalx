@@ -1,0 +1,105 @@
+<!--
+SPDX-FileCopyrightText: 2025-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+
+{% extends "orga/base.html" %}
+
+{% load i18n %}
+{% load static %}
+
+{% block extra_title %}{% translate "Bulk Tagging" %} :: {% endblock extra_title %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static "orga/css/ui/reviews.css" %}" />
+{% endblock stylesheets %}
+
+{% block content %}
+    <div class="alert alert-info">
+        {% blocktranslate trimmed %}
+            Select proposals below and add or remove tags in bulk.
+        {% endblocktranslate %}
+    </div>
+
+    {% include "orga/includes/review_filter_form.html" %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="bulk-tag-controls mb-3 p-3 border rounded filter-group align-items-center">
+            <div class="row align-items-center w-100">
+                <div class="col-md-6">
+                    {{ tag_form.tags.as_field_group }}
+                </div>
+                <div class="col-md-3 action-select">
+                    {{ tag_form.action.as_field_group }}
+                </div>
+                <div class="col-md-3 button-container">
+                    <button type="submit" class="btn btn-success d-block ml-auto">
+                        <i class="fa fa-tags"></i> {% translate "Apply" %}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive-sm">
+            <table class="table table-sm table-flip table-sticky">
+                <thead>
+                    <tr>
+                        <th class="text-center">
+                            <input type="checkbox" id="select-all" title="{% translate 'Select all' %}">
+                        </th>
+                        <th>{% translate "Code" %}</th>
+                        <th>{% translate "Title" %}</th>
+                        {% if can_view_speakers %}<th>{{ phrases.schedule.speakers }}</th>{% endif %}
+                        {% if show_tracks %}<th>{% translate "Track" %}</th>{% endif %}
+                        <th>{% translate "Current Tags" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for submission in submissions %}
+                        <tr>
+                            <td class="text-center">
+                                <input type="checkbox" name="s-{{ submission.code }}" value="on">
+                            </td>
+                            <td>
+                                <a href="{{ submission.orga_urls.base }}">{{ submission.code }}</a>
+                            </td>
+                            <td>
+                                <a href="{{ submission.orga_urls.base }}">{{ submission.title }}</a>
+                            </td>
+                            {% if can_view_speakers %}
+                                <td>
+                                    {% for speaker in submission.speakers.all %}
+                                        {% include "orga/includes/user_name.html" with user=speaker lightbox=True %}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                </td>
+                            {% endif %}
+                            {% if show_tracks %}
+                                <td>{{ submission.track|default:"—" }}</td>
+                            {% endif %}
+                            <td>
+                                {% for tag in submission.tags.all %}
+                                    <span class="badge" style="background-color: {{ tag.color }};">{{ tag.tag }}</span>
+                                {% empty %}
+                                    —
+                                {% endfor %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="10">{% translate "No proposals found matching your filters." %}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+
+    <script>
+        document.getElementById('select-all').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('input[name^="s-"]');
+            checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+        });
+    </script>
+{% endblock content %}

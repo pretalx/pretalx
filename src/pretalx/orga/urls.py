@@ -432,6 +432,11 @@ urlpatterns = [
                     name="reviews.bulk",
                 ),
                 path(
+                    "reviews/bulk-tag/",
+                    review.BulkTagging.as_view(),
+                    name="reviews.bulk_tag",
+                ),
+                path(
                     "reviews/regenerate/",
                     review.RegenerateDecisionMails.as_view(),
                     name="reviews.regenerate",

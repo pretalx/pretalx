@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% if request.GET.unanswered %} <input type="hidden" name="unanswered" value="{{ request.GET.unanswered }}"> {% endif %}
         {{ filter_form.sort }}
 
-        <button class="btn btn-success" type="submit">{% translate "Search" %}</button>
+        <button class="btn btn-info" type="submit"><i class="fa fa-search"></i>{% translate "Search" %}</button>
     </form>
     {% if filter_form.is_valid and filter_form.cleaned_data.question %}
         <p class="text-muted ml-2">

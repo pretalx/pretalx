@@ -52,11 +52,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
     <div class="ml-auto mb-2 d-flex">
         {% if can_change_submissions %}
-            <details class="dropdown flip fix-height" role="menu">
+            <details class="dropdown flip fix-height ml-auto" role="menu">
                 <summary class="btn btn-info">
                     {% translate "Actions" %} <i class="fa fa-caret-down ml-1"></i>
                 </summary>
                 <div class="dropdown-content dropdown-content-s{% if rtl %}e{% else %}w{% endif %}">
+                    {% if request.event.tags.exists %}
+                        <a class="dropdown-item" href="{{ request.event.orga_urls.reviews }}bulk-tag/{% querystring page='' %}" role="menuitem" tabindex="-1">
+                            <i class="fa fa-tags"></i> {% translate "Bulk tag proposals" %}
+                        </a>
+                    {% endif %}
                     <a class="dropdown-item" href="{{ request.event.orga_urls.reviews }}regenerate" role="menuitem" tabindex="-1">
                         <i class="fa fa-link"></i> {% translate "Regenerate decision emails" %}
                     </a>

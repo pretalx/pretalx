@@ -18,7 +18,13 @@ from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
 from pretalx.orga.forms.export import ExportForm
 from pretalx.person.models import User
-from pretalx.submission.models import Question, Review, Submission, SubmissionStates
+from pretalx.submission.models import (
+    Question,
+    Review,
+    Submission,
+    SubmissionStates,
+    Tag,
+)
 
 
 class TagsForm(ReadOnlyFlag, forms.ModelForm):
@@ -425,6 +431,32 @@ class ReviewExportForm(ExportForm):
 
     def get_answer(self, question, obj):
         return question.answers.filter(review=obj).first()
+
+
+class BulkTagForm(forms.Form):
+    default_renderer = InlineFormRenderer
+
+    tags = SafeModelMultipleChoiceField(
+        queryset=Tag.objects.none(),
+        required=True,
+        label=_("Tags"),
+        widget=EnhancedSelectMultiple(color_field="color"),
+    )
+    action = forms.ChoiceField(
+        required=True,
+        label=_("Action"),
+        choices=(
+            ("add", _("Add tags")),
+            ("remove", _("Remove tags")),
+        ),
+        widget=forms.RadioSelect,
+        initial="add",
+    )
+
+    def __init__(self, event, **kwargs):
+        self.event = event
+        super().__init__(**kwargs)
+        self.fields["tags"].queryset = event.tags.all()
 
 
 class ReviewAssignImportForm(DirectionForm):
