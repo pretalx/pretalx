@@ -17,6 +17,14 @@ THUMBNAIL_SIZES = {
     "tiny": (64, 64),
     "default": (460, 460),
 }
+FORMAT_MAP = {
+    ".jpg": "JPEG",
+    ".png": "PNG",
+}
+MAX_DIMENSIONS = (
+    settings.IMAGE_DEFAULT_MAX_WIDTH,
+    settings.IMAGE_DEFAULT_MAX_HEIGHT,
+)
 
 gravatar_csp = partial(
     csp_update,
@@ -71,50 +79,50 @@ def validate_image(f):
         f.seek(0)
 
 
+def load_img(image):
+    extension = ".jpg"
+    try:
+        img = Image.open(image)
+    except Exception:
+        return
+    if img.mode.lower() in ("rgba", "la", "pa"):
+        extension = ".png"
+    elif img.mode != "RGB":
+        img = img.convert("RGB")
+    return img, extension
+
+
 def process_image(*, image, generate_thumbnail=False):
     """
     This function receives an image that has been uploaded, and processes it
     by reducing its file size and stripping its metadata.
     Image must be an ImageFieldFile, e.g. user.avatar.
     """
-    try:
-        img = Image.open(image)
-    except Exception:
-        return
-
-    extension = ".jpg"
-    if img.mode.lower() in ("rgba", "la", "pa"):
-        extension = ".png"
-    elif img.mode != "RGB":
-        img = img.convert("RGB")
-
+    img, extension = load_img(image)
     img_without_exif = Image.new(img.mode, img.size)
     img_without_exif.putdata(img.getdata())
-    max_dimensions = (
-        settings.IMAGE_DEFAULT_MAX_WIDTH,
-        settings.IMAGE_DEFAULT_MAX_HEIGHT,
-    )
     img_without_exif = ImageOps.exif_transpose(img_without_exif)
-    img_without_exif.thumbnail(max_dimensions, resample=Resampling.LANCZOS)
+    img_without_exif.thumbnail(MAX_DIMENSIONS, resample=Resampling.LANCZOS)
 
     # Overwrite the original image with the processed one
     path = Path(image.path)
+    fmt = FORMAT_MAP[extension]
     save_path = path.with_suffix(extension)
-    if save_path != path:
-        path.unlink()
     img_byte_array = BytesIO()
     img_without_exif.save(
         img_byte_array,
         quality="web_high" if extension == ".jpg" else 95,
-        format=img.format,
+        format=fmt,
     )
     image_field = getattr(image.instance, image.field.name)
     image_field.save(save_path, ContentFile(img_byte_array.getvalue()))
     image_field.instance.save()
+    if save_path != path:
+        path.unlink()
 
     if generate_thumbnail:
         for size in THUMBNAIL_SIZES:
-            create_thumbnail(img_without_exif, size)
+            create_thumbnail(image, size, fmt=fmt, extension=extension)
 
 
 def get_thumbnail_field_name(image, size):
@@ -124,26 +132,22 @@ def get_thumbnail_field_name(image, size):
     return thumbnail_field_name
 
 
-def create_thumbnail(image, size):
+def create_thumbnail(image, size, extension=None, fmt=None):
     if size not in THUMBNAIL_SIZES:
         return
     thumbnail_field_name = get_thumbnail_field_name(image, size)
     if not image.instance._meta.get_field(thumbnail_field_name):
         return
 
-    try:
-        img = Image.open(image, formats=("PNG", "JPEG", "GIF"))
-        img.load()
-    except Exception:
-        return None
+    img, ext = load_img(image)
+    img.load()
     img.thumbnail(THUMBNAIL_SIZES[size], resample=Resampling.LANCZOS)
     thumbnail_field = getattr(image.instance, thumbnail_field_name)
-    thumbnail_name = (
-        Path(image.name).stem + f"_thumbnail_{size}" + Path(image.name).suffix
-    )
+    extension = extension or ext
+    thumbnail_name = Path(image.name).stem + f"_thumbnail_{size}" + extension
     # Write the image to a BytesIO object
     img_byte_array = BytesIO()
-    img.save(img_byte_array, format=img.format)
+    img.save(img_byte_array, format=fmt or img.format)
     thumbnail_field.save(
         thumbnail_name,
         ContentFile(img_byte_array.getvalue()),
