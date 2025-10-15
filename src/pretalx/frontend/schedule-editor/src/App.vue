@@ -6,6 +6,12 @@ SPDX-License-Identifier: Apache-2.0
 <template lang="pug">
 .pretalx-schedule(:style="{'--scrollparent-width': scrollParentWidth + 'px'}", :class="[draggedSession ? 'is-dragging' : '', displayMode === 'condensed' ? 'condensed-mode' : 'expanded-mode']", @pointerup="stopDragging")
 	template(v-if="schedule")
+		.schedule-header.no-print
+			.schedule-controls-left
+				button.mode-toggle-button(@click="toggleDisplayMode", :class="{'active': displayMode === 'condensed'}")
+					i.fa(:class="displayMode === 'condensed' ? 'fa-expand' : 'fa-compress'")
+					span.mode-label {{ displayMode === 'condensed' ? $t('Expanded View') : $t('Condensed View') }}
+			#schedule-action-wrapper-target
 		#main-wrapper
 			#unassigned.no-print(v-scrollbar.y="", @pointerenter="isUnassigning = true", @pointerleave="isUnassigning = false", :class="{'pinned': unassignedPanelPinned, 'collapse-container': displayMode === 'condensed'}")
 				template(v-if="displayMode === 'condensed'")
@@ -31,10 +37,6 @@ SPDX-License-Identifier: Apache-2.0
 				.schedule-controls
 					bunt-tabs.days(v-if="days", :modelValue="currentDay.format()", ref="tabs" :class="['grid-tabs']")
 						bunt-tab(v-for="day of days", :id="day.format()", :header="day.format(dateFormat)", @selected="changeDay(day)")
-					.display-mode-toggle.no-print
-						button.mode-toggle-button(@click="toggleDisplayMode", :class="{'active': displayMode === 'condensed'}")
-							i.fa(:class="displayMode === 'condensed' ? 'fa-expand' : 'fa-compress'")
-							span.mode-label {{ displayMode === 'condensed' ? $t('Expanded View') : $t('Condensed View') }}
 				grid-schedule(:sessions="sessions",
 					:rooms="schedule.rooms",
 					:availabilities="availabilities",
@@ -295,6 +297,32 @@ export default {
 		// We block until we have either a regular parent or a shadow DOM parent
 		window.addEventListener('resize', this.onWindowResize)
 		this.onWindowResize()
+
+		// Move the Django-generated action buttons into the Vue header with retry
+		const moveActionButtons = () => {
+			const actionWrapper = document.getElementById('schedule-action-wrapper')
+			const actionTarget = document.getElementById('schedule-action-wrapper-target')
+			if (actionWrapper && actionTarget) {
+				actionTarget.appendChild(actionWrapper)
+				actionWrapper.style.display = 'flex'
+				return true
+			}
+			return false
+		}
+
+		// Retry up to 50 times with 100ms delay (5 seconds total)
+		let attempts = 0
+		const maxAttempts = 50
+		const tryMove = () => {
+			if (moveActionButtons()) {
+				return
+			}
+			attempts++
+			if (attempts < maxAttempts) {
+				setTimeout(tryMove, 100)
+			}
+		}
+		this.$nextTick(tryMove)
 	},
 	destroyed () {
 		// TODO destroy observers
@@ -620,6 +648,43 @@ export default {
 				align-items: center
 				&:hover
 					background-color: $clr-dividers-light
+	.schedule-header
+		display: flex
+		justify-content: space-between
+		align-items: center
+		margin: 1rem 42px 1rem 8px
+		max-width: 100%
+		padding: 0
+		.schedule-controls-left
+			display: flex
+			align-items: center
+			gap: 12px
+			.mode-toggle-button
+				display: flex
+				align-items: center
+				gap: 8px
+				padding: 8px 16px
+				background-color: $clr-white
+				border: 1px solid $clr-dividers-light
+				border-radius: 4px
+				cursor: pointer
+				font-size: 14px
+				color: $clr-primary-text-light
+				transition: all 0.2s
+				&:hover
+					background-color: $clr-grey-100
+					border-color: var(--color-primary)
+				&.active
+					background-color: var(--color-primary)
+					color: $clr-white
+					border-color: var(--color-primary)
+				.fa
+					font-size: 16px
+		#schedule-action-wrapper-target
+			display: flex
+			align-items: center
+			#schedule-action-wrapper
+				display: flex !important
 	#schedule-wrapper
 		width: 100%
 		margin-right: 40px
@@ -632,32 +697,6 @@ export default {
 		top: 0
 		z-index: 30
 		background-color: $clr-white
-	.display-mode-toggle
-		position: absolute
-		right: 16px
-		top: 8px
-		z-index: 40
-		.mode-toggle-button
-			display: flex
-			align-items: center
-			gap: 8px
-			padding: 8px 16px
-			background-color: $clr-white
-			border: 1px solid $clr-dividers-light
-			border-radius: 4px
-			cursor: pointer
-			font-size: 14px
-			color: $clr-primary-text-light
-			transition: all 0.2s
-			&:hover
-				background-color: $clr-grey-100
-				border-color: var(--color-primary)
-			&.active
-				background-color: var(--color-primary)
-				color: $clr-white
-				border-color: var(--color-primary)
-			.fa
-				font-size: 16px
   #session-editor-wrapper
 		position: absolute
 		z-index: 1000
