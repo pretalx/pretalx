@@ -5,7 +5,8 @@ from urllib.parse import quote
 
 import django_tables2 as tables
 from django.db.models.lookups import Transform
-from django.template import Context
+from django.template import Context, Template
+from django.template.loader import get_template
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
@@ -101,9 +102,33 @@ class ContextTemplateColumn(tables.TemplateColumn):
         context = getattr(table, "context", Context())
         for key, value in self.template_context.items():
             if callable(value):
-                context[key] = value(record)
+                context[key] = value(record, table)
         context[self.context_object_name] = record
-        return super().render(record, table, value, bound_column, **kwargs)
+
+        # This is where we would usually call super().render()
+        # However, upstream uses context.flatten(), which makes the use of
+        # {% querystring %} impossible in the template, as querystring,
+        # in Python, uses Context.request, while a flattened context is
+        # just a dict.
+        # We have the choice of vendoring the render method and patching
+        # Request.flatten, so I suppose this is the less bad option.
+        # Keep an eye on https://github.com/jieter/django-tables2/issues/1008
+
+        additional_context = {
+            "default": bound_column.default,
+            "column": bound_column,
+            "record": record,
+            "value": value,
+            "row_counter": kwargs["bound_row"].row_counter,
+        }
+        additional_context.update(self.extra_context)
+        with context.update(additional_context):
+            if self.template_code:
+                return Template(self.template_code).render(context)
+            else:
+                return get_template(self.template_name).render(
+                    context.flatten(), request=table.request
+                )
 
 
 class SortableTemplateColumn(FunctionOrderMixin, ContextTemplateColumn):

@@ -61,7 +61,7 @@ class SpeakerTable(PretalxTable):
         empty_values=[""],
         order_by=Lower("user__name"),
         template_name="orga/includes/user_name.html",
-        template_context={"user": lambda record: record.user},
+        template_context={"user": lambda record, table: record.user},
     )
     accepted_submission_count = tables.Column(
         verbose_name=_("Accepted Proposals"),
