@@ -98,11 +98,23 @@ def process_image(*, image, generate_thumbnail=False):
     img_without_exif.thumbnail(max_dimensions, resample=Resampling.LANCZOS)
 
     # Overwrite the original image with the processed one
-    img_without_exif.save(image.path, quality="web_high" if extension == ".jpg" else 95)
+    path = Path(image.path)
+    save_path = path.with_suffix(extension)
+    if save_path != path:
+        path.unlink()
+    img_byte_array = BytesIO()
+    img_without_exif.save(
+        img_byte_array,
+        quality="web_high" if extension == ".jpg" else 95,
+        format=img.format,
+    )
+    image_field = getattr(image.instance, image.field.name)
+    image_field.save(save_path, ContentFile(img_byte_array.getvalue()))
+    image_field.instance.save()
 
     if generate_thumbnail:
         for size in THUMBNAIL_SIZES:
-            create_thumbnail(image, size)
+            create_thumbnail(img_without_exif, size)
 
 
 def get_thumbnail_field_name(image, size):
