@@ -26,11 +26,11 @@ def daterange_en(date_from, date_to):
         and date_from.month == date_to.month
         and date_from.day == date_to.day
     ):
-        return str(_date(date_from, "N jS, Y"))
+        return str(_date(date_from, "N j, Y"))
     if date_from.year == date_to.year and date_from.month == date_to.month:
-        return "{} – {}".format(_date(date_from, "N jS"), _date(date_to, "jS, Y"))
+        return "{} – {}".format(_date(date_from, "N j"), _date(date_to, "jS, Y"))
     if date_from.year == date_to.year:
-        return "{} – {}".format(_date(date_from, "N jS"), _date(date_to, "N jS, Y"))
+        return "{} – {}".format(_date(date_from, "N j"), _date(date_to, "N j, Y"))
     return ""
 
 
