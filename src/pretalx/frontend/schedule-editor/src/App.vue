@@ -499,14 +499,16 @@ export default {
 	flex-direction: column
 	min-height: 0
 	min-width: 0
-	height: calc(100vh - 160px)
+	height: calc(100vh - 85px)
 	width: 100%
 	font-size: 14px
-	margin-left: 24px
+	padding-left: 24px
 	font-family: var(--font-family)
 	color: var(--color-text)
 	h1, h2, h3, h4, h5, h6, legend, button, .btn
 		font-family: var(--font-family-title)
+	.bunt-scrollbar-rail-wrapper-y
+		display: none
 	&.is-dragging
 		user-select: none
 		cursor: grabbing
