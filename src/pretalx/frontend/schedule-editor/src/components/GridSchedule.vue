@@ -4,7 +4,7 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <template lang="pug">
-.c-grid-schedule()
+.c-grid-schedule(:class="{'condensed-grid': displayMode === 'condensed'}")
 	.grid(ref="grid", :style="gridStyle", :class="gridClasses", @pointermove="updateHoverSlice($event)", @pointerup="stopDragging($event)")
 		template(v-for="slice of visibleTimeslices")
 			.timeslice(:ref="slice.name", :class="getSliceClasses(slice)", :data-slice="slice.date.format()", :style="getSliceStyle(slice)", @click="expandTimeslice(slice)") {{ getSliceLabel(slice) }}
@@ -17,7 +17,7 @@ SPDX-License-Identifier: Apache-2.0
 			span {{ getLocalizedString(room.name) }}
 			.hide-room.no-print(v-if="visibleRooms.length > 1", @click="hiddenRooms = rooms.filter(r => hiddenRooms.includes(r) || r === room)")
 				i.fa.fa-eye-slash
-		session(v-if="draggedSession && hoverSlice", :style="getHoverSliceStyle()", :session="draggedSession", :isDragClone="true", :overrideStart="hoverSlice.time")
+		session(v-if="draggedSession && hoverSlice", :style="getHoverSliceStyle()", :session="draggedSession", :isDragClone="true", :overrideStart="hoverSlice.time", :displayMode="displayMode")
 		template(v-for="session of visibleSessions")
 			session(
 				:session="session",
@@ -25,12 +25,13 @@ SPDX-License-Identifier: Apache-2.0
 				:isDragged="draggedSession && (session.id === draggedSession.id)",
 				:style="getSessionStyle(session)",
 				:showRoom="false",
+				:displayMode="displayMode",
 				@startDragging="startDragging($event)",
 			)
 		.availability(v-for="availability of visibleAvailabilities", :style="getSessionStyle(availability)", :class="availability.active ? ['active'] : []")
-	#hiddenRooms.no-print(v-if="hiddenRooms.length")
+	#hiddenRooms.collapse-container.no-print(v-if="hiddenRooms.length")
 		h4 {{ $t('Hidden rooms') }} ({{ hiddenRooms.length }})
-		.room-list
+		.room-list.collapse-content
 			.room-entry(v-for="room of hiddenRooms", @click="hiddenRooms.splice(hiddenRooms.indexOf(room), 1)")
 				.span {{ getLocalizedString(room.name) }}
 				.show-room(@click.stop="hiddenRooms.splice(hiddenRooms.indexOf(room), 1)")
@@ -56,7 +57,11 @@ export default {
 		end: Object,
 		rooms: Array,
 		currentDay: Object,
-		draggedSession: Object
+		draggedSession: Object,
+		displayMode: {
+			type: String,
+			default: 'expanded'
+		}
 	},
 	data () {
 		return {
@@ -266,16 +271,22 @@ export default {
 			return result
 		},
 		gridStyle () {
-			let rows = '[header] 52px '
+			const headerHeight = this.displayMode === 'condensed' ? 40 : 52
+			const baseMultiplier = this.displayMode === 'condensed' ? 1.2 : 2
+			const maxHeight = this.displayMode === 'condensed' ? 40 : 60
+			const gapHeight = this.displayMode === 'condensed' ? 60 : 100
+			const datebreakHeight = this.displayMode === 'condensed' ? 40 : 60
+
+			let rows = `[header] ${headerHeight}px `
 			rows += this.timeslices.map((slice, index) => {
 				const next = this.timeslices[index + 1]
-				let height = 60
+				let height = maxHeight
 				if (slice.gap) {
-					height = 100
+					height = gapHeight
 				} else if (slice.datebreak) {
-					height = 60
+					height = datebreakHeight
 				} else if (next) {
-					height = Math.min(60, next.date.diff(slice.date, 'minutes') * 2)
+					height = Math.min(maxHeight, next.date.diff(slice.date, 'minutes') * baseMultiplier)
 				}
 				return `[${slice.name}] minmax(${height}px, auto)`
 			}).join(' ')
@@ -545,7 +556,7 @@ export default {
 	.grid
 		background-color: $clr-grey-50
 		display: grid
-		grid-template-columns: 78px repeat(var(--total-rooms), 1fr) auto
+		grid-template-columns: 78px repeat(var(--total-rooms), minmax(200px, 1fr)) auto
 		// grid-gap: 8px
 		position: relative
 		min-width: min-content
@@ -584,6 +595,7 @@ export default {
 		background-color: $clr-grey-50
 		border-top: 1px solid $clr-dividers-light
 		z-index: 20
+		font-size: 14px
 		.expand
 			display: none
 		&.datebreak
@@ -615,25 +627,23 @@ export default {
 	pointer-events: none
 	&.active
 		background-color: rgba(56, 158, 119, 0.1)
-#hiddenRooms
-	position: fixed
-	z-index: 500
-	bottom: 0
-	right: 0
-	width: 300px;
-	background-color: $clr-white
-	padding: 8px 16px
-	box-shadow: 0 0 10px rgba(0, 0, 0, 0.3)
-	border-top-left-radius: 8px
-	font-size: 16px
-
-	.room-list
-		display: none
-
-	&:hover
-		.room-list
-			display: block
-
+.c-grid-schedule.condensed-grid
+	.grid
+		grid-template-columns: 58px repeat(var(--total-rooms), minmax(150px, 1fr)) auto
+		> .room
+			font-size: 14px
+			top: 40px
+			padding: 4px
+			.hide-room
+				font-size: 12px
+				margin-left: 8px
+				padding: 2px 6px
+	.timeslice
+		padding: 4px 6px 0 6px
+		font-size: 12px
+		&.datebreak
+			padding-top: 0
+#hiddenRooms.collapse-container
 	.room-entry
 		border-bottom: border-separator()
 		display: flex
@@ -650,4 +660,7 @@ export default {
 			border-radius: 4px
 		&:hover
 			background-color: $clr-grey-100
+
+.condensed-mode #hiddenRooms
+	right: 345px  // 350px unassigned panel - 5px spacing to not overlap the rounded column
 </style>

@@ -45,6 +45,10 @@ export default {
 		overrideStart: {
 			type: Object,
 			default: null
+		},
+		displayMode: {
+			type: String,
+			default: 'expanded'
 		}
 	},
 	inject: {
@@ -77,6 +81,7 @@ export default {
 			}
 			if (this.isDragged) classes.push('dragging')
 			if (this.isDragClone) classes.push('clone')
+			if (this.displayMode === 'condensed') classes.push('condensed')
 			return classes
 		},
 		style () {
@@ -238,6 +243,44 @@ export default {
 		font-size: 16px
 		.warning-icon span
 			padding-right: 4px
+	// Condensed mode styles
+	&.condensed
+		min-width: 0
+		min-height: 60px
+		margin: 4px
+		&.istalk
+			flex-direction: column
+			.time-box
+				display: none
+			.info
+				border-radius: 6px
+				border-left: 4px solid var(--track-color)
+				padding: 4px 6px
+				.title
+					font-size: 13px
+					margin-bottom: 2px
+					line-height: 1.3
+					overflow: hidden
+					text-overflow: ellipsis
+				.speakers
+					font-size: 11px
+					line-height: 1.2
+					overflow: hidden
+					text-overflow: ellipsis
+					white-space: nowrap
+				.bottom-info
+					display: none
+				.pending-line
+					font-size: 11px
+		&.isbreak
+			min-height: 40px
+			margin: 4px
+			.time-box
+				display: none
+			.info
+				padding: 4px 8px
+				.title
+					font-size: 14px
 @media print
 	.c-linear-schedule-session.isbreak
 		border: 2px solid $clr-grey-300 !important

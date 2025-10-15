@@ -4,24 +4,37 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <template lang="pug">
-.pretalx-schedule(:style="{'--scrollparent-width': scrollParentWidth + 'px'}", :class="draggedSession ? ['is-dragging'] : []", @pointerup="stopDragging")
+.pretalx-schedule(:style="{'--scrollparent-width': scrollParentWidth + 'px'}", :class="[draggedSession ? 'is-dragging' : '', displayMode === 'condensed' ? 'condensed-mode' : 'expanded-mode']", @pointerup="stopDragging")
 	template(v-if="schedule")
 		#main-wrapper
-			#unassigned.no-print(v-scrollbar.y="", @pointerenter="isUnassigning = true", @pointerleave="isUnassigning = false")
-				.title
-					bunt-input#filter-input(v-model="unassignedFilterString", :placeholder="translations.filterSessions", icon="search")
-					#unassigned-sort(@click="showUnassignedSortMenu = !showUnassignedSortMenu", :class="{'active': showUnassignedSortMenu}")
-						i.fa.fa-sort
+			#unassigned.no-print(v-scrollbar.y="", @pointerenter="isUnassigning = true", @pointerleave="isUnassigning = false", :class="{'pinned': unassignedPanelPinned, 'collapse-container': displayMode === 'condensed'}")
+				template(v-if="displayMode === 'condensed'")
+					h4
+						span {{ $t('Unscheduled sessions') }} ({{ unscheduled.length }})
+						.controls
+							.pin-button(@click.stop="pinUnassignedPanel", :class="{'pinned': unassignedPanelPinned}")
+								i.fa.fa-thumb-tack
+				template(v-else)
+					.title
+						bunt-input#filter-input(v-model="unassignedFilterString", :placeholder="translations.filterSessions", icon="search")
+						#unassigned-sort(@click="showUnassignedSortMenu = !showUnassignedSortMenu", :class="{'active': showUnassignedSortMenu}")
+							i.fa.fa-sort
 					#unassigned-sort-menu(v-if="showUnassignedSortMenu")
 						.sort-method(v-for="method of unassignedSortMethods", @click="unassignedSort === method.name ? unassignedSortDirection = unassignedSortDirection * -1 : unassignedSort = method.name; showUnassignedSortMenu = false")
 							span {{ method.label }}
 							i.fa.fa-sort-amount-asc(v-if="unassignedSort === method.name && unassignedSortDirection === 1")
 							i.fa.fa-sort-amount-desc(v-if="unassignedSort === method.name && unassignedSortDirection === -1")
-				session.new-break(:session="{title: '+ ' + translations.newBreak}", :isDragged="false", @startDragging="startNewBreak", @click="showNewBreakHint", v-tooltip.fixed="{text: newBreakTooltip, show: newBreakTooltip}", @pointerleave="removeNewBreakHint")
-				session(v-for="un in unscheduled", :session="un", @startDragging="startDragging", :isDragged="draggedSession && un.id === draggedSession.id", @click="editorStart(un)")
+				.session-list(:class="{'collapse-content': displayMode === 'condensed'}")
+					session.new-break(:session="{title: '+ ' + translations.newBreak}", :isDragged="false", :displayMode="displayMode", @startDragging="startNewBreak", @click="showNewBreakHint", v-tooltip.fixed="{text: newBreakTooltip, show: newBreakTooltip}", @pointerleave="removeNewBreakHint")
+					session(v-for="un in unscheduled", :session="un", :displayMode="displayMode", @startDragging="startDragging", :isDragged="draggedSession && un.id === draggedSession.id", @click="editorStart(un)")
 			#schedule-wrapper(v-scrollbar.x.y="")
-				bunt-tabs.days(v-if="days", :modelValue="currentDay.format()", ref="tabs" :class="['grid-tabs']")
-					bunt-tab(v-for="day of days", :id="day.format()", :header="day.format(dateFormat)", @selected="changeDay(day)")
+				.schedule-controls
+					bunt-tabs.days(v-if="days", :modelValue="currentDay.format()", ref="tabs" :class="['grid-tabs']")
+						bunt-tab(v-for="day of days", :id="day.format()", :header="day.format(dateFormat)", @selected="changeDay(day)")
+					.display-mode-toggle.no-print
+						button.mode-toggle-button(@click="toggleDisplayMode", :class="{'active': displayMode === 'condensed'}")
+							i.fa(:class="displayMode === 'condensed' ? 'fa-expand' : 'fa-compress'")
+							span.mode-label {{ displayMode === 'condensed' ? $t('Expanded View') : $t('Condensed View') }}
 				grid-schedule(:sessions="sessions",
 					:rooms="schedule.rooms",
 					:availabilities="availabilities",
@@ -30,6 +43,7 @@ SPDX-License-Identifier: Apache-2.0
 					:end="days.at(-1).clone().endOf('day')",
 					:currentDay="currentDay",
 					:draggedSession="draggedSession",
+					:displayMode="displayMode",
 					@changeDay="currentDay = $event",
 					@startDragging="startDragging",
 					@rescheduleSession="rescheduleSession",
@@ -125,6 +139,8 @@ export default {
 			unassignedSortDirection: 1,  // asc
 			showUnassignedSortMenu: false,
 			newBreakTooltip: '',
+			displayMode: localStorage.getItem('scheduleDisplayMode') || 'expanded',
+			unassignedPanelPinned: false,
 			getLocalizedString,
 			// i18next-parser doesn't have a pug parser / fails to parse translated
 			// strings in attributes (though plain {{}} strings work!), so anything
@@ -283,6 +299,26 @@ export default {
 		// TODO destroy observers
 	},
 	methods: {
+		toggleDisplayMode () {
+			const newMode = this.displayMode === 'expanded' ? 'condensed' : 'expanded'
+			this.displayMode = newMode
+			localStorage.setItem('scheduleDisplayMode', newMode)
+
+			// Handle sidebar collapse/expand
+			if (newMode === 'condensed') {
+				// Collapse sidebar in condensed mode
+				const sidebar = document.querySelector('.sidebar')
+				if (sidebar && !sidebar.classList.contains('collapsed')) {
+					localStorage.removeItem('sidebarVisible')
+					document.documentElement.classList.remove('sidebar-expanded')
+				}
+				// Reset unassigned panel to unpinned
+				this.unassignedPanelPinned = false
+			}
+		},
+		pinUnassignedPanel () {
+			this.unassignedPanelPinned = !this.unassignedPanelPinned
+		},
 		changeDay (day) {
 			if (day.isSame(this.currentDay)) return
 			this.currentDay = moment(day, this.eventTimezone).startOf('day')
@@ -437,6 +473,51 @@ export default {
 		flex: auto
 		min-height: 0
 		min-width: 0
+	.collapse-container
+		position: fixed
+		bottom: 0
+		right: 0
+		width: 300px
+		z-index: 500
+		background-color: $clr-white
+		padding: 8px 16px
+		box-shadow: 0 0 10px rgba(0, 0, 0, 0.3)
+		border-top-left-radius: 8px
+		overflow-y: hidden
+		.collapse-content
+			display: none
+			overflow-y: auto
+		&:hover
+			.collapse-content
+				display: block
+		h4
+			margin: 0
+			font-size: 16px
+			display: flex
+			justify-content: space-between
+			align-items: center
+	&.condensed-mode
+		#unassigned
+			margin-top: 0
+			z-index: 501
+			font-size: 16px
+			.session-list
+				margin-right: 0
+			&.pinned .collapse-content
+				display: block
+			.bunt-scrollbar-rail-wrapper-y
+				top: 30px
+			.pin-button
+				padding: 0
+				cursor: pointer
+				&:hover
+					opacity: 0.7
+				&.pinned
+					color: var(--color-primary)
+			.session-list
+				max-height: 400px
+		#schedule-wrapper
+			margin-right: 0
 	.settings
 		margin-left: 18px
 		align-self: flex-start
@@ -452,17 +533,12 @@ export default {
 			cursor: default
 			color: $clr-secondary-text-light
 	.days
-		background-color: $clr-white
 		tabs-style(active-color: var(--color-primary), indicator-color: var(--color-primary), background-color: transparent)
 		overflow-x: auto
-		position: sticky
-		left: 0
-		top: 0
 		margin-bottom: 0
-		flex: none
+		flex: auto
 		min-width: 0
 		height: 48px
-		z-index: 30
 		.bunt-tabs-header
 			min-width: min-content
 		.bunt-tabs-header-items
@@ -474,9 +550,10 @@ export default {
 				white-space: nowrap
 	#unassigned
 		margin-top: 35px
+		background-color: $clr-white
 		width: 350px
 		flex: none
-		> *
+		.session-list
 			margin-right: 12px
 		> .bunt-scrollbar-rail-y
 			margin: 0
@@ -532,6 +609,41 @@ export default {
 	#schedule-wrapper
 		width: 100%
 		margin-right: 40px
+	.schedule-controls
+		display: flex
+		justify-content: space-between
+		align-items: center
+		position: sticky
+		left: 0
+		top: 0
+		z-index: 30
+		background-color: $clr-white
+	.display-mode-toggle
+		position: absolute
+		right: 16px
+		top: 8px
+		z-index: 40
+		.mode-toggle-button
+			display: flex
+			align-items: center
+			gap: 8px
+			padding: 8px 16px
+			background-color: $clr-white
+			border: 1px solid $clr-dividers-light
+			border-radius: 4px
+			cursor: pointer
+			font-size: 14px
+			color: $clr-primary-text-light
+			transition: all 0.2s
+			&:hover
+				background-color: $clr-grey-100
+				border-color: var(--color-primary)
+			&.active
+				background-color: var(--color-primary)
+				color: $clr-white
+				border-color: var(--color-primary)
+			.fa
+				font-size: 16px
   #session-editor-wrapper
 		position: absolute
 		z-index: 1000
