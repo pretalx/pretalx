@@ -15,7 +15,7 @@ from pretalx.common.views.generic import get_next_url
 
 class LocaleSet(View):
     def get(self, request, *args, **kwargs):
-        url = get_next_url(request, omit_params=["lang"]) or "/"
+        url = get_next_url(request, omit_params=["locale"]) or "/"
         resp = HttpResponseRedirect(url)
         locale = request.GET.get("locale")
         if locale in (lc for lc, __ in settings.LANGUAGES):

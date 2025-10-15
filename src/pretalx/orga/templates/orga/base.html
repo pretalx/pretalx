@@ -130,7 +130,7 @@ SPDX-FileContributor: Raphael Michel
                 {% blocktranslate with link=link trimmed %}
                     You’re using pretalx as a superuser. This is not recommended.
                 {% endblocktranslate %}
-                <a href="{% url "orga:user.subuser" %}?next={{ request.path|urlencode }}">
+                <a href="{% url "orga:user.subuser" %}{% querystring next=request.path|urlencode %}">
                     {% translate "Please click here to switch to an administrator account." %}
                 </a>
             </div>

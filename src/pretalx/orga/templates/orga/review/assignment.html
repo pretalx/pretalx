@@ -49,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% for team in review_teams %}
                     <tr>
                         <td>
-                            <a href="{{ team.orga_urls.base }}?next={{ request.path|urlencode }}">
+                            <a href="{{ team.orga_urls.base }}{% querystring next=request.path|urlencode %}">
                                 {{ team.name }}
                                 {% if request.user in team.members.all %}
                                     <i class="fa fa-star text-warning" title="{% translate "You are a member of this team" %}"></i>
@@ -80,10 +80,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             </td>
                         {% endif %}
                         <td class="text-right">
-                            <a href="{{ team.orga_urls.base }}?next={{ request.path|urlencode }}" class="btn btn-sm btn-info" title="{{ phrases.base.edit }}">
+                            <a href="{{ team.orga_urls.base }}{% querystring next=request.path|urlencode %}" class="btn btn-sm btn-info" title="{{ phrases.base.edit }}">
                                 <i class="fa fa-edit"></i>
                             </a>
-                            <a href="{{ team.orga_urls.delete }}?next={{ request.path|urlencode }}" class="btn btn-sm btn-danger" title="{{ phrases.base.delete_button }}">
+                            <a href="{{ team.orga_urls.delete }}{% querystring next=request.path|urlencode %}" class="btn btn-sm btn-danger" title="{{ phrases.base.delete_button }}">
                                 <i class="fa fa-trash"></i>
                             </a>
                         </td>

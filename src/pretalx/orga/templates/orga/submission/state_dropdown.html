@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <a
                 class="dropdown-item submission-state-submitted"
                 role="menuitem" tabindex="-1"
-                href="{{ submission.orga_urls.make_submitted }}?next={{ request.path|urlencode }}%3F{{ request.META.QUERY_STRING|urlencode }}">
+                href="{{ submission.orga_urls.make_submitted }}{% querystring next=request.path|urlencode %}">
                 {% include "cfp/event/fragment_state.html" with state="submitted" %}
             </a>
         {% endif %}
@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <a
                 class="dropdown-item submission-state-accepted"
                 role="menuitem" tabindex="-1"
-                href="{{ submission.orga_urls.accept }}?next={{ request.path|urlencode }}%3F{{ request.META.QUERY_STRING|urlencode }}">
+                href="{{ submission.orga_urls.accept }}{% querystring next=request.path|urlencode %}">
                 {% include "cfp/event/fragment_state.html" with state="accepted" %}
             </a>
         {% endif %}
@@ -40,7 +40,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <a
                 class="dropdown-item submission-state-confirmed"
                 role="menuitem" tabindex="-1"
-                href="{{ submission.orga_urls.confirm }}?next={{ request.path|urlencode }}%3F{{ request.META.QUERY_STRING|urlencode }}">
+                href="{{ submission.orga_urls.confirm }}{% querystring next=request.path|urlencode %}">
                 {% include "cfp/event/fragment_state.html" with state="confirmed" %}
             </a>
         {% endif %}
@@ -48,7 +48,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <a
                 class="dropdown-item submission-state-rejected"
                 role="menuitem" tabindex="-1"
-                href="{{ submission.orga_urls.reject }}?next={{ request.path|urlencode }}%3F{{ request.META.QUERY_STRING|urlencode }}">
+                href="{{ submission.orga_urls.reject }}{% querystring next=request.path|urlencode %}">
                 {% include "cfp/event/fragment_state.html" with state="rejected" %}
             </a>
         {% endif %}
@@ -56,7 +56,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <a
                 class="dropdown-item submission-state-canceled"
                 role="menuitem" tabindex="-1"
-                href="{{ submission.orga_urls.cancel }}?next={{ request.path|urlencode }}%3F{{ request.META.QUERY_STRING|urlencode }}">
+                href="{{ submission.orga_urls.cancel }}{% querystring next=request.path|urlencode %}">
                 {% include "cfp/event/fragment_state.html" with state="canceled" %}
             </a>
         {% endif %}
@@ -64,7 +64,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <a
                 class="dropdown-item submission-state-withdrawn"
                 role="menuitem" tabindex="-1"
-                href="{{ submission.orga_urls.withdraw }}?next={{ request.path|urlencode }}%3F{{ request.META.QUERY_STRING|urlencode }}">
+                href="{{ submission.orga_urls.withdraw }}{% querystring next=request.path|urlencode %}">
                 {% include "cfp/event/fragment_state.html" with state="withdrawn" %}
             </a>
         {% endif %}
@@ -72,7 +72,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <a
                 class="dropdown-item submission-state-deleted"
                 role="menuitem" tabindex="-1"
-                href="{{ submission.orga_urls.delete }}?{% if submission.code not in request.path %}next={{ request.path|urlencode }}%3F{% endif %}{{ request.META.QUERY_STRING|urlencode }}">
+                href="{{ submission.orga_urls.delete }}{% if submission.code not in request.path %}{% querystring next=request.path|urlencode %}{% else %}{% querystring next="" %}{% endif %}">
                 {% include "cfp/event/fragment_state.html" with state="deleted" %}
             </a>
         {% endif %}

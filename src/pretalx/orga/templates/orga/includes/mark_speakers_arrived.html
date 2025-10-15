@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {# Permission check has to take place outside of this template, so we don’t run it a gazillion times in list views #}
 
-<form method="post" action="{{ speaker.orga_urls.toggle_arrived }}?next={{ request.path|urlencode }}" class="d-inline">
+<form method="post" action="{{ speaker.orga_urls.toggle_arrived }}{% querystring next=request.path|urlencode %}" class="d-inline">
     {% csrf_token %}
 
     <button type="submit" class="btn btn-{{ speaker.has_arrived|yesno:"success,info" }} {{ arrived_btn_class }}">
