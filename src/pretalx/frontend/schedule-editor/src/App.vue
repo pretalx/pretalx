@@ -99,6 +99,7 @@ SPDX-License-Identifier: Apache-2.0
 					.button-row
 						input(type="submit")
 						bunt-button#btn-delete(v-if="!editorSession.code", @click="editorDelete", :loading="editorSessionWaiting") {{ $t('Delete') }}
+						bunt-button#btn-unschedule(v-if="editorSession.start && editorSession.room", @click="editorUnschedule", :loading="editorSessionWaiting") {{ $t('Unschedule') }}
 						bunt-button#btn-save(@click="editorSave", :loading="editorSessionWaiting") {{ $t('Save') }}
 	bunt-progress-circular(v-else, size="huge", :page="true")
 </template>
@@ -367,6 +368,19 @@ export default {
 			this.editorSessionWaiting = true
 			api.deleteTalk(this.editorSession)
 			this.schedule.talks = this.schedule.talks.filter(s => s.id !== this.editorSession.id)
+			this.editorSessionWaiting = false
+			this.editorSession = null
+		},
+		editorUnschedule () {
+			this.editorSessionWaiting = true
+			const session = this.schedule.talks.find(s => s.id === this.editorSession.id)
+			session.start = null
+			session.end = null
+			session.room = null
+			this.editorSession.start = null
+			this.editorSession.end = null
+			this.editorSession.room = null
+			this.saveTalk(session)
 			this.editorSessionWaiting = false
 			this.editorSession = null
 		},
@@ -680,6 +694,9 @@ export default {
 					font-size: 16px !important
 				#btn-delete
 					button-style(color: $clr-danger, text-color: $clr-white)
+					font-weight: bold;
+				#btn-unschedule
+					button-style(color: $clr-warning, text-color: $clr-white)
 					font-weight: bold;
 				#btn-save
 					margin-left: auto
