@@ -213,7 +213,7 @@ def test_orga_can_see_all_submissions_even_nonpublic(
     submission.event.feature_flags["show_schedule"] = False
     submission.event.save()
     response = client.get(
-        submission.event.api_urls.submissions,
+        submission.event.api_urls.submissions + "?expand=speakers",
         follow=True,
         headers={"Authorization": f"Token {orga_user_token.token}"},
     )
@@ -222,6 +222,7 @@ def test_orga_can_see_all_submissions_even_nonpublic(
     assert response.status_code == 200
     assert content["count"] == 4
     assert content["results"][0]["title"] == slot.submission.title
+    assert content["results"][0]["speakers"][0]["email"]
 
 
 @pytest.mark.django_db
