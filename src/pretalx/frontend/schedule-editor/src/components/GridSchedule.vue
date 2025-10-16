@@ -556,7 +556,7 @@ export default {
 	.grid
 		background-color: $clr-grey-50
 		display: grid
-		grid-template-columns: 78px repeat(var(--total-rooms), minmax(200px, 1fr)) auto
+		grid-template-columns: 78px repeat(var(--total-rooms), minmax(310px, 1fr)) auto
 		// grid-gap: 8px
 		position: relative
 		min-width: min-content
