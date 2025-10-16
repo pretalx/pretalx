@@ -385,7 +385,7 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
         # Reviews and assigned reviewers are currently not expandable because
         # reviewers are also receiving the ReviewerOrgaSerializer, but may
         # not be cleared to see all reviews or who is assigned to which review.
-        extra_expandable_fields = SubmissionSerializer.Meta.expandable_fields | {
+        extra_expandable_fields = SubmissionSerializer.Meta.extra_expandable_fields | {
             "speakers": (
                 "pretalx.api.serializers.speaker.SpeakerOrgaSerializer",
                 {"many": True, "read_only": True},
