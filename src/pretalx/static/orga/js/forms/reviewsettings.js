@@ -6,13 +6,13 @@ const updateTotal = () => {
     document
         .querySelectorAll("#score-formset .score-group")
         .forEach((element) => {
-            const factor = element.querySelector("input[type=number]").value
-            const name = element.querySelector("input[type=text]").value
+            const factor = element.querySelector("input[type=number]")
+            const name = element.querySelector("input")
             if (factor && name) {
-                if (factor === "1") {
-                    summands.push(name)
+                if (factor.value === "1") {
+                    summands.push(name.value)
                 } else {
-                    summands.push(`(${factor} × ${name})`)
+                    summands.push(`(${factor.value} × ${name.value})`)
                 }
             }
         })
