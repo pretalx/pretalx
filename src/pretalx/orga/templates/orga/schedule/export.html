@@ -109,6 +109,7 @@ SPDX-FileContributor: luto
             {% endif %}
         </p>
         <form action="{{ request.event.orga_urls.schedule_export_trigger }}" method="POST">
+            {% csrf_token %}
             {% include "orga/includes/submit_row.html" with submit_buttons=zip_buttons %}
         </form>
     </section>
