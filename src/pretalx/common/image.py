@@ -84,7 +84,7 @@ def load_img(image):
     try:
         img = Image.open(image)
     except Exception:
-        return
+        return None, None
     if img.mode.lower() in ("rgba", "la", "pa"):
         extension = ".png"
     elif img.mode != "RGB":
@@ -99,6 +99,8 @@ def process_image(*, image, generate_thumbnail=False):
     Image must be an ImageFieldFile, e.g. user.avatar.
     """
     img, extension = load_img(image)
+    if not img:
+        return
     img_without_exif = Image.new(img.mode, img.size)
     img_without_exif.putdata(img.getdata())
     img_without_exif = ImageOps.exif_transpose(img_without_exif)
@@ -140,6 +142,8 @@ def create_thumbnail(image, size, extension=None, fmt=None):
         return
 
     img, ext = load_img(image)
+    if not img:
+        return
     img.load()
     img.thumbnail(THUMBNAIL_SIZES[size], resample=Resampling.LANCZOS)
     thumbnail_field = getattr(image.instance, thumbnail_field_name)
