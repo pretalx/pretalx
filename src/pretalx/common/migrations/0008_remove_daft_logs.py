@@ -17,6 +17,7 @@ def remove_draft_logs(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("common", "0007_alter_globalsettings_settingsstore_unique_together"),
+        ("submission", "0086_alter_question_icon"),
     ]
 
     operations = [migrations.RunPython(remove_draft_logs, migrations.RunPython.noop)]
