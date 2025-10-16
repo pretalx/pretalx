@@ -100,8 +100,9 @@ SPDX-License-Identifier: Apache-2.0
 								span(v-else) {{ warnings[editorSession.code][0].message }}
 					.button-row
 						input(type="submit")
-						bunt-button#btn-delete(v-if="!editorSession.code", @click="editorDelete", :loading="editorSessionWaiting") {{ $t('Delete') }}
-						bunt-button#btn-unschedule(v-if="editorSession.start && editorSession.room", @click="editorUnschedule", :loading="editorSessionWaiting") {{ $t('Unschedule') }}
+						bunt-button.mr-1#btn-delete(v-if="!editorSession.code", @click="editorDelete", :loading="editorSessionWaiting") {{ $t('Delete') }}
+						bunt-button.mr-1#btn-unschedule(v-if="editorSession.start && editorSession.room && editorSession.code", @click="editorUnschedule", :loading="editorSessionWaiting") {{ $t('Unschedule') }}
+						bunt-button.mr-1#btn-copy-to-rooms(v-if="!editorSession.code && editorSession.start && editorSession.room && editorAvailableRoomsForCopy.length > 0", @click="editorCopyToOtherRooms", :loading="editorSessionWaiting") {{ $t('Copy to other rooms') }}
 						bunt-button#btn-save(@click="editorSave", :loading="editorSessionWaiting") {{ $t('Save') }}
 	bunt-progress-circular(v-else, size="huge", :page="true")
 </template>
@@ -158,6 +159,36 @@ export default {
 		roomsLookup () {
 			if (!this.schedule) return {}
 			return this.schedule.rooms.reduce((acc, room) => { acc[room.id] = room; return acc }, {})
+		},
+		editorAvailableRoomsForCopy () {
+			// Check if we can copy the current break to other rooms
+			if (!this.editorSession || this.editorSession.code || !this.editorSession.start || !this.editorSession.room) {
+				return []
+			}
+			// Find all rooms that are free at the break's time
+			const breakStart = moment(this.editorSession.start)
+			const breakEnd = moment(this.editorSession.end || breakStart.clone().add(this.editorSession.duration, 'minutes'))
+			const availableRooms = []
+
+			for (const room of this.schedule.rooms) {
+				if (room.id === this.editorSession.room.id || room.id === this.editorSession.room) {
+					// Skip the current room
+					continue
+				}
+				// Check if there's any session overlapping with the break time in this room
+				const hasOverlap = this.schedule.talks.some(talk => {
+					if (!talk.start || !talk.room) return false
+					if ((talk.room.id || talk.room) !== room.id) return false
+					const talkStart = moment(talk.start)
+					const talkEnd = moment(talk.end)
+					// Check for time overlap
+					return talkStart.isBefore(breakEnd) && talkEnd.isAfter(breakStart)
+				})
+				if (!hasOverlap) {
+					availableRooms.push(room)
+				}
+			}
+			return availableRooms
 		},
 		tracksLookup () {
 			if (!this.schedule) return {}
@@ -409,6 +440,45 @@ export default {
 			this.editorSession.end = null
 			this.editorSession.room = null
 			this.saveTalk(session)
+			this.editorSessionWaiting = false
+			this.editorSession = null
+		},
+		async editorCopyToOtherRooms () {
+			// Copy the current break to all available rooms
+			this.editorSessionWaiting = true
+			const availableRooms = this.editorAvailableRoomsForCopy
+
+			for (const room of availableRooms) {
+				const newBreak = {
+					title: this.editorSession.title,
+					description: this.editorSession.description,
+					start: this.editorSession.start,
+					end: this.editorSession.end,
+					duration: this.editorSession.duration,
+					room: room.id
+				}
+
+				try {
+					const response = await api.createTalk(newBreak)
+					// Add the newly created break to the schedule
+					const createdBreak = {
+						id: response.id,
+						title: newBreak.title,
+						description: newBreak.description,
+						start: newBreak.start,
+						end: newBreak.end,
+						duration: newBreak.duration,
+						room: room.id
+					}
+					this.schedule.talks.push(createdBreak)
+					if (response.warnings) {
+						this.warnings[response.id] = response.warnings
+					}
+				} catch (error) {
+					console.error('Failed to create break in room', room, error)
+				}
+			}
+
 			this.editorSessionWaiting = false
 			this.editorSession = null
 		},
@@ -738,6 +808,9 @@ export default {
 					font-weight: bold;
 				#btn-unschedule
 					button-style(color: $clr-warning, text-color: $clr-white)
+					font-weight: bold;
+				#btn-copy-to-rooms
+					button-style(color: #4a90e2, text-color: $clr-white)
 					font-weight: bold;
 				#btn-save
 					margin-left: auto
