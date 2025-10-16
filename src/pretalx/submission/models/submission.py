@@ -1184,7 +1184,7 @@ class Submission(GenerateCode, PretalxModel):
         self, action, data=None, person=None, orga=False, content_object=None
     ):
         if self.state != SubmissionStates.DRAFT:
-            super().log_action(action, data, person, orga, content_object)
+            return super().log_action(action, data, person, orga, content_object)
 
 
 class SubmissionFavourite(PretalxModel):
