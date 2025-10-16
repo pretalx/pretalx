@@ -177,7 +177,7 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
         return instance
 
     class Media:
-        js = [forms.Script("orga/js/ui/review.js", defer="")]
+        js = [forms.Script("orga/js/forms/review.js", defer="")]
 
     class Meta:
         model = Review
