@@ -12,8 +12,8 @@ const updateTitle = (newTitle) => {
 }
 
 const checkForTitle = () => {
-    const titleInput = document.getElementById("id_title").value
-    updateTitle(titleInput)
+    const titleInput = document.getElementById("id_title")
+    if (titleInput) updateTitle(titleInput.value)
 }
 
 if (titleParts.length !== 3) {
