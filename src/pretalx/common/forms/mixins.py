@@ -22,7 +22,12 @@ from pretalx.common.forms.validators import (
     MinDateTimeValidator,
     MinDateValidator,
 )
-from pretalx.common.forms.widgets import HtmlDateInput, HtmlDateTimeInput
+from pretalx.common.forms.widgets import (
+    EnhancedSelect,
+    EnhancedSelectMultiple,
+    HtmlDateInput,
+    HtmlDateTimeInput,
+)
 from pretalx.common.text.phrases import phrases
 from pretalx.submission.models.cfp import default_fields
 
@@ -315,11 +320,7 @@ class QuestionFieldsMixin:
                 ),
                 disabled=read_only,
                 help_text=help_text,
-                widget=(
-                    forms.RadioSelect
-                    if len(choices) < 4
-                    else forms.Select(attrs={"class": "enhanced"})
-                ),
+                widget=(forms.RadioSelect if len(choices) < 4 else EnhancedSelect),
             )
             field.original_help_text = original_help_text
             field.widget.attrs["placeholder"] = ""  # XSS
@@ -333,7 +334,7 @@ class QuestionFieldsMixin:
                 widget=(
                     forms.CheckboxSelectMultiple
                     if len(choices) < 8
-                    else forms.SelectMultiple(attrs={"class": "enhanced"})
+                    else EnhancedSelectMultiple
                 ),
                 initial=(
                     initial_object.options.all()
