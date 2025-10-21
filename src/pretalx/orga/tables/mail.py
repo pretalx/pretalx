@@ -60,12 +60,12 @@ class OutboxMailTable(PretalxTable):
         verbose_name=_("To"),
         order_by=Lower("to_users__name"),
     )
-    submissions = tables.TemplateColumn(
+    submissions = ContextTemplateColumn(
         template_name="orga/tables/columns/queued_mail_submissions.html",
         verbose_name="",
         orderable=False,
     )
-    template_info = tables.TemplateColumn(
+    template_info = ContextTemplateColumn(
         template_name="orga/tables/columns/queued_mail_template_info.html",
         verbose_name="",
         order_by=("template__role",),

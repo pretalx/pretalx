@@ -67,7 +67,7 @@ class SubmissionTable(PretalxTable):
         order_by=Lower("title"),
         linkify=lambda record: record.orga_urls.base,
     )
-    speakers = tables.TemplateColumn(
+    speakers = ContextTemplateColumn(
         template_name="orga/tables/columns/submission_speakers.html",
         verbose_name=_("Speakers"),
         orderable=False,
@@ -138,7 +138,7 @@ class ReviewTable(PretalxTable):
     def render_user_score(self, value):
         return f"{value:.1f}"
 
-    review_count = tables.TemplateColumn(
+    review_count = ContextTemplateColumn(
         verbose_name=_("Reviews"),
         template_name="orga/tables/columns/review_count.html",
         order_by=("review_nonnull_count",),
@@ -152,7 +152,7 @@ class ReviewTable(PretalxTable):
         attrs={"td": {"class": "w-75"}},
         linkify=lambda record: record.orga_urls.reviews,
     )
-    speakers = tables.TemplateColumn(
+    speakers = ContextTemplateColumn(
         template_name="orga/tables/columns/submission_speakers.html",
         verbose_name=_("Speakers"),
         orderable=False,
@@ -164,7 +164,7 @@ class ReviewTable(PretalxTable):
         order_by=Lower(Translate("track__name")),
         attrs={"td": {"class": "nowrap"}},
     )
-    tags = tables.TemplateColumn(
+    tags = ContextTemplateColumn(
         template_name="orga/tables/columns/review_tags.html",
         verbose_name=_("Tags"),
         orderable=False,
@@ -182,7 +182,7 @@ class ReviewTable(PretalxTable):
         order_by=Lower(Translate("submission_type__name")),
         attrs={"td": {"class": "nowrap"}},
     )
-    state = tables.TemplateColumn(
+    state = ContextTemplateColumn(
         template_name="orga/tables/columns/review_state.html",
         verbose_name=_("State"),
         initial_sort_descending=True,
@@ -246,7 +246,7 @@ class ReviewTable(PretalxTable):
             header_html = render_to_string(
                 "orga/tables/columns/review_actions_header.html", {"table": self}
             )
-            self.base_columns["actions"] = tables.TemplateColumn(
+            self.base_columns["actions"] = ContextTemplateColumn(
                 template_name="orga/tables/columns/review_actions.html",
                 verbose_name=mark_safe(header_html),
                 orderable=False,
@@ -346,7 +346,7 @@ class TagTable(PretalxTable):
         linkify=lambda record: record.urls.edit,
         verbose_name=_("Tag"),
     )
-    color = tables.TemplateColumn(
+    color = ContextTemplateColumn(
         verbose_name=_("Colour"),
         template_name="orga/tables/columns/color_square.html",
     )

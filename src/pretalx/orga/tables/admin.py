@@ -25,12 +25,12 @@ class AdminUserTable(PretalxTable):
     email = SortableTemplateColumn(
         template_name="orga/tables/columns/copyable.html",
     )
-    teams = tables.TemplateColumn(
+    teams = ContextTemplateColumn(
         template_name="orga/tables/columns/admin_user_teams.html",
         verbose_name=_("Teams"),
         orderable=False,
     )
-    events = tables.TemplateColumn(
+    events = ContextTemplateColumn(
         template_name="orga/tables/columns/admin_user_events.html",
         orderable=False,
     )
@@ -39,12 +39,12 @@ class AdminUserTable(PretalxTable):
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
         initial_sort_descending=True,
     )
-    last_login = tables.TemplateColumn(
+    last_login = ContextTemplateColumn(
         template_name="orga/tables/columns/timesince.html",
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
         initial_sort_descending=True,
     )
-    pw_reset_time = tables.TemplateColumn(
+    pw_reset_time = ContextTemplateColumn(
         template_name="orga/tables/columns/timesince.html",
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
         initial_sort_descending=True,
