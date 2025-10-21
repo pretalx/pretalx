@@ -22,5 +22,5 @@ if (titleParts.length !== 3) {
     )
 } else {
     onReady(checkForTitle)
-    document.getElementById("id_title").addEventListener("change", (ev) => { updateTitle(ev.target.value) })
+    document.getElementById("id_title")?.addEventListener("change", (ev) => { updateTitle(ev.target.value) })
 }
