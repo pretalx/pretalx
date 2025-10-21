@@ -183,7 +183,7 @@ class AvailabilitiesField(CharField):
         super().__init__(*args, **kwargs)
 
     def set_initial_from_instance(self):
-        if self.instance and self.event and not self.initial:
+        if self.event and not self.initial:
             self.initial = self._serialize(self.event, self.instance)
 
     def _serialize(self, event, instance):
