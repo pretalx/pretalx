@@ -13,6 +13,7 @@ import statistics
 from itertools import repeat
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
@@ -395,7 +396,12 @@ class Submission(GenerateCode, PretalxModel):
 
     @cached_property
     def editable(self) -> bool:
-        deadline = self.submission_type.deadline or self.event.cfp.deadline
+        try:
+            event = self.event
+        except ObjectDoesNotExist:
+            # Unsaved submissions can always be edited
+            return True
+        deadline = self.submission_type.deadline or event.cfp.deadline
         deadline_open = (not deadline) or now() <= deadline
 
         if self.state == SubmissionStates.DRAFT:
@@ -422,13 +428,13 @@ class Submission(GenerateCode, PretalxModel):
             # deadline or can ignore it safely
             return bool(deadline_open or access_code)
 
-        if not self.event.get_feature_flag("speakers_can_edit_submissions"):
+        if not event.get_feature_flag("speakers_can_edit_submissions"):
             return False
 
         if self.state == SubmissionStates.SUBMITTED:
             return deadline_open or (
-                self.event.active_review_phase
-                and self.event.active_review_phase.speakers_can_change_submissions
+                event.active_review_phase
+                and event.active_review_phase.speakers_can_change_submissions
             )
         return self.state in SubmissionStates.accepted_states
 
