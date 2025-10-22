@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2024-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from contextlib import suppress
 from functools import partial
 from io import BytesIO
 from pathlib import Path
@@ -141,7 +142,9 @@ def create_thumbnail(image, size, extension=None, fmt=None):
     if not image.instance._meta.get_field(thumbnail_field_name):
         return
 
-    img, ext = load_img(image)
+    img = None
+    with suppress(Exception):
+        img, ext = load_img(image)
     if not img:
         return
     img.thumbnail(THUMBNAIL_SIZES[size], resample=Resampling.LANCZOS)
