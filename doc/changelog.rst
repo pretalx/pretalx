@@ -6,6 +6,15 @@
 Release Notes
 =============
 
+- :feature:`api` When expanding a proposal’s speakers in the proposal API, you will now see additional speaker information if you are authenticated and have the required permissions.
+- :feature:`orga:schedule` You can now copy a break in the schedule editor to all other rooms to spare you the monotonous copying-and-pasting.
+- :feature:`orga:schedule` If your event has a lot of rooms, you can now switch to the new condensed display mode in the schedule editor, in order to fit more information on a single screen.
+- :feature:`orga:review` Reviewers can now add and remove tags in bulk rather than having to tag each individual proposal.
+- :feature:`orga` When you create a new event and choose to copy a past event’s settings, rooms and their availabilities will now be copied and shifted in time to match the new event dates.
+- :feature:`orga` You can now see the list of proposals submitted with an access code on the access code detail page.
+- :feature:`orga` You can now sort tables by nearly all columns, and sorting will be case-insensitive.
+- :feature:`schedule` The pretalx schedule widget will now update when there are schedule updates, so that attendees who have not recently reloaded their schedule will still see the most recent schedule information.
+- :bug:`cfp` Submitters who used an access code to create a proposal, and first saved their proposal as draft, were not always able to then submit the draft proposal.
 - :developer:`dev,1964` If your plugin provides an exporter, you can likely simplify it. If you split up the ``identifier`` into a ``filename_identifier`` and an ``extension`` property, you can then use the ``filename`` property to get a standardised filename including the event name, your exporter's name, and a timestamp, just like all pretalx exporters now do. You can also delegate that part to pretalx by implementing the new ``get_data`` method instead of ``render`` if you set a ``content_type`` attribute on your exporter class.
 - :feature:`administrator,2155` Administrators of self-hosted instances can now change the maximum page size of API responses.
 - :announcement:`dev` In an effort to make our pages smaller and faster, we reworked our static files. They are now broken up into smaller chunks, and are placed in different locations. If you use any upstream static files explicitly, please check if they are impacted. Please also do a quick visual inspection of your plugin pages to make sure that you were not relying on styles or scripts that used to be included in all pages and are now only included on the relevant pages. You can a detailed list of changes in our `2025.2.0 release notes <https://gist.github.com/rixx/0dc12119daf467d93b7bc822f63f90e3>`_.
@@ -24,6 +33,7 @@ Release Notes
 - :feature:`orga:email` The URL to the private speaker profile page (where speakers can e.g. edit their biography) is now available as an email placeholder.
 - :bug:`orga:email` The list of available email placeholders was hidden when editing email templates.
 - :bug:`orga:email` If the email signature contained URLs, those URLs were broken in the HTML version of the email.
+- :bug:`orga:email` With some configurations, email subjects would contain duplicate ``[event]`` prefixes.
 - :feature:`schedule,1662` Featured sessions will now also have a public detail page, rather than just appearing in the featured list view. The page will however not link to related speakers and sessions.
 - :feature:`schedule` Organisers can now configure icons for public custom fields of type URL. Responses to this custom field will be shown on the session or speaker page as a link with the selected icon. Available icons for now include GitHub, LinkedIn, Twitter, Mastodon, YouTube, Discord, Instagram, and a generic web icon. Happy to add more icons as needed, please request them on GitHub.
 - :feature:`orga:review` In the review assignment form, you can now see which proposal was already reviewed by which reviewers.
@@ -40,13 +50,12 @@ Release Notes
 - :feature:`orga,1346` Organisers can now completely disable speaker editing of proposals with a new toggle in the CfP settings. When disabled, speakers cannot edit their proposals once submitted (draft proposals remain editable while the CfP is open). This setting overrides review phase settings, and provides a long-requested way of preventing even accepted and confirmed speakers from editing their proposals.
 - :feature:`cfp` When users change their email address, pretalx now sends a notification email to the old email address.
 - :feature:`cfp` When the session duration field is required, pretalx now hides the default proposal type duration.
-- :bug:`schedule` Fixed dates wrapping incorrectly in schedule session boxes.
 - :bug:`cfp` Fixed users being able to clear their profile picture when they should not be able to.
 - :announcement:`admin` As PostgreSQL 13 is soon EOL, pretalx support has changed to PostgreSQL 14 or higher.
 - :announcement:`admin` The ``shell_scoped`` command was removed – please use the ``shell`` command instead, which now requires you to either specify an ``--event`` or run with ``--unsafe-disable-scopes`` (matching the previous ``shell_scoped --scopes-disabled``).
-- :bug:`schedule` Fixed speaker biography data not loading in session schedule modals.
+- :feature:`schedule` The full speaker biography is now included in the schedule widget.
 - :bug:`orga:email` Fixed broken footer links in emails.
-- :bug:`schedule` Fixed schedule HTML exporter to properly include lightbox images.
+- :bug:`orga:schedule` Fixed schedule HTML exporter to properly include lightbox images.
 - :bug:`api` Fixed speaker API in events without speaker avatar configuration.
 - :feature:`admin` Administrators can now disable the verbose pretalx startup message with an environment variable, ``PRETALX_NO_INITIAL_LOG=1``, in addition to the existing command-line flag.
 - :feature:`admin` Administrators can now access organiser dashboards.
