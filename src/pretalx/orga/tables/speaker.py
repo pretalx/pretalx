@@ -9,10 +9,10 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import (
     ActionsColumn,
-    ContextTemplateColumn,
     PretalxTable,
     SortableColumn,
     SortableTemplateColumn,
+    TemplateColumn,
 )
 from pretalx.orga.utils.i18n import Translate
 from pretalx.person.models import SpeakerInformation, SpeakerProfile
@@ -72,7 +72,7 @@ class SpeakerTable(PretalxTable):
         verbose_name=_("Proposals"),
         initial_sort_descending=True,
     )
-    has_arrived = ContextTemplateColumn(
+    has_arrived = TemplateColumn(
         verbose_name="", template_name="orga/tables/columns/speaker_arrived.html"
     )
 

@@ -7,14 +7,14 @@ from django.utils.translation import gettext_lazy as _
 from pretalx.common.tables import (
     ActionsColumn,
     BooleanIconColumn,
-    ContextTemplateColumn,
     PretalxTable,
+    TemplateColumn,
 )
 from pretalx.event.models import Team
 
 
 class TeamTable(PretalxTable):
-    name = ContextTemplateColumn(
+    name = TemplateColumn(
         linkify=lambda record: record.orga_urls.base,
         verbose_name=_("Name"),
         template_name="orga/tables/columns/team_name.html",

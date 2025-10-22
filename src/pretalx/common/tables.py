@@ -87,10 +87,17 @@ class SortableColumn(FunctionOrderMixin, tables.Column):
     pass
 
 
-class ContextTemplateColumn(tables.TemplateColumn):
-    """Allow to change the context_object_name."""
+class TemplateColumn(tables.TemplateColumn):
+    """
+    Overrides the default django-tables2 TemplateColumn.
+    Changes:
+    - Allow to change the context_object_name
+    - Pass the request to the render method, allowing use of queryparam
+    - Return a placeholder if the rendered value is empty
+    """
 
     context_object_name = "record"
+    placeholder = mark_safe("&mdash;")
 
     def __init__(self, *args, template_context=None, **kwargs):
         if name := kwargs.pop("context_object_name", None):
@@ -124,14 +131,23 @@ class ContextTemplateColumn(tables.TemplateColumn):
         additional_context.update(self.extra_context)
         with context.update(additional_context):
             if self.template_code:
-                return Template(self.template_code).render(context)
+                result = Template(self.template_code).render(context)
             else:
-                return get_template(self.template_name).render(
+                result = get_template(self.template_name).render(
                     context.flatten(), request=table.request
                 )
+            if not result.strip():
+                return self.placeholder
+            return result
+
+    def value(self, **kwargs):
+        result = super().value(**kwargs)
+        if result == self.placeholder:
+            return ""
+        return result
 
 
-class SortableTemplateColumn(FunctionOrderMixin, ContextTemplateColumn):
+class SortableTemplateColumn(FunctionOrderMixin, TemplateColumn):
     pass
 
 

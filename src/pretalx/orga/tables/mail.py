@@ -7,17 +7,17 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import (
     ActionsColumn,
-    ContextTemplateColumn,
     PretalxTable,
     SortableColumn,
     SortableTemplateColumn,
+    TemplateColumn,
 )
 from pretalx.mail.models import MailTemplate, QueuedMail
 from pretalx.orga.utils.i18n import Translate
 
 
 class MailTemplateTable(PretalxTable):
-    role = ContextTemplateColumn(
+    role = TemplateColumn(
         linkify=lambda record: record.urls.edit,
         template_name="orga/includes/mail_template_role.html",
         context_object_name="template",
@@ -60,12 +60,12 @@ class OutboxMailTable(PretalxTable):
         verbose_name=_("To"),
         order_by=Lower("to_users__name"),
     )
-    submissions = ContextTemplateColumn(
+    submissions = TemplateColumn(
         template_name="orga/tables/columns/queued_mail_submissions.html",
         verbose_name="",
         orderable=False,
     )
-    template_info = ContextTemplateColumn(
+    template_info = TemplateColumn(
         template_name="orga/tables/columns/queued_mail_template_info.html",
         verbose_name="",
         order_by=("template__role",),

@@ -8,9 +8,9 @@ from django.utils.translation import gettext_lazy as _
 from pretalx.common.tables import (
     ActionsColumn,
     BooleanIconColumn,
-    ContextTemplateColumn,
     PretalxTable,
     SortableColumn,
+    TemplateColumn,
     UnsortableMixin,
 )
 from pretalx.orga.utils.i18n import Translate
@@ -23,7 +23,7 @@ from pretalx.submission.models import (
 
 
 class SubmitterAccessCodeTable(PretalxTable):
-    code = ContextTemplateColumn(
+    code = TemplateColumn(
         template_name="orga/tables/columns/copyable.html",
         verbose_name=_("Code"),
     )
@@ -89,12 +89,12 @@ class SubmitterAccessCodeTable(PretalxTable):
 
 
 class TrackTable(UnsortableMixin, PretalxTable):
-    name = ContextTemplateColumn(
+    name = TemplateColumn(
         linkify=lambda record: record.urls.edit,
         verbose_name=_("Track"),
         template_name="orga/tables/columns/track_name.html",
     )
-    color = ContextTemplateColumn(
+    color = TemplateColumn(
         verbose_name=_("Colour"),
         template_name="orga/tables/columns/color_square.html",
     )
@@ -128,7 +128,7 @@ class TrackTable(UnsortableMixin, PretalxTable):
 
 
 class SubmissionTypeTable(PretalxTable):
-    name = ContextTemplateColumn(
+    name = TemplateColumn(
         linkify=lambda record: record.urls.edit,
         verbose_name=_("Session type"),
         template_name="orga/tables/columns/submission_type_name.html",

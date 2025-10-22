@@ -13,10 +13,10 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import (
     ActionsColumn,
-    ContextTemplateColumn,
     PretalxTable,
     SortableColumn,
     SortableTemplateColumn,
+    TemplateColumn,
 )
 from pretalx.orga.utils.i18n import Translate
 from pretalx.submission.models import Submission, Tag
@@ -67,7 +67,7 @@ class SubmissionTable(PretalxTable):
         order_by=Lower("title"),
         linkify=lambda record: record.orga_urls.base,
     )
-    speakers = ContextTemplateColumn(
+    speakers = TemplateColumn(
         template_name="orga/tables/columns/submission_speakers.html",
         verbose_name=_("Speakers"),
         orderable=False,
@@ -78,12 +78,12 @@ class SubmissionTable(PretalxTable):
         accessor="submission_type__name",
         order_by=Lower(Translate("submission_type__name")),
     )
-    state = ContextTemplateColumn(
+    state = TemplateColumn(
         template_name="orga/submission/state_dropdown.html",
         verbose_name=_("State"),
         context_object_name="submission",
     )
-    is_featured = ContextTemplateColumn(
+    is_featured = TemplateColumn(
         template_name="orga/tables/columns/submission_is_featured.html",
         verbose_name=_("Featured"),
     )
@@ -138,7 +138,7 @@ class ReviewTable(PretalxTable):
     def render_user_score(self, value):
         return f"{value:.1f}"
 
-    review_count = ContextTemplateColumn(
+    review_count = TemplateColumn(
         verbose_name=_("Reviews"),
         template_name="orga/tables/columns/review_count.html",
         order_by=("review_nonnull_count",),
@@ -152,7 +152,7 @@ class ReviewTable(PretalxTable):
         attrs={"td": {"class": "w-75"}},
         linkify=lambda record: record.orga_urls.reviews,
     )
-    speakers = ContextTemplateColumn(
+    speakers = TemplateColumn(
         template_name="orga/tables/columns/submission_speakers.html",
         verbose_name=_("Speakers"),
         orderable=False,
@@ -164,7 +164,7 @@ class ReviewTable(PretalxTable):
         order_by=Lower(Translate("track__name")),
         attrs={"td": {"class": "nowrap"}},
     )
-    tags = ContextTemplateColumn(
+    tags = TemplateColumn(
         template_name="orga/tables/columns/review_tags.html",
         verbose_name=_("Tags"),
         orderable=False,
@@ -182,7 +182,7 @@ class ReviewTable(PretalxTable):
         order_by=Lower(Translate("submission_type__name")),
         attrs={"td": {"class": "nowrap"}},
     )
-    state = ContextTemplateColumn(
+    state = TemplateColumn(
         template_name="orga/tables/columns/review_state.html",
         verbose_name=_("State"),
         initial_sort_descending=True,
@@ -246,7 +246,7 @@ class ReviewTable(PretalxTable):
             header_html = render_to_string(
                 "orga/tables/columns/review_actions_header.html", {"table": self}
             )
-            self.base_columns["actions"] = ContextTemplateColumn(
+            self.base_columns["actions"] = TemplateColumn(
                 template_name="orga/tables/columns/review_actions.html",
                 verbose_name=mark_safe(header_html),
                 orderable=False,
@@ -346,7 +346,7 @@ class TagTable(PretalxTable):
         linkify=lambda record: record.urls.edit,
         verbose_name=_("Tag"),
     )
-    color = ContextTemplateColumn(
+    color = TemplateColumn(
         verbose_name=_("Colour"),
         template_name="orga/tables/columns/color_square.html",
     )

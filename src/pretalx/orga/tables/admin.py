@@ -7,15 +7,15 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import (
     ActionsColumn,
-    ContextTemplateColumn,
     PretalxTable,
     SortableTemplateColumn,
+    TemplateColumn,
 )
 from pretalx.person.models import User
 
 
 class AdminUserTable(PretalxTable):
-    name = ContextTemplateColumn(
+    name = TemplateColumn(
         linkify=lambda record: reverse(
             "orga:admin.user.detail", kwargs={"code": record.code}
         ),
@@ -25,12 +25,12 @@ class AdminUserTable(PretalxTable):
     email = SortableTemplateColumn(
         template_name="orga/tables/columns/copyable.html",
     )
-    teams = ContextTemplateColumn(
+    teams = TemplateColumn(
         template_name="orga/tables/columns/admin_user_teams.html",
         verbose_name=_("Teams"),
         orderable=False,
     )
-    events = ContextTemplateColumn(
+    events = TemplateColumn(
         template_name="orga/tables/columns/admin_user_events.html",
         orderable=False,
     )
@@ -39,12 +39,12 @@ class AdminUserTable(PretalxTable):
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
         initial_sort_descending=True,
     )
-    last_login = ContextTemplateColumn(
+    last_login = TemplateColumn(
         template_name="orga/tables/columns/timesince.html",
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
         initial_sort_descending=True,
     )
-    pw_reset_time = ContextTemplateColumn(
+    pw_reset_time = TemplateColumn(
         template_name="orga/tables/columns/timesince.html",
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
         initial_sort_descending=True,
