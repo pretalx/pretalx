@@ -1096,7 +1096,8 @@ class CommentDelete(SubmissionViewMixin, ActionConfirmMixin, TemplateView):
     def action_object_name(self):
         return _("Your comment on “{title}”").format(title=self.object.submission.title)
 
-    def get_object(self):
+    @cached_property
+    def object(self):
         return get_object_or_404(
             SubmissionComment,
             submission__code__iexact=self.kwargs["code"],
