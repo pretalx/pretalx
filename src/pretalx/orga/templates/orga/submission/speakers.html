@@ -19,6 +19,7 @@ SPDX-FileContributor: Florian Mösch
 
     <span id="vars" remoteUrl="{{ request.event.organiser.orga_urls.user_search }}"></span>
 
+    {% has_perm "person.orga_list_speakerprofile" request.user request.event as can_view_speakers %}
     {% has_perm "submission.update_submission" request.user submission as can_edit_speakers %}
     {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
     {% has_perm "person.mark_arrived_speakerprofile" request.user request.event as can_mark_speaker %}
@@ -39,9 +40,13 @@ SPDX-FileContributor: Florian Mösch
     {% for speaker in speakers %}
         <div class="card mb-3"><div class="card-body">
             <h3 class="card-title">
-                <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.user.code %}">
-                    {{ speaker.user.get_display_name }}
-                </a>
+                {% if can_view_speakers %}
+                    <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.user.code %}">
+                {% endif %}
+                {{ speaker.user.get_display_name }}
+                {% if can_view_speakers %}
+                    </a>
+                {% endif %}
                 {% if speaker.user.avatar and request.event.cfp.request_avatar %}
                     <div class="float-right">
                         <a href="{{ speaker.user.avatar.url }}" data-lightbox>

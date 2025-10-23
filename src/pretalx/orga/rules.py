@@ -14,3 +14,13 @@ def can_view_speaker_names(user, obj):
     return bool(
         event.active_review_phase and event.active_review_phase.can_see_speaker_names
     )
+
+
+@rules.predicate
+def orga_can_view_speakers(user, obj):
+    event = getattr(obj, "event", None)
+    if not user or user.is_anonymous or not obj or not event:
+        return False
+    if user.is_administrator:
+        return True
+    return "can_view_speakers" in user.get_permissions_for_event(event)
