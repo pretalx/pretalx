@@ -38,8 +38,12 @@ def i18n_unserialise(value):
         return LazyI18nString(str(value))
 
 
+def i18n_serialise(value):
+    return json.dumps(value.data)
+
+
 hierarkey.add_type(
-    LazyI18nString, serialize=lambda s: json.dumps(s.data), unserialize=i18n_unserialise
+    LazyI18nString, serialize=i18n_serialise, unserialize=i18n_unserialise
 )
 
 
