@@ -108,7 +108,7 @@ class BasePhrases(Phrases, app="base"):
         link_start='<a href="https://docs.pretalx.org/user/markdown/" target="_blank" rel="noopener">',
         link_end="</a>",
     )
-    public_content = _("This content will be shown publicly.")
+    public_content = _("This content may be shown publicly.")
 
     quotation_open = pgettext_lazy("opening quotation mark", "“")
     quotation_close = pgettext_lazy("closing quotation mark", "”")
