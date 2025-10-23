@@ -9,7 +9,7 @@ from pretalx.agenda.rules import can_view_schedule, is_speaker_viewable
 from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
-from pretalx.orga.rules import can_view_speaker_names
+from pretalx.orga.rules import can_view_speaker_names, orga_can_view_speakers
 from pretalx.person.rules import (
     can_mark_speakers_arrived,
     is_administrator,
@@ -60,18 +60,24 @@ class SpeakerProfile(PretalxModel):
     class Meta:
         # These permissions largely apply to event-scoped user actions
         rules_permissions = {
-            "list": can_view_schedule | (is_reviewer & can_view_speaker_names),
+            "list": can_view_schedule
+            | orga_can_view_speakers
+            | (is_reviewer & can_view_speaker_names),
             "reviewer_list": is_reviewer & can_view_speaker_names,
             "orga_list": orga_can_change_submissions
+            | orga_can_view_speakers
             | (is_reviewer & can_view_speaker_names),
             "view": is_speaker_viewable
             | orga_can_change_submissions
+            | orga_can_view_speakers
             | (is_reviewer & can_view_speaker_names),
             "orga_view": orga_can_change_submissions
+            | orga_can_view_speakers
             | (is_reviewer & can_view_speaker_names),
             "create": is_administrator,
             "update": orga_can_change_submissions,
-            "mark_arrived": orga_can_change_submissions & can_mark_speakers_arrived,
+            "mark_arrived": (orga_can_change_submissions | orga_can_view_speakers)
+            & can_mark_speakers_arrived,
             "delete": is_administrator,
         }
 

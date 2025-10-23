@@ -217,6 +217,9 @@ class Team(PretalxModel):
     can_change_event_settings = models.BooleanField(
         default=False, verbose_name=_("Can change event settings")
     )
+    can_view_speakers = models.BooleanField(
+        default=False, verbose_name=_("Can view speaker details")
+    )
     can_view_submissions = models.BooleanField(
         default=False, verbose_name=_("Can view proposals")
     )
