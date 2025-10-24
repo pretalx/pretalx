@@ -5,6 +5,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% extends "cfp/event/base.html" %}
 {% load i18n %}
+{% load form_media %}
+
+{% block scripts %}{% form_media extra_js="common/js/ui/collapse.js" %}{% endblock scripts %}
 
 {% block title %}{% translate "Your Emails" %} :: {% endblock title %}
 
