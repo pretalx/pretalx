@@ -7,13 +7,23 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 {% load rich_text %}
+{% load stars %}
+{% load static %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static "orga/css/ui/submission.css" %}" />
+    <link rel="stylesheet" href="{% static "common/css/forms/stars.css" %}" />
+{% endblock stylesheets %}
 
 {% block submission_title %}{% translate "Attendee feedback" %} :: {% endblock submission_title %}
 
 {% block submission_content %}
     {% for entry in feedback %}
         <div class="card mb-2">
-            <div class="card-body pb-0">{{ entry.review|rich_text }}</div>
+            <div class="card-body pb-0">
+                {{ entry.rating|stars }}
+                {{ entry.review|rich_text }}
+            </div>
         </div>
     {% empty %}
         {{ phrases.schedule.no_feedback }}
