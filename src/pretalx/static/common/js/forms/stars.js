@@ -28,12 +28,6 @@ function initStarRating(root) {
             render(currentValue);
         });
     });
-    
-    function syncAria() {
-        root.setAttribute("aria-valuenow", String(currentValue));
-    }
-    root.addEventListener("click", syncAria);
-    root.addEventListener("keydown", syncAria);
 }
 
 // onReady(() =>
