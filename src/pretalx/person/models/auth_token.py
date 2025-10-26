@@ -49,6 +49,7 @@ ENDPOINTS = (
     "mail-templates",
     "access-codes",
     "speaker-information",
+    "feedback",
 )
 
 
