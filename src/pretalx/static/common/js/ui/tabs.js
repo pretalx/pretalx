@@ -52,7 +52,8 @@ const initTabs = () => {
     })
 }
 
-onReady(() => {
+// onReady(() =>
+document.addEventListener("DOMContentLoaded", () => {
     if (document.querySelector(TAB_SELECTOR)) {
       initTabs()
     }
