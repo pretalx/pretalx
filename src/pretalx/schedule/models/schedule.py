@@ -562,6 +562,7 @@ class Schedule(PretalxModel):
                         "duration": talk.submission.get_duration(),
                         "updated": talk.updated.isoformat(),
                         "state": talk.submission.state if all_talks else None,
+                        "content_locale": talk.submission.content_locale,
                         "do_not_record": (
                             talk.submission.do_not_record
                             if show_do_not_record
