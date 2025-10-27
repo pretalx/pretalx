@@ -15,6 +15,7 @@ from django.utils.crypto import get_random_string
 from django.utils.translation import gettext_lazy as _
 from django.views import View
 
+from pretalx.cfp.flow import cfp_session
 from pretalx.cfp.views.event import EventPageMixin
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.text.phrases import phrases
@@ -23,17 +24,27 @@ from pretalx.common.text.phrases import phrases
 class SubmitStartView(EventPageMixin, View):
     @staticmethod
     def get(request, *args, **kwargs):
+        tmpid = request.resolver_match.kwargs.get("tmpid", get_random_string(length=6))
         url = reverse(
             "cfp:event.submit",
             kwargs={
                 "event": request.event.slug,
                 "step": list(request.event.cfp_flow.steps_dict.keys())[0],
-                "tmpid": get_random_string(length=6),
+                "tmpid": tmpid,
             },
         )
         if request.GET:
             url += f"?{request.GET.urlencode()}"
         return redirect(url)
+
+
+class SubmitReStartView(EventPageMixin, View):
+    @staticmethod
+    def get(request, *args, **kwargs):
+        request.resolver_match.kwargs["tmpid"] = get_random_string(length=6)
+        cfp_session_data = cfp_session(request)
+        cfp_session_data["code"] = request.resolver_match.kwargs["code"]
+        return SubmitStartView.get(request, *args, **kwargs)
 
 
 class SubmitWizard(EventPageMixin, View):
