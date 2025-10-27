@@ -11,6 +11,7 @@ from django.core.validators import validate_email
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -449,12 +450,16 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
                 and self.request.method == "POST"
                 and self.request.POST.get("action", "submit") == "dedraft"
             ):
-                form.instance.make_submitted(person=self.request.user)
-                form.instance.log_action(
-                    "pretalx.submission.create", person=self.request.user
+                url = reverse(
+                    "cfp:event.submit",
+                    kwargs={
+                        "event": self.request.event.slug,
+                        "code": form.instance.code,
+                    },
                 )
-                messages.success(self.request, _("Your proposal has been submitted."))
-                return redirect(self.request.event.urls.user_submissions)
+                if form.instance.access_code:
+                    url += f"?access_code={form.instance.access_code.code}"
+                return redirect(url)
             messages.success(self.request, phrases.base.saved)
         else:
             messages.error(self.request, phrases.cfp.submission_uneditable)
