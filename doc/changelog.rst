@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`schedule` You can now filter a pretalx schedule by session language if there are multiple session languages in the event.
 - :feature:`api` When expanding a proposal’s speakers in the proposal API, you will now see additional speaker information if you are authenticated and have the required permissions.
 - :feature:`orga:schedule` You can now copy a break in the schedule editor to all other rooms to spare you the monotonous copying-and-pasting.
 - :feature:`orga:schedule` If your event has a lot of rooms, you can now switch to the new condensed display mode in the schedule editor, in order to fit more information on a single screen.
