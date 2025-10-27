@@ -43,6 +43,7 @@ from pretalx.submission.models import (
     SubmissionType,
     Track,
 )
+from pretalx.submission.models.submission import Submission
 
 
 def i18n_string(data, locales):
@@ -330,6 +331,21 @@ class InfoStep(GenericFlowStep, FormFlowStep):
     def get_form_kwargs(self):
         result = super().get_form_kwargs()
         result["access_code"] = getattr(self.request, "access_code", None)
+        with suppress(Submission.DoesNotExist, KeyError):
+            code = self.cfp_session.get("code")
+            if (
+                self.request.user.is_authenticated
+                and code
+                and (
+                    instance := Submission._base_manager.get(
+                        event=self.event,
+                        code=code,
+                        state=SubmissionStates.DRAFT,
+                        speakers__in=[self.request.user],
+                    )
+                )
+            ):
+                result["instance"] = instance
         return result
 
     def get_form_initial(self):
@@ -350,6 +366,11 @@ class InfoStep(GenericFlowStep, FormFlowStep):
         form.instance.event = self.event
         if draft:
             form.instance.state = SubmissionStates.DRAFT
+        elif form.instance.state == SubmissionStates.DRAFT:
+            form.instance.make_submitted(person=self.request.user)
+            form.instance.log_action(
+                "pretalx.submission.create", person=self.request.user
+            )
         form.save()
         submission = form.instance
         submission.speakers.add(request.user)
@@ -381,7 +402,7 @@ class InfoStep(GenericFlowStep, FormFlowStep):
                     messages.warning(self.request, phrases.cfp.submission_email_fail)
 
         access_code = getattr(request, "access_code", None)
-        if access_code:
+        if access_code != submission.access_code:
             submission.access_code = access_code
             submission.save()
             access_code.redeemed += 1

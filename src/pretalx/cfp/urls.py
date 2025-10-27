@@ -30,6 +30,11 @@ urlpatterns = [
                 path("cfp", event.EventCfP.as_view(), name="event.start"),
                 path("submit/", wizard.SubmitStartView.as_view(), name="event.submit"),
                 path(
+                    "submit/<code>/",
+                    wizard.SubmitReStartView.as_view(),
+                    name="event.submit",
+                ),
+                path(
                     "submit/<tmpid>/<step>/",
                     wizard.SubmitWizard.as_view(),
                     name="event.submit",

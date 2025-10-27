@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`cfp` When users want to submit draft proposals, they will now be guided back through the CfP flow to make sure that all information is complete before final submission.
 - :feature:`orga` Organisers can now configure tables to change which columns are shown and what the default ordering should be.
 - :feature:`cfp` When a text field is limited in character length, pretalx now uses JavaScript to validate the input and warn the user rather than native HTML, as this would cut off pasted input if it was too long without any warning.
 - :feature:`cfp` Users are now asked to crop their profile picture to a square format on upload.
