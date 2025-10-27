@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% extends "orga/base.html" %}
 
+{% load event_tags %}
 {% load i18n %}
 {% load static %}
 
@@ -123,7 +124,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <td>{{ sform.cfp_description_min_length.as_field_group }}</td>
                             <td>{{ sform.cfp_description_max_length.as_field_group }}</td>
                         </tr>
-                        <tr{% if not request.event.settings.use_tracks %} class="d-none"{% endif %}>
+                        <tr{% if not request.event|get_feature_flag:"use_tracks" %} class="d-none"{% endif %}>
                             <th>{% translate "Track" %}</th>
                             <td class="hide-label">{{ sform.cfp_ask_track.as_field_group }}</td>
                             <td></td>
