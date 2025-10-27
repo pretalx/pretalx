@@ -8,6 +8,7 @@ from rest_framework import routers
 from pretalx.api.views import (
     access_code,
     event,
+    feedback,
     mail,
     question,
     review,
@@ -67,6 +68,11 @@ event_router.register(
     "speaker-information",
     speaker_information.SpeakerInformationViewSet,
     basename="speaker_information",
+)
+event_router.register(
+    "feedback",
+    feedback.FeedbackViewSet,
+    basename="feedback",
 )
 
 organiser_router = routers.DefaultRouter()

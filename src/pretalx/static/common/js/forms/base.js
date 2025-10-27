@@ -108,7 +108,8 @@ const initTextarea = (element, other, limit) => {
 }
 
 /* Register handlers */
-onReady(() => {
+// onReady(() =>
+document.addEventListener("DOMContentLoaded", () => {
     document
         .querySelectorAll("form[method=post]")
         .forEach((form) => {
