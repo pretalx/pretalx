@@ -124,11 +124,7 @@ const pushOrder = (parentElement) => {
     fetch(url, {
         method: "POST",
         headers: {
-            "X-CSRFToken": document.cookie
-                .split("pretalx_csrftoken=")
-                .pop()
-                .split(";")
-                .shift(),
+            "X-CSRFToken": getCookie("pretalx_csrftoken")
         },
         body: data,
     });

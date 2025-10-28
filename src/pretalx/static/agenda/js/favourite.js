@@ -9,6 +9,24 @@ let loggedIn = false
 let apiBaseUrl = null
 let setupRun = false
 
+const getCookie = (name) => {
+    let cookieValue = null
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";")
+        for (var i = 0; i < cookies.length; i++) {
+            let cookie = cookies[i].trim()
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === name + "=") {
+                cookieValue = decodeURIComponent(
+                    cookie.substring(name.length + 1),
+                )
+                break
+            }
+        }
+    }
+    return cookieValue
+}
+
 const spinStar = (star) => {
     star.classList.add('animate-spin')
     setTimeout(() => {
@@ -46,7 +64,7 @@ const loadLocalFavs = () => {
 const apiFetch = async (path, method) => {
     const headers = {'Content-Type': 'application/json'}
     if (method === 'POST' || method === 'DELETE') {
-        headers['X-CSRFToken'] = document.cookie.split('pretalx_csrftoken=').pop().split(';').shift()
+        headers['X-CSRFToken'] = getCookie('pretalx_csrftoken')
     }
     const response = await fetch(apiBaseUrl + path, {
         method,

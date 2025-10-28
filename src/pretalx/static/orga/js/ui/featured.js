@@ -50,4 +50,4 @@ onReady(() => {
                 handleFeaturedChange(element),
             ),
         )
-}
+})
