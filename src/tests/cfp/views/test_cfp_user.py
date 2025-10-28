@@ -854,11 +854,36 @@ def test_draft_submission_allowed_with_access_code(
             "resource-MIN_NUM_FORMS": 0,
             "resource-MAX_NUM_FORMS": 1000,
         }
-        response = speaker_client.post(
-            submission.urls.user_base, data=data, follow=True
-        )
+        response = speaker_client.post(submission.urls.user_base, data=data)
 
+        # redirect to cfp flow
+        assert response.status_code == 302
+        url = response.url
+        response = speaker_client.get(url)
+
+        # redirect to first cfp flow form
+        assert response.status_code == 302
+        url = response.url
+        response = speaker_client.get(url)
         assert response.status_code == 200
+
+        from bs4 import BeautifulSoup
+
+        for _step in "info", "profile":
+            soup = BeautifulSoup(response.render().content, "html.parser")
+            form = soup.find_all("form")[1]
+            form_data = {}
+            for input_tag in form.find_all("input"):
+                form_data[input_tag.get("name")] = input_tag.get("value", "")
+            for input_tag in form.find_all("textarea"):
+                form_data[input_tag.get("name")] = input_tag.text
+            form_data["action"] = "submit"
+            response = speaker_client.post(url, data=form_data)
+            assert response.status_code == 302
+            url = response.url
+            response = speaker_client.get(url)
+            assert response.status_code == 200
+
         submission.refresh_from_db()
         assert submission.state == SubmissionStates.SUBMITTED
         assert submission.access_code.is_valid
@@ -1052,8 +1077,35 @@ def test_access_code_not_redeemed_again_on_dedraft(
         "resource-MIN_NUM_FORMS": 0,
         "resource-MAX_NUM_FORMS": 1000,
     }
-    response = speaker_client.post(submission.urls.user_base, data=data, follow=True)
+    response = speaker_client.post(submission.urls.user_base, data=data)
+
+    # redirect to cfp flow
+    assert response.status_code == 302
+    url = response.url
+    response = speaker_client.get(url)
+
+    # redirect to first cfp flow form
+    assert response.status_code == 302
+    url = response.url
+    response = speaker_client.get(url)
     assert response.status_code == 200
+
+    from bs4 import BeautifulSoup
+
+    for _step in "info", "profile":
+        soup = BeautifulSoup(response.render().content, "html.parser")
+        form = soup.find_all("form")[1]
+        form_data = {}
+        for input_tag in form.find_all("input"):
+            form_data[input_tag.get("name")] = input_tag.get("value", "")
+        for input_tag in form.find_all("textarea"):
+            form_data[input_tag.get("name")] = input_tag.text
+        form_data["action"] = "submit"
+        response = speaker_client.post(url, data=form_data)
+        assert response.status_code == 302
+        url = response.url
+        response = speaker_client.get(url)
+        assert response.status_code == 200
 
     access_code.refresh_from_db()
     assert (
