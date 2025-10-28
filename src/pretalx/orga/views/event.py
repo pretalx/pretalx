@@ -570,6 +570,7 @@ def condition_copy(wizard):
     return EventWizardCopyForm.copy_from_queryset(wizard.request.user).exists()
 
 
+@method_decorator(no_html_minification, name="dispatch")
 class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView):
     permission_required = "event.create_event"
     file_storage = FileSystemStorage(location=Path(settings.MEDIA_ROOT) / "new_event")
