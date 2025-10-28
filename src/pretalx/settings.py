@@ -631,6 +631,11 @@ if DEBUG:
 
 DJANGO_TABLES2_TEMPLATE = "orga/generic/table.html"
 
+## UI SETTINGS
+MAX_PAGINATION_LIMIT = int(config.get("ui", "max_pagination_limit"))
+if MAX_PAGINATION_LIMIT == -1:
+    MAX_PAGINATION_LIMIT = None
+
 ## API SETTINGS
 API_MAX_PAGINATION_LIMIT = int(config.get("api", "max_pagination_limit"))
 if API_MAX_PAGINATION_LIMIT == -1:
