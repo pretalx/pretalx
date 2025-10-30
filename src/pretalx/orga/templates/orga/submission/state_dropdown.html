@@ -9,11 +9,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <summary class="btn">
         <h4>
 
-            {% include "cfp/event/fragment_state.html" with state=submission.state %}
+            {% include "cfp/event/fragment_state.html" with state=submission.state as_badge=False %}
 
             {% if submission.pending_state %}
                 <span class="pending-indicator">
-                    (<i class="fa fa-arrow-right"></i> {% include "cfp/event/fragment_state.html" with state=submission.pending_state %})
+                    (<i class="fa fa-arrow-right"></i> {% include "cfp/event/fragment_state.html" with state=submission.pending_state as_badge=False %})
                 </span>
             {% endif %}
         </h4>
@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 class="dropdown-item submission-state-submitted"
                 role="menuitem" tabindex="-1"
                 href="{{ submission.orga_urls.make_submitted }}{% querystring next=request.path|urlencode %}">
-                {% include "cfp/event/fragment_state.html" with state="submitted" %}
+                {% include "cfp/event/fragment_state.html" with state="submitted" as_badge=False %}
             </a>
         {% endif %}
         {% if submission.state != "accepted" or submission.pending_state %}
@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 class="dropdown-item submission-state-accepted"
                 role="menuitem" tabindex="-1"
                 href="{{ submission.orga_urls.accept }}{% querystring next=request.path|urlencode %}">
-                {% include "cfp/event/fragment_state.html" with state="accepted" %}
+                {% include "cfp/event/fragment_state.html" with state="accepted" as_badge=False %}
             </a>
         {% endif %}
         {% if submission.state != "confirmed" or submission.pending_state %}
@@ -41,7 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 class="dropdown-item submission-state-confirmed"
                 role="menuitem" tabindex="-1"
                 href="{{ submission.orga_urls.confirm }}{% querystring next=request.path|urlencode %}">
-                {% include "cfp/event/fragment_state.html" with state="confirmed" %}
+                {% include "cfp/event/fragment_state.html" with state="confirmed" as_badge=False %}
             </a>
         {% endif %}
         {% if submission.state != "rejected" or submission.pending_state %}
@@ -49,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 class="dropdown-item submission-state-rejected"
                 role="menuitem" tabindex="-1"
                 href="{{ submission.orga_urls.reject }}{% querystring next=request.path|urlencode %}">
-                {% include "cfp/event/fragment_state.html" with state="rejected" %}
+                {% include "cfp/event/fragment_state.html" with state="rejected" as_badge=False %}
             </a>
         {% endif %}
         {% if submission.state != "canceled" or submission.pending_state %}
@@ -57,7 +57,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 class="dropdown-item submission-state-canceled"
                 role="menuitem" tabindex="-1"
                 href="{{ submission.orga_urls.cancel }}{% querystring next=request.path|urlencode %}">
-                {% include "cfp/event/fragment_state.html" with state="canceled" %}
+                {% include "cfp/event/fragment_state.html" with state="canceled" as_badge=False %}
             </a>
         {% endif %}
         {% if submission.state != "withdrawn" or submission.pending_state %}
@@ -65,7 +65,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 class="dropdown-item submission-state-withdrawn"
                 role="menuitem" tabindex="-1"
                 href="{{ submission.orga_urls.withdraw }}{% querystring next=request.path|urlencode %}">
-                {% include "cfp/event/fragment_state.html" with state="withdrawn" %}
+                {% include "cfp/event/fragment_state.html" with state="withdrawn" as_badge=False %}
             </a>
         {% endif %}
         {% if submission.state != "deleted" or submission.pending_state %}
@@ -73,7 +73,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 class="dropdown-item submission-state-deleted"
                 role="menuitem" tabindex="-1"
                 href="{{ submission.orga_urls.delete }}{% if submission.code not in request.path %}{% querystring next=request.path|urlencode %}{% else %}{% querystring next="" %}{% endif %}">
-                {% include "cfp/event/fragment_state.html" with state="deleted" %}
+                {% include "cfp/event/fragment_state.html" with state="deleted" as_badge=False %}
             </a>
         {% endif %}
     </div>
