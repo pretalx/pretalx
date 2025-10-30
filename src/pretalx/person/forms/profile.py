@@ -256,7 +256,7 @@ class SpeakerFilterForm(forms.Form):
 
     role = forms.ChoiceField(
         choices=(
-            ("", phrases.base.all_choices),
+            ("", _("Submitters and speakers")),
             ("true", phrases.schedule.speakers),
             ("false", _("Non-accepted submitters")),
         ),
@@ -265,7 +265,7 @@ class SpeakerFilterForm(forms.Form):
     )
     arrived = forms.ChoiceField(
         choices=(
-            ("", phrases.base.all_choices),
+            ("", _("Any arrival status")),
             ("true", _("Marked as arrived")),
             ("false", _("Not yet arrived")),
         ),
