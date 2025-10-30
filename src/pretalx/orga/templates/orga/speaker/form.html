@@ -38,7 +38,7 @@ SPDX-FileContributor: Florian Mösch
             {% endif %}
             <a href="{{ form.instance.orga_urls.password_reset }}" class="btn btn-info flip">{{ phrases.base.password_reset_heading }}</a>
             {% if can_send_mails %}
-                <a class="btn btn-outline-info ml-2" href="{{ request.event.orga_urls.compose_mails_sessions }}?speakers={{ form.instance.user.code }}">
+                <a class="btn btn-outline-info ml-2" href="{{ form.instance.orga_urls.send_mail }}">
                     <i class="fa fa-envelope"></i>
                     {% translate "Send email" %}
                 </a>
