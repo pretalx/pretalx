@@ -86,6 +86,9 @@ class SpeakerProfile(PretalxModel):
         toggle_arrived = (
             "{self.event.orga_urls.speakers}{self.user.code}/toggle-arrived"
         )
+        send_mail = (
+            "{self.event.orga_urls.compose_mails_sessions}?speakers={self.user.code}"
+        )
 
     def __str__(self):
         """Help when debugging."""

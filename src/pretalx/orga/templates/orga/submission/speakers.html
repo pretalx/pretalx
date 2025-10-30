@@ -74,7 +74,7 @@ SPDX-FileContributor: Florian Mösch
                     {% include "orga/includes/mark_speakers_arrived.html" with speaker=speaker.profile %}
                 {% endif %}
                 {% if can_send_mails %}
-                    <a class="btn btn-outline-info" href="{{ request.event.orga_urls.compose_mails_sessions }}?speakers={{ speaker.user.code }}">
+                    <a class="btn btn-outline-info" href="{{ speaker.orga_urls.send_mail }}">
                         <i class="fa fa-envelope"></i>
                         {% translate "Send email" %}
                     </a>
