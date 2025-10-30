@@ -55,6 +55,13 @@ class SpeakerInformationTable(PretalxTable):
 
 
 class SpeakerTable(PretalxTable):
+    default_columns = (
+        "name",
+        "submission_count",
+        "accepted_submission_count",
+        "has_arrived",
+    )
+
     name = SortableTemplateColumn(
         verbose_name=_("Name"),
         linkify=lambda record: record.orga_urls.base,
@@ -64,16 +71,32 @@ class SpeakerTable(PretalxTable):
         template_name="orga/includes/user_name.html",
         template_context={"user": lambda record, table: record.user},
     )
-    accepted_submission_count = tables.Column(
-        verbose_name=_("Accepted Proposals"),
-        initial_sort_descending=True,
+    code = tables.Column(
+        verbose_name=_("ID"),
+        accessor="user__code",
+    )
+    email = tables.Column(
+        verbose_name=_("Email"),
+        accessor="user__email",
+        linkify=lambda record: record.orga_urls.send_mail,
     )
     submission_count = tables.Column(
         verbose_name=_("Proposals"),
         initial_sort_descending=True,
+        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
+    )
+    accepted_submission_count = tables.Column(
+        verbose_name=_("Accepted Proposals"),
+        initial_sort_descending=True,
+        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
+    )
+    locale = tables.Column(
+        verbose_name=_("Language"),
+        accessor="user__locale",
     )
     has_arrived = TemplateColumn(
-        verbose_name="", template_name="orga/tables/columns/speaker_arrived.html"
+        verbose_name=_("Arrived"),
+        template_name="orga/tables/columns/speaker_arrived.html",
     )
 
     def __init__(self, *args, has_arrived_permission=False, **kwargs):
@@ -84,8 +107,11 @@ class SpeakerTable(PretalxTable):
         model = SpeakerProfile
         fields = (
             "name",
-            "accepted_submission_count",
+            "code",
+            "email",
             "submission_count",
+            "accepted_submission_count",
+            "locale",
             "has_arrived",
         )
 
