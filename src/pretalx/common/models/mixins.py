@@ -106,8 +106,7 @@ class FileCleanupMixin:
             return super().save(*args, **kwargs)
 
         for field in self._file_fields:
-            old_value = getattr(pre_save_instance, field)
-            if old_value:
+            if old_value := getattr(pre_save_instance, field):
                 new_value = getattr(self, field)
                 if new_value and old_value.path != new_value.path:
                     # We don't want to delete the file immediately, as the save action

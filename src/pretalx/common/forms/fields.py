@@ -30,6 +30,7 @@ IMAGE_EXTENSIONS = {
     ".jpeg": ["image/jpeg", ".jpeg"],
     ".gif": ["image/gif", ".gif"],
     ".svg": ["image/svg+xml", ".svg"],
+    ".webp": ["image/webp", ".webp"],
 }
 
 

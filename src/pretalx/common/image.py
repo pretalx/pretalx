@@ -18,14 +18,16 @@ THUMBNAIL_SIZES = {
     "tiny": (64, 64),
     "default": (460, 460),
 }
-FORMAT_MAP = {
-    ".jpg": "JPEG",
-    ".png": "PNG",
-}
 MAX_DIMENSIONS = (
     settings.IMAGE_DEFAULT_MAX_WIDTH,
     settings.IMAGE_DEFAULT_MAX_HEIGHT,
 )
+WEBP_SETTINGS = {
+    "format": "WEBP",
+    "quality": 95,  # Not too much compression in case images are used in print
+    "method": 6,  # Max effort / smallest image, as we run async
+    "lossless": False,
+}
 
 gravatar_csp = partial(
     csp_update,
@@ -51,7 +53,7 @@ def validate_image(f):
 
     try:
         try:
-            image = Image.open(file, formats=settings.PILLOW_FORMATS_QUESTIONS_IMAGE)
+            image = Image.open(file)
             # verify() must be called immediately after the constructor.
             image.verify()
         except DecompressionBombError:
@@ -80,52 +82,58 @@ def validate_image(f):
         f.seek(0)
 
 
+def _save_image_as_webp(img, field, filename):
+    """Helper to save a PIL Image as WebP to a model image field and save the instance."""
+    buffer = BytesIO()
+    img.save(buffer, **WEBP_SETTINGS)
+    field.save(filename, ContentFile(buffer.getvalue()))
+    field.instance.save()
+
+
 def load_img(image):
-    extension = ".jpg"
     try:
         img = Image.open(image)
     except Exception:
-        return None, None
-    if img.mode.lower() in ("rgba", "la", "pa"):
-        extension = ".png"
-    elif img.mode != "RGB":
+        return None
+
+    if (img.mode == "P" and "transparency" in img.info) or img.mode.lower() in (
+        "la",
+        "pa",
+    ):
+        img = img.convert("RGBA")
+    elif img.mode not in ("RGB", "RGBA"):
         img = img.convert("RGB")
-    return img, extension
+    return img
 
 
 def process_image(*, image, generate_thumbnail=False):
     """
     This function receives an image that has been uploaded, and processes it
     by reducing its file size and stripping its metadata.
+    All images are converted to WebP format for optimal size and quality.
     Image must be an ImageFieldFile, e.g. user.avatar.
     """
-    img, extension = load_img(image)
+    img = load_img(image)
     if not img:
         return
+    img = ImageOps.exif_transpose(img)
     img_without_exif = Image.new(img.mode, img.size)
     img_without_exif.putdata(img.getdata())
-    img_without_exif = ImageOps.exif_transpose(img_without_exif)
     img_without_exif.thumbnail(MAX_DIMENSIONS, resample=Resampling.LANCZOS)
 
-    # Overwrite the original image with the processed one
+    # Overwrite the original image with the processed, converted image
     path = Path(image.path)
-    fmt = FORMAT_MAP[extension]
-    save_path = path.with_suffix(extension)
-    img_byte_array = BytesIO()
-    img_without_exif.save(
-        img_byte_array,
-        quality="web_high" if extension == ".jpg" else 95,
-        format=fmt,
-    )
+    save_path = path.with_suffix(".webp")
+
     image_field = getattr(image.instance, image.field.name)
-    image_field.save(save_path, ContentFile(img_byte_array.getvalue()))
-    image_field.instance.save()
+    _save_image_as_webp(img_without_exif, image_field, save_path.name)
     if save_path != path:
-        path.unlink()
+        with suppress(Exception):
+            path.unlink()
 
     if generate_thumbnail:
         for size in THUMBNAIL_SIZES:
-            create_thumbnail(image, size, fmt=fmt, extension=extension)
+            create_thumbnail(image, size, processed_img=img_without_exif)
 
 
 def get_thumbnail_field_name(image, size):
@@ -135,7 +143,14 @@ def get_thumbnail_field_name(image, size):
     return thumbnail_field_name
 
 
-def create_thumbnail(image, size, extension=None, fmt=None):
+def create_thumbnail(image, size, processed_img=None):
+    """Create a thumbnail from an image field.
+
+    Args:
+        image: ImageFieldFile to create thumbnail from
+        size: Thumbnail size key from THUMBNAIL_SIZES
+        processed_img: Optional already-processed PIL Image to avoid reloading from disk
+    """
     if size not in THUMBNAIL_SIZES:
         return
     thumbnail_field_name = get_thumbnail_field_name(image, size)
@@ -143,21 +158,19 @@ def create_thumbnail(image, size, extension=None, fmt=None):
         return
 
     img = None
-    with suppress(Exception):
-        img, ext = load_img(image)
+    if processed_img is not None:
+        img = processed_img.copy()
+    else:
+        with suppress(Exception):
+            img = load_img(image)
     if not img:
         return
+
     img.thumbnail(THUMBNAIL_SIZES[size], resample=Resampling.LANCZOS)
     thumbnail_field = getattr(image.instance, thumbnail_field_name)
-    extension = extension or ext
-    thumbnail_name = Path(image.name).stem + f"_thumbnail_{size}" + extension
-    # Write the image to a BytesIO object
-    img_byte_array = BytesIO()
-    img.save(img_byte_array, format=fmt or img.format)
-    thumbnail_field.save(
-        thumbnail_name,
-        ContentFile(img_byte_array.getvalue()),
-    )
+    thumbnail_name = Path(image.name).stem + f"_thumbnail_{size}.webp"
+
+    _save_image_as_webp(img, thumbnail_field, thumbnail_name)
     return thumbnail_field
 
 
@@ -166,7 +179,7 @@ def get_thumbnail(image, size):
     if not (image.instance._meta.get_field(thumbnail_field_name)):
         return image
 
-    thumbnail_field = getattr(image.instance, thumbnail_field_name)
+    thumbnail_field = getattr(image.instance, thumbnail_field_name, None)
     if not thumbnail_field or not thumbnail_field.storage.exists(thumbnail_field.path):
         return create_thumbnail(image, size)
     return thumbnail_field
