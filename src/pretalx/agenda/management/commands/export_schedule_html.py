@@ -71,8 +71,11 @@ def find_assets(html):
             yield url
 
 
+URL_REGEX = re.compile(r'url\("?(/[^")]+)"?\)', re.IGNORECASE)
+
+
 def find_urls(css):
-    return re.findall(r'url\("?(/[^")]+)"?\)', css.decode("utf-8"), re.IGNORECASE)
+    return re.findall(URL_REGEX, css.decode("utf-8"))
 
 
 def event_talk_urls(event):

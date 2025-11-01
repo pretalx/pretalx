@@ -29,6 +29,8 @@ from pretalx.common.urls import get_base_url
 from pretalx.submission.rules import is_break, is_wip, orga_can_change_submissions
 
 INSTANCE_IDENTIFIER = None
+WHITESPACE_REGEX = re.compile(r"\W+")
+FRAB_SLUG_REGEX = re.compile(f"[^{string.ascii_letters + string.digits + '-'}]")
 
 
 @contextmanager
@@ -213,12 +215,10 @@ class TalkSlot(PretalxModel):
 
     @cached_property
     def frab_slug(self):
-        title = re.sub(r"\W+", "-", self.submission.title)
+        title = re.sub(WHITESPACE_REGEX, "-", self.submission.title)
         title = title.lower()
         title = unicodedata.normalize("NFD", title).encode("ASCII", "ignore").decode()
-        legal_chars = string.ascii_letters + string.digits + "-"
-        pattern = f"[^{legal_chars}]+"
-        title = re.sub(pattern, "", title)
+        title = re.sub(FRAB_SLUG_REGEX, "", title)
         title = title.strip("-")
         if title:
             return f"{self.event.slug}-{self.submission.pk}{self.id_suffix}-{title}"
