@@ -320,3 +320,21 @@ class AvailabilitiesWidget(forms.TextInput):
             forms.Script("common/js/forms/availabilities.js", defer=""),
         ]
         css = {"all": ["common/css/forms/availabilities.css"]}
+
+
+class AvatarCropWidget(ClearableBasenameFileInput):
+    template_name = "common/widgets/avatar_crop_input.html"
+
+    class Media:
+        css = {
+            "all": [
+                "vendored/cropper.min.css",
+                "common/css/forms/avatar_crop.css",
+                "common/css/forms/image.css",
+            ]
+        }
+        js = [
+            forms.Script("vendored/cropper.min.js", defer=""),
+            forms.Script("common/js/forms/avatar_crop.js", defer=""),
+            forms.Script("common/js/forms/filesize.js", defer=""),
+        ]

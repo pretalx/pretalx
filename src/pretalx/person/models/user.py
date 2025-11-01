@@ -166,10 +166,6 @@ class User(
         null=True,
         blank=True,
         verbose_name=_("Profile picture"),
-        help_text=_(
-            "We recommend uploading an image at least 400px wide. "
-            "A square image works best, as we display it in a circle in several places."
-        ),
         upload_to=avatar_path,
     )
     avatar_thumbnail = models.ImageField(null=True, blank=True, upload_to="avatars/")
