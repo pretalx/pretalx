@@ -21,13 +21,9 @@ const setupLightbox = () => {
         .querySelectorAll("a[data-lightbox], img[data-lightbox]")
         .forEach((element) => {
             element.addEventListener("click", function (ev) {
-                console.log("lightbox click")
                 const image = element.tag === "A" ? element.querySelector("img") : element
-                console.log(image)
                 const imageUrl = element.dataset.lightbox || element.href || image.src
-                console.log(imageUrl)
                 const label = image.alt
-                console.log(label)
                 if (!imageUrl) return
                 ev.preventDefault()
                 img.src = imageUrl

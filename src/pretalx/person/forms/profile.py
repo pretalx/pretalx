@@ -17,6 +17,7 @@ from pretalx.common.forms.mixins import (
 )
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
+    AvatarCropWidget,
     ClearableBasenameFileInput,
     EnhancedSelect,
     EnhancedSelectMultiple,
@@ -83,6 +84,8 @@ class SpeakerProfileForm(
                 disabled=read_only,
                 help_text=User._meta.get_field(field).help_text,
             )
+            if field in self.Meta.widgets:
+                self.fields[field].widget = self.Meta.widgets[field]()
             self._update_cfp_texts(field)
 
         if not self.event.cfp.request_avatar:
@@ -177,7 +180,7 @@ class SpeakerProfileForm(
         )
         public_fields = ["name", "biography", "avatar"]
         widgets = {
-            "avatar": ClearableBasenameFileInput,
+            "avatar": AvatarCropWidget,
         }
         field_classes = {
             "avatar": ImageField,

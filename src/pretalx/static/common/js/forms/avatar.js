@@ -12,6 +12,9 @@ function setImage(url) {
 }
 
 const updateFileInput = (ev) => {
+    // Skip if this is the avatar crop widget - it handles its own preview
+    if (ev.target.closest('.avatar-crop-widget')) return
+
     const imageSelected = ev.target.value !== '';
 
     if (imageSelected) {
@@ -83,7 +86,16 @@ const updateGravatarInput = async (ev) => {
 
 const initFileInput = function () {
     document.querySelectorAll(".avatar-form").forEach(form => {
-        form.querySelector(".form-image-preview").remove() // remove default preview
+        const hasCropWidget = form.querySelector('.avatar-crop-widget');
+
+        if (!hasCropWidget) {
+            // Legacy behavior for non-cropping widgets
+            const preview = form.querySelector(".form-image-preview");
+            if (preview) {
+                preview.remove();
+            }
+        }
+
         document.querySelectorAll('.avatar-upload input[type=file]').forEach((element) => {
             element.addEventListener('change', updateFileInput)
         })

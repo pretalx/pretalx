@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`cfp` Users are now asked to crop their profile picture to a square format on upload.
 - :feature:`schedule` You can now filter a pretalx schedule by session language if there are multiple session languages in the event.
 - :feature:`api` When expanding a proposal’s speakers in the proposal API, you will now see additional speaker information if you are authenticated and have the required permissions.
 - :feature:`orga:schedule` You can now copy a break in the schedule editor to all other rooms to spare you the monotonous copying-and-pasting.
