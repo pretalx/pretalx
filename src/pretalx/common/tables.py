@@ -7,10 +7,8 @@ import django_tables2 as tables
 from django.db.models.lookups import Transform
 from django.template import Context, Template
 from django.template.loader import get_template
-from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from django_tables2.utils import AttributeDict
 
 
 def get_icon(icon):
@@ -269,22 +267,17 @@ class ActionsColumn(tables.Column):
         return mark_safe(html)
 
 
-class BooleanIconColumn(tables.BooleanColumn):
+class BooleanColumn(tables.Column):
+    TRUE_MARK = mark_safe('<i class="fa fa-check-circle text-success"></i>')
+    FALSE_MARK = mark_safe('<i class="fa fa-times-circle text-danger"></i>')
+    EMPTY_MARK = mark_safe('<span class="text-muted">&mdash;</span>')
     attrs = {
         "td": {"class": "text-center"},
         "th": {"class": "text-center"},
     }
 
-    def __init__(self, *args, yesno=None, **kwargs):
-        yesno = get_icon("check-circle text-success"), get_icon(
-            "times-circle text-danger"
-        )
-        super().__init__(*args, yesno=yesno, attrs=self.attrs, **kwargs)
+    def render(self, value):
+        if value is None:
+            return self.EMPTY_MARK
+        return self.TRUE_MARK if value else self.FALSE_MARK
 
-    def render(self, value, record, bound_column):
-        # We do not escape the yesno value because we know it's safe
-        value = self._get_bool_value(record, value, bound_column)
-        text = self.yesno[int(not value)]
-        attrs = self.attrs
-        attrs["td"]["class"] += f" {str(value).lower()}"
-        return format_html("<span {}>{}</span>", AttributeDict(attrs).as_html(), text)

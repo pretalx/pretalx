@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import (
     ActionsColumn,
-    BooleanIconColumn,
+    BooleanColumn,
     PretalxTable,
     TemplateColumn,
 )
@@ -24,8 +24,8 @@ class TeamTable(PretalxTable):
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
         initial_sort_descending=True,
     )
-    all_events = BooleanIconColumn(verbose_name=_("All events"))
-    is_reviewer = BooleanIconColumn(verbose_name=_("Reviewer"))
+    all_events = BooleanColumn(verbose_name=_("All events"))
+    is_reviewer = BooleanColumn(verbose_name=_("Reviewer"))
     actions = ActionsColumn(
         actions={
             "edit": {"url": "orga_urls.base"},
