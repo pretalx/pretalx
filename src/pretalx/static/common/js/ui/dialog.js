@@ -13,6 +13,7 @@ const setupModals = () => {
             ev.preventDefault()
             outerDialogElement.showModal()
         })
+        outerDialogElement.querySelectorAll("button.close-dialog").forEach((btn) => btn.addEventListener("click", () => outerDialogElement.close()))
         outerDialogElement.addEventListener("click", () => outerDialogElement.close())
         outerDialogElement.querySelector("div").addEventListener("click", (ev) => ev.stopPropagation())
     })

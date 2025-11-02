@@ -72,16 +72,14 @@ img[data-lightbox]:hover {
     0 3px 5px rgb(0 0 0 / 0.22);
 }
 
-dialog#lightbox-dialog {
-  .modal-card-content {
-    padding: 20px;
+.modal-card-content {
+  padding: 20px;
 
-    img {
-      object-fit: contain;
-      max-height: 80vh;
-      max-width: 80vw;
-      height: 100%;
-      width: 100%;
-    }
+  img {
+    object-fit: contain;
+    max-height: 80vh;
+    max-width: 80vw;
+    height: 100%;
+    width: 100%;
   }
 }
