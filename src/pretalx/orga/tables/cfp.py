@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import (
     ActionsColumn,
-    BooleanIconColumn,
+    BooleanColumn,
     PretalxTable,
     SortableColumn,
     TemplateColumn,
@@ -173,8 +173,8 @@ class QuestionTable(UnsortableMixin, PretalxTable):
     )
     target = tables.Column(verbose_name=_("Target"))
     variant = tables.Column(verbose_name=_("Field type"))
-    required = BooleanIconColumn()
-    active = BooleanIconColumn()
+    required = BooleanColumn()
+    active = BooleanColumn()
     answer_count = tables.Column(
         verbose_name=_("Responses"),
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
