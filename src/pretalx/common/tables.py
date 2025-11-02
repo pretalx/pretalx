@@ -281,3 +281,15 @@ class BooleanColumn(tables.Column):
             return self.EMPTY_MARK
         return self.TRUE_MARK if value else self.FALSE_MARK
 
+
+class DateTimeColumn(tables.DateTimeColumn):
+    timezone = None
+
+    def render(self, record, table, value, bound_column, **kwargs):
+        if value and table and (event := getattr(table, "event", None)):
+            value = value.astimezone(event.tz)
+        return f"{value.date().isoformat()} {value.time().isoformat()}"
+
+    def value(self, value):
+        if value:
+            return value.isoformat()
