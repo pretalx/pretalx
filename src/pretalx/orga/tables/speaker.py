@@ -43,6 +43,13 @@ class SpeakerInformationTable(PretalxTable):
     def render_resource(self, record):
         return mark_safe('<i class="fa fa-file-o"></i>')
 
+    @property
+    def default_columns(self):
+        columns = ["title", "limit_types", "limit_tracks", "resource"]
+        if not self.event or not self.event.get_feature_flag("use_tracks"):
+            columns.remove("limit_tracks")
+        return columns
+
     class Meta:
         model = SpeakerInformation
         fields = (
@@ -124,7 +131,13 @@ class SpeakerOrgaTable(SpeakerTable):
         context_object_name="user",
     )
     email = tables.Column(linkify=lambda record: f"mailto:{record.email}")
+
+    # Set unavailable columns to `None` so that the configuration form
+    # won’t show up
+    locale = None
+    code = None
     has_arrived = None
+    default_columns = None
 
     @cached_property
     def paginated_rows(self):
