@@ -18,7 +18,6 @@ from pretalx.common.forms.mixins import (
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
     AvatarCropWidget,
-    ClearableBasenameFileInput,
     EnhancedSelect,
     EnhancedSelectMultiple,
 )

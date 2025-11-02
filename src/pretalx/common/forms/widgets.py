@@ -124,8 +124,15 @@ class MarkdownWidget(forms.Textarea):
             forms.Script("vendored/purify.min.js", defer=""),
             forms.Script("common/js/ui/tabs.js", defer=""),
             forms.Script("common/js/forms/markdown.js", defer=""),
+            forms.Script("common/js/forms/character-limit.js", defer=""),
         ]
-        css = {"all": ["common/css/ui/tabs.css", "common/css/forms/markdown.css"]}
+        css = {
+            "all": [
+                "common/css/ui/tabs.css",
+                "common/css/forms/markdown.css",
+                "common/css/forms/character-limit.css",
+            ]
+        }
 
 
 class EnhancedSelectMixin(forms.Select):
