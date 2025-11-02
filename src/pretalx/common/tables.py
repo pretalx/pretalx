@@ -110,6 +110,8 @@ class TemplateColumn(tables.TemplateColumn):
         for key, value in self.template_context.items():
             if callable(value):
                 context[key] = value(record, table)
+            else:
+                context[key] = value
         context[self.context_object_name] = record
 
         # This is where we would usually call super().render()
