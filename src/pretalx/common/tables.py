@@ -284,11 +284,14 @@ class BooleanColumn(tables.Column):
 
 class DateTimeColumn(tables.DateTimeColumn):
     timezone = None
+    placeholder = mark_safe("&mdash;")
 
     def render(self, record, table, value, bound_column, **kwargs):
+        if not value:
+            return self.placeholder
         if value and table and (event := getattr(table, "event", None)):
             value = value.astimezone(event.tz)
-        return f"{value.date().isoformat()} {value.time().isoformat()}"
+        return f"{value.date().isoformat()} {value.time().strftime('%H:%M')}"
 
     def value(self, value):
         if value:
