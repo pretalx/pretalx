@@ -39,7 +39,7 @@ class Track(OrderedModel, PretalxModel):
     )
     color = models.CharField(
         max_length=7,
-        verbose_name=_("Color"),
+        verbose_name=_("Colour"),
         validators=[
             RegexValidator("#([0-9A-Fa-f]{3}){1,2}"),
         ],
