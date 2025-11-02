@@ -57,7 +57,8 @@ b,
 strong {
   font-weight: bolder;
 }
-small {
+small,
+.text-small {
   font-size: 80%;
 }
 p,

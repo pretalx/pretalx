@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`cfp` When a text field is limited in character length, pretalx now uses JavaScript to validate the input and warn the user rather than native HTML, as this would cut off pasted input if it was too long without any warning.
 - :feature:`cfp` Users are now asked to crop their profile picture to a square format on upload.
 - :feature:`schedule` You can now filter a pretalx schedule by session language if there are multiple session languages in the event.
 - :feature:`api` When expanding a proposal’s speakers in the proposal API, you will now see additional speaker information if you are authenticated and have the required permissions.

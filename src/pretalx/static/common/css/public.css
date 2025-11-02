@@ -86,7 +86,7 @@ header {
     a + a {
       margin-left: 0.3em;
     }
-    
+
     .locales a:hover {
       border-bottom: 1px dashed white;
       text-decoration: none;

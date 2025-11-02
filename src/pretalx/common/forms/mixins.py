@@ -69,6 +69,10 @@ class PublicContent:
 
 
 class RequestRequire:
+    class Media:
+        js = [forms.Script("common/js/forms/character-limit.js", defer="")]
+        css = {"all": ["common/css/forms/character-limit.css"]}
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         count_chars = self.event.cfp.settings["count_length_in"] == "chars"
@@ -84,9 +88,9 @@ class RequestRequire:
                 max_value = self.event.cfp.fields.get(key, {}).get("max_length")
                 if min_value or max_value:
                     if min_value and count_chars:
-                        field.widget.attrs["minlength"] = min_value
+                        field.widget.attrs["data-minlength"] = min_value
                     if max_value and count_chars:
-                        field.widget.attrs["maxlength"] = max_value
+                        field.widget.attrs["data-maxlength"] = max_value
                     field.validators.append(
                         partial(
                             self.validate_field_length,
@@ -152,6 +156,10 @@ class RequestRequire:
 
 
 class QuestionFieldsMixin:
+    class Media:
+        js = [forms.Script("common/js/forms/character-limit.js", defer="")]
+        css = {"all": ["common/css/forms/character-limit.css"]}
+
     def get_field(self, *, question, initial, initial_object, readonly):
         from pretalx.common.templatetags.rich_text import rich_text
         from pretalx.submission.models import QuestionVariant
@@ -208,11 +216,14 @@ class QuestionFieldsMixin:
                 label=question.question,
                 required=question.required,
                 initial=initial,
-                min_length=question.min_length if count_chars else None,
-                max_length=question.max_length if count_chars else None,
             )
             field.original_help_text = original_help_text
             field.widget.attrs["placeholder"] = ""  # XSS
+            if count_chars:
+                if question.min_length:
+                    field.widget.attrs["data-minlength"] = question.min_length
+                if question.max_length:
+                    field.widget.attrs["data-maxlength"] = question.max_length
             field.validators.append(
                 partial(
                     RequestRequire.validate_field_length,
@@ -246,8 +257,6 @@ class QuestionFieldsMixin:
                     self.event.cfp.settings["count_length_in"],
                 ),
                 initial=initial,
-                min_length=question.min_length if count_chars else None,
-                max_length=question.max_length if count_chars else None,
             )
             field.validators.append(
                 partial(
@@ -259,6 +268,11 @@ class QuestionFieldsMixin:
             )
             field.original_help_text = original_help_text
             field.widget.attrs["placeholder"] = ""  # XSS
+            if count_chars:
+                if question.min_length:
+                    field.widget.attrs["data-minlength"] = question.min_length
+                if question.max_length:
+                    field.widget.attrs["data-maxlength"] = question.max_length
             return field
         if question.variant == QuestionVariant.FILE:
             field = ExtensionFileField(
