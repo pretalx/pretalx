@@ -1,0 +1,49 @@
+<!--
+SPDX-FileCopyrightText: 2025-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+
+{% extends "orga/generic/table.html" %}
+
+{% load i18n %}
+
+{% comment %}
+This template is specifically for the ReviewTable which needs special handling
+because the table is wrapped in a form (for state changes), which would conflict
+with the table configuration form. This template separates the configuration
+form from the review form.
+{% endcomment %}
+
+{% block table-wrapper %}
+    {% block table-configuration %}
+        {{ block.super }}
+    {% endblock table-configuration %}
+
+    <form method="post" class="review-form">
+        {% csrf_token %}
+        <div class="table-container">
+            {% block table %}
+                {{ block.super }}
+            {% endblock table %}
+        </div>
+
+        {% block pagination %}
+            {{ block.super }}
+        {% endblock pagination %}
+
+        {% block submit-bar %}
+            <div id="submitBar">
+                <div id="pending" class="form-check mr-2">
+                    <input type="checkbox" id="id_pending" name="pending">
+                    <label for="id_pending">{% translate 'Mark the new state as "pending"' %}</label>
+                </div>
+                <i class="fa fa-question-circle mr-4" data-toggle="tooltip" data-placement="top" title="{% translate 'If you mark state changes as pending, they won\'t be visible to speakers right away. You can always apply pending changes for some or all proposals in one go once you\'re ready to make your decisions public.' %}"></i>
+                <span id="submitText" class="d-none ml-2">
+                    {% translate "Accept" %}: <span id="acceptCount" class="text-success"></span>
+                    {% translate "Reject" %}: <span id="rejectCount" class="text-danger"></span>
+                </span>
+                <button type="submit" class="btn btn-success">{% translate "Go!" %}</button>
+            </div>
+        {% endblock submit-bar %}
+    </form>
+{% endblock table-wrapper %}
