@@ -24,33 +24,49 @@ from pretalx.submission.models import (
 
 
 class SubmitterAccessCodeTable(PretalxTable):
+    default_columns = (
+        "code",
+        "track",
+        "submission_type",
+        "valid_until",
+        "uses",
+    )
+
     code = TemplateColumn(
         template_name="orga/tables/columns/copyable.html",
-        verbose_name=_("Code"),
     )
     track = SortableColumn(
         linkify=lambda record: record.track and record.track.urls.base,
-        verbose_name=_("Track"),
         order_by=Lower(Translate("track__name")),
     )
     submission_type = SortableColumn(
         linkify=lambda record: record.submission_type
         and record.submission_type.urls.base,
-        verbose_name=_("Session type"),
         order_by=Lower(Translate("submission_type__name")),
     )
-    valid_until = tables.Column()
+    valid_until = DateTimeColumn()
     uses = tables.Column(
+        verbose_name=_("Uses"),
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
         order_by="redeemed",
         empty_values=[""],
         initial_sort_descending=True,
+    )
+    redeemed = tables.Column(
+        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
+        initial_sort_descending=True,
+    )
+    maximum_uses = tables.Column(
+        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
     )
 
     def render_uses(self, record):
         redeemed = record.redeemed or 0
         maximum = record.maximum_uses if record.maximum_uses else "∞ "
         return f"{redeemed} / {maximum}"
+
+    def render_maximum_uses(self, record):
+        return record.maximum_uses if record.maximum_uses else "∞"
 
     actions = ActionsColumn(
         actions={
@@ -68,9 +84,6 @@ class SubmitterAccessCodeTable(PretalxTable):
         }
     )
 
-    def render_valid_until(self, record):
-        return record.valid_until.strftime("%Y-%m-%d %H:%M")
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.exclude = list(self.exclude)
@@ -85,6 +98,8 @@ class SubmitterAccessCodeTable(PretalxTable):
             "submission_type",
             "valid_until",
             "uses",
+            "redeemed",
+            "maximum_uses",
             "actions",
         )
 
