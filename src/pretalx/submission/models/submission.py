@@ -194,6 +194,7 @@ class Submission(GenerateCode, PretalxModel):
         related_name="submissions",
         through=SpeakerRole,
         blank=True,
+        verbose_name=_("Speakers"),
     )
     event = models.ForeignKey(
         to="event.Event", on_delete=models.PROTECT, related_name="submissions"
