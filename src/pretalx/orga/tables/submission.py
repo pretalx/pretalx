@@ -204,15 +204,17 @@ class ReviewTable(PretalxTable):
         orderable=False,
         attrs={"td": {"class": "w-25 nowrap"}},
     )
+    code = tables.Column(
+        verbose_name=_("ID"),
+        linkify=lambda record: record.orga_urls.reviews,
+    )
     track = SortableColumn(
-        verbose_name=_("Track"),
-        accessor="track__name",
         order_by=Lower(Translate("track__name")),
         attrs={"td": {"class": "nowrap"}},
+        linkify=lambda record: record.track.urls.base if record.track else None,
     )
     tags = TemplateColumn(
         template_name="orga/tables/columns/review_tags.html",
-        verbose_name=_("Tags"),
         orderable=False,
         attrs={"td": {"class": "nowrap"}},
     )
@@ -223,10 +225,8 @@ class ReviewTable(PretalxTable):
         attrs={"td": {"class": "nowrap"}},
     )
     submission_type = SortableColumn(
-        verbose_name=_("Type"),
-        accessor="submission_type__name",
         order_by=Lower(Translate("submission_type__name")),
-        attrs={"td": {"class": "nowrap"}},
+        linkify=lambda record: record.submission_type.urls.base,
     )
     state = TemplateColumn(
         template_name="orga/tables/columns/review_state.html",
@@ -234,6 +234,37 @@ class ReviewTable(PretalxTable):
         initial_sort_descending=True,
         attrs={"td": {"class": "nowrap"}},
     )
+    pending_state = SortableTemplateColumn(
+        verbose_name=_("Pending state"),
+        template_name="cfp/event/fragment_state.html",
+        template_context={
+            "state": lambda record, table: record.pending_state,
+            "as_badge": True,
+        },
+    )
+    created = DateTimeColumn()
+    do_not_record = BooleanColumn(verbose_name=_("Do not record"))
+
+    @property
+    def default_columns(self):
+        columns = []
+        if self.can_see_all_reviews:
+            if self.aggregate_method == "median":
+                columns.append("median_score")
+            else:
+                columns.append("mean_score")
+            if self.independent_categories:
+                for category in self.independent_categories:
+                    columns.append(f"independent_score_{category.pk}")
+        if self.is_reviewer:
+            columns.append("user_score")
+        columns.extend(["review_count", "title"])
+        if self.can_view_speakers:
+            columns.append("speakers")
+        if self.event and self.event.feature_flags.get("use_tracks"):
+            columns.append("track")
+        columns.append("state")
+        return columns
 
     def __init__(
         self,
@@ -248,21 +279,18 @@ class ReviewTable(PretalxTable):
         request_user=None,
         **kwargs,
     ):
+        self.aggregate_method = aggregate_method
         self.can_see_all_reviews = can_see_all_reviews
         self.is_reviewer = is_reviewer
         self.can_view_speakers = can_view_speakers
         self.can_accept_submissions = can_accept_submissions
         self.independent_categories = independent_categories or []
         self.short_questions = short_questions or []
-        self.aggregate_method = aggregate_method
         self.request_user = request_user
 
-        default_sequence = ["median_score", "mean_score"]
         if self.independent_categories:
             for category in self.independent_categories:
                 column_name = f"independent_score_{category.pk}"
-                default_sequence.append(column_name)
-
                 self.base_columns[column_name] = CallableColumn(
                     verbose_name=category.name,
                     accessor="pk",
@@ -273,12 +301,9 @@ class ReviewTable(PretalxTable):
                     attrs={"td": {"class": "numeric text-center"}},
                 )
 
-        default_sequence += ["user_score", "review_count", "title"]
         if self.short_questions:
             for question in self.short_questions:
                 column_name = f"question_{question.id}"
-                default_sequence.append(column_name)
-
                 self.base_columns[column_name] = CallableColumn(
                     verbose_name=question.question,
                     accessor="pk",
@@ -320,13 +345,6 @@ class ReviewTable(PretalxTable):
 
         if not self.can_view_speakers:
             self.exclude.append("speakers")
-
-        self.columns.hide("duration")
-        self.columns.hide("submission_type")
-        self.columns.hide("tags")
-        for question in self.short_questions:
-            self.columns.hide(f"question_{question.id}")
-        self.sequence = default_sequence
 
     def get_independent_scores_for_submission(self, submission):
         if not self.independent_categories:
