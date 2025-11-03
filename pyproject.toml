@@ -6,6 +6,7 @@ name = "pretalx"
 dynamic = ["version"]
 description = "Conference organisation: CfPs, scheduling, much more"
 readme = "README.rst"
+license = {file = "LICENSE"}
 requires-python = ">=3.10"
 keywords = ["conference", "event", "schedule", "talk", "cfp"]
 authors = [
@@ -20,13 +21,12 @@ classifiers = [
   "Framework :: Django :: 5.2",
   "Intended Audience :: Developers",
   "Intended Audience :: Other Audience",
-  "License :: OSI Approved :: Apache Software License",
-  "License :: OSI Approved",
-  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU Affero General Public License v3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
 ]
 
@@ -61,7 +61,6 @@ dependencies = [
   "reportlab~=4.4.0",
   "requests~=2.32.0",
   "rules~=3.5.0",
-  "setuptools",
   "urlman~=2.0.1",
   "vobject~=0.9.0",
   "whitenoise[brotli]~=6.11.0",
@@ -81,7 +80,6 @@ dev = [
   "freezegun",
   "isort",
   "jsonschema",
-  "lxml",
   "pytest",
   "pytest-cov",
   "pytest-django",
@@ -124,7 +122,6 @@ version = {attr = "pretalx.__version__"}
 where = ["src"]
 include = ["pretalx*"]
 exclude = ["pretalx/frontend/node_modules"]
-namespaces = false
 
 [tool.check-manifest]
 ignore = [
