@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`orga` Organisers can now configure tables to change which columns are shown and what the default ordering should be.
 - :feature:`cfp` When a text field is limited in character length, pretalx now uses JavaScript to validate the input and warn the user rather than native HTML, as this would cut off pasted input if it was too long without any warning.
 - :feature:`cfp` Users are now asked to crop their profile picture to a square format on upload.
 - :feature:`schedule` You can now filter a pretalx schedule by session language if there are multiple session languages in the event.
@@ -18,7 +19,7 @@ Release Notes
 - :feature:`orga` You can now sort tables by nearly all columns, and sorting will be case-insensitive.
 - :feature:`schedule` The pretalx schedule widget will now update when there are schedule updates, so that attendees who have not recently reloaded their schedule will still see the most recent schedule information.
 - :bug:`cfp` Submitters who used an access code to create a proposal, and first saved their proposal as draft, were not always able to then submit the draft proposal.
-- :developer:`dev,1964` If your plugin provides an exporter, you can likely simplify it. If you split up the ``identifier`` into a ``filename_identifier`` and an ``extension`` property, you can then use the ``filename`` property to get a standardised filename including the event name, your exporter's name, and a timestamp, just like all pretalx exporters now do. You can also delegate that part to pretalx by implementing the new ``get_data`` method instead of ``render`` if you set a ``content_type`` attribute on your exporter class.
+- :announcement:`dev,1964` If your plugin provides an exporter, you can likely simplify it. If you split up the ``identifier`` into a ``filename_identifier`` and an ``extension`` property, you can then use the ``filename`` property to get a standardised filename including the event name, your exporter's name, and a timestamp, just like all pretalx exporters now do. You can also delegate that part to pretalx by implementing the new ``get_data`` method instead of ``render`` if you set a ``content_type`` attribute on your exporter class.
 - :feature:`administrator,2155` Administrators of self-hosted instances can now change the maximum page size of API responses.
 - :announcement:`dev` In an effort to make our pages smaller and faster, we reworked our static files. They are now broken up into smaller chunks, and are placed in different locations. If you use any upstream static files explicitly, please check if they are impacted. Please also do a quick visual inspection of your plugin pages to make sure that you were not relying on styles or scripts that used to be included in all pages and are now only included on the relevant pages. You can a detailed list of changes in our `2025.2.0 release notes <https://gist.github.com/rixx/0dc12119daf467d93b7bc822f63f90e3>`_.
 - :bug:`orga:submission,2147` The room, start and end times of submissions can now be edited.
