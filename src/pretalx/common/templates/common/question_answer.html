@@ -15,7 +15,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% translate "No file provided" %}
     {% endif %}
 {% elif answer.question.variant == "boolean" %}
-    {{ answer.boolean_answer|yesno }}
+    {% if answer.boolean_answer is True %}
+        <i class="fa fa-check-circle text-success"></i>
+    {% elif answer.boolean_answer is False %}
+        <i class="fa fa-times-circle text-danger"></i>
+    {% else %}
+        &mdash;
+    {% endif %}
+{% elif answer.question.variant == "choices" or answer.question.variant == "multiple_choice" %}
+    {% for option in answer.options.all %}{{ option.answer }}{% if not forloop.last %}, {% endif %}{% empty %}&mdash;{% endfor %}
 {% elif answer.question.variant == "url" %}
     <a href="{% safelink answer.answer %}">
         {% if answer.question.icon_url %}
