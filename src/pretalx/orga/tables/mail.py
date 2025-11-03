@@ -5,8 +5,10 @@ import django_tables2 as tables
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.language import LANGUAGE_NAMES
 from pretalx.common.tables import (
     ActionsColumn,
+    DateTimeColumn,
     PretalxTable,
     SortableColumn,
     SortableTemplateColumn,
@@ -58,6 +60,13 @@ class MailTemplateTable(PretalxTable):
 
 
 class OutboxMailTable(PretalxTable):
+    default_columns = (
+        "subject",
+        "to_recipients",
+        "submissions",
+        "template_info",
+    )
+
     subject = SortableColumn(
         linkify=lambda record: record.urls.edit,
         verbose_name=_("Subject"),
@@ -69,13 +78,16 @@ class OutboxMailTable(PretalxTable):
     )
     submissions = TemplateColumn(
         template_name="orga/tables/columns/queued_mail_submissions.html",
-        verbose_name="",
+        verbose_name=_("Proposals"),
         orderable=False,
     )
     template_info = TemplateColumn(
         template_name="orga/tables/columns/queued_mail_template_info.html",
-        verbose_name="",
+        verbose_name=_("Template"),
         order_by=("template__role",),
+    )
+    locale = tables.Column(
+        verbose_name=_("Language"),
     )
     actions = ActionsColumn(
         verbose_name="",
@@ -94,22 +106,36 @@ class OutboxMailTable(PretalxTable):
         },
     )
 
+    def render_locale(self, value):
+        if not value:
+            return ""
+        return LANGUAGE_NAMES.get(value, value)
+
     class Meta:
         model = QueuedMail
         fields = (
             "subject",
             "to_recipients",
+            "reply_to",
+            "cc",
+            "bcc",
             "submissions",
             "template_info",
+            "locale",
             "actions",
         )
 
 
 class SentMailTable(OutboxMailTable):
-    sent = tables.DateTimeColumn(
-        verbose_name=_("Sent"),
-        format="SHORT_DATETIME_FORMAT",
+    default_columns = (
+        "sent",
+        "subject",
+        "to_recipients",
+        "submissions",
+        "template_info",
     )
+
+    sent = DateTimeColumn()
     actions = None
 
     class Meta(OutboxMailTable.Meta):
@@ -117,6 +143,10 @@ class SentMailTable(OutboxMailTable):
             "sent",
             "subject",
             "to_recipients",
+            "reply_to",
+            "cc",
+            "bcc",
             "submissions",
             "template_info",
+            "locale",
         )
