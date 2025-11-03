@@ -44,7 +44,7 @@ class QuestionColumnMixin:
                 question=question,
             )
             self.columns.columns[column_name] = column
-            column.header = column_name
+            # column.header = column_name
 
     def get_answer_for_question(self, record, question_id):
         """Get answer object for a specific question, using lazy-loaded cache.
