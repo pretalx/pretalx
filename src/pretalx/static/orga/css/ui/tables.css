@@ -22,3 +22,13 @@ dialog.table-preferences {
     min-width: min-content;
   }
 }
+td.answer {
+  p {
+    display: inline;
+    margin: 0;
+    padding: 0;
+  }
+  img {
+    margin-top: 4px;
+  }
+}

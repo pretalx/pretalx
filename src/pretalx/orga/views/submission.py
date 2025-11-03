@@ -58,6 +58,8 @@ from pretalx.submission.forms import (
 )
 from pretalx.submission.models import (
     Feedback,
+    QuestionTarget,
+    QuestionVariant,
     Resource,
     Submission,
     SubmissionComment,
@@ -582,6 +584,14 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
             .select_related("event", "event__cfp")
         )
 
+    @context
+    @cached_property
+    def short_questions(self):
+        return self.request.event.questions.filter(
+            target=QuestionTarget.SUBMISSION,
+            variant__in=QuestionVariant.short_answers,
+        )
+
     def get_table_kwargs(self):
         kwargs = super().get_table_kwargs()
         can_change_submission = self.request.user.has_perm(
@@ -601,6 +611,7 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
                 ),
                 "has_update_permission": can_change_submission,
                 "has_delete_permission": can_change_submission,
+                "short_questions": self.short_questions,
                 "exclude": exclude,
             }
         )

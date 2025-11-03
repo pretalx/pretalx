@@ -10,6 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from pretalx.common.tables import (
     ActionsColumn,
     PretalxTable,
+    QuestionColumnMixin,
     SortableColumn,
     SortableTemplateColumn,
     TemplateColumn,
@@ -61,7 +62,7 @@ class SpeakerInformationTable(PretalxTable):
         )
 
 
-class SpeakerTable(PretalxTable):
+class SpeakerTable(QuestionColumnMixin, PretalxTable):
     default_columns = (
         "name",
         "submission_count",
@@ -106,7 +107,12 @@ class SpeakerTable(PretalxTable):
         template_name="orga/tables/columns/speaker_arrived.html",
     )
 
-    def __init__(self, *args, has_arrived_permission=False, **kwargs):
+    def __init__(
+        self, *args, has_arrived_permission=False, short_questions=None, **kwargs
+    ):
+        self.short_questions = short_questions or []
+        self._add_question_columns()
+
         super().__init__(*args, **kwargs)
         self.has_arrived_permission = has_arrived_permission
 

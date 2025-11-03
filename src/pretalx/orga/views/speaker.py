@@ -40,7 +40,7 @@ from pretalx.person.forms import (
 from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
 from pretalx.person.rules import is_only_reviewer
 from pretalx.submission.forms import QuestionsForm
-from pretalx.submission.models import Answer
+from pretalx.submission.models import Answer, QuestionTarget, QuestionVariant
 from pretalx.submission.models.submission import SubmissionStates
 from pretalx.submission.rules import limit_for_reviewers, speaker_profiles_for_user
 
@@ -109,6 +109,13 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
     def get_table_data(self):
         return self.get_queryset()
 
+    @cached_property
+    def short_questions(self):
+        return self.request.event.questions.filter(
+            target=QuestionTarget.SPEAKER,
+            variant__in=QuestionVariant.short_answers,
+        )
+
     def get_table_kwargs(self):
         result = super().get_table_kwargs()
         result["has_arrived_permission"] = self.request.user.has_perm(
@@ -117,6 +124,7 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
         result["has_update_permission"] = self.request.user.has_perm(
             "person.update_speakerprofile", self.request.event
         )
+        result["short_questions"] = list(self.short_questions)
         return result
 
 

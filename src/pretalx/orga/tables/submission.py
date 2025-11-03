@@ -3,7 +3,6 @@
 
 import statistics
 from collections import defaultdict
-from functools import partial
 
 import django_tables2 as tables
 from django.db.models.functions import Lower
@@ -15,48 +14,18 @@ from pretalx.common.tables import (
     ActionsColumn,
     BooleanColumn,
     DateTimeColumn,
+    IndependentScoreColumn,
     PretalxTable,
+    QuestionColumnMixin,
     SortableColumn,
     SortableTemplateColumn,
     TemplateColumn,
 )
 from pretalx.orga.utils.i18n import Translate
-from pretalx.submission.models import Submission, Tag
+from pretalx.submission.models import Review, Submission, Tag
 
 
-def render_independent_score(record, table, category_id):
-    if not hasattr(record, "_independent_scores_cache"):
-        record._independent_scores_cache = table.get_independent_scores_for_submission(
-            record
-        )
-    score = record._independent_scores_cache.get(category_id)
-    return score if score is not None else "-"
-
-
-def render_question_answer(record, table, question_id):
-    if not hasattr(record, "_short_answers_cache"):
-        record._short_answers_cache = table.get_short_answers_for_submission(record)
-    return record._short_answers_cache.get(question_id, "")
-
-
-class CallableColumn(tables.Column):
-    """Column that renders using a callable function.
-
-    To avoid pickling issues, stores the callable directly without binding to self.
-    The callable should accept (record, column) as arguments, where column has
-    a table_ref attribute set after initialization.
-    """
-
-    def __init__(self, *args, callable_func=None, **kwargs):
-        self.callable_func = callable_func
-        self.table_ref = None
-        super().__init__(*args, **kwargs)
-
-    def render(self, record):
-        return self.callable_func(record, self.table_ref)
-
-
-class SubmissionTable(PretalxTable):
+class SubmissionTable(QuestionColumnMixin, PretalxTable):
     exempt_columns = ("pk", "actions", "indicator")
 
     indicator = TemplateColumn(
@@ -116,7 +85,10 @@ class SubmissionTable(PretalxTable):
         }
     )
 
-    def __init__(self, *args, can_view_speakers=False, **kwargs):
+    def __init__(self, *args, can_view_speakers=False, short_questions=None, **kwargs):
+        self.short_questions = short_questions or []
+        self._add_question_columns()
+
         super().__init__(*args, **kwargs)
 
         self.exclude = list(self.exclude)
@@ -155,7 +127,7 @@ class SubmissionTable(PretalxTable):
         fields = ()
 
 
-class ReviewTable(PretalxTable):
+class ReviewTable(QuestionColumnMixin, PretalxTable):
     median_score = tables.Column(
         verbose_name=_("Median"),
         order_by=("median_score",),
@@ -291,27 +263,13 @@ class ReviewTable(PretalxTable):
         if self.independent_categories:
             for category in self.independent_categories:
                 column_name = f"independent_score_{category.pk}"
-                self.base_columns[column_name] = CallableColumn(
+                self.base_columns[column_name] = IndependentScoreColumn(
                     verbose_name=category.name,
-                    accessor="pk",
-                    orderable=False,
-                    callable_func=partial(
-                        render_independent_score, category_id=category.pk
-                    ),
+                    category=category,
                     attrs={"td": {"class": "numeric text-center"}},
                 )
 
-        if self.short_questions:
-            for question in self.short_questions:
-                column_name = f"question_{question.id}"
-                self.base_columns[column_name] = CallableColumn(
-                    verbose_name=question.question,
-                    accessor="pk",
-                    orderable=False,
-                    callable_func=partial(
-                        render_question_answer, question_id=question.pk
-                    ),
-                )
+        self._add_question_columns()
 
         if self.can_accept_submissions:
             header_html = render_to_string(
@@ -325,10 +283,6 @@ class ReviewTable(PretalxTable):
             )
 
         super().__init__(*args, **kwargs)
-
-        for bound_column in self.columns:
-            if isinstance(bound_column.column, CallableColumn):
-                bound_column.column.table_ref = self
 
         self.exclude = list(self.exclude) if hasattr(self, "exclude") else []
 
@@ -346,58 +300,56 @@ class ReviewTable(PretalxTable):
         if not self.can_view_speakers:
             self.exclude.append("speakers")
 
-    def get_independent_scores_for_submission(self, submission):
+    def get_independent_score(self, submission, category_id):
         if not self.independent_categories:
-            return {}
+            return None
+        if not hasattr(self, "_scores_cache"):
+            self._load_all_scores()
+        return self._scores_cache.get(submission.pk, {}).get(category_id)
+
+    def _load_all_scores(self):
+        submission_ids = []
+        try:
+            for row in self.rows:
+                submission_ids.append(row.record.pk)
+        except (AttributeError, TypeError):
+            for submission in self.data:
+                submission_ids.append(submission.pk)
+
+        if not submission_ids:
+            self._scores_cache = {}
+            return
 
         independent_ids = [cat.pk for cat in self.independent_categories]
+        reviews = Review.objects.filter(
+            submission_id__in=submission_ids
+        ).prefetch_related("scores")
+
+        # Build cache: {submission_id: {category_id: score}}
+        self._scores_cache = {}
 
         if self.can_see_all_reviews:
-            mapping = defaultdict(list)
-            for review in submission.reviews.all():
+            mapping = defaultdict(lambda: defaultdict(list))
+            for review in reviews:
                 for score in review.scores.all():
                     if score.category_id in independent_ids:
-                        mapping[score.category_id].append(score.value)
-            return {
-                key: round(statistics.fmean(value), 1) for key, value in mapping.items()
-            }
-        else:
-            reviews = [
-                review
-                for review in submission.reviews.all()
-                if review.user == self.request_user
-            ]
-            if reviews:
-                review = reviews[0]
-                return {
-                    score.category_id: score.value
-                    for score in review.scores.all()
-                    if score.category_id in independent_ids
+                        mapping[review.submission_id][score.category_id].append(
+                            score.value
+                        )
+
+            for submission_id, categories in mapping.items():
+                self._scores_cache[submission_id] = {
+                    cat_id: round(statistics.fmean(values), 1)
+                    for cat_id, values in categories.items()
                 }
-            return {}
-
-    def get_short_answers_for_submission(self, submission):
-        if not self.short_questions:
-            return {}
-
-        return {
-            answer.question_id: answer.answer_string
-            for answer in submission.answers.all()
-            if answer.question in self.short_questions
-        }
-
-    def get_independent_score(self, record, category_id):
-        if not hasattr(record, "_independent_scores_cache"):
-            record._independent_scores_cache = (
-                self.get_independent_scores_for_submission(record)
-            )
-        score = record._independent_scores_cache.get(category_id)
-        return score if score is not None else "-"
-
-    def get_question_answer(self, record, question_id):
-        if not hasattr(record, "_short_answers_cache"):
-            record._short_answers_cache = self.get_short_answers_for_submission(record)
-        return record._short_answers_cache.get(question_id, "")
+        else:
+            for review in reviews:
+                if review.user == self.request_user:
+                    self._scores_cache[review.submission_id] = {
+                        score.category_id: score.value
+                        for score in review.scores.all()
+                        if score.category_id in independent_ids
+                    }
 
     class Meta:
         model = Submission
