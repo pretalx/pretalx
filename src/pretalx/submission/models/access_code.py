@@ -66,7 +66,9 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
         null=True,
         blank=True,
     )
-    redeemed = models.PositiveIntegerField(default=0, editable=False)
+    redeemed = models.PositiveIntegerField(
+        verbose_name=_("Redeemed"), default=0, editable=False
+    )
     internal_notes = models.TextField(
         null=True,
         blank=True,
