@@ -264,11 +264,13 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
         if self.independent_categories:
             for category in self.independent_categories:
                 column_name = f"independent_score_{category.pk}"
-                self.base_columns[column_name] = IndependentScoreColumn(
+                column = IndependentScoreColumn(
                     verbose_name=category.name,
                     category=category,
                     attrs={"td": {"class": "numeric text-center"}},
                 )
+                self.columns.columns[column_name] = column
+                column.header = column_name
 
         self._add_question_columns()
 
@@ -276,12 +278,14 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
             header_html = render_to_string(
                 "orga/tables/columns/review_actions_header.html", {"table": self}
             )
-            self.base_columns["actions"] = TemplateColumn(
+            column = TemplateColumn(
                 template_name="orga/tables/columns/review_actions.html",
                 verbose_name=mark_safe(header_html),
                 orderable=False,
                 attrs={"td": {"class": "nowrap"}},
             )
+            self.columns.columns["actions"] = column
+            column.header = "actions"
 
         self.exclude = list(self.exclude) if hasattr(self, "exclude") else []
 

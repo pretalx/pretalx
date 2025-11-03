@@ -33,16 +33,18 @@ class QuestionColumnMixin:
                 self._question_model = "submission"
 
     def _add_question_columns(self):
-        """Add QuestionColumn instances, should be called in __init__."""
+        """Add QuestionColumn instances, should be called after __init__."""
         if not getattr(self, "short_questions", None):
             return
 
         for question in self.short_questions:
             column_name = f"question_{question.id}"
-            self.base_columns[column_name] = QuestionColumn(
+            column = QuestionColumn(
                 verbose_name=question.question,
                 question=question,
             )
+            self.columns.columns[column_name] = column
+            column.header = column_name
 
     def get_answer_for_question(self, record, question_id):
         """Get answer object for a specific question, using lazy-loaded cache.
