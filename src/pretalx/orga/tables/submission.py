@@ -87,9 +87,8 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
 
     def __init__(self, *args, can_view_speakers=False, short_questions=None, **kwargs):
         self.short_questions = short_questions or []
-        self._add_question_columns()
-
         super().__init__(*args, **kwargs)
+        self._add_question_columns()
 
         self.exclude = list(self.exclude)
         self.can_view_speakers = can_view_speakers
@@ -260,6 +259,8 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
         self.short_questions = short_questions or []
         self.request_user = request_user
 
+        super().__init__(*args, **kwargs)
+
         if self.independent_categories:
             for category in self.independent_categories:
                 column_name = f"independent_score_{category.pk}"
@@ -281,8 +282,6 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
                 orderable=False,
                 attrs={"td": {"class": "nowrap"}},
             )
-
-        super().__init__(*args, **kwargs)
 
         self.exclude = list(self.exclude) if hasattr(self, "exclude") else []
 

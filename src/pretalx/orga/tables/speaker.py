@@ -111,9 +111,8 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
         self, *args, has_arrived_permission=False, short_questions=None, **kwargs
     ):
         self.short_questions = short_questions or []
-        self._add_question_columns()
-
         super().__init__(*args, **kwargs)
+        self._add_question_columns()
         self.has_arrived_permission = has_arrived_permission
 
     class Meta:
