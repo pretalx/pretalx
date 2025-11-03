@@ -53,7 +53,17 @@ class QuestionVariant(Choices):
     CHOICES = "choices"
     MULTIPLE = "multiple_choice"
 
-    short_answers = (NUMBER, STRING, URL, DATE, DATETIME, FILE, CHOICES, MULTIPLE)
+    short_answers = (
+        NUMBER,
+        STRING,
+        URL,
+        DATE,
+        DATETIME,
+        BOOLEAN,
+        FILE,
+        CHOICES,
+        MULTIPLE,
+    )
     long_answers = (TEXT,)
 
     valid_choices = [

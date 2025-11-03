@@ -4,6 +4,7 @@
 from urllib.parse import quote
 
 import django_tables2 as tables
+from django.db.models import OuterRef, Subquery
 from django.db.models.lookups import Transform
 from django.template import Context, Template
 from django.template.loader import get_template
@@ -16,6 +17,85 @@ from pretalx.common.forms.tables import TablePreferencesForm
 
 def get_icon(icon):
     return mark_safe(f'<i class="fa fa-{icon}"></i>')
+
+
+class QuestionColumnMixin:
+    """Mixin for tables that display QuestionColumns with answer caching."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if hasattr(self, "Meta") and hasattr(self.Meta, "model"):
+            from pretalx.person.models import SpeakerProfile
+
+            if self.Meta.model == SpeakerProfile:
+                self._question_model = "user"
+            else:
+                self._question_model = "submission"
+
+    def _add_question_columns(self):
+        """Add QuestionColumn instances, should be called in __init__."""
+        if not getattr(self, "short_questions", None):
+            return
+
+        for question in self.short_questions:
+            column_name = f"question_{question.id}"
+            self.base_columns[column_name] = QuestionColumn(
+                verbose_name=question.question,
+                question=question,
+            )
+
+    def get_answer_for_question(self, record, question_id):
+        """Get answer object for a specific question, using lazy-loaded cache.
+
+        This method fetches all answers for all records in the table in a single
+        query the first time any question column is rendered. This is efficient
+        because django-tables2 only renders visible columns.
+        """
+        if not getattr(self, "short_questions", None):
+            return None
+
+        if not hasattr(self, "_answers_cache"):
+            self._load_all_answers()
+
+        cache_key = self._get_record_cache_key(record)
+        return self._answers_cache.get(cache_key, {}).get(question_id)
+
+    def _get_record_cache_key(self, record):
+        return record.user_id if self._question_model == "user" else record.pk
+
+    def _get_answer_filter_field(self):
+        model = "person" if self._question_model == "user" else "submission"
+        return f"{model}_id__in"
+
+    def _load_all_answers(self):
+        from pretalx.submission.models import Answer
+
+        record_ids = []
+        try:
+            for row in self.rows:
+                record_ids.append(self._get_record_cache_key(row.record))
+        except (AttributeError, TypeError):
+            for record in self.data:
+                record_ids.append(self._get_record_cache_key(record))
+
+        if not record_ids:
+            self._answers_cache = {}
+            return
+
+        filter_field = self._get_answer_filter_field()
+        answers = (
+            Answer.objects.filter(
+                **{filter_field: record_ids},
+                question__in=self.short_questions,
+            )
+            .select_related("question")
+            .prefetch_related("options")
+        )
+        self._answers_cache = {}
+        cache_key = "person_id" if self._question_model == "user" else "submission_id"
+        for answer in answers:
+            answer_key = getattr(answer, cache_key, None)
+            self._answers_cache.setdefault(answer_key, {})[answer.question_id] = answer
 
 
 class PretalxTable(tables.Table):
@@ -383,3 +463,67 @@ class DateTimeColumn(tables.DateTimeColumn):
     def value(self, value):
         if value:
             return value.isoformat()
+
+
+class QuestionColumn(TemplateColumn):
+    """Column for rendering question answers using the standard question template.
+
+    This column delegates to the table's get_answer_for_question method,
+    which should handle caching and efficient data fetching.
+    """
+
+    empty_values = ()  # Always call render, even if no value from accessor
+    placeholder = mark_safe("&mdash;")
+
+    def __init__(self, *args, question=None, **kwargs):
+        self.question = question
+        kwargs.setdefault("orderable", True)
+        kwargs.setdefault("template_name", "common/question_answer.html")
+        kwargs.setdefault("attrs", {})
+        if "td" not in kwargs["attrs"]:
+            kwargs["attrs"]["td"] = {"class": ""}
+        existing_class = kwargs["attrs"]["td"].get("class", "")
+        kwargs["attrs"]["td"]["class"] = f"{existing_class} answer".strip()
+        super().__init__(*args, **kwargs)
+
+    def order(self, queryset, is_descending):
+        from pretalx.submission.models import Answer
+
+        if hasattr(queryset.model, "user"):
+            answer_subquery = Answer.objects.filter(
+                person_id=OuterRef("user_id"), question_id=self.question.id
+            ).values("answer")[:1]
+        else:
+            answer_subquery = Answer.objects.filter(
+                submission_id=OuterRef("pk"), question_id=self.question.id
+            ).values("answer")[:1]
+
+        annotation_name = f"_question_{self.question.id}_answer"
+        queryset = queryset.annotate(**{annotation_name: Subquery(answer_subquery)})
+        order_field = f"{'-' if is_descending else ''}{annotation_name}"
+        queryset = queryset.order_by(order_field)
+        return queryset, True
+
+    def render(self, record, table, value, bound_column, **kwargs):
+        answer = table.get_answer_for_question(record, self.question.id)
+
+        if not answer:
+            return self.placeholder
+
+        context = getattr(table, "context", {})
+        context["answer"] = answer
+        return super().render(record, table, value, bound_column, **kwargs)
+
+
+class IndependentScoreColumn(tables.Column):
+    empty_values = ()  # Always call render, even if no value from accessor
+    placeholder = mark_safe("&mdash;")
+
+    def __init__(self, *args, category=None, **kwargs):
+        self.category = category
+        kwargs.setdefault("orderable", False)
+        super().__init__(*args, **kwargs)
+
+    def render(self, record, table, **kwargs):
+        score = table.get_independent_score(record, self.category.pk)
+        return score if score is not None else self.placeholder

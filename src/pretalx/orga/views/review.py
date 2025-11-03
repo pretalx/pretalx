@@ -51,7 +51,13 @@ from pretalx.orga.tables.submission import ReviewTable
 from pretalx.orga.views.submission import SubmissionListMixin
 from pretalx.person.models import User
 from pretalx.submission.forms import QuestionsForm, SubmissionFilterForm
-from pretalx.submission.models import Review, Submission, SubmissionStates
+from pretalx.submission.models import (
+    QuestionTarget,
+    QuestionVariant,
+    Review,
+    Submission,
+    SubmissionStates,
+)
 from pretalx.submission.rules import (
     get_missing_reviews,
     get_reviewable_submissions,
@@ -203,19 +209,9 @@ class ReviewDashboard(
     @context
     @cached_property
     def short_questions(self):
-        from pretalx.submission.models import QuestionVariant
-
         queryset = self.request.event.questions.filter(
-            target="submission",
-            variant__in=[
-                QuestionVariant.BOOLEAN,
-                QuestionVariant.CHOICES,
-                QuestionVariant.MULTIPLE,
-                QuestionVariant.DATE,
-                QuestionVariant.DATETIME,
-                QuestionVariant.BOOLEAN,
-                QuestionVariant.NUMBER,
-            ],
+            target=QuestionTarget.SUBMISSION,
+            variant__in=QuestionVariant.short_answers,
         )
         if not self.can_change_submissions:
             queryset = queryset.filter(is_visible_to_reviewers=True)
