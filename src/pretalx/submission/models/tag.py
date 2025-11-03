@@ -22,14 +22,14 @@ class Tag(PretalxModel):
         to="event.Event", on_delete=models.PROTECT, related_name="tags"
     )
 
-    tag = models.CharField(max_length=50)
+    tag = models.CharField(verbose_name=_("Tag"), max_length=50)
     description = I18nTextField(
         verbose_name=_("Description"),
         blank=True,
     )
     color = models.CharField(
         max_length=7,
-        verbose_name=_("Color"),
+        verbose_name=_("Colour"),
         validators=[
             RegexValidator("#([0-9A-Fa-f]{3}){1,2}"),
         ],
