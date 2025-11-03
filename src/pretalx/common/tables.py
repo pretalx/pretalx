@@ -7,8 +7,11 @@ import django_tables2 as tables
 from django.db.models.lookups import Transform
 from django.template import Context, Template
 from django.template.loader import get_template
+from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+
+from pretalx.common.forms.tables import TablePreferencesForm
 
 
 def get_icon(icon):
@@ -16,18 +19,102 @@ def get_icon(icon):
 
 
 class PretalxTable(tables.Table):
+    exempt_columns = ("pk", "actions")
+
     def __init__(
         self,
         *args,
         event=None,
+        user=None,
         has_update_permission=False,
         has_delete_permission=False,
         **kwargs,
     ):
         self.event = event
+        self.user = user
         self.has_update_permission = has_update_permission
         self.has_delete_permission = has_delete_permission
         super().__init__(*args, **kwargs)
+
+    @property
+    def name(self):
+        return self.__class__.__name__
+
+    def _get_columns(self, visible=True):
+        columns = []
+        for name, column in self.columns.items():
+            if column.visible == visible and name not in self.exempt_columns:
+                columns.append((name, column.verbose_name))
+        return columns
+
+    @property
+    def available_columns(self):
+        return self._get_columns(visible=False)
+
+    @property
+    def selected_columns(self):
+        return self._get_columns(visible=True)
+
+    @cached_property
+    def configuration_form(self):
+        has_default_columns = getattr(self, "default_columns", None)
+        has_hidden_columns = len(self.available_columns) > 0
+
+        if not (has_default_columns or has_hidden_columns):
+            return None
+
+        return TablePreferencesForm(table=self)
+
+    def _set_columns(self, selected_columns):
+        available_column_names = self.columns.names()
+        valid_selected_columns = [
+            c for c in selected_columns if c in available_column_names
+        ]
+        visible_columns = [*valid_selected_columns, *self.exempt_columns]
+
+        for column_name in available_column_names:
+            if column_name in visible_columns:
+                self.columns.show(column_name)
+            else:
+                self.columns.hide(column_name)
+
+        # Rearrange the sequence to list selected columns first, followed by all remaining columns
+        self.sequence = [
+            *valid_selected_columns,
+            *[c for c in available_column_names if c not in valid_selected_columns],
+        ]
+
+        if "pk" in self.sequence:
+            self.sequence.remove("pk")
+            self.sequence.insert(0, "pk")
+        if "actions" in self.sequence:
+            self.sequence.remove("actions")
+            self.sequence.append("actions")
+
+    def configure(self, request):
+        columns = None
+        ordering = None
+        page_size = None
+
+        # If an ordering has been specified as a query parameter, save it as the
+        # user's preferred ordering for this table.
+        if request.user.is_authenticated and self.event:
+            if ordering := request.GET.getlist(self.prefixed_order_by_field):
+                preferences = request.user.get_event_preferences(self.event)
+                preferences.set(f"tables.{self.name}.ordering", ordering, commit=True)
+
+            preferences = request.user.get_event_preferences(self.event)
+            columns = preferences.get(f"tables.{self.name}.columns")
+            ordering = preferences.get(f"tables.{self.name}.ordering")
+            page_size = preferences.get(f"tables.{self.name}.page_size")
+
+        columns = columns or getattr(self, "default_columns", None) or self.Meta.fields
+        self._set_columns(columns)
+
+        if ordering is not None:
+            self.order_by = ordering
+
+        return page_size
 
 
 class UnsortableMixin:

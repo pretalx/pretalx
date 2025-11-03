@@ -199,6 +199,7 @@ class User(
         self.permission_cache = {}
         self.event_profile_cache = {}
         self.event_permission_cache = {}
+        self.event_preferences_cache = {}
 
     def has_perm(self, perm, obj, *args, **kwargs):
         cached_result = None
@@ -256,6 +257,18 @@ class User(
 
         self.event_profile_cache[event.pk] = profile
         return profile
+
+    def get_event_preferences(self, event):
+        if preferences := self.event_preferences_cache.get(event.pk):
+            return preferences
+
+        from pretalx.person.models.preferences import UserEventPreferences
+
+        preferences, _ = UserEventPreferences.objects.get_or_create(
+            event=event, user=self
+        )
+        self.event_preferences_cache[event.pk] = preferences
+        return preferences
 
     def get_locale_for_event(self, event):
         if self.locale in event.locales:

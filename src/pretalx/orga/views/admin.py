@@ -89,7 +89,7 @@ class AdminUserView(OrgaCRUDView):
     model = User
     table_class = AdminUserTable
     permission_required = "person.administrator_user"
-    paginate_by = "250"
+    paginate_by = 250
     lookup_field = "code"
     path_converter = "slug"
     template_namespace = "orga/admin"
