@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2025-present Tobias Kunze
 // SPDX-License-Identifier: Apache-2.0
 
-onReady(() = {
+onReady(() => {
     const normalizeLineBreaks = (text) => text.replace(/\r\n/g, '\n');
 
     const escapeHtml = (text) => {
@@ -15,7 +15,7 @@ onReady(() = {
         let wrapper = parentEl.querySelector(`.${wrapperClass}`);
 
         if (!wrapper) {
-            wrapper = documentEl.createElement('div');
+            wrapper = document.createElement('div');
             wrapper.className = wrapperClass;
             element.parentElement.insertBefore(wrapper, element);
             wrapper.appendChild(element);
