@@ -9,6 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block agenda_content %}
     <article>
+        <h3>{% translate "Schedule changes" %}</h3>
         {% for schedule in schedules %}
             <section>
                 <h4 id="{{ schedule.version }}">

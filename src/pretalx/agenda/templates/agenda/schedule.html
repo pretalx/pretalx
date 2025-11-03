@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <div class="dropdown-content dropdown-content-s{% if rtl %}e{% else %}w{% endif %}">
             <a class="dropdown-item" href="{{ request.event.urls.changelog }}" role="menuitem" tabindex="-1">
                 <i class="fa fa-book"></i>
-                {% translate "Changelog" %}
+                {% translate "Schedule changes" %}
             </a>
             <hr>
             {% for exporter in exporters %}
