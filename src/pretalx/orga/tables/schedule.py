@@ -9,13 +9,14 @@ from pretalx.schedule.models import Room
 
 
 class RoomTable(UnsortableMixin, PretalxTable):
+    default_columns = ("name",)
+
     name = tables.Column(
         linkify=lambda record: record.urls.settings_base,
         verbose_name=_("Name"),
     )
     capacity = tables.Column(
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
-        default="",
     )
     actions = ActionsColumn(
         actions={
@@ -35,5 +36,6 @@ class RoomTable(UnsortableMixin, PretalxTable):
         fields = (
             "name",
             "capacity",
+            "guid",
         )
         row_attrs = {"dragsort-id": lambda record: record.pk}
