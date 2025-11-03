@@ -17,6 +17,11 @@ from pretalx.orga.utils.i18n import Translate
 
 
 class MailTemplateTable(PretalxTable):
+    default_columns = (
+        "role",
+        "subject",
+    )
+
     role = TemplateColumn(
         linkify=lambda record: record.urls.edit,
         template_name="orga/includes/mail_template_role.html",
@@ -46,6 +51,8 @@ class MailTemplateTable(PretalxTable):
         fields = (
             "role",
             "subject",
+            "reply_to",
+            "bcc",
             "actions",
         )
 
