@@ -128,7 +128,7 @@ def test_event_model_slug_uniqueness():
 
 @pytest.mark.django_db
 def test_event_copy_settings(
-    event, submission_type, choice_question, track, room_availability
+    event, submission_type, answered_choice_question, track, room_availability
 ):
     with scope(event=event):
         event.custom_domain = "https://testeventcopysettings.example.org"
@@ -137,7 +137,8 @@ def test_event_copy_settings(
         accept_template.text = "testtemplate"
         accept_template.save()
         event.feature_flags = {"testing": "working"}
-        choice_question.tracks.add(track)
+        answered_choice_question.tracks.add(track)
+        assert answered_choice_question.answers.count() == 1
         event.cfp.deadline = now()
         event.cfp.save()
         assert event.submission_types.count() == 2
@@ -171,6 +172,8 @@ def test_event_copy_settings(
         assert new_event.cfp.deadline == event.cfp.deadline
         assert new_event.questions.count()
         assert new_event.questions.first().options.count()
+        assert new_event.questions.first().tracks.count()
+        assert new_event.questions.first().answers.count() == 0
         # Check rooms and availabilities are copied
         assert new_event.rooms.count() == 1
         copied_room = new_event.rooms.first()
