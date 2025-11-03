@@ -87,8 +87,8 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
 
     def __init__(self, *args, can_view_speakers=False, short_questions=None, **kwargs):
         self.short_questions = short_questions or []
+        kwargs.setdefault("extra_columns", []).extend(self._get_question_columns())
         super().__init__(*args, **kwargs)
-        self._add_question_columns()
 
         self.exclude = list(self.exclude)
         self.can_view_speakers = can_view_speakers
@@ -259,33 +259,39 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
         self.short_questions = short_questions or []
         self.request_user = request_user
 
-        super().__init__(*args, **kwargs)
-
+        extra_columns = self._get_question_columns()
         if self.independent_categories:
             for category in self.independent_categories:
                 column_name = f"independent_score_{category.pk}"
-                column = IndependentScoreColumn(
-                    verbose_name=category.name,
-                    category=category,
-                    attrs={"td": {"class": "numeric text-center"}},
+                extra_columns.append(
+                    (
+                        column_name,
+                        IndependentScoreColumn(
+                            verbose_name=category.name,
+                            category=category,
+                            attrs={"td": {"class": "numeric text-center"}},
+                        ),
+                    )
                 )
-                self.columns.columns[column_name] = column
-                column.header = column_name
-
-        self._add_question_columns()
 
         if self.can_accept_submissions:
             header_html = render_to_string(
                 "orga/tables/columns/review_actions_header.html", {"table": self}
             )
-            column = TemplateColumn(
-                template_name="orga/tables/columns/review_actions.html",
-                verbose_name=mark_safe(header_html),
-                orderable=False,
-                attrs={"td": {"class": "nowrap"}},
+            extra_columns.append(
+                (
+                    "actions",
+                    TemplateColumn(
+                        template_name="orga/tables/columns/review_actions.html",
+                        verbose_name=mark_safe(header_html),
+                        orderable=False,
+                        attrs={"td": {"class": "nowrap"}},
+                    ),
+                )
             )
-            self.columns.columns["actions"] = column
-            column.header = "actions"
+
+        kwargs.setdefault("extra_columns", []).extend(extra_columns)
+        super().__init__(*args, **kwargs)
 
         self.exclude = list(self.exclude) if hasattr(self, "exclude") else []
 
