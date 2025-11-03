@@ -752,6 +752,9 @@ a {
 .flex-wrap {
   flex-wrap: wrap !important;
 }
+.flex-nowrap {
+  flex-wrap: nowrap !important;
+}
 .flex-grow-1 {
   flex-grow: 1 !important;
 }

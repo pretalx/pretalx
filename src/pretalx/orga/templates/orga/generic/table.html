@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <button id="dialog-close" class="btn btn-default btn-xs close-dialog" aria-label="{% translate "Close" %}"><i class="fa fa-times"></i></button>
                         </div>
                         <form class="table-preferences-form" data-table-name="{{ table.name }}">
-                            <div class="row">
+                            <div class="row flex-nowrap">
                                 <div class="col-md-5 text-center">
                                     <label for="id_available_columns_{{ table.name }}">{{ table.configuration_form.available_columns.label }}</label>
                                     <select id="id_available_columns_{{ table.name }}"
