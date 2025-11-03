@@ -17,8 +17,19 @@ DEFAULT_FORMSET_MEDIA = forms.Media(
 )
 
 
+DEFAULT_TABLE_MEDIA = forms.Media(
+    js=[
+        forms.Script("common/js/ui/dialog.js", defer=""),
+        forms.Script("orga/js/ui/tables.js", defer=""),
+    ],
+    css={"all": ["common/css/ui/dialog.css", "orga/css/ui/tables.css"]},
+)
+
+
 @register.simple_tag(takes_context=True)
-def form_media(context, always_base=False, extra_js=None, extra_css=None):
+def form_media(
+    context, always_base=False, extra_js=None, extra_css=None, table_media=False
+):
     # The entire point of this tag is to make sure that all form media is merged
     # and then only added once per template. If this tag has been invoked before,
     # it’s a noop.
@@ -56,6 +67,8 @@ def form_media(context, always_base=False, extra_js=None, extra_css=None):
                     media += first_item.media
     if always_base or media._js or media._css:
         media = DEFAULT_FORM_MEDIA + media
+    if table_media and context.get("table"):
+        media += DEFAULT_TABLE_MEDIA
     if extra_js:
         media += forms.Media(
             js=[forms.Script(js, defer="") for js in extra_js.split(",")]

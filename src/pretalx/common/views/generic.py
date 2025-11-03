@@ -568,17 +568,33 @@ class OrgaTableMixin(SingleTableMixin):
     DEFAULT_PAGINATION = 50
 
     def get_paginate_by(self, queryset=None):
-        skey = "stored_page_size_" + self.request.resolver_match.url_name
-        default = (
-            self.request.session.get(skey)
-            or getattr(self, "paginate_by", None)
-            or self.DEFAULT_PAGINATION
-        )
+        # TODO: remove most of this method including the fallback to
+        # session-based handling in 2026, data should have been migrated
+        # by active use (and if not, it can’t have mattered that much)
+        if not (default := getattr(self, "_table_page_size", None)):
+            skey = "stored_page_size_" + self.request.resolver_match.url_name
+            default = (
+                self.request.session.get(skey)
+                or getattr(self, "paginate_by", None)
+                or self.DEFAULT_PAGINATION
+            )
+
         if self.request.GET.get("page_size"):
             try:
                 max_page_size = getattr(self, "max_page_size", 250)
                 size = min(max_page_size, int(self.request.GET.get("page_size")))
-                self.request.session[skey] = size
+
+                if (
+                    self.request.user.is_authenticated
+                    and (table := getattr(self, "table", None))
+                    and (event := getattr(table, "event", None))
+                ):
+                    preferences = self.request.user.get_event_preferences(event)
+                    preferences.set(f"tables.{table.name}.page_size", size, commit=True)
+                else:
+                    skey = "stored_page_size_" + self.request.resolver_match.url_name
+                    self.request.session[skey] = size
+
                 return size
             except ValueError:
                 return default
@@ -587,12 +603,16 @@ class OrgaTableMixin(SingleTableMixin):
     def get_table_kwargs(self):
         kwargs = super().get_table_kwargs()
         kwargs["event"] = getattr(self.request, "event", None)
+        kwargs["user"] = getattr(self.request, "user", None)
         return kwargs
 
     def get_table(self, *args, **kwargs):
         if not self.table_class:
             return
-        return super().get_table(*args, **kwargs)
+        table = super().get_table(*args, **kwargs)
+        page_size = table.configure(self.request)
+        self._table_page_size = page_size
+        return table
 
 
 class OrgaCRUDView(OrgaTableMixin, FormSignalMixin, CRUDView):

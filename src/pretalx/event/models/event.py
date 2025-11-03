@@ -765,6 +765,12 @@ class Event(PretalxModel):
             sett.pk = None
             sett.save()
         self.settings.flush()
+
+        for user_prefs in other_event.user_preferences.all():
+            user_prefs.pk = None
+            user_prefs.event = self
+            user_prefs.save()
+
         self.cfp.copy_data_from(other_event.cfp, skip_attributes=skip_attributes)
         event_copy_data.send(
             sender=self,

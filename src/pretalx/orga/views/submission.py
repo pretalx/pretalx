@@ -623,7 +623,6 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
 class SubmissionList(SubmissionListMixin, EventPermissionRequired, ListView):
     template_name = "orga/submission/list.html"
     permission_required = "submission.orga_list_submission"
-    paginate_by = 25
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -638,7 +637,6 @@ class SubmissionList(SubmissionListMixin, EventPermissionRequired, ListView):
 class FeedbackList(SubmissionViewMixin, PaginationMixin, ListView):
     template_name = "orga/submission/feedback_list.html"
     context_object_name = "feedback"
-    paginate_by = 25
     permission_required = "submission.view_feedback_submission"
 
     def get_queryset(self):
@@ -1027,7 +1025,6 @@ class AllFeedbacksList(EventPermissionRequired, PaginationMixin, ListView):
     context_object_name = "feedback"
     template_name = "orga/submission/feedbacks_list.html"
     permission_required = "submission.orga_list_submission"
-    paginate_by = 25
 
     def get_queryset(self):
         return (

@@ -1,0 +1,24 @@
+/*
+ * SPDX-FileCopyrightText: 2025-present Tobias Kunze
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+dialog.table-preferences {
+  .modal-card-header {
+    display: flex;
+    position: relative;
+  }
+  select {
+    min-width: 200px;
+    width: 200px;
+  }
+  .btn {
+    white-space: nowrap;
+  }
+  .submit-group {
+    margin-bottom: -4px;
+  }
+  .col-md-5 {
+    min-width: min-content;
+  }
+}

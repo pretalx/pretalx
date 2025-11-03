@@ -1,7 +1,9 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import json
 
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -16,6 +18,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button
 from pretalx.common.views import is_form_bound
 from pretalx.common.views.generic import get_next_url
+from pretalx.orga.views.event import EventPermissionRequired
 from pretalx.person.forms import AuthTokenForm, LoginInfoForm, OrgaProfileForm
 
 
@@ -124,3 +127,34 @@ class SubuserView(View):
         if url := get_next_url(request):
             return redirect(url)
         return redirect(reverse("orga:event.list"))
+
+
+class PreferencesView(EventPermissionRequired, View):
+    permission_required = "event.orga_access_event"
+
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            table_name = data.get("table_name")
+            reset = data.get("reset", False)
+
+            if not table_name:
+                return JsonResponse({"error": "table_name is required"}, status=400)
+
+            preferences = request.user.get_event_preferences(request.event)
+
+            if reset:
+                preferences.clear(f"tables.{table_name}.columns", commit=True)
+            else:
+                columns = data.get("columns", [])
+                if not isinstance(columns, list):
+                    return JsonResponse({"error": "columns must be a list"}, status=400)
+
+                preferences.set(f"tables.{table_name}.columns", columns, commit=True)
+
+            return JsonResponse({"success": True})
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)

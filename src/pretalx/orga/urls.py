@@ -127,6 +127,11 @@ urlpatterns = [
                 path("live", event.EventLive.as_view(), name="event.live"),
                 path("history/", event.EventHistory.as_view(), name="event.history"),
                 path(
+                    "preferences/",
+                    person.PreferencesView.as_view(),
+                    name="preferences",
+                ),
+                path(
                     "cfp/",
                     RedirectView.as_view(pattern_name="orga:cfp.text.view"),
                     name="cfp",
