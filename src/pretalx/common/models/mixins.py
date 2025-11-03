@@ -8,6 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, models
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager, scopes_disabled
 from i18nfield.utils import I18nJSONEncoder
 from rules.contrib.models import RulesModelBase, RulesModelMixin
@@ -16,8 +17,12 @@ SENSITIVE_KEYS = ["password", "secret", "api_key"]
 
 
 class TimestampedModel(models.Model):
-    created = models.DateTimeField(auto_now_add=True, blank=True, null=True)
-    updated = models.DateTimeField(auto_now=True, blank=True, null=True)
+    created = models.DateTimeField(
+        verbose_name=_("Created"), auto_now_add=True, blank=True, null=True
+    )
+    updated = models.DateTimeField(
+        verbose_name=_("Updated"), auto_now=True, blank=True, null=True
+    )
 
     class Meta:
         abstract = True
@@ -199,7 +204,7 @@ class GenerateCode:
     def save(self, *args, **kwargs):
         # It’s super duper unlikely for this to fail, but let’s add a short
         # stupid retry loop regardless
-        for _ in range(3):
+        for __ in range(3):
             if not getattr(self, self._code_property, None):
                 self.assign_code()
             try:
