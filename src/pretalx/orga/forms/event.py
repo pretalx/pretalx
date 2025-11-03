@@ -43,7 +43,7 @@ from pretalx.common.text.css import validate_css
 from pretalx.common.text.phrases import phrases
 from pretalx.event.models.event import Event, EventExtraLink
 from pretalx.orga.forms.widgets import HeaderSelect, MultipleLanguagesWidget
-from pretalx.schedule.models import Availability, TalkSlot
+from pretalx.schedule.models import Availability, Room, TalkSlot
 from pretalx.submission.models import ReviewPhase, ReviewScore, ReviewScoreCategory
 
 ENCRYPTED_PASSWORD_PLACEHOLDER = "*" * 24
@@ -622,6 +622,15 @@ class WidgetGenerationForm(forms.ModelForm):
             "You can limit the days shown in the widget. Leave empty to show all days."
         ),
     )
+    rooms = forms.ModelMultipleChoiceField(
+        label=_("Limit rooms"),
+        queryset=Room.objects.none(),
+        widget=EnhancedSelectMultiple,
+        required=False,
+        help_text=_(
+            "You can limit the rooms shown in the widget. Leave empty to show all rooms."
+        ),
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -634,6 +643,7 @@ class WidgetGenerationForm(forms.ModelForm):
             )
             for i in range(event.duration)
         ]
+        self.fields["rooms"].queryset = event.rooms.all()
 
     class Meta:
         model = Event
