@@ -217,19 +217,31 @@ class SubmissionTypeTable(PretalxTable):
 
 
 class QuestionTable(UnsortableMixin, PretalxTable):
+    default_columns = (
+        "question",
+        "target",
+        "variant",
+        "required",
+        "active",
+        "answer_count",
+    )
+
     question = tables.Column(
         verbose_name=_("Custom field"),
         linkify=lambda record: record.urls.base,
     )
-    target = tables.Column(verbose_name=_("Target"))
-    variant = tables.Column(verbose_name=_("Field type"))
-    required = BooleanColumn()
-    active = BooleanColumn()
     answer_count = tables.Column(
         verbose_name=_("Responses"),
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
         initial_sort_descending=True,
     )
+    deadline = DateTimeColumn()
+    freeze_after = DateTimeColumn()
+    is_public = BooleanColumn()
+    active = BooleanColumn()
+    required = BooleanColumn()
+    is_visible_to_reviewers = BooleanColumn()
+    contains_personal_data = BooleanColumn()
     actions = ActionsColumn(actions={"sort": {}, "edit": {}, "delete": {}})
     empty_text = _("You have configured no custom fields yet.")
 
@@ -246,6 +258,11 @@ class QuestionTable(UnsortableMixin, PretalxTable):
             "required",
             "active",
             "answer_count",
+            "deadline",
+            "freeze_after",
+            "is_public",
+            "is_visible_to_reviewers",
+            "contains_personal_data",
             "actions",
         )
         row_attrs = {"dragsort-id": lambda record: record.pk}
