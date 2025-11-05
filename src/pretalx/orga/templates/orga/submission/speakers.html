@@ -37,7 +37,7 @@ SPDX-FileContributor: Florian Mösch
     </div>{% endif %}
 
     {% for speaker in speakers %}
-        <div class="card mb-3"><div class="card-body">
+        <div class="card mb-3 speaker-card"><div class="card-body">
             <h3 class="card-title">
                 <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.user.code %}">
                     {{ speaker.user.get_display_name }}

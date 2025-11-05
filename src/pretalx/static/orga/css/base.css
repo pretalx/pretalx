@@ -640,6 +640,22 @@ table th.orderable.desc a {
   }
 }
 
+.speaker-card {
+  a[data-lightbox] {
+    width: 180px;
+    height: 180px;
+    display: block;
+    overflow: hidden;
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      box-shadow: var(--shadow-lighter);
+      border-radius: 6px;
+    }
+  }
+}
+
 .lg-action {
   background-color: var(--color-grey-lighter);
   margin: 8px 0;
