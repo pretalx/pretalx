@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-11-05 16:05+0000\n"
-"PO-Revision-Date: 2025-08-28 08:44+0000\n"
+"PO-Revision-Date: 2025-11-05 16:43+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: \n"
 "Language: de_Formal\n"
@@ -47,10 +47,8 @@ msgstr ""
 
 #: pretalx/agenda/templates/agenda/changelog.html:12
 #: pretalx/agenda/templates/agenda/schedule.html:33
-#, fuzzy
-#| msgid "Schedule update"
 msgid "Schedule changes"
-msgstr "Programm-Update"
+msgstr "Programm-Änderungen"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:19
 msgid "We have new sessions!"
@@ -373,16 +371,12 @@ msgstr ""
 "direkt an uns, wenn das verkehrt ist."
 
 #: pretalx/cfp/phrases.py:36
-#, fuzzy
-#| msgid ""
-#| "This proposal cannot be confirmed at this time – please contact us if you "
-#| "think this is an error."
 msgid ""
 "This proposal cannot be edited at this time. Please contact the organisers "
 "if you need to make changes."
 msgstr ""
-"Ihre Einreichung kann gerade nicht bestätigt werden – bitte wenden Sie sich "
-"direkt an uns, wenn das verkehrt ist."
+"Diese Einreichung kann gerade nicht editiert werden. Bitte wenden Sie sich "
+"an die Veranstalter, wenn Sie Änderungen vornehmen wollen."
 
 #: pretalx/cfp/phrases.py:39
 msgid "Speaker email"
@@ -448,10 +442,7 @@ msgid "Custom fields"
 msgstr "Zusatzfelder"
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:29
-#, fuzzy, python-format
-#| msgid ""
-#| "You can enter proposals until %(deadline)s (%(timezone)s), "
-#| "%(until_string)s from now."
+#, python-format
 msgid ""
 "Submissions close on %(deadline)s (%(timezone)s), %(until_string)s from now."
 msgstr ""
@@ -963,10 +954,10 @@ msgid "Resources"
 msgstr "Ressourcen"
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:18
-#, fuzzy
-#| msgid "Resources will be publicly visible."
 msgid "Resources will be publicly visible unless marked as non-public."
-msgstr "Ressourcen werden öffentlich einsehbar sein."
+msgstr ""
+"Ressourcen werden öffentlich einsehbar sein, außer wenn sie als "
+"nichtöffentlich markiert werden."
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:72
 msgid "This proposal has no resources yet."
@@ -1075,16 +1066,14 @@ msgstr ""
 "dieser Endungen haben: "
 
 #: pretalx/common/forms/fields.py:165
-#, fuzzy, python-format
-#| msgid "The submitted availability contains an invalid date."
+#, python-format
 msgid "Submitted availabilities are not valid json: %(error)s."
-msgstr "Die Verfügbarkeit enthält ein falsches Datum."
+msgstr "Die Verfügbarkeit ist nicht valide: %(error)s."
 
 #: pretalx/common/forms/fields.py:167
-#, fuzzy, python-format
-#| msgid "The submitted availability does not comply with the required format."
+#, python-format
 msgid "Availability JSON does not comply with expected format: %(detail)s"
-msgstr "Die Verfügbarkeit wurde im falschen Format eingereicht."
+msgstr "Die Verfügbarkeit wurde im falschen Format eingereicht: %(detail)s"
 
 #: pretalx/common/forms/fields.py:170
 msgid "The submitted availability does not comply with the required format."
@@ -1153,16 +1142,12 @@ msgid "You wrote {count} words."
 msgstr "Sie haben {count} Wörter geschrieben."
 
 #: pretalx/common/forms/tables.py:10
-#, fuzzy
-#| msgid "Availabilities"
 msgid "Available Columns"
-msgstr "Verfügbarkeiten"
+msgstr "Verfügbare Spalten"
 
 #: pretalx/common/forms/tables.py:20
-#, fuzzy
-#| msgid "Select Plugins"
 msgid "Selected Columns"
-msgstr "Plugin auswählen"
+msgstr "Verwendete Spalten"
 
 #: pretalx/common/forms/widgets.py:26
 msgid ""
@@ -1422,10 +1407,8 @@ msgid "A custom field response was added."
 msgstr "Eine Antwort eines Zusatzfeldes wurde hinzugefügt."
 
 #: pretalx/common/log_display.py:112
-#, fuzzy
-#| msgid "A custom field response was modified."
 msgid "A custom field response was removed."
-msgstr "Eine Antwort eines Zusatzfelds wurde angepasst."
+msgstr "Eine Antwort eines Zusatzfelds wurde entfernt."
 
 #: pretalx/common/log_display.py:113
 msgid "A proposal comment was added."
@@ -1520,10 +1503,8 @@ msgid "The profile was modified."
 msgstr "Das Profil wurde angepasst."
 
 #: pretalx/common/log_display.py:139
-#, fuzzy
-#| msgid "Search users by name or email address"
 msgid "The user changed their email address."
-msgstr "User nach Name oder E-Mail-Adresse suchen"
+msgstr "User-E-Mail-Adresse wurde geändert."
 
 #: pretalx/common/log_display.py:189 pretalx/common/log_display.py:193
 #: pretalx/orga/tables/cfp.py:230 pretalx/orga/views/cfp.py:144
@@ -1572,9 +1553,8 @@ msgid "Created"
 msgstr "Erstellt"
 
 #: pretalx/common/models/mixins.py:24
-#, fuzzy
 msgid "Updated"
-msgstr "Datum"
+msgstr "Aktualisiert"
 
 #: pretalx/common/models/settings.py:66
 msgid ""
@@ -1897,14 +1877,12 @@ msgid "Proceed to %(host)s"
 msgstr "Weiter zu %(host)s"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:18
-#, fuzzy
-#| msgid "Your avatar"
 msgid "Crop your avatar"
-msgstr "Ihr Profilbild"
+msgstr "Ihr Profilbild zuschneiden"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:22
 msgid "Image for cropping"
-msgstr ""
+msgstr "Bild zum Zuschneiden"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:25
 #: pretalx/common/text/phrases.py:51
@@ -1913,7 +1891,7 @@ msgstr "Abbrechen"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:26
 msgid "Apply Crop"
-msgstr ""
+msgstr "Zuschneiden"
 
 #. Translators: Text is used to describe the main text body of an email, or of
 #. similar options like the main text of the CfP or a review. It's separate from
@@ -2107,10 +2085,8 @@ msgid "You can use {link_start}Markdown{link_end} here."
 msgstr "Sie können hier {link_start}Markdown{link_end} verwenden."
 
 #: pretalx/common/text/phrases.py:111
-#, fuzzy
-#| msgid "This content will be shown publicly."
 msgid "This content may be shown publicly."
-msgstr "Diese Eingabe wird öffentlich sein."
+msgstr "Diese Eingabe kann öffentlich gemacht werden."
 
 #: pretalx/common/text/phrases.py:113
 msgctxt "opening quotation mark"
@@ -2202,16 +2178,12 @@ msgid "Plugin"
 msgstr "Plugin"
 
 #: pretalx/common/views/generic.py:96
-#, fuzzy
-#| msgid "Your changes have been saved."
 msgid "Some changes could not be saved."
-msgstr "Ihre Änderungen wurden gespeichert."
+msgstr "Manche Änderungen konnten nicht gespeichert werden."
 
 #: pretalx/common/views/generic.py:425
-#, fuzzy
-#| msgid "Newline"
 msgid "New"
-msgstr "Zeilenumbruch"
+msgstr "Neu"
 
 #: pretalx/common/views/mixins.py:212
 msgid "ManagementForm data is missing or has been tampered with."
@@ -2788,10 +2760,8 @@ msgid "URL to a user’s list of proposals"
 msgstr "Link zur Einreichungsliste einer Person"
 
 #: pretalx/mail/context.py:150
-#, fuzzy
-#| msgid "URL to a user’s list of proposals"
 msgid "URL to a user’s private profile page."
-msgstr "Link zur Einreichungsliste einer Person"
+msgstr "Link zur privaten Profilseite einer Person."
 
 #: pretalx/mail/context.py:165
 msgid "The general CfP deadline"
@@ -3361,10 +3331,8 @@ msgstr ""
 "öffentlich zugänglichen Links mit anderen zu teilen."
 
 #: pretalx/orga/forms/cfp.py:75
-#, fuzzy
-#| msgid "Allow submitters to share their proposal publicly"
 msgid "Allow speakers to edit their proposals and profiles"
-msgstr "Einreichende können ihre Einreichung öffentlich teilen"
+msgstr "Einreichende können ihre Einreichungen und Profildaten modifizieren"
 
 #: pretalx/orga/forms/cfp.py:85
 #: pretalx/orga/templates/orga/organiser/team/_form.html:28
@@ -3379,6 +3347,9 @@ msgid ""
 "If disabled, speakers cannot edit their proposals regardless of the proposal "
 "state. This setting overrides the {review_phase_link} for speaker editing."
 msgstr ""
+"Wenn dieser Haken nicht gesetzt ist, können Vortragende ihre Einreichung "
+"nicht editieren, egal, welchen Status sie hat. Diese Einstellung "
+"überschreibt auch die {review_phase_link} fürs Editieren."
 
 #: pretalx/orga/forms/cfp.py:132
 msgid "Do not ask"
@@ -3939,30 +3910,23 @@ msgstr ""
 "frei, um alle Tage anzuzeigen."
 
 #: pretalx/orga/forms/event.py:626
-#, fuzzy
-#| msgid "Limit days"
 msgid "Limit rooms"
-msgstr "Auf bestimmte Tage beschränken"
+msgstr "Auf bestimmte Räume beschränken"
 
 #: pretalx/orga/forms/event.py:631
-#, fuzzy
-#| msgid ""
-#| "You can limit the days shown in the widget. Leave empty to show all days."
 msgid ""
 "You can limit the rooms shown in the widget. Leave empty to show all rooms."
 msgstr ""
-"Sie können das Widget auf bestimmte Tage beschränken. Lassen Sie das Feld "
-"frei, um alle Tage anzuzeigen."
+"Sie können das Widget auf bestimmte Räume beschränken. Lassen Sie das Feld "
+"frei, um alle Räume anzuzeigen."
 
 #: pretalx/orga/forms/event.py:637
 msgid "Widget language"
 msgstr "Widget-Sprache"
 
 #: pretalx/orga/forms/event.py:661
-#, fuzzy
-#| msgid "Can change event settings"
 msgid "Change this in the CfP settings"
-msgstr "Darf Veranstaltungseinstellungen ändern"
+msgstr "In den CfP-Einstellungen ändern"
 
 #: pretalx/orga/forms/event.py:663
 #, python-brace-format
@@ -3970,6 +3934,8 @@ msgid ""
 "Speaker editing is currently disabled at the event level. {link_tag} to "
 "enable speaker editing."
 msgstr ""
+"Das Editieren von Einreichungen ist derzeit auf Veranstaltungsebene "
+"blockiert. {link_tag} um es zu erlauben."
 
 #: pretalx/orga/forms/event.py:675
 msgid "The end of a phase has to be after its start."
@@ -4151,20 +4117,16 @@ msgid "Tags"
 msgstr "Tags"
 
 #: pretalx/orga/forms/review.py:447
-#, fuzzy
-#| msgid "Actions"
 msgid "Action"
-msgstr "Aktionen"
+msgstr "Aktion"
 
 #: pretalx/orga/forms/review.py:449
 msgid "Add tags"
-msgstr ""
+msgstr "Tags hinzufügen"
 
 #: pretalx/orga/forms/review.py:450
-#, fuzzy
-#| msgid "Remove"
 msgid "Remove tags"
-msgstr "Entfernen"
+msgstr "Tags entfernen"
 
 #: pretalx/orga/forms/review.py:465 pretalx/person/models/information.py:57
 #: pretalx/submission/models/resource.py:31
@@ -4315,11 +4277,11 @@ msgstr "Der Endzeitpunkt muss nach dem Beginn liegen."
 
 #: pretalx/orga/forms/submission.py:154
 msgid "You cannot assign a room without setting the start time as well."
-msgstr ""
+msgstr "Wenn Sie einen Raum zuweisen, müssen Sie auch eine Startzeit wählen."
 
 #: pretalx/orga/forms/submission.py:162
 msgid "You cannot set a start time without assigning the room as well."
-msgstr ""
+msgstr "Wenn Sie eine Startzeit wählen, müssen Sie auch einen Raum zuweisen."
 
 #: pretalx/orga/forms/submission.py:299
 msgid "Mark the new state as “pending”"
@@ -4452,10 +4414,8 @@ msgid "Go to pre-filled CfP form"
 msgstr "Zu vorausgefülltem CfP-Formular gehen"
 
 #: pretalx/orga/tables/cfp.py:191
-#, fuzzy
-#| msgid "Default"
 msgid "Make default"
-msgstr "Standard"
+msgstr "Zum Default machen"
 
 #: pretalx/orga/tables/cfp.py:234
 msgid "Responses"
@@ -4500,10 +4460,8 @@ msgstr ""
 
 #: pretalx/orga/tables/speaker.py:83 pretalx/orga/tables/submission.py:38
 #: pretalx/orga/tables/submission.py:179
-#, fuzzy
-#| msgid "GUID"
 msgid "ID"
-msgstr "GUID"
+msgstr "ID"
 
 #: pretalx/orga/tables/speaker.py:97
 msgid "Accepted Proposals"
@@ -4515,20 +4473,16 @@ msgid "Arrived"
 msgstr "Angekommen"
 
 #: pretalx/orga/tables/submission.py:66 pretalx/orga/tables/submission.py:209
-#, fuzzy
-#| msgid "Pending {state}"
 msgid "Pending state"
-msgstr "Als {state} vorgemerkt"
+msgstr "Vorgemerkter Status"
 
 #: pretalx/orga/tables/submission.py:76
 msgid "Featured"
 msgstr "Highlight"
 
 #: pretalx/orga/tables/submission.py:79 pretalx/orga/tables/submission.py:217
-#, fuzzy
-#| msgid "Do not copy"
 msgid "Do not record"
-msgstr "Nicht kopieren"
+msgstr "Nicht aufzeichnen"
 
 #: pretalx/orga/tables/submission.py:137
 msgid "Average"
@@ -4930,10 +4884,8 @@ msgid "Speaker Information"
 msgstr "Informationen für Vortragende"
 
 #: pretalx/orga/templates/orga/base.html:371
-#, fuzzy
-#| msgid "Release schedules as needed"
 msgid "Unreleased schedule changes"
-msgstr "Veröffentlichen Sie weitere Programmversionen"
+msgstr "Unveröffentliche Änderungen am Programm"
 
 #: pretalx/orga/templates/orga/base.html:384 pretalx/orga/views/schedule.py:587
 msgid "Rooms"
@@ -5148,7 +5100,7 @@ msgstr "Zugangscode verschicken"
 
 #: pretalx/orga/templates/orga/cfp/submitteraccesscode/update.html:13
 msgid "This access code was used for the following proposals:"
-msgstr ""
+msgstr "Dieser Zugangscode wurde für die folgenden Einreichungen verwendet:"
 
 #: pretalx/orga/templates/orga/cfp/text.html:32
 msgid ""
@@ -5394,22 +5346,20 @@ msgstr ""
 
 #: pretalx/orga/templates/orga/generic/table.html:16
 #: pretalx/orga/templates/orga/generic/table.html:22
-#, fuzzy
-#| msgid "Upload options"
 msgid "Table options"
-msgstr "Optionen hochladen"
+msgstr "Tabelleneinstellungen"
 
 #: pretalx/orga/templates/orga/generic/table.html:41
 msgid "Add selected columns"
-msgstr ""
+msgstr "Spalten hinzufügen"
 
 #: pretalx/orga/templates/orga/generic/table.html:42
 msgid "Add"
-msgstr ""
+msgstr "Hinzufügen"
 
 #: pretalx/orga/templates/orga/generic/table.html:44
 msgid "Remove selected columns"
-msgstr ""
+msgstr "Spalten entfernen"
 
 #: pretalx/orga/templates/orga/generic/table.html:45
 #: pretalx/orga/templates/orga/submission/speakers.html:88
@@ -5417,20 +5367,16 @@ msgid "Remove"
 msgstr "Entfernen"
 
 #: pretalx/orga/templates/orga/generic/table.html:61
-#, fuzzy
-#| msgid "Move question up"
 msgid "Move selected columns up"
-msgstr "Frage nach oben verschieben"
+msgstr "Spalte nach oben verschieben"
 
 #: pretalx/orga/templates/orga/generic/table.html:62
 msgid "Move up"
 msgstr "Nach oben verschieben"
 
 #: pretalx/orga/templates/orga/generic/table.html:64
-#, fuzzy
-#| msgid "Move question down"
 msgid "Move selected columns down"
-msgstr "Frage nach unten verschieben"
+msgstr "Spalte nach unten verschieben"
 
 #: pretalx/orga/templates/orga/generic/table.html:65
 msgid "Move down"
@@ -5438,7 +5384,7 @@ msgstr "Nach unten verschieben"
 
 #: pretalx/orga/templates/orga/generic/table.html:72
 msgid "Reset to defaults"
-msgstr ""
+msgstr "Zurücksetzen"
 
 #: pretalx/orga/templates/orga/includes/dashboard_block_event.html:18
 #: pretalx/orga/templates/orga/speaker/form.html:28
@@ -5907,10 +5853,8 @@ msgstr "Sie haben keine Einreichungen mehr zu bewerten!"
 
 #: pretalx/orga/templates/orga/review/bulk.html:44
 #: pretalx/orga/templates/orga/review/dashboard.html:62
-#, fuzzy
-#| msgid "Total proposals"
 msgid "Bulk tag proposals"
-msgstr "Einreichungen gesamt"
+msgstr "Einreichungen taggen"
 
 #: pretalx/orga/templates/orga/review/bulk.html:62
 #: pretalx/submission/models/comment.py:34
@@ -5924,15 +5868,17 @@ msgstr "Sie haben noch keine Einreichungen."
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:11
 msgid "Bulk Tagging"
-msgstr ""
+msgstr "Einreichungen taggen"
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:19
 msgid "Select proposals below and add or remove tags in bulk."
 msgstr ""
+"Wählen Sie Einreichungen aus, und wählen Sie anschließend Tags, die "
+"hinzugefügt oder entfernt werden sollen."
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:39
 msgid "Apply"
-msgstr ""
+msgstr "Anwenden"
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:50
 #: pretalx/orga/templates/orga/review/export.html:37
@@ -5947,12 +5893,11 @@ msgstr "Zugangscode"
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:56
 msgid "Current Tags"
-msgstr ""
+msgstr "Aktuelle Tags"
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:91
-#, fuzzy
 msgid "No proposals found matching your filters."
-msgstr "Einreichung wartet auf Ihre Bewertung."
+msgstr "Keine Einreichung für diese Suche gefunden."
 
 #: pretalx/orga/templates/orga/review/dashboard.html:33
 #, python-format
@@ -6648,7 +6593,7 @@ msgstr ""
 
 #: pretalx/orga/templates/orga/submission/review.html:137
 msgid "Non-public resources"
-msgstr ""
+msgstr "Nichtöffentliche Ressourcen"
 
 #: pretalx/orga/templates/orga/submission/review.html:160
 msgid "Other proposals"
@@ -6805,14 +6750,10 @@ msgid "Requires access code"
 msgstr "Zugangscode benötigt"
 
 #: pretalx/orga/templates/orga/tables/columns/timesince.html:9
-#, fuzzy
-#| msgid "Tag"
 msgid "ago"
-msgstr "Tag"
+msgstr "vor"
 
 #: pretalx/orga/templates/orga/tables/review_table.html:38
-#, fuzzy
-#| msgid "Mark the new state as “pending”"
 msgid "Mark the new state as \"pending\""
 msgstr "Neuen Status als „vorgemerkt“ markieren"
 
@@ -6881,7 +6822,7 @@ msgstr "Neues Token anlegen"
 
 #: pretalx/orga/templates/orga/widgets/icon_option.html:21
 msgid "No icon"
-msgstr ""
+msgstr "Kein Logo"
 
 #: pretalx/orga/templates/orga/widgets/multi_languages_widget.html:13
 #, python-format
@@ -7436,22 +7377,18 @@ msgstr ""
 "Für alle {count} Einreichungen konnte der Status nicht angepasst werden."
 
 #: pretalx/orga/views/review.py:506
-#, fuzzy
-#| msgid "A proposal resource was deleted."
 msgid "No proposals were selected."
-msgstr "Eine Ressource wurde gelöscht."
+msgstr "Keine Einreichung war ausgewählt."
 
 #: pretalx/orga/views/review.py:522
-#, fuzzy, python-brace-format
-#| msgid "Changed {count} proposal states."
+#, python-brace-format
 msgid "Added tags to {count} proposals."
-msgstr "{count} Einreichungen wurden angepasst."
+msgstr "{count} Einreichungen wurden getagged."
 
 #: pretalx/orga/views/review.py:527
-#, fuzzy, python-brace-format
-#| msgid "Changed {count} proposal states."
+#, python-brace-format
 msgid "Removed tags from {count} proposals."
-msgstr "{count} Einreichungen wurden angepasst."
+msgstr "Von {count} Einreichungen wurden Tags entfernt."
 
 #: pretalx/orga/views/review.py:757
 msgid "Nice, you have no proposals left to review!"
@@ -7736,10 +7673,8 @@ msgstr ""
 "Gravatar zu laden."
 
 #: pretalx/person/forms/profile.py:259
-#, fuzzy
-#| msgid "Submit sessions for your speakers"
 msgid "Submitters and speakers"
-msgstr "Reichen Sie selber für die Vortragenden ein"
+msgstr "Einreichende und Vortragende"
 
 #: pretalx/person/forms/profile.py:261 pretalx/person/forms/profile.py:314
 msgid "Non-accepted submitters"
@@ -7747,7 +7682,7 @@ msgstr "Nicht angenommene Einreichende"
 
 #: pretalx/person/forms/profile.py:268
 msgid "Any arrival status"
-msgstr ""
+msgstr "Jeder Ankunftsstatus"
 
 #: pretalx/person/forms/profile.py:269
 msgid "Marked as arrived"
@@ -7955,17 +7890,7 @@ msgid "[pretalx] Password changed"
 msgstr "[pretalx] Passwortänderung"
 
 #: pretalx/person/models/user.py:581
-#, fuzzy, python-brace-format
-#| msgid ""
-#| "Hi {name},\n"
-#| "\n"
-#| "Your pretalx account password was just changed.\n"
-#| "\n"
-#| "If you did not change your password, please contact the site "
-#| "administration immediately.\n"
-#| "\n"
-#| "All the best,\n"
-#| "the pretalx team"
+#, python-brace-format
 msgid ""
 "Hi {name},\n"
 "\n"
@@ -7980,19 +7905,18 @@ msgid ""
 msgstr ""
 "Hi {name},\n"
 "\n"
-"Ihr pretalx-Passwort wurde gerade geändert.\n"
+"Die E-Mail-Adresse für Ihr pretalx-Konto wurde gerade von {old_email} zu "
+"{new_email} geändert.\n"
 "\n"
-"Wenn Sie Ihr Passwort gerade *nicht* geändert haben, melden Sie sich bitte "
-"umgehend bei der Administration.\n"
+"Wenn Sie Ihre E-Mail-Adresse gerade *nicht* geändert hast, melden Sie sich "
+"bitte umgehend bei der Administration.\n"
 "\n"
 "Viele Grüße\n"
 "Das pretalx-Team"
 
 #: pretalx/person/models/user.py:593
-#, fuzzy
-#| msgid "[pretalx] Password changed"
 msgid "[pretalx] Email address changed"
-msgstr "[pretalx] Passwortänderung"
+msgstr "[pretalx] E-Mail-Änderung"
 
 #: pretalx/schedule/ascii.py:27
 msgid "No speakers"
@@ -8222,7 +8146,7 @@ msgstr "Japanisch"
 
 #: pretalx/settings.py:419
 msgid "Korean"
-msgstr ""
+msgstr "Koreanisch"
 
 #: pretalx/settings.py:424
 msgid "Dutch"
@@ -8233,8 +8157,6 @@ msgid "Polish"
 msgstr "Polnisch"
 
 #: pretalx/settings.py:434
-#, fuzzy
-#| msgid "Brasilian Portuguese"
 msgid "Brazilian Portuguese"
 msgstr "Brasilianisches Portugiesisch"
 
@@ -8366,7 +8288,7 @@ msgstr ""
 
 #: pretalx/submission/models/access_code.py:70
 msgid "Redeemed"
-msgstr ""
+msgstr "Eingelöst"
 
 #: pretalx/submission/models/cfp.py:95
 msgid "headline"
@@ -8382,7 +8304,7 @@ msgstr "Standardeinreichungsart"
 
 #: pretalx/submission/models/cfp.py:112
 msgid "Opening"
-msgstr ""
+msgstr "Beginn"
 
 #: pretalx/submission/models/cfp.py:114
 msgid ""
@@ -8390,6 +8312,8 @@ msgid ""
 "users.Leave the date empty to start accepting proposals immediately once the "
 "event is live."
 msgstr ""
+"Datum, ab dem Einreichungen möglich sind. Leer lassen, um Einreichungen "
+"zuzulassen, sobald die Veranstaltung öffentlich ist."
 
 #: pretalx/submission/models/cfp.py:123
 msgid "Please put in the last date you want to accept proposals from users."
@@ -8467,46 +8391,39 @@ msgstr "verpflichtend nach Ablauf der Frist"
 
 #: pretalx/submission/models/question.py:119
 msgid "Bluesky"
-msgstr ""
+msgstr "Bluesky"
 
 #: pretalx/submission/models/question.py:120
-#, fuzzy
-#| msgid "Discard"
 msgid "Discord"
-msgstr "Verwerfen"
+msgstr "Discord"
 
 #: pretalx/submission/models/question.py:121
 msgid "GitHub"
-msgstr ""
+msgstr "GitHub"
 
 #: pretalx/submission/models/question.py:122
 msgid "Instagram"
-msgstr ""
+msgstr "Instagram"
 
 #: pretalx/submission/models/question.py:123
-#, fuzzy
-#| msgid "Links"
 msgid "LinkedIn"
-msgstr "Links"
+msgstr "LinkedIn"
 
 #: pretalx/submission/models/question.py:124
 msgid "Mastodon"
-msgstr ""
+msgstr "Mastodon"
 
 #: pretalx/submission/models/question.py:125
-#, fuzzy
-#| msgid "Submitter"
-#| msgid_plural "Submitters"
 msgid "Twitter"
-msgstr "Einreichende"
+msgstr "Twitter"
 
 #: pretalx/submission/models/question.py:126
 msgid "Website"
-msgstr ""
+msgstr "Webseite"
 
 #: pretalx/submission/models/question.py:127
 msgid "YouTube"
-msgstr ""
+msgstr "YouTube"
 
 #: pretalx/submission/models/question.py:183
 msgid "Field type"
@@ -8631,6 +8548,7 @@ msgstr "Antworten öffentlich machen"
 #: pretalx/submission/models/question.py:302
 msgid "Responses will be shown on session or speaker pages as appropriate."
 msgstr ""
+"Antworten werden auf der Einreichungs- bzw. Speaker-Seite angezeigt werden."
 
 #: pretalx/submission/models/question.py:307
 msgid "Show answers to reviewers"
@@ -8647,17 +8565,19 @@ msgstr ""
 
 #: pretalx/submission/models/question.py:318
 msgid "Icon"
-msgstr ""
+msgstr "Logo"
 
 #: pretalx/submission/models/question.py:320
 msgid ""
 "Custom URL fields that are shown publicly can use an icon when displaying "
 "the link."
 msgstr ""
+"URL-Felder, die öffentlich angezeigt werden, können den Link als "
+"Webseitenlogo darstellen."
 
 #: pretalx/submission/models/resource.py:41
 msgid "Publicly visible resource"
-msgstr ""
+msgstr "Öffentlich sichtbare Ressource"
 
 #: pretalx/submission/models/review.py:39
 msgid "Leave empty to use this category for all tracks."
@@ -8843,8 +8763,6 @@ msgid "{title_in_quotes} by {list_of_speakers}"
 msgstr "{title_in_quotes} von {list_of_speakers}"
 
 #: pretalx/submission/models/tag.py:32 pretalx/submission/models/track.py:42
-#, fuzzy
-#| msgid "Color"
 msgid "Colour"
 msgstr "Farbe"
 
@@ -8917,22 +8835,22 @@ msgid "not accepted"
 msgstr "abgelehnt"
 
 msgid "Expanded View"
-msgstr ""
+msgstr "Erweiterte Ansicht"
 
 msgid "Condensed View"
-msgstr ""
+msgstr "Komprimierte Ansicht"
 
 msgid "Unscheduled sessions"
 msgstr ""
 
 msgid "Availabilities"
-msgstr ""
+msgstr "Verfügbarkeiten"
 
 msgid "Unschedule"
 msgstr ""
 
 msgid "Copy to other rooms"
-msgstr ""
+msgstr "Zu restlichen Räumen kopieren"
 
 #~ msgid "Changelog"
 #~ msgstr "Historie"
