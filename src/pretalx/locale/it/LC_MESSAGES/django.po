@@ -5,15 +5,15 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-06-12 14:01+0000\n"
-"PO-Revision-Date: 2025-06-20 14:07+0000\n"
-"Last-Translator: albanobattistella <albano_battistella@hotmail.com>\n"
+"PO-Revision-Date: 2025-11-05 15:50+0000\n"
+"Last-Translator: Stefano De Carlo <stefanauss@gmail.com>\n"
 "Language-Team: none\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.9.2\n"
+"X-Generator: Weblate 5.12.2\n"
 
 #: pretalx/agenda/phrases.py:8
 msgid "Thank you for your feedback!"
@@ -4591,9 +4591,8 @@ msgid "Users"
 msgstr "Utenti"
 
 #: pretalx/orga/templates/orga/admin/user_list.html:20
-#, fuzzy
 msgid "Search users by name or email address"
-msgstr "Indirizzo email dell'utente destinatario"
+msgstr "Ricerca gli utenti per nome o indirizzo email"
 
 #: pretalx/orga/templates/orga/admin/user_list.html:32
 #: pretalx/orga/templates/orga/base.html:221
@@ -7440,10 +7439,8 @@ msgstr ""
 "cancellati e non potranno essere recuperati."
 
 #: pretalx/orga/views/mails.py:48
-#, fuzzy
 msgid "You cannot send emails at this time."
-msgstr ""
-"Non puoi ancora fornire feedback per questa sessione in questo momento."
+msgstr "Non è possibile inviare email in questo momento."
 
 #: pretalx/orga/views/mails.py:147 pretalx/orga/views/mails.py:131
 #, python-brace-format
