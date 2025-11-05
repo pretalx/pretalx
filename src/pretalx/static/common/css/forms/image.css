@@ -27,11 +27,18 @@
       #efefef
     );
   border-radius: 6px;
+  a {
+    width: 180px;
+    height: 180px;
+    display: block;
+    overflow: hidden;
+  }
   img {
     border-radius: 6px;
-    max-width: 100%;
-    height: auto;
+    width: 100%;
+    height: 100%;
     box-shadow: var(--shadow-light);
+    object-fit: cover;
   }
 }
 .form-image-initial {
