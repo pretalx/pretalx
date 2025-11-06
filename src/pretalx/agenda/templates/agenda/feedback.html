@@ -34,6 +34,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
                 <i class="fa fa-quote-left quote" aria-hidden="true"></i>
                 <div class="feedback-text">
+                    <span class="text-muted float-right">
+                        {{ opinion.created|date:"SHORT_DATETIME_FORMAT" }}
+                    </span>
                     {{ opinion.rating|stars }}
                     {{ opinion.review|rich_text }}
                 </div>

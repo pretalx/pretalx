@@ -21,6 +21,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% for entry in feedback %}
         <div class="card mb-2">
             <div class="card-body pb-0">
+                <span class="text-muted float-right">
+                    {{ entry.created|date:"SHORT_DATETIME_FORMAT" }}
+                </span>
                 {{ entry.rating|stars }}
                 {{ entry.review|rich_text }}
             </div>
