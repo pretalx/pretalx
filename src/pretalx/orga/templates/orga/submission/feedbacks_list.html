@@ -35,6 +35,9 @@ SPDX-FileContributor: michalpirchala
             {% if can_see_feedback %}
                 <div class="card mb-2">
                     <div class="card-body pb-0">
+                        <span class="text-muted float-right">
+                            {{ entry.created|date:"SHORT_DATETIME_FORMAT" }}
+                        </span>
                         {{ entry.rating|stars }}
                         {{ entry.review|rich_text }}
                     </div>
