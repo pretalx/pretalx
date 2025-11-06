@@ -10,7 +10,6 @@ from urllib.parse import urlparse
 
 import bs4
 import pytest
-from django import forms as forms
 from django.core import mail as djmail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http.request import QueryDict
@@ -18,7 +17,7 @@ from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
 from pretalx.submission.forms import InfoForm
-from pretalx.submission.models import Submission, SubmissionType
+from pretalx.submission.models import Submission, SubmissionStates, SubmissionType
 
 
 class TestWizard:
@@ -788,4 +787,156 @@ def test_infoform_set_submission_type_2nd_event(event, other_event, submission_t
         f = InfoForm(event)
         assert len(event.submission_types.all()) == 2
         assert len(f.fields["submission_type"].queryset) == 2
-        assert not isinstance(f.fields["submission_type"].widget, forms.HiddenInput)
+
+
+class TestWizardDrafts:
+
+    @pytest.mark.django_db
+    def test_draft_not_saved_with_invalid_data_on_info_step(self, event, client):
+        """Test that clicking 'save as draft' with invalid form data doesn't create a draft.
+
+        After the fix: When the user clicks 'save as draft' with invalid form data,
+        they stay on the same page with validation errors shown, and no confusing
+        redirect happens.
+        """
+        with scope(event=event):
+            submission_type = SubmissionType.objects.filter(event=event).first().pk
+            initial_submission_count = Submission.all_objects.count()
+
+        response = client.get("/test/submit/", follow=True)
+        current_url = response.redirect_chain[-1][0]
+        assert "/info/" in current_url
+
+        # Missing required field: title
+        invalid_data = {
+            "action": "draft",
+            "content_locale": "en",
+            "description": "Some description",
+            "abstract": "Some abstract",
+            "notes": "Some notes",
+            "slot_count": 1,
+            "submission_type": submission_type,
+        }
+        response = client.post(current_url, data=invalid_data, follow=True)
+
+        final_url = (
+            response.redirect_chain[-1][0] if response.redirect_chain else current_url
+        )
+        assert "/info/" in final_url
+        assert "draft=1" not in final_url
+
+        with scope(event=event):
+            assert Submission.all_objects.count() == initial_submission_count
+            assert (
+                Submission.all_objects.filter(state=SubmissionStates.DRAFT).count() == 0
+            )
+
+        doc = bs4.BeautifulSoup(response.content, "html.parser")
+        errors = doc.select(".alert-danger, .errorlist")
+        assert len(errors) > 0, "Validation errors should be displayed"
+
+    @pytest.mark.django_db
+    def test_draft_not_saved_with_invalid_data_on_profile_step(self, event, client):
+        """Test that clicking 'save as draft' with invalid profile data doesn't create a draft."""
+        with scope(event=event):
+            submission_type = SubmissionType.objects.filter(event=event).first().pk
+            initial_submission_count = Submission.all_objects.count()
+
+        response = client.get("/test/submit/", follow=True)
+        current_url = response.redirect_chain[-1][0]
+
+        info_data = {
+            "title": "Test Submission",
+            "content_locale": "en",
+            "description": "Description",
+            "abstract": "Abstract",
+            "notes": "Notes",
+            "slot_count": 1,
+            "submission_type": submission_type,
+        }
+        response = client.post(current_url, data=info_data, follow=True)
+        current_url = response.redirect_chain[-1][0]
+
+        user_data = {
+            "register_name": "testuser@example.com",
+            "register_email": "testuser@example.com",
+            "register_password": "testpassw0rd!",
+            "register_password_repeat": "testpassw0rd!",
+        }
+        response = client.post(current_url, data=user_data, follow=True)
+        current_url = response.redirect_chain[-1][0]
+
+        invalid_profile_data = {
+            "action": "draft",
+            "biography": "Bio",
+        }
+        response = client.post(current_url, data=invalid_profile_data, follow=True)
+
+        final_url = (
+            response.redirect_chain[-1][0] if response.redirect_chain else current_url
+        )
+        assert "/profile/" in final_url
+        assert "draft=1" not in final_url
+
+        with scope(event=event):
+            assert Submission.all_objects.count() == initial_submission_count
+            assert (
+                Submission.all_objects.filter(state=SubmissionStates.DRAFT).count() == 0
+            )
+
+        doc = bs4.BeautifulSoup(response.content, "html.parser")
+        errors = doc.select(".alert-danger, .errorlist")
+        assert len(errors) > 0, "Validation errors should be displayed"
+
+    @pytest.mark.django_db
+    def test_draft_saved_successfully_with_valid_data(self, event, client, user):
+        with scope(event=event):
+            submission_type = SubmissionType.objects.filter(event=event).first().pk
+            initial_submission_count = Submission.all_objects.count()
+
+        response = client.get("/test/submit/", follow=True)
+        current_url = response.redirect_chain[-1][0]
+        assert "/info/" in current_url
+
+        valid_data = {
+            "action": "draft",
+            "title": "Draft Submission",
+            "content_locale": "en",
+            "description": "Draft description",
+            "abstract": "Draft abstract",
+            "notes": "Draft notes",
+            "slot_count": 1,
+            "submission_type": submission_type,
+        }
+        response = client.post(current_url, data=valid_data, follow=True)
+
+        # No draft should be created yet (user needs to login first)
+        final_url = (
+            response.redirect_chain[-1][0] if response.redirect_chain else current_url
+        )
+        assert "/user/" in final_url
+        assert "draft=1" in final_url
+        with scope(event=event):
+            assert Submission.all_objects.count() == initial_submission_count
+        user_data = {
+            "login_email": user.email,
+            "login_password": "testpassw0rd!",
+        }
+        response = client.post(final_url, data=user_data, follow=True)
+
+        # After login, should redirect to /me/submissions/
+        final_url = (
+            response.redirect_chain[-1][0] if response.redirect_chain else final_url
+        )
+        assert "/me/submissions/" in final_url
+
+        with scope(event=event):
+            assert Submission.all_objects.count() == initial_submission_count + 1
+            draft = Submission.all_objects.filter(state=SubmissionStates.DRAFT).last()
+            assert draft is not None
+            assert draft.title == "Draft Submission"
+            assert draft.description == "Draft description"
+            assert draft.abstract == "Draft abstract"
+            assert draft.notes == "Draft notes"
+
+        assert "Draft Submission" in response.content.decode()

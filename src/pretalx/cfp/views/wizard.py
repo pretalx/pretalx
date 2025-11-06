@@ -65,7 +65,17 @@ class SubmitWizard(EventPageMixin, View):
         handler = getattr(step, request.method.lower(), self.http_method_not_allowed)
         result = handler(request)
 
-        if request.method == "POST" and request.POST.get("action", "submit") == "draft":
+        if request.method == "POST" and (
+            request.POST.get("action", "submit") == "draft"
+            or (step.identifier == "user" and request.GET.get("draft") == "1")
+        ):
+            # Check if the current step is valid before saving as draft
+            # If the form is invalid, the handler already displayed errors and returned
+            # the form page, so we should return that result instead of trying to save
+            step.request = request
+            if not step.is_completed(request):
+                # Form is invalid, return the error page that was already rendered by the handler
+                return result
             return self.done(
                 request,
                 draft=True,
