@@ -175,7 +175,7 @@ class CSVExporterMixin:
     content_type = "text/plain"
 
     def get_data(self, request, **kwargs):
-        fieldnames, data = self.get_data(request, **kwargs)
+        fieldnames, data = self.get_csv_data(request, **kwargs)
         output = StringIO()
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
