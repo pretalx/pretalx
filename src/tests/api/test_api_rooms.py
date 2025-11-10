@@ -198,7 +198,10 @@ def test_orga_can_update_rooms(client, orga_user_write_token, event, room):
     with scope(event=room.event):
         room.refresh_from_db()
         assert room.name == "newtestroom"
-        assert room.logged_actions().filter(action_type="pretalx.room.update").exists()
+        action = room.logged_actions().get(action_type="pretalx.room.update")
+        assert action.data["changes"] == {
+            "name": {"old": "Testroom", "new": "newtestroom"}
+        }
 
 
 @pytest.mark.django_db

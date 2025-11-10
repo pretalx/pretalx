@@ -59,8 +59,22 @@ class PretalxViewSetMixin:
         serializer.instance.log_action(".create", person=self.request.user, orga=True)
 
     def perform_update(self, serializer):
+        old_data = None
+        if hasattr(serializer.instance, "_get_instance_data"):
+            old_data = serializer.instance._get_instance_data()
+
         super().perform_update(serializer)
-        serializer.instance.log_action(".update", person=self.request.user, orga=True)
+
+        new_data = None
+        if hasattr(serializer.instance, "_get_instance_data"):
+            new_data = serializer.instance._get_instance_data()
+
+        log_kwargs = {"person": self.request.user, "orga": True}
+        if old_data is not None and new_data is not None:
+            log_kwargs["old_data"] = old_data
+            log_kwargs["new_data"] = new_data
+
+        serializer.instance.log_action(".update", **log_kwargs)
 
     @cached_property
     def event(self):

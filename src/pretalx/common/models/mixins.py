@@ -3,6 +3,8 @@
 
 from contextlib import suppress
 
+from django.db import models
+from i18nfield.fields import I18nCharField, I18nTextField
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, models
 from django.utils.crypto import get_random_string
@@ -31,7 +33,14 @@ class LogMixin:
     log_parent = None
 
     def log_action(
-        self, action, data=None, person=None, orga=False, content_object=None
+        self,
+        action,
+        data=None,
+        person=None,
+        orga=False,
+        content_object=None,
+        old_data=None,
+        new_data=None,
     ):
         if not self.pk or not isinstance(self.pk, int):
             return
@@ -41,6 +50,15 @@ class LogMixin:
                 action = f"{self.log_prefix}{action}"
             else:
                 return
+
+        if old_data is not None and new_data is not None:
+            changes = self._compute_changes(old_data, new_data)
+            if not changes and not data:
+                return
+            if changes:
+                if data is None:
+                    data = {}
+                data["changes"] = changes
 
         if data:
             if not isinstance(data, dict):
@@ -62,6 +80,47 @@ class LogMixin:
             data=data,
             is_orga_action=orga,
         )
+
+    def _compute_changes(self, old_data, new_data):
+        all_keys = set(old_data.keys()) | set(new_data.keys())
+        changes = {}
+
+        for key in all_keys:
+            old_value = old_data.get(key)
+            new_value = new_data.get(key)
+            if old_value != new_value:
+                changes[key] = {"old": old_value, "new": new_value}
+
+        return changes
+
+    def _get_instance_data(self):
+        """Get a dictionary of field values for this instance.
+
+        Used for change tracking in log_action. Excludes auto-updated
+        fields like timestamps and sensitive data.
+        Does not handle many-to-many fields.
+        """
+        excluded_fields = {"created", "updated"}
+        data = {}
+
+        for field in self._meta.fields:
+            if field.name in excluded_fields or field.name in SENSITIVE_KEYS:
+                continue
+
+            if getattr(field, "auto_now", False) or getattr(field, "auto_now_add", False):
+                continue
+
+            value = getattr(self, field.name, None)
+
+            if isinstance(field, (I18nCharField, I18nTextField)) and hasattr(value, "data"):
+                data[field.name] = value.data
+            elif isinstance(field, models.ForeignKey) and value is not None:
+                data[field.name] = value.pk
+            elif isinstance(field, models.FileField) and value:
+                data[field.name] = value.name
+            else:
+                data[field.name] = value
+        return data
 
     def logged_actions(self):
         from pretalx.common.models import ActivityLog
