@@ -40,7 +40,8 @@ class ActivityLog(models.Model):
     content_object = GenericForeignKey("content_type", "object_id")
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     action_type = models.CharField(max_length=200)
-    data = models.TextField(null=True, blank=True)
+    legacy_data = models.TextField(null=True, blank=True)
+    data = models.JSONField(null=True, blank=True, default=dict)
     is_orga_action = models.BooleanField(default=False)
 
     objects = ScopedManager(event="event")
@@ -56,9 +57,11 @@ class ActivityLog(models.Model):
 
     @cached_property
     def json_data(self):
-        if self.data:
+        if self.data is not None:
+            return self.data
+        if self.legacy_data:
             with suppress(json.JSONDecodeError):
-                return json.loads(self.data)
+                return json.loads(self.legacy_data)
         return {}
 
     @cached_property
