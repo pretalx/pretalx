@@ -472,7 +472,7 @@ class SubmissionContent(
         return True
 
     def get_permission_required(self):
-        if "code" in self.kwargs:
+        if self.action != "create":
             return ["submission.orga_list_submission"]
         return ["submission.create_submission"]
 
