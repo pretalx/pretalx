@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import json
 from contextlib import suppress
 
 from django.contrib.contenttypes.models import ContentType
@@ -10,7 +9,6 @@ from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager, scopes_disabled
-from i18nfield.utils import I18nJSONEncoder
 from rules.contrib.models import RulesModelBase, RulesModelMixin
 
 SENSITIVE_KEYS = ["password", "secret", "api_key"]
@@ -44,16 +42,15 @@ class LogMixin:
             else:
                 return
 
-        if data and isinstance(data, dict):
+        if data:
+            if not isinstance(data, dict):
+                raise TypeError(
+                    f"Logged data should always be a dictionary, not {type(data)}."
+                )
             for key, value in data.items():
                 if any(sensitive_key in key for sensitive_key in SENSITIVE_KEYS):
                     value = data[key]
                     data[key] = "********" if value else value
-            data = json.dumps(data, cls=I18nJSONEncoder)
-        elif data:
-            raise TypeError(
-                f"Logged data should always be a dictionary, not {type(data)}."
-            )
 
         from pretalx.common.models import ActivityLog
 
