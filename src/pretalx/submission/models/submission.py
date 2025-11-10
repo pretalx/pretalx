@@ -1187,11 +1187,9 @@ class Submission(GenerateCode, PretalxModel):
     def remove_favourite(self, user):
         SubmissionFavourite.objects.filter(user=user, submission=self).delete()
 
-    def log_action(
-        self, action, data=None, person=None, orga=False, content_object=None
-    ):
+    def log_action(self, action, data=None, **kwargs):
         if self.state != SubmissionStates.DRAFT:
-            return super().log_action(action, data, person, orga, content_object)
+            return super().log_action(action=action, data=data, **kwargs)
 
 
 class SubmissionFavourite(PretalxModel):
