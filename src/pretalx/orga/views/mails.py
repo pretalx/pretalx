@@ -24,7 +24,6 @@ from pretalx.common.views.generic import (
 )
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
-    ActionFromUrl,
     EventPermissionRequired,
     Filterable,
     PermissionRequired,
@@ -310,7 +309,7 @@ class OutboxPurge(ActionConfirmMixin, OutboxList):
         return redirect(self.request.event.orga_urls.outbox)
 
 
-class MailDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
+class MailDetail(PermissionRequired, CreateOrUpdateView):
     model = QueuedMail
     form_class = MailDetailForm
     template_name = "orga/mails/outbox_form.html"

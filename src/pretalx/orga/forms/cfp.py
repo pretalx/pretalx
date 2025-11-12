@@ -77,8 +77,7 @@ class CfPSettingsForm(
     )
 
     def __init__(self, *args, obj, **kwargs):
-        # added in ActionFromUrl view mixin, but not needed here.
-        kwargs.pop("read_only")
+        kwargs.pop("read_only", None)
         self.instance = obj
         super().__init__(*args, **kwargs)
 

@@ -33,7 +33,6 @@ from pretalx.common.views import CreateOrUpdateView
 from pretalx.common.views.generic import OrgaCRUDView, OrgaTableMixin, get_next_url
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
-    ActionFromUrl,
     EventPermissionRequired,
     PaginationMixin,
     PermissionRequired,
@@ -327,7 +326,7 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
 
 
 class SubmissionContent(
-    ActionFromUrl, ReviewerSubmissionFilter, SubmissionViewMixin, CreateOrUpdateView
+    ReviewerSubmissionFilter, SubmissionViewMixin, CreateOrUpdateView
 ):
     model = Submission
     form_class = SubmissionForm
