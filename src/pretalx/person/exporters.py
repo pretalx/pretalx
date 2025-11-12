@@ -19,7 +19,7 @@ class CSVSpeakerExporter(CSVExporterMixin, BaseExporter):
     def verbose_name(self):
         return _("Speaker CSV")
 
-    def get_csv_data(self, **kwargs):
+    def get_csv_data(self, request, **kwargs):
         fieldnames = ["name", "email", "confirmed"]
         data = []
         for speaker in self.event.submitters:
