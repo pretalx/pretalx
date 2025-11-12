@@ -33,6 +33,7 @@ from pretalx.cfp.signals import cfp_steps
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.language import language
 from pretalx.common.text.phrases import phrases
+from pretalx.common.text.serialize import json_roundtrip
 from pretalx.person.forms import SpeakerProfileForm, UserForm
 from pretalx.person.models import User
 from pretalx.submission.forms import InfoForm, QuestionsForm
@@ -640,7 +641,7 @@ class CfPFlow:
             for key, value in steps.items():
                 config["steps"][key] = self._get_step_config_from_data(value)
         if json_compat:
-            config = json.loads(json.dumps(config, cls=I18nJSONEncoder))
+            config = json_roundtrip(config)
         return config
 
     def get_editor_config(self, json_compat=False):
@@ -683,7 +684,7 @@ class CfPFlow:
                 }
             )
         if json_compat:
-            steps = json.loads(json.dumps(steps, cls=I18nJSONEncoder))
+            config = json_roundtrip(config)
         return steps
 
     def get_config_json(self):
