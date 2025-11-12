@@ -150,3 +150,9 @@ class SpeakerProfile(PretalxModel):
     def avatar_url(self):
         if self.event.cfp.request_avatar:
             return self.user.get_avatar_url(event=self.event)
+
+    def _get_instance_data(self):
+        data = {}
+        if self.pk:
+            data = {"name": self.user.name, "email": self.user.email}
+        return super()._get_instance_data() | data

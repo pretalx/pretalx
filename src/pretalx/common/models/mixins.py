@@ -9,6 +9,7 @@ from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager, scopes_disabled
+from i18nfield.strings import LazyI18nString
 from rules.contrib.models import RulesModelBase, RulesModelMixin
 
 from pretalx.common.text.serialize import json_roundtrip
@@ -114,12 +115,17 @@ class LogMixin:
 
             value = getattr(self, field.name, None)
 
-            if isinstance(field, models.ForeignKey) and value is not None:
-                data[field.name] = value.pk
-            elif isinstance(field, models.FileField) and value:
-                data[field.name] = value.name
-            elif isinstance(field, models.UUIDField) and value:
-                data[field.name] = str(value)
+            if isinstance(field, models.ForeignKey):
+                data[field.name] = value.pk if value else None
+            elif isinstance(field, models.FileField):
+                data[field.name] = value.name if value else None
+            elif isinstance(field, models.UUIDField):
+                data[field.name] = str(value) if value else None
+            elif isinstance(value, LazyI18nString):
+                if isinstance(getattr(value, "data", None), dict):
+                    data[field.name] = {k: v for k, v in value.data.items() if v}
+                else:
+                    data[field.name] = str(value)
             else:
                 data[field.name] = json_roundtrip(value)
         return data

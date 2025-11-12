@@ -684,7 +684,7 @@ class CfPFlow:
                 }
             )
         if json_compat:
-            config = json_roundtrip(config)
+            steps = json_roundtrip(steps)
         return steps
 
     def get_config_json(self):

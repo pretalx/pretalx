@@ -77,7 +77,6 @@ class CfPSettingsForm(
     )
 
     def __init__(self, *args, obj, **kwargs):
-        kwargs.pop("read_only", None)
         self.instance = obj
         super().__init__(*args, **kwargs)
 

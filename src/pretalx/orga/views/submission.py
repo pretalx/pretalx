@@ -330,6 +330,7 @@ class SubmissionContent(
 ):
     model = Submission
     form_class = SubmissionForm
+    read_only_form_class = True
     template_name = "orga/submission/content.html"
     permission_required = "submission.orga_list_submission"
     extra_forms_signal = "pretalx.orga.signals.submission_form"
@@ -765,12 +766,15 @@ class SubmissionHistory(SubmissionViewMixin, ListView):
         return self.request.event
 
 
-class SubmissionFeed(PermissionRequired, Feed):
+class SubmissionFeed(Feed):
     permission_required = "submission.orga_list_submission"
     feed_type = feedgenerator.Atom1Feed
 
     def get_object(self, request, *args, **kwargs):
-        return request.event
+        event = request.event
+        if not request.user.has_perm("submission.orga_list_submission", event):
+            raise Http404()
+        return event
 
     def title(self, obj):
         return _("{name} proposal feed").format(name=obj.name)

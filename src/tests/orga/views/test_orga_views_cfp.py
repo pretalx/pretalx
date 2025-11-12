@@ -88,9 +88,9 @@ def test_edit_cfp_flow_shows_in_frontend(orga_client, event):
     with scope(event=event):
         new_config = event.cfp_flow.get_editor_config(json_compat=True)
 
-    new_config[0]["title"]["en"] = "TEST CFP WOO"
-    new_config[0]["text"]["en"] = "PLS SUBMIT HERE THX"
-    new_config[0]["fields"][0]["help_text"]["en"] = "titles are hard, y'know"
+    new_config[0]["title"] = "TEST CFP WOO"
+    new_config[0]["text"] = "PLS SUBMIT HERE THX"
+    new_config[0]["fields"][0]["help_text"] = "titles are hard, y'know"
     response = orga_client.post(
         event.cfp.urls.editor,
         new_config,
