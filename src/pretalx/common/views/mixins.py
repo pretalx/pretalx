@@ -20,7 +20,7 @@ from formtools.wizard.forms import ManagementForm
 from rules.contrib.views import PermissionRequiredMixin
 
 from pretalx.common.forms import SearchForm
-from pretalx.common.forms.mixins import PretalxI18nModelForm
+from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, back_button
 
@@ -114,6 +114,7 @@ class Filterable:
 class PermissionRequired(PermissionRequiredMixin):
     write_permission_required = None
     create_permission_required = None
+    read_only_form_class = False
 
     @cached_property
     def object(self):
@@ -128,7 +129,8 @@ class PermissionRequired(PermissionRequiredMixin):
     @context
     @cached_property
     def action(self):
-        if not any(_id in self.kwargs for _id in ("pk", "code")):
+        kwargs = getattr(self, "kwargs", None)
+        if kwargs and not any(_id in self.kwargs for _id in ("pk", "code")):
             if self._check_permission(
                 self.create_permission_required or self.write_permission_required
             ):
@@ -140,7 +142,9 @@ class PermissionRequired(PermissionRequiredMixin):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs["read_only"] = self.action == "view"
+        cls = self.get_form_class()
+        if self.read_only_form_class or issubclass(cls, ReadOnlyFlag):
+            kwargs["read_only"] = self.action == "view"
         event = getattr(self.request, "event", None)
         if event and issubclass(self.form_class, PretalxI18nModelForm):
             kwargs["locales"] = event.locales

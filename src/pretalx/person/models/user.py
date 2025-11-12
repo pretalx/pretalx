@@ -27,6 +27,7 @@ from django.utils.translation import override
 from django_scopes import scopes_disabled
 from rest_framework.authtoken.models import Token
 from rules.contrib.models import RulesModelBase, RulesModelMixin
+from i18nfield.utils import I18nJSONEncoder
 
 from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.image import create_thumbnail
@@ -289,7 +290,7 @@ class User(
         from pretalx.common.models import ActivityLog
 
         if data:
-            data = json.dumps(data)
+            data = json.dumps(data, cls=I18nJSONEncoder)
 
         ActivityLog.objects.create(
             person=person or self,

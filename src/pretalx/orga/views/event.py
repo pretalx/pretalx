@@ -705,8 +705,8 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
             event.log_action(
                 "pretalx.event.create",
                 person=self.request.user,
-                data=logdata,
                 orga=True,
+                new_data=logdata,
             )
 
             if steps["copy"] and steps["copy"]["copy_from_event"]:

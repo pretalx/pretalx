@@ -4,12 +4,11 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.forms.mixins import ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.submission.models import Feedback
 
 
-class FeedbackForm(ReadOnlyFlag, forms.ModelForm):
+class FeedbackForm(forms.ModelForm):
     default_renderer = InlineFormRenderer
 
     def __init__(self, talk, **kwargs):
