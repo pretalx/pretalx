@@ -103,6 +103,38 @@ class QuestionsForm(CfPFormMixin, QuestionFieldsMixin, forms.Form):
             if field.question.target == QuestionTarget.SUBMISSION
         ]
 
+    def serialize_answers(self):
+        data = {}
+        for key, field in self.fields.items():
+            if question := getattr(field, "question", None):
+                key = f"question-{question.pk}"
+                if hasattr(field, "answer") and field.answer:
+                    data[key] = field.answer.answer_string
+                else:
+                    data[key] = None
+        return data
+
     def save(self):
+        parent_object = None
+        if self.target_type == QuestionTarget.SUBMISSION:
+            parent_object = self.submission
+        elif self.target_type == QuestionTarget.SPEAKER:
+            parent_object = self.speaker
+        elif self.target_type == QuestionTarget.REVIEWER:
+            parent_object = self.review
+
+        old_data = self.serialize_answers()
+
         for key, value in self.cleaned_data.items():
             self.save_questions(key, value)
+
+        new_data = self.serialize_answers()
+
+        if parent_object and (old_data or new_data):
+            parent_object.log_action(
+                "pretalx.question.answer.update",
+                person=getattr(self, "user", None),
+                orga=getattr(self, "is_orga", False),
+                old_data=old_data,
+                new_data=new_data,
+            )

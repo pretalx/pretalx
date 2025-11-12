@@ -258,12 +258,37 @@ class AnswerViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
         return self.serializer_class
 
     def perform_create(self, serializer):
+        old_answer_value = None
+        existing_answer = Answer.objects.filter(
+            question=serializer.validated_data["question"],
+            review=serializer.validated_data.get("review"),
+            submission=serializer.validated_data.get("submission"),
+            person=serializer.validated_data.get("person"),
+        ).first()
+
+        if existing_answer:
+            old_answer_value = existing_answer.answer_string
+
         # We don't want duplicate answers
-        answer, _ = Answer.objects.update_or_create(
+        answer, created = Answer.objects.update_or_create(
             question=serializer.validated_data["question"],
             review=serializer.validated_data.get("review"),
             submission=serializer.validated_data.get("submission"),
             person=serializer.validated_data.get("person"),
             defaults={"answer": serializer.validated_data["answer"]},
         )
+
+        new_answer_value = answer.answer_string
+        if created or old_answer_value != new_answer_value:
+            question = answer.question
+            key = f"question-{question.pk}"
+
+            answer.log_parent.log_action(
+                "pretalx.question.answer.update",
+                person=self.request.user,
+                orga=True,
+                old_data={key: old_answer_value} if old_answer_value else None,
+                new_data={key: new_answer_value},
+            )
+
         return answer

@@ -30,6 +30,7 @@ from formtools.wizard.views import SessionWizardView
 from pretalx.common.forms import I18nEventFormSet
 from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
+from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import Button, delete_link
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
@@ -706,7 +707,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                 "pretalx.event.create",
                 person=self.request.user,
                 orga=True,
-                new_data=logdata,
+                new_data=json_roundtrip(logdata),
             )
 
             if steps["copy"] and steps["copy"]["copy_from_event"]:

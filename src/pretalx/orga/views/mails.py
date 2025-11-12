@@ -413,6 +413,7 @@ class ComposeMailChoice(EventPermissionRequired, TemplateView):
 
 class ComposeMailBaseView(EventPermissionRequired, FormView):
     permission_required = "mail.send_queuedmail"
+    write_permission_required = "mail.send_queuedmail"
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

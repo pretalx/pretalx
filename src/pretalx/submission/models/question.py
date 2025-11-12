@@ -506,7 +506,11 @@ class Answer(PretalxModel):
 
     @property
     def log_parent(self):
-        return self.event
+        if self.question.target == QuestionTarget.SUBMISSION:
+            return self.submission
+        if self.question.target == QuestionTarget.REVIEWER:
+            return self.review
+        return self.person.event_profile(self.event)
 
     def __str__(self):
         """Help when debugging."""
