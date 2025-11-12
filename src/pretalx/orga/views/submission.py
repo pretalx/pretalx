@@ -334,6 +334,7 @@ class SubmissionContent(
     template_name = "orga/submission/content.html"
     permission_required = "submission.orga_list_submission"
     extra_forms_signal = "pretalx.orga.signals.submission_form"
+    messages = {"update": _("The proposal has been updated!")}
 
     @cached_property
     def object(self):
@@ -488,17 +489,18 @@ class SubmissionContent(
 
     @transaction.atomic()
     def form_valid(self, form):
-        created = not self.object
+        created = not form.instance.pk
         speaker_form = self.new_speaker_form
         if speaker_form and not speaker_form.is_valid():
             return self.form_invalid(form)
         self.object = form.instance
-        self._questions_form.submission = self.object
+        self._questions_form.submission = form.instance
         if not self._questions_form.is_valid():
             messages.error(self.request, phrases.base.error_saving_changes)
             return self.get(self.request, *self.args, **self.kwargs)
+
         form.instance.event = self.request.event
-        form.save()
+        result = super().form_valid(form)
         self._questions_form.save()
 
         if created and speaker_form and (email := speaker_form.cleaned_data["email"]):
@@ -512,12 +514,9 @@ class SubmissionContent(
             formset_result = self.save_formset(form.instance)
             if not formset_result:
                 return self.get(self.request, *self.args, **self.kwargs)
-            messages.success(self.request, _("The proposal has been updated!"))
         if form.has_changed():
-            action = "pretalx.submission." + ("create" if created else "update")
-            form.instance.log_action(action, person=self.request.user, orga=True)
             self.request.event.cache.set("rebuild_schedule_export", True, None)
-        return super().form_valid(form)
+        return result
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

@@ -402,6 +402,8 @@ def test_orga_can_edit_submission(orga_client, event, accepted_submission):
     with scope(event=event):
         assert event.submissions.count() == 1
         assert accepted_submission.slots.count() == 1
+        old_title = accepted_submission.title
+        initial_log_count = accepted_submission.logged_actions().count()
 
     response = orga_client.post(
         accepted_submission.orga_urls.base,
@@ -427,6 +429,15 @@ def test_orga_can_edit_submission(orga_client, event, accepted_submission):
         assert event.submissions.count() == 1
         assert accepted_submission.slot_count == 2
         assert accepted_submission.slots.count() == 2
+
+        logs = accepted_submission.logged_actions()
+        assert logs.count() > initial_log_count
+        update_log = logs.filter(action_type="pretalx.submission.update").first()
+        assert update_log is not None
+        assert "changes" in update_log.json_data
+        assert "title" in update_log.json_data["changes"]
+        assert update_log.json_data["changes"]["title"]["old"] == old_title
+        assert update_log.json_data["changes"]["title"]["new"] == "title"
 
 
 @pytest.mark.django_db

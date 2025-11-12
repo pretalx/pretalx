@@ -3,14 +3,13 @@
 
 from contextlib import suppress
 
-from django.db import models
-from i18nfield.fields import I18nCharField, I18nTextField
 from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError, models
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager, scopes_disabled
+from i18nfield.fields import I18nCharField, I18nTextField
 from rules.contrib.models import RulesModelBase, RulesModelMixin
 
 SENSITIVE_KEYS = ["password", "secret", "api_key"]
@@ -107,17 +106,24 @@ class LogMixin:
             if field.name in excluded_fields or field.name in SENSITIVE_KEYS:
                 continue
 
-            if getattr(field, "auto_now", False) or getattr(field, "auto_now_add", False):
+            if getattr(field, "auto_now", False) or getattr(
+                field, "auto_now_add", False
+            ):
                 continue
 
             value = getattr(self, field.name, None)
 
-            if isinstance(field, (I18nCharField, I18nTextField)) and hasattr(value, "data"):
-                data[field.name] = value.data
+            if isinstance(field, (I18nCharField, I18nTextField)):
+                if isinstance(getattr(value, "data", None), dict):
+                    data[field.name] = {k: v for k, v in value.data.items() if v}
+                else:
+                    data[field.name] = str(value.data)
             elif isinstance(field, models.ForeignKey) and value is not None:
                 data[field.name] = value.pk
             elif isinstance(field, models.FileField) and value:
                 data[field.name] = value.name
+            elif isinstance(field, models.UUIDField) and value:
+                data[field.name] = str(value)
             else:
                 data[field.name] = value
         return data
