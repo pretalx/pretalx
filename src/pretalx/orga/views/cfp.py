@@ -29,7 +29,6 @@ from pretalx.common.text.serialize import I18nStrJSONEncoder
 from pretalx.common.ui import send_button
 from pretalx.common.views.generic import OrgaCRUDView, get_next_url
 from pretalx.common.views.mixins import (
-    ActionFromUrl,
     EventPermissionRequired,
     OrderActionMixin,
     PermissionRequired,
@@ -63,7 +62,7 @@ from pretalx.submission.models import (
 from pretalx.submission.rules import questions_for_user
 
 
-class CfPTextDetail(PermissionRequired, ActionFromUrl, UpdateView):
+class CfPTextDetail(PermissionRequired, UpdateView):
     form_class = CfPForm
     model = CfP
     template_name = "orga/cfp/text.html"

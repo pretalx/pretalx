@@ -25,7 +25,6 @@ from pretalx.common.views.generic import (
 )
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
-    ActionFromUrl,
     EventPermissionRequired,
     Filterable,
     PermissionRequired,
@@ -159,7 +158,7 @@ class SpeakerViewMixin(PermissionRequired):
 
 
 @method_decorator(gravatar_csp(), name="dispatch")
-class SpeakerDetail(SpeakerViewMixin, ActionFromUrl, CreateOrUpdateView):
+class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
     template_name = "orga/speaker/form.html"
     form_class = SpeakerProfileForm
     extra_forms_signal = "pretalx.orga.signals.speaker_form"

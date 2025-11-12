@@ -27,45 +27,6 @@ from pretalx.common.ui import Button, back_button
 SessionStore = import_string(f"{settings.SESSION_ENGINE}.SessionStore")
 
 
-class ActionFromUrl:
-    write_permission_required = None
-    create_permission_required = None
-
-    @cached_property
-    def object(self):
-        return self.get_object()
-
-    @cached_property
-    def permission_object(self):
-        if hasattr(self, "get_permission_object"):
-            return self.get_permission_object()
-        return self.object
-
-    def _check_permission(self, permission_name):
-        return self.request.user.has_perm(permission_name, self.permission_object)
-
-    @context
-    @cached_property
-    def action(self):
-        if not any(_id in self.kwargs for _id in ("pk", "code")):
-            if self._check_permission(
-                self.create_permission_required or self.write_permission_required
-            ):
-                return "create"
-            raise Http404()
-        if self._check_permission(self.write_permission_required):
-            return "edit"
-        return "view"
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs["read_only"] = self.action == "view"
-        event = getattr(self.request, "event", None)
-        if event and issubclass(self.form_class, PretalxI18nModelForm):
-            kwargs["locales"] = event.locales
-        return kwargs
-
-
 class Filterable:
     filter_fields = []
     default_filters = []
@@ -151,6 +112,43 @@ class Filterable:
 
 
 class PermissionRequired(PermissionRequiredMixin):
+    write_permission_required = None
+    create_permission_required = None
+
+    @cached_property
+    def object(self):
+        return self.get_object()
+
+    @cached_property
+    def permission_object(self):
+        if hasattr(self, "get_permission_object"):
+            return self.get_permission_object()
+        return self.object
+
+    @context
+    @cached_property
+    def action(self):
+        if not any(_id in self.kwargs for _id in ("pk", "code")):
+            if self._check_permission(
+                self.create_permission_required or self.write_permission_required
+            ):
+                return "create"
+            raise Http404()
+        if self._check_permission(self.write_permission_required):
+            return "edit"
+        return "view"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["read_only"] = self.action == "view"
+        event = getattr(self.request, "event", None)
+        if event and issubclass(self.form_class, PretalxI18nModelForm):
+            kwargs["locales"] = event.locales
+        return kwargs
+
+    def _check_permission(self, permission_name):
+        return self.request.user.has_perm(permission_name, self.permission_object)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not hasattr(self, "get_permission_object"):

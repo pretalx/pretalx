@@ -33,7 +33,6 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, delete_link
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
-    ActionFromUrl,
     EventPermissionRequired,
     PermissionRequired,
     SensibleBackWizardMixin,
@@ -73,7 +72,7 @@ class EventSettingsPermission(EventPermissionRequired):
         return self.request.event
 
 
-class EventDetail(EventSettingsPermission, ActionFromUrl, UpdateView):
+class EventDetail(EventSettingsPermission, UpdateView):
     model = Event
     form_class = EventForm
     template_name = "orga/settings/form.html"
@@ -283,7 +282,7 @@ class EventHistory(EventSettingsPermission, ListView):
         return ActivityLog.objects.filter(event=self.request.event)
 
 
-class EventReviewSettings(EventSettingsPermission, ActionFromUrl, FormView):
+class EventReviewSettings(EventSettingsPermission, FormView):
     form_class = ReviewSettingsForm
     template_name = "orga/settings/review.html"
 
@@ -458,7 +457,7 @@ class PhaseActivate(EventSettingsPermission, View):
         return redirect(self.request.event.orga_urls.review_settings)
 
 
-class EventMailSettings(EventSettingsPermission, ActionFromUrl, FormView):
+class EventMailSettings(EventSettingsPermission, FormView):
     form_class = MailSettingsForm
     template_name = "orga/settings/mail.html"
 

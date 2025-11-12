@@ -312,6 +312,7 @@ class OrganiserDetail(PermissionRequired, CreateOrUpdateView):
     template_name = "orga/organiser/detail.html"
     model = Organiser
     permission_required = "event.update_organiser"
+    write_permission_required = "event.update_organiser"
     form_class = OrganiserForm
 
     def get_object(self, queryset=None):
@@ -332,12 +333,6 @@ class OrganiserDetail(PermissionRequired, CreateOrUpdateView):
 
     def get_permission_object(self):
         return self.object
-
-    def form_valid(self, form):
-        result = super().form_valid(form)
-        if form.has_changed():
-            messages.success(self.request, phrases.base.saved)
-        return result
 
     def get_success_url(self):
         return self.request.path
