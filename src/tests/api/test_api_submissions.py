@@ -970,6 +970,7 @@ def test_orga_cannot_create_submission_readonly_token(
 
 @pytest.mark.django_db
 def test_orga_can_update_submission(client, orga_user_write_token, submission):
+    old_title = submission.title
     assert submission.title != "Updated Submission"
     response = client.patch(
         submission.event.api_urls.submissions + f"{submission.code}/",
@@ -984,11 +985,15 @@ def test_orga_can_update_submission(client, orga_user_write_token, submission):
     with scope(event=submission.event):
         submission.refresh_from_db()
         assert submission.title == "Updated Submission"
-        assert (
+        update_log = (
             submission.logged_actions()
             .filter(action_type="pretalx.submission.update")
-            .exists()
+            .first()
         )
+        assert "changes" in update_log.json_data
+        assert "title" in update_log.json_data["changes"]
+        assert update_log.json_data["changes"]["title"]["old"] == old_title
+        assert update_log.json_data["changes"]["title"]["new"] == "Updated Submission"
 
 
 @pytest.mark.django_db

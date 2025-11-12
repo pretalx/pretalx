@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scope
 
+from pretalx.event.models import Event
 from pretalx.schedule.models import Schedule
 
 
@@ -343,8 +344,6 @@ def test_orga_cannot_reuse_schedule_name(orga_client, event):
 
 @pytest.mark.django_db
 def test_orga_can_toggle_schedule_visibility(orga_client, event):
-    from pretalx.event.models import Event
-
     assert event.feature_flags["show_schedule"] is True
 
     response = orga_client.get(event.orga_urls.toggle_schedule, follow=True)
@@ -396,7 +395,6 @@ def test_edit_room(orga_client, event, room):
         assert event.rooms.count() == 1
         assert event.rooms.first().availabilities.count() == 1
         assert str(event.rooms.first().name) != "A room"
-    import json
 
     response = orga_client.post(
         room.urls.edit,
@@ -404,6 +402,7 @@ def test_edit_room(orga_client, event, room):
         data={
             "name_0": "A room",
             "guid": uuid4(),
+            "capacity": room.capacity,
             "availabilities": json.dumps({"availabilities": []}),
         },
     )
@@ -412,6 +411,11 @@ def test_edit_room(orga_client, event, room):
         assert event.rooms.count() == 1
         assert str(event.rooms.first().name) == "A room"
         assert event.rooms.first().availabilities.count() == 0
+        action = room.logged_actions().get(action_type="pretalx.room.update")
+        assert action.data["changes"]["guid"]["new"]
+        assert not action.data["changes"]["guid"]["old"]
+        assert action.data["changes"]["name"]["new"] == {"en": "A room"}
+        assert "capacity" not in action.data["changes"]
 
 
 @pytest.mark.django_db

@@ -100,8 +100,55 @@ class FormSignalMixin:
         return result
 
 
+class FormLoggingMixin:
+    messages = {
+        "create": phrases.base.saved,
+        "update": phrases.base.saved,
+        "delete": phrases.base.deleted,
+    }
+
+    def get_log_kwargs(self):
+        return {"person": self.request.user, "orga": True}
+
+    def get_log_action(self):
+        return f".{self.action}"
+
+    def form_valid(self, form):
+        old_data = None
+        if (
+            self.object
+            and hasattr(self.object, "_get_instance_data")
+            and self.object.pk
+        ):
+            old_object = self.object.__class__.objects.get(pk=self.object.pk)
+            old_data = old_object._get_instance_data()
+
+        self.object = form.save()
+
+        if message := self.messages.get(self.action):
+            messages.success(self.request, message)
+
+        if form.has_changed() and hasattr(self.object, "log_action"):
+            new_data = None
+            if hasattr(self.object, "_get_instance_data"):
+                new_data = self.object._get_instance_data()
+
+            log_kwargs = self.get_log_kwargs()
+            if old_data is not None and new_data is not None:
+                log_kwargs["old_data"] = old_data
+                log_kwargs["new_data"] = new_data
+
+            self.object.log_action(self.get_log_action(), **log_kwargs)
+
+        return HttpResponseRedirect(self.get_success_url())
+
+
 class CreateOrUpdateView(
-    SingleObjectTemplateResponseMixin, FormSignalMixin, ModelFormMixin, ProcessFormView
+    SingleObjectTemplateResponseMixin,
+    FormLoggingMixin,
+    FormSignalMixin,
+    ModelFormMixin,
+    ProcessFormView,
 ):
     def set_object(self):
         with suppress(self.model.DoesNotExist, AttributeError):
@@ -114,6 +161,9 @@ class CreateOrUpdateView(
     def post(self, request, *args, **kwargs):
         self.set_object()
         return super().post(request, *args, **kwargs)
+
+    def get_log_action(self):
+        return ".create" if self.action == "create" else ".update"
 
 
 class GenericLoginView(FormView):
@@ -210,7 +260,7 @@ CRUDHandlerMap = {
 }
 
 
-class CRUDView(PaginationMixin, Filterable, View):
+class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
     """
     Provides a list, create, detail and update, delete view.
 
@@ -233,11 +283,6 @@ class CRUDView(PaginationMixin, Filterable, View):
     lookup_field = "pk"
     path_converter = "int"
     detail_is_update = True
-    messages = {
-        "create": phrases.base.saved,
-        "update": phrases.base.saved,
-        "delete": phrases.base.deleted,
-    }
 
     def permission_denied(self):
         if (
@@ -312,9 +357,6 @@ class CRUDView(PaginationMixin, Filterable, View):
         context = self.get_context_data(instance=self.object)
         return self.render_to_response(context)
 
-    def get_log_kwargs(self):
-        return {"person": self.request.user}
-
     def perform_delete(self):
         self.object.delete(log_kwargs=self.get_log_kwargs())
         if message := self.messages.get(self.action):
@@ -355,31 +397,6 @@ class CRUDView(PaginationMixin, Filterable, View):
             **self.get_form_kwargs(),
             **kwargs,
         )
-
-    def form_valid(self, form):
-        old_data = None
-        if self.object and hasattr(self.object, "_get_instance_data"):
-            if self.object.pk:
-                old_data = self.object._get_instance_data()
-
-        self.object = form.save()
-
-        if message := self.messages.get(self.action):
-            messages.success(self.request, message)
-
-        if form.has_changed():
-            new_data = None
-            if hasattr(self.object, "_get_instance_data"):
-                new_data = self.object._get_instance_data()
-
-            log_kwargs = self.get_log_kwargs()
-            if old_data is not None and new_data is not None:
-                log_kwargs["old_data"] = old_data
-                log_kwargs["new_data"] = new_data
-
-            self.object.log_action(f".{self.action}", **log_kwargs)
-
-        return HttpResponseRedirect(self.get_success_url())
 
     def form_invalid(self, form):
         context = self.get_context_data(instance=self.object, form=form)

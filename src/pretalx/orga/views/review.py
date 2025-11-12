@@ -705,14 +705,12 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
         if self.tags_form and not self.tags_form.is_valid():
             messages.error(self.request, phrases.base.error_saving_changes)
             return super().form_invalid(form)
-        action = ".create" if not form.instance else ".update"
-        form.save()
-        form.instance.log_action(action, person=self.request.user, orga=True)
+        result = super().form_valid(form)
         self.qform.review = form.instance
         self.qform.save()
         if self.tags_form:
             self.tags_form.save()
-        return super().form_valid(form)
+        return result
 
     def post(self, request, *args, **kwargs):
         action = self.request.POST.get("review_submit") or "save"

@@ -317,6 +317,7 @@ class MailDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
     write_permission_required = "mail.update_queuedmail"
     permission_required = "mail.view_queuedmail"
     extra_forms_signal = "pretalx.orga.signals.mail_form"
+    messages = {}
 
     def get_object(self, queryset=None) -> QueuedMail:
         return self.request.event.queued_mails.filter(pk=self.kwargs.get("pk")).first()
@@ -327,9 +328,6 @@ class MailDetail(PermissionRequired, ActionFromUrl, CreateOrUpdateView):
     def form_valid(self, form):
         form.instance.event = self.request.event
         result = super().form_valid(form)
-        if form.has_changed():
-            action = "pretalx.mail." + ("update" if self.object else "create")
-            form.instance.log_action(action, person=self.request.user, orga=True)
         action = form.data.get("form", "save")
         if action == "send":
             errors = get_send_mail_exceptions(self.request)

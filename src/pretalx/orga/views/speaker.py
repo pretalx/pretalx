@@ -216,13 +216,8 @@ class SpeakerDetail(SpeakerViewMixin, ActionFromUrl, CreateOrUpdateView):
         if not self.questions_form.is_valid():
             return self.get(self.request, *self.args, **self.kwargs)
         self.questions_form.save()
-        if form.has_changed():
-            form.instance.log_action(
-                "pretalx.user.profile.update", person=self.request.user, orga=True
-            )
         if form.has_changed() or self.questions_form.has_changed():
             self.request.event.cache.set("rebuild_schedule_export", True, None)
-        messages.success(self.request, phrases.base.saved)
         return result
 
     def get_form_kwargs(self):
