@@ -52,7 +52,7 @@ class LogMixin:
             else:
                 return
 
-        if old_data is not None and new_data is not None:
+        if old_data is not None or new_data is not None:
             changes = self._compute_changes(old_data, new_data)
             if not changes and not data:
                 return
@@ -83,6 +83,8 @@ class LogMixin:
         )
 
     def _compute_changes(self, old_data, new_data):
+        old_data = old_data or {}
+        new_data = new_data or {}
         all_keys = set(old_data.keys()) | set(new_data.keys())
         changes = {}
 

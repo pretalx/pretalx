@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import html
-import json
 import random
 import uuid
 from contextlib import suppress
@@ -16,7 +15,6 @@ from django.contrib.auth.models import (
     BaseUserManager,
     PermissionsMixin,
 )
-from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils.crypto import get_random_string
@@ -27,12 +25,11 @@ from django.utils.translation import override
 from django_scopes import scopes_disabled
 from rest_framework.authtoken.models import Token
 from rules.contrib.models import RulesModelBase, RulesModelMixin
-from i18nfield.utils import I18nJSONEncoder
 
 from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.image import create_thumbnail
 from pretalx.common.models import TIMEZONE_CHOICES
-from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode
+from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode, LogMixin
 from pretalx.common.text.path import path_with_hash
 from pretalx.common.urls import EventUrls, build_absolute_uri
 from pretalx.person.rules import is_administrator
@@ -95,6 +92,7 @@ class User(
     PermissionsMixin,
     RulesModelMixin,
     GenerateCode,
+    LogMixin,
     FileCleanupMixin,
     AbstractBaseUser,
     metaclass=RulesModelBase,
@@ -276,41 +274,17 @@ class User(
             return self.locale
         return event.locale
 
-    def log_action(
-        self, action: str, data: dict = None, person=None, orga: bool = False
-    ):
-        """Create a log entry for this user.
-
-        :param action: The log action that took place.
-        :param data: Addition data to be saved.
-        :param person: The person modifying this user. Defaults to this user.
-        :type person: :class:`~pretalx.person.models.user.User`
-        :param orga: Was this action initiated by a privileged user?
-        """
-        from pretalx.common.models import ActivityLog
-
-        if data:
-            data = json.dumps(data, cls=I18nJSONEncoder)
-
-        ActivityLog.objects.create(
+    def log_action(self, action, person=None, content_object=None, **kwargs):
+        return super().log_action(
+            action=action,
             person=person or self,
-            content_object=self,
-            action_type=action,
-            data=data,
-            is_orga_action=orga,
-        )
-
-    def logged_actions(self):
-        """Returns all log entries that were made about this user."""
-        from pretalx.common.models import ActivityLog
-
-        return ActivityLog.objects.filter(
-            content_type=ContentType.objects.get_for_model(type(self)),
-            object_id=self.pk,
+            content_object=content_object or self,
+            **kwargs,
         )
 
     def own_actions(self):
-        """Returns all log entries that were made by this user."""
+        """Returns all log entries that were made by this user.
+        To get actions concerning this user, use logged_actions()."""
         from pretalx.common.models import ActivityLog
 
         return ActivityLog.objects.filter(person=self)

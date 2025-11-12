@@ -695,6 +695,7 @@ class ApplyPending(SubmissionViewMixin, View):
 
 class Anonymise(SubmissionViewMixin, UpdateView):
     permission_required = "submission.orga_update_submission"
+    write_permission_required = "submission.orga_update_submission"
     template_name = "orga/submission/anonymise.html"
     form_class = AnonymiseForm
 

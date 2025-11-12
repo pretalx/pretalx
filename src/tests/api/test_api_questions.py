@@ -872,3 +872,63 @@ def test_organiser_can_expand_question_option_fields(
     assert len(question_data["tracks"]) == 1
     assert question_data["tracks"][0]["id"] == track.pk
     assert question_data["tracks"][0]["name"]["en"] == track.name
+
+
+@pytest.mark.django_db
+def test_answer_create_logs_to_submission(
+    client, orga_user_write_token, submission, question
+):
+    with scope(event=submission.event):
+        initial_log_count = submission.logged_actions().count()
+
+    response = client.post(
+        submission.event.api_urls.answers,
+        data=json.dumps(
+            {
+                "question": question.pk,
+                "submission": submission.code,
+                "answer": "Test answer",
+            }
+        ),
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+    assert response.status_code == 201, response.text
+
+    with scope(event=submission.event):
+        assert submission.logged_actions().count() == initial_log_count + 1
+        log = submission.logged_actions().latest("timestamp")
+        assert log.action_type == "pretalx.question.answer.update"
+        assert "changes" in log.data
+        assert log.data["changes"][f"question-{question.pk}"]["new"] == "Test answer"
+
+
+@pytest.mark.django_db
+def test_answer_update_via_api_logs_to_parent(client, orga_user_write_token, answer):
+    with scope(event=answer.question.event):
+        submission = answer.submission
+        initial_log_count = submission.logged_actions().count()
+        old_answer = answer.answer
+
+    response = client.post(
+        answer.question.event.api_urls.answers,
+        data=json.dumps(
+            {
+                "question": answer.question.pk,
+                "submission": submission.code,
+                "answer": "Updated answer",
+            }
+        ),
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+    assert response.status_code == 201, response.text
+
+    with scope(event=answer.question.event):
+        assert submission.logged_actions().count() == initial_log_count + 1
+        log = submission.logged_actions().latest("timestamp")
+        assert log.action_type == "pretalx.question.answer.update"
+        assert "changes" in log.data
+        key = f"question-{answer.question_id}"
+        assert log.data["changes"][key]["old"] == old_answer
+        assert log.data["changes"][key]["new"] == "Updated answer"
