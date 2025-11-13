@@ -1575,3 +1575,90 @@ def test_remove_favourite_not_favourited(event, speaker_client, slot, speaker):
     assert response.status_code == 200
     with scope(event=event):
         assert not slot.submission.favourites.filter(user=speaker).exists()
+
+
+@pytest.mark.django_db
+def test_orga_can_see_submission_log(
+    client, orga_user_write_token, submission, orga_user
+):
+    with scope(event=submission.event):
+        submission.log_action(
+            "pretalx.submission.update",
+            person=orga_user,
+            orga=True,
+            old_data={"title": "Old Title"},
+            new_data={"title": "New Title"},
+        )
+        submission.log_action(
+            "pretalx.submission.create",
+            person=orga_user,
+            orga=True,
+            data={"title": submission.title},
+        )
+
+    url = submission.event.api_urls.submissions + f"{submission.code}/log/"
+    response = client.get(
+        url,
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+    content = json.loads(response.text)
+
+    assert response.status_code == 200, content
+    assert "results" in content or isinstance(content, list)
+    results = content["results"] if "results" in content else content
+    assert len(results) >= 2
+    log_entry = results[0]
+    assert "id" in log_entry
+    assert "timestamp" in log_entry
+    assert "action_type" in log_entry
+    assert "person" in log_entry
+    assert "data" in log_entry
+
+
+@pytest.mark.django_db
+def test_reviewer_can_see_submission_log(
+    client, review_user_token, submission, review_user
+):
+    with scope(event=submission.event):
+        submission.log_action(
+            "pretalx.submission.update",
+            person=review_user,
+            orga=True,
+            data={"note": "Reviewed"},
+        )
+
+    url = submission.event.api_urls.submissions + f"{submission.code}/log/"
+    response = client.get(
+        url,
+        follow=True,
+        headers={"Authorization": f"Token {review_user_token.token}"},
+    )
+    content = json.loads(response.text)
+
+    assert response.status_code == 200, content
+
+
+@pytest.mark.django_db
+def test_log_endpoint_pagination(client, orga_user_write_token, submission, orga_user):
+    with scope(event=submission.event):
+        for i in range(15):
+            submission.log_action(
+                f"pretalx.submission.update.{i}",
+                person=orga_user,
+                orga=True,
+                data={"iteration": i},
+            )
+
+    url = submission.event.api_urls.submissions + f"{submission.code}/log/"
+    response = client.get(
+        url,
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+    content = json.loads(response.text)
+
+    assert response.status_code == 200, content
+    if "results" in content:
+        assert "count" in content
+        assert "next" in content or "previous" in content
