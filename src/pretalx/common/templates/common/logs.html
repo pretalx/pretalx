@@ -8,8 +8,13 @@ SPDX-FileContributor: Jahongir Rahmonov
 
 {% load i18n %}
 
-{% if entries|length %}
-    <div class="card">
+{% if entries|length or show_history_title %}
+    <div class="card{% if history_class %} {{ history_class }}{% endif %}">
+        {% if show_history_title %}
+            <div class="card-header">
+                <h4 class="card-title">{% translate "Recent Changes" %}</h4>
+            </div>
+        {% endif %}
         <ul class="list-group list-group-flush">
             {% for log in entries %}
                 <li class="list-group-item logentry">

@@ -8,6 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 {% load static %}
 {% load times %}
+{% load history_sidebar %}
 
 {% block stylesheets %}
     <link rel="stylesheet" type="text/css" href="{% static "vendored/apexcharts/apexcharts.css" %}" />
@@ -104,4 +105,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </div>
             {% endif %}
     {% endif %}
+
+    {% history_sidebar question %}
 {% endblock content %}

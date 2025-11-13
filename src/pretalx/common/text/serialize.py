@@ -1,8 +1,8 @@
 # SPDX-FileCopyrightText: 2018-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import json
 import datetime as dt
+import json
 
 from i18nfield.strings import LazyI18nString
 from i18nfield.utils import I18nJSONEncoder

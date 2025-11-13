@@ -5,88 +5,96 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% extends "orga/mails/base.html" %}
 
+{% load history_sidebar %}
 {% load i18n %}
 {% load rich_text %}
 
 {% block extra_title %}{% translate "Mail Editor" %} :: {% endblock extra_title %}
 
 {% block mail_content %}
-    {% if form.instance.sent %}
-        <div class="alert alert-info">
-            {% blocktranslate trimmed with timestamp=form.instance.sent %}
-                This email was sent on {{ timestamp }}.
-            {% endblocktranslate %}
-        </div>
-    {% endif %}
-    <form method="post">
-        {% csrf_token %}
-        <h2>{% translate "Mail Editor" %}</h2>
-
-        {% if not form.read_only %}
-            {{ form }}
-            {% for extra_form in extra_forms %}
-                <fieldset>
-                    {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
-                    {{ extra_form }}
-                </fieldset>
-            {% endfor %}
-        {% else %}
-            <div class="d-flex flex-column">
-                <div class="row form-group">
-                    <label class="col col-md-3 col-form-label">To</label>
-                    <div class="col col-md-9 mt-2">{{ form.instance.to|default:"-" }}</div>
+    <div class="form-history-container">
+        <div class="form-container">
+            {% if form.instance.sent %}
+                <div class="alert alert-info">
+                    {% blocktranslate trimmed with timestamp=form.instance.sent %}
+                        This email was sent on {{ timestamp }}.
+                    {% endblocktranslate %}
                 </div>
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                <h2>{% translate "Mail Editor" %}</h2>
 
-                {% if form.to_users %}
-                    <div class="row form-group">
-                        <label class="col col-md-3 col-form-label">To Users</label>
-                        <div class="col col-md-9 mt-2">
-                            {% for user in form.instance.to_users.all %}
-                                {% if user in request.event.submitters %}
-                                    <a href="{% url "orga:speakers.view" event=request.event.slug code=user.code %}">{{ user }}</a>
-                                {% else %}
-                                    {{ user }}{% endif %}{% if not forloop.last %},
-                                    {% endif %}
-                            {% endfor %}
+                {% if not form.read_only %}
+                    {{ form }}
+                    {% for extra_form in extra_forms %}
+                        <fieldset>
+                            {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
+                            {{ extra_form }}
+                        </fieldset>
+                    {% endfor %}
+                {% else %}
+                    <div class="d-flex flex-column">
+                        <div class="row form-group">
+                            <label class="col col-md-3 col-form-label">To</label>
+                            <div class="col col-md-9 mt-2">{{ form.instance.to|default:"-" }}</div>
+                        </div>
+
+                        {% if form.to_users %}
+                            <div class="row form-group">
+                                <label class="col col-md-3 col-form-label">To Users</label>
+                                <div class="col col-md-9 mt-2">
+                                    {% for user in form.instance.to_users.all %}
+                                        {% if user in request.event.submitters %}
+                                            <a href="{% url "orga:speakers.view" event=request.event.slug code=user.code %}">{{ user }}</a>
+                                        {% else %}
+                                            {{ user }}{% endif %}{% if not forloop.last %},
+                                            {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <div class="row form-group">
+                            <label class="col col-md-3 col-form-label">Reply-To</label>
+                            <div class="col col-md-9 mt-2">{{ form.instance.reply_to|default:"-" }}</div>
+                        </div>
+
+                        <div class="row form-group">
+                            <label class="col col-md-3 col-form-label">CC</label>
+                            <div class="col col-md-9 mt-2">{{ form.instance.cc|default:"-" }}</div>
+                        </div>
+
+                        <div class="row form-group">
+                            <label class="col col-md-3 col-form-label">BCC</label>
+                            <div class="col col-md-9 mt-2">{{ form.instance.bcc|default:"-" }}</div>
+                        </div>
+
+                        <div class="row form-group">
+                            <label class="col col-md-3 col-form-label">Subject</label>
+                            <div class="col col-md-9 mt-2">{{ form.instance.subject }}</div>
+                        </div>
+
+                        <div class="row form-group">
+                            <label class="col col-md-3 col-form-label">Text</label>
+                            <div class="col col-md-9 mt-2">{{ form.instance.text|rich_text }}</div>
                         </div>
                     </div>
+
+                    {% for extra_form in extra_forms %}
+                        <fieldset>
+                            {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
+                            {{ extra_form }}
+                        </fieldset>
+                    {% endfor %}
                 {% endif %}
 
-                <div class="row form-group">
-                    <label class="col col-md-3 col-form-label">Reply-To</label>
-                    <div class="col col-md-9 mt-2">{{ form.instance.reply_to|default:"-" }}</div>
-                </div>
-
-                <div class="row form-group">
-                    <label class="col col-md-3 col-form-label">CC</label>
-                    <div class="col col-md-9 mt-2">{{ form.instance.cc|default:"-" }}</div>
-                </div>
-
-                <div class="row form-group">
-                    <label class="col col-md-3 col-form-label">BCC</label>
-                    <div class="col col-md-9 mt-2">{{ form.instance.bcc|default:"-" }}</div>
-                </div>
-
-                <div class="row form-group">
-                    <label class="col col-md-3 col-form-label">Subject</label>
-                    <div class="col col-md-9 mt-2">{{ form.instance.subject }}</div>
-                </div>
-
-                <div class="row form-group">
-                    <label class="col col-md-3 col-form-label">Text</label>
-                    <div class="col col-md-9 mt-2">{{ form.instance.text|rich_text }}</div>
-                </div>
-            </div>
-
-            {% for extra_form in extra_forms %}
-                <fieldset>
-                    {% if extra_form.label %}<legend>{{ extra_form.label }}</legend>{% endif %}
-                    {{ extra_form }}
-                </fieldset>
-            {% endfor %}
-        {% endif %}
-
-        {% include "orga/includes/submit_row.html" %}
-    </form>
+                {% include "orga/includes/submit_row.html" %}
+            </form>
+        </div>
+        <div class="sidebar-container">
+            {% history_sidebar form.instance %}
+        </div>
+    </div>
 
 {% endblock mail_content %}

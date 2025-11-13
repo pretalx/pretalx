@@ -15,32 +15,32 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock stylesheets %}
 
 {% block content %}
-        <h2>{% translate "Log Detail" %}</h2>
-        <div class="log-meta">
-            <div class="log-meta-item">
-                <i class="fa fa-clock-o"></i>
-                <span>{{ log.timestamp|date:"DATETIME_FORMAT" }}</span>
-            </div>
-            {% if log.person %}
-                <div class="log-meta-item">
-                    {% if log.is_orga_action %}
-                        <i class="fa fa-check-circle fa-fw text-success" title="{% translate 'This change was performed by an event organiser.' %}"></i>
-                    {% else %}
-                        <i class="fa fa-user fa-fw"></i>
-                    {% endif %}
-                    {% include "orga/includes/user_name.html" with user=log.person lightbox=True %}
-                </div>
-            {% endif %}
-            <div class="log-meta-item">
-                <i class="fa fa-flag"></i>
-                <span>{{ log.display }}</span>
-            </div>
-            {% if log.display_object %}
-                <div class="log-meta-item">
-                    <span>{{ log.display_object|safe }}</span>
-                </div>
-            {% endif %}
+    <h2>{% translate "Log Detail" %}</h2>
+    <div class="log-meta">
+        <div class="log-meta-item">
+            <i class="fa fa-clock-o"></i>
+            <span>{{ log.timestamp|date:"DATETIME_FORMAT" }}</span>
         </div>
+        {% if log.person %}
+            <div class="log-meta-item">
+                {% if log.is_orga_action %}
+                    <i class="fa fa-check-circle fa-fw text-success" title="{% translate 'This change was performed by an event organiser.' %}"></i>
+                {% else %}
+                    <i class="fa fa-user fa-fw"></i>
+                {% endif %}
+                {% include "orga/includes/user_name.html" with user=log.person lightbox=True %}
+            </div>
+        {% endif %}
+        <div class="log-meta-item">
+            <i class="fa fa-flag"></i>
+            <span>{{ log.display }}</span>
+        </div>
+        {% if log.display_object %}
+            <div class="log-meta-item">
+                <span>{{ log.display_object|safe }}</span>
+            </div>
+        {% endif %}
+    </div>
     </div>
 
     <div class="changes-container">
