@@ -160,6 +160,7 @@ class SubmissionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
         "make_submitted": "submission.state_change_submission",
         "add_speaker": "submission.update_submission",
         "remove_speaker": "submission.update_submission",
+        "log": "submission.orga_list_submission",
     }
     endpoint = "submissions"
 
@@ -362,6 +363,31 @@ class SubmissionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
         submission.remove_speaker(speaker, user=self.request.user)
         submission.refresh_from_db()
         return Response(SubmissionOrgaSerializer(submission).data)
+
+    @action(detail=True, methods=["GET"], url_path="log")
+    def log(self, request, **kwargs):
+        """Return activity log entries for this submission.
+
+        Uses the submission's logged_actions() method to avoid expensive
+        generic foreign key resolution. Returns paginated log entries.
+        """
+        from pretalx.api.serializers.log import ActivityLogSerializer
+
+        submission = self.get_object()
+        logs = submission.logged_actions().select_related("person", "event")
+
+        # Use DRF's pagination
+        page = self.paginate_queryset(logs)
+        if page is not None:
+            serializer = ActivityLogSerializer(
+                page, many=True, context=self.get_serializer_context()
+            )
+            return self.get_paginated_response(serializer.data)
+
+        serializer = ActivityLogSerializer(
+            logs, many=True, context=self.get_serializer_context()
+        )
+        return Response(serializer.data)
 
 
 @extend_schema(
