@@ -127,6 +127,11 @@ urlpatterns = [
                 path("live", event.EventLive.as_view(), name="event.live"),
                 path("history/", event.EventHistory.as_view(), name="event.history"),
                 path(
+                    "history/<int:pk>/",
+                    event.EventHistoryDetail.as_view(),
+                    name="event.history.detail",
+                ),
+                path(
                     "preferences/",
                     person.PreferencesView.as_view(),
                     name="preferences",
