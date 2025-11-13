@@ -22,7 +22,14 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy
-from django.views.generic import FormView, ListView, TemplateView, UpdateView, View
+from django.views.generic import (
+    DetailView,
+    FormView,
+    ListView,
+    TemplateView,
+    UpdateView,
+    View,
+)
 from django_context_decorator import context
 from django_scopes import scope, scopes_disabled
 from formtools.wizard.views import SessionWizardView
@@ -278,6 +285,16 @@ class EventHistory(EventSettingsPermission, ListView):
     model = ActivityLog
     context_object_name = "log_entries"
     paginate_by = 200
+
+    def get_queryset(self):
+        return ActivityLog.objects.filter(event=self.request.event)
+
+
+class EventHistoryDetail(EventSettingsPermission, DetailView):
+    template_name = "orga/event/history_detail.html"
+    model = ActivityLog
+    context_object_name = "log"
+    pk_url_kwarg = "pk"
 
     def get_queryset(self):
         return ActivityLog.objects.filter(event=self.request.event)

@@ -92,3 +92,26 @@ class ActivityLog(models.Model):
                 if response:
                     return response
         return ""
+
+    @cached_property
+    def changes(self):
+        if not self.data or not self.event or not self.data.get("changes"):
+            return
+        object = self.content_object
+        if not object:
+            return
+        result = {}
+        for key, value in self.data["changes"].items():
+            display = value.copy()
+            if key.startswith("question-"):
+                question_pk = key.split("-", 1)[-1]
+                question = self.event.questions.filter(pk=question_pk).first()
+                if question:
+                    display["question"] = question
+                    display["label"] = question.question
+            else:
+                with suppress(Exception):
+                    field = object.__class__._meta.get_field(key)
+                    display["label"] = field.verbose_name
+            result[key] = display
+        return result
