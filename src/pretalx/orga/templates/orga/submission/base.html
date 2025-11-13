@@ -88,7 +88,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% endwith %}
                 </a>
             {% endif %}
-            {% if request.user.is_administrator %}
+            {% if can_view_speakers %}
                 <a role="tab" href="{{ submission.orga_urls.history }}" {% if "submissions.history" in url_name %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
                     {% translate "History" %}
                 </a>

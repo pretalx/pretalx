@@ -737,7 +737,7 @@ class Anonymise(SubmissionViewMixin, UpdateView):
 
 class SubmissionHistory(SubmissionViewMixin, ListView):
     template_name = "orga/submission/history.html"
-    permission_required = "person.administrator_user"
+    permission_required = "person.orga_list_speakerprofile"
     paginate_by = 200
     context_object_name = "log_entries"
 

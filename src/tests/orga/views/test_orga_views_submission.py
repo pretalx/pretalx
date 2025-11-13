@@ -942,3 +942,19 @@ def test_orga_cannot_post_empty_submission_comment(orga_client, submission):
     with scope(event=submission.event):
         submission.refresh_from_db()
         assert submission.comments.count() == 0
+
+
+@pytest.mark.django_db
+def test_orga_can_view_submission_history(orga_client, event, submission, orga_user):
+    with scope(event=event):
+        submission.log_action(
+            "pretalx.submission.update",
+            person=orga_user,
+            orga=True,
+            old_data={"title": "Old Title"},
+            new_data={"title": "New Title"},
+        )
+
+    response = orga_client.get(submission.orga_urls.history, follow=True)
+    assert response.status_code == 200
+    assert "History" in response.text or "Activity" in response.text
