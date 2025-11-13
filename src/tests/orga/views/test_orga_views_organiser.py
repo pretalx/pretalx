@@ -330,7 +330,7 @@ class TestEventCreation:
         )
 
     def submit_display(self, client, **kwargs):
-        data = {"header_pattern": "", "logo": "", "primary_color": ""}
+        data = {"header_pattern": "plain", "logo": "", "primary_color": ""}
         data.update(kwargs)
         return self.post(step="display", data=data, client=client)
 

@@ -98,7 +98,7 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
         self, category, read_only=False, initial=None, hide_optional=False
     ):
         choices = (
-            [(None, _("No score"))]
+            [("-", _("No score"))]
             if (not category.required or self.allow_empty)
             else []
         )
@@ -156,11 +156,13 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
 
         # This validation would normally run in the clean_score_category_{pk} method
         for category in self.categories:
-            score = cleaned_data.get(f"score_{category.id}")
-            if score in ("", None) and category.required and not self.allow_empty:
-                self.add_error(
-                    f"score_{category.id}", _("Please provide a review score!")
-                )
+            key = f"score_{category.id}"
+            score = cleaned_data.get(key)
+            if score in ("", "-", None) and category.required and not self.allow_empty:
+                self.add_error(key, _("Please provide a review score!"))
+            if score == "-":
+                cleaned_data[key] = ""
+
         return cleaned_data
 
     def save(self, *args, **kwargs):

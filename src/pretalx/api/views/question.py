@@ -102,7 +102,7 @@ class QuestionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
         Returns the icon for this question as an SVG image if the question has an icon.
         """
         question = self.get_object()
-        if not question.icon or question.icon not in PLATFORM_ICONS:
+        if not question.show_icon or question.icon not in PLATFORM_ICONS:
             return HttpResponse(status=404)
 
         return HttpResponse(PLATFORM_ICONS[question.icon], content_type="image/svg+xml")

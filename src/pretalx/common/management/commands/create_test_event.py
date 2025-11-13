@@ -99,7 +99,7 @@ Feel free to look around, but don\'t be alarmed if something doesn\'t quite make
             )
 
             event.display_settings["header_pattern"] = random.choice(
-                ("", "pcb", "bubbles", "signal", "topo", "graph")
+                ("plain", "pcb", "bubbles", "signal", "topo", "graph")
             )
             event.save()
 

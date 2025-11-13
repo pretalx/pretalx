@@ -37,7 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
         {% include "common/includes/favicon.html" %}
 
-        {% if request.event.display_settings.header_pattern %}
+        {% if request.event.display_settings.header_pattern and request.event.display_settings.header_pattern != "plain" %}
             {% with "common/css/headers/"|add:request.event.display_settings.header_pattern|add:".css" as header_path %}
                 <link rel="stylesheet" type="text/css" href="{% static header_path %}" />
             {% endwith %}

@@ -286,7 +286,7 @@ class Event(PretalxModel):
     plugins = models.TextField(null=True, blank=True, verbose_name=_("Plugins"))
 
     HEADER_PATTERN_CHOICES = (
-        ("", _("Plain")),
+        ("plain", _("Plain")),
         ("pcb", _("Circuits")),
         ("bubbles", _("Circles")),
         ("signal", _("Signal")),

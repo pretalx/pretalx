@@ -107,10 +107,7 @@ class SpeakerView(PermissionRequired, TemplateView):
         icon_answers = []
         for answer in answers:
             if answer.question.variant in QuestionVariant.short_answers:
-                if (
-                    answer.question.variant == QuestionVariant.URL
-                    and answer.question.icon
-                ):
+                if answer.question.show_icon:
                     icon_answers.append(answer)
                 else:
                     short_answers.append(answer)

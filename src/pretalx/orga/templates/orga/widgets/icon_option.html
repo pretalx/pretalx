@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 <label {% if widget.attrs.id %}for="{{ widget.attrs.id }}"{% endif %} class="icon-option-label">
     <div class="icon-preview" data-label="{{ widget.label }}">
-        {% if widget.value %}
+        {% if widget.value != "-" %}
             <div class="icon-svg">
                 {% platform_icon widget.value %}
             </div>

@@ -24,7 +24,6 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy
 from django.views.generic import FormView, ListView, TemplateView, UpdateView, View
 from django_context_decorator import context
-from django_minify_html.decorators import no_html_minification
 from django_scopes import scope, scopes_disabled
 from formtools.wizard.views import SessionWizardView
 
@@ -74,7 +73,6 @@ class EventSettingsPermission(EventPermissionRequired):
         return self.request.event
 
 
-@method_decorator(no_html_minification, name="dispatch")
 class EventDetail(EventSettingsPermission, ActionFromUrl, UpdateView):
     model = Event
     form_class = EventForm
@@ -570,7 +568,6 @@ def condition_copy(wizard):
     return EventWizardCopyForm.copy_from_queryset(wizard.request.user).exists()
 
 
-@method_decorator(no_html_minification, name="dispatch")
 class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView):
     permission_required = "event.create_event"
     file_storage = FileSystemStorage(location=Path(settings.MEDIA_ROOT) / "new_event")

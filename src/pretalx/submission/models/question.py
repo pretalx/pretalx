@@ -105,6 +105,7 @@ class QuestionRequired(Choices):
 
 
 class QuestionIcon(Choices):
+    NONE = "-"
     BSKY = "bsky"
     DISCORD = "discord"
     GITHUB = "github"
@@ -116,6 +117,7 @@ class QuestionIcon(Choices):
     YOUTUBE = "youtube"
 
     valid_choices = [
+        (NONE, _("No icon")),
         (BSKY, _("Bluesky")),
         (DISCORD, _("Discord")),
         (GITHUB, _("GitHub")),
@@ -349,9 +351,13 @@ class Question(OrderedModel, PretalxModel):
     def read_only(self):
         return self.freeze_after and (self.freeze_after <= now())
 
+    @property
+    def show_icon(self):
+        return self.variant == QuestionVariant.URL and self.icon not in ("", "-", None)
+
     @cached_property
     def icon_url(self):
-        if self.icon:
+        if self.show_icon:
             return reverse(
                 "api:question-icon", kwargs={"event": self.event.slug, "pk": self.pk}
             )
