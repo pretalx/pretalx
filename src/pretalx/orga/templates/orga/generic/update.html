@@ -4,3 +4,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 -->
 
 {% extends "orga/generic/_form.html" %}
+{% load history_sidebar %}
+
+{% block form %}
+    {% if not show_history %}
+        {{ block.super }}
+    {% else %}
+        <div class="form-history-container">
+            <div class="form-container">
+                {{ block.super }}
+            </div>
+            <div class="sidebar-container">
+                {% history_sidebar form.instance %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock form %}

@@ -283,6 +283,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
     lookup_field = "pk"
     path_converter = "int"
     detail_is_update = True
+    show_history = True
 
     def permission_denied(self):
         if (
@@ -520,7 +521,14 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
         elif self.action == "delete":
             kwargs["submit_buttons_extra"] = [self.get_back_button()]
             kwargs["submit_buttons"] = [delete_button()]
-
+        if self.action == "detail":
+            kwargs["show_history"] = self.show_history and self.has_update_permission
+        elif self.action == "update":
+            kwargs["show_history"] = (
+                self.show_history
+                and self.has_update_permission
+                and self.detail_is_update
+            )
         return kwargs
 
     def get_template_names(self):

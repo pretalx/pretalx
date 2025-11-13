@@ -8,6 +8,7 @@ SPDX-FileContributor: Florian Mösch
 
 {% extends "orga/base.html" %}
 
+{% load history_sidebar %}
 {% load i18n %}
 {% load rules %}
 
@@ -62,6 +63,10 @@ SPDX-FileContributor: Florian Mösch
             </ul>
         </span>
     </div>
+    {% if can_edit_speaker %}
+        <div class="form-history-container">
+            <div class="form-container">
+    {% endif %}
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {% include "common/forms/errors.html" %}
@@ -94,5 +99,12 @@ SPDX-FileContributor: Florian Mösch
         {% include "common/mail_log.html" %}
     {% else %}
         {% translate "No mails were sent to this speaker yet." %}
+    {% endif %}
+    {% if can_edit_speaker %}
+        </div>
+        <div class="sidebar-container">
+            {% history_sidebar form.instance %}
+        </div>
+        </div>
     {% endif %}
 {% endblock content %}
