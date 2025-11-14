@@ -5,8 +5,8 @@ from pathlib import Path
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 
-from pretalx.api.mixins import PretalxSerializer
 from pretalx.api.serializers.fields import UploadedFileField
+from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import SpeakerInformation
 from pretalx.submission.models import SubmissionType, Track

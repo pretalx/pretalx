@@ -3,11 +3,11 @@
 
 from rest_framework.serializers import UUIDField
 
-from pretalx.api.mixins import PretalxSerializer
 from pretalx.api.serializers.availability import (
     AvailabilitiesMixin,
     AvailabilitySerializer,
 )
+from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.schedule.models import Room
 

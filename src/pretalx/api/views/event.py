@@ -5,8 +5,8 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import permissions, viewsets
 
 from pretalx.api.documentation import build_search_docs
-from pretalx.api.mixins import PretalxViewSetMixin
 from pretalx.api.serializers.event import EventListSerializer, EventSerializer
+from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.event.models import Event
 from pretalx.event.rules import get_events_for_user
 

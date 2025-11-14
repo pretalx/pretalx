@@ -11,7 +11,6 @@ from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, AllowAny
 
 from pretalx.api.documentation import build_expand_docs, build_search_docs
-from pretalx.api.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.api.serializers.question import (
     AnswerCreateSerializer,
     AnswerOptionCreateSerializer,
@@ -20,6 +19,7 @@ from pretalx.api.serializers.question import (
     QuestionOrgaSerializer,
     QuestionSerializer,
 )
+from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.submission.icons import PLATFORM_ICONS
 from pretalx.submission.models import Answer, AnswerOption, Question, QuestionVariant
 from pretalx.submission.rules import questions_for_user

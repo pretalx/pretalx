@@ -8,7 +8,6 @@ from rest_framework import filters, mixins, viewsets
 from rest_framework.permissions import SAFE_METHODS
 
 from pretalx.api.documentation import build_expand_docs, build_search_docs
-from pretalx.api.mixins import PretalxViewSetMixin
 from pretalx.api.serializers.legacy import (
     LegacySpeakerOrgaSerializer,
     LegacySpeakerReviewerSerializer,
@@ -20,6 +19,7 @@ from pretalx.api.serializers.speaker import (
     SpeakerUpdateSerializer,
 )
 from pretalx.api.versions import LEGACY
+from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.rules import (
     questions_for_user,

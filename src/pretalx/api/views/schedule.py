@@ -18,7 +18,6 @@ from rest_framework.response import Response
 from pretalx.agenda.views.utils import get_schedule_exporter_content
 from pretalx.api.documentation import build_expand_docs, build_search_docs
 from pretalx.api.filters.schedule import TalkSlotFilter
-from pretalx.api.mixins import PretalxViewSetMixin
 from pretalx.api.serializers.legacy import LegacyScheduleSerializer
 from pretalx.api.serializers.schedule import (
     ScheduleListSerializer,
@@ -27,6 +26,7 @@ from pretalx.api.serializers.schedule import (
     TalkSlotOrgaSerializer,
     TalkSlotSerializer,
 )
+from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.schedule.models import Schedule, TalkSlot
 
 

@@ -11,7 +11,7 @@ from rest_framework.serializers import (
     SlugRelatedField,
 )
 
-from pretalx.api.mixins import PretalxSerializer
+from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.serializers.question import AnswerSerializer
 from pretalx.api.serializers.room import AvailabilitySerializer
 from pretalx.api.serializers.submission import ResourceSerializer

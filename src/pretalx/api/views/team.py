@@ -16,8 +16,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from pretalx.api.documentation import build_expand_docs, build_search_docs
-from pretalx.api.mixins import PretalxViewSetMixin
 from pretalx.api.serializers.team import TeamInviteSerializer, TeamSerializer
+from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.event.models import Team, TeamInvite
 from pretalx.event.models.organiser import check_access_permissions
 from pretalx.person.models import User

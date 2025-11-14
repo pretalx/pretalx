@@ -19,7 +19,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from pretalx.api.documentation import build_expand_docs, build_search_docs
-from pretalx.api.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.api.serializers.legacy import (
     LegacySubmissionOrgaSerializer,
     LegacySubmissionReviewerSerializer,
@@ -33,6 +32,7 @@ from pretalx.api.serializers.submission import (
     TrackSerializer,
 )
 from pretalx.api.versions import LEGACY
+from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
 from pretalx.submission.models import (
