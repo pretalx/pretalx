@@ -16,6 +16,17 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block content %}
     <h2>{% translate "Event History" %}</h2>
+
+    <div class="filter-group">
+        <form class="search-form" role="search">
+            {{ filter_form }}
+            <button class="btn btn-info" type="submit">
+                <i class="fa fa-filter"></i>
+                {% translate "Filter" %}
+            </button>
+        </form>
+    </div>
+
     <div class="dashboard-history">
 
         {% include "common/logs.html" with entries=log_entries %}

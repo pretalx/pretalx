@@ -42,6 +42,7 @@ from pretalx.common.ui import Button, delete_link
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     EventPermissionRequired,
+    Filterable,
     PermissionRequired,
     SensibleBackWizardMixin,
 )
@@ -57,6 +58,7 @@ from pretalx.orga.forms import EventForm
 from pretalx.orga.forms.event import (
     EventFooterLinkFormset,
     EventHeaderLinkFormset,
+    EventHistoryFilterForm,
     MailSettingsForm,
     ReviewPhaseForm,
     ReviewScoreCategoryForm,
@@ -280,14 +282,18 @@ class EventLive(EventSettingsPermission, TemplateView):
         return redirect(event.orga_urls.base)
 
 
-class EventHistory(EventSettingsPermission, ListView):
+class EventHistory(Filterable, EventSettingsPermission, ListView):
     template_name = "orga/event/history.html"
     model = ActivityLog
     context_object_name = "log_entries"
     paginate_by = 200
+    filter_form_class = EventHistoryFilterForm
 
     def get_queryset(self):
-        return ActivityLog.objects.filter(event=self.request.event)
+        qs = ActivityLog.objects.filter(event=self.request.event).select_related(
+            "person", "content_type"
+        )
+        return self.filter_queryset(qs)
 
 
 class EventHistoryDetail(EventSettingsPermission, DetailView):
