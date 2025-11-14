@@ -8,7 +8,7 @@ from rest_framework import exceptions, pagination, viewsets
 from rest_framework.permissions import SAFE_METHODS
 
 from pretalx.api.documentation import build_search_docs
-from pretalx.api.mixins import PretalxViewSetMixin
+from pretalx.api.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.api.serializers.room import RoomOrgaSerializer, RoomSerializer
 from pretalx.schedule.models import Room
 
@@ -37,7 +37,7 @@ class RoomPagination(pagination.LimitOffsetPagination):
     ),
     destroy=extend_schema(summary="Delete Rooms"),
 )
-class RoomViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
+class RoomViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
     queryset = Room.objects.none()
     serializer_class = RoomSerializer
     pagination_class = RoomPagination

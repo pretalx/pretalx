@@ -8,6 +8,8 @@ from i18nfield.rest_framework import I18nField
 from rest_flex_fields import is_expanded
 from rest_flex_fields.utils import split_levels
 from rest_framework import exceptions
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
 
 from pretalx.api.versions import get_api_version_from_request, get_serializer_by_version
@@ -88,6 +90,32 @@ class PretalxViewSetMixin:
 
     def check_expanded_fields(self, *args):
         return [arg for arg in args if is_expanded(self.request, arg)]
+
+
+class ActivityLogMixin:
+
+    @action(detail=True, methods=["GET"], url_path="log")
+    def log(self, request, **kwargs):
+        """Return log entries for this object."""
+        from pretalx.api.serializers.log import ActivityLogSerializer
+
+        obj = self.get_object()
+
+        if not hasattr(obj, "logged_actions"):
+            raise exceptions.MethodNotAllowed(method="GET")
+
+        logs = obj.logged_actions().select_related("person", "event")
+        page = self.paginate_queryset(logs)
+        if page is not None:
+            serializer = ActivityLogSerializer(
+                page, many=True, context=self.get_serializer_context()
+            )
+            return self.get_paginated_response(serializer.data)
+
+        serializer = ActivityLogSerializer(
+            logs, many=True, context=self.get_serializer_context()
+        )
+        return Response(serializer.data)
 
 
 @extend_schema_field(

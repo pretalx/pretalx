@@ -5,7 +5,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
 
 from pretalx.api.documentation import build_search_docs
-from pretalx.api.mixins import PretalxViewSetMixin
+from pretalx.api.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.api.serializers.mail import MailTemplateSerializer
 from pretalx.mail.models import MailTemplate
 
@@ -20,7 +20,7 @@ from pretalx.mail.models import MailTemplate
     partial_update=extend_schema(summary="Update Mail Template (Partial Update)"),
     destroy=extend_schema(summary="Delete Mail Template"),
 )
-class MailTemplateViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
+class MailTemplateViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
     serializer_class = MailTemplateSerializer
     queryset = MailTemplate.objects.none()
     endpoint = "mail-templates"

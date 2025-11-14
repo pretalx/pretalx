@@ -93,6 +93,25 @@ def test_orga_can_see_single_room(client, orga_user_token, room):
 
 
 @pytest.mark.django_db
+def test_orga_can_see_single_room_log(client, orga_user_token, orga_user, room):
+    with scope(event=room.event):
+        room.log_action("something", data={"foo": "bar"}, person=orga_user)
+    response = client.get(
+        room.event.api_urls.rooms + f"{room.pk}/log/",
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_token.token}"},
+    )
+    content = json.loads(response.text)
+
+    assert response.status_code == 200
+    assert content["count"] == 1
+    log_element = content["results"][0]
+    assert log_element["action_type"] == "something"
+    assert log_element["data"] == {"foo": "bar"}
+    assert log_element["person"]["code"] == orga_user.code
+
+
+@pytest.mark.django_db
 def test_orga_can_see_single_room_locale_override(client, orga_user_token, room):
     response = client.get(
         room.event.api_urls.rooms + f"{room.pk}/?lang=en",
