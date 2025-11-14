@@ -5,7 +5,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
 
 from pretalx.api.documentation import build_expand_docs, build_search_docs
-from pretalx.api.mixins import PretalxViewSetMixin
+from pretalx.api.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.api.serializers.speaker_information import SpeakerInformationSerializer
 from pretalx.person.models import SpeakerInformation
 
@@ -27,7 +27,9 @@ from pretalx.person.models import SpeakerInformation
     partial_update=extend_schema(summary="Update Speaker Information (Partial Update)"),
     destroy=extend_schema(summary="Delete Speaker Information"),
 )
-class SpeakerInformationViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
+class SpeakerInformationViewSet(
+    ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
+):
     serializer_class = SpeakerInformationSerializer
     queryset = SpeakerInformation.objects.none()
     endpoint = "speaker-information"

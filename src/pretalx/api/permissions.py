@@ -13,14 +13,6 @@ MODEL_PERMISSION_MAP = {
     "destroy": "delete",
 }
 
-MODEL_PERMISSION_MAP = {
-    "list": "list",
-    "retrieve": "view",
-    "update": "update",
-    "partial_update": "update",
-    "destroy": "delete",
-}
-
 
 class ApiPermission(BasePermission):
 
@@ -56,7 +48,9 @@ class ApiPermission(BasePermission):
                 ):
                     return False
             endpoint = getattr(view, "endpoint", None)
-            if not request.auth.has_endpoint_permission(endpoint, view.action):
+            # The log endpoint should behave like the retrieve endpoint
+            permission_action = "retrieve" if view.action == "log" else view.action
+            if not request.auth.has_endpoint_permission(endpoint, permission_action):
                 return False
 
         if view.detail and not obj:
@@ -68,9 +62,11 @@ class ApiPermission(BasePermission):
             view, obj, request, detail=view.detail
         )
         permission_map = getattr(view, "permission_map", None) or {}
-        permission_required = permission_map.get(view.action)
+        # The log endpoint should behave like the retrieve endpoint
+        permission_action = "retrieve" if view.action == "log" else view.action
+        permission_required = permission_map.get(permission_action)
         if not permission_required:
-            model_action = MODEL_PERMISSION_MAP.get(view.action, view.action)
+            model_action = MODEL_PERMISSION_MAP.get(permission_action, view.action)
             permission_required = view.queryset.model.get_perm(model_action)
         return request.user.has_perm(permission_required, permission_object)
 

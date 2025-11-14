@@ -11,7 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, AllowAny
 
 from pretalx.api.documentation import build_expand_docs, build_search_docs
-from pretalx.api.mixins import PretalxViewSetMixin
+from pretalx.api.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.api.serializers.question import (
     AnswerCreateSerializer,
     AnswerOptionCreateSerializer,
@@ -50,7 +50,7 @@ OPTIONS_HELP = (
     ),
     destroy=extend_schema(summary="Delete Question"),
 )
-class QuestionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
+class QuestionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
     queryset = Question.objects.none()
     serializer_class = QuestionSerializer
     filterset_fields = ("is_public", "is_visible_to_reviewers", "target", "variant")
@@ -134,7 +134,7 @@ class QuestionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
         description="Deleting a question option is only possible if it hasn't been used in any answers yet.",
     ),
 )
-class AnswerOptionViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
+class AnswerOptionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
     queryset = AnswerOption.objects.none()
     serializer_class = AnswerOptionSerializer
     filterset_fields = ("question",)
@@ -217,7 +217,7 @@ class AnswerFilterSet(filters.FilterSet):
     ),
     destroy=extend_schema(summary="Delete Answer"),
 )
-class AnswerViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
+class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
     queryset = Answer.objects.none()
     serializer_class = AnswerSerializer
     filterset_class = AnswerFilterSet

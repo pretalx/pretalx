@@ -10,7 +10,7 @@ from pretalx.person.models import User
 class UserSerializer(PretalxSerializer):
     class Meta:
         model = User
-        fields = ("code", "email", "name")
+        fields = ("code", "name")
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
