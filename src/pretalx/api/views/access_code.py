@@ -7,8 +7,8 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import exceptions, viewsets
 
 from pretalx.api.documentation import build_expand_docs, build_search_docs
-from pretalx.api.mixins import PretalxViewSetMixin
 from pretalx.api.serializers.access_code import SubmitterAccessCodeSerializer
+from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.submission.models import SubmitterAccessCode
 
 

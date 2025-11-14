@@ -473,6 +473,73 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/events/{event}/answers/{id}/log/:
+    get:
+      operationId: answers_log_list
+      description: Changelog entries related to this object.
+      summary: Object changelog
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this answer.
+        required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: person
+        schema:
+          type: string
+      - name: q
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: question
+        schema:
+          type: number
+      - in: query
+        name: review
+        schema:
+          type: number
+      - in: query
+        name: submission
+        schema:
+          type: string
+      tags:
+      - answers
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityLogList'
+          description: ''
   /api/events/{event}/mail-templates/:
     get:
       operationId: mail_templates_list
@@ -650,6 +717,57 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/events/{event}/mail-templates/{id}/log/:
+    get:
+      operationId: mail_templates_log_list
+      description: Changelog entries related to this object.
+      summary: Object changelog
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this mail template.
+        required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: q
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - mail-templates
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityLogList'
+          description: ''
   /api/events/{event}/question-options/:
     get:
       operationId: question_options_list
@@ -855,6 +973,61 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/events/{event}/question-options/{id}/log/:
+    get:
+      operationId: question_options_log_list
+      description: Changelog entries related to this object.
+      summary: Object changelog
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this answer option.
+        required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: q
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: question
+        schema:
+          type: integer
+      tags:
+      - question-options
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityLogList'
+          description: ''
   /api/events/{event}/questions/:
     get:
       operationId: questions_list
@@ -1138,6 +1311,106 @@ paths:
               schema:
                 $ref: '#/components/schemas/Question'
           description: ''
+  /api/events/{event}/questions/{id}/log/:
+    get:
+      operationId: questions_log_list
+      description: Changelog entries related to this object.
+      summary: Object changelog
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this question.
+        required: true
+      - in: query
+        name: is_public
+        schema:
+          type: boolean
+      - in: query
+        name: is_visible_to_reviewers
+        schema:
+          type: boolean
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: q
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: target
+        schema:
+          type: string
+          title: Field type
+          enum:
+          - reviewer
+          - speaker
+          - submission
+        description: |-
+          Do you require an answer from every speaker or for every session?
+
+          * `submission` - per proposal
+          * `speaker` - per speaker
+          * `reviewer` - for reviewers
+      - in: query
+        name: variant
+        schema:
+          type: string
+          enum:
+          - boolean
+          - choices
+          - date
+          - datetime
+          - file
+          - multiple_choice
+          - number
+          - string
+          - text
+          - url
+        description: |-
+          * `number` - Number
+          * `string` - Text (one-line)
+          * `text` - Multi-line text
+          * `url` - URL
+          * `date` - Date
+          * `datetime` - Date and time
+          * `boolean` - Yes/No
+          * `file` - File upload
+          * `choices` - Choose one from a list
+          * `multiple_choice` - Choose multiple from a list
+      tags:
+      - questions
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityLogList'
+          description: ''
   /api/events/{event}/reviews/:
     get:
       operationId: reviews_list
@@ -1190,17 +1463,19 @@ paths:
       - in: query
         name: speaker
         schema:
-          type: integer
+          type: string
+          nullable: true
         description: Filter by speaker code (for the submission being reviewed)
       - in: query
         name: submission
         schema:
-          type: integer
+          type: string
         description: Filter by submission code
       - in: query
         name: user
         schema:
-          type: integer
+          type: string
+          nullable: true
         description: Filter by reviewer code
       tags:
       - reviews
@@ -1356,6 +1631,74 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/events/{event}/reviews/{id}/log/:
+    get:
+      operationId: reviews_log_list
+      description: Changelog entries related to this object.
+      summary: Object changelog
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this review.
+        required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: q
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: speaker
+        schema:
+          type: string
+          nullable: true
+        description: Filter by speaker code (for the submission being reviewed)
+      - in: query
+        name: submission
+        schema:
+          type: string
+        description: Filter by submission code
+      - in: query
+        name: user
+        schema:
+          type: string
+          nullable: true
+        description: Filter by reviewer code
+      tags:
+      - reviews
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityLogList'
+          description: ''
   /api/events/{event}/rooms/:
     get:
       operationId: rooms_list
@@ -1533,6 +1876,57 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/events/{event}/rooms/{id}/log/:
+    get:
+      operationId: rooms_log_list
+      description: Changelog entries related to this object.
+      summary: Object changelog
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this room.
+        required: true
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - name: q
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - rooms
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityLogList'
+          description: ''
   /api/events/{event}/schedules/:
     get:
       operationId: schedules_list
@@ -1800,11 +2194,12 @@ paths:
       - in: query
         name: speaker
         schema:
-          type: integer
+          type: string
+          nullable: true
       - in: query
         name: submission
         schema:
-          type: integer
+          type: string
       tags:
       - slots
       responses:
@@ -2147,6 +2542,57 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/events/{event}/speaker-information/{id}/log/:
+    get:
+      operationId: speaker_information_log_list
+      description: Changelog entries related to this object.
+      summary: Object changelog
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this speaker information.
+        required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: q
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - speaker-information
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityLogList'
+          description: ''
   /api/events/{event}/speakers/:
     get:
       operationId: speakers_list
@@ -2469,6 +2915,57 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/events/{event}/submission-types/{id}/log/:
+    get:
+      operationId: submission_types_log_list
+      description: Changelog entries related to this object.
+      summary: Object changelog
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this submission type.
+        required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: q
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - submission-types
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityLogList'
+          description: ''
   /api/events/{event}/submissions/:
     get:
       operationId: submissions_list
@@ -2871,6 +3368,123 @@ paths:
               schema:
                 $ref: '#/components/schemas/Submission'
           description: ''
+  /api/events/{event}/submissions/{code__iexact}/log/:
+    get:
+      operationId: submissions_log_list
+      description: Changelog entries related to this object.
+      summary: Object changelog
+      parameters:
+      - in: path
+        name: code__iexact
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: content_locale
+        schema:
+          type: string
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: query
+        name: is_featured
+        schema:
+          type: boolean
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: pending_state
+        schema:
+          type: array
+          items:
+            type: string
+            nullable: true
+            title: Pending proposal state
+            enum:
+            - accepted
+            - canceled
+            - confirmed
+            - deleted
+            - draft
+            - rejected
+            - submitted
+            - withdrawn
+        description: |-
+          * `submitted` - submitted
+          * `accepted` - accepted
+          * `confirmed` - confirmed
+          * `rejected` - rejected
+          * `canceled` - canceled
+          * `withdrawn` - withdrawn
+          * `deleted` - deleted
+          * `draft` - draft
+        explode: true
+        style: form
+      - name: q
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: state
+        schema:
+          type: array
+          items:
+            type: string
+            title: Proposal state
+            enum:
+            - accepted
+            - canceled
+            - confirmed
+            - deleted
+            - draft
+            - rejected
+            - submitted
+            - withdrawn
+        description: |-
+          * `submitted` - submitted
+          * `accepted` - accepted
+          * `confirmed` - confirmed
+          * `rejected` - rejected
+          * `canceled` - canceled
+          * `withdrawn` - withdrawn
+          * `deleted` - deleted
+          * `draft` - draft
+        explode: true
+        style: form
+      - in: query
+        name: submission_type
+        schema:
+          type: integer
+      tags:
+      - submissions
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityLogList'
+          description: ''
   /api/events/{event}/submissions/{code__iexact}/make-submitted/:
     post:
       operationId: submissions_make_submitted_create
@@ -3213,6 +3827,57 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/events/{event}/tags/{id}/log/:
+    get:
+      operationId: tags_log_list
+      description: Changelog entries related to this object.
+      summary: Object changelog
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tag.
+        required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: q
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - tags
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityLogList'
+          description: ''
   /api/events/{event}/tracks/:
     get:
       operationId: tracks_list
@@ -3390,6 +4055,57 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/events/{event}/tracks/{id}/log/:
+    get:
+      operationId: tracks_log_list
+      description: Changelog entries related to this object.
+      summary: Object changelog
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this track.
+        required: true
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: q
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - tracks
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityLogList'
+          description: ''
   /api/organisers/{organiser}/teams/:
     get:
       operationId: api_organisers_teams_list
@@ -3702,8 +4418,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/FileResponse'
               examples:
-                ? ''
-                : value:
+                '':
+                  value:
                     id: file:1234-5678
           description: ''
         '400':
@@ -3715,6 +4431,41 @@ paths:
           description: ''
 components:
   schemas:
+    ActivityLog:
+      type: object
+      description: |-
+        This serializer class will behave like the i18nfield serializer,
+        outputting a dict/object for internationalized strings, unless if
+        when it was initialized with an ``override_locale`` (taken from
+        a URL queryparam, usually), in which case the string will be cast
+        to the locale in question – relying on either a view or a middleware
+        to apply the locale manager.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+        action_type:
+          type: string
+          maxLength: 200
+        is_orga_action:
+          type: boolean
+        person:
+          $ref: '#/components/schemas/User'
+        display:
+          type: string
+          readOnly: true
+        data:
+          nullable: true
+      required:
+      - action_type
+      - display
+      - id
+      - person
+      - timestamp
     AddSpeakerRequest:
       type: object
       properties:
@@ -4121,6 +4872,7 @@ components:
       - id
     IconEnum:
       enum:
+      - '-'
       - bsky
       - discord
       - github
@@ -4132,6 +4884,7 @@ components:
       - youtube
       type: string
       description: |-
+        * `-` - No icon
         * `bsky` - Bluesky
         * `discord` - Discord
         * `github` - GitHub
@@ -4297,6 +5050,29 @@ components:
     NullEnum:
       enum:
       - null
+    PaginatedActivityLogList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityLog'
     PaginatedAnswerList:
       type: object
       required:
@@ -4812,6 +5588,7 @@ components:
           description: |-
             Custom URL fields that are shown publicly can use an icon when displaying the link.
 
+            * `-` - No icon
             * `bsky` - Bluesky
             * `discord` - Discord
             * `github` - GitHub
@@ -4955,6 +5732,7 @@ components:
           description: |-
             Custom URL fields that are shown publicly can use an icon when displaying the link.
 
+            * `-` - No icon
             * `bsky` - Bluesky
             * `discord` - Discord
             * `github` - GitHub
@@ -5112,6 +5890,7 @@ components:
           description: |-
             Custom URL fields that are shown publicly can use an icon when displaying the link.
 
+            * `-` - No icon
             * `bsky` - Bluesky
             * `discord` - Discord
             * `github` - GitHub
@@ -6272,6 +7051,7 @@ components:
           $ref: '#/components/schemas/Multi-language string'
         color:
           type: string
+          title: Colour
           pattern: '#([0-9A-Fa-f]{3}){1,2}'
           maxLength: 7
         is_public:
@@ -6302,6 +7082,7 @@ components:
         color:
           type: string
           minLength: 1
+          title: Colour
           pattern: '#([0-9A-Fa-f]{3}){1,2}'
           maxLength: 7
         is_public:
@@ -6564,6 +7345,7 @@ components:
           $ref: '#/components/schemas/Multi-language string'
         color:
           type: string
+          title: Colour
           pattern: '#([0-9A-Fa-f]{3}){1,2}'
           maxLength: 7
         position:
@@ -6598,6 +7380,7 @@ components:
         color:
           type: string
           minLength: 1
+          title: Colour
           pattern: '#([0-9A-Fa-f]{3}){1,2}'
           maxLength: 7
         position:
@@ -6613,6 +7396,27 @@ components:
             access code.
       required:
       - color
+      - name
+    User:
+      type: object
+      description: |-
+        This serializer class will behave like the i18nfield serializer,
+        outputting a dict/object for internationalized strings, unless if
+        when it was initialized with an ``override_locale`` (taken from
+        a URL queryparam, usually), in which case the string will be cast
+        to the locale in question – relying on either a view or a middleware
+        to apply the locale manager.
+      properties:
+        code:
+          type: string
+          nullable: true
+          maxLength: 16
+        name:
+          type: string
+          description: Please enter the name you wish to be displayed publicly. This
+            name will be used for all events you are participating in on this server.
+          maxLength: 120
+      required:
       - name
     VariantEnum:
       enum:

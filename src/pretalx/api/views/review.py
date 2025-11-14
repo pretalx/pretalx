@@ -8,8 +8,8 @@ from rest_framework.permissions import SAFE_METHODS
 
 from pretalx.api.documentation import build_expand_docs, build_search_docs
 from pretalx.api.filters.review import ReviewFilter
-from pretalx.api.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.api.serializers.review import ReviewSerializer, ReviewWriteSerializer
+from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.submission.models import Review, Submission
 from pretalx.submission.rules import get_reviewable_submissions
 

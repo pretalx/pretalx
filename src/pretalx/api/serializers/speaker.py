@@ -13,12 +13,12 @@ from rest_framework.serializers import (
     URLField,
 )
 
-from pretalx.api.mixins import PretalxSerializer
 from pretalx.api.serializers.availability import (
     AvailabilitiesMixin,
     AvailabilitySerializer,
 )
 from pretalx.api.serializers.fields import UploadedFileField
+from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.models import QuestionTarget

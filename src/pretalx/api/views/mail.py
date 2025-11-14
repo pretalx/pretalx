@@ -5,8 +5,8 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
 
 from pretalx.api.documentation import build_search_docs
-from pretalx.api.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.api.serializers.mail import MailTemplateSerializer
+from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.mail.models import MailTemplate
 
 

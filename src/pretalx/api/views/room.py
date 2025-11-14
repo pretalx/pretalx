@@ -8,8 +8,8 @@ from rest_framework import exceptions, pagination, viewsets
 from rest_framework.permissions import SAFE_METHODS
 
 from pretalx.api.documentation import build_search_docs
-from pretalx.api.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.api.serializers.room import RoomOrgaSerializer, RoomSerializer
+from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.schedule.models import Room
 
 

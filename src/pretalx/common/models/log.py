@@ -65,7 +65,7 @@ class ActivityLog(models.Model):
         return {}
 
     @cached_property
-    def display(self):
+    def display(self) -> str:
         from pretalx.common.signals import activitylog_display
 
         for _receiver, response in activitylog_display.send(

@@ -4,7 +4,7 @@
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions, serializers
 
-from pretalx.api.mixins import PretalxSerializer
+from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.event.models import Event, Team, TeamInvite
 from pretalx.person.models import User
