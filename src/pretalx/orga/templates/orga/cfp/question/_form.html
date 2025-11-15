@@ -10,6 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load static %}
 
 {% block stylesheets %}
+    {{ block.super }}
     <link rel="stylesheet" href="{% static "orga/css/ui/dragsort.css" %}">
 {% endblock stylesheets %}
 

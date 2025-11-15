@@ -113,5 +113,6 @@ class ActivityLog(models.Model):
                 with suppress(Exception):
                     field = object.__class__._meta.get_field(key)
                     display["label"] = field.verbose_name
+                    display["field"] = field
             result[key] = display
         return result
