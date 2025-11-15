@@ -5,6 +5,22 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% extends "orga/generic/_form.html" %}
 {% load history_sidebar %}
+{% load static %}
+
+{% block stylesheets %}
+    {% if show_history %}
+        <link rel="stylesheet" href="{% static "orga/css/forms/i18n.css" %}">
+        <link rel="stylesheet" href="{% static "orga/css/ui/history.css" %}">
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    {% if show_history %}
+        <script defer src="{% static "vendored/htmx.min.js" %}"></script>
+        <script defer src="{% static "common/js/ui/dialog.js" %}"></script>
+        <script defer src="{% static "common/js/ui/history-dialog.js" %}"></script>
+    {% endif %}
+{% endblock scripts %}
 
 {% block form %}
     {% if not show_history %}
