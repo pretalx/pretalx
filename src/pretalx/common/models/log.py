@@ -103,6 +103,8 @@ class ActivityLog(models.Model):
         result = {}
         for key, value in self.data["changes"].items():
             display = value.copy()
+            if not value.get("old") and not value.get("new"):
+                continue
             if key.startswith("question-"):
                 question_pk = key.split("-", 1)[-1]
                 question = self.event.questions.filter(pk=question_pk).first()

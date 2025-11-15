@@ -25,7 +25,8 @@
     grid-template-columns: [time] 180px [user] 180px [text] 1fr [button] 50px;
   }
 }
-.logentry {
+.logentry,
+.list-group .logentry.list-group-item {
   display: flex;
   flex-direction: column;
   .time {
@@ -58,10 +59,32 @@
   }
 }
 
-.changes-container tr div[lang] {
-  background-repeat: no-repeat;
-  padding-left: 24px;
-  background-position: top 8px left;
+.changes-container {
+  ins {
+    background-color: color-mix(in srgb, var(--color-success), transparent 55%);
+    text-decoration: none;
+    border-radius: 2px;
+  }
+
+  del {
+    background-color: color-mix(in srgb, var(--color-danger), transparent 75%);
+    text-decoration: line-through;
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+
+  td {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  tr div[lang] {
+    background-repeat: no-repeat;
+    padding-left: 24px;
+    background-position: top 8px left;
+  }
+  tr p {
+    margin-top: 0;
+  }
 }
 
 dialog#dialog-history-details {

@@ -6,24 +6,40 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% for row in rows %}
     <tr>
         {% if row.label is not None %}
-            <td{% if row.rowspan %} rowspan="{{ row.rowspan }}"{% endif %}>
-                {% if row.question %}<a href="{{ row.question.orga_urls.base }}">{% endif %}
+            <th class="text-left"{% if row.rowspan %} rowspan="{{ row.rowspan }}"{% endif %}>
+                {% if row.question %}<a href="{{ row.question.urls.base }}">{% endif %}
                 {{ row.label }}
                 {% if row.question %}</a>{% endif %}
-            </td>
+            </th>
         {% endif %}
         <td>
-            {% if row.language %}
-                <div lang="{{ row.language }}">{{ row.old|default:"–" }}</div>
+            {% if row.diff_data.is_diff %}
+                {% if row.language %}
+                    <div lang="{{ row.language }}">{{ row.diff_data.old_html }}</div>
+                {% else %}
+                    {{ row.diff_data.old_html }}
+                {% endif %}
             {% else %}
-                {{ row.old|default:"–" }}
+                {% if row.language %}
+                    <div lang="{{ row.language }}">{{ row.old|default:"–" }}</div>
+                {% else %}
+                    {{ row.old|default:"–" }}
+                {% endif %}
             {% endif %}
         </td>
         <td>
-            {% if row.language %}
-                <div lang="{{ row.language }}">{{ row.new|default:"–" }}</div>
+            {% if row.diff_data.is_diff %}
+                {% if row.language %}
+                    <div lang="{{ row.language }}">{{ row.diff_data.new_html }}</div>
+                {% else %}
+                    {{ row.diff_data.new_html }}
+                {% endif %}
             {% else %}
-                {{ row.new|default:"–" }}
+                {% if row.language %}
+                    <div lang="{{ row.language }}">{{ row.new|default:"–" }}</div>
+                {% else %}
+                    {{ row.new|default:"–" }}
+                {% endif %}
             {% endif %}
         </td>
     </tr>

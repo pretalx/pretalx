@@ -47,14 +47,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <table>
             <thead>
                 <tr>
-                    <th></th>
+                    <th>{% translate "Field" %}</th>
                     <th>{% translate "Before" %}</th>
                     <th>{% translate "After" %}</th>
                 </tr>
             </thead>
             <tbody>
                 {% for field, change in log.changes.items %}
-                    {% change_row field change %}
+                    {% change_row field change log %}
                 {% endfor %}
             </tbody>
         </table>
