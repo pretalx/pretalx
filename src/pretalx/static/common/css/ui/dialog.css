@@ -10,7 +10,7 @@ dialog {
   box-shadow: var(--shadow-dialog);
   border-radius: 0.3rem;
   opacity: 0;
-  max-width: 70vw;
+  max-width: 80vw;
 
   &[open] {
     opacity: 1;

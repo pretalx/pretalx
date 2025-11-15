@@ -39,6 +39,7 @@ from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import Button, delete_link
+from pretalx.common.views.helpers import is_htmx
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     EventPermissionRequired,
@@ -304,6 +305,20 @@ class EventHistoryDetail(EventSettingsPermission, DetailView):
 
     def get_queryset(self):
         return ActivityLog.objects.filter(event=self.request.event)
+
+    @cached_property
+    def is_htmx(self):
+        return is_htmx(self.request)
+
+    def get_template_names(self):
+        if self.is_htmx:
+            return ["orga/event/history_detail_content.html"]
+        return [self.template_name]
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_htmx_request"] = self.is_htmx
+        return context
 
 
 class EventReviewSettings(EventSettingsPermission, FormView):

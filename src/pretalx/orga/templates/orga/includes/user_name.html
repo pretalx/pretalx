@@ -4,8 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 -->
 
 {% load thumbnail %}
-<span class="user-name-display">
-  {{ user.get_display_name }}
+<span class="user-name-display">{{ user.get_display_name }}
   {% if not request.event or request.event.cfp.request_avatar %}
     {% if user.has_avatar %}
       {% if lightbox %}<a href="{{ user.avatar.url }}" data-lightbox>{% endif %}

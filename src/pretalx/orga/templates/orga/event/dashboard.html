@@ -12,8 +12,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block stylesheets %}
     <link rel="stylesheet" href="{% static "common/css/ui/stages.css" %}">
     <link rel="stylesheet" href="{% static "orga/css/ui/dashboard.css" %}">
+    <link rel="stylesheet" href="{% static "orga/css/forms/i18n.css" %}">
     <link rel="stylesheet" href="{% static "orga/css/ui/history.css" %}">
 {% endblock stylesheets %}
+
+{% block scripts %}
+    <script defer src="{% static "vendored/htmx.min.js" %}"></script>
+    <script defer src="{% static "common/js/ui/dialog.js" %}"></script>
+    <script defer src="{% static "common/js/ui/history-dialog.js" %}"></script>
+{% endblock scripts %}
 
 {% block content %}
     {% has_perm "person.orga_list_speakerprofile" request.user request.event as can_view_speakers %}

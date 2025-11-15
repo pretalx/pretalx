@@ -11,8 +11,22 @@ SPDX-FileContributor: Florian Mösch
 {% load history_sidebar %}
 {% load i18n %}
 {% load rules %}
+{% load static %}
 
 {% block extra_title %}{{ form.instance.user.get_display_name }} :: {% endblock extra_title %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static "orga/css/forms/i18n.css" %}">
+    <link rel="stylesheet" href="{% static "orga/css/ui/history.css" %}">
+{% endblock stylesheets %}
+
+{% block scripts %}
+    {{ block.super }}
+    <script defer src="{% static "vendored/htmx.min.js" %}"></script>
+    <script defer src="{% static "common/js/ui/dialog.js" %}"></script>
+    <script defer src="{% static "common/js/ui/history-dialog.js" %}"></script>
+{% endblock scripts %}
 
 {% block alternate_link %}
     <link rel="alternate" type="application/json" title="{{ request.event.name }} API" href="{{ request.event.api_urls.speakers.full }}{{ form.instance.code }}" />

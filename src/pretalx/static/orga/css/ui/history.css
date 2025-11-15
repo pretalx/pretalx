@@ -25,14 +25,16 @@
     grid-template-columns: [time] 180px [user] 180px [text] 1fr [button] 50px;
   }
 }
-.list-group .logentry.list-group-item {
+.logentry {
   display: flex;
   flex-direction: column;
   .time {
     color: var(--color-text-muted);
   }
-  span i.fa {
-    padding-right: 4px;
+  span i.fa,
+  div i.fa {
+    padding-right: 6px;
+    color: var(--color-text-muted);
   }
 }
 
@@ -60,6 +62,10 @@
   background-repeat: no-repeat;
   padding-left: 24px;
   background-position: top 8px left;
+}
+
+dialog#dialog-history-details {
+  min-width: min(550px, 80vw);
 }
 
 @media (max-width: 768px) {
