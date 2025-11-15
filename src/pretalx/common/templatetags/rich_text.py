@@ -32,6 +32,7 @@ ALLOWED_TAGS = {
     "em",
     "hr",
     "i",
+    "ins",
     "li",
     "ol",
     "strong",
