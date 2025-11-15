@@ -19,7 +19,7 @@ SPDX-FileContributor: Jahongir Rahmonov
             {% for log in entries %}
                 <li class="list-group-item logentry">
                     <span class="time">
-                        <i class="fa fa-clock-o"></i> {{ log.timestamp|date:"SHORT_DATETIME_FORMAT" }}
+                        <i class="fa fa-clock-o"></i>{{ log.timestamp|date:"SHORT_DATETIME_FORMAT" }}
                     </span>
                     {% if not hide_user %}
                         <span class="person">
@@ -48,7 +48,12 @@ SPDX-FileContributor: Jahongir Rahmonov
                     {% endif %}
                     <span class="log-text">{{ log.display }}</span>
                     {% if log.data.changes %}
-                        <a href="{% url 'orga:event.history.detail' event=log.event.slug pk=log.pk %}" class="btn btn-sm btn-outline-info log-detail" title="{% translate 'View detailed changes' %}">
+                        <a href="{% url 'orga:event.history.detail' event=log.event.slug pk=log.pk %}"
+                           class="btn btn-sm btn-outline-info log-detail"
+                           title="{% translate 'View detailed changes' %}"
+                           hx-get="{% url 'orga:event.history.detail' event=log.event.slug pk=log.pk %}"
+                           hx-target="#dialog-history-details-content"
+                           hx-swap="innerHTML">
                             <i class="fa fa-list-ul"></i>
                         </a>
                     {% endif %}
@@ -56,4 +61,17 @@ SPDX-FileContributor: Jahongir Rahmonov
             {% endfor %}
         </ul>
     </div>
+
+    <dialog id="dialog-history-details">
+        <div class="modal-card-content">
+            <div class="dialog-header">
+                <h3>{% translate "Log Detail" %}</h3>
+                <button class="close-dialog btn btn-sm btn-outline-secondary" id="dialog-close" aria-label="{% translate 'Close' %}">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div id="dialog-history-details-content" class="dialog-content">
+            </div>
+        </div>
+    </dialog>
 {% endif %}

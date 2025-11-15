@@ -21,3 +21,7 @@ def get_static(
         )
     except Exception:
         raise Http404()
+
+
+def is_htmx(request):
+    return bool(request.headers.get("HX-Request"))

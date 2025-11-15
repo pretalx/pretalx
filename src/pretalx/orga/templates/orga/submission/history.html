@@ -10,8 +10,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block stylesheets %}
     {{ block.super }}
+    <link rel="stylesheet" href="{% static "orga/css/forms/i18n.css" %}">
     <link rel="stylesheet" href="{% static "orga/css/ui/history.css" %}">
 {% endblock stylesheets %}
+
+{% block scripts %}
+    {{ block.super }}
+    <script defer src="{% static "vendored/htmx.min.js" %}"></script>
+    <script defer src="{% static "common/js/ui/dialog.js" %}"></script>
+    <script defer src="{% static "common/js/ui/history-dialog.js" %}"></script>
+{% endblock scripts %}
 
 {% block submission_content %}
     <div class="dashboard-history submission-history">

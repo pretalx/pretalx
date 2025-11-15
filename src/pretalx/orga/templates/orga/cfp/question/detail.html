@@ -13,12 +13,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block stylesheets %}
     <link rel="stylesheet" type="text/css" href="{% static "vendored/apexcharts/apexcharts.css" %}" />
     <link rel="stylesheet" type="text/css" href="{% static "orga/css/ui/stats.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "orga/css/forms/i18n.css" %}" />
     <link rel="stylesheet" type="text/css" href="{% static "orga/css/ui/history.css" %}" />
 {% endblock stylesheets %}
 
 {% block scripts %}
     <script defer src="{% static "vendored/apexcharts/apexcharts.min.js" %}"></script>
     <script defer src="{% static "orga/js/ui/questionstats.js" %}"></script>
+    <script defer src="{% static "vendored/htmx.min.js" %}"></script>
+    <script defer src="{% static "common/js/ui/dialog.js" %}"></script>
+    <script defer src="{% static "common/js/ui/history-dialog.js" %}"></script>
 {% endblock scripts %}
 
 {% block extra_title %}{{ quotation_open }}{{ question.question }}{{ quotation_close }} :: {% endblock extra_title %}
