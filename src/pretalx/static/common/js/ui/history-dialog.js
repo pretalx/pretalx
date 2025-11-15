@@ -5,6 +5,9 @@ const setupHistoryDialog = () => {
     const dialog = document.getElementById('dialog-history-details')
     if (!dialog) return
 
+    const dialogContent = document.getElementById('dialog-history-details-content')
+    if (!dialogContent) return
+
     document.querySelectorAll('.log-detail[hx-get]').forEach((link) => {
         link.addEventListener('click', function(event) {
             event.preventDefault()
@@ -12,6 +15,8 @@ const setupHistoryDialog = () => {
             dialog.showModal()
         })
     })
+
+    dialog.addEventListener('close', () => { dialogContent.innerHTML = '' })
 }
 
 onReady(setupHistoryDialog)
