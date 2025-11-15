@@ -4,8 +4,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 -->
 
 {% extends "orga/base.html" %}
+{% load static %}
 
 {% block extra_title %}{{ generic_title }} :: {% endblock extra_title %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static "orga/css/ui/history.css" %}">
+{% endblock %}
 
 {% block content %}
     <h2>

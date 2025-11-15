@@ -48,8 +48,8 @@ SPDX-FileContributor: Jahongir Rahmonov
                     {% endif %}
                     <span class="log-text">{{ log.display }}</span>
                     {% if log.data.changes %}
-                        <a href="{% url 'orga:event.history.detail' event=log.event.slug pk=log.pk %}" class="btn btn-sm btn-info" style="margin-left: 0.5rem;" title="{% translate 'View detailed changes' %}">
-                            <i class="fa fa-search"></i>
+                        <a href="{% url 'orga:event.history.detail' event=log.event.slug pk=log.pk %}" class="btn btn-sm btn-outline-info log-detail" title="{% translate 'View detailed changes' %}">
+                            <i class="fa fa-list-ul"></i>
                         </a>
                     {% endif %}
                 </li>

@@ -7,29 +7,22 @@
   max-height: none;
 
   .list-group {
-    .logentry {
+    .list-group-item.logentry {
       flex-direction: row;
+      display: grid;
+      grid-template-columns: [time] 180px [user] 180px [obj] 1fr [text] 1fr [button] 50px;
+      padding-left: 10px;
+      padding-right: 10px;
       & > * {
-        display: inline-block;
+        padding: 0 10px;
       }
-
-      > span {
-        padding-right: 8px;
-        width: 350px;
-
-        &.time,
-        &.person {
-          width: 200px;
-        }
-
-        &.log-object {
-          width: 250px;
-        }
-        br {
-          display: none;
-        }
+      .log-detail {
+        align-self: start;
       }
     }
+  }
+  &.submission-history .list-group .list-group-item.logentry {
+    grid-template-columns: [time] 180px [user] 180px [text] 1fr [button] 50px;
   }
 }
 .list-group .logentry.list-group-item {
@@ -42,8 +35,36 @@
     padding-right: 4px;
   }
 }
+
+.form-history-container:has(.sidebar-container) {
+  position: relative;
+  .form-container {
+    margin-right: 220px;
+  }
+  .sidebar-container {
+    width: 220px;
+    position: absolute;
+    top: -40px;
+    right: -20px;
+    .card-title {
+      margin-bottom: 0;
+      font-size: 18px;
+    }
+    .log-detail {
+      display: inline-block;
+    }
+  }
+}
+
+.changes-container tr div[lang] {
+  background-repeat: no-repeat;
+  padding-left: 24px;
+  background-position: top 8px left;
+}
+
 @media (max-width: 768px) {
   .dashboard-history .list-group .logentry {
+    display: flex;
     flex-direction: column;
     border-bottom: 1px solid var(--color-grey-light);
     padding-top: 16px;
