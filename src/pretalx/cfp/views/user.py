@@ -368,23 +368,11 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
             if form in self.formset.deleted_forms:
                 if not form.instance.pk:
                     continue
-                obj.log_action(
-                    "pretalx.submission.resource.delete",
-                    person=self.request.user,
-                    data={"id": form.instance.pk},
-                )
                 form.instance.delete()
                 form.instance.pk = None
             elif form.has_changed():
                 form.instance.submission = obj
                 form.save()
-                change_data = {
-                    key: form.cleaned_data.get(key) for key in form.changed_data
-                }
-                change_data["id"] = form.instance.pk
-                obj.log_action(
-                    "pretalx.submission.resource.update", person=self.request.user
-                )
 
         extra_forms = [
             form
@@ -396,11 +384,6 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
         for form in extra_forms:
             form.instance.submission = obj
             form.save()
-            obj.log_action(
-                "pretalx.submission.resource.create",
-                person=self.request.user,
-                data={"id": form.instance.pk},
-            )
 
         return True
 
@@ -457,12 +440,21 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
         form.save()
         self.qform.save()
 
-        if form.instance.state != SubmissionStates.DRAFT and (
-            form.has_changed() or self.qform.has_changed()
+        if not self.save_formset(form.instance):  # validation failed
+            return self.get(self.request, *self.args, **self.kwargs)
+
+        if (
+            form.instance.state != SubmissionStates.DRAFT
+            and form.instance.pk
+            and (
+                form.has_changed()
+                or self.qform.has_changed()
+                or self.formset.has_changed()
+            )
         ):
-            if form.instance.pk and "duration" in form.changed_data:
+            if "duration" in form.changed_data:
                 form.instance.update_duration()
-            if form.instance.pk and "track" in form.changed_data:
+            if "track" in form.changed_data:
                 form.instance.update_review_scores()
             new_submission_data = form.instance._get_instance_data() or {}
             new_questions_data = self.qform.serialize_answers() or {}
@@ -474,13 +466,8 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
             )
             self.request.event.cache.set("rebuild_schedule_export", True, None)
 
-        result = self.save_formset(form.instance)
-        if not result:
-            return self.get(self.request, *self.args, **self.kwargs)
-
-        if (
+        elif (
             form.instance.state == SubmissionStates.DRAFT
-            and self.request.method == "POST"
             and self.request.POST.get("action", "submit") == "dedraft"
         ):
             form.instance.make_submitted(person=self.request.user)

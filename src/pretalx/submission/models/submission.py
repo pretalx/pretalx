@@ -519,6 +519,27 @@ class Submission(GenerateCode, PretalxModel):
                 user=None,
             )
 
+    def _get_instance_data(self):
+        data = super()._get_instance_data()
+
+        if self.pk:
+            resources = list(self.resources.all()) or []
+            lines = []
+            for resource in resources:
+                label = resource.description
+                if resource.link and label:
+                    lines.append(f"- [{label}]({resource.link})")
+                elif resource.link:
+                    lines.append(f"- {resource.link}")
+                elif label:
+                    lines.append(f"- <i class=\"fa fa-paperclip\"></i> {label}")
+                elif resource.filename:
+                    lines.append(f"- <i class=\"fa fa-paperclip\"></i> {resource.filename}")
+            if lines:
+                data["resources"] = "\n".join(lines)
+
+        return data
+
     def update_review_scores(self):
         """Apply the submission's calculated review scores.
 

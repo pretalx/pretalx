@@ -64,10 +64,14 @@ def get_display(obj, field, value):
 def change_row(context, field, change, log):
     event = context.get("request").event
     question = change.get("question")
-    label = question.question if question else change.get("label", field)
     old_value = change.get("old")
     new_value = change.get("new")
     field_obj = change.get("field")
+    label = question.question if question else change.get("label")
+    if not label and field_obj:
+        label = field_obj.verbose_name
+    if not label:
+        label = field
 
     result = {
         "label": question.question if question else change.get("label", field),

@@ -82,7 +82,8 @@
     padding-left: 24px;
     background-position: top 8px left;
   }
-  tr p {
+  tr p,
+  tr ul {
     margin-top: 0;
   }
 }
