@@ -555,6 +555,7 @@ if not DEBUG:
     template_loaders = (("django.template.loaders.cached.Loader", template_loaders),)
 
 FORM_RENDERER = "pretalx.common.forms.renderers.TabularFormRenderer"
+FORMS_URLFIELD_ASSUME_HTTPS = True
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
