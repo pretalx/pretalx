@@ -186,6 +186,51 @@ def test_can_edit_submission(speaker_client, submission, resource, other_resourc
 
 
 @pytest.mark.django_db
+def test_speaker_can_edit_submission_logs_consolidated(
+    speaker_client, submission, question
+):
+    with scope(event=submission.event):
+        submission.event.feature_flags["speakers_can_edit_submissions"] = True
+        submission.event.save()
+        question.question_required = "optional"
+        question.save()
+        log_count = submission.logged_actions().count()
+        old_title = submission.title
+
+        data = {
+            "title": "Completely New Title",
+            "submission_type": submission.submission_type.pk,
+            "content_locale": submission.content_locale,
+            "description": "New description",
+            "abstract": submission.abstract,
+            "notes": submission.notes,
+            "slot_count": submission.slot_count,
+            f"question_{question.pk}": "50",
+            "resource-TOTAL_FORMS": 0,
+            "resource-INITIAL_FORMS": 0,
+            "resource-MIN_NUM_FORMS": 0,
+            "resource-MAX_NUM_FORMS": 1000,
+        }
+
+    response = speaker_client.post(submission.urls.user_base, follow=True, data=data)
+    assert response.status_code == 200
+
+    with scope(event=submission.event):
+        submission.refresh_from_db()
+        assert submission.title == "Completely New Title"
+        logs = submission.logged_actions()
+        assert logs.count() == log_count + 1
+        update_log = logs.filter(action_type="pretalx.submission.update").first()
+        assert update_log
+        assert update_log.changes
+        assert update_log.changes["title"]["old"] == old_title
+        assert update_log.changes["title"]["new"] == "Completely New Title"
+        question_key = f"question-{question.pk}"
+        assert update_log.changes[question_key]["old"] is None
+        assert update_log.changes[question_key]["new"] == "50"
+
+
+@pytest.mark.django_db
 def test_can_edit_slot_count(speaker_client, submission):
     with scope(event=submission.event):
         submission.event.feature_flags["present_multiple_times"] = True

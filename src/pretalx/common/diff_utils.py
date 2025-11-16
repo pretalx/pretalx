@@ -51,7 +51,9 @@ def render_diff(old_value, new_value, threshold=None):
     should_diff = (
         isinstance(old_value, (str, type(None)))
         and isinstance(new_value, (str, type(None)))
-        and (threshold and (len(old_str) >= threshold or len(new_str) >= threshold))
+        and old_value
+        and new_value
+        and (not threshold or (len(old_str) >= threshold or len(new_str) >= threshold))
     )
 
     if not should_diff:

@@ -28,6 +28,7 @@ from pretalx.common.exceptions import SubmissionError
 from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
+from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import Button, back_button
 from pretalx.common.views import CreateOrUpdateView
 from pretalx.common.views.generic import OrgaCRUDView, OrgaTableMixin, get_next_url
@@ -499,9 +500,32 @@ class SubmissionContent(
             messages.error(self.request, phrases.base.error_saving_changes)
             return self.get(self.request, *self.args, **self.kwargs)
 
+        old_submission_data = {}
+        old_questions_data = {}
+        if not created:
+            old_submission = form.instance.__class__.objects.get(pk=form.instance.pk)
+            old_submission_data = old_submission._get_instance_data() or {}
+            old_questions_data = self._questions_form.serialize_answers() or {}
+
         form.instance.event = self.request.event
-        result = super().form_valid(form)
+
+        # Save the form and show success message (skipping FormLoggingMixin's logging)
+        self.object = form.save()
         self._questions_form.save()
+
+        if message := self.messages.get(self.action):
+            messages.success(self.request, message)
+
+        if not created and (form.has_changed() or self._questions_form.has_changed()):
+            new_submission_data = form.instance._get_instance_data() or {}
+            new_questions_data = self._questions_form.serialize_answers() or {}
+            form.instance.log_action(
+                "pretalx.submission.update",
+                person=self.request.user,
+                orga=True,
+                old_data=json_roundtrip(old_submission_data | old_questions_data),
+                new_data=json_roundtrip(new_submission_data | new_questions_data),
+            )
 
         if created and speaker_form and (email := speaker_form.cleaned_data["email"]):
             form.instance.add_speaker(
@@ -516,7 +540,7 @@ class SubmissionContent(
                 return self.get(self.request, *self.args, **self.kwargs)
         if form.has_changed():
             self.request.event.cache.set("rebuild_schedule_export", True, None)
-        return result
+        return redirect(self.get_success_url())
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

@@ -104,6 +104,43 @@ def test_orga_can_edit_speaker(orga_client, speaker, event, submission):
 
 
 @pytest.mark.django_db
+def test_orga_can_edit_speaker_with_custom_field_consolidated_log(
+    orga_client, speaker, event, submission, speaker_question
+):
+    with scope(event=event):
+        url = speaker.event_profile(event).orga_urls.base
+        profile = speaker.event_profile(event)
+        old_name = speaker.name
+        initial_log_count = profile.logged_actions().count()
+
+    response = orga_client.post(
+        url,
+        data={
+            "name": "Updated Speaker Name",
+            "biography": "Updated biography!",
+            "email": speaker.email,
+            f"question_{speaker_question.pk}": "My speaker answer",
+        },
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    with scope(event=event):
+        speaker.refresh_from_db()
+
+        logs = profile.logged_actions()
+        new_log_count = logs.count()
+        assert new_log_count == initial_log_count + 1
+        update_log = logs.filter(action_type="pretalx.user.profile.update").first()
+        assert update_log
+        assert update_log.changes
+        assert update_log.changes["name"]["old"] == old_name
+        assert update_log.changes["name"]["new"] == "Updated Speaker Name"
+        question_key = f"question-{speaker_question.pk}"
+        assert update_log.changes[question_key]["new"] == "My speaker answer"
+
+
+@pytest.mark.django_db
 def test_orga_can_edit_speaker_unchanged(orga_client, speaker, event, submission):
     with scope(event=event):
         url = speaker.event_profile(event).orga_urls.base

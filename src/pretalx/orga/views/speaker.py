@@ -16,6 +16,7 @@ from pretalx.agenda.views.utils import get_schedule_exporters
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.image import gravatar_csp
 from pretalx.common.text.phrases import phrases
+from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import api_buttons
 from pretalx.common.views.generic import (
     CreateOrUpdateView,
@@ -211,13 +212,34 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
 
     @transaction.atomic()
     def form_valid(self, form):
-        result = super().form_valid(form)
         if not self.questions_form.is_valid():
             return self.get(self.request, *self.args, **self.kwargs)
+
+        old_profile = form.instance.__class__.objects.get(pk=form.instance.pk)
+        old_data = old_profile._get_instance_data()
+        old_questions_data = self.questions_form.serialize_answers()
+
+        # Save the form and show success message (skipping FormLoggingMixin's logging)
+        self.object = form.save()
         self.questions_form.save()
+
+        if message := self.messages.get(self.action):
+            messages.success(self.request, message)
+
+        if form.has_changed() or self.questions_form.has_changed():
+            new_data = form.instance._get_instance_data()
+            new_questions_data = self.questions_form.serialize_answers()
+            form.instance.log_action(
+                "pretalx.user.profile.update",
+                person=self.request.user,
+                orga=True,
+                old_data=json_roundtrip(old_data | old_questions_data),
+                new_data=json_roundtrip(new_data | new_questions_data),
+            )
+
         if form.has_changed() or self.questions_form.has_changed():
             self.request.event.cache.set("rebuild_schedule_export", True, None)
-        return result
+        return redirect(self.get_success_url())
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

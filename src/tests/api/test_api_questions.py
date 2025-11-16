@@ -898,7 +898,7 @@ def test_answer_create_logs_to_submission(
     with scope(event=submission.event):
         assert submission.logged_actions().count() == initial_log_count + 1
         log = submission.logged_actions().latest("timestamp")
-        assert log.action_type == "pretalx.question.answer.update"
+        assert log.action_type == "pretalx.submission.update"
         assert "changes" in log.data
         assert log.data["changes"][f"question-{question.pk}"]["new"] == "Test answer"
 
@@ -927,7 +927,7 @@ def test_answer_update_via_api_logs_to_parent(client, orga_user_write_token, ans
     with scope(event=answer.question.event):
         assert submission.logged_actions().count() == initial_log_count + 1
         log = submission.logged_actions().latest("timestamp")
-        assert log.action_type == "pretalx.question.answer.update"
+        assert log.action_type == "pretalx.submission.update"
         assert "changes" in log.data
         key = f"question-{answer.question_id}"
         assert log.data["changes"][key]["old"] == old_answer

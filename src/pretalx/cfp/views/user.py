@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.contrib.auth import logout
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.db import transaction
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
@@ -31,6 +32,7 @@ from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.image import gravatar_csp
 from pretalx.common.middleware.event import get_login_redirect
 from pretalx.common.text.phrases import phrases
+from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import Button, LinkButton, back_button, delete_button
 from pretalx.common.views import is_form_bound
 from pretalx.person.forms import (
@@ -97,16 +99,30 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
             self.login_form.save()
             request.user.log_action("pretalx.user.password.update")
         elif self.profile_form.is_bound and self.profile_form.is_valid():
+            profile = self.request.user.event_profile(self.request.event)
+            old_profile_data = profile._get_instance_data()
             self.profile_form.save()
-            profile = self.request.user.profiles.get_or_create(
-                event=self.request.event
-            )[0]
-            profile.log_action("pretalx.user.profile.update", person=request.user)
             if self.profile_form.has_changed():
+                new_profile_data = self.profile_form.instance._get_instance_data()
+                profile.log_action(
+                    "pretalx.user.profile.update",
+                    person=request.user,
+                    old_data=old_profile_data,
+                    new_data=new_profile_data,
+                )
                 self.request.event.cache.set("rebuild_schedule_export", True, None)
         elif self.questions_form.is_bound and self.questions_form.is_valid():
+            profile = self.request.user.event_profile(self.request.event)
+            old_questions_data = self.questions_form.serialize_answers()
             self.questions_form.save()
             if self.questions_form.has_changed():
+                new_questions_data = self.questions_form.serialize_answers()
+                profile.log_action(
+                    "pretalx.user.profile.update",
+                    person=request.user,
+                    old_data=old_questions_data,
+                    new_data=new_questions_data,
+                )
                 self.request.event.cache.set("rebuild_schedule_export", True, None)
         else:
             return super().get(request, *args, **kwargs)
@@ -428,36 +444,52 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
         kwargs["remove_additional_speaker"] = True
         return kwargs
 
+    @transaction.atomic
     def form_valid(self, form):
-        if self.can_edit:
-            form.save()
-            self.qform.save()
-            result = self.save_formset(form.instance)
-            if not result:
-                return self.get(self.request, *self.args, **self.kwargs)
-            if form.has_changed():
-                if form.instance.pk and "duration" in form.changed_data:
-                    form.instance.update_duration()
-                if form.instance.pk and "track" in form.changed_data:
-                    form.instance.update_review_scores()
-                form.instance.log_action(
-                    "pretalx.submission.update", person=self.request.user
-                )
-                self.request.event.cache.set("rebuild_schedule_export", True, None)
-            if (
-                form.instance.state == SubmissionStates.DRAFT
-                and self.request.method == "POST"
-                and self.request.POST.get("action", "submit") == "dedraft"
-            ):
-                form.instance.make_submitted(person=self.request.user)
-                form.instance.log_action(
-                    "pretalx.submission.create", person=self.request.user
-                )
-                messages.success(self.request, _("Your proposal has been submitted."))
-                return redirect(self.request.event.urls.user_submissions)
-            messages.success(self.request, phrases.base.saved)
-        else:
+        if not self.can_edit:
             messages.error(self.request, phrases.cfp.submission_uneditable)
+            return redirect(self.object.urls.user_base)
+
+        old_submission = form.instance.__class__.objects.get(pk=form.instance.pk)
+        old_submission_data = old_submission._get_instance_data() or {}
+        old_questions_data = self.qform.serialize_answers() or {}
+
+        form.save()
+        self.qform.save()
+
+        if form.instance.state != SubmissionStates.DRAFT and (
+            form.has_changed() or self.qform.has_changed()
+        ):
+            if form.instance.pk and "duration" in form.changed_data:
+                form.instance.update_duration()
+            if form.instance.pk and "track" in form.changed_data:
+                form.instance.update_review_scores()
+            new_submission_data = form.instance._get_instance_data() or {}
+            new_questions_data = self.qform.serialize_answers() or {}
+            form.instance.log_action(
+                "pretalx.submission.update",
+                person=self.request.user,
+                old_data=json_roundtrip(old_submission_data | old_questions_data),
+                new_data=json_roundtrip(new_submission_data | new_questions_data),
+            )
+            self.request.event.cache.set("rebuild_schedule_export", True, None)
+
+        result = self.save_formset(form.instance)
+        if not result:
+            return self.get(self.request, *self.args, **self.kwargs)
+
+        if (
+            form.instance.state == SubmissionStates.DRAFT
+            and self.request.method == "POST"
+            and self.request.POST.get("action", "submit") == "dedraft"
+        ):
+            form.instance.make_submitted(person=self.request.user)
+            form.instance.log_action(
+                "pretalx.submission.create", person=self.request.user
+            )
+            messages.success(self.request, _("Your proposal has been submitted."))
+            return redirect(self.request.event.urls.user_submissions)
+        messages.success(self.request, phrases.base.saved)
         return redirect(self.object.urls.user_base)
 
 

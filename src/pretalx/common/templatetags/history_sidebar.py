@@ -5,9 +5,9 @@ from contextlib import suppress
 
 from django import template
 from django.db import models
-from pretalx.common.tables import BooleanColumn
 
 from pretalx.common.diff_utils import render_diff
+from pretalx.common.tables import BooleanColumn
 
 register = template.Library()
 
@@ -22,7 +22,6 @@ def resolve_foreign_key(field, value):
         return str(obj)
 
     return value
-
 
 
 @register.inclusion_tag("common/logs.html", takes_context=True)

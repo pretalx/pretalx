@@ -60,7 +60,11 @@ SPDX-FileContributor: Florian Mösch
             {% endif %}
         </div>
     </h2>
-    <div class="alert alert-info col-md-9 flip offset-md-3">
+    {% if can_edit_speaker %}
+        <div class="form-history-container">
+            <div class="form-container">
+    {% endif %}
+    <div class="alert alert-info">
         <span>
             <h5>
                 {{ proposal_title|capfirst }}
@@ -77,10 +81,6 @@ SPDX-FileContributor: Florian Mösch
             </ul>
         </span>
     </div>
-    {% if can_edit_speaker %}
-        <div class="form-history-container">
-            <div class="form-container">
-    {% endif %}
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {% include "common/forms/errors.html" %}
@@ -116,7 +116,7 @@ SPDX-FileContributor: Florian Mösch
     {% endif %}
     {% if can_edit_speaker %}
         </div>
-        <div class="sidebar-container">
+        <div class="sidebar-container mt-4 pt-4">
             {% history_sidebar form.instance %}
         </div>
         </div>

@@ -91,7 +91,7 @@ class LogMixin:
         for key in all_keys:
             old_value = old_data.get(key)
             new_value = new_data.get(key)
-            if old_value != new_value:
+            if (old_value or new_value) and (old_value != new_value):
                 changes[key] = {"old": old_value, "new": new_value}
 
         return changes
@@ -103,11 +103,23 @@ class LogMixin:
         fields like timestamps and sensitive data.
         Does not handle many-to-many fields.
         """
-        excluded_fields = {"created", "updated"}
+        excluded_fields = {
+            "created",
+            "updated",
+            "is_active",
+            "last_login",
+            "user",
+            "event",
+            "code",
+        }
         data = {}
 
         for field in self._meta.fields:
-            if field.name in excluded_fields or field.name in SENSITIVE_KEYS:
+            if (
+                field.name in excluded_fields
+                or field.name in SENSITIVE_KEYS
+                or "thumbnail" in field.name
+            ):
                 continue
 
             if getattr(field, "auto_now", False) or getattr(
@@ -144,10 +156,15 @@ class LogMixin:
             .prefetch_related("content_object")
         )
 
-    def delete(self, *args, log_kwargs=None, **kwargs):
+    def delete(self, *args, log_kwargs=None, skip_log=False, **kwargs):
         parent = self.log_parent
         result = super().delete(*args, **kwargs)
-        if parent and getattr(parent, "log_action", None) and self.log_prefix:
+        if (
+            not skip_log
+            and parent
+            and getattr(parent, "log_action", None)
+            and self.log_prefix
+        ):
             log_kwargs = log_kwargs or {}
             parent.log_action(f"{self.log_prefix}.delete", **log_kwargs)
         return result
