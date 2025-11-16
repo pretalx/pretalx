@@ -273,7 +273,7 @@ class TeamMemberDelete(TeamMemberMixin, ActionConfirmMixin, DetailView):
                     person=self.request.user,
                     orga=True,
                     data={
-                        "id": self.member.pk,
+                        "code": self.member.code,
                         "name": self.member.name,
                         "email": self.member.email,
                     },

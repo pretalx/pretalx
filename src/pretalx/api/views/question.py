@@ -284,7 +284,7 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
             key = f"question-{question.pk}"
 
             answer.log_parent.log_action(
-                "pretalx.question.answer.update",
+                ".update",
                 person=self.request.user,
                 orga=True,
                 old_data={key: old_answer_value} if old_answer_value else None,
