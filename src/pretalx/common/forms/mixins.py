@@ -420,7 +420,8 @@ class QuestionFieldsMixin:
             # We already have a cached answer object, so we don't
             # have to create a new one
             if value == "" or value is None or value is False:
-                field.answer.delete()
+                # Parent view handles consolidated logging
+                field.answer.delete(skip_log=True)
             else:
                 self._save_to_answer(field, field.answer, value)
         elif value != "" and value is not None and value is not False:
@@ -472,6 +473,7 @@ class QuestionFieldsMixin:
         else:
             answer.answer = value
         answer.save()
+        field.answer = answer
 
 
 class JsonSubfieldMixin:

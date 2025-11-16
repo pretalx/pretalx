@@ -154,5 +154,9 @@ class SpeakerProfile(PretalxModel):
     def _get_instance_data(self):
         data = {}
         if self.pk:
-            data = {"name": self.user.name, "email": self.user.email}
+            data = {
+                "name": self.user.name,
+                "email": self.user.email,
+                "avatar": self.user.avatar.name if self.user.avatar else None,
+            }
         return super()._get_instance_data() | data

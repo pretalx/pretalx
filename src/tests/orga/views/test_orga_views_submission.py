@@ -441,6 +441,51 @@ def test_orga_can_edit_submission(orga_client, event, accepted_submission):
 
 
 @pytest.mark.django_db
+def test_orga_can_edit_submission_with_custom_field_consolidated_log(
+    orga_client, event, accepted_submission, question
+):
+    with scope(event=event):
+        question.question_required = QuestionRequired.OPTIONAL
+        question.save()
+        old_title = accepted_submission.title
+        initial_log_count = accepted_submission.logged_actions().count()
+
+    response = orga_client.post(
+        accepted_submission.orga_urls.base,
+        data={
+            "abstract": "abstract",
+            "content_locale": "en",
+            "description": "description",
+            "duration": "",
+            "notes": "notes",
+            "title": "New Updated Title",
+            "submission_type": accepted_submission.submission_type.pk,
+            "resource-TOTAL_FORMS": 0,
+            "resource-INITIAL_FORMS": 0,
+            f"question_{question.pk}": "50",
+        },
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    with scope(event=event):
+        accepted_submission.refresh_from_db()
+
+        logs = accepted_submission.logged_actions()
+        new_log_count = logs.count()
+        assert new_log_count == initial_log_count + 1
+
+        update_log = logs.filter(action_type="pretalx.submission.update").first()
+        assert update_log
+        assert update_log.changes
+        assert update_log.changes["title"]["old"] == old_title
+        assert update_log.changes["title"]["new"] == "New Updated Title"
+        question_key = f"question-{question.pk}"
+        assert update_log.changes[question_key]["old"] is None
+        assert update_log.changes[question_key]["new"] == "50"
+
+
+@pytest.mark.django_db
 def test_orga_can_remove_and_add_resources(
     orga_client, event, submission, resource, other_resource
 ):
