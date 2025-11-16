@@ -508,7 +508,11 @@ class SubmissionContent(
         if message := self.messages.get(self.action):
             messages.success(self.request, message)
 
-        if (form.has_changed() or self._questions_form.has_changed() or self._formset.has_changed()):
+        if (
+            form.has_changed()
+            or self._questions_form.has_changed()
+            or self._formset.has_changed()
+        ):
             self.request.event.cache.set("rebuild_schedule_export", True, None)
             if not created:
                 new_submission_data = form.instance._get_instance_data() or {}

@@ -68,8 +68,10 @@ def render_diff(old_value, new_value, threshold=None):
     dmp = diff_match_patch()
     old_words = re.split(r"(\s+)", old_str)
     new_words = re.split(r"(\s+)", new_str)
-    old_text = "\n".join(old_words)
-    new_text = "\n".join(new_words)
+    # Use null byte as separator to avoid conflicts with content newlines
+    separator = "\x00"
+    old_text = separator.join(old_words)
+    new_text = separator.join(new_words)
     diffs = dmp.diff_main(old_text, new_text)
     dmp.diff_cleanupSemantic(diffs)
 
@@ -77,7 +79,8 @@ def render_diff(old_value, new_value, threshold=None):
     old_html_parts = []
     new_html_parts = []
     for op, text in diffs:
-        text = text.replace("\n", "")
+        # Remove the separator, preserving original whitespace (including newlines)
+        text = text.replace(separator, "")
         if op == diff_match_patch.DIFF_DELETE:
             old_html_parts.append(f"<del>{escape(text)}</del>")
         elif op == diff_match_patch.DIFF_INSERT:
