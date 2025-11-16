@@ -532,9 +532,11 @@ class Submission(GenerateCode, PretalxModel):
                 elif resource.link:
                     lines.append(f"- {resource.link}")
                 elif label:
-                    lines.append(f"- <i class=\"fa fa-paperclip\"></i> {label}")
+                    file_str = _("File")
+                    lines.append(f"- {file_str}: {label}")
                 elif resource.filename:
-                    lines.append(f"- <i class=\"fa fa-paperclip\"></i> {resource.filename}")
+                    file_str = _("File")
+                    lines.append(f"- {file_str}: {resource.filename}")
             if lines:
                 data["resources"] = "\n".join(lines)
 
