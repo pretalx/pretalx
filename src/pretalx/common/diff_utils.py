@@ -11,7 +11,7 @@ from pretalx.common.templatetags.rich_text import render_markdown
 
 
 def detect_markdown(text):
-    if not text:
+    if not text or not isinstance(text, str):
         return False
 
     indicators = [
@@ -57,11 +57,12 @@ def render_diff(old_value, new_value, threshold=None):
     )
 
     if not should_diff:
-        return {
-            "is_diff": False,
-            "old": old_value,
-            "new": new_value,
-        }
+        result = {"is_diff": False}
+        if detect_markdown(old_value):
+            result["old_html"] = mark_safe(render_markdown(old_value))
+        if detect_markdown(new_value):
+            result["new_html"] = mark_safe(render_markdown(new_value))
+        return result
 
     # Calculate word-level diff
     dmp = diff_match_patch()

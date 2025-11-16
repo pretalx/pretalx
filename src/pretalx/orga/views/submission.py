@@ -434,25 +434,11 @@ class SubmissionContent(
             if form in self._formset.deleted_forms:
                 if not form.instance.pk:
                     continue
-                obj.log_action(
-                    "pretalx.submission.resource.delete",
-                    person=self.request.user,
-                    data={"id": form.instance.pk},
-                )
                 form.instance.delete()
                 form.instance.pk = None
             elif form.has_changed():
                 form.instance.submission = obj
                 form.save()
-                change_data = {
-                    key: form.cleaned_data.get(key) for key in form.changed_data
-                }
-                change_data["id"] = form.instance.pk
-                obj.log_action(
-                    "pretalx.submission.resource.update",
-                    person=self.request.user,
-                    orga=True,
-                )
 
         extra_forms = [
             form
@@ -464,12 +450,6 @@ class SubmissionContent(
         for form in extra_forms:
             form.instance.submission = obj
             form.save()
-            obj.log_action(
-                "pretalx.submission.resource.create",
-                person=self.request.user,
-                orga=True,
-                data={"id": form.instance.pk},
-            )
 
         return True
 
@@ -513,33 +493,33 @@ class SubmissionContent(
         self.object = form.save()
         self._questions_form.save()
 
+        if created:
+            if speaker_form and (email := speaker_form.cleaned_data["email"]):
+                form.instance.add_speaker(
+                    email=email,
+                    name=self.new_speaker_form.cleaned_data["name"],
+                    locale=self.new_speaker_form.cleaned_data.get("locale"),
+                    user=self.request.user,
+                )
+        else:
+            if not self.save_formset(form.instance):  # validation failed
+                return self.get(self.request, *self.args, **self.kwargs)
+
         if message := self.messages.get(self.action):
             messages.success(self.request, message)
 
-        if not created and (form.has_changed() or self._questions_form.has_changed()):
-            new_submission_data = form.instance._get_instance_data() or {}
-            new_questions_data = self._questions_form.serialize_answers() or {}
-            form.instance.log_action(
-                "pretalx.submission.update",
-                person=self.request.user,
-                orga=True,
-                old_data=json_roundtrip(old_submission_data | old_questions_data),
-                new_data=json_roundtrip(new_submission_data | new_questions_data),
-            )
-
-        if created and speaker_form and (email := speaker_form.cleaned_data["email"]):
-            form.instance.add_speaker(
-                email=email,
-                name=self.new_speaker_form.cleaned_data["name"],
-                locale=self.new_speaker_form.cleaned_data.get("locale"),
-                user=self.request.user,
-            )
-        elif not created:
-            formset_result = self.save_formset(form.instance)
-            if not formset_result:
-                return self.get(self.request, *self.args, **self.kwargs)
-        if form.has_changed():
+        if (form.has_changed() or self._questions_form.has_changed() or self._formset.has_changed()):
             self.request.event.cache.set("rebuild_schedule_export", True, None)
+            if not created:
+                new_submission_data = form.instance._get_instance_data() or {}
+                new_questions_data = self._questions_form.serialize_answers() or {}
+                form.instance.log_action(
+                    "pretalx.submission.update",
+                    person=self.request.user,
+                    orga=True,
+                    old_data=json_roundtrip(old_submission_data | old_questions_data),
+                    new_data=json_roundtrip(new_submission_data | new_questions_data),
+                )
         return redirect(self.get_success_url())
 
     def get_form_kwargs(self):
