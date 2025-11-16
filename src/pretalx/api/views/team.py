@@ -178,7 +178,7 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
                     person=request.user,
                     orga=True,
                     data={
-                        "id": user_to_remove.id,
+                        "code": user_to_remove.code,
                         "name": user_to_remove.get_display_name(),
                         "email": user_to_remove.email,
                     },

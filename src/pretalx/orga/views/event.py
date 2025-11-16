@@ -745,7 +745,6 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                 "pretalx.event.create",
                 person=self.request.user,
                 orga=True,
-                new_data=json_roundtrip(logdata),
             )
 
             if steps["copy"] and steps["copy"]["copy_from_event"]:

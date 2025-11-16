@@ -1123,7 +1123,12 @@ class Submission(GenerateCode, PretalxModel):
             )
 
         self.speakers.add(speaker)
-        self.log_action("pretalx.submission.speakers.add", person=user, orga=True)
+        self.log_action(
+            "pretalx.submission.speakers.add",
+            person=user,
+            orga=True,
+            data={"code": speaker.code, "name": speaker.name, "email": speaker.email},
+        )
         context["user"] = speaker
         template = self.event.get_mail_template(
             MailTemplateRoles.EXISTING_SPEAKER_INVITE
