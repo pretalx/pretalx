@@ -52,18 +52,16 @@ jobs:
       - name: Install Python dependencies
         run: just install --extra dev && uv pip install --system wheel
       - name: Install frontend dependencies
-        run: just run collectstatic --npm-install
+        run: just install-npm
       - name: Run check-manifest
         run: just release-checks
       - name: Install the created wheel package with pip
         run: |
           # Switch to a new virtualenv
+          set -e
           mkdir test_venv
-          uv venv test_venv
+          python -m venv test_venv
           . test_venv/bin/activate
-
-          uv pip install dist/pretalx*whl
-      - name: Make sure we can run pretalx commands
-        run: uv run pretalx help
-      - name: Make sure we can run through all migrations
-        run: uv run pretalx migrate
+          pip install dist/pretalx*whl
+          python -m pretalx help
+          python -m pretalx migrate

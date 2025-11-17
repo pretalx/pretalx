@@ -108,7 +108,5 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - name: Install Dependencies
-        run: uv pip install reuse
       - name: Run REUSE
-        run: just reuse
+        run: uvx reuse lint
