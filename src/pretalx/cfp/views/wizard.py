@@ -38,7 +38,7 @@ class SubmitStartView(EventPageMixin, View):
         return redirect(url)
 
 
-class SubmitReStartView(EventPageMixin, View):
+class SubmitRestartView(EventPageMixin, View):
     @staticmethod
     def get(request, *args, **kwargs):
         request.resolver_match.kwargs["tmpid"] = get_random_string(length=6)

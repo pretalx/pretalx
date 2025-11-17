@@ -476,7 +476,7 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
             and self.request.POST.get("action", "submit") == "dedraft"
         ):
             url = reverse(
-                "cfp:event.submit",
+                "cfp:event.cfp.restart",
                 kwargs={"event": self.request.event.slug, "code": form.instance.code},
             )
             if form.instance.access_code:

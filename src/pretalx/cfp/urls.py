@@ -28,12 +28,12 @@ urlpatterns = [
                     name="event.new_recover",
                 ),
                 path("cfp", event.EventCfP.as_view(), name="event.start"),
-                path("submit/", wizard.SubmitStartView.as_view(), name="event.submit"),
                 path(
-                    "submit/<code>/",
-                    wizard.SubmitReStartView.as_view(),
-                    name="event.submit",
+                    "submit/restart-<code>/",
+                    wizard.SubmitRestartView.as_view(),
+                    name="event.cfp.restart",
                 ),
+                path("submit/", wizard.SubmitStartView.as_view(), name="event.submit"),
                 path(
                     "submit/<tmpid>/<step>/",
                     wizard.SubmitWizard.as_view(),

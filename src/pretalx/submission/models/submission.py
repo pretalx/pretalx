@@ -716,9 +716,7 @@ class Submission(GenerateCode, PretalxModel):
         """Sets the submission's state to 'submitted'."""
         previous = self.state
         self._set_state(SubmissionStates.SUBMITTED, force, person=person)
-        if previous == SubmissionStates.DRAFT and person:
-            self.send_initial_mails(person=person)
-        else:
+        if previous != SubmissionStates.DRAFT:
             self.log_action(
                 "pretalx.submission.make_submitted",
                 person=person,

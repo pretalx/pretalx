@@ -337,7 +337,7 @@ class InfoStep(GenericFlowStep, FormFlowStep):
                 self.request.user.is_authenticated
                 and code
                 and (
-                    instance := Submission._base_manager.get(
+                    instance := Submission.all_objects.get(
                         event=self.event,
                         code=code,
                         state=SubmissionStates.DRAFT,
