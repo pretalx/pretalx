@@ -44,6 +44,7 @@ class EventPluginsView(EventPermissionRequired, TemplateView):
                         self.request.event.log_action(
                             "pretalx.event.plugins.enabled",
                             person=self.request.user,
+                            # TODO log name and display
                             data={"plugin": module},
                             orga=True,
                         )

@@ -220,7 +220,8 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
         old_questions_data = self.questions_form.serialize_answers()
 
         # Save the form and show success message (skipping FormLoggingMixin's logging)
-        self.object = form.save()
+        result = super().form_valid(form, skip_logging=True)
+        self.object = form.instance
         self.questions_form.save()
 
         if message := self.messages.get(self.action):
@@ -239,7 +240,7 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
 
         if form.has_changed() or self.questions_form.has_changed():
             self.request.event.cache.set("rebuild_schedule_export", True, None)
-        return redirect(self.get_success_url())
+        return result
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import datetime as dt
+from contextlib import suppress
 
 import pytest
 from django.conf import settings
@@ -403,26 +404,17 @@ def test_cannot_edit_accepted_submission_when_feature_disabled(
 def test_draft_submission_still_editable_when_feature_disabled(
     speaker_client, submission
 ):
-    """Test that draft submissions remain editable even when speakers_can_edit_submissions is disabled"""
     with scope(event=submission.event):
-        # Make it a draft
         submission.state = SubmissionStates.DRAFT
         submission.save()
-
-        # Disable the feature flag
         submission.event.feature_flags["speakers_can_edit_submissions"] = False
         submission.event.save()
-
-        # Draft should still be editable (need to clear the cached property)
         submission.refresh_from_db()
-        # Clear the cached property - Django's cached_property uses the property name as the cache key
-        try:
+
+        with suppress(AttributeError):
             del submission.editable
-        except AttributeError:
-            pass  # Property wasn't cached yet
         assert submission.editable is True
 
-        # Try to edit via POST request should still work
         data = {
             "title": "Changed draft title",
             "submission_type": submission.submission_type.pk,
@@ -439,8 +431,6 @@ def test_draft_submission_still_editable_when_feature_disabled(
             submission.urls.user_base, follow=True, data=data
         )
         assert response.status_code == 200
-
-        # Verify the submission was changed
         submission.refresh_from_db()
         assert submission.title == "Changed draft title"
 

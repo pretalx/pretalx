@@ -8,6 +8,7 @@ from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField
+from i18nfield.strings import override
 
 from pretalx.agenda.rules import is_agenda_visible
 from pretalx.common.models.choices import Choices
@@ -408,6 +409,18 @@ class Question(OrderedModel, PretalxModel):
             return max(users.count() - answer_count, 0)
         return 0
 
+    def _get_instance_data(self):
+        data = super()._get_instance_data()
+        if self.pk and self.variant in (
+            QuestionVariant.CHOICES,
+            QuestionVariant.MULTIPLE,
+        ):
+            options = list(self.options.all().values_list("answer", flat=True))
+            if options:
+                with override(self.event.locale):
+                    data["options"] = "\n".join(f"- {option}" for option in options)
+        return data
+
 
 class AnswerOption(PretalxModel):
     """Provides the possible answers for.
@@ -427,6 +440,7 @@ class AnswerOption(PretalxModel):
 
     class Meta:
         ordering = ("position", "id")
+        verbose_name_plural = _("Options")  # Used in question log display
         rules_permissions = QUESTION_PERMISSIONS
 
     @cached_property

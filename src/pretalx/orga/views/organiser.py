@@ -123,6 +123,7 @@ class TeamView(OrgaCRUDView):
 
     def form_valid(self, form):
         if self.action == "create":
+            form.instance.organiser = self.request.organiser
             return super().form_valid(form)
         warnings = []
         try:

@@ -134,3 +134,8 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
             ).send()
 
     send_invite.alters_data = True
+
+    def _get_instance_data(self):
+        result = super()._get_instance_data()
+        result["code"] = self.code  # Usually excluded as ID field
+        return result

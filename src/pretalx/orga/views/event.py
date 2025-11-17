@@ -37,7 +37,6 @@ from formtools.wizard.views import SessionWizardView
 from pretalx.common.forms import I18nEventFormSet
 from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
-from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import Button, delete_link
 from pretalx.common.views.helpers import is_htmx
 from pretalx.common.views.mixins import (
@@ -158,6 +157,7 @@ class EventDetail(EventSettingsPermission, UpdateView):
         self.footer_links_formset.save()
         self.header_links_formset.save()
 
+        # TODO log data and display
         form.instance.log_action(
             "pretalx.event.update", person=self.request.user, orga=True
         )
