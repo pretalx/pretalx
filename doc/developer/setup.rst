@@ -150,8 +150,7 @@ If you want to translate new strings that are not yet known to the translation s
 first include them in the ``.po`` files. As we share translations between both the JavaScript
 frontend and the Python backend, you'll need to install the frontend dependencies first::
 
-    $ cd src/pretalx/frontend/schedule-editor
-    $ npm ci
+    $ just install-npm
 
 Then, use the following command to scan the source code for strings we want to
 translate and update the ``*.po`` files accordingly::
