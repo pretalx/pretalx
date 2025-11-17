@@ -90,6 +90,7 @@ dev = [
   "pytest-sugar",
   "pytest-xdist",
   "responses",
+  "twine",
   "urllib3",
 ]
 devdocs = [

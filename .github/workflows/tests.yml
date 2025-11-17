@@ -62,7 +62,11 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: extractions/setup-just@v2
       - name: Set up node
         uses: actions/setup-node@v6
         with:
@@ -72,29 +76,22 @@ jobs:
           sudo apt update
           sudo apt install -y gettext
       - name: Install Python dependencies
-        run: python -m pip install uv && uv pip install --system -Ue ".[dev]" Faker
+        run: just install --extra dev && uv pip install --system Faker
+        if: matrix.database != 'postgres'
       - name: Install Postgres dependencies
-        run: python -m pip install uv && uv pip install --system -Ue ".[postgres]"
+        run: just install --extra dev --extra postgres && uv pip install --system Faker
         if: matrix.database == 'postgres'
       - name: Install frontend dependencies
-        run: npm ci
-        working-directory: ./src/pretalx/frontend/schedule-editor
+        run: just install-npm
       - name: Run checks
-        run: python manage.py check --deploy
-        working-directory: ./src
-      - name: Run checks
-        run: python manage.py compilemessages
-        working-directory: ./src
+        run: just run check --deploy
+      - name: Compile messages
+        run: just run compilemessages
       - name: Run tests
-        working-directory: ./src
         run: |
           # tee will gobble up our exit code without pipefail
           set -o pipefail
-          python -m pytest \
-            -nauto -p no:sugar \
-            --junitxml=pytest.xml \
-            --cov-report=term-missing:skip-covered \
-            tests | tee pytest-coverage.txt
+          just test-parallel -p no:sugar --junitxml=pytest.xml --cov-report=term-missing:skip-covered | tee pytest-coverage.txt
         env:
           PRETALX_CONFIG_FILE: 'tests/ci_${{ matrix.database }}.cfg'
       - name: Coverage comment
@@ -122,16 +119,16 @@ jobs:
         working-directory: ./src
         shell: bash  # needed to make echo work as expected
         run: |
-          python -m coverage json
+          uv run coverage json
 
-          export TOTAL_COV=$(python -c "import json;print(json.load(open('coverage.json'))['totals']['percent_covered_display'])")
+          export TOTAL_COV=$(uv run python -c "import json;print(json.load(open('coverage.json'))['totals']['percent_covered_display'])")
           echo "TOTAL_COV=$TOTAL_COV" >> $GITHUB_ENV
           echo "## Test coverage: $TOTAL_COV%" >> $GITHUB_STEP_SUMMARY
           echo ${{ steps.coverageData.outputs.summaryReport }} >> $GITHUB_STEP_SUMMARY
           echo ${{ steps.coverageComment.outputs.summaryReport }} >> $GITHUB_STEP_SUMMARY
-          python -m coverage report --skip-covered --skip-empty --show-missing --format=markdown >> $GITHUB_STEP_SUMMARY
+          uv run coverage report --skip-covered --skip-empty --show-missing --format=markdown >> $GITHUB_STEP_SUMMARY
 
-          python -m coverage report
+          uv run coverage report
         if: always() && matrix.database == 'postgres' && matrix.python-version == '3.12'
 
       - name: "Make badge"

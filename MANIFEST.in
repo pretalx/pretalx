@@ -8,6 +8,7 @@ include src/pretalx.example.cfg
 
 exclude src/pretalx/override_settings.py
 exclude src/pretalx.cfg
+exclude justfile
 
 recursive-exclude doc *
 recursive-exclude src/data *
