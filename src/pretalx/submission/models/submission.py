@@ -539,6 +539,8 @@ class Submission(GenerateCode, PretalxModel):
                     lines.append(f"- {file_str}: {resource.filename}")
             if lines:
                 data["resources"] = "\n".join(lines)
+            tags = list(self.tags.all().values_list("tag", flat=True)) or []
+            data["tags"] = "\n".join(f"- {tag}" for tag in tags)
 
         return data
 
