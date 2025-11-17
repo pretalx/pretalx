@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2023-present NONE
 # SPDX-License-Identifier: CC0-1.0
 
-include _build/backend.py
 include LICENSE
 recursive-include LICENSES *.txt
 include README.rst

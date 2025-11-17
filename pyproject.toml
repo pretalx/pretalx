@@ -6,7 +6,10 @@ name = "pretalx"
 dynamic = ["version"]
 description = "Conference organisation: CfPs, scheduling, much more"
 readme = "README.rst"
-license = {file = "LICENSE"}
+license = "AGPL-3.0-only"
+# SHOULD be the following, but Python does not support SPDX v3 (yet?)
+#license = "AGPL-3.0-only WITH AdditionRef-Pretalx-AGPL-3.0-Terms"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 keywords = ["conference", "event", "schedule", "talk", "cfp"]
 authors = [
@@ -21,7 +24,6 @@ classifiers = [
   "Framework :: Django :: 5.2",
   "Intended Audience :: Developers",
   "Intended Audience :: Other Audience",
-  "License :: OSI Approved :: GNU Affero General Public License v3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
