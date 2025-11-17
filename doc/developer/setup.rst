@@ -34,8 +34,8 @@ Please make sure you have the following dependencies installed:
 Some Python dependencies might also need a compiler during installation, the Debian package
 ``build-essential`` or something similar should suffice.
 
-Additionally, please install ``uv``. See the `uv installation guide`_ on how to do this.
-
+Additionally, please install ``uv``. See the `uv installation guide`_ on how to do this,
+and `just`_.
 
 Get a copy of the source code
 -----------------------------
@@ -50,25 +50,24 @@ Working with the code
 
 First up, install all the main application dependencies::
 
-    $ uv sync --extra dev
+    $ just install --extra dev
 
-You can also run ``uv sync --all-extras`` to include dependencies for
+You can also run ``just install-all`` to include dependencies for
 PostgreSQL, Redis, and building the documentation.
 
 Next, you will have to copy the static files from the source folder to the
 STATIC_ROOT directory, and create the local database::
 
-    $ cd src
-    $ uv run python manage.py collectstatic --noinput
-    $ uv run python manage.py migrate
+    $ just run collectstatic --noinput
+    $ just run migrate
 
 To be able to log in, you should also create an admin user, organiser and team by running::
 
-    $ uv run python manage.py init
+    $ just run init
 
 Additionally, if you want to get started with an event right away, run the ``create_test_event`` command::
 
-    $ uv run python manage.py create_test_event
+    $ just run create_test_event
 
 This command will create a test event for you, with a set of test submissions,
 and speakers, and the like.  With the ``--stage`` flag, you can determine which
@@ -81,7 +80,7 @@ the default value.
 If you want to see pretalx in a different language than English, you have to compile our language
 files::
 
-    $ uv run python manage.py compilemessages
+    $ just run compilemessages
 
 If you need to test more complicated features, you should probably look into the
 :doc:`setup</administrator/installation>` documentation to find the bits and pieces you
@@ -91,7 +90,7 @@ Run the development server
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 To run the local development server, execute::
 
-    $ uv run python manage.py runserver
+    $ just run
 
 Now point your browser to http://127.0.0.1:8000/orga/ – You should be able to log in and use
 all sites except those that use big custom JavaScript components, like the schedule editor.
@@ -101,12 +100,12 @@ In order to use those, you have two options – in any case, you will need to ha
 If you just need to use the JavaScript component, but don't need to change it,
 compile the JavaScript files::
 
-    $ uv run python manage.py rebuild --npm-install
+    $ just run rebuild --npm-install
 
 If you want to change the JavaScript code, you can run the following command, which combines
 the Python and the JavaScript development servers::
 
-    $ uv run python manage.py devserver
+    $ just run devserver
 
 .. _`checksandtests`:
 
@@ -114,24 +113,19 @@ Code checks and unit tests
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Before you check in your code into git, always run the static linters and style checkers::
 
-    $ uv run black .
-    $ uv run isort .
-    $ uv run flake8 .
-    $ find -name "*.html" | xargs uv run djhtml -i
+    $ just fmt
 
 Once you're done with those, run the tests::
 
-    $ uv run pytest tests/
+    $ just test
 
 Pytest, our test framework, has a lot of useful options, like ``--lf`` to repeat only failing
 tests, ``-k something`` to run only tests called ``*something*``, and ``-x`` to stop on the
 first breaking test.
 
 .. note:: If you have more than one CPU core and want to speed up the test suite, you can run
-          ``uv run pytest -n NUM`` with ``NUM`` being the number of threads you want to use.
-
-If you edit a stylesheet ``.scss`` file, please run ``sass-convert -i path/to/file.scss``
-afterwards to format that file.
+          ``just test-parallel`` (with an optional ``NUM`` parameter to specify the number of
+          threads, which you can leave empty for an automatic choice.)
 
 Working with mails
 ^^^^^^^^^^^^^^^^^^
@@ -162,12 +156,12 @@ frontend and the Python backend, you'll need to install the frontend dependencie
 Then, use the following command to scan the source code for strings we want to
 translate and update the ``*.po`` files accordingly::
 
-    $ uv run python manage.py makemessages --keep-pot --all
+    $ just makemessages
 
 To actually see pretalx in your language, you have to compile the ``*.po`` files to their optimised
 binary ``*.mo`` counterparts::
 
-    $ uv run python manage.py compilemessages
+    $ just run compilemessages
 
 pretalx by default supports events in English, German, or French, or all three. To translate
 pretalx to a new language, add the language code and natural name to the ``LANGUAGES`` variable in
@@ -185,14 +179,13 @@ To build the documentation, the documentation dependencies will already be insta
 
 Then, go to the ``doc`` directory and run ``make html`` to build the documentation::
 
-    $ cd doc
-    $ uv run make html
+    $ just docs
 
 You will now find the generated documentation in the ``doc/_build/html/`` subdirectory.
 If you find yourself working with the documentation more than a little, give the ``autobuild``
 functionality a try::
 
-    $ uv run sphinx-autobuild . _build/html --port 8001
+    $ just serve-docs
 
 Then, go to http://localhost:8001 for a version of the documentation that
 automatically re-builds when you save a changed source file.
@@ -200,3 +193,4 @@ Please note that changes in the static files (stylesheets and JavaScript) will o
 after a restart.
 
 .. _uv installation guide: https://docs.astral.sh/uv/getting-started/installation/
+.. _just: https://github.com/casey/just
