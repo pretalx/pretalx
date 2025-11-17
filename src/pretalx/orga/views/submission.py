@@ -490,9 +490,11 @@ class SubmissionContent(
         form.instance.event = self.request.event
 
         # Save the form and show success message (skipping FormLoggingMixin's logging)
-        self.object = form.save()
+        result = super().form_valid(form, skip_logging=True)
+        self.object = form.instance
         self._questions_form.save()
 
+        stay_on_page = False
         if created:
             if speaker_form and (email := speaker_form.cleaned_data["email"]):
                 form.instance.add_speaker(
@@ -503,12 +505,12 @@ class SubmissionContent(
                 )
         else:
             if not self.save_formset(form.instance):  # validation failed
-                return self.get(self.request, *self.args, **self.kwargs)
+                stay_on_page = True
 
         if message := self.messages.get(self.action):
             messages.success(self.request, message)
 
-        if (
+        if not created and (
             form.has_changed()
             or self._questions_form.has_changed()
             or self._formset.has_changed()
@@ -518,13 +520,17 @@ class SubmissionContent(
                 new_submission_data = form.instance._get_instance_data() or {}
                 new_questions_data = self._questions_form.serialize_answers() or {}
                 form.instance.log_action(
-                    "pretalx.submission.update",
+                    ".update",
                     person=self.request.user,
                     orga=True,
                     old_data=json_roundtrip(old_submission_data | old_questions_data),
                     new_data=json_roundtrip(new_submission_data | new_questions_data),
                 )
-        return redirect(self.get_success_url())
+        elif created:
+            form.instance.log_action(".create", person=self.request.user, orga=True)
+        if stay_on_page:
+            return self.get(self.request, *self.args, **self.kwargs)
+        return result
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

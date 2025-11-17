@@ -83,8 +83,8 @@ class FormSignalMixin:
         result["extra_forms"] = self.extra_forms
         return result
 
-    def form_valid(self, form):
-        result = super().form_valid(form)
+    def form_valid(self, form, **kwargs):
+        result = super().form_valid(form, **kwargs)
         for f in self.extra_forms:
             if not f.is_valid():
                 if f.errors:
@@ -113,7 +113,12 @@ class FormLoggingMixin:
     def get_log_action(self):
         return f".{self.action}"
 
-    def form_valid(self, form):
+    def form_valid(self, form, skip_logging=False):
+        if skip_logging:
+            form.save()
+            self.object = form.instance
+            return redirect(self.get_success_url())
+
         old_data = None
         if (
             self.object
@@ -123,7 +128,8 @@ class FormLoggingMixin:
             old_object = self.object.__class__.objects.get(pk=self.object.pk)
             old_data = old_object._get_instance_data()
 
-        self.object = form.save()
+        form.save()
+        self.object = form.instance
 
         if message := self.messages.get(self.action):
             messages.success(self.request, message)
@@ -139,8 +145,7 @@ class FormLoggingMixin:
                 log_kwargs["new_data"] = new_data
 
             self.object.log_action(self.get_log_action(), **log_kwargs)
-
-        return HttpResponseRedirect(self.get_success_url())
+        return redirect(self.get_success_url())
 
 
 class CreateOrUpdateView(
@@ -694,10 +699,10 @@ class OrgaCRUDView(OrgaTableMixin, FormSignalMixin, CRUDView):
         return getattr(self.request, "organiser", None)
 
     @transaction.atomic
-    def form_valid(self, form):
+    def form_valid(self, form, **kwargs):
         if self.event:
             form.instance.event = self.request.event
-        return super().form_valid(form)
+        return super().form_valid(form, **kwargs)
 
     def get_template_names(self):
         result = super().get_template_names()

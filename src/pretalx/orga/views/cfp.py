@@ -166,7 +166,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
             self.request.POST if self.request.method == "POST" else None,
             queryset=(
                 AnswerOption.objects.filter(question=self.object)
-                if self.object
+                if self.object and self.object.pk
                 else AnswerOption.objects.none()
             ),
             event=self.request.event,
@@ -260,7 +260,8 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
 
     def form_valid(self, form):
         form.instance.event = self.request.event
-        self.instance = form.instance
+        created = not form.instance.pk
+        self.object = form.instance
         if form.cleaned_data.get("variant") in ("choices", "multiple_choice"):
             changed_options = [
                 form.changed_data for form in self.formset if form.has_changed()
@@ -273,14 +274,38 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
                     ),
                 )
                 return self.form_invalid(form)
-        result = super().form_valid(form)
+
+        old_data = {}
+        if not created:
+            old_obj = self.request.event.questions(manager="all_objects").get(
+                pk=form.instance.pk
+            )
+            old_data = old_obj._get_instance_data()
+
+        result = super().form_valid(form, skip_logging=True)
+
+        stay_on_page = False
         if form.cleaned_data.get("variant") in (
             "choices",
             "multiple_choice",
         ) and not form.cleaned_data.get("options"):
-            formset = self.save_formset(self.instance)
+            formset = self.save_formset(self.object)
             if not formset:
-                return self.get(self.request, *self.args, **self.kwargs)
+                stay_on_page = True
+
+        if not created and (form.has_changed() or self.formset.has_changed()):
+            form.instance.log_action(
+                ".update",
+                person=self.request.user,
+                orga=True,
+                old_data=old_data,
+                new_data=form.instance._get_instance_data(),
+            )
+        elif created:
+            form.instance.log_action(".create", person=self.request.user, orga=True)
+
+        if stay_on_page:
+            return self.get(self.request, *self.args, **self.kwargs)
         return result
 
     def post(self, request, *args, **kwargs):

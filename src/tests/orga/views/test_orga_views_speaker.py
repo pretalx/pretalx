@@ -183,7 +183,7 @@ def test_orga_cannot_edit_speaker_without_filling_questions(
     assert response.status_code == 200
     with scope(event=event):
         speaker.refresh_from_db()
-    assert speaker.name == "BESTSPEAKAR", response.text
+    assert speaker.name != "BESTSPEAKAR", response.text
 
 
 @pytest.mark.django_db

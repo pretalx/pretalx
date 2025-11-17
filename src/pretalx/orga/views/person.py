@@ -72,6 +72,7 @@ class UserSettings(TemplateView):
         elif self.profile_form.is_bound and self.profile_form.is_valid():
             self.profile_form.save()
             messages.success(request, phrases.base.saved)
+            # TODO logging data
             request.user.log_action("pretalx.user.profile.update")
         elif self.token_form.is_bound and self.token_form.is_valid():
             token = self.token_form.save()
@@ -90,6 +91,7 @@ class UserSettings(TemplateView):
             token = request.user.api_tokens.filter(pk=token_id).first()
             token.version = CURRENT_VERSION
             token.save()
+            # TODO: log versions as old/new
             request.user.log_action(
                 "pretalx.user.token.upgrade", data=token.serialize()
             )

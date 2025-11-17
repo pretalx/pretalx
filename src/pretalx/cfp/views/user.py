@@ -433,9 +433,14 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
             messages.error(self.request, phrases.cfp.submission_uneditable)
             return redirect(self.object.urls.user_base)
 
-        old_submission = form.instance.__class__.objects.get(pk=form.instance.pk)
-        old_submission_data = old_submission._get_instance_data() or {}
-        old_questions_data = self.qform.serialize_answers() or {}
+        old_submission_data = {}
+        old_questions_data = {}
+        model_class = form.instance.__class__
+        manager = model_class.all_objects or model_class.objects
+        old_submission = manager.filter(pk=form.instance.pk).first()
+        if old_submission:
+            old_submission_data = old_submission._get_instance_data() or {}
+            old_questions_data = self.qform.serialize_answers() or {}
 
         form.save()
         self.qform.save()

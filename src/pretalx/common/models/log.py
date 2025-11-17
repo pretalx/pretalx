@@ -7,6 +7,7 @@ from contextlib import suppress
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 from django.db.models.fields.related import ManyToManyRel, ManyToOneRel
 from django.utils.functional import cached_property
@@ -113,11 +114,16 @@ class ActivityLog(models.Model):
                     display["question"] = question
                     display["label"] = question.question
             else:
-                if field := object.__class__._meta.get_field(key):
-                    display["field"] = field
-                    if isinstance(field, (ManyToOneRel, ManyToManyRel)):
-                        display["label"] = field.related_model._meta.verbose_name_plural
-                    else:
-                        display["label"] = field.verbose_name
+                try:
+                    if field := object.__class__._meta.get_field(key):
+                        display["field"] = field
+                        if isinstance(field, (ManyToOneRel, ManyToManyRel)):
+                            display["label"] = (
+                                field.related_model._meta.verbose_name_plural
+                            )
+                        else:
+                            display["label"] = field.verbose_name
+                except FieldDoesNotExist:
+                    display["label"] = key.capitalize()
             result[key] = display
         return result

@@ -905,8 +905,8 @@ def test_event_history_detail_view_with_changes(
     response = orga_client.get(url, follow=True)
     assert response.status_code == 200
     assert "Changes" in response.text
-    assert "Old Title" in response.text
-    assert "New Title" in response.text
+    assert "<del>Old</del> Title" in response.text
+    assert "<ins>New</ins> Title" in response.text
     assert question.question in response.text
     assert "Blue" in response.text
     assert "Red" in response.text
