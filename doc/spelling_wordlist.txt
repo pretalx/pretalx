@@ -94,6 +94,7 @@ referer
 ro
 SaaS
 scrollbar
+setuptools
 slugified
 socio
 stdout
