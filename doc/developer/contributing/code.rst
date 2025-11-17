@@ -46,10 +46,10 @@ and ``black`` as style checkers, so those should help you if you’re not sure
 how to format something. They are configured via the ``setup.cfg`` file in the
 ``src`` directory, and can be run like this::
 
-    $ isort .
-    $ black .
-    $ flake8 .
-    $ djhtml -i .
+    $ uv run isort .
+    $ uv run black .
+    $ uv run flake8 .
+    $ uv run djhtml -i .
 
 While we enforce no strict line length, please try to keep your lines **below
 120 characters**. Other than that, we generally subscribe to the `Django
