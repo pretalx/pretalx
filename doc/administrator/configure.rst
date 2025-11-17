@@ -130,6 +130,14 @@ The site section
 - **Environment variables:** ``PRETALX_SITE_CSP``, ``PRETALX_SITE_CSP_SCRIPT`` etc.
 - **Default**: ``''``
 
+``max_pagination_limit``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The maximum number of items that can be requested per page. Users can request
+  smaller page sizes, but cannot exceed this limit. Set to ``-1`` to remove the
+  limit entirely. This setting applies to both API pages and UI pages.
+- **Environment variable:** ``PRETALX_MAX_PAGINATION_LIMIT``
+- **Default:** ``250``
 
 The database section
 --------------------
@@ -338,16 +346,5 @@ The files section
 - **Environment variable:** ``PRETALX_FILE_UPLOAD_LIMIT``
 - **Default:** ``10``
 
-The api section
----------------
-
-``max_pagination_limit``
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- The maximum number of items that can be requested per API page. Users can
-  request smaller page sizes, but cannot exceed this limit. Set to ``-1`` to
-  remove the limit entirely.
-- **Environment variable:** ``PRETALX_API_MAX_PAGINATION_LIMIT``
-- **Default:** ``50``
 
 .. _Python: https://docs.python.org/3/library/configparser.html

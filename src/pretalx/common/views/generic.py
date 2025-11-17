@@ -8,6 +8,7 @@ import datetime as dt
 from contextlib import suppress
 from urllib.parse import quote
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.core.paginator import InvalidPage, Paginator
@@ -629,8 +630,12 @@ class OrgaTableMixin(SingleTableMixin):
 
         if self.request.GET.get("page_size"):
             try:
-                max_page_size = getattr(self, "max_page_size", 250)
-                size = min(max_page_size, int(self.request.GET.get("page_size")))
+                if max_page_size := getattr(
+                    self, "max_page_size", settings.MAX_PAGINATION_LIMIT
+                ):
+                    size = min(max_page_size, int(self.request.GET.get("page_size")))
+                else:
+                    size = int(self.request.GET.get("page_size"))
 
                 if (
                     self.request.user.is_authenticated

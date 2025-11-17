@@ -7,7 +7,7 @@ from rest_framework import pagination
 
 
 class LimitOffsetPagination(pagination.LimitOffsetPagination):
-    max_limit = settings.API_MAX_PAGINATION_LIMIT
+    max_limit = settings.MAX_PAGINATION_LIMIT
 
 
 class PageNumberPagination(pagination.PageNumberPagination):
@@ -18,7 +18,7 @@ class PageNumberPagination(pagination.PageNumberPagination):
     """
 
     page_size_query_param = "page_size"
-    max_page_size = settings.API_MAX_PAGINATION_LIMIT
+    max_page_size = settings.MAX_PAGINATION_LIMIT
 
     @cached_property
     def is_limit_offset(self):

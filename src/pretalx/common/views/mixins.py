@@ -281,8 +281,12 @@ class PaginationMixin:
         )
         if self.request.GET.get("page_size"):
             try:
-                max_page_size = getattr(self, "max_page_size", 250)
-                size = min(max_page_size, int(self.request.GET.get("page_size")))
+                if max_page_size := getattr(
+                    self, "max_page_size", settings.MAX_PAGINATION_LIMIT
+                ):
+                    size = min(max_page_size, int(self.request.GET.get("page_size")))
+                else:
+                    size = int(self.request.GET.get("page_size"))
                 self.request.session[skey] = size
                 return size
             except ValueError:

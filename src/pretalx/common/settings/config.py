@@ -51,6 +51,10 @@ CONFIG = {
         "csp_style": {"default": "", "env": os.getenv("PRETALX_SITE_CSP_STYLE")},
         "csp_img": {"default": "", "env": os.getenv("PRETALX_SITE_CSP_IMG")},
         "csp_form": {"default": "", "env": os.getenv("PRETALX_SITE_CSP_FORM")},
+        "max_pagination_limit": {
+            "default": 250,
+            "env": os.getenv("PRETALX_MAX_PAGINATION_LIMIT"),
+        },
     },
     "database": {
         "backend": {
@@ -151,12 +155,6 @@ CONFIG = {
         "upload_limit": {
             "default": 10,
             "env": os.getenv("PRETALX_FILE_UPLOAD_LIMIT"),
-        }
-    },
-    "api": {
-        "max_pagination_limit": {
-            "default": 50,
-            "env": os.getenv("PRETALX_API_MAX_PAGINATION_LIMIT"),
         }
     },
 }
