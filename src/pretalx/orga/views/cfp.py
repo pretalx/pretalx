@@ -80,7 +80,7 @@ class CfPTextDetail(PermissionRequired, UpdateView):
     @cached_property
     def sform(self):
         return CfPSettingsForm(
-            read_only=(self.action == "view"),
+            read_only=(self.permission_action == "view"),
             locales=self.request.event.locales,
             obj=self.request.event,
             data=self.request.POST if self.request.method == "POST" else None,

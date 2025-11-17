@@ -351,8 +351,10 @@ class SubmissionContent(
 
     @cached_property
     def write_permission_required(self):
-        if self.kwargs.get("code"):
-            return "submission.update_submission"
+        return "submission.update_submission"
+
+    @cached_property
+    def create_permission_required(self):
         return "submission.create_submission"
 
     @context
@@ -454,7 +456,7 @@ class SubmissionContent(
         return True
 
     def get_permission_required(self):
-        if self.action != "create":
+        if self.permission_action != "create":
             return ["submission.orga_list_submission"]
         return ["submission.create_submission"]
 
@@ -507,7 +509,7 @@ class SubmissionContent(
             if not self.save_formset(form.instance):  # validation failed
                 stay_on_page = True
 
-        if message := self.messages.get(self.action):
+        if message := self.messages.get(self.permission_action):
             messages.success(self.request, message)
 
         if not created and (

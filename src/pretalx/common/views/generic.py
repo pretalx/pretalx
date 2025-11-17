@@ -131,7 +131,8 @@ class FormLoggingMixin:
         form.save()
         self.object = form.instance
 
-        if message := self.messages.get(self.action):
+        action = getattr(self, "action", getattr(self, "permission_action", None))
+        if message := self.messages.get(action):
             messages.success(self.request, message)
 
         if form.has_changed() and hasattr(self.object, "log_action"):
@@ -168,7 +169,7 @@ class CreateOrUpdateView(
         return super().post(request, *args, **kwargs)
 
     def get_log_action(self):
-        return ".create" if self.action == "create" else ".update"
+        return ".create" if self.permission_action == "create" else ".update"
 
 
 class GenericLoginView(FormView):
