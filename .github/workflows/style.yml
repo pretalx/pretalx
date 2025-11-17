@@ -30,12 +30,15 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version-file: ".github/workflows/python-version.txt"
-          cache: "pip"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: extractions/setup-just@v2
       - name: Install Dependencies
-        run: python -m pip install uv && uv pip install --system -Ue ".[dev]"
+        run: just install --extra dev
       - name: Run isort
-        run: isort -c .
-        working-directory: ./src
+        run: just isort-check
   flake:
     name: flake8
     runs-on: ubuntu-latest
@@ -44,14 +47,17 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version-file: ".github/workflows/python-version.txt"
-          cache: "pip"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: extractions/setup-just@v2
       - name: Install Dependencies
-        run: python -m pip install uv && uv pip install --system -Ue ".[dev]"
+        run: just install --extra dev
       - name: Setup flake8 annotations
         uses: rbialon/flake8-annotations@v1
       - name: Run flake8
-        run: flake8 .
-        working-directory: ./src
+        run: just flake8
   black:
     name: black
     runs-on: ubuntu-latest
@@ -60,12 +66,17 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version-file: ".github/workflows/python-version.txt"
-          cache: "pip"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: extractions/setup-just@v2
+      - name: Install Dependencies
+        run: just install --extra dev
       - name: Add problem matcher for black
         run: echo "::add-matcher::.github/workflows/matchers/black.json"
-      - uses: psf/black@stable
-        with:
-          src: "./src"
+      - name: Run black
+        run: just black-check
   html:
     name: HTML checks
     runs-on: ubuntu-latest
@@ -74,12 +85,15 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version-file: ".github/workflows/python-version.txt"
-          cache: "pip"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: extractions/setup-just@v2
       - name: Install Dependencies
-        run: python -m pip install uv && uv pip install --system -Ue ".[dev]"
+        run: just install --extra dev
       - name: Run djhtml
-        run: 'djhtml pretalx/'
-        working-directory: ./src
+        run: just djhtml-check
       - name: Make sure we always use trimmed translation strings
         run: "! git grep ' blocktranslate ' | grep -v trimmed"
   compliance:
@@ -90,8 +104,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version-file: ".github/workflows/python-version.txt"
-          cache: "pip"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
       - name: Install Dependencies
-        run: python -m pip install reuse
+        run: uv pip install reuse
       - name: Run REUSE
-        run: "reuse lint"
+        run: just reuse

@@ -14,6 +14,12 @@ install *args:
 install-all:
     uv sync --all-extras
 
+# Install all dependencies (dev, devdocs, postgres, redis)
+[group('development')]
+[working-directory("src/pretalx/frontend/schedule-editor/")]
+install-npm:
+    npm ci
+
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
 [working-directory("src")]
@@ -30,14 +36,20 @@ makemessages:
 # Build the documentation
 [group('documentation')]
 [working-directory("doc")]
-docs:
-    uv run make html
+docs *args="html":
+    uv run make {{ args }}
 
 # Serve the documentation from a live server
 [group('documentation')]
 [working-directory("doc")]
 serve-docs *args="--port 8001":
     uv run sphinx-autobuild . _build/html {{ args }}
+
+# Check codebase for licensing problems
+[group('linting')]
+[working-directory("src")]
+reuse:
+    uv run reuse lint
 
 # Format code with black
 [group('linting')]
@@ -131,3 +143,13 @@ test-coverage *args:
 [working-directory("src")]
 test-coverage-report: test-coverage
     open htmlcov/index.html || xdg-open htmlcov/index.html || echo "Coverage report generated in htmlcov/index.html"
+
+# Run release checks
+[group('release')]
+release-checks:
+    uv run check-manifest
+    uv run python -m build
+    uv run twine check dist/*
+    unzip -l dist/pretalx*whl | grep frontend || exit 1
+    unzip -l dist/pretalx*whl | grep node_modules && exit 1 || exit 0
+    echo "All release checks successful"

@@ -38,37 +38,32 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: extractions/setup-just@v2
       - name: Set up node
         uses: actions/setup-node@v6
         with:
           node-version: 'latest'
-      - name: Install frontend dependencies
-        run: npm ci
-        working-directory: ./src/pretalx/frontend/schedule-editor
       - name: Install system dependencies
         run: sudo apt update && sudo apt install -y gettext unzip
       - name: Install Python dependencies
-        run: python -m pip install uv && uv pip install --system twine wheel -Ue ".[dev]"
+        run: just install --extra dev && uv pip install --system wheel
+      - name: Install frontend dependencies
+        run: just run collectstatic --npm-install
       - name: Run check-manifest
-        run: check-manifest
-      - name: Run build
-        run: python -m build
-      - name: Check package
-        run: twine check dist/*
-      - name: Check files to make sure we ship our frontend
-        run: unzip -l dist/pretalx*whl | grep frontend || exit 1
-      - name: Check files to make sure we ship our frontend but not our node_modules
-        run: unzip -l dist/pretalx*whl | grep node_modules && exit 1 || exit 0
+        run: just release-checks
       - name: Install the created wheel package with pip
         run: |
           # Switch to a new virtualenv
           mkdir test_venv
-          python -m venv test_venv
+          uv venv test_venv
           . test_venv/bin/activate
 
-          python -m pip install dist/pretalx*whl
+          uv pip install dist/pretalx*whl
       - name: Make sure we can run pretalx commands
-        run: python -m pretalx help
+        run: uv run pretalx help
       - name: Make sure we can run through all migrations
-        run: python -m pretalx migrate
+        run: uv run pretalx migrate
