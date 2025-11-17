@@ -52,7 +52,7 @@ class ActionFromUrl:
                 self.create_permission_required or self.write_permission_required
             ):
                 return "create"
-            return "view"
+            raise Http404()
         if self._check_permission(self.write_permission_required):
             return "edit"
         return "view"
