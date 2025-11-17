@@ -78,7 +78,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                         <i class="fa fa-question-circle-o text-info ml-2"></i>
                                     </span>
                                 {% endif %}
-                                {% if action != "view" %}
+                                {% if permission_action != "view" %}
                                     <button type="button" class="btn btn-xs btn-danger ml-auto" data-formset-delete-button>
                                         <i class="fa fa-trash"></i>
                                     </button>
@@ -89,7 +89,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 {{ form.new_scores }}
                                 {{ form.DELETE }}
                             </div>
-                            <div class="score-row flip ml-auto score-input{% if action == "view" %} disabled{% endif %}">
+                            <div class="score-row flip ml-auto score-input{% if permission_action == "view" %} disabled{% endif %}">
                                 {% include "common/forms/errors.html" %}
                                 {{ form.is_independent.as_field_group }}
                                 {{ form.weight.as_field_group }}
@@ -137,7 +137,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <h3 class="d-flex offset-md-3 flex-wrap align-items-start mt-2 hide-label">
                             <span class="m-2">{% translate "Score Category" %}</span>
                             {{ scores_formset.empty_form.name.as_field_group }}
-                            {% if action != "view" %}
+                            {% if permission_action != "view" %}
                                 <div class="score-delete flip ml-auto">
                                 <button type="button" class="btn btn-danger" data-formset-delete-button>
                                 <i class="fa fa-trash"></i></button>
@@ -203,7 +203,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                         <i class="fa fa-question-circle-o text-info ml-2"></i>
                                     </span>
                                 {% endif %}
-                                {% if action != "view" %}
+                                {% if permission_action != "view" %}
                                     <div class="phase-option-delete flip ml-auto">
                                         {% if not form.instance.is_active %}
                                             <a href="{{ form.instance.urls.activate }}"
@@ -229,7 +229,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 {{ form.DELETE }}
                             </div>
                             <div class="phase-option-row flip ml-auto">
-                                <div class="phase-option-input{% if action == "view" %} disabled{% endif %}">
+                                <div class="phase-option-input{% if permission_action == "view" %} disabled{% endif %}">
                                     {% include "common/forms/errors.html" %}
                                     {% for field in form %}
                                         {% if field.name != "DELETE" and field.name != "name" and field.name != "id" %}

@@ -128,14 +128,18 @@ class PermissionRequired(PermissionRequiredMixin):
 
     @context
     @cached_property
-    def action(self):
+    def permission_action(self):
         kwargs = getattr(self, "kwargs", None)
         if kwargs and not any(_id in self.kwargs for _id in ("pk", "code")):
-            if self._check_permission(
-                self.create_permission_required or self.write_permission_required
-            ):
+            if permission := self.create_permission_required:
+                # If there is a create_permission and we don't have it, raise
+                if not self._check_permission(permission):
+                    raise Http404()
                 return "create"
-            raise Http404()
+            if self._check_permission(self.write_permission_required):
+                # If there is no create permission, we're probably not in an object view
+                return "create"
+            return "view"
         if self._check_permission(self.write_permission_required):
             return "edit"
         return "view"
@@ -144,7 +148,7 @@ class PermissionRequired(PermissionRequiredMixin):
         kwargs = super().get_form_kwargs()
         cls = self.get_form_class()
         if self.read_only_form_class or issubclass(cls, ReadOnlyFlag):
-            kwargs["read_only"] = self.action == "view"
+            kwargs["read_only"] = self.permission_action == "view"
         event = getattr(self.request, "event", None)
         if event and issubclass(self.form_class, PretalxI18nModelForm):
             kwargs["locales"] = event.locales
@@ -289,7 +293,7 @@ class PaginationMixin:
         from pretalx.common.views.generic import CRUDView
 
         ctx = super().get_context_data(**kwargs)
-        if isinstance(self, CRUDView) and self.action != "list":
+        if isinstance(self, CRUDView) and self.permission_action != "list":
             return ctx
         return ctx
 

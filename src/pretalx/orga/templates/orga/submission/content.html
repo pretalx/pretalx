@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
             {{ form.title.as_field_group }}
 
-            {% if action == "create" %}
+            {% if permission_action == "create" %}
                 {{ form.state.as_field_group }}
                 </fieldset>
                 <fieldset>
@@ -43,7 +43,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <legend id="proposal">{% translate "Proposal" %}</legend>
             {% endif %}
             {% if form.room %}
-                <div id="show-if-state" {% if action == "create" %}class="d-none"{% endif %}>
+                <div id="show-if-state" {% if permission_action == "create" %}class="d-none"{% endif %}>
                     {{ form.room.as_field_group }}
                     {{ form.start.as_field_group }}
                     {{ form.end.as_field_group }}
@@ -74,7 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {{ form.duration.as_field_group }}
             {% if form.slot_count %}{{ form.slot_count.as_field_group }}{% endif %}
             {% if form.image %}{{ form.image.as_field_group }}{% endif %}
-            {% if action != "create" %}
+            {% if permission_action != "create" %}
                 {% include "cfp/includes/submission_resources_form.html" %}
             {% endif %}
             {% if questions_form and questions_form.fields %}

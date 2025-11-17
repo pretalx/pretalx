@@ -347,7 +347,7 @@ class MailDetail(PermissionRequired, CreateOrUpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.action == "edit":
+        if self.permission_action == "edit":
             context["submit_buttons"] = [
                 Button(),
                 Button(
