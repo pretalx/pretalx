@@ -74,7 +74,7 @@ class ScheduleReleaseSerializer(PretalxSerializer):
 @register_serializer(versions=CURRENT_VERSIONS)
 class TalkSlotSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     submission = SlugRelatedField(slug_field="code", read_only=True)
-    end = DateTimeField(source="local_end")
+    end = DateTimeField(source="local_end", required=False)
 
     class Meta:
         model = TalkSlot

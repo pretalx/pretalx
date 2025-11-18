@@ -2277,7 +2277,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TalkSlotRequest'
-        required: true
       responses:
         '200':
           content:
@@ -2310,7 +2309,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TalkSlotRequest'
-        required: true
       responses:
         '200':
           content:
@@ -7134,7 +7132,6 @@ components:
           readOnly: true
       required:
       - duration
-      - end
       - id
       - schedule
       - submission
@@ -7162,8 +7159,6 @@ components:
           allOf:
           - $ref: '#/components/schemas/Multi-language string'
           nullable: true
-      required:
-      - end
     TargetEnum:
       enum:
       - submission
