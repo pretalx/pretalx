@@ -25,7 +25,6 @@ from django_context_decorator import context
 from i18nfield.strings import LazyI18nString
 from i18nfield.utils import I18nJSONEncoder
 
-from pretalx.agenda.management.commands.export_schedule_html import get_export_zip_path
 from pretalx.agenda.tasks import export_schedule_html
 from pretalx.agenda.views.utils import get_schedule_exporters
 from pretalx.common.language import get_current_language_information
@@ -159,6 +158,10 @@ class ScheduleExportDownloadView(EventPermissionRequired, View):
     permission_required = "event.update_event"
 
     def get(self, request, event):
+        from pretalx.agenda.management.commands.export_schedule_html import (
+            get_export_zip_path,
+        )
+
         try:
             zip_path = get_export_zip_path(self.request.event)
             response = FileResponse(open(zip_path, "rb"), as_attachment=True)
