@@ -4,10 +4,7 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: s-light
 
-from urllib.parse import urlparse
 
-import vobject
-from django.conf import settings
 from django.contrib import messages
 from django.db.models import Prefetch, Q
 from django.http import HttpResponse
@@ -21,6 +18,7 @@ from pretalx.agenda.signals import register_recording_provider
 from pretalx.cfp.views.event import EventPageMixin
 from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import PermissionRequired, SocialMediaCardMixin
+from pretalx.schedule.ical import get_submission_ical
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.forms import FeedbackForm
 from pretalx.submission.models import Submission, SubmissionStates
@@ -207,17 +205,11 @@ class SingleICalView(EventPageMixin, TalkMixin, View):
 
     def get(self, request, event, **kwargs):
         code = self.submission.code
-        talk_slots = self.submission.slots.filter(
+        slots = self.submission.slots.filter(
             schedule=self.request.event.current_schedule, is_visible=True
         )
-
-        netloc = urlparse(settings.SITE_URL).netloc
-        cal = vobject.iCalendar()
-        cal.add("prodid").value = f"-//pretalx//{netloc}//{code}"
-        for talk in talk_slots:
-            talk.build_ical(cal)
         return HttpResponse(
-            cal.serialize(),
+            get_submission_ical(self.submission, slots).serialize(),
             content_type="text/calendar",
             headers={
                 "Content-Disposition": f'attachment; filename="{request.event.slug}-{code}.ics"'

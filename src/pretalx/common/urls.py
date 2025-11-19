@@ -31,10 +31,13 @@ def build_absolute_uri(urlname, event=None, args=None, kwargs=None):
     return urljoin(url, reverse(urlname, args=args, kwargs=kwargs))
 
 
+def get_netloc(event, url=None):
+    return urlparse(get_base_url(event, url)).netloc
+
+
 class EventUrls(Urls):
     def get_hostname(self, url):
-        url = get_base_url(self.instance.event, url)
-        return urlparse(url).netloc
+        return get_netloc(self.instance.event, url)
 
     def get_scheme(self, url):
         url = get_base_url(self.instance.event, url)

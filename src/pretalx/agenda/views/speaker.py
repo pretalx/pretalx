@@ -6,9 +6,7 @@
 
 import io
 from collections import defaultdict
-from urllib.parse import urlparse
 
-import vobject
 from django.conf import settings
 from django.core.exceptions import SuspiciousFileOperation
 from django.core.files.storage import Storage
@@ -27,6 +25,7 @@ from pretalx.common.views.mixins import (
     SocialMediaCardMixin,
 )
 from pretalx.person.models import SpeakerProfile, User
+from pretalx.schedule.ical import get_speaker_ical
 from pretalx.submission.models import QuestionTarget, QuestionVariant
 
 
@@ -151,20 +150,11 @@ class SpeakerTalksIcalView(PermissionRequired, DetailView):
     def get(self, request, event, *args, **kwargs):
         if not self.request.event.current_schedule:
             raise Http404()
-        netloc = urlparse(settings.SITE_URL).netloc
         speaker = self.get_object()
         slots = self.request.event.current_schedule.talks.filter(
             submission__speakers=speaker.user, is_visible=True
         ).select_related("room", "submission")
-
-        cal = vobject.iCalendar()
-        cal.add("prodid").value = (
-            f"-//pretalx//{netloc}//{request.event.slug}//{speaker.code}"
-        )
-
-        for slot in slots:
-            slot.build_ical(cal)
-
+        cal = get_speaker_ical(request.event, speaker, slots)
         try:
             speaker_name = Storage().get_valid_name(
                 name=speaker.user.name or speaker.user.code

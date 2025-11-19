@@ -6,11 +6,7 @@
 
 import datetime as dt
 import json
-from urllib.parse import urlparse
-from zoneinfo import ZoneInfo
 
-import vobject
-from django.conf import settings
 from django.template.loader import get_template
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -18,7 +14,8 @@ from i18nfield.utils import I18nJSONEncoder
 
 from pretalx import __version__
 from pretalx.common.exporter import BaseExporter
-from pretalx.common.urls import get_base_url
+from pretalx.common.urls import get_base_url, get_netloc
+from pretalx.schedule.ical import get_slots_ical
 
 
 class ScheduleData(BaseExporter):
@@ -151,7 +148,7 @@ class FrabXCalExporter(ScheduleData):
 
     def get_data(self, **kwargs):
         url = get_base_url(self.event)
-        context = {"data": self.data, "url": url, "domain": urlparse(url).netloc}
+        context = {"data": self.data, "url": url, "domain": get_netloc(self.event)}
         return get_template("agenda/schedule.xcal").render(context=context)
 
 
@@ -309,20 +306,13 @@ class ICalExporter(BaseExporter):
         self.schedule = schedule
 
     def get_data(self, **kwargs):
-        netloc = urlparse(get_base_url(self.event)).netloc
-        cal = vobject.iCalendar()
-        cal.add("prodid").value = f"-//pretalx//{netloc}//"
-        creation_time = dt.datetime.now(ZoneInfo("UTC"))
-
         talks = (
             self.schedule.talks.filter(is_visible=True)
             .prefetch_related("submission__speakers")
             .select_related("submission", "room", "submission__event")
             .order_by("start")
         )
-        for talk in talks:
-            talk.build_ical(cal, creation_time=creation_time, netloc=netloc)
-        return cal.serialize()
+        return get_slots_ical(self.schedule.event, talks).serialize()
 
 
 class FavedICalExporter(BaseExporter):
@@ -347,14 +337,7 @@ class FavedICalExporter(BaseExporter):
         if not request.user.is_authenticated:
             return None
 
-        netloc = urlparse(settings.SITE_URL).netloc
         slots = request.event.current_schedule.scheduled_talks.filter(
             submission__favourites__user__in=[request.user]
         )
-
-        cal = vobject.iCalendar()
-        cal.add("prodid").value = f"-//pretalx//{netloc}//{request.event.slug}//faved"
-
-        for slot in slots:
-            slot.build_ical(cal)
-        return cal.serialize()
+        return get_slots_ical(request.event, slots, prodid_suffix="faved").serialize()

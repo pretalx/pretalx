@@ -9,12 +9,8 @@ import re
 import string
 import unicodedata
 import uuid
-from contextlib import contextmanager
-from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
-import vobject
-from django.conf import settings
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -25,34 +21,13 @@ from pretalx.agenda.rules import is_agenda_submission_visible, is_agenda_visible
 from pretalx.common.models.fields import DateTimeField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.serialize import serialize_duration
-from pretalx.common.urls import get_base_url
+from pretalx.common.urls import get_netloc
+from pretalx.schedule.ical import get_slot_ical, patch_out_timezone_cache
 from pretalx.submission.rules import is_break, is_wip, orga_can_change_submissions
 
 INSTANCE_IDENTIFIER = None
 WHITESPACE_REGEX = re.compile(r"\W+")
 FRAB_SLUG_REGEX = re.compile(f"[^{string.ascii_letters + string.digits + '-'}]")
-
-
-@contextmanager
-def patch_out_timezone_cache(tzinfo):
-    """Context manager to clear vobject's timezone cache during ICS generation.
-
-    This prevents vobject from using cached ambiguous timezone abbreviations like "PST"
-    which could be interpreted as either Pacific Standard Time (-08:00) or
-    Philippine Standard Time (+08:00). By clearing the cache, vobject is forced to
-    re-register timezones every time.
-    """
-    import vobject.icalendar as ical
-
-    try:
-        minimal_tzid_map = {"UTC": ical.__tzidMap["UTC"]}
-    except KeyError:
-        minimal_tzid_map = {}
-
-    try:
-        yield
-    finally:
-        ical.__tzidMap = minimal_tzid_map
 
 
 class TalkSlot(PretalxModel):
@@ -239,7 +214,7 @@ class TalkSlot(PretalxModel):
         if not self.start or not self.local_end or not self.room or not self.submission:
             return
         creation_time = creation_time or dt.datetime.now(ZoneInfo("UTC"))
-        netloc = netloc or urlparse(get_base_url(self.event)).netloc
+        netloc = netloc or get_netloc(self.event)
 
         with patch_out_timezone_cache(self.event.tz):
             vevent = calendar.add("vevent")
@@ -258,10 +233,4 @@ class TalkSlot(PretalxModel):
             vevent.add("url").value = self.submission.urls.public.full()
 
     def full_ical(self):
-        netloc = urlparse(settings.SITE_URL).netloc
-        cal = vobject.iCalendar()
-        cal.add("prodid").value = "-//pretalx//{}//{}".format(
-            netloc, self.submission.code if self.submission else self.pk
-        )
-        self.build_ical(cal)
-        return cal
+        return get_slot_ical(self)
