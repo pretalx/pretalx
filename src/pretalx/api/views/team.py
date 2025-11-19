@@ -4,18 +4,19 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django_scopes import scopes_disabled
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import (
-    OpenApiParameter,
-    OpenApiResponse,
-    extend_schema,
-    extend_schema_view,
-)
 from rest_framework import exceptions, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from pretalx.api.documentation import build_expand_docs, build_search_docs
+from pretalx.api.documentation import (
+    OpenApiParameter,
+    OpenApiResponse,
+    OpenApiTypes,
+    build_expand_docs,
+    build_search_docs,
+    extend_schema,
+    extend_schema_view,
+)
 from pretalx.api.serializers.team import TeamInviteSerializer, TeamSerializer
 from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.event.models import Team, TeamInvite

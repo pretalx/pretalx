@@ -5,7 +5,6 @@ from django.http import Http404
 from django.utils.functional import cached_property
 from django_filters import rest_framework as filters
 from django_scopes import scopes_disabled
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import serializers, status, viewsets
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import (
@@ -18,7 +17,13 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from pretalx.api.documentation import build_expand_docs, build_search_docs
+from pretalx.api.documentation import (
+    OpenApiResponse,
+    build_expand_docs,
+    build_search_docs,
+    extend_schema,
+    extend_schema_view,
+)
 from pretalx.api.serializers.legacy import (
     LegacySubmissionOrgaSerializer,
     LegacySubmissionReviewerSerializer,

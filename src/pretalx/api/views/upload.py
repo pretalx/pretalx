@@ -5,17 +5,17 @@ import datetime
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.timezone import now
-from drf_spectacular.utils import (
-    OpenApiExample,
-    extend_schema,
-    extend_schema_serializer,
-)
 from rest_framework import permissions, serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.parsers import FileUploadParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from pretalx.api.documentation import (
+    OpenApiExample,
+    extend_schema,
+    extend_schema_serializer,
+)
 from pretalx.common.image import validate_image
 from pretalx.common.models import CachedFile
 

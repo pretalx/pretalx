@@ -1,10 +1,14 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
 
-from pretalx.api.documentation import build_expand_docs, build_search_docs
+from pretalx.api.documentation import (
+    build_expand_docs,
+    build_search_docs,
+    extend_schema,
+    extend_schema_view,
+)
 from pretalx.api.serializers.speaker_information import SpeakerInformationSerializer
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.person.models import SpeakerInformation

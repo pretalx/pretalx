@@ -2,11 +2,12 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.utils.functional import cached_property
-from drf_spectacular.utils import extend_schema_field
 from i18nfield.fields import I18nCharField, I18nTextField
 from i18nfield.rest_framework import I18nField
 from rest_flex_fields.utils import split_levels
 from rest_framework.serializers import ModelSerializer
+
+from pretalx.api.documentation import extend_schema_field
 
 
 @extend_schema_field(

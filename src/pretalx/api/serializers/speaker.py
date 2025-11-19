@@ -3,7 +3,6 @@
 
 from pathlib import Path
 
-from drf_spectacular.utils import extend_schema_field
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions
 from rest_framework.serializers import (
@@ -13,6 +12,7 @@ from rest_framework.serializers import (
     URLField,
 )
 
+from pretalx.api.documentation import extend_schema_field
 from pretalx.api.serializers.availability import (
     AvailabilitiesMixin,
     AvailabilitySerializer,

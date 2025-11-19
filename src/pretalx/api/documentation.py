@@ -1,10 +1,39 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter
+from contextlib import suppress
+
+from django.conf import settings
 
 from pretalx.mail.models import MailTemplateRoles
+
+SPECTACULAR_LOADED = False
+if settings.LOAD_SPECTACULAR:
+    with suppress(ImportError):
+        from drf_spectacular.types import OpenApiTypes
+        from drf_spectacular.utils import (  # noqa
+            OpenApiExample,
+            OpenApiParameter,
+            OpenApiResponse,
+            extend_schema,
+            extend_schema_field,
+            extend_schema_serializer,
+            extend_schema_view,
+        )
+
+        SPECTACULAR_LOADED = True
+
+if not settings.LOAD_SPECTACULAR or not SPECTACULAR_LOADED:
+    from pretalx.api.shims import (  # noqa
+        OpenApiExample,
+        OpenApiParameter,
+        OpenApiResponse,
+        OpenApiTypes,
+        extend_schema,
+        extend_schema_field,
+        extend_schema_serializer,
+        extend_schema_view,
+    )
 
 
 def build_expand_docs(*params):

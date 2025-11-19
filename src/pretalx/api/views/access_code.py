@@ -3,10 +3,14 @@
 
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
-from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import exceptions, viewsets
 
-from pretalx.api.documentation import build_expand_docs, build_search_docs
+from pretalx.api.documentation import (
+    build_expand_docs,
+    build_search_docs,
+    extend_schema,
+    extend_schema_view,
+)
 from pretalx.api.serializers.access_code import SubmitterAccessCodeSerializer
 from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.submission.models import SubmitterAccessCode

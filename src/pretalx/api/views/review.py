@@ -2,11 +2,15 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.utils.functional import cached_property
-from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
 from rest_framework.permissions import SAFE_METHODS
 
-from pretalx.api.documentation import build_expand_docs, build_search_docs
+from pretalx.api.documentation import (
+    build_expand_docs,
+    build_search_docs,
+    extend_schema,
+    extend_schema_view,
+)
 from pretalx.api.filters.review import ReviewFilter
 from pretalx.api.serializers.review import ReviewSerializer, ReviewWriteSerializer
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin

@@ -5,18 +5,19 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.functional import cached_property
-from drf_spectacular.utils import (
-    OpenApiParameter,
-    OpenApiResponse,
-    extend_schema,
-    extend_schema_view,
-)
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from pretalx.agenda.views.utils import get_schedule_exporter_content
-from pretalx.api.documentation import build_expand_docs, build_search_docs
+from pretalx.api.documentation import (
+    OpenApiParameter,
+    OpenApiResponse,
+    build_expand_docs,
+    build_search_docs,
+    extend_schema,
+    extend_schema_view,
+)
 from pretalx.api.filters.schedule import TalkSlotFilter
 from pretalx.api.serializers.legacy import LegacyScheduleSerializer
 from pretalx.api.serializers.schedule import (

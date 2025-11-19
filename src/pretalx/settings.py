@@ -97,7 +97,6 @@ LOCAL_APPS = [
 FALLBACK_APPS = [
     "django.forms",
     "rest_framework",
-    "drf_spectacular",
 ]
 INSTALLED_APPS = DJANGO_APPS + EXTERNAL_APPS + LOCAL_APPS + FALLBACK_APPS
 
@@ -642,7 +641,6 @@ REST_FRAMEWORK = {
         "rest_framework.filters.OrderingFilter",
         "django_filters.rest_framework.DjangoFilterBackend",
     ),
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "pretalx.api.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
     "SEARCH_PARAM": "q",
@@ -678,6 +676,15 @@ REST_FLEX_FIELDS = {
     "RECURSIVE_EXPANSION_PERMITTED": False,
     "MAXIMUM_EXPANSION_DEPTH": 3,
 }
+
+LOAD_SPECTACULAR = False
+if "spectacular" in sys.argv:
+    with suppress(ImportError):
+        import drf_spectacular  # noqa
+
+        INSTALLED_APPS.append("drf_spectacular")
+        REST_FRAMEWORK["DEFAULT_SCHEMA_CLASS"] = "drf_spectacular.openapi.AutoSchema"
+        LOAD_SPECTACULAR = True
 
 WSGI_APPLICATION = "pretalx.wsgi.application"
 

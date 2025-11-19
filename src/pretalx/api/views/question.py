@@ -5,12 +5,16 @@ from django.db import transaction
 from django.db.models.deletion import ProtectedError
 from django.http import HttpResponse
 from django_filters import rest_framework as filters
-from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import exceptions, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, AllowAny
 
-from pretalx.api.documentation import build_expand_docs, build_search_docs
+from pretalx.api.documentation import (
+    build_expand_docs,
+    build_search_docs,
+    extend_schema,
+    extend_schema_view,
+)
 from pretalx.api.serializers.question import (
     AnswerCreateSerializer,
     AnswerOptionCreateSerializer,

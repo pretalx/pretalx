@@ -4,7 +4,6 @@
 from collections import defaultdict
 from contextlib import suppress
 
-from bs4 import BeautifulSoup
 from django import forms
 from django.db import transaction
 from django.db.models import Count, Q
@@ -93,6 +92,8 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
         if warnings:
             warnings = ", ".join("{" + warning + "}" for warning in warnings)
             raise forms.ValidationError(str(_("Unknown placeholder!")) + " " + warnings)
+
+        from bs4 import BeautifulSoup
 
         from pretalx.common.templatetags.rich_text import render_markdown_abslinks
 

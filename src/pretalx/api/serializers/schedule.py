@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from drf_spectacular.utils import extend_schema_field
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -12,6 +11,7 @@ from rest_framework.serializers import (
     SlugRelatedField,
 )
 
+from pretalx.api.documentation import extend_schema_field
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.schedule.models import Schedule, TalkSlot

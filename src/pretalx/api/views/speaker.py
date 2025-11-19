@@ -3,11 +3,15 @@
 
 from django.utils.functional import cached_property
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, mixins, viewsets
 from rest_framework.permissions import SAFE_METHODS
 
-from pretalx.api.documentation import build_expand_docs, build_search_docs
+from pretalx.api.documentation import (
+    build_expand_docs,
+    build_search_docs,
+    extend_schema,
+    extend_schema_view,
+)
 from pretalx.api.serializers.legacy import (
     LegacySpeakerOrgaSerializer,
     LegacySpeakerReviewerSerializer,
