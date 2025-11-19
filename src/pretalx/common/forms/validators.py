@@ -7,7 +7,6 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils.formats import date_format
 from django.utils.timezone import get_current_timezone
 from django.utils.translation import gettext_lazy as _
-from zxcvbn import zxcvbn
 
 
 class ZXCVBNValidator:
@@ -23,6 +22,8 @@ class ZXCVBNValidator:
         return self.validate(value)
 
     def validate(self, password, user=None):
+        from zxcvbn import zxcvbn
+
         user_inputs = [
             getattr(user, attribute, None) for attribute in self.user_attributes
         ]

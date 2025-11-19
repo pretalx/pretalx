@@ -23,7 +23,7 @@ install-npm:
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
 [working-directory("src")]
-run *args="runserver":
+run *args="runserver --skip-checks":
     uv run python manage.py {{ args }}
 
 # Update translation files
