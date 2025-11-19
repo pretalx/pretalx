@@ -17,16 +17,24 @@ from django.urls import resolve, reverse
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_page
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, View
 from django_context_decorator import context
 
 from pretalx.agenda.views.utils import (
     get_schedule_exporter_content,
     get_schedule_exporters,
 )
-from pretalx.common.views.mixins import EventPermissionRequired, PermissionRequired
+from pretalx.common.views.mixins import (
+    EventPermissionRequired,
+    PermissionRequired,
+    SocialMediaCardMixin,
+)
 from pretalx.schedule.ascii import draw_ascii_schedule
 from pretalx.schedule.exporters import ScheduleData
+
+
+class EventSocialMediaCard(SocialMediaCardMixin, View):
+    pass
 
 
 class ScheduleMixin:

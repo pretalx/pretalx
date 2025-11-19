@@ -4,7 +4,6 @@
 from django.urls import include, path, re_path
 
 from pretalx.agenda.views import featured, feed, schedule, speaker, talk, widget
-from pretalx.common.views import EventSocialMediaCard
 from pretalx.orga.views import admin
 
 
@@ -119,7 +118,7 @@ urlpatterns = [
                 ),
                 path(
                     "og-image",
-                    EventSocialMediaCard.as_view(),
+                    schedule.EventSocialMediaCard.as_view(),
                     name="event-social",
                 ),
             ]

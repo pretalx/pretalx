@@ -21,8 +21,11 @@ from django_scopes import scopes_disabled
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, delete_link
-from pretalx.common.views import CreateOrUpdateView
-from pretalx.common.views.generic import OrgaCRUDView, OrgaTableMixin
+from pretalx.common.views.generic import (
+    CreateOrUpdateView,
+    OrgaCRUDView,
+    OrgaTableMixin,
+)
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     Filterable,

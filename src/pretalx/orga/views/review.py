@@ -29,8 +29,7 @@ from pretalx.common.db import Median
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, api_buttons
-from pretalx.common.views import CreateOrUpdateView
-from pretalx.common.views.generic import OrgaTableMixin
+from pretalx.common.views.generic import CreateOrUpdateView, OrgaTableMixin
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     EventPermissionRequired,

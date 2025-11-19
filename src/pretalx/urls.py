@@ -9,7 +9,9 @@ from django.conf.urls.static import static
 from django.urls import include, path
 from django.utils.module_loading import import_string
 
-from pretalx.common.views import error_view, redirect_view, shortlink_view
+from pretalx.common.views.errors import error_view
+from pretalx.common.views.redirect import redirect_view
+from pretalx.common.views.shortlink import shortlink_view
 
 plugin_patterns = []
 for app in apps.get_app_configs():
@@ -36,7 +38,7 @@ urlpatterns = [
     path("", include((plugin_patterns, "plugins"))),
 ]
 
-handler500 = "pretalx.common.views.handle_500"
+handler500 = "pretalx.common.views.errors.handle_500"
 
 if settings.DEBUG:
     with suppress(ImportError):

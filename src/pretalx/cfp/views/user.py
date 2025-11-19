@@ -34,7 +34,7 @@ from pretalx.common.middleware.event import get_login_redirect
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import Button, LinkButton, back_button, delete_button
-from pretalx.common.views import is_form_bound
+from pretalx.common.views.helpers import is_form_bound
 from pretalx.person.forms import (
     LoginInfoForm,
     SpeakerAvailabilityForm,

@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import bleach
 from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -470,6 +469,9 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
                     _("There are no recipients matching this selection."),
                 )
                 return self.get(self.request, *self.args, **self.kwargs)
+
+            import bleach
+
             from pretalx.common.templatetags.rich_text import render_markdown_abslinks
 
             for locale in self.request.event.locales:

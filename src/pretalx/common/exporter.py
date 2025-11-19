@@ -4,10 +4,6 @@
 from io import StringIO
 from urllib.parse import quote
 
-import qrcode
-import qrcode.image.svg
-from defusedcsv import csv
-from defusedxml import ElementTree
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
@@ -164,6 +160,10 @@ class BaseExporter:
         base = "{self.event.urls.export}{self.quoted_identifier}"
 
     def get_qrcode(self):
+        import qrcode
+        import qrcode.image.svg
+        from defusedxml import ElementTree
+
         image = qrcode.make(
             self.urls.base.full(), image_factory=qrcode.image.svg.SvgPathFillImage
         )
@@ -175,6 +175,8 @@ class CSVExporterMixin:
     content_type = "text/plain"
 
     def get_data(self, request, **kwargs):
+        from defusedcsv import csv
+
         fieldnames, data = self.get_csv_data(request, **kwargs)
         output = StringIO()
         writer = csv.DictWriter(output, fieldnames=fieldnames)

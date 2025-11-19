@@ -11,8 +11,6 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.utils.translation import gettext_lazy as _
-from PIL import Image, ImageOps
-from PIL.Image import MAX_IMAGE_PIXELS, DecompressionBombError, Resampling
 
 THUMBNAIL_SIZES = {
     "tiny": (64, 64),
@@ -51,12 +49,14 @@ def validate_image(f):
     else:
         file = BytesIO(f["content"])
 
+    from PIL import Image
+
     try:
         try:
             image = Image.open(file)
             # verify() must be called immediately after the constructor.
             image.verify()
-        except DecompressionBombError:
+        except Image.DecompressionBombError:
             raise ValidationError(
                 _(
                     "The file you uploaded has a very large number of pixels, please upload a picture with smaller dimensions."
@@ -64,7 +64,7 @@ def validate_image(f):
             )
 
         # load() is a potential DoS vector (see Django bug #18520), so we verify the size first
-        if image.width * image.height > MAX_IMAGE_PIXELS:
+        if image.width * image.height > Image.MAX_IMAGE_PIXELS:
             raise ValidationError(
                 _(
                     "The file you uploaded has a very large number of pixels, please upload a picture with smaller dimensions."
@@ -91,6 +91,8 @@ def _save_image_as_webp(img, field, filename):
 
 
 def load_img(image):
+    from PIL import Image
+
     try:
         img = Image.open(image)
     except Exception:
@@ -116,10 +118,12 @@ def process_image(*, image, generate_thumbnail=False):
     img = load_img(image)
     if not img:
         return
+    from PIL import Image, ImageOps
+
     img = ImageOps.exif_transpose(img)
     img_without_exif = Image.new(img.mode, img.size)
     img_without_exif.putdata(img.getdata())
-    img_without_exif.thumbnail(MAX_DIMENSIONS, resample=Resampling.LANCZOS)
+    img_without_exif.thumbnail(MAX_DIMENSIONS, resample=Image.Resampling.LANCZOS)
 
     # Overwrite the original image with the processed, converted image
     path = Path(image.path)
@@ -166,7 +170,9 @@ def create_thumbnail(image, size, processed_img=None):
     if not img:
         return
 
-    img.thumbnail(THUMBNAIL_SIZES[size], resample=Resampling.LANCZOS)
+    from PIL import Image
+
+    img.thumbnail(THUMBNAIL_SIZES[size], resample=Image.Resampling.LANCZOS)
     thumbnail_field = getattr(image.instance, thumbnail_field_name)
     thumbnail_name = Path(image.name).stem + f"_thumbnail_{size}.webp"
 

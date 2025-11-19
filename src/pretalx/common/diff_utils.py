@@ -7,8 +7,6 @@ from diff_match_patch import diff_match_patch
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
-from pretalx.common.templatetags.rich_text import render_markdown
-
 
 def detect_markdown(text):
     if not text or not isinstance(text, str):
@@ -55,6 +53,8 @@ def render_diff(old_value, new_value, threshold=None):
         and new_value
         and (not threshold or (len(old_str) >= threshold or len(new_str) >= threshold))
     )
+
+    from pretalx.common.templatetags.rich_text import render_markdown
 
     if not should_diff:
         result = {"is_diff": False}

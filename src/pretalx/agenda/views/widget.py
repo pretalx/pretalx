@@ -12,7 +12,7 @@ from django.views.decorators.http import condition
 from i18nfield.utils import I18nJSONEncoder
 
 from pretalx.agenda.rules import is_widget_visible
-from pretalx.common.views import conditional_cache_page
+from pretalx.common.views.cache import conditional_cache_page
 
 WIDGET_JS_CHECKSUM = None
 WIDGET_PATH = "agenda/js/pretalx-schedule.min.js"

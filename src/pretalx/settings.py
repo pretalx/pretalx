@@ -663,6 +663,7 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "pretalx API",
     "SERVERS": [{"url": "https://pretalx.com"}],
     "EXTERNAL_DOCS": {"url": "https://docs.pretalx.org/api/"},
+    "DEFAULT_SCHEMA_CLASS": None,
     "PATH_CONVERTER_OVERRIDES": {
         "slug": {"type": "string", "description": "The event’s slug"},
     },

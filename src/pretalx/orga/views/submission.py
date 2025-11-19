@@ -30,8 +30,12 @@ from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import Button, back_button
-from pretalx.common.views import CreateOrUpdateView
-from pretalx.common.views.generic import OrgaCRUDView, OrgaTableMixin, get_next_url
+from pretalx.common.views.generic import (
+    CreateOrUpdateView,
+    OrgaCRUDView,
+    OrgaTableMixin,
+    get_next_url,
+)
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     EventPermissionRequired,

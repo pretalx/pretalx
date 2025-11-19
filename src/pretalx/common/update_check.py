@@ -5,7 +5,6 @@ import datetime as dt
 import sys
 import uuid
 
-import requests
 from django.conf import settings
 from django.dispatch import receiver
 from django.urls import reverse
@@ -66,6 +65,8 @@ def update_check():
             for plugin in get_all_plugins()
         ],
     }
+    import requests
+
     try:
         response = requests.post(
             "https://pretalx.com/.update_check/",
