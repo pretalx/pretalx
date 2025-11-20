@@ -37,7 +37,6 @@ from pretalx.common.ui import Button, back_button, delete_button
 from pretalx.common.views.mixins import (
     Filterable,
     PaginationMixin,
-    SocialMediaCardMixin,
 )
 from pretalx.person.forms import UserForm
 from pretalx.person.models import User
@@ -252,10 +251,6 @@ class GenericResetView(FormView):
         user.log_action("pretalx.user.password.reset")
 
         return redirect(self.get_success_url())
-
-
-class EventSocialMediaCard(SocialMediaCardMixin, View):
-    pass
 
 
 CRUDHandlerMap = {
