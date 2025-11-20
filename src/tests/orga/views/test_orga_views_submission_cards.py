@@ -4,7 +4,7 @@
 import pytest
 from django_scopes import scope
 
-from pretalx.orga.views.cards import _text
+from pretalx.submission.cards import _text
 
 
 @pytest.mark.parametrize(
