@@ -70,7 +70,8 @@ const checkForChanges = () => {
     window.setTimeout(checkForChanges, 100)
 }
 
-onReady(() => {
+// onReady(() =>
+document.addEventListener("DOMContentLoaded", () => {
     document
         .querySelectorAll(".markdown-wrapper")
         .forEach((element) => initMarkdown(element))

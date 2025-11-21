@@ -1,0 +1,15 @@
+/*
+ * SPDX-FileCopyrightText: 2025-present Florian Moesch
+ * SPDX-License-Identifier: Apache-2.0
+ */
+ 
+ .star-rating .star {
+  padding: 0.1rem;
+  color: var(--color-grey-light);
+  transition: color 0.3s ease;
+}
+
+.star-rating .star.color-active {
+  color:  var(--color-warning);
+}
+
