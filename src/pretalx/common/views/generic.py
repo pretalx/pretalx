@@ -34,10 +34,7 @@ from pretalx.common.exceptions import SendMailException
 from pretalx.common.forms.mixins import PretalxI18nModelForm
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, back_button, delete_button
-from pretalx.common.views.mixins import (
-    Filterable,
-    PaginationMixin,
-)
+from pretalx.common.views.mixins import Filterable, PaginationMixin
 from pretalx.person.forms import UserForm
 from pretalx.person.models import User
 

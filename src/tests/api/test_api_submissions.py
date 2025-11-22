@@ -157,9 +157,35 @@ def test_orga_can_see_all_submissions(
     assert len(
         [submission for submission in content["results"] if submission["answers"] == []]
     )
-    assert len(
-        [submission for submission in content["results"] if submission["answers"] != []]
+
+
+@pytest.mark.django_db
+def test_orga_can_filter_by_track(
+    client,
+    orga_user_token,
+    slot,
+    accepted_submission,
+    rejected_submission,
+    submission,
+    answer,
+    track,
+):
+    with scope(event=submission.event):
+        submission.track = track
+        submission.save()
+        track_count = submission.event.submissions.filter(track=track).count()
+        assert track_count != submission.event.submissions.all().count()
+
+    response = client.get(
+        submission.event.api_urls.submissions + f"?track={track.pk}",
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
+    content = json.loads(response.text)
+
+    assert response.status_code == 200, content
+    assert content["count"] == track_count
+    assert [submission["track"] == track.id for submission in content["results"]]
 
 
 @pytest.mark.django_db

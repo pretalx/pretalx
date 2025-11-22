@@ -3083,6 +3083,10 @@ paths:
         name: submission_type
         schema:
           type: integer
+      - in: query
+        name: track
+        schema:
+          type: integer
       tags:
       - submissions
       responses:
@@ -3472,6 +3476,10 @@ paths:
         style: form
       - in: query
         name: submission_type
+        schema:
+          type: integer
+      - in: query
+        name: track
         schema:
           type: integer
       tags:

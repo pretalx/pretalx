@@ -79,6 +79,7 @@ with scopes_disabled():
                 "pending_state",
                 "content_locale",
                 "submission_type",
+                "track",
                 "is_featured",
             )
 
