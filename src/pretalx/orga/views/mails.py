@@ -602,7 +602,11 @@ class MailTemplateView(OrgaCRUDView):
     create_button_label = _("New custom template")
 
     def get_queryset(self):
-        return self.request.event.mail_templates.all().order_by("role")
+        return (
+            self.request.event.mail_templates.all()
+            .exclude(is_auto_created=True)
+            .order_by("role")
+        )
 
     def get_generic_title(self, instance=None):
         if instance:
