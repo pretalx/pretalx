@@ -30,7 +30,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
       - name: Install system packages
         run: |
           sudo apt update
@@ -68,7 +68,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
       - name: Install Dependencies
         run: just install --extra devdocs
       - name: Linkcheck docs

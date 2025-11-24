@@ -40,7 +40,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
       - name: Install system dependencies
         run: |
           sudo apt update
