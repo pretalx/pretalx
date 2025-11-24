@@ -34,7 +34,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
       - name: Install Dependencies
         run: just install --extra dev
       - name: Run isort
@@ -51,7 +51,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
       - name: Install Dependencies
         run: just install --extra dev
       - name: Setup flake8 annotations
@@ -70,7 +70,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
       - name: Install Dependencies
         run: just install --extra dev
       - name: Add problem matcher for black
@@ -89,7 +89,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v2
+      - uses: extractions/setup-just@v3
       - name: Install Dependencies
         run: just install --extra dev
       - name: Run djhtml
