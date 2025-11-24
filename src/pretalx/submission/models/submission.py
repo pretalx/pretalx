@@ -1053,7 +1053,9 @@ class Submission(GenerateCode, PretalxModel):
 
     def __str__(self):
         """Help when debugging."""
-        return f"Submission(event={self.event.slug}, code={self.code}, title={self.title}, state={self.state})"
+        if self.pk:
+            return f"Submission(event={self.event.slug}, code={self.code}, title={self.title}, state={self.state})"
+        return f"Submission(code={self.code}, title={self.title}, state={self.state})"
 
     @cached_property
     def export_duration(self):
