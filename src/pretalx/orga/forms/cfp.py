@@ -225,6 +225,7 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
             self.fields.pop("submission_types")
         else:
             self.fields["submission_types"].queryset = event.submission_types.all()
+        self.fields["limit_teams"].queryset = event.teams.all()
 
     def clean_options(self):
         # read uploaded file, return list of strings or list of i18n strings
@@ -270,6 +271,8 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
                     _("You cannot replace options without uploading new ones.")
                 ),
             )
+        if self.cleaned_data.get("is_public"):
+            self.cleaned_data["limit_teams"] = None
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
@@ -330,6 +333,7 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
             "icon",
             "tracks",
             "submission_types",
+            "limit_teams",
             "contains_personal_data",
             "min_length",
             "max_length",
@@ -350,12 +354,14 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
             "max_date": HtmlDateInput,
             "tracks": EnhancedSelectMultiple,
             "submission_types": EnhancedSelectMultiple,
+            "limit_teams": EnhancedSelectMultiple,
             "icon": IconSelect,
         }
         field_classes = {
             "variant": SafeModelChoiceField,
             "tracks": SafeModelMultipleChoiceField,
             "submission_types": SafeModelMultipleChoiceField,
+            "limit_teams": SafeModelMultipleChoiceField,
         }
 
 

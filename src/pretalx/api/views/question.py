@@ -239,6 +239,8 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
     }
 
     def get_queryset(self):
+        from pretalx.submission.rules import filter_answers_by_team_access
+
         queryset = (
             Answer.objects.filter(
                 question__in=questions_for_user(self.event, self.request.user)
@@ -246,6 +248,7 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
             .select_related("question", "question__event")
             .order_by("pk")
         )
+        queryset = filter_answers_by_team_access(queryset, self.request.user)
         question_fields = self.check_expanded_fields(
             "question.tracks", "question.submissions"
         )

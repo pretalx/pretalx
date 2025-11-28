@@ -212,29 +212,54 @@ def has_reviewer_access(user, obj):
     return user in obj.assigned_reviewers.all()
 
 
-def questions_for_user(event, user):
+def filter_answers_by_team_access(answers, user):
+    if not user or user.is_anonymous:
+        return answers.none()
+
+    return answers.filter(
+    ).distinct()
+
+
+def filter_questions_by_team_access(queryset, user):
+    if not user or user.is_anonymous:
+        return queryset.none()
+
+    return queryset.filter(
+        Q(limit_teams__isnull=True)
+        | Q(limit_teams__in=user.teams.all())
+    ).distinct()
+
+
+def questions_for_user(event, user, for_answers=False):
     """Used to retrieve synced querysets in the orga list and the API list."""
     from django.db.models import Q
 
     from pretalx.orga.rules import can_view_speaker_names
     from pretalx.submission.models import QuestionTarget
 
+    queryset = None
+
     if user.has_perm("submission.update_question", event):
         # Organisers with edit permissions can see everything
-        return event.questions(manager="all_objects").all()
-    if (
+        queryset = event.questions(manager="all_objects").all()
+    elif (
         not user.is_anonymous
         and is_only_reviewer(user, event)
         and can_view_speaker_names(user, event)
     ):
-        return event.questions(manager="all_objects").filter(
+        queryset = event.questions(manager="all_objects").filter(
             Q(is_visible_to_reviewers=True) | Q(target=QuestionTarget.REVIEWER),
             active=True,
         )
-    if user.has_perm("submission.orga_list_question", event):
+    elif user.has_perm("submission.orga_list_question", event):
         # Other team members can either view all active questions
         # or only questions open to reviewers
-        return event.questions(manager="all_objects").all()
+        queryset = event.questions(manager="all_objects").all()
+
+    if queryset and for_answers:
+        return filter_questions_by_team_access(queryset, user)
+    elif queryset:
+        return queryset
 
     # Now we are left with anonymous users or users with very limited permissions.
     # They can see all public (non-reviewer) questions if they are already publicly

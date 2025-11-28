@@ -7,7 +7,9 @@
 import pytest
 from django_scopes import scope
 
+from pretalx.person.models import User
 from pretalx.submission.models import Answer, Question
+from pretalx.submission.rules import filter_answers_by_team_access
 
 
 @pytest.mark.parametrize("target", ("submission", "speaker", "reviewer"))

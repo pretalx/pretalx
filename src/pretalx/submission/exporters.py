@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from pretalx.common.exporter import BaseExporter, CSVExporterMixin
 from pretalx.common.signals import register_data_exporters
 from pretalx.submission.models import Answer
+from pretalx.submission.rules import filter_answers_by_team_access
 
 
 class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
@@ -33,6 +34,7 @@ class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
             .select_related("question", "person")
             .order_by("person__name")
         )
+        qs = filter_answers_by_team_access(qs, request.user)
         for answer in qs:
             data.append(
                 {
@@ -69,6 +71,7 @@ class SubmissionQuestionData(CSVExporterMixin, BaseExporter):
             question__event=self.event,
             question__active=True,
         ).order_by("submission__title")
+        qs = filter_answers_by_team_access(qs, request.user)
         for answer in qs:
             data.append(
                 {

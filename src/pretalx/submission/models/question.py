@@ -226,6 +226,15 @@ class Question(OrderedModel, PretalxModel):
         verbose_name=_("Session Types"),
         blank=True,
     )
+    limit_teams = models.ManyToManyField(
+        to="event.Team",
+        related_name="+",
+        help_text=_(
+            "You can limit this field to specific teams. Only members of these teams will be able to see responses."
+        ),
+        verbose_name=_("Limit answers to teams"),
+        blank=True,
+    )
     question = I18nCharField(max_length=800, verbose_name=_("Label"))
     help_text = I18nCharField(
         null=True,

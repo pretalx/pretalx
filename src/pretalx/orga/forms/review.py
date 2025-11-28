@@ -19,7 +19,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.orga.forms.export import ExportForm
 from pretalx.person.models import User
 from pretalx.submission.models import (
-    Question,
+    QuestionTarget,
     Review,
     Submission,
     SubmissionStates,
@@ -352,11 +352,7 @@ class ReviewExportForm(ExportForm):
 
     @cached_property
     def questions(self):
-        return Question.all_objects.filter(
-            target="reviewer",
-            active=True,
-            event=self.event,
-        ).prefetch_related("answers", "answers__review", "options")
+        return questions_for_user(self.event, self.user, for_answers=True).filter(target=QuestionTarget.REVIEWER)
 
     @cached_property
     def score_categories(self):
