@@ -131,8 +131,11 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
     create_button_label = _("New custom field")
 
     def get_queryset(self):
+        for_answers = self.action == "detail"
         return (
-            questions_for_user(self.request.event, self.request.user)
+            questions_for_user(
+                self.request.event, self.request.user, for_answers=for_answers
+            )
             .annotate(answer_count=Count("answers"))
             .order_by("position")
         )

@@ -95,6 +95,10 @@ class QuestionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             "icon",
         )
         expandable_fields = {
+            # If we ever add answers to the expandable fields, we need to
+            # make sure that we respect the limit_teams field on the question,
+            # as organisers may have view and edit rights on the question itself,
+            # but not on the question answers.
             "options": (
                 "pretalx.api.serializers.question.AnswerOptionSerializer",
                 {

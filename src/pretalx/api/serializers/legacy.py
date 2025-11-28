@@ -109,7 +109,13 @@ class LegacySpeakerOrgaSerializer(LegacySpeakerSerializer):
     )
 
     def answers_queryset(self, obj):
-        return obj.answers.all()
+        from pretalx.submission.rules import filter_answers_by_team_access
+
+        queryset = obj.answers.all()
+        request = self.context.get("request")
+        if request:
+            return filter_answers_by_team_access(queryset, request.user)
+        return queryset.none()
 
     def get_submissions(self, obj):
         return obj.user.submissions.filter(event=obj.event).values_list(
@@ -122,7 +128,13 @@ class LegacySpeakerOrgaSerializer(LegacySpeakerSerializer):
 
 class LegacySpeakerReviewerSerializer(LegacySpeakerOrgaSerializer):
     def answers_queryset(self, obj):
-        return obj.reviewer_answers.all()
+        from pretalx.submission.rules import filter_answers_by_team_access
+
+        queryset = obj.reviewer_answers.all()
+        request = self.context.get("request")
+        if request:
+            return filter_answers_by_team_access(queryset, request.user)
+        return queryset.none()
 
     class Meta(LegacySpeakerOrgaSerializer.Meta):
         pass
@@ -257,7 +269,13 @@ class LegacySubmissionOrgaSerializer(LegacySubmissionSerializer):
     speaker_serializer_class = LegacySubmitterOrgaSerializer
 
     def answers_queryset(self, obj):
-        return obj.answers.all()
+        from pretalx.submission.rules import filter_answers_by_team_access
+
+        queryset = obj.answers.all()
+        request = self.context.get("request")
+        if request:
+            return filter_answers_by_team_access(queryset, request.user)
+        return queryset.none()
 
     def get_created(self, obj):
         return obj.created.astimezone(obj.event.tz).isoformat()
@@ -282,7 +300,13 @@ class LegacySubmissionOrgaSerializer(LegacySubmissionSerializer):
 
 class LegacySubmissionReviewerSerializer(LegacySubmissionOrgaSerializer):
     def answers_queryset(self, obj):
-        return obj.reviewer_answers.all()
+        from pretalx.submission.rules import filter_answers_by_team_access
+
+        queryset = obj.reviewer_answers.all()
+        request = self.context.get("request")
+        if request:
+            return filter_answers_by_team_access(queryset, request.user)
+        return queryset.none()
 
     class Meta(LegacySubmissionOrgaSerializer.Meta):
         pass

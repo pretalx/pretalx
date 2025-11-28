@@ -25,6 +25,7 @@ from pretalx.submission.models import (
     SubmissionStates,
     Tag,
 )
+from pretalx.submission.rules import questions_for_user
 
 
 class TagsForm(ReadOnlyFlag, forms.ModelForm):
@@ -352,7 +353,9 @@ class ReviewExportForm(ExportForm):
 
     @cached_property
     def questions(self):
-        return questions_for_user(self.event, self.user, for_answers=True).filter(target=QuestionTarget.REVIEWER)
+        return questions_for_user(self.event, self.user, for_answers=True).filter(
+            target=QuestionTarget.REVIEWER
+        )
 
     @cached_property
     def score_categories(self):

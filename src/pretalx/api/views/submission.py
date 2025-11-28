@@ -241,7 +241,9 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         context = super().get_serializer_context()
         if not self.event:
             return context
-        context["questions"] = questions_for_user(self.event, self.request.user)
+        context["questions"] = questions_for_user(
+            self.event, self.request.user, for_answers=True
+        )
         context["speakers"] = self.speaker_profiles_for_user
         context["schedule"] = self.event.current_schedule
         context["public_slots"] = not self.has_perm("delete")

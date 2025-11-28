@@ -216,8 +216,7 @@ def filter_answers_by_team_access(answers, user):
     if not user or user.is_anonymous:
         return answers.none()
 
-    return answers.filter(
-    ).distinct()
+    return answers.filter().distinct()
 
 
 def filter_questions_by_team_access(queryset, user):
@@ -225,8 +224,7 @@ def filter_questions_by_team_access(queryset, user):
         return queryset.none()
 
     return queryset.filter(
-        Q(limit_teams__isnull=True)
-        | Q(limit_teams__in=user.teams.all())
+        Q(limit_teams__isnull=True) | Q(limit_teams__in=user.teams.all())
     ).distinct()
 
 

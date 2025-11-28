@@ -60,6 +60,7 @@ from pretalx.submission.models import (
 from pretalx.submission.rules import (
     get_missing_reviews,
     get_reviewable_submissions,
+    questions_for_user,
     reviews_are_open,
 )
 
@@ -634,6 +635,9 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
 
     @context
     def reviews(self):
+        question_queryset = questions_for_user(
+            self.request.event, self.request.user, for_answers=True
+        )
         return [
             {
                 "score": review.display_score,
@@ -642,7 +646,7 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
                 "user": review.user,
                 "answers": [
                     review.answers.filter(question=question).first()
-                    for question in self.qform.queryset
+                    for question in question_queryset
                 ],
             }
             for review in self.submission.reviews.exclude(
