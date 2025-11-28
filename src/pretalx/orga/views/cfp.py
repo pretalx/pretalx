@@ -373,7 +373,7 @@ class CfPQuestionToggle(PermissionRequired, View):
 
 class CfPQuestionRemind(EventPermissionRequired, FormView):
     template_name = "orga/cfp/question/remind.html"
-    permission_required = "submission.orga_view_question"
+    permission_required = "submission.update_question"
     form_class = ReminderFilterForm
 
     def get_form_kwargs(self):
