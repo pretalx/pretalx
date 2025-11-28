@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-11-28 21:17+0000\n"
-"PO-Revision-Date: 2025-11-28 21:13+0000\n"
+"PO-Revision-Date: 2025-11-28 21:38+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: \n"
 "Language: de_DE\n"
@@ -5422,10 +5422,8 @@ msgid "Event History"
 msgstr "Veranstaltungsverlauf"
 
 #: pretalx/orga/templates/orga/event/history_detail.html:12
-#, fuzzy
-#| msgid "History"
 msgid "History detail"
-msgstr "Verlauf"
+msgstr "Verlaufsdetail"
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html:38
 msgid "Permalink"
@@ -8102,10 +8100,6 @@ msgstr ""
 "Bitte beachte, dass alle Zeiten in der Veranstaltungs-Zeitzone, {tz}, sind."
 
 #: pretalx/schedule/forms.py:44
-#, fuzzy
-#| msgid ""
-#| "If you set room availabilities, speakers will only be able to set their "
-#| "availability for when any room is available."
 msgid ""
 "If you set room availabilities, speakers will only be able to set their "
 "availability for when any room is available."
