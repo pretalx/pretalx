@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-11-28 20:39+0000\n"
-"PO-Revision-Date: 2025-11-20 08:10+0000\n"
+"PO-Revision-Date: 2025-11-28 20:54+0000\n"
 "Last-Translator: albanobattistella <albano_battistella@hotmail.com>\n"
 "Language-Team: none\n"
 "Language: it\n"
@@ -1831,10 +1831,8 @@ msgid "Close"
 msgstr "Chiudi"
 
 #: pretalx/common/templates/common/logs.html:15
-#, fuzzy
-#| msgid "Schedule changes"
 msgid "Recent Changes"
-msgstr "Modifiche al programma"
+msgstr "Modifiche recenti"
 
 #: pretalx/common/templates/common/logs.html:28
 #: pretalx/orga/templates/orga/event/history_detail_content.html:17
@@ -1842,17 +1840,13 @@ msgid "This change was performed by an event organiser."
 msgstr "Questa modifica è stata apportata da un organizzatore dell'evento."
 
 #: pretalx/common/templates/common/logs.html:53
-#, fuzzy
-#| msgid "Schedule changes"
 msgid "View detailed changes"
-msgstr "Modifiche al programma"
+msgstr "Visualizza le modifiche dettagliate"
 
 #: pretalx/common/templates/common/logs.html:68
 #: pretalx/orga/templates/orga/event/history_detail.html:20
-#, fuzzy
-#| msgid "Log in"
 msgid "Log Detail"
-msgstr "Accedi"
+msgstr "Dettaglio del log"
 
 #: pretalx/common/templates/common/powered_by.html:43
 #, python-format
@@ -3932,24 +3926,20 @@ msgid "The end of a phase has to be after its start."
 msgstr "La fine di una fase deve essere dopo il suo inizio."
 
 #: pretalx/orga/forms/event.py:848
-#, fuzzy
-#| msgid "New type"
 msgid "Object type"
-msgstr "Nuovo tipo"
+msgstr "Tipo di oggetto"
 
 #: pretalx/orga/forms/event.py:849
 msgid "Filter by object type"
-msgstr ""
+msgstr "Filtra per tipo di oggetto"
 
 #: pretalx/orga/forms/event.py:853
-#, fuzzy
-#| msgid "question type"
 msgid "Action type"
-msgstr "tipo di domanda"
+msgstr "Tipo di azione"
 
 #: pretalx/orga/forms/event.py:854
 msgid "Filter by action type"
-msgstr ""
+msgstr "Filtra per tipo di azione"
 
 #: pretalx/orga/forms/event.py:861 pretalx/orga/forms/event.py:883
 #: pretalx/orga/forms/mails.py:294 pretalx/orga/forms/mails.py:298
@@ -3963,10 +3953,8 @@ msgid "Proposals"
 msgstr "Proposte"
 
 #: pretalx/orga/forms/event.py:863
-#, fuzzy
-#| msgid "Custom fields"
 msgid "Custom field options"
-msgstr "Campi personalizzati"
+msgstr "Opzioni dei campi personalizzati"
 
 #: pretalx/orga/forms/event.py:864 pretalx/orga/tables/submission.py:159
 #: pretalx/orga/templates/orga/review/bulk.html:13
@@ -3999,10 +3987,8 @@ msgid "Tracks"
 msgstr "Temi"
 
 #: pretalx/orga/forms/event.py:868
-#, fuzzy
-#| msgid "Proposal titles"
 msgid "Proposal types"
-msgstr "Titoli delle proposte"
+msgstr "Tipi di proposta"
 
 #. Translators: Ideally a term that is as broad as possible, to refer to
 #. anybody who
