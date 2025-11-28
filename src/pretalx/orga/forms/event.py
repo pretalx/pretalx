@@ -846,12 +846,12 @@ class EventHistoryFilterForm(forms.Form):
     object_type = forms.ChoiceField(
         required=False,
         label=_("Object type"),
-        widget=forms.Select(attrs={"title": _("Filter by object type")}),
+        widget=forms.Select(),
     )
     action_type = forms.ChoiceField(
         required=False,
-        label=_("Action type"),
-        widget=forms.Select(attrs={"title": _("Filter by action type")}),
+        label=_("Action"),
+        widget=forms.Select(),
     )
 
     default_renderer = InlineFormRenderer

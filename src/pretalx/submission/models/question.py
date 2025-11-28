@@ -228,7 +228,7 @@ class Question(OrderedModel, PretalxModel):
         help_text=_(
             "You can limit this field to some session types. Leave empty to apply to all session types."
         ),
-        verbose_name=_("Session Types"),
+        verbose_name=_("Session types"),
         blank=True,
     )
     limit_teams = models.ManyToManyField(

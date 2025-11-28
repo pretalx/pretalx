@@ -41,7 +41,7 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
     submission_type = models.ForeignKey(
         to="submission.SubmissionType",
         on_delete=models.CASCADE,
-        verbose_name=_("Session Type"),
+        verbose_name=_("Session type"),
         help_text=_(
             "You can restrict the access code to a single session type, or leave it open for all session types."
         ),

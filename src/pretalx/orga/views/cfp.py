@@ -474,7 +474,7 @@ class SubmissionTypeView(OrderActionMixin, OrgaCRUDView):
                 + f" {phrases.base.quotation_open}{instance.name}{phrases.base.quotation_close}"
             )
         if self.action == "create":
-            return _("New Session Type")
+            return _("New session type")
         return _("Session types")
 
     def delete_handler(self, request, *args, **kwargs):
@@ -483,7 +483,7 @@ class SubmissionTypeView(OrderActionMixin, OrgaCRUDView):
         except ProtectedError:
             messages.error(
                 request,
-                _("This Session Type is in use in a proposal and cannot be deleted."),
+                _("This session type is in use in a proposal and cannot be deleted."),
             )
             return self.delete_view(request, *args, **kwargs)
 
@@ -504,7 +504,7 @@ class SubmissionTypeDefault(PermissionRequired, View):
         submission_type.log_action(
             "pretalx.submission_type.make_default", person=self.request.user, orga=True
         )
-        messages.success(request, _("The Session Type has been made default."))
+        messages.success(request, _("The session type has been made default."))
         url = get_next_url(request)
         return redirect(url or self.request.event.cfp.urls.types)
 
