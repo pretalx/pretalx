@@ -8550,11 +8550,6 @@ msgid "iCal (your starred sessions)"
 msgstr "مرحبا بك الى قائمة جلساتنا المميزة!"
 
 #: pretalx/schedule/forms.py:35
-#, fuzzy
-#| msgid ""
-#| "Please click and drag to mark your availability during the conference with "
-#| "green blocks. We will try to schedule your slot during these times. You can "
-#| "click a block twice to remove it."
 msgid ""
 "Please click and drag to mark your availability during the conference with "
 "green blocks. We will try to schedule your slot during these times. You can "

@@ -7028,11 +7028,6 @@ msgid "Mark the new state as \"pending\""
 msgstr "Đánh dấu trạng thái mới là “đang xử lý”"
 
 #: pretalx/orga/templates/orga/tables/review_table.html:40
-#, fuzzy
-#| msgid ""
-#| "If you mark state changes as pending, they won’t be visible to speakers "
-#| "right away. You can always apply pending changes for some or all proposals "
-#| "in one go once you’re ready to make your decisions public."
 msgid ""
 "If you mark state changes as pending, they won't be visible to speakers "
 "right away. You can always apply pending changes for some or all proposals "
