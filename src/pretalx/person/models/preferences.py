@@ -4,7 +4,6 @@
 from contextlib import suppress
 
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.models.mixins import TimestampedModel
 
@@ -48,9 +47,7 @@ class UserEventPreferences(TimestampedModel, models.Model):
                 if create:
                     err_path = ".".join(keys[: i + 1])
                     raise TypeError(
-                        _("Key '{path}' is a leaf node; cannot assign new keys").format(
-                            path=err_path
-                        )
+                        f"Key '{err_path}' is a leaf node; cannot assign new keys"
                     )
                 else:
                     return None, keys[-1]
@@ -93,9 +90,7 @@ class UserEventPreferences(TimestampedModel, models.Model):
             and not isinstance(value, dict)
         ):
             raise TypeError(
-                _(
-                    "Key '{path}' is a dictionary; cannot assign a non-dictionary value"
-                ).format(path=path)
+                f"Key '{path}' is a dictionary; cannot assign a non-dictionary value"
             )
         else:
             parent[key] = value
