@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-28 20:39+0000\n"
+"POT-Creation-Date: 2025-11-28 21:18+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -854,7 +854,8 @@ msgstr ""
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:46
 #: pretalx/orga/tables/cfp.py:169
 #: pretalx/orga/templates/orga/submission/review.html:66
-#: pretalx/orga/views/cfp.py:473 pretalx/submission/models/submission.py:207
+#: pretalx/orga/views/cfp.py:473 pretalx/submission/models/access_code.py:44
+#: pretalx/submission/models/submission.py:207
 msgid "Session type"
 msgstr ""
 
@@ -3460,16 +3461,8 @@ msgstr ""
 msgid "Object type"
 msgstr ""
 
-#: pretalx/orga/forms/event.py:849
-msgid "Filter by object type"
-msgstr ""
-
-#: pretalx/orga/forms/event.py:853
-msgid "Action type"
-msgstr ""
-
-#: pretalx/orga/forms/event.py:854
-msgid "Filter by action type"
+#: pretalx/orga/forms/event.py:853 pretalx/orga/forms/review.py:448
+msgid "Action"
 msgstr ""
 
 #: pretalx/orga/forms/event.py:861 pretalx/orga/forms/event.py:883
@@ -3802,10 +3795,6 @@ msgstr ""
 #: pretalx/orga/forms/review.py:397
 #, python-brace-format
 msgid "Score in “{score_category}”"
-msgstr ""
-
-#: pretalx/orga/forms/review.py:448
-msgid "Action"
 msgstr ""
 
 #: pretalx/orga/forms/review.py:450
@@ -4462,6 +4451,7 @@ msgstr ""
 
 #: pretalx/orga/templates/orga/base.html:262 pretalx/orga/views/cfp.py:478
 #: pretalx/submission/forms/submission.py:257
+#: pretalx/submission/models/question.py:231
 msgid "Session types"
 msgstr ""
 
@@ -4830,7 +4820,7 @@ msgid "Event History"
 msgstr ""
 
 #: pretalx/orga/templates/orga/event/history_detail.html:12
-msgid "Activity Log Detail"
+msgid "History detail"
 msgstr ""
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html:38
@@ -6289,15 +6279,15 @@ msgid "New type"
 msgstr ""
 
 #: pretalx/orga/views/cfp.py:477
-msgid "New Session Type"
+msgid "New session type"
 msgstr ""
 
 #: pretalx/orga/views/cfp.py:486
-msgid "This Session Type is in use in a proposal and cannot be deleted."
+msgid "This session type is in use in a proposal and cannot be deleted."
 msgstr ""
 
 #: pretalx/orga/views/cfp.py:507
-msgid "The Session Type has been made default."
+msgid "The session type has been made default."
 msgstr ""
 
 #: pretalx/orga/views/cfp.py:517 pretalx/orga/views/cfp.py:548
@@ -7229,28 +7219,31 @@ msgid ""
 "click a block twice to remove it."
 msgstr ""
 
-#: pretalx/schedule/forms.py:40
+#: pretalx/schedule/forms.py:39
 #, python-brace-format
-msgid ""
-"Please note that all times are in the event timezone, {tz}. If you set room "
-"availabilities, speakers will only be able to set their availability for "
-"when any room is available."
+msgid "Please note that all times are in the event timezone, {tz}."
 msgstr ""
 
-#: pretalx/schedule/forms.py:45
+#: pretalx/schedule/forms.py:44
+msgid ""
+"If you set room availabilities, speakers will only be able to set their "
+"availability for when any room is available."
+msgstr ""
+
+#: pretalx/schedule/forms.py:48
 msgid "Room I"
 msgstr ""
 
-#: pretalx/schedule/forms.py:47
+#: pretalx/schedule/forms.py:50
 msgid ""
 "Description, e.g.: Our main meeting place, Room I, enter from the right."
 msgstr ""
 
-#: pretalx/schedule/forms.py:50
+#: pretalx/schedule/forms.py:53
 msgid "Information for speakers, e.g.: Projector has only HDMI input."
 msgstr ""
 
-#: pretalx/schedule/forms.py:55
+#: pretalx/schedule/forms.py:58
 #, python-brace-format
 msgid "The current, automatically generated GUID is: {guid}."
 msgstr ""
@@ -7525,10 +7518,6 @@ msgid ""
 "tracks."
 msgstr ""
 
-#: pretalx/submission/models/access_code.py:44
-msgid "Session Type"
-msgstr ""
-
 #: pretalx/submission/models/access_code.py:46
 msgid ""
 "You can restrict the access code to a single session type, or leave it open "
@@ -7718,10 +7707,6 @@ msgstr ""
 msgid ""
 "You can limit this field to some session types. Leave empty to apply to all "
 "session types."
-msgstr ""
-
-#: pretalx/submission/models/question.py:231
-msgid "Session Types"
 msgstr ""
 
 #: pretalx/submission/models/question.py:238
