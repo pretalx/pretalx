@@ -19,7 +19,11 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import can_change_event_settings
 from pretalx.person.rules import is_reviewer
-from pretalx.submission.rules import is_cfp_open, orga_can_change_submissions
+from pretalx.submission.rules import (
+    has_team_question_access,
+    is_cfp_open,
+    orga_can_change_submissions,
+)
 
 
 def answer_file_path(instance, filename):
@@ -133,10 +137,11 @@ class QuestionIcon(Choices):
 
 # Question and question option permissions should be in sync
 QUESTION_PERMISSIONS = {
+    # List and view are assumed to only be used on public questions
     "list": is_cfp_open | is_agenda_visible | orga_can_change_submissions | is_reviewer,
-    "orga_list": orga_can_change_submissions,
     "view": is_cfp_open | is_agenda_visible | orga_can_change_submissions | is_reviewer,
-    "orga_view": orga_can_change_submissions,
+    "orga_list": orga_can_change_submissions,
+    "orga_view": orga_can_change_submissions & has_team_question_access,
     "create": can_change_event_settings,
     "update": can_change_event_settings,
     "delete": can_change_event_settings,
@@ -232,7 +237,7 @@ class Question(OrderedModel, PretalxModel):
         help_text=_(
             "You can limit this field to specific teams. Only members of these teams will be able to see responses."
         ),
-        verbose_name=_("Limit answers to teams"),
+        verbose_name=_("Limit access"),
         blank=True,
     )
     question = I18nCharField(max_length=800, verbose_name=_("Label"))

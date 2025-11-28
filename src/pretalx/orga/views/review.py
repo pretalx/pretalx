@@ -209,7 +209,9 @@ class ReviewDashboard(
     @context
     @cached_property
     def short_questions(self):
-        queryset = self.request.event.questions.filter(
+        queryset = questions_for_user(
+            self.request.event, self.request.user, for_answers=True
+        ).filter(
             target=QuestionTarget.SUBMISSION,
             variant__in=QuestionVariant.short_answers,
         )

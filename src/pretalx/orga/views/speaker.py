@@ -42,7 +42,11 @@ from pretalx.person.rules import is_only_reviewer
 from pretalx.submission.forms import QuestionsForm
 from pretalx.submission.models import Answer, QuestionTarget, QuestionVariant
 from pretalx.submission.models.submission import SubmissionStates
-from pretalx.submission.rules import limit_for_reviewers, speaker_profiles_for_user
+from pretalx.submission.rules import (
+    limit_for_reviewers,
+    questions_for_user,
+    speaker_profiles_for_user,
+)
 
 
 class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
@@ -111,7 +115,9 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
 
     @cached_property
     def short_questions(self):
-        return self.request.event.questions.filter(
+        return questions_for_user(
+            self.request.event, self.request.user, for_answers=True
+        ).filter(
             target=QuestionTarget.SPEAKER,
             variant__in=QuestionVariant.short_answers,
         )

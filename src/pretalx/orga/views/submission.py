@@ -74,6 +74,7 @@ from pretalx.submission.rules import (
     annotate_assigned,
     get_reviewer_tracks,
     limit_for_reviewers,
+    questions_for_user,
 )
 
 
@@ -606,7 +607,9 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
     @context
     @cached_property
     def short_questions(self):
-        return self.request.event.questions.filter(
+        return questions_for_user(
+            self.request.event, self.request.user, for_answers=True
+        ).filter(
             target=QuestionTarget.SUBMISSION,
             variant__in=QuestionVariant.short_answers,
         )

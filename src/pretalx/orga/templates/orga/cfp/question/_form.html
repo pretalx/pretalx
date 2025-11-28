@@ -39,6 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <span id="is-visible-to-reviewers">{{ form.is_visible_to_reviewers.as_field_group }}</span>
         {{ form.is_public.as_field_group }}
         <span id="icon-field">{{ form.icon.as_field_group }}</span>
+        <span id="limit-teams">{{ form.limit_teams.as_field_group }}</span>
         <fieldset class="limit-submission">
             <legend id="limit">{% translate "Limit to specific proposals" %}</legend>
             {% if form.tracks %}

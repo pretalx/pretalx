@@ -3,6 +3,7 @@
 
 import django_tables2 as tables
 from django.db.models.functions import Lower
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import (
@@ -226,10 +227,7 @@ class QuestionTable(UnsortableMixin, PretalxTable):
         "answer_count",
     )
 
-    question = tables.Column(
-        verbose_name=_("Custom field"),
-        linkify=lambda record: record.urls.base,
-    )
+    question = tables.Column(verbose_name=_("Custom field"))
     answer_count = tables.Column(
         verbose_name=_("Responses"),
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
@@ -248,6 +246,18 @@ class QuestionTable(UnsortableMixin, PretalxTable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.attrs["dragsort-url"] = self.event.cfp.urls.questions
+
+    def render_question(self, record, value):
+        # Can’t automatically linkify: We can only link to the detail view if
+        # the user can see answers.
+        request = getattr(self, "request", None)
+        if request and hasattr(request, "user") and record:
+            if request.user.has_perm("submission.orga_view_question", record):
+                url = record.urls.base
+            else:
+                url = record.urls.edit
+            return format_html('<a href="{}">{}</a>', url, value)
+        return value
 
     class Meta:
         model = Question

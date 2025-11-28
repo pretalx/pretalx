@@ -155,6 +155,18 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
         permission = permission_map.get(self.action, self.action)
         return self.model.get_perm(permission)
 
+    def get_success_url(self):
+        if self.next_url:
+            return self.next_url
+        if self.action == "delete":
+            return self.reverse("list")
+        if self.request.user.has_perm("submission.orga_view_question", self.object):
+            # Users may have edit permissions but not view permissions, as the
+            # detail view includes question answers, which can be limited to
+            # be accessed by specific teams.
+            return self.reverse("detail", instance=self.object)
+        return self.reverse("list")
+
     @cached_property
     def formset(self):
         formset_class = inlineformset_factory(

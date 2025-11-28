@@ -21,6 +21,7 @@ const question_page_toggle_view = () => {
     setVisibility("#limit-date", variant === "date")
     setVisibility("#limit-datetime", variant === "datetime")
     setVisibility("#icon-field", variant === "url" && isPublic)
+    setVisibility("#limit-teams", !isPublic)
 }
 
 const question_page_toggle_target_view = () => {

@@ -267,6 +267,13 @@ def questions_for_user(event, user, for_answers=False):
     return event.questions.none()
 
 
+@rules.predicate
+def has_team_question_access(user, obj):
+    return (
+        questions_for_user(obj.event, user, for_answers=True).filter(pk=obj.pk).exists()
+    )
+
+
 def annotate_assigned(queryset, event, user):
     assigned = user.assigned_reviews.filter(event=event, pk=OuterRef("pk"))
     return queryset.annotate(is_assigned=Exists(Subquery(assigned)))
