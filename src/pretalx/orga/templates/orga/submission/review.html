@@ -108,7 +108,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </div>
                 </div>
             {% endif %}
-            {% for answer in submission.reviewer_answers %}
+            {% for answer in filtered_reviewer_answers %}
                 <div class="form-group row">
                     <label class="col-md-3 col-form-label">{{ answer.question.question }}</label>
                     <div class="col-md-9 mt-2">

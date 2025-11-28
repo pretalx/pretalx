@@ -682,6 +682,8 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
         )
 
     def get_context_data(self, **kwargs):
+        from pretalx.submission.rules import filter_answers_by_team_access
+
         result = super().get_context_data(**kwargs)
         result["done"] = self.request.user.reviews.filter(
             submission__event=self.request.event
@@ -692,6 +694,10 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
         )
         if result["total_reviews"]:
             result["percentage"] = int(result["done"] * 100 / result["total_reviews"])
+
+        result["filtered_reviewer_answers"] = filter_answers_by_team_access(
+            self.submission.reviewer_answers, self.request.user
+        )
         return result
 
     def get_form_kwargs(self):
