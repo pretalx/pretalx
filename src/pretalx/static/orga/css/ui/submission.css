@@ -42,6 +42,7 @@ details.submission-state-dropdown {
     }
   }
   .dropdown-content {
+    width: fit-content;
     z-index: 1000;
     a.dropdown-item {
       color: var(--submission-color-primary);
