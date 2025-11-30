@@ -714,10 +714,13 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
             if deadline:
                 event.cfp.deadline = deadline.replace(tzinfo=event.tz)
                 event.cfp.save()
-            for setting in ("display_header_data",):
-                value = steps["display"].get(setting)
-                if value:
-                    event.settings.set(setting, value)
+            event_changed = False
+            for setting in ("header_pattern",):
+                if value := steps["display"].get(setting):
+                    event.display_settings[setting] = value
+                    event_changed = True
+            if event_changed:
+                event.save(update_fields=["display_settings"])
             if event.logo:
                 event.process_image("logo")
 

@@ -357,6 +357,7 @@ class TestEventCreation:
         assert str(event.name) == "New event!"
         assert event.locales == ["en", "de"]
         assert event.content_locales == ["en", "de"]
+        assert event.display_settings["header_pattern"] == "topo"
 
     def test_orga_create_event_existing_slug(
         self, orga_client, organiser, deadline, event
