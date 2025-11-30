@@ -6,6 +6,9 @@
 Release Notes
 =============
 
+- :feature:`orga` Organisers can now limit who can see the answers to their custom field to specific organiser teams, e.g. for when sensitive information needs to be collected, but should not be visible to all organisers.
+- :bug:`api` In the session slot API, the `end` field was required even though it was meant to be computed automatically by the session’s session type.
+- :feature:`api` The session list in the API can now be filtered by track.
 - :feature:`lang` New translation: Bulgarian!
 - :bug:`orga` 'Filter by tracks' dropdown showed an incorrect submission count.
 - :feature:`cfp` When users want to submit draft proposals, they will now be guided back through the CfP flow to make sure that all information is complete before final submission.
