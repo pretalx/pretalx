@@ -190,7 +190,6 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
     def save_formset(self, obj):
         if not self.formset.is_valid():
             return False
-        # TODO: collect formset change data and log on a per-question basis
         for form in self.formset.initial_forms:
             if form in self.formset.deleted_forms:
                 if not form.instance.pk:
@@ -200,16 +199,6 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
             elif form.has_changed():
                 form.instance.question = obj
                 form.save()
-                # change_data = {
-                #     key: form.cleaned_data.get(key) for key in form.changed_data
-                # }
-                # change_data["id"] = form.instance.pk
-                # obj.log_action(
-                #     "pretalx.question.option.update",
-                #     person=self.request.user,
-                #     orga=True,
-                #     data=change_data,
-                # )
 
         extra_forms = [
             form
@@ -219,14 +208,6 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
         for form in extra_forms:
             form.instance.question = obj
             form.save()
-            # change_data = {key: form.cleaned_data.get(key) for key in form.changed_data}
-            # change_data["id"] = form.instance.pk
-            # obj.log_action(
-            #     "pretalx.question.option.create",
-            #     person=self.request.user,
-            #     orga=True,
-            #     data=change_data,
-            # )
 
         return True
 
