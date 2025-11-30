@@ -382,6 +382,11 @@ LANGUAGES_INFORMATION = {
         "natural_name": "اَلْعَرَبِيَّةُ",
         "official": False,
     },
+    "bg": {
+        "name": _("Bulgarian"),
+        "natural_name": "Български",
+        "official": False,
+    },
     "cs": {
         "name": _("Czech"),
         "natural_name": "Čeština",

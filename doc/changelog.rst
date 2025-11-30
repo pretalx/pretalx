@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`lang` New translation: Bulgarian!
 - :bug:`orga` 'Filter by tracks' dropdown showed an incorrect submission count.
 - :feature:`cfp` When users want to submit draft proposals, they will now be guided back through the CfP flow to make sure that all information is complete before final submission.
 - :feature:`orga` Organisers can now configure tables to change which columns are shown and what the default ordering should be.
