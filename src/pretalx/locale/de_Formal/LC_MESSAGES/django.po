@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-11-28 21:17+0000\n"
-"PO-Revision-Date: 2025-11-05 16:43+0000\n"
+"PO-Revision-Date: 2025-11-28 21:40+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: \n"
 "Language: de_Formal\n"
@@ -1842,10 +1842,8 @@ msgid "Close"
 msgstr "Schließen"
 
 #: pretalx/common/templates/common/logs.html:15
-#, fuzzy
-#| msgid "Schedule changes"
 msgid "Recent Changes"
-msgstr "Programm-Änderungen"
+msgstr "Letzte Änderungen"
 
 #: pretalx/common/templates/common/logs.html:28
 #: pretalx/orga/templates/orga/event/history_detail_content.html:17
@@ -1853,17 +1851,13 @@ msgid "This change was performed by an event organiser."
 msgstr "Diese Aktion wurde von einem Veranstalter durchgeführt."
 
 #: pretalx/common/templates/common/logs.html:53
-#, fuzzy
-#| msgid "Schedule changes"
 msgid "View detailed changes"
-msgstr "Programm-Änderungen"
+msgstr "Details ansehen"
 
 #: pretalx/common/templates/common/logs.html:68
 #: pretalx/orga/templates/orga/event/history_detail.html:20
-#, fuzzy
-#| msgid "Log in"
 msgid "Log Detail"
-msgstr "Einloggen"
+msgstr "Änderungen"
 
 #: pretalx/common/templates/common/powered_by.html:43
 #, python-format
@@ -3966,10 +3960,8 @@ msgid "The end of a phase has to be after its start."
 msgstr "Das Ende dieser Phase muss nach ihrem Beginn liegen."
 
 #: pretalx/orga/forms/event.py:848
-#, fuzzy
-#| msgid "New type"
 msgid "Object type"
-msgstr "Einreichungsart erstellen"
+msgstr "Objektart"
 
 #: pretalx/orga/forms/event.py:853 pretalx/orga/forms/review.py:448
 msgid "Action"
@@ -3987,10 +3979,8 @@ msgid "Proposals"
 msgstr "Einreichungen"
 
 #: pretalx/orga/forms/event.py:863
-#, fuzzy
-#| msgid "Custom fields"
 msgid "Custom field options"
-msgstr "Zusatzfelder"
+msgstr "Zusatzfeld-Optionen"
 
 #: pretalx/orga/forms/event.py:864 pretalx/orga/tables/submission.py:159
 #: pretalx/orga/templates/orga/review/bulk.html:13
@@ -4023,10 +4013,8 @@ msgid "Tracks"
 msgstr "Tracks"
 
 #: pretalx/orga/forms/event.py:868
-#, fuzzy
-#| msgid "Proposal titles"
 msgid "Proposal types"
-msgstr "Titel"
+msgstr "Einreichungsarten"
 
 #. Translators: Ideally a term that is as broad as possible, to refer to anybody who
 #. presents/owns a session. This word is also used to differentiate accepted „speakers“
@@ -4044,10 +4032,8 @@ msgid "Users"
 msgstr "Benutzer"
 
 #: pretalx/orga/forms/event.py:871
-#, fuzzy
-#| msgid "Mail template"
 msgid "Mail templates"
-msgstr "E-Mail-Vorlage"
+msgstr "E-Mail-Vorlagen"
 
 #: pretalx/orga/forms/event.py:872 pretalx/orga/forms/event.py:902
 #: pretalx/orga/templates/orga/speaker/form.html:111
@@ -4060,14 +4046,12 @@ msgid "Rooms"
 msgstr "Räume"
 
 #: pretalx/orga/forms/event.py:874
-#, fuzzy
-#| msgid "Schedule"
 msgid "Schedules"
-msgstr "Programm"
+msgstr "Programme"
 
 #: pretalx/orga/forms/event.py:875
 msgid "Slots"
-msgstr ""
+msgstr "Programmslots"
 
 #: pretalx/orga/forms/event.py:878 pretalx/orga/tables/admin.py:30
 #: pretalx/orga/templates/orga/base.html:214
@@ -4080,82 +4064,60 @@ msgstr "Teams"
 #: pretalx/orga/forms/event.py:885 pretalx/orga/forms/event.py:896
 #: pretalx/orga/forms/event.py:904 pretalx/orga/forms/event.py:919
 msgid "Modified"
-msgstr ""
+msgstr "Geändert"
 
 #: pretalx/orga/forms/event.py:886 pretalx/orga/forms/event.py:887
 #: pretalx/orga/forms/event.py:897 pretalx/orga/forms/event.py:905
-#, fuzzy
-#| msgid "Delete"
 msgid "Deleted"
-msgstr "Löschen"
+msgstr "Gelöscht"
 
 #: pretalx/orga/forms/event.py:888
-#, fuzzy
-#| msgid "accepted"
 msgid "Accepted"
-msgstr "angenommen"
+msgstr "Angenommen"
 
 #: pretalx/orga/forms/event.py:889
-#, fuzzy
-#| msgid "rejected"
 msgid "Rejected"
-msgstr "abgelehnt"
+msgstr "Abgelehnt"
 
 #: pretalx/orga/forms/event.py:890
-#, fuzzy
-#| msgid "canceled"
 msgid "Cancelled"
-msgstr "abgesagt"
+msgstr "Abgesagt"
 
 #: pretalx/orga/forms/event.py:891
-#, fuzzy
-#| msgid "confirmed"
 msgid "Confirmed"
-msgstr "bestätigt"
+msgstr "Bestätigt"
 
 #: pretalx/orga/forms/event.py:892
-#, fuzzy
-#| msgid "Withdraw"
 msgid "Withdrawn"
-msgstr "Zurückziehen"
+msgstr "Zurückgezogen"
 
 #: pretalx/orga/forms/event.py:898
-#, fuzzy
-#| msgid "Optional"
 msgid "Option created"
-msgstr "Optional"
+msgstr "Option angelegt"
 
 #: pretalx/orga/forms/event.py:899
 msgid "Option modified"
-msgstr ""
+msgstr "Option verändert"
 
 #: pretalx/orga/forms/event.py:900
-#, fuzzy
-#| msgid "deleted"
 msgid "Option deleted"
-msgstr "gelöscht"
+msgstr "Option gelöscht"
 
 #: pretalx/orga/forms/event.py:906
 msgid "Sent"
 msgstr "Verschickt"
 
 #: pretalx/orga/forms/event.py:907
-#, fuzzy
-#| msgid "Template"
 msgid "Template created"
-msgstr "Vorlage"
+msgstr "Vorlage erstellt"
 
 #: pretalx/orga/forms/event.py:908
-#, fuzzy
-#| msgid "A mail template was modified."
 msgid "Template modified"
-msgstr "Eine E-Mail-Vorlage wurde verändert."
+msgstr "Vorlage verändert"
 
 #: pretalx/orga/forms/event.py:909
-#, fuzzy
-#| msgid "A mail template was deleted."
 msgid "Template deleted"
-msgstr "Eine E-Mail-Vorlage wurde gelöscht."
+msgstr "Vorlage gelöscht"
 
 #: pretalx/orga/forms/event.py:911
 #: pretalx/orga/templates/orga/settings/form.html:61
@@ -4163,63 +4125,42 @@ msgid "Schedule"
 msgstr "Programm"
 
 #: pretalx/orga/forms/event.py:912
-#, fuzzy
-#| msgid "Release"
 msgid "Released"
-msgstr "Veröffentlichen"
+msgstr "Veröffentlicht"
 
 #: pretalx/orga/forms/event.py:913
-#, fuzzy
-#| msgid "Created"
 msgid "Room created"
-msgstr "Erstellt"
+msgstr "Raum erstellt"
 
 #: pretalx/orga/forms/event.py:914
-#, fuzzy
-#| msgid "A room was modified."
 msgid "Room modified"
-msgstr "Ein Raum wurde verändert."
+msgstr "Raum verändert"
 
 #: pretalx/orga/forms/event.py:915
-#, fuzzy
-#| msgid "deleted"
 msgid "Room deleted"
-msgstr "gelöscht"
+msgstr "Raum gelöscht"
 
 #: pretalx/orga/forms/event.py:920
-#, fuzzy
-#| msgid "Activate field"
 msgid "Activated"
-msgstr "Feld aktivieren"
+msgstr "Aktiviert"
 
 #: pretalx/orga/forms/event.py:921
-#, fuzzy
-#| msgid "Deactivate event"
 msgid "Deactivated"
-msgstr "Veranstaltung deaktivieren"
+msgstr "Deaktiviert"
 
 #: pretalx/orga/forms/event.py:922
-#, fuzzy
-#| msgid "The CfP has been modified."
 msgid "CfP modified"
-msgstr "Der CfP wurde geändert."
+msgstr "CfP verändert"
 
 #: pretalx/orga/forms/event.py:942
-#, fuzzy
-#| msgid "All session types"
 msgid "All object types"
-msgstr "Alle Einreichungsarten"
+msgstr "Alle Objektarten"
 
 #: pretalx/orga/forms/event.py:960
-#, fuzzy
-#| msgid "All session types"
 msgid "All action types"
-msgstr "Alle Einreichungsarten"
+msgstr "Alle Aktionen"
 
 #: pretalx/orga/forms/event.py:984
-#, fuzzy
-#| msgctxt "category of items"
-#| msgid "Other"
 msgid "Other"
 msgstr "Sonstige"
 
@@ -5490,36 +5431,28 @@ msgid "Event History"
 msgstr "Veranstaltungsverlauf"
 
 #: pretalx/orga/templates/orga/event/history_detail.html:12
-#, fuzzy
-#| msgid "History"
 msgid "History detail"
-msgstr "Verlauf"
+msgstr "Verlaufsdetail"
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html:38
-#, fuzzy
-#| msgid "German"
 msgid "Permalink"
-msgstr "Deutsch"
+msgstr "Permalink"
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html:46
-#, fuzzy
-#| msgid "Changelog"
 msgid "Changes"
-msgstr "Historie"
+msgstr "Änderungshistorie"
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html:50
-#, fuzzy
-#| msgid "Fields"
 msgid "Field"
-msgstr "Felder"
+msgstr "Feld"
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html:51
 msgid "Before"
-msgstr ""
+msgstr "Vorher"
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html:52
 msgid "After"
-msgstr ""
+msgstr "Nachher"
 
 #: pretalx/orga/templates/orga/event/live.html:10
 #: pretalx/orga/templates/orga/event/live.html:15
@@ -8184,10 +8117,6 @@ msgstr ""
 "Bitte beachte, dass alle Zeiten in der Veranstaltungs-Zeitzone, {tz}, sind."
 
 #: pretalx/schedule/forms.py:44
-#, fuzzy
-#| msgid ""
-#| "If you set room availabilities, speakers will only be able to set their "
-#| "availability for when any room is available."
 msgid ""
 "If you set room availabilities, speakers will only be able to set their "
 "availability for when any room is available."
@@ -8719,22 +8648,16 @@ msgstr ""
 "wird es für alle Einreichungstypen genutzt."
 
 #: pretalx/submission/models/question.py:238
-#, fuzzy
-#| msgid ""
-#| "You can limit this field to some session types. Leave empty to apply to "
-#| "all session types."
 msgid ""
 "You can limit this field to specific teams. Only members of these teams will "
 "be able to see responses."
 msgstr ""
-"Sie können dieses Feld auf bestimmte Einreichungstypen beschränken. Sonst "
-"wird es für alle Einreichungstypen genutzt."
+"Sie können dieses Feld auf bestimmte Teams beschränken. Nur Mitglieder "
+"dieses Teams werden die Angaben sehen können."
 
 #: pretalx/submission/models/question.py:240
-#, fuzzy
-#| msgid "Limit days"
 msgid "Limit access"
-msgstr "Auf bestimmte Tage beschränken"
+msgstr "Zugang beschränken"
 
 #: pretalx/submission/models/question.py:243
 msgid "Label"
@@ -8840,10 +8763,8 @@ msgstr ""
 "Webseitenlogo darstellen."
 
 #: pretalx/submission/models/question.py:457
-#, fuzzy
-#| msgid "Optional"
 msgid "Options"
-msgstr "Optional"
+msgstr "Optionen"
 
 #: pretalx/submission/models/resource.py:41
 msgid "Publicly visible resource"
@@ -9105,10 +9026,10 @@ msgid "not accepted"
 msgstr "abgelehnt"
 
 msgid "Unscheduled sessions"
-msgstr ""
+msgstr "Nicht geplante Sessions"
 
 msgid "Unschedule"
-msgstr ""
+msgstr "Aus dem Programm nehmen"
 
 #, fuzzy
 #~| msgid "question type"
