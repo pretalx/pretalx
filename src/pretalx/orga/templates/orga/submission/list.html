@@ -21,6 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block scripts %}
     <script defer src="{% static "orga/js/ui/featured.js" %}"></script>
+    <script defer src="{% static "orga/js/ui/dropdown-table-fix.js" %}"></script>
 {% endblock %}
 
 {% block extra_title %}{{ page_obj.paginator.count }} {% blocktranslate trimmed count count=page_obj.paginator.count %}session{% plural %}sessions{% endblocktranslate %} :: {% endblock extra_title %}
