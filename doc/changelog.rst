@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :release:`2025.2.0 <2025-11-30>`
 - :feature:`orga` Organisers can now limit who can see the answers to their custom field to specific organiser teams, e.g. for when sensitive information needs to be collected, but should not be visible to all organisers.
 - :bug:`api` In the session slot API, the `end` field was required even though it was meant to be computed automatically by the session’s session type.
 - :feature:`api` The session list in the API can now be filtered by track.
