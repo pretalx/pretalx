@@ -24,14 +24,6 @@ class QuestionsForm(CfPFormMixin, QuestionFieldsMixin, forms.Form):
         )
         self.target_type = kwargs.pop("target", QuestionTarget.SUBMISSION)
         self.for_reviewers = kwargs.pop("for_reviewers", False)
-        if self.target_type == QuestionTarget.SUBMISSION:
-            target_object = self.submission
-        elif self.target_type == QuestionTarget.SPEAKER:
-            target_object = self.speaker
-        elif self.target_type == QuestionTarget.REVIEWER:
-            target_object = self.review
-        else:
-            target_object = self.speaker
         readonly = kwargs.pop("readonly", False)
 
         super().__init__(*args, **kwargs)
@@ -63,7 +55,7 @@ class QuestionsForm(CfPFormMixin, QuestionFieldsMixin, forms.Form):
         for question in self.queryset.prefetch_related("options"):
             initial_object = None
             initial = question.default_answer
-            if target_object:
+            if target_object := self.get_object_for_question(question):
                 answers = [
                     answer
                     for answer in target_object.answers.all()
@@ -86,6 +78,14 @@ class QuestionsForm(CfPFormMixin, QuestionFieldsMixin, forms.Form):
             field.question = question
             field.answer = initial_object
             self.fields[f"question_{question.pk}"] = field
+
+    def get_object_for_question(self, question):
+        if question.target == QuestionTarget.SUBMISSION:
+            return self.submission
+        elif question.target == QuestionTarget.SPEAKER:
+            return self.speaker
+        elif question.target == QuestionTarget.REVIEWER:
+            return self.review
 
     @cached_property
     def speaker_fields(self):

@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scope
 
-from pretalx.submission.models import SubmissionStates
+from pretalx.submission.models import SubmissionStates, SubmitterAccessCode
 
 
 @pytest.mark.django_db
@@ -861,9 +861,8 @@ def test_draft_submission_prevented_when_access_code_required(
 
 @pytest.mark.django_db
 def test_draft_submission_allowed_with_access_code(
-    speaker_client, speaker, submission, track
+    speaker_client, speaker, submission, track, answer
 ):
-    from pretalx.submission.models import SubmitterAccessCode
 
     with scope(event=submission.event):
         submission.state = SubmissionStates.DRAFT
@@ -872,6 +871,9 @@ def test_draft_submission_allowed_with_access_code(
             event=submission.event, code="VALID123", track=submission.track
         )
         submission.save()
+        answer.question.active = True
+        answer.question.save()
+        assert submission.answers.all().count() == 1
 
         submission.track.requires_access_code = True
         submission.track.save()
@@ -884,6 +886,7 @@ def test_draft_submission_allowed_with_access_code(
             "description": submission.description,
             "abstract": submission.abstract,
             "notes": submission.notes,
+            f"question_{answer.question.pk}": answer.answer,
             "resource-TOTAL_FORMS": 0,
             "resource-INITIAL_FORMS": 0,
             "resource-MIN_NUM_FORMS": 0,
@@ -904,7 +907,7 @@ def test_draft_submission_allowed_with_access_code(
 
         from bs4 import BeautifulSoup
 
-        for _step in "info", "profile":
+        for _step in "info", "question", "profile":
             soup = BeautifulSoup(response.render().content, "html.parser")
             form = soup.find_all("form")[1]
             form_data = {}
@@ -922,6 +925,7 @@ def test_draft_submission_allowed_with_access_code(
         submission.refresh_from_db()
         assert submission.state == SubmissionStates.SUBMITTED
         assert submission.access_code.is_valid
+        assert submission.answers.all().count() == 1
 
 
 @pytest.mark.django_db

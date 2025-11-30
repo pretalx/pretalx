@@ -322,15 +322,11 @@ class GenericFlowStep:
         return result
 
 
-class InfoStep(GenericFlowStep, FormFlowStep):
-    identifier = "info"
-    icon = "paper-plane"
-    form_class = InfoForm
-    priority = 0
+class DedraftMixin:
+    dedraft_key = "instance"
 
     def get_form_kwargs(self):
         result = super().get_form_kwargs()
-        result["access_code"] = getattr(self.request, "access_code", None)
         with suppress(Submission.DoesNotExist, KeyError):
             code = self.cfp_session.get("code")
             if (
@@ -345,7 +341,19 @@ class InfoStep(GenericFlowStep, FormFlowStep):
                     )
                 )
             ):
-                result["instance"] = instance
+                result[self.dedraft_key] = instance
+        return result
+
+
+class InfoStep(DedraftMixin, GenericFlowStep, FormFlowStep):
+    identifier = "info"
+    icon = "paper-plane"
+    form_class = InfoForm
+    priority = 0
+
+    def get_form_kwargs(self):
+        result = super().get_form_kwargs()
+        result["access_code"] = getattr(self.request, "access_code", None)
         return result
 
     def get_form_initial(self):
@@ -425,12 +433,13 @@ class InfoStep(GenericFlowStep, FormFlowStep):
         )
 
 
-class QuestionsStep(GenericFlowStep, FormFlowStep):
+class QuestionsStep(DedraftMixin, GenericFlowStep, FormFlowStep):
     identifier = "questions"
     icon = "question-circle-o"
     form_class = QuestionsForm
     template_name = "cfp/event/submission_questions.html"
     priority = 25
+    dedraft_key = "submission"
 
     def is_applicable(self, request):
         self.request = request
@@ -471,6 +480,8 @@ class QuestionsStep(GenericFlowStep, FormFlowStep):
             result["submission_type"] = info_data.get("submission_type")
         if not self.request.user.is_anonymous:
             result["speaker"] = self.request.user
+        if hasattr(self.request, "submission"):
+            result.setdefault("submission", self.request.submission)
         return result
 
     def done(self, request, draft=False):
