@@ -150,8 +150,8 @@ release-checks:
     uv run check-manifest
     uv run python -m build
     uv run twine check dist/*
-    unzip -l dist/pretalx*whl | grep frontend || echo "frontend files were not packaged!"
-    unzip -l dist/pretalx*whl | grep node_modules && echo "node_modules were packaged!"
+    unzip -l dist/pretalx*whl | grep frontend || exit 1
+    unzip -l dist/pretalx*whl | grep node_modules && exit 1 || exit 0
     echo "All release checks successful"
 
 # Release a new pretalx version

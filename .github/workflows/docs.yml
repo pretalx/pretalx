@@ -8,10 +8,12 @@ on:
     branches: [ main ]
     paths:
       - 'doc/**'
+      - 'pyproject.toml'
   pull_request:
     branches: [ main ]
     paths:
       - 'doc/**'
+      - 'pyproject.toml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
