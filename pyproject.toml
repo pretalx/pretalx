@@ -94,7 +94,8 @@ dev = [
 ]
 devdocs = [
   "drf-spectacular~=0.29.0",
-  "sphinx",
+  # Pinning sphinx to <9 due to https://github.com/tox-dev/sphinx-autodoc-typehints/issues/586
+  "sphinx<9.0",
   "sphinx-autobuild",
   "sphinx-autodoc-typehints",
   "sphinx-copybutton",
