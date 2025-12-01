@@ -278,6 +278,10 @@ class TemplateColumn(tables.TemplateColumn):
         super().__init__(*args, **kwargs)
 
     def render(self, record, table, value, bound_column, **kwargs):
+        # We can’t call super() here, because there is no way to inject
+        # extra context into TemplateColumn.
+        # So instead we’re adding our own extra context here and then
+        # proceed with the vendored TemplateColumn.render() method
         context = getattr(table, "context", Context())
         for key, value in self.template_context.items():
             if callable(value):
@@ -285,15 +289,6 @@ class TemplateColumn(tables.TemplateColumn):
             else:
                 context[key] = value
         context[self.context_object_name] = record
-
-        # This is where we would usually call super().render()
-        # However, upstream uses context.flatten(), which makes the use of
-        # {% querystring %} impossible in the template, as querystring,
-        # in Python, uses Context.request, while a flattened context is
-        # just a dict.
-        # We have the choice of vendoring the render method and patching
-        # Request.flatten, so I suppose this is the less bad option.
-        # Keep an eye on https://github.com/jieter/django-tables2/issues/1008
 
         additional_context = {
             "default": bound_column.default,
