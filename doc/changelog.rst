@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :bug:`orga:schedule,2209` Dragging sessions to their slots in the schedule editor did not work on MacOS browsers.
 - :release:`2025.2.0 <2025-11-30>`
 - :feature:`orga` Organisers can now limit who can see the answers to their custom field to specific organiser teams, e.g. for when sensitive information needs to be collected, but should not be visible to all organisers.
 - :bug:`api` In the session slot API, the `end` field was required even though it was meant to be computed automatically by the session’s session type.

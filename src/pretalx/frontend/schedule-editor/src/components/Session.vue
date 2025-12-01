@@ -4,7 +4,7 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <template lang="pug">
-.c-linear-schedule-session(:style="style", @pointerdown.stop="$emit('startDragging', {session: session, event: $event})", :class="classes")
+.c-linear-schedule-session(:style="style", @pointerdown.stop="$emit('startDragging', {session: session, event: $event})", @dragstart.prevent, :class="classes", draggable="true")
 	.time-box
 		.start(:class="{'has-ampm': startTime.ampm}", v-if="startTime")
 			.time {{ startTime.time }}
@@ -134,6 +134,10 @@ export default {
 	color: $clr-primary-text-light
 	position: relative
 	cursor: pointer
+	user-select: none
+	-webkit-user-select: none
+	-webkit-user-drag: element
+	touch-action: none
 	&.clone
 		z-index: 200
 	&.dragging
