@@ -12,25 +12,23 @@ Boarding checks
 1. Are the translation files up to date?
 2. Are there pending checks for bad translations on Weblate?
 3. Are there pending translations from `Weblate <https://translate.pretalx.com/projects/pretalx/pretalx/#repository>`_? Merge them.
-4. Are all locales with more than 75% coverage included in the release?
-5. Update the translation percentages from `translate.pretalx.com <https://translate.pretalx.com/projects/pretalx/pretalx/>`_.
-6. If new translations were added, add new calendar locales (you have to download the `release archive <https://github.com/fullcalendar/fullcalendar/releases/download/v6.1.5/fullcalendar-6.1.5.zip>`_) and extract the locales from there), and make sure that flags (in input fields) for the new locale are shown.
-7. Are there warnings about missing migrations?
-8. Any blockers to see `in our issues <https://github.com/pretalx/pretalx/issues?q=is%3Aopen+is%3Aissue+label%3A%22type%3A+bug%22+>`_?
-9. Are there any TODOs that you have to resolve?
-10. Are there any ``@pytest.mark.xfail`` that you have to resolve?
-11. Are the :ref:`changelog` well-phrased and complete?
-12. Are there `open pull requests <https://github.com/pretalx/pretalx/pulls>`_ that you should merge?
-13. Are all tests passing in CI?
-14. Have you written (and not pushed) a blog post? It should contain at least major features and all contributors involved in the release.
+4. Are all locales with more than 75% coverage included in the release? If new translations need to be added, add new calendar locales (you have to download the `release archive <https://github.com/fullcalendar/fullcalendar/releases/download/v6.1.5/fullcalendar-6.1.5.zip>`_) and extract the locales from there), and make sure that flags (in input fields) for the new locale are shown.
+5. Are there warnings about missing migrations?
+6. Any blockers to see `in our issues <https://github.com/pretalx/pretalx/issues?q=is%3Aopen+is%3Aissue+label%3A%22type%3A+bug%22+>`_?
+7. Are there any TODOs that you have to resolve?
+8. Are there any ``@pytest.mark.xfail`` that you have to resolve?
+9. Are the :ref:`changelog` well-phrased and complete?
+10. Are there `open pull requests <https://github.com/pretalx/pretalx/pulls>`_ that you should merge?
+11. Are all tests passing in CI?
+12. Have you written (and not pushed) a blog post? It should contain at least major features and all contributors involved in the release.
 
 System checks
 -------------
 
 1. Deploy the release-ready commit to an instance. Check if the upgrade and the instance works.
-2. Clean clone: ``git clone git@github.com:pretalx/pretalx pretalx-release && cd pretalx-release``
-3. Set up your environment: ``mkvirtualenv pretalx-release && pip install -e . check-manifest twine wheel``
-4. Run ``check-manifest`` **locally**.
+2. Clean clone: ``git clone git@github.com:pretalx/pretalx pretalx-release && cd pretalx-release`` (or local clone)
+3. Install release dependencies: ``uv pip install check-manifest twine wheel``
+3. Run ``just release-checks`` **locally**.
 
 Take-off and landing
 --------------------
