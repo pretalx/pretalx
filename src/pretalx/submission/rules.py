@@ -76,7 +76,7 @@ def use_tracks(user, obj):
 @rules.predicate
 def is_speaker(user, obj):
     obj = getattr(obj, "submission", obj)
-    return obj and user in obj.speakers.all()
+    return obj and obj.pk and user in obj.speakers.all()
 
 
 @rules.predicate
