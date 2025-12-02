@@ -250,7 +250,7 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     def clean(self):
         deadline = self.cleaned_data["deadline"]
-        question_required = self.cleaned_data["question_required"]
+        question_required = self.cleaned_data.get("question_required")
         if (not deadline) and (question_required == QuestionRequired.AFTER_DEADLINE):
             self.add_error(
                 "deadline",
