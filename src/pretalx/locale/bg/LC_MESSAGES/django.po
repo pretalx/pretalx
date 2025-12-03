@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-11-28 21:17+0000\n"
-"PO-Revision-Date: 2025-11-05 15:50+0000\n"
+"PO-Revision-Date: 2025-12-02 21:41+0000\n"
 "Last-Translator: Vasil Kolew <vasil@ludost.net>\n"
 "Language-Team: none\n"
 "Language: bg\n"
@@ -1690,7 +1690,7 @@ msgstr "Други"
 
 #: pretalx/common/tables.py:333
 msgid "edit"
-msgstr ""
+msgstr "редакция"
 
 #. Translators: This is a label on delete buttons.
 #: pretalx/common/tables.py:341 pretalx/common/text/phrases.py:58
@@ -1827,7 +1827,7 @@ msgstr "Незадължително"
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:19
 #: pretalx/orga/templates/orga/generic/table.html:23
 msgid "Close"
-msgstr ""
+msgstr "Затвори"
 
 #: pretalx/common/templates/common/logs.html:15
 #, fuzzy
@@ -1897,7 +1897,7 @@ msgstr "Вашият аватар"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:22
 msgid "Image for cropping"
-msgstr ""
+msgstr "Изображение за изрязване"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:25
 #: pretalx/common/text/phrases.py:51
@@ -1906,7 +1906,7 @@ msgstr "Отказ"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:26
 msgid "Apply Crop"
-msgstr ""
+msgstr "Приложи изрязване"
 
 #. Translators: Text is used to describe the main text body of an email, or of
 #. similar options like the main text of the CfP or a review. It's separate from
@@ -3345,6 +3345,9 @@ msgid ""
 "If disabled, speakers cannot edit their proposals regardless of the proposal "
 "state. This setting overrides the {review_phase_link} for speaker editing."
 msgstr ""
+"Ако е изключено, лекторите не могат да редактират предложенията си без "
+"значение в какво състояние са. Тази настройка е с по-висок приоритет от "
+"{review_phase_link} за редакция от лектори."
 
 #: pretalx/orga/forms/cfp.py:130
 msgid "Do not ask"
@@ -3933,6 +3936,8 @@ msgid ""
 "Speaker editing is currently disabled at the event level. {link_tag} to "
 "enable speaker editing."
 msgstr ""
+"Редакцията от лектори е изключена на ниво събитие. {link_tag} може да включи "
+"редактирането от лектори."
 
 #: pretalx/orga/forms/event.py:676
 msgid "The end of a phase has to be after its start."
@@ -4042,7 +4047,7 @@ msgstr "Програма"
 
 #: pretalx/orga/forms/event.py:875
 msgid "Slots"
-msgstr ""
+msgstr "Слотове"
 
 #: pretalx/orga/forms/event.py:878 pretalx/orga/tables/admin.py:30
 #: pretalx/orga/templates/orga/base.html:214
@@ -4055,7 +4060,7 @@ msgstr "Екипи"
 #: pretalx/orga/forms/event.py:885 pretalx/orga/forms/event.py:896
 #: pretalx/orga/forms/event.py:904 pretalx/orga/forms/event.py:919
 msgid "Modified"
-msgstr ""
+msgstr "Променено"
 
 #: pretalx/orga/forms/event.py:886 pretalx/orga/forms/event.py:887
 #: pretalx/orga/forms/event.py:897 pretalx/orga/forms/event.py:905
@@ -4102,7 +4107,7 @@ msgstr "Незадължително"
 
 #: pretalx/orga/forms/event.py:899
 msgid "Option modified"
-msgstr ""
+msgstr "Опцията е променена"
 
 #: pretalx/orga/forms/event.py:900
 #, fuzzy
@@ -4347,7 +4352,7 @@ msgstr "Оценка в „{score_category}“"
 
 #: pretalx/orga/forms/review.py:450
 msgid "Add tags"
-msgstr ""
+msgstr "Добави тагове"
 
 #: pretalx/orga/forms/review.py:451
 #, fuzzy
@@ -4501,11 +4506,11 @@ msgstr "Крайното време трябва да е след начално
 
 #: pretalx/orga/forms/submission.py:154
 msgid "You cannot assign a room without setting the start time as well."
-msgstr ""
+msgstr "Не може да зададете зала без да зададете времето за започване."
 
 #: pretalx/orga/forms/submission.py:162
 msgid "You cannot set a start time without assigning the room as well."
-msgstr ""
+msgstr "Не може да зададете начално време без да зададете и зала."
 
 #: pretalx/orga/forms/submission.py:299
 msgid "Mark the new state as “pending”"
@@ -5295,7 +5300,7 @@ msgstr "Изпращане на код за достъп"
 
 #: pretalx/orga/templates/orga/cfp/submitteraccesscode/update.html:13
 msgid "This access code was used for the following proposals:"
-msgstr ""
+msgstr "Този код за достъп е бил използван за следните предложения:"
 
 #: pretalx/orga/templates/orga/cfp/text.html:32
 msgid ""
@@ -5483,11 +5488,11 @@ msgstr "Полета"
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html:51
 msgid "Before"
-msgstr ""
+msgstr "Преди"
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html:52
 msgid "After"
-msgstr ""
+msgstr "След"
 
 #: pretalx/orga/templates/orga/event/live.html:10
 #: pretalx/orga/templates/orga/event/live.html:15
@@ -5577,15 +5582,15 @@ msgstr "Качване на настройки"
 
 #: pretalx/orga/templates/orga/generic/table.html:41
 msgid "Add selected columns"
-msgstr ""
+msgstr "Добави избраните колони"
 
 #: pretalx/orga/templates/orga/generic/table.html:42
 msgid "Add"
-msgstr ""
+msgstr "Добави"
 
 #: pretalx/orga/templates/orga/generic/table.html:44
 msgid "Remove selected columns"
-msgstr ""
+msgstr "Премахни избраните колони"
 
 #: pretalx/orga/templates/orga/generic/table.html:45
 #: pretalx/orga/templates/orga/submission/speakers.html:88
@@ -5594,7 +5599,7 @@ msgstr "Премахване"
 
 #: pretalx/orga/templates/orga/generic/table.html:61
 msgid "Move selected columns up"
-msgstr ""
+msgstr "Премести нагоре избраните колони"
 
 #: pretalx/orga/templates/orga/generic/table.html:62
 #, fuzzy
@@ -5604,15 +5609,15 @@ msgstr "Преместване на елемент"
 
 #: pretalx/orga/templates/orga/generic/table.html:64
 msgid "Move selected columns down"
-msgstr ""
+msgstr "Премсти надолу избраните колони"
 
 #: pretalx/orga/templates/orga/generic/table.html:65
 msgid "Move down"
-msgstr ""
+msgstr "Премести надолу"
 
 #: pretalx/orga/templates/orga/generic/table.html:72
 msgid "Reset to defaults"
-msgstr ""
+msgstr "Върни настройки по подразбиране"
 
 #: pretalx/orga/templates/orga/includes/dashboard_block_event.html:18
 #: pretalx/orga/templates/orga/speaker/form.html:43
@@ -6098,15 +6103,15 @@ msgstr "Все още нямате нито едно предложение."
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:11
 msgid "Bulk Tagging"
-msgstr ""
+msgstr "Слагане на много тагове"
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:19
 msgid "Select proposals below and add or remove tags in bulk."
-msgstr ""
+msgstr "Избери предложения по-долу и добави/премахни тагове."
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:39
 msgid "Apply"
-msgstr ""
+msgstr "Приложи"
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:50
 #: pretalx/orga/templates/orga/review/export.html:37
@@ -6121,7 +6126,7 @@ msgstr "Код"
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:56
 msgid "Current Tags"
-msgstr ""
+msgstr "Текущи тагове"
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:91
 #, fuzzy
@@ -6799,7 +6804,7 @@ msgstr "Ще може да видите другите рецензии, сле�
 
 #: pretalx/orga/templates/orga/submission/review.html:137
 msgid "Non-public resources"
-msgstr ""
+msgstr "Не-публични ресурси"
 
 #: pretalx/orga/templates/orga/submission/review.html:160
 msgid "Other proposals"
@@ -7039,7 +7044,7 @@ msgstr "Създаване на нов токен"
 #: pretalx/orga/templates/orga/widgets/icon_option.html:21
 #: pretalx/submission/models/question.py:125
 msgid "No icon"
-msgstr ""
+msgstr "Няма икона"
 
 #: pretalx/orga/templates/orga/widgets/multi_languages_widget.html:13
 #, python-format
@@ -7885,7 +7890,7 @@ msgstr "Лектори само с отхвърлени предложения"
 
 #: pretalx/person/forms/profile.py:268
 msgid "Any arrival status"
-msgstr ""
+msgstr "Всякакъв статус"
 
 #: pretalx/person/forms/profile.py:269
 msgid "Marked as arrived"
@@ -8352,7 +8357,7 @@ msgstr "Японски"
 
 #: pretalx/settings.py:418
 msgid "Korean"
-msgstr ""
+msgstr "Корейски"
 
 #: pretalx/settings.py:423
 msgid "Dutch"
@@ -8497,7 +8502,7 @@ msgstr ""
 
 #: pretalx/submission/models/access_code.py:70
 msgid "Redeemed"
-msgstr ""
+msgstr "Използван"
 
 #: pretalx/submission/models/cfp.py:95
 msgid "headline"
@@ -8513,7 +8518,7 @@ msgstr "Стандартен вид сесия"
 
 #: pretalx/submission/models/cfp.py:112
 msgid "Opening"
-msgstr ""
+msgstr "Отваряне"
 
 #: pretalx/submission/models/cfp.py:114
 msgid ""
@@ -8521,6 +8526,9 @@ msgid ""
 "users.Leave the date empty to start accepting proposals immediately once the "
 "event is live."
 msgstr ""
+"Моля опишете датата, от която искате да започнете да приемате предложения. "
+"Оставете празно, ако искате да приемате предложения от момента, в който "
+"събитието е активирано."
 
 #: pretalx/submission/models/cfp.py:123
 msgid "Please put in the last date you want to accept proposals from users."
@@ -8598,7 +8606,7 @@ msgstr "задължително след крайния срок"
 
 #: pretalx/submission/models/question.py:126
 msgid "Bluesky"
-msgstr ""
+msgstr "Bluesky"
 
 #: pretalx/submission/models/question.py:127
 #, fuzzy
@@ -8608,11 +8616,11 @@ msgstr "Изтрийте"
 
 #: pretalx/submission/models/question.py:128
 msgid "GitHub"
-msgstr ""
+msgstr "GitHub"
 
 #: pretalx/submission/models/question.py:129
 msgid "Instagram"
-msgstr ""
+msgstr "Instagram"
 
 #: pretalx/submission/models/question.py:130
 #, fuzzy
@@ -8622,7 +8630,7 @@ msgstr "Връзки"
 
 #: pretalx/submission/models/question.py:131
 msgid "Mastodon"
-msgstr ""
+msgstr "Mastodon"
 
 #: pretalx/submission/models/question.py:132
 #, fuzzy
@@ -8633,11 +8641,11 @@ msgstr "Подател"
 
 #: pretalx/submission/models/question.py:133
 msgid "Website"
-msgstr ""
+msgstr "Web сайт"
 
 #: pretalx/submission/models/question.py:134
 msgid "YouTube"
-msgstr ""
+msgstr "YouTube"
 
 #: pretalx/submission/models/question.py:191
 msgid "Field type"
@@ -8772,7 +8780,7 @@ msgstr "Публикуване на отговори"
 
 #: pretalx/submission/models/question.py:319
 msgid "Responses will be shown on session or speaker pages as appropriate."
-msgstr ""
+msgstr "Отговорите ще бъдат показвани на страниците на сесиите или лекторите."
 
 #: pretalx/submission/models/question.py:324
 msgid "Show answers to reviewers"
@@ -8788,13 +8796,15 @@ msgstr ""
 
 #: pretalx/submission/models/question.py:335
 msgid "Icon"
-msgstr ""
+msgstr "Икона"
 
 #: pretalx/submission/models/question.py:337
 msgid ""
 "Custom URL fields that are shown publicly can use an icon when displaying "
 "the link."
 msgstr ""
+"URL полета, които се показват публично могат да използват икона, когато се "
+"показва линка."
 
 #: pretalx/submission/models/question.py:457
 #, fuzzy
@@ -8804,7 +8814,7 @@ msgstr "Незадължително"
 
 #: pretalx/submission/models/resource.py:41
 msgid "Publicly visible resource"
-msgstr ""
+msgstr "Публично видими ресурси"
 
 #: pretalx/submission/models/review.py:39
 msgid "Leave empty to use this category for all tracks."
@@ -9066,22 +9076,22 @@ msgid "not accepted"
 msgstr "неприето"
 
 msgid "Expanded View"
-msgstr ""
+msgstr "Разширен изглед"
 
 msgid "Condensed View"
-msgstr ""
+msgstr "Сгънат изглед"
 
 msgid "Unscheduled sessions"
-msgstr ""
+msgstr "Сесии извън графика"
 
 msgid "Availabilities"
-msgstr ""
+msgstr "Свободни времена"
 
 msgid "Unschedule"
-msgstr ""
+msgstr "Махни от графика"
 
 msgid "Copy to other rooms"
-msgstr ""
+msgstr "Копирай в друга зала"
 
 #, fuzzy
 #~| msgid "Actions"
