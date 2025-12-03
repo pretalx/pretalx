@@ -186,7 +186,9 @@ class QuestionFieldsMixin:
                 required=question.required,
                 widget=widget,
                 initial=(
-                    (initial == "True") if initial else bool(question.default_answer)
+                    (initial.lower() == "true")
+                    if initial
+                    else bool(question.default_answer)
                 ),
             )
             field.original_help_text = original_help_text

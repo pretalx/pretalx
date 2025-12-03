@@ -554,9 +554,9 @@ class Answer(PretalxModel):
 
     @cached_property
     def boolean_answer(self):
-        if self.answer == "True":
+        if self.answer.lower() == "true":
             return True
-        if self.answer == "False":
+        if self.answer == "false":
             return False
 
     @property
