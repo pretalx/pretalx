@@ -163,3 +163,4 @@ release version="":
     rm -rf dist/ build/ pretalx.egg-info
     uv run python -m build -n
     uvx twine upload dist/pretalx-*
+    git push
