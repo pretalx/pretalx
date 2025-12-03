@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :bug:`orga:email` Emails containing schedule notifications for speakers in multilingual events could sometimes appear in mixed languages, with the general email text using the user’s preferred language and the notification section using the main event language.
 - :bug:`api` Submission creation in the API was broken.
 - :bug:`orga` There was a bug that prevented the saving of custom fields in the organiser area for some specific event settings.
 - :bug:`orga:schedule,2209` Dragging sessions to their slots in the schedule editor did not work on MacOS browsers.

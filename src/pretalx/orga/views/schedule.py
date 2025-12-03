@@ -12,6 +12,7 @@ import dateutil.parser
 from csp.decorators import csp_update
 from django.conf import settings
 from django.contrib import messages
+from django.db import transaction
 from django.db.models.deletion import ProtectedError
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import redirect
@@ -219,6 +220,7 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
         )
         return super().form_invalid(form)
 
+    @transaction.atomic
     def form_valid(self, form):
         self.request.event.release_schedule(
             form.cleaned_data["version"],

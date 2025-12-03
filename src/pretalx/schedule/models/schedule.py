@@ -16,7 +16,6 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import is_reviewer
-from pretalx.schedule.notifications import render_notifications
 from pretalx.schedule.services import (
     freeze_schedule,
     get_cached_schedule_changes,
@@ -462,9 +461,6 @@ class Schedule(PretalxModel):
         mails = []
         for speaker, data in self.speakers_concerned.items():
             locale = speaker.get_locale_for_event(self.event)
-            notifications = render_notifications(
-                data, event=self.event, speaker=speaker, locale=locale
-            )
             slots = list(data.get("create") or []) + [
                 talk["new_slot"] for talk in (data.get("update") or [])
             ]
@@ -474,7 +470,6 @@ class Schedule(PretalxModel):
                     user=speaker,
                     event=self.event,
                     context_kwargs={"user": speaker},
-                    context={"notifications": notifications},
                     commit=save,
                     locale=locale,
                     submissions=submissions,

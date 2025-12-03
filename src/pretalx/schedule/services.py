@@ -393,6 +393,8 @@ def freeze_schedule(
         TalkSlot.objects.bulk_create(talks)
 
     if notify_speakers:
+        # Complete refresh to avoid dealing with stale data
+        schedule = schedule.__class__.objects.get(pk=schedule.pk)
         schedule.generate_notifications(save=True)
 
     with suppress(AttributeError):
