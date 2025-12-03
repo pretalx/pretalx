@@ -5,8 +5,8 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-11-28 21:17+0000\n"
-"PO-Revision-Date: 2025-11-05 15:50+0000\n"
-"Last-Translator: Jozef Mlich <jmlich83@gmail.com>\n"
+"PO-Revision-Date: 2025-12-02 21:41+0000\n"
+"Last-Translator: Michal Stanke <michal@stanke.cz>\n"
 "Language-Team: none\n"
 "Language: cs\n"
 "MIME-Version: 1.0\n"
@@ -37,7 +37,7 @@ msgstr "Zobrazit náhled programu"
 
 #: pretalx/agenda/phrases.py:18
 msgid "Edit or view your proposals"
-msgstr "Zobrazit nebo upravit příspěvky"
+msgstr "Zobrazit nebo upravit přihlášky"
 
 #: pretalx/agenda/templates/agenda/base.html:63
 msgid "This schedule-related page is non-public. Only organisers can see it."
@@ -47,10 +47,8 @@ msgstr ""
 
 #: pretalx/agenda/templates/agenda/changelog.html:12
 #: pretalx/agenda/templates/agenda/schedule.html:33
-#, fuzzy
-#| msgid "Schedule update"
 msgid "Schedule changes"
-msgstr "Aktualizace programu"
+msgstr "Změny programu"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:19
 msgid "We have new sessions!"
@@ -256,10 +254,8 @@ msgstr ""
 "toho, zabere to jen chvilku."
 
 #: pretalx/cfp/flow.py:485
-#, fuzzy
-#| msgid "Admin information"
 msgid "Additional information"
-msgstr "Informace pro správce"
+msgstr "Doplňující informace"
 
 #: pretalx/cfp/flow.py:489
 msgid "Tell us more!"
@@ -368,16 +364,12 @@ msgstr ""
 "pokud si myslíte, že jde o chybu."
 
 #: pretalx/cfp/phrases.py:36
-#, fuzzy
-#| msgid ""
-#| "This proposal cannot be confirmed at this time – please contact us if you "
-#| "think this is an error."
 msgid ""
 "This proposal cannot be edited at this time. Please contact the organisers "
 "if you need to make changes."
 msgstr ""
-"Tato přihláška nemůže být v tuto chvíli potvrzena – prosím kontaktujte nás, "
-"pokud si myslíte, že jde o chybu."
+"Tato přihláška nemůže být v tuto chvíli upravena – pro provedení změn prosím "
+"kontaktujte organizátory."
 
 #: pretalx/cfp/phrases.py:39
 msgid "Speaker email"
@@ -438,37 +430,26 @@ msgstr ""
 
 #: pretalx/cfp/phrases.py:65 pretalx/orga/forms/event.py:862
 #: pretalx/orga/forms/event.py:894 pretalx/orga/views/cfp.py:151
-#, fuzzy
-#| msgid "Custom Mail"
 msgid "Custom fields"
-msgstr "Vlastní e-mail"
+msgstr "Vlastní pole"
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:29
-#, fuzzy, python-format
-#| msgid ""
-#| "You can enter proposals until %(deadline)s (%(timezone)s), "
-#| "%(until_string)s from now."
+#, python-format
 msgid ""
 "Submissions close on %(deadline)s (%(timezone)s), %(until_string)s from now."
 msgstr ""
-"Můžete přidávat příspěvky do %(deadline)s (%(timezone)s), %(until_string)s "
-"od teď."
+"Přidávání přihlášek bude uzavřeno %(deadline)s (%(timezone)s), "
+"%(until_string)s od teď."
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:34
-#, fuzzy, python-format
-#| msgid "This Call for Papers closed on %(deadline)s (%(timezone)s)."
+#, python-format
 msgid "Submissions open on %(opening)s (%(timezone)s)."
-msgstr ""
-"Toto shánění přednášejících (Call for Papers) skončilo %(deadline)s "
-"(%(timezone)s)."
+msgstr "Přidávání přihlášek je otevřeno do %(opening)s (%(timezone)s)."
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:38
-#, fuzzy, python-format
-#| msgid "This Call for Papers closed on %(deadline)s (%(timezone)s)."
+#, python-format
 msgid "Submissions closed on %(deadline)s (%(timezone)s)."
-msgstr ""
-"Toto shánění přednášejících (Call for Papers) skončilo %(deadline)s "
-"(%(timezone)s)."
+msgstr "Přidávání přihlášek skončilo %(deadline)s (%(timezone)s)."
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:64
 msgid "Submit a proposal"
@@ -476,7 +457,7 @@ msgstr "Odeslat přihlášku"
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:66 pretalx/cfp/views/wizard.py:62
 msgid "Proposals are closed"
-msgstr "Příspěvky byly uzavřeny"
+msgstr "Přidávání přihlášek bylo uzavřeno"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:19
 #: pretalx/submission/models/submission.py:87
@@ -500,10 +481,8 @@ msgid "withdrawn"
 msgstr "staženo"
 
 #: pretalx/cfp/templates/cfp/event/index.html:41
-#, fuzzy
-#| msgid "Organiser area"
 msgid "Go To Organiser Area"
-msgstr "Rozhraní organizátorů"
+msgstr "Přejít do rozhraní pro organizátory"
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:11
 #: pretalx/cfp/templates/cfp/event/invitation.html:14
@@ -574,7 +553,7 @@ msgstr ""
 
 #: pretalx/cfp/templates/cfp/event/recover.html:20
 msgid "Set your password to access your profile and proposals"
-msgstr ""
+msgstr "Nastavte heslo pro přístup k vašemu profilu a přihláškám"
 
 #: pretalx/cfp/templates/cfp/event/submission_base.html:15
 #: pretalx/orga/templates/orga/submission/content.html:20
@@ -811,7 +790,7 @@ msgstr ""
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:27
 #: pretalx/cfp/views/user.py:285
 msgid "Withdraw"
-msgstr "Zrušit"
+msgstr "Stáhnout"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:133
 msgid "Discard draft proposal"
@@ -955,14 +934,8 @@ msgid "Resources"
 msgstr "Zdroje"
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:18
-#, fuzzy
-#| msgid ""
-#| "Resources will be publicly visible. Please try to keep your uploads below "
-#| "16MB."
 msgid "Resources will be publicly visible unless marked as non-public."
-msgstr ""
-"Zdroje budou veřejně přístupné. Prosíme, aby všechny soubory byly menší než "
-"16 MB."
+msgstr "Zdroje budou veřejně přístupné, pokud nebudou označeny jako neveřejné."
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:72
 msgid "This proposal has no resources yet."
@@ -1067,16 +1040,14 @@ msgstr ""
 "Soubory tohoto typu ({extension}) nejsou povoleny, soubor musí být typu: "
 
 #: pretalx/common/forms/fields.py:165
-#, fuzzy, python-format
-#| msgid "The submitted availability contains an invalid date."
+#, python-format
 msgid "Submitted availabilities are not valid json: %(error)s."
-msgstr "Vložená dostupnost obsahuje nevalidní datum."
+msgstr "Vložená dostupnost není validní json: %(error)s."
 
 #: pretalx/common/forms/fields.py:167
-#, fuzzy, python-format
-#| msgid "The submitted availability does not comply with the required format."
+#, python-format
 msgid "Availability JSON does not comply with expected format: %(detail)s"
-msgstr "Vložená dostupnost neodpovídá požadovanému formátu."
+msgstr "JSON s dostupností neodpovídá očekávanému formátu: %(detail)s"
 
 #: pretalx/common/forms/fields.py:170
 msgid "The submitted availability does not comply with the required format."
@@ -1146,13 +1117,11 @@ msgstr "Napsali jste {count} slov."
 
 #: pretalx/common/forms/tables.py:10
 msgid "Available Columns"
-msgstr ""
+msgstr "Dostupné sloupce"
 
 #: pretalx/common/forms/tables.py:20
-#, fuzzy
-#| msgid "Selection"
 msgid "Selected Columns"
-msgstr "Výběr"
+msgstr "Vybrané sloupce"
 
 #: pretalx/common/forms/widgets.py:26
 msgid ""
@@ -1174,6 +1143,7 @@ msgid ""
 "The file you uploaded has a very large number of pixels, please upload a "
 "picture with smaller dimensions."
 msgstr ""
+"Nahraný soubor má příliš vysoké rozlišení. Nahrajte prosím menší obrázek."
 
 #: pretalx/common/image.py:78
 msgid ""
@@ -1241,10 +1211,8 @@ msgid "The invitation to the review team was sent."
 msgstr "Pozvánka do týmu kontrolujícího přihlášky byla odeslána."
 
 #: pretalx/common/log_display.py:70
-#, fuzzy
-#| msgid "The team was removed."
 msgid "A team member was removed"
-msgstr "Tým byl odstraněn."
+msgstr "Člen týmu byl odstraněn"
 
 #: pretalx/common/log_display.py:71
 msgid "An email was created."
@@ -1279,40 +1247,28 @@ msgid "A mail template was modified."
 msgstr "E-mailová šablona byla upravena."
 
 #: pretalx/common/log_display.py:79
-#, fuzzy
-#| msgid "A question was added."
 msgid "A custom field was added."
-msgstr "Otázka byla přidána."
+msgstr "Vlastní pole bylo přidáno."
 
 #: pretalx/common/log_display.py:80
-#, fuzzy
-#| msgid "A question was deleted."
 msgid "A custom field was deleted."
-msgstr "Otázka byla smazána."
+msgstr "Vlastní pole bylo smazáno."
 
 #: pretalx/common/log_display.py:81
-#, fuzzy
-#| msgid "A question was modified."
 msgid "A custom field was modified."
-msgstr "Otázka byla upravena."
+msgstr "Vlastní pole bylo upraveno."
 
 #: pretalx/common/log_display.py:82
-#, fuzzy
-#| msgid "A question option was added."
 msgid "A custom field option was added."
-msgstr "Možnost odpovědi byla přidána."
+msgstr "Možnost pro vlastní pole byla přidána."
 
 #: pretalx/common/log_display.py:83
-#, fuzzy
-#| msgid "A question option was deleted."
 msgid "A custom field option was deleted."
-msgstr "Možnost odpovědi byla smazána."
+msgstr "Možnost pro vlastní pole byla smazána."
 
 #: pretalx/common/log_display.py:84
-#, fuzzy
-#| msgid "A question option was modified."
 msgid "A custom field option was modified."
-msgstr "Možnost odpovědi byla upravena."
+msgstr "Možnost pro vlastní pole byla upravena."
 
 #: pretalx/common/log_display.py:85
 msgid "A tag was added."
@@ -1331,16 +1287,12 @@ msgid "A new room was added."
 msgstr "Nová místnost byla přidána."
 
 #: pretalx/common/log_display.py:89
-#, fuzzy
-#| msgid "A track was modified."
 msgid "A room was modified."
-msgstr "Track byl upraven."
+msgstr "Místnost byla upravena."
 
 #: pretalx/common/log_display.py:90
-#, fuzzy
-#| msgid "A track was deleted."
 msgid "A room was deleted."
-msgstr "Track byl smazán."
+msgstr "Místnost byla smazána."
 
 #: pretalx/common/log_display.py:91
 msgid "A new schedule version was released."
@@ -1383,22 +1335,16 @@ msgid "A proposal resource was modified."
 msgstr "Zdroj u přihlášky byl upraven."
 
 #: pretalx/common/log_display.py:101
-#, fuzzy
-#| msgid "A track was deleted."
 msgid "A review was deleted."
-msgstr "Track byl smazán."
+msgstr "Hodnocení bylo smazáno."
 
 #: pretalx/common/log_display.py:102
-#, fuzzy
-#| msgid "An email was modified."
 msgid "A review was modified."
-msgstr "E-mail byl upraven."
+msgstr "Hodnocení bylo upraveno."
 
 #: pretalx/common/log_display.py:103
-#, fuzzy
-#| msgid "A track was added."
 msgid "A review was added."
-msgstr "Track byl přidán."
+msgstr "Hodnocení bylo přidáno."
 
 #: pretalx/common/log_display.py:104
 msgid "A speaker was added to the proposal."
@@ -1425,34 +1371,24 @@ msgid "The proposal was withdrawn."
 msgstr "Přihláška byla stažena."
 
 #: pretalx/common/log_display.py:110
-#, fuzzy
-#| msgid "A question was modified."
 msgid "A custom field response was modified."
-msgstr "Otázka byla upravena."
+msgstr "Odpověď pro vlastní pole byla upravena."
 
 #: pretalx/common/log_display.py:111
-#, fuzzy
-#| msgid "A question was added."
 msgid "A custom field response was added."
-msgstr "Otázka byla přidána."
+msgstr "Odpověď pro vlastní pole byla přidána."
 
 #: pretalx/common/log_display.py:112
-#, fuzzy
-#| msgid "A question was modified."
 msgid "A custom field response was removed."
-msgstr "Otázka byla upravena."
+msgstr "Odpověď pro vlastní pole byla smazána."
 
 #: pretalx/common/log_display.py:113
-#, fuzzy
-#| msgid "A proposal resource was added."
 msgid "A proposal comment was added."
-msgstr "Zdroj k přihlášce byl přidán."
+msgstr "Komentář k přihlášce byl přidán."
 
 #: pretalx/common/log_display.py:114
-#, fuzzy
-#| msgid "A proposal resource was deleted."
 msgid "A proposal comment was deleted."
-msgstr "Zdroj u přihlášky byl smazán."
+msgstr "Komentář k přihlášce byl smazán."
 
 #: pretalx/common/log_display.py:115
 msgid "A session type was added."
@@ -1507,38 +1443,28 @@ msgid "A speaker has been marked as not arrived."
 msgstr "Přednášející byl(a) označen(a), že nepřijel(a)."
 
 #: pretalx/common/log_display.py:128
-#, fuzzy
-#| msgid "Speaker information note"
 msgid "A speaker information note was added."
-msgstr "Poznámka s informacemi pro přednášející"
+msgstr "Poznámka s informacemi pro přednášející byla přidána."
 
 #: pretalx/common/log_display.py:129
-#, fuzzy
-#| msgid "Speaker information note"
 msgid "A speaker information note was modified."
-msgstr "Poznámka s informacemi pro přednášející"
+msgstr "Poznámka s informacemi pro přednášející byla upravena."
 
 #: pretalx/common/log_display.py:130
-#, fuzzy
-#| msgid "Speaker information note"
 msgid "A speaker information note was deleted."
-msgstr "Poznámka s informacemi pro přednášející"
+msgstr "Poznámka s informacemi pro přednášející byla smazána."
 
 #: pretalx/common/log_display.py:131
 msgid "The API token was reset."
 msgstr "API klíč byl resetován."
 
 #: pretalx/common/log_display.py:132 pretalx/orga/views/person.py:108
-#, fuzzy
-#| msgid "The API token was reset."
 msgid "The API token was revoked."
-msgstr "API klíč byl resetován."
+msgstr "API klíč byl zrušen."
 
 #: pretalx/common/log_display.py:134
-#, fuzzy
-#| msgid "The API token was reset."
 msgid "The API token was upgraded to the latest version."
-msgstr "API klíč byl resetován."
+msgstr "API klíč byl upgradován na nejnovější verzi."
 
 #: pretalx/common/log_display.py:137
 msgid "The password was modified."
@@ -1549,21 +1475,17 @@ msgid "The profile was modified."
 msgstr "Profil byl upraven."
 
 #: pretalx/common/log_display.py:139
-#, fuzzy
-#| msgid "The addressed user’s email address"
 msgid "The user changed their email address."
-msgstr "E-mailová adresa oslovovaného uživatele"
+msgstr "Uživatel změnil svou e-mailovou adresu."
 
 #: pretalx/common/log_display.py:189 pretalx/common/log_display.py:193
 #: pretalx/orga/tables/cfp.py:230 pretalx/orga/views/cfp.py:146
-#, fuzzy
-#| msgid "Custom Mail"
 msgid "Custom field"
-msgstr "Vlastní e-mail"
+msgstr "Vlastní pole"
 
 #: pretalx/common/log_display.py:200
 msgid "Response to custom field"
-msgstr ""
+msgstr "Odpověď pro vlastní pole"
 
 #: pretalx/common/log_display.py:203 pretalx/orga/forms/event.py:877
 #: pretalx/orga/templates/orga/base.html:240
@@ -1586,10 +1508,8 @@ msgid "Email"
 msgstr "E-mail"
 
 #: pretalx/common/log_display.py:214
-#, fuzzy
-#| msgid "Speaker email"
 msgid "Speaker profile"
-msgstr "E-mail přednášejícího"
+msgstr "Profil přednášejícího"
 
 #: pretalx/common/log_display.py:218 pretalx/event/stages.py:101
 #: pretalx/orga/forms/event.py:876 pretalx/orga/forms/event.py:917
@@ -1607,11 +1527,11 @@ msgstr[2] "Událostí"
 #: pretalx/orga/forms/event.py:895 pretalx/orga/forms/event.py:903
 #: pretalx/orga/forms/event.py:918 pretalx/orga/templates/orga/user.html:43
 msgid "Created"
-msgstr ""
+msgstr "Vytvořeno"
 
 #: pretalx/common/models/mixins.py:25
 msgid "Updated"
-msgstr ""
+msgstr "Upraveno"
 
 #: pretalx/common/models/settings.py:66
 msgid ""
@@ -1758,10 +1678,8 @@ msgstr "Smazat"
 
 #: pretalx/common/tables.py:350
 #: pretalx/orga/templates/orga/cfp/question/_form.html:101
-#, fuzzy
-#| msgid "Remove filter"
 msgid "Move item"
-msgstr "Zrušit filtr"
+msgstr "Přesunout položku"
 
 #: pretalx/common/tables.py:360 pretalx/orga/tables/cfp.py:76
 msgid "Copy access code link"
@@ -1858,7 +1776,7 @@ msgstr "Můj profil"
 
 #: pretalx/common/templates/common/base.html:125
 msgid "Organiser area"
-msgstr "Rozhraní organizátorů"
+msgstr "Rozhraní pro organizátory"
 
 #: pretalx/common/templates/common/base.html:133
 msgid "Logout"
@@ -1891,30 +1809,22 @@ msgid "Close"
 msgstr "Zavřít"
 
 #: pretalx/common/templates/common/logs.html:15
-#, fuzzy
-#| msgid "Schedule update"
 msgid "Recent Changes"
-msgstr "Aktualizace programu"
+msgstr "Nedávné změny"
 
 #: pretalx/common/templates/common/logs.html:28
 #: pretalx/orga/templates/orga/event/history_detail_content.html:17
-#, fuzzy
-#| msgid "This change was performed by a member of the event orga."
 msgid "This change was performed by an event organiser."
-msgstr "Tuto změnu provedl člen organizačního týmu."
+msgstr "Tuto změnu provedl organizátor."
 
 #: pretalx/common/templates/common/logs.html:53
-#, fuzzy
-#| msgid "Schedule update"
 msgid "View detailed changes"
-msgstr "Aktualizace programu"
+msgstr "Zobrazit podrobné změny"
 
 #: pretalx/common/templates/common/logs.html:68
 #: pretalx/orga/templates/orga/event/history_detail.html:20
-#, fuzzy
-#| msgid "Log in"
 msgid "Log Detail"
-msgstr "Přihlásit se"
+msgstr "Podrobný záznam"
 
 #: pretalx/common/templates/common/powered_by.html:43
 #, python-format
@@ -1927,12 +1837,12 @@ msgstr "Nebyl poskytnut žádný soubor"
 
 #: pretalx/common/templates/common/question_answer.html:38
 msgid "No response"
-msgstr ""
+msgstr "Žádné odpovědi"
 
 #: pretalx/common/templates/common/redirect.html:12
 #: pretalx/common/templates/common/redirect.html:18
 msgid "Redirect"
-msgstr ""
+msgstr "Přesměrování"
 
 #: pretalx/common/templates/common/redirect.html:20
 #, python-format
@@ -1940,25 +1850,25 @@ msgid ""
 "The link you clicked on wants to redirect you to a destination on the "
 "website %(host)s."
 msgstr ""
+"Odkaz, který jste otevřeli, vás chce přesměrovat na stránku na serveru "
+"%(host)s."
 
 #: pretalx/common/templates/common/redirect.html:23
 msgid "Please only proceed if you trust this website to be safe."
-msgstr ""
+msgstr "Pokračujte jen pokud tento server považujete za bezpečný."
 
 #: pretalx/common/templates/common/redirect.html:29
 #, python-format
 msgid "Proceed to %(host)s"
-msgstr ""
+msgstr "Pokračovat na %(host)s"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:18
-#, fuzzy
-#| msgid "Your avatar"
 msgid "Crop your avatar"
-msgstr "Váš avatar"
+msgstr "Oříznout avatar"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:22
 msgid "Image for cropping"
-msgstr ""
+msgstr "Obrázek k oříznutí"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:25
 #: pretalx/common/text/phrases.py:51
@@ -1967,7 +1877,7 @@ msgstr "Zrušit"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:26
 msgid "Apply Crop"
-msgstr ""
+msgstr "Oříznout"
 
 #. Translators: Text is used to describe the main text body of an email, or of
 #. similar options like the main text of the CfP or a review. It's separate from
@@ -2053,10 +1963,8 @@ msgstr ""
 "zpět."
 
 #: pretalx/common/text/phrases.py:64
-#, fuzzy
-#| msgid "The tag has been deleted."
 msgid "The item has been deleted."
-msgstr "Štítek byl smazán."
+msgstr "Položka byla smazána."
 
 #: pretalx/common/text/phrases.py:66
 msgid "Your changes have been saved."
@@ -2158,10 +2066,8 @@ msgid "You can use {link_start}Markdown{link_end} here."
 msgstr "Můžete tady používat {link_start}Markdown{link_end}."
 
 #: pretalx/common/text/phrases.py:111
-#, fuzzy
-#| msgid "This content will be shown publicly."
 msgid "This content may be shown publicly."
-msgstr "Tato informace bude veřejně zobrazena."
+msgstr "Tento obsah se může zobrazit veřejně."
 
 #: pretalx/common/text/phrases.py:113
 msgctxt "opening quotation mark"
@@ -2251,16 +2157,12 @@ msgid "Plugin"
 msgstr "Plugin"
 
 #: pretalx/common/views/generic.py:93
-#, fuzzy
-#| msgid "Your changes have been saved."
 msgid "Some changes could not be saved."
-msgstr "Vaše změny byly uloženy."
+msgstr "Některé změny se nepodařilo uložit."
 
 #: pretalx/common/views/generic.py:459
-#, fuzzy
-#| msgid "Newline"
 msgid "New"
-msgstr "Nový řádek"
+msgstr "Nový"
 
 #: pretalx/common/views/mixins.py:218
 msgid "ManagementForm data is missing or has been tampered with."
@@ -2572,16 +2474,12 @@ msgid "News from your content system"
 msgstr "Novinky ze systému správy obsahu"
 
 #: pretalx/event/models/event.py:1158
-#, fuzzy
-#| msgid "Landing page text"
 msgid "Link text"
-msgstr "Text výchozí stránky"
+msgstr "Text odkazu"
 
 #: pretalx/event/models/event.py:1159
-#, fuzzy
-#| msgid "Imprint URL"
 msgid "Link URL"
-msgstr "URL tiráže"
+msgstr "URL odkazu"
 
 #: pretalx/event/models/organiser.py:44
 msgid ""
@@ -2593,13 +2491,12 @@ msgstr ""
 
 #: pretalx/event/models/organiser.py:51
 msgid "Nobody on your teams has the permission to create new events."
-msgstr "Nikdo ve Vašem týmu nemá oprávnění vytvářet nové události."
+msgstr "Nikdo z vašich týmů nemá oprávnění vytvářet nové události."
 
 #: pretalx/event/models/organiser.py:59
 msgid ""
 "Nobody on your teams has the permission to change organiser-level settings."
-msgstr ""
-"Nikdo ve vašem týmu nemá oprávnění změnit nastavení úrovně organizátor."
+msgstr "Nikdo z vašich týmů nemá oprávnění změnit nastavení úrovně organizátor."
 
 #: pretalx/event/models/organiser.py:72
 #, python-brace-format
@@ -2616,7 +2513,7 @@ msgid ""
 "Nobody on your teams has the permissions to change settings for the event "
 "{event_name}"
 msgstr ""
-"Nikdo z vašeho týmu nemá oprávnění změnit nastavení pro událost {event_name}"
+"Nikdo z vašich týmů nemá oprávnění změnit nastavení pro událost {event_name}"
 
 #: pretalx/event/models/organiser.py:111
 msgid ""
@@ -2829,10 +2726,8 @@ msgid "URL to a user’s list of proposals"
 msgstr "URL adresa na seznam uživatelových přihlášek"
 
 #: pretalx/mail/context.py:150
-#, fuzzy
-#| msgid "URL to a user’s list of proposals"
 msgid "URL to a user’s private profile page."
-msgstr "URL adresa na seznam uživatelových přihlášek"
+msgstr "URL adresa na soukromou stránku profilu uživatele."
 
 #: pretalx/mail/context.py:165
 msgid "The general CfP deadline"
@@ -2887,10 +2782,8 @@ msgid "The track the proposal belongs to"
 msgstr "Track, do kterého přihláška patří"
 
 #: pretalx/mail/context.py:235
-#, fuzzy
-#| msgid "The duration in minutes."
 msgid "The session’s duration in minutes"
-msgstr "Doba trvání v minutách."
+msgstr "Doba trvání přednášky v minutách"
 
 #: pretalx/mail/context.py:242
 msgid ""
@@ -3215,48 +3108,38 @@ msgstr ""
 "Organizátoři {event_name}"
 
 #: pretalx/mail/models.py:39
-#, fuzzy
-#| msgid "Your proposal: {submission_title}"
 msgid "Acknowledge proposal submission"
-msgstr "Vaše přihláška: {submission_title}"
+msgstr "Potvrdit podání přihlášky"
 
 #: pretalx/mail/models.py:41
 msgid "New proposal (organiser notification)"
-msgstr ""
+msgstr "Nová přihláška (upozornění organizátora)"
 
 #: pretalx/mail/models.py:43
-#, fuzzy
-#| msgid "Proposal feed"
 msgid "Proposal accepted"
-msgstr "Kanál přihlášek"
+msgstr "Přihláška přijata"
 
 #: pretalx/mail/models.py:44
-#, fuzzy
-#| msgid "Proposal feed"
 msgid "Proposal rejected"
-msgstr "Kanál přihlášek"
+msgstr "Přihláška zamítnuta"
 
 #: pretalx/mail/models.py:46
 msgid "Add a speaker to a proposal (new account)"
-msgstr ""
+msgstr "Přidat přednášejícího k přihlášce (nový účet)"
 
 #: pretalx/mail/models.py:49
 msgid "Add a speaker to a proposal (existing account)"
-msgstr ""
+msgstr "Přidat přednášejícího k přihlášce (existující účet)"
 
 #: pretalx/mail/models.py:51
 #: pretalx/orga/templates/orga/cfp/question/remind.html:23
 #: pretalx/orga/templates/orga/includes/mail_template_role.html:14
-#, fuzzy
-#| msgid "Send reminder"
 msgid "Custom fields reminder"
-msgstr "Odeslat připomenutí"
+msgstr "Připomenutí pro vlastní pole"
 
 #: pretalx/mail/models.py:52
-#, fuzzy
-#| msgid "Make schedule public"
 msgid "New schedule published"
-msgstr "Zveřejnit program"
+msgstr "Nový program zveřejněn"
 
 #: pretalx/mail/models.py:101 pretalx/mail/models.py:332
 msgid "Reply-To"
@@ -3283,25 +3166,18 @@ msgstr ""
 "odeslaného z této šablony. Může jich být opravdu hodně."
 
 #: pretalx/mail/models.py:246
-#, fuzzy
-#| msgid ""
-#| "- First missing question\n"
-#| "- Second missing question"
 msgid ""
 "- First missing field\n"
 "- Second missing field"
 msgstr ""
-"- První chybějící otázka\n"
-"- Druhá chybějící otázka"
+"- První chybějící pole\n"
+"- Druhé chybějící pole"
 
 #: pretalx/mail/models.py:248
-#, fuzzy
-#| msgid ""
-#| "The list of questions that the user has not answered, as bullet points"
 msgid ""
 "The list of custom fields that the user has not responded to, as bullet "
 "points"
-msgstr "Seznam otázek, na které uživatel neodpověděl"
+msgstr "Seznam vlastních polí, která uživatel nevyplnil"
 
 #: pretalx/mail/models.py:319 pretalx/orga/forms/cfp.py:470
 #: pretalx/orga/tables/mail.py:76
@@ -3393,17 +3269,16 @@ msgstr ""
 
 #: pretalx/orga/forms/cfp.py:68
 msgid "Allow submitters to share their proposal publicly"
-msgstr ""
+msgstr "Povolit přihlášeným, aby sdíleli svou přihlášku veřejně"
 
 #: pretalx/orga/forms/cfp.py:70
 msgid "Allow submitters to share a secret link to their proposal with others."
 msgstr ""
+"Povolit přihlášeným, aby sdíleli tajný odkaz na svou přihlášku s ostatními."
 
 #: pretalx/orga/forms/cfp.py:75
-#, fuzzy
-#| msgid "A speaker was invited to the proposal."
 msgid "Allow speakers to edit their proposals and profiles"
-msgstr "Přednášející byl k přihlášce přizván."
+msgstr "Povolit přednášejícím upravovat své přihlášky a profily"
 
 #: pretalx/orga/forms/cfp.py:83
 #: pretalx/orga/templates/orga/organiser/team/_form.html:28
@@ -3418,6 +3293,9 @@ msgid ""
 "If disabled, speakers cannot edit their proposals regardless of the proposal "
 "state. This setting overrides the {review_phase_link} for speaker editing."
 msgstr ""
+"Pokud není povoleno, přednášející nebudou moci upravovat své přihlášky bez "
+"ohledu na jejich stav. Toto nastavení má přednost před {review_phase_link} "
+"pro úpravu přednášejících."
 
 #: pretalx/orga/forms/cfp.py:130
 msgid "Do not ask"
@@ -3457,28 +3335,18 @@ msgid "Upload options"
 msgstr "Možnosti nahrávání"
 
 #: pretalx/orga/forms/cfp.py:195
-#, fuzzy
-#| msgid ""
-#| "You can upload question options here, one option per line. To use "
-#| "multiple languages, please upload a JSON file with a list of options:"
 msgid ""
 "You can upload options here, one option per line. To use multiple languages, "
 "please upload a JSON file with a list of options:"
 msgstr ""
-"Tady můžete nahrát možnosti odpovědí na otázky, jednu na každý řádek. Pro "
-"více jazyků, použijte prosím soubor typu JSON se seznamem možností:"
+"Tady můžete nahrát možnosti, jednu na každý řádek. Pro více jazyků, použijte "
+"prosím soubor typu JSON se seznamem možností:"
 
 #: pretalx/orga/forms/cfp.py:203
 msgid "Replace existing options"
 msgstr "Přepsat existující možnosti"
 
 #: pretalx/orga/forms/cfp.py:205
-#, fuzzy
-#| msgid ""
-#| "If you upload new options, do you want to replace the existing ones? "
-#| "Please note that this will DELETE all existing answers to this question! "
-#| "If you do not check this, the uploaded options will be added to the "
-#| "existing ones, without adding duplicates."
 msgid ""
 "If you upload new options, do you want to replace the existing ones? Please "
 "note that this will DELETE all existing responses to this custom field! If "
@@ -3486,8 +3354,8 @@ msgid ""
 "ones, without adding duplicates."
 msgstr ""
 "Pokud nahrajete nové možnosti, chcete nahradit ty stávající? Pamatujte, že "
-"tím dojde ke SMAZÁNÍ všech dosavadních odpovědí na tuto otázku. Pokud toto "
-"nevyberete, nahrané možnosti budou přidané k těm stávajícím. Případné "
+"tím dojde ke SMAZÁNÍ všech dosavadních odpovědí na toto vlastní pole. Pokud "
+"toto nevyberete, nahrané možnosti budou přidané k těm stávajícím. Případné "
 "duplicity budou ignorovány."
 
 #: pretalx/orga/forms/cfp.py:238
@@ -3503,17 +3371,12 @@ msgid "JSON file does not contain a list of objects."
 msgstr "JSON soubor neobsahuje seznam objektů."
 
 #: pretalx/orga/forms/cfp.py:259
-#, fuzzy
-#| msgid ""
-#| "Please select a deadline after which the question should become mandatory."
 msgid "Please select a deadline after which the field should become mandatory."
-msgstr "Vyberte prosím termín po kterém bude otázka povinná."
+msgstr "Vyberte prosím termín, po kterém bude povinné pole vyplnit."
 
 #: pretalx/orga/forms/cfp.py:271
-#, fuzzy
-#| msgid "You cannot replace answer options without uploading new ones."
 msgid "You cannot replace options without uploading new ones."
-msgstr "Nelze přepsat možné odpovědi bez nahrání nových."
+msgstr "Nelze přepsat možnosti bez nahrání nových."
 
 #: pretalx/orga/forms/cfp.py:386
 msgid "You already have a session type by this name!"
@@ -3600,10 +3463,8 @@ msgid "Recipients"
 msgstr "Příjemci"
 
 #: pretalx/orga/forms/cfp.py:627
-#, fuzzy
-#| msgid "If you select no question, all questions will be used."
 msgid "If you select no custom field, all will be used."
-msgstr "Pokud nevyberete žádnou otázku, budou použity všechny."
+msgstr "Pokud nevyberete žádná vlastní pole, budou použita všechna."
 
 #: pretalx/orga/forms/event.py:53
 msgid "Grid"
@@ -3732,7 +3593,7 @@ msgstr "Požádat vyhledávače, aby stránky události neindexovaly"
 #: pretalx/orga/forms/event.py:161
 #, python-brace-format
 msgid "Make sure to point a CNAME record from your domain to {site_url}."
-msgstr ""
+msgstr "Nasměřujte CNAME záznam své domény na {site_url}."
 
 #: pretalx/orga/forms/event.py:171
 #, python-brace-format
@@ -3849,6 +3710,8 @@ msgid ""
 "The password contains unsupported letters. Please only use characters A-Z, a-"
 "z, 0-9, and common special characters ({characters})."
 msgstr ""
+"Heslo obsahuje nepodporované znaky. Použijte prosím jen A-Z, a-z, 0-9 nebo "
+"běžné speciální znaky ({characters})."
 
 #: pretalx/orga/forms/event.py:445
 msgid "Use STARTTLS"
@@ -3891,13 +3754,15 @@ msgstr ""
 
 #: pretalx/orga/forms/event.py:537
 msgid "Enable submission comments"
-msgstr ""
+msgstr "Povolit komentáře k přihláškám"
 
 #: pretalx/orga/forms/event.py:539
 msgid ""
 "Allow organisers and reviewers to comment on submissions, separate from "
 "reviews."
 msgstr ""
+"Umožní organizátorům a kontrolujícím přidávat komentáře nezávislé na "
+"hodnocení."
 
 #: pretalx/orga/forms/event.py:544
 msgid "Require a review score"
@@ -3972,48 +3837,34 @@ msgstr ""
 "se program nebude zobrazovat zde v pretalxu."
 
 #: pretalx/orga/forms/event.py:618
-#, fuzzy
-#| msgid "Limit to tracks"
 msgid "Limit days"
-msgstr "Omezit pro dané tracky"
+msgstr "Omezit dny"
 
 #: pretalx/orga/forms/event.py:623
-#, fuzzy
-#| msgid ""
-#| "You can limit this question to some tracks. Leave this field empty to "
-#| "apply to all tracks."
 msgid ""
 "You can limit the days shown in the widget. Leave empty to show all days."
 msgstr ""
-"Tuto otázku můžete omezit pro některé tracky. Pro její použití pro všechny "
-"tracky toto pole ponechte prázdné."
+"Můžete omezit, které dny se ve widgetu zobrazí. Pro zobrazení všech dní "
+"ponechte prázdné."
 
 #: pretalx/orga/forms/event.py:627
-#, fuzzy
-#| msgid "Limit to tracks"
 msgid "Limit rooms"
-msgstr "Omezit pro dané tracky"
+msgstr "Omezit místnosti"
 
 #: pretalx/orga/forms/event.py:632
-#, fuzzy
-#| msgid ""
-#| "You can limit this question to some tracks. Leave this field empty to "
-#| "apply to all tracks."
 msgid ""
 "You can limit the rooms shown in the widget. Leave empty to show all rooms."
 msgstr ""
-"Tuto otázku můžete omezit pro některé tracky. Pro její použití pro všechny "
-"tracky toto pole ponechte prázdné."
+"Můžete omezit, které místnosti se ve widgetu zobrazí. Pro zobrazení všech "
+"místností ponechte prázdné."
 
 #: pretalx/orga/forms/event.py:638
 msgid "Widget language"
 msgstr "Jazyk widgetu"
 
 #: pretalx/orga/forms/event.py:662
-#, fuzzy
-#| msgid "Can change event settings"
 msgid "Change this in the CfP settings"
-msgstr "Může měnit nastavení události"
+msgstr "Toto můžete změnit v nastavení CfP"
 
 #: pretalx/orga/forms/event.py:664
 #, python-brace-format
@@ -4021,20 +3872,18 @@ msgid ""
 "Speaker editing is currently disabled at the event level. {link_tag} to "
 "enable speaker editing."
 msgstr ""
+"Změny přednášejících jsou pro tuto událost zakázané. {link_tag} pro povolení "
+"úprav."
 
 #: pretalx/orga/forms/event.py:676
 msgid "The end of a phase has to be after its start."
 msgstr "Konec fáze musí následovat až po jejím začátku."
 
 #: pretalx/orga/forms/event.py:848
-#, fuzzy
-#| msgid "New type"
 msgid "Object type"
-msgstr "Nový typ"
+msgstr "Typ objektu"
 
 #: pretalx/orga/forms/event.py:853 pretalx/orga/forms/review.py:448
-#, fuzzy
-#| msgid "Actions"
 msgid "Action"
 msgstr "Akce"
 
@@ -4050,10 +3899,8 @@ msgid "Proposals"
 msgstr "Přihlášky"
 
 #: pretalx/orga/forms/event.py:863
-#, fuzzy
-#| msgid "Custom Mail"
 msgid "Custom field options"
-msgstr "Vlastní e-mail"
+msgstr "Možnosti vlastního pole"
 
 #: pretalx/orga/forms/event.py:864 pretalx/orga/tables/submission.py:159
 #: pretalx/orga/templates/orga/review/bulk.html:13
@@ -4067,10 +3914,8 @@ msgstr "Kontroly"
 
 #: pretalx/orga/forms/event.py:865
 #: pretalx/orga/templates/orga/submission/base.html:83
-#, fuzzy
-#| msgid "Comment"
 msgid "Comments"
-msgstr "Komentář"
+msgstr "Komentáře"
 
 #: pretalx/orga/forms/event.py:866 pretalx/orga/forms/review.py:443
 #: pretalx/orga/templates/orga/base.html:287
@@ -4088,10 +3933,8 @@ msgid "Tracks"
 msgstr "Tracky"
 
 #: pretalx/orga/forms/event.py:868
-#, fuzzy
-#| msgid "Proposal titles"
 msgid "Proposal types"
-msgstr "Názvy přihlášek"
+msgstr "Typy přihlášek"
 
 #. Translators: Ideally a term that is as broad as possible, to refer to anybody who
 #. presents/owns a session. This word is also used to differentiate accepted „speakers“
@@ -4109,10 +3952,8 @@ msgid "Users"
 msgstr "Uživatelé"
 
 #: pretalx/orga/forms/event.py:871
-#, fuzzy
-#| msgid "Mail template"
 msgid "Mail templates"
-msgstr "Šablona mailu"
+msgstr "Šablony e-mailů"
 
 #: pretalx/orga/forms/event.py:872 pretalx/orga/forms/event.py:902
 #: pretalx/orga/templates/orga/speaker/form.html:111
@@ -4125,13 +3966,12 @@ msgid "Rooms"
 msgstr "Místnosti"
 
 #: pretalx/orga/forms/event.py:874
-#, fuzzy
 msgid "Schedules"
-msgstr "Program"
+msgstr "Programy"
 
 #: pretalx/orga/forms/event.py:875
 msgid "Slots"
-msgstr ""
+msgstr "Sloty"
 
 #: pretalx/orga/forms/event.py:878 pretalx/orga/tables/admin.py:30
 #: pretalx/orga/templates/orga/base.html:214
@@ -4144,145 +3984,103 @@ msgstr "Týmy"
 #: pretalx/orga/forms/event.py:885 pretalx/orga/forms/event.py:896
 #: pretalx/orga/forms/event.py:904 pretalx/orga/forms/event.py:919
 msgid "Modified"
-msgstr ""
+msgstr "Upraveno"
 
 #: pretalx/orga/forms/event.py:886 pretalx/orga/forms/event.py:887
 #: pretalx/orga/forms/event.py:897 pretalx/orga/forms/event.py:905
-#, fuzzy
-#| msgid "Delete"
 msgid "Deleted"
-msgstr "Smazat"
+msgstr "Smazáno"
 
 #: pretalx/orga/forms/event.py:888
-#, fuzzy
-#| msgid "accepted"
 msgid "Accepted"
-msgstr "přijato"
+msgstr "Přijato"
 
 #: pretalx/orga/forms/event.py:889
-#, fuzzy
-#| msgid "rejected"
 msgid "Rejected"
-msgstr "odmítnuto"
+msgstr "Zamítnuto"
 
 #: pretalx/orga/forms/event.py:890
-#, fuzzy
-#| msgid "canceled"
 msgid "Cancelled"
-msgstr "zrušeno"
+msgstr "Zrušeno"
 
 #: pretalx/orga/forms/event.py:891
-#, fuzzy
-#| msgid "confirmed"
 msgid "Confirmed"
-msgstr "potvrzeno"
+msgstr "Potvrzeno"
 
 #: pretalx/orga/forms/event.py:892
-#, fuzzy
-#| msgid "Withdraw"
 msgid "Withdrawn"
-msgstr "Zrušit"
+msgstr "Staženo"
 
 #: pretalx/orga/forms/event.py:898
-#, fuzzy
-#| msgid "Optional"
 msgid "Option created"
-msgstr "Nepovinné"
+msgstr "Možnost vytvořena"
 
 #: pretalx/orga/forms/event.py:899
 msgid "Option modified"
-msgstr ""
+msgstr "Možnost upravena"
 
 #: pretalx/orga/forms/event.py:900
-#, fuzzy
-#| msgid "deleted"
 msgid "Option deleted"
-msgstr "smazáno"
+msgstr "Možnost smazána"
 
 #: pretalx/orga/forms/event.py:906
 msgid "Sent"
 msgstr "Odeslané"
 
 #: pretalx/orga/forms/event.py:907
-#, fuzzy
-#| msgid "Templates"
 msgid "Template created"
-msgstr "Šablony"
+msgstr "Šablona vytvořena"
 
 #: pretalx/orga/forms/event.py:908
-#, fuzzy
-#| msgid "A mail template was modified."
 msgid "Template modified"
-msgstr "E-mailová šablona byla upravena."
+msgstr "Šablona upravena"
 
 #: pretalx/orga/forms/event.py:909
-#, fuzzy
-#| msgid "A mail template was deleted."
 msgid "Template deleted"
-msgstr "E-mailová šablona byla smazána."
+msgstr "Šablona smazána"
 
 #: pretalx/orga/forms/event.py:911
 #: pretalx/orga/templates/orga/settings/form.html:61
-#, fuzzy
 msgid "Schedule"
 msgstr "Program"
 
 #: pretalx/orga/forms/event.py:912
-#, fuzzy
-#| msgid "Release"
 msgid "Released"
-msgstr "Zveřejnit"
+msgstr "Zveřejněno"
 
 #: pretalx/orga/forms/event.py:913
 msgid "Room created"
-msgstr ""
+msgstr "Místnost vytvořena"
 
 #: pretalx/orga/forms/event.py:914
-#, fuzzy
-#| msgid "A track was modified."
 msgid "Room modified"
-msgstr "Track byl upraven."
+msgstr "Místnost upravena"
 
 #: pretalx/orga/forms/event.py:915
-#, fuzzy
-#| msgid "deleted"
 msgid "Room deleted"
-msgstr "smazáno"
+msgstr "Místnost smazána"
 
 #: pretalx/orga/forms/event.py:920
-#, fuzzy
-#| msgid "Activate phase"
 msgid "Activated"
-msgstr "Aktivovat fázi"
+msgstr "Aktivováno"
 
 #: pretalx/orga/forms/event.py:921
-#, fuzzy
-#| msgid "Deactivate event"
 msgid "Deactivated"
-msgstr "Deaktivovat událost"
+msgstr "Deaktivováno"
 
 #: pretalx/orga/forms/event.py:922
-#, fuzzy
-#| msgid "The CfP has been modified."
 msgid "CfP modified"
-msgstr "CfP bylo upraveno."
+msgstr "CfP upraveno"
 
 #: pretalx/orga/forms/event.py:942
-#, fuzzy
-#| msgid "Session types"
 msgid "All object types"
-msgstr "Typy přednášek"
+msgstr "Všechny typy objektů"
 
 #: pretalx/orga/forms/event.py:960
-#, fuzzy
-#| msgid "Session types"
 msgid "All action types"
-msgstr "Typy přednášek"
+msgstr "Všechny typy akcí"
 
 #: pretalx/orga/forms/event.py:984
-#, fuzzy
-#| msgctxt "category of items"
-#| msgid "Other"
 msgid "Other"
 msgstr "Ostatní"
 
@@ -4307,16 +4105,12 @@ msgid "Data delimiter"
 msgstr "Oddělovač dat"
 
 #: pretalx/orga/forms/export.py:33
-#, fuzzy
-#| msgid ""
-#| "How do you want to separate data within a single cell (for example, "
-#| "multiple speakers in one session)?"
 msgid ""
 "How do you want to separate data within a single cell (for example, multiple "
 "speakers in one session/multiple sessions for one speaker)?"
 msgstr ""
 "Jak chcete oddělit data v rámci jedné buňky (např. více přednášejících jedné "
-"přednášky)?"
+"přednášky/více přednášek jednoho přednášejícího)?"
 
 #: pretalx/orga/forms/export.py:36
 msgid "Newline"
@@ -4439,13 +4233,11 @@ msgstr "Skóre za „{score_category}“"
 
 #: pretalx/orga/forms/review.py:450
 msgid "Add tags"
-msgstr ""
+msgstr "Přidat tagy"
 
 #: pretalx/orga/forms/review.py:451
-#, fuzzy
-#| msgid "Remove"
 msgid "Remove tags"
-msgstr "Smazat"
+msgstr "Smazat tagy"
 
 #: pretalx/orga/forms/review.py:466 pretalx/person/models/information.py:57
 #: pretalx/submission/models/resource.py:31
@@ -4522,11 +4314,11 @@ msgstr "Jména přednášejících"
 
 #: pretalx/orga/forms/schedule.py:126 pretalx/orga/forms/schedule.py:145
 msgid "date"
-msgstr ""
+msgstr "datum"
 
 #: pretalx/orga/forms/schedule.py:134 pretalx/orga/forms/schedule.py:150
 msgid "time"
-msgstr ""
+msgstr "čas"
 
 #: pretalx/orga/forms/schedule.py:155
 msgid "Median score"
@@ -4549,10 +4341,8 @@ msgid "Resources provided by the speaker, either as links or as uploaded files"
 msgstr "Zdroje poskytnuté přednášejícím, ať už odkazy nebo nahrané soubory"
 
 #: pretalx/orga/forms/speaker.py:20
-#, fuzzy
-#| msgid "Reviewers can accept and reject proposals"
 msgid "Just speakers with accepted and confirmed proposals"
-msgstr "Kontrolující mohou přijímat a odmítat přihlášky"
+msgstr "Jen přednášející s přijatými nebo potvrzenými přihláškami"
 
 #: pretalx/orga/forms/speaker.py:34
 msgid "Proposal IDs"
@@ -4594,11 +4384,11 @@ msgstr "Čas konce musí být po času začátku."
 
 #: pretalx/orga/forms/submission.py:154
 msgid "You cannot assign a room without setting the start time as well."
-msgstr ""
+msgstr "Bez zadání času začátku nelze přiřadit místnosti."
 
 #: pretalx/orga/forms/submission.py:162
 msgid "You cannot set a start time without assigning the room as well."
-msgstr ""
+msgstr "Bez přiřazení místnosti nelze zadat čas začátku."
 
 #: pretalx/orga/forms/submission.py:299
 msgid "Mark the new state as “pending”"
@@ -4631,26 +4421,20 @@ msgid "The name of the speaker that should be displayed publicly."
 msgstr "Jméno přednášejícího jak se má veřejně zobrazit."
 
 #: pretalx/orga/forms/submission.py:323
-#, fuzzy
-#| msgid "Content languages"
 msgid "Invite language"
-msgstr "Jazyky obsahu"
+msgstr "Jazyk pozvánky"
 
 #: pretalx/orga/forms/submission.py:327
 msgid "The language in which the speaker will receive their invitation email."
-msgstr ""
+msgstr "Jazyk, ve kterém přednášející obdrží pozvánku e-mailem."
 
 #: pretalx/orga/forms/submission.py:352
-#, fuzzy
-#| msgid "Please provide a valid email address."
 msgid "Please provide an email address."
-msgstr "Uveďte prosím platnou e-mailovou adresu."
+msgstr "Uveďte prosím e-mailovou adresu."
 
 #: pretalx/orga/forms/widgets.py:61
-#, fuzzy
-#| msgid "Unofficial translation"
 msgid "Community translations"
-msgstr "Neoficiální překlad"
+msgstr "Komunitní překlady"
 
 #: pretalx/orga/forms/widgets.py:63
 #, python-brace-format
@@ -4725,35 +4509,26 @@ msgid "Go to pre-filled CfP form"
 msgstr "Přejít na předvyplněný formulář CfP"
 
 #: pretalx/orga/tables/cfp.py:192
-#, fuzzy
-#| msgid "Default"
 msgid "Make default"
-msgstr "Výchozí"
+msgstr "Nastavit jako výchozí"
 
 #: pretalx/orga/tables/cfp.py:232
 msgid "Responses"
-msgstr ""
+msgstr "Odpovědi"
 
 #: pretalx/orga/tables/cfp.py:244 pretalx/orga/views/event.py:220
-#, fuzzy
-#| msgid "You have configured no questions yet."
 msgid "You have configured no custom fields yet."
-msgstr "Nenastavili jste zatím žádné otázky."
+msgstr "Zatím jste nenastavili žádná vlastní pole."
 
 #: pretalx/orga/tables/mail.py:32 pretalx/orga/tables/mail.py:86
-#, fuzzy
-#| msgid "Templates"
 msgid "Template"
-msgstr "Šablony"
+msgstr "Šablona"
 
 #: pretalx/orga/tables/mail.py:38
 msgid "Send mails"
 msgstr "Odeslat e-maily"
 
 #: pretalx/orga/tables/mail.py:72
-#, fuzzy
-#| msgctxt "email subject"
-#| msgid "Subject"
 msgid "Subject"
 msgstr "Předmět"
 
@@ -4778,10 +4553,8 @@ msgstr "Přidejte alespoň jedno místo, kde se mohou přednášky konat."
 
 #: pretalx/orga/tables/speaker.py:83 pretalx/orga/tables/submission.py:38
 #: pretalx/orga/tables/submission.py:179
-#, fuzzy
-#| msgid "GUID"
 msgid "ID"
-msgstr "GUID"
+msgstr "ID"
 
 #: pretalx/orga/tables/speaker.py:97
 msgid "Accepted Proposals"
@@ -4793,20 +4566,16 @@ msgid "Arrived"
 msgstr "Přijel(a)"
 
 #: pretalx/orga/tables/submission.py:66 pretalx/orga/tables/submission.py:209
-#, fuzzy
-#| msgid "Pending {state}"
 msgid "Pending state"
-msgstr "Čekající {state}"
+msgstr "Čekající stav"
 
 #: pretalx/orga/tables/submission.py:76
 msgid "Featured"
 msgstr "Vybrané"
 
 #: pretalx/orga/tables/submission.py:79 pretalx/orga/tables/submission.py:217
-#, fuzzy
-#| msgid "Do not copy"
 msgid "Do not record"
-msgstr "Nekopírovat"
+msgstr "Nepořizovat záznam"
 
 #: pretalx/orga/tables/submission.py:137
 msgid "Average"
@@ -5076,10 +4845,8 @@ msgid "User hasn't submitted any proposals"
 msgstr "Uživatel neodeslal žádnou přihlášky"
 
 #: pretalx/orga/templates/orga/admin/user_list.html:21
-#, fuzzy
-#| msgid "The addressed user’s email address"
 msgid "Search users by name or email address"
-msgstr "E-mailová adresa oslovovaného uživatele"
+msgstr "Hledat uživatele podle jméno nebo e-mailové adresy"
 
 #: pretalx/orga/templates/orga/auth/base.html:31
 #: pretalx/orga/templates/orga/base.html:69
@@ -5096,10 +4863,8 @@ msgid "View event"
 msgstr "Zobrazit událost"
 
 #: pretalx/orga/templates/orga/base.html:121
-#, fuzzy
-#| msgid "Log in"
 msgid "Log out"
-msgstr "Přihlásit se"
+msgstr "Odhlásit se"
 
 #: pretalx/orga/templates/orga/base.html:130
 msgid "You’re using pretalx as a superuser. This is not recommended."
@@ -5188,10 +4953,8 @@ msgid "Speaker Information"
 msgstr "Informace pro přednášející"
 
 #: pretalx/orga/templates/orga/base.html:371
-#, fuzzy
-#| msgid "Release schedules as needed"
 msgid "Unreleased schedule changes"
-msgstr "Vydávejte programy podle potřeby"
+msgstr "Nezveřejněné změny programu"
 
 #: pretalx/orga/templates/orga/base.html:407
 msgid "Outbox"
@@ -5242,18 +5005,13 @@ msgstr ""
 "přidat vlastní nápovědu. Stačí klepnout na položku, kterou chcete změnit."
 
 #: pretalx/orga/templates/orga/cfp/question/_form.html:33
-#, fuzzy
-#| msgid ""
-#| "If you mark a Yes/No question as required, it means that the user has to "
-#| "select Yes and No is not accepted. If you want to allow both options, do "
-#| "not make this field required."
 msgid ""
 "If you mark a Yes/No field as required, it means that the user has to select "
 "Yes and No is not accepted. If you want to allow both options, do not make "
 "this field required."
 msgstr ""
-"Pokud označíte otázku typu Ano/Ne jako povinnou, znamená to, že uživatel "
-"musí vybrat „Ano“. Odpověď „Ne“ nebude přijata. Pokud chcete povolit obě "
+"Pokud označíte pole typu Ano/Ne jako povinné, znamená to, že uživatel musí "
+"vybrat „Ano“. Odpověď „Ne“ nebude přijata. Pokud chcete povolit obě "
 "možnosti, neoznačujte toto pole jako povinné."
 
 #: pretalx/orga/templates/orga/cfp/question/_form.html:44
@@ -5265,8 +5023,6 @@ msgid "Input validation"
 msgstr "Kontrola vstupu"
 
 #: pretalx/orga/templates/orga/cfp/question/_form.html:76
-#, fuzzy
-#| msgid "Answer options"
 msgid "Response options"
 msgstr "Možnosti odpovědi"
 
@@ -5281,73 +5037,51 @@ msgstr "Filtrovat"
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html:54
 #: pretalx/orga/templates/orga/cfp/question/update.html:23
-#, fuzzy
-#| msgid ""
-#| "This question is currently active, it will be asked during submission."
 msgid "This field is currently active, it will be asked during submission."
-msgstr "Tato otázka je nyní aktivní a bude položena jako součást přihlášky."
+msgstr "Toto pole je nyní aktivní a bude zobrazeno jako součást přihlášky."
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html:55
 #: pretalx/orga/templates/orga/cfp/question/update.html:25
-#, fuzzy
-#| msgid "Hide schedule"
 msgid "Hide field"
-msgstr "Skrýt program"
+msgstr "Skrýt pole"
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html:57
 #: pretalx/orga/templates/orga/cfp/question/update.html:27
-#, fuzzy
-#| msgid ""
-#| "This question is currently inactive, and will not be asked during "
-#| "submission."
 msgid ""
 "This field is currently inactive, and will not be asked during submission."
-msgstr ""
-"Tato otázka teď není aktivní a nebude pokládána jako součást přihlášky."
+msgstr "Toto pole teď není aktivní a nebude zobrazeno jako součást přihlášky."
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html:58
 #: pretalx/orga/templates/orga/cfp/question/update.html:28
-#, fuzzy
-#| msgid "Activate phase"
 msgid "Activate field"
-msgstr "Aktivovat fázi"
+msgstr "Aktivovat pole"
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html:63
-#, fuzzy
-#| msgid "Nobody has answered this question at the moment."
 msgid "Nobody has responded to this field at the moment."
-msgstr "Na tuto otázku zatím nikdo neodpověděl."
+msgstr "Toto pole zatím nikdo nevyplnil."
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html:67
-#, fuzzy, python-format
-#| msgid ""
-#| "This question has been answered <strong>%(count)s</strong>, "
-#| "<strong>%(missing)s</strong> answers <a "
-#| "href=\"%(base_search_url)sunanswered=1\">are still missing</a>."
+#, python-format
 msgid ""
 "This field has <strong>%(count)s</strong> responses, <strong>%(missing)s</"
 "strong> <a href=\"%(base_search_url)sunanswered=1\">are still missing</a>."
 msgstr ""
-"Tato otázka byla zatím odpovězena <strong>%(count)skrát</strong>, "
-"<strong>%(missing)s</strong> odpovědí <a "
-"href=\"%(base_search_url)sunanswered=1\">stále chybí</a>."
+"Toto pole bylo vyplněno <strong>%(count)skrát</strong>, <strong>%(missing)s</"
+"strong> odpovědí <a href=\"%(base_search_url)sunanswered=1\">stále chybí</a>."
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html:71
-#, fuzzy, python-format
-#| msgid ""
-#| "This question has been answered <strong>%(count)s</strong>, and no "
-#| "answers are missing."
+#, python-format
 msgid ""
 "This field has <strong>%(count)s</strong> responses, and no answers are "
 "missing."
 msgstr ""
-"Tato otázka byla odpovězena <strong>%(count)skrát</strong>, žádná odpověď "
+"Toto pole bylo vyplněno <strong>%(count)skrát</strong>, žádná odpověď "
 "nechybí."
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html:87
 #: pretalx/submission/models/question.py:449
 msgid "Response"
-msgstr ""
+msgstr "Odpověď"
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html:88
 msgid "Count"
@@ -5359,28 +5093,20 @@ msgid "%%"
 msgstr "%%"
 
 #: pretalx/orga/templates/orga/cfp/question/list.html:29
-#, fuzzy
-#| msgid "Send out reminders for unanswered questions"
 msgid "Send out reminders for custom fields without responses"
-msgstr "Odeslat připomenutí na nezodpovězené otázky"
+msgstr "Odeslat připomenutí pro dosud nevyplněná vlastní pole"
 
 #: pretalx/orga/templates/orga/cfp/question/list.html:36
-#, fuzzy
-#| msgid ""
-#| "Questions can help you sort out additional details with speakers, such as "
-#| "clothing sizes, special requirements such as dietary needs, or "
-#| "accommodation. Questions can be asked either on a per-proposal level, or "
-#| "per speaker, as you see fit."
 msgid ""
 "Custom fields can help you sort out additional details with speakers, such "
 "as clothing sizes, special requirements such as dietary needs, or "
 "accommodation. Custom fields can be configured either on a per-proposal "
 "level, or per speaker, as you see fit."
 msgstr ""
-"Otázky vám pomohou vyřešit s přednášejícími podrobnosti jako je velikost "
-"trička, případně alergie pro stravování nebo zda mají zájem o zajištění "
-"ubytování. Otázky můžete směřovat na jednotlivé přednášky, nebo každému "
-"přednášejícímu, jak potřebujete."
+"Vlastní pole vám pomohou vyřešit s přednášejícími podrobnosti jako je "
+"velikost trička, případně alergie pro stravování nebo zda mají zájem o "
+"zajištění ubytování. Vlastní můžete požadovat vyplnit pro každou přednášku, "
+"nebo jednou za přednášejícího, jak potřebujete."
 
 #: pretalx/orga/templates/orga/cfp/question/remind.html:10
 #: pretalx/orga/templates/orga/cfp/question/remind.html:13
@@ -5396,19 +5122,14 @@ msgstr ""
 "před odesláním zkontrolovat."
 
 #: pretalx/orga/templates/orga/cfp/question/update.html:13
-#, fuzzy
-#| msgid ""
-#| "This question has already been answered by some speakers – please "
-#| "consider carefully if modifying it would render those answers obsolete. "
-#| "You could also deactivate this question and start a new one instead."
 msgid ""
 "This custom field already has responses from some speakers – please consider "
 "carefully if modifying it would render those answers obsolete. You could "
 "also deactivate this field and create a new one instead."
 msgstr ""
-"Na tuto otázku už odpověděli někteří přednášející – pečlivě zvažte, jestli "
-"její změna nezmění smysl těchto odpovědí. Můžete také tuto otázku "
-"deaktivovat a připravit místo ní novou."
+"Někteří přednášející už toto vlastní pole vyplnili – pečlivě zvažte, jestli "
+"jeho změna nezmění smysl těchto odpovědí. Můžete také tuto vlastní pole "
+"deaktivovat a připravit místo něj nové."
 
 #: pretalx/orga/templates/orga/cfp/submissiontype/list.html:25
 msgid ""
@@ -5437,7 +5158,7 @@ msgstr "Poslat přístupový kód"
 
 #: pretalx/orga/templates/orga/cfp/submitteraccesscode/update.html:13
 msgid "This access code was used for the following proposals:"
-msgstr ""
+msgstr "Tento přístupový kód byl použit pro následující přihlášky:"
 
 #: pretalx/orga/templates/orga/cfp/text.html:32
 msgid ""
@@ -5559,18 +5280,13 @@ msgstr ""
 "tracků pomáhají vašim návštěvníkům s orientací v programu."
 
 #: pretalx/orga/templates/orga/event/dashboard.html:31
-#, fuzzy
-#| msgid ""
-#| "Your event has been created and you’re ready to go! Check out the event "
-#| "settings, set up your Call for Papers with session types and questions, "
-#| "and you’re ready to go!"
 msgid ""
 "Your event has been created and you’re ready to go! Check out the event "
 "settings, set up your Call for Papers with session types and custom fields, "
 "and you’re ready to go!"
 msgstr ""
 "Vaše událost byla vytvořena. Zkontrolujte její nastavení, nastavte Call for "
-"Papers s typy přednášek a otázkami, a můžete začít."
+"Papers s typy přednášek a vlastní pole, a můžete začít."
 
 #: pretalx/orga/templates/orga/event/dashboard.html:74
 msgid "Your event is currently"
@@ -5604,36 +5320,28 @@ msgid "Event History"
 msgstr "Historie události"
 
 #: pretalx/orga/templates/orga/event/history_detail.html:12
-#, fuzzy
-#| msgid "History"
 msgid "History detail"
-msgstr "Historie"
+msgstr ""
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html:38
-#, fuzzy
-#| msgid "German"
 msgid "Permalink"
-msgstr "nemčina"
+msgstr "Trvalý odkaz"
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html:46
-#, fuzzy
-#| msgid "Changelog"
 msgid "Changes"
-msgstr "Historie změn"
+msgstr "Změny"
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html:50
-#, fuzzy
-#| msgid "New type"
 msgid "Field"
-msgstr "Nový typ"
+msgstr "Pole"
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html:51
 msgid "Before"
-msgstr ""
+msgstr "Před"
 
 #: pretalx/orga/templates/orga/event/history_detail_content.html:52
 msgid "After"
-msgstr ""
+msgstr "Po"
 
 #: pretalx/orga/templates/orga/event/live.html:10
 #: pretalx/orga/templates/orga/event/live.html:15
@@ -5711,25 +5419,25 @@ msgid ""
 "You are currently in the organiser area of pretalx. To view your submitted "
 "proposals, please go directly to the event page:"
 msgstr ""
+"Nacházíte se v rozhraní Pretalxu pro organizátory. Pro zobrazení vašich "
+"vlastních přihlášek přejděte přímo na stránku události:"
 
 #: pretalx/orga/templates/orga/generic/table.html:16
 #: pretalx/orga/templates/orga/generic/table.html:22
-#, fuzzy
-#| msgid "Upload options"
 msgid "Table options"
-msgstr "Možnosti nahrávání"
+msgstr "Možnosti tabulky"
 
 #: pretalx/orga/templates/orga/generic/table.html:41
 msgid "Add selected columns"
-msgstr ""
+msgstr "Přidat vybrané sloupce"
 
 #: pretalx/orga/templates/orga/generic/table.html:42
 msgid "Add"
-msgstr ""
+msgstr "Přidat"
 
 #: pretalx/orga/templates/orga/generic/table.html:44
 msgid "Remove selected columns"
-msgstr ""
+msgstr "Odebrat vybrané sloupce"
 
 #: pretalx/orga/templates/orga/generic/table.html:45
 #: pretalx/orga/templates/orga/submission/speakers.html:88
@@ -5737,20 +5445,16 @@ msgid "Remove"
 msgstr "Smazat"
 
 #: pretalx/orga/templates/orga/generic/table.html:61
-#, fuzzy
-#| msgid "Move question up"
 msgid "Move selected columns up"
-msgstr "Přesunout otázku výše"
+msgstr "Přesunout vybrané sloupce výše"
 
 #: pretalx/orga/templates/orga/generic/table.html:62
 msgid "Move up"
 msgstr "Přesunout nahoru"
 
 #: pretalx/orga/templates/orga/generic/table.html:64
-#, fuzzy
-#| msgid "Move question down"
 msgid "Move selected columns down"
-msgstr "Přesunout otázku níže"
+msgstr "Přesunout vybrané sloupce níže"
 
 #: pretalx/orga/templates/orga/generic/table.html:65
 msgid "Move down"
@@ -5758,7 +5462,7 @@ msgstr "Přesunout dolů"
 
 #: pretalx/orga/templates/orga/generic/table.html:72
 msgid "Reset to defaults"
-msgstr ""
+msgstr "Obnovit výchozí"
 
 #: pretalx/orga/templates/orga/includes/dashboard_block_event.html:18
 #: pretalx/orga/templates/orga/speaker/form.html:43
@@ -5779,7 +5483,7 @@ msgstr "Neveřejné"
 
 #: pretalx/orga/templates/orga/includes/event_links_formset.html:53
 msgid "Add link"
-msgstr ""
+msgstr "Přidat odkaz"
 
 #: pretalx/orga/templates/orga/includes/mail_template_role.html:8
 msgid "Accept email"
@@ -5827,10 +5531,10 @@ msgstr "Počet kontrol"
 
 #: pretalx/orga/templates/orga/includes/submission_filter_form.html:32
 #: pretalx/orga/templates/orga/speaker/list.html:29
-#, fuzzy, python-format
-#| msgid "List filtered by answers to question “%(question)s”."
+#, python-format
 msgid "List filtered by responses to custom field “%(question)s”."
-msgstr "Seznam filtrovaný podle odpovědí na otázku „%(question)s“."
+msgstr ""
+"Seznam filtrovaný podle obsahu vyplněného do vlastního pole „%(question)s“."
 
 #: pretalx/orga/templates/orga/includes/submission_filter_form.html:37
 #: pretalx/orga/templates/orga/mails/compose_session_mail_form.html:26
@@ -5974,10 +5678,11 @@ msgstr ""
 "odeslaných e-mailů."
 
 #: pretalx/orga/templates/orga/mails/compose_session_mail_form.html:21
-#, fuzzy, python-format
-#| msgid "Recipients filtered by answers to question “%(question)s”."
+#, python-format
 msgid "Recipients filtered by responses to the custom field “%(question)s”."
-msgstr "Seznam příjemců filtrovaný podle odpovědí na otázku „%(question)s“."
+msgstr ""
+"Seznam příjemců filtrovaný podle obsahu vyplněného do vlastního pole "
+"„%(question)s“."
 
 #: pretalx/orga/templates/orga/mails/compose_session_mail_form.html:33
 #, python-format
@@ -5985,12 +5690,6 @@ msgid "Recipients filtered by search “%(search)s”."
 msgstr "Příjemci jsou vyfiltrováni vyhledáváním „%(search)s“."
 
 #: pretalx/orga/templates/orga/mails/mailtemplate/list.html:27
-#, fuzzy
-#| msgid ""
-#| "You can edit the default templates and your custom templates for emails "
-#| "here. If you want to send emails to some or all of your speakers, head "
-#| "over to the “Send Emails” tab. Mails queued for sending are in the "
-#| "“Outbox” tab."
 msgid ""
 "You can edit the default templates and your custom templates for emails "
 "here. If you want to send emails to some or all of your speakers, head over "
@@ -5998,8 +5697,8 @@ msgid ""
 "tab."
 msgstr ""
 "Tady můžete upravit výchozí šablony e-mailů nebo přidat vlastní. Pokud "
-"chcete poslat e-mail všem nebo jen některým přednášejícím, otevřete panel "
-"„Poslat e-maily“. E-maily budou zařazeny do panelu „K odeslání“."
+"chcete poslat e-mail všem nebo jen některým přednášejícím, otevřete panel „"
+"Poslat e-maily“. E-maily budou zařazeny do panelu „K odeslání“."
 
 #: pretalx/orga/templates/orga/mails/mailtemplate/list.html:34
 msgid ""
@@ -6040,7 +5739,7 @@ msgstr "Zahodit vše"
 
 #: pretalx/orga/templates/orga/mails/outbox_list.html:43
 msgid "The current filters will be used when sending/discarding emails."
-msgstr ""
+msgstr "Stávající filtry budou použity pro odeslání/zahození e-mailů."
 
 #: pretalx/orga/templates/orga/mails/send_draft_reminders.html:11
 msgid "Send reminder to unsubmitted proposal drafts"
@@ -6235,10 +5934,8 @@ msgstr "Všechny přihlášky jsou zkontrolované!"
 
 #: pretalx/orga/templates/orga/review/bulk.html:44
 #: pretalx/orga/templates/orga/review/dashboard.html:62
-#, fuzzy
-#| msgid "Total proposals"
 msgid "Bulk tag proposals"
-msgstr "Celkem přihlášek"
+msgstr "Hromadné tagování přihlášek"
 
 #: pretalx/orga/templates/orga/review/bulk.html:62
 #: pretalx/submission/models/comment.py:34
@@ -6252,15 +5949,16 @@ msgstr "Zdá se, že zatím nemáte žádné přihlášky."
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:11
 msgid "Bulk Tagging"
-msgstr ""
+msgstr "Hromadné tagování"
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:19
 msgid "Select proposals below and add or remove tags in bulk."
 msgstr ""
+"Níže označte přihlášky, kterým chcete hromadně přidat nebo odebrat tagy."
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:39
 msgid "Apply"
-msgstr ""
+msgstr "Použít"
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:50
 #: pretalx/orga/templates/orga/review/export.html:37
@@ -6275,12 +5973,11 @@ msgstr "Kód"
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:56
 msgid "Current Tags"
-msgstr ""
+msgstr "Současné tagy"
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:91
-#, fuzzy
 msgid "No proposals found matching your filters."
-msgstr "Příspěvky byly uzavřeny"
+msgstr "Žádné přihlášky odpovídající vašim filtrům nebyly nalezeny."
 
 #: pretalx/orga/templates/orga/review/dashboard.html:33
 #, python-format
@@ -6304,10 +6001,8 @@ msgid "Reviews are currently closed."
 msgstr "Kontroly jsou momentálně uzavřené."
 
 #: pretalx/orga/templates/orga/review/dashboard.html:47
-#, fuzzy
-#| msgid "You do not have permission to perform this action."
 msgid "You don’t have reviewer permissions for this event."
-msgstr "Pro provedení této akce nemáte dostatečná oprávnění."
+msgstr "Nemáte oprávnění pro provádění kontrol u této události."
 
 #: pretalx/orga/templates/orga/review/dashboard.html:66
 #: pretalx/orga/views/review.py:797 pretalx/orga/views/review.py:798
@@ -6419,25 +6114,20 @@ msgid "HTML Export"
 msgstr "HTML export"
 
 #: pretalx/orga/templates/orga/schedule/export.html:100
-#, fuzzy
-#| msgid ""
-#| "The event schedule can be exported to a static HTML dump, so you can "
-#| "upload it to a normal file-serving web server like nginx. This is done "
-#| "automatically on schedule release, but you can also trigger that action "
-#| "here."
 msgid ""
 "The event schedule can be exported to a static HTML dump, so you can upload "
 "it to a normal file-serving web server like nginx."
 msgstr ""
 "Program události můžete exportovat jako statické HTML, které můžete nahrát "
-"na obyčejný webový server jako například nginx. Export probíhá automaticky "
-"při zveřejnění programu, ale můžete akci provést také zde."
+"na obyčejný webový server jako například nginx."
 
 #: pretalx/orga/templates/orga/schedule/export.html:105
 msgid ""
 "This is done automatically on schedule release, but you can also trigger "
 "that action here."
 msgstr ""
+"Toto probíhá automaticky při zveřejnění programu, ale můžete akci provést "
+"také zde."
 
 #: pretalx/orga/templates/orga/schedule/export.html:118
 #: pretalx/orga/views/review.py:961 pretalx/orga/views/schedule.py:122
@@ -6613,16 +6303,12 @@ msgid "Design"
 msgstr ""
 
 #: pretalx/orga/templates/orga/settings/form.html:70
-#, fuzzy
-#| msgid "User settings"
 msgid "Other settings"
-msgstr "Uživatelská nastavení"
+msgstr "Další nastavení"
 
 #: pretalx/orga/templates/orga/settings/form.html:74
-#, fuzzy
-#| msgid "Header image"
 msgid "Header links"
-msgstr "Obrázek záhlaví"
+msgstr "Odkazy v záhlaví"
 
 #: pretalx/orga/templates/orga/settings/form.html:79
 msgid ""
@@ -6631,16 +6317,22 @@ msgid ""
 "example link to your home page, your registration page, or your livestream "
 "here."
 msgstr ""
+"Tyto odkazy se zobrazí v horní části stránek s programem, např. na stránce s "
+"programem samotným, stránkách přednášejících, přednášek apod. Můžete "
+"například přidat odkaz na svou domovskou stránku, registrace nebo živý "
+"přenos."
 
 #: pretalx/orga/templates/orga/settings/form.html:92
 msgid "Footer links"
-msgstr ""
+msgstr "Odkazy v zápatí"
 
 #: pretalx/orga/templates/orga/settings/form.html:97
 msgid ""
 "These links will be shown in the footer of all your public pages. You could "
 "for example link your terms of service, imprint, or privacy policy here."
 msgstr ""
+"Tyto odkazy se zobrazí ve spodní části všech veřejných stránek. Můžete "
+"například přidat odkaz na podmínky, impresum, nebo pravidla ochrany soukromí."
 
 #: pretalx/orga/templates/orga/settings/mail.html:18
 #: pretalx/orga/templates/orga/settings/mail.html:22
@@ -6887,8 +6579,6 @@ msgid "There are no pending changes to apply right now."
 msgstr "Žádné změny teď nečekají na provedení."
 
 #: pretalx/orga/templates/orga/submission/base.html:100
-#, fuzzy
-#| msgid "Send mail to speakers"
 msgid "Send email to speakers"
 msgstr "Poslat e-mail přednášejícím"
 
@@ -6906,22 +6596,17 @@ msgstr "Tajný veřejný odkaz"
 
 #: pretalx/orga/templates/orga/submission/comments.html:24
 msgid "No comments yet."
-msgstr ""
+msgstr "Zatím žádné komentáře."
 
 #: pretalx/orga/templates/orga/submission/comments.html:66
-#, fuzzy
-#| msgid "Comment"
 msgid "Add comment"
-msgstr "Komentář"
+msgstr "Přidat komentář"
 
 #: pretalx/orga/templates/orga/submission/content.html:25
 msgid "This proposal was created using an access code:"
 msgstr "Tato přihláška byla odeslána použitím přístupového kódu:"
 
 #: pretalx/orga/templates/orga/submission/content.html:43
-#, fuzzy
-#| msgid "Proposal"
-#| msgid_plural "Proposals"
 msgid "Proposal"
 msgstr "Přihláška"
 
@@ -6969,7 +6654,7 @@ msgstr "Výsledky ostatních kontrol můžete zobrazit až zadáte vlastní."
 
 #: pretalx/orga/templates/orga/submission/review.html:137
 msgid "Non-public resources"
-msgstr ""
+msgstr "Neveřejné zdroje"
 
 #: pretalx/orga/templates/orga/submission/review.html:160
 msgid "Other proposals"
@@ -7125,14 +6810,10 @@ msgid "Requires access code"
 msgstr "Vyžaduje přístupový kód"
 
 #: pretalx/orga/templates/orga/tables/columns/timesince.html:9
-#, fuzzy
-#| msgid "Tag"
 msgid "ago"
-msgstr "Štítek"
+msgstr ""
 
 #: pretalx/orga/templates/orga/tables/review_table.html:38
-#, fuzzy
-#| msgid "Mark the new state as “pending”"
 msgid "Mark the new state as \"pending\""
 msgstr "Označit nový stav jako čekající"
 
@@ -7164,35 +6845,25 @@ msgid "API Access"
 msgstr "API přístup"
 
 #: pretalx/orga/templates/orga/user.html:28
-#, fuzzy, python-format
-#| msgid ""
-#| "This token can be used to access the <a %(apiurl)s>pretalx API</a>. You "
-#| "can generate a new token, which will invalidate the old one. To find out "
-#| "more, please have a look at the <a %(docurl)s> API documentation</a>."
+#, python-format
 msgid ""
 "API tokens can be used to access the <a %(apiurl)s>pretalx API</a>. To find "
 "out more, please have a look at the <a %(docurl)s> API documentation</a>."
 msgstr ""
-"Tento token je možné využít k přístupu k <a %(apiurl)s>pretalx API</a>. "
-"Můžete si vygenerovat nový token, který zneplatní starý. Více o API "
-"naleznete v <a %(docurl)s>dokumentaci</a>."
+"API tokeny je možné používat k přístupu k <a %(apiurl)s>pretalx API</a>. "
+"Více o API naleznete v <a %(docurl)s>dokumentaci</a>."
 
 #: pretalx/orga/templates/orga/user.html:35
-#, fuzzy
-#| msgid "API Token"
 msgid "Your API tokens"
-msgstr "API token"
+msgstr "Vaše API tokeny"
 
 #: pretalx/orga/templates/orga/user.html:40
-#, fuzzy
-#| msgctxt "Version of the conference schedule"
-#| msgid "Version"
 msgid "Version"
 msgstr "Verze"
 
 #: pretalx/orga/templates/orga/user.html:42
 msgid "Last used"
-msgstr ""
+msgstr "Naposledy použito"
 
 #: pretalx/orga/templates/orga/user.html:44
 #: pretalx/submission/models/access_code.py:53
@@ -7201,28 +6872,24 @@ msgstr "Platnost do"
 
 #: pretalx/orga/templates/orga/user.html:60
 msgid "Upgrade"
-msgstr ""
+msgstr "Upgradovat"
 
 #: pretalx/orga/templates/orga/user.html:80
 msgid "Revoke"
-msgstr ""
+msgstr "Zrušit"
 
 #: pretalx/orga/templates/orga/user.html:90
-#, fuzzy
-#| msgid "You don’t have any proposals yet."
 msgid "You don't have any API tokens yet."
-msgstr "Nemáte zatím žádné přihlášky."
+msgstr "Nemáte zatím žádné API tokeny."
 
 #: pretalx/orga/templates/orga/user.html:95
-#, fuzzy
-#| msgid "Create a new event"
 msgid "Create new token"
-msgstr "Vytvořit novou událost"
+msgstr "Vytvořit nový token"
 
 #: pretalx/orga/templates/orga/widgets/icon_option.html:21
 #: pretalx/submission/models/question.py:125
 msgid "No icon"
-msgstr ""
+msgstr "Žádná ikona"
 
 #: pretalx/orga/templates/orga/widgets/multi_languages_widget.html:13
 #, python-format
@@ -7230,10 +6897,8 @@ msgid "%(percentage)s %% translated"
 msgstr "Přeloženo %(percentage)s %%"
 
 #: pretalx/orga/views/admin.py:146
-#, fuzzy
-#| msgid "Anonymisation"
 msgid "Last actions"
-msgstr "Anonymizace"
+msgstr "Poslední akce"
 
 #: pretalx/orga/views/admin.py:161
 msgid "The user has been deleted."
@@ -7246,36 +6911,24 @@ msgstr "Obecné informace"
 
 #: pretalx/orga/views/cfp.py:76
 msgid "Fields"
-msgstr ""
+msgstr "Pole"
 
 #: pretalx/orga/views/cfp.py:131 pretalx/orga/views/cfp.py:150
-#, fuzzy
-#| msgid "New custom template"
 msgid "New custom field"
-msgstr "Nová vlastní šablona"
+msgstr "Nové vlastní pole"
 
 #: pretalx/orga/views/cfp.py:288
-#, fuzzy
-#| msgid ""
-#| "You cannot change the question options and upload a question option file "
-#| "at the same time."
 msgid ""
 "You cannot change the options and upload an option file at the same time."
-msgstr ""
-"Změnit možnosti odpovědí a zároveň nahrát soubor s možnostmi odpovědí není "
-"možné."
+msgstr "Změnit možnosti a zároveň nahrát soubor s možnostmi není možné."
 
 #: pretalx/orga/views/cfp.py:352
-#, fuzzy
-#| msgid ""
-#| "You cannot delete a question that has already been answered. We have "
-#| "deactivated the question instead."
 msgid ""
 "You cannot delete a custom field that has any responses. We have deactivated "
 "the field instead."
 msgstr ""
-"Nemůžete smazat otázku, která byla odpovězena. Otázku jsme místo toho "
-"deaktivovali."
+"Vlastní pole, které už někdo vyplnil, nelze smazat. Toto pole bylo místo "
+"toho deaktivováno."
 
 #: pretalx/orga/views/cfp.py:409
 msgid "Could not send mails, error in configuration."
@@ -7384,13 +7037,11 @@ msgid "unconfirmed"
 msgstr "nepotvrzeno"
 
 #: pretalx/orga/views/dashboard.py:374
-#, fuzzy
-#| msgid "Apply pending changes"
 msgid "submission with pending changes"
 msgid_plural "submissions with pending changes"
-msgstr[0] "Použít čekající změny"
-msgstr[1] "Použít čekající změny"
-msgstr[2] "Použít čekající změny"
+msgstr[0] "přihláška s čekajícími změnami"
+msgstr[1] "přihlášky s čekajícími změnami"
+msgstr[2] "přihlášek s čekajícími změnami"
 
 #: pretalx/orga/views/dashboard.py:397
 #: pretalx/submission/models/submission.py:89
@@ -7405,20 +7056,16 @@ msgstr[1] "odeslané e-maily"
 msgstr[2] "odeslaných e-mailů"
 
 #: pretalx/orga/views/event.py:128
-#, fuzzy
-#| msgid "Anonymisation"
 msgid "Localisation"
-msgstr "Anonymizace"
+msgstr "Lokalizace"
 
 #: pretalx/orga/views/event.py:129
 msgid "Display settings"
 msgstr "Nastavení zobrazení"
 
 #: pretalx/orga/views/event.py:130
-#, fuzzy
-#| msgid "Text"
 msgid "Texts"
-msgstr "Text"
+msgstr "Texty"
 
 #: pretalx/orga/views/event.py:142
 msgid "Delete event"
@@ -7473,14 +7120,12 @@ msgid "Review phases"
 msgstr "Fáze kontroly"
 
 #: pretalx/orga/views/event.py:415
-#, fuzzy
-#| msgid "The order of review phases has been updated."
 msgid "Only the last review phase may be open-ended."
-msgstr "Pořadí fází kontroly bylo upraveno."
+msgstr "Pouze poslední fáze kontroly může být bez data konce."
 
 #: pretalx/orga/views/event.py:420
 msgid "All review phases except for the first one need a start date."
-msgstr ""
+msgstr "Všechny fáze kontroly, kromě první, musí mít počáteční datum."
 
 #: pretalx/orga/views/event.py:426
 #, python-brace-format
@@ -7488,6 +7133,8 @@ msgid ""
 "The review phases '{phase1}' and '{phase2}' overlap. Please make sure that "
 "review phases do not overlap, then save again."
 msgstr ""
+"Fáze kontroly „{phase1}“ a „{phase2}“ se překrývají. Ujistěte se, že se "
+"překrývat nebudou, a znovu je uložte."
 
 #: pretalx/orga/views/event.py:516
 msgid "Save and test custom SMTP connection"
@@ -7558,10 +7205,8 @@ msgid "Generate widget"
 msgstr "Vygenerovat widget"
 
 #: pretalx/orga/views/mails.py:53
-#, fuzzy
-#| msgid "You can’t give feedback for this session at this time."
 msgid "You cannot send emails at this time."
-msgstr "Aktuálně nemůžete přidávat zpětnou vazbu k této přednášce."
+msgstr "V tuto chvíli nemůžete posílat e-maily."
 
 #: pretalx/orga/views/mails.py:151
 #, python-brace-format
@@ -7675,22 +7320,20 @@ msgid ""
 "The template has been saved - note that already pending emails that are "
 "based on this template will not be changed!"
 msgstr ""
+"Šablona byla uložena. Pozor, čekající e-maily založené na této šabloně "
+"nebudou změněny."
 
 #: pretalx/orga/views/mails.py:602
 msgid "New custom template"
 msgstr "Nová vlastní šablona"
 
 #: pretalx/orga/views/mails.py:617
-#, fuzzy
-#| msgid "Email template"
 msgid "New email template"
-msgstr "Šablona e-mailu"
+msgstr "Nová šablona e-mailu"
 
 #: pretalx/orga/views/mails.py:618
-#, fuzzy
-#| msgid "Email template"
 msgid "Email templates"
-msgstr "Šablona e-mailu"
+msgstr "Šablony e-mailů"
 
 #: pretalx/orga/views/organiser.py:114
 msgid "The invitation has been sent."
@@ -7705,16 +7348,12 @@ msgid "The team was removed."
 msgstr "Tým byl odstraněn."
 
 #: pretalx/orga/views/organiser.py:196
-#, fuzzy
-#| msgid "Accept invitation"
 msgid "Retract invitation"
-msgstr "Přijmout pozvánku"
+msgstr "Zrušit pozvánku"
 
 #: pretalx/orga/views/organiser.py:197
-#, fuzzy
-#| msgid "Are you sure you want to resend the invitation to this user?"
 msgid "Are you sure you want to retract the invitation to this user?"
-msgstr "Opravdu chcete znovu poslat pozvánku tomuto uživateli?"
+msgstr "Opravdu chcete zrušit pozvánku pro tohoto uživatele?"
 
 #: pretalx/orga/views/organiser.py:216
 msgid "The team invitation was retracted."
@@ -7750,26 +7389,20 @@ msgstr ""
 "obnovit."
 
 #: pretalx/orga/views/organiser.py:374
-#, fuzzy
-#| msgid "The selected page has been deleted."
 msgid "The organiser and all related data have been deleted."
-msgstr "Zvolená stránka byla smazána."
+msgstr "Organizátor a s ním spojená data byl smazán."
 
 #: pretalx/orga/views/person.py:83
-#, fuzzy
-#| msgid ""
-#| "Your API token has been regenerated. The previous token will not be "
-#| "usable any longer."
 msgid ""
 "This is your new API token. Please make sure to save it, as it will not be "
 "shown again:"
-msgstr "Váš API token byl přegenerován. Předchozí token již nelze použít."
+msgstr ""
+"Toto je váš nový API token. Bezpečně si ho uložte, už nebude možné ho znovu "
+"zobrazit:"
 
 #: pretalx/orga/views/person.py:98
-#, fuzzy
-#| msgid "The order has been updated."
 msgid "The API token has been upgraded."
-msgstr "Pořadí bylo upraveno."
+msgstr "API token byl upgradován."
 
 #: pretalx/orga/views/person.py:127
 msgid "You are now an administrator instead of a superuser."
@@ -7795,22 +7428,18 @@ msgid "We were unable to change the state of all {count} proposals."
 msgstr "Nemohli jsme změnit stav žádné z {count} přihlášek."
 
 #: pretalx/orga/views/review.py:508
-#, fuzzy
-#| msgid "A proposal resource was deleted."
 msgid "No proposals were selected."
-msgstr "Zdroj u přihlášky byl smazán."
+msgstr "Nebyly vybrány žádné přihlášky."
 
 #: pretalx/orga/views/review.py:524
-#, fuzzy, python-brace-format
-#| msgid "Changed {count} proposal states."
+#, python-brace-format
 msgid "Added tags to {count} proposals."
-msgstr "Změněny stavy {count} přihlášek."
+msgstr "Tagy přidány pro {count} přihlášek."
 
 #: pretalx/orga/views/review.py:529
-#, fuzzy, python-brace-format
-#| msgid "Changed {count} proposal states."
+#, python-brace-format
 msgid "Removed tags from {count} proposals."
-msgstr "Změněny stavy {count} přihlášek."
+msgstr "Tagy odebrány od {count} přihlášek."
 
 #: pretalx/orga/views/review.py:766
 msgid "Nice, you have no proposals left to review!"
@@ -7938,17 +7567,12 @@ msgstr ""
 "V této místnosti je nebo byla naplánovaná přednáška. Místnost nelze smazat."
 
 #: pretalx/orga/views/speaker.py:318
-#, fuzzy
-#| msgid "Speaker Information"
 msgid "New speaker information"
-msgstr "Informace pro přednášející"
+msgstr "Nové informace pro přednášející"
 
 #: pretalx/orga/views/speaker.py:335
-#, fuzzy
-#| msgid "Speaker Information Note"
-#| msgid_plural "Speaker Information Notes"
 msgid "Speaker Information Notes"
-msgstr "Poznámka s informacemi pro přednášející"
+msgstr "Poznámky s informacemi pro přednášející"
 
 #: pretalx/orga/views/submission.py:208
 msgid ""
@@ -8022,7 +7646,7 @@ msgstr "Termín uzávěrky"
 
 #: pretalx/orga/views/submission.py:1079 pretalx/orga/views/submission.py:1095
 msgid "New tag"
-msgstr "Nový štítek"
+msgstr "Nový tag"
 
 #: pretalx/orga/views/submission.py:1091 pretalx/submission/models/tag.py:25
 msgid "Tag"
@@ -8031,13 +7655,11 @@ msgstr "Štítek"
 #: pretalx/orga/views/submission.py:1131
 #, python-brace-format
 msgid "Your comment on “{title}”"
-msgstr ""
+msgstr "Váš komentář k „{title}“"
 
 #: pretalx/orga/views/submission.py:1147
-#, fuzzy
-#| msgid "The tag has been deleted."
 msgid "The comment has been deleted."
-msgstr "Štítek byl smazán."
+msgstr "Komentář byl smazán."
 
 #: pretalx/orga/views/submission.py:1174
 #, python-brace-format
@@ -8061,33 +7683,29 @@ msgid "Password (current)"
 msgstr "Heslo (aktuální)"
 
 #: pretalx/person/forms/auth_token.py:22
-#, fuzzy
-#| msgid "Send all"
 msgid "Read all endpoints"
-msgstr "Odeslat vše"
+msgstr "Číst ze všech endpointů"
 
 #: pretalx/person/forms/auth_token.py:23
 msgid "Read and write all endpoints"
-msgstr ""
+msgstr "Číst a zapisovat do všech endpointů"
 
 #: pretalx/person/forms/auth_token.py:24
-#, fuzzy
-#| msgid "Permissions"
 msgid "Customize permissions and endpoints"
-msgstr "Oprávnění"
+msgstr "Upravit oprávnění a endpointy"
 
 #: pretalx/person/forms/auth_token.py:26
 msgid "Choose a preset or configure detailed permissions below."
-msgstr ""
+msgstr "Vyberte přednastavenou možnost, nebo nastavte podrobná oprávnění níže."
 
 #: pretalx/person/forms/auth_token.py:84
 #, python-brace-format
 msgid "Invalid permissions selected: {perms}"
-msgstr ""
+msgstr "Vybrána neplatná oprávnění: {perms}"
 
 #: pretalx/person/forms/profile.py:34
 msgid "There already exists an account for this email address."
-msgstr ""
+msgstr "Účet s touto e-mailovou adresou už existuje."
 
 #: pretalx/person/forms/profile.py:138
 msgid ""
@@ -8098,10 +7716,8 @@ msgstr ""
 "gravatar!"
 
 #: pretalx/person/forms/profile.py:259
-#, fuzzy
-#| msgid "Submit sessions for your speakers"
 msgid "Submitters and speakers"
-msgstr "Odešlete přednášky pro své přednášející"
+msgstr "Přihlášení přednášející"
 
 #: pretalx/person/forms/profile.py:261 pretalx/person/forms/profile.py:314
 msgid "Non-accepted submitters"
@@ -8109,23 +7725,19 @@ msgstr "Nepřijatí odesilatelé přihlášek"
 
 #: pretalx/person/forms/profile.py:268
 msgid "Any arrival status"
-msgstr ""
+msgstr "Jakýkoliv stav příjezdu"
 
 #: pretalx/person/forms/profile.py:269
-#, fuzzy
-#| msgid "Mark speaker as arrived"
 msgid "Marked as arrived"
-msgstr "Označit přednášející(ho), že přijel(a)"
+msgstr "Označit, že přijel(a)"
 
 #: pretalx/person/forms/profile.py:270
-#, fuzzy
-#| msgid "Not arrived"
 msgid "Not yet arrived"
-msgstr "Nepřijel(a)"
+msgstr "Zatím nepřijel(a)"
 
 #: pretalx/person/forms/user.py:32
 msgid "display name"
-msgstr ""
+msgstr "zobrazované jméno"
 
 #: pretalx/person/forms/user.py:46
 msgid "Password (again)"
@@ -8158,13 +7770,11 @@ msgstr ""
 
 #: pretalx/person/models/auth_token.py:76
 msgid "Expiry date"
-msgstr ""
+msgstr "Konec platnosti"
 
 #: pretalx/person/models/auth_token.py:79
-#, fuzzy
-#| msgid "version"
 msgid "API version"
-msgstr "verze"
+msgstr "Verze API"
 
 #: pretalx/person/models/information.py:34
 msgid "All accepted speakers"
@@ -8212,7 +7822,7 @@ msgstr ""
 
 #: pretalx/person/models/user.py:88
 msgid "Your username must not contain HTML or other markup."
-msgstr ""
+msgstr "Vaše uživatelské jméno nesmí obsahovat HTML ani jiné značky."
 
 #: pretalx/person/models/user.py:128
 msgid ""
@@ -8294,10 +7904,18 @@ msgid ""
 "All the best,\n"
 "the pretalx team"
 msgstr ""
+"Zdravíme {name}.\n"
+"\n"
+"Heslo vašeho pretalx účtu bylo změněno.\n"
+"\n"
+"Pokud jste své heslo neměnili, kontaktujte prosím bez prodlení správce.\n"
+"\n"
+"S pozdravem,\n"
+"tým pretalxu"
 
 #: pretalx/person/models/user.py:532
 msgid "[pretalx] Password changed"
-msgstr ""
+msgstr "[pretalx] Heslo změněno"
 
 #: pretalx/person/models/user.py:556
 #, python-brace-format
@@ -8313,12 +7931,19 @@ msgid ""
 "All the best,\n"
 "the pretalx team"
 msgstr ""
+"Zdravíme {name}.\n"
+"\n"
+"Potvrzujeme, že e-mailová adresa vašeho pretalx účtu byla změněna z "
+"{old_email} na {new_email}.\n"
+"\n"
+"Pokud jste tuto změnu neprovedli, kontaktujte prosím bez prodlení správce.\n"
+"\n"
+"S pozdravem,\n"
+"tým pretalxu"
 
 #: pretalx/person/models/user.py:568
-#, fuzzy
-#| msgid "Email addresses"
 msgid "[pretalx] Email address changed"
-msgstr "E-mailové adresy"
+msgstr "[pretalx] E-mailová adresa změněna"
 
 #: pretalx/schedule/ascii.py:27
 msgid "No speakers"
@@ -8326,7 +7951,7 @@ msgstr "Žádní přednášející"
 
 #: pretalx/schedule/exporters.py:294
 msgid "iCal (full event)"
-msgstr ""
+msgstr "iCal (celá událost)"
 
 #: pretalx/schedule/exporters.py:320
 msgid "iCal (your starred sessions)"
@@ -8348,10 +7973,6 @@ msgid "Please note that all times are in the event timezone, {tz}."
 msgstr "Všechny časy jsou v časové zóně události, tedy {tz}."
 
 #: pretalx/schedule/forms.py:44
-#, fuzzy
-#| msgid ""
-#| "If you set room availabilities, speakers will only be able to set their "
-#| "availability for when any room is available."
 msgid ""
 "If you set room availabilities, speakers will only be able to set their "
 "availability for when any room is available."
@@ -8366,11 +7987,11 @@ msgstr "Místnost I"
 #: pretalx/schedule/forms.py:50
 msgid ""
 "Description, e.g.: Our main meeting place, Room I, enter from the right."
-msgstr "Popis, např. „Naše hlavní místnost, vstupujte vchodem napravo.“"
+msgstr "Popis, např. „Naše hlavní místnost, vstupujte vchodem napravo“."
 
 #: pretalx/schedule/forms.py:53
 msgid "Information for speakers, e.g.: Projector has only HDMI input."
-msgstr "Informace pro přednášející, např. „Projektor má jen HDMI vstup.“"
+msgstr "Informace pro přednášející, např. „Projektor má jen HDMI vstup“."
 
 #: pretalx/schedule/forms.py:58
 #, python-brace-format
@@ -8551,21 +8172,17 @@ msgstr "japonština"
 
 #: pretalx/settings.py:418
 msgid "Korean"
-msgstr ""
+msgstr "korejština"
 
 #: pretalx/settings.py:423
 msgid "Dutch"
 msgstr "nizozemština"
 
 #: pretalx/settings.py:428
-#, fuzzy
-#| msgid "English"
 msgid "Polish"
-msgstr "angličtina"
+msgstr "polština"
 
 #: pretalx/settings.py:433
-#, fuzzy
-#| msgid "Brasilian Portuguese"
 msgid "Brazilian Portuguese"
 msgstr "brazilská portugalština"
 
@@ -8575,7 +8192,7 @@ msgstr "portugalština"
 
 #: pretalx/settings.py:445
 msgid "Vietnamese"
-msgstr ""
+msgstr "vietnamština"
 
 #: pretalx/settings.py:450
 msgid "Traditional Chinese (Taiwan)"
@@ -8591,23 +8208,16 @@ msgid "{} minutes, #{}, {}, {}"
 msgstr "{} minut, #{}, {}, {}"
 
 #: pretalx/submission/exporters.py:22 pretalx/submission/exporters.py:64
-#, fuzzy
-#| msgid "Custom Mail"
 msgid "Custom fields data"
-msgstr "Vlastní e-mail"
+msgstr "Data vlastních polí"
 
 #: pretalx/submission/exporters.py:22
-#, fuzzy
-#| msgid "speaker"
-#| msgid_plural "speakers"
 msgid "speakers"
 msgstr "přednášející"
 
 #: pretalx/submission/exporters.py:64
-#, fuzzy
-#| msgid "Submissions"
 msgid "submissions"
-msgstr "Přihlášky"
+msgstr "přihlášky"
 
 #: pretalx/submission/forms/feedback.py:19
 msgid "All speakers"
@@ -8663,7 +8273,7 @@ msgstr "Čekající {state}"
 
 #: pretalx/submission/forms/tag.py:23
 msgid "You already have a tag by this name!"
-msgstr "Štítek s tímto názvem už máte!"
+msgstr "Tag s tímto názvem už máte!"
 
 #: pretalx/submission/models/access_code.py:35
 msgid ""
@@ -8701,7 +8311,7 @@ msgstr ""
 
 #: pretalx/submission/models/access_code.py:70
 msgid "Redeemed"
-msgstr ""
+msgstr "Použito"
 
 #: pretalx/submission/models/cfp.py:95
 msgid "headline"
@@ -8717,7 +8327,7 @@ msgstr "Výchozí typ přednášky"
 
 #: pretalx/submission/models/cfp.py:112
 msgid "Opening"
-msgstr ""
+msgstr "Spuštění"
 
 #: pretalx/submission/models/cfp.py:114
 msgid ""
@@ -8725,6 +8335,8 @@ msgid ""
 "users.Leave the date empty to start accepting proposals immediately once the "
 "event is live."
 msgstr ""
+"Zadejte datum, od kdy chcete začít přijímat přihlášky od uživatelů. Pro "
+"otevření přihlášek okamžikem zveřejnění události ponechte pole prázdné."
 
 #: pretalx/submission/models/cfp.py:123
 msgid "Please put in the last date you want to accept proposals from users."
@@ -8802,133 +8414,102 @@ msgstr "vyžadováno po termínu uzávěrky"
 
 #: pretalx/submission/models/question.py:126
 msgid "Bluesky"
-msgstr ""
+msgstr "Bluesky"
 
 #: pretalx/submission/models/question.py:127
-#, fuzzy
-#| msgid "Discard"
 msgid "Discord"
-msgstr "Zahodit"
+msgstr "Discord"
 
 #: pretalx/submission/models/question.py:128
 msgid "GitHub"
-msgstr ""
+msgstr "GitHub"
 
 #: pretalx/submission/models/question.py:129
 msgid "Instagram"
-msgstr ""
+msgstr "Instagram"
 
 #: pretalx/submission/models/question.py:130
-#, fuzzy
-#| msgid "Links"
 msgid "LinkedIn"
-msgstr "Odkazy"
+msgstr "LinkedIn"
 
 #: pretalx/submission/models/question.py:131
 msgid "Mastodon"
-msgstr ""
+msgstr "Mastodon"
 
 #: pretalx/submission/models/question.py:132
-#, fuzzy
-#| msgid "Submitter"
-#| msgid_plural "Submitters"
 msgid "Twitter"
-msgstr "Odesilatel"
+msgstr "Twitter"
 
 #: pretalx/submission/models/question.py:133
 msgid "Website"
-msgstr ""
+msgstr "Webová stránka"
 
 #: pretalx/submission/models/question.py:134
 msgid "YouTube"
-msgstr ""
+msgstr "YouTube"
 
 #: pretalx/submission/models/question.py:191
-#, fuzzy
-#| msgid "New type"
 msgid "Field type"
-msgstr "Nový typ"
+msgstr "Typ pole"
 
 #: pretalx/submission/models/question.py:193
 msgid "Do you require an answer from every speaker or for every session?"
 msgstr "Chcete odpověď pro každého přednášejícího, nebo každou přednášku?"
 
 #: pretalx/submission/models/question.py:200
-#, fuzzy
-#| msgid "Set a deadline to make this question required after the given date."
 msgid "Set a deadline to make this field required after the given date."
-msgstr "Vyberte termín, od kdy bude odpověď na tuto otázku vyžadována."
+msgstr "Vyberte termín, od kdy bude vyplnění tohoto pole povinné."
 
 #: pretalx/submission/models/question.py:205
 msgid "freeze after"
 msgstr "zmrazit po"
 
 #: pretalx/submission/models/question.py:207
-#, fuzzy
-#| msgid "Set a deadline to stop changes to answers after the given date."
 msgid "Set a deadline to stop changes to responses after the given date."
 msgstr "Vyberte termín, po kterém nebude možné měnit odpovědi."
 
 #: pretalx/submission/models/question.py:214
-#, fuzzy
-#| msgid "required"
 msgid "Field required"
-msgstr "vyžadováno"
+msgstr "Pole vyžadováno"
 
 #: pretalx/submission/models/question.py:220
-#, fuzzy
-#| msgid ""
-#| "You can limit this question to some tracks. Leave this field empty to "
-#| "apply to all tracks."
 msgid ""
 "You can limit this field to some tracks. Leave empty to apply to all tracks."
 msgstr ""
-"Tuto otázku můžete omezit pro některé tracky. Pro její použití pro všechny "
-"tracky toto pole ponechte prázdné."
+"Toto pole můžete omezit jen pro některé tracky. Pro všechny tracky ponechte "
+"prázdné."
 
 #: pretalx/submission/models/question.py:229
-#, fuzzy
-#| msgid ""
-#| "You can limit this question to some session types. Leave this field empty "
-#| "to apply to all session types."
 msgid ""
 "You can limit this field to some session types. Leave empty to apply to all "
 "session types."
 msgstr ""
-"Otázku můžete omezit jen pro některé typy přednášek. Pro všechny typy "
-"přednášek ponechte toto pole prázdné."
+"Toto pole můžete omezit jen pro některé typy přednášek. Pro všechny typy "
+"přednášek ponechte prázdné."
 
 #: pretalx/submission/models/question.py:238
-#, fuzzy
-#| msgid ""
-#| "You can limit this question to some session types. Leave this field empty "
-#| "to apply to all session types."
 msgid ""
 "You can limit this field to specific teams. Only members of these teams will "
 "be able to see responses."
 msgstr ""
-"Otázku můžete omezit jen pro některé typy přednášek. Pro všechny typy "
-"přednášek ponechte toto pole prázdné."
+"Toto pole můžete omezit jen pro vybrané týmy. Pouze členové těchto týmů pak "
+"uvidí odpovědi."
 
 #: pretalx/submission/models/question.py:240
-#, fuzzy
-#| msgid "Limit to tracks"
 msgid "Limit access"
-msgstr "Omezit pro dané tracky"
+msgstr "Omezit přístup"
 
 #: pretalx/submission/models/question.py:243
 msgid "Label"
-msgstr ""
+msgstr "Označení"
 
 #: pretalx/submission/models/question.py:248
 msgid "help text"
 msgstr "nápověda"
 
 #: pretalx/submission/models/question.py:249
-#, fuzzy
-#| msgid "Will appear just like this text below the question input field."
 msgid "Will appear just like this text below the custom input field."
-msgstr "Zobrazí se jako tento text pod vstupním polem pro otázku."
+msgstr "Zobrazí se jako tento text pod vstupním polem."
 
 #: pretalx/submission/models/question.py:254
 msgid "default answer"
@@ -8939,28 +8520,20 @@ msgid "active"
 msgstr "aktivní"
 
 #: pretalx/submission/models/question.py:260
-#, fuzzy
-#| msgid "Inactive questions will no longer be asked."
 msgid "Inactive fields will no longer be shown."
-msgstr "Neaktivní otázky už nebudou pokládány."
+msgstr "Neaktivní pole se už nebudou zobrazovat."
 
 #: pretalx/submission/models/question.py:264
-#, fuzzy
-#| msgid "Answers contain personal data"
 msgid "Responses contain personal data"
 msgstr "Odpovědi obsahují osobní informace"
 
 #: pretalx/submission/models/question.py:266
-#, fuzzy
-#| msgid ""
-#| "If a user deletes their account, answers of questions for personal data "
-#| "will be removed, too."
 msgid ""
 "If a user deletes their account, responses containing personal data will be "
 "removed, too."
 msgstr ""
-"Pokud uživatel smaže svůj účet, odpovědi na otázky s osobními informacemi "
-"budou smazány také."
+"Pokud uživatel smaže svůj účet, data vyplněná do polí s osobními informacemi "
+"budou smazána také."
 
 #: pretalx/submission/models/question.py:272
 msgid "Minimum text length"
@@ -9000,43 +8573,41 @@ msgstr "Zveřejnit odpovědi"
 #: pretalx/submission/models/question.py:319
 msgid "Responses will be shown on session or speaker pages as appropriate."
 msgstr ""
+"Odpovědi se zobrazí na odpovídajících stránkách přednášek nebo "
+"přednášejících."
 
 #: pretalx/submission/models/question.py:324
 msgid "Show answers to reviewers"
 msgstr "Zobrazovat odpovědi při kontrole"
 
 #: pretalx/submission/models/question.py:326
-#, fuzzy
-#| msgid ""
-#| "Should answers to this question be shown to reviewers? This is helpful if "
-#| "you want to collect personal information, but use anonymous reviews."
 msgid ""
 "Should responses to this field be shown to reviewers? This is helpful if you "
 "want to collect personal information, but use anonymous reviews."
 msgstr ""
-"Mají být odpovědi na tyto otázky zobrazeny během kontroly? Nastavení se může "
-"hodit, pokud chcete sbírat osobní informace, které mají při kontrole zůstat "
-"skryté."
+"Mají být data vyplněná do těchto polí zobrazena během kontroly? Nastavení se "
+"může hodit, pokud chcete sbírat osobní informace, které mají při kontrole "
+"zůstat skryté."
 
 #: pretalx/submission/models/question.py:335
 msgid "Icon"
-msgstr ""
+msgstr "Ikona"
 
 #: pretalx/submission/models/question.py:337
 msgid ""
 "Custom URL fields that are shown publicly can use an icon when displaying "
 "the link."
 msgstr ""
+"Vlastní URL pole, která budou zobrazována veřejně, mohou při zobrazení "
+"odkazu použít ikonu."
 
 #: pretalx/submission/models/question.py:457
-#, fuzzy
-#| msgid "Optional"
 msgid "Options"
-msgstr "Nepovinné"
+msgstr "Možnosti"
 
 #: pretalx/submission/models/resource.py:41
 msgid "Publicly visible resource"
-msgstr ""
+msgstr "Veřejný zdroj"
 
 #: pretalx/submission/models/review.py:39
 msgid "Leave empty to use this category for all tracks."
@@ -9120,15 +8691,15 @@ msgstr "Kontrolující mohou přijímat a odmítat přihlášky"
 
 #: pretalx/submission/models/review.py:281
 msgid "Reviewers can tag proposals"
-msgstr "Kontrolující mohou přihlášky označovat pomocí štítků"
+msgstr "Kontrolující mohou přihlášky označovat pomocí tagů"
 
 #: pretalx/submission/models/review.py:285
 msgid "Add and remove existing tags"
-msgstr "Přidávat i odstraňovat štítky"
+msgstr "Přidávat i odstraňovat tagy"
 
 #: pretalx/submission/models/review.py:286
 msgid "Add, remove and create tags"
-msgstr "Přidávat, odstraňovat i vytvářet štítky"
+msgstr "Přidávat, odstraňovat i vytvářet tagy"
 
 #: pretalx/submission/models/review.py:291
 msgid "Speakers can modify their proposals before acceptance"
@@ -9218,14 +8789,12 @@ msgid "{title_in_quotes} by {list_of_speakers}"
 msgstr "{title_in_quotes} od {list_of_speakers}"
 
 #: pretalx/submission/models/tag.py:32 pretalx/submission/models/track.py:42
-#, fuzzy
-#| msgid "Color"
 msgid "Colour"
 msgstr "Barva"
 
 #: pretalx/submission/models/tag.py:39
 msgid "Show tag publicly"
-msgstr "Zobrazit štítek veřejně"
+msgstr "Zobrazit tag veřejně"
 
 #: pretalx/submission/models/tag.py:41
 msgid ""
@@ -9296,31 +8865,31 @@ msgid "not accepted"
 msgstr "zamítnuto"
 
 msgid "Expanded View"
-msgstr ""
+msgstr "Rozšíření zobrazení"
 
 msgid "Condensed View"
-msgstr ""
+msgstr "Kompaktní zobrazení"
 
 msgid "Unscheduled sessions"
-msgstr ""
+msgstr "Nenaplánované přednášky"
 
 msgid "Availabilities"
-msgstr ""
+msgstr "Dostupnosti"
 
 msgid "Unschedule"
-msgstr ""
+msgstr "Zrušit naplánování"
 
 msgid "Copy to other rooms"
-msgstr ""
+msgstr "Zkopírovat do dalších místností"
 
 msgid "Filter sessions"
-msgstr ""
+msgstr "Filtrování přednášek"
 
 msgid "New break"
-msgstr ""
+msgstr "Nová přestávka"
 
 msgid "Drag the box to the schedule to create a new break"
-msgstr ""
+msgstr "Pro vytvoření nové přestávky přetáhněte box do programu"
 
 #, fuzzy
 #~| msgid "question type"
