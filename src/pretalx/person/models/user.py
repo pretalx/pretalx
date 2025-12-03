@@ -202,6 +202,8 @@ class User(
 
     def has_perm(self, perm, obj, *args, **kwargs):
         cached_result = None
+        if not getattr(obj, "pk", None):
+            return super().has_perm(perm, obj, *args, **kwargs)
         with suppress(TypeError):
             cached_result = self.permission_cache.get((perm, obj))
         if cached_result is not None:
