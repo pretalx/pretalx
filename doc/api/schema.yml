@@ -2021,7 +2021,8 @@ paths:
   /api/events/{event}/schedules/{id}/exporters/{name}/:
     get:
       operationId: schedules_exporters_retrieve
-      description: Retrieve the content of a specific schedule exporter by name.
+      description: Retrieve the content of a specific schedule exporter by name. Requires
+        'action' permissions.
       summary: Get Exporter Content
       parameters:
       - in: path
@@ -4906,6 +4907,7 @@ components:
       - de
       - de-formal
       - ar
+      - bg
       - cs
       - el
       - es
@@ -4926,6 +4928,7 @@ components:
         * `de` - German
         * `de-formal` - German (formal)
         * `ar` - Arabic
+        * `bg` - Bulgarian
         * `cs` - Czech
         * `el` - Greek
         * `es` - Spanish
@@ -5534,8 +5537,8 @@ components:
           type: array
           items:
             type: integer
-            title: Session Types
-          title: Session Types
+            title: Session types
+          title: Session types
           description: You can limit this field to some session types. Leave empty
             to apply to all session types.
         options:
@@ -5678,8 +5681,8 @@ components:
           type: array
           items:
             type: integer
-            title: Session Types
-          title: Session Types
+            title: Session types
+          title: Session types
           description: You can limit this field to some session types. Leave empty
             to apply to all session types.
         options:
@@ -5836,8 +5839,8 @@ components:
           type: array
           items:
             type: integer
-            title: Session Types
-          title: Session Types
+            title: Session types
+          title: Session types
           description: You can limit this field to some session types. Leave empty
             to apply to all session types.
         options:
@@ -6964,7 +6967,7 @@ components:
         submission_type:
           type: integer
           nullable: true
-          title: Session Type
+          title: Session type
           description: You can restrict the access code to a single session type,
             or leave it open for all session types.
         valid_until:
@@ -7014,7 +7017,7 @@ components:
         submission_type:
           type: integer
           nullable: true
-          title: Session Type
+          title: Session type
           description: You can restrict the access code to a single session type,
             or leave it open for all session types.
         valid_until:

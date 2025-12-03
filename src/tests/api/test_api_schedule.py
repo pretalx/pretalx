@@ -84,6 +84,19 @@ def test_orga_cannot_see_schedule_even_if_not_public(
 
 
 @pytest.mark.django_db
+def test_orga_can_access_api_schedule_exports(
+    client, orga_user_write_token, event, slot
+):
+    response = client.get(
+        event.api_urls.schedules + "latest/exporters/schedule.json/",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+    assert response.status_code == 200
+    content = json.loads(response.text)
+    assert content["schedule"]["version"] == event.current_schedule.version
+
+
+@pytest.mark.django_db
 def test_orga_can_access_wip_schedule_shortcut(client, orga_user_token, event, slot):
     with scope(event=event):
         wip_schedule = event.wip_schedule

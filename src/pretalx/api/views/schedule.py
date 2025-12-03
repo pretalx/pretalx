@@ -70,7 +70,7 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
     lookup_value_regex = "[^/]+"
     permission_map = {
         "redirect_version": "schedule.list_schedule",
-        "get_exporter": "schedule.list_schedule",
+        "get_exporter": "schedule.orga_view_schedule",
     }
 
     def get_unversioned_serializer_class(self):
@@ -91,7 +91,7 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
         current_schedule = (
             self.event.current_schedule.pk if self.event.current_schedule else None
         )
-        if self.has_perm("release", self.event):
+        if self.request.user.has_perm("schedule.orga_view_schedule", self.event):
             return self.event.schedules.all()
         return self.event.schedules.filter(pk=current_schedule)
 
@@ -192,7 +192,7 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
 
     @extend_schema(
         summary="Get Exporter Content",
-        description="Retrieve the content of a specific schedule exporter by name.",
+        description="Retrieve the content of a specific schedule exporter by name. Requires 'action' permissions.",
         parameters=[
             OpenApiParameter(
                 name="name",

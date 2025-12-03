@@ -129,7 +129,15 @@ SPDX-FileContributor: luto
         </p>
 
             <pre> curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.urls.frab_xml.full }}
- curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.api_urls.submissions.full }} </pre>
+ curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.api_urls.schedules }}latest/exporters/schedule.xml/ </pre>
+
+        <p>
+            {% blocktranslate trimmed %}
+                Please note that your token will have to have the “action” permissions in order
+                to access the predefined schedule exports via the API.
+            {% endblocktranslate %}
+        </p>
+
 
         {% include "orga/includes/submit_row.html" with submit_buttons=api_buttons %}
     </section>
