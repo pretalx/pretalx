@@ -5,15 +5,15 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-11-28 21:17+0000\n"
-"PO-Revision-Date: 2025-06-01 00:55+0000\n"
-"Last-Translator: Yi Zhu <yi.zhu@zyyln.com>\n"
+"PO-Revision-Date: 2025-12-04 17:41+0000\n"
+"Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
 "Language: zh_Hans\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.9.2\n"
+"X-Generator: Weblate 5.12.2\n"
 
 #: pretalx/agenda/phrases.py:11
 msgid "Thank you for your feedback!"
@@ -52,35 +52,34 @@ msgstr "日程更新"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:19
 msgid "We have new sessions!"
-msgstr "我们有新的会议环节！"
+msgstr "我们有新的会期！"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:29
 msgid "We have a new session: "
-msgstr "我们有一个新的会话："
+msgstr "我们有一个新的会期： "
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:39
 msgid "Sadly, we had to cancel sessions:"
-msgstr "遗憾的是，我们不得不取消会议环节："
+msgstr "遗憾的是，我们不得不取消会期："
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:47
 msgid "We sadly had to cancel a session: "
-msgstr "我们很遗憾不得不取消一个会话："
+msgstr "我们很遗憾不得不取消一个会期： "
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:56
 msgid ""
 "We had to move some sessions, so if you were planning on seeing them, check "
 "their new dates or locations:"
-msgstr ""
-"我们不得不调整一些会议时间和地点。如果你原本计划参加这些会议，请检查它们的新"
+msgstr "我们不得不调整一些会期时间和地点。如果你原本计划参加这些会期，请检查它们的新"
 "日期或地点："
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:74
 msgid "We have moved a session around: "
-msgstr "我们已经调整了一个会话的时间："
+msgstr "我们已经调整了一个会期的时间： "
 
 #: pretalx/agenda/templates/agenda/featured.html:17
 msgid "Welcome to our list of featured sessions!"
-msgstr "欢迎来到我们的精选会议环节"
+msgstr "欢迎来到我们的精选会期!"
 
 #: pretalx/agenda/templates/agenda/featured.html:20
 msgid ""
@@ -95,8 +94,7 @@ msgstr ""
 msgid ""
 "In the near future you will see a curated list of sessions we’d like to show "
 "off here. Right now we are busy reviewing proposals.<br> Check back later!"
-msgstr ""
-"在不久的将来，您将看到我们在此展示的一系列策划好的会话。目前我们正忙于审查建"
+msgstr "在不久的将来，您将看到我们在此展示的一系列策划好的会期。目前我们正忙于审查建"
 "议书。请稍后再来查看！"
 
 #: pretalx/agenda/templates/agenda/feed/description.html:10
@@ -121,7 +119,7 @@ msgstr "反馈"
 #: pretalx/agenda/templates/agenda/feedback.html:30
 msgid ""
 "This review is for you personally, not for all speakers in this session."
-msgstr "这个评论是针对你个人的，而不是针对本场演讲所有的演讲者。"
+msgstr "这个评论是针对你个人的，而不是针对本场会期所有的演讲者。"
 
 #: pretalx/agenda/templates/agenda/feedback_form.html:23
 msgid ""
@@ -134,7 +132,7 @@ msgstr ""
 
 #: pretalx/agenda/templates/agenda/feedback_form.html:30
 msgid "You can’t give feedback for this session at this time."
-msgstr "您目前无法针对此会话提供反馈。"
+msgstr "您目前无法针对此会期提供反馈。"
 
 #: pretalx/agenda/templates/agenda/schedule.html:87
 #, python-format
@@ -158,7 +156,7 @@ msgstr ""
 #: pretalx/agenda/templates/agenda/schedule_nojs.html:79
 #, python-format
 msgid "No sessions on %(weekday)s, %(current_day)s."
-msgstr "%(weekday)s没有会话，%(current_day)s。"
+msgstr "%(weekday)s没有会期，%(current_day)s。"
 
 #: pretalx/agenda/templates/agenda/session_block.html:17
 #, python-format
@@ -174,28 +172,21 @@ msgid "The speaker’s profile picture"
 msgstr "演讲者的个人资料照片"
 
 #: pretalx/agenda/templates/agenda/speaker.html:90
-#, fuzzy
-#| msgid "Session"
 msgid "Session"
 msgid_plural "Sessions"
-msgstr[0] "会议"
-msgstr[1] "会议"
+msgstr[0] "会期"
 
 #: pretalx/agenda/templates/agenda/talk.html:49
-#, fuzzy
-#| msgid "Don’t record this session."
 msgid "Favourite this session"
-msgstr "不要记录此次会议。"
+msgstr "收藏本次会期"
 
 #: pretalx/agenda/templates/agenda/talk.html:50
-#, fuzzy
-#| msgid "Submit sessions for your speakers"
 msgid "Remove this session from your favourites"
-msgstr "为您的演讲者提交会议议程"
+msgstr "从收藏夹中移除此会期"
 
 #: pretalx/agenda/templates/agenda/talk.html:102
 msgid "This session’s header image"
-msgstr "本次会话的页眉图片"
+msgstr "本次会期的页眉图片"
 
 #: pretalx/agenda/templates/agenda/talk.html:151
 msgid "See also:"
@@ -222,7 +213,7 @@ msgstr ""
 #: pretalx/agenda/views/talk.py:142
 #, python-brace-format
 msgid "The session “{title}” at {event}"
-msgstr "{event} 会议上主题为 {title} 的研讨会"
+msgstr "{event} 会议上主题为 {title} 的会期"
 
 #: pretalx/cfp/flow.py:381
 msgid ""
@@ -297,8 +288,7 @@ msgstr "告诉我们一些关于你自己的事情！"
 msgid ""
 "This information will be publicly displayed next to your session - you can "
 "always edit for as long as proposals are still open."
-msgstr ""
-"这些信息将会公开显示在你的会话旁边 - 只要建议还未关闭，你随时可以进行编辑。"
+msgstr "这些信息将会公开显示在你的会期旁边 - 只要建议还未关闭，你随时可以进行编辑。"
 
 #: pretalx/cfp/phrases.py:10
 msgid "Go to CfP"
@@ -339,7 +329,7 @@ msgstr "您的提案目前无法撤回 - 如果您需要撤回您的提案，请
 
 #: pretalx/cfp/phrases.py:27
 msgid "Your session has been confirmed – we’re looking forward to seeing you!"
-msgstr "您的会话已经确认-我们期待见到您！"
+msgstr "您的会期已经确认-我们期待见到您！"
 
 #: pretalx/cfp/phrases.py:30
 msgid ""
@@ -370,7 +360,7 @@ msgstr "演讲者邮件"
 #: pretalx/cfp/phrases.py:40
 #, python-brace-format
 msgid "{speaker} invites you to join their session!"
-msgstr "{speaker} 邀请您加入他们的会话！"
+msgstr "{speaker} 邀请您加入他们的会期！"
 
 #: pretalx/cfp/phrases.py:42
 #, python-brace-format
@@ -413,7 +403,7 @@ msgstr "你现在是这个提案的一部分！请在下面填写你的个人档
 msgid ""
 "We are experiencing difficulties when sending mails, but your session was "
 "submitted successfully!"
-msgstr "我们在发送邮件时遇到了困难，但您的会话已成功提交！"
+msgstr "我们在发送邮件时遇到了困难，但您的会期已成功提交！"
 
 #: pretalx/cfp/phrases.py:65 pretalx/orga/forms/event.py:862
 #: pretalx/orga/forms/event.py:894 pretalx/orga/views/cfp.py:151
@@ -500,8 +490,7 @@ msgstr ""
 msgid ""
 "You, %(name)s, have been invited to be a speaker for the session “%(talk)s”. "
 "Do you accept the invitation?"
-msgstr ""
-"%(name)s 您好，您已被邀请成为“%(talk)s”议程的演讲者。请问您是否接受邀请？"
+msgstr "%(name)s 您好，您已被邀请成为“%(talk)s”会期的演讲者。请问您是否接受邀请？"
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:39
 msgid "Abstract:"
@@ -657,8 +646,7 @@ msgstr ""
 msgid ""
 "I really do want to delete my account, losing access to my proposals and "
 "sessions, and overriding my public and private data."
-msgstr ""
-"我真的想删除我的账户，失去我的建议和会话的访问权限，以及覆盖我的公共和私人数"
+msgstr "我真的想删除我的账户，失去我的建议和会期的访问权限，以及覆盖我的公共和私人数"
 "据。"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:99
@@ -716,7 +704,7 @@ msgstr "观众反馈"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:34
 msgid "Attendees can leave feedback here after your session has taken place."
-msgstr "参加者可以在您的会议结束后在此处留下反馈。"
+msgstr "参加者可以在您的会期结束后在此处留下反馈。"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:44
 #: pretalx/orga/templates/orga/submission/content.html:39
@@ -757,9 +745,8 @@ msgid ""
 "You can withdraw your proposal from the selection process here. You cannot "
 "undo this - if you are just uncertain if you can or should hold your "
 "session, please contact the organiser instead."
-msgstr ""
-"您可以在此处撤回您的申请，但此操作不可撤销。如果您只是不确定是否可以或应该举"
-"行会议，请联系组织者。"
+msgstr "您可以在此处撤回您的申请，但此操作不可撤销。如果您只是不确定是否可以或应该举"
+"行会期，请联系组织者。"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:128
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:27
@@ -956,7 +943,7 @@ msgstr ""
 #: pretalx/orga/views/cfp.py:473 pretalx/submission/models/access_code.py:44
 #: pretalx/submission/models/submission.py:207
 msgid "Session type"
-msgstr "会议类型"
+msgstr "会期类型"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:52
 #: pretalx/orga/tables/cfp.py:117 pretalx/orga/templates/orga/cfp/text.html:128
@@ -1417,19 +1404,19 @@ msgstr "一个提案资源被删除了。"
 
 #: pretalx/common/log_display.py:115
 msgid "A session type was added."
-msgstr "添加了会话类型。"
+msgstr "添加了会期类型。"
 
 #: pretalx/common/log_display.py:116
 msgid "A session type was deleted."
-msgstr "一个会话类型被删除了。"
+msgstr "一个会期类型被删除了。"
 
 #: pretalx/common/log_display.py:117
 msgid "The session type was made default."
-msgstr "会话类型已默认设置。"
+msgstr "会期类型已默认设置。"
 
 #: pretalx/common/log_display.py:118
 msgid "A session type was modified."
-msgstr "一个会话类型被修改了。"
+msgstr "一个会期类型被修改了。"
 
 #: pretalx/common/log_display.py:119
 msgid "An access code was added."
@@ -2295,8 +2282,7 @@ msgid ""
 "The default deadline for your Call for Papers. You can assign additional "
 "deadlines to individual session types, which will take precedence over this "
 "deadline."
-msgstr ""
-"您的征文默认截稿日期。您可以分配给各个会议类型额外的截稿日期，这些日期将优先"
+msgstr "您的征文默认截稿日期。您可以分配给各个会期类型额外的截稿日期，这些日期将优先"
 "于默认截稿日期。"
 
 #: pretalx/event/forms.py:322
@@ -2309,8 +2295,7 @@ msgid ""
 "You can copy settings from previous events here, such as mail settings, "
 "session types, and email templates. Please check those settings once the "
 "event has been created!"
-msgstr ""
-"你可以在这里从先前的活动中复制设置，例如邮件设置、会话类型和电子邮件模板。请"
+msgstr "你可以在这里从先前的活动中复制设置，例如邮件设置、会期类型和电子邮件模板。请"
 "在创建活动后检查这些设置！"
 
 #: pretalx/event/forms.py:329
@@ -2440,13 +2425,13 @@ msgstr "如果可用，此文本将与CfP和日程链接一起显示在登录页
 
 #: pretalx/event/models/event.py:277
 msgid "Featured sessions text"
-msgstr "特色会议环节注释"
+msgstr "特别会期注释"
 
 #: pretalx/event/models/event.py:279
 msgid ""
 "This text will be shown at the top of the featured sessions page instead of "
 "the default text."
-msgstr "此文本将显示在特色会议环节页面的顶部，而不是默认文本。"
+msgstr "此文本将显示在特别会期页面的顶部，而不是默认文本。"
 
 #: pretalx/event/models/event.py:286
 #: pretalx/orga/templates/orga/admin/admin.html:112
@@ -2683,7 +2668,7 @@ msgstr "监视提案"
 
 #: pretalx/event/stages.py:66
 msgid "Submit sessions for your speakers"
-msgstr "为您的演讲者提交会议议程"
+msgstr "为您的演讲者提交会期"
 
 #: pretalx/event/stages.py:69
 msgid "Invite reviewers"
@@ -2730,7 +2715,7 @@ msgstr "监控收到的反馈。"
 
 #: pretalx/event/stages.py:115
 msgid "Embed session recordings if available"
-msgstr "如果有可用的会话记录，请嵌入。"
+msgstr "如果有可用的会期记录，请嵌入。"
 
 #: pretalx/event/stages.py:116
 msgid "Release next event date?"
@@ -2804,11 +2789,11 @@ msgstr "此提案中所有发言者的姓名。"
 
 #: pretalx/mail/context.py:220
 msgid "Session Type A"
-msgstr "会话类型A"
+msgstr "会期类型A"
 
 #: pretalx/mail/context.py:221
 msgid "The proposal’s session type"
-msgstr "提案的会议类型"
+msgstr "提案的会期类型"
 
 #: pretalx/mail/context.py:227
 msgid "Track A"
@@ -2819,10 +2804,8 @@ msgid "The track the proposal belongs to"
 msgstr "提案所属的轨道"
 
 #: pretalx/mail/context.py:235
-#, fuzzy
-#| msgid "Default duration in minutes"
 msgid "The session’s duration in minutes"
-msgstr "默认时长（分钟）"
+msgstr "会期时间长短（分钟）"
 
 #: pretalx/mail/context.py:242
 msgid ""
@@ -2841,19 +2824,19 @@ msgstr "此提案的所有审核文本"
 
 #: pretalx/mail/context.py:251
 msgid "The session’s start date"
-msgstr "会议的开始日期"
+msgstr "会期的开始日期"
 
 #: pretalx/mail/context.py:258
 msgid "The session’s start time"
-msgstr "会议开始时间"
+msgstr "会期开始时间"
 
 #: pretalx/mail/context.py:265
 msgid "The session’s end date"
-msgstr "本次会议的结束日期"
+msgstr "本次会期的结束日期"
 
 #: pretalx/mail/context.py:272
 msgid "The session’s end time"
-msgstr "本次会议的结束时间"
+msgstr "本次会期的结束时间"
 
 #: pretalx/mail/context.py:278
 msgid "Room 101"
@@ -2861,7 +2844,7 @@ msgstr "101号房间"
 
 #: pretalx/mail/context.py:279
 msgid "The session’s room"
-msgstr "会议室的房间"
+msgstr "会期室"
 
 #: pretalx/mail/context.py:285
 msgid "Jane Doe"
@@ -2881,6 +2864,8 @@ msgid ""
 "- Your session “Title” will take place at {time} in Room 101.\n"
 "- Your session “Other Title” has been moved to {time2} in Room 102."
 msgstr ""
+"- 您的会期「Title」将在 {time} 于会议室 101 举行。\n"
+"- 您的会期「Other Title」已移至 {time2} 会议室 102。"
 
 #: pretalx/mail/context.py:308
 msgid ""
@@ -2893,10 +2878,12 @@ msgid ""
 "- Your session “Title” will take place at {time} in Room 101.\n"
 "- Your session “Other Title” will take place at {time2} in Room 102."
 msgstr ""
+"- 您的会期「Title」将在 {time} 于会议室 101 举行。\n"
+"- 您的会期「Other Title」將在 {time2} 于会议室 102 举行。"
 
 #: pretalx/mail/context.py:322
 msgid "A list of time and place for this user’s publicly visible sessions."
-msgstr ""
+msgstr "此使用者公开可见会期的时间和地点清单。"
 
 #: pretalx/mail/default_templates.py:7
 #, python-brace-format
@@ -3004,7 +2991,7 @@ msgstr ""
 "\n"
 "{speaker_schedule_new}\n"
 "\n"
-"我们期待着见到你，请在您的会议或指定时间出现问题时与我们联系。\n"
+"我们期待着见到你，请在您的会期或指定时间出现问题时与我们联系。\n"
 "\n"
 "{event_name}的组织者"
 
@@ -3303,7 +3290,7 @@ msgstr "使用轨道"
 
 #: pretalx/orga/forms/cfp.py:53
 msgid "Do you organise your sessions by tracks?"
-msgstr "你会按照赛道来组织你的会议吗？"
+msgstr "你会按照赛道来组织你的会期吗？"
 
 #: pretalx/orga/forms/cfp.py:56 pretalx/submission/models/submission.py:270
 msgid "Slot Count"
@@ -3311,7 +3298,7 @@ msgstr "可用时间区间数量"
 
 #: pretalx/orga/forms/cfp.py:58
 msgid "Can sessions be held multiple times?"
-msgstr "会话可以多次举行吗？"
+msgstr "会期可以多次举行吗？"
 
 #: pretalx/orga/forms/cfp.py:61
 msgid "Send mail on new proposal"
@@ -3435,7 +3422,7 @@ msgstr ""
 
 #: pretalx/orga/forms/cfp.py:386
 msgid "You already have a session type by this name!"
-msgstr "您已经有一个同名的会话类型！"
+msgstr "您已经有一个同名的会期类型！"
 
 #: pretalx/orga/forms/cfp.py:401 pretalx/orga/forms/submission.py:234
 msgid "minutes"
@@ -3582,7 +3569,7 @@ msgstr "未设置隐藏日程安排，例如如果您想要专门使用HTML导�
 
 #: pretalx/orga/forms/event.py:111
 msgid "Show featured sessions"
-msgstr "显示特色会议。"
+msgstr "显示特别会期。"
 
 #: pretalx/orga/forms/event.py:113 pretalx/submission/models/review.py:263
 #: pretalx/submission/models/review.py:284
@@ -3601,8 +3588,7 @@ msgstr "总是"
 msgid ""
 "Marking sessions as “featured” is a good way to show them before the first "
 "schedule release, or to highlight them once the schedule is visible."
-msgstr ""
-"将某些会话标记为“特色”是在首次发布日程之前展示它们或在日程可见后突出显示它们"
+msgstr "将某些会期标记为“特别”是在首次发布日程之前展示它们或在日程可见后突出显示它们"
 "的好方法。"
 
 #: pretalx/orga/forms/event.py:123
