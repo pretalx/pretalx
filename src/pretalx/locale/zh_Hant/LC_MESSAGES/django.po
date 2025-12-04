@@ -5,8 +5,8 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-11-28 21:17+0000\n"
-"PO-Revision-Date: 2025-11-05 15:50+0000\n"
-"Last-Translator: Peter Dave Hello <hsu@peterdavehello.org>\n"
+"PO-Revision-Date: 2025-12-04 17:41+0000\n"
+"Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
 "Language: zh_Hant\n"
 "MIME-Version: 1.0\n"
@@ -7795,15 +7795,10 @@ msgid "Please note that all times are in the event timezone, {tz}."
 msgstr "請注意，所有時間均以活動時區 {tz} 顯示。"
 
 #: pretalx/schedule/forms.py:44
-#, fuzzy
-#| msgid ""
-#| "If you set room availabilities, speakers will only be able to set their "
-#| "availability for when any room is available."
 msgid ""
 "If you set room availabilities, speakers will only be able to set their "
 "availability for when any room is available."
-msgstr ""
-"如果您設定了會議室可用性，講者只能在任何會議室可用的時段設定其可參與時段。"
+msgstr "如果您設定了會議室可用性，講者只能在任何會議室可用的時段設定其可參與時段。"
 
 #: pretalx/schedule/forms.py:48
 msgid "Room I"
