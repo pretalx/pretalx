@@ -5,15 +5,15 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-11-28 21:17+0000\n"
-"PO-Revision-Date: 2025-07-06 06:20+0000\n"
-"Last-Translator: sideseal <ckgun@naver.com>\n"
+"PO-Revision-Date: 2025-12-04 17:41+0000\n"
+"Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
 "Language: ko\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.9.2\n"
+"X-Generator: Weblate 5.12.2\n"
 
 #: pretalx/agenda/phrases.py:11
 msgid "Thank you for your feedback!"
@@ -359,10 +359,6 @@ msgid ""
 msgstr "해당 제안이 거절되었습니다. 오류라고 생각된다면 문의 부탁드립니다."
 
 #: pretalx/cfp/phrases.py:36
-#, fuzzy
-#| msgid ""
-#| "This proposal cannot be confirmed at this time – please contact us if you "
-#| "think this is an error."
 msgid ""
 "This proposal cannot be edited at this time. Please contact the organisers "
 "if you need to make changes."
@@ -431,15 +427,12 @@ msgid "Custom fields"
 msgstr "커스텀 필드"
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:29
-#, fuzzy, python-format
-#| msgid ""
-#| "You can enter proposals until %(deadline)s (%(timezone)s), "
-#| "%(until_string)s from now."
+#, python-format
 msgid ""
 "Submissions close on %(deadline)s (%(timezone)s), %(until_string)s from now."
 msgstr ""
-"지금부터 %(deadline)s (%(timezone)s) 까지 , %(until_string)s 동안 제안서를 입"
-"력할 수 있습니다."
+"지금부터 %(deadline)s (%(timezone)s) 까지 , %(until_string)s 동안 제안서를 "
+"입력할 수 있습니다."
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:34
 #, fuzzy, python-format
