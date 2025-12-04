@@ -147,7 +147,7 @@ class SubmissionTypeField(SafeModelChoiceField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # All shown submission types in a form should belong to one event,
-        # particularly in the non-organizer area where this field is used,
+        # particularly in the non-organiser area where this field is used,
         # so we can just cache the rendering decision between instances.
         self.show_duration = None
 

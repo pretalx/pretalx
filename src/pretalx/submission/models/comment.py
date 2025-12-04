@@ -18,7 +18,7 @@ from pretalx.submission.rules import (
 
 
 class SubmissionComment(PretalxModel):
-    """Comments allow reviewers and organizers to discuss submissions.
+    """Comments allow reviewers and organisers to discuss submissions.
 
     They are separate from reviews and provide a forum-style discussion space.
     """

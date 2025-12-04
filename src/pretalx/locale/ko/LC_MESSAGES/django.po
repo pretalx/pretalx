@@ -70,9 +70,7 @@ msgstr "아쉽게도 세션을 취소해야 했습니다: "
 msgid ""
 "We had to move some sessions, so if you were planning on seeing them, check "
 "their new dates or locations:"
-msgstr ""
-"일부 세션을 이동해야 했으므로, 해당 세션을 시청할 예정이었다면 새로운 날짜 또"
-"는 장소를 확인하세요:"
+msgstr "일부 세션을 이동해야 했으므로, 해당 세션을 시청할 예정이었다면 새로운 날짜 또는 장소를 확인하세요:"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:74
 msgid "We have moved a session around: "
@@ -88,17 +86,16 @@ msgid ""
 "conference. Please keep in mind that this is not our full schedule. We will "
 "follow up with the full schedule in time, stay tuned!"
 msgstr ""
-"이번 컨퍼런스를 미리 느껴볼 수 있도록 흥미로운 세션 목록을 준비했습니다. 다"
-"만, 이 목록은 전체 일정이 아니며, 추후에 전체 일정을 안내해 드릴 예정이니 많"
-"은 관심 부탁드려요!"
+"이번 컨퍼런스를 미리 느껴볼 수 있도록 흥미로운 세션 목록을 준비했습니다. 다만, 이 목록은 전체 일정이 아니며, 추후에 전체 일정을 "
+"안내해 드릴 예정이니 많은 관심 부탁드려요!"
 
 #: pretalx/agenda/templates/agenda/featured.html:26
 msgid ""
-"In the near future you will see a curated list of sessions we’d like to show "
-"off here. Right now we are busy reviewing proposals.<br> Check back later!"
+"In the near future you will see a curated list of sessions we’d like to show"
+" off here. Right now we are busy reviewing proposals.<br> Check back later!"
 msgstr ""
-"가까운 시일 내에 엄선된 세션 목록을 여기서 확인하실 수 있습니다. 지금은 제안"
-"서를 검토하느라 바쁜 시기이니, 나중에 다시 확인해 주세요!"
+"가까운 시일 내에 엄선된 세션 목록을 여기서 확인하실 수 있습니다. 지금은 제안서를 검토하느라 바쁜 시기이니, 나중에 다시 확인해 "
+"주세요!"
 
 #: pretalx/agenda/templates/agenda/feed/description.html:10
 #, python-format
@@ -122,9 +119,7 @@ msgstr "피드백"
 #: pretalx/agenda/templates/agenda/feedback.html:30
 msgid ""
 "This review is for you personally, not for all speakers in this session."
-msgstr ""
-"해당 리뷰는 개별적으로 작성된 것이며, 세션의 모든 발표자를 대상으로 한 것이 "
-"아닙니다."
+msgstr "해당 리뷰는 개별적으로 작성된 것이며, 세션의 모든 발표자를 대상으로 한 것이 아닙니다."
 
 #: pretalx/agenda/templates/agenda/feedback_form.html:23
 msgid ""
@@ -132,9 +127,8 @@ msgid ""
 "presentation. Even a short review can prove valuable to a speaker! Please "
 "take the time and communicate your feedback in a constructive way."
 msgstr ""
-"리뷰는 발표자가 콘텐츠와 프레젠테이션을 개선할 수 있는 유용한 도구입니다. 짧"
-"은 리뷰도 발표자에게 큰 도움이 될 수 있습니다! 시간을 내어 건설적인 방식으로 "
-"피드백을 전달해 주세요."
+"리뷰는 발표자가 콘텐츠와 프레젠테이션을 개선할 수 있는 유용한 도구입니다. 짧은 리뷰도 발표자에게 큰 도움이 될 수 있습니다! 시간을 "
+"내어 건설적인 방식으로 피드백을 전달해 주세요."
 
 #: pretalx/agenda/templates/agenda/feedback_form.html:30
 msgid "You can’t give feedback for this session at this time."
@@ -146,8 +140,8 @@ msgid ""
 "To see our schedule, please either enable JavaScript or go <a "
 "href=\"%(href)s\">here</a> for our NoJS schedule."
 msgstr ""
-"일정을 확인하려면 JavaScript를 활성화하거나 <a href=\"%(href)s\">여기</a>로 "
-"이동하여 JavaScript 없는 일정을 확인하세요."
+"일정을 확인하려면 JavaScript를 활성화하거나 <a href=\"%(href)s\">여기</a>로 이동하여 JavaScript 없는"
+" 일정을 확인하세요."
 
 #: pretalx/agenda/templates/agenda/schedule_nojs.html:23
 #, python-format
@@ -156,8 +150,8 @@ msgid ""
 "personal scheduling, please enable JavaScript and go <a "
 "href=\"%(href)s\">here</a>."
 msgstr ""
-"시간대 변환 및 개인 일정과 같은 모든 기능이 포함된 일정을 확인하려면 "
-"JavaScript를 활성화하고 <a href=\"%(href)s\">여기</a>로 이동하세요."
+"시간대 변환 및 개인 일정과 같은 모든 기능이 포함된 일정을 확인하려면 JavaScript를 활성화하고 <a "
+"href=\"%(href)s\">여기</a>로 이동하세요."
 
 #: pretalx/agenda/templates/agenda/schedule_nojs.html:79
 #, python-format
@@ -208,11 +202,9 @@ msgstr "아직 일정이 공개되지 않았습니다."
 
 #: pretalx/agenda/views/schedule.py:200
 msgid ""
-"You're currently not logged in, so your favourited talks will only be stored "
-"locally in your browser."
-msgstr ""
-"현재 로그인하지 않았으므로, 즐겨찾기한 프로그램은 브라우저에 로컬로만 저장됩"
-"니다."
+"You're currently not logged in, so your favourited talks will only be stored"
+" locally in your browser."
+msgstr "현재 로그인하지 않았으므로, 즐겨찾기한 프로그램은 브라우저에 로컬로만 저장됩니다."
 
 #: pretalx/agenda/views/schedule.py:203
 msgid "Your favourites could only be saved locally in your browser."
@@ -225,17 +217,17 @@ msgstr "{event}의 '{title}' 세션"
 
 #: pretalx/cfp/flow.py:381
 msgid ""
-"Your draft was saved. You can continue to edit it as long as the CfP is open."
+"Your draft was saved. You can continue to edit it as long as the CfP is "
+"open."
 msgstr "초안이 저장되었습니다. CfP가 열려 있는 한 계속 편집할 수 있습니다."
 
 #: pretalx/cfp/flow.py:389
 msgid ""
 "Congratulations, you’ve submitted your proposal! You can continue to make "
-"changes to it up to the submission deadline, and you will be notified of any "
-"changes or questions."
+"changes to it up to the submission deadline, and you will be notified of any"
+" changes or questions."
 msgstr ""
-"제안서를 제출하셨습니다! 제출 마감일까지 제안서를 계속 변경할 수 있으며, 변"
-"경 사항이나 질문이 있을 경우 알림을 받게 됩니다."
+"제안서를 제출하셨습니다! 제출 마감일까지 제안서를 계속 변경할 수 있으며, 변경 사항이나 질문이 있을 경우 알림을 받게 됩니다."
 
 #: pretalx/cfp/flow.py:419
 msgid "Hey, nice to meet you!"
@@ -245,9 +237,7 @@ msgstr "안녕하세요, 만나서 반가워요!"
 msgid ""
 "We’re glad that you want to contribute to our event with your proposal. "
 "Let’s get started, this won’t take long."
-msgstr ""
-"제안서를 통해 이벤트에 참여해주셔서 감사합니다. 오래 걸리지 않을 테니 시작해 "
-"보겠습니다."
+msgstr "제안서를 통해 이벤트에 참여해주셔서 감사합니다. 오래 걸리지 않을 테니 시작해 보겠습니다."
 
 #: pretalx/cfp/flow.py:485
 msgid "Additional information"
@@ -263,10 +253,9 @@ msgstr "제안서를 저장하기 전에 몇 가지 질문이 더 있습니다."
 
 #: pretalx/cfp/flow.py:524
 msgid ""
-"There was an error when logging in. Please contact the organiser for further "
-"help."
-msgstr ""
-"로그인하는 동안 오류가 발생했습니다. 주최자에게 문의하여 도움을 받으세요."
+"There was an error when logging in. Please contact the organiser for further"
+" help."
+msgstr "로그인하는 동안 오류가 발생했습니다. 주최자에게 문의하여 도움을 받으세요."
 
 #: pretalx/cfp/flow.py:533
 msgid "Account"
@@ -274,8 +263,7 @@ msgstr "계정"
 
 #: pretalx/cfp/flow.py:538
 msgid "That’s it about your proposal! We now just need a way to contact you."
-msgstr ""
-"제안서는 여기까지입니다! 이제 당신에게 연락드릴 방법을 알려주시면 됩니다."
+msgstr "제안서는 여기까지입니다! 이제 당신에게 연락드릴 방법을 알려주시면 됩니다."
 
 #: pretalx/cfp/flow.py:544
 msgid ""
@@ -283,8 +271,8 @@ msgid ""
 "gives us a way to contact you, it also gives you the possibility to edit "
 "your proposal or to view its current state."
 msgstr ""
-"제안서를 작성하려면 이 페이지에서 계정이 필요합니다. 계정을 통해 연락할 수 있"
-"을 뿐만 아니라 제안서를 수정하거나 현재 상태를 확인할 수 있습니다."
+"제안서를 작성하려면 이 페이지에서 계정이 필요합니다. 계정을 통해 연락할 수 있을 뿐만 아니라 제안서를 수정하거나 현재 상태를 확인할 수"
+" 있습니다."
 
 #: pretalx/cfp/flow.py:586
 msgid "Profile"
@@ -298,9 +286,7 @@ msgstr "당신에 대해서 알려주세요!"
 msgid ""
 "This information will be publicly displayed next to your session - you can "
 "always edit for as long as proposals are still open."
-msgstr ""
-"이 정보는 세션 옆에 공개적으로 표시되며, 제안서가 열려 있는 동안에는 언제든"
-"지 수정할 수 있습니다."
+msgstr "이 정보는 세션 옆에 공개적으로 표시되며, 제안서가 열려 있는 동안에는 언제든지 수정할 수 있습니다."
 
 #: pretalx/cfp/phrases.py:10
 msgid "Go to CfP"
@@ -310,20 +296,17 @@ msgstr "CfP 로 이동"
 msgid ""
 "If we know a user by this email address (who has not requested a password "
 "reset in the last 24 hours), we will send you an email containing further "
-"instructions. If you don’t see the email within the next minutes, check your "
-"spam inbox!"
+"instructions. If you don’t see the email within the next minutes, check your"
+" spam inbox!"
 msgstr ""
-"이 이메일 주소의 사용자를 확인하게 되면 (지난 24시간 동안 비밀번호 재설정을 "
-"요청하지 않았을 경우), 추가 안내가 포함된 이메일을 보내드립니다. 몇 분 안에 "
-"이메일이 도착하지 않으면 스팸 메일함을 확인해 주세요!"
+"이 이메일 주소의 사용자를 확인하게 되면 (지난 24시간 동안 비밀번호 재설정을 요청하지 않았을 경우), 추가 안내가 포함된 이메일을 "
+"보내드립니다. 몇 분 안에 이메일이 도착하지 않으면 스팸 메일함을 확인해 주세요!"
 
 #: pretalx/cfp/phrases.py:17
 msgid ""
 "This link was not valid. Make sure you copied the complete URL from the "
 "email and that the email is no more than 24 hours old."
-msgstr ""
-"이 링크는 유효하지 않습니다. 이메일에서 전체 URL을 복사했는지, 이메일이 24시"
-"간이 지나지 않았는지 확인하세요."
+msgstr "이 링크는 유효하지 않습니다. 이메일에서 전체 URL을 복사했는지, 이메일이 24시간이 지나지 않았는지 확인하세요."
 
 #: pretalx/cfp/phrases.py:20
 msgid "Awesome! You can now log in using your new password."
@@ -337,9 +320,7 @@ msgstr "발표 제안이 철회되었습니다."
 msgid ""
 "Your proposal can’t be withdrawn at this time – please contact us if you "
 "need to withdraw your proposal!"
-msgstr ""
-"지금은 발표 제안을 철회할 수 없습니다. 제안을 철회해야 하는 경우 문의해 주세"
-"요!"
+msgstr "지금은 발표 제안을 철회할 수 없습니다. 제안을 철회해야 하는 경우 문의해 주세요!"
 
 #: pretalx/cfp/phrases.py:27
 msgid "Your session has been confirmed – we’re looking forward to seeing you!"
@@ -349,8 +330,7 @@ msgstr "세션이 확정되었습니다 - 여러분을 만나 뵙기를 고대�
 msgid ""
 "This proposal has already been confirmed – we’re looking forward to seeing "
 "you!"
-msgstr ""
-"이 발표 제안은 이미 확정되었습니다 - 여러분의 많은 참여를 기다리겠습니다!"
+msgstr "이 발표 제안은 이미 확정되었습니다 - 여러분의 많은 참여를 기다리겠습니다!"
 
 #: pretalx/cfp/phrases.py:33
 msgid ""
@@ -412,8 +392,7 @@ msgstr "초대장이 전송되었습니다!"
 
 #: pretalx/cfp/phrases.py:58
 msgid "You are now part of this proposal! Please fill in your profile below."
-msgstr ""
-"이제 해당 제안서에 참여하실 수 있습니다! 아래에 프로필을 작성해 주세요."
+msgstr "이제 해당 제안서에 참여하실 수 있습니다! 아래에 프로필을 작성해 주세요."
 
 #: pretalx/cfp/phrases.py:62
 msgid ""
@@ -431,8 +410,7 @@ msgstr "커스텀 필드"
 msgid ""
 "Submissions close on %(deadline)s (%(timezone)s), %(until_string)s from now."
 msgstr ""
-"지금부터 %(deadline)s (%(timezone)s) 까지 , %(until_string)s 동안 제안서를 "
-"입력할 수 있습니다."
+"지금부터 %(deadline)s (%(timezone)s) 까지 , %(until_string)s 동안 제안서를 입력할 수 있습니다."
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:34
 #, fuzzy, python-format
@@ -487,24 +465,20 @@ msgstr "초대를 수락하시겠습니까?"
 #: pretalx/cfp/templates/cfp/event/invitation.html:18
 msgid ""
 "Unfortunately, you cannot accept this invitation at the moment. This may be "
-"because the invitation has expired, or because the proposal cannot be edited "
-"any more."
-msgstr ""
-"안타깝지만 지금은 이 초대를 수락할 수 없습니다. 초대가 만료되었거나 제안서를 "
-"더 이상 편집할 수 없기 때문일 수 있습니다."
+"because the invitation has expired, or because the proposal cannot be edited"
+" any more."
+msgstr "안타깝지만 지금은 이 초대를 수락할 수 없습니다. 초대가 만료되었거나 제안서를 더 이상 편집할 수 없기 때문일 수 있습니다."
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:25
-msgid "Please contact the conference organizers for more information."
+msgid "Please contact the conference organisers for more information."
 msgstr "자세한 내용은 컨퍼런스 주최자에게 문의하시기 바랍니다."
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:31
 #, python-format
 msgid ""
-"You, %(name)s, have been invited to be a speaker for the session “%(talk)s”. "
-"Do you accept the invitation?"
-msgstr ""
-"%(name)s님께서는 “%(talk)s” 발표의 발표자로 초대되셨습니다. 이 초대를 수락하"
-"시겠습니까?"
+"You, %(name)s, have been invited to be a speaker for the session “%(talk)s”."
+" Do you accept the invitation?"
+msgstr "%(name)s님께서는 “%(talk)s” 발표의 발표자로 초대되셨습니다. 이 초대를 수락하시겠습니까?"
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:39
 msgid "Abstract:"
@@ -530,21 +504,18 @@ msgstr "돌아온 것을 환영합니다!"
 
 #: pretalx/cfp/templates/cfp/event/login.html:21
 msgid ""
-"You do not need an account to view the event, or submit feedback, or receive "
-"schedule updates. You’ll only need an account if you participate in the "
+"You do not need an account to view the event, or submit feedback, or receive"
+" schedule updates. You’ll only need an account if you participate in the "
 "event as speaker or as an organiser."
 msgstr ""
-"이벤트를 보거나, 피드백을 제출하거나, 일정 업데이트를 받기 위한 계정은 필요하"
-"지 않습니다. 이벤트에 발표자 또는 주최자로 참여하는 경우에만 계정이 필요합니"
-"다."
+"이벤트를 보거나, 피드백을 제출하거나, 일정 업데이트를 받기 위한 계정은 필요하지 않습니다. 이벤트에 발표자 또는 주최자로 참여하는 "
+"경우에만 계정이 필요합니다."
 
 #: pretalx/cfp/templates/cfp/event/login.html:28
 msgid ""
 "If you already created a proposal for a different event on this server, you "
 "can re-use your account to log in for this event."
-msgstr ""
-"이 서버에서 다른 이벤트에 대한 제안서를 이미 생성한 경우, 해당 계정을 다시 사"
-"용하여 이 이벤트에 로그인할 수 있습니다."
+msgstr "이 서버에서 다른 이벤트에 대한 제안서를 이미 생성한 경우, 해당 계정을 다시 사용하여 이 이벤트에 로그인할 수 있습니다."
 
 #: pretalx/cfp/templates/cfp/event/recover.html:20
 msgid "Set your password to access your profile and proposals"
@@ -581,8 +552,8 @@ msgid ""
 "not be able to see your proposal, though they will be able to send you "
 "reminder emails about the upcoming deadline."
 msgstr ""
-"제안서를 초안으로 저장하고 나중에 제출할 수 있습니다. 주최자는 제안서를 볼 수"
-"는 없지만, 다가오는 마감일에 대한 알림 이메일을 보낼 수 있습니다."
+"제안서를 초안으로 저장하고 나중에 제출할 수 있습니다. 주최자는 제안서를 볼 수는 없지만, 다가오는 마감일에 대한 알림 이메일을 보낼 수"
+" 있습니다."
 
 #: pretalx/cfp/templates/cfp/event/submission_questions.html:18
 msgid "… about your proposal:"
@@ -602,8 +573,7 @@ msgid ""
 "will be able to send you reminders about your pending proposal draft closer "
 "to the deadline."
 msgstr ""
-"주최자는 당신의 초안이나 이메일 주소를 볼 수 없지만, 마감일이 가까워지면 보"
-"류 중인 제안서 초안에 대한 리마인더를 보낼 수 있습니다."
+"주최자는 당신의 초안이나 이메일 주소를 볼 수 없지만, 마감일이 가까워지면 보류 중인 제안서 초안에 대한 리마인더를 보낼 수 있습니다."
 
 #: pretalx/cfp/templates/cfp/event/user_mails.html:12
 #: pretalx/cfp/templates/cfp/event/user_mails.html:15
@@ -612,13 +582,12 @@ msgstr "당신의 이메일"
 
 #: pretalx/cfp/templates/cfp/event/user_mails.html:17
 msgid ""
-"These are emails the organisers sent you, so you should be able to find them "
-"in your email inbox, but this page serves as a helper in case your email "
+"These are emails the organisers sent you, so you should be able to find them"
+" in your email inbox, but this page serves as a helper in case your email "
 "address was unavailable or the emails got lost in some way."
 msgstr ""
-"주최자가 보낸 이메일은 당신의 이메일 편지함으로 전송되지만, 당신의 이메일 주"
-"소를 사용할 수 없거나 이메일이 분실된 경우, 이 페이지는 이에 대한 도우미 역할"
-"을 합니다."
+"주최자가 보낸 이메일은 당신의 이메일 편지함으로 전송되지만, 당신의 이메일 주소를 사용할 수 없거나 이메일이 분실된 경우, 이 페이지는 "
+"이에 대한 도우미 역할을 합니다."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:11
 #: pretalx/cfp/templates/cfp/event/user_profile.html:18
@@ -629,9 +598,7 @@ msgstr "당신의 프로필"
 msgid ""
 "This data will be displayed publicly if your proposal is accepted. It is "
 "also visible to reviewers."
-msgstr ""
-"이 데이터는 제안이 수락되면 공개적으로 표시되며, 이에 대해 검토자도 접근할 "
-"수 있습니다."
+msgstr "이 데이터는 제안이 수락되면 공개적으로 표시되며, 이에 대해 검토자도 접근할 수 있습니다."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:45
 msgid "We have some questions"
@@ -652,19 +619,17 @@ msgstr "계정 삭제"
 #: pretalx/cfp/templates/cfp/event/user_profile.html:86
 msgid ""
 "You can delete your account here – all names, emails, and other personal "
-"information will be overwritten. <strong>This action is irreversible.</"
-"strong>"
+"information will be overwritten. <strong>This action is "
+"irreversible.</strong>"
 msgstr ""
-"여기에서 계정을 삭제할 수 있으며, 모든 이름과 이메일 그리고 그 외 개인 정보"
-"가 덮어씌워집니다. <strong>이 작업은 되돌릴 수 없습니다.</strong>"
+"여기에서 계정을 삭제할 수 있으며, 모든 이름과 이메일 그리고 그 외 개인 정보가 덮어씌워집니다. <strong>이 작업은 되돌릴 수 "
+"없습니다.</strong>"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:92
 msgid ""
 "I really do want to delete my account, losing access to my proposals and "
 "sessions, and overriding my public and private data."
-msgstr ""
-"저는 정말로 계정을 삭제하여 제안서 및 세션에 대한 접근 권한을 잃고, 나의 공"
-"개 및 비공개 데이터를 삭제하고 싶습니다."
+msgstr "저는 정말로 계정을 삭제하여 제안서 및 세션에 대한 접근 권한을 잃고, 나의 공개 및 비공개 데이터를 삭제하고 싶습니다."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:99
 msgid "Delete my account"
@@ -681,17 +646,14 @@ msgid ""
 "proposal data, such as title, abstract, description, and any uploads you "
 "provided, can be made publicly available once the proposal is confirmed."
 msgstr ""
-"제안서를 확인함으로써 귀하는 이 이벤트에 참가할 수 있으며 제안서의 내용을 공"
-"개할 의향이 있음에 동의합니다. 제안서가 확정되면 제목, 초안, 설명 및 제출한 "
-"파일과 같은 제안서의 데이터가 공개될 수 있습니다."
+"제안서를 확인함으로써 귀하는 이 이벤트에 참가할 수 있으며 제안서의 내용을 공개할 의향이 있음에 동의합니다. 제안서가 확정되면 제목, "
+"초안, 설명 및 제출한 파일과 같은 제안서의 데이터가 공개될 수 있습니다."
 
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm.html:39
 msgid ""
-"Please provide us with your available hours during the event, so that we can "
-"schedule your event accordingly:"
-msgstr ""
-"이벤트 기간 중 가능한 시간을 알려주시면 그에 맞춰 이벤트 일정을 조정할 수 있"
-"습니다:"
+"Please provide us with your available hours during the event, so that we can"
+" schedule your event accordingly:"
+msgstr "이벤트 기간 중 가능한 시간을 알려주시면 그에 맞춰 이벤트 일정을 조정할 수 있습니다:"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm_error.html:10
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm_error.html:14
@@ -701,11 +663,11 @@ msgstr "제안서를 찾을 수 없습니다"
 #: pretalx/cfp/templates/cfp/event/user_submission_confirm_error.html:16
 msgid ""
 "The proposal you’re trying to confirm either does not exist or does not "
-"belong to the account you’re currently logged in with. Try logging in with a "
-"different account, or contact the event organisers for further information."
+"belong to the account you’re currently logged in with. Try logging in with a"
+" different account, or contact the event organisers for further information."
 msgstr ""
-"확인하려는 제안서가 존재하지 않거나 현재 로그인한 계정에 속하지 않습니다. 다"
-"른 계정으로 로그인하거나 이벤트 주최자에게 문의하여 자세한 정보를 확인하세요."
+"확인하려는 제안서가 존재하지 않거나 현재 로그인한 계정에 속하지 않습니다. 다른 계정으로 로그인하거나 이벤트 주최자에게 문의하여 자세한 "
+"정보를 확인하세요."
 
 #: pretalx/cfp/templates/cfp/event/user_submission_discard.html:23
 msgid ""
@@ -749,11 +711,9 @@ msgstr "제안서 공유"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:109
 msgid ""
-"If you need a review from a colleague or a friend here’s a link that you can "
-"send out for viewing your proposal:"
-msgstr ""
-"동료나 친구의 리뷰가 필요하다면, 제안서를 확인할 수 있는 링크를 공유할 수 있"
-"습니다:"
+"If you need a review from a colleague or a friend here’s a link that you can"
+" send out for viewing your proposal:"
+msgstr "동료나 친구의 리뷰가 필요하다면, 제안서를 확인할 수 있는 링크를 공유할 수 있습니다:"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:117
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:18
@@ -766,8 +726,8 @@ msgid ""
 "undo this - if you are just uncertain if you can or should hold your "
 "session, please contact the organiser instead."
 msgstr ""
-"여기에서 제안서를 철회할 수 있습니다. 이 작업은 되돌릴 수 없습니다. 만약 본인"
-"의 제안에 확신이 없는 경우, 운영진에게 문의하는 것을 고려해 주세요."
+"여기에서 제안서를 철회할 수 있습니다. 이 작업은 되돌릴 수 없습니다. 만약 본인의 제안에 확신이 없는 경우, 운영진에게 문의하는 것을 "
+"고려해 주세요."
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:128
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:27
@@ -782,11 +742,11 @@ msgstr "제안서 초안 폐기"
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:135
 msgid ""
 "You can discard your draft proposal here. You cannot undo this - if you are "
-"just uncertain if you can or should submit your proposal, please contact the "
-"organiser instead."
+"just uncertain if you can or should submit your proposal, please contact the"
+" organiser instead."
 msgstr ""
-"여기에서 제안서 초안을 삭제할 수 있습니다. 이 작업은 되돌릴 수 없습니다. 만"
-"약 본인의 제안에 확신이 없는 경우, 운영진에게 문의하는 것을 고려해 주세요."
+"여기에서 제안서 초안을 삭제할 수 있습니다. 이 작업은 되돌릴 수 없습니다. 만약 본인의 제안에 확신이 없는 경우, 운영진에게 문의하는 "
+"것을 고려해 주세요."
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:144
 #: pretalx/orga/views/mails.py:362
@@ -803,8 +763,8 @@ msgid ""
 "organising team to cancel it. The best way to reach out would be an answer "
 "to your acceptance mail."
 msgstr ""
-"제안서가 이미 수락 되었으므로, 취소하려면 이벤트 주최 팀에 문의하시기 바랍니"
-"다. 승인 이메일에 답장을 하여 문의를 하는 것을 권장합니다."
+"제안서가 이미 수락 되었으므로, 취소하려면 이벤트 주최 팀에 문의하시기 바랍니다. 승인 이메일에 답장을 하여 문의를 하는 것을 "
+"권장합니다."
 
 #: pretalx/cfp/templates/cfp/event/user_submission_invitation.html:24
 msgid ""
@@ -812,8 +772,7 @@ msgid ""
 "email, (which might get caught by spam filters) you can also give them this "
 "link:"
 msgstr ""
-"여기에서 당신의 발표 제안서에 다른 발표자를 초대하세요. (스팸 처리될 수 있"
-"는) 메일을 보내는 대신, 다음 링크를 제공해도 됩니다:"
+"여기에서 당신의 발표 제안서에 다른 발표자를 초대하세요. (스팸 처리될 수 있는) 메일을 보내는 대신, 다음 링크를 제공해도 됩니다:"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:20
 msgid "Do you really want to withdraw your proposal?"
@@ -890,17 +849,13 @@ msgstr "이 이벤트에 아직 아무것도 제출하지 않은 것 같습니�
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:162
 msgid "If you did, maybe you used a different account? Check your emails!"
-msgstr ""
-"이미 제출하셨었다면, 다른 계정을 사용한 것일 수도 있습니다. 이메일을 확인해 "
-"주세요!"
+msgstr "이미 제출하셨었다면, 다른 계정을 사용한 것일 수도 있습니다. 이메일을 확인해 주세요!"
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:165
 msgid ""
 "If you did not, why not go ahead and create a proposal now? We’d love to "
 "hear from you!"
-msgstr ""
-"아직 제안서를 작성하지 않으셨다면 지금 바로 제안서를 작성해 보세요. 여러분의 "
-"참여를 부탁드립니다!"
+msgstr "아직 제안서를 작성하지 않으셨다면 지금 바로 제안서를 작성해 보세요. 여러분의 참여를 부탁드립니다!"
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:170
 msgid "Submit something now!"
@@ -943,9 +898,7 @@ msgstr "제안서의 현재 상태:"
 msgid ""
 "This is a draft proposal. It will never be visible to anybody else, unless "
 "you submit it or explicitly share it."
-msgstr ""
-"이것은 제안서 초안입니다. 제출하거나 명시적으로 공유하지 않는 한 다른 사람에"
-"게 절대 공개되지 않습니다."
+msgstr "이것은 제안서 초안입니다. 제출하거나 명시적으로 공유하지 않는 한 다른 사람에게 절대 공개되지 않습니다."
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:46
 #: pretalx/orga/tables/cfp.py:169
@@ -956,7 +909,8 @@ msgid "Session type"
 msgstr "세션 유형"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:52
-#: pretalx/orga/tables/cfp.py:117 pretalx/orga/templates/orga/cfp/text.html:128
+#: pretalx/orga/tables/cfp.py:117
+#: pretalx/orga/templates/orga/cfp/text.html:128
 #: pretalx/orga/templates/orga/review/bulk_tag.html:55
 #: pretalx/orga/templates/orga/submission/review.html:71
 #: pretalx/orga/views/cfp.py:544 pretalx/submission/models/access_code.py:33
@@ -1018,8 +972,7 @@ msgstr "{size}보다 큰 파일은 업로드하지 말아주세요!"
 msgid ""
 "This filetype ({extension}) is not allowed, it has to be one of the "
 "following: "
-msgstr ""
-"이 파일 형식({extension})은 허용되지 않으며, 다음 중 하나이어야 합니다: "
+msgstr "이 파일 형식({extension})은 허용되지 않으며, 다음 중 하나이어야 합니다: "
 
 #: pretalx/common/forms/fields.py:165
 #, fuzzy, python-format
@@ -1029,7 +982,8 @@ msgstr "제출된 가용성에 유효하지 않은 날짜가 포함되어 있습
 
 #: pretalx/common/forms/fields.py:167
 #, fuzzy, python-format
-#| msgid "The submitted availability does not comply with the required format."
+#| msgid ""
+#| "The submitted availability does not comply with the required format."
 msgid "Availability JSON does not comply with expected format: %(detail)s"
 msgstr "제출된 가용성이 요구되는 형식에 맞지 않습니다."
 
@@ -1113,10 +1067,9 @@ msgstr "선택"
 
 #: pretalx/common/forms/widgets.py:26
 msgid ""
-"This password would take <em class=\"password_strength_time\"></em> to crack."
-msgstr ""
-"이 비밀번호를 해독하는 데 <em class=\"password_strength_time\"></em> 가 소요"
-"됩니다."
+"This password would take <em class=\"password_strength_time\"></em> to "
+"crack."
+msgstr "이 비밀번호를 해독하는 데 <em class=\"password_strength_time\"></em> 가 소요됩니다."
 
 #: pretalx/common/forms/widgets.py:65
 msgid "Warning"
@@ -1130,17 +1083,13 @@ msgstr "비밀번호가 일치하지 않습니다."
 msgid ""
 "The file you uploaded has a very large number of pixels, please upload a "
 "picture with smaller dimensions."
-msgstr ""
-"업로드한 파일의 픽셀 수가 매우 많습니다. 더 작은 크기의 사진을 업로드해 주세"
-"요."
+msgstr "업로드한 파일의 픽셀 수가 매우 많습니다. 더 작은 크기의 사진을 업로드해 주세요."
 
 #: pretalx/common/image.py:78
 msgid ""
 "Upload a valid image. The file you uploaded was either not an image or a "
 "corrupted image."
-msgstr ""
-"유효한 이미지를 업로드하세요. 업로드한 파일이 이미지가 아니거나 손상된 이미지"
-"입니다."
+msgstr "유효한 이미지를 업로드하세요. 업로드한 파일이 이미지가 아니거나 손상된 이미지입니다."
 
 #: pretalx/common/log_display.py:34
 #, python-brace-format
@@ -1531,9 +1480,7 @@ msgstr "날짜"
 msgid ""
 "Please give a fair review on why you’d like to see this proposal at the "
 "conference, or why you think it would not be a good fit."
-msgstr ""
-"이 제안을 행사(컨퍼런스)에서 보고 싶은 이유 또는 적합하지 않다고 생각하는 이"
-"유에 대해 공정하게 검토해 주세요."
+msgstr "이 제안을 행사(컨퍼런스)에서 보고 싶은 이유 또는 적합하지 않다고 생각하는 이유에 대해 공정하게 검토해 주세요."
 
 #: pretalx/common/models/settings.py:79
 #, python-brace-format
@@ -1683,9 +1630,7 @@ msgstr "액세스 코드 링크 복사"
 msgid ""
 "It looks as if the communication between you and pretalx went wrong in some "
 "way. <br> Please return to the last page and try again!"
-msgstr ""
-"사용자와 시스템 간의 통신이 어떤 식으로든 잘못된 것 같습니다.<br>마지막 페이"
-"지로 돌아가서 다시 시도해 주세요!"
+msgstr "사용자와 시스템 간의 통신이 어떤 식으로든 잘못된 것 같습니다.<br>마지막 페이지로 돌아가서 다시 시도해 주세요!"
 
 #: pretalx/common/templates/403_csrf.html:12
 #: pretalx/common/templates/403_csrf.html:16
@@ -1698,8 +1643,8 @@ msgid ""
 "reasons, we cannot process it. <br> Please go back to the last page, "
 "refresh, and then try again."
 msgstr ""
-"이 요청이 실제로 귀하가 보낸 것인지 확인할 수 없습니다. 보안상의 이유로 처리"
-"할 수 없습니다.<br> 마지막 페이지로 돌아가 새로고침한 후 다시 시도해 주세요."
+"이 요청이 실제로 귀하가 보낸 것인지 확인할 수 없습니다. 보안상의 이유로 처리할 수 없습니다.<br> 마지막 페이지로 돌아가 새로고침한"
+" 후 다시 시도해 주세요."
 
 #: pretalx/common/templates/500.html:15
 msgid "Internal server error."
@@ -1712,11 +1657,9 @@ msgstr "오류가 발생했습니다."
 #: pretalx/common/templates/500.html:26
 #, python-format
 msgid ""
-"Please help us to fix this by submitting <a href=\"%(link)s\" rel=noopener>a "
-"bug report</a>!"
-msgstr ""
-"<a href=\"%(link)s\" rel=noopener>버그 리포트를 제출하여 이 문제를 해결할 수 "
-"있도록 도와주세요!"
+"Please help us to fix this by submitting <a href=\"%(link)s\" rel=noopener>a"
+" bug report</a>!"
+msgstr "<a href=\"%(link)s\" rel=noopener>버그 리포트를 제출하여 이 문제를 해결할 수 있도록 도와주세요!"
 
 #: pretalx/common/templates/common/auth.html:21
 msgid "I already have an account"
@@ -1878,7 +1821,8 @@ msgid "Apply Crop"
 msgstr ""
 
 #. Translators: Text is used to describe the main text body of an email, or of
-#. similar options like the main text of the CfP or a review. It's separate from
+#. similar options like the main text of the CfP or a review. It's separate
+#. from
 #. the "text" input type used in questions.
 #: pretalx/common/templates/common/widgets/markdown.html:9
 #: pretalx/common/text/phrases.py:127 pretalx/mail/models.py:95
@@ -1922,7 +1866,8 @@ msgstr "CSS에 \"{key}\" 키를 포함할 수 없습니다."
 msgid "{date_from} – {date_to}"
 msgstr "{date_from} ~ {date_to}"
 
-#. Translators: This is the label on buttons that trigger the sending of emails.
+#. Translators: This is the label on buttons that trigger the sending of
+#. emails.
 #: pretalx/common/text/phrases.py:48
 msgid "Send"
 msgstr "보내기"
@@ -1943,7 +1888,8 @@ msgstr "수정"
 msgid "all"
 msgstr "모두"
 
-#. Translators: This is a label on navigation elements leading to the previous page.
+#. Translators: This is a label on navigation elements leading to the previous
+#. page.
 #: pretalx/common/text/phrases.py:56
 msgid "Back"
 msgstr "뒤로"
@@ -1956,9 +1902,7 @@ msgstr "삭제 확인"
 msgid ""
 "Please make sure that this is the item you want to delete. This action "
 "cannot be undone!"
-msgstr ""
-"이 항목을 삭제하고자 하시는지 다시 한번 확인 해 주십시오. 이 작업은 되돌릴 "
-"수 없습니다!"
+msgstr "이 항목을 삭제하고자 하시는지 다시 한번 확인 해 주십시오. 이 작업은 되돌릴 수 없습니다!"
 
 #: pretalx/common/text/phrases.py:64
 msgid "The item has been deleted."
@@ -1972,7 +1916,8 @@ msgstr "변경 사항이 저장되었습니다."
 msgid "Please go back and try again."
 msgstr "뒤로 돌아가서 다시 시도해 주세요."
 
-#. Translators: This is an established term in the context of software development.
+#. Translators: This is an established term in the context of software
+#. development.
 #: pretalx/common/text/phrases.py:70
 msgid "Bad request."
 msgstr "잘못된 요청."
@@ -1983,9 +1928,7 @@ msgstr "메일을 보내는 동안 오류가 발생했습니다. 나중에 다�
 
 #: pretalx/common/text/phrases.py:75
 msgid "We had trouble saving your input – Please see below for details."
-msgstr ""
-"입력 내용을 저장하는 데 문제가 발생했습니다. 자세한 내용은 아래를 참조하세"
-"요. 🠯"
+msgstr "입력 내용을 저장하는 데 문제가 발생했습니다. 자세한 내용은 아래를 참조하세요. 🠯"
 
 #: pretalx/common/text/phrases.py:77
 msgid "You do not have permission to perform this action."
@@ -2081,7 +2024,8 @@ msgctxt "closing quotation mark"
 msgid "”"
 msgstr "”"
 
-#. Translators: Used both for language selection for users, and for the language
+#. Translators: Used both for language selection for users, and for the
+#. language
 #. attribute of events and sessions.
 #: pretalx/common/text/phrases.py:118 pretalx/orga/tables/mail.py:90
 #: pretalx/orga/tables/speaker.py:102
@@ -2117,8 +2061,7 @@ msgstr "pretalx 업데이트가 존재합니다"
 msgid ""
 "Hi!\n"
 "\n"
-"An update is available for pretalx or for one of the plugins you installed "
-"in your pretalx installation at {base_url}.\n"
+"An update is available for pretalx or for one of the plugins you installed in your pretalx installation at {base_url}.\n"
 "Please follow this link for more information:\n"
 "\n"
 " {url} \n"
@@ -2127,8 +2070,7 @@ msgid ""
 "\n"
 "  https://docs.pretalx.org/changelog.html\n"
 "\n"
-"Larger updates are also announced with upgrade notes on the pretalx.com "
-"blog:\n"
+"Larger updates are also announced with upgrade notes on the pretalx.com blog:\n"
 "\n"
 "  https://pretalx.com/p/news\n"
 "\n"
@@ -2137,8 +2079,7 @@ msgid ""
 msgstr ""
 "안녕하세요!\n"
 "\n"
-"pretalx 또는 {base_url}에 설치한 플러그인 중 하나에 대한 업데이트가 제공됩니"
-"다.\n"
+"pretalx 또는 {base_url}에 설치한 플러그인 중 하나에 대한 업데이트가 제공됩니다.\n"
 "자세한 내용은 이 링크를 참조하세요:\n"
 "\n"
 " {url} \n"
@@ -2178,9 +2119,7 @@ msgstr "ManagementForm 데이터가 누락되었거나 변조되었습니다."
 msgid ""
 "Please either pick some events for this team, or grant access to all your "
 "events!"
-msgstr ""
-"이 팀에 대해 몇 가지 이벤트를 선택하거나, 모든 이벤트에 대한 액세스 권한을 부"
-"여하세요!"
+msgstr "이 팀에 대해 몇 가지 이벤트를 선택하거나, 모든 이벤트에 대한 액세스 권한을 부여하세요!"
 
 #: pretalx/event/forms.py:73
 msgid "Please pick at least one permission for this team!"
@@ -2222,19 +2161,17 @@ msgstr "주최자"
 msgid ""
 "The organiser running the event can copy settings from previous events and "
 "share team permissions across all or multiple events."
-msgstr ""
-"이벤트를 운영하는 주최자는 이전 이벤트의 설정을 복사하고 전체 또는 여러 이벤"
-"트에서 팀 권한을 공유할 수 있습니다."
+msgstr "이벤트를 운영하는 주최자는 이전 이벤트의 설정을 복사하고 전체 또는 여러 이벤트에서 팀 권한을 공유할 수 있습니다."
 
 #: pretalx/event/forms.py:216
 msgid ""
 "This is the address your event will be available at. Should be short, only "
-"contain lowercase letters and numbers, and must be unique. We recommend some "
-"kind of abbreviation with less than 30 characters that can be easily "
+"contain lowercase letters and numbers, and must be unique. We recommend some"
+" kind of abbreviation with less than 30 characters that can be easily "
 "remembered."
 msgstr ""
-"이벤트가 진행될 주소입니다. 짧고 소문자와 숫자만 포함해야 하며 고유해야 합니"
-"다. 쉽게 기억할 수 있는 30자 미만의 약어를 사용하는 것이 좋습니다."
+"이벤트가 진행될 주소입니다. 짧고 소문자와 숫자만 포함해야 하며 고유해야 합니다. 쉽게 기억할 수 있는 30자 미만의 약어를 사용하는 "
+"것이 좋습니다."
 
 #: pretalx/event/forms.py:222
 msgid "You cannot change the slug later on!"
@@ -2244,9 +2181,7 @@ msgstr "나중에 slug를 변경할 수 없습니다!"
 msgid ""
 "This short name is already taken, please choose another one (or ask the "
 "owner of that event to add you to their team)."
-msgstr ""
-"이 짧은 이름은 이미 사용 중이므로 다른 이름을 선택하거나 해당 이벤트의 소유자"
-"에게 팀에 추가해 달라고 요청하세요."
+msgstr "이 짧은 이름은 이미 사용 중이므로 다른 이름을 선택하거나 해당 이벤트의 소유자에게 팀에 추가해 달라고 요청하세요."
 
 #: pretalx/event/forms.py:255
 msgid ""
@@ -2254,8 +2189,7 @@ msgid ""
 "deadlines to individual session types, which will take precedence over this "
 "deadline."
 msgstr ""
-"CFP의 기본 마감일입니다. 개별 세션 유형에 추가 마감일을 지정할 수 있으며, 이 "
-"마감 기한이 기본 마감 기한보다 우선합니다."
+"CFP의 기본 마감일입니다. 개별 세션 유형에 추가 마감일을 지정할 수 있으며, 이 마감 기한이 기본 마감 기한보다 우선합니다."
 
 #: pretalx/event/forms.py:322
 msgid "Copy configuration from"
@@ -2268,9 +2202,8 @@ msgid ""
 "session types, and email templates. Please check those settings once the "
 "event has been created!"
 msgstr ""
-"이곳에서 이전 이벤트의 설정을 복사할 수 있습니다. 예를 들어 메일 설정, 세션 "
-"유형 및 이메일 템플릿 등이 있습니다. 이벤트가 생성된 후 해당 설정을 확인해 주"
-"세요!"
+"이곳에서 이전 이벤트의 설정을 복사할 수 있습니다. 예를 들어 메일 설정, 세션 유형 및 이메일 템플릿 등이 있습니다. 이벤트가 생성된 "
+"후 해당 설정을 확인해 주세요!"
 
 #: pretalx/event/forms.py:329
 msgid "Do not copy"
@@ -2343,9 +2276,7 @@ msgstr "메인 이벤트 색상"
 msgid ""
 "Provide a hex value like #00ff00 if you want to style pretalx in your "
 "event’s colour scheme."
-msgstr ""
-"이벤트의 색 구성표에 pretalx 스타일을 지정하려면 #00ff00과 같은 16진수 값을 "
-"입력합니다."
+msgstr "이벤트의 색 구성표에 pretalx 스타일을 지정하려면 #00ff00과 같은 16진수 값을 입력합니다."
 
 #: pretalx/event/models/event.py:232
 msgid "Custom Event CSS"
@@ -2355,9 +2286,7 @@ msgstr "커스텀 이벤트 CSS"
 msgid ""
 "Upload a custom CSS file if changing the primary colour is not sufficient "
 "for you."
-msgstr ""
-"기본 색상을 변경하는 것만으로는 충분하지 않은 경우 커스텀 CSS 파일을 업로드하"
-"세요."
+msgstr "기본 색상을 변경하는 것만으로는 충분하지 않은 경우 커스텀 CSS 파일을 업로드하세요."
 
 #: pretalx/event/models/event.py:241
 msgid "Logo"
@@ -2367,9 +2296,7 @@ msgstr "로고"
 msgid ""
 "If you provide a logo image, your event’s name will not be shown in the "
 "event header. The logo will be scaled down to a height of 140px."
-msgstr ""
-"로고 이미지를 제공하면 이벤트 헤더에 이벤트 이름이 표시되지 않습니다. 로고는 "
-"150px 높이로 축소됩니다."
+msgstr "로고 이미지를 제공하면 이벤트 헤더에 이벤트 이름이 표시되지 않습니다. 로고는 150px 높이로 축소됩니다."
 
 #: pretalx/event/models/event.py:251
 msgid "Header image"
@@ -2378,13 +2305,12 @@ msgstr "헤더 이미지"
 #: pretalx/event/models/event.py:253
 msgid ""
 "If you provide a header image, it will be displayed instead of your event’s "
-"color and/or header pattern at the top of all event pages. It will be center-"
-"aligned, so when the window shrinks, the center parts will continue to be "
-"displayed, and not stretched."
+"color and/or header pattern at the top of all event pages. It will be "
+"center-aligned, so when the window shrinks, the center parts will continue "
+"to be displayed, and not stretched."
 msgstr ""
-"헤더 이미지를 제공하면 모든 이벤트 페이지의 상단에 이벤트의 색상 및/또는 헤"
-"더 패턴 대신 해당 이미지가 표시됩니다. 중앙에 정렬되므로 창이 축소되어도 가운"
-"데 부분이 늘어나지 않고 계속 표시됩니다."
+"헤더 이미지를 제공하면 모든 이벤트 페이지의 상단에 이벤트의 색상 및/또는 헤더 패턴 대신 해당 이미지가 표시됩니다. 중앙에 정렬되므로 "
+"창이 축소되어도 가운데 부분이 늘어나지 않고 계속 표시됩니다."
 
 #: pretalx/event/models/event.py:264
 msgid "Default language"
@@ -2396,10 +2322,9 @@ msgstr "랜딩 페이지 텍스트"
 
 #: pretalx/event/models/event.py:269
 msgid ""
-"This text will be shown on the landing page, alongside with links to the CfP "
-"and schedule, if appropriate."
-msgstr ""
-"이 텍스트는 랜딩 페이지에 CfP 및 일정 링크와 함께 표시됩니다(적절한 경우)."
+"This text will be shown on the landing page, alongside with links to the CfP"
+" and schedule, if appropriate."
+msgstr "이 텍스트는 랜딩 페이지에 CfP 및 일정 링크와 함께 표시됩니다(적절한 경우)."
 
 #: pretalx/event/models/event.py:277
 msgid "Featured sessions text"
@@ -2486,10 +2411,10 @@ msgstr "링크 URL"
 #: pretalx/event/models/organiser.py:44
 msgid ""
 "There must be at least one team with the permission to change teams, as "
-"otherwise nobody can create new teams or grant permissions to existing teams."
+"otherwise nobody can create new teams or grant permissions to existing "
+"teams."
 msgstr ""
-"팀 변경 권한이 있는 팀이 최소한 하나는 있어야 합니다. 그렇지 않으면 새로운 팀"
-"을 만들거나 기존 팀에 권한을 부여할 수 없습니다."
+"팀 변경 권한이 있는 팀이 최소한 하나는 있어야 합니다. 그렇지 않으면 새로운 팀을 만들거나 기존 팀에 권한을 부여할 수 없습니다."
 
 #: pretalx/event/models/organiser.py:51
 msgid "Nobody on your teams has the permission to create new events."
@@ -2506,8 +2431,7 @@ msgid ""
 "There must be at least one team with access to every event. Currently, "
 "nobody has access to {event_name}."
 msgstr ""
-"모든 이벤트에 접근할 수 있는 팀이 최소한 하나는 있어야 합니다. 현재 "
-"{event_name}에 접근할 수 있는 사람이 없습니다."
+"모든 이벤트에 접근할 수 있는 팀이 최소한 하나는 있어야 합니다. 현재 {event_name}에 접근할 수 있는 사람이 없습니다."
 
 #: pretalx/event/models/organiser.py:82
 #, python-brace-format
@@ -2580,8 +2504,8 @@ msgid ""
 "setting will <strong>override the event settings</strong> and always hide "
 "speaker names for this team."
 msgstr ""
-"일반적으로 익명화는 이벤트 검토 설정에서 구성됩니다. 이 설정은 <strong>이벤"
-"트 설정을 덮어쓰고</strong> 항상 이 팀의 발표자 이름을 가립니다."
+"일반적으로 익명화는 이벤트 검토 설정에서 구성됩니다. 이 설정은 <strong>이벤트 설정을 덮어쓰고</strong> 항상 이 팀의 "
+"발표자 이름을 가립니다."
 
 #: pretalx/event/models/organiser.py:240
 #, python-brace-format
@@ -2597,8 +2521,7 @@ msgstr "{email}을 {team}팀에 초대합니다"
 #, python-brace-format
 msgid ""
 "Hi!\n"
-"You have been invited to the {name} event organiser team - Please click here "
-"to accept:\n"
+"You have been invited to the {name} event organiser team - Please click here to accept:\n"
 "\n"
 "{invitation_link}\n"
 "\n"
@@ -2848,7 +2771,8 @@ msgstr ""
 
 #: pretalx/mail/context.py:308
 msgid ""
-"A list of all changes to the user’s schedule in the current schedule version."
+"A list of all changes to the user’s schedule in the current schedule "
+"version."
 msgstr "현재 일정 버전에서 사용자의 일정에 대한 모든 변경 사항 목록입니다."
 
 #: pretalx/mail/context.py:319
@@ -2885,9 +2809,7 @@ msgid ""
 msgstr ""
 "안녕하세요!\n"
 "\n"
-"귀하의 제안 “{submission_title}”을 {event_name}에 접수하였습니다. 모든 제안"
-"을 검토할 시간이 필요하니, 그때까지 {submission_url}에서 귀하의 제안을 확인하"
-"고 수정할 수 있습니다.\n"
+"귀하의 제안 “{submission_title}”을 {event_name}에 접수하였습니다. 모든 제안을 검토할 시간이 필요하니, 그때까지 {submission_url}에서 귀하의 제안을 확인하고 수정할 수 있습니다.\n"
 "\n"
 "질문이 있으시면 주저하지 말고 연락해 주세요!\n"
 "\n"
@@ -2903,10 +2825,8 @@ msgid ""
 "\n"
 "    {confirmation_link}\n"
 "\n"
-"We look forward to seeing you at {event_name} - Please contact us if you "
-"have any\n"
-"questions! We will reach out again before the conference to tell you "
-"details\n"
+"We look forward to seeing you at {event_name} - Please contact us if you have any\n"
+"questions! We will reach out again before the conference to tell you details\n"
 "about your slot in the schedule and technical details concerning the room\n"
 "and presentation tech.\n"
 "\n"
@@ -2915,14 +2835,11 @@ msgid ""
 msgstr ""
 "안녕하세요!\n"
 "\n"
-"귀하의 제안 “{submission_title}”이 {event_name}에 수락되었음을 알려드리게 되"
-"어 기쁩니다. 참석을 확인하려면 이 링크를 클릭해 주세요:\n"
+"귀하의 제안 “{submission_title}”이 {event_name}에 수락되었음을 알려드리게 되어 기쁩니다. 참석을 확인하려면 이 링크를 클릭해 주세요:\n"
 "\n"
 "    {confirmation_link}\n"
 "\n"
-"{event_name}에서 뵙기를 기대합니다 - 질문이 있으시면 연락해 주세요! 회의 전"
-"에 다시 연락드려 귀하의 일정과 방 및 발표 기술에 대한 세부 정보를 알려드리겠"
-"습니다.\n"
+"{event_name}에서 뵙기를 기대합니다 - 질문이 있으시면 연락해 주세요! 회의 전에 다시 연락드려 귀하의 일정과 방 및 발표 기술에 대한 세부 정보를 알려드리겠습니다.\n"
 "\n"
 "그곳에서 뵙겠습니다!\n"
 "{event_name} 주최자 드림"
@@ -2941,9 +2858,7 @@ msgid ""
 msgstr ""
 "안녕하세요!\n"
 "\n"
-"귀하의 제안 “{submission_title}”이 {event_name}에 수락되지 않았음을 알려드리"
-"게 되어 유감입니다. 훌륭한 제안이 너무 많았습니다 - 귀하를 발표자가 아닌 참석"
-"자로 {event_name}에서 뵙기를 희망합니다!\n"
+"귀하의 제안 “{submission_title}”이 {event_name}에 수락되지 않았음을 알려드리게 되어 유감입니다. 훌륭한 제안이 너무 많았습니다 - 귀하를 발표자가 아닌 참석자로 {event_name}에서 뵙기를 희망합니다!\n"
 "\n"
 "{event_name} 주최자 드림"
 
@@ -2960,8 +2875,7 @@ msgid ""
 "\n"
 "{speaker_schedule_new}\n"
 "\n"
-"We look forward to seeing you, and please contact us if there is any problem "
-"with your session or assigned slot.\n"
+"We look forward to seeing you, and please contact us if there is any problem with your session or assigned slot.\n"
 "\n"
 "The {event_name} organisers"
 msgstr ""
@@ -2971,8 +2885,7 @@ msgstr ""
 "\n"
 "{speaker_schedule_new}\n"
 "\n"
-"귀하를 뵙기를 기대하며, 세션이나 배정된 슬롯에 문제가 있을 경우 연락해 주세"
-"요.\n"
+"귀하를 뵙기를 기대하며, 세션이나 배정된 슬롯에 문제가 있을 경우 연락해 주세요.\n"
 "\n"
 "{event_name} 주최자 드림"
 
@@ -2998,8 +2911,7 @@ msgid ""
 msgstr ""
 "안녕하세요!\n"
 "\n"
-"귀하와 귀하의 제안에 대해 몇 가지 질문이 있습니다. 답변해 주시면 감사하겠습니"
-"다:\n"
+"귀하와 귀하의 제안에 대해 몇 가지 질문이 있습니다. 답변해 주시면 감사하겠습니다:\n"
 "\n"
 "{questions}\n"
 "\n"
@@ -3049,22 +2961,18 @@ msgstr "{event_name} 이벤트의 제안서에 초대됐습니다"
 msgid ""
 "Hi!\n"
 "\n"
-"You have been added to a proposal of {event_name}, titled "
-"“{proposal_title}”.\n"
-"An account has been created for you – please follow this link to set your "
-"account password.\n"
+"You have been added to a proposal of {event_name}, titled “{proposal_title}”.\n"
+"An account has been created for you – please follow this link to set your account password.\n"
 "\n"
 "{invitation_link}\n"
 "\n"
-"Afterwards, you can edit your user profile and see the state of your "
-"proposal.\n"
+"Afterwards, you can edit your user profile and see the state of your proposal.\n"
 "\n"
 "The {event} orga crew"
 msgstr ""
 "안녕하세요!\n"
 "\n"
-"귀하가 “{proposal_title}”이라는 제목의 {event_name} 제안에 추가되었습니다. 귀"
-"하의 계정을 설정하기 위해 이 링크를 따라 주십시오.\n"
+"귀하가 “{proposal_title}”이라는 제목의 {event_name} 제안에 추가되었습니다. 귀하의 계정을 설정하기 위해 이 링크를 따라 주십시오.\n"
 "\n"
 "{invitation_link}\n"
 "\n"
@@ -3077,10 +2985,8 @@ msgstr ""
 msgid ""
 "Hi!\n"
 "\n"
-"You have been added to a proposal of {event_name}, titled "
-"“{proposal_title}”.\n"
-"Please follow this link to edit your user profile and see the state of your "
-"proposal:\n"
+"You have been added to a proposal of {event_name}, titled “{proposal_title}”.\n"
+"Please follow this link to edit your user profile and see the state of your proposal:\n"
 "\n"
 "{proposal_url}\n"
 "\n"
@@ -3088,9 +2994,7 @@ msgid ""
 msgstr ""
 "안녕하세요!\n"
 "\n"
-"귀하가 “{proposal_title}”이라는 제목의 {event_name} 제안에 추가되었습니다. 사"
-"용자 프로필을 수정하고 귀하의 제안 상태를 확인하기 위해 이 링크를 따라 주십시"
-"오:\n"
+"귀하가 “{proposal_title}”이라는 제목의 {event_name} 제안에 추가되었습니다. 사용자 프로필을 수정하고 귀하의 제안 상태를 확인하기 위해 이 링크를 따라 주십시오:\n"
 "\n"
 "{proposal_url}\n"
 "\n"
@@ -3149,8 +3053,7 @@ msgid ""
 "Enter comma separated addresses. Will receive a blind copy of every mail "
 "sent from this template. This may be a LOT!"
 msgstr ""
-"쉼표로 구분된 주소를 입력하세요. 이 템플릿에서 발송된 모든 메일의 숨은 복사본"
-"을 받게 됩니다. 이건 정말 많을 수 있습니다!"
+"쉼표로 구분된 주소를 입력하세요. 이 템플릿에서 발송된 모든 메일의 숨은 복사본을 받게 됩니다. 이건 정말 많을 수 있습니다!"
 
 #: pretalx/mail/models.py:246
 msgid ""
@@ -3200,16 +3103,14 @@ msgstr "업데이트 확인 수행"
 msgid ""
 "During the update check, pretalx will report an anonymous, unique "
 "installation ID, the current version of pretalx and your installed plugins "
-"and the number of active and inactive events in your installation to servers "
-"operated by the pretalx developers. We will only store anonymous data, never "
-"any IP addresses and we will not know who you are or where to find your "
-"instance. You can disable this behavior here at any time."
+"and the number of active and inactive events in your installation to servers"
+" operated by the pretalx developers. We will only store anonymous data, "
+"never any IP addresses and we will not know who you are or where to find "
+"your instance. You can disable this behavior here at any time."
 msgstr ""
-"업데이트 확인 중에 pretalx는 익명 고유 설치 ID, 현재 pretalx 버전 및 설치된 "
-"플러그인, 설치된 활성 및 비활성 이벤트 수를 pretalx 개발자가 운영하는 서버에 "
-"보고합니다. 우리는 익명 데이터만 저장하며, IP 주소는 절대 저장하지 않으며, 당"
-"신이 누구인지 또는 당신의 인스턴스를 어디서 찾을 수 있는지 알지 못합니다. 언"
-"제든지 여기에서 이 동작을 비활성화할 수 있습니다."
+"업데이트 확인 중에 pretalx는 익명 고유 설치 ID, 현재 pretalx 버전 및 설치된 플러그인, 설치된 활성 및 비활성 이벤트 "
+"수를 pretalx 개발자가 운영하는 서버에 보고합니다. 우리는 익명 데이터만 저장하며, IP 주소는 절대 저장하지 않으며, 당신이 "
+"누구인지 또는 당신의 인스턴스를 어디서 찾을 수 있는지 알지 못합니다. 언제든지 여기에서 이 동작을 비활성화할 수 있습니다."
 
 #: pretalx/orga/forms/admin.py:31
 msgid "Email notifications"
@@ -3221,8 +3122,8 @@ msgid ""
 "available. This address will not be transmitted to pretalx.com, the emails "
 "will be sent by your server locally."
 msgstr ""
-"새 업데이트가 사용 가능하다고 감지되면 이 주소로 알림을 드립니다. 이 주소는 "
-"pretalx.com에 전송되지 않으며, 이메일은 귀하의 서버에서 로컬로 전송됩니다."
+"새 업데이트가 사용 가능하다고 감지되면 이 주소로 알림을 드립니다. 이 주소는 pretalx.com에 전송되지 않으며, 이메일은 귀하의 "
+"서버에서 로컬로 전송됩니다."
 
 #: pretalx/orga/forms/cfp.py:51
 msgid "Use tracks"
@@ -3248,9 +3149,7 @@ msgstr "새 제안에 대한 메일 전송"
 msgid ""
 "If this setting is checked, you will receive an email to the organiser "
 "address for every received proposal."
-msgstr ""
-"이 설정이 체크되면, 수신된 모든 제안에 대해 주최자 주소로 이메일을 받게 됩니"
-"다."
+msgstr "이 설정이 체크되면, 수신된 모든 제안에 대해 주최자 주소로 이메일을 받게 됩니다."
 
 #: pretalx/orga/forms/cfp.py:68
 msgid "Allow submitters to share their proposal publicly"
@@ -3258,9 +3157,7 @@ msgstr "제안자가 자신의 제안을 공개적으로 공유할 수 있도록
 
 #: pretalx/orga/forms/cfp.py:70
 msgid "Allow submitters to share a secret link to their proposal with others."
-msgstr ""
-"제안자가 다른 사람과 자신의 제안에 대한 비밀 링크를 공유할 수 있도록 허용합니"
-"다."
+msgstr "제안자가 다른 사람과 자신의 제안에 대한 비밀 링크를 공유할 수 있도록 허용합니다."
 
 #: pretalx/orga/forms/cfp.py:75
 #, fuzzy
@@ -3278,8 +3175,8 @@ msgstr "검토 설정"
 #: pretalx/orga/forms/cfp.py:85
 #, python-brace-format
 msgid ""
-"If disabled, speakers cannot edit their proposals regardless of the proposal "
-"state. This setting overrides the {review_phase_link} for speaker editing."
+"If disabled, speakers cannot edit their proposals regardless of the proposal"
+" state. This setting overrides the {review_phase_link} for speaker editing."
 msgstr ""
 
 #: pretalx/orga/forms/cfp.py:130
@@ -3321,11 +3218,10 @@ msgstr "업로드 옵션"
 
 #: pretalx/orga/forms/cfp.py:195
 msgid ""
-"You can upload options here, one option per line. To use multiple languages, "
-"please upload a JSON file with a list of options:"
+"You can upload options here, one option per line. To use multiple languages,"
+" please upload a JSON file with a list of options:"
 msgstr ""
-"여기에 옵션을 한 줄에 하나씩 업로드할 수 있습니다. 여러 언어를 사용하려면 옵"
-"션 목록이 포함된 JSON 파일을 업로드하세요:"
+"여기에 옵션을 한 줄에 하나씩 업로드할 수 있습니다. 여러 언어를 사용하려면 옵션 목록이 포함된 JSON 파일을 업로드하세요:"
 
 #: pretalx/orga/forms/cfp.py:203
 msgid "Replace existing options"
@@ -3338,9 +3234,8 @@ msgid ""
 "you do not check this, the uploaded options will be added to the existing "
 "ones, without adding duplicates."
 msgstr ""
-"새 옵션을 업로드하면 기존 옵션을 교체하시겠습니까? 이 경우 이 사용자 정의 필"
-"드에 대한 모든 기존 응답이 삭제됩니다! 이 체크를 하지 않으면 업로드된 옵션이 "
-"기존 옵션에 추가되며, 중복 항목은 추가되지 않습니다."
+"새 옵션을 업로드하면 기존 옵션을 교체하시겠습니까? 이 경우 이 사용자 정의 필드에 대한 모든 기존 응답이 삭제됩니다! 이 체크를 하지 "
+"않으면 업로드된 옵션이 기존 옵션에 추가되며, 중복 항목은 추가되지 않습니다."
 
 #: pretalx/orga/forms/cfp.py:238
 msgid "Could not read file."
@@ -3355,7 +3250,8 @@ msgid "JSON file does not contain a list of objects."
 msgstr "JSON 파일에 객체 목록이 포함되어 있지 않습니다."
 
 #: pretalx/orga/forms/cfp.py:259
-msgid "Please select a deadline after which the field should become mandatory."
+msgid ""
+"Please select a deadline after which the field should become mandatory."
 msgstr "필드가 필수로 변경될 마감일을 선택하십시오."
 
 #: pretalx/orga/forms/cfp.py:271
@@ -3469,9 +3365,8 @@ msgid ""
 "language a user selects, it will be shown in your event’s default language "
 "instead."
 msgstr ""
-"사용자는 이러한 언어로 pretalx를 사용할 수 있으며, 이러한 언어로 모든 텍스트"
-"를 제공할 수 있습니다. 사용자가 선택한 언어로 텍스트를 제공하지 않으면 이벤트"
-"의 기본 언어로 표시됩니다."
+"사용자는 이러한 언어로 pretalx를 사용할 수 있으며, 이러한 언어로 모든 텍스트를 제공할 수 있습니다. 사용자가 선택한 언어로 "
+"텍스트를 제공하지 않으면 이벤트의 기본 언어로 표시됩니다."
 
 #: pretalx/orga/forms/event.py:80
 msgid "Content languages"
@@ -3493,8 +3388,7 @@ msgstr "임프린트 URL"
 msgid ""
 "This should point e.g. to a part of your website that has your contact "
 "details and legal information."
-msgstr ""
-"여기에는 연락처 정보 및 법적 정보가 포함된 웹사이트의 일부를 가리켜야 합니다."
+msgstr "여기에는 연락처 정보 및 법적 정보가 포함된 웹사이트의 일부를 가리켜야 합니다."
 
 #: pretalx/orga/forms/event.py:99
 msgid "Show schedule publicly"
@@ -3504,8 +3398,7 @@ msgstr "일정을 공개적으로 표시"
 msgid ""
 "Unset to hide your schedule, e.g. if you want to use the HTML export "
 "exclusively."
-msgstr ""
-"HTML 내보내기를 독점적으로 사용하려는 경우 일정을 숨기려면 해제하십시오."
+msgstr "HTML 내보내기를 독점적으로 사용하려는 경우 일정을 숨기려면 해제하십시오."
 
 #: pretalx/orga/forms/event.py:111
 msgid "Show featured sessions"
@@ -3528,9 +3421,7 @@ msgstr "항상"
 msgid ""
 "Marking sessions as “featured” is a good way to show them before the first "
 "schedule release, or to highlight them once the schedule is visible."
-msgstr ""
-"세션을 “추천”으로 표시하는 것은 첫 번째 일정 발표 전에 세션을 보여주거나 일정"
-"이 표시된 후 강조하는 좋은 방법입니다."
+msgstr "세션을 “추천”으로 표시하는 것은 첫 번째 일정 발표 전에 세션을 보여주거나 일정이 표시된 후 강조하는 좋은 방법입니다."
 
 #: pretalx/orga/forms/event.py:123
 msgid "Enable anonymous feedback"
@@ -3548,8 +3439,7 @@ msgstr "일정 발표 시 HTML 내보내기 생성"
 msgid ""
 "The static HTML export will be provided as a .zip archive on the schedule "
 "export page."
-msgstr ""
-"정적 HTML 내보내기는 일정 내보내기 페이지에서 .zip 아카이브로 제공됩니다."
+msgstr "정적 HTML 내보내기는 일정 내보내기 페이지에서 .zip 아카이브로 제공됩니다."
 
 #: pretalx/orga/forms/event.py:137
 msgid "HTML Export URL"
@@ -3561,9 +3451,8 @@ msgid ""
 "absolute URL to be set in various places. Please only set this value once "
 "you have published your schedule. Should end with a slash."
 msgstr ""
-"HTML 내보내기를 통해 일정을 게시하는 경우 다양한 위치에 올바른 절대 URL이 설"
-"정되기를 원할 것입니다. 일정을 게시한 후에만 이 값을 설정하십시오. 슬래시로 "
-"끝나야 합니다."
+"HTML 내보내기를 통해 일정을 게시하는 경우 다양한 위치에 올바른 절대 URL이 설정되기를 원할 것입니다. 일정을 게시한 후에만 이 "
+"값을 설정하십시오. 슬래시로 끝나야 합니다."
 
 #: pretalx/orga/forms/event.py:152
 msgid "Ask search engines not to index the event pages"
@@ -3591,8 +3480,7 @@ msgid ""
 "event dates. You will have to release a new schedule version to notify all "
 "speakers."
 msgstr ""
-"이벤트 날짜를 변경하면 이미 예약된 모든 세션이 이동됩니다. 모든 발표자에게 알"
-"리기 위해 새로운 일정 버전을 공개해야 합니다."
+"이벤트 날짜를 변경하면 이미 예약된 모든 세션이 이동됩니다. 모든 발표자에게 알리기 위해 새로운 일정 버전을 공개해야 합니다."
 
 #: pretalx/orga/forms/event.py:200
 msgid "Please do not choose the default domain as custom event domain."
@@ -3601,11 +3489,9 @@ msgstr "기본 도메인을 사용자 지정 이벤트 도메인으로 선택하
 #: pretalx/orga/forms/event.py:211
 #, python-brace-format
 msgid ""
-"The domain “{domain}” does not have a name server entry at this time. Please "
-"make sure the domain is working before configuring it here."
-msgstr ""
-"현재 “{domain}” 도메인에 이름 서버 항목이 없습니다. 여기에서 구성하기 전에 도"
-"메인이 작동하는지 확인하세요."
+"The domain “{domain}” does not have a name server entry at this time. Please"
+" make sure the domain is working before configuring it here."
+msgstr "현재 “{domain}” 도메인에 이름 서버 항목이 없습니다. 여기에서 구성하기 전에 도메인이 작동하는지 확인하세요."
 
 #: pretalx/orga/forms/event.py:248
 msgid "Your default language needs to be one of your active languages."
@@ -3619,9 +3505,7 @@ msgstr "연락처 주소"
 msgid ""
 "Reply-To address. If this setting is empty and you have no custom sender, "
 "your event email address will be used as Reply-To address."
-msgstr ""
-"회신 주소. 이 설정이 비어 있고 사용자 지정 발신자가 없는 경우, 이벤트 이메일 "
-"주소가 회신 주소로 사용됩니다."
+msgstr "회신 주소. 이 설정이 비어 있고 사용자 지정 발신자가 없는 경우, 이벤트 이메일 주소가 회신 주소로 사용됩니다."
 
 #: pretalx/orga/forms/event.py:395
 msgid "Mail subject prefix"
@@ -3679,11 +3563,10 @@ msgstr "비밀번호"
 #: pretalx/orga/forms/event.py:436
 #, python-brace-format
 msgid ""
-"The password contains unsupported letters. Please only use characters A-Z, a-"
-"z, 0-9, and common special characters ({characters})."
+"The password contains unsupported letters. Please only use characters A-Z, "
+"a-z, 0-9, and common special characters ({characters})."
 msgstr ""
-"비밀번호에 지원되지 않는 문자가 포함되어 있습니다. A-Z, a-z, 0-9 및 일반 특"
-"수 문자({characters})만 사용하세요."
+"비밀번호에 지원되지 않는 문자가 포함되어 있습니다. A-Z, a-z, 0-9 및 일반 특수 문자({characters})만 사용하세요."
 
 #: pretalx/orga/forms/event.py:445
 msgid "Use STARTTLS"
@@ -3709,9 +3592,7 @@ msgstr "사용자 지정 SMTP 서버를 사용하는 경우 발신자 주소를 
 msgid ""
 "You can activate either SSL or STARTTLS security, but not both at the same "
 "time."
-msgstr ""
-"SSL 또는 STARTTLS 보안을 활성화해야 하지만 두 가지를 동시에 사용할 수는 없습"
-"니다."
+msgstr "SSL 또는 STARTTLS 보안을 활성화해야 하지만 두 가지를 동시에 사용할 수는 없습니다."
 
 #: pretalx/orga/forms/event.py:504
 msgid ""
@@ -3720,9 +3601,8 @@ msgid ""
 "instance-wide bypass. If you use this bypass, please also adjust your "
 "Privacy Policy."
 msgstr ""
-"데이터 보호 이유로 비로컬 메일 서버를 사용하는 경우 SSL 또는 STARTTLS 보안을 "
-"활성화해야 합니다. 관리자가 인스턴스 전체 우회를 추가할 수 있습니다. 이 우회"
-"를 사용하는 경우 개인정보 보호정책도 조정하세요."
+"데이터 보호 이유로 비로컬 메일 서버를 사용하는 경우 SSL 또는 STARTTLS 보안을 활성화해야 합니다. 관리자가 인스턴스 전체 "
+"우회를 추가할 수 있습니다. 이 우회를 사용하는 경우 개인정보 보호정책도 조정하세요."
 
 #: pretalx/orga/forms/event.py:537
 msgid "Enable submission comments"
@@ -3732,8 +3612,7 @@ msgstr "제출 댓글 활성화"
 msgid ""
 "Allow organisers and reviewers to comment on submissions, separate from "
 "reviews."
-msgstr ""
-"조직자와 리뷰어가 리뷰와 별도로 제출에 대해 댓글을 달 수 있도록 허용합니다."
+msgstr "조직자와 리뷰어가 리뷰와 별도로 제출에 대해 댓글을 달 수 있도록 허용합니다."
 
 #: pretalx/orga/forms/event.py:544
 msgid "Require a review score"
@@ -3767,9 +3646,7 @@ msgstr "텍스트만 표시"
 msgid ""
 "This is how the score will look like on the review interface. The dashboard "
 "will always show numerical scores."
-msgstr ""
-"이것이 리뷰 인터페이스에서 점수가 표시되는 방식입니다. 대시보드는 항상 숫자 "
-"점수를 표시합니다."
+msgstr "이것이 리뷰 인터페이스에서 점수가 표시되는 방식입니다. 대시보드는 항상 숫자 점수를 표시합니다."
 
 #: pretalx/orga/forms/event.py:565
 msgid "Score aggregation method"
@@ -3791,9 +3668,7 @@ msgstr "검토자를 위한 도움말 텍스트"
 msgid ""
 "This text will be shown at the top of every review, as long as reviews can "
 "be created or edited."
-msgstr ""
-"이 텍스트는 리뷰를 생성하거나 편집할 수 있는 한 모든 리뷰의 상단에 표시됩니"
-"다."
+msgstr "이 텍스트는 리뷰를 생성하거나 편집할 수 있는 한 모든 리뷰의 상단에 표시됩니다."
 
 #: pretalx/orga/forms/event.py:597
 msgid "Show the widget even if the schedule is not public"
@@ -3803,9 +3678,7 @@ msgstr "일정이 공개되지 않더라도 위젯을 표시합니다"
 msgid ""
 "Set to allow external pages to show the schedule widget, even if the "
 "schedule is not shown here using pretalx."
-msgstr ""
-"일정이 여기에서 pretalx를 사용하여 표시되지 않더라도 외부 페이지에서 일정 위"
-"젯을 표시할 수 있도록 설정합니다."
+msgstr "일정이 여기에서 pretalx를 사용하여 표시되지 않더라도 외부 페이지에서 일정 위젯을 표시할 수 있도록 설정합니다."
 
 #: pretalx/orga/forms/event.py:618
 msgid "Limit days"
@@ -3814,9 +3687,7 @@ msgstr "일수 제한"
 #: pretalx/orga/forms/event.py:623
 msgid ""
 "You can limit the days shown in the widget. Leave empty to show all days."
-msgstr ""
-"위젯에 표시되는 일수를 제한할 수 있습니다. 모든 날을 표시하려면 비워 두십시"
-"오."
+msgstr "위젯에 표시되는 일수를 제한할 수 있습니다. 모든 날을 표시하려면 비워 두십시오."
 
 #: pretalx/orga/forms/event.py:627
 #, fuzzy
@@ -3830,9 +3701,7 @@ msgstr "일수 제한"
 #| "You can limit the days shown in the widget. Leave empty to show all days."
 msgid ""
 "You can limit the rooms shown in the widget. Leave empty to show all rooms."
-msgstr ""
-"위젯에 표시되는 일수를 제한할 수 있습니다. 모든 날을 표시하려면 비워 두십시"
-"오."
+msgstr "위젯에 표시되는 일수를 제한할 수 있습니다. 모든 날을 표시하려면 비워 두십시오."
 
 #: pretalx/orga/forms/event.py:638
 msgid "Widget language"
@@ -3920,8 +3789,10 @@ msgstr "트랙"
 msgid "Proposal types"
 msgstr "제안 제목"
 
-#. Translators: Ideally a term that is as broad as possible, to refer to anybody who
-#. presents/owns a session. This word is also used to differentiate accepted „speakers“
+#. Translators: Ideally a term that is as broad as possible, to refer to
+#. anybody who
+#. presents/owns a session. This word is also used to differentiate accepted
+#. „speakers“
 #. from not-yet-accepted „submitters“. Plural, used in headings.
 #: pretalx/orga/forms/event.py:869 pretalx/orga/tables/submission.py:174
 #: pretalx/orga/templates/orga/base.html:444
@@ -4137,11 +4008,9 @@ msgstr "데이터 구분 기호"
 
 #: pretalx/orga/forms/export.py:33
 msgid ""
-"How do you want to separate data within a single cell (for example, multiple "
-"speakers in one session/multiple sessions for one speaker)?"
-msgstr ""
-"하나의 셀 내에서 데이터를 어떻게 구분하시겠습니까 (예: 하나의 세션에서 여러 "
-"발표자/하나의 발표자에 대한 여러 세션)?"
+"How do you want to separate data within a single cell (for example, multiple"
+" speakers in one session/multiple sessions for one speaker)?"
+msgstr "하나의 셀 내에서 데이터를 어떻게 구분하시겠습니까 (예: 하나의 세션에서 여러 발표자/하나의 발표자에 대한 여러 세션)?"
 
 #: pretalx/orga/forms/export.py:36
 msgid "Newline"
@@ -4160,8 +4029,7 @@ msgid ""
 "Invalid email template! Please check that you don’t have stray { or } "
 "somewhere, and that there are no spaces inside the {} blocks."
 msgstr ""
-"유효하지 않은 이메일 템플릿입니다! { 또는 }가 어딘가에 남아 있지 않은지 확인"
-"하고, {} 블록 내부에 공백이 없는지 확인하십시오."
+"유효하지 않은 이메일 템플릿입니다! { 또는 }가 어딘가에 남아 있지 않은지 확인하고, {} 블록 내부에 공백이 없는지 확인하십시오."
 
 #: pretalx/orga/forms/mails.py:77 pretalx/orga/forms/mails.py:94
 msgid "Unknown placeholder!"
@@ -4182,8 +4050,8 @@ msgstr "즉시 전송"
 
 #: pretalx/orga/forms/mails.py:212
 msgid ""
-"If you check this, the emails will be sent immediately, instead of being put "
-"in the outbox."
+"If you check this, the emails will be sent immediately, instead of being put"
+" in the outbox."
 msgstr "이 옵션을 선택하면 이메일이 발신함에 넣어지는 대신 즉시 전송됩니다."
 
 #: pretalx/orga/forms/mails.py:228
@@ -4212,12 +4080,11 @@ msgstr "다른 필터와 관계없이 이메일을 받아야 하는 발표자를
 
 #: pretalx/orga/forms/mails.py:332
 msgid ""
-"If you provide only one language, that language will be used for all emails. "
-"If you provide multiple languages, the best fit for each speaker will be "
+"If you provide only one language, that language will be used for all emails."
+" If you provide multiple languages, the best fit for each speaker will be "
 "used."
 msgstr ""
-"하나의 언어만 제공하면 해당 언어가 모든 이메일에 사용됩니다. 여러 언어를 제공"
-"하면 각 발표자에게 가장 적합한 언어가 사용됩니다."
+"하나의 언어만 제공하면 해당 언어가 모든 이메일에 사용됩니다. 여러 언어를 제공하면 각 발표자에게 가장 적합한 언어가 사용됩니다."
 
 #: pretalx/orga/forms/review.py:102
 msgid "No score"
@@ -4285,9 +4152,7 @@ msgstr "현재 할당 유지"
 msgid ""
 "Select to remove all current assignments and replace them with the import. "
 "Otherwise, the import will be an addition to the current assignments."
-msgstr ""
-"모든 현재 할당을 제거하고 가져온 것으로 교체하려면 선택하십시오. 그렇지 않으"
-"면 가져오기는 현재 할당에 추가됩니다."
+msgstr "모든 현재 할당을 제거하고 가져온 것으로 교체하려면 선택하십시오. 그렇지 않으면 가져오기는 현재 할당에 추가됩니다."
 
 #: pretalx/orga/forms/review.py:480
 msgid "Cannot parse JSON file."
@@ -4363,7 +4228,8 @@ msgid "Average review score, if there have been reviews yet"
 msgstr "리뷰가 이미 있는 경우 평균 리뷰 점수"
 
 #: pretalx/orga/forms/schedule.py:167
-msgid "Resources provided by the speaker, either as links or as uploaded files"
+msgid ""
+"Resources provided by the speaker, either as links or as uploaded files"
 msgstr "발표자가 제공한 리소스, 링크 또는 업로드된 파일 형태로"
 
 #: pretalx/orga/forms/speaker.py:20
@@ -4426,16 +4292,14 @@ msgid ""
 "right away. You can always apply pending changes for some or all proposals "
 "in one go once you’re ready to make your decisions public."
 msgstr ""
-"상태 변경을 보류 중으로 표시하면 발표자에게 즉시 표시되지 않습니다. 결정을 공"
-"개할 준비가 되면 일부 또는 모든 제안에 대해 보류 중인 변경 사항을 한 번에 적"
-"용할 수 있습니다."
+"상태 변경을 보류 중으로 표시하면 발표자에게 즉시 표시되지 않습니다. 결정을 공개할 준비가 되면 일부 또는 모든 제안에 대해 보류 중인 "
+"변경 사항을 한 번에 적용할 수 있습니다."
 
 #: pretalx/orga/forms/submission.py:312
 msgid ""
 "The email address of the speaker holding the session. They will be invited "
 "to create an account."
-msgstr ""
-"세션을 진행하는 발표자의 이메일 주소입니다. 계정을 만들도록 초대됩니다."
+msgstr "세션을 진행하는 발표자의 이메일 주소입니다. 계정을 만들도록 초대됩니다."
 
 #: pretalx/orga/forms/submission.py:318
 msgid "Speaker name"
@@ -4469,9 +4333,8 @@ msgid ""
 "translated and will show in English instead. You can <a href=\"{url}\" "
 "target=\"_blank\">contribute to the translations</a>."
 msgstr ""
-"이 번역은 pretalx 팀에서 유지 관리하지 않습니다. 정확성을 보장할 수 없으며, "
-"새로 추가되거나 최근에 변경된 기능은 번역되지 않을 수 있으며 대신 영어로 표시"
-"됩니다. <a href=\"{url}\" target=\"_blank\">번역에 기여할 수 있습니다</a>."
+"이 번역은 pretalx 팀에서 유지 관리하지 않습니다. 정확성을 보장할 수 없으며, 새로 추가되거나 최근에 변경된 기능은 번역되지 않을"
+" 수 있으며 대신 영어로 표시됩니다. <a href=\"{url}\" target=\"_blank\">번역에 기여할 수 있습니다</a>."
 
 #: pretalx/orga/phrases.py:10
 msgid "The event end cannot be before the start."
@@ -4486,8 +4349,8 @@ msgid ""
 "Choose how the frontpage header banner will be styled. Pattern source: <a "
 "href=\"http://www.heropatterns.com/\">heropatterns.com</a>, CC BY 4.0."
 msgstr ""
-"프론트페이지 헤더 배너의 스타일을 선택합니다. 패턴 출처: <a href=\"http://"
-"www.heropatterns.com/\">heropatterns.com</a>, CC BY 4.0."
+"프론트페이지 헤더 배너의 스타일을 선택합니다. 패턴 출처: <a "
+"href=\"http://www.heropatterns.com/\">heropatterns.com</a>, CC BY 4.0."
 
 #: pretalx/orga/phrases.py:16
 msgid "Schedule display format"
@@ -4504,17 +4367,14 @@ msgstr "비밀번호가 재설정되었고 사용자가 통지되었습니다."
 #: pretalx/orga/phrases.py:22
 msgid ""
 "The password reset email could not be sent, so the password was not reset."
-msgstr ""
-"비밀번호 재설정 이메일을 보낼 수 없으므로 비밀번호가 재설정되지 않았습니다."
+msgstr "비밀번호 재설정 이메일을 보낼 수 없으므로 비밀번호가 재설정되지 않았습니다."
 
 #: pretalx/orga/phrases.py:25
 #, python-brace-format
 msgid ""
 "{count} emails have been saved to the outbox – you can make individual "
 "changes there or just send them all."
-msgstr ""
-"{count}개의 이메일이 발신함에 저장되었습니다 – 개별 변경을 거기에서 하거나 모"
-"두 보낼 수 있습니다."
+msgstr "{count}개의 이메일이 발신함에 저장되었습니다 – 개별 변경을 거기에서 하거나 모두 보낼 수 있습니다."
 
 #: pretalx/orga/tables/admin.py:38
 msgid "Submissions"
@@ -4628,8 +4488,8 @@ msgid ""
 "and set the DEBUG variable to False if this page is in any way reachable "
 "from the internet."
 msgstr ""
-"개발 모드에서 pretalx를 실행하고 있습니다. 이 페이지가 인터넷에서 접근 가능하"
-"다면 <strong>중지</strong>하고 DEBUG 변수를 False로 설정하십시오."
+"개발 모드에서 pretalx를 실행하고 있습니다. 이 페이지가 인터넷에서 접근 가능하다면 <strong>중지</strong>하고 "
+"DEBUG 변수를 False로 설정하십시오."
 
 #: pretalx/orga/templates/orga/admin/admin.html:39
 msgid "Your pretalx version is:"
@@ -4657,9 +4517,7 @@ msgstr "설정이 다음에서 로드되었습니다:"
 msgid ""
 "No settings files were found, all settings are either set to their default "
 "value or have been read from environment variables."
-msgstr ""
-"설정 파일이 발견되지 않았습니다. 모든 설정은 기본값으로 설정되었거나 환경 변"
-"수에서 읽혔습니다."
+msgstr "설정 파일이 발견되지 않았습니다. 모든 설정은 기본값으로 설정되었거나 환경 변수에서 읽혔습니다."
 
 #: pretalx/orga/templates/orga/admin/admin.html:59
 msgid "Database"
@@ -4796,8 +4654,7 @@ msgid ""
 "installation. Update checks are performed on a daily basis if your cronjob "
 "is set up properly."
 msgstr ""
-"마지막 업데이트 이후 아직 업데이트 확인이 수행되지 않았습니다. cronjob이 제대"
-"로 설정되어 있다면 매일 업데이트 확인이 수행됩니다."
+"마지막 업데이트 이후 아직 업데이트 확인이 수행되지 않았습니다. cronjob이 제대로 설정되어 있다면 매일 업데이트 확인이 수행됩니다."
 
 #: pretalx/orga/templates/orga/admin/update.html:27
 #: pretalx/orga/templates/orga/admin/update.html:47
@@ -4908,17 +4765,15 @@ msgstr "여기를 클릭하여 관리자 계정으로 전환하십시오."
 
 #: pretalx/orga/templates/orga/base.html:141
 msgid ""
-"Starting with version 1.1.0, pretalx automatically checks for updates in the "
-"background. During this check, anonymous data is transmitted to servers "
+"Starting with version 1.1.0, pretalx automatically checks for updates in the"
+" background. During this check, anonymous data is transmitted to servers "
 "operated by the pretalx developers. Click on this message to find out more, "
 "disable this feature or enter your email address to get notified via email "
 "if a new update arrives. This message will disappear once you clicked it."
 msgstr ""
-"버전 1.1.0부터 pretalx는 백그라운드에서 자동으로 업데이트를 확인합니다. 이 확"
-"인 중에 익명 데이터가 pretalx 개발자가 운영하는 서버로 전송됩니다. 이 메시지"
-"를 클릭하여 자세한 내용을 확인하거나 이 기능을 비활성화하거나 새 업데이트가 "
-"도착하면 이메일로 알림을 받을 이메일 주소를 입력하십시오. 이 메시지는 클릭하"
-"면 사라집니다."
+"버전 1.1.0부터 pretalx는 백그라운드에서 자동으로 업데이트를 확인합니다. 이 확인 중에 익명 데이터가 pretalx 개발자가 "
+"운영하는 서버로 전송됩니다. 이 메시지를 클릭하여 자세한 내용을 확인하거나 이 기능을 비활성화하거나 새 업데이트가 도착하면 이메일로 "
+"알림을 받을 이메일 주소를 입력하십시오. 이 메시지는 클릭하면 사라집니다."
 
 #: pretalx/orga/templates/orga/base.html:165
 msgid "Organiser account"
@@ -5034,19 +4889,17 @@ msgid ""
 "custom help text to individual fields. Just click on the item you want to "
 "change!"
 msgstr ""
-"이것은 pretalx CfP 편집기입니다. 이 페이지에서는 모든 CfP 단계의 제목과 정보 "
-"텍스트를 변경할 수 있습니다. 또한, 각 필드에 사용자 지정 도움말 텍스트를 추가"
-"할 수도 있습니다. 변경하려는 필드를 클릭하기만 하면 됩니다!"
+"이것은 pretalx CfP 편집기입니다. 이 페이지에서는 모든 CfP 단계의 제목과 정보 텍스트를 변경할 수 있습니다. 또한, 각 "
+"필드에 사용자 지정 도움말 텍스트를 추가할 수도 있습니다. 변경하려는 필드를 클릭하기만 하면 됩니다!"
 
 #: pretalx/orga/templates/orga/cfp/question/_form.html:33
 msgid ""
-"If you mark a Yes/No field as required, it means that the user has to select "
-"Yes and No is not accepted. If you want to allow both options, do not make "
+"If you mark a Yes/No field as required, it means that the user has to select"
+" Yes and No is not accepted. If you want to allow both options, do not make "
 "this field required."
 msgstr ""
-"예/아니오 필드를 필수로 표시하면 사용자가 예를 선택해야 하며 아니오는 허용되"
-"지 않음을 의미합니다. 두 가지 옵션을 모두 허용하려면 이 필드를 필수로 만들지 "
-"마십시오."
+"예/아니오 필드를 필수로 표시하면 사용자가 예를 선택해야 하며 아니오는 허용되지 않음을 의미합니다. 두 가지 옵션을 모두 허용하려면 이 "
+"필드를 필수로 만들지 마십시오."
 
 #: pretalx/orga/templates/orga/cfp/question/_form.html:44
 msgid "Limit to specific proposals"
@@ -5097,21 +4950,19 @@ msgstr "현재 이 필드에 대한 응답이 없습니다."
 #: pretalx/orga/templates/orga/cfp/question/detail.html:67
 #, python-format
 msgid ""
-"This field has <strong>%(count)s</strong> responses, <strong>%(missing)s</"
-"strong> <a href=\"%(base_search_url)sunanswered=1\">are still missing</a>."
+"This field has <strong>%(count)s</strong> responses, "
+"<strong>%(missing)s</strong> <a href=\"%(base_search_url)sunanswered=1\">are"
+" still missing</a>."
 msgstr ""
-"이 필드는 <strong>%(count)s</strong>개의 응답이 있으며, <strong>%(missing)s</"
-"strong> <a href=\"%(base_search_url)sunanswered=1\">아직 누락된 응답이 있습니"
-"다</a>."
+"이 필드는 <strong>%(count)s</strong>개의 응답이 있으며, <strong>%(missing)s</strong> <a "
+"href=\"%(base_search_url)sunanswered=1\">아직 누락된 응답이 있습니다</a>."
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html:71
 #, python-format
 msgid ""
 "This field has <strong>%(count)s</strong> responses, and no answers are "
 "missing."
-msgstr ""
-"이 필드는 <strong>%(count)s</strong>개의 응답이 있으며, 누락된 답변이 없습니"
-"다."
+msgstr "이 필드는 <strong>%(count)s</strong>개의 응답이 있으며, 누락된 답변이 없습니다."
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html:87
 #: pretalx/submission/models/question.py:449
@@ -5138,9 +4989,8 @@ msgid ""
 "accommodation. Custom fields can be configured either on a per-proposal "
 "level, or per speaker, as you see fit."
 msgstr ""
-"사용자 정의 필드를 사용하면 옷 사이즈, 식단 요구 사항 등의 특별 요구 사항, 숙"
-"박 시설 등 발표자와 관련된 추가 세부 정보를 정리하는 데 도움이 됩니다. 사용"
-"자 정의 필드는 제안서 단위 또는 발표자 별로 필요에 따라 구성할 수 있습니다."
+"사용자 정의 필드를 사용하면 옷 사이즈, 식단 요구 사항 등의 특별 요구 사항, 숙박 시설 등 발표자와 관련된 추가 세부 정보를 정리하는"
+" 데 도움이 됩니다. 사용자 정의 필드는 제안서 단위 또는 발표자 별로 필요에 따라 구성할 수 있습니다."
 
 #: pretalx/orga/templates/orga/cfp/question/remind.html:10
 #: pretalx/orga/templates/orga/cfp/question/remind.html:13
@@ -5151,19 +5001,16 @@ msgstr "알림 발송"
 msgid ""
 "Here you can limit who will receive reminder emails. You will be able to "
 "review emails before they are sent out."
-msgstr ""
-"여기에서 알림 이메일을 받을 사람을 제한할 수 있습니다. 이메일이 발송되기 전"
-"에 검토할 수 있습니다."
+msgstr "여기에서 알림 이메일을 받을 사람을 제한할 수 있습니다. 이메일이 발송되기 전에 검토할 수 있습니다."
 
 #: pretalx/orga/templates/orga/cfp/question/update.html:13
 msgid ""
-"This custom field already has responses from some speakers – please consider "
-"carefully if modifying it would render those answers obsolete. You could "
+"This custom field already has responses from some speakers – please consider"
+" carefully if modifying it would render those answers obsolete. You could "
 "also deactivate this field and create a new one instead."
 msgstr ""
-"이 사용자 지정 필드에는 이미 일부 발표자의 답변이 있습니다. 필드를 수정하면 "
-"해당 답변이 더 이상 유효하지 않게 되므로 신중하게 고려해 주세요. 이 필드를 비"
-"활성화하고 새 필드를 만들 수도 있습니다."
+"이 사용자 지정 필드에는 이미 일부 발표자의 답변이 있습니다. 필드를 수정하면 해당 답변이 더 이상 유효하지 않게 되므로 신중하게 고려해"
+" 주세요. 이 필드를 비활성화하고 새 필드를 만들 수도 있습니다."
 
 #: pretalx/orga/templates/orga/cfp/submissiontype/list.html:25
 msgid ""
@@ -5171,9 +5018,8 @@ msgid ""
 "lengths (short sessions vs long sessions) or different presentation formats "
 "(talk vs workshop vs metal concert)."
 msgstr ""
-"다양한 세션 유형은 연사들이 서로 다른 시간 길이(짧은 세션 vs 긴 세션) 또는 서"
-"로 다른 발표 형식(강연 vs 워크숍 vs 메탈 콘서트)으로 안내하는 데 도움이 될 "
-"수 있습니다."
+"다양한 세션 유형은 연사들이 서로 다른 시간 길이(짧은 세션 vs 긴 세션) 또는 서로 다른 발표 형식(강연 vs 워크숍 vs 메탈 "
+"콘서트)으로 안내하는 데 도움이 될 수 있습니다."
 
 #: pretalx/orga/templates/orga/cfp/submitteraccesscode/list.html:30
 msgid ""
@@ -5181,9 +5027,8 @@ msgid ""
 "can also use them for hidden tracks or hidden session types, which can only "
 "be seen with a matching access code."
 msgstr ""
-"액세스 코드는 CfP가 종료된 후에도 제안을 허용하는 데 사용할 수 있습니다. 또"
-"한 숨겨진 트랙이나 숨겨진 세션 유형에 사용할 수 있으며, 이는 일치하는 액세스 "
-"코드로만 볼 수 있습니다."
+"액세스 코드는 CfP가 종료된 후에도 제안을 허용하는 데 사용할 수 있습니다. 또한 숨겨진 트랙이나 숨겨진 세션 유형에 사용할 수 "
+"있으며, 이는 일치하는 액세스 코드로만 볼 수 있습니다."
 
 #: pretalx/orga/templates/orga/cfp/submitteraccesscode/send.html:10
 #: pretalx/orga/templates/orga/cfp/submitteraccesscode/send.html:13
@@ -5198,9 +5043,7 @@ msgstr ""
 msgid ""
 "A good Call for Participation will engage potential speakers. Remember to "
 "include:"
-msgstr ""
-"좋은 참여 요청은 잠재적인 발표자의 참여를 유도할 수 있습니다. 다음을 포함하"
-"는 것을 잊지 마십시오:"
+msgstr "좋은 참여 요청은 잠재적인 발표자의 참여를 유도할 수 있습니다. 다음을 포함하는 것을 잊지 마십시오:"
 
 #: pretalx/orga/templates/orga/cfp/text.html:35
 msgid "The formats (sessions, workshops, panels) and their durations"
@@ -5305,9 +5148,8 @@ msgid ""
 "themselves. Track colors are helpful to help attendees navigate your "
 "schedule."
 msgstr ""
-"트랙은 세션을 카테고리로 분류하는 데 사용됩니다. 발표자가 자신의 세션에 대한 "
-"트랙을 선택할 수 있는지 여부는 CfP 설정을 통해 결정할 수 있습니다. 트랙 색상"
-"은 참석자가 일정을 탐색하는 데 도움이 됩니다."
+"트랙은 세션을 카테고리로 분류하는 데 사용됩니다. 발표자가 자신의 세션에 대한 트랙을 선택할 수 있는지 여부는 CfP 설정을 통해 결정할"
+" 수 있습니다. 트랙 색상은 참석자가 일정을 탐색하는 데 도움이 됩니다."
 
 #: pretalx/orga/templates/orga/event/dashboard.html:31
 msgid ""
@@ -5315,8 +5157,8 @@ msgid ""
 "settings, set up your Call for Papers with session types and custom fields, "
 "and you’re ready to go!"
 msgstr ""
-"귀하의 이벤트가 생성되었으며 준비가 완료되었습니다! 이벤트 설정을 확인하고, "
-"세션 유형 및 사용자 정의 필드로 Call for Papers를 설정하면 준비 완료입니다!"
+"귀하의 이벤트가 생성되었으며 준비가 완료되었습니다! 이벤트 설정을 확인하고, 세션 유형 및 사용자 정의 필드로 Call for "
+"Papers를 설정하면 준비 완료입니다!"
 
 #: pretalx/orga/templates/orga/event/dashboard.html:74
 msgid "Your event is currently"
@@ -5396,17 +5238,13 @@ msgstr "공개 전환"
 msgid ""
 "Your event is currently live and publicly visible. If you take it down, it "
 "will only be visible to you and your team."
-msgstr ""
-"이벤트는 현재 라이브 상태이며 공개적으로 볼 수 있습니다. 이벤트를 삭제하면 나"
-"와 내 팀만 볼 수 있습니다."
+msgstr "이벤트는 현재 라이브 상태이며 공개적으로 볼 수 있습니다. 이벤트를 삭제하면 나와 내 팀만 볼 수 있습니다."
 
 #: pretalx/orga/templates/orga/event/live.html:27
 msgid ""
-"Your event is currently only visible to you and your team. By going live, it "
-"will be publicly visible."
-msgstr ""
-"이벤트는 현재 나와 내 팀에게만 표시됩니다. 라이브로 전환하면 공개적으로 볼 "
-"수 있게 됩니다."
+"Your event is currently only visible to you and your team. By going live, it"
+" will be publicly visible."
+msgstr "이벤트는 현재 나와 내 팀에게만 표시됩니다. 라이브로 전환하면 공개적으로 볼 수 있게 됩니다."
 
 #: pretalx/orga/templates/orga/event/live.html:34
 msgid "Your event may not be ready for release yet!"
@@ -5419,8 +5257,7 @@ msgstr "수정 필요"
 
 #: pretalx/orga/templates/orga/event/live.html:46
 msgid "There may be easy ways to improve your event before its release!"
-msgstr ""
-"이벤트가 공개되기 전에 이벤트를 개선할 수 있는 쉬운 방법이 있을 수 있습니다!"
+msgstr "이벤트가 공개되기 전에 이벤트를 개선할 수 있는 쉬운 방법이 있을 수 있습니다!"
 
 #: pretalx/orga/templates/orga/event/wizard/base.html:10
 #: pretalx/orga/templates/orga/event/wizard/base.html:16
@@ -5436,9 +5273,7 @@ msgstr "단계 %(current)s 중 %(total)s"
 msgid ""
 "Choose your inital customisations here – you can always change them later, "
 "or enhance them with custom CSS."
-msgstr ""
-"여기에서 초기 사용자 정의를 선택하세요. 나중에 변경하거나 사용자 정의 CSS로 "
-"향상시킬 수 있습니다."
+msgstr "여기에서 초기 사용자 정의를 선택하세요. 나중에 변경하거나 사용자 정의 CSS로 향상시킬 수 있습니다."
 
 #: pretalx/orga/templates/orga/event_list.html:29
 msgid "Your upcoming events"
@@ -5456,9 +5291,7 @@ msgstr "가장 최근 이벤트"
 msgid ""
 "You are currently in the organiser area of pretalx. To view your submitted "
 "proposals, please go directly to the event page:"
-msgstr ""
-"현재 pretalx의 주최자 영역에 방문하셨습니다. 제출한 제안서를 보려면 이벤트 페"
-"이지로 바로 이동하세요:"
+msgstr "현재 pretalx의 주최자 영역에 방문하셨습니다. 제출한 제안서를 보려면 이벤트 페이지로 바로 이동하세요:"
 
 #: pretalx/orga/templates/orga/generic/table.html:16
 #: pretalx/orga/templates/orga/generic/table.html:22
@@ -5600,27 +5433,25 @@ msgstr "주최자 팀에 %(name)s로 초대되었습니다."
 #: pretalx/orga/templates/orga/invitation.html:25
 #, python-format
 msgid ""
-"If you already have an account – either as a speaker or an organiser – at <a "
-"href=\"%(domain)s\">%(domain)s</a>, please log in now. Otherwise, create a "
+"If you already have an account – either as a speaker or an organiser – at <a"
+" href=\"%(domain)s\">%(domain)s</a>, please log in now. Otherwise, create a "
 "new account to join the team!"
 msgstr ""
-"이미 <a href=\"%(domain)s\">%(domain)s</a>에서 발표자 또는 조직자로 계정이 있"
-"는 경우 지금 로그인하세요. 그렇지 않으면 팀에 가입하기 위해 새 계정을 생성하"
-"세요!"
+"이미 <a href=\"%(domain)s\">%(domain)s</a>에서 발표자 또는 조직자로 계정이 있는 경우 지금 로그인하세요. "
+"그렇지 않으면 팀에 가입하기 위해 새 계정을 생성하세요!"
 
 #: pretalx/orga/templates/orga/invitation.html:42
 #, python-format
 msgid ""
 "To accept the invitation with the account you’re currently active, please "
 "use the button below. If you want to accept the invitation with a different "
-"account, you can <a href=\"/orga/logout/?next=%(link)s\">log out</a> and log "
-"in with the other account. </p><p> If you believe to have received this "
+"account, you can <a href=\"/orga/logout/?next=%(link)s\">log out</a> and log"
+" in with the other account. </p><p> If you believe to have received this "
 "invitation by mistake, please contact the organiser directly."
 msgstr ""
-"현재 활성화된 계정으로 초대를 수락하려면 아래 버튼을 사용하세요. 다른 계정으"
-"로 초대를 수락하려면 <a href=\"/orga/logout/?next=%(link)s\">로그아웃</a>하"
-"고 다른 계정으로 로그인할 수 있습니다.</p><p> 실수로 이 초대를 받았다고 생각"
-"되면 조직자에게 직접 연락하세요."
+"현재 활성화된 계정으로 초대를 수락하려면 아래 버튼을 사용하세요. 다른 계정으로 초대를 수락하려면 <a "
+"href=\"/orga/logout/?next=%(link)s\">로그아웃</a>하고 다른 계정으로 로그인할 수 있습니다.</p><p> "
+"실수로 이 초대를 받았다고 생각되면 조직자에게 직접 연락하세요."
 
 #: pretalx/orga/templates/orga/invitation.html:50
 msgid "Join the team!"
@@ -5653,8 +5484,7 @@ msgstr "대략 %(count)s개의 이메일이 생성됩니다."
 msgid ""
 "You have placeholders in your email that are either not valid or not valid "
 "for every email!"
-msgstr ""
-"이메일에 유효하지 않거나 모든 이메일에 유효하지 않은 자리 표시자가 있습니다!"
+msgstr "이메일에 유효하지 않거나 모든 이메일에 유효하지 않은 자리 표시자가 있습니다!"
 
 #: pretalx/orga/templates/orga/mails/_mail_editor.html:89
 #, python-brace-format
@@ -5687,8 +5517,7 @@ msgstr "세션, 제안, 발표자"
 msgid ""
 "Send an email to speakers, authors, submitters, based on their proposal "
 "status and other filters."
-msgstr ""
-"제안 상태 및 기타 필터를 기반으로 발표자, 저자, 제출자에게 이메일을 보냅니다."
+msgstr "제안 상태 및 기타 필터를 기반으로 발표자, 저자, 제출자에게 이메일을 보냅니다."
 
 #: pretalx/orga/templates/orga/mails/compose_choice.html:24
 #: pretalx/orga/templates/orga/mails/compose_reviewer_mail_form.html:11
@@ -5701,12 +5530,12 @@ msgstr "검토자 또는 다른 팀원에게 이메일을 보냅니다."
 
 #: pretalx/orga/templates/orga/mails/compose_reviewer_mail_form.html:16
 msgid ""
-"Emails to reviewers and other team members are always sent out directly, and "
-"are not placed in the outbox first. They also do not show up in the list of "
-"sent mails."
+"Emails to reviewers and other team members are always sent out directly, and"
+" are not placed in the outbox first. They also do not show up in the list of"
+" sent mails."
 msgstr ""
-"검토자 및 다른 팀원에게 보내는 이메일은 항상 직접 발송되며, 먼저 보낸 편지함"
-"에 배치되지 않습니다. 또한 발송된 메일 목록에 표시되지 않습니다."
+"검토자 및 다른 팀원에게 보내는 이메일은 항상 직접 발송되며, 먼저 보낸 편지함에 배치되지 않습니다. 또한 발송된 메일 목록에 표시되지 "
+"않습니다."
 
 #: pretalx/orga/templates/orga/mails/compose_session_mail_form.html:21
 #, python-format
@@ -5725,17 +5554,14 @@ msgid ""
 "to the \"Send Emails\" tab. Mails queued for sending are in the \"Outbox\" "
 "tab."
 msgstr ""
-"여기에서 이메일에 대한 기본 템플릿과 사용자 정의 템플릿을 편집할 수 있습니"
-"다. 일부 또는 모든 발표자에게 이메일을 보내고 싶다면 \"이메일 보내기\" 탭으"
-"로 이동하세요. 발송 대기 중인 메일은 \"보낸 편지함\" 탭에 있습니다."
+"여기에서 이메일에 대한 기본 템플릿과 사용자 정의 템플릿을 편집할 수 있습니다. 일부 또는 모든 발표자에게 이메일을 보내고 싶다면 "
+"\"이메일 보내기\" 탭으로 이동하세요. 발송 대기 중인 메일은 \"보낸 편지함\" 탭에 있습니다."
 
 #: pretalx/orga/templates/orga/mails/mailtemplate/list.html:34
 msgid ""
 "There are different placeholders available depending on the template type. "
 "They are explained in detail once you start editing a template."
-msgstr ""
-"템플릿 유형에 따라 사용할 수 있는 다양한 플레이스 홀더가 있습니다. 템플릿 편"
-"집을 시작하면 자세히 설명됩니다."
+msgstr "템플릿 유형에 따라 사용할 수 있는 다양한 플레이스 홀더가 있습니다. 템플릿 편집을 시작하면 자세히 설명됩니다."
 
 #: pretalx/orga/templates/orga/mails/outbox_form.html:13
 #: pretalx/orga/templates/orga/mails/outbox_form.html:40
@@ -5776,9 +5602,7 @@ msgstr "제출되지 않은 제안 초안에 대한 알림 발송"
 msgid ""
 "These emails will be sent out immediately! They will not be saved to the "
 "outbox or logged first, to protect the privacy of the draft authors."
-msgstr ""
-"이 이메일은 즉시 발송됩니다! 초안 작성자의 개인 정보를 보호하기 위해 발신함"
-"에 저장되거나 먼저 기록되지 않습니다."
+msgstr "이 이메일은 즉시 발송됩니다! 초안 작성자의 개인 정보를 보호하기 위해 발신함에 저장되거나 먼저 기록되지 않습니다."
 
 #: pretalx/orga/templates/orga/mails/sent_list.html:14
 msgid "Sent Mails"
@@ -5853,10 +5677,9 @@ msgid ""
 "be either the reviewer’s email address or their user code (e.g. “34KJN”). "
 "You can find an example file <a href=\"%(href)s\">here</a>."
 msgstr ""
-"여기에서 JSON 파일에서 리뷰어 할당을 업로드할 수 있습니다. 제안 코드(예: "
-"“UX3N1”)를 키로, 사용자 식별을 값으로 하거나 그 반대의 경우도 가능합니다. 사"
-"용자 식별은 리뷰어의 이메일 주소 또는 사용자 코드(예: “34KJN”)일 수 있습니"
-"다. 예제 파일은 <a href=\"%(href)s\">여기</a>에서 찾을 수 있습니다."
+"여기에서 JSON 파일에서 리뷰어 할당을 업로드할 수 있습니다. 제안 코드(예: “UX3N1”)를 키로, 사용자 식별을 값으로 하거나 그"
+" 반대의 경우도 가능합니다. 사용자 식별은 리뷰어의 이메일 주소 또는 사용자 코드(예: “34KJN”)일 수 있습니다. 예제 파일은 <a"
+" href=\"%(href)s\">여기</a>에서 찾을 수 있습니다."
 
 #: pretalx/orga/templates/orga/review/assignment.html:22
 msgid ""
@@ -5864,8 +5687,7 @@ msgid ""
 "more granular assignments, you can also assign reviewers to proposals "
 "individually."
 msgstr ""
-"리뷰어는 리뷰 팀을 통해 트랙에 할당될 수 있습니다. 더 세부적인 할당이 필요한 "
-"경우, 제안에 개별적으로 리뷰어를 할당할 수도 있습니다."
+"리뷰어는 리뷰 팀을 통해 트랙에 할당될 수 있습니다. 더 세부적인 할당이 필요한 경우, 제안에 개별적으로 리뷰어를 할당할 수도 있습니다."
 
 #: pretalx/orga/templates/orga/review/assignment.html:28
 msgid ""
@@ -5890,17 +5712,17 @@ msgstr "당신은 이 팀의 맴버입니다"
 #: pretalx/orga/templates/orga/review/assignment.html:99
 #, python-format
 msgid ""
-"Reviewers will be able to see and review <strong>only their assigned</"
-"strong> proposals. You can change this in your <a href=\"%(href)s\">review "
-"settings</a>."
+"Reviewers will be able to see and review <strong>only their "
+"assigned</strong> proposals. You can change this in your <a "
+"href=\"%(href)s\">review settings</a>."
 msgstr ""
 
 #: pretalx/orga/templates/orga/review/assignment.html:104
 #, python-format
 msgid ""
-"Reviewers will be able to see and review <strong>all proposals</strong>, but "
-"their assigned reviews will appear highlighted, and they will be directed to "
-"them first. You can change this in your <a href=\"%(href)s\">review "
+"Reviewers will be able to see and review <strong>all proposals</strong>, but"
+" their assigned reviews will appear highlighted, and they will be directed "
+"to them first. You can change this in your <a href=\"%(href)s\">review "
 "settings</a>."
 msgstr ""
 
@@ -5910,17 +5732,14 @@ msgid ""
 "this drop-down to switch between the two assignment modes (assigning "
 "reviewers to proposals or proposals to reviewers)."
 msgstr ""
-"여기에서 특정 제안에 리뷰어를 할당할 수 있습니다! 이 드롭다운을 사용하여 두 "
-"가지 할당 모드(제안에 리뷰어를 할당하거나 리뷰어에게 제안을 할당) 간에 전환하"
-"세요."
+"여기에서 특정 제안에 리뷰어를 할당할 수 있습니다! 이 드롭다운을 사용하여 두 가지 할당 모드(제안에 리뷰어를 할당하거나 리뷰어에게 "
+"제안을 할당) 간에 전환하세요."
 
 #: pretalx/orga/templates/orga/review/assignment.html:117
 msgid ""
 "You can also use the Actions menu above to import your assignments from a "
 "prepared file."
-msgstr ""
-"준비된 파일에서 제출물들을 가져오기 위해 위의 작업 메뉴를 사용할 수도 있습니"
-"다."
+msgstr "준비된 파일에서 제출물들을 가져오기 위해 위의 작업 메뉴를 사용할 수도 있습니다."
 
 #: pretalx/orga/templates/orga/review/assignment.html:124
 #: pretalx/orga/templates/orga/review/bulk.html:40
@@ -6043,9 +5862,8 @@ msgid ""
 "applications, while JSON exports are often used for integration with other "
 "tools."
 msgstr ""
-"필요한 모든 데이터를 선택하고 내보내기 형식을 선택하여 맞춤 내보내기를 여기에"
-"서 구축할 수 있습니다. CSV 내보내기는 Excel 및 유사한 응용 프로그램에서 열 "
-"수 있으며, JSON 내보내기는 종종 다른 도구와의 통합에 사용됩니다."
+"필요한 모든 데이터를 선택하고 내보내기 형식을 선택하여 맞춤 내보내기를 여기에서 구축할 수 있습니다. CSV 내보내기는 Excel 및 "
+"유사한 응용 프로그램에서 열 수 있으며, JSON 내보내기는 종종 다른 도구와의 통합에 사용됩니다."
 
 #: pretalx/orga/templates/orga/review/export.html:29
 #: pretalx/orga/templates/orga/schedule/export.html:37
@@ -6080,9 +5898,8 @@ msgid ""
 "access the organiser version in automatic integrations, you’ll have to "
 "provide your authentication token just like in the API, like this:"
 msgstr ""
-"일부 일반 내보내기는 주최자만 접근할 수 있으며, 주최자 계정으로 접근할 때 더 "
-"많은 정보를 포함합니다. 자동 통합에서 주최자 버전에 접근하려면 API와 마찬가지"
-"로 인증 토큰을 제공해야 합니다. 다음과 같이:"
+"일부 일반 내보내기는 주최자만 접근할 수 있으며, 주최자 계정으로 접근할 때 더 많은 정보를 포함합니다. 자동 통합에서 주최자 버전에 "
+"접근하려면 API와 마찬가지로 인증 토큰을 제공해야 합니다. 다음과 같이:"
 
 #: pretalx/orga/templates/orga/schedule/export.html:14
 #: pretalx/orga/templates/orga/schedule/export.html:21
@@ -6096,17 +5913,15 @@ msgid ""
 "looking for, you can also provide a custom plugin to export the data – "
 "please ask your administrator to install the plugin."
 msgstr ""
-"pretalx는 다양한 내보내기를 제공합니다. 이 중 어떤 것도 원하는 것과 일치하지 "
-"않는 경우, 데이터를 내보내기 위해 사용자 정의 플러그인을 제공할 수도 있습니"
-"다. 관리자에게 플러그인을 설치해 달라고 요청하세요."
+"pretalx는 다양한 내보내기를 제공합니다. 이 중 어떤 것도 원하는 것과 일치하지 않는 경우, 데이터를 내보내기 위해 사용자 정의 "
+"플러그인을 제공할 수도 있습니다. 관리자에게 플러그인을 설치해 달라고 요청하세요."
 
 #: pretalx/orga/templates/orga/schedule/export.html:63
 #: pretalx/orga/templates/orga/speaker/export.html:69
 msgid ""
 "If you are looking for exports of proposals, sessions or schedule data, "
 "please head here:"
-msgstr ""
-"제안, 세션 또는 일정 데이터의 내보내기를 찾고 있다면 여기를 방문하세요:"
+msgstr "제안, 세션 또는 일정 데이터의 내보내기를 찾고 있다면 여기를 방문하세요:"
 
 #: pretalx/orga/templates/orga/schedule/export.html:67
 msgid "Speaker exports"
@@ -6114,11 +5929,9 @@ msgstr "발표자 내보내기"
 
 #: pretalx/orga/templates/orga/schedule/export.html:70
 msgid ""
-"You haven’t released a schedule yet – many of these data exporters only work "
-"on a released schedule."
-msgstr ""
-"아직 일정을 발표하지 않았습니다. 이러한 데이터 내보내기 도구는 발표된 일정에"
-"서만 작동합니다."
+"You haven’t released a schedule yet – many of these data exporters only work"
+" on a released schedule."
+msgstr "아직 일정을 발표하지 않았습니다. 이러한 데이터 내보내기 도구는 발표된 일정에서만 작동합니다."
 
 #: pretalx/orga/templates/orga/schedule/export.html:97
 msgid "HTML Export"
@@ -6129,16 +5942,13 @@ msgid ""
 "The event schedule can be exported to a static HTML dump, so you can upload "
 "it to a normal file-serving web server like nginx."
 msgstr ""
-"이벤트 일정을 정적 HTML 덤프로 내보낼 수 있으므로, 이를 nginx와 같은 일반 파"
-"일 제공 웹 서버에 업로드할 수 있습니다."
+"이벤트 일정을 정적 HTML 덤프로 내보낼 수 있으므로, 이를 nginx와 같은 일반 파일 제공 웹 서버에 업로드할 수 있습니다."
 
 #: pretalx/orga/templates/orga/schedule/export.html:105
 msgid ""
 "This is done automatically on schedule release, but you can also trigger "
 "that action here."
-msgstr ""
-"일정 발표 시 자동으로 수행되지만, 여기에서 해당 작업을 트리거할 수도 있습니"
-"다."
+msgstr "일정 발표 시 자동으로 수행되지만, 여기에서 해당 작업을 트리거할 수도 있습니다."
 
 #: pretalx/orga/templates/orga/schedule/export.html:118
 #: pretalx/orga/views/review.py:961 pretalx/orga/views/schedule.py:122
@@ -6176,8 +5986,8 @@ msgstr "발표자 알림 재전송"
 
 #: pretalx/orga/templates/orga/schedule/index.html:73
 msgid ""
-"You can start planning your schedule once you have configured some rooms for "
-"sessions to take place in."
+"You can start planning your schedule once you have configured some rooms for"
+" sessions to take place in."
 msgstr "세션이 진행될 방을 구성한 후에 일정을 계획할 수 있습니다."
 
 #: pretalx/orga/templates/orga/schedule/index.html:74
@@ -6198,8 +6008,7 @@ msgstr "새 일정 발표"
 msgid ""
 "There are still warnings about the release of this schedule. Please review "
 "them carefully!"
-msgstr ""
-"이 일정 공개에 대한 경고가 아직 남아 있습니다. 주의 깊게 검토해 주세요!"
+msgstr "이 일정 공개에 대한 경고가 아직 남아 있습니다. 주의 깊게 검토해 주세요!"
 
 #: pretalx/orga/templates/orga/schedule/release.html:40
 #, python-format
@@ -6217,12 +6026,12 @@ msgid ""
 "can be generated and placed in the outbox, to tell speakers about their "
 "session slots."
 msgid_plural ""
-"When releasing this new schedule, <strong>%(count)s notifications emails </"
-"strong> can be generated and placed in the outbox, to tell speakers about "
+"When releasing this new schedule, <strong>%(count)s notifications emails "
+"</strong> can be generated and placed in the outbox, to tell speakers about "
 "their session slots."
 msgstr[0] ""
-"이 새로운 일정을 발표하면 <strong>%(count)s개의 알림 이메일</strong>이 생성되"
-"어 발신함에 보관되어 발표자에게 세션 시간대를 알릴 수 있습니다."
+"이 새로운 일정을 발표하면 <strong>%(count)s개의 알림 이메일</strong>이 생성되어 발신함에 보관되어 발표자에게 세션 "
+"시간대를 알릴 수 있습니다."
 
 #: pretalx/orga/templates/orga/schedule/release.html:59
 msgid "New schedule version"
@@ -6230,11 +6039,9 @@ msgstr "새 일정 버전"
 
 #: pretalx/orga/templates/orga/schedule/release.html:61
 msgid ""
-"This schedule release would result in <strong>no notification emails</"
-"strong> for speakers."
-msgstr ""
-"이번 일정 발표는 발표자에게 <strong>알림 이메일이 전혀 발송되지 않을 것입니다"
-"</strong>."
+"This schedule release would result in <strong>no notification "
+"emails</strong> for speakers."
+msgstr "이번 일정 발표는 발표자에게 <strong>알림 이메일이 전혀 발송되지 않을 것입니다</strong>."
 
 #: pretalx/orga/templates/orga/schedule/release.html:68
 #, python-format
@@ -6245,8 +6052,7 @@ msgid_plural ""
 "%(count)s sessions are still <strong>unconfirmed</strong> and will not show "
 "up on the public schedule."
 msgstr[0] ""
-"%(count)s개의 세션 아직 <strong>확정되지 않았습니다</strong>. 따라서 공개 일"
-"정에 표시되지 않습니다."
+"%(count)s개의 세션 아직 <strong>확정되지 않았습니다</strong>. 따라서 공개 일정에 표시되지 않습니다."
 
 #: pretalx/orga/templates/orga/schedule/release.html:74
 msgid "See all unconfirmed sessions."
@@ -6255,17 +6061,16 @@ msgstr "모든 확인되지 않은 세션 보기."
 #: pretalx/orga/templates/orga/schedule/release.html:77
 #, python-format
 msgid "One session has <strong>not yet been scheduled</strong>."
-msgid_plural "%(count)s sessions have <strong>not yet been scheduled</strong>."
-msgstr[0] ""
-"%(count)s개의 세션이 <strong>아직 일정이 잡히지 않았습니다</strong>."
+msgid_plural ""
+"%(count)s sessions have <strong>not yet been scheduled</strong>."
+msgstr[0] "%(count)s개의 세션이 <strong>아직 일정이 잡히지 않았습니다</strong>."
 
 #: pretalx/orga/templates/orga/schedule/release.html:84
 #, python-format
 msgid "One session has <strong>not yet been assigned a track</strong>."
 msgid_plural ""
 "%(count)s sessions have <strong>not yet been assigned a track</strong>."
-msgstr[0] ""
-"%(count)s개의 세션이 <strong>아직 트랙이 지정되지 않았습니다</strong>."
+msgstr[0] "%(count)s개의 세션이 <strong>아직 트랙이 지정되지 않았습니다</strong>."
 
 #: pretalx/orga/templates/orga/schedule/release.html:100
 msgid "Warnings"
@@ -6277,8 +6082,8 @@ msgstr "공식 변경 로그"
 
 #: pretalx/orga/templates/orga/schedule/release.html:118
 msgid ""
-"This is how the new schedule version will appear in the public changelog and "
-"in the RSS feed."
+"This is how the new schedule version will appear in the public changelog and"
+" in the RSS feed."
 msgstr "새 일정 버전이 공식 변경 로그와 RSS 피드에 어떻게 표시될지입니다."
 
 #: pretalx/orga/templates/orga/schedule/release.html:119
@@ -6304,9 +6109,8 @@ msgid ""
 "example link to your home page, your registration page, or your livestream "
 "here."
 msgstr ""
-"이 링크는 모든 일정 관련 페이지의 상단에 표시됩니다. 예를 들어, 일정 자체, 연"
-"사 페이지, 세션 페이지 등이 있습니다. 여기에서 홈페이지, 등록 페이지 또는 라"
-"이브 스트림에 링크할 수 있습니다."
+"이 링크는 모든 일정 관련 페이지의 상단에 표시됩니다. 예를 들어, 일정 자체, 연사 페이지, 세션 페이지 등이 있습니다. 여기에서 "
+"홈페이지, 등록 페이지 또는 라이브 스트림에 링크할 수 있습니다."
 
 #: pretalx/orga/templates/orga/settings/form.html:92
 msgid "Footer links"
@@ -6317,8 +6121,7 @@ msgid ""
 "These links will be shown in the footer of all your public pages. You could "
 "for example link your terms of service, imprint, or privacy policy here."
 msgstr ""
-"이 링크는 모든 공개 페이지의 푸터에 표시됩니다. 여기에서 서비스 약관, 인쇄물 "
-"또는 개인정보 보호정책에 링크할 수 있습니다."
+"이 링크는 모든 공개 페이지의 푸터에 표시됩니다. 여기에서 서비스 약관, 인쇄물 또는 개인정보 보호정책에 링크할 수 있습니다."
 
 #: pretalx/orga/templates/orga/settings/mail.html:18
 #: pretalx/orga/templates/orga/settings/mail.html:22
@@ -6331,9 +6134,8 @@ msgid ""
 "this server will be used (ask your administrator for details).<br> We "
 "recommend that you add email settings here explicitly."
 msgstr ""
-"사용자 정의 이메일 설정을 구성하지 않으면, 이 서버의 전역 설정이 사용됩니다 "
-"(자세한 내용은 관리자에게 문의하세요).<br> 여기에서 이메일 설정을 명시적으로 "
-"추가하는 것이 좋습니다."
+"사용자 정의 이메일 설정을 구성하지 않으면, 이 서버의 전역 설정이 사용됩니다 (자세한 내용은 관리자에게 문의하세요).<br> 여기에서 "
+"이메일 설정을 명시적으로 추가하는 것이 좋습니다."
 
 #: pretalx/orga/templates/orga/settings/review.html:37
 #, python-format
@@ -6342,8 +6144,8 @@ msgid ""
 "offered an additional %(quotation_open)sAbstain%(quotation_close)s button "
 "when reviewing proposals."
 msgstr ""
-"검토 점수나 검토 텍스트가 필요하지 않은 경우, 제안서를 검토할 때 검토자에게 "
-"추가 %(quotation_open)s기권%(quotation_close)s 버튼이 제공됩니다."
+"검토 점수나 검토 텍스트가 필요하지 않은 경우, 제안서를 검토할 때 검토자에게 추가 "
+"%(quotation_open)s기권%(quotation_close)s 버튼이 제공됩니다."
 
 #: pretalx/orga/templates/orga/settings/review.html:53
 msgid ""
@@ -6352,9 +6154,8 @@ msgid ""
 "this total score can be weighted. Currently, the total score is calculated "
 "as:"
 msgstr ""
-"리뷰어에게 하나 이상의 점수를 제공하도록 요청할 수 있습니다. 여러 점수를 요청"
-"하면 최종 총점으로 합산됩니다. 원하신다면 이 총점은 가중치를 부여할 수 있습니"
-"다. 현재 총점은 다음과 같이 계산됩니다:"
+"리뷰어에게 하나 이상의 점수를 제공하도록 요청할 수 있습니다. 여러 점수를 요청하면 최종 총점으로 합산됩니다. 원하신다면 이 총점은 "
+"가중치를 부여할 수 있습니다. 현재 총점은 다음과 같이 계산됩니다:"
 
 #: pretalx/orga/templates/orga/settings/review.html:72
 msgid "Review Score category"
@@ -6377,14 +6178,12 @@ msgstr "다른 점수 카테고리 추가"
 #: pretalx/orga/templates/orga/settings/review.html:183
 msgid ""
 "Review phases allow you to structure your review process. By default, there "
-"are two review phases: The review itself, and the selection process once the "
-"review phase is over. But you could for example add another review and "
+"are two review phases: The review itself, and the selection process once the"
+" review phase is over. But you could for example add another review and "
 "selection phase after that, if you require additional review rounds."
 msgstr ""
-"리뷰 단계는 리뷰 프로세스를 구조화할 수 있게 해줍니다. 기본적으로 두 개의 리"
-"뷰 단계가 있습니다: 리뷰 자체와 리뷰 단계가 끝난 후의 선택 프로세스입니다. 그"
-"러나 예를 들어 추가 리뷰 단계가 필요하다면 그 후에 또 다른 리뷰 및 리뷰 단계"
-"를 추가할 수 있습니다."
+"리뷰 단계는 리뷰 프로세스를 구조화할 수 있게 해줍니다. 기본적으로 두 개의 리뷰 단계가 있습니다: 리뷰 자체와 리뷰 단계가 끝난 후의 "
+"선택 프로세스입니다. 그러나 예를 들어 추가 리뷰 단계가 필요하다면 그 후에 또 다른 리뷰 및 리뷰 단계를 추가할 수 있습니다."
 
 #: pretalx/orga/templates/orga/settings/review.html:199
 #: pretalx/orga/templates/orga/settings/review.html:247
@@ -6418,34 +6217,29 @@ msgid ""
 "your homepage, instead of using this page. If you want to disable the "
 "schedule on here entirely, please activate the setting below."
 msgstr ""
-"홈페이지에 이벤트 일정을 표시하기 위해 pretalx 일정 위젯을 구성할 수 있습니"
-"다. 이 페이지를 사용하지 않으려면 아래 설정을 활성화하십시오."
+"홈페이지에 이벤트 일정을 표시하기 위해 pretalx 일정 위젯을 구성할 수 있습니다. 이 페이지를 사용하지 않으려면 아래 설정을 "
+"활성화하십시오."
 
 #: pretalx/orga/templates/orga/settings/widget.html:39
 msgid ""
 "The pretalx schedule widget is a way to embed your schedule into your event "
-"website. This way, your attendees can see your schedule without leaving your "
-"website, and you can style the schedule to fit right in with your website."
+"website. This way, your attendees can see your schedule without leaving your"
+" website, and you can style the schedule to fit right in with your website."
 msgstr ""
-"pretalx 일정 위젯은 귀하의 일정이 이벤트 웹사이트에 포함되도록 하는 방법입니"
-"다. 이렇게 하면 참석자들이 귀하의 웹사이트를 떠나지 않고도 일정을 볼 수 있으"
-"며, 웹사이트에 맞게 일정을 스타일링할 수 있습니다."
+"pretalx 일정 위젯은 귀하의 일정이 이벤트 웹사이트에 포함되도록 하는 방법입니다. 이렇게 하면 참석자들이 귀하의 웹사이트를 떠나지 "
+"않고도 일정을 볼 수 있으며, 웹사이트에 맞게 일정을 스타일링할 수 있습니다."
 
 #: pretalx/orga/templates/orga/settings/widget.html:46
 msgid ""
 "Using this form, you can generate code to copy and paste to your website "
 "source."
-msgstr ""
-"이 양식을 사용하여 웹사이트 소스에 복사하고 붙여넣을 코드를 생성할 수 있습니"
-"다."
+msgstr "이 양식을 사용하여 웹사이트 소스에 복사하고 붙여넣을 코드를 생성할 수 있습니다."
 
 #: pretalx/orga/templates/orga/settings/widget.html:55
 msgid ""
 "To embed the widget into your website, copy the following code to the "
 "<code>&lt;head></code> section of your website:"
-msgstr ""
-"위젯을 웹사이트에 포함하려면, 다음 코드를 웹사이트의 <code>&lt;head></code> "
-"섹션에 복사하십시오:"
+msgstr "위젯을 웹사이트에 포함하려면, 다음 코드를 웹사이트의 <code>&lt;head></code> 섹션에 복사하십시오:"
 
 #: pretalx/orga/templates/orga/settings/widget.html:62
 msgid ""
@@ -6483,9 +6277,7 @@ msgstr "일정 내보내기"
 msgid ""
 "You can either create exactly the export you need in the “Custom” tab, or "
 "use these pre-built exports:"
-msgstr ""
-"“사용자 정의” 탭에서 필요한 내보내기를 정확히 생성하거나, 이러한 미리 구축된 "
-"내보내기를 사용할 수 있습니다:"
+msgstr "“사용자 정의” 탭에서 필요한 내보내기를 정확히 생성하거나, 이러한 미리 구축된 내보내기를 사용할 수 있습니다:"
 
 #: pretalx/orga/templates/orga/speaker/form.html:58
 #: pretalx/orga/templates/orga/submission/list.html:46
@@ -6535,8 +6327,8 @@ msgid ""
 "have no permissions to change this proposal will be shown the anonymised "
 "proposal content."
 msgstr ""
-"익명화가 활성화된 검토 단계가 현재 활성화되어 있는 경우, 이 제안을 변경할 권"
-"한이 없는 모든 검토자는 익명화된 제안 내용을 보게 됩니다."
+"익명화가 활성화된 검토 단계가 현재 활성화되어 있는 경우, 이 제안을 변경할 권한이 없는 모든 검토자는 익명화된 제안 내용을 보게 "
+"됩니다."
 
 #: pretalx/orga/templates/orga/submission/anonymise.html:60
 msgid "Replace selection with █"
@@ -6801,9 +6593,8 @@ msgid ""
 "right away. You can always apply pending changes for some or all proposals "
 "in one go once you're ready to make your decisions public."
 msgstr ""
-"상태 변경을 보류 중으로 표시하면 발표자에게 즉시 표시되지 않습니다. 결정을 공"
-"개할 준비가 되면 일부 또는 모든 제안에 대해 보류 중인 변경 사항을 한 번에 적"
-"용할 수 있습니다."
+"상태 변경을 보류 중으로 표시하면 발표자에게 즉시 표시되지 않습니다. 결정을 공개할 준비가 되면 일부 또는 모든 제안에 대해 보류 중인 "
+"변경 사항을 한 번에 적용할 수 있습니다."
 
 #: pretalx/orga/templates/orga/tables/review_table.html:45
 msgid "Go!"
@@ -6828,8 +6619,8 @@ msgid ""
 "API tokens can be used to access the <a %(apiurl)s>pretalx API</a>. To find "
 "out more, please have a look at the <a %(docurl)s> API documentation</a>."
 msgstr ""
-"API 토큰을 사용하여 <a %(apiurl)s>pretalx API</a>에 액세스할 수 있습니다. 자"
-"세한 내용은 <a %(docurl)s>API 문서</a>를 참조하세요."
+"API 토큰을 사용하여 <a %(apiurl)s>pretalx API</a>에 액세스할 수 있습니다. 자세한 내용은 <a "
+"%(docurl)s>API 문서</a>를 참조하세요."
 
 #: pretalx/orga/templates/orga/user.html:35
 msgid "Your API tokens"
@@ -6902,11 +6693,9 @@ msgstr "옵션을 변경하고 옵션 파일을 동시에 업로드할 수 없�
 
 #: pretalx/orga/views/cfp.py:352
 msgid ""
-"You cannot delete a custom field that has any responses. We have deactivated "
-"the field instead."
-msgstr ""
-"응답이 있는 사용자 정의 필드를 삭제할 수 없습니다. 대신 필드를 비활성화했습니"
-"다."
+"You cannot delete a custom field that has any responses. We have deactivated"
+" the field instead."
+msgstr "응답이 있는 사용자 정의 필드를 삭제할 수 없습니다. 대신 필드를 비활성화했습니다."
 
 #: pretalx/orga/views/cfp.py:409
 msgid "Could not send mails, error in configuration."
@@ -6948,9 +6737,7 @@ msgstr "접속 코드"
 msgid ""
 "This access code has been used for a proposal and cannot be deleted. To "
 "disable it, you can set its validity date to the past."
-msgstr ""
-"이 접속 코드는 제안서에 사용되었으며 삭제할 수 없습니다. 비활성화하려면 유효"
-"성 날짜를 과거로 설정할 수 있습니다."
+msgstr "이 접속 코드는 제안서에 사용되었으며 삭제할 수 없습니다. 비활성화하려면 유효성 날짜를 과거로 설정할 수 있습니다."
 
 #: pretalx/orga/views/cfp.py:646
 msgid "The access code has been sent."
@@ -7047,10 +6834,9 @@ msgstr "이벤트는 아직 랜딩 페이지 텍스트가 없습니다."
 
 #: pretalx/orga/views/event.py:205
 msgid ""
-"You want submitters to choose the tracks for their proposals, but you do not "
-"offer tracks for selection. Add at least one track!"
-msgstr ""
-"제출자가 제안서의 트랙을 선택하도록 하려면 최소한 하나의 트랙을 추가하세요!"
+"You want submitters to choose the tracks for their proposals, but you do not"
+" offer tracks for selection. Add at least one track!"
+msgstr "제출자가 제안서의 트랙을 선택하도록 하려면 최소한 하나의 트랙을 추가하세요!"
 
 #: pretalx/orga/views/event.py:213
 msgid "You have configured only one session type so far."
@@ -7097,9 +6883,7 @@ msgstr "첫 번째 단계를 제외한 모든 리뷰 단계에는 시작 날짜�
 msgid ""
 "The review phases '{phase1}' and '{phase2}' overlap. Please make sure that "
 "review phases do not overlap, then save again."
-msgstr ""
-"리뷰 단계 '{phase1}'와 '{phase2}'가 겹칩니다. 리뷰 단계가 겹치지 않도록 확인"
-"한 후 다시 저장하세요."
+msgstr "리뷰 단계 '{phase1}'와 '{phase2}'가 겹칩니다. 리뷰 단계가 겹치지 않도록 확인한 후 다시 저장하세요."
 
 #: pretalx/orga/views/event.py:516
 msgid "Save and test custom SMTP connection"
@@ -7114,18 +6898,16 @@ msgstr "SMTP 서버에 연락하는 동안 오류가 발생했습니다: %s"
 msgid ""
 "Yay, your changes have been saved and the connection attempt to your SMTP "
 "server was successful."
-msgstr ""
-"야호, 귀하의 변경 사항이 저장되었고 SMTP 서버에 대한 연결 시도가 성공했습니"
-"다."
+msgstr "야호, 귀하의 변경 사항이 저장되었고 SMTP 서버에 대한 연결 시도가 성공했습니다."
 
 #: pretalx/orga/views/event.py:547
 msgid ""
-"We’ve been able to contact the SMTP server you configured. Remember to check "
-"the “use custom SMTP server” checkbox, otherwise your SMTP server will not "
+"We’ve been able to contact the SMTP server you configured. Remember to check"
+" the “use custom SMTP server” checkbox, otherwise your SMTP server will not "
 "be used."
 msgstr ""
-"구성한 SMTP 서버에 연락할 수 있었습니다. \"사용자 정의 SMTP 서버 사용\" 체크"
-"박스를 확인하세요. 그렇지 않으면 SMTP 서버가 사용되지 않습니다."
+"구성한 SMTP 서버에 연락할 수 있었습니다. \"사용자 정의 SMTP 서버 사용\" 체크박스를 확인하세요. 그렇지 않으면 SMTP "
+"서버가 사용되지 않습니다."
 
 #: pretalx/orga/views/event.py:584
 msgid ""
@@ -7150,8 +6932,7 @@ msgstr "이전 단계"
 msgid ""
 "Please consider including your event’s year in the slug, e.g. "
 "myevent{number}."
-msgstr ""
-"슬러그에 이벤트의 연도를 포함하는 것을 고려하세요. 예: myevent{number}."
+msgstr "슬러그에 이벤트의 연도를 포함하는 것을 고려하세요. 예: myevent{number}."
 
 #: pretalx/orga/views/event.py:677
 msgid "Did you really mean to make your event take place in the past?"
@@ -7159,11 +6940,9 @@ msgstr "정말로 이벤트가 과거에 진행되도록 하시겠습니까?"
 
 #: pretalx/orga/views/event.py:771
 msgid ""
-"ALL related data, such as proposals, and speaker profiles, and uploads, will "
-"also be deleted and cannot be restored."
-msgstr ""
-"제안서, 발표자 프로필 및 업로드와 같은 모든 관련 데이터가 삭제되며 복원할 수 "
-"없습니다."
+"ALL related data, such as proposals, and speaker profiles, and uploads, will"
+" also be deleted and cannot be restored."
+msgstr "제안서, 발표자 프로필 및 업로드와 같은 모든 관련 데이터가 삭제되며 복원할 수 없습니다."
 
 #: pretalx/orga/views/event.py:812
 msgid "Generate widget"
@@ -7282,9 +7061,7 @@ msgstr "{count}개의 이메일이 전송되었습니다."
 msgid ""
 "The template has been saved - note that already pending emails that are "
 "based on this template will not be changed!"
-msgstr ""
-"템플릿이 저장되었습니다 - 이 템플릿을 기반으로 한 이미 보류 중인 이메일은 변"
-"경되지 않습니다!"
+msgstr "템플릿이 저장되었습니다 - 이 템플릿을 기반으로 한 이미 보류 중인 이메일은 변경되지 않습니다!"
 
 #: pretalx/orga/views/mails.py:602
 msgid "New custom template"
@@ -7336,19 +7113,15 @@ msgstr "팀에서 멤버가 제거되었습니다."
 
 #: pretalx/orga/views/organiser.py:302 pretalx/orga/views/speaker.py:265
 msgid ""
-"Do your really want to reset this user’s password? They won’t be able to log "
-"in until they set a new password."
-msgstr ""
-"정말로 이 사용자의 비밀번호를 재설정하시겠습니까? 새 비밀번호를 설정할 때까"
-"지 로그인할 수 없습니다."
+"Do your really want to reset this user’s password? They won’t be able to log"
+" in until they set a new password."
+msgstr "정말로 이 사용자의 비밀번호를 재설정하시겠습니까? 새 비밀번호를 설정할 때까지 로그인할 수 없습니다."
 
 #: pretalx/orga/views/organiser.py:350
 msgid ""
 "ALL related data for ALL events, such as proposals, and speaker profiles, "
 "and uploads, will also be deleted and cannot be restored."
-msgstr ""
-"제안서, 발표자 프로필 및 업로드와 같은 모든 이벤트에 대한 모든 관련 데이터도 "
-"삭제되며 복구할 수 없습니다."
+msgstr "제안서, 발표자 프로필 및 업로드와 같은 모든 이벤트에 대한 모든 관련 데이터도 삭제되며 복구할 수 없습니다."
 
 #: pretalx/orga/views/organiser.py:374
 msgid "The organiser and all related data have been deleted."
@@ -7373,8 +7146,7 @@ msgstr "이제 슈퍼유저 대신 관리자가 되었습니다."
 msgid ""
 "Success! {accepted} proposals were accepted, {rejected} proposals were "
 "rejected."
-msgstr ""
-"성공! {accepted}개의 제안이 수락되었고, {rejected}개의 제안이 거부되었습니다."
+msgstr "성공! {accepted}개의 제안이 수락되었고, {rejected}개의 제안이 거부되었습니다."
 
 #: pretalx/orga/views/review.py:333
 #, python-brace-format
@@ -7421,9 +7193,7 @@ msgstr "리뷰가 삭제되었습니다."
 msgid ""
 "Do you really want to regenerate %(count)s acceptance and rejection emails? "
 "They will be placed in the outbox and not sent out directly."
-msgstr ""
-"정말로 %(count)s개의 수락 및 거부 이메일을 다시 생성하시겠습니까? 이들은 발신"
-"함에 배치되며 직접 전송되지 않습니다."
+msgstr "정말로 %(count)s개의 수락 및 거부 이메일을 다시 생성하시겠습니까? 이들은 발신함에 배치되며 직접 전송되지 않습니다."
 
 #: pretalx/orga/views/review.py:833
 #, python-brace-format
@@ -7476,9 +7246,7 @@ msgstr "새로운 내보내기가 생성 중이며 곧 사용 가능해질 것�
 msgid ""
 "A new export will be generated on the next scheduled opportunity – please "
 "contact your administrator for details."
-msgstr ""
-"다음 예정된 기회에 새 내보내기가 생성됩니다 - 자세한 내용은 관리자에게 문의하"
-"십시오."
+msgstr "다음 예정된 기회에 새 내보내기가 생성됩니다 - 자세한 내용은 관리자에게 문의하십시오."
 
 #: pretalx/orga/views/schedule.py:172
 #, python-brace-format
@@ -7524,9 +7292,9 @@ msgid "Room"
 msgstr "방"
 
 #: pretalx/orga/views/schedule.py:599
-msgid "There is or was a session scheduled in this room. It cannot be deleted."
-msgstr ""
-"이 방에는 세션이 예약되어 있거나 예약된 적이 있습니다. 삭제할 수 없습니다."
+msgid ""
+"There is or was a session scheduled in this room. It cannot be deleted."
+msgstr "이 방에는 세션이 예약되어 있거나 예약된 적이 있습니다. 삭제할 수 없습니다."
 
 #: pretalx/orga/views/speaker.py:318
 msgid "New speaker information"
@@ -7540,16 +7308,13 @@ msgstr "발표자 정보 노트"
 msgid ""
 "Somebody else was faster than you: this proposal was already in the state "
 "you wanted to change it to."
-msgstr ""
-"다른 사람이 당신보다 빨랐습니다: 이 제안은 이미 당신이 변경하고자 했던 상태"
-"에 있었습니다."
+msgstr "다른 사람이 당신보다 빨랐습니다: 이 제안은 이미 당신이 변경하고자 했던 상태에 있었습니다."
 
 #: pretalx/orga/views/submission.py:247
 msgid ""
 "There may be pending emails for this proposal that are now incorrect or "
 "outdated."
-msgstr ""
-"이 제안에 대해 잘못되었거나 오래된 대기 중인 이메일이 있을 수 있습니다."
+msgstr "이 제안에 대해 잘못되었거나 오래된 대기 중인 이메일이 있을 수 있습니다."
 
 #: pretalx/orga/views/submission.py:270 pretalx/orga/views/submission.py:1188
 msgid "Do it"
@@ -7672,8 +7437,7 @@ msgstr "이 이메일 주소에 대한 계정이 이미 존재합니다."
 msgid ""
 "Please provide a profile picture or allow us to load your picture from "
 "gravatar!"
-msgstr ""
-"프로필 사진을 제공하거나 gravatar에서 사진을 불러올 수 있도록 허용해 주세요!"
+msgstr "프로필 사진을 제공하거나 gravatar에서 사진을 불러올 수 있도록 허용해 주세요!"
 
 #: pretalx/person/forms/profile.py:259
 #, fuzzy
@@ -7711,11 +7475,9 @@ msgstr "로그인 또는 등록 양식의 모든 필드를 작성해 주세요."
 
 #: pretalx/person/forms/user.py:71
 msgid ""
-"No user account matches the entered credentials. Are you sure that you typed "
-"your password correctly?"
-msgstr ""
-"입력한 자격 증명과 일치하는 사용자 계정이 없습니다. 비밀번호를 올바르게 입력"
-"했는지 확실합니까?"
+"No user account matches the entered credentials. Are you sure that you typed"
+" your password correctly?"
+msgstr "입력한 자격 증명과 일치하는 사용자 계정이 없습니다. 비밀번호를 올바르게 입력했는지 확실합니까?"
 
 #: pretalx/person/forms/user.py:77
 msgid "Sorry, your account is currently disabled."
@@ -7725,9 +7487,7 @@ msgstr "죄송합니다. 귀하의 계정은 현재 비활성화되어 있습니
 msgid ""
 "We already have a user with that email address. Did you already register "
 "before and just need to log in?"
-msgstr ""
-"이미 해당 이메일 주소로 사용자 계정이 있습니다. 이전에 등록하셨고 로그인만 필"
-"요하신가요?"
+msgstr "이미 해당 이메일 주소로 사용자 계정이 있습니다. 이전에 등록하셨고 로그인만 필요하신가요?"
 
 #: pretalx/person/models/auth_token.py:76
 msgid "Expiry date"
@@ -7777,8 +7537,7 @@ msgstr "내부 메모"
 msgid ""
 "Internal notes for other organisers/reviewers. Not visible to the speakers "
 "or the public."
-msgstr ""
-"다른 조직자/검토자를 위한 내부 메모. 발표자나 대중에게는 보이지 않습니다."
+msgstr "다른 조직자/검토자를 위한 내부 메모. 발표자나 대중에게는 보이지 않습니다."
 
 #: pretalx/person/models/user.py:88
 msgid "Your username must not contain HTML or other markup."
@@ -7788,16 +7547,13 @@ msgstr "사용자 이름에는 HTML 또는 기타 마크업이 포함되어서�
 msgid ""
 "Please enter the name you wish to be displayed publicly. This name will be "
 "used for all events you are participating in on this server."
-msgstr ""
-"공개적으로 표시할 이름을 입력해 주세요. 이 이름은 이 서버에서 참여하는 모든 "
-"이벤트에 사용됩니다."
+msgstr "공개적으로 표시할 이름을 입력해 주세요. 이 이름은 이 서버에서 참여하는 모든 이벤트에 사용됩니다."
 
 #: pretalx/person/models/user.py:136
 msgid ""
 "Your email address will be used for password resets and notification about "
 "your event/proposals."
-msgstr ""
-"귀하의 이메일 주소는 비밀번호 재설정 및 이벤트/제안에 대한 알림에 사용됩니다."
+msgstr "귀하의 이메일 주소는 비밀번호 재설정 및 이벤트/제안에 대한 알림에 사용됩니다."
 
 #: pretalx/person/models/user.py:157
 msgid "Preferred language"
@@ -7809,11 +7565,9 @@ msgstr "Gravatar를 통해 프로필 사진을 가져옵니다"
 
 #: pretalx/person/models/user.py:178
 msgid ""
-"If you have registered with an email address that has a gravatar account, we "
-"can retrieve your profile picture from there."
-msgstr ""
-"Gravatar 계정이 있는 이메일 주소로 등록한 경우, 그곳에서 프로필 사진을 가져"
-"올 수 있습니다."
+"If you have registered with an email address that has a gravatar account, we"
+" can retrieve your profile picture from there."
+msgstr "Gravatar 계정이 있는 이메일 주소로 등록한 경우, 그곳에서 프로필 사진을 가져올 수 있습니다."
 
 #: pretalx/person/models/user.py:194
 msgid "Unnamed user"
@@ -7857,8 +7611,7 @@ msgid ""
 "\n"
 "Your pretalx account password was just changed.\n"
 "\n"
-"If you did not change your password, please contact the site administration "
-"immediately.\n"
+"If you did not change your password, please contact the site administration immediately.\n"
 "\n"
 "All the best,\n"
 "the pretalx team"
@@ -7867,8 +7620,7 @@ msgstr ""
 "\n"
 "귀하의 pretalx 계정 비밀번호가 방금 변경되었습니다.\n"
 "\n"
-"비밀번호를 변경하지 않으셨다면, 즉시 사이트 관리자에게 연락해 주시기 바랍니"
-"다.\n"
+"비밀번호를 변경하지 않으셨다면, 즉시 사이트 관리자에게 연락해 주시기 바랍니다.\n"
 "\n"
 "모든 것이 잘 되길 바랍니다,\n"
 "pretalx 팀"
@@ -7884,19 +7636,16 @@ msgstr "[pretalx] 비밀번호 변경됨"
 #| "\n"
 #| "Your pretalx account password was just changed.\n"
 #| "\n"
-#| "If you did not change your password, please contact the site "
-#| "administration immediately.\n"
+#| "If you did not change your password, please contact the site administration immediately.\n"
 #| "\n"
 #| "All the best,\n"
 #| "the pretalx team"
 msgid ""
 "Hi {name},\n"
 "\n"
-"This is a confirmation that the email address for your pretalx account has "
-"been changed from {old_email} to {new_email}.\n"
+"This is a confirmation that the email address for your pretalx account has been changed from {old_email} to {new_email}.\n"
 "\n"
-"If you did not perform this change, please contact an administrator "
-"immediately.\n"
+"If you did not perform this change, please contact an administrator immediately.\n"
 "\n"
 "All the best,\n"
 "the pretalx team"
@@ -7905,8 +7654,7 @@ msgstr ""
 "\n"
 "귀하의 pretalx 계정 비밀번호가 방금 변경되었습니다.\n"
 "\n"
-"비밀번호를 변경하지 않으셨다면, 즉시 사이트 관리자에게 연락해 주시기 바랍니"
-"다.\n"
+"비밀번호를 변경하지 않으셨다면, 즉시 사이트 관리자에게 연락해 주시기 바랍니다.\n"
 "\n"
 "모든 것이 잘 되길 바랍니다,\n"
 "pretalx 팀"
@@ -7935,9 +7683,8 @@ msgid ""
 "green blocks. We will try to schedule your slot during these times. You can "
 "click a block twice to remove it."
 msgstr ""
-"회의 중에 녹색 블록으로 귀하의 가용성을 표시하려면 클릭하고 드래그하세요. 우"
-"리는 이 시간 동안 귀하의 슬롯을 예약하려고 노력할 것입니다. 블록을 두 번 클릭"
-"하면 제거할 수 있습니다."
+"회의 중에 녹색 블록으로 귀하의 가용성을 표시하려면 클릭하고 드래그하세요. 우리는 이 시간 동안 귀하의 슬롯을 예약하려고 노력할 "
+"것입니다. 블록을 두 번 클릭하면 제거할 수 있습니다."
 
 #: pretalx/schedule/forms.py:39
 #, python-brace-format
@@ -7952,9 +7699,7 @@ msgstr "모든 시간은 이벤트 시간대 {tz}에 있습니다."
 msgid ""
 "If you set room availabilities, speakers will only be able to set their "
 "availability for when any room is available."
-msgstr ""
-"방 가용성을 설정하면 발표자는 방이 사용 가능한 시간에만 가용성을 설정할 수 있"
-"습니다."
+msgstr "방 가용성을 설정하면 발표자는 방이 사용 가능한 시간에만 가용성을 설정할 수 있습니다."
 
 #: pretalx/schedule/forms.py:48
 msgid "Room I"
@@ -7990,9 +7735,7 @@ msgstr "참석자를 위한 설명, 예: 방향 안내."
 msgid ""
 "Information relevant for speakers scheduled in this room, for example room "
 "size, special directions, available adaptors for video input …"
-msgstr ""
-"이 방에 예정된 발표자에게 관련된 정보, 예: 방 크기, 특별한 방향, 비디오 입력"
-"을 위한 사용 가능한 어댑터 …"
+msgstr "이 방에 예정된 발표자에게 관련된 정보, 예: 방 크기, 특별한 방향, 비디오 입력을 위한 사용 가능한 어댑터 …"
 
 #: pretalx/schedule/models/room.py:63
 msgid "Capacity"
@@ -8055,7 +7798,8 @@ msgctxt "Schedule/program of the conference"
 msgid "Schedule"
 msgstr "일정"
 
-#. Translators: Ideally a neutral term that will work for workshop, talks and special
+#. Translators: Ideally a neutral term that will work for workshop, talks and
+#. special
 #. formats. Plural, used in headings.
 #: pretalx/schedule/phrases.py:16
 msgid "Sessions"
@@ -8067,11 +7811,9 @@ msgstr "첫번째 일정을 공개했습니다!"
 
 #: pretalx/schedule/phrases.py:25
 msgid ""
-"You are currently viewing the editable schedule version, which is unreleased "
-"and may change at any time."
-msgstr ""
-"현재 편집 가능한 일정 버전을 보고 계시는데, 이 버전은 아직 출시되지 않았으며 "
-"언제든지 변경될 수 있습니다."
+"You are currently viewing the editable schedule version, which is unreleased"
+" and may change at any time."
+msgstr "현재 편집 가능한 일정 버전을 보고 계시는데, 이 버전은 아직 출시되지 않았으며 언제든지 변경될 수 있습니다."
 
 #: pretalx/schedule/phrases.py:27
 msgid "You are currently viewing an older schedule version."
@@ -8080,8 +7822,7 @@ msgstr "현재 이전 버전의 일정을 보고 계십니다."
 #: pretalx/schedule/phrases.py:29
 #, python-format
 msgid "You can find the current version <a href=\"%(current_url)s\">here</a>."
-msgstr ""
-"현재 버전은 <a href=\"%(current_url)s\">여기</a>에서 확인할 수 있습니다."
+msgstr "현재 버전은 <a href=\"%(current_url)s\">여기</a>에서 확인할 수 있습니다."
 
 #. Translators: “tz” is a full timezone name like “Europe/Berlin”
 #: pretalx/schedule/phrases.py:33
@@ -8095,7 +7836,8 @@ msgstr "아직 이 세션에 대한 피드백이 없습니다."
 
 #: pretalx/schedule/templates/schedule/speaker_notification.txt:2
 #, python-format
-msgid "- Your session “%(title)s” will take place at %(start)s in %(location)s"
+msgid ""
+"- Your session “%(title)s” will take place at %(start)s in %(location)s"
 msgstr "- 귀하의 세션 “%(title)s”는 %(start)s에 %(location)s에서 진행됩니다"
 
 #: pretalx/schedule/templates/schedule/speaker_notification.txt:3
@@ -8216,9 +7958,8 @@ msgid ""
 "invite them to create an account. If you have more than one co-speaker, you "
 "can add more speakers after finishing the proposal process."
 msgstr ""
-"공동 발표자가 있는 경우, 여기에서 그들의 이메일 주소를 추가해 주시면, 계정을 "
-"만들도록 초대하겠습니다. 공동 발표자가 여러 명인 경우, 제안 프로세스를 마친 "
-"후 더 많은 발표자를 추가할 수 있습니다."
+"공동 발표자가 있는 경우, 여기에서 그들의 이메일 주소를 추가해 주시면, 계정을 만들도록 초대하겠습니다. 공동 발표자가 여러 명인 경우,"
+" 제안 프로세스를 마친 후 더 많은 발표자를 추가할 수 있습니다."
 
 #: pretalx/submission/forms/submission.py:46
 #: pretalx/submission/models/submission.py:291
@@ -8250,18 +7991,15 @@ msgstr "이미 이 이름으로 태그가 있습니다!"
 
 #: pretalx/submission/models/access_code.py:35
 msgid ""
-"You can restrict the access code to a single track, or leave it open for all "
-"tracks."
-msgstr ""
-"접근 코드를 단일 트랙으로 제한하거나 모든 트랙에 대해 열어둘 수 있습니다."
+"You can restrict the access code to a single track, or leave it open for all"
+" tracks."
+msgstr "접근 코드를 단일 트랙으로 제한하거나 모든 트랙에 대해 열어둘 수 있습니다."
 
 #: pretalx/submission/models/access_code.py:46
 msgid ""
 "You can restrict the access code to a single session type, or leave it open "
 "for all session types."
-msgstr ""
-"접근 코드를 단일 세션 유형으로 제한하거나 모든 세션 유형에 대해 열어둘 수 있"
-"습니다."
+msgstr "접근 코드를 단일 세션 유형으로 제한하거나 모든 세션 유형에 대해 열어둘 수 있습니다."
 
 #: pretalx/submission/models/access_code.py:55
 msgid "You can set or change this date later to invalidate the access code."
@@ -8275,9 +8013,7 @@ msgstr "최대 사용 횟수"
 msgid ""
 "Numbers of times this access code can be used to submit a proposal. Leave "
 "empty for no limit."
-msgstr ""
-"이 접근 코드를 사용하여 제안서를 제출할 수 있는 횟수입니다. 제한이 없으려면 "
-"비워 두세요."
+msgstr "이 접근 코드를 사용하여 제안서를 제출할 수 있는 횟수입니다. 제한이 없으려면 비워 두세요."
 
 #: pretalx/submission/models/access_code.py:70
 msgid "Redeemed"
@@ -8302,8 +8038,8 @@ msgstr ""
 #: pretalx/submission/models/cfp.py:114
 msgid ""
 "Please put in the date you want to start accepting proposals from "
-"users.Leave the date empty to start accepting proposals immediately once the "
-"event is live."
+"users.Leave the date empty to start accepting proposals immediately once the"
+" event is live."
 msgstr ""
 
 #: pretalx/submission/models/cfp.py:123
@@ -8449,28 +8185,23 @@ msgstr "필수 필드"
 #: pretalx/submission/models/question.py:220
 msgid ""
 "You can limit this field to some tracks. Leave empty to apply to all tracks."
-msgstr ""
-"이 필드를 일부 트랙으로 제한할 수 있습니다. 비워 두면 모든 트랙에 적용됩니다."
+msgstr "이 필드를 일부 트랙으로 제한할 수 있습니다. 비워 두면 모든 트랙에 적용됩니다."
 
 #: pretalx/submission/models/question.py:229
 msgid ""
 "You can limit this field to some session types. Leave empty to apply to all "
 "session types."
-msgstr ""
-"이 필드를 일부 세션 유형으로 제한할 수 있습니다. 비워 두면 모든 세션 유형에 "
-"적용됩니다."
+msgstr "이 필드를 일부 세션 유형으로 제한할 수 있습니다. 비워 두면 모든 세션 유형에 적용됩니다."
 
 #: pretalx/submission/models/question.py:238
 #, fuzzy
 #| msgid ""
-#| "You can limit this field to some session types. Leave empty to apply to "
-#| "all session types."
+#| "You can limit this field to some session types. Leave empty to apply to all "
+#| "session types."
 msgid ""
-"You can limit this field to specific teams. Only members of these teams will "
-"be able to see responses."
-msgstr ""
-"이 필드를 일부 세션 유형으로 제한할 수 있습니다. 비워 두면 모든 세션 유형에 "
-"적용됩니다."
+"You can limit this field to specific teams. Only members of these teams will"
+" be able to see responses."
+msgstr "이 필드를 일부 세션 유형으로 제한할 수 있습니다. 비워 두면 모든 세션 유형에 적용됩니다."
 
 #: pretalx/submission/models/question.py:240
 #, fuzzy
@@ -8555,11 +8286,9 @@ msgstr "검토자에게 답변 표시"
 
 #: pretalx/submission/models/question.py:326
 msgid ""
-"Should responses to this field be shown to reviewers? This is helpful if you "
-"want to collect personal information, but use anonymous reviews."
-msgstr ""
-"이 필드에 대한 응답을 검토자에게 표시해야 합니까? 개인 정보를 수집하고 싶지"
-"만 익명 리뷰를 사용하려는 경우 유용합니다."
+"Should responses to this field be shown to reviewers? This is helpful if you"
+" want to collect personal information, but use anonymous reviews."
+msgstr "이 필드에 대한 응답을 검토자에게 표시해야 합니까? 개인 정보를 수집하고 싶지만 익명 리뷰를 사용하려는 경우 유용합니다."
 
 #: pretalx/submission/models/question.py:335
 msgid "Icon"
@@ -8593,9 +8322,7 @@ msgstr "독립 점수"
 msgid ""
 "Independent scores are not part of the total score. Instead they are shown "
 "in a separate column in the review dashboard."
-msgstr ""
-"독립 점수는 총 점수의 일부가 아닙니다. 대신 검토 대시보드의 별도 열에 표시됩"
-"니다."
+msgstr "독립 점수는 총 점수의 일부가 아닙니다. 대신 검토 대시보드의 별도 열에 표시됩니다."
 
 #: pretalx/submission/models/review.py:65
 msgid "You need to keep at least one non-independent score category!"
@@ -8636,9 +8363,8 @@ msgid ""
 "proposals will be highlighted and will be shown first in the review "
 "workflow. "
 msgstr ""
-"“모두”를 선택하면 검토자는 팀이 접근할 수 있는 모든 제안을 검토할 수 있습니"
-"다 (따라서 모든 제안 또는 특정 트랙). 이 모드에서는 할당된 제안이 강조 표시되"
-"며 검토 작업 흐름에서 먼저 표시됩니다. "
+"“모두”를 선택하면 검토자는 팀이 접근할 수 있는 모든 제안을 검토할 수 있습니다 (따라서 모든 제안 또는 특정 트랙). 이 모드에서는 "
+"할당된 제안이 강조 표시되며 검토 작업 흐름에서 먼저 표시됩니다. "
 
 #: pretalx/submission/models/review.py:259
 msgid "Reviewers can see other reviews"
@@ -8680,17 +8406,17 @@ msgstr "발표자는 수락 전에 제안을 수정할 수 있습니다"
 msgid ""
 "By default, modification of proposals is locked after the CfP ends, and is "
 "re-enabled once the proposal was accepted."
-msgstr ""
-"기본적으로, 제안 수정은 CfP 종료 후 잠겨 있으며, 제안이 수락되면 다시 활성화"
-"됩니다."
+msgstr "기본적으로, 제안 수정은 CfP 종료 후 잠겨 있으며, 제안이 수락되면 다시 활성화됩니다."
 
 #: pretalx/submission/models/submission.py:86 pretalx/submission/phrases.py:16
 msgctxt "proposal status"
 msgid "submitted"
 msgstr "제출됨"
 
-#. Translators: This string is used to mark anything that has been formally deleted,
-#. and can only be shown to organisers with extended access. It's usually placed
+#. Translators: This string is used to mark anything that has been formally
+#. deleted,
+#. and can only be shown to organisers with extended access. It's usually
+#. placed
 #. after the title/object like [this].
 #: pretalx/submission/models/submission.py:92 pretalx/submission/phrases.py:14
 msgid "deleted"
@@ -8771,9 +8497,7 @@ msgstr "태그를 공개적으로 표시"
 msgid ""
 "Tags are currently only in use for organisers and reviewers. They will be "
 "visible publicly in a future release of pretalx."
-msgstr ""
-"태그는 현재 조직자와 검토자만 사용할 수 있습니다. 향후 pretalx의 릴리스에서 "
-"공개적으로 표시될 것입니다."
+msgstr "태그는 현재 조직자와 검토자만 사용할 수 있습니다. 향후 pretalx의 릴리스에서 공개적으로 표시될 것입니다."
 
 #: pretalx/submission/models/track.py:55
 msgid ""
@@ -8796,9 +8520,7 @@ msgstr "분 단위의 기본 지속 시간"
 msgid ""
 "If you want a different deadline than the global deadline for this session "
 "type, enter it here."
-msgstr ""
-"이 세션 유형에 대해 글로벌 마감일과 다른 마감일을 원하시면 여기에 입력하십시"
-"오."
+msgstr "이 세션 유형에 대해 글로벌 마감일과 다른 마감일을 원하시면 여기에 입력하십시오."
 
 #: pretalx/submission/models/type.py:53
 msgid ""
@@ -8850,7 +8572,6 @@ msgid "Copy to other rooms"
 msgstr ""
 
 #, fuzzy
-#~| msgid "Actions"
 #~ msgid "Action type"
 #~ msgstr "작업"
 
@@ -8912,13 +8633,12 @@ msgstr ""
 #~ msgstr "유형"
 
 #~ msgid ""
-#~ "Add important messages (e.g. “Please bring an HDMI adapter if required.”) "
-#~ "or files (e.g. a conference styleguide). <br> They are shown to the "
-#~ "selected speakers above the list of their submitted sessions."
+#~ "Add important messages (e.g. “Please bring an HDMI adapter if required.”) or"
+#~ " files (e.g. a conference styleguide). <br> They are shown to the selected "
+#~ "speakers above the list of their submitted sessions."
 #~ msgstr ""
-#~ "중요한 메시지(예: “필요한 경우 HDMI 어댑터를 가져오세요.”) 또는 파일(예: "
-#~ "회의 스타일 가이드)을 추가하십시오. <br> 이들은 제출된 세션 목록 위의 선택"
-#~ "된 발표자에게 표시됩니다."
+#~ "중요한 메시지(예: “필요한 경우 HDMI 어댑터를 가져오세요.”) 또는 파일(예: 회의 스타일 가이드)을 추가하십시오. <br> 이들은"
+#~ " 제출된 세션 목록 위의 선택된 발표자에게 표시됩니다."
 
 #~ msgid "Add a new note"
 #~ msgstr "새 노트 추가"
@@ -8946,18 +8666,15 @@ msgstr ""
 #~ "We recommend uploading an image at least 400px wide. A square image works "
 #~ "best, as we display it in a circle in several places."
 #~ msgstr ""
-#~ "최소 400픽셀 너비의 이미지를 업로드하는 것을 권장합니다. 정사각형 이미지"
-#~ "가 가장 잘 작동하며, 여러 곳에서 원형으로 표시됩니다."
+#~ "최소 400픽셀 너비의 이미지를 업로드하는 것을 권장합니다. 정사각형 이미지가 가장 잘 작동하며, 여러 곳에서 원형으로 표시됩니다."
 
 #~ msgid ""
-#~ "Responses will be shown on session or speaker pages as appropriate. "
-#~ "Please note that you cannot make a field public after the first answers "
-#~ "have been given, to allow speakers explicit consent before publishing "
-#~ "information."
+#~ "Responses will be shown on session or speaker pages as appropriate. Please "
+#~ "note that you cannot make a field public after the first answers have been "
+#~ "given, to allow speakers explicit consent before publishing information."
 #~ msgstr ""
-#~ "응답은 적절한 세션 또는 발표자 페이지에 표시됩니다. 첫 번째 답변이 제공된 "
-#~ "후에는 필드를 공개할 수 없으므로 발표자가 정보를 게시하기 전에 명시적인 동"
-#~ "의를 받을 수 있도록 하십시오."
+#~ "응답은 적절한 세션 또는 발표자 페이지에 표시됩니다. 첫 번째 답변이 제공된 후에는 필드를 공개할 수 없으므로 발표자가 정보를 게시하기 "
+#~ "전에 명시적인 동의를 받을 수 있도록 하십시오."
 
 #~ msgid "Filter sessions"
 #~ msgstr "세션 필터링"
@@ -8975,10 +8692,9 @@ msgstr ""
 #~ msgstr "초대 다시 보내기"
 
 #~ msgid ""
-#~ "Your API token has been regenerated. The previous token will not be "
-#~ "usable any longer."
-#~ msgstr ""
-#~ "API 토큰이 다시 생성되었습니다. 이전 토큰은 더 이상 사용할 수 없습니다."
+#~ "Your API token has been regenerated. The previous token will not be usable "
+#~ "any longer."
+#~ msgstr "API 토큰이 다시 생성되었습니다. 이전 토큰은 더 이상 사용할 수 없습니다."
 
 #, fuzzy
 #~ msgid "Speaker information"
@@ -8999,8 +8715,7 @@ msgstr ""
 #~ msgid "Use for authentication when accessing the API."
 #~ msgstr "API에 액세스할 때 인증에 사용합니다."
 
-#~ msgid ""
-#~ "Generate a new token. The current token will not be usable any longer."
+#~ msgid "Generate a new token. The current token will not be usable any longer."
 #~ msgstr "새 토큰을 생성합니다. 기존 토큰은 더 이상 사용할 수 없습니다."
 
 #~ msgid "Invalidate and regenerate"
@@ -9041,8 +8756,8 @@ msgstr ""
 #~ "excellent support for English in pretalx, but if you encounter issues or "
 #~ "errors, please contact us!"
 #~ msgstr ""
-#~ "로캘 기본 설정이 저장되었습니다. 저희는 프리탈엑스에서 한글을 훌륭하게 지"
-#~ "원하고 있다고 생각하지만, 문제나 오류가 발생하면 저희에게 연락해 주세요!"
+#~ "로캘 기본 설정이 저장되었습니다. 저희는 프리탈엑스에서 한글을 훌륭하게 지원하고 있다고 생각하지만, 문제나 오류가 발생하면 저희에게 "
+#~ "연락해 주세요!"
 
 #~ msgid "Acknowledge Mail"
 #~ msgstr "확인 메일"
@@ -9129,21 +8844,16 @@ msgstr ""
 #~ msgstr "엑세스가 거부되었습니다."
 
 #~ msgid "Your password is too weak or too common, please choose another one."
-#~ msgstr ""
-#~ "비밀번호가 너무 약하거나 흔한 것 같습니다, 다른 비밀번호를 사용해 주세요."
+#~ msgstr "비밀번호가 너무 약하거나 흔한 것 같습니다, 다른 비밀번호를 사용해 주세요."
 
 #~ msgid ""
 #~ "Sorry, this password is too weak or too common, please choose another one."
-#~ msgstr ""
-#~ "죄송합니다. 비밀번호가 너무 약하거나 흔한 것 같습니다, 다른 비밀번호를 사"
-#~ "용해 주세요."
+#~ msgstr "죄송합니다. 비밀번호가 너무 약하거나 흔한 것 같습니다, 다른 비밀번호를 사용해 주세요."
 
 #~ msgid ""
-#~ "Your password is the only thing protecting your account, so please choose "
-#~ "a strong one."
-#~ msgstr ""
-#~ "비밀번호는 계정을 보호하는 유일한 수단이므로 강력한 비밀번호를 선택하시기 "
-#~ "바랍니다."
+#~ "Your password is the only thing protecting your account, so please choose a "
+#~ "strong one."
+#~ msgstr "비밀번호는 계정을 보호하는 유일한 수단이므로 강력한 비밀번호를 선택하시기 바랍니다."
 
 #~ msgid "Plugin: {}"
 #~ msgstr "플러그인: {}"
