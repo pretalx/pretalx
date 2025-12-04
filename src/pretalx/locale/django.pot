@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-28 21:18+0000\n"
+"POT-Creation-Date: 2025-12-04 19:09+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -207,70 +207,70 @@ msgstr ""
 msgid "The session “{title}” at {event}"
 msgstr ""
 
-#: pretalx/cfp/flow.py:381
+#: pretalx/cfp/flow.py:389
 msgid ""
 "Your draft was saved. You can continue to edit it as long as the CfP is open."
 msgstr ""
 
-#: pretalx/cfp/flow.py:389
+#: pretalx/cfp/flow.py:397
 msgid ""
 "Congratulations, you’ve submitted your proposal! You can continue to make "
 "changes to it up to the submission deadline, and you will be notified of any "
 "changes or questions."
 msgstr ""
 
-#: pretalx/cfp/flow.py:419
+#: pretalx/cfp/flow.py:427
 msgid "Hey, nice to meet you!"
 msgstr ""
 
-#: pretalx/cfp/flow.py:424
+#: pretalx/cfp/flow.py:432
 msgid ""
 "We’re glad that you want to contribute to our event with your proposal. "
 "Let’s get started, this won’t take long."
 msgstr ""
 
-#: pretalx/cfp/flow.py:485
+#: pretalx/cfp/flow.py:496
 msgid "Additional information"
 msgstr ""
 
-#: pretalx/cfp/flow.py:489
+#: pretalx/cfp/flow.py:500
 msgid "Tell us more!"
 msgstr ""
 
-#: pretalx/cfp/flow.py:494
+#: pretalx/cfp/flow.py:505
 msgid "Before we can save your proposal, we have some more questions for you."
 msgstr ""
 
-#: pretalx/cfp/flow.py:524
+#: pretalx/cfp/flow.py:535
 msgid ""
 "There was an error when logging in. Please contact the organiser for further "
 "help."
 msgstr ""
 
-#: pretalx/cfp/flow.py:533
+#: pretalx/cfp/flow.py:544
 msgid "Account"
 msgstr ""
 
-#: pretalx/cfp/flow.py:538
+#: pretalx/cfp/flow.py:549
 msgid "That’s it about your proposal! We now just need a way to contact you."
 msgstr ""
 
-#: pretalx/cfp/flow.py:544
+#: pretalx/cfp/flow.py:555
 msgid ""
 "To create your proposal, you need an account on this page. This not only "
 "gives us a way to contact you, it also gives you the possibility to edit "
 "your proposal or to view its current state."
 msgstr ""
 
-#: pretalx/cfp/flow.py:586
+#: pretalx/cfp/flow.py:597
 msgid "Profile"
 msgstr ""
 
-#: pretalx/cfp/flow.py:590
+#: pretalx/cfp/flow.py:601
 msgid "Tell us something about yourself!"
 msgstr ""
 
-#: pretalx/cfp/flow.py:595
+#: pretalx/cfp/flow.py:606
 msgid ""
 "This information will be publicly displayed next to your session - you can "
 "always edit for as long as proposals are still open."
@@ -441,7 +441,7 @@ msgid ""
 msgstr ""
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:25
-msgid "Please contact the conference organizers for more information."
+msgid "Please contact the conference organisers for more information."
 msgstr ""
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:31
@@ -854,7 +854,7 @@ msgstr ""
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:46
 #: pretalx/orga/tables/cfp.py:169
 #: pretalx/orga/templates/orga/submission/review.html:66
-#: pretalx/orga/views/cfp.py:473 pretalx/submission/models/access_code.py:44
+#: pretalx/orga/views/cfp.py:454 pretalx/submission/models/access_code.py:44
 #: pretalx/submission/models/submission.py:207
 msgid "Session type"
 msgstr ""
@@ -863,7 +863,7 @@ msgstr ""
 #: pretalx/orga/tables/cfp.py:117 pretalx/orga/templates/orga/cfp/text.html:128
 #: pretalx/orga/templates/orga/review/bulk_tag.html:55
 #: pretalx/orga/templates/orga/submission/review.html:71
-#: pretalx/orga/views/cfp.py:544 pretalx/submission/models/access_code.py:33
+#: pretalx/orga/views/cfp.py:525 pretalx/submission/models/access_code.py:33
 #: pretalx/submission/models/submission.py:213
 msgid "Track"
 msgstr ""
@@ -1339,7 +1339,7 @@ msgstr ""
 msgid "The API token was reset."
 msgstr ""
 
-#: pretalx/common/log_display.py:132 pretalx/orga/views/person.py:108
+#: pretalx/common/log_display.py:132 pretalx/orga/views/person.py:107
 msgid "The API token was revoked."
 msgstr ""
 
@@ -1397,7 +1397,7 @@ msgstr ""
 #: pretalx/orga/templates/orga/admin/user_detail.html:131
 #: pretalx/orga/templates/orga/mails/_placeholder_group.html:19
 #: pretalx/orga/templates/orga/organiser/list.html:34
-#: pretalx/orga/views/event.py:782
+#: pretalx/orga/views/event.py:785
 msgid "Event"
 msgid_plural "Events"
 msgstr[0] ""
@@ -1506,21 +1506,21 @@ msgctxt "category of items"
 msgid "Other"
 msgstr ""
 
-#: pretalx/common/tables.py:333
+#: pretalx/common/tables.py:328
 msgid "edit"
 msgstr ""
 
 #. Translators: This is a label on delete buttons.
-#: pretalx/common/tables.py:341 pretalx/common/text/phrases.py:58
+#: pretalx/common/tables.py:336 pretalx/common/text/phrases.py:58
 msgid "Delete"
 msgstr ""
 
-#: pretalx/common/tables.py:350
+#: pretalx/common/tables.py:345
 #: pretalx/orga/templates/orga/cfp/question/_form.html:101
 msgid "Move item"
 msgstr ""
 
-#: pretalx/common/tables.py:360 pretalx/orga/tables/cfp.py:76
+#: pretalx/common/tables.py:355 pretalx/orga/tables/cfp.py:76
 msgid "Copy access code link"
 msgstr ""
 
@@ -3504,7 +3504,7 @@ msgid "Tags"
 msgstr ""
 
 #: pretalx/orga/forms/event.py:867 pretalx/orga/forms/mails.py:471
-#: pretalx/orga/templates/orga/base.html:258 pretalx/orga/views/cfp.py:549
+#: pretalx/orga/templates/orga/base.html:258 pretalx/orga/views/cfp.py:530
 #: pretalx/submission/forms/submission.py:271
 #: pretalx/submission/models/question.py:222
 msgid "Tracks"
@@ -3539,7 +3539,7 @@ msgid "Emails"
 msgstr ""
 
 #: pretalx/orga/forms/event.py:873 pretalx/orga/templates/orga/base.html:384
-#: pretalx/orga/views/schedule.py:590
+#: pretalx/orga/views/schedule.py:592
 msgid "Rooms"
 msgstr ""
 
@@ -4449,13 +4449,13 @@ msgstr ""
 msgid "Editor"
 msgstr ""
 
-#: pretalx/orga/templates/orga/base.html:262 pretalx/orga/views/cfp.py:478
+#: pretalx/orga/templates/orga/base.html:262 pretalx/orga/views/cfp.py:459
 #: pretalx/submission/forms/submission.py:257
 #: pretalx/submission/models/question.py:231
 msgid "Session types"
 msgstr ""
 
-#: pretalx/orga/templates/orga/base.html:265 pretalx/orga/views/cfp.py:583
+#: pretalx/orga/templates/orga/base.html:265 pretalx/orga/views/cfp.py:564
 msgid "Access codes"
 msgstr ""
 
@@ -5447,7 +5447,7 @@ msgstr ""
 #: pretalx/orga/templates/orga/review/dashboard.html:69
 #: pretalx/orga/templates/orga/submission/apply_pending.html:10
 #: pretalx/orga/templates/orga/submission/base.html:47
-#: pretalx/orga/templates/orga/submission/list.html:51
+#: pretalx/orga/templates/orga/submission/list.html:52
 msgid "Apply pending changes"
 msgstr ""
 
@@ -5546,9 +5546,15 @@ msgid ""
 msgstr ""
 
 #: pretalx/orga/templates/orga/schedule/export.html:118
-#: pretalx/orga/views/review.py:961 pretalx/orga/views/schedule.py:122
+#: pretalx/orga/views/review.py:961 pretalx/orga/views/schedule.py:123
 #: pretalx/orga/views/speaker.py:361
 msgid "API"
+msgstr ""
+
+#: pretalx/orga/templates/orga/schedule/export.html:135
+msgid ""
+"Please note that your token will have to have the “action” permissions in "
+"order to access the predefined schedule exports via the API."
 msgstr ""
 
 #: pretalx/orga/templates/orga/schedule/index.html:34
@@ -5860,7 +5866,7 @@ msgid ""
 msgstr ""
 
 #: pretalx/orga/templates/orga/speaker/form.html:58
-#: pretalx/orga/templates/orga/submission/list.html:46
+#: pretalx/orga/templates/orga/submission/list.html:47
 #: pretalx/orga/templates/orga/submission/speakers.html:79
 msgid "Send email"
 msgstr ""
@@ -5977,19 +5983,19 @@ msgid "There has been no feedback for sessions in this event yet."
 msgstr ""
 
 #: pretalx/orga/templates/orga/submission/list.html:16
-#: pretalx/orga/templates/orga/submission/list.html:58
+#: pretalx/orga/templates/orga/submission/list.html:59
 msgid "Proposal feed"
 msgstr ""
 
-#: pretalx/orga/templates/orga/submission/list.html:26
-#: pretalx/orga/templates/orga/submission/list.html:36
+#: pretalx/orga/templates/orga/submission/list.html:27
+#: pretalx/orga/templates/orga/submission/list.html:37
 #: pretalx/orga/views/dashboard.py:335
 msgid "session"
 msgid_plural "sessions"
 msgstr[0] ""
 msgstr[1] ""
 
-#: pretalx/orga/templates/orga/submission/list.html:56
+#: pretalx/orga/templates/orga/submission/list.html:57
 msgid "Add new session or proposal"
 msgstr ""
 
@@ -6259,60 +6265,60 @@ msgstr ""
 msgid "New custom field"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:288
+#: pretalx/orga/views/cfp.py:269
 msgid ""
 "You cannot change the options and upload an option file at the same time."
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:352
+#: pretalx/orga/views/cfp.py:333
 msgid ""
 "You cannot delete a custom field that has any responses. We have deactivated "
 "the field instead."
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:409
+#: pretalx/orga/views/cfp.py:390
 msgid "Could not send mails, error in configuration."
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:446
+#: pretalx/orga/views/cfp.py:427
 msgid "New type"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:477
+#: pretalx/orga/views/cfp.py:458
 msgid "New session type"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:486
+#: pretalx/orga/views/cfp.py:467
 msgid "This session type is in use in a proposal and cannot be deleted."
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:507
+#: pretalx/orga/views/cfp.py:488
 msgid "The session type has been made default."
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:517 pretalx/orga/views/cfp.py:548
+#: pretalx/orga/views/cfp.py:498 pretalx/orga/views/cfp.py:529
 msgid "New track"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:557
+#: pretalx/orga/views/cfp.py:538
 msgid "This track is in use in a proposal and cannot be deleted."
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:570 pretalx/orga/views/cfp.py:582
+#: pretalx/orga/views/cfp.py:551 pretalx/orga/views/cfp.py:563
 msgid "New access code"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:578 pretalx/submission/models/access_code.py:25
+#: pretalx/orga/views/cfp.py:559 pretalx/submission/models/access_code.py:25
 msgid "Access code"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:611
+#: pretalx/orga/views/cfp.py:592
 msgid ""
 "This access code has been used for a proposal and cannot be deleted. To "
 "disable it, you can set its validity date to the past."
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:646
+#: pretalx/orga/views/cfp.py:627
 msgid "The access code has been sent."
 msgstr ""
 
@@ -6515,13 +6521,13 @@ msgstr ""
 msgid "Did you really mean to make your event take place in the past?"
 msgstr ""
 
-#: pretalx/orga/views/event.py:771
+#: pretalx/orga/views/event.py:774
 msgid ""
 "ALL related data, such as proposals, and speaker profiles, and uploads, will "
 "also be deleted and cannot be restored."
 msgstr ""
 
-#: pretalx/orga/views/event.py:812
+#: pretalx/orga/views/event.py:815
 msgid "Generate widget"
 msgstr ""
 
@@ -6704,17 +6710,17 @@ msgstr ""
 msgid "The organiser and all related data have been deleted."
 msgstr ""
 
-#: pretalx/orga/views/person.py:83
+#: pretalx/orga/views/person.py:82
 msgid ""
 "This is your new API token. Please make sure to save it, as it will not be "
 "shown again:"
 msgstr ""
 
-#: pretalx/orga/views/person.py:98
+#: pretalx/orga/views/person.py:97
 msgid "The API token has been upgraded."
 msgstr ""
 
-#: pretalx/orga/views/person.py:127
+#: pretalx/orga/views/person.py:126
 msgid "You are now an administrator instead of a superuser."
 msgstr ""
 
@@ -6789,82 +6795,82 @@ msgstr ""
 msgid "The reviewers were assigned successfully."
 msgstr ""
 
-#: pretalx/orga/views/review.py:960 pretalx/orga/views/schedule.py:120
+#: pretalx/orga/views/review.py:960 pretalx/orga/views/schedule.py:121
 #: pretalx/orga/views/speaker.py:359
 msgid "CSV/JSON exports"
 msgstr ""
 
-#: pretalx/orga/views/review.py:973 pretalx/orga/views/schedule.py:128
+#: pretalx/orga/views/review.py:973 pretalx/orga/views/schedule.py:129
 #: pretalx/orga/views/speaker.py:371
 msgid "No data to be exported"
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:109
+#: pretalx/orga/views/schedule.py:110
 msgid "Download ZIP"
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:112
+#: pretalx/orga/views/schedule.py:113
 msgid "Regenerate Export"
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:121 pretalx/orga/views/speaker.py:360
+#: pretalx/orga/views/schedule.py:122 pretalx/orga/views/speaker.py:360
 msgid "More exports"
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:143
+#: pretalx/orga/views/schedule.py:144
 msgid "A new export is being generated and will be available soon."
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:150
+#: pretalx/orga/views/schedule.py:151
 msgid ""
 "A new export will be generated on the next scheduled opportunity – please "
 "contact your administrator for details."
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:172
+#: pretalx/orga/views/schedule.py:173
 #, python-brace-format
 msgid ""
 "Could not find the current export, please try to regenerate it. ({error})"
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:198
+#: pretalx/orga/views/schedule.py:199
 msgid "Release"
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:218
+#: pretalx/orga/views/schedule.py:219
 msgid "You have to provide a new, unique schedule version!"
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:229
+#: pretalx/orga/views/schedule.py:231
 msgid "Nice, your schedule has been released!"
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:245
+#: pretalx/orga/views/schedule.py:247
 msgid ""
 "Reset successful – start editing the schedule from your selected version!"
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:250
+#: pretalx/orga/views/schedule.py:252
 msgid "Error retrieving the schedule version to reset to."
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:284
+#: pretalx/orga/views/schedule.py:286
 msgid "You can only regenerate mails after the first schedule was released."
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:557
+#: pretalx/orga/views/schedule.py:559
 msgid "The session has been scheduled."
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:572 pretalx/orga/views/schedule.py:589
+#: pretalx/orga/views/schedule.py:574 pretalx/orga/views/schedule.py:591
 msgid "New room"
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:585 pretalx/schedule/models/slot.py:54
+#: pretalx/orga/views/schedule.py:587 pretalx/schedule/models/slot.py:54
 msgid "Room"
 msgstr ""
 
-#: pretalx/orga/views/schedule.py:599
+#: pretalx/orga/views/schedule.py:601
 msgid "There is or was a session scheduled in this room. It cannot be deleted."
 msgstr ""
 
@@ -7143,7 +7149,7 @@ msgstr ""
 msgid "Unnamed user"
 msgstr ""
 
-#: pretalx/person/models/user.py:478
+#: pretalx/person/models/user.py:480
 #, python-brace-format
 msgid ""
 "Hi {name},\n"
@@ -7159,11 +7165,11 @@ msgid ""
 "the pretalx robot"
 msgstr ""
 
-#: pretalx/person/models/user.py:493
+#: pretalx/person/models/user.py:495
 msgid "Password recovery"
 msgstr ""
 
-#: pretalx/person/models/user.py:520
+#: pretalx/person/models/user.py:522
 #, python-brace-format
 msgid ""
 "Hi {name},\n"
@@ -7177,11 +7183,11 @@ msgid ""
 "the pretalx team"
 msgstr ""
 
-#: pretalx/person/models/user.py:532
+#: pretalx/person/models/user.py:534
 msgid "[pretalx] Password changed"
 msgstr ""
 
-#: pretalx/person/models/user.py:556
+#: pretalx/person/models/user.py:558
 #, python-brace-format
 msgid ""
 "Hi {name},\n"
@@ -7196,7 +7202,7 @@ msgid ""
 "the pretalx team"
 msgstr ""
 
-#: pretalx/person/models/user.py:568
+#: pretalx/person/models/user.py:570
 msgid "[pretalx] Email address changed"
 msgstr ""
 
@@ -7274,30 +7280,30 @@ msgstr ""
 msgid "How many people can fit in the room?"
 msgstr ""
 
-#: pretalx/schedule/models/schedule.py:44 pretalx/schedule/phrases.py:11
+#: pretalx/schedule/models/schedule.py:43 pretalx/schedule/phrases.py:11
 msgctxt "Version of the conference schedule"
 msgid "Version"
 msgstr ""
 
-#: pretalx/schedule/models/schedule.py:50
+#: pretalx/schedule/models/schedule.py:49
 msgid "This text will be shown in the public changelog and the RSS feed."
 msgstr ""
 
-#: pretalx/schedule/models/schedule.py:246
+#: pretalx/schedule/models/schedule.py:245
 #, python-brace-format
 msgid "Room {room_name} is not available at the scheduled time."
 msgstr ""
 
-#: pretalx/schedule/models/schedule.py:270
+#: pretalx/schedule/models/schedule.py:269
 msgid "Another session in the same room overlaps with this one."
 msgstr ""
 
-#: pretalx/schedule/models/schedule.py:302
+#: pretalx/schedule/models/schedule.py:301
 #, python-brace-format
 msgid "{speaker} is not available at the scheduled time."
 msgstr ""
 
-#: pretalx/schedule/models/schedule.py:330
+#: pretalx/schedule/models/schedule.py:329
 #, python-brace-format
 msgid "{speaker} is scheduled for another session at the same time."
 msgstr ""
@@ -7389,58 +7395,62 @@ msgid "Arabic"
 msgstr ""
 
 #: pretalx/settings.py:386
-msgid "Czech"
+msgid "Bulgarian"
 msgstr ""
 
 #: pretalx/settings.py:391
-msgid "Greek"
+msgid "Czech"
 msgstr ""
 
 #: pretalx/settings.py:396
-msgid "Spanish"
+msgid "Greek"
 msgstr ""
 
 #: pretalx/settings.py:401
+msgid "Spanish"
+msgstr ""
+
+#: pretalx/settings.py:406
 msgid "French"
 msgstr ""
 
-#: pretalx/settings.py:407
+#: pretalx/settings.py:412
 msgid "Italian"
 msgstr ""
 
-#: pretalx/settings.py:412
+#: pretalx/settings.py:417
 msgid "Japanese"
 msgstr ""
 
-#: pretalx/settings.py:418
+#: pretalx/settings.py:423
 msgid "Korean"
 msgstr ""
 
-#: pretalx/settings.py:423
+#: pretalx/settings.py:428
 msgid "Dutch"
 msgstr ""
 
-#: pretalx/settings.py:428
+#: pretalx/settings.py:433
 msgid "Polish"
 msgstr ""
 
-#: pretalx/settings.py:433
+#: pretalx/settings.py:438
 msgid "Brazilian Portuguese"
 msgstr ""
 
-#: pretalx/settings.py:439
+#: pretalx/settings.py:444
 msgid "Portuguese"
 msgstr ""
 
-#: pretalx/settings.py:445
+#: pretalx/settings.py:450
 msgid "Vietnamese"
 msgstr ""
 
-#: pretalx/settings.py:450
+#: pretalx/settings.py:455
 msgid "Traditional Chinese (Taiwan)"
 msgstr ""
 
-#: pretalx/settings.py:456
+#: pretalx/settings.py:461
 msgid "Simplified Chinese"
 msgstr ""
 
