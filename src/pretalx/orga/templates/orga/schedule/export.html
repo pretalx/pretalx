@@ -124,12 +124,12 @@ SPDX-FileContributor: luto
                 Some of the general exports are only accessible for organisers, or include
                 more information when accessed with your organiser account. If you want to
                 access the organiser version in automatic integrations, you’ll have to
-                provide your authentication token just like in the API, like this:
+                use the API URLs and use an API token, like this:
             {% endblocktranslate %}
         </p>
 
-            <pre> curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.urls.frab_xml.full }}
- curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.api_urls.schedules }}latest/exporters/schedule.xml/ </pre>
+            <pre> curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.api_urls.submissions.full }} 
+ curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.api_urls.schedules.full }}latest/exporters/schedule.xml/ </pre>
 
         <p>
             {% blocktranslate trimmed %}
@@ -137,7 +137,6 @@ SPDX-FileContributor: luto
                 to access the predefined schedule exports via the API.
             {% endblocktranslate %}
         </p>
-
 
         {% include "orga/includes/submit_row.html" with submit_buttons=api_buttons %}
     </section>

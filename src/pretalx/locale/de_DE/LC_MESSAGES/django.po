@@ -6164,13 +6164,13 @@ msgid ""
 "Some of the general exports are only accessible for organisers, or include "
 "more information when accessed with your organiser account. If you want to "
 "access the organiser version in automatic integrations, you’ll have to "
-"provide your authentication token just like in the API, like this:"
+"use the API URLs and use an API token, like this:"
 msgstr ""
 "Einige dieser allgemeinen Exports sind nur für Veranstalter zugänglich, oder "
 "enthalten zusätzliche Informationen, wenn sie von einem Veranstalter-Account "
 "abgerufen werden. Wenn du diese Exporte in Automatisierungen einbinden "
-"möchtest, wirst du ein Authentifizierungs-Token angeben müssen, wie in der "
-"API. Das geht so:"
+"möchtest, musst Du über die API URLs zugreifen und ein API-Token angeben. "
+"Das geht so:"
 
 #: pretalx/orga/templates/orga/schedule/export.html:14
 #: pretalx/orga/templates/orga/schedule/export.html:21
