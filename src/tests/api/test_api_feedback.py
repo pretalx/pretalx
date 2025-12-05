@@ -229,6 +229,25 @@ def test_anon_can_create_feedback_with_speaker(client, event, past_slot, speaker
 
 
 @pytest.mark.django_db
+def test_anon_cannot_create_feedback_with_unrelated_speaker(
+    client, event, past_slot, speaker
+):
+    # The speaker is not a speaker of the submission
+    url = event.api_urls.feedback
+    data = {
+        "submission": past_slot.submission.code,
+        "review": "Great speaker!",
+        "speaker": speaker.code,
+    }
+
+    response = client.post(url, data=json.dumps(data), content_type="application/json")
+    content = json.loads(response.text)
+
+    assert response.status_code == 400, content
+    assert "speaker" in content
+
+
+@pytest.mark.django_db
 def test_anon_cannot_create_feedback_for_unscheduled_submission(
     client, event, submission
 ):
