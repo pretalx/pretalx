@@ -385,6 +385,7 @@ class Event(PretalxModel):
         schedules = "{base}schedules/"
         speakers = "{base}speakers/"
         reviews = "{base}reviews/"
+        feedback = "{base}feedback/"
         rooms = "{base}rooms/"
         questions = "{base}questions/"
         question_options = "{base}question-options/"
