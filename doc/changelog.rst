@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`api` At the root API URL, you will now find a link to the event API, as well as the latest API version that is available.
 - :feature:`orga` When creating a new API token, you can now select and deselect whole rows and columns.
 - :feature:`orga` You can now see which endpoints an existing API token can access.
 - :bug:`orga:review` New review scores could only be created with a limited length at first, and could only be longer after having been saved once.

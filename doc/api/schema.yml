@@ -3,6 +3,21 @@ info:
   title: pretalx API
   version: ''
 paths:
+  /api/:
+    get:
+      operationId: api_retrieve
+      description: Returns a link to the REST API, as well as the currently used pretalx
+        version.
+      summary: API Root
+      tags:
+      - root
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Root'
+          description: ''
   /api/events/:
     get:
       operationId: api_events_list
@@ -6422,6 +6437,30 @@ components:
             $ref: '#/components/schemas/AvailabilityRequest'
       required:
       - name
+    Root:
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        api_version:
+          type: string
+        urls:
+          $ref: '#/components/schemas/RootUrls'
+      required:
+      - api_version
+      - name
+      - urls
+      - version
+    RootUrls:
+      type: object
+      properties:
+        events:
+          type: string
+          format: uri
+      required:
+      - events
     Schedule:
       type: object
       description: |-
@@ -7697,6 +7736,9 @@ servers:
 externalDocs:
   url: https://docs.pretalx.org/api/
 tags:
+- name: root
+  description: The API root endpoint provides version information and links to the
+    main API resources.
 - name: events
   description: The events endpoints are currently read-only, though we hope to add
     write actions for event settings eventually.

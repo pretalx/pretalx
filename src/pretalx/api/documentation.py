@@ -63,7 +63,8 @@ def build_search_docs(*params, extra_description=None):
 
 def postprocess_schema(result, generator, request, public):
     # We never want to show auth information, as the display with redoc really sucks. We
-    # disabled this globally, but it snuck back in in the two public endpoints.
+    # disabled this globally, but it snuck back in in the public endpoints.
+    result["paths"]["/api/"]["get"].pop("security", None)
     result["paths"]["/api/events/"]["get"].pop("security")
     result["paths"]["/api/events/{event}/"]["get"].pop("security")
 
@@ -83,6 +84,10 @@ def postprocess_schema(result, generator, request, public):
 
     # Section headings. Order here determines order in the docs!
     result["tags"] = [
+        {
+            "name": "root",
+            "description": "The API root endpoint provides version information and links to the main API resources.",
+        },
         {
             "name": "events",
             "description": "The events endpoints are currently read-only, though we hope to add write actions for event settings eventually.",
