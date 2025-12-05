@@ -540,6 +540,149 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedActivityLogList'
           description: ''
+  /api/events/{event}/feedback/:
+    get:
+      operationId: feedback_list
+      summary: List Feedback
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: query
+        name: expand
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - speaker
+            - submission
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
+      - name: o
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: A search term, searching in `"submission.title"`.
+      - in: query
+        name: submission
+        schema:
+          type: string
+        description: Filter by submission code
+      tags:
+      - feedback
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFeedbackList'
+          description: ''
+    post:
+      operationId: feedback_create
+      description: Submit feedback for a session. This endpoint is publicly accessible.
+      summary: Create Feedback
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      tags:
+      - feedback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackWriteRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: ''
+  /api/events/{event}/feedback/{id}/:
+    get:
+      operationId: feedback_retrieve
+      summary: Show Feedback
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: query
+        name: expand
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - speaker
+            - submission
+        description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feedback.
+        required: true
+      tags:
+      - feedback
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feedback'
+          description: ''
+    delete:
+      operationId: feedback_destroy
+      summary: Delete Feedback
+      parameters:
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this feedback.
+        required: true
+      tags:
+      - feedback
+      responses:
+        '204':
+          description: No response body
   /api/events/{event}/mail-templates/:
     get:
       operationId: mail_templates_list
@@ -4868,6 +5011,64 @@ components:
       - date_to
       - name
       - slug
+    Feedback:
+      type: object
+      description: |-
+        A ModelSerializer that takes additional arguments for
+        "fields", "omit" and "expand" in order to
+        control which fields are displayed, and whether to replace simple
+        values with complex, nested serializations
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        submission:
+          type: string
+          readOnly: true
+        speaker:
+          type: string
+          nullable: true
+          readOnly: true
+        rating:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        review:
+          type: string
+          title: Feedback
+      required:
+      - id
+      - review
+      - speaker
+      - submission
+    FeedbackWriteRequest:
+      type: object
+      description: |-
+        A ModelSerializer that takes additional arguments for
+        "fields", "omit" and "expand" in order to
+        control which fields are displayed, and whether to replace simple
+        values with complex, nested serializations
+      properties:
+        submission:
+          type: string
+          minLength: 1
+        speaker:
+          type: string
+          minLength: 1
+          nullable: true
+        rating:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        review:
+          type: string
+          minLength: 1
+          title: Feedback
+      required:
+      - review
+      - submission
     FileResponse:
       type: object
       description: Serializer for file upload response.
@@ -5128,6 +5329,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AnswerOption'
+    PaginatedFeedbackList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Feedback'
     PaginatedMailTemplateList:
       type: object
       required:
