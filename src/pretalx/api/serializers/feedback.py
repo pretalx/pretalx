@@ -35,6 +35,16 @@ class FeedbackWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             )
         return value
 
+    def validate(self, data):
+        data = super().validate(data)
+        speaker = data.get("speaker")
+        talk = data.get("talk")
+        if speaker and talk and speaker not in talk.speakers.all():
+            raise exceptions.ValidationError(
+                {"speaker": "This speaker is not a speaker of the given submission."}
+            )
+        return data
+
     class Meta:
         model = Feedback
         fields = [
