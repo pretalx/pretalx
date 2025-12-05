@@ -45,6 +45,11 @@ docs *args="html":
 serve-docs *args="--port 8001":
     uv run sphinx-autobuild . _build/html {{ args }}
 
+# Update the API documentation
+[group('documentation')]
+api-docs:
+    just run spectacular --color --file ../doc/api/schema.yml
+
 # Check codebase for licensing problems
 [group('linting')]
 [working-directory("src")]
