@@ -8,6 +8,7 @@ Release Notes
 
 - :bug:`orga:review` New review scores could only be created with a limited length at first, and could only be longer after having been saved once.
 - :feature:`api` There is now an API for session feedback.
+- :bug:`orga` There was a bug that prevented the saving of custom fields in the organiser area when they were set to be public.
 - :release:`2025.2.1 <2025-12-03>`
 - :bug:`orga:email` Emails containing schedule notifications for speakers in multilingual events could sometimes appear in mixed languages, with the general email text using the user’s preferred language and the notification section using the main event language.
 - :bug:`api` Submission creation in the API was broken.

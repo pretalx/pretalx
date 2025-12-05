@@ -272,7 +272,7 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
                 ),
             )
         if self.cleaned_data.get("is_public"):
-            self.cleaned_data["limit_teams"] = None
+            self.cleaned_data.pop("limit_teams", None)
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
