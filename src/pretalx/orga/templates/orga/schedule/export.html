@@ -128,8 +128,8 @@ SPDX-FileContributor: luto
             {% endblocktranslate %}
         </p>
 
-            <pre> curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.urls.frab_xml.full }}
- curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.api_urls.schedules }}latest/exporters/schedule.xml/ </pre>
+            <pre> curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.api_urls.submissions.full }}
+ curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.api_urls.schedules.full }}latest/exporters/schedule.xml/ </pre>
 
         <p>
             {% blocktranslate trimmed %}

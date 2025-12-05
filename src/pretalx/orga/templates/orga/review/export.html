@@ -65,7 +65,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endblocktranslate %}
         </p>
 
-            <pre> curl -H "Authorization: Token INSERTAUTHTOKENHERE" {{ request.event.api_urls.reviews.full }} </pre>
+            <pre> curl -H "Authorization: Token INSERTAUTHTOKENHERE" {{ request.event.api_urls.reviews.full }}
+ curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.api_urls.schedules.full }}latest/exporters/speakers.csv/ </pre>
+
+        <p>
+            {% blocktranslate trimmed %}
+                Please note that your token will have to have the “action” permissions in order
+                to access the predefined schedule exports via the API.
+            {% endblocktranslate %}
+        </p>
 
         {% include "orga/includes/submit_row.html" with submit_buttons=api_buttons %}
     </section>
