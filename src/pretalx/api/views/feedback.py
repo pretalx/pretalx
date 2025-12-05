@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from rest_framework import mixins, viewsets
+from rest_framework import exceptions, mixins, viewsets
 from rest_framework.permissions import AllowAny
 
 from pretalx.api.documentation import (
@@ -79,6 +79,11 @@ class FeedbackViewSet(
                 ]
             )
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        if not self.event.get_feature_flag("use_feedback"):
+            raise exceptions.PermissionDenied("Feedback is not enabled for this event.")
+        return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         # Don't log action for anonymous feedback creation

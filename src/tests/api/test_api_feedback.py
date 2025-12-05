@@ -251,9 +251,6 @@ def test_anon_cannot_create_feedback_for_future_session(client, event, slot):
         slot.start = now() + dt.timedelta(hours=1)
         slot.end = now() + dt.timedelta(hours=2)
         slot.save()
-        # Clear the cached property so it gets re-evaluated
-        if hasattr(slot.submission, "does_accept_feedback"):
-            del slot.submission.__dict__["does_accept_feedback"]
 
     url = event.api_urls.feedback
     data = {
@@ -283,6 +280,24 @@ def test_anon_cannot_create_feedback_for_unreleased_schedule(
     response = client.post(url, data=json.dumps(data), content_type="application/json")
     # Should fail because the submission is not in the released schedule
     assert response.status_code == 400, response.text
+
+
+@pytest.mark.django_db
+def test_anon_cannot_create_feedback_when_disabled_in_settings(
+    client, event, past_slot
+):
+    with scope(event=event):
+        event.feature_flags["use_feedback"] = False
+        event.save()
+
+    url = event.api_urls.feedback
+    data = {
+        "submission": past_slot.submission.code,
+        "review": "Great talk!",
+    }
+
+    response = client.post(url, data=json.dumps(data), content_type="application/json")
+    assert response.status_code == 403, response.text
 
 
 @pytest.mark.django_db
