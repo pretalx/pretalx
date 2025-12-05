@@ -156,7 +156,7 @@ release-checks:
 
 # Release a new pretalx version
 [group('release')]
-release version="":
+release version:
     uv pip install build
     git commit -am "Release {{ version }}"
     git tag -m "Release {{ version }}" {{ version }}
@@ -164,3 +164,4 @@ release version="":
     uv run python -m build -n
     uvx twine upload dist/pretalx-*
     git push
+    git push --tags
