@@ -928,12 +928,11 @@ def test_event_history_detail_view_requires_permission(
 
     url = f"/orga/event/{event.slug}/history/{log_pk}/"
     response = client.get(url, follow=True)
-    assert response.status_code in [200, 403]
-    if response.status_code == 200:
-        assert (
-            "login" in response.request["PATH_INFO"].lower()
-            or "sign in" in response.text.lower()
-        )
+    assert response.status_code == 200
+    assert (
+        "login" in response.request["PATH_INFO"].lower()
+        or "sign in" in response.text.lower()
+    )
 
 
 @pytest.mark.django_db

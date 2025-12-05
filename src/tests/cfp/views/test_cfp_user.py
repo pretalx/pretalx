@@ -358,25 +358,16 @@ def test_cannot_edit_submission_type_after_acceptance(
 def test_cannot_edit_accepted_submission_when_feature_disabled(
     speaker_client, accepted_submission
 ):
-    """Test that accepted submissions cannot be edited when speakers_can_edit_submissions is disabled"""
     with scope(event=accepted_submission.event):
-        # First verify the submission is normally editable when accepted
         assert accepted_submission.editable is True
 
-        # Disable the feature flag
         accepted_submission.event.feature_flags["speakers_can_edit_submissions"] = False
         accepted_submission.event.save()
 
-        # Now it should not be editable (need to clear the cached property)
         accepted_submission.refresh_from_db()
-        # Clear the cached property - Django's cached_property uses the property name as the cache key
-        try:
-            del accepted_submission.editable
-        except AttributeError:
-            pass  # Property wasn't cached yet
+        del accepted_submission.editable
         assert accepted_submission.editable is False
 
-        # Try to edit via POST request
         data = {
             "title": "Should not change",
             "submission_type": accepted_submission.submission_type.pk,
@@ -395,7 +386,6 @@ def test_cannot_edit_accepted_submission_when_feature_disabled(
         )
         assert response.status_code == 200
 
-        # Verify the submission was not changed
         accepted_submission.refresh_from_db()
         assert accepted_submission.title == original_title
 

@@ -1685,6 +1685,5 @@ def test_log_endpoint_pagination(client, orga_user_write_token, submission, orga
     content = json.loads(response.text)
 
     assert response.status_code == 200, content
-    if "results" in content:
-        assert "count" in content
-        assert "next" in content or "previous" in content
+    assert "count" in content
+    assert "next" in content or "previous" in content

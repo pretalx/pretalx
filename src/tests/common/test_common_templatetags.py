@@ -107,13 +107,13 @@ def test_html_signal(event, slug, signal):
 
 
 class MockEncodeDict(dict):
-    def urlencode(self, **kwargs):
+    def urlencode(self, **kwargs):  # pragma: no cover
         return self
 
-    def copy(self):
+    def copy(self):  # pragma: no cover
         return self
 
 
 class FakeRequest:
-    def __init__(self, get):
+    def __init__(self, get):  # pragma: no cover
         self.GET = MockEncodeDict(get)
