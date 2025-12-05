@@ -37,6 +37,7 @@ ENDPOINTS = (
     "submissions",
     "speakers",
     "reviews",
+    "feedback",
     "rooms",
     "questions",
     "question-options",
