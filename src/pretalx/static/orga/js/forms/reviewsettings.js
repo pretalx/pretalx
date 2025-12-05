@@ -46,7 +46,7 @@ const addNewScores = (ev) => {
                 <input type="number" name="scores-${formID}-value_${newID}" step="0.1" class="form-control" id="id_scores-${formID}-value_${newID}" placeholder="2">
             </div>
             <div class="score-label">
-                <input type="text" name="scores-${formID}-label_${newID}" maxlength="20" class="form-control" id="id_scores-${formID}-label_${newID}" placeholder="👍">
+                <input type="text" name="scores-${formID}-label_${newID}" maxlength="200" class="form-control" id="id_scores-${formID}-label_${newID}" placeholder="👍">
             </div>
         </div>
     </div>`
