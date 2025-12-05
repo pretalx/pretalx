@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import string
+from functools import cached_property
 
 from django.db import models
 from django.db.models import Q
@@ -108,6 +109,36 @@ class UserApiToken(PretalxModel):
             "endpoints": self.endpoints,
             "version": self.version,
         }
+
+    @cached_property
+    def permission_preset(self):
+        if not self.endpoints:
+            return "custom"
+        all_endpoints_have_read = all(
+            set(READ_PERMISSIONS) == set(self.endpoints.get(ep, [])) for ep in ENDPOINTS
+        )
+        if all_endpoints_have_read:
+            return "read"
+        all_endpoints_have_write = all(
+            set(WRITE_PERMISSIONS) == set(self.endpoints.get(ep, []))
+            for ep in ENDPOINTS
+        )
+        if all_endpoints_have_write:
+            return "write"
+        return "custom"
+
+    def get_endpoint_permissions_display(self):
+        result = []
+        for endpoint in ENDPOINTS:
+            permissions = self.endpoints.get(endpoint, [])
+            if permissions:
+                permission_labels = [
+                    str(label)
+                    for key, label in PERMISSION_CHOICES
+                    if key in permissions
+                ]
+                result.append((f"/{endpoint}", permission_labels))
+        return result
 
     def update_events(self):
         """Called when a user loses access to a team. Should remove any events the user

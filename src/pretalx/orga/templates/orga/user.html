@@ -39,6 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 <th>{% translate "Name" %}</th>
                                 <th class="text-center">{% translate "Version" %}</th>
                                 <th>{% translate "Events" %}</th>
+                                <th>{% translate "Capabilities" %}</th>
                                 <th>{% translate "Last used" %}</th>
                                 <th>{% translate "Created" %}</th>
                                 <th>{% translate "Valid until" %}</th>
@@ -68,6 +69,24 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                                 <li><a href="{{ event.orga_urls.base }}">{{ event.name }}</a></li>
                                             {% endfor %}
                                         </ul>
+                                    </td>
+                                    <td>
+                                        {% if token.permission_preset == "read" %}
+                                            {% translate "Read all endpoints" %}
+                                        {% elif token.permission_preset == "write" %}
+                                            {% translate "Read and write all endpoints" %}
+                                        {% else %}
+                                            <details>
+                                                <summary>{% translate "Custom" %}</summary>
+                                                <ul>
+                                                    {% for endpoint, permissions in token.get_endpoint_permissions_display %}
+                                                        <li>{{ endpoint }}: {{ permissions|join:", " }}</li>
+                                                    {% empty %}
+                                                        <li>{% translate "No permissions" %}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </details>
+                                        {% endif %}
                                     </td>
                                     <td>{{ token.last_used|date:"SHORT_DATETIME_FORMAT"|default:"-" }}</td>
                                     <td>{{ token.created|date:"SHORT_DATETIME_FORMAT" }}</td>

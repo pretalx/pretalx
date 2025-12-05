@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`orga` You can now see which endpoints an existing API token can access.
 - :bug:`orga:review` New review scores could only be created with a limited length at first, and could only be longer after having been saved once.
 - :feature:`api` There is now an API for session feedback.
 - :release:`2025.2.2 <2025-12-05>`
