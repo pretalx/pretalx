@@ -52,7 +52,7 @@ class ReviewScoreSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
-class ReviewerSerializer(PretalxSerializer):
+class ReviewerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     class Meta:
         model = User
         fields = ("code", "name", "email")

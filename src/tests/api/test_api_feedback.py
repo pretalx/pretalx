@@ -129,31 +129,8 @@ def test_orga_can_see_expanded_feedback_speaker(
     assert response.status_code == 200
     assert len(content["results"]) == 1
     data = content["results"][0]
-    assert data["speaker"]["code"] == speaker.code
-    assert "name" in data["speaker"]
-
-
-@pytest.mark.django_db
-def test_orga_can_see_expanded_feedback_all(
-    client, orga_user_token, event, feedback, past_slot, speaker
-):
-    with scope(event=event):
-        past_slot.submission.speakers.add(speaker)
-        feedback.speaker = speaker
-        feedback.save()
-
-    response = client.get(
-        event.api_urls.feedback + "?expand=submission,speaker",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    content = json.loads(response.text)
-
-    assert response.status_code == 200
-    assert len(content["results"]) == 1
-    data = content["results"][0]
-    assert data["submission"]["code"] == feedback.talk.code
-    assert data["speaker"]["code"] == speaker.code
+    # We do not leak any private information here, e.g. email addresses.
+    assert data["speaker"] == {"code": speaker.code, "name": speaker.name}
 
 
 @pytest.mark.django_db

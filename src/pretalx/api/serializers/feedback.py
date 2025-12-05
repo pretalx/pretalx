@@ -70,6 +70,6 @@ class FeedbackSerializer(FeedbackWriteSerializer):
             "speaker": (
                 # Feedback.speaker is a User, not a SpeakerProfile
                 "pretalx.api.serializers.review.ReviewerSerializer",
-                {"read_only": True},
+                {"read_only": True, "omit": ("email",)},
             ),
         }
