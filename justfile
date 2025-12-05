@@ -88,7 +88,7 @@ djhtml-check:
 [group('linting')]
 [working-directory("src")]
 djhtml *args:
-    find . -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -print | xargs uv run djhtml {{ args }}
+    find . -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -print | xargs uv run djhtml {{ args }}
 
 # Run all formatters and linters
 [group('linting')]
@@ -136,7 +136,7 @@ test-parallel n="auto" *args:
 [group('tests')]
 [working-directory("src")]
 test-coverage *args:
-    just test --cov=pretalx --cov-report=html --cov-report=term {{ args }}
+    just test --cov=pretalx --cov-report=html --cov-report=term-missing:skip-covered {{ args }}
 
 # Show test coverage report in browser
 [group('tests')]
