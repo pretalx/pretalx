@@ -1304,3 +1304,16 @@ class SubmissionInvitation(PretalxModel):
         return mail
 
     send.alters_data = True
+
+    def retract(self, person=None, orga=False):
+        email = self.email
+        submission = self.submission
+        self.delete()
+        submission.log_action(
+            "pretalx.submission.invitation.retract",
+            person=person,
+            orga=orga,
+            data={"email": email},
+        )
+
+    retract.alters_data = True

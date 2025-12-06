@@ -42,6 +42,7 @@ from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
 from pretalx.submission.models import (
     Submission,
+    SubmissionInvitation,
     SubmissionStates,
     SubmissionType,
     Tag,
@@ -166,6 +167,8 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         "make_submitted": "submission.state_change_submission",
         "add_speaker": "submission.update_submission",
         "remove_speaker": "submission.update_submission",
+        "invite_speaker": "submission.update_submission",
+        "retract_invitation": "submission.update_submission",
     }
     endpoint = "submissions"
 
@@ -370,6 +373,69 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         submission.remove_speaker(speaker, user=self.request.user)
         submission.refresh_from_db()
         return Response(SubmissionOrgaSerializer(submission).data)
+
+    @action(detail=True, methods=["POST"], url_path="invitations")
+    def invite_speaker(self, request, **kwargs):
+        serializer = AddSpeakerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        submission = self.get_object()
+        email = data["email"].lower()
+
+        if submission.speakers.filter(email__iexact=email).exists():
+            return Response(
+                {"detail": "This person is already a speaker on this proposal."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if submission.invitations.filter(email__iexact=email).exists():
+            return Response(
+                {"detail": "This person has already been invited to this proposal."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        max_speakers = self.event.cfp.max_speakers
+        if max_speakers is not None:
+            current = submission.speakers.count()
+            pending = submission.invitations.count()
+            if current + pending + 1 > max_speakers:
+                return Response(
+                    {
+                        "detail": f"This would exceed the maximum of {max_speakers} speakers per proposal."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        invitation = SubmissionInvitation.objects.create(
+            submission=submission,
+            email=email,
+        )
+        invitation.send(_from=request.user)
+        submission.log_action(
+            "pretalx.submission.invitation.send",
+            person=request.user,
+            orga=True,
+            data={"email": email},
+        )
+        submission.refresh_from_db()
+        return Response(SubmissionOrgaSerializer(submission).data)
+
+    @action(
+        detail=True,
+        methods=["DELETE"],
+        url_path=r"invitations/(?P<invitation_id>[0-9]+)",
+    )
+    def retract_invitation(self, request, invitation_id=None, **kwargs):
+        submission = self.get_object()
+        try:
+            invitation = SubmissionInvitation.objects.get(
+                pk=invitation_id, submission=submission
+            )
+        except SubmissionInvitation.DoesNotExist:
+            return Response(
+                {"detail": "Invitation not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        invitation.retract(person=request.user, orga=True)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(

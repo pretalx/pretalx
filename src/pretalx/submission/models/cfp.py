@@ -54,7 +54,7 @@ def default_fields():
         "track": {"visibility": "do_not_ask"},
         "duration": {"visibility": "do_not_ask"},
         "content_locale": {"visibility": "required"},
-        "additional_speaker": {"visibility": "optional"},
+        "additional_speaker": {"visibility": "optional", "max": None},
     }
 
 
@@ -200,3 +200,11 @@ class CfP(PretalxModel):
         if self.deadline:
             deadlines.append(self.deadline)
         return max(deadlines) if deadlines else None
+
+    @property
+    def max_speakers(self) -> int | None:
+        field = (
+            self.fields.get("additional_speaker")
+            or default_fields()["additional_speaker"]
+        )
+        return field.get("max")

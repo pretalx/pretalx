@@ -13,7 +13,8 @@ from pretalx.api.serializers.submission import (
     TagSerializer,
     TrackSerializer,
 )
-from pretalx.submission.models import SubmissionStates
+from pretalx.api.versions import LEGACY
+from pretalx.submission.models import SubmissionInvitation, SubmissionStates
 
 
 @pytest.mark.django_db
@@ -109,6 +110,7 @@ def test_submission_serializer_for_organiser(submission, orga_user, resource, ta
             "slots",
             "created",
             "updated",
+            "invitations",
         }
         assert isinstance(data["speakers"], list)
         assert data["tags"] == [tag.id]
@@ -387,8 +389,6 @@ def test_orga_can_see_single_tag_locale_override(client, orga_user_token, tag):
 
 @pytest.mark.django_db
 def test_orga_can_see_single_legacy_tag(client, orga_user_token, tag):
-    from pretalx.api.versions import LEGACY
-
     response = client.get(
         tag.event.api_urls.tags + f"{tag.pk}/",
         follow=True,
@@ -599,8 +599,6 @@ def test_orga_can_see_single_track_locale_override(client, orga_user_token, trac
 
 @pytest.mark.django_db
 def test_no_legacy_track_api(client, orga_user_token, track):
-    from pretalx.api.versions import LEGACY
-
     response = client.get(
         track.event.api_urls.tracks + f"{track.pk}/",
         follow=True,
@@ -805,8 +803,6 @@ def test_orga_can_see_single_submission_type_locale_override(
 
 @pytest.mark.django_db
 def test_no_legacy_submission_type_api(client, orga_user_token, submission_type):
-    from pretalx.api.versions import LEGACY
-
     response = client.get(
         submission_type.event.api_urls.submission_types + f"{submission_type.pk}/",
         follow=True,
@@ -1689,3 +1685,169 @@ def test_log_endpoint_pagination(client, orga_user_write_token, submission, orga
     assert response.status_code == 200, content
     assert "count" in content
     assert "next" in content or "previous" in content
+
+
+@pytest.mark.django_db
+def test_orga_can_invite_speaker(client, orga_user_write_token, submission):
+    response = client.post(
+        submission.event.api_urls.submissions + f"{submission.code}/invitations/",
+        follow=True,
+        data=json.dumps({"email": "newinvitee@example.com"}),
+        content_type="application/json",
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 200, response.text
+    content = json.loads(response.text)
+    assert len(content["invitations"]) == 1
+    with scope(event=submission.event):
+        assert submission.invitations.filter(email="newinvitee@example.com").exists()
+        assert (
+            submission.logged_actions()
+            .filter(action_type="pretalx.submission.invitation.send")
+            .exists()
+        )
+
+
+@pytest.mark.django_db
+def test_orga_cannot_invite_speaker_readonly_token(client, orga_user_token, submission):
+    response = client.post(
+        submission.event.api_urls.submissions + f"{submission.code}/invitations/",
+        follow=True,
+        data=json.dumps({"email": "newinvitee@example.com"}),
+        content_type="application/json",
+        headers={
+            "Authorization": f"Token {orga_user_token.token}",
+        },
+    )
+    assert response.status_code == 403
+    with scope(event=submission.event):
+        assert not submission.invitations.filter(
+            email="newinvitee@example.com"
+        ).exists()
+
+
+@pytest.mark.django_db
+def test_orga_cannot_invite_existing_speaker(
+    client, orga_user_write_token, submission, speaker
+):
+    response = client.post(
+        submission.event.api_urls.submissions + f"{submission.code}/invitations/",
+        follow=True,
+        data=json.dumps({"email": speaker.email}),
+        content_type="application/json",
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 400
+    content = json.loads(response.text)
+    assert "already a speaker" in content["detail"]
+
+
+@pytest.mark.django_db
+def test_orga_cannot_invite_already_invited(client, orga_user_write_token, submission):
+    with scope(event=submission.event):
+        SubmissionInvitation.objects.create(
+            submission=submission, email="invited@example.com"
+        )
+
+    response = client.post(
+        submission.event.api_urls.submissions + f"{submission.code}/invitations/",
+        follow=True,
+        data=json.dumps({"email": "invited@example.com"}),
+        content_type="application/json",
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 400
+    content = json.loads(response.text)
+    assert "already been invited" in content["detail"]
+
+
+@pytest.mark.django_db
+def test_orga_can_retract_invitation(client, orga_user_write_token, submission):
+    with scope(event=submission.event):
+        invitation = SubmissionInvitation.objects.create(
+            submission=submission, email="todelete@example.com"
+        )
+        invitation_id = invitation.pk
+
+    response = client.delete(
+        submission.event.api_urls.submissions
+        + f"{submission.code}/invitations/{invitation_id}/",
+        follow=True,
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 204
+    with scope(event=submission.event):
+        assert not SubmissionInvitation.objects.filter(pk=invitation_id).exists()
+        assert (
+            submission.logged_actions()
+            .filter(action_type="pretalx.submission.invitation.retract")
+            .exists()
+        )
+
+
+@pytest.mark.django_db
+def test_orga_cannot_retract_invitation_readonly_token(
+    client, orga_user_token, submission
+):
+    with scope(event=submission.event):
+        invitation = SubmissionInvitation.objects.create(
+            submission=submission, email="todelete@example.com"
+        )
+        invitation_id = invitation.pk
+
+    response = client.delete(
+        submission.event.api_urls.submissions
+        + f"{submission.code}/invitations/{invitation_id}/",
+        follow=True,
+        headers={
+            "Authorization": f"Token {orga_user_token.token}",
+        },
+    )
+    assert response.status_code == 403
+    with scope(event=submission.event):
+        assert SubmissionInvitation.objects.filter(pk=invitation_id).exists()
+
+
+@pytest.mark.django_db
+def test_orga_cannot_retract_nonexistent_invitation(
+    client, orga_user_write_token, submission
+):
+    response = client.delete(
+        submission.event.api_urls.submissions + f"{submission.code}/invitations/99999/",
+        follow=True,
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_orga_can_expand_invitations(client, orga_user_token, submission):
+    with scope(event=submission.event):
+        SubmissionInvitation.objects.create(
+            submission=submission, email="expandtest@example.com"
+        )
+
+    response = client.get(
+        submission.event.api_urls.submissions + "?expand=invitations",
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_token.token}"},
+    )
+    content = json.loads(response.text)
+
+    assert response.status_code == 200
+    # Find our submission in results
+    sub_data = next(s for s in content["results"] if s["code"] == submission.code)
+    assert len(sub_data["invitations"]) == 1
+    assert sub_data["invitations"][0]["email"] == "expandtest@example.com"
+    assert "id" in sub_data["invitations"][0]
+    assert "created" in sub_data["invitations"][0]
