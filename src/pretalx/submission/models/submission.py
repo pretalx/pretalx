@@ -382,6 +382,7 @@ class Submission(GenerateCode, PretalxModel):
         cancel = "{base}cancel"
         speakers = "{base}speakers/"
         delete_speaker = "{speakers}delete"
+        retract_invitation = "{speakers}invitation/retract"
         reviews = "{base}reviews/"
         feedback = "{base}feedback/"
         toggle_featured = "{base}toggle_featured"
@@ -1237,3 +1238,69 @@ class SubmissionFavourite(PretalxModel):
 
     class Meta:
         unique_together = (("user", "submission"),)
+
+
+class SubmissionInvitation(PretalxModel):
+    """Track pending speaker invitations for submissions.
+
+    When a speaker is invited to a submission, a SubmissionInvitation is created
+    with a unique token. The invitation is deleted when the invited person accepts
+    it, or can be retracted by organisers or the submitter.
+    """
+
+    submission = models.ForeignKey(
+        to="submission.Submission",
+        related_name="invitations",
+        on_delete=models.CASCADE,
+    )
+    email = models.EmailField(verbose_name=_("Email"))
+    token = models.CharField(
+        default=generate_invite_code,
+        max_length=64,
+        unique=True,
+    )
+
+    objects = ScopedManager(event="submission__event")
+
+    class Meta:
+        unique_together = (("submission", "email"),)
+
+    class urls(EventUrls):
+        base = "{self.submission.event.urls.base}invitation/{self.submission.code}/{self.token}"
+
+    @property
+    def event(self):
+        return self.submission.event
+
+    def __str__(self):
+        return _("Invite to {submission} for {email}").format(
+            submission=self.submission.title, email=self.email
+        )
+
+    def send(self, _from=None, subject=None, text=None):
+        from pretalx.mail.models import QueuedMail
+
+        if not _from:
+            raise Exception("Please enter a sender for this invitation.")
+
+        subject = subject or phrases.cfp.invite_subject.format(
+            speaker=_from.get_display_name()
+        )
+        subject = get_prefixed_subject(self.submission.event, subject)
+        text = text or phrases.cfp.invite_text.format(
+            event=self.submission.event.name,
+            title=self.submission.title,
+            url=self.urls.base.full(),
+            speaker=_from.get_display_name(),
+        )
+        mail = QueuedMail(
+            event=self.submission.event,
+            to=self.email,
+            subject=subject,
+            text=text,
+            locale=self.submission.get_email_locale(),
+        )
+        mail.send()
+        return mail
+
+    send.alters_data = True

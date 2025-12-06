@@ -8,7 +8,7 @@ from .feedback import Feedback
 from .question import Answer, AnswerOption, Question, QuestionTarget, QuestionVariant
 from .resource import Resource
 from .review import Review, ReviewPhase, ReviewScore, ReviewScoreCategory
-from .submission import Submission, SubmissionStates
+from .submission import Submission, SubmissionInvitation, SubmissionStates
 from .tag import Tag
 from .track import Track
 from .type import SubmissionType
@@ -28,6 +28,7 @@ __all__ = [
     "ReviewScoreCategory",
     "Submission",
     "SubmissionComment",
+    "SubmissionInvitation",
     "SubmissionStates",
     "SubmissionType",
     "SubmitterAccessCode",
