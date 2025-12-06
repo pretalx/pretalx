@@ -113,4 +113,3 @@ jobs:
         with:
           name: python-coverage-comment-action
           path: python-coverage-comment-action.txt
-        if: always() && matrix.database == 'postgres' && matrix.python-version == '3.14' && github.event_name == 'pull_request'
