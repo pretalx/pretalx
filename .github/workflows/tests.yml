@@ -14,6 +14,7 @@ on:
     paths-ignore:
       - 'doc/**'
       - 'src/pretalx/locale/**'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -34,15 +35,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.10', 3.11, 3.12, 3.13]
+        python-version: [3.11, 3.12, 3.13, 3.14]
         database: [sqlite, postgres]
+        # We run tests on all Postgres x Python versions and on one version for sqlite.
+        # We build coverage information on the latest Python version only
         exclude:
-          - database: sqlite
-            python-version: '3.10'
           - database: sqlite
             python-version: '3.11'
           - database: sqlite
             python-version: '3.12'
+          - database: sqlite
+            python-version: '3.13'
     services:
       postgres:
         image: postgres:15
@@ -95,50 +98,19 @@ jobs:
         env:
           PRETALX_CONFIG_FILE: 'tests/ci_${{ matrix.database }}.cfg'
       - name: Coverage comment
-        id: coverageComment
-        uses: MishaKav/pytest-coverage-comment@main
+        id: coverage_comment
+        uses: py-cov-action/python-coverage-comment-action@v3
         with:
-          pytest-coverage-path: ./src/pytest-coverage.txt
-          junitxml-path: ./src/pytest.xml
-          junitxml-title: Test summary
-          report-only-changed-files: true
-          title: Full coverage report
-        if: always() && matrix.database == 'postgres' && matrix.python-version == '3.12' && github.event_name == 'pull_request'
-      - name: Coverage data (non-PR, do not comment)
-        id: coverageData
-        uses: MishaKav/pytest-coverage-comment@main
+          GITHUB_TOKEN: ${{ github.token }}
+          COVERAGE_PATH: "src/"
+          MINIMUM_GREEN: "90"
+          MINIMUM_ORANGE: "80"
+          ANNOTATE_MISSING_LINES: true
+        if: always() && matrix.database == 'postgres' && matrix.python-version == '3.14'
+      - name: Store Pull Request comment to be posted
+        uses: actions/upload-artifact@v4
+        if: steps.coverage_comment.outputs.COMMENT_FILE_WRITTEN == 'true'
         with:
-          pytest-coverage-path: ./src/pytest-coverage.txt
-          junitxml-path: ./src/pytest.xml
-          junitxml-title: Test summary
-          report-only-changed-files: true
-          hide-comment: true
-          title: Full coverage report
-        if: always() && matrix.database == 'postgres' && matrix.python-version == '3.12' && github.event_name != 'pull_request'
-      - name: Show coverage as build info
-        working-directory: ./src
-        shell: bash  # needed to make echo work as expected
-        run: |
-          uv run coverage json
-
-          export TOTAL_COV=$(uv run python -c "import json;print(json.load(open('coverage.json'))['totals']['percent_covered_display'])")
-          echo "TOTAL_COV=$TOTAL_COV" >> $GITHUB_ENV
-          echo "## Test coverage: $TOTAL_COV%" >> $GITHUB_STEP_SUMMARY
-          echo ${{ steps.coverageData.outputs.summaryReport }} >> $GITHUB_STEP_SUMMARY
-          echo ${{ steps.coverageComment.outputs.summaryReport }} >> $GITHUB_STEP_SUMMARY
-          uv run coverage report --skip-covered --skip-empty --show-missing --format=markdown >> $GITHUB_STEP_SUMMARY
-
-          uv run coverage report
-        if: always() && matrix.database == 'postgres' && matrix.python-version == '3.12'
-
-      - name: "Make badge"
-        uses: schneegans/dynamic-badges-action@v1.7.0
-        with:
-          # GIST_TOKEN is a GitHub personal access token with scope "gist".
-          auth: ${{ secrets.GIST_TOKEN }}
-          gistID: 0ac3e4314d780e809c0164c8c329f36f
-          filename: covbadge.json
-          label: coverage
-          message: ${{ env.TOTAL_COV }}%
-          color: "#3aa57c"
-        if: env.TOTAL_COV && github.ref == 'refs/heads/main'
+          name: python-coverage-comment-action
+          path: python-coverage-comment-action.txt
+        if: always() && matrix.database == 'postgres' && matrix.python-version == '3.14' && github.event_name == 'pull_request'
