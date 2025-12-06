@@ -7,8 +7,8 @@
    :target: https://github.com/pretalx/pretalx/actions/workflows/tests.yml?query=workflow%3ATests
    :alt: Continuous integration
 
-.. image:: https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/rixx/0ac3e4314d780e809c0164c8c329f36f/raw/covbadge.json
-   :target: https://github.com/pretalx/pretalx/actions/workflows/tests.yml?query=workflow%3ATests
+.. image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/pretalx/pretalx/python-coverage-comment-action-data/endpoint.json&colorB=3aa57c
+   :target: https://htmlpreview.github.io/?https://github.com/pretalx/pretalx/blob/python-coverage-comment-action-data/htmlcov/index.html
    :alt: Coverage
 
 .. image:: https://img.shields.io/pypi/v/pretalx.svg?colorB=3aa57c
