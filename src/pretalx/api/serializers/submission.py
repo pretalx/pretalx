@@ -19,6 +19,7 @@ from pretalx.submission.models import (
     QuestionTarget,
     Resource,
     Submission,
+    SubmissionInvitation,
     SubmissionType,
     Tag,
     Track,
@@ -118,6 +119,14 @@ class TrackSerializer(PretalxSerializer):
         if any(str(track.name) == str(value) for track in existing_types):
             raise exceptions.ValidationError("Track name already exists in event.")
         return value
+
+
+@register_serializer(versions=CURRENT_VERSIONS)
+class SubmissionInvitationSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+    class Meta:
+        model = SubmissionInvitation
+        fields = ("id", "email", "created", "updated")
+        read_only_fields = ("id", "created", "updated")
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
@@ -295,12 +304,20 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
     )
     created = serializers.DateTimeField(read_only=True)
     updated = serializers.DateTimeField(read_only=True)
+    invitations = serializers.SerializerMethodField()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["reviews"].required = False
         if self.event:
             self.fields["assigned_reviewers"].queryset = self.event.reviewers
+
+    @extend_schema_field(list[int])
+    def get_invitations(self, obj):
+        qs = obj.invitations.all()
+        if serializer := self.get_extra_flex_field("invitations", qs):
+            return serializer.data
+        return qs.values_list("pk", flat=True)
 
     def validate_content_locale(self, value):
         if self.event and value not in self.event.content_locales:
@@ -385,6 +402,7 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
             "mean_score",
             "created",
             "updated",
+            "invitations",
         ]
         # Reviews and assigned reviewers are currently not expandable because
         # reviewers are also receiving the ReviewerOrgaSerializer, but may
@@ -392,6 +410,10 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
         extra_expandable_fields = SubmissionSerializer.Meta.extra_expandable_fields | {
             "speakers": (
                 "pretalx.api.serializers.speaker.SpeakerOrgaSerializer",
+                {"many": True, "read_only": True},
+            ),
+            "invitations": (
+                "pretalx.api.serializers.submission.SubmissionInvitationSerializer",
                 {"many": True, "read_only": True},
             ),
         }
