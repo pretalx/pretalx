@@ -69,25 +69,49 @@ SPDX-FileContributor: Florian Mösch
                     </ul>
                 {% endif %}
             </p>
-            {% if can_edit_speakers %}
-                {% if can_mark_speaker and submission.state in 'accepted,confirmed' %}
-                    {% include "orga/includes/mark_speakers_arrived.html" with speaker=speaker.profile %}
-                {% endif %}
-                {% if can_send_mails %}
-                    <a class="btn btn-outline-info" href="{{ speaker.orga_urls.send_mail }}">
-                        <i class="fa fa-envelope"></i>
-                        {% translate "Send email" %}
+            <div class="row ml-3 mr-2 align-items-end justify-content-end gap-2">
+                {% if can_edit_speakers %}
+                    {% if can_mark_speaker and submission.state in 'accepted,confirmed' %}
+                        {% include "orga/includes/mark_speakers_arrived.html" with speaker=speaker.profile %}
+                    {% endif %}
+                    {% if can_send_mails %}
+                        <a class="btn btn-outline-info" href="{{ speaker.orga_urls.send_mail }}">
+                            <i class="fa fa-envelope"></i>
+                            {% translate "Send email" %}
+                        </a>
+                    {% endif %}
+                    <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.user.code %}"
+                       class="btn btn-info">
+                        <i class="fa fa-edit"></i> {{ phrases.base.edit }}
+                    </a>
+                    <a href="{{ submission.orga_urls.delete_speaker }}?id={{ speaker.user.id }}"
+                       class="btn btn-danger">
+                        <i class="fa fa-trash"></i> {% translate "Remove" %}
                     </a>
                 {% endif %}
-                <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.user.code %}"
-                   class="btn btn-info">
-                    <i class="fa fa-edit"></i> {{ phrases.base.edit }}
-                </a>
-                <a href="{{ submission.orga_urls.delete_speaker }}?id={{ speaker.user.id }}"
-                   class="btn btn-danger">
-                    <i class="fa fa-trash"></i> {% translate "Remove" %}
-                </a>
-            {% endif %}
+            </div>
         </div></div>
     {% endfor %}
+
+    {% if invitations %}
+        <h4 class="mt-4">{% translate "Pending Invitations" %}</h4>
+        {% for invitation in invitations %}
+            <div class="card mb-3 speaker-card"><div class="card-body">
+                <h3 class="card-title">
+                    <i class="fa fa-clock"></i> {{ invitation.email }}
+                </h3>
+                <p class="card-text text-muted ml-2">
+                    {% translate "Invited on" %} {{ invitation.created|date:"SHORT_DATE_FORMAT" }}
+                </p>
+                {% if can_edit_speakers %}
+                    <div class="row mr-2 justify-content-end">
+                        <a href="{{ submission.orga_urls.retract_invitation }}?id={{ invitation.id }}"
+                           class="btn btn-danger ml-2">
+                            <i class="fa fa-trash"></i> {% translate "Remove" %}
+                        </a>
+                    </div>
+                {% endif %}
+            </div></div>
+        {% endfor %}
+    {% endif %}
 {% endblock submission_content %}
