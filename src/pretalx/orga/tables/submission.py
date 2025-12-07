@@ -49,6 +49,16 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
         template_name="orga/tables/columns/submission_speakers.html",
         orderable=False,
     )
+    speaker_count = tables.Column(
+        verbose_name=_("Number of speakers"),
+        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric text-center"}},
+        initial_sort_descending=True,
+    )
+    invitation_count = tables.Column(
+        verbose_name=_("Pending invitations"),
+        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric text-center"}},
+        initial_sort_descending=True,
+    )
     submission_type = SortableColumn(
         linkify=lambda record: record.submission_type.urls.base,
         order_by=Lower(Translate("submission_type__name")),

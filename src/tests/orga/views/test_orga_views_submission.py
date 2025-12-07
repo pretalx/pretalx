@@ -9,7 +9,7 @@ from django.utils.timezone import now
 from django_scopes import scope
 
 from pretalx.common.models.log import ActivityLog
-from pretalx.submission.models import Submission, SubmissionStates
+from pretalx.submission.models import Submission, SubmissionInvitation, SubmissionStates
 from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 
 
@@ -1003,3 +1003,30 @@ def test_orga_can_view_submission_history(orga_client, event, submission, orga_u
     response = orga_client.get(submission.orga_urls.history, follow=True)
     assert response.status_code == 200
     assert "History" in response.text or "Activity" in response.text
+
+
+@pytest.mark.django_db
+def test_orga_can_retract_invitation(orga_client, submission):
+    with scope(event=submission.event):
+        invitation = SubmissionInvitation.objects.create(
+            submission=submission, email="todelete@example.com"
+        )
+        invitation_id = invitation.pk
+
+    response = orga_client.get(
+        submission.orga_urls.retract_invitation + f"?id={invitation_id}", follow=True
+    )
+    assert response.status_code == 200
+    assert "todelete@example.com" in response.text
+
+    response = orga_client.post(
+        submission.orga_urls.retract_invitation + f"?id={invitation_id}", follow=True
+    )
+    assert response.status_code == 200
+    with scope(event=submission.event):
+        assert not SubmissionInvitation.objects.filter(pk=invitation_id).exists()
+        assert (
+            submission.logged_actions()
+            .filter(action_type="pretalx.submission.invitation.retract")
+            .exists()
+        )

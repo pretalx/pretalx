@@ -134,6 +134,19 @@ class CfPSettingsForm(
             )
         if not obj.is_multilingual:
             self.fields.pop("cfp_ask_content_locale", None)
+        self.fields["cfp_additional_speaker_max"] = forms.IntegerField(
+            required=False,
+            min_value=1,
+            label=_("Maximum speakers per proposal"),
+            help_text=_(
+                "Maximum number of speakers allowed per proposal (including the submitter). "
+                "Leave empty for no limit."
+            ),
+            initial=obj.cfp.fields.get(
+                "additional_speaker", default_fields()["additional_speaker"]
+            ).get("max"),
+        )
+        self.fields["cfp_additional_speaker_max"].widget.attrs["placeholder"] = ""
 
     def save(self, *args, **kwargs):
         for key in self.request_require_fields:
@@ -149,6 +162,13 @@ class CfPSettingsForm(
             self.instance.cfp.fields[key]["max_length"] = self.cleaned_data.get(
                 f"cfp_{key}_max_length"
             )
+        if "additional_speaker" not in self.instance.cfp.fields:
+            self.instance.cfp.fields["additional_speaker"] = default_fields()[
+                "additional_speaker"
+            ]
+        self.instance.cfp.fields["additional_speaker"]["max"] = self.cleaned_data.get(
+            "cfp_additional_speaker_max"
+        )
         self.instance.cfp.save()
         super().save(*args, **kwargs)
 

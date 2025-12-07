@@ -67,6 +67,7 @@ from pretalx.submission.models import (
     Resource,
     Submission,
     SubmissionComment,
+    SubmissionInvitation,
     SubmissionStates,
     Tag,
 )
@@ -288,6 +289,43 @@ class SubmissionSpeakersDelete(SubmissionViewMixin, View):
         return redirect(submission.orga_urls.speakers)
 
 
+class SubmissionInvitationRetract(
+    SubmissionViewMixin, ActionConfirmMixin, TemplateView
+):
+    permission_required = "submission.update_submission"
+    action_title = _("Retract invitation")
+    action_confirm_color = "danger"
+    action_confirm_icon = "trash"
+    action_confirm_label = _("Retract")
+
+    @cached_property
+    def invitation(self):
+        return get_object_or_404(
+            SubmissionInvitation,
+            pk=self.request.GET.get("id"),
+            submission=self.object,
+        )
+
+    @property
+    def action_object_name(self):
+        return self.invitation.email
+
+    @property
+    def action_text(self):
+        return _("Do you really want to retract the invitation for {email}?").format(
+            email=self.invitation.email
+        )
+
+    @property
+    def action_back_url(self):
+        return self.object.orga_urls.speakers
+
+    def post(self, request, *args, **kwargs):
+        self.invitation.retract(person=request.user, orga=True)
+        messages.success(request, _("The invitation has been retracted."))
+        return redirect(self.object.orga_urls.speakers)
+
+
 class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView):
     template_name = "orga/submission/speakers.html"
     permission_required = "person.orga_list_speakerprofile"
@@ -307,6 +345,11 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
             }
             for speaker in submission.speakers.all()
         ]
+
+    @context
+    @cached_property
+    def invitations(self):
+        return self.object.invitations.all()
 
     def form_valid(self, form):
         if email := form.cleaned_data.get("email"):
@@ -602,6 +645,10 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
             .order_by("id")
             .distinct()
             .select_related("event", "event__cfp")
+            .annotate(
+                speaker_count=Count("speakers", distinct=True),
+                invitation_count=Count("invitations", distinct=True),
+            )
         )
 
     @context
