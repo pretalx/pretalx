@@ -152,7 +152,7 @@
 | pretalx/event/models/event.py                                          |      556 |       31 |      122 |       10 |     93% |84, 463, 468, 514, 517, 655-657, 686->700, 718, 722-733, 755-756, 764, 806-815, 953->956 |
 | pretalx/event/models/organiser.py                                      |      119 |        8 |       18 |        6 |     90% |48, 55, 69, 77, 258, 266, 273, 315 |
 | pretalx/event/rules.py                                                 |       52 |        0 |       12 |        0 |    100% |           |
-| pretalx/event/services.py                                              |       57 |        2 |       20 |        3 |     94% |81, 90->exit, 118 |
+| pretalx/event/services.py                                              |       57 |        2 |       20 |        2 |     95% |   81, 118 |
 | pretalx/event/stages.py                                                |       39 |        0 |       10 |        0 |    100% |           |
 | pretalx/event/utils.py                                                 |        7 |        0 |        2 |        0 |    100% |           |
 | pretalx/mail/apps.py                                                   |        5 |        0 |        0 |        0 |    100% |           |
@@ -277,7 +277,7 @@
 | tests/api/test\_api\_schedule.py                                       |      489 |        0 |        6 |        0 |    100% |           |
 | tests/api/test\_api\_speaker\_information.py                           |      141 |        0 |        0 |        0 |    100% |           |
 | tests/api/test\_api\_speakers.py                                       |      299 |        0 |        4 |        0 |    100% |           |
-| tests/api/test\_api\_submissions.py                                    |      734 |        1 |        2 |        0 |     99% |       112 |
+| tests/api/test\_api\_submissions.py                                    |      734 |        0 |        2 |        0 |    100% |           |
 | tests/api/test\_api\_teams.py                                          |      208 |        0 |        0 |        0 |    100% |           |
 | tests/api/test\_api\_upload.py                                         |       30 |        0 |        0 |        0 |    100% |           |
 | tests/cfp/test\_cfp\_flow.py                                           |       22 |        0 |        0 |        0 |    100% |           |
@@ -355,7 +355,7 @@
 | tests/submission/test\_submission\_model.py                            |      297 |        0 |        6 |        0 |    100% |           |
 | tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-|                                                              **TOTAL** | **31619** | **1887** | **5054** |  **700** | **91%** |           |
+|                                                              **TOTAL** | **31619** | **1886** | **5054** |  **699** | **91%** |           |
 
 
 ## Setup coverage badge
