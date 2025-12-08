@@ -5,7 +5,10 @@
 # SPDX-FileContributor: Johan Van de Wauw
 # SPDX-FileContributor: Michael Reichert
 
+import re
+
 from django import forms
+from django.core.validators import validate_email
 from django.db.models import Count, Exists, OuterRef, Q
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -17,6 +20,7 @@ from pretalx.common.forms.mixins import PublicContent, RequestRequire
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
     EnhancedSelect,
+    MultiEmailInput,
     SearchInput,
     SelectMultipleWithCount,
 )
@@ -33,12 +37,14 @@ from pretalx.submission.models import (
 
 
 class InfoForm(CfPFormMixin, RequestRequire, PublicContent, forms.ModelForm):
-    additional_speaker = forms.EmailField(
-        label=_("Additional Speaker"),
+    additional_speaker = forms.CharField(
+        label=_("Additional Speakers"),
         help_text=_(
-            "If you have a co-speaker, please add their email address here, and we will invite them to create an account. If you have more than one co-speaker, you can add more speakers after finishing the proposal process."
+            "If you have co-speakers, please add their email addresses here, "
+            "and we will invite them to create an account."
         ),
         required=False,
+        widget=MultiEmailInput(),
     )
     image = ImageField(
         required=False,
@@ -179,6 +185,53 @@ class InfoForm(CfPFormMixin, RequestRequire, PublicContent, forms.ModelForm):
                     "Please contact the organisers if you want to change how often you’re presenting this proposal."
                 )
             )
+
+    def clean_additional_speaker(self):
+        value = self.cleaned_data.get("additional_speaker", "")
+        if not value:
+            return []
+
+        raw_emails = re.split(r"[,\n\r]+", value)
+        emails = []
+        errors = []
+
+        for email in raw_emails:
+            email = email.strip()
+            if not email:
+                continue
+            try:
+                validate_email(email)
+                emails.append(email.lower())
+            except forms.ValidationError:
+                errors.append(email)
+
+        if errors:
+            raise forms.ValidationError(
+                _("Invalid email addresses: {emails}").format(emails=", ".join(errors))
+            )
+
+        emails = list(set(emails))
+        max_speakers = self.event.cfp.max_speakers
+        if max_speakers is not None:
+            instance = self.instance if self.instance and self.instance.pk else None
+            existing_speakers = instance.speakers.count() if instance else 0
+            pending_invites = instance.invitations.count() if instance else 0
+            if not instance:
+                existing_speakers = 1
+            total = existing_speakers + pending_invites + len(emails)
+            if total > max_speakers:
+                raise forms.ValidationError(
+                    _(
+                        "This would exceed the maximum of {max} speakers per proposal. "
+                        "Currently: {current} speaker(s) and {pending} pending invitation(s)."
+                    ).format(
+                        max=max_speakers,
+                        current=existing_speakers,
+                        pending=pending_invites,
+                    )
+                )
+
+        return emails
 
     def save(self, *args, **kwargs):
         for key, value in self.default_values.items():

@@ -89,6 +89,11 @@ urlpatterns = [
                                 user.SubmissionInviteView.as_view(),
                                 name="event.user.submission.invite",
                             ),
+                            path(
+                                "retract-invitation",
+                                user.SubmissionInviteRetractView.as_view(),
+                                name="event.user.submission.retract_invitation",
+                            ),
                         ]
                     ),
                 ),

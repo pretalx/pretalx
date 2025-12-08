@@ -39,6 +39,7 @@ from pretalx.person.models import User
 from pretalx.submission.forms import InfoForm, QuestionsForm
 from pretalx.submission.models import (
     QuestionTarget,
+    SubmissionInvitation,
     SubmissionStates,
     SubmissionType,
     Track,
@@ -366,6 +367,10 @@ class InfoStep(DedraftMixin, GenericFlowStep, FormFlowStep):
                     obj = model.objects.filter(event=self.request.event, pk=pk).first()
                     if obj:
                         result[field] = obj
+        if "additional_speaker" in result and isinstance(
+            result["additional_speaker"], list
+        ):
+            result["additional_speaker"] = ",".join(result["additional_speaker"])
         return result
 
     def done(self, request, draft=False):
@@ -399,12 +404,19 @@ class InfoStep(DedraftMixin, GenericFlowStep, FormFlowStep):
                 ),
             )
 
-            additional_speaker = (
-                form.cleaned_data.get("additional_speaker") or ""
-            ).strip()
-            if additional_speaker:
+            additional_speakers = form.cleaned_data.get("additional_speaker") or []
+            for email in additional_speakers:
                 try:
-                    submission.send_invite(to=[additional_speaker], _from=request.user)
+                    invitation = SubmissionInvitation.objects.create(
+                        submission=submission,
+                        email=email,
+                    )
+                    invitation.send(_from=request.user)
+                    submission.log_action(
+                        "pretalx.submission.invitation.send",
+                        person=request.user,
+                        data={"email": email},
+                    )
                 except SendMailException as exception:
                     logging.getLogger("").warning(str(exception))
                     messages.warning(self.request, phrases.cfp.submission_email_fail)

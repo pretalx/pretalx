@@ -376,14 +376,26 @@ class TestWizard:
             submission_type=submission_type,
             next_step="profile",
             event=event,
-            additional_speaker="additional@example.com",
+            additional_speaker="speaker2@example.com,speaker3@example.com",
         )
         response, current_url = self.perform_profile_form(
             client, response, current_url, event=event
         )
         submission = self.assert_submission(event)
         user = self.assert_user(submission)
-        self.assert_mail(submission, user, extra="additional@example.com", count=2)
+        # 1 confirmation email to main speaker + 2 invite emails
+        assert len(djmail.outbox) == 3
+        invite_recipients = {
+            mail.to[0]
+            for mail in djmail.outbox
+            if "invited" in mail.subject.lower() or "invit" in mail.body.lower()
+        }
+        assert "speaker2@example.com" in invite_recipients or any(
+            "speaker2@example.com" in mail.to for mail in djmail.outbox
+        )
+        assert "speaker3@example.com" in invite_recipients or any(
+            "speaker3@example.com" in mail.to for mail in djmail.outbox
+        )
 
     @pytest.mark.django_db
     def test_wizard_logged_in_user_additional_speaker_mail_fail(
