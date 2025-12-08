@@ -293,6 +293,8 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
         required=False,
         many=True,
     )
+    created = serializers.DateTimeField(read_only=True)
+    updated = serializers.DateTimeField(read_only=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -381,6 +383,8 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
             "is_anonymised",
             "median_score",
             "mean_score",
+            "created",
+            "updated",
         ]
         # Reviews and assigned reviewers are currently not expandable because
         # reviewers are also receiving the ReviewerOrgaSerializer, but may

@@ -6,8 +6,8 @@ paths:
   /api/:
     get:
       operationId: api_retrieve
-      description: Returns a link to the REST API, as well as the currently used pretalx
-        version.
+      description: Returns a link to the REST API, as well as the pretalx and API
+        versions.
       summary: API Root
       tags:
       - root
@@ -6985,9 +6985,18 @@ components:
           format: double
           nullable: true
           readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        updated:
+          type: string
+          format: date-time
+          readOnly: true
       required:
       - answers
       - code
+      - created
       - is_anonymised
       - mean_score
       - median_score
@@ -6997,6 +7006,7 @@ components:
       - state
       - submission_type
       - title
+      - updated
     SubmissionOrgaRequest:
       type: object
       description: |-
