@@ -42,7 +42,12 @@ from pretalx.person.forms import (
 )
 from pretalx.person.rules import can_view_information
 from pretalx.submission.forms import InfoForm, QuestionsForm, ResourceForm
-from pretalx.submission.models import Resource, Submission, SubmissionStates
+from pretalx.submission.models import (
+    Resource,
+    Submission,
+    SubmissionInvitation,
+    SubmissionStates,
+)
 
 
 @method_decorator(gravatar_csp(), name="dispatch")
@@ -399,6 +404,20 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
             readonly=not self.can_edit,
         )
 
+    @context
+    @cached_property
+    def invitations(self):
+        return self.object.invitations.all()
+
+    @context
+    @cached_property
+    def can_add_more_speakers(self):
+        max_speakers = self.request.event.cfp.max_speakers
+        if max_speakers is None:
+            return True
+        current_count = self.object.speakers.count() + self.object.invitations.count()
+        return current_count < max_speakers
+
     @cached_property
     def object(self):
         return self.get_object()
@@ -522,10 +541,12 @@ class SubmissionInviteView(LoggedInEventPageMixin, SubmissionViewMixin, FormView
         return kwargs
 
     def form_valid(self, form):
-        form.save()
+        invitation = form.save()
         messages.success(self.request, phrases.cfp.invite_sent)
         self.submission.log_action(
-            "pretalx.submission.speakers.invite", person=self.request.user
+            "pretalx.submission.invitation.send",
+            person=self.request.user,
+            data={"email": invitation.email},
         )
         return super().form_valid(form)
 
@@ -533,16 +554,52 @@ class SubmissionInviteView(LoggedInEventPageMixin, SubmissionViewMixin, FormView
         return self.submission.urls.user_base
 
 
+class SubmissionInviteRetractView(LoggedInEventPageMixin, SubmissionViewMixin, View):
+    permission_required = "submission.add_speaker_submission"
+
+    def get_permission_object(self):
+        return self.get_object()
+
+    def get_invitation(self):
+        invitation_id = self.request.GET.get("id") or self.request.POST.get("id")
+        return get_object_or_404(
+            SubmissionInvitation,
+            pk=invitation_id,
+            submission=self.submission,
+        )
+
+    def post(self, request, *args, **kwargs):
+        invitation = self.get_invitation()
+        email = invitation.email
+        invitation.delete()
+        self.submission.log_action(
+            "pretalx.submission.invitation.retract",
+            person=self.request.user,
+            data={"email": email},
+        )
+        messages.success(self.request, _("The invitation has been retracted."))
+        return redirect(self.submission.urls.user_base)
+
+
 class SubmissionInviteAcceptView(LoggedInEventPageMixin, DetailView):
     template_name = "cfp/event/invitation.html"
     context_object_name = "submission"
 
-    def get_object(self, queryset=None):
+    def get_invitation(self):
         return get_object_or_404(
-            Submission,
-            code__iexact=self.kwargs["code"],
-            invitation_token__iexact=self.kwargs["invitation"],
+            SubmissionInvitation,
+            submission__code__iexact=self.kwargs["code"],
+            submission__event=self.request.event,
+            token__iexact=self.kwargs["invitation"],
         )
+
+    def get_object(self, queryset=None):
+        return self.get_invitation().submission
+
+    @context
+    @cached_property
+    def invitation(self):
+        return self.get_invitation()
 
     @context
     @cached_property
@@ -555,12 +612,16 @@ class SubmissionInviteAcceptView(LoggedInEventPageMixin, DetailView):
         if not self.can_accept_invite:
             messages.error(self.request, _("You cannot accept this invitation."))
             return redirect(self.request.event.urls.user)
-        submission = self.get_object()
+        invitation = self.get_invitation()
+        submission = invitation.submission
+        email = invitation.email
         submission.speakers.add(self.request.user)
         submission.log_action(
-            "pretalx.submission.speakers.add", person=self.request.user
+            "pretalx.submission.invitation.accept",
+            person=self.request.user,
+            data={"email": email},
         )
-        submission.save()
+        invitation.delete()
         messages.success(self.request, phrases.cfp.invite_accepted)
         return redirect("cfp:event.user.view", event=self.request.event.slug)
 

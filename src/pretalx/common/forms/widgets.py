@@ -312,6 +312,27 @@ class ColorPickerWidget(forms.TextInput):
         css = {"all": ["orga/css/forms/colorpicker.css"]}
 
 
+class MultiEmailInput(forms.TextInput):
+    def __init__(self, attrs=None, delimiter=","):
+        self.delimiter = delimiter
+        attrs = add_attribute(attrs, "class", "tags-input")
+        super().__init__(attrs=attrs)
+
+    def format_value(self, value):
+        if isinstance(value, (list, tuple)):
+            return self.delimiter.join(value)
+        return value or ""
+
+    class Media:
+        js = [
+            forms.Script("vendored/choices/choices.min.js", defer=""),
+            forms.Script("common/js/forms/multi-email.js", defer=""),
+        ]
+        css = {
+            "all": ["vendored/choices/choices.min.css", "common/css/forms/select.css"]
+        }
+
+
 class AvailabilitiesWidget(forms.TextInput):
 
     def __init__(self, attrs=None):

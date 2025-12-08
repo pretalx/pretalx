@@ -10,9 +10,13 @@ from django.core import mail as djmail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils.timezone import now
-from django_scopes import scope
+from django_scopes import scope, scopes_disabled
 
-from pretalx.submission.models import SubmissionStates, SubmitterAccessCode
+from pretalx.submission.models import (
+    SubmissionInvitation,
+    SubmissionStates,
+    SubmitterAccessCode,
+)
 
 
 @pytest.mark.django_db
@@ -685,21 +689,49 @@ def test_can_invite_speaker(speaker_client, submission):
 @pytest.mark.django_db
 def test_can_accept_invitation(orga_client, submission):
     assert submission.speakers.count() == 1
-    response = orga_client.post(submission.urls.accept_invitation, follow=True)
+    invitation = SubmissionInvitation.objects.create(
+        submission=submission, email="orga@orga.org"
+    )
+    invitation_pk = invitation.pk
+    response = orga_client.post(invitation.urls.base.full(), follow=True)
     submission.refresh_from_db()
     assert response.status_code == 200
     assert submission.speakers.count() == 2
+    with scopes_disabled():
+        assert not SubmissionInvitation.objects.filter(pk=invitation_pk).exists()
 
 
 @pytest.mark.django_db
 def test_wrong_acceptance_link(orga_client, submission):
     assert submission.speakers.count() == 1
-    response = orga_client.post(
-        submission.urls.accept_invitation + "olololol", follow=True
+    invitation = SubmissionInvitation.objects.create(
+        submission=submission, email="orga@orga.org"
     )
+    response = orga_client.post(invitation.urls.base.full() + "olololol", follow=True)
     submission.refresh_from_db()
     assert response.status_code == 404
     assert submission.speakers.count() == 1
+
+
+@pytest.mark.django_db
+def test_speaker_can_retract_invitation(speaker_client, submission):
+    with scope(event=submission.event):
+        invitation = SubmissionInvitation.objects.create(
+            submission=submission, email="todelete@example.com"
+        )
+        invitation_id = invitation.pk
+
+    response = speaker_client.post(
+        submission.urls.retract_invitation + f"?id={invitation_id}", follow=True
+    )
+    assert response.status_code == 200
+    with scope(event=submission.event):
+        assert not SubmissionInvitation.objects.filter(pk=invitation_id).exists()
+        assert (
+            submission.logged_actions()
+            .filter(action_type="pretalx.submission.invitation.retract")
+            .exists()
+        )
 
 
 @pytest.mark.django_db

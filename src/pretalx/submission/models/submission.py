@@ -366,6 +366,7 @@ class Submission(GenerateCode, PretalxModel):
         ical = "{public_base}.ics"
         image = "{self.image_url}"
         invite = "{user_base}invite"
+        retract_invitation = "{user_base}retract-invitation"
         accept_invitation = (
             "{self.event.urls.base}invitation/{self.code}/{self.invitation_token}"
         )
