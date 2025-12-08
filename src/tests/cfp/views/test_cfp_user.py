@@ -682,6 +682,10 @@ def test_can_invite_speaker(speaker_client, submission):
     }
     response = speaker_client.post(submission.urls.invite, follow=True, data=data)
     assert response.status_code == 200
+    assert len(djmail.outbox) == 0  # incorrect text
+    data["text"] += "{invitation_url}"
+    response = speaker_client.post(submission.urls.invite, follow=True, data=data)
+    assert response.status_code == 200
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == ["other@speaker.org"]
 
