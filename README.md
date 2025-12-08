@@ -20,7 +20,7 @@
 | pretalx/agenda/views/utils.py                                          |       51 |        6 |       22 |        4 |     86% |21, 59, 61, 65-69, 77->79 |
 | pretalx/agenda/views/widget.py                                         |       78 |        7 |       26 |        5 |     88% |39, 84-87, 102, 136->143, 141 |
 | pretalx/api/apps.py                                                    |        3 |        0 |        0 |        0 |    100% |           |
-| pretalx/api/documentation.py                                           |       27 |        1 |        6 |        2 |     91% |11->26, 27 |
+| pretalx/api/documentation.py                                           |       28 |        1 |        6 |        2 |     91% |11->26, 27 |
 | pretalx/api/exceptions.py                                              |        9 |        0 |        2 |        0 |    100% |           |
 | pretalx/api/filters/feedback.py                                        |       16 |        0 |        0 |        0 |    100% |           |
 | pretalx/api/filters/review.py                                          |       20 |        0 |        2 |        1 |     95% |  35->exit |
@@ -41,7 +41,7 @@
 | pretalx/api/serializers/schedule.py                                    |       71 |        1 |       12 |        1 |     98% |        38 |
 | pretalx/api/serializers/speaker.py                                     |       90 |        7 |       26 |        5 |     90% |38, 47, 70, 116, 147-149 |
 | pretalx/api/serializers/speaker\_information.py                        |       35 |        1 |        6 |        1 |     95% |        63 |
-| pretalx/api/serializers/submission.py                                  |      197 |       22 |       66 |       16 |     85% |81, 93, 119, 162, 176, 305, 311-317, 323->325, 326, 331, 333-335, 344-345, 357, 359-360, 362, 364, 366 |
+| pretalx/api/serializers/submission.py                                  |      199 |       22 |       66 |       16 |     85% |81, 93, 119, 162, 176, 307, 313-319, 325->327, 328, 333, 335-337, 346-347, 359, 361-362, 364, 366, 368 |
 | pretalx/api/serializers/team.py                                        |       49 |        0 |        8 |        0 |    100% |           |
 | pretalx/api/shims.py                                                   |       18 |       18 |        0 |        0 |      0% |     11-35 |
 | pretalx/api/versions.py                                                |       30 |        1 |       10 |        1 |     95% |        35 |
@@ -53,6 +53,7 @@
 | pretalx/api/views/question.py                                          |      115 |        9 |       18 |        3 |     89% |108-112, 159, 172-173, 258-259, 289->301 |
 | pretalx/api/views/review.py                                            |       42 |        1 |       10 |        1 |     96% |       112 |
 | pretalx/api/views/room.py                                              |       32 |        2 |        2 |        0 |     94% |     65-66 |
+| pretalx/api/views/root.py                                              |       19 |        0 |        0 |        0 |    100% |           |
 | pretalx/api/views/schedule.py                                          |      129 |        8 |       36 |        8 |     90% |80, 90, 114, 148, 222, 300, 316, 322 |
 | pretalx/api/views/speaker.py                                           |       55 |        1 |       12 |        1 |     97% |       157 |
 | pretalx/api/views/speaker\_information.py                              |       19 |        0 |        2 |        0 |    100% |           |
@@ -151,7 +152,7 @@
 | pretalx/event/models/event.py                                          |      556 |       31 |      122 |       10 |     93% |84, 463, 468, 514, 517, 655-657, 686->700, 718, 722-733, 755-756, 764, 806-815, 953->956 |
 | pretalx/event/models/organiser.py                                      |      119 |        8 |       18 |        6 |     90% |48, 55, 69, 77, 258, 266, 273, 315 |
 | pretalx/event/rules.py                                                 |       52 |        0 |       12 |        0 |    100% |           |
-| pretalx/event/services.py                                              |       57 |        2 |       20 |        2 |     95% |   81, 118 |
+| pretalx/event/services.py                                              |       57 |        2 |       20 |        3 |     94% |81, 90->exit, 118 |
 | pretalx/event/stages.py                                                |       39 |        0 |       10 |        0 |    100% |           |
 | pretalx/event/utils.py                                                 |        7 |        0 |        2 |        0 |    100% |           |
 | pretalx/mail/apps.py                                                   |        5 |        0 |        0 |        0 |    100% |           |
@@ -208,7 +209,7 @@
 | pretalx/person/forms/information.py                                    |       21 |        1 |        2 |        1 |     91% |        18 |
 | pretalx/person/forms/profile.py                                        |      185 |       31 |       66 |       14 |     78% |67->69, 91-92, 93->96, 100->exit, 121->123, 134, 149, 151, 153, 167, 198->exit, 205, 221-227, 230-231, 283->exit, 301, 327-332, 335-344 |
 | pretalx/person/forms/user.py                                           |       57 |        3 |       16 |        3 |     92% |77, 89, 127 |
-| pretalx/person/models/auth\_token.py                                   |       53 |       11 |       10 |        0 |     73% |100, 103, 115-124 |
+| pretalx/person/models/auth\_token.py                                   |       73 |       11 |       20 |        0 |     82% |101, 104, 146-155 |
 | pretalx/person/models/information.py                                   |       30 |        0 |        0 |        0 |    100% |           |
 | pretalx/person/models/preferences.py                                   |       41 |        5 |       18 |        5 |     80% |47-53, 92, 98->exit, 109->112, 112->exit |
 | pretalx/person/models/profile.py                                       |       58 |        2 |        6 |        3 |     92% |119, 140, 146->exit, 151->exit, 156->162 |
@@ -272,10 +273,11 @@
 | tests/api/test\_api\_questions.py                                      |      446 |        0 |        6 |        0 |    100% |           |
 | tests/api/test\_api\_reviews.py                                        |      370 |        0 |        0 |        0 |    100% |           |
 | tests/api/test\_api\_rooms.py                                          |      205 |        0 |        0 |        0 |    100% |           |
+| tests/api/test\_api\_root.py                                           |       13 |        0 |        0 |        0 |    100% |           |
 | tests/api/test\_api\_schedule.py                                       |      489 |        0 |        6 |        0 |    100% |           |
 | tests/api/test\_api\_speaker\_information.py                           |      141 |        0 |        0 |        0 |    100% |           |
 | tests/api/test\_api\_speakers.py                                       |      299 |        0 |        4 |        0 |    100% |           |
-| tests/api/test\_api\_submissions.py                                    |      734 |        0 |        2 |        0 |    100% |           |
+| tests/api/test\_api\_submissions.py                                    |      734 |        1 |        2 |        0 |     99% |       112 |
 | tests/api/test\_api\_teams.py                                          |      208 |        0 |        0 |        0 |    100% |           |
 | tests/api/test\_api\_upload.py                                         |       30 |        0 |        0 |        0 |    100% |           |
 | tests/cfp/test\_cfp\_flow.py                                           |       22 |        0 |        0 |        0 |    100% |           |
@@ -333,6 +335,7 @@
 | tests/orga/views/test\_orga\_views\_speaker.py                         |      216 |        0 |        2 |        0 |    100% |           |
 | tests/orga/views/test\_orga\_views\_submission.py                      |      585 |        0 |        6 |        0 |    100% |           |
 | tests/orga/views/test\_orga\_views\_submission\_cards.py               |       14 |        0 |        0 |        0 |    100% |           |
+| tests/person/test\_auth\_token\_model.py                               |       11 |        0 |        0 |        0 |    100% |           |
 | tests/person/test\_information\_model.py                               |        5 |        0 |        0 |        0 |    100% |           |
 | tests/person/test\_person\_permissions.py                              |       10 |        0 |        0 |        0 |    100% |           |
 | tests/person/test\_person\_tasks.py                                    |       34 |        0 |        0 |        0 |    100% |           |
@@ -352,7 +355,7 @@
 | tests/submission/test\_submission\_model.py                            |      297 |        0 |        6 |        0 |    100% |           |
 | tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-|                                                              **TOTAL** | **31553** | **1886** | **5044** |  **699** | **91%** |           |
+|                                                              **TOTAL** | **31619** | **1887** | **5054** |  **700** | **91%** |           |
 
 
 ## Setup coverage badge
