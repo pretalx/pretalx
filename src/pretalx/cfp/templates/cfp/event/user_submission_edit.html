@@ -17,17 +17,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block scripts %}{% form_media %}{% endblock scripts %}
 
 {% block content %}
-    {% has_perm "submission.add_speaker_submission" request.user submission as can_invite_speakers %}
+    {% include "cfp/includes/user_submission_header.html" with show_invites=True %}
 
-    {% include "cfp/includes/user_submission_header.html" %}
-
-    <p>
+    <p class="text-right">
         {% if submission.state == "accepted" %}
             <a href="{{ submission.urls.confirm }}" class="btn btn-sm btn-success">
                 <i class="fa fa-check"></i> {% translate "Confirm your attendance" %}
             </a>
         {% elif submission.state == "confirmed" and request.event|get_feature_flag:"use_feedback" %}
-            <a href="{{ submission.urls.feedback }}">
+            <a href="{{ submission.urls.feedback }}" class="btn btn-sm btn-success">
                 {% if submission.does_accept_feedback %}
                     {% translate "Audience feedback" %}
                 {% else %}
@@ -36,41 +34,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </a>
         {% endif %}
     </p>
-    <h5>
-        <div class="form-group form-inline flex-row">
-            <div class="mt-1">
-                {% if submission.state == "confirmed" %}
-                    {% blocktranslate trimmed count count=submission.speakers.count %}Speaker{% plural %}Speakers{% endblocktranslate %}:
-                {% else %}
-                    {% blocktranslate trimmed count count=submission.speakers.count %}Submitter{% plural %}Submitters{% endblocktranslate %}:
-                {% endif %}
-                {{ submission.display_speaker_names }}{% if invitations %},
-                    {% for invitation in invitations %}
-                        <span class="text-muted" title="{% translate "Pending invitation" %}">{{ invitation.email }}{% if can_invite_speakers %}
-                            <form method="post" action="{{ submission.urls.retract_invitation }}?id={{ invitation.pk }}" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-link btn-sm p-0 text-muted" title="{% translate "Retract invitation" %}">
-                                    <i class="fa fa-times"></i>
-                                </button>
-                            </form>{% endif %}</span>{% if not forloop.last %},{% elif can_invite_speakers and can_add_more_speakers %},{% endif %}
-                    {% endfor %}
-                {% elif can_invite_speakers and can_add_more_speakers %},
-                {% endif %}
-            </div>
-            {% if can_invite_speakers and can_add_more_speakers %}
-                <form class="add-speaker d-inline" action="{{ submission.urls.invite }}">
-                    <div class="input-group pl-2 w-auto">
-                        <input name="email" class="form-control form-control-sm" placeholder="mail@example.org">
-                        <span class="input-group-btn input-group-append">
-                            <button class="btn btn-success btn-sm">
-                                <i class="fa fa-plus"></i>
-                            </button>
-                        </span>
-                    </div>
-                </form>
-            {% endif %}
-        </div>
-    </h5>
     <form method="post" enctype="multipart/form-data">
         {% include "common/forms/errors.html" %}
         {% include "common/forms/errors.html" with form=qform %}

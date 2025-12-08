@@ -33,7 +33,9 @@ from pretalx.submission.models import (
 TEMPLATE_LOG_NAMES = {
     "pretalx.event.delete": _("The event {name} ({slug}) by {organiser} was deleted."),
     "pretalx.organiser.delete": _("The organiser {name} was deleted."),
-    "pretalx.submission.invitation.send": _("A speaker invitation was sent to {email}."),
+    "pretalx.submission.invitation.send": _(
+        "A speaker invitation was sent to {email}."
+    ),
     "pretalx.submission.invitation.accept": _(
         "A speaker invitation to {email} was accepted."
     ),
