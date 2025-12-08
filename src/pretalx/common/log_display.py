@@ -33,6 +33,13 @@ from pretalx.submission.models import (
 TEMPLATE_LOG_NAMES = {
     "pretalx.event.delete": _("The event {name} ({slug}) by {organiser} was deleted."),
     "pretalx.organiser.delete": _("The organiser {name} was deleted."),
+    "pretalx.submission.invitation.send": _("A speaker invitation was sent to {email}."),
+    "pretalx.submission.invitation.accept": _(
+        "A speaker invitation to {email} was accepted."
+    ),
+    "pretalx.submission.invitation.retract": _(
+        "A speaker invitation to {email} was retracted."
+    ),
 }
 
 # These log names were used in the past, and we still support them for display purposes
@@ -104,6 +111,9 @@ LOG_NAMES = {
     "pretalx.submission.speakers.add": _("A speaker was added to the proposal."),
     "pretalx.submission.speakers.invite": _("A speaker was invited to the proposal."),
     "pretalx.submission.speakers.remove": _("A speaker was removed from the proposal."),
+    "pretalx.submission.invitation.send": _("A speaker invitation was sent."),
+    "pretalx.submission.invitation.accept": _("A speaker invitation was accepted."),
+    "pretalx.submission.invitation.retract": _("A speaker invitation was retracted."),
     "pretalx.submission.unconfirm": _("The proposal was unconfirmed."),
     "pretalx.submission.update": _("The proposal was modified."),
     "pretalx.submission.withdraw": _("The proposal was withdrawn."),
