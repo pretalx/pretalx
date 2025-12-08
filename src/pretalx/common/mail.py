@@ -113,9 +113,9 @@ def mail_send_task(
         backend = get_connection(fail_silently=False)
 
     email = EmailMultiAlternatives(
-        subject,
-        body,
-        sender,
+        subject=subject,
+        body=body,
+        from_email=sender,
         to=to,
         cc=cc,
         bcc=bcc,
@@ -128,7 +128,7 @@ def mail_send_task(
         inliner = css_inline.CSSInliner(keep_style_tags=False)
         body_html = inliner.inline(html)
 
-        email.attach_alternative(body_html, "text/html")
+        email.attach_alternative(content=body_html, mimetype="text/html")
 
     if attachments:
         for attachment in attachments:
