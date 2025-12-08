@@ -107,6 +107,8 @@ def test_submission_serializer_for_organiser(submission, orga_user, resource, ta
             "reviews",
             "is_anonymised",
             "slots",
+            "created",
+            "updated",
         }
         assert isinstance(data["speakers"], list)
         assert data["tags"] == [tag.id]
