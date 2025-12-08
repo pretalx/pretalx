@@ -226,6 +226,31 @@ table:not(.no-hover) tr:hover {
   background-color: var(--color-grey-lightest);
 }
 
+.alert-primary#submission-info {
+  width: auto;
+  margin: 0 auto;
+
+  .table-submission-info {
+    margin: 0;
+    width: 100%;
+    background: white;
+
+    th,
+    td {
+      padding: 0.25rem 0.25rem 0.25rem 0;
+      text-align: left;
+      vertical-align: middle;
+      line-height: 1.4;
+    }
+    th {
+      padding: 0 1.5rem 0 0.5rem;
+      white-space: nowrap;
+      font-weight: 600;
+      width: 200px;
+    }
+  }
+}
+
 legend {
   margin-bottom: 0.5rem;
 }
@@ -596,7 +621,8 @@ a {
   --highlight-color-text: var(--color-danger-text-dark);
 }
 .color-primary,
-.btn-primary {
+.btn-primary,
+.alert-primary {
   --highlight-color: var(--color-primary);
   --highlight-color-text: var(--color-primary-text-dark);
   --color-on-highlight: var(--color-text-on-primary);
@@ -1019,6 +1045,21 @@ pl-0 {
 }
 .pb-4 {
   padding-bottom: 1.5rem !important;
+}
+.gap-0 {
+  gap: 0 !important;
+}
+.gap-1 {
+  gap: 0.25rem !important;
+}
+.gap-2 {
+  gap: 0.5rem !important;
+}
+.gap-3 {
+  gap: 1rem !important;
+}
+.gap-4 {
+  gap: 1.5rem !important;
 }
 
 .text-center {

@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load datetimerange %}
 {% load i18n %}
+{% load rules %}
 {% load static %}
 
 <script defer src="{% static "common/js/ui/datetime-local.js" %}"></script>
@@ -15,14 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <span class="badge color-secondary">{% translate "Draft" %}</span>
     {% endif %}
 </h2>
-{% if submission.state != "draft" %}
-    <p>
-        {% translate "Current state of your proposal:" %}
-
-        {% include "cfp/event/fragment_state.html" with state=submission.state as_badge=True %}
-
-    </p>
-{% else %}
+{% if submission.state == "draft" %}
     <div class="alert alert-info">
         {% blocktranslate trimmed %}
             This is a draft proposal.
@@ -30,36 +24,74 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endblocktranslate %}
     </div>
 {% endif %}
-{% if submission.public_slots %}
-    <h3>
-        <small>
-            {% for talk in submission.public_slots %}
-                {{ talk.start|datetimerange:talk.end }}, {{ talk.room.name }}
-                {% if not forloop.last %}·{% endif %}
-            {% endfor %}
-        </small>
-    </h3>
-{% endif %}
-<div class="submission-info d-flex">
-    {% if submission.submission_type and request.event.submission_types.all|length > 1 %}
-        <p class="mr-1 ml-1">
-            <strong>{% translate "Session type" %}</strong>: {{ submission.submission_type.name }}
-        </p>
-        ·
-    {% endif %}
-    {% if submission.track and request.event.tracks.all|length > 1 %}
-        <p class="mr-1 ml-1">
-            <strong>{% translate "Track" %}</strong> {{ submission.track.name }}
-        </p>
-        ·
-    {% endif %}
-    {% if request.event.is_multilingual and request.event.cfp.request_content_locale %}
-        <p class="mr-1 ml-1">
-            <strong>{{ phrases.base.language }}</strong> {{ submission.get_content_locale_display }}
-        </p>
-        ·
-    {% endif %}
-    <p class="mr-1 ml-1">
-        <strong>{% translate "Duration" %}</strong> {{ submission.export_duration }}
-    </p>
+{% if show_invites %}{% has_perm "submission.add_speaker_submission" request.user submission as can_invite_speakers %}{% endif %}
+<div class="alert alert-info alert-primary" id="submission-info">
+    <table class="table-submission-info no-hover">
+        <tr>
+            <th>
+                {% if submission.state == "confirmed" %}
+                    {% blocktranslate trimmed count count=submission.speakers.count %}Speaker{% plural %}Speakers{% endblocktranslate %}
+                {% else %}
+                    {% blocktranslate trimmed count count=submission.speakers.count %}Submitter{% plural %}Submitters{% endblocktranslate %}
+                {% endif %}
+            </th>
+            <td>
+                {{ submission.display_speaker_names }}{% if show_invites and invitations %},
+                    {% for invitation in invitations %}
+                        <span class="text-muted" title="{% translate "Pending invitation" %}">{{ invitation.email }}{% if can_invite_speakers %}
+                            <form method="post" action="{{ submission.urls.retract_invitation }}?id={{ invitation.pk }}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-link btn-sm p-0 text-muted" title="{% translate "Retract invitation" %}">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                            </form>{% endif %}</span>{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                {% endif %}
+                {% if can_invite_speakers and can_add_more_speakers %}
+                    <a href="{{ submission.urls.invite }}" class="btn btn-success btn-sm ml-2" title="{% translate "Invite co-speaker" %}">
+                        <i class="fa fa-plus"></i>
+                    </a>
+                {% endif %}
+            </td>
+        </tr>
+        {% if submission.state != "draft" %}
+            <tr>
+                <th>{% translate "Status" %}</th>
+                <td>{% include "cfp/event/fragment_state.html" with state=submission.state as_badge=True %}</td>
+            </tr>
+        {% endif %}
+        {% if submission.submission_type and request.event.submission_types.all|length > 1 %}
+            <tr>
+                <th>{% translate "Session type" %}</th>
+                <td>{{ submission.submission_type.name }}</td>
+            </tr>
+        {% endif %}
+        {% if submission.track and request.event.tracks.all|length > 1 %}
+            <tr>
+                <th>{% translate "Track" %}</th>
+                <td>{{ submission.track.name }}</td>
+            </tr>
+        {% endif %}
+        {% if request.event.is_multilingual and request.event.cfp.request_content_locale %}
+            <tr>
+                <th>{{ phrases.base.language }}</th>
+                <td>{{ submission.get_content_locale_display }}</td>
+            </tr>
+        {% endif %}
+        <tr>
+            <th>{% translate "Duration" %}</th>
+            <td>{{ submission.export_duration }}</td>
+        </tr>
+        {% if submission.public_slots %}
+            <tr>
+                <th></th>
+                <td>
+                    {% for talk in submission.public_slots %}
+                        <i class="fa fa-calendar"></i> {{ talk.start|datetimerange:talk.end }}
+                        <i class="fa fa-map-marker"></i> {{ talk.room.name }}{% if not forloop.last %}<br>{% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+        {% endif %}
+    </table>
 </div>
