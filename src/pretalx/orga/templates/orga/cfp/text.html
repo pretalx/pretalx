@@ -17,15 +17,20 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <link rel="stylesheet" href="{% static "orga/css/ui/cfp.css" %}" />
 {% endblock stylesheets %}
 
-{% block extra_title %}{% translate "Call for Proposals" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "CfP Settings" %} :: {% endblock extra_title %}
 
 {% block content %}
-    <h2>
-        {% translate "Call for Proposals" %}
-        <span data-dialog-target="#info-dialog" data-toggle="dialog">
-            <i class="fa fa-question-circle-o text-info"></i>
-        </span>
-    </h2>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>
+            {% translate "CfP Settings" %}
+            <span data-dialog-target="#info-dialog" data-toggle="dialog">
+                <i class="fa fa-question-circle-o text-info"></i>
+            </span>
+        </h2>
+        <a href="{{ request.event.cfp.urls.editor }}" class="btn btn-outline-info">
+            <i class="fa fa-edit"></i> {% translate "CfP Editor" %}
+        </a>
+    </div>
     <dialog class="info-dialog" id="info-dialog">
         <div class="alert alert-info">
             <span>
@@ -49,169 +54,35 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% include "common/forms/errors.html" %}
         {% include "common/forms/errors.html" with form=sform %}
 
-        {% include "orga/includes/tablist.html" %}
-        <section role="tabpanel" id="tabpanel-general" aria-labelledby="tab-general" tabindex="0" aria-hidden="false">
-            {{ form.headline.as_field_group }}
-            {{ form.text.as_field_group }}
-            {{ form.opening.as_field_group }}
-            {{ form.deadline.as_field_group }}
-            {% if different_deadlines %}
-                <div class="offset-md-3 alert alert-info">
-                    <div>
-                        {% translate "Some of your session types have different deadlines:" %}
-                        <ul class="mb-0">
-                            {% for deadline, session_types in different_deadlines.items %}
-                                <li>
-                                    {% for session_type in session_types %}
-                                        <a href="{{ session_type.urls.base }}">{{ session_type.name }}</a>{% if not forloop.last %},{% else %}:{% endif %}
-                                    {% endfor %}
-                                    {{ deadline }}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
+        {{ form.headline.as_field_group }}
+        {{ form.text.as_field_group }}
+        {{ form.opening.as_field_group }}
+        {{ form.deadline.as_field_group }}
+        {% if different_deadlines %}
+            <div class="offset-md-3 alert alert-info">
+                <div>
+                    {% translate "Some of your session types have different deadlines:" %}
+                    <ul class="mb-0">
+                        {% for deadline, session_types in different_deadlines.items %}
+                            <li>
+                                {% for session_type in session_types %}
+                                    <a href="{{ session_type.urls.base }}">{{ session_type.name }}</a>{% if not forloop.last %},{% else %}:{% endif %}
+                                {% endfor %}
+                                {{ deadline }}
+                            </li>
+                        {% endfor %}
+                    </ul>
                 </div>
-            {% endif %}
-            {{ form.show_deadline.as_field_group }}
-            {{ sform.use_tracks.as_field_group }}
-            {{ sform.present_multiple_times.as_field_group }}
-            {{ sform.speakers_can_edit_submissions.as_field_group }}
-            {{ sform.submission_public_review.as_field_group }}
-            {{ sform.mail_on_new_submission.as_field_group }}
-        </section>
+            </div>
+        {% endif %}
+        {{ form.show_deadline.as_field_group }}
+        {{ sform.count_length_in.as_field_group }}
+        {{ sform.use_tracks.as_field_group }}
+        {{ sform.present_multiple_times.as_field_group }}
+        {{ sform.speakers_can_edit_submissions.as_field_group }}
+        {{ sform.submission_public_review.as_field_group }}
+        {{ sform.mail_on_new_submission.as_field_group }}
 
-        <section role="tabpanel" id="tabpanel-fields" aria-labelledby="tab-fields" tabindex="0" aria-hidden="true">
-            {{ form.count_length_in.as_field_group }}
-            <fieldset>
-
-                <legend id="information"><div>
-                    {% translate "Proposal information" %}
-                    <span data-dialog-target="#proposal-info-dialog" data-toggle="dialog">
-                        <i class="fa fa-question-circle-o text-info"></i>
-                    </span>
-                </div></legend>
-                <dialog class="info-dialog" id="proposal-info-dialog">
-                    <div class="alert alert-info"><span>
-                        {% translate "Select which information should be requested and/or required during CfP proposal." %}
-                        <a href="{{ request.event.cfp.urls.editor }}">{% translate "Click here to view the proposal form." %}</a>
-                    </span></div>
-                </dialog>
-                <div class="table-responsive-sm offset-md-3"><table class="table table-sm table-flip table-sticky cfp-option-table">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th></th>
-                            <th>{% translate "Minimum length" %}</th>
-                            <th>{% translate "Maximum length" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th>{% translate "Title" %}</th>
-                            <td></td>
-                            <td>{{ sform.cfp_title_min_length.as_field_group }}</td>
-                            <td>{{ sform.cfp_title_max_length.as_field_group }}</td>
-                        </tr>
-                        <tr>
-                            <th>{% translate "Abstract" %}</th>
-                            <td class="hide-label">{{ sform.cfp_ask_abstract.as_field_group }}</td>
-                            <td>{{ sform.cfp_abstract_min_length.as_field_group }}</td>
-                            <td>{{ sform.cfp_abstract_max_length.as_field_group }}</td>
-                        </tr>
-                        <tr>
-                            <th>{% translate "Description" %}</th>
-                            <td class="hide-label">{{ sform.cfp_ask_description.as_field_group }}</td>
-                            <td>{{ sform.cfp_description_min_length.as_field_group }}</td>
-                            <td>{{ sform.cfp_description_max_length.as_field_group }}</td>
-                        </tr>
-                        <tr{% if not request.event|get_feature_flag:"use_tracks" %} class="d-none"{% endif %}>
-                            <th>{% translate "Track" %}</th>
-                            <td class="hide-label">{{ sform.cfp_ask_track.as_field_group }}</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        {% if request.event.is_multilingual %}
-                            <tr>
-                                <th>{{ phrases.base.language }}</th>
-                                <td class="hide-label">{{ sform.cfp_ask_content_locale.as_field_group }}</td>
-                                <td></td>
-                                <td></td>
-                            </tr>
-                        {% endif %}
-                        <tr>
-                            <th>{% translate "Additional speakers" %}</th>
-                            <td class="hide-label">{{ sform.cfp_ask_additional_speaker.as_field_group }}</td>
-                            <td></td>
-                            <td class="hide-label">{{ sform.cfp_additional_speaker_max.as_field_group }}</td>
-                        </tr>
-                        <tr>
-                            <th>{% translate "Notes" %}</th>
-                            <td class="hide-label">{{ sform.cfp_ask_notes.as_field_group }}</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <th>{% translate "Recording opt-out" %}</th>
-                            <td class="hide-label">{{ sform.cfp_ask_do_not_record.as_field_group }}</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <th>{% translate "Session image" %}</th>
-                            <td class="hide-label">{{ sform.cfp_ask_image.as_field_group }}</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <th>{% translate "Duration" %}</th>
-                            <td class="hide-label">{{ sform.cfp_ask_duration.as_field_group }}</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                    </tbody>
-                </table></div>
-            </fieldset>
-            <fieldset>
-                <legend id="speaker-information">
-                    <div>
-                        {% translate "Speaker Information" %}
-                        <span data-dialog-target="#proposal-info-dialog" data-toggle="dialog">
-                            <i class="fa fa-question-circle-o text-info"></i>
-                        </span>
-                    </div>
-                </legend>
-                <div class="table-responsive-sm offset-md-3"><table class="table table-sm table-flip table-sticky cfp-option-table">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th></th>
-                            <th>{% translate "Minimum length" %}</th>
-                            <th>{% translate "Maximum length" %}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th>{% translate "Biography" %}</th>
-                            <td class="hide-label">{{ sform.cfp_ask_biography.as_field_group }}</td>
-                            <td>{{ sform.cfp_biography_min_length.as_field_group }}</td>
-                            <td>{{ sform.cfp_biography_max_length.as_field_group }}</td>
-                        </tr>
-                        <tr>
-                            <th>{% translate "Profile picture" %}</th>
-                            <td class="hide-label">{{ sform.cfp_ask_avatar.as_field_group }}</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <th>{% translate "Availability" %}</th>
-                            <td class="hide-label">{{ sform.cfp_ask_availabilities.as_field_group }}</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                    </tbody>
-                </table></div>
-            </fieldset>
-        </section>
         {% include "orga/includes/submit_row.html" %}
     </form>
 {% endblock content %}

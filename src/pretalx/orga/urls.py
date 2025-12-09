@@ -139,7 +139,7 @@ urlpatterns = [
                 ),
                 path(
                     "cfp/",
-                    RedirectView.as_view(pattern_name="orga:cfp.text.view"),
+                    RedirectView.as_view(pattern_name="orga:cfp.editor"),
                     name="cfp",
                 ),
                 path("cfp/flow/", cfp.CfPFlowEditor.as_view(), name="cfp.flow"),
