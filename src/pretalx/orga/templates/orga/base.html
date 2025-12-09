@@ -235,7 +235,7 @@ SPDX-FileContributor: Raphael Michel
                             </div>
                             <div class="nav-fold">
                                 <span class="has-children">
-                                    <a class="nav-link nav-link-inner" href="{{ request.event.cfp.urls.text }}">
+                                    <a class="nav-link nav-link-inner" href="{{ request.event.cfp.urls.editor }}">
                                         <i class="fa fa-bullhorn"></i>
                                         <span class="sidebar-text">{% translate "Call for Proposals" %}</span>
                                     </a>
@@ -244,11 +244,11 @@ SPDX-FileContributor: Raphael Michel
                                     </a>
                                 </span>
                                 <div class="collapse in{% if "cfp." in url_name %} show{% endif %}" aria-expand="true" id="collapseCfP">
-                                    <a href="{{ request.event.cfp.urls.text }}" class="nav-link nav-link-second-level{% if "cfp.text" in url_name %} active{% endif %}">
-                                        <span>{% translate "Content" %}</span>
-                                    </a>
-                                    <a href="{{ request.event.cfp.urls.editor }}" class="nav-link nav-link-second-level{% if "cfp.flow" in url_name %} active{% endif %}">
+                                    <a href="{{ request.event.cfp.urls.editor }}" class="nav-link nav-link-second-level{% if "cfp.editor" in url_name %} active{% endif %}">
                                         <span>{% translate "Editor" %}</span>
+                                    </a>
+                                    <a href="{{ request.event.cfp.urls.text }}" class="nav-link nav-link-second-level{% if "cfp.text" in url_name %} active{% endif %}">
+                                        <span>{% translate "Settings" %}</span>
                                     </a>
                                     <a href="{{ request.event.cfp.urls.questions }}" class="nav-link nav-link-second-level{% if "cfp.question" in url_name %} active{% endif %}">
                                         <span>{{ phrases.cfp.custom_fields }}</span>

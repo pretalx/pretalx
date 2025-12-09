@@ -8,7 +8,6 @@
 import json
 from collections import defaultdict
 
-from csp.decorators import csp_update
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count, Q
@@ -16,7 +15,6 @@ from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView, UpdateView, View
@@ -68,13 +66,6 @@ class CfPTextDetail(PermissionRequired, UpdateView):
     template_name = "orga/cfp/text.html"
     permission_required = "event.update_event"
     write_permission_required = "event.update_event"
-
-    @context
-    def tablist(self):
-        return {
-            "general": _("General information"),
-            "fields": _("Fields"),
-        }
 
     @context
     @cached_property
