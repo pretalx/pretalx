@@ -11,6 +11,7 @@ Release Notes
 - :feature:`cfp` If organisers set a colour with bad contrast to white font as their primary colour despite all warnings, pretalx will render text on buttons and on the conference header in dark colours rather than in white.
 - :bug:`orga:submissions,2220` Sessions without a track always showed with the anonymisation indicator in the organiser session list.
 - :feature:`api` The submission organiser API now includes the ``created`` and ``updated`` timestamp fields. Please note that the ``updated`` timestamp is not guaranteed to be always set, particularly when only custom fields are being changes. If you need a reliable last modification date, please refer to the object changelog instead.
+- :feature:`cfp` Organisers can now reorder the pretalx-provided CfP fields.
 - :announcement:`admin` pretalx now requires Python 3.12 or newer.
 - :feature:`api` At the root API URL, you will now find a link to the event API, as well as the latest API version that is available.
 - :feature:`orga` When creating a new API token, you can now select and deselect whole rows and columns.
