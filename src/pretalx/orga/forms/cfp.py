@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import override
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
+from i18nfield.forms import I18nFormField, I18nTextarea, I18nTextInput
 from i18nfield.strings import LazyI18nString
 
 from pretalx.common.forms.fields import ColorField
@@ -638,6 +639,83 @@ class QuestionFilterForm(forms.Form):
 
     class Media:
         css = {"all": ["orga/css/forms/search.css"]}
+
+
+class CfPFieldConfigForm(PretalxI18nFormMixin, forms.Form):
+    label = I18nFormField(
+        label=_("Custom label"),
+        required=False,
+        help_text=_("Leave empty to use the default label."),
+        widget=I18nTextInput,
+    )
+    help_text = I18nFormField(
+        label=_("Help text"),
+        required=False,
+        help_text=_("Additional instructions shown below the field."),
+        widget=I18nTextarea,
+    )
+    visibility = forms.ChoiceField(
+        label=_("Visibility"),
+        choices=[
+            ("required", _("Required")),
+            ("optional", _("Optional")),
+        ],
+        widget=forms.Select(attrs={"class": "form-control"}),
+    )
+    min_length = forms.IntegerField(
+        label=_("Minimum length"),
+        required=False,
+        min_value=0,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+    max_length = forms.IntegerField(
+        label=_("Maximum length"),
+        required=False,
+        min_value=0,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+    max = forms.IntegerField(
+        label=_("Maximum speakers"),
+        required=False,
+        min_value=1,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+        help_text=_("Maximum number of speakers per proposal (including submitter)."),
+    )
+
+    def __init__(self, *args, field_key=None, event=None, **kwargs):
+        self.field_key = field_key
+        self.event = event
+        kwargs["locales"] = event.locales
+        super().__init__(*args, **kwargs)
+
+        self.fields["help_text"].widget.attrs["rows"] = "2"
+        self.fields["help_text"].widget.attrs["size"] = "2"
+        length_fields = ["title", "abstract", "description", "biography"]
+        if field_key not in length_fields:
+            del self.fields["min_length"]
+            del self.fields["max_length"]
+
+        if field_key != "additional_speaker":
+            del self.fields["max"]
+
+
+class StepHeaderForm(PretalxI18nFormMixin, forms.Form):
+    title = forms.CharField(
+        label=_("Step title"),
+        required=False,
+        help_text=_("Leave empty to use the default title."),
+    )
+    text = forms.CharField(
+        label=_("Step description"),
+        required=False,
+        help_text=_("Leave empty to use the default description."),
+        widget=forms.Textarea(attrs={"rows": 3}),
+    )
+
+    def __init__(self, *args, event=None, **kwargs):
+        self.event = event
+        kwargs["locales"] = event.locales
+        super().__init__(*args, **kwargs)
 
 
 class ReminderFilterForm(QuestionFilterForm):
