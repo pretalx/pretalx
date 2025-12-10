@@ -66,12 +66,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endif %}
         </div>
         {% if request.event and not request.event.is_public and not is_html_export %}
-            <div id="event-nonpublic" class="d-print-none">
-                <i class="fa fa-user-secret"></i>
-                {% blocktranslate trimmed %}
-                    This event is currently non-public. Only organisers can see it.
-                {% endblocktranslate %}
-            </div>
+            {% include "common/includes/nonpublic.html" %}
         {% endif %}
         <div class="container{% block container_width %}{% endblock container_width %}" id="main-container">
             <header>

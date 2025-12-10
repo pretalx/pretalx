@@ -57,13 +57,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock header_tabs %}
 
 {% block content %}
-    {% if not request.event|get_feature_flag:"show_schedule" and not request.user.is_anonymous and not hide_visibility_warning %}
-        <div id="event-nonpublic" class="d-print-none">
-            <i class="fa fa-user-secret"></i>
-            {% blocktranslate trimmed %}
-                This schedule-related page is non-public. Only organisers can see it.
-            {% endblocktranslate %}
-        </div>
+    {% if request.event.is_public and not request.event|get_feature_flag:"show_schedule" and not request.user.is_anonymous and not hide_visibility_warning %}
+        {% include "common/includes/nonpublic.html" %}
     {% endif %}
     {% block agenda_content %}{% endblock agenda_content %}
 {% endblock content %}
