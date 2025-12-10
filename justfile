@@ -60,7 +60,7 @@ reuse:
 [group('linting')]
 [working-directory("src")]
 black *args=".":
-    uv run black {{ args }}
+    uv run --extra=dev black {{ args }}
 
 # Check code with black (check only)
 [group('linting')]
@@ -76,13 +76,13 @@ isort-check *args=".":
 [group('linting')]
 [working-directory("src")]
 isort *args=".":
-    uv run isort {{ args }}
+    uv run --extra=dev isort {{ args }}
 
 # Run flake8 linter
 [group('linting')]
 [working-directory("src")]
 flake8 *args=".":
-    uv run flake8 {{ args }}
+    uv run --extra=dev flake8 {{ args }}
 
 # Check Django templates with djhtml (check only)
 [group('linting')]
@@ -93,7 +93,7 @@ djhtml-check:
 [group('linting')]
 [working-directory("src")]
 djhtml *args:
-    find . -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -print | xargs uv run djhtml {{ args }}
+    find . -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -print | xargs uv run --extra=dev djhtml {{ args }}
 
 # Run all formatters and linters
 [group('linting')]
@@ -129,7 +129,7 @@ clean:
 [group('tests')]
 [working-directory("src")]
 test *args:
-    uv run pytest {{ args }}
+    uv run --extra=dev pytest {{ args }}
 
 # Run tests in parallel (requires pytest-xdist)
 [group('tests')]
