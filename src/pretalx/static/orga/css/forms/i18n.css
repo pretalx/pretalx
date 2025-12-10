@@ -8,7 +8,7 @@
 }
 
 .i18n-form-group {
-  input[lang],
+  input[lang]:not([type="checkbox"]):not([type="radio"]),
   textarea[lang],
   .mail-preview[lang] {
     background-repeat: no-repeat;
@@ -30,7 +30,7 @@
     }
   }
 }
-.i18n-form-group input[lang],
+.i18n-form-group input[lang]:not([type="checkbox"]):not([type="radio"]),
 .i18n-form-group textarea {
   border-top-width: 0;
   border-radius: 0;
