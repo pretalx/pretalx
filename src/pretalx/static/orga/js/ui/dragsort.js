@@ -67,7 +67,7 @@ const dragStart = (el) => {
     let parentElement = el.closest("[dragsort-url]");
     if (parentElement.tagName === "TABLE") parentElement = parentElement.querySelector("tbody") || parentElement
 
-    const sortableElements = getSortableElements(parentElement);
+    let sortableElements = getSortableElements(parentElement);
     const listDirection = predictDirection(...sortableElements);
     const isTable = parentElement.tagName === "TBODY";
 
@@ -77,6 +77,8 @@ const dragStart = (el) => {
     const dragoverHandler = (evt) => {
         evt.preventDefault();
 
+        // Recalculate centroids on each dragover to handle scrolling
+        sortableElements = getSortableElements(parentElement);
         const byProximity = sortableElements
             .map((pe) => {
                 return {
@@ -130,9 +132,15 @@ const pushOrder = (parentElement) => {
     });
 };
 
-onReady(() =>
-    document.querySelectorAll("[dragsort-id]").forEach((el) => {
-        el.querySelector(".dragsort-button").addEventListener(
+const initDragsort = (container = document) => {
+    container.querySelectorAll("[dragsort-id]").forEach((el) => {
+        if (el.dataset.dragsortInit) return;
+        el.dataset.dragsortInit = "true";
+
+        const button = el.querySelector(".dragsort-button");
+        if (!button) return;
+
+        button.addEventListener(
             "dragstart",
             (evt) => {
                 // Changing the element’s class in the dragstart handler will immediately
@@ -168,5 +176,7 @@ onReady(() =>
                 );
             },
         );
-    }),
-);
+    });
+};
+
+onReady(() => initDragsort());
