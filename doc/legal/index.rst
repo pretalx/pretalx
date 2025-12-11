@@ -12,6 +12,7 @@ Legal & Policies
    :caption: Contents:
 
    licensing
+   browser-support
 ..   privacy
 ..   accessibility
 ..   lifecycle
