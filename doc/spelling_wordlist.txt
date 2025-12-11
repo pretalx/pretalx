@@ -57,6 +57,7 @@ iframes
 informations
 installable
 integrations
+iOS
 IPython
 iterable
 Jorian
@@ -68,6 +69,7 @@ linters
 localhost
 lookups
 lossy
+macOS
 makemessages
 middleware
 mixin
