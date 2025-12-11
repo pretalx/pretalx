@@ -52,36 +52,32 @@ api-docs:
 
 # Check codebase for licensing problems
 [group('linting')]
-[working-directory("src")]
 reuse:
     uv run reuse lint
 
 # Format code with black
 [group('linting')]
-[working-directory("src")]
-black *args=".":
+black *args="src":
     uv run --extra=dev black {{ args }}
 
 # Check code with black (check only)
 [group('linting')]
-black-check *args=".":
+black-check *args="src":
     just black --check {{ args }}
 
 # Check import sorting with isort (check only)
 [group('linting')]
-isort-check *args=".":
+isort-check *args="src":
     just isort --check {{ args }}
 
 # Sort imports with isort
 [group('linting')]
-[working-directory("src")]
-isort *args=".":
+isort *args="src":
     uv run --extra=dev isort {{ args }}
 
 # Run flake8 linter
 [group('linting')]
-[working-directory("src")]
-flake8 *args=".":
+flake8 *args="src":
     uv run --extra=dev flake8 {{ args }}
 
 # Check Django templates with djhtml (check only)
@@ -91,9 +87,8 @@ djhtml-check:
 
 # Format Django templates with djhtml
 [group('linting')]
-[working-directory("src")]
-djhtml *args:
-    find . -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -print | xargs uv run --extra=dev djhtml {{ args }}
+djhtml *args="src":
+    find {{ args }} -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -print | xargs uv run --extra=dev djhtml
 
 # Run all formatters and linters
 [group('linting')]
@@ -105,13 +100,11 @@ check: black-check isort-check djhtml-check flake8
 
 # Open Django shell with access to all events
 [group('development')]
-[working-directory("src")]
 shell event="" *args:
     just run shell --event {{ event }} {{ args }}
 
 # Open Django shell with access to all events
 [group('development')]
-[working-directory("src")]
 unsafe-shell *args:
     just run shell --unsafe-disable-scopes {{ args }}
 
@@ -127,9 +120,8 @@ clean:
 
 # Run the test suite
 [group('tests')]
-[working-directory("src")]
 test *args:
-    uv run --extra=dev pytest {{ args }}
+    uv run --extra=dev --extra=devdocs pytest {{ args }}
 
 # Run tests in parallel (requires pytest-xdist)
 [group('tests')]

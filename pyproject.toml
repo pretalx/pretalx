@@ -79,6 +79,7 @@ dev = [
   "djhtml",
   "flake8",
   "flake8-bugbear",
+  "flake8-pyproject",
   "freezegun",
   "isort",
   "jsonschema",
@@ -139,4 +140,88 @@ ignore = [
   "src/tests",
   "src/tests/*",
   "SECURITY.md",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "pretalx.common.settings.test_settings"
+testpaths = "src/tests"
+pythonpath = "src"
+filterwarnings = [
+    # We can ignore this one, as it's just about trying to parse the XML output while exporting the schedule
+    "ignore:It looks like you're parsing an XML document using an HTML parser.::pretalx.agenda.management.commands.export_schedule:",
+    # This warning *should* get suppressed via our own settings anyway …
+    "ignore:Cache key contains characters that will cause errors if used with memcached::django.core.cache.backends.base:"
+]
+addopts = "-p no:doctest -p no:pastebin -p no:nose --cov=./ --cov-report=term-missing:skip-covered --cov-config=pyproject.toml"
+
+[tool.coverage.run]
+branch = true
+omit = [
+  "*/__init__.py",
+  "*/__main__.py",
+  "*/admin.py",
+  "*/celery_app.py",
+  "*/legacy.py",
+  "*/local/*",
+  "*/manage.py",
+  "*/migrations/*",
+  "*/screenshots/*",
+  "*/settings*",
+  "*/test_settings*",
+  "*/urls.py",
+  "*/wsgi.py",
+]
+
+[tool.coverage.report]
+exclude_also = [
+  "def __repr__",
+  "def __str__",
+  "if settings.DEBUG",
+  "NOQA",
+  "noqa",
+  "NotImplementedError",
+]
+
+[tool.isort]
+profile = "black"
+known_first_party = "pretalx"
+skip = [
+  "celery_app.py",
+  "local",
+  "migrations",
+  "settings.py",
+  "test_settings.py",
+  "wsgi.py",
+]
+
+[tool.flake8]
+max-line-length = 160
+exclude = [
+  "*settings.py",
+  ".venv",
+  "build",
+  "doc",
+  "local",
+  "migrations",
+  "static",
+]
+ignore-names = [
+  "allDay",
+  "get_allDay",
+  "urls",
+  "orga_urls",
+  "api_urls",
+  "SendMailException",
+  "extendMarkdown",
+  "setUp",
+  "setUpTestData",
+]
+ignore = [
+  "E203",  # Whitespace before ‘,’, ‘;’, or ‘:’
+  "E231",  # Missing whitespace after ‘,’, ‘;’, or ‘:’
+  "E266",  # Too many leading ‘#’ for block comment
+  "E501",  # Line too long
+  "W503",  # Line break before binary operator
+  "W605",  # Invalid escape sequence
+  "B028",  # No explicit stacklevel argument found
 ]
