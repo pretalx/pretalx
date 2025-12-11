@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import copy
 import datetime as dt
 from functools import partial
 
@@ -24,38 +25,45 @@ def default_settings():
     }
 
 
+_DEFAULT_FIELDS = {
+    "title": {
+        "visibility": "required",
+        "min_length": None,
+        "max_length": None,
+    },
+    "abstract": {
+        "visibility": "required",
+        "min_length": None,
+        "max_length": None,
+    },
+    "description": {
+        "visibility": "optional",
+        "min_length": None,
+        "max_length": None,
+    },
+    "biography": {
+        "visibility": "required",
+        "min_length": None,
+        "max_length": None,
+    },
+    "avatar": {"visibility": "optional"},
+    "availabilities": {"visibility": "do_not_ask"},
+    "notes": {"visibility": "optional"},
+    "do_not_record": {"visibility": "optional"},
+    "image": {"visibility": "optional"},
+    "track": {"visibility": "do_not_ask"},
+    "duration": {"visibility": "do_not_ask"},
+    "content_locale": {"visibility": "required"},
+    "additional_speaker": {"visibility": "optional", "max": None},
+}
+
+
 def default_fields():
-    return {
-        "title": {
-            "visibility": "required",
-            "min_length": None,
-            "max_length": None,
-        },
-        "abstract": {
-            "visibility": "required",
-            "min_length": None,
-            "max_length": None,
-        },
-        "description": {
-            "visibility": "optional",
-            "min_length": None,
-            "max_length": None,
-        },
-        "biography": {
-            "visibility": "required",
-            "min_length": None,
-            "max_length": None,
-        },
-        "avatar": {"visibility": "optional"},
-        "availabilities": {"visibility": "do_not_ask"},
-        "notes": {"visibility": "optional"},
-        "do_not_record": {"visibility": "optional"},
-        "image": {"visibility": "optional"},
-        "track": {"visibility": "do_not_ask"},
-        "duration": {"visibility": "do_not_ask"},
-        "content_locale": {"visibility": "required"},
-        "additional_speaker": {"visibility": "optional", "max": None},
-    }
+    """Default configuration for CfP fields.
+
+    Returns a deep copy to prevent accidental mutation of the defaults.
+    """
+    return copy.deepcopy(_DEFAULT_FIELDS)
 
 
 def field_helper(cls):
@@ -128,7 +136,7 @@ class CfP(PretalxModel):
 
     class urls(EventUrls):
         base = "{self.event.orga_urls.cfp}"
-        editor = "{base}flow/"
+        editor = "{base}editor/"
         questions = "{base}questions/"
         new_question = "{questions}new/"
         remind_questions = "{questions}remind/"

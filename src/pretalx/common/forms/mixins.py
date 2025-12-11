@@ -28,7 +28,6 @@ from pretalx.common.forms.widgets import (
     HtmlDateInput,
     HtmlDateTimeInput,
 )
-from pretalx.common.text.phrases import phrases
 from pretalx.submission.models.cfp import default_fields
 
 logger = logging.getLogger(__name__)

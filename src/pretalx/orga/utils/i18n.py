@@ -202,3 +202,11 @@ class Translate(Transform):
         # Lazy template eval in order to get the actual current language
         current_locale = translation.get_language()
         return self.base_template.format(locale=current_locale)
+
+
+def has_i18n_content(value):
+    if not value:
+        return False
+    if isinstance(value, dict):
+        return any(v.strip() for v in value.values() if v)
+    return bool(str(value).strip())

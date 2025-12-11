@@ -142,7 +142,44 @@ urlpatterns = [
                     RedirectView.as_view(pattern_name="orga:cfp.editor"),
                     name="cfp",
                 ),
-                path("cfp/flow/", cfp.CfPFlowEditor.as_view(), name="cfp.flow"),
+                path(
+                    "cfp/editor/",
+                    include(
+                        [
+                            path("", cfp.CfPFlowEditor.as_view(), name="cfp.editor"),
+                            path(
+                                "step/<str:step>/",
+                                cfp.CfPEditorStep.as_view(),
+                                name="cfp.editor.step",
+                            ),
+                            path(
+                                "step/<str:step>/reorder/",
+                                cfp.CfPEditorReorder.as_view(),
+                                name="cfp.editor.reorder",
+                            ),
+                            path(
+                                "step/<str:step>/<str:action>/",
+                                cfp.CfPEditorFieldToggle.as_view(),
+                                name="cfp.editor.field_toggle",
+                            ),
+                            path(
+                                "step/<str:step>/field/<str:field_key>/",
+                                cfp.CfPEditorField.as_view(),
+                                name="cfp.editor.field",
+                            ),
+                            path(
+                                "question/<int:question_id>/",
+                                cfp.CfPEditorQuestion.as_view(),
+                                name="cfp.editor.question",
+                            ),
+                            path(
+                                "reset/",
+                                cfp.CfPEditorReset.as_view(),
+                                name="cfp.editor.reset",
+                            ),
+                        ]
+                    ),
+                ),
                 *cfp.QuestionView.get_urls(
                     url_base="cfp/questions",
                     url_name="cfp.questions",

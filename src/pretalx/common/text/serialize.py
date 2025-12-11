@@ -32,3 +32,9 @@ class I18nStrJSONEncoder(I18nJSONEncoder):
 
 def json_roundtrip(data):
     return json.loads(json.dumps(data, cls=I18nJSONEncoder))
+
+
+def serialize_i18n(value):
+    if hasattr(value, "data"):
+        return value.data
+    return value

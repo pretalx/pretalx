@@ -35,7 +35,7 @@ from pretalx.common.language import language
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.person.forms import SpeakerProfileForm, UserForm
-from pretalx.person.models import User
+from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.forms import InfoForm, QuestionsForm
 from pretalx.submission.models import (
     QuestionTarget,
@@ -90,6 +90,19 @@ def cfp_session(request):
             "files": {},
         }
     return session_data[key]
+
+
+def cfp_field_labels():
+    """CfP-specific display labels for fields.
+
+    These override the model verbose_name when displaying fields in the CfP editor.
+    Only fields that need a different label than their model verbose_name are listed.
+    """
+    return {
+        "title": _("Title"),
+        "additional_speaker": _("Additional speakers"),
+        "availabilities": _("Availability"),
+    }
 
 
 class BaseCfPStep:
@@ -210,6 +223,9 @@ class TemplateFlowStep(TemplateResponseMixin, BaseCfPStep):
 class FormFlowStep(TemplateFlowStep):
     form_class = None
     file_storage = FileSystemStorage(str(Path(settings.MEDIA_ROOT) / "cfp_uploads"))
+    always_required_fields = set()
+    field_keys = []
+    label_model = None
 
     def get_form_initial(self):
         initial_data = self.cfp_session.get("initial", {}).get(self.identifier, {})
@@ -235,6 +251,8 @@ class FormFlowStep(TemplateFlowStep):
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
         result["form"] = self.get_form()
+        result["text"] = self.text
+        result["title"] = self.title
         previous_data = self.cfp_session.get("data")
         result["submission_title"] = previous_data.get("info", {}).get("title")
         return result
@@ -290,8 +308,6 @@ class FormFlowStep(TemplateFlowStep):
             data[field] = file_dict
             self.cfp_session["files"][self.identifier] = data
 
-
-class GenericFlowStep:
     @cached_property
     def config(self):
         return self.event.cfp_flow.config.get("steps", {}).get(self.identifier, {})
@@ -315,12 +331,6 @@ class GenericFlowStep:
             "field_configuration": self.config.get("fields"),
             **self.get_extra_form_kwargs(),
         }
-
-    def get_context_data(self, **kwargs):
-        result = super().get_context_data(**kwargs)
-        result["text"] = self.text
-        result["title"] = self.title
-        return result
 
 
 class DedraftMixin:
@@ -346,11 +356,26 @@ class DedraftMixin:
         return result
 
 
-class InfoStep(DedraftMixin, GenericFlowStep, FormFlowStep):
+class InfoStep(DedraftMixin, FormFlowStep):
     identifier = "info"
     icon = "paper-plane"
     form_class = InfoForm
     priority = 0
+    field_keys = [
+        "title",
+        "submission_type",
+        "abstract",
+        "description",
+        "notes",
+        "do_not_record",
+        "image",
+        "track",
+        "duration",
+        "content_locale",
+        "additional_speaker",
+    ]
+    always_required_fields = {"title", "submission_type"}
+    label_model = Submission
 
     def get_form_kwargs(self):
         result = super().get_form_kwargs()
@@ -445,7 +470,7 @@ class InfoStep(DedraftMixin, GenericFlowStep, FormFlowStep):
         )
 
 
-class QuestionsStep(DedraftMixin, GenericFlowStep, FormFlowStep):
+class QuestionsStep(DedraftMixin, FormFlowStep):
     identifier = "questions"
     icon = "question-circle-o"
     form_class = QuestionsForm
@@ -518,7 +543,7 @@ class QuestionsStep(DedraftMixin, GenericFlowStep, FormFlowStep):
         )
 
 
-class UserStep(GenericFlowStep, FormFlowStep):
+class UserStep(FormFlowStep):
     identifier = "user"
     icon = "user-circle-o"
     form_class = UserForm
@@ -568,12 +593,14 @@ class UserStep(GenericFlowStep, FormFlowStep):
         )
 
 
-class ProfileStep(GenericFlowStep, FormFlowStep):
+class ProfileStep(FormFlowStep):
     identifier = "profile"
     icon = "address-card-o"
     form_class = SpeakerProfileForm
     template_name = "cfp/event/submission_profile.html"
     priority = 75
+    field_keys = ["biography", "avatar", "availabilities"]
+    label_model = SpeakerProfile
 
     def get_form_kwargs(self):
         result = super().get_form_kwargs()
@@ -648,6 +675,14 @@ class CfPFlow:
     request, for the CfP editor, it will contain all steps.
     """
 
+    STEP_INFO = "info"
+    STEP_QUESTIONS = "questions"
+    STEP_USER = "user"
+    STEP_PROFILE = "profile"
+    # Virtual step IDs for question reordering in the CfP editor
+    STEP_QUESTIONS_SUBMISSION = "questions_submission"
+    STEP_QUESTIONS_SPEAKER = "questions_speaker"
+
     def __init__(self, event):
         self.event = event
         data = event.cfp.settings["flow"]
@@ -676,60 +711,12 @@ class CfPFlow:
 
         config = {"steps": {}}
         steps = data.get("steps", {})
-        if isinstance(steps, list):  # This is what we get from the editor
-            for entry in steps:
-                config["steps"][entry["identifier"]] = self._get_step_config_from_data(
-                    entry
-                )
-        else:
+        if isinstance(steps, dict):
             for key, value in steps.items():
                 config["steps"][key] = self._get_step_config_from_data(value)
         if json_compat:
             config = json_roundtrip(config)
         return config
-
-    def get_editor_config(self, json_compat=False):
-        config = self.config
-        locales = self.event.locales
-        steps = []
-        for step in self.steps:
-            step_config = config.get("steps", {}).get(step.identifier, {})
-            if not isinstance(step, GenericFlowStep) or step.identifier == "user":
-                continue
-            steps.append(
-                {
-                    "icon": step.icon,
-                    "icon_label": step.label,
-                    "title": i18n_string(step_config.get("title", step.title), locales),
-                    "text": i18n_string(step_config.get("text", step.text), locales),
-                    "identifier": step.identifier,
-                    "fields": [
-                        {
-                            "widget": field.widget.__class__.__name__,
-                            "key": key,
-                            "label": i18n_string(field.label, locales),
-                            "help_text": i18n_string(
-                                getattr(field, "original_help_text", field.help_text),
-                                locales,
-                            ),
-                            "added_help_text": i18n_string(
-                                getattr(field, "added_help_text", ""),
-                                locales,
-                            ),
-                            "full_help_text": field.help_text,
-                            "required": field.required,
-                        }
-                        for key, field in step.form_class(
-                            event=self.event,
-                            field_configuration=step_config.get("fields"),
-                            **step.get_extra_form_kwargs(),
-                        ).fields.items()
-                    ],
-                }
-            )
-        if json_compat:
-            steps = json_roundtrip(steps)
-        return steps
 
     def get_config_json(self):
         return json.dumps(self.config, cls=I18nJSONEncoder)
@@ -742,7 +729,7 @@ class CfPFlow:
         self.event.cfp.save()
 
     def reset(self):
-        self.save_config(None)
+        self.save_config(data=None)
 
     def _get_step_config_from_data(self, data):
         step_config = {}
@@ -772,3 +759,65 @@ class CfPFlow:
     @property
     def steps(self):
         return list(self.steps_dict.values())
+
+    def get_step_config(self, step_id):
+        return self.config.get("steps", {}).get(step_id, {})
+
+    def get_field_config(self, step_id, field_key):
+        step_config = self.get_step_config(step_id)
+        for field in step_config.get("fields", []):
+            if field.get("key") == field_key:
+                return field
+        return {}
+
+    def _ensure_step_config(self, config, step_id):
+        if "steps" not in config:
+            config["steps"] = {}
+        if step_id not in config["steps"]:
+            config["steps"][step_id] = {"fields": []}
+        if "fields" not in config["steps"][step_id]:
+            config["steps"][step_id]["fields"] = []
+
+    def update_step_header(self, step_id, title, text):
+        config = self.config.copy()
+        self._ensure_step_config(config, step_id)
+        config["steps"][step_id]["title"] = title
+        config["steps"][step_id]["text"] = text
+        self.save_config(config)
+
+    def update_field_config(self, step_id, field_key, label=None, help_text=None):
+        config = self.config.copy()
+        self._ensure_step_config(config, step_id)
+        fields = config["steps"][step_id]["fields"]
+        field_config = next((f for f in fields if f.get("key") == field_key), None)
+
+        if field_config:
+            if label:
+                field_config["label"] = label
+            if help_text:
+                field_config["help_text"] = help_text
+        else:
+            new_config = {"key": field_key}
+            if label:
+                new_config["label"] = label
+            if help_text:
+                new_config["help_text"] = help_text
+            fields.append(new_config)
+
+        self.save_config(config)
+
+    def update_field_order(self, step_id, field_order):
+        config = self.config.copy()
+        self._ensure_step_config(config, step_id)
+        existing_fields = config["steps"][step_id].get("fields", [])
+        existing_by_key = {f.get("key"): f for f in existing_fields}
+
+        new_fields = []
+        for key in field_order:
+            if key in existing_by_key:
+                new_fields.append(existing_by_key[key])
+            else:
+                new_fields.append({"key": key})
+
+        config["steps"][step_id]["fields"] = new_fields
+        self.save_config(config)
