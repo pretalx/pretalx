@@ -133,7 +133,7 @@ test-parallel n="auto" *args:
 [group('tests')]
 [working-directory("src")]
 test-coverage *args:
-    just test --cov=pretalx --cov-report=html --cov-report=term-missing:skip-covered {{ args }}
+    just test {{ args }}
 
 # Show test coverage report in browser
 [group('tests')]
