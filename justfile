@@ -42,7 +42,8 @@ docs *args="html":
 # Serve the documentation from a live server
 [group('documentation')]
 [working-directory("doc")]
-serve-docs *args="--port 8001":
+docs-serve *args="--port 8001":
+    rm -rf _build/html
     uv run sphinx-autobuild . _build/html {{ args }}
 
 # Update the API documentation
