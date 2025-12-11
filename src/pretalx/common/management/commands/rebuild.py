@@ -7,7 +7,7 @@ from contextlib import suppress
 from pathlib import Path
 
 from django.conf import settings
-from django.core.management import call_command
+from django.core.management import CommandError, call_command
 from django.core.management.base import BaseCommand
 from django.test import override_settings
 
@@ -41,7 +41,19 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         silent = 0 if options.get("silent") else 1
-        call_command("compilemessages", verbosity=silent, ignore="sphinx")
+        try:
+            # There are broken translations (completely wrong brace format)
+            # inside Sphinx that do not appear to get fixed. We ignore those,
+            # and if other translations fail as well, we still try to continue.
+            call_command("compilemessages", verbosity=silent, ignore=["*sphinx*"])
+        except CommandError as e:
+            self.stdout.write(
+                self.style.ERROR(
+                    "Failed to build translation files, proceeding regardless. "
+                    f"Run `compilemessages` directly for full error message: {e}"
+                )
+            )
+
         call_command(
             "collectstatic", verbosity=silent, interactive=False, clear=options["clear"]
         )
