@@ -171,6 +171,7 @@ omit = [
   "*/urls.py",
   "*/wsgi.py",
 ]
+relative_files = true
 
 [tool.coverage.report]
 exclude_also = [
