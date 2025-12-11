@@ -1,0 +1,491 @@
+<!--
+SPDX-FileCopyrightText: 2025-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+
+{% extends "orga/base.html" %}
+
+{% load i18n %}
+{% load static %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static "common/css/forms/availabilities.css" %}" />
+    <link rel="stylesheet" href="{% static "common/css/forms/markdown.css" %}" />
+    <link rel="stylesheet" href="{% static "common/css/ui/stages.css" %}" />
+    <link rel="stylesheet" href="{% static "orga/css/forms/i18n.css" %}" />
+    <link rel="stylesheet" href="{% static "orga/css/ui/dragsort.css" %}" />
+    <link rel="stylesheet" href="{% static "orga/css/ui/cfp-editor.css" %}" />
+    {% with pattern=request.event.display_settings.header_pattern %}
+        {% if pattern and pattern != "plain" %}
+            <link rel="stylesheet" href="{% static "common/css/headers/" %}{{ pattern }}.css" />
+        {% endif %}
+    {% endwith %}
+{% endblock stylesheets %}
+
+{% block scripts %}
+    <script defer src="{% static "common/js/forms/availabilities.js" %}"></script>
+    <script defer src="{% static "common/js/ui/dialog.js" %}"></script>
+    <script defer src="{% static "orga/js/ui/dragsort.js" %}"></script>
+    <script defer src="{% static "vendored/fullcalendar/fullcalendar.min.js" %}"></script>
+    <script defer src="{% static "vendored/fullcalendar/luxon-plugin.min.js" %}"></script>
+    <script defer src="{% static "vendored/htmx.min.js" %}"></script>
+    <script defer src="{% static "vendored/luxon.min.js" %}"></script>
+    <script defer src="{% static "orga/js/ui/cfp-editor.js" %}"></script>
+{% endblock scripts %}
+
+{% block extra_title %}{% translate "CfP Editor" %} :: {% endblock extra_title %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>
+            {% translate "CfP Editor" %}
+        </h2>
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-danger btn-sm" data-dialog-target="#reset-modal" data-toggle="dialog">
+                <i class="fa fa-undo"></i> {% translate "Reset to Defaults" %}
+            </button>
+            <a href="{{ request.event.cfp.urls.text }}" class="btn btn-outline-info btn-sm">
+                <i class="fa fa-cog"></i> {% translate "CfP Settings" %}
+            </a>
+        </div>
+    </div>
+
+    <div class="cfp-editor-container">
+        <div class="cfp-preview-wrapper">
+            <div class="cfp-preview-top-bg header {{ request.event.display_settings.header_pattern|default:'bg-primary' }}">
+                {% if request.event.header_image %}
+                    <img src="{{ request.event.header_image.url }}" class="cfp-preview-header-image" alt="">
+                {% endif %}
+            </div>
+
+            <header class="cfp-preview-header">
+                <h1>
+                    <a href="{{ request.event.urls.base }}">
+                        {% if request.event.logo %}
+                            <img loading="lazy" src="{{ request.event.logo.url }}" id="event-logo" alt="{% translate "The event's logo" %}" class="cfp-preview-logo">
+                        {% else %}
+                            {{ request.event.name }}
+                        {% endif %}
+                    </a>
+                </h1>
+            </header>
+
+            <div class="cfp-preview-content">
+                <div id="submission-steps" class="stages cfp-editor-stages">
+                    {% for step in steps %}
+                        <a class="step step-{% if step.identifier == active_step %}current{% elif forloop.first %}done{% else %}tbd{% endif %}"
+                           hx-get="{% url 'orga:cfp.editor.step' event=request.event.slug step=step.identifier %}"
+                           hx-target="#step-content-inner"
+                           hx-swap="innerHTML"
+                           hx-indicator="#step-content-inner"
+                           data-step="{{ step.identifier }}"
+                           tabindex="0">
+                            <div class="step-icon">
+                                <span class="fa fa-{{ step.icon }}"></span>
+                            </div>
+                            <div class="step-label">{{ step.label }}</div>
+                        </a>
+                    {% endfor %}
+                    <div class="step step-tbd">
+                        <div class="step-icon">
+                            <span class="fa fa-check"></span>
+                        </div>
+                        <div class="step-label">{% translate "Done!" %}</div>
+                    </div>
+                </div>
+
+                <div id="step-content-inner" class="cfp-editor-step-content">
+                    {% partial step-content-inner %}
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <button type="button" class="btn btn-info btn-lg cfp-nav-prev" id="cfp-nav-prev" disabled>
+                        « {% translate "Back" %}
+                    </button>
+                    <button type="button" class="btn btn-success btn-lg cfp-nav-next" id="cfp-nav-next">
+                        {% translate "Continue" %} »
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <aside id="available-fields" class="cfp-editor-sidebar">
+            {% partial sidebar %}
+        </aside>
+    </div>
+
+    <dialog id="field-modal" class="cfp-field-modal">
+        <button type="button" class="dialog-close">
+            <i class="fa fa-times"></i>
+        </button>
+        <div id="field-modal-content" class="modal-card-content"></div>
+    </dialog>
+
+    <dialog id="reset-modal" class="cfp-field-modal">
+        <button type="button" class="dialog-close">
+            <i class="fa fa-times"></i>
+        </button>
+        <div class="modal-card-content">
+            <h3 class="mb-3">{% translate "Reset to Defaults" %}</h3>
+            <p class="mb-4">
+                {% blocktranslate %}
+                    This will reset all CfP field settings, custom labels, help texts, and field ordering
+                    to their default values. This action cannot be undone.
+                {% endblocktranslate %}
+            </p>
+            <form method="post" action="{% url 'orga:cfp.editor.reset' event=request.event.slug %}">
+                {% csrf_token %}
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary dialog-cancel">
+                        {% translate "Cancel" %}
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fa fa-undo"></i> {% translate "Reset to Defaults" %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+{% endblock content %}
+
+{% partialdef step-content-inner %}
+    <div class="step-content-inner" id="step-{{ step_id }}">
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% elif is_static and step_id == "user" %}
+            <div class="step-header editable">
+                <div class="step-header-overlay"
+                     hx-get="{% url 'orga:cfp.editor.step' event=request.event.slug step=step_id %}?edit_header=1"
+                     hx-target="#field-modal-content"
+                     hx-trigger="click"
+                     data-dialog-target="#field-modal"
+                     data-toggle="dialog">
+                    <span class="field-preview-edit-hint">
+                        <i class="fa fa-pencil"></i> {% translate "Click to edit" %}
+                    </span>
+                </div>
+                <h3 class="mb-2">{{ step_title }}</h3>
+                <p class="mb-0 text-muted">{{ step_text }}</p>
+            </div>
+            <div class="alert alert-info">
+                {% translate "This step shows the login/registration form and cannot be customized." %}
+            </div>
+            <div class="user-step-preview">
+                <div class="auth-form-block">
+                    <h4 class="mb-3">{% translate "I already have an account" %}</h4>
+                    <div class="form-group mb-2"><input type="text" class="form-control" placeholder="{% translate "Email address" %}" disabled></div>
+                    <div class="form-group mb-2"><input type="password" class="form-control" placeholder="{% translate "Password" %}" disabled></div>
+                    <button class="btn btn-success btn-block mt-2" disabled>{% translate "Log in" %}</button>
+                </div>
+                <div class="auth-form-block">
+                    <h4 class="mb-3">{% translate "I need a new account" %}</h4>
+                    <div class="form-group mb-2"><input type="text" class="form-control" placeholder="{% translate "Name" %}" disabled></div>
+                    <div class="form-group mb-2"><input type="text" class="form-control" placeholder="{% translate "Email address" %}" disabled></div>
+                    <div class="form-group mb-2"><input type="password" class="form-control" placeholder="{% translate "Password" %}" disabled></div>
+                    <button class="btn btn-info btn-block mt-2" disabled>{% translate "Register" %}</button>
+                </div>
+            </div>
+        {% elif is_questions %}
+            <div class="step-header editable">
+                <div class="step-header-overlay"
+                     hx-get="{% url 'orga:cfp.editor.step' event=request.event.slug step=step_id %}?edit_header=1"
+                     hx-target="#field-modal-content"
+                     hx-trigger="click"
+                     data-dialog-target="#field-modal"
+                     data-toggle="dialog">
+                    <span class="field-preview-edit-hint">
+                        <i class="fa fa-pencil"></i> {% translate "Click to edit" %}
+                    </span>
+                </div>
+                <h3 class="mb-2">{{ step_title }}</h3>
+                <p class="mb-0 text-muted">{{ step_text }}</p>
+            </div>
+
+            <div class="questions-sections">
+                <div class="questions-section">
+                    <h4 class="mb-3">{% translate "… about your proposal:" %}</h4>
+                    <div class="field-list"
+                         dragsort-url="{% url 'orga:cfp.editor.reorder' event=request.event.slug step='questions_submission' %}">
+                        {% for field in submission_questions %}
+                            {% with field=field step_id="questions" %}
+                                {% partial field-card %}
+                            {% endwith %}
+                        {% empty %}
+                            <div class="no-fields-message small">
+                                {% translate "No session fields configured." %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="questions-section">
+                    <h4 class="mb-3">{% translate "… about yourself:" %}</h4>
+                    <div class="field-list"
+                         dragsort-url="{% url 'orga:cfp.editor.reorder' event=request.event.slug step='questions_speaker' %}">
+                        {% for field in speaker_questions %}
+                            {% with field=field step_id="questions" %}
+                                {% partial field-card %}
+                            {% endwith %}
+                        {% empty %}
+                            <div class="no-fields-message small">
+                                {% translate "No speaker fields configured." %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="step-header editable">
+                <div class="step-header-overlay"
+                     hx-get="{% url 'orga:cfp.editor.step' event=request.event.slug step=step_id %}?edit_header=1"
+                     hx-target="#field-modal-content"
+                     hx-trigger="click"
+                     data-dialog-target="#field-modal"
+                     data-toggle="dialog">
+                    <span class="field-preview-edit-hint">
+                        <i class="fa fa-pencil"></i> {% translate "Click to edit" %}
+                    </span>
+                </div>
+                <h3 class="mb-2">{{ step_title }}</h3>
+                <p class="mb-0 text-muted">{{ step_text }}</p>
+            </div>
+
+            <div class="field-list"
+                 dragsort-url="{% url 'orga:cfp.editor.reorder' event=request.event.slug step=step_id %}">
+                {% for field in fields %}
+                    {% with field=field %}
+                        {% partial field-card %}
+                    {% endwith %}
+                {% empty %}
+                    <div class="no-fields-message">
+                        {% translate "No fields configured for this step. Add fields from the sidebar." %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+{% endpartialdef step-content-inner %}
+
+{% partialdef step-content-full %}
+    {% partial step-content-inner %}
+    <aside id="available-fields" class="cfp-editor-sidebar" hx-swap-oob="true">
+        {% partial sidebar %}
+    </aside>
+{% endpartialdef step-content-full %}
+
+{% partialdef step-header-edit %}
+    <h3 class="mb-4 pr-4">{% translate "Edit Step" %}: {{ step.label }}</h3>
+    <form hx-post="{% url 'orga:cfp.editor.step' event=request.event.slug step=step_id %}"
+          hx-target="#step-content-inner"
+          hx-swap="innerHTML">
+        {% csrf_token %}
+
+        {{ form.title.as_field_group }}
+        {{ form.text.as_field_group }}
+
+        <div class="form-actions mt-4">
+            <button type="button" class="btn btn-outline-secondary dialog-cancel">
+                {% translate "Cancel" %}
+            </button>
+            <button type="submit" class="btn btn-success">
+                {% translate "Save" %}
+            </button>
+        </div>
+    </form>
+{% endpartialdef step-header-edit %}
+
+{% partialdef field-card %}
+    {# Unified field card partial for both regular fields and questions #}
+    {# Required context: field (dict with key, label, etc.), step_id (string) #}
+    <div class="field-preview{% if field.is_auto_hidden %} field-preview-auto-hidden{% endif %}" dragsort-id="{{ field.key }}">
+        <div class="pt-1">
+            <span class="dragsort-button" draggable="true" title="{% translate "Drag to reorder" %}">
+                <i class="fa fa-bars"></i>
+            </span>
+        </div>
+        <div class="field-preview-content">
+            {% if field.is_auto_hidden %}
+                <div class="field-auto-hidden-notice">
+                    <i class="fa fa-eye-slash mr-1"></i>
+                    {% translate "Currently hidden (only one option available)" %}
+                </div>
+            {% endif %}
+            <div class="field-preview-overlay"
+                 {% if field.is_question %}
+                     hx-get="{% url 'orga:cfp.editor.question' event=request.event.slug question_id=field.question_id %}"
+                 {% else %}
+                     hx-get="{% url 'orga:cfp.editor.field' event=request.event.slug field_key=field.key %}"
+                 {% endif %}
+                 hx-target="#field-modal-content"
+                 hx-trigger="click"
+                 data-dialog-target="#field-modal"
+                 data-toggle="dialog">
+                <span class="field-preview-edit-hint">
+                    <i class="fa fa-pencil"></i> {% translate "Click to edit" %}
+                </span>
+            </div>
+            {% if field.form_field %}
+                {{ field.form_field.as_field_group }}
+            {% else %}
+                <label class="d-block font-weight-bold mb-2">
+                    {{ field.label }}
+                    {% if field.visibility == "required" %}<span class="text-danger ml-1">*</span>{% endif %}
+                </label>
+                {% if field.key == "submission_type" %}
+                    <select class="form-control" disabled>
+                        <option>{% translate "Talk (30 minutes)" %}</option>
+                    </select>
+                {% else %}
+                    <input type="text" class="form-control" disabled>
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class="pt-1">
+            {% if field.is_auto_required %}
+                <span class="px-2 text-muted" title="{% translate "This field cannot be removed." %}">
+                    <i class="fa fa-lock"></i>
+                </span>
+            {% else %}
+                <button type="button"
+                        class="field-remove btn btn-link text-danger px-2"
+                        title="{% if field.is_question %}{% translate "Deactivate field" %}{% else %}{% translate "Remove field" %}{% endif %}"
+                        hx-post="{% url 'orga:cfp.editor.field_toggle' event=request.event.slug step=step_id action='remove' %}"
+                        hx-vals='{"field": "{{ field.key }}"}'
+                        hx-target="#step-content-inner"
+                        hx-swap="innerHTML">
+                    <i class="fa fa-times"></i>
+                </button>
+            {% endif %}
+        </div>
+    </div>
+{% endpartialdef field-card %}
+
+{% partialdef sidebar %}
+    <h4 class="mb-2">{% translate "Available Fields" %}</h4>
+    <p class="text-muted small mb-3">
+        {% translate "Fields not shown to submitters. Click to add." %}
+    </p>
+    {% if is_questions %}
+        <div class="mt-4">
+            <a href="{{ request.event.cfp.urls.new_question }}" class="btn btn-outline-info btn-sm sidebar-field w-100 text-left" role="button">
+                <i class="fa fa-plus"></i>
+                {% translate "New custom field" %}
+            </a>
+        </div>
+
+        {% if inactive_submission_questions %}
+            <h4 class="mt-3 mb-2 text-muted"><small>{% translate "Session fields" %}</small></h4>
+            <div class="sidebar-fields">
+                {% for field in inactive_submission_questions %}
+                    <button role="button"
+                            class="sidebar-field btn btn-outline-info btn-sm text-left"
+                            hx-post="{% url 'orga:cfp.editor.field_toggle' event=request.event.slug step='questions' action='add' %}"
+                            hx-vals='{"field": "{{ field.key }}"}'
+                            hx-target="#step-content-inner"
+                            hx-swap="innerHTML">
+                        <i class="fa fa-question-circle mr-1"></i>{{ field.label }}
+                    </button>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if inactive_speaker_questions %}
+            <h4 class="mt-3 mb-2 text-muted"><small>{% translate "Speaker fields" %}</small></h4>
+            <div class="sidebar-fields">
+                {% for field in inactive_speaker_questions %}
+                    <button role="button"
+                            class="sidebar-field btn btn-outline-info btn-sm text-left"
+                            hx-post="{% url 'orga:cfp.editor.field_toggle' event=request.event.slug step='questions' action='add' %}"
+                            hx-vals='{"field": "{{ field.key }}"}'
+                            hx-target="#step-content-inner"
+                            hx-swap="innerHTML">
+                        <i class="fa fa-question-circle mr-1"></i>{{ field.label }}
+                    </button>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="sidebar-fields">
+            {% for field in available_fields %}
+                <button type="button"
+                        class="sidebar-field btn btn-outline-info btn-sm text-left"
+                        hx-post="{% url 'orga:cfp.editor.field_toggle' event=request.event.slug step=step_id action='add' %}"
+                        hx-vals='{"field": "{{ field.key }}"}'
+                        hx-target="#step-content-inner"
+                        hx-swap="innerHTML">
+                    <i class="fa fa-plus mr-1"></i>{{ field.label }}
+                </button>
+            {% empty %}
+                <p class="text-muted small">{% translate "All fields are in use." %}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endpartialdef sidebar %}
+
+{% partialdef field-modal %}
+    <h3 class="mb-3">{% translate "Configure Field" %}: {{ field_label }}</h3>
+    <form hx-post="{% url 'orga:cfp.editor.field' event=request.event.slug field_key=field_key %}"
+          hx-target="#step-content-inner"
+          hx-swap="innerHTML">
+        {% csrf_token %}
+
+        {{ form.label.as_field_group }}
+        {{ form.help_text.as_field_group }}
+        {{ form.visibility.as_field_group }}
+
+        {% if form.min_length %}
+            <div class="form-row">
+                <div class="col-6">
+                    {{ form.min_length.as_field_group }}
+                </div>
+                <div class="col-6">
+                    {{ form.max_length.as_field_group }}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if form.max %}
+            {{ form.max.as_field_group }}
+        {% endif %}
+
+        <div class="form-actions mt-4">
+            <button type="button" class="btn btn-outline-secondary dialog-cancel">
+                {% translate "Cancel" %}
+            </button>
+            <button type="submit" class="btn btn-success">
+                {% translate "Save" %}
+            </button>
+        </div>
+    </form>
+{% endpartialdef field-modal %}
+
+{% partialdef question-modal %}
+    <h3 class="mb-3">{% translate "Custom Field" %}: {{ question.question }}</h3>
+
+    <div class="mb-4">
+        <dl class="row mb-0 d-flex flex-column ml-2 mr-2">
+            <dt class="col-4">{% translate "Type" %}</dt>
+            <dd class="col-8">{{ question.get_variant_display }}</dd>
+
+            <dt class="col-4">{% translate "Required" %}</dt>
+            <dd class="col-8">{% if question.required %}{% translate "Yes" %}{% else %}{% translate "No" %}{% endif %}</dd>
+
+            <dt class="col-4">{% translate "Target" %}</dt>
+            <dd class="col-8">{{ question.get_target_display }}</dd>
+
+            {% if question.help_text %}
+                <dt class="col-4">{% translate "Help text" %}</dt>
+                <dd class="col-8">{{ question.help_text }}</dd>
+            {% endif %}
+        </dl>
+    </div>
+
+    <div class="form-actions mt-4">
+        <button type="button" class="btn btn-outline-secondary dialog-cancel">
+            {% translate "Close" %}
+        </button>
+        <a href="{{ question.urls.edit }}" class="btn btn-info">
+            <i class="fa fa-pencil"></i> {% translate "Edit field" %}
+        </a>
+    </div>
+{% endpartialdef question-modal %}
