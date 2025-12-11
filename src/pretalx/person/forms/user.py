@@ -1,21 +1,35 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import ipaddress
+
 from django import forms
+from django.conf import settings
 from django.contrib.auth import authenticate
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.utils import timezone, translation
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.cfp.forms.cfp import CfPFormMixin
+from pretalx.common.auth import get_client_ip
 from pretalx.common.forms.fields import NewPasswordConfirmationField, NewPasswordField
 from pretalx.common.forms.renderers import InlineFormLabelRenderer
 from pretalx.common.text.phrases import phrases
 from pretalx.person.models import User
 
+LOGIN_RATE_LIMIT_THRESHOLD = 10
+LOGIN_RATE_LIMIT_WINDOW = 300  # seconds
+
 
 class UserForm(CfPFormMixin, forms.Form):
     default_renderer = InlineFormLabelRenderer
+    error_messages = {
+        "rate_limit": _(
+            "For security reasons, please wait 5 minutes before you try again."
+        )
+    }
 
     login_email = forms.EmailField(
         max_length=60,
@@ -53,9 +67,26 @@ class UserForm(CfPFormMixin, forms.Form):
         "Please fill all fields of either the login or the registration form."
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, request=None, **kwargs):
         kwargs.pop("event", None)
+        self.request = request
         super().__init__(*args, **kwargs)
+
+    @cached_property
+    def ratelimit_key(self):
+        if not settings.HAS_REDIS or not self.request:
+            return None
+        if not (ip := get_client_ip(self.request)):
+            return None
+        try:
+            ip_address = ipaddress.ip_address(ip)
+        except ValueError:
+            return None
+        if ip_address.is_private:
+            # This can indicate a misconfigured reverse proxy, so we skip
+            # rate limiting in this case to avoid blocking innocent users
+            return None
+        return f"pretalx_login_{ip_address}"
 
     def _clean_login(self, data):
         try:
@@ -66,6 +97,11 @@ class UserForm(CfPFormMixin, forms.Form):
         user = authenticate(username=uname, password=data.get("login_password"))
 
         if user is None:
+            if self.ratelimit_key:
+                try:
+                    cache.incr(self.ratelimit_key)
+                except ValueError:
+                    cache.set(self.ratelimit_key, 1, LOGIN_RATE_LIMIT_WINDOW)
             raise ValidationError(
                 _(
                     "No user account matches the entered credentials. "
@@ -100,6 +136,13 @@ class UserForm(CfPFormMixin, forms.Form):
         data = super().clean()
 
         if data.get("login_email") and data.get("login_password"):
+            if (
+                self.ratelimit_key
+                and (cache.get(self.ratelimit_key) or 0) > LOGIN_RATE_LIMIT_THRESHOLD
+            ):
+                raise ValidationError(
+                    self.error_messages["rate_limit"], code="rate_limit"
+                )
             self._clean_login(data)
         elif (
             data.get("register_email")

@@ -176,6 +176,11 @@ class GenericLoginView(FormView):
     def password_reset_link(self):
         return self.get_password_reset_link()
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request"] = self.request
+        return kwargs
+
     def dispatch(self, request, *args, **kwargs):
         if not self.request.user.is_anonymous:
             try:
