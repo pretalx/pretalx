@@ -12,6 +12,7 @@ Legal & Policies
    :caption: Contents:
 
    licensing
+   gdpr
    browser-support
    release-cycle
 ..   privacy
