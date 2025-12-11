@@ -22,6 +22,7 @@
   );
   --color-primary-light: color-mix(in srgb, var(--color-primary), white 45%);
   --color-primary-lighter: color-mix(in srgb, var(--color-primary), white 72%);
+  --color-text-on-primary: white;
   --color-secondary: var(--color-grey-medium);
 
   --color-success: var(--color-pretalx);

@@ -308,3 +308,27 @@ def test_event_update_review_phase_activate_next_phase(event):
             event=event, position=3, start=active_phase.end
         )
         assert event.update_review_phase() == new_phase
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "color,needs_dark_text",
+    (
+        # Dark colors - white text is fine, no dark text needed
+        ("#000000", False),  # Black - 21:1 contrast
+        ("#0000ff", False),  # Blue - 8.59:1 contrast
+        ("#800000", False),  # Maroon
+        ("#008000", False),  # Dark green - 5.14:1 contrast
+        # Medium/light colors - need dark text
+        ("#3aa57c", True),  # pretalx green - ~2.99:1 contrast
+        ("#ffffff", True),  # White
+        ("#ffff00", True),  # Yellow
+        ("#00ffff", True),  # Cyan
+        ("#ffcc00", True),  # Gold/amber
+        (None, False),
+        ("", False),
+    ),
+)
+def test_event_primary_color_needs_dark_text(event, color, needs_dark_text):
+    event.primary_color = color
+    assert event.primary_color_needs_dark_text is needs_dark_text

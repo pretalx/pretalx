@@ -110,3 +110,34 @@ def api_buttons(event):
         ),
         LinkButton(href=event.api_urls.base, label=_("Go to API")),
     ]
+
+
+def _channel_luminance(c):
+    return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def has_good_contrast(color, threshold=4.5):
+    """
+    Calculates the colour contrast ratio to white using the WCAG formula.
+    Thresholds: 4.5 for text, 3 for large text / graphical objects.
+
+    https://www.w3.org/WAI/GL/wiki/Contrast_ratio
+    """
+    hex_color = color.lstrip("#")
+
+    try:
+        r, g, b = (int(hex_color[i : i + 2], 16) / 255 for i in (0, 2, 4))
+    except ValueError, IndexError:
+        # Returning False on error would lead to swapped button colours,
+        # and as with an invalid colour, the default pretalx colour is used,
+        # which has good contrast to white (the default case in this project's
+        # context), we assume a good outcome on error.
+        return True
+
+    luminance = (
+        0.2126 * _channel_luminance(r)
+        + 0.7152 * _channel_luminance(g)
+        + 0.0722 * _channel_luminance(b)
+    )
+    contrast_with_white = (1 + 0.05) / (luminance + 0.05)
+    return contrast_with_white >= threshold

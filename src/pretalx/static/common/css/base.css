@@ -248,7 +248,7 @@ summary.btn {
   border: 1px solid var(--highlight-color);
   border-radius: var(--size-border-radius);
   background: var(--highlight-color);
-  color: white;
+  color: var(--color-on-highlight, white);
   transition:
     color 0.15s ease-in-out,
     background-color 0.15s ease-in-out,
@@ -296,7 +296,7 @@ summary.btn {
   &:active {
     background: color-mix(in hsl, var(--highlight-color), black 10%);
     text-decoration: none;
-    color: white;
+    color: var(--color-on-highlight, white);
   }
   &:active {
     box-shadow: var(--shadow-light);
@@ -312,7 +312,7 @@ summary.btn {
     color: var(--highlight-color);
     &:hover {
       background: var(--highlight-color);
-      color: white;
+      color: var(--color-on-highlight, white);
     }
   }
 
@@ -599,6 +599,7 @@ a {
 .btn-primary {
   --highlight-color: var(--color-primary);
   --highlight-color-text: var(--color-primary-text-dark);
+  --color-on-highlight: var(--color-text-on-primary);
 }
 .color-secondary,
 .btn-secondary {

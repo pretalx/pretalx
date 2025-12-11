@@ -29,6 +29,7 @@ from pretalx.common.plugins import get_all_plugins
 from pretalx.common.text.daterange import daterange
 from pretalx.common.text.path import path_with_hash
 from pretalx.common.text.phrases import phrases
+from pretalx.common.ui import has_good_contrast
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import (
     can_change_event_settings,
@@ -537,6 +538,17 @@ class Event(PretalxModel):
     @cached_property
     def visible_primary_color(self):
         return self.primary_color or settings.DEFAULT_EVENT_PRIMARY_COLOR
+
+    @cached_property
+    def primary_color_needs_dark_text(self):
+        if not self.primary_color:
+            return False
+
+        return self.cache.get_or_set(
+            f"dark_text_{self.primary_color.lstrip('#')}",
+            lambda: not has_good_contrast(self.primary_color, threshold=3),
+            timeout=86400 * 365,
+        )
 
     def _get_default_submission_type(self):
         from pretalx.submission.models import SubmissionType

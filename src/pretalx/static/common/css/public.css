@@ -9,6 +9,7 @@ body {
 
 #top-bg {
   background-color: var(--color-primary);
+  --color-header-text: var(--color-text-on-primary, white);
   position: fixed;
   top: 0;
   left: 0;
@@ -17,18 +18,13 @@ body {
   z-index: -1;
   display: flex;
 
+  :has(#header-image) {
+    --color-header-text: white;
+  }
+
   #header-image {
     object-fit: cover;
     width: 100%;
-  }
-}
-
-h1 a {
-  color: white;
-
-  &:hover {
-    color: white;
-    text-decoration: none;
   }
 }
 
@@ -42,6 +38,15 @@ header {
 
   #event-logo {
     max-height: 140px;
+  }
+
+  h1 a {
+    color: var(--color-header-text);
+
+    &:hover {
+      color: var(--color-header-text);
+      text-decoration: none;
+    }
   }
 
   .header-wrapper {
@@ -74,13 +79,13 @@ header {
   }
   .header-row-right {
     padding-bottom: 4px;
-    color: white;
+    color: var(--color-header-text);
     margin-left: auto;
     display: flex;
     flex-wrap: wrap;
 
     a {
-      color: white;
+      color: var(--color-header-text);
     }
 
     a + a {
@@ -88,12 +93,12 @@ header {
     }
 
     .locales a:hover {
-      border-bottom: 1px dashed white;
+      border-bottom: 1px dashed var(--color-header-text);
       text-decoration: none;
     }
 
     .locales a.active {
-      border-bottom: 1px solid white;
+      border-bottom: 1px solid var(--color-header-text);
     }
   }
 }

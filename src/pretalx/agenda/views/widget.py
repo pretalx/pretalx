@@ -19,7 +19,9 @@ WIDGET_PATH = "agenda/js/pretalx-schedule.min.js"
 
 
 def color_etag(request, event, **kwargs):
-    return request.event.primary_color or "none"
+    if not (color := request.event.primary_color):
+        return "none"
+    return f"{color}:{request.event.primary_color_needs_dark_text}"
 
 
 def widget_js_etag(request, event, **kwargs):
@@ -132,12 +134,14 @@ def widget_script(request, event):
 def event_css(request, event):
     # If this event has custom colours, we send back a simple CSS file that sets the
     # root colours for the event.
-    result = ""
+    rules = []
     if color := request.event.primary_color:
         variable = "--color-primary"
+        postfix = ""
         if request.GET.get("target") == "orga":
-            # The organiser area sometimes needs the event’s colour, but shouldn’t use
-            # it as primary colour automatically.
-            variable = f"{variable}-event"
-        result = ":root { " + f"{variable}: {color};" + " }"
+            postfix = "-event"
+        if request.event.primary_color_needs_dark_text:
+            rules.append(f" --color-text-on-primary{postfix}: var(--color-text);")
+        rules.append(f"{variable}{postfix}: {color};")
+    result = ":root { " + " ".join(rules) + " }"
     return HttpResponse(result, content_type="text/css")
