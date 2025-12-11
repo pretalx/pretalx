@@ -50,24 +50,6 @@ class ReadOnlyFlag:
         return super().clean()
 
 
-class PublicContent:
-    public_fields = []
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        event = getattr(self, "event", None)
-        if event and not event.get_feature_flag("show_schedule"):
-            return
-        for field_name in self.Meta.public_fields:
-            field = self.fields.get(field_name)
-            if field:
-                field.original_help_text = getattr(field, "original_help_text", "")
-                field.added_help_text = getattr(field, "added_help_text", "") + str(
-                    phrases.base.public_content
-                )
-                field.help_text = field.original_help_text + " " + field.added_help_text
-
-
 class RequestRequire:
     class Media:
         js = [forms.Script("common/js/forms/character-limit.js", defer="")]
@@ -167,8 +149,6 @@ class QuestionFieldsMixin:
         read_only = readonly or question.read_only
         original_help_text = question.help_text
         help_text = rich_text(question.help_text)[len("<p>") : -len("</p>")]
-        if question.is_public and self.event.get_feature_flag("show_schedule"):
-            help_text += " " + str(phrases.base.public_content)
         count_chars = self.event.cfp.settings["count_length_in"] == "chars"
         if question.variant == QuestionVariant.BOOLEAN:
             # For some reason, django-bootstrap4 does not set the required attribute

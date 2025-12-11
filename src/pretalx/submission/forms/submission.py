@@ -16,7 +16,7 @@ from django_scopes.forms import SafeModelChoiceField
 
 from pretalx.cfp.forms.cfp import CfPFormMixin
 from pretalx.common.forms.fields import ImageField, SubmissionTypeField
-from pretalx.common.forms.mixins import PublicContent, RequestRequire
+from pretalx.common.forms.mixins import RequestRequire
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
     EnhancedSelect,
@@ -36,7 +36,7 @@ from pretalx.submission.models import (
 )
 
 
-class InfoForm(CfPFormMixin, RequestRequire, PublicContent, forms.ModelForm):
+class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
     additional_speaker = forms.CharField(
         label=_("Additional Speakers"),
         help_text=_(
