@@ -13,6 +13,6 @@ Legal & Policies
 
    licensing
    browser-support
+   release-cycle
 ..   privacy
 ..   accessibility
-..   lifecycle
