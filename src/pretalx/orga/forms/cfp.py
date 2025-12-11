@@ -41,7 +41,7 @@ from pretalx.submission.models import (
     SubmitterAccessCode,
     Track,
 )
-from pretalx.submission.models.cfp import CfP, default_fields
+from pretalx.submission.models.cfp import CfP
 from pretalx.submission.models.question import QuestionRequired
 
 
@@ -90,88 +90,6 @@ class CfPSettingsForm(
             self.fields[
                 "mail_on_new_submission"
             ].help_text += f' (<a href="mailto:{obj.email}">{obj.email}</a>)'
-        self.length_fields = ["title", "abstract", "description", "biography"]
-        self.request_require_fields = [
-            "abstract",
-            "description",
-            "notes",
-            "biography",
-            "avatar",
-            "additional_speaker",
-            "availabilities",
-            "do_not_record",
-            "image",
-            "track",
-            "duration",
-            "content_locale",
-        ]
-        for attribute in self.length_fields:
-            field_name = f"cfp_{attribute}_min_length"
-            self.fields[field_name] = forms.IntegerField(
-                required=False,
-                min_value=0,
-                initial=obj.cfp.fields[attribute].get("min_length"),
-            )
-            self.fields[field_name].widget.attrs["placeholder"] = ""
-            field_name = f"cfp_{attribute}_max_length"
-            self.fields[field_name] = forms.IntegerField(
-                required=False,
-                min_value=0,
-                initial=obj.cfp.fields[attribute].get("max_length"),
-            )
-            self.fields[field_name].widget.attrs["placeholder"] = ""
-        for attribute in self.request_require_fields:
-            field_name = f"cfp_ask_{attribute}"
-            self.fields[field_name] = forms.ChoiceField(
-                required=True,
-                initial=obj.cfp.fields.get(attribute, default_fields()[attribute])[
-                    "visibility"
-                ],
-                choices=[
-                    ("do_not_ask", _("Do not ask")),
-                    ("optional", _("Ask, but do not require input")),
-                    ("required", _("Ask and require input")),
-                ],
-            )
-        if not obj.is_multilingual:
-            self.fields.pop("cfp_ask_content_locale", None)
-        self.fields["cfp_additional_speaker_max"] = forms.IntegerField(
-            required=False,
-            min_value=1,
-            label=_("Maximum speakers per proposal"),
-            help_text=_(
-                "Maximum number of speakers allowed per proposal (including the submitter). "
-                "Leave empty for no limit."
-            ),
-            initial=obj.cfp.fields.get(
-                "additional_speaker", default_fields()["additional_speaker"]
-            ).get("max"),
-        )
-        self.fields["cfp_additional_speaker_max"].widget.attrs["placeholder"] = ""
-
-    def save(self, *args, **kwargs):
-        for key in self.request_require_fields:
-            if key not in self.instance.cfp.fields:
-                self.instance.cfp.fields[key] = default_fields()[key]
-            self.instance.cfp.fields[key]["visibility"] = self.cleaned_data.get(
-                f"cfp_ask_{key}"
-            )
-        for key in self.length_fields:
-            self.instance.cfp.fields[key]["min_length"] = self.cleaned_data.get(
-                f"cfp_{key}_min_length"
-            )
-            self.instance.cfp.fields[key]["max_length"] = self.cleaned_data.get(
-                f"cfp_{key}_max_length"
-            )
-        if "additional_speaker" not in self.instance.cfp.fields:
-            self.instance.cfp.fields["additional_speaker"] = default_fields()[
-                "additional_speaker"
-            ]
-        self.instance.cfp.fields["additional_speaker"]["max"] = self.cleaned_data.get(
-            "cfp_additional_speaker_max"
-        )
-        self.instance.cfp.save()
-        super().save(*args, **kwargs)
 
     class Media:
         js = [forms.Script("orga/js/forms/cfp.js", defer="")]
@@ -700,22 +618,24 @@ class CfPFieldConfigForm(PretalxI18nFormMixin, forms.Form):
 
 
 class StepHeaderForm(PretalxI18nFormMixin, forms.Form):
-    title = forms.CharField(
+    title = I18nFormField(
         label=_("Step title"),
         required=False,
         help_text=_("Leave empty to use the default title."),
+        widget=I18nTextInput,
     )
-    text = forms.CharField(
+    text = I18nFormField(
         label=_("Step description"),
         required=False,
         help_text=_("Leave empty to use the default description."),
-        widget=forms.Textarea(attrs={"rows": 3}),
+        widget=I18nTextarea,
     )
 
     def __init__(self, *args, event=None, **kwargs):
         self.event = event
         kwargs["locales"] = event.locales
         super().__init__(*args, **kwargs)
+        self.fields["text"].widget.attrs["rows"] = "3"
 
 
 class ReminderFilterForm(QuestionFilterForm):

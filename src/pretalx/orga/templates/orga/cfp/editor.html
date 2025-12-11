@@ -314,7 +314,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                  {% if field.is_question %}
                      hx-get="{% url 'orga:cfp.editor.question' event=request.event.slug question_id=field.question_id %}"
                  {% else %}
-                     hx-get="{% url 'orga:cfp.editor.field' event=request.event.slug field_key=field.key %}"
+                     hx-get="{% url 'orga:cfp.editor.field' event=request.event.slug step=step_id field_key=field.key %}"
                  {% endif %}
                  hx-target="#field-modal-content"
                  hx-trigger="click"
@@ -424,7 +424,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% partialdef field-modal %}
     <h3 class="mb-3">{% translate "Configure Field" %}: {{ field_label }}</h3>
-    <form hx-post="{% url 'orga:cfp.editor.field' event=request.event.slug field_key=field_key %}"
+    <form hx-post="{% url 'orga:cfp.editor.field' event=request.event.slug step=step_id field_key=field_key %}"
           hx-target="#step-content-inner"
           hx-swap="innerHTML">
         {% csrf_token %}

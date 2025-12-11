@@ -9,21 +9,23 @@ import json
 from collections import defaultdict
 
 from django.contrib import messages
+from django.core.exceptions import FieldDoesNotExist
 from django.db import transaction
 from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView, UpdateView, View
 from django_context_decorator import context
+from i18nfield.strings import LazyI18nString
 
-from pretalx.cfp.flow import CfPFlow
+from pretalx.cfp.flow import CfPFlow, cfp_field_labels
 from pretalx.common.forms import I18nFormSet
 from pretalx.common.text.phrases import phrases
-from pretalx.common.text.serialize import I18nStrJSONEncoder
+from pretalx.common.text.serialize import I18nStrJSONEncoder, serialize_i18n
 from pretalx.common.ui import send_button
 from pretalx.common.views.generic import OrgaCRUDView, get_next_url
 from pretalx.common.views.mixins import (
@@ -36,9 +38,11 @@ from pretalx.orga.forms import CfPForm, QuestionForm, SubmissionTypeForm, TrackF
 from pretalx.orga.forms.cfp import (
     AccessCodeSendForm,
     AnswerOptionForm,
+    CfPFieldConfigForm,
     CfPSettingsForm,
     QuestionFilterForm,
     ReminderFilterForm,
+    StepHeaderForm,
     SubmitterAccessCodeForm,
 )
 from pretalx.orga.tables.cfp import (
@@ -47,6 +51,9 @@ from pretalx.orga.tables.cfp import (
     SubmitterAccessCodeTable,
     TrackTable,
 )
+from pretalx.orga.utils.i18n import has_i18n_content
+from pretalx.person.forms import SpeakerProfileForm
+from pretalx.submission.forms import InfoForm, QuestionsForm
 from pretalx.submission.models import (
     AnswerOption,
     CfP,
@@ -57,6 +64,7 @@ from pretalx.submission.models import (
     SubmitterAccessCode,
     Track,
 )
+from pretalx.submission.models.cfp import default_fields
 from pretalx.submission.rules import questions_for_user
 
 
@@ -626,41 +634,521 @@ class AccessCodeSend(PermissionRequired, UpdateView):
         return result
 
 
-@method_decorator(csp_update({"script-src": "'self' 'unsafe-eval'"}), name="dispatch")
-class CfPFlowEditor(EventPermissionRequired, TemplateView):
-    template_name = "orga/cfp/flow.html"
+def get_field_label(field_key, model):
+    if label := cfp_field_labels().get(field_key):
+        return label
+    try:
+        field = model._meta.get_field(field_key)
+        return field.verbose_name
+    except FieldDoesNotExist:
+        pass
+    return field_key.replace("_", " ").title()
+
+
+class CfPEditorMixin:
+    @cached_property
+    def flow(self):
+        return self.request.event.cfp_flow
+
+    @cached_property
+    def auto_field_states(self):
+        auto_hidden = set()
+        auto_required = set()
+
+        submission_type_count = self.request.event.submission_types.filter(
+            requires_access_code=False
+        ).count()
+        if submission_type_count <= 1:
+            auto_hidden.add("submission_type")
+        else:
+            auto_required.add("submission_type")
+        if len(self.request.event.content_locales) <= 1:
+            auto_hidden.add("content_locale")
+        if not self.request.event.get_feature_flag("use_tracks"):
+            auto_hidden.add("track")
+
+        return auto_hidden, auto_required
+
+    @property
+    def auto_hidden(self):
+        return self.auto_field_states[0]
+
+    @property
+    def auto_required(self):
+        return self.auto_field_states[1]
+
+    def get_step_context(self, step_id):
+        step = self.flow.steps_dict.get(step_id)
+        if not step:
+            return {"error": "Step not found", "step_id": step_id}
+
+        step_config = self.flow.get_step_config(step_id)
+        ctx = {
+            "step_id": step_id,
+            "step": step,
+            "step_title": step_config.get("title", getattr(step, "_title", step.label)),
+            "step_text": step_config.get("text", getattr(step, "_text", "")),
+        }
+
+        if step_id == CfPFlow.STEP_USER:
+            ctx["is_static"] = True
+            ctx["fields"] = []
+            ctx["available_fields"] = []
+        elif step_id == CfPFlow.STEP_QUESTIONS:
+            ctx["is_questions"] = True
+            ctx["fields"] = []
+            ctx["available_fields"] = []
+            for target, prefix in [
+                (QuestionTarget.SUBMISSION, "submission"),
+                (QuestionTarget.SPEAKER, "speaker"),
+            ]:
+                ctx[f"{prefix}_questions"] = self._get_questions_by_target(
+                    target, active=True
+                )
+                ctx[f"inactive_{prefix}_questions"] = self._get_questions_by_target(
+                    target, active=False
+                )
+        else:
+            ctx["is_static"] = False
+            ctx["fields"] = self._get_step_fields(step, step_config)
+            ctx["available_fields"] = self._get_available_fields(step)
+        return ctx
+
+    def _get_step_fields(self, step, step_config):
+        fields_config = step_config.get("fields", [])
+        step_fields = getattr(step, "field_keys", [])
+        always_required = getattr(step, "always_required_fields", set())
+        auto_required = self.auto_required | always_required
+
+        form = self._get_preview_form(step)
+        ordered_keys = self._get_ordered_field_keys(fields_config, step_fields)
+
+        result = []
+        for key in ordered_keys:
+            if key not in step_fields:
+                continue
+            field_data = self._build_field_data(
+                key, fields_config, step, form, auto_required
+            )
+            if field_data:
+                result.append(field_data)
+        return result
+
+    def _get_preview_form(self, step):
+        if step.identifier == "info":
+            return InfoForm(event=self.request.event, readonly=True)
+        elif step.identifier == "profile":
+            return SpeakerProfileForm(event=self.request.event, read_only=True)
+        return None
+
+    def _get_ordered_field_keys(self, fields_config, step_fields):
+        if fields_config:
+            ordered_keys = [f.get("key") for f in fields_config if f.get("key")]
+            for key in step_fields:
+                if key not in ordered_keys:
+                    ordered_keys.append(key)
+            return ordered_keys
+        return step_fields
+
+    def _build_field_data(self, key, fields_config, step, form, auto_required):
+        is_auto_hidden = key in self.auto_hidden
+        is_auto_required = key in auto_required
+
+        cfp = self.request.event.cfp
+        field_settings = cfp.fields.get(key, default_fields().get(key, {}))
+        visibility = field_settings.get("visibility", "do_not_ask")
+
+        if is_auto_required:
+            visibility = "required"
+        elif visibility == "do_not_ask" and not is_auto_hidden:
+            return None
+
+        custom_config = next((f for f in fields_config if f.get("key") == key), {})
+        custom_label = custom_config.get("label") or ""
+        custom_help_text = custom_config.get("help_text") or ""
+
+        if isinstance(custom_label, dict):
+            custom_label = LazyI18nString(custom_label)
+        if isinstance(custom_help_text, dict):
+            custom_help_text = LazyI18nString(custom_help_text)
+
+        label = (
+            custom_label
+            if has_i18n_content(custom_label)
+            else get_field_label(key, step.label_model)
+        )
+
+        form_field = None
+        if form and key in form.fields:
+            form_field = form[key]
+            if has_i18n_content(custom_label):
+                form_field.label = custom_label
+            if has_i18n_content(custom_help_text):
+                form_field.help_text = custom_help_text
+
+        return {
+            "key": key,
+            "label": label,
+            "help_text": custom_help_text,
+            "visibility": visibility,
+            "min_length": field_settings.get("min_length"),
+            "max_length": field_settings.get("max_length"),
+            "max": field_settings.get("max"),
+            "is_question": False,
+            "form_field": form_field,
+            "is_auto_hidden": is_auto_hidden,
+            "is_auto_required": is_auto_required,
+        }
+
+    def _get_available_fields(self, step):
+        always_required = getattr(step, "always_required_fields", set())
+        step_fields = [
+            f for f in getattr(step, "field_keys", []) if f not in always_required
+        ]
+        cfp = self.request.event.cfp
+        result = []
+        for key in step_fields:
+            field_settings = cfp.fields.get(key, default_fields().get(key, {}))
+            if field_settings.get("visibility", "do_not_ask") == "do_not_ask":
+                result.append(
+                    {
+                        "key": key,
+                        "label": get_field_label(key, step.label_model),
+                        "is_question": False,
+                    }
+                )
+        return result
+
+    def _get_questions_by_target(self, target, active=True):
+        manager = Question.objects if active else Question.all_objects
+        questions = manager.filter(
+            event=self.request.event, target=target, active=active
+        ).order_by("position")
+
+        form = None
+        if active and questions.exists():
+            form = QuestionsForm(event=self.request.event, target=target, readonly=True)
+
+        result = []
+        for question in questions:
+            data = {
+                "key": f"question_{question.pk}",
+                "label": str(question.question),
+                "is_question": True,
+                "question_id": question.pk,
+            }
+            if active:
+                data["help_text"] = (
+                    str(question.help_text) if question.help_text else ""
+                )
+                data["visibility"] = "required" if question.required else "optional"
+                field_name = f"question_{question.pk}"
+                if form and field_name in form.fields:
+                    data["form_field"] = form[field_name]
+            result.append(data)
+        return result
+
+
+class CfPFlowEditor(CfPEditorMixin, EventPermissionRequired, TemplateView):
+    template_name = "orga/cfp/editor.html"
     permission_required = "event.update_event"
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["current_configuration"] = self.request.event.cfp_flow.get_editor_config(
-            json_compat=True
-        )
-        ctx["event_configuration"] = {
-            "header_pattern": self.request.event.display_settings["header_pattern"]
-            or "bg-primary",
-            "header_image": (
-                self.request.event.header_image.url
-                if self.request.event.header_image
-                else None
-            ),
-            "logo_image": (
-                self.request.event.logo.url if self.request.event.logo else None
-            ),
-            "primary_color": self.request.event.visible_primary_color,
-            "locales": self.request.event.locales,
-        }
+        steps = []
+        for step in self.flow.steps:
+            if step.identifier == CfPFlow.STEP_USER or hasattr(step, "form_class"):
+                steps.append(
+                    {
+                        "identifier": step.identifier,
+                        "label": step.label,
+                        "icon": step.icon,
+                        "is_static": step.identifier
+                        in (CfPFlow.STEP_USER, CfPFlow.STEP_QUESTIONS),
+                    }
+                )
+        ctx["steps"] = steps
+        active_step = self.request.GET.get("step", CfPFlow.STEP_INFO)
+        ctx["active_step"] = active_step
+        ctx.update(self.get_step_context(active_step))
         return ctx
 
-    def post(self, request, *args, **kwargs):
-        try:
-            data = json.loads(request.body.decode())
-        except Exception:
-            return JsonResponse({"error": "Invalid data"}, status=400)
 
-        flow = CfPFlow(self.request.event)
-        if "action" in data and data["action"] == "reset":
-            flow.reset()
-        else:
-            flow.save_config(data)
+class CfPEditorStep(CfPEditorMixin, EventPermissionRequired, TemplateView):
+    template_name = "orga/cfp/editor.html"
+    permission_required = "event.update_event"
+
+    def get_template_names(self):
+        if self.request.GET.get("edit_header") == "1":
+            return [f"{self.template_name}#step-header-edit"]
+        return [f"{self.template_name}#step-content-full"]
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        step_id = self.kwargs["step"]
+
+        form = StepHeaderForm(request.POST, event=request.event)
+        if not form.is_valid():
+            step = self.flow.steps_dict.get(step_id)
+            ctx = self.get_context_data(**kwargs)
+            ctx["step"] = step
+            ctx["step_id"] = step_id
+            ctx["form"] = form
+            return render(request, "orga/cfp/editor.html#step-header-edit", ctx)
+
+        title = form.cleaned_data.get("title", "")
+        text = form.cleaned_data.get("text", "")
+        self.flow.update_step_header(step_id, title, text)
+
+        ctx = self.get_step_context(step_id)
+        return render(request, "orga/cfp/editor.html#step-content-inner", ctx)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        step_id = self.kwargs["step"]
+
+        if self.request.GET.get("edit_header") != "1":
+            ctx.update(self.get_step_context(step_id))
+            return ctx
+
+        step = self.flow.steps_dict.get(step_id)
+        if not step:
+            ctx["error"] = "Step not found"
+            return ctx
+
+        step_config = self.flow.get_step_config(step_id)
+        default_title = getattr(step, "_title", step.label)
+        default_text = getattr(step, "_text", "")
+        step_title = step_config.get("title", default_title)
+        step_text = step_config.get("text", default_text)
+
+        ctx["step"] = step
+        ctx["step_id"] = step_id
+        ctx["step_title"] = step_title
+        ctx["step_text"] = step_text
+        ctx["default_title"] = default_title
+        ctx["default_text"] = default_text
+        ctx["form"] = StepHeaderForm(
+            initial={
+                "title": step_title if step_title != default_title else "",
+                "text": step_text if step_text != default_text else "",
+            },
+            event=self.request.event,
+        )
+        return ctx
+
+
+class CfPEditorReorder(EventPermissionRequired, View):
+    permission_required = "event.update_event"
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        step_id = self.kwargs["step"]
+        order = request.POST.get("order", "")
+
+        if not order:
+            return JsonResponse({"error": "No order provided"}, status=400)
+
+        field_order = order.split(",")
+
+        if step_id in (
+            CfPFlow.STEP_QUESTIONS_SUBMISSION,
+            CfPFlow.STEP_QUESTIONS_SPEAKER,
+        ):
+            target = (
+                QuestionTarget.SUBMISSION
+                if step_id == CfPFlow.STEP_QUESTIONS_SUBMISSION
+                else QuestionTarget.SPEAKER
+            )
+            for index, key in enumerate(field_order):
+                if key.startswith("question_"):
+                    question_id_str = key.replace("question_", "")
+                    try:
+                        question_id = int(question_id_str)
+                    except ValueError:
+                        continue
+                    try:
+                        question = Question.objects.get(
+                            pk=question_id, event=request.event, target=target
+                        )
+                        question.position = index
+                        question.save(update_fields=["position"])
+                    except Question.DoesNotExist:
+                        pass
+            return JsonResponse({"success": True})
+
+        request.event.cfp_flow.update_field_order(step_id, field_order)
         return JsonResponse({"success": True})
+
+
+class CfPEditorFieldToggle(CfPEditorMixin, EventPermissionRequired, View):
+    permission_required = "event.update_event"
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        step_id = self.kwargs["step"]
+        action = self.kwargs["action"]
+        field_key = request.POST.get("field")
+
+        if not field_key:
+            return JsonResponse({"error": "No field provided"}, status=400)
+
+        if action not in ("add", "remove"):
+            return JsonResponse({"error": "Invalid action"}, status=400)
+
+        if field_key.startswith("question_"):
+            question_id = field_key.replace("question_", "")
+            manager = Question.all_objects if action == "add" else Question.objects
+            try:
+                question = manager.get(pk=question_id, event=request.event)
+                question.active = action == "add"
+                question.save()
+            except Question.DoesNotExist:
+                return JsonResponse({"error": "Question not found"}, status=404)
+        else:
+            if field_key not in default_fields().keys():
+                return JsonResponse({"error": "Invalid field key"}, status=400)
+
+            cfp = request.event.cfp
+            if field_key not in cfp.fields:
+                cfp.fields[field_key] = default_fields().get(field_key, {}).copy()
+
+            cfp.fields[field_key]["visibility"] = (
+                "optional" if action == "add" else "do_not_ask"
+            )
+            cfp.save()
+
+        ctx = self.get_step_context(step_id)
+        return render(request, "orga/cfp/editor.html#step-content-full", ctx)
+
+
+class CfPEditorField(CfPEditorMixin, EventPermissionRequired, TemplateView):
+    template_name = "orga/cfp/editor.html#field-modal"
+    permission_required = "event.update_event"
+
+    def dispatch(self, request, *args, **kwargs):
+        field_key = kwargs.get("field_key")
+        if field_key not in default_fields().keys():
+            return JsonResponse({"error": "Invalid field key"}, status=404)
+        return super().dispatch(request, *args, **kwargs)
+
+    @cached_property
+    def step_id(self):
+        return self.kwargs["step"]
+
+    @cached_property
+    def field_key(self):
+        return self.kwargs["field_key"]
+
+    @cached_property
+    def step(self):
+        return self.flow.steps_dict.get(self.step_id)
+
+    @cached_property
+    def field_label(self):
+        if self.step:
+            return get_field_label(self.field_key, self.step.label_model)
+        return self.field_key
+
+    def _build_form_initial(self):
+        cfp = self.request.event.cfp
+        field_settings = cfp.fields.get(
+            self.field_key, default_fields().get(self.field_key, {})
+        )
+        custom_config = self.flow.get_field_config(self.step_id, self.field_key)
+
+        return {
+            "label": custom_config.get("label", ""),
+            "help_text": custom_config.get("help_text", ""),
+            "visibility": field_settings.get("visibility", "optional"),
+            "min_length": field_settings.get("min_length"),
+            "max_length": field_settings.get("max_length"),
+            "max": field_settings.get("max"),
+        }
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["step_id"] = self.step_id
+        ctx["field_key"] = self.field_key
+        ctx["field_label"] = self.field_label
+        ctx["form"] = CfPFieldConfigForm(
+            initial=self._build_form_initial(),
+            field_key=self.field_key,
+            event=self.request.event,
+        )
+        return ctx
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        cfp = request.event.cfp
+        form = CfPFieldConfigForm(
+            request.POST,
+            field_key=self.field_key,
+            event=request.event,
+        )
+
+        if not form.is_valid():
+            ctx = {
+                "step_id": self.step_id,
+                "field_key": self.field_key,
+                "field_label": self.field_label,
+                "form": form,
+            }
+            return render(request, "orga/cfp/editor.html#field-modal", ctx)
+
+        if self.field_key not in cfp.fields:
+            cfp.fields[self.field_key] = default_fields().get(self.field_key, {}).copy()
+
+        cfp.fields[self.field_key]["visibility"] = form.cleaned_data["visibility"]
+
+        if "min_length" in form.fields:
+            cfp.fields[self.field_key]["min_length"] = form.cleaned_data.get(
+                "min_length"
+            )
+        if "max_length" in form.fields:
+            cfp.fields[self.field_key]["max_length"] = form.cleaned_data.get(
+                "max_length"
+            )
+        if "max" in form.fields:
+            cfp.fields[self.field_key]["max"] = form.cleaned_data.get("max")
+
+        cfp.save()
+
+        label = serialize_i18n(form.cleaned_data.get("label", ""))
+        help_text = serialize_i18n(form.cleaned_data.get("help_text", ""))
+        self.flow.update_field_config(self.step_id, self.field_key, label, help_text)
+
+        ctx = self.get_step_context(self.step_id)
+        response = render(request, "orga/cfp/editor.html#step-content-inner", ctx)
+        response["HX-Trigger"] = "closeModal"
+        return response
+
+
+class CfPEditorQuestion(EventPermissionRequired, TemplateView):
+    template_name = "orga/cfp/editor.html#question-modal"
+    permission_required = "event.update_event"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        question_id = self.kwargs["question_id"]
+
+        question = get_object_or_404(
+            Question.objects.filter(event=self.request.event), pk=question_id
+        )
+
+        ctx["question"] = question
+        return ctx
+
+
+class CfPEditorReset(EventPermissionRequired, View):
+    permission_required = "event.update_event"
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        flow = request.event.cfp_flow
+        flow.reset()
+        cfp = request.event.cfp
+        cfp.fields = default_fields()
+        cfp.save()
+        messages.success(request, _("CfP configuration has been reset to defaults."))
+        return redirect(request.event.cfp.urls.editor)
