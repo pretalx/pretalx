@@ -98,3 +98,40 @@ def test_trigger(client, user):
     client.post("/orga/admin/update/", {"trigger": "on"})
     gs.settings.flush()
     assert gs.settings.update_check_last
+
+
+@pytest.mark.django_db
+def test_test_mail_requires_admin(client, user):
+    client.login(email="dummy@dummy.dummy", password="dummy")
+    response = client.post("/orga/admin/test-mail/")
+    assert response.status_code == 404
+
+    user.is_administrator = True
+    user.save()
+    response = client.post("/orga/admin/test-mail/")
+    assert response.status_code == 302
+
+
+@pytest.mark.django_db
+def test_test_mail_no_admins_configured(client, user, settings):
+    user.is_administrator = True
+    user.save()
+    client.login(email="dummy@dummy.dummy", password="dummy")
+
+    settings.ADMINS = []
+    response = client.post("/orga/admin/test-mail/", follow=True)
+    assert "No administrator email addresses are configured" in response.text
+
+
+@pytest.mark.django_db
+def test_test_mail_sends_email(client, user, settings, mailoutbox):
+    user.is_administrator = True
+    user.save()
+    client.login(email="dummy@dummy.dummy", password="dummy")
+
+    settings.ADMINS = [("Admin", "admin@example.com")]
+    response = client.post("/orga/admin/test-mail/", follow=True)
+    assert "Test email sent successfully" in response.text
+    assert len(mailoutbox) == 1
+    assert mailoutbox[0].to == ["admin@example.com"]
+    assert "test email" in mailoutbox[0].subject.lower()

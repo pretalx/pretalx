@@ -11,13 +11,14 @@ from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import FormView, TemplateView
+from django.views.generic import FormView, TemplateView, View
 from django_context_decorator import context
 from django_scopes import scopes_disabled
 
 from pretalx.celery_app import app
 from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.image import gravatar_csp
+from pretalx.common.mail import mail_send_task
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.phrases import phrases
 from pretalx.common.update_check import check_result_table, update_check
@@ -49,6 +50,48 @@ class AdminDashboard(PermissionRequired, TemplateView):
     @context
     def pretalx_version(self):
         return settings.PRETALX_VERSION
+
+
+class TestMailView(PermissionRequired, View):
+    permission_required = "person.administrator_user"
+
+    def post(self, request, *args, **kwargs):
+        if not settings.ADMINS:
+            messages.error(
+                request,
+                _(
+                    "No administrator email addresses are configured. "
+                    "Please set the 'email' option in the [logging] section of your configuration."
+                ),
+            )
+            return redirect(reverse("orga:admin.dashboard"))
+
+        admin_emails = [email for name, email in settings.ADMINS]
+
+        try:
+            mail_send_task.apply(
+                kwargs={
+                    "to": admin_emails,
+                    "subject": _("pretalx test email"),
+                    "body": _(
+                        "This is a test email from pretalx to verify your system email configuration is working correctly."
+                    ),
+                    "html": None,
+                }
+            )
+            messages.success(
+                request,
+                _("Test email sent successfully to: {emails}").format(
+                    emails=", ".join(admin_emails)
+                ),
+            )
+        except Exception as e:
+            messages.error(
+                request,
+                _("Failed to send test email: {error}").format(error=str(e)),
+            )
+
+        return redirect(reverse("orga:admin.dashboard"))
 
 
 class UpdateCheckView(PermissionRequired, FormView):

@@ -100,6 +100,17 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% translate "No email password has been set." %}
                     {% endif %}
                 </li>
+                <li>
+                    <form action="{% url "orga:admin.test_mail" %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-info btn-sm">
+                            {% translate "Send test email" %}
+                        </button>
+                    </form>
+                    <small class="text-muted ms-2">
+                        {% translate "Sends a test email to the configured administrator email addresses." %}
+                    </small>
+                </li>
             </ul>
         </li>
     </ul>
