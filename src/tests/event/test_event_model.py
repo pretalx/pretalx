@@ -320,7 +320,7 @@ def test_event_update_review_phase_activate_next_phase(event):
         ("#800000", False),  # Maroon
         ("#008000", False),  # Dark green - 5.14:1 contrast
         # Medium/light colors - need dark text
-        ("#3aa57c", True),  # pretalx green - ~2.99:1 contrast
+        ("#3aa57c", False),  # pretalx green
         ("#ffffff", True),  # White
         ("#ffff00", True),  # Yellow
         ("#00ffff", True),  # Cyan

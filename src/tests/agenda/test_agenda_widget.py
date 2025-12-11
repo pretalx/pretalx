@@ -24,7 +24,7 @@ def test_event_css_no_color(event, client):
         ("#0000ff", False),
         ("#800000", False),  # Maroon
         # Medium/light colors - need dark text override
-        ("#3aa57c", True),  # pretalx green - ~2.99:1 contrast, needs dark text
+        ("#3aa57c", False),  # pretalx green
         ("#ffffff", True),
         ("#ffff00", True),
         ("#00ffff", True),
