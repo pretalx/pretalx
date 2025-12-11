@@ -13,6 +13,7 @@ Legal & Policies
 
    licensing
    gdpr
+   cookies
    browser-support
    release-cycle
 ..   privacy
