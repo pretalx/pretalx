@@ -39,7 +39,7 @@ dialog {
   & > .alert {
     margin: 0;
   }
-  #dialog-close {
+  .dialog-close {
     position: absolute;
     top: -4px;
     right: 0;
