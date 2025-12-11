@@ -326,7 +326,7 @@
 | src/tests/orga/test\_orga\_utils.py                                        |        6 |        0 |        0 |        0 |    100% |           |
 | src/tests/orga/test\_templatetags.py                                       |       18 |        0 |        0 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_tables.py                                 |      109 |        0 |        0 |        0 |    100% |           |
-| src/tests/orga/views/test\_orga\_views\_admin.py                           |       58 |        0 |        0 |        0 |    100% |           |
+| src/tests/orga/views/test\_orga\_views\_admin.py                           |       86 |        0 |        0 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_cfp.py                             |      475 |        0 |        0 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_dashboard.py                       |      112 |        0 |       40 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_event.py                           |      461 |        0 |        0 |        0 |    100% |           |
@@ -358,7 +358,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      295 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-|                                                                  **TOTAL** | **31777** | **1903** | **5072** |  **697** | **91%** |           |
+|                                                                  **TOTAL** | **31805** | **1903** | **5072** |  **697** | **91%** |           |
 
 
 ## Setup coverage badge
