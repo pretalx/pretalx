@@ -27,7 +27,7 @@ from pretalx.submission.models import Resource
 def test_schedule_xsd_is_up_to_date():
     """If this test fails:
 
-    http -d https://raw.githubusercontent.com/voc/schedule/master/validator/xsd/schedule.xml.xsd >! tests/fixtures/schedule.xsd
+    http -d https://raw.githubusercontent.com/voc/schedule/master/validator/xsd/schedule.xml.xsd >! src/tests/fixtures/schedule.xsd
     """
     http = urllib3.PoolManager()
     response = http.request(
@@ -49,7 +49,7 @@ def test_schedule_xsd_is_up_to_date():
 def test_schedule_json_schema_is_up_to_date():
     """If this test fails:
 
-    http -d https://raw.githubusercontent.com/voc/schedule/master/validator/json/schema.json >! tests/fixtures/schedule.json
+    http -d https://raw.githubusercontent.com/voc/schedule/master/validator/json/schema.json >! src/tests/fixtures/schedule.json
     """
     http = urllib3.PoolManager()
     response = http.request(
@@ -360,9 +360,8 @@ def test_html_export_release_disabled(mocker, event):
 @pytest.mark.django_db
 @pytest.mark.usefixtures("slot")
 def test_html_export_language(event):
-    from django.core.management import (  # Import here to avoid overriding mocks
-        call_command,
-    )
+    # Import here to avoid overriding mocks
+    from django.core.management import call_command
 
     event.locale = "de"
     event.locale_array = "de,en"

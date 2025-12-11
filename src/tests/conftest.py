@@ -1102,7 +1102,7 @@ def other_slot(other_confirmed_submission, room, schedule):
 
 @pytest.fixture
 def schedule_schema_xml():
-    with open("tests/fixtures/schedule.xsd") as xsd:
+    with open("src/tests/fixtures/schedule.xsd") as xsd:
         source = xsd.read()
     schema = etree.XML(source)
     return etree.XMLSchema(schema)
@@ -1110,7 +1110,7 @@ def schedule_schema_xml():
 
 @pytest.fixture
 def schedule_schema_json():
-    with open("tests/fixtures/schedule.json") as js:
+    with open("src/tests/fixtures/schedule.json") as js:
         source = json.load(js)
     return source
 

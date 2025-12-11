@@ -41,7 +41,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         silent = 0 if options.get("silent") else 1
-        call_command("compilemessages", verbosity=silent)
+        call_command("compilemessages", verbosity=silent, ignore="sphinx")
         call_command(
             "collectstatic", verbosity=silent, interactive=False, clear=options["clear"]
         )

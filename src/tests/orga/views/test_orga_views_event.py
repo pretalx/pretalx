@@ -113,9 +113,9 @@ def test_test_mail_settings(orga_client, event, availability):
 @pytest.mark.parametrize(
     "path,allowed",
     (
-        ("tests/fixtures/custom.css", True),
-        ("tests/fixtures/malicious.css", False),
-        ("tests/conftest.py", False),
+        ("src/tests/fixtures/custom.css", True),
+        ("src/tests/fixtures/malicious.css", False),
+        ("src/tests/conftest.py", False),
     ),
 )
 def test_add_custom_css(event, orga_client, path, allowed):
@@ -133,9 +133,9 @@ def test_add_custom_css(event, orga_client, path, allowed):
 @pytest.mark.parametrize(
     "path,allowed",
     (
-        ("tests/fixtures/custom.css", True),
-        ("tests/fixtures/malicious.css", False),
-        ("tests/conftest.py", False),
+        ("src/tests/fixtures/custom.css", True),
+        ("src/tests/fixtures/malicious.css", False),
+        ("src/tests/conftest.py", False),
     ),
 )
 def test_add_custom_css_as_text(event, orga_client, path, allowed):
@@ -154,9 +154,9 @@ def test_add_custom_css_as_text(event, orga_client, path, allowed):
 @pytest.mark.parametrize(
     "path",
     (
-        "tests/fixtures/custom.css",
-        "tests/fixtures/malicious.css",
-        "tests/conftest.py",
+        "src/tests/fixtures/custom.css",
+        "src/tests/fixtures/malicious.css",
+        "src/tests/conftest.py",
     ),
 )
 def test_add_custom_css_as_administrator(event, administrator_client, path):
