@@ -96,13 +96,12 @@ jobs:
           set -o pipefail
           just test-parallel auto -p no:sugar --junitxml=pytest.xml --cov-report=term-missing:skip-covered | tee pytest-coverage.txt
         env:
-          PRETALX_CONFIG_FILE: 'tests/ci_${{ matrix.database }}.cfg'
+          PRETALX_CONFIG_FILE: 'src/tests/ci_${{ matrix.database }}.cfg'
       - name: Coverage comment
         id: coverage_comment
         uses: py-cov-action/python-coverage-comment-action@v3
         with:
           GITHUB_TOKEN: ${{ github.token }}
-          COVERAGE_PATH: "src/"
           MINIMUM_GREEN: "90"
           MINIMUM_ORANGE: "80"
           ANNOTATE_MISSING_LINES: true
