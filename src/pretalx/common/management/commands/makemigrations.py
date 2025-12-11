@@ -22,7 +22,6 @@ essentially, so we’re leaving that can of worms alone.
 from django.core.management.commands.makemigrations import Command as Parent
 from django.db import models
 from django.db.migrations.operations import models as modelops
-from django_countries.fields import CountryField
 
 
 def hack_model_fields():
@@ -59,7 +58,7 @@ def hack_model_fields():
                 models.TimeField,
             ],
         ),
-        (models.CharField, "choices", [CountryField]),
+        (models.CharField, "choices", []),
     ]
 
     original_deconstruct = models.Field.deconstruct

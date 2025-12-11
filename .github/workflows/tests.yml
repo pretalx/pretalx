@@ -105,38 +105,5 @@ jobs:
         uses: actions/upload-artifact@v5
         if: steps.coverage_comment.outputs.COMMENT_FILE_WRITTEN == 'true'
         with:
-          pytest-coverage-path: ./src/pytest-coverage.txt
-          junitxml-path: ./src/pytest.xml
-          junitxml-title: Test summary
-          report-only-changed-files: true
-          hide-comment: true
-          title: Full coverage report
-        if: always() && matrix.database == 'postgres' && matrix.python-version == '3.12' && github.event_name != 'pull_request'
-      - name: Show coverage as build info
-        working-directory: ./src
-        shell: bash  # needed to make echo work as expected
-        run: |
-          uv run coverage json
-
-          export TOTAL_COV=$(uv run python -c "import json;print(json.load(open('coverage.json'))['totals']['percent_covered_display'])")
-          echo "TOTAL_COV=$TOTAL_COV" >> $GITHUB_ENV
-          echo "## Test coverage: $TOTAL_COV%" >> $GITHUB_STEP_SUMMARY
-          echo ${{ steps.coverageData.outputs.summaryReport }} >> $GITHUB_STEP_SUMMARY
-          echo ${{ steps.coverageComment.outputs.summaryReport }} >> $GITHUB_STEP_SUMMARY
-          uv run coverage report --skip-covered --skip-empty --show-missing --format=markdown >> $GITHUB_STEP_SUMMARY
-
-          uv run coverage report
-        if: always() && matrix.database == 'postgres' && matrix.python-version == '3.14'
-
-      - name: "Make badge"
-        uses: schneegans/dynamic-badges-action@v1.7.0
-        with:
-          # GIST_TOKEN is a GitHub personal access token with scope "gist".
-          auth: ${{ secrets.GIST_TOKEN }}
-          gistID: 0ac3e4314d780e809c0164c8c329f36f
-          filename: covbadge.json
-          label: coverage
-          message: ${{ env.TOTAL_COV }}%
-          color: "#3aa57c"
-        if: env.TOTAL_COV && github.ref == 'refs/heads/main'
->>>>>>> 7d88f3d69 (Update to Django 6.0, raise minimum Python version)
+          name: python-coverage-comment-action
+          path: python-coverage-comment-action.txt
