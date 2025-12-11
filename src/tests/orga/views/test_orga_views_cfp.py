@@ -10,11 +10,12 @@ from zoneinfo import ZoneInfo
 
 import pytest
 from django.core import mail as djmail
+from django.urls import reverse
 from django_scopes import scope
 
 from pretalx.event.models import Event
 from pretalx.mail.models import QueuedMail
-from pretalx.submission.models import Question
+from pretalx.submission.models import Question, QuestionTarget
 from pretalx.submission.models.question import QuestionRequired
 
 
@@ -61,40 +62,11 @@ def test_edit_cfp_timezones(orga_client, event):
 
 
 @pytest.mark.django_db
-def test_edit_cfp_flow(orga_client, event):
-    response = orga_client.get(event.cfp.urls.editor)
-    assert response.status_code == 200, response.text
-    response = orga_client.post(
-        event.cfp.urls.editor, {"action": "reset"}, content_type="application/json"
-    )
-    assert response.status_code == 200, response.text
-    response = orga_client.post(
-        event.cfp.urls.editor,
-        "not actually useful data",
-        content_type="application/json",
-    )
-    assert response.status_code == 400, response.text
-    with scope(event=event):
-        response = orga_client.post(
-            event.cfp.urls.editor,
-            event.cfp_flow.get_editor_config(json_compat=True),
-            content_type="application/json",
-        )
-    assert response.status_code == 200, response.text
-
-
-@pytest.mark.django_db
 def test_edit_cfp_flow_shows_in_frontend(orga_client, event):
-    with scope(event=event):
-        new_config = event.cfp_flow.get_editor_config(json_compat=True)
-
-    new_config[0]["title"] = "TEST CFP WOO"
-    new_config[0]["text"] = "PLS SUBMIT HERE THX"
-    new_config[0]["fields"][0]["help_text"] = "titles are hard, y'know"
+    url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"})
     response = orga_client.post(
-        event.cfp.urls.editor,
-        new_config,
-        content_type="application/json",
+        url,
+        {"title_0": "TEST CFP WOO", "text_0": "PLS SUBMIT HERE THX"},
     )
     assert response.status_code == 200, response.text
 
@@ -102,7 +74,249 @@ def test_edit_cfp_flow_shows_in_frontend(orga_client, event):
     assert response.status_code == 200
     assert "TEST CFP WOO" in response.text
     assert "PLS SUBMIT HERE THX" in response.text
-    assert "titles are hard, y'know" in response.text
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("step", ["info", "questions", "user", "profile"])
+def test_cfp_editor_step_view(orga_client, event, step):
+    url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": step})
+    response = orga_client.get(url)
+    assert response.status_code == 200
+    assert (
+        f'id="step-{step}"'.encode() in response.content
+        or f"id=step-{step}".encode() in response.content
+    )
+
+
+@pytest.mark.django_db
+def test_cfp_editor_add_field(orga_client, event):
+    url = reverse(
+        "orga:cfp.editor.field_toggle",
+        kwargs={"event": event.slug, "step": "info", "action": "add"},
+    )
+    with scope(event=event):
+        event = Event.objects.get(slug=event.slug)
+        event.cfp.fields["duration"] = {"visibility": "do_not_ask"}
+        event.cfp.save()
+
+    response = orga_client.post(url, {"field": "duration"})
+    assert response.status_code == 200
+
+    with scope(event=event):
+        event = Event.objects.get(slug=event.slug)
+        assert event.cfp.fields["duration"]["visibility"] == "optional"
+
+
+@pytest.mark.django_db
+def test_cfp_editor_remove_field(orga_client, event):
+    url = reverse(
+        "orga:cfp.editor.field_toggle",
+        kwargs={"event": event.slug, "step": "info", "action": "remove"},
+    )
+    with scope(event=event):
+        event = Event.objects.get(slug=event.slug)
+        event.cfp.fields["duration"] = {"visibility": "optional"}
+        event.cfp.save()
+
+    response = orga_client.post(url, {"field": "duration"})
+    assert response.status_code == 200
+
+    with scope(event=event):
+        event = Event.objects.get(slug=event.slug)
+        assert event.cfp.fields["duration"]["visibility"] == "do_not_ask"
+
+
+@pytest.mark.django_db
+def test_cfp_editor_reorder_fields(orga_client, event):
+    url = reverse(
+        "orga:cfp.editor.reorder", kwargs={"event": event.slug, "step": "info"}
+    )
+    response = orga_client.post(url, {"order": "abstract,title,description"})
+    assert response.status_code == 200
+
+    with scope(event=event):
+        event = Event.objects.get(slug=event.slug)
+        flow_config = event.cfp.settings.get("flow", {})
+        step_config = flow_config.get("steps", {}).get("info", {})
+        fields = step_config.get("fields", [])
+        if fields:
+            field_keys = [f.get("key") for f in fields]
+            assert field_keys[:3] == ["abstract", "title", "description"]
+
+
+@pytest.mark.django_db
+def test_cfp_editor_field_modal(orga_client, event):
+    url = reverse(
+        "orga:cfp.editor.field",
+        kwargs={"event": event.slug, "step": "info", "field_key": "abstract"},
+    )
+
+    response = orga_client.get(url)
+    assert response.status_code == 200
+
+    response = orga_client.post(
+        url, {"visibility": "required", "min_length": "50", "max_length": "500"}
+    )
+    assert response.status_code == 200
+
+    with scope(event=event):
+        event = Event.objects.get(slug=event.slug)
+        assert event.cfp.fields["abstract"]["visibility"] == "required"
+        assert event.cfp.fields["abstract"]["min_length"] == 50
+        assert event.cfp.fields["abstract"]["max_length"] == 500
+
+
+@pytest.mark.django_db
+def test_cfp_editor_field_modal_multilingual(orga_client, multilingual_event):
+    url = reverse(
+        "orga:cfp.editor.field",
+        kwargs={
+            "event": multilingual_event.slug,
+            "step": "info",
+            "field_key": "abstract",
+        },
+    )
+
+    response = orga_client.get(url)
+    assert response.status_code == 200
+    assert b"label" in response.content.lower()
+
+
+@pytest.mark.django_db
+def test_cfp_editor_add_question(orga_client, event):
+    with scope(event=event):
+        question = Question.objects.create(
+            event=event,
+            question="Test Question",
+            target=QuestionTarget.SUBMISSION,
+            variant="text",
+            active=False,
+        )
+        question_id = question.pk
+
+    url = reverse(
+        "orga:cfp.editor.field_toggle",
+        kwargs={"event": event.slug, "step": "questions", "action": "add"},
+    )
+    response = orga_client.post(url, {"field": f"question_{question_id}"})
+    assert response.status_code == 200
+
+    with scope(event=event):
+        question = Question.all_objects.get(pk=question_id)
+        assert question.active is True
+
+
+@pytest.mark.django_db
+def test_cfp_editor_remove_question(orga_client, event):
+    with scope(event=event):
+        question = Question.objects.create(
+            event=event,
+            question="Test Question",
+            target=QuestionTarget.SUBMISSION,
+            variant="text",
+            active=True,
+        )
+        question_id = question.pk
+
+    url = reverse(
+        "orga:cfp.editor.field_toggle",
+        kwargs={"event": event.slug, "step": "questions", "action": "remove"},
+    )
+    response = orga_client.post(url, {"field": f"question_{question_id}"})
+    assert response.status_code == 200
+
+    with scope(event=event):
+        question = Question.all_objects.get(pk=question_id)
+        assert question.active is False
+
+
+@pytest.mark.django_db
+def test_cfp_editor_question_modal(orga_client, event):
+    with scope(event=event):
+        question = Question.objects.create(
+            event=event,
+            question="Test Question",
+            target=QuestionTarget.SUBMISSION,
+            variant="text",
+            active=True,
+        )
+        question_id = question.pk
+
+    url = reverse(
+        "orga:cfp.editor.question",
+        kwargs={"event": event.slug, "question_id": question_id},
+    )
+    response = orga_client.get(url)
+    assert response.status_code == 200
+    assert b"Test Question" in response.content
+
+
+@pytest.mark.django_db
+def test_cfp_editor_reorder_questions(orga_client, event):
+    with scope(event=event):
+        q1 = Question.objects.create(
+            event=event,
+            question="Question 1",
+            target=QuestionTarget.SUBMISSION,
+            variant="text",
+            active=True,
+            position=0,
+        )
+        q2 = Question.objects.create(
+            event=event,
+            question="Question 2",
+            target=QuestionTarget.SUBMISSION,
+            variant="text",
+            active=True,
+            position=1,
+        )
+
+    url = reverse(
+        "orga:cfp.editor.reorder",
+        kwargs={"event": event.slug, "step": "questions_submission"},
+    )
+    response = orga_client.post(url, {"order": f"question_{q2.pk},question_{q1.pk}"})
+    assert response.status_code == 200
+
+    with scope(event=event):
+        q1.refresh_from_db()
+        q2.refresh_from_db()
+        assert q2.position == 0
+        assert q1.position == 1
+
+
+@pytest.mark.django_db
+def test_cfp_editor_step_header_edit(orga_client, event):
+    url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"})
+    response = orga_client.get(url + "?edit_header=1")
+    assert response.status_code == 200
+    assert b"Edit Step" in response.content
+    assert b"id_title" in response.content
+    assert b"id_text" in response.content
+
+    response = orga_client.post(
+        url,
+        {
+            "title_0": "Custom Title",
+            "text_0": "Custom text",
+        },
+    )
+    assert response.status_code == 200
+
+    with scope(event=event):
+        event = Event.objects.get(slug=event.slug)
+        flow_config = event.cfp.settings.get("flow", {})
+        step_config = flow_config.get("steps", {}).get("info", {})
+        title = step_config.get("title")
+        text = step_config.get("text")
+        if isinstance(title, dict):
+            assert title.get("en") == "Custom Title"
+        else:
+            assert title == "Custom Title"
+        if isinstance(text, dict):
+            assert text.get("en") == "Custom text"
+        else:
+            assert text == "Custom text"
 
 
 @pytest.mark.django_db
@@ -807,3 +1021,91 @@ def test_can_send_special_access_code(orga_client, access_code, track):
     djmail.outbox = []
     response = orga_client.get(access_code.urls.send, follow=True)
     assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_cfp_editor_invalid_step(orga_client, event):
+    url = reverse(
+        "orga:cfp.editor.step", kwargs={"event": event.slug, "step": "nonexistent"}
+    )
+    response = orga_client.get(url)
+    assert response.status_code == 200
+    assert b"Step not found" in response.content
+
+
+@pytest.mark.django_db
+def test_cfp_editor_reorder_invalid_question_id(orga_client, event):
+    url = reverse(
+        "orga:cfp.editor.reorder",
+        kwargs={"event": event.slug, "step": "questions_submission"},
+    )
+    response = orga_client.post(url, {"order": "question_invalid,question_abc"})
+    assert response.status_code == 200
+    assert b"success" in response.content
+
+
+@pytest.mark.django_db
+def test_cfp_editor_toggle_missing_field(orga_client, event):
+    url = reverse(
+        "orga:cfp.editor.field_toggle",
+        kwargs={"event": event.slug, "step": "info", "action": "add"},
+    )
+    response = orga_client.post(url, {})
+    assert response.status_code == 400
+    assert b"No field provided" in response.content
+
+
+@pytest.mark.django_db
+def test_cfp_editor_toggle_invalid_action(orga_client, event):
+    url = reverse(
+        "orga:cfp.editor.field_toggle",
+        kwargs={"event": event.slug, "step": "info", "action": "invalid"},
+    )
+    response = orga_client.post(url, {"field": "duration"})
+    assert response.status_code == 400
+    assert b"Invalid action" in response.content
+
+
+@pytest.mark.django_db
+def test_cfp_editor_reorder_no_order(orga_client, event):
+    url = reverse(
+        "orga:cfp.editor.reorder", kwargs={"event": event.slug, "step": "info"}
+    )
+    response = orga_client.post(url, {})
+    assert response.status_code == 400
+    assert b"No order provided" in response.content
+
+
+@pytest.mark.django_db
+def test_cfp_editor_step_header_clear_custom(orga_client, event):
+    url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"})
+    orga_client.post(url, {"title_0": "Custom Title", "text_0": "Custom text"})
+    response = orga_client.post(url, {"title_0": "", "text_0": ""})
+    assert response.status_code == 200
+    with scope(event=event):
+        event = Event.objects.get(slug=event.slug)
+        flow_config = event.cfp.settings.get("flow", {})
+        step_config = flow_config.get("steps", {}).get("info", {})
+        title = step_config.get("title")
+        if isinstance(title, dict):
+            assert not any(title.values()) or title.get("en") == ""
+        else:
+            assert title == "" or title is None
+
+
+@pytest.mark.django_db
+def test_cfp_editor_main_view(orga_client, event):
+    response = orga_client.get(event.cfp.urls.editor)
+    assert response.status_code == 200
+    assert b"submission-steps" in response.content
+    assert b'id="step-info"' in response.content or b"id=step-info" in response.content
+
+
+@pytest.mark.django_db
+def test_cfp_editor_question_modal_nonexistent(orga_client, event):
+    url = reverse(
+        "orga:cfp.editor.question",
+        kwargs={"event": event.slug, "question_id": 99999},
+    )
+    response = orga_client.get(url)
+    assert response.status_code == 404

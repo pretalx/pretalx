@@ -7,6 +7,8 @@ from django_scopes import scope
 from i18nfield.strings import LazyI18nString
 
 from pretalx.cfp.flow import BaseCfPStep, i18n_string
+from pretalx.person.forms.profile import SpeakerProfileForm
+from pretalx.submission.forms.submission import InfoForm
 
 
 @pytest.mark.parametrize(
@@ -69,8 +71,6 @@ def test_i18n_string(data, locales, expected):
             },
             {"steps": {"info": {"fields": [{"key": "k", "help_text": {"en": "bar"}}]}}},
         ),
-        ({"steps": []}, {"steps": {}}),
-        ({"steps": [{"identifier": "info"}]}, {"steps": {"info": {"fields": []}}}),
     ),
 )
 @pytest.mark.django_db
@@ -88,3 +88,39 @@ def test_base_cfp_step_attributes():
     assert step.done(None) is None
     assert isinstance(step.get(None), HttpResponseNotAllowed)
     assert isinstance(step.post(None), HttpResponseNotAllowed)
+
+
+@pytest.mark.django_db
+def test_cfp_form_mixin_reorders_fields(event):
+    with scope(event=event):
+        field_config = [
+            {"key": "abstract"},
+            {"key": "title"},
+            {"key": "description"},
+        ]
+        form_reordered = InfoForm(event=event, field_configuration=field_config)
+        reordered_keys = list(form_reordered.fields.keys())
+
+        configured_fields = [
+            k for k in reordered_keys if k in ["abstract", "title", "description"]
+        ]
+        assert configured_fields == ["abstract", "title", "description"]
+        assert reordered_keys.index("abstract") < reordered_keys.index("title")
+
+
+@pytest.mark.django_db
+def test_speaker_profile_form_reorders_fields(event, speaker):
+    with scope(event=event):
+        field_config = [
+            {"key": "biography"},
+            {"key": "name"},
+            {"key": "avatar"},
+        ]
+        form = SpeakerProfileForm(
+            event=event,
+            user=speaker,
+            field_configuration=field_config,
+        )
+        keys = list(form.fields.keys())
+
+        assert keys.index("biography") < keys.index("name")
