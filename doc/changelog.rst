@@ -12,7 +12,7 @@ Release Notes
 - :bug:`orga:submissions,2220` Sessions without a track always showed with the anonymisation indicator in the organiser session list.
 - :feature:`api` The submission organiser API now includes the ``created`` and ``updated`` timestamp fields. Please note that the ``updated`` timestamp is not guaranteed to be always set, particularly when only custom fields are being changes. If you need a reliable last modification date, please refer to the object changelog instead.
 - :feature:`cfp` Organisers can now change the order of fields on each CfP page.
-- :feature:`cfp` Organisers can now configure a maximum numer of speakers in a proposal.
+- :feature:`cfp` Organisers can now configure a maximum number of speakers in a proposal.
 - :feature:`cfp` When speakers are invited as co-speaker to a proposal, the invite is now tracked and shown to the organisers.
 - :feature:`cfp` Organisers can now reorder the pretalx-provided CfP fields.
 - :announcement:`admin` pretalx now requires Python 3.12 or newer.
