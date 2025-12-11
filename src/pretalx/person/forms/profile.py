@@ -11,7 +11,6 @@ from pretalx.cfp.forms.cfp import CfPFormMixin
 from pretalx.common.forms.fields import AvailabilitiesField, ImageField, SizeFileField
 from pretalx.common.forms.mixins import (
     PretalxI18nModelForm,
-    PublicContent,
     ReadOnlyFlag,
     RequestRequire,
 )
@@ -40,7 +39,6 @@ def get_email_address_error():
 class SpeakerProfileForm(
     CfPFormMixin,
     ReadOnlyFlag,
-    PublicContent,
     RequestRequire,
     forms.ModelForm,
 ):
