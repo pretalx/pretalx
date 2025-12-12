@@ -36,6 +36,7 @@ from formtools.wizard.views import SessionWizardView
 
 from pretalx.common.forms import I18nEventFormSet
 from pretalx.common.models import ActivityLog
+from pretalx.common.plugins import get_all_plugins
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, delete_link
 from pretalx.common.views.helpers import is_htmx
@@ -51,6 +52,7 @@ from pretalx.event.forms import (
     EventWizardCopyForm,
     EventWizardDisplayForm,
     EventWizardInitialForm,
+    EventWizardPluginForm,
     EventWizardTimelineForm,
 )
 from pretalx.event.models import Event, Team, TeamInvite
@@ -606,6 +608,14 @@ def condition_copy(wizard):
     return EventWizardCopyForm.copy_from_queryset(wizard.request.user).exists()
 
 
+def condition_plugins(wizard):
+    plugins = get_all_plugins()
+    return any(
+        not plugin.name.startswith(".") and getattr(plugin, "visible", True)
+        for plugin in plugins
+    )
+
+
 class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView):
     permission_required = "event.create_event"
     file_storage = FileSystemStorage(location=Path(settings.MEDIA_ROOT) / "new_event")
@@ -614,9 +624,10 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
         ("basics", EventWizardBasicsForm),
         ("timeline", EventWizardTimelineForm),
         ("display", EventWizardDisplayForm),
+        ("plugins", EventWizardPluginForm),
         ("copy", EventWizardCopyForm),
     ]
-    condition_dict = {"copy": condition_copy}
+    condition_dict = {"copy": condition_copy, "plugins": condition_plugins}
 
     def get_template_names(self):
         return [
@@ -688,7 +699,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
     @transaction.atomic()
     def done(self, form_list, *args, **kwargs):
         steps = {}
-        for step in ("initial", "basics", "timeline", "display", "copy"):
+        for step in ("initial", "basics", "timeline", "display", "plugins", "copy"):
             try:
                 steps[step] = self.get_cleaned_data_for_step(step)
             except KeyError:
@@ -762,6 +773,11 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                         "deadline",
                     ],
                 )
+
+            if steps["plugins"] and steps["plugins"].get("plugins"):
+                for plugin_module in steps["plugins"]["plugins"]:
+                    event.enable_plugin(plugin_module)
+                event.save()
 
         return redirect(event.orga_urls.base + "?congratulations")
 

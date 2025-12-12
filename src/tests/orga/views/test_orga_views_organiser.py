@@ -334,6 +334,10 @@ class TestEventCreation:
         data.update(kwargs)
         return self.post(step="display", data=data, client=client)
 
+    def submit_plugins(self, client, plugins=None):
+        data = {"plugins": plugins or []}
+        return self.post(step="plugins", data=data, client=client)
+
     def submit_copy(self, copy=False, client=None):
         return self.post(
             step="copy", data={"copy_from_event": copy if copy else ""}, client=client
@@ -347,6 +351,7 @@ class TestEventCreation:
         self.submit_basics(client=orga_client, slug=f"newevent{now().year}")
         self.submit_timeline(deadline=deadline, client=orga_client)
         self.submit_display(client=orga_client, header_pattern="topo")
+        self.submit_plugins(client=orga_client)
         self.submit_copy(client=orga_client)
         event = Event.objects.get(slug=f"newevent{now().year}")
         assert Event.objects.count() == count + 1
@@ -368,6 +373,7 @@ class TestEventCreation:
         self.submit_basics(client=orga_client, slug=event.slug)
         self.submit_timeline(deadline=deadline, client=orga_client)
         self.submit_display(client=orga_client, header_pattern="topo")
+        self.submit_plugins(client=orga_client)
         self.submit_copy(client=orga_client)
         assert Event.objects.count() == count
 
@@ -379,6 +385,7 @@ class TestEventCreation:
         self.submit_basics(client=orga_client)
         self.submit_timeline(deadline=deadline, client=orga_client)
         self.submit_display(client=orga_client)
+        self.submit_plugins(client=orga_client)
         self.submit_copy(client=orga_client)
         event = Event.objects.get(slug="newevent")
         assert Event.objects.count() == count + 1
@@ -406,6 +413,7 @@ class TestEventCreation:
         self.submit_basics(client=orga_client)
         self.submit_timeline(deadline=deadline, client=orga_client)
         self.submit_display(client=orga_client)
+        self.submit_plugins(client=orga_client)
         self.submit_copy(copy=event.pk, client=orga_client)
         assert Event.objects.count() == count + 1
         assert organiser.teams.count() == team_count + 1
@@ -431,10 +439,24 @@ class TestEventCreation:
         self.submit_basics(client=orga_client)
         self.submit_timeline(deadline=deadline, client=orga_client)
         self.submit_display(primary_color="#00ff00", client=orga_client)
+        self.submit_plugins(client=orga_client)
         self.submit_copy(client=orga_client)
         assert Event.objects.count() == count + 1
         assert organiser.teams.count() == team_count
         assert Event.objects.filter(primary_color="#00ff00").exists()
+
+    def test_orga_create_event_with_plugins(self, orga_client, organiser, deadline):
+        organiser.teams.all().update(can_create_events=True)
+        count = Event.objects.count()
+        self.submit_initial(organiser, client=orga_client)
+        self.submit_basics(client=orga_client, slug="pluginevent")
+        self.submit_timeline(deadline=deadline, client=orga_client)
+        self.submit_display(client=orga_client)
+        self.submit_plugins(client=orga_client, plugins=["tests"])
+        self.submit_copy(client=orga_client)
+        assert Event.objects.count() == count + 1
+        event = Event.objects.get(slug="pluginevent")
+        assert "tests" in event.plugin_list
 
 
 @pytest.mark.django_db
