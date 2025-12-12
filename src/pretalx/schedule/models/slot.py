@@ -30,6 +30,11 @@ WHITESPACE_REGEX = re.compile(r"\W+")
 FRAB_SLUG_REGEX = re.compile(f"[^{string.ascii_letters + string.digits + '-'}]")
 
 
+class SlotType(models.TextChoices):
+    BREAK = "break", _("Break")
+    BLOCKER = "blocker", _("Blocker")
+
+
 class TalkSlot(PretalxModel):
     """The TalkSlot object is the scheduled version of a.
 
@@ -38,6 +43,7 @@ class TalkSlot(PretalxModel):
     TalkSlots always belong to one submission and one :class:`~pretalx.schedule.models.schedule.Schedule`.
 
     :param is_visible: This parameter is set on schedule release. Only confirmed talks will be visible.
+    :param slot_type: For non-submission slots, distinguishes breaks (visible) from blockers (hidden).
     """
 
     submission = models.ForeignKey(
@@ -60,6 +66,16 @@ class TalkSlot(PretalxModel):
         to="schedule.Schedule", on_delete=models.PROTECT, related_name="talks"
     )
     is_visible = models.BooleanField(default=False)
+    slot_type = models.CharField(
+        max_length=10,
+        choices=SlotType.choices,
+        null=True,
+        blank=True,
+        verbose_name=_("Slot type"),
+        help_text=_(
+            "For non-submission slots: 'break' for public breaks, 'blocker' for hidden blockers"
+        ),
+    )
     start = DateTimeField(
         null=True,
         verbose_name=_("Start"),

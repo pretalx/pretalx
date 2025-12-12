@@ -299,6 +299,7 @@ def serialize_break(slot):
         "end": slot.end.isoformat() if slot.end else None,
         "duration": slot.duration,
         "updated": slot.updated.isoformat(),
+        "slot_type": slot.slot_type,
     }
 
 
@@ -354,6 +355,7 @@ class TalkList(EventPermissionRequired, View):
             all_talks=True,
             all_rooms=not bool(filter_updated),
             filter_updated=filter_updated,
+            include_blockers=True,
         )
 
         if request.GET.get("warnings"):
@@ -385,6 +387,9 @@ class TalkList(EventPermissionRequired, View):
         )
         room = data.get("room")
         room = room.get("id") if isinstance(room, dict) else room
+        slot_type = data.get("slot_type", "break")
+        if slot_type not in ("break", "blocker"):
+            slot_type = "break"
         slot = TalkSlot.objects.create(
             schedule=request.event.wip_schedule,
             room=(
@@ -395,6 +400,7 @@ class TalkList(EventPermissionRequired, View):
             description=LazyI18nString(data.get("title")),
             start=start,
             end=end,
+            slot_type=slot_type,
         )
         task_update_unreleased_schedule_changes.apply_async(
             kwargs={"event": request.event.slug}

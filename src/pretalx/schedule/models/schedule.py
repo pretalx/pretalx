@@ -16,6 +16,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import is_reviewer
+from pretalx.schedule.models.slot import SlotType
 from pretalx.schedule.services import (
     freeze_schedule,
     get_cached_schedule_changes,
@@ -118,7 +119,11 @@ class Schedule(PretalxModel):
 
     @cached_property
     def breaks(self):
-        return self.talks.select_related("room").filter(submission__isnull=True)
+        return self.talks.select_related("room").filter(slot_type=SlotType.BREAK)
+
+    @cached_property
+    def blockers(self):
+        return self.talks.select_related("room").filter(slot_type=SlotType.BLOCKER)
 
     @cached_property
     def slots(self):
@@ -502,10 +507,18 @@ class Schedule(PretalxModel):
 
         return self != self.event.current_schedule
 
-    def build_data(self, all_talks=False, filter_updated=None, all_rooms=False):
+    def build_data(
+        self,
+        all_talks=False,
+        filter_updated=None,
+        all_rooms=False,
+        include_blockers=False,
+    ):
         talks = self.talks.all()
         if not all_talks:
             talks = self.talks.filter(is_visible=True)
+        if not include_blockers:
+            talks = talks.exclude(slot_type=SlotType.BLOCKER)
         if filter_updated:
             talks = talks.filter(updated__gte=filter_updated)
         talks = talks.select_related(
@@ -573,6 +586,7 @@ class Schedule(PretalxModel):
                         "start": talk.start,
                         "end": talk.local_end,
                         "room": talk.room_id,
+                        "slot_type": talk.slot_type,
                     }
                 )
         tracks.discard(None)
