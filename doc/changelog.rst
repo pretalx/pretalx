@@ -14,7 +14,6 @@ Release Notes
 - :feature:`cfp` Organisers can now change the order of fields on each CfP page.
 - :feature:`cfp` Organisers can now configure a maximum number of speakers in a proposal.
 - :feature:`cfp` When speakers are invited as co-speaker to a proposal, the invite is now tracked and shown to the organisers.
-- :feature:`cfp` Organisers can now reorder the pretalx-provided CfP fields.
 - :announcement:`admin` pretalx now requires Python 3.12 or newer.
 - :feature:`api` At the root API URL, you will now find a link to the event API, as well as the latest API version that is available.
 - :feature:`orga` When creating a new API token, you can now select and deselect whole rows and columns.

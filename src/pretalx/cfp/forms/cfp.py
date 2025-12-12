@@ -24,9 +24,6 @@ class CfPFormMixin:
             self._reorder_fields(field_order)
 
     def _reorder_fields(self, field_order):
-        if not field_order:
-            return
-
         new_fields = {}
         for key in field_order:
             if key in self.fields:

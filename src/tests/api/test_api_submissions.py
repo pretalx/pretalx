@@ -963,6 +963,29 @@ def test_orga_can_create_submission(
 
 
 @pytest.mark.django_db
+def test_orga_cannot_create_submission_wrong_locale(
+    client, orga_user_write_token, event, submission_type
+):
+    response = client.post(
+        event.api_urls.submissions,
+        follow=True,
+        data={
+            "title": "New Submission",
+            "submission_type": submission_type.pk,
+            "abstract": "Abstract",
+            "description": "Description",
+            "duration": 30,
+            "content_locale": "zz",
+        },
+        content_type="application/json",
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 400, response.text
+
+
+@pytest.mark.django_db
 def test_orga_cannot_create_submission_readonly_token(
     client, orga_user_token, event, submission_type
 ):
@@ -1708,6 +1731,28 @@ def test_orga_can_invite_speaker(client, orga_user_write_token, submission):
             .filter(action_type="pretalx.submission.invitation.send")
             .exists()
         )
+
+
+@pytest.mark.django_db
+def test_orga_cannot_invite_speaker_too_many(client, orga_user_token, submission):
+    with scope(event=submission.event):
+        submission.event.cfp.fields["max_speakers"] = 1
+        submission.event.cfp.save()
+
+    response = client.post(
+        submission.event.api_urls.submissions + f"{submission.code}/invitations/",
+        follow=True,
+        data=json.dumps({"email": "newinvitee@example.com"}),
+        content_type="application/json",
+        headers={
+            "Authorization": f"Token {orga_user_token.token}",
+        },
+    )
+    assert response.status_code == 403
+    with scope(event=submission.event):
+        assert not submission.invitations.filter(
+            email="newinvitee@example.com"
+        ).exists()
 
 
 @pytest.mark.django_db

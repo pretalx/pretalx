@@ -668,8 +668,12 @@ def test_persists_changed_locale(multilingual_event, orga_user, orga_client):
     assert orga_user.locale == "de"
 
 
+@pytest.mark.parametrize("max_num_speakers", (None, 2))
 @pytest.mark.django_db
-def test_can_invite_speaker(speaker_client, submission):
+def test_can_invite_speaker(speaker_client, submission, max_num_speakers):
+    with scope(event=submission.event):
+        submission.event.cfp.fields["max_speakers"] = max_num_speakers
+        submission.event.cfp.save()
     djmail.outbox = []
     response = speaker_client.get(
         submission.urls.invite, follow=True, data={"email": "invalidemail"}
@@ -678,16 +682,71 @@ def test_can_invite_speaker(speaker_client, submission):
     data = {
         "speaker": "other@speaker.org",
         "subject": "Please join!",
-        "text": "C'mon, it will be fun!",
+        "text": "C'mon, it will be fun! {invitation_url}",
     }
-    response = speaker_client.post(submission.urls.invite, follow=True, data=data)
-    assert response.status_code == 200
-    assert len(djmail.outbox) == 0  # incorrect text
-    data["text"] += "{invitation_url}"
     response = speaker_client.post(submission.urls.invite, follow=True, data=data)
     assert response.status_code == 200
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == ["other@speaker.org"]
+
+
+@pytest.mark.django_db
+def test_cannot_invite_speaker_beyond_limit(speaker_client, submission):
+    with scope(event=submission.event):
+        submission.event.cfp.fields["max_speakers"] = 1
+        submission.event.cfp.save()
+    djmail.outbox = []
+    data = {
+        "speaker": "other@speaker.org",
+        "subject": "Please join!",
+        "text": "C'mon, it will be fun!",
+    }
+    response = speaker_client.post(submission.urls.invite, follow=True, data=data)
+    assert response.status_code == 200
+    assert len(djmail.outbox) == 0
+
+
+@pytest.mark.django_db
+def test_cannot_invite_speaker_without_url(speaker_client, submission):
+    djmail.outbox = []
+    data = {
+        "speaker": "other@speaker.org",
+        "subject": "Please join!",
+        "text": "C'mon, it will be fun!",
+    }
+    response = speaker_client.post(submission.urls.invite, follow=True, data=data)
+    assert response.status_code == 200
+    assert len(djmail.outbox) == 0
+
+
+@pytest.mark.django_db
+def test_cannot_invite_speaker_existing_speaker(speaker, speaker_client, submission):
+    djmail.outbox = []
+    data = {
+        "speaker": speaker.email,
+        "subject": "Please join!",
+        "text": "C'mon, it will be fun! {invitation_url}",
+    }
+    response = speaker_client.post(submission.urls.invite, follow=True, data=data)
+    assert response.status_code == 200
+    assert len(djmail.outbox) == 0  # speaker exists already
+
+
+@pytest.mark.django_db
+def test_cannot_invite_speaker_existing_invite(speaker_client, submission):
+    with scope(event=submission.event):
+        SubmissionInvitation.objects.create(
+            email="other@example.org", submission=submission
+        )
+    djmail.outbox = []
+    data = {
+        "speaker": "other@example.org",
+        "subject": "Please join!",
+        "text": "C'mon, it will be fun! {invitation_url}",
+    }
+    response = speaker_client.post(submission.urls.invite, follow=True, data=data)
+    assert response.status_code == 200
+    assert len(djmail.outbox) == 0  # speaker exists already
 
 
 @pytest.mark.django_db
