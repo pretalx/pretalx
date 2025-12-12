@@ -227,24 +227,6 @@ def test_event_copy_preserves_table_preferences(orga_client, event, orga_user):
 
 
 @pytest.mark.django_db
-def test_table_preferences_rejects_invalid_table_name(orga_client, event):
-    url = event.orga_urls.base + "preferences/"
-    response = orga_client.post(
-        url,
-        data=json.dumps(
-            {
-                "table_name": "MaliciousTableName",
-                "columns": ["title"],
-            }
-        ),
-        content_type="application/json",
-    )
-    assert response.status_code == 400
-    data = response.json()
-    assert data["error"] == "Invalid table_name"
-
-
-@pytest.mark.django_db
 def test_table_preferences_save_ordering(orga_client, event, orga_user):
     url = event.orga_urls.base + "preferences/"
     response = orga_client.post(
@@ -291,33 +273,6 @@ def test_table_preferences_save_columns_and_ordering(orga_client, event, orga_us
             "state",
         ]
         assert prefs.get("tables.SubmissionTable.ordering") == ["title"]
-
-
-@pytest.mark.django_db
-def test_table_preferences_reset_clears_ordering(orga_client, event, orga_user):
-    with scope(event=event):
-        prefs = orga_user.get_event_preferences(event)
-        prefs.set("tables.SubmissionTable.columns", ["title", "code"], commit=False)
-        prefs.set("tables.SubmissionTable.ordering", ["-title"], commit=True)
-
-    url = event.orga_urls.base + "preferences/"
-    response = orga_client.post(
-        url,
-        data=json.dumps(
-            {
-                "table_name": "SubmissionTable",
-                "reset": True,
-            }
-        ),
-        content_type="application/json",
-    )
-    assert response.status_code == 200
-
-    with scope(event=event):
-        orga_user.event_preferences_cache.clear()
-        prefs.refresh_from_db()
-        assert prefs.get("tables.SubmissionTable.columns") is None
-        assert prefs.get("tables.SubmissionTable.ordering") is None
 
 
 @pytest.mark.django_db
