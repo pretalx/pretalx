@@ -29,7 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% if not talk.does_accept_feedback or not can_give_feedback %}
                     {% translate "You can’t give feedback for this session at this time." %}
                 {% else %}
-                    <form method="post">
+                    <form method="post" novalidate>
                         {% csrf_token %}
                         {{ form }}
                         <button type="submit" class="btn-success float-right">{{ phrases.base.send }}</button>

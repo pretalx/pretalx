@@ -88,3 +88,15 @@ def test_cannot_see_feedback_form_before_talk(django_assert_num_queries, slot, c
     with django_assert_num_queries(14):
         response = client.get(slot.submission.urls.feedback, follow=True)
     assert response.status_code == 200
+
+
+@pytest.mark.django_db()
+def test_honeypot_rejects_spam(past_slot, client, event):
+    response = client.post(
+        past_slot.submission.urls.feedback,
+        {"review": "spam!", "subject": "on"},
+        follow=True,
+    )
+    assert response.status_code == 200
+    with scope(event=event):
+        assert past_slot.submission.feedback.count() == 0

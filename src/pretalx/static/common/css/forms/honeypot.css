@@ -1,0 +1,16 @@
+/*
+ * SPDX-FileCopyrightText: 2025-present Tobias Kunze
+ * SPDX-License-Identifier: Apache-2.0
+*/
+
+.form-group:has(.pretalx-extra-field) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

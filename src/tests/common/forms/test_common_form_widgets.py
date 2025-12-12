@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
+from django import forms
 from django_scopes import scope
 
+from pretalx.common.forms.fields import HoneypotField
 from pretalx.submission.forms.question import QuestionsForm
 from pretalx.submission.forms.submission import InfoForm
 from pretalx.submission.models import QuestionVariant
@@ -55,3 +57,24 @@ def test_question_field_data_attributes(event, question):
         assert field_name in form.fields
         assert form.fields[field_name].widget.attrs.get("data-minlength") == 20
         assert form.fields[field_name].widget.attrs.get("data-maxlength") == 1000
+
+
+class HoneypotTestForm(forms.Form):
+    honeypot = HoneypotField()
+    content = forms.CharField()
+
+
+def test_honeypot_field_rejects_checked_value():
+    form = HoneypotTestForm(data={"honeypot": "on", "content": "test"})
+    assert not form.is_valid()
+    assert "honeypot" in form.errors
+
+
+def test_honeypot_field_accepts_unchecked_value():
+    form = HoneypotTestForm(data={"content": "test"})
+    assert form.is_valid()
+
+
+def test_honeypot_field_accepts_empty_string():
+    form = HoneypotTestForm(data={"honeypot": "", "content": "test"})
+    assert form.is_valid()
