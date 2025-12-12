@@ -304,12 +304,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </span>
         </div>
         <div class="field-preview-content">
-            {% if field.is_auto_hidden %}
-                <div class="field-auto-hidden-notice">
-                    <i class="fa fa-eye-slash mr-1"></i>
-                    {% translate "Currently hidden (only one option available)" %}
-                </div>
-            {% endif %}
             <div class="field-preview-overlay"
                  {% if field.is_question %}
                      hx-get="{% url 'orga:cfp.editor.question' event=request.event.slug question_id=field.question_id %}"
@@ -320,6 +314,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                  hx-trigger="click"
                  data-dialog-target="#field-modal"
                  data-toggle="dialog">
+                {% if field.is_auto_hidden %}
+                    <span class="field-auto-hidden-notice">
+                        <i class="fa fa-eye-slash"></i> {% translate "Currently hidden (only one option available)" %}
+                    </span>
+                {% endif %}
                 <span class="field-preview-edit-hint">
                     <i class="fa fa-pencil"></i> {% translate "Click to edit" %}
                 </span>
@@ -327,17 +326,21 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% if field.form_field %}
                 {{ field.form_field.as_field_group }}
             {% else %}
-                <label class="d-block font-weight-bold mb-2">
-                    {{ field.label }}
-                    {% if field.visibility == "required" %}<span class="text-danger ml-1">*</span>{% endif %}
-                </label>
-                {% if field.key == "submission_type" %}
-                    <select class="form-control" disabled>
-                        <option>{% translate "Talk (30 minutes)" %}</option>
-                    </select>
-                {% else %}
-                    <input type="text" class="form-control" disabled>
-                {% endif %}
+                <div class="form-group row">
+                    <label class="col-md-3 col-form-label">
+                        {{ field.label }}
+                        {% if field.visibility == "required" %}<span class="text-danger ml-1">*</span>{% endif %}
+                    </label>
+                    <div class="col-md-9">
+                        {% if field.key == "submission_type" %}
+                            <select class="form-control" disabled>
+                                <option>{% translate "Talk (30 minutes)" %}</option>
+                            </select>
+                        {% else %}
+                            <input type="text" class="form-control" disabled>
+                        {% endif %}
+                    </div>
+                </div>
             {% endif %}
         </div>
         <div class="pt-1">
