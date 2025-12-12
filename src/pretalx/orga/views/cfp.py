@@ -1064,6 +1064,8 @@ class CfPEditorField(CfPEditorMixin, EventPermissionRequired, TemplateView):
             "min_length": field_settings.get("min_length"),
             "max_length": field_settings.get("max_length"),
             "max": field_settings.get("max"),
+            "min_number": field_settings.get("min"),
+            "max_number": field_settings.get("max"),
         }
 
     def get_context_data(self, **kwargs):
@@ -1111,6 +1113,10 @@ class CfPEditorField(CfPEditorMixin, EventPermissionRequired, TemplateView):
             )
         if "max" in form.fields:
             cfp.fields[self.field_key]["max"] = form.cleaned_data.get("max")
+        if "min_number" in form.fields:
+            cfp.fields[self.field_key]["min"] = form.cleaned_data.get("min_number")
+        if "max_number" in form.fields:
+            cfp.fields[self.field_key]["max"] = form.cleaned_data.get("max_number")
 
         cfp.save()
 

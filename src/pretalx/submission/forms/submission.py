@@ -255,7 +255,7 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
     def clean_tags(self):
         tags = list(self.cleaned_data.get("tags", []))
         if self.instance and self.instance.pk:
-            tags += list(self.instance.tags.filter(is_public=False)))
+            tags += list(self.instance.tags.filter(is_public=False))
         return set(tags)
 
     def save(self, *args, **kwargs):
