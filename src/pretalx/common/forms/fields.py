@@ -8,7 +8,13 @@ from pathlib import Path
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.uploadedfile import UploadedFile
-from django.forms import CharField, FileField, RegexField, ValidationError
+from django.forms import (
+    BooleanField,
+    CharField,
+    FileField,
+    RegexField,
+    ValidationError,
+)
 from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField
@@ -17,6 +23,7 @@ from pretalx.common.forms.widgets import (
     AvailabilitiesWidget,
     ClearableBasenameFileInput,
     ColorPickerWidget,
+    HoneypotWidget,
     ImageInput,
     PasswordConfirmationInput,
     PasswordStrengthInput,
@@ -157,6 +164,34 @@ class SubmissionTypeField(SafeModelChoiceField):
         if self.show_duration:
             return str(obj)
         return str(obj.name)
+
+
+class HoneypotField(BooleanField):
+    """A honeypot field for spam protection.
+
+    This field renders as a visually hidden checkbox. It should be added to
+    forms that are publicly accessible and susceptible to spam. The form
+    should use novalidate to prevent browser validation.
+
+    Validation: If the field is checked (True), it's a spam bot, so raise
+    a validation error. Legitimate users never see or interact with this field.
+    """
+
+    widget = HoneypotWidget
+
+    def __init__(self, *args, **kwargs):
+        # We manually render the required flag in the widget,
+        # so we unset it here to bypass Django validation
+        kwargs["required"] = False
+        kwargs.setdefault("label", "")
+        super().__init__(*args, **kwargs)
+
+    def validate(self, value):
+        if value:
+            raise ValidationError(
+                _("Form submission failed."),
+                code="invalid",
+            )
 
 
 class AvailabilitiesField(CharField):

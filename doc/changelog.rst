@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`schedule` There is now some basic spam protection for the open feedback form.
 - :feature:`administrator,1947` Administrators can now send a test email to the server administrator email address on the administrator page, in order to verify that the instance-global email setup is working.
 - :feature:`cfp` Users are now rate-limited on repeated failed login attempts.
 - :feature:`cfp` If organisers set a colour with bad contrast to white font as their primary colour despite all warnings, pretalx will render text on buttons and on the conference header in dark colours rather than in white.

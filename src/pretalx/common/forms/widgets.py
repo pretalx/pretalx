@@ -365,3 +365,17 @@ class AvatarCropWidget(ClearableBasenameFileInput):
             forms.Script("common/js/forms/avatar_crop.js", defer=""),
             forms.Script("common/js/forms/filesize.js", defer=""),
         ]
+
+
+class HoneypotWidget(forms.CheckboxInput):
+    """A hidden checkbox widget for honeypot spam protection.
+
+    Renders as a visually hidden checkbox that is marked as required.
+    Spam bots typically fill in all required fields, so if this is checked,
+    we know it's a bot.
+    """
+
+    template_name = "common/widgets/honeypot.html"
+
+    class Media:
+        css = {"all": ["common/css/forms/honeypot.css"]}
