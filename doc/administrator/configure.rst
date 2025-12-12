@@ -139,6 +139,16 @@ The site section
 - **Environment variable:** ``PRETALX_MAX_PAGINATION_LIMIT``
 - **Default:** ``250``
 
+``highlighted_plugins``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+- A comma-separated list of plugin module names that should be highlighted as
+  recommended plugins. Highlighted plugins appear first in plugin lists and
+  display a "Recommended" badge in both the plugin settings page and the event
+  creation wizard.
+- **Environment variable:** ``PRETALX_HIGHLIGHTED_PLUGINS``
+- **Default:** ``''``
+
 The database section
 --------------------
 

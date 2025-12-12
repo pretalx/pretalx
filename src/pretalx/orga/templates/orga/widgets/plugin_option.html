@@ -6,9 +6,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 {% load rich_text %}
 
-<div class="card plugin-card">
+<div class="card plugin-card{% if widget.plugin.highlighted %} plugin-highlighted{% endif %}">
     <div class="card-header">
-        <label for="{{ widget.attrs.id }}">{{ widget.plugin.name }}</label>
+        <label for="{{ widget.attrs.id }}">
+            {{ widget.plugin.name }}
+            {% if widget.plugin.highlighted %}
+                <span class="badge badge-info">{% translate "Recommended" %}</span>
+            {% endif %}
+        </label>
         <input type="checkbox"
                name="{{ widget.name }}"
                value="{{ widget.value }}"

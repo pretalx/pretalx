@@ -31,9 +31,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <div class="form-plugins">
 
                         {% for plugin in plugins %}
-                            <div class="card plugin-card">
+                            <div class="card plugin-card{% if plugin.highlighted %} plugin-highlighted{% endif %}">
                                 <div class="card-header">
-                                    {{ plugin.name }}
+                                    <span>
+                                        {{ plugin.name }}
+                                        {% if plugin.highlighted %}
+                                            <span class="badge badge-info">{% translate "Recommended" %}</span>
+                                        {% endif %}
+                                    </span>
                                     {% if plugin.module in plugins_active %}
                                         <button class="btn btn-outline-danger btn-block" name="plugin:{{ plugin.module }}" value="disable">{% translate "Disable" %}</button>
                                     {% else %}

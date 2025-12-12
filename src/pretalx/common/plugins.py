@@ -4,6 +4,7 @@
 from itertools import groupby
 
 from django.apps import apps
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import pgettext_lazy
 
@@ -19,16 +20,25 @@ CATEGORY_LABELS = {
 }
 
 
+def is_highlighted(plugin):
+    """Check if a plugin is highlighted by the server admin."""
+    return plugin.module in getattr(settings, "HIGHLIGHTED_PLUGINS", [])
+
+
 def get_all_plugins(event=None):
     """Return the PretalxPluginMeta classes of all plugins found in the
     installed Django apps, sorted by name. If an event is provided, only
-    plugins available for that event are returned."""
+    plugins available for that event are returned.
+
+    Each plugin meta class will have a `highlighted` attribute set based on
+    the HIGHLIGHTED_PLUGINS setting."""
     plugins = []
     for app in apps.get_app_configs():
         if getattr(app, "PretalxPluginMeta", None):
             meta = app.PretalxPluginMeta
             meta.module = app.name
             meta.app = app
+            meta.highlighted = is_highlighted(meta)
 
             if event and hasattr(app, "is_available") and not app.is_available(event):
                 continue
@@ -37,6 +47,7 @@ def get_all_plugins(event=None):
     return sorted(
         plugins,
         key=lambda module: (
+            0 if module.highlighted else 1,
             0 if module.module.startswith("pretalx.") else 1,
             str(module.name).lower().replace("pretalx ", ""),
         ),
@@ -48,7 +59,10 @@ def plugin_group_key(plugin):
 
 
 def plugin_sort_key(plugin):
-    return str(plugin.name).lower().replace("pretalx ", "")
+    return (
+        0 if plugin.highlighted else 1,
+        str(plugin.name).lower().replace("pretalx ", ""),
+    )
 
 
 def get_all_plugins_grouped(event=None, filter_visible=True):
