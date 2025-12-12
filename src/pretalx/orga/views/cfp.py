@@ -652,20 +652,24 @@ class CfPEditorMixin:
 
     @cached_property
     def auto_field_states(self):
-        auto_hidden = set()
+        auto_hidden = {}
         auto_required = set()
 
         submission_type_count = self.request.event.submission_types.filter(
             requires_access_code=False
         ).count()
         if submission_type_count <= 1:
-            auto_hidden.add("submission_type")
+            auto_hidden["submission_type"] = _("only one option available")
         else:
             auto_required.add("submission_type")
         if len(self.request.event.content_locales) <= 1:
-            auto_hidden.add("content_locale")
+            auto_hidden["content_locale"] = _("only one language configured")
         if not self.request.event.get_feature_flag("use_tracks"):
-            auto_hidden.add("track")
+            auto_hidden["track"] = _("tracks are disabled")
+        elif self.request.event.tracks.count() == 0:
+            auto_hidden["track"] = _("no tracks exist")
+        if self.request.event.tags.filter(is_public=True).count() == 0:
+            auto_hidden["tags"] = _("no public tags exist")
 
         return auto_hidden, auto_required
 
@@ -751,7 +755,7 @@ class CfPEditorMixin:
         return step_fields
 
     def _build_field_data(self, key, fields_config, step, form, auto_required):
-        is_auto_hidden = key in self.auto_hidden
+        auto_hidden_reason = self.auto_hidden.get(key)
         is_auto_required = key in auto_required
 
         cfp = self.request.event.cfp
@@ -760,7 +764,7 @@ class CfPEditorMixin:
 
         if is_auto_required:
             visibility = "required"
-        elif visibility == "do_not_ask" and not is_auto_hidden:
+        elif visibility == "do_not_ask" and not auto_hidden_reason:
             return None
 
         custom_config = next((f for f in fields_config if f.get("key") == key), {})
@@ -796,7 +800,7 @@ class CfPEditorMixin:
             "max": field_settings.get("max"),
             "is_question": False,
             "form_field": form_field,
-            "is_auto_hidden": is_auto_hidden,
+            "auto_hidden_reason": auto_hidden_reason,
             "is_auto_required": is_auto_required,
         }
 
