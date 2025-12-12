@@ -686,7 +686,7 @@ class Event(PretalxModel):
                 old_default = self.cfp.default_type
                 self.cfp.default_type = submission_type
                 self.cfp.save()
-                old_default.delete()
+                old_default.delete(skip_log=True)
 
         track_map = {}
         for track in other_event.tracks.all():
