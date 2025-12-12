@@ -10,6 +10,7 @@ from django_scopes import scope
 
 from pretalx.mail.models import QueuedMail
 from pretalx.schedule.models import Schedule, TalkSlot
+from pretalx.schedule.models.slot import SlotType
 from pretalx.submission.models import Submission
 
 
@@ -256,3 +257,38 @@ def test_schedule_changes(event, slot, room, accepted_submission):
         schedule, _ = event.wip_schedule.freeze("test4")
         assert schedule.changes["count"] == 1
         assert len(schedule.changes["canceled_talks"]) == 1
+
+
+@pytest.mark.django_db
+def test_blocker_not_in_released_schedule(slot, blocker_slot, room):
+    with scope(event=slot.submission.event):
+        event = slot.submission.event
+        current_slot = slot.submission.slots.filter(schedule=event.wip_schedule).first()
+        current_slot.room = room
+        current_slot.start = now()
+        current_slot.save()
+        assert event.wip_schedule.blockers.count() == 1
+
+        released_schedule, new_wip = current_slot.schedule.freeze(
+            "test-blocker-version"
+        )
+        assert released_schedule.blockers.count() == 0
+        assert new_wip.blockers.count() == 1
+        assert new_wip.blockers.first().slot_type == SlotType.BLOCKER
+
+
+@pytest.mark.django_db
+def test_break_becomes_visible_after_freeze(slot, break_slot, room):
+    with scope(event=slot.submission.event):
+        current_slot = slot.submission.slots.filter(
+            schedule=slot.submission.event.wip_schedule
+        ).first()
+        current_slot.room = room
+        current_slot.start = now()
+        current_slot.save()
+
+        _, new_schedule = current_slot.schedule.freeze("test-break-version")
+        new_break = new_schedule.breaks.first()
+        assert new_break is not None
+        assert new_break.is_visible is True
+        assert new_break.slot_type == SlotType.BREAK
