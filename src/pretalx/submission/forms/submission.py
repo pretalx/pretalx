@@ -20,6 +20,7 @@ from pretalx.common.forms.mixins import RequestRequire
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
     EnhancedSelect,
+    EnhancedSelectMultiple,
     MultiEmailInput,
     SearchInput,
     SelectMultipleWithCount,
@@ -52,6 +53,12 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
         help_text=_("Use this if you want an illustration to go with your proposal."),
     )
     content_locale = forms.ChoiceField(label=phrases.base.language)
+    tags = forms.ModelMultipleChoiceField(
+        queryset=Tag.objects.none(),
+        label=_("Tags"),
+        required=False,
+        widget=EnhancedSelectMultiple(color_field="color"),
+    )
 
     def __init__(self, event, remove_additional_speaker=False, **kwargs):
         self.event = event
@@ -82,6 +89,7 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
         self._set_submission_types(instance=instance)
         self._set_locales()
         self._set_slot_count(instance=instance)
+        self._set_tags(instance=instance)
 
         if self.readonly:
             for field in self.fields.values():
@@ -186,6 +194,17 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
                 )
             )
 
+    def _set_tags(self, instance=None):
+        if "tags" not in self.fields:
+            return
+        public_tags = self.event.tags.filter(is_public=True)
+        if not public_tags.exists():
+            self.fields.pop("tags")
+            return
+        self.fields["tags"].queryset = public_tags
+        if instance and instance.pk:
+            self.initial["tags"] = instance.tags.filter(is_public=True)
+
     def clean_additional_speaker(self):
         value = self.cleaned_data.get("additional_speaker", "")
         if not value:
@@ -233,6 +252,12 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
 
         return emails
 
+    def clean_tags(self):
+        tags = list(self.cleaned_data.get("tags", []))
+        if self.instance and self.instance.pk:
+            tags += list(self.instance.tags.filter(is_public=False)))
+        return set(tags)
+
     def save(self, *args, **kwargs):
         for key, value in self.default_values.items():
             setattr(self.instance, key, value)
@@ -258,6 +283,7 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
             "do_not_record",
             "image",
             "duration",
+            "tags",
         ]
         request_require = [
             "title",
@@ -270,6 +296,7 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
             "duration",
             "content_locale",
             "additional_speaker",
+            "tags",
         ]
         public_fields = ["title", "abstract", "description", "image"]
         widgets = {

@@ -616,6 +616,11 @@ class CfPFieldConfigForm(PretalxI18nFormMixin, forms.Form):
         if field_key != "additional_speaker":
             del self.fields["max"]
 
+        if field_key == "tags":
+            self.fields["help_text"].help_text = _(
+                "Additional instructions shown below the field. "
+                "Note: Only public tags will be shown to submitters."
+            )
 
 class StepHeaderForm(PretalxI18nFormMixin, forms.Form):
     title = I18nFormField(
