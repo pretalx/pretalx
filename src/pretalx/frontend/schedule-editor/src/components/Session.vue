@@ -16,7 +16,7 @@ SPDX-License-Identifier: Apache-2.0
 		.pending-line(v-if="session.state && session.state !== 'confirmed' && session.state !== 'accepted'")
 			i.fa.fa-exclamation-circle
 			span {{ $t('Pending proposal state') }}
-		.bottom-info(v-if="!isBreak")
+		.bottom-info(v-if="!isBreak && !isBlocker")
 			.track(v-if="session.track") {{ getLocalizedString(session.track.name) }}
 	.warning.no-print(v-if="warnings?.length")
 		.warning-icon.text-danger
@@ -69,11 +69,15 @@ export default {
 			return this.generateSessionLinkUrl({eventUrl: this.eventUrl, session: this.session})
 		},
 		isBreak () {
-			return !this.session.code
+			return this.session.slot_type === 'break'
+		},
+		isBlocker () {
+			return this.session.slot_type === 'blocker'
 		},
 		classes () {
 			let classes = []
-			if (this.isBreak) classes.push('isbreak')
+			if (this.isBlocker) classes.push('isblocker')
+			else if (this.isBreak) classes.push('isbreak')
 			else {
 				classes.push('istalk')
 				if (this.session.state !== "confirmed" && this.session.state !== "accepted") classes.push('pending')
@@ -158,7 +162,23 @@ export default {
 			.title
 				font-size: 20px
 				color: $clr-secondary-text-light
-				align: center
+				text-align: center
+	&.isblocker
+		background-color: $clr-red-50
+		border-radius: 6px
+		.time-box
+			background-color: $clr-red-200
+			.start
+				color: $clr-primary-text-dark
+			.duration
+				color: $clr-secondary-text-dark
+		.info
+			justify-content: center
+			align-items: center
+			.title
+				font-size: 20px
+				color: $clr-red-300
+				text-align: center
 	&.istalk
 		.time-box
 			background-color: var(--track-color)
@@ -285,9 +305,20 @@ export default {
 				padding: 4px 8px
 				.title
 					font-size: 14px
+		&.isblocker
+			min-height: 40px
+			margin: 4px
+			.time-box
+				display: none
+			.info
+				padding: 4px 8px
+				.title
+					font-size: 14px
 @media print
 	.c-linear-schedule-session.isbreak
 		border: 2px solid $clr-grey-300 !important
+	.c-linear-schedule-session.isblocker
+		border: 2px solid $clr-red-200 !important
 	.c-linear-schedule-session.istalk .time-box
 		border: 2px solid var(--track-color) !important
 	.c-linear-schedule-session.istalk .info
