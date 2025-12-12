@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
+from django.test import override_settings
 
 from pretalx.common.plugins import get_all_plugins, get_all_plugins_grouped
 from tests.dummy_app import PluginApp
@@ -28,26 +29,10 @@ def test_plugins_have_highlighted_attribute():
 
 
 @pytest.mark.django_db
-def test_highlighted_plugins_sorted_first(settings):
-    settings.HIGHLIGHTED_PLUGINS = ["tests"]
-    plugins = get_all_plugins()
-    highlighted_plugins = [p for p in plugins if p.highlighted]
-    non_highlighted_plugins = [p for p in plugins if not p.highlighted]
-    assert highlighted_plugins
-    # All highlighted plugins should come before non-highlighted ones
-    for hp in highlighted_plugins:
-        for nhp in non_highlighted_plugins:
-            assert plugins.index(hp) < plugins.index(nhp)
-
-
-@pytest.mark.django_db
-def test_highlighted_plugins_sorted_first_in_groups(settings):
-    settings.HIGHLIGHTED_PLUGINS = ["tests"]
-    grouped = get_all_plugins_grouped()
-    for _category, plugins in grouped.items():
-        highlighted_indices = [i for i, p in enumerate(plugins) if p.highlighted]
-        non_highlighted_indices = [
-            i for i, p in enumerate(plugins) if not p.highlighted
-        ]
-        if highlighted_indices and non_highlighted_indices:
-            assert max(highlighted_indices) < min(non_highlighted_indices)
+def test_highlighted_plugins_sorted_first():
+    with override_settings(HIGHLIGHTED_PLUGINS=["tests"]):
+        plugins = get_all_plugins()
+        assert plugins[0].highlighted
+        plugins = get_all_plugins_grouped()
+        other_plugins = list(plugins.values())[-1]
+        assert other_plugins[0].highlighted

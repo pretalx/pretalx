@@ -4,23 +4,22 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 -->
 
 {% load i18n %}
-{% load rich_text %}
 
-<div class="card plugin-card{% if widget.plugin.highlighted %} plugin-highlighted{% endif %}">
+<label class="card plugin-card plugin-selectable{% if widget.plugin.highlighted %} plugin-highlighted{% endif %}" for="{{ widget.attrs.id }}">
     <div class="card-header">
-        <label for="{{ widget.attrs.id }}">
+        <div>
             {{ widget.plugin.name }}
             {% if widget.plugin.highlighted %}
-                <span class="badge badge-info">{% translate "Recommended" %}</span>
+                <span class="badge color-info">{% translate "Recommended" %}</span>
             {% endif %}
-        </label>
-        <input type="checkbox"
-               name="{{ widget.name }}"
-               value="{{ widget.value }}"
-               id="{{ widget.attrs.id }}"
-               {% if widget.selected %}checked{% endif %}>
+        </div>
+        <div>
+            <input type="checkbox"
+                   name="{{ widget.name }}"
+                   value="{{ widget.value }}"
+                   id="{{ widget.attrs.id }}"
+                   {% if widget.selected %}checked{% endif %}>
+        </div>
     </div>
-    {% with plugin=widget.plugin %}
-        {% include "orga/includes/plugin_card_body.html" %}
-    {% endwith %}
-</div>
+    {% include "orga/includes/plugin_card_body.html" with plugin=widget.plugin %}
+</label>

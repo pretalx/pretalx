@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`orga` Organisers can now select plugins when they create a new event, and if they copy another event’s settings, they can see and override the copied settings immediately.
 - :feature:`schedule` There is now some basic spam protection for the open feedback form.
 - :feature:`administrator,1947` Administrators can now send a test email to the server administrator email address on the administrator page, in order to verify that the instance-global email setup is working.
 - :feature:`cfp` Users are now rate-limited on repeated failed login attempts.

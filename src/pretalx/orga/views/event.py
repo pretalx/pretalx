@@ -36,7 +36,7 @@ from formtools.wizard.views import SessionWizardView
 
 from pretalx.common.forms import I18nEventFormSet
 from pretalx.common.models import ActivityLog
-from pretalx.common.plugins import get_all_plugins
+from pretalx.common.plugins import get_all_plugins_grouped
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, delete_link
 from pretalx.common.views.helpers import is_htmx
@@ -604,11 +604,7 @@ class InvitationView(FormView):
 
 
 def condition_plugins(wizard):
-    plugins = get_all_plugins()
-    return any(
-        not plugin.name.startswith(".") and getattr(plugin, "visible", True)
-        for plugin in plugins
-    )
+    return bool(get_all_plugins_grouped())
 
 
 class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView):
@@ -639,7 +635,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                     color="info",
                     name="wizard_goto_step",
                     value=step,
-                    icon="None",
+                    icon=None,
                 )
             ]
         return result

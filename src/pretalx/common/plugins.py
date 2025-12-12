@@ -20,38 +20,27 @@ CATEGORY_LABELS = {
 }
 
 
-def is_highlighted(plugin):
-    """Check if a plugin is highlighted by the server admin."""
-    return plugin.module in getattr(settings, "HIGHLIGHTED_PLUGINS", [])
-
-
 def get_all_plugins(event=None):
     """Return the PretalxPluginMeta classes of all plugins found in the
-    installed Django apps, sorted by name. If an event is provided, only
-    plugins available for that event are returned.
+    installed Django apps, sorted by highlight status and name. If an
+    event is provided, only plugins available for that event are returned.
 
     Each plugin meta class will have a `highlighted` attribute set based on
     the HIGHLIGHTED_PLUGINS setting."""
     plugins = []
+    highlighted_plugins = settings.HIGHLIGHTED_PLUGINS
     for app in apps.get_app_configs():
         if getattr(app, "PretalxPluginMeta", None):
             meta = app.PretalxPluginMeta
             meta.module = app.name
             meta.app = app
-            meta.highlighted = is_highlighted(meta)
+            meta.highlighted = meta.module in highlighted_plugins
 
             if event and hasattr(app, "is_available") and not app.is_available(event):
                 continue
 
             plugins.append(meta)
-    return sorted(
-        plugins,
-        key=lambda module: (
-            0 if module.highlighted else 1,
-            0 if module.module.startswith("pretalx.") else 1,
-            str(module.name).lower().replace("pretalx ", ""),
-        ),
-    )
+    return sorted(plugins, key=lambda module: plugin_sort_key(module))
 
 
 def plugin_group_key(plugin):
