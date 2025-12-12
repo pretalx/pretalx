@@ -205,6 +205,7 @@ class EventWizardInitialForm(forms.Form):
 
 class EventWizardBasicsForm(PretalxI18nModelForm):
     def __init__(self, *args, user=None, locales=None, organiser=None, **kwargs):
+        self.user = user
         self.locales = locales or []
         super().__init__(*args, **kwargs, locales=locales)
         self.fields["locale"].choices = [
@@ -222,6 +223,19 @@ class EventWizardBasicsForm(PretalxI18nModelForm):
             + str(_("You cannot change the slug later on!"))
             + "</strong>"
         )
+        copy_from_queryset = EventWizardCopyForm.copy_from_queryset(user)
+        if copy_from_queryset.exists():
+            self.fields["copy_from_event"] = forms.ModelChoiceField(
+                label=_("Copy configuration from"),
+                queryset=copy_from_queryset,
+                widget=EnhancedSelect(color_field="visible_primary_color"),
+                help_text=_(
+                    "You can copy settings from previous events here, such as mail settings, session types, and email templates. "
+                    "Please check those settings once the event has been created!"
+                ),
+                empty_label=_("Do not copy"),
+                required=False,
+            )
 
     def clean_slug(self):
         slug = self.cleaned_data["slug"]
@@ -292,12 +306,25 @@ class EventWizardDisplayForm(forms.Form):
         widget=HeaderSelect,
     )
 
-    def __init__(self, *args, user=None, locales=None, organiser=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        user=None,
+        locales=None,
+        organiser=None,
+        copy_from_event=None,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         logo = Event._meta.get_field("logo")
         self.fields["logo"] = ImageField(
             required=False, label=logo.verbose_name, help_text=logo.help_text
         )
+        if copy_from_event:
+            self.fields["primary_color"].initial = copy_from_event.primary_color
+            self.fields["header_pattern"].initial = (
+                copy_from_event.display_settings.get("header_pattern")
+            )
 
 
 class EventWizardCopyForm(forms.Form):
@@ -332,7 +359,15 @@ class EventWizardCopyForm(forms.Form):
 
 
 class EventWizardPluginForm(forms.Form):
-    def __init__(self, *args, user=None, locales=None, organiser=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        user=None,
+        locales=None,
+        organiser=None,
+        copy_from_event=None,
+        **kwargs,
+    ):
         from pretalx.common.plugins import get_all_plugins_grouped
         from pretalx.orga.forms.widgets import PluginSelectWidget
 
@@ -346,9 +381,13 @@ class EventWizardPluginForm(forms.Form):
                 (category_label, [(plugin.module, plugin.name) for plugin in plugins])
             )
         if all_plugins:
+            initial_plugins = []
+            if copy_from_event:
+                initial_plugins = copy_from_event.plugin_list
             self.fields["plugins"] = forms.MultipleChoiceField(
                 label=_("Plugins"),
                 required=False,
                 choices=choices,
+                initial=initial_plugins,
                 widget=PluginSelectWidget(plugins=all_plugins),
             )

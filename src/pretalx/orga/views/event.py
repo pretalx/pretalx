@@ -49,7 +49,6 @@ from pretalx.common.views.mixins import (
 )
 from pretalx.event.forms import (
     EventWizardBasicsForm,
-    EventWizardCopyForm,
     EventWizardDisplayForm,
     EventWizardInitialForm,
     EventWizardPluginForm,
@@ -604,10 +603,6 @@ class InvitationView(FormView):
         invite.delete()
 
 
-def condition_copy(wizard):
-    return EventWizardCopyForm.copy_from_queryset(wizard.request.user).exists()
-
-
 def condition_plugins(wizard):
     plugins = get_all_plugins()
     return any(
@@ -625,9 +620,8 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
         ("timeline", EventWizardTimelineForm),
         ("display", EventWizardDisplayForm),
         ("plugins", EventWizardPluginForm),
-        ("copy", EventWizardCopyForm),
     ]
-    condition_dict = {"copy": condition_copy, "plugins": condition_plugins}
+    condition_dict = {"plugins": condition_plugins}
 
     def get_template_names(self):
         return [
@@ -694,12 +688,16 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
         if step != "initial":
             fdata = self.get_cleaned_data_for_step("initial")
             kwargs.update(fdata or {})
+        if step in ("display", "plugins"):
+            basics_data = self.get_cleaned_data_for_step("basics")
+            if basics_data and basics_data.get("copy_from_event"):
+                kwargs["copy_from_event"] = basics_data["copy_from_event"]
         return kwargs
 
     @transaction.atomic()
     def done(self, form_list, *args, **kwargs):
         steps = {}
-        for step in ("initial", "basics", "timeline", "display", "plugins", "copy"):
+        for step in ("initial", "basics", "timeline", "display", "plugins"):
             try:
                 steps[step] = self.get_cleaned_data_for_step(step)
             except KeyError:
@@ -761,9 +759,10 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                 orga=True,
             )
 
-            if steps["copy"] and steps["copy"]["copy_from_event"]:
+            copy_from_event = steps["basics"].get("copy_from_event")
+            if copy_from_event:
                 event.copy_data_from(
-                    steps["copy"]["copy_from_event"],
+                    copy_from_event,
                     skip_attributes=[
                         "locale",
                         "locales",
@@ -771,12 +770,13 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                         "timezone",
                         "email",
                         "deadline",
+                        "plugins",
                     ],
                 )
 
-            if steps["plugins"] and steps["plugins"].get("plugins"):
-                for plugin_module in steps["plugins"]["plugins"]:
-                    event.enable_plugin(plugin_module)
+            if steps["plugins"]:
+                selected_plugins = steps["plugins"].get("plugins") or []
+                event.set_plugins(selected_plugins)
                 event.save()
 
         return redirect(event.orga_urls.base + "?congratulations")

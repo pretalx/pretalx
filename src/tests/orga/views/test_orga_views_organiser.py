@@ -301,16 +301,19 @@ class TestEventCreation:
             client=client,
         )
 
-    def submit_basics(self, client, slug="newevent"):
+    def submit_basics(self, client, slug="newevent", copy_from_event=None):
+        data = {
+            "email": "foo@bar.com",
+            "locale": "en",
+            "name_0": "New event!",
+            "slug": slug,
+            "timezone": "Europe/Amsterdam",
+        }
+        if copy_from_event:
+            data["copy_from_event"] = copy_from_event
         return self.post(
             step="basics",
-            data={
-                "email": "foo@bar.com",
-                "locale": "en",
-                "name_0": "New event!",
-                "slug": slug,
-                "timezone": "Europe/Amsterdam",
-            },
+            data=data,
             client=client,
         )
 
@@ -338,11 +341,6 @@ class TestEventCreation:
         data = {"plugins": plugins or []}
         return self.post(step="plugins", data=data, client=client)
 
-    def submit_copy(self, copy=False, client=None):
-        return self.post(
-            step="copy", data={"copy_from_event": copy if copy else ""}, client=client
-        )
-
     def test_orga_create_event(self, orga_client, organiser, deadline):
         organiser.teams.all().update(can_create_events=True)
         count = Event.objects.count()
@@ -352,7 +350,6 @@ class TestEventCreation:
         self.submit_timeline(deadline=deadline, client=orga_client)
         self.submit_display(client=orga_client, header_pattern="topo")
         self.submit_plugins(client=orga_client)
-        self.submit_copy(client=orga_client)
         event = Event.objects.get(slug=f"newevent{now().year}")
         assert Event.objects.count() == count + 1
         assert organiser.teams.count() == team_count + 1
@@ -374,7 +371,6 @@ class TestEventCreation:
         self.submit_timeline(deadline=deadline, client=orga_client)
         self.submit_display(client=orga_client, header_pattern="topo")
         self.submit_plugins(client=orga_client)
-        self.submit_copy(client=orga_client)
         assert Event.objects.count() == count
 
     def test_orga_create_event_in_the_past(self, orga_client, organiser, deadline):
@@ -386,7 +382,6 @@ class TestEventCreation:
         self.submit_timeline(deadline=deadline, client=orga_client)
         self.submit_display(client=orga_client)
         self.submit_plugins(client=orga_client)
-        self.submit_copy(client=orga_client)
         event = Event.objects.get(slug="newevent")
         assert Event.objects.count() == count + 1
         assert organiser.teams.count() == team_count + 1
@@ -410,11 +405,10 @@ class TestEventCreation:
         event.cfp.save()
         team_count = organiser.teams.count()
         self.submit_initial(organiser, client=orga_client)
-        self.submit_basics(client=orga_client)
+        self.submit_basics(client=orga_client, copy_from_event=event.pk)
         self.submit_timeline(deadline=deadline, client=orga_client)
         self.submit_display(client=orga_client)
         self.submit_plugins(client=orga_client)
-        self.submit_copy(copy=event.pk, client=orga_client)
         assert Event.objects.count() == count + 1
         assert organiser.teams.count() == team_count + 1
         assert organiser.teams.filter(
@@ -440,7 +434,6 @@ class TestEventCreation:
         self.submit_timeline(deadline=deadline, client=orga_client)
         self.submit_display(primary_color="#00ff00", client=orga_client)
         self.submit_plugins(client=orga_client)
-        self.submit_copy(client=orga_client)
         assert Event.objects.count() == count + 1
         assert organiser.teams.count() == team_count
         assert Event.objects.filter(primary_color="#00ff00").exists()
@@ -453,10 +446,72 @@ class TestEventCreation:
         self.submit_timeline(deadline=deadline, client=orga_client)
         self.submit_display(client=orga_client)
         self.submit_plugins(client=orga_client, plugins=["tests"])
-        self.submit_copy(client=orga_client)
         assert Event.objects.count() == count + 1
         event = Event.objects.get(slug="pluginevent")
         assert "tests" in event.plugin_list
+
+    def test_orga_create_event_copy_preselects_plugins(
+        self, orga_client, organiser, event, deadline
+    ):
+        organiser.teams.all().update(can_create_events=True)
+        event.enable_plugin("tests")
+        event.save()
+        count = Event.objects.count()
+        self.submit_initial(organiser, client=orga_client)
+        self.submit_basics(
+            client=orga_client, slug="copypluginevent", copy_from_event=event.pk
+        )
+        self.submit_timeline(deadline=deadline, client=orga_client)
+        self.submit_display(client=orga_client)
+        # When copying from an event with plugins, those plugins should be
+        # pre-selected in the form. Here we simulate the user accepting the
+        # pre-selection by submitting the same plugins.
+        self.submit_plugins(client=orga_client, plugins=["tests"])
+        assert Event.objects.count() == count + 1
+        new_event = Event.objects.get(slug="copypluginevent")
+        assert "tests" in new_event.plugin_list
+
+    def test_orga_create_event_copy_can_deselect_plugins(
+        self, orga_client, organiser, event, deadline
+    ):
+        organiser.teams.all().update(can_create_events=True)
+        event.enable_plugin("tests")
+        event.save()
+        count = Event.objects.count()
+        self.submit_initial(organiser, client=orga_client)
+        self.submit_basics(
+            client=orga_client, slug="nopluginevent", copy_from_event=event.pk
+        )
+        self.submit_timeline(deadline=deadline, client=orga_client)
+        self.submit_display(client=orga_client)
+        # User can deselect the pre-selected plugins
+        self.submit_plugins(client=orga_client, plugins=[])
+        assert Event.objects.count() == count + 1
+        new_event = Event.objects.get(slug="nopluginevent")
+        assert new_event.plugin_list == []
+
+    def test_orga_create_event_copy_prefills_display(
+        self, orga_client, organiser, event, deadline
+    ):
+        organiser.teams.all().update(can_create_events=True)
+        event.primary_color = "#ff0000"
+        event.display_settings["header_pattern"] = "topo"
+        event.save()
+        count = Event.objects.count()
+        self.submit_initial(organiser, client=orga_client)
+        self.submit_basics(
+            client=orga_client, slug="copydisplayevent", copy_from_event=event.pk
+        )
+        self.submit_timeline(deadline=deadline, client=orga_client)
+        # Simulate accepting the pre-filled display values
+        self.submit_display(
+            client=orga_client, primary_color="#ff0000", header_pattern="topo"
+        )
+        self.submit_plugins(client=orga_client)
+        assert Event.objects.count() == count + 1
+        new_event = Event.objects.get(slug="copydisplayevent")
+        assert new_event.primary_color == "#ff0000"
+        assert new_event.display_settings["header_pattern"] == "topo"
 
 
 @pytest.mark.django_db
