@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.forms.fields import NewPasswordConfirmationField, NewPasswordField
+from pretalx.common.forms.widgets import PasswordInput
 from pretalx.common.text.phrases import phrases
 from pretalx.person.models import User
 
@@ -19,7 +20,7 @@ class LoginInfoForm(forms.ModelForm):
     }
 
     old_password = forms.CharField(
-        widget=forms.PasswordInput, label=_("Password (current)"), required=True
+        widget=PasswordInput, label=_("Password (current)"), required=True
     )
     password = NewPasswordField(label=phrases.base.new_password, required=False)
     password_repeat = NewPasswordConfirmationField(

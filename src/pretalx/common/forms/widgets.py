@@ -20,12 +20,43 @@ def add_attribute(attrs, attr, css_class):
     return attrs
 
 
-class PasswordStrengthInput(forms.PasswordInput):
+class PasswordInput(forms.PasswordInput):
+    css_class = "password-input"
+
+    def _get_toggle_markup(self):
+        show_password = _("Show password")
+        hide_password = _("Hide password")
+        return f"""<button type="button" class="password-toggle" aria-label="{show_password}" data-show-label="{show_password}" data-hide-label="{hide_password}">
+                <i class="fa fa-eye" aria-hidden="true"></i>
+            </button>"""
+
+    def _get_extra_markup(self):
+        return ""
+
+    def _prepare_attrs(self):
+        self.attrs = add_attribute(self.attrs, "class", self.css_class)
+
     def render(self, name, value, attrs=None, renderer=None):
+        self._prepare_attrs()
+        return mark_safe(
+            super().render(name, value, self.attrs)
+            + self._get_toggle_markup()
+            + self._get_extra_markup()
+        )
+
+    class Media:
+        js = [forms.Script("common/js/forms/password.js", defer="")]
+        css = {"all": ["common/css/forms/password.css"]}
+
+
+class PasswordStrengthInput(PasswordInput):
+    css_class = "password_strength"
+
+    def _get_extra_markup(self):
         message = _(
             'This password would take <em class="password_strength_time"></em> to crack.'
         )
-        markup = f"""
+        return f"""
         <div class="password-progress">
             <div class="password-progress-bar progress">
                 <div class="progress-bar bg-warning password_strength_bar"
@@ -35,17 +66,15 @@ class PasswordStrengthInput(forms.PasswordInput):
                      aria-valuemax="4">
                 </div>
             </div>
-            <p class="text-muted password_strength_info d-none">
-                <span style="margin-left:5px;">
-                    {message}
-                </span>
-            </p>
+            <small class="d-none password_strength_info form-text text-muted">
+                {message}
+            </small>
         </div>
         """
 
-        self.attrs = add_attribute(self.attrs, "class", "password_strength")
+    def _prepare_attrs(self):
+        super()._prepare_attrs()
         self.attrs["autocomplete"] = "new-password"
-        return mark_safe(super().render(name, value, self.attrs) + markup)
 
     class Media:
         js = [
@@ -55,27 +84,26 @@ class PasswordStrengthInput(forms.PasswordInput):
         css = {"all": ["common/css/forms/password.css"]}
 
 
-class PasswordConfirmationInput(forms.PasswordInput):
+class PasswordConfirmationInput(PasswordInput):
+    css_class = "password_confirmation"
+
     def __init__(self, confirm_with=None, attrs=None, render_value=False):
         super().__init__(attrs, render_value)
         self.confirm_with = confirm_with
 
-    def render(self, name, value, attrs=None, renderer=None):
-        self.attrs["data-confirm-with"] = str(self.confirm_with)
-        warning = _("Warning")
+    def _get_extra_markup(self):
+        warning = _("Warning") + ":"
         content = _("Your passwords don’t match.")
-
-        markup = f"""
-        <div class="d-none password_strength_info">
-            <p class="text-muted">
-                <span class="label label-danger">{warning}</span>
-                <span>{content}</span>
-            </p>
-        </div>
+        return f"""
+        <small class="d-none password_strength_info form-text text-muted">
+            <span class="label label-danger">{warning}</span>
+            <span>{content}</span>
+        </small>
         """
 
-        self.attrs = add_attribute(self.attrs, "class", "password_confirmation")
-        return mark_safe(super().render(name, value, self.attrs) + markup)
+    def _prepare_attrs(self):
+        super()._prepare_attrs()
+        self.attrs["data-confirm-with"] = str(self.confirm_with)
 
 
 class ClearableBasenameFileInput(forms.ClearableFileInput):

@@ -38,6 +38,7 @@ from pretalx.common.forms.widgets import (
     EnhancedSelectMultiple,
     HtmlDateInput,
     MarkdownWidget,
+    PasswordInput,
     TextInputWithAddon,
 )
 from pretalx.common.text.css import validate_css
@@ -424,7 +425,7 @@ class MailSettingsForm(
     smtp_password = forms.CharField(
         label=_("Password"),
         required=False,
-        widget=forms.PasswordInput(
+        widget=PasswordInput(
             attrs={"autocomplete": "new-password"},
             render_value=True,
         ),
