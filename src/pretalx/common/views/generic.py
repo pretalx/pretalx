@@ -27,6 +27,7 @@ from django.views.generic import FormView, View
 from django.views.generic.detail import SingleObjectTemplateResponseMixin
 from django.views.generic.edit import ModelFormMixin, ProcessFormView
 from django_context_decorator import context
+from django_tables2 import RequestConfig
 from django_tables2.views import SingleTableMixin
 
 from pretalx.cfp.forms.auth import ResetForm
@@ -331,8 +332,6 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
                 queryset=queryset,
             )
         else:
-            # Tables handle their own pagination, but we pass the object list
-            # to the template regardless
             self.object_list = filtered_queryset
             context = self.get_context_data(queryset=queryset)
         return self.render_to_response(context)
@@ -659,9 +658,16 @@ class OrgaTableMixin(SingleTableMixin):
     def get_table(self, *args, **kwargs):
         if not self.table_class:
             return
-        table = super().get_table(*args, **kwargs)
+        # We need to configure column visibility and ordering BEFORE pagination
+        # happens. super().get_table() calls RequestConfig.configure() which
+        # paginates the table, so we create the table ourselves first.
+        table_class = self.get_table_class()
+        table = table_class(data=self.get_table_data(), **kwargs)
         page_size = table.configure(self.request)
         self._table_page_size = page_size
+        RequestConfig(
+            self.request, paginate=self.get_table_pagination(table)
+        ).configure(table)
         return table
 
 

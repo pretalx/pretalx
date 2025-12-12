@@ -147,11 +147,31 @@ class PreferencesView(EventPermissionRequired, View):
             if reset:
                 preferences.clear(f"tables.{table_name}.columns", commit=True)
             else:
-                columns = data.get("columns", [])
-                if not isinstance(columns, list):
-                    return JsonResponse({"error": "columns must be a list"}, status=400)
+                columns = data.get("columns")
+                ordering = data.get("ordering")
 
-                preferences.set(f"tables.{table_name}.columns", columns, commit=True)
+                if columns is not None:
+                    if not isinstance(columns, list):
+                        return JsonResponse(
+                            {"error": "columns must be a list"}, status=400
+                        )
+                    preferences.set(
+                        f"tables.{table_name}.columns", columns, commit=False
+                    )
+
+                if ordering is not None:
+                    if not isinstance(ordering, list):
+                        return JsonResponse(
+                            {"error": "ordering must be a list"}, status=400
+                        )
+                    if ordering:
+                        preferences.set(
+                            f"tables.{table_name}.ordering", ordering, commit=False
+                        )
+                    else:
+                        preferences.clear(f"tables.{table_name}.ordering", commit=False)
+
+                preferences.save()
 
             return JsonResponse({"success": True})
 
