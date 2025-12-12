@@ -1050,16 +1050,32 @@ def break_slot(room, schedule):
         TalkSlot.objects.create(
             description="Break",
             schedule=schedule.event.wip_schedule,
+            slot_type="break",
         )
         slot = TalkSlot.objects.create(
             description="Break",
             schedule=schedule,
             is_visible=True,
+            slot_type="break",
         )
-        slots = TalkSlot.objects.filter(submission__isnull=True)
+        slots = TalkSlot.objects.filter(slot_type="break")
         slots.update(
             start=room.event.datetime_from + dt.timedelta(minutes=90),
             end=room.event.datetime_from + dt.timedelta(minutes=120),
+            room=room,
+        )
+        return slot
+
+
+@pytest.fixture
+def blocker_slot(room, event):
+    with scope(event=event):
+        slot = TalkSlot.objects.create(
+            description="Blocker",
+            schedule=event.wip_schedule,
+            slot_type="blocker",
+            start=event.datetime_from + dt.timedelta(minutes=150),
+            end=event.datetime_from + dt.timedelta(minutes=180),
             room=room,
         )
         return slot

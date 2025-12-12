@@ -108,8 +108,11 @@ class TalkSlotSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 @register_serializer(versions=CURRENT_VERSIONS)
 class TalkSlotOrgaSerializer(TalkSlotSerializer):
     class Meta(TalkSlotSerializer.Meta):
-        fields = TalkSlotSerializer.Meta.fields + ["is_visible"]
-        read_only_fields = TalkSlotSerializer.Meta.read_only_fields + ["is_visible"]
+        fields = TalkSlotSerializer.Meta.fields + ["is_visible", "slot_type"]
+        read_only_fields = TalkSlotSerializer.Meta.read_only_fields + [
+            "is_visible",
+            "slot_type",
+        ]
         expandable_fields = TalkSlotSerializer.Meta.expandable_fields
 
     def validate_end(self, value):

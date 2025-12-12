@@ -778,3 +778,22 @@ def test_schedule_expand_slots(client, event, slot, track):
     assert speaker_data["code"] == speaker.code
     assert speaker_data["name"] == speaker.name
     assert speaker_data["biography"] == profile.biography
+
+
+@pytest.mark.django_db
+def test_orga_can_see_blocker_in_wip_schedule(
+    client, orga_user_token, event, blocker_slot
+):
+    with scope(event=event):
+        wip_schedule_pk = event.wip_schedule.pk
+
+    response = client.get(
+        event.api_urls.slots + f"?schedule={wip_schedule_pk}",
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_token.token}"},
+    )
+    content = json.loads(response.text)
+    assert response.status_code == 200
+
+    slot_ids = [s["id"] for s in content["results"]]
+    assert blocker_slot.pk in slot_ids
