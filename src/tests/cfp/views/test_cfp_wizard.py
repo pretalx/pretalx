@@ -17,7 +17,7 @@ from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
 from pretalx.submission.forms import InfoForm
-from pretalx.submission.models import Submission, SubmissionStates, SubmissionType
+from pretalx.submission.models import Submission, SubmissionStates, SubmissionType, Tag
 
 
 class TestWizard:
@@ -59,6 +59,7 @@ class TestWizard:
         event=None,
         track=None,
         additional_speaker=None,
+        tags=None,
     ):
         submission_data = {
             "title": title,
@@ -72,6 +73,8 @@ class TestWizard:
         }
         if track:
             submission_data["track"] = getattr(track, "pk", track)
+        if tags:
+            submission_data["tags"] = [getattr(t, "pk", t) for t in tags]
         response, current_url = self.get_response_and_url(
             client, url, data=submission_data
         )
@@ -147,6 +150,7 @@ class TestWizard:
         question=None,
         answer="42",
         track=None,
+        tags=None,
     ):
         with scope(event=event):
             sub = Submission.objects.last()
@@ -168,6 +172,8 @@ class TestWizard:
                 assert sub.track == track
             else:
                 assert sub.track is None
+            if tags:
+                assert set(sub.tags.all()) == set(tags)
         return sub
 
     def assert_user(
@@ -505,6 +511,42 @@ class TestWizard:
             client, response, current_url, event=event
         )
         submission = self.assert_submission(event, track=track)
+        user = self.assert_user(submission, email="testuser@example.com")
+        self.assert_mail(submission, user)
+
+    @pytest.mark.django_db
+    def test_wizard_with_tags(self, event, client):
+        with scope(event=event):
+            submission_type = SubmissionType.objects.filter(event=event).first().pk
+            tag1 = Tag.objects.create(tag="Python", event=event, is_public=True)
+            tag2 = Tag.objects.create(tag="Web", event=event, is_public=True)
+            Tag.objects.create(tag="Private", event=event, is_public=False)
+            event.cfp.fields["tags"]["visibility"] = "optional"
+            event.cfp.save()
+
+        response, current_url = self.perform_init_wizard(client, event=event)
+        response, current_url = self.perform_info_wizard(
+            client,
+            response,
+            current_url,
+            submission_type=submission_type,
+            next_step="user",
+            event=event,
+            tags=[tag1, tag2],
+        )
+        response, current_url = self.perform_user_wizard(
+            client,
+            response,
+            current_url,
+            password="testpassw0rd!",
+            email="testuser@example.com",
+            register=True,
+            event=event,
+        )
+        response, current_url = self.perform_profile_form(
+            client, response, current_url, event=event
+        )
+        submission = self.assert_submission(event, tags=[tag1, tag2])
         user = self.assert_user(submission, email="testuser@example.com")
         self.assert_mail(submission, user)
 

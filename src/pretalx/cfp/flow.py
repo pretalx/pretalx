@@ -373,6 +373,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
         "duration",
         "content_locale",
         "additional_speaker",
+        "tags",
     ]
     always_required_fields = {"title", "submission_type"}
     label_model = Submission

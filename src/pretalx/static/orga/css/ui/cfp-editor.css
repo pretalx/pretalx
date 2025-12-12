@@ -139,9 +139,16 @@
 .field-preview-content .form-control-file,
 .field-preview-content .i18n-form-field input,
 .field-preview-content .i18n-form-field textarea,
+.field-preview-content .choices .choices__inner,
 .field-preview-content select {
     background: var(--color-grey-lightest);
     opacity: 0.85;
+}
+.field-preview-content .choices {
+    .choices__input.choices__input--cloned,
+    .choices__list.choices__list--single {
+        display: none;
+    }
 }
 .field-preview .field-remove {
     opacity: 0;
