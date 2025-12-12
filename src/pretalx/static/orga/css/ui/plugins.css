@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+.plugin-card {
+  flex-grow:1;
+  width: 40%;
+}
 .plugin-card .card-header {
   display: flex;
   flex-direction: row;
@@ -23,6 +27,7 @@
   justify-content: space-between;
   align-items: stretch;
   align-content: stretch;
+  gap: 1em;
 
   label.plugin-card {
     margin: 16px;
