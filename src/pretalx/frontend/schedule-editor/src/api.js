@@ -88,6 +88,7 @@ const api = {
 			duration: talk.duration,
 			title: talk.title,
 			description: talk.description,
+			slot_type: talk.slot_type,
 		})
 	},
 	deleteTalk (talk) {

@@ -5,6 +5,9 @@
   "Speakers": "",
   "Availabilities": "",
   "Title": "",
+  "Type": "",
+  "Break": "",
+  "Blocker": "",
   "Track": "",
   "Room": "",
   "Duration": "",
@@ -17,6 +20,10 @@
   "Filter sessions": "",
   "New break": "",
   "Drag the box to the schedule to create a new break": "",
+  "Breaks are publicly visible on the schedule": "",
+  "New blocker": "",
+  "Drag the box to the schedule to create a new blocker": "",
+  "Blockers are for internal planning and will never become public": "",
   "Hidden rooms": "",
   "Pending proposal state": ""
 }

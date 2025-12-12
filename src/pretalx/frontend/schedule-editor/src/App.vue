@@ -31,7 +31,12 @@ SPDX-License-Identifier: Apache-2.0
 							i.fa.fa-sort-amount-asc(v-if="unassignedSort === method.name && unassignedSortDirection === 1")
 							i.fa.fa-sort-amount-desc(v-if="unassignedSort === method.name && unassignedSortDirection === -1")
 				.session-list(:class="{'collapse-content': displayMode === 'condensed'}")
-					session.new-break(:session="{title: '+ ' + translations.newBreak}", :isDragged="false", :displayMode="displayMode", @startDragging="startNewBreak", @click="showNewBreakHint", v-tooltip.fixed="{text: newBreakTooltip, show: newBreakTooltip}", @pointerleave="removeNewBreakHint")
+					.new-slot-row
+						session.new-break(:session="{title: '+ ' + translations.newBreak, slot_type: 'break'}", :isDragged="false", :displayMode="displayMode", @startDragging="startNewSlot({event: $event.event, slotType: 'break'})", @click="showNewSlotHint('break')", v-tooltip.fixed="{text: newSlotTooltipType === 'break' ? newSlotTooltip : '', show: newSlotTooltipType === 'break' && newSlotTooltip}", @pointerleave="removeNewSlotHint('break')")
+						i.fa.fa-question-circle.slot-help-icon(v-tooltip="{text: $t('Breaks are publicly visible on the schedule')}")
+					.new-slot-row
+						session.new-blocker(:session="{title: '+ ' + translations.newBlocker, slot_type: 'blocker'}", :isDragged="false", :displayMode="displayMode", @startDragging="startNewSlot({event: $event.event, slotType: 'blocker'})", @click="showNewSlotHint('blocker')", v-tooltip.fixed="{text: newSlotTooltipType === 'blocker' ? newSlotTooltip : '', show: newSlotTooltipType === 'blocker' && newSlotTooltip}", @pointerleave="removeNewSlotHint('blocker')")
+						i.fa.fa-question-circle.slot-help-icon(v-tooltip="{text: $t('Blockers are for internal planning and will never become public')}")
 					session(v-for="un in unscheduled", :session="un", :displayMode="displayMode", @startDragging="startDragging", :isDragged="draggedSession && un.id === draggedSession.id", @click="editorStart(un)")
 			#schedule-wrapper(v-scrollbar.x.y="")
 				.schedule-controls
@@ -77,6 +82,10 @@ SPDX-License-Identifier: Apache-2.0
 								.i18n-form-group
 									template(v-for="locale of locales")
 										input(v-model="editorSession.title[locale]", :required="true", :lang="locale", type="text")
+						.data-row(v-if="editorSession.slot_type").form-group.row
+							label.data-label.col-form-label.col-md-3 {{ $t('Type') }}
+							.col-md-9.data-value
+								span.slot-type-badge(:class="'slot-type-' + editorSession.slot_type") {{ editorSession.slot_type === 'blocker' ? $t('Blocker') : $t('Break') }}
 						.data-row(v-if="editorSession.track").form-group.row
 							label.data-label.col-form-label.col-md-3 {{ $t('Track') }}
 							.col-md-9.data-value {{ getLocalizedString(editorSession.track.name) }}
@@ -142,7 +151,8 @@ export default {
 			unassignedSort: 'title',
 			unassignedSortDirection: 1,  // asc
 			showUnassignedSortMenu: false,
-			newBreakTooltip: '',
+			newSlotTooltip: '',
+			newSlotTooltipType: null,
 			displayMode: localStorage.getItem('scheduleDisplayMode') || 'expanded',
 			unassignedPanelPinned: false,
 			getLocalizedString,
@@ -152,6 +162,7 @@ export default {
 			translations: {
 				filterSessions: this.$t('Filter sessions'),
 				newBreak: this.$t('New break'),
+				newBlocker: this.$t('New blocker'),
 			}
 		}
 	},
@@ -276,6 +287,7 @@ export default {
 					speakers: session.speakers?.map(s => this.speakersLookup[s]),
 					track: this.tracksLookup[session.track],
 					state: session.state,
+					slot_type: session.slot_type,
 					room: this.roomsLookup[session.room]
 				})
 			}
@@ -482,20 +494,32 @@ export default {
 			this.editorSessionWaiting = false
 			this.editorSession = null
 		},
-		showNewBreakHint () {
-			// Users try to click the "+ New Break" box instead of dragging it to the schedule
+		showNewSlotHint (slotType) {
+			// Users try to click the "+ New Break/Blocker" box instead of dragging it to the schedule
 			// so we show a hint on-click
-			this.newBreakTooltip = this.$t('Drag the box to the schedule to create a new break')
+			const messages = {
+				break: this.$t('Drag the box to the schedule to create a new break'),
+				blocker: this.$t('Drag the box to the schedule to create a new blocker'),
+			}
+			this.newSlotTooltip = messages[slotType]
+			this.newSlotTooltipType = slotType
 		},
-		removeNewBreakHint () {
-			this.newBreakTooltip = ''
+		removeNewSlotHint (slotType) {
+			if (this.newSlotTooltipType === slotType) {
+				this.newSlotTooltip = ''
+				this.newSlotTooltipType = null
+			}
 		},
-		startNewBreak({event}) {
+		startNewSlot({event, slotType}) {
+			const titles = {
+				break: this.$t("New break"),
+				blocker: this.$t("New blocker"),
+			}
 			const title = this.locales.reduce((obj, locale) => {
-				obj[locale] = this.$t("New break")
+				obj[locale] = titles[slotType]
 				return obj
 			}, {})
-			this.startDragging({event, session: {title, duration: "5", uncreated: true}})
+			this.startDragging({event, session: {title, duration: "5", uncreated: true, slot_type: slotType}})
 		},
 		startDragging ({event, session}) {
 			if (this.availabilities && this.availabilities.talks[session.id] && this.availabilities.talks[session.id].length !== 0) {
@@ -697,8 +721,20 @@ export default {
 				&:hover, &.active
 					opacity: 0.8
 					background-color: $clr-dividers-light
-		.new-break.c-linear-schedule-session
+		.new-slot-row
+			display: flex
+			align-items: center
+			.slot-help-icon
+				margin-left: 8px
+				margin-right: 8px
+				color: $clr-secondary-text-light
+				cursor: help
+				font-size: 14px
+				&:hover
+					color: $clr-primary-text-light
+		.new-break.c-linear-schedule-session, .new-blocker.c-linear-schedule-session
 			min-height: 48px
+			flex: 1
 		#unassigned-sort-menu
 			color: $clr-primary-text-light
 			display: flex
@@ -828,6 +864,17 @@ export default {
 						ul
 							list-style: none
 							padding: 0
+				.slot-type-badge
+					display: inline-block
+					padding: 4px 12px
+					border-radius: 4px
+					font-weight: 500
+					&.slot-type-break
+						background-color: $clr-grey-200
+						color: $clr-secondary-text-light
+					&.slot-type-blocker
+						background-color: $clr-red-50
+						color: $clr-red-300
 		.warning
 			color: #b23e65
 </style>
