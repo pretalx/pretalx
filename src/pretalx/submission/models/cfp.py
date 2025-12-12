@@ -55,6 +55,7 @@ _DEFAULT_FIELDS = {
     "duration": {"visibility": "do_not_ask"},
     "content_locale": {"visibility": "required"},
     "additional_speaker": {"visibility": "optional", "max": None},
+    "tags": {"visibility": "do_not_ask", "min": None, "max": None},
 }
 
 
@@ -216,3 +217,8 @@ class CfP(PretalxModel):
             or default_fields()["additional_speaker"]
         )
         return field.get("max")
+
+    @property
+    def tag_limits(self) -> tuple[int | None, int | None]:
+        field = self.fields.get("tags") or default_fields()["tags"]
+        return field.get("min"), field.get("max")

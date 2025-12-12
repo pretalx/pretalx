@@ -599,6 +599,18 @@ class CfPFieldConfigForm(PretalxI18nFormMixin, forms.Form):
         widget=forms.NumberInput(attrs={"class": "form-control"}),
         help_text=_("Maximum number of speakers per proposal (including submitter)."),
     )
+    min_number = forms.IntegerField(
+        label=_("Minimum tags"),
+        required=False,
+        min_value=0,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+    max_number = forms.IntegerField(
+        label=_("Maximum tags"),
+        required=False,
+        min_value=1,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
 
     def __init__(self, *args, field_key=None, event=None, **kwargs):
         self.field_key = field_key
@@ -621,6 +633,20 @@ class CfPFieldConfigForm(PretalxI18nFormMixin, forms.Form):
                 "Additional instructions shown below the field. "
                 "Note: Only public tags will be shown to submitters."
             )
+        else:
+            del self.fields["min_number"]
+            del self.fields["max_number"]
+
+    def clean(self):
+        cleaned = super().clean()
+        min_number = cleaned.get("min_number")
+        max_number = cleaned.get("max_number")
+        if min_number and max_number and min_number > max_number:
+            raise forms.ValidationError(
+                _("Minimum tags cannot be greater than maximum tags.")
+            )
+        return cleaned
+
 
 class StepHeaderForm(PretalxI18nFormMixin, forms.Form):
     title = I18nFormField(

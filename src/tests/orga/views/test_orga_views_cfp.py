@@ -183,6 +183,50 @@ def test_cfp_editor_field_modal_multilingual(orga_client, multilingual_event):
 
 
 @pytest.mark.django_db
+def test_cfp_editor_tags_field_modal(orga_client, event):
+    url = reverse(
+        "orga:cfp.editor.field",
+        kwargs={"event": event.slug, "step": "info", "field_key": "tags"},
+    )
+
+    response = orga_client.get(url)
+    assert response.status_code == 200
+    assert b"public tags" in response.content.lower()
+    assert b"min_number" in response.content
+    assert b"max_number" in response.content
+
+    response = orga_client.post(
+        url, {"visibility": "optional", "min_number": "1", "max_number": "5"}
+    )
+    assert response.status_code == 200
+
+    with scope(event=event):
+        event = Event.objects.get(slug=event.slug)
+        assert event.cfp.fields["tags"]["visibility"] == "optional"
+        assert event.cfp.fields["tags"]["min"] == 1
+        assert event.cfp.fields["tags"]["max"] == 5
+
+
+@pytest.mark.django_db
+def test_cfp_editor_tags_field_modal_min_greater_than_max(orga_client, event):
+    url = reverse(
+        "orga:cfp.editor.field",
+        kwargs={"event": event.slug, "step": "info", "field_key": "tags"},
+    )
+
+    response = orga_client.post(
+        url, {"visibility": "optional", "min_number": "5", "max_number": "2"}
+    )
+    assert response.status_code == 200
+    content_lower = response.content.decode().lower()
+    assert "cannot be greater than" in content_lower or "minimum" in content_lower
+
+    with scope(event=event):
+        reloaded_event = Event.objects.get(slug=event.slug)
+        assert reloaded_event.cfp.fields["tags"].get("min") != 5
+
+
+@pytest.mark.django_db
 def test_cfp_editor_add_question(orga_client, event):
     with scope(event=event):
         question = Question.objects.create(

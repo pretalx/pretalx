@@ -38,7 +38,11 @@ class Tag(PretalxModel):
         default=False,
         verbose_name=_("Show tag publicly"),
         help_text=_(
-            "Tags are currently only in use for organisers and reviewers. They will be visible publicly in a future release of pretalx."
+            "Public tags can be selected by submitters in the CfP if you activate the tags field."
+        )
+        + " "
+        + _(
+            "In a future release of pretalx, public tags may also be shown in the public schedule."
         ),
     )
 

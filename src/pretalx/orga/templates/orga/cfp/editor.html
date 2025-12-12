@@ -461,6 +461,17 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {{ form.max.as_field_group }}
         {% endif %}
 
+        {% if form.min_number %}
+            <div class="form-row">
+                <div class="col-6">
+                    {{ form.min_number.as_field_group }}
+                </div>
+                <div class="col-6">
+                    {{ form.max_number.as_field_group }}
+                </div>
+            </div>
+        {% endif %}
+
         <div class="form-actions mt-4">
             <button type="button" class="btn btn-outline-secondary dialog-cancel">
                 {% translate "Cancel" %}
