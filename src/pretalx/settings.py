@@ -109,6 +109,9 @@ CORE_MODULES = LOCAL_APPS + [
     module for module in config.get("site", "core_modules").split(",") if module
 ]
 
+HIGHLIGHTED_PLUGINS = [
+    module for module in config.get("site", "highlighted_plugins").split(",") if module
+]
 
 ## PLUGIN SETTINGS
 PLUGIN_SETTINGS = {}

@@ -44,6 +44,10 @@ CONFIG = {
             "default": "",
             "env": os.getenv("PRETALX_CORE_MODULES"),
         },
+        "highlighted_plugins": {
+            "default": "",
+            "env": os.getenv("PRETALX_HIGHLIGHTED_PLUGINS"),
+        },
         "media": {"default": "/media/", "env": os.getenv("PRETALX_SITE_MEDIA")},
         "static": {"default": "/static/", "env": os.getenv("PRETALX_SITE_STATIC")},
         "csp": {"default": "", "env": os.getenv("PRETALX_SITE_CSP")},
