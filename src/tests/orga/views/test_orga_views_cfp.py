@@ -309,14 +309,8 @@ def test_cfp_editor_step_header_edit(orga_client, event):
         step_config = flow_config.get("steps", {}).get("info", {})
         title = step_config.get("title")
         text = step_config.get("text")
-        if isinstance(title, dict):
-            assert title.get("en") == "Custom Title"
-        else:
-            assert title == "Custom Title"
-        if isinstance(text, dict):
-            assert text.get("en") == "Custom text"
-        else:
-            assert text == "Custom text"
+        assert title.get("en") == "Custom Title"
+        assert text.get("en") == "Custom text"
 
 
 @pytest.mark.django_db
@@ -1087,10 +1081,7 @@ def test_cfp_editor_step_header_clear_custom(orga_client, event):
         flow_config = event.cfp.settings.get("flow", {})
         step_config = flow_config.get("steps", {}).get("info", {})
         title = step_config.get("title")
-        if isinstance(title, dict):
-            assert not any(title.values()) or title.get("en") == ""
-        else:
-            assert title == "" or title is None
+        assert not any(title.values()) or title.get("en") == ""
 
 
 @pytest.mark.django_db

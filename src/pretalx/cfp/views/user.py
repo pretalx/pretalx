@@ -594,7 +594,7 @@ class SubmissionInviteAcceptView(LoggedInEventPageMixin, DetailView):
         )
 
     def get_object(self, queryset=None):
-        return self.get_invitation().submission
+        return self.invitation.submission
 
     @context
     @cached_property
@@ -612,16 +612,15 @@ class SubmissionInviteAcceptView(LoggedInEventPageMixin, DetailView):
         if not self.can_accept_invite:
             messages.error(self.request, _("You cannot accept this invitation."))
             return redirect(self.request.event.urls.user)
-        invitation = self.get_invitation()
-        submission = invitation.submission
-        email = invitation.email
+        submission = self.invitation.submission
+        email = self.invitation.email
         submission.speakers.add(self.request.user)
         submission.log_action(
             "pretalx.submission.invitation.accept",
             person=self.request.user,
             data={"email": email},
         )
-        invitation.delete()
+        self.invitation.delete()
         messages.success(self.request, phrases.cfp.invite_accepted)
         return redirect("cfp:event.user.view", event=self.request.event.slug)
 

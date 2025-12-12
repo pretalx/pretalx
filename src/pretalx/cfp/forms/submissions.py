@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django import forms
-from django.db import IntegrityError
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.text.phrases import phrases
@@ -64,13 +63,11 @@ class SubmissionInvitationForm(forms.Form):
 
     def save(self):
         email = self.cleaned_data["speaker"]
-        try:
-            self.invitation = SubmissionInvitation.objects.create(
-                submission=self.submission,
-                email=email,
-            )
-        except IntegrityError:
-            self.invitation = self.submission.invitations.get(email__iexact=email)
+        self.invitation, created = SubmissionInvitation.objects.get_or_create(
+            submission=self.submission,
+            email=email,
+        )
+        if not created:  # pragma: no cover
             return self.invitation
 
         text = self.cleaned_data["text"].replace(

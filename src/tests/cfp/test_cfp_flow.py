@@ -82,6 +82,17 @@ def test_cfp_flow(event, data, expected):
         assert event.cfp_flow.get_config_json()
 
 
+@pytest.mark.django_db
+def test_cfp_flow_reset(event):
+    with scope(event=event):
+        event.cfp_flow.save_config(
+            {"steps": {"info": {"fields": [{"key": "k", "help_text": {"en": "bar"}}]}}}
+        )
+        event.cfp_flow.reset()
+        assert event.cfp_flow.get_config_json()
+        assert event.cfp.settings["flow"] == {}
+
+
 def test_base_cfp_step_attributes():
     step = BaseCfPStep(None)
     assert step.priority == 100
@@ -124,3 +135,134 @@ def test_speaker_profile_form_reorders_fields(event, speaker):
         keys = list(form.fields.keys())
 
         assert keys.index("biography") < keys.index("name")
+
+
+@pytest.mark.django_db
+def test_get_field_config_returns_empty_dict_for_missing(event):
+    with scope(event=event):
+        assert event.cfp_flow.get_field_config("info", "nonexistent") == {}
+        assert event.cfp_flow.get_field_config("nonexistent_step", "title") == {}
+
+
+@pytest.mark.django_db
+def test_get_field_config_returns_field(event):
+    from pretalx.cfp.flow import CfPFlow
+
+    with scope(event=event):
+        event.cfp_flow.save_config(
+            {
+                "steps": {
+                    "info": {
+                        "fields": [
+                            {
+                                "key": "title",
+                                "label": "Custom Title",
+                                "help_text": "Help",
+                            },
+                            {"key": "abstract"},
+                        ]
+                    }
+                }
+            }
+        )
+        # Reload the flow to get updated config
+        flow = CfPFlow(event)
+        config = flow.get_field_config("info", "title")
+        assert config["key"] == "title"
+        assert config["label"] == {"en": "Custom Title"}
+        assert config["help_text"] == {"en": "Help"}
+
+        assert flow.get_field_config("info", "abstract") == {"key": "abstract"}
+
+
+@pytest.mark.django_db
+def test_update_field_config_creates_new_field(event):
+    from pretalx.cfp.flow import CfPFlow
+
+    with scope(event=event):
+        event.cfp_flow.update_field_config("info", "title", label="New Label")
+        flow = CfPFlow(event)
+        config = flow.get_field_config("info", "title")
+        assert config["key"] == "title"
+        assert config["label"] == {"en": "New Label"}
+
+
+@pytest.mark.django_db
+def test_update_field_config_updates_existing_field(event):
+    from pretalx.cfp.flow import CfPFlow
+
+    with scope(event=event):
+        event.cfp_flow.save_config(
+            {"steps": {"info": {"fields": [{"key": "title", "label": "Old"}]}}}
+        )
+        flow = CfPFlow(event)
+        flow.update_field_config("info", "title", label="New", help_text="Help")
+        flow = CfPFlow(event)
+        config = flow.get_field_config("info", "title")
+        assert config["label"] == {"en": "New"}
+        assert config["help_text"] == {"en": "Help"}
+
+
+@pytest.mark.django_db
+def test_update_field_config_creates_step_if_missing(event):
+    from pretalx.cfp.flow import CfPFlow
+
+    with scope(event=event):
+        event.cfp_flow.update_field_config("profile", "biography", help_text="Bio help")
+        flow = CfPFlow(event)
+        config = flow.get_field_config("profile", "biography")
+        assert config["key"] == "biography"
+        assert config["help_text"] == {"en": "Bio help"}
+
+
+@pytest.mark.django_db
+def test_update_field_order_reorders_existing_fields(event):
+    from pretalx.cfp.flow import CfPFlow
+
+    with scope(event=event):
+        event.cfp_flow.save_config(
+            {
+                "steps": {
+                    "info": {
+                        "fields": [
+                            {"key": "title", "label": "Title Label"},
+                            {"key": "abstract", "help_text": "Abstract help"},
+                            {"key": "description"},
+                        ]
+                    }
+                }
+            }
+        )
+        flow = CfPFlow(event)
+        flow.update_field_order("info", ["description", "title", "abstract"])
+        flow = CfPFlow(event)
+        step_config = flow.get_step_config("info")
+        keys = [f["key"] for f in step_config["fields"]]
+        assert keys == ["description", "title", "abstract"]
+        assert step_config["fields"][1]["label"] == {"en": "Title Label"}
+        assert step_config["fields"][2]["help_text"] == {"en": "Abstract help"}
+
+
+@pytest.mark.django_db
+def test_update_field_order_creates_new_fields(event):
+    from pretalx.cfp.flow import CfPFlow
+
+    with scope(event=event):
+        event.cfp_flow.update_field_order("info", ["title", "new_field", "abstract"])
+        flow = CfPFlow(event)
+        step_config = flow.get_step_config("info")
+        keys = [f["key"] for f in step_config["fields"]]
+        assert keys == ["title", "new_field", "abstract"]
+        assert step_config["fields"][1] == {"key": "new_field"}
+
+
+@pytest.mark.django_db
+def test_update_field_order_creates_step_if_missing(event):
+    from pretalx.cfp.flow import CfPFlow
+
+    with scope(event=event):
+        event.cfp_flow.update_field_order("newstep", ["field1", "field2"])
+        flow = CfPFlow(event)
+        step_config = flow.get_step_config("newstep")
+        keys = [f["key"] for f in step_config["fields"]]
+        assert keys == ["field1", "field2"]
