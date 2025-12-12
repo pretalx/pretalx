@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_0d44dfb08069b247_create_test_event_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.12.0">coverage.py v7.12.0</a>,
-            created at 2025-12-11 22:04 +0000
+            created at 2025-12-12 05:27 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -197,9 +197,9 @@
     <p class="run"><span class="n"><a id="t113" href="#t113">113</a></span><span class="t">        <span class="nam">backend</span> <span class="op">=</span> <span class="nam">get_connection</span><span class="op">(</span><span class="nam">fail_silently</span><span class="op">=</span><span class="key">False</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t114" href="#t114">114</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t115" href="#t115">115</a></span><span class="t">    <span class="nam">email</span> <span class="op">=</span> <span class="nam">EmailMultiAlternatives</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">        <span class="nam">subject</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t117" href="#t117">117</a></span><span class="t">        <span class="nam">body</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t118" href="#t118">118</a></span><span class="t">        <span class="nam">sender</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">        <span class="nam">subject</span><span class="op">=</span><span class="nam">subject</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t117" href="#t117">117</a></span><span class="t">        <span class="nam">body</span><span class="op">=</span><span class="nam">body</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t118" href="#t118">118</a></span><span class="t">        <span class="nam">from_email</span><span class="op">=</span><span class="nam">sender</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t119" href="#t119">119</a></span><span class="t">        <span class="nam">to</span><span class="op">=</span><span class="nam">to</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t120" href="#t120">120</a></span><span class="t">        <span class="nam">cc</span><span class="op">=</span><span class="nam">cc</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t121" href="#t121">121</a></span><span class="t">        <span class="nam">bcc</span><span class="op">=</span><span class="nam">bcc</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
@@ -212,7 +212,7 @@
     <p class="run"><span class="n"><a id="t128" href="#t128">128</a></span><span class="t">        <span class="nam">inliner</span> <span class="op">=</span> <span class="nam">css_inline</span><span class="op">.</span><span class="nam">CSSInliner</span><span class="op">(</span><span class="nam">keep_style_tags</span><span class="op">=</span><span class="key">False</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t129" href="#t129">129</a></span><span class="t">        <span class="nam">body_html</span> <span class="op">=</span> <span class="nam">inliner</span><span class="op">.</span><span class="nam">inline</span><span class="op">(</span><span class="nam">html</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t130" href="#t130">130</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t131" href="#t131">131</a></span><span class="t">        <span class="nam">email</span><span class="op">.</span><span class="nam">attach_alternative</span><span class="op">(</span><span class="nam">body_html</span><span class="op">,</span> <span class="str">"text/html"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t131" href="#t131">131</a></span><span class="t">        <span class="nam">email</span><span class="op">.</span><span class="nam">attach_alternative</span><span class="op">(</span><span class="nam">content</span><span class="op">=</span><span class="nam">body_html</span><span class="op">,</span> <span class="nam">mimetype</span><span class="op">=</span><span class="str">"text/html"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t132" href="#t132">132</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="par run show_par"><span class="n"><a id="t133" href="#t133">133</a></span><span class="t">    <span class="key">if</span> <span class="nam">attachments</span><span class="op">:</span>&nbsp;</span><span class="r"><span class="annotate short">133&#x202F;&#x219B;&#x202F;134</span><span class="annotate long">line 133 didn't jump to line 134 because the condition on line 133 was never true</span></span></p>
     <p class="mis show_mis"><span class="n"><a id="t134" href="#t134">134</a></span><span class="t">        <span class="key">for</span> <span class="nam">attachment</span> <span class="key">in</span> <span class="nam">attachments</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -244,7 +244,7 @@
             <a class="nav" href="z_0d44dfb08069b247_create_test_event_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.12.0">coverage.py v7.12.0</a>,
-            created at 2025-12-11 22:04 +0000
+            created at 2025-12-12 05:27 +0000
         </p>
     </div>
 </footer>
