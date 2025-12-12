@@ -1,0 +1,14 @@
+<!--
+SPDX-FileCopyrightText: 2018-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+
+{% extends "orga/event/wizard/base.html" %}
+
+{% load i18n %}
+
+{% block wizard_content %}
+    <div class="alert alert-info col-md-9 offset-md-3">
+        {% translate "Select which plugins you want to enable for this event. You can change this later in the event settings." %}
+    </div>
+{% endblock wizard_content %}
