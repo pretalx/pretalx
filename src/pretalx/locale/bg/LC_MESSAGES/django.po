@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-04 19:09+0000\n"
-"PO-Revision-Date: 2025-12-02 21:41+0000\n"
+"PO-Revision-Date: 2025-12-09 06:41+0000\n"
 "Last-Translator: Vasil Kolew <vasil@ludost.net>\n"
 "Language-Team: none\n"
 "Language: bg\n"
@@ -6293,6 +6293,8 @@ msgid ""
 "Please note that your token will have to have the “action” permissions in "
 "order to access the predefined schedule exports via the API."
 msgstr ""
+"Вашият token ще има позволението за \"действия\" за да може да достъпва "
+"предефинираните графици през API-то."
 
 #: pretalx/orga/templates/orga/schedule/index.html:34
 msgid "New release"
@@ -8339,7 +8341,7 @@ msgstr "Арабски"
 
 #: pretalx/settings.py:386
 msgid "Bulgarian"
-msgstr ""
+msgstr "Български"
 
 #: pretalx/settings.py:391
 msgid "Czech"
