@@ -5,11 +5,11 @@
 
 body {
   background: var(--color-grey-lightest);
+  --color-header-text: var(--color-text-on-primary, white);
 }
 
 #top-bg {
   background-color: var(--color-primary);
-  --color-header-text: var(--color-text-on-primary, white);
   position: fixed;
   top: 0;
   left: 0;
