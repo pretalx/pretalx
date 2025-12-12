@@ -199,7 +199,7 @@
 | src/pretalx/orga/views/person.py                                           |      110 |       19 |       22 |        4 |     80% |77-86, 90-97, 99-107, 152, 160-161 |
 | src/pretalx/orga/views/plugins.py                                          |       36 |        0 |        6 |        0 |    100% |           |
 | src/pretalx/orga/views/review.py                                           |      498 |       70 |      106 |       18 |     83% |85, 88-91, 93-96, 248->250, 250->256, 291->exit, 312-313, 315-321, 354, 363-368, 373, 379-384, 389, 398-412, 434, 448-455, 496-497, 508-509, 520->533, 537, 717-718, 729-732, 734-738, 777, 780, 784, 787-790, 884-885, 888-889, 943, 973-974 |
-| src/pretalx/orga/views/schedule.py                                         |      303 |       27 |       46 |        7 |     88% |51->58, 129-130, 169-176, 348, 349->352, 360, 409, 421, 431, 441-472, 490, 532, 597-604 |
+| src/pretalx/orga/views/schedule.py                                         |      306 |       28 |       48 |        8 |     88% |51->58, 129-130, 169-176, 349, 350->353, 362, 392, 415, 427, 437, 447-478, 496, 538, 603-610 |
 | src/pretalx/orga/views/speaker.py                                          |      201 |       10 |       22 |        5 |     92% |93-105, 107-110, 234, 308, 371-372 |
 | src/pretalx/orga/views/submission.py                                       |      634 |       31 |      112 |       20 |     93% |194-198, 222, 239-245, 366, 374, 398, 486, 489->483, 526, 549->560, 561, 569->581, 579->581, 639, 671->673, 692->exit, 694, 761-762, 795->805, 847, 901, 928, 1174, 1178, 1182, 1189-1195, 1217-1218 |
 | src/pretalx/orga/views/typeahead.py                                        |       59 |       16 |       16 |        5 |     64% |45, 54, 63, 104-109, 114, 119-131, 154, 193-196 |
@@ -226,11 +226,11 @@
 | src/pretalx/schedule/ical.py                                               |       37 |        2 |        4 |        0 |     95% |     24-25 |
 | src/pretalx/schedule/models/availability.py                                |       88 |        1 |       34 |        1 |     98% |55, 76->79 |
 | src/pretalx/schedule/models/room.py                                        |       44 |        3 |        4 |        2 |     90% |94, 101, 104 |
-| src/pretalx/schedule/models/schedule.py                                    |      202 |       30 |       68 |        8 |     83% |146-187, 234->236, 278, 282, 352, 364-372, 383-391, 418->420, 510 |
-| src/pretalx/schedule/models/slot.py                                        |      119 |        5 |       22 |        2 |     94% |182-189, 200 |
+| src/pretalx/schedule/models/schedule.py                                    |      208 |       30 |       70 |        8 |     83% |151-192, 239->241, 283, 287, 357, 369-377, 388-396, 423->425, 523 |
+| src/pretalx/schedule/models/slot.py                                        |      123 |        5 |       22 |        2 |     94% |198-205, 216 |
 | src/pretalx/schedule/notifications.py                                      |       20 |        0 |        4 |        0 |    100% |           |
 | src/pretalx/schedule/phrases.py                                            |       14 |        0 |        0 |        0 |    100% |           |
-| src/pretalx/schedule/services.py                                           |      229 |        5 |       94 |       10 |     95% |72->74, 77->79, 79->81, 81->83, 83->76, 122-124, 128->126, 139->131, 142->144, 144->147, 433-434 |
+| src/pretalx/schedule/services.py                                           |      231 |        5 |       94 |       10 |     95% |73->75, 78->80, 80->82, 82->84, 84->77, 123-125, 129->127, 140->132, 143->145, 145->148, 438-439 |
 | src/pretalx/schedule/signals.py                                            |       24 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/schedule/tasks.py                                              |        9 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/schedule/utils.py                                              |       14 |        0 |        8 |        0 |    100% |           |
@@ -276,7 +276,7 @@
 | src/tests/api/test\_api\_reviews.py                                        |      370 |        0 |        0 |        0 |    100% |           |
 | src/tests/api/test\_api\_rooms.py                                          |      205 |        0 |        0 |        0 |    100% |           |
 | src/tests/api/test\_api\_root.py                                           |       13 |        0 |        0 |        0 |    100% |           |
-| src/tests/api/test\_api\_schedule.py                                       |      489 |        0 |        6 |        0 |    100% |           |
+| src/tests/api/test\_api\_schedule.py                                       |      498 |        0 |        6 |        0 |    100% |           |
 | src/tests/api/test\_api\_speaker\_information.py                           |      141 |        0 |        0 |        0 |    100% |           |
 | src/tests/api/test\_api\_speakers.py                                       |      299 |        0 |        4 |        0 |    100% |           |
 | src/tests/api/test\_api\_submissions.py                                    |      809 |        0 |        2 |        0 |    100% |           |
@@ -311,7 +311,7 @@
 | src/tests/common/test\_diff\_utils.py                                      |       59 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/test\_update\_check.py                                    |      117 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/views/test\_shortlink.py                                  |       84 |        0 |        0 |        0 |    100% |           |
-| src/tests/conftest.py                                                      |      548 |        0 |       12 |        0 |    100% |           |
+| src/tests/conftest.py                                                      |      553 |        0 |       12 |        0 |    100% |           |
 | src/tests/dummy\_app.py                                                    |       13 |        0 |        0 |        0 |    100% |           |
 | src/tests/dummy\_signals.py                                                |       46 |        0 |        6 |        0 |    100% |           |
 | src/tests/event/test\_event\_model.py                                      |      170 |        0 |        0 |        0 |    100% |           |
@@ -346,7 +346,7 @@
 | src/tests/schedule/test\_schedule\_availability.py                         |       59 |        0 |        4 |        0 |    100% |           |
 | src/tests/schedule/test\_schedule\_exporters.py                            |       28 |        0 |        0 |        0 |    100% |           |
 | src/tests/schedule/test\_schedule\_forms.py                                |      105 |        0 |       10 |        0 |    100% |           |
-| src/tests/schedule/test\_schedule\_model.py                                |      173 |        0 |        2 |        0 |    100% |           |
+| src/tests/schedule/test\_schedule\_model.py                                |      199 |        0 |        2 |        0 |    100% |           |
 | src/tests/schedule/test\_schedule\_models\_slot.py                         |       75 |        0 |        6 |        0 |    100% |           |
 | src/tests/schedule/test\_schedule\_utils.py                                |       25 |        0 |        2 |        0 |    100% |           |
 | src/tests/services/test\_documentation.py                                  |       37 |        0 |       12 |        0 |    100% |           |
@@ -358,7 +358,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      295 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-|                                                                  **TOTAL** | **32963** | **1974** | **5252** |  **735** | **91%** |           |
+|                                                                  **TOTAL** | **33018** | **1975** | **5256** |  **736** | **91%** |           |
 
 
 ## Setup coverage badge
