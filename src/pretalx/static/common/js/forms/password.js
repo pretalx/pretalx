@@ -46,6 +46,9 @@ const matchPasswords = (passwordField, confirmationFields) => {
 }
 
 const updatePasswordStrength = (passwordField) => {
+    const passwordProgress = passwordField.parentNode.querySelector(
+        ".password-progress",
+    )
     const passwordStrengthBar = passwordField.parentNode.querySelector(
         ".password_strength_bar",
     )
@@ -54,24 +57,29 @@ const updatePasswordStrength = (passwordField) => {
     )
 
     if (!passwordField.value) {
+        passwordProgress.classList.add("d-none")
         passwordStrengthBar.classList.remove("bg-success")
         passwordStrengthBar.classList.add("bg-warning")
         passwordStrengthBar.style.width = "0%"
         passwordStrengthBar.setAttribute("aria-valuenow", 0)
         passwordStrengthInfo.classList.add("d-none")
     } else {
+        passwordProgress.classList.remove("d-none")
         const result = zxcvbn(passwordField.value)
         const crackTime =
             result.crack_times_display.online_no_throttling_10_per_second
 
         if (result.score < 1) {
             passwordStrengthBar.classList.remove("bg-success")
+            passwordStrengthBar.classList.remove("bg-warning")
             passwordStrengthBar.classList.add("bg-danger")
         } else if (result.score < 3) {
             passwordStrengthBar.classList.remove("bg-danger")
+            passwordStrengthBar.classList.remove("bg-success")
             passwordStrengthBar.classList.add("bg-warning")
         } else {
             passwordStrengthBar.classList.remove("bg-warning")
+            passwordStrengthBar.classList.remove("bg-danger")
             passwordStrengthBar.classList.add("bg-success")
         }
 
@@ -85,8 +93,29 @@ const updatePasswordStrength = (passwordField) => {
     matchPasswords(passwordField)
 }
 
+const togglePasswordVisibility = (button) => {
+    const input = button.parentNode.querySelector(
+        'input[type="password"], input[type="text"]',
+    )
+    if (!input) return
+
+    const icon = button.querySelector("i")
+    const isPassword = input.type === "password"
+
+    input.type = isPassword ? "text" : "password"
+    icon.classList.toggle("fa-eye", !isPassword)
+    icon.classList.toggle("fa-eye-slash", isPassword)
+    button.setAttribute(
+        "aria-label",
+        isPassword ? button.dataset.hideLabel : button.dataset.showLabel,
+    )
+}
+
 const setupPasswordStrength = () => {
     document.querySelectorAll(".password_strength_info").forEach((element) => {
+        element.classList.add("d-none")
+    })
+    document.querySelectorAll(".password-progress").forEach((element) => {
         element.classList.add("d-none")
     })
     document.querySelectorAll(".password_strength").forEach((passwordField) => {
@@ -115,6 +144,10 @@ const setupPasswordStrength = () => {
                 timer = setTimeout(() => matchPasswords(passwordField), 400)
             })
         })
+
+    document.querySelectorAll(".password-toggle").forEach((button) => {
+        button.addEventListener("click", () => togglePasswordVisibility(button))
+    })
 }
 
 onReady(setupPasswordStrength)

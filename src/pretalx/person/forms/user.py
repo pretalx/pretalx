@@ -16,6 +16,7 @@ from pretalx.cfp.forms.cfp import CfPFormMixin
 from pretalx.common.auth import get_client_ip
 from pretalx.common.forms.fields import NewPasswordConfirmationField, NewPasswordField
 from pretalx.common.forms.renderers import InlineFormLabelRenderer
+from pretalx.common.forms.widgets import PasswordInput
 from pretalx.common.text.phrases import phrases
 from pretalx.person.models import User
 
@@ -40,7 +41,7 @@ class UserForm(CfPFormMixin, forms.Form):
     login_password = forms.CharField(
         label=_("Password"),
         required=False,
-        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+        widget=PasswordInput(attrs={"autocomplete": "current-password"}),
     )
     register_name = forms.CharField(
         label=_("Name") + f" ({_('display name')})",
@@ -60,7 +61,6 @@ class UserForm(CfPFormMixin, forms.Form):
         label=_("Password (again)"),
         required=False,
         confirm_with="register_password",
-        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
     )
 
     FIELDS_ERROR = _(
