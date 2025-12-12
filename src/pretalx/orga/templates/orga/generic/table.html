@@ -67,6 +67,20 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="sort-preferences mt-3">
+                                <div class="sort-row d-flex align-items-center mb-2">
+                                    <label class="mr-2 mb-0">{{ table.configuration_form.sort_column_1.label }}</label>
+                                    {{ table.configuration_form.sort_column_1 }}
+                                    {{ table.configuration_form.sort_direction_1 }}
+                                </div>
+                                <div class="sort-row d-flex align-items-center mb-2">
+                                    <label class="mr-2 mb-0">{{ table.configuration_form.sort_column_2.label }}</label>
+                                    {{ table.configuration_form.sort_column_2 }}
+                                    {{ table.configuration_form.sort_direction_2 }}
+                                </div>
+                            </div>
+
                             <div class="submit-group mt-4">
                                 <button type="button" class="btn btn-outline-danger mr-2 reset-preferences">
                                     {% translate "Reset to defaults" %}

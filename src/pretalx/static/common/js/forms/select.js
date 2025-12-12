@@ -46,6 +46,7 @@ const initSelect = (element) => {
         removeItemIconText: "×",
         maxItemText: "",
         allowHTML: true,
+        position: element.dataset.position || "auto",
     }
     if (element.querySelectorAll("option[data-description]").length || element.querySelectorAll("option[data-color]").length || element.querySelectorAll("option[data-highlight]").length) {
         choicesOptions.callbackOnCreateTemplates = (strToEl, escapeForTemplates, getClassNames) => ({
