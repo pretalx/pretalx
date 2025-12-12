@@ -3529,6 +3529,62 @@ paths:
               schema:
                 $ref: '#/components/schemas/Submission'
           description: ''
+  /api/events/{event}/submissions/{code__iexact}/invitations/:
+    post:
+      operationId: submissions_invitations_create
+      parameters:
+      - in: path
+        name: code__iexact
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      tags:
+      - submissions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+          description: ''
+  /api/events/{event}/submissions/{code__iexact}/invitations/{invitation_id}/:
+    delete:
+      operationId: submissions_invitations_destroy
+      parameters:
+      - in: path
+        name: code__iexact
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: path
+        name: invitation_id
+        schema:
+          type: string
+          pattern: ^[0-9]+$
+        required: true
+      tags:
+      - submissions
+      responses:
+        '204':
+          description: No response body
   /api/events/{event}/submissions/{code__iexact}/log/:
     get:
       operationId: submissions_log_list
@@ -6993,10 +7049,16 @@ components:
           type: string
           format: date-time
           readOnly: true
+        invitations:
+          type: array
+          items:
+            type: integer
+          readOnly: true
       required:
       - answers
       - code
       - created
+      - invitations
       - is_anonymised
       - mean_score
       - median_score
