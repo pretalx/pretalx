@@ -12,6 +12,7 @@ from django.utils.dateparse import parse_datetime
 from django.utils.timezone import now
 
 from pretalx.agenda.tasks import export_schedule_html
+from pretalx.schedule.models.slot import SlotType
 from pretalx.schedule.signals import schedule_release
 
 
@@ -379,18 +380,22 @@ def freeze_schedule(
         schedule.save(update_fields=["published", "version", "comment"])
         schedule.log_action("pretalx.schedule.release", person=user, orga=True)
 
-        # Set visibility
+        # Set visibility: confirmed submissions and breaks are visible, blockers remain hidden
         schedule.talks.all().update(is_visible=False)
         schedule.talks.filter(
             models.Q(submission__state=SubmissionStates.CONFIRMED)
-            | models.Q(submission__isnull=True),
+            | models.Q(slot_type=SlotType.BREAK),
             start__isnull=False,
         ).update(is_visible=True)
 
+        # Copy all talks to new WIP schedule
         talks = []
         for talk in schedule.talks.select_related("submission", "room").all():
             talks.append(talk.copy_to_schedule(wip_schedule, save=False))
         TalkSlot.objects.bulk_create(talks)
+
+        # Delete blockers from the released schedule (they should only exist in WIP)
+        schedule.talks.filter(slot_type=SlotType.BLOCKER).delete()
 
     if notify_speakers:
         # Complete refresh to avoid dealing with stale data
