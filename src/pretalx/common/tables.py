@@ -11,6 +11,7 @@ from django.template.loader import get_template
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+from django_tables2.utils import OrderBy, OrderByTuple
 
 from pretalx.common.forms.tables import TablePreferencesForm
 
@@ -121,7 +122,32 @@ class PretalxTable(tables.Table):
         self.user = user
         self.has_update_permission = has_update_permission
         self.has_delete_permission = has_delete_permission
+        self._ordering_applied = False
         super().__init__(*args, **kwargs)
+
+    @tables.Table.order_by.setter
+    def order_by(self, value):
+        """Override order_by setter to prevent django_tables2 from re-ordering.
+
+        After our configure() method applies custom multi-column ordering, we set
+        _ordering_applied=True. This prevents RequestConfig from triggering the
+        default ordering mechanism which doesn't handle function-based columns
+        correctly in multi-column scenarios.
+        """
+        if self._ordering_applied:
+            # Don't re-order - just update the display value for sort indicators
+            order_by = () if not value else value
+            order_by = order_by.split(",") if isinstance(order_by, str) else order_by
+            valid = []
+            for alias in order_by:
+                name = OrderBy(alias).bare
+                if name in self.columns and self.columns[name].orderable:
+                    valid.append(alias)
+            self._order_by = OrderByTuple(valid)
+            # Don't call self.data.order_by()
+        else:
+            # Use parent's setter which includes ordering
+            tables.Table.order_by.fset(self, value)
 
     @property
     def name(self):
@@ -141,6 +167,18 @@ class PretalxTable(tables.Table):
     @property
     def selected_columns(self):
         return self._get_columns(visible=True)
+
+    @property
+    def current_ordering(self):
+        if not self.order_by:
+            return []
+        result = []
+        for field in self.order_by:
+            if field.startswith("-"):
+                result.append({"column": field[1:], "direction": "desc"})
+            else:
+                result.append({"column": field, "direction": "asc"})
+        return result
 
     @cached_property
     def configuration_form(self):
@@ -178,6 +216,104 @@ class PretalxTable(tables.Table):
             self.sequence.remove("actions")
             self.sequence.append("actions")
 
+    def _get_sortable_column_names(self):
+        return {
+            name
+            for name, column in self.columns.items()
+            if column.orderable and name not in self.exempt_columns
+        }
+
+    def _validate_ordering(self, ordering):
+        if not ordering:
+            return ordering
+        sortable = self._get_sortable_column_names()
+        valid_ordering = []
+        seen_columns = set()
+        for field in ordering:
+            column_name = field[1:] if field.startswith("-") else field
+            if column_name in sortable and column_name not in seen_columns:
+                valid_ordering.append(field)
+                seen_columns.add(column_name)
+        return valid_ordering if valid_ordering else None
+
+    def _apply_ordering(self, queryset, ordering):
+        """Apply multi-column ordering to the queryset, handling function-based columns.
+
+        django_tables2's default ordering mechanism (TableQuerysetData.order_by) has a
+        limitation: when a column's order() method returns modified=True, it stops
+        processing subsequent columns. This means multi-column sorting doesn't work
+        when function-based columns are involved.
+
+        This method applies all ordering ourselves by:
+        1. Iterating through all columns in the ordering
+        2. For function-based columns (FunctionOrderMixin), applying their annotation
+        3. For traditional columns, using their accessor
+        4. Applying all orderings at once with a single order_by() call
+
+        This ensures multi-column sorting works correctly even when mixing function-based
+        and traditional columns.
+        """
+        if not ordering:
+            return queryset
+
+        order_by_fields = []
+        for field in ordering:
+            descending = field.startswith("-")
+            column_name = field[1:] if descending else field
+            if column_name not in self.columns:
+                continue
+
+            bound_column = self.columns[column_name]
+            column = bound_column.column
+
+            # Check if this is a FunctionOrderMixin column
+            if (
+                hasattr(column, "apply_function_ordering")
+                and column.order_function_lookup
+            ):
+                queryset, order_keys = column.apply_function_ordering(
+                    queryset, descending
+                )
+                order_by_fields.extend(order_keys)
+            elif bound_column.order_by:
+                for accessor in bound_column.order_by:
+                    accessor_str = str(accessor)
+                    if descending and not accessor_str.startswith("-"):
+                        order_by_fields.append(f"-{accessor_str}")
+                    elif not descending and accessor_str.startswith("-"):
+                        order_by_fields.append(accessor_str[1:])
+                    else:
+                        order_by_fields.append(accessor_str)
+            else:
+                order_key = f"-{column_name}" if descending else column_name
+                order_by_fields.append(order_key)
+
+        if order_by_fields:
+            queryset = queryset.order_by(*order_by_fields)
+
+        return queryset
+
+    def _merge_ordering(self, new_ordering, saved_ordering):
+        """Merge new column click ordering with saved multi-column ordering.
+
+        When user clicks a column header, we receive the new primary sort.
+        If that column was in the secondary position, remove it from there.
+        Preserve the secondary sort if it's a different column.
+        """
+        if not saved_ordering or not new_ordering:
+            return new_ordering
+        if len(saved_ordering) < 2 or len(new_ordering) != 1:
+            return new_ordering
+
+        new_primary = new_ordering[0]
+        new_column = new_primary[1:] if new_primary.startswith("-") else new_primary
+        secondary = saved_ordering[1]
+        if secondary:
+            secondary_column = secondary[1:] if secondary.startswith("-") else secondary
+            if secondary_column != new_column:
+                return [new_primary, secondary]
+        return new_ordering
+
     def configure(self, request):
         columns = None
         ordering = None
@@ -186,20 +322,30 @@ class PretalxTable(tables.Table):
         # If an ordering has been specified as a query parameter, save it as the
         # user's preferred ordering for this table.
         if request.user.is_authenticated and self.event:
-            if ordering := request.GET.getlist(self.prefixed_order_by_field):
-                preferences = request.user.get_event_preferences(self.event)
-                preferences.set(f"tables.{self.name}.ordering", ordering, commit=True)
-
             preferences = request.user.get_event_preferences(self.event)
+            saved_ordering = preferences.get(f"tables.{self.name}.ordering")
+
+            if new_ordering := request.GET.getlist(self.prefixed_order_by_field):
+                ordering = self._merge_ordering(new_ordering, saved_ordering)
+                preferences.set(f"tables.{self.name}.ordering", ordering, commit=True)
+            else:
+                ordering = saved_ordering
+
             columns = preferences.get(f"tables.{self.name}.columns")
-            ordering = preferences.get(f"tables.{self.name}.ordering")
             page_size = preferences.get(f"tables.{self.name}.page_size")
 
         columns = columns or getattr(self, "default_columns", None) or self.Meta.fields
         self._set_columns(columns)
 
         if ordering is not None:
-            self.order_by = ordering
+            ordering = self._validate_ordering(ordering)
+            if ordering:
+                # Apply our custom ordering that handles multi-column sorting with
+                # function-based columns correctly. We modify the underlying queryset
+                # directly and set _order_by for display purposes only.
+                self.data.data = self._apply_ordering(self.data.data, ordering)
+                self._order_by = OrderByTuple(ordering)
+                self._ordering_applied = True
 
         return page_size
 
@@ -213,6 +359,16 @@ class UnsortableMixin:
 
 
 class FunctionOrderMixin:
+    """Mixin for columns that use Django ORM functions/expressions for ordering.
+
+    This mixin stores the ordering function in order_function_lookup, which is then
+    used by PretalxTable._apply_ordering() to handle multi-column sorting correctly.
+
+    Note: The order() method is kept for backward compatibility with django_tables2's
+    single-column ordering. For multi-column sorting with function-based columns,
+    PretalxTable._apply_ordering() is used instead, which properly handles all columns
+    in sequence without the early-return limitation of django_tables2's default mechanism.
+    """
 
     def __init__(self, *args, order_by=None, **kwargs):
         self.order_function_lookup = {}
@@ -237,21 +393,39 @@ class FunctionOrderMixin:
 
         super().__init__(*args, order_by=order_by, **kwargs)
 
+    def apply_function_ordering(self, queryset, descending):
+        """Apply function-based annotations and return (queryset, order_keys).
+
+        This method is used by both:
+        - order() for django_tables2's single-column ordering
+        - PretalxTable._apply_ordering() for multi-column sorting
+
+        Returns a tuple of (annotated_queryset, list_of_order_keys).
+        """
+        order_keys = []
+        for plain_field, func in self.order_function_lookup.items():
+            annotation_key = f"_sort_{plain_field.replace('__', '_')}"
+            queryset = queryset.annotate(**{annotation_key: func})
+            if descending:
+                annotation_key = f"-{annotation_key}"
+            order_keys.append(annotation_key)
+        return queryset, order_keys
+
     def order(self, queryset, is_descending):
+        """Apply function-based ordering to the queryset.
+
+        Note: This method is called by django_tables2's TableQuerysetData.order_by()
+        for single-column ordering scenarios. For multi-column sorting in PretalxTable,
+        we use _apply_ordering() instead which reads order_function_lookup directly.
+
+        The limitation in django_tables2 is that when any column's order() returns
+        modified=True, it stops processing subsequent columns. Our _apply_ordering()
+        method handles all columns correctly regardless of whether they use functions.
+        """
         if not self.order_function_lookup:
             return (queryset, False)
-        mapped_order_by = []
-        for index, field in enumerate(self.order_by):
-            if func := self.order_function_lookup.get(field):
-                mapped_key = f"sort{index}"
-                queryset = queryset.annotate(**{mapped_key: func})
-                if is_descending:
-                    mapped_key = f"-{mapped_key}"
-                    func = func.desc()
-                mapped_order_by.append(mapped_key)
-            else:
-                mapped_order_by.append(field)
-        queryset = queryset.order_by(*mapped_order_by)
+        queryset, order_keys = self.apply_function_ordering(queryset, is_descending)
+        queryset = queryset.order_by(*order_keys)
         return (queryset, True)
 
 
