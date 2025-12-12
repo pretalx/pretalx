@@ -4,6 +4,13 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from pretalx.common.forms.widgets import EnhancedSelect
+
+DIRECTION_CHOICES = [
+    ("asc", _("A–Z / low to high ↑")),
+    ("desc", _("Z–A / high to low ↓")),
+]
+
 
 class TablePreferencesForm(forms.Form):
     available_columns = forms.MultipleChoiceField(
@@ -25,6 +32,28 @@ class TablePreferencesForm(forms.Form):
                 "size": "10",
             }
         ),
+    )
+    sort_column_1 = forms.ChoiceField(
+        label=_("Sort by"),
+        required=False,
+        widget=EnhancedSelect(attrs={"data-position": "top"}),
+    )
+    sort_direction_1 = forms.ChoiceField(
+        label=_("Direction"),
+        required=False,
+        choices=DIRECTION_CHOICES,
+        widget=EnhancedSelect(attrs={"data-position": "top"}),
+    )
+    sort_column_2 = forms.ChoiceField(
+        label=_("Then by"),
+        required=False,
+        widget=EnhancedSelect(attrs={"data-position": "top"}),
+    )
+    sort_direction_2 = forms.ChoiceField(
+        label=_("Direction"),
+        required=False,
+        choices=DIRECTION_CHOICES,
+        widget=EnhancedSelect(attrs={"data-position": "top"}),
     )
 
     def __init__(self, *args, table=None, **kwargs):
@@ -50,3 +79,28 @@ class TablePreferencesForm(forms.Form):
         self.fields["columns"].choices = visible
         self.fields["columns"].initial = []
         self.fields["available_columns"].choices = sorted(hidden)
+
+        sortable_columns = [("", "---------")] + sorted(
+            [
+                (name, str(column.verbose_name))
+                for name, column in table.columns.items()
+                if column.orderable and name not in table.exempt_columns
+            ],
+            key=lambda x: x[1],
+        )
+
+        self.fields["sort_column_1"].choices = sortable_columns
+        self.fields["sort_column_2"].choices = sortable_columns
+
+        current_ordering = table.current_ordering
+        if current_ordering:
+            if len(current_ordering) >= 1:
+                self.fields["sort_column_1"].initial = current_ordering[0]["column"]
+                self.fields["sort_direction_1"].initial = current_ordering[0][
+                    "direction"
+                ]
+            if len(current_ordering) >= 2:
+                self.fields["sort_column_2"].initial = current_ordering[1]["column"]
+                self.fields["sort_direction_2"].initial = current_ordering[1][
+                    "direction"
+                ]

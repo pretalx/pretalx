@@ -69,6 +69,11 @@ def form_media(
         media = DEFAULT_FORM_MEDIA + media
     if table_media and context.get("table"):
         media += DEFAULT_TABLE_MEDIA
+        if (
+            hasattr(context["table"], "configuration_form")
+            and context["table"].configuration_form
+        ):
+            media += context["table"].configuration_form.media
     if extra_js:
         media += forms.Media(
             js=[forms.Script(js, defer="") for js in extra_js.split(",")]

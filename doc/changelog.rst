@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`orga` Organisers can now select a secondary sort column in list views.
 - :feature:`orga:schedule,1326` Organisers can now create blocker sessions in the schedule editor. Blocker sessions work similar to breaks, but will never be public, and allow you to reserve schedule slots without accidentally moving another session there.
 - :feature:`cfp` When logging in or changing your password, you can now toggle the plain-text display of the text you’re entering.
 - :feature:`orga` Organisers can now select plugins when they create a new event, and if they copy another event’s settings, they can see and override the copied settings immediately.

@@ -16,8 +16,11 @@ const setupModals = () => {
     })
     document.querySelectorAll("dialog").forEach((element) => {
         element.querySelectorAll("button.close-dialog").forEach((btn) => btn.addEventListener("click", () => element.close()))
-        element.addEventListener("click", () => element.close())
-        element.querySelector("div").addEventListener("click", (ev) => ev.stopPropagation())
+        element.addEventListener("click", (ev) => {
+            if (ev.target === element) {
+                element.close()
+            }
+        })
     })
 }
 

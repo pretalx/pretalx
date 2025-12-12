@@ -86,12 +86,31 @@ const setupPreferenceModal = (form) => {
       return null
     }
 
+    const sortColumn1 = form.querySelector("[name='sort_column_1']")
+    const sortDirection1 = form.querySelector("[name='sort_direction_1']")
+    const sortColumn2 = form.querySelector("[name='sort_column_2']")
+    const sortDirection2 = form.querySelector("[name='sort_direction_2']")
+
+    const getOrdering = () => {
+      const ordering = []
+      if (sortColumn1?.value) {
+        const dir1 = sortDirection1?.value === "desc" ? "-" : ""
+        ordering.push(dir1 + sortColumn1.value)
+      }
+      if (sortColumn2?.value && sortColumn2.value !== sortColumn1?.value) {
+        const dir2 = sortDirection2?.value === "desc" ? "-" : ""
+        ordering.push(dir2 + sortColumn2.value)
+      }
+      return ordering
+    }
+
     form.querySelector(".save-preferences")?.addEventListener("click", async () => {
       Array.from(selectedSelect.options).forEach((option) => {
         option.selected = true
       })
 
       const columns = Array.from(selectedSelect.options).map((opt) => opt.value)
+      const ordering = getOrdering()
 
       try {
         const eventSlug = getEventSlug()
@@ -109,6 +128,7 @@ const setupPreferenceModal = (form) => {
           body: JSON.stringify({
             table_name: tableName,
             columns: columns,
+            ordering: ordering,
           }),
         })
 
@@ -125,7 +145,7 @@ const setupPreferenceModal = (form) => {
     })
 
     form.querySelector(".reset-preferences")?.addEventListener("click", async () => {
-      if (!confirm("Reset table columns to defaults?")) {
+      if (!confirm("Reset table preferences to defaults?")) {
         return
       }
 
