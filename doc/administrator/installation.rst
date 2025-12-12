@@ -30,7 +30,7 @@ To install pretalx, you will need to provide the following dependencies:
 * **Python 3.10 or newer**
 * Access to an SMTP server to send out mails
 * A periodic task runner like ``cron``
-* A database: pretalx supports `PostgreSQL`_ 14+ and SQLite 3. For production
+* A database: pretalx supports `PostgreSQL`_ 16+ and SQLite 3. For production
   setups, we highly recommend using PostgreSQL.
 * A reverse proxy like nginx to allow HTTPS connections and serve
   files from the filesystem
