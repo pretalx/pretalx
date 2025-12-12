@@ -20,6 +20,11 @@ install-all:
 install-npm:
     npm ci
 
+# Install a plugin
+[group('development')]
+install-plugin path="":
+    uv pip install -e {{ path }}
+
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
 [working-directory("src")]
