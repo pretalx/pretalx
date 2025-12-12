@@ -40,24 +40,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                         <button class="btn btn-success btn-block" name="plugin:{{ plugin.module }}" value="enable">{% translate "Enable" %}</button>
                                     {% endif %}
                                 </div>
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item">
-                                        {% if plugin.author %}
-                                            <p class="meta">
-                                                {% blocktranslate trimmed with v=plugin.version a=plugin.author %}
-                                                    Version {{ v }} by <em>{{ a }}</em>
-                                                {% endblocktranslate %}
-                                            </p>
-                                        {% else %}
-                                            <p class="meta">
-                                                {% blocktranslate trimmed with v=plugin.version a=plugin.author %}
-                                                    Version {{ v }}
-                                                {% endblocktranslate %}
-                                            </p>
-                                        {% endif %}
-                                        {{ plugin.description|rich_text }}
-                                    </li>
-                                </ul>
+                                {% include "orga/includes/plugin_card_body.html" %}
                             </div>
                         {% endfor %}
                     </div>

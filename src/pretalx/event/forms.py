@@ -334,19 +334,21 @@ class EventWizardCopyForm(forms.Form):
 class EventWizardPluginForm(forms.Form):
     def __init__(self, *args, user=None, locales=None, organiser=None, **kwargs):
         from pretalx.common.plugins import get_all_plugins_grouped
+        from pretalx.orga.forms.widgets import PluginSelectWidget
 
         super().__init__(*args, **kwargs)
         self.grouped_plugins = get_all_plugins_grouped()
         all_plugins = []
-        for plugins in self.grouped_plugins.values():
+        choices = []
+        for (_category_key, category_label), plugins in self.grouped_plugins.items():
             all_plugins.extend(plugins)
+            choices.append(
+                (category_label, [(plugin.module, plugin.name) for plugin in plugins])
+            )
         if all_plugins:
             self.fields["plugins"] = forms.MultipleChoiceField(
                 label=_("Plugins"),
                 required=False,
-                choices=[(plugin.module, plugin.name) for plugin in all_plugins],
-                widget=forms.CheckboxSelectMultiple,
-                help_text=_(
-                    "Select which plugins to enable for this event. You can change this later in the event settings."
-                ),
+                choices=choices,
+                widget=PluginSelectWidget(plugins=all_plugins),
             )

@@ -6,6 +6,27 @@ from django.forms import CheckboxSelectMultiple, RadioSelect
 from django.utils.translation import gettext_lazy as _
 
 
+class PluginSelectWidget(CheckboxSelectMultiple):
+    template_name = "orga/widgets/plugin_select.html"
+    option_template_name = "orga/widgets/plugin_option.html"
+
+    def __init__(self, *args, plugins=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.plugins = {p.module: p for p in (plugins or [])}
+
+    class Media:
+        css = {"all": ["orga/css/ui/plugins.css"]}
+
+    def create_option(
+        self, name, value, label, selected, index, subindex=None, attrs=None
+    ):
+        opt = super().create_option(
+            name, value, label, selected, index, subindex, attrs
+        )
+        opt["plugin"] = self.plugins.get(value)
+        return opt
+
+
 class HeaderSelect(RadioSelect):
     option_template_name = "orga/widgets/header_option.html"
 
