@@ -301,7 +301,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% partialdef field-card %}
     {# Unified field card partial for both regular fields and questions #}
     {# Required context: field (dict with key, label, etc.), step_id (string) #}
-    <div class="field-preview{% if field.is_auto_hidden %} field-preview-auto-hidden{% endif %}" dragsort-id="{{ field.key }}">
+    <div class="field-preview{% if field.auto_hidden_reason %} field-preview-auto-hidden{% endif %}" dragsort-id="{{ field.key }}">
         <div class="pt-1">
             <span class="dragsort-button" draggable="true" title="{% translate "Drag to reorder" %}">
                 <i class="fa fa-bars"></i>
@@ -318,9 +318,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                  hx-trigger="click"
                  data-dialog-target="#field-modal"
                  data-toggle="dialog">
-                {% if field.is_auto_hidden %}
+                {% if field.auto_hidden_reason %}
                     <span class="field-auto-hidden-notice">
-                        <i class="fa fa-eye-slash"></i> {% translate "Currently hidden (only one option available)" %}
+                        <i class="fa fa-eye-slash"></i> {% translate "Currently hidden" %} ({{ field.auto_hidden_reason }})
                     </span>
                 {% endif %}
                 <span class="field-preview-edit-hint">

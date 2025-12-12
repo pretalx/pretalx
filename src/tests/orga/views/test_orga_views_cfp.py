@@ -1144,3 +1144,46 @@ def test_cfp_editor_question_modal_nonexistent(orga_client, event):
     )
     response = orga_client.get(url)
     assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_cfp_editor_tags_auto_hidden_without_public_tags(orga_client, event):
+    with scope(event=event):
+        event.cfp.fields["tags"] = {"visibility": "optional"}
+        event.cfp.save()
+        assert event.tags.filter(is_public=True).count() == 0
+    url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"})
+    response = orga_client.get(url)
+    assert response.status_code == 200
+    assert b"Currently hidden" in response.content
+    assert b"no public tags exist" in response.content
+
+
+@pytest.mark.django_db
+def test_cfp_editor_track_auto_hidden_without_tracks(orga_client, event):
+    with scope(event=event):
+        event.feature_flags["use_tracks"] = True
+        event.save()
+        event.cfp.fields["track"] = {"visibility": "optional"}
+        event.cfp.save()
+        event.tracks.all().delete()
+        assert event.tracks.count() == 0
+    url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"})
+    response = orga_client.get(url)
+    assert response.status_code == 200
+    assert b"Currently hidden" in response.content
+    assert b"no tracks exist" in response.content
+
+
+@pytest.mark.django_db
+def test_cfp_editor_track_auto_hidden_when_disabled(orga_client, event):
+    with scope(event=event):
+        event.feature_flags["use_tracks"] = False
+        event.save()
+        event.cfp.fields["track"] = {"visibility": "optional"}
+        event.cfp.save()
+    url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"})
+    response = orga_client.get(url)
+    assert response.status_code == 200
+    assert b"Currently hidden" in response.content
+    assert b"tracks are disabled" in response.content
