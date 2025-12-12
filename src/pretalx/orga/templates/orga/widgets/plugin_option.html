@@ -1,0 +1,21 @@
+<!--
+SPDX-FileCopyrightText: 2025-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+
+{% load i18n %}
+{% load rich_text %}
+
+<div class="card plugin-card">
+    <div class="card-header">
+        <label for="{{ widget.attrs.id }}">{{ widget.plugin.name }}</label>
+        <input type="checkbox"
+               name="{{ widget.name }}"
+               value="{{ widget.value }}"
+               id="{{ widget.attrs.id }}"
+               {% if widget.selected %}checked{% endif %}>
+    </div>
+    {% with plugin=widget.plugin %}
+        {% include "orga/includes/plugin_card_body.html" %}
+    {% endwith %}
+</div>
