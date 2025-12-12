@@ -205,7 +205,6 @@ class EventWizardInitialForm(forms.Form):
 
 class EventWizardBasicsForm(PretalxI18nModelForm):
     def __init__(self, *args, user=None, locales=None, organiser=None, **kwargs):
-        self.user = user
         self.locales = locales or []
         super().__init__(*args, **kwargs, locales=locales)
         self.fields["locale"].choices = [
@@ -223,7 +222,18 @@ class EventWizardBasicsForm(PretalxI18nModelForm):
             + str(_("You cannot change the slug later on!"))
             + "</strong>"
         )
-        copy_from_queryset = EventWizardCopyForm.copy_from_queryset(user)
+        copy_from_queryset = Event.objects.filter(
+            Q(
+                organiser_id__in=user.teams.filter(
+                    all_events=True, can_change_event_settings=True
+                ).values_list("organiser", flat=True)
+            )
+            | Q(
+                id__in=user.teams.filter(can_change_event_settings=True).values_list(
+                    "limit_events__id", flat=True
+                )
+            )
+        )
         if copy_from_queryset.exists():
             self.fields["copy_from_event"] = forms.ModelChoiceField(
                 label=_("Copy configuration from"),
@@ -327,37 +337,6 @@ class EventWizardDisplayForm(forms.Form):
             )
 
 
-class EventWizardCopyForm(forms.Form):
-    @staticmethod
-    def copy_from_queryset(user):
-        return Event.objects.filter(
-            Q(
-                organiser_id__in=user.teams.filter(
-                    all_events=True, can_change_event_settings=True
-                ).values_list("organiser", flat=True)
-            )
-            | Q(
-                id__in=user.teams.filter(can_change_event_settings=True).values_list(
-                    "limit_events__id", flat=True
-                )
-            )
-        )
-
-    def __init__(self, *args, user=None, locales=None, organiser=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["copy_from_event"] = forms.ModelChoiceField(
-            label=_("Copy configuration from"),
-            queryset=EventWizardCopyForm.copy_from_queryset(user),
-            widget=EnhancedSelect(color_field="visible_primary_color"),
-            help_text=_(
-                "You can copy settings from previous events here, such as mail settings, session types, and email templates. "
-                "Please check those settings once the event has been created!"
-            ),
-            empty_label=_("Do not copy"),
-            required=False,
-        )
-
-
 class EventWizardPluginForm(forms.Form):
     def __init__(
         self,
@@ -383,7 +362,10 @@ class EventWizardPluginForm(forms.Form):
         if all_plugins:
             initial_plugins = []
             if copy_from_event:
-                initial_plugins = copy_from_event.plugin_list
+                available_modules = {p.module for p in all_plugins}
+                initial_plugins = [
+                    p for p in copy_from_event.plugin_list if p in available_modules
+                ]
             self.fields["plugins"] = forms.MultipleChoiceField(
                 label=_("Plugins"),
                 required=False,

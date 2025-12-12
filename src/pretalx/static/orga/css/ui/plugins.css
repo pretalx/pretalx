@@ -3,6 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+.plugin-card .card-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+
+  .btn {
+    max-width: 150px;
+  }
+}
+
+/* These rules only apply to the plugin selection in the event creation wizard */
 .form-plugins {
   display: flex;
   flex-direction: row;
@@ -11,21 +24,35 @@
   align-items: stretch;
   align-content: stretch;
 
-  .plugin-card {
+  label.plugin-card {
     margin: 16px;
     width: 40%;
     flex-grow: 1;
     flex-shrink: 0;
+    text-align: left;
 
-    .card-header {
+    &.plugin-highlighted {
+      border-color: var(--color-info);
+    }
+
+    &.plugin-selectable {
       display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: baseline;
-      font-weight: bold;
+      flex-direction: column;
+      background-color: var(--color-bg);
+      cursor: pointer;
+      transition: box-shadow 0.15s ease-in-out;
+      font-weight: normal;
+      padding: 0;
 
-      .btn {
-        max-width: 150px;
+      &:hover {
+        box-shadow: 0 0 0 2px var(--color-primary-light);
+      }
+      &:has(input:checked) {
+        box-shadow: 0 0 0 3px var(--color-primary);
+      }
+      &:has(input:focus-visible) {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
       }
     }
   }

@@ -8,11 +8,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 {% load static %}
 
-{% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" href="{% static "orga/css/ui/plugins.css" %}">
-{% endblock stylesheets %}
-
 {% block wizard_content %}
     <div class="alert alert-info">
         {% translate "Select which plugins you want to enable for this event. You can change this later in the event settings." %}

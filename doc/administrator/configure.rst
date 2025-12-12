@@ -145,7 +145,8 @@ The site section
 - A comma-separated list of plugin module names that should be highlighted as
   recommended plugins. Highlighted plugins appear first in plugin lists and
   display a "Recommended" badge in both the plugin settings page and the event
-  creation wizard.
+  creation wizard. The order of the list does not matter, as the group of
+  highlighted plugins will be sorted alphabetically.
 - **Environment variable:** ``PRETALX_HIGHLIGHTED_PLUGINS``
 - **Default:** ``''``
 
