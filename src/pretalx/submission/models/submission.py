@@ -1041,6 +1041,11 @@ class Submission(GenerateCode, PretalxModel):
     def public_resources(self):
         return self.active_resources.filter(is_public=True)
 
+    @cached_property
+    def available_public_resources(self):
+        """Returns public resources that are available based on hide_until_event_day setting."""
+        return [resource for resource in self.public_resources if resource.is_available]
+
     @property
     def is_deleted(self):
         return self.state == SubmissionStates.DELETED
