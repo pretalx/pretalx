@@ -6,6 +6,7 @@ from pathlib import Path
 
 from django.db import models
 from django.utils.functional import cached_property
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager
 
@@ -40,6 +41,13 @@ class Resource(PretalxModel):
     is_public = models.BooleanField(
         default=True, verbose_name=_("Publicly visible resource")
     )
+    hide_until_event_day = models.BooleanField(
+        default=False,
+        verbose_name=_("Hide until event day"),
+        help_text=_(
+            "If enabled, this resource will only be visible on or after the day of the session."
+        ),
+    )
 
     objects = ScopedManager(event="submission__event")
 
@@ -65,3 +73,25 @@ class Resource(PretalxModel):
         with suppress(ValueError):
             if self.resource:
                 return Path(self.resource.name).name
+
+    @cached_property
+    def is_available(self):
+        """Check if the resource is available based on hide_until_event_day setting.
+
+        If hide_until_event_day is True, the resource is only available on or after
+        the start time of the submission's earliest scheduled slot.
+        """
+        if not self.hide_until_event_day:
+            return True
+
+        # Get the earliest slot start time for this submission
+        earliest_slot = (
+            self.submission.slots.filter(start__isnull=False).order_by("start").first()
+        )
+
+        if not earliest_slot or not earliest_slot.start:
+            # No scheduled slot yet, so resource is not available
+            return False
+
+        # Resource is available if current time is on or after the slot start
+        return now() >= earliest_slot.start

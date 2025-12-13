@@ -8,6 +8,7 @@ Release Notes
 
 - :announcement:`admin` pretalx support now requires PostgreSQL 16 or higher.
 - :feature:`orga` Organisers can now select a secondary sort column in list views.
+- :feature:`cfp` Speakers can now mark resources to be hidden until the day of their session, preventing attendees from accessing materials before the talk begins.
 - :feature:`orga:schedule,1326` Organisers can now create blocker sessions in the schedule editor. Blocker sessions work similar to breaks, but will never be public, and allow you to reserve schedule slots without accidentally moving another session there.
 - :feature:`cfp` When logging in or changing your password, you can now toggle the plain-text display of the text you’re entering.
 - :feature:`orga` Organisers can now select plugins when they create a new event, and if they copy another event’s settings, they can see and override the copied settings immediately.

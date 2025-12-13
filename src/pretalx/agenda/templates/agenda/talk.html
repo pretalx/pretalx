@@ -146,14 +146,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </section>
                 {% endif %}
             </section>
-            {% if submission.public_resources %}
+            {% if submission.available_public_resources %}
                 <section class="resources">
                     {% translate "See also:" %}
-                    {% if submission.public_resources.count == 1 %}{% with resource=submission.public_resources.first %}
+                    {% if submission.available_public_resources|length == 1 %}{% with resource=submission.available_public_resources.0 %}
                         {% include "agenda/includes/submission_resource.html" %}
                     {% endwith %}{% else %}
                         <ul>
-                            {% for resource in submission.public_resources %}
+                            {% for resource in submission.available_public_resources %}
                                 <li>{% include "agenda/includes/submission_resource.html" %}</li>
                             {% endfor %}
                         </ul>

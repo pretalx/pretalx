@@ -83,7 +83,7 @@ def event_talk_urls(event):
         yield talk.urls.public
         yield talk.urls.ical
 
-        for resource in talk.public_resources:
+        for resource in talk.available_public_resources:
             if resource.resource and resource.resource.url:
                 yield resource.resource.url
 

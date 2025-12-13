@@ -126,6 +126,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             {% for resource in submission.public_resources %}
 
                                 {% include "agenda/includes/submission_resource.html" %}
+                                {% if resource.hide_until_event_day and not resource.is_available %}
+                                    <i class="fa fa-clock-o text-muted" title="{% translate 'Hidden until event day' %}"></i>
+                                {% endif %}
 
                                 {% if not forloop.last %}<br>{% endif %}
                             {% endfor %}

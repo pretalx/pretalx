@@ -233,7 +233,14 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         public_resources = self.context.get("public_resources", True)
         qs = obj.active_resources
         if public_resources:
-            qs = obj.public_resources
+            # For public resources, filter by availability (respects hide_until_event_day)
+            available_resources = obj.available_public_resources
+            # Convert list to QuerySet by filtering by PKs
+            if available_resources:
+                resource_pks = [r.pk for r in available_resources]
+                qs = obj.active_resources.filter(pk__in=resource_pks)
+            else:
+                qs = obj.active_resources.none()
         if serializer := self.get_extra_flex_field("resources", qs):
             return serializer.data
         return qs.values_list("pk", flat=True)
