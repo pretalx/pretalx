@@ -90,6 +90,27 @@ class RequestRequire:
                     field.help_text = (
                         field.original_help_text + " " + field.added_help_text
                     )
+        if field := self.fields.get("tags"):
+            min_number, max_number = self.event.cfp.tag_limits
+            field.original_help_text = getattr(
+                field, "original_help_text", field.help_text or ""
+            )
+            if min_number or max_number:
+                field.validators.append(
+                    partial(
+                        self.validate_tag_count,
+                        min_number=min_number,
+                        max_number=max_number,
+                    )
+                )
+                field.added_help_text = self.get_tag_help_text(
+                    "", min_number, max_number
+                )
+                field.help_text = (
+                    field.original_help_text + " " + field.added_help_text
+                ).strip()
+            elif field.original_help_text:
+                field.help_text = field.original_help_text
 
     @staticmethod
     def get_help_text(text, min_length, max_length, count_in="chars"):
@@ -133,6 +154,39 @@ class RequestRequire:
                 "words": _("You wrote {count} words."),
             }
             error_message += " " + str(errors[count_in]).format(count=length)
+            raise forms.ValidationError(error_message)
+
+    @staticmethod
+    def get_tag_help_text(text, min_number, max_number):
+        if not min_number and not max_number:
+            return text
+        if text:
+            text = str(text) + " "
+        else:
+            text = ""
+        if min_number and max_number:
+            if min_number == max_number:
+                message = _("Please select exactly {count} tags.").format(
+                    count=min_number
+                )
+            else:
+                message = _("Please select between {min} and {max} tags.").format(
+                    min=min_number, max=max_number
+                )
+        elif min_number:
+            message = _("Please select at least {min} tags.").format(min=min_number)
+        else:
+            message = _("Please select at most {max} tags.").format(max=max_number)
+        return (text + str(message)).strip()
+
+    @staticmethod
+    def validate_tag_count(value, min_number, max_number):
+        count = len(value) if value else 0
+        if (min_number and min_number > count) or (max_number and max_number < count):
+            error_message = RequestRequire.get_tag_help_text("", min_number, max_number)
+            error_message += " " + str(_("You selected {count} tags.")).format(
+                count=count
+            )
             raise forms.ValidationError(error_message)
 
 

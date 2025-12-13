@@ -16,6 +16,7 @@ from pretalx.submission.models import (
     SubmissionInvitation,
     SubmissionStates,
     SubmitterAccessCode,
+    Tag,
 )
 
 
@@ -1238,3 +1239,253 @@ def test_access_code_not_redeemed_again_on_dedraft(
 
     submission.refresh_from_db()
     assert submission.state == SubmissionStates.SUBMITTED
+
+
+@pytest.mark.django_db
+def test_can_edit_submission_with_tags(speaker_client, submission):
+    with scope(event=submission.event):
+        public_tag = Tag.objects.create(
+            tag="public-tag", event=submission.event, is_public=True
+        )
+        private_tag = Tag.objects.create(
+            tag="private-tag", event=submission.event, is_public=False
+        )
+        submission.event.cfp.fields["tags"] = {"visibility": "optional"}
+        submission.event.cfp.save()
+
+        response = speaker_client.get(submission.urls.user_base, follow=True)
+        assert response.status_code == 200
+        assert "public-tag" in response.text
+        assert "private-tag" not in response.text
+
+        data = {
+            "title": submission.title,
+            "submission_type": submission.submission_type.pk,
+            "content_locale": submission.content_locale,
+            "description": submission.description,
+            "abstract": submission.abstract,
+            "notes": submission.notes,
+            "slot_count": submission.slot_count,
+            "tags": [public_tag.pk],
+            "resource-TOTAL_FORMS": 0,
+            "resource-INITIAL_FORMS": 0,
+        }
+        response = speaker_client.post(submission.urls.user_base, data, follow=True)
+        assert response.status_code == 200
+
+        submission.refresh_from_db()
+        assert public_tag in submission.tags.all()
+        assert private_tag not in submission.tags.all()
+
+
+@pytest.mark.django_db
+def test_private_tags_preserved_on_save(speaker_client, submission):
+    """Ensure that private tags assigned by organisers are not removed when speakers edit."""
+    with scope(event=submission.event):
+        public_tag = Tag.objects.create(
+            tag="public-tag", event=submission.event, is_public=True
+        )
+        private_tag = Tag.objects.create(
+            tag="private-tag", event=submission.event, is_public=False
+        )
+        # Assign both tags to submission (as if organiser did it)
+        submission.tags.add(public_tag, private_tag)
+        submission.event.cfp.fields["tags"] = {"visibility": "optional"}
+        submission.event.cfp.save()
+
+        # Speaker edits and removes the public tag
+        data = {
+            "title": submission.title,
+            "submission_type": submission.submission_type.pk,
+            "content_locale": submission.content_locale,
+            "description": submission.description,
+            "abstract": submission.abstract,
+            "notes": submission.notes,
+            "slot_count": submission.slot_count,
+            "tags": [],  # Speaker deselects all public tags
+            "resource-TOTAL_FORMS": 0,
+            "resource-INITIAL_FORMS": 0,
+        }
+        response = speaker_client.post(submission.urls.user_base, data, follow=True)
+        assert response.status_code == 200
+
+        submission.refresh_from_db()
+        # Public tag should be removed (speaker deselected it)
+        assert public_tag not in submission.tags.all()
+        # Private tag should be preserved (speaker can't see/edit it)
+        assert private_tag in submission.tags.all()
+
+
+@pytest.mark.django_db
+def test_tags_field_hidden_when_no_public_tags(speaker_client, submission):
+    with scope(event=submission.event):
+        Tag.objects.create(tag="private-tag", event=submission.event, is_public=False)
+        submission.event.cfp.fields["tags"] = {"visibility": "optional"}
+        submission.event.cfp.save()
+
+        response = speaker_client.get(submission.urls.user_base, follow=True)
+        assert response.status_code == 200
+        assert "private-tag" not in response.text
+
+
+@pytest.mark.django_db
+def test_tags_field_hidden_when_do_not_ask(speaker_client, submission):
+    with scope(event=submission.event):
+        Tag.objects.create(tag="public-tag", event=submission.event, is_public=True)
+        submission.event.cfp.fields["tags"] = {"visibility": "do_not_ask"}
+        submission.event.cfp.save()
+
+        response = speaker_client.get(submission.urls.user_base, follow=True)
+        assert response.status_code == 200
+        assert "public-tag" not in response.text
+
+
+@pytest.mark.django_db
+def test_tags_validation_min_number(speaker_client, submission):
+    with scope(event=submission.event):
+        tag1 = Tag.objects.create(tag="tag1", event=submission.event, is_public=True)
+        Tag.objects.create(tag="tag2", event=submission.event, is_public=True)
+        submission.event.cfp.fields["tags"] = {
+            "visibility": "required",
+            "min": 2,
+            "max": None,
+        }
+        submission.event.cfp.save()
+
+        data = {
+            "title": submission.title,
+            "submission_type": submission.submission_type.pk,
+            "content_locale": submission.content_locale,
+            "description": submission.description,
+            "abstract": submission.abstract,
+            "notes": submission.notes,
+            "slot_count": submission.slot_count,
+            "tags": [tag1.pk],
+            "resource-TOTAL_FORMS": 0,
+            "resource-INITIAL_FORMS": 0,
+        }
+        response = speaker_client.post(submission.urls.user_base, data, follow=True)
+        assert response.status_code == 200
+        assert "at least 2 tags" in response.text.lower()
+
+
+@pytest.mark.django_db
+def test_tags_validation_max_number(speaker_client, submission):
+    with scope(event=submission.event):
+        tag1 = Tag.objects.create(tag="tag1", event=submission.event, is_public=True)
+        tag2 = Tag.objects.create(tag="tag2", event=submission.event, is_public=True)
+        tag3 = Tag.objects.create(tag="tag3", event=submission.event, is_public=True)
+        submission.event.cfp.fields["tags"] = {
+            "visibility": "optional",
+            "min": None,
+            "max": 2,
+        }
+        submission.event.cfp.save()
+
+        data = {
+            "title": submission.title,
+            "submission_type": submission.submission_type.pk,
+            "content_locale": submission.content_locale,
+            "description": submission.description,
+            "abstract": submission.abstract,
+            "notes": submission.notes,
+            "slot_count": submission.slot_count,
+            "tags": [tag1.pk, tag2.pk, tag3.pk],
+            "resource-TOTAL_FORMS": 0,
+            "resource-INITIAL_FORMS": 0,
+        }
+        response = speaker_client.post(submission.urls.user_base, data, follow=True)
+        assert response.status_code == 200
+        assert "at most 2 tags" in response.text.lower()
+
+
+@pytest.mark.django_db
+def test_tags_validation_valid_count(speaker_client, submission):
+    with scope(event=submission.event):
+        tag1 = Tag.objects.create(tag="tag1", event=submission.event, is_public=True)
+        tag2 = Tag.objects.create(tag="tag2", event=submission.event, is_public=True)
+        submission.event.cfp.fields["tags"] = {
+            "visibility": "optional",
+            "min": 1,
+            "max": 2,
+        }
+        submission.event.cfp.save()
+
+        data = {
+            "title": submission.title,
+            "submission_type": submission.submission_type.pk,
+            "content_locale": submission.content_locale,
+            "description": submission.description,
+            "abstract": submission.abstract,
+            "notes": submission.notes,
+            "slot_count": submission.slot_count,
+            "tags": [tag1.pk, tag2.pk],
+            "resource-TOTAL_FORMS": 0,
+            "resource-INITIAL_FORMS": 0,
+        }
+        response = speaker_client.post(submission.urls.user_base, data, follow=True)
+        assert response.status_code == 200
+        # Ensure no validation error message is shown
+        assert "you selected" not in response.text.lower()
+
+        submission.refresh_from_db()
+        assert set(submission.tags.all()) == {tag1, tag2}
+
+
+@pytest.mark.django_db
+def test_tags_required_but_none_submitted(speaker_client, submission):
+    with scope(event=submission.event):
+        Tag.objects.create(tag="tag1", event=submission.event, is_public=True)
+        submission.event.cfp.fields["tags"] = {
+            "visibility": "required",
+            "min": None,
+            "max": None,
+        }
+        submission.event.cfp.save()
+
+        data = {
+            "title": submission.title,
+            "submission_type": submission.submission_type.pk,
+            "content_locale": submission.content_locale,
+            "description": submission.description,
+            "abstract": submission.abstract,
+            "notes": submission.notes,
+            "slot_count": submission.slot_count,
+            "tags": [],
+            "resource-TOTAL_FORMS": 0,
+            "resource-INITIAL_FORMS": 0,
+        }
+        response = speaker_client.post(submission.urls.user_base, data, follow=True)
+        assert response.status_code == 200
+        assert "this field is required" in response.text.lower()
+
+
+@pytest.mark.django_db
+def test_tags_validation_exact_count(speaker_client, submission):
+    """Test the special case when min == max shows 'exactly N tags' message."""
+    with scope(event=submission.event):
+        tag1 = Tag.objects.create(tag="tag1", event=submission.event, is_public=True)
+        Tag.objects.create(tag="tag2", event=submission.event, is_public=True)
+        Tag.objects.create(tag="tag3", event=submission.event, is_public=True)
+        submission.event.cfp.fields["tags"] = {
+            "visibility": "optional",
+            "min": 2,
+            "max": 2,
+        }
+        submission.event.cfp.save()
+
+        data = {
+            "title": submission.title,
+            "submission_type": submission.submission_type.pk,
+            "content_locale": submission.content_locale,
+            "description": submission.description,
+            "abstract": submission.abstract,
+            "notes": submission.notes,
+            "slot_count": submission.slot_count,
+            "tags": [tag1.pk],
+            "resource-TOTAL_FORMS": 0,
+            "resource-INITIAL_FORMS": 0,
+        }
+        response = speaker_client.post(submission.urls.user_base, data, follow=True)
+        assert response.status_code == 200
+        assert "exactly 2 tags" in response.text.lower()

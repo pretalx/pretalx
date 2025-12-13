@@ -11,9 +11,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block stylesheets %}
     <link rel="stylesheet" href="{% static "common/css/forms/availabilities.css" %}" />
     <link rel="stylesheet" href="{% static "common/css/forms/markdown.css" %}" />
+    <link rel="stylesheet" href="{% static "common/css/forms/select.css" %}" />
     <link rel="stylesheet" href="{% static "common/css/ui/stages.css" %}" />
     <link rel="stylesheet" href="{% static "orga/css/forms/i18n.css" %}" />
     <link rel="stylesheet" href="{% static "orga/css/ui/dragsort.css" %}" />
+    <link rel="stylesheet" href="{% static "vendored/choices/choices.min.css" %}" />
     <link rel="stylesheet" href="{% static "orga/css/ui/cfp-editor.css" %}" />
     {% with pattern=request.event.display_settings.header_pattern %}
         {% if pattern and pattern != "plain" %}
@@ -23,13 +25,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock stylesheets %}
 
 {% block scripts %}
-    <script defer src="{% static "common/js/forms/availabilities.js" %}"></script>
-    <script defer src="{% static "common/js/ui/dialog.js" %}"></script>
-    <script defer src="{% static "orga/js/ui/dragsort.js" %}"></script>
     <script defer src="{% static "vendored/fullcalendar/fullcalendar.min.js" %}"></script>
     <script defer src="{% static "vendored/fullcalendar/luxon-plugin.min.js" %}"></script>
     <script defer src="{% static "vendored/htmx.min.js" %}"></script>
     <script defer src="{% static "vendored/luxon.min.js" %}"></script>
+    <script defer src="{% static "vendored/choices/choices.min.js" %}"></script>
+    <script defer src="{% static "common/js/forms/availabilities.js" %}"></script>
+    <script defer src="{% static "common/js/forms/select.js" %}"></script>
+    <script defer src="{% static "common/js/ui/dialog.js" %}"></script>
+    <script defer src="{% static "orga/js/ui/dragsort.js" %}"></script>
     <script defer src="{% static "orga/js/ui/cfp-editor.js" %}"></script>
 {% endblock scripts %}
 
@@ -297,7 +301,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% partialdef field-card %}
     {# Unified field card partial for both regular fields and questions #}
     {# Required context: field (dict with key, label, etc.), step_id (string) #}
-    <div class="field-preview{% if field.is_auto_hidden %} field-preview-auto-hidden{% endif %}" dragsort-id="{{ field.key }}">
+    <div class="field-preview{% if field.auto_hidden_reason %} field-preview-auto-hidden{% endif %}" dragsort-id="{{ field.key }}">
         <div class="pt-1">
             <span class="dragsort-button" draggable="true" title="{% translate "Drag to reorder" %}">
                 <i class="fa fa-bars"></i>
@@ -314,9 +318,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                  hx-trigger="click"
                  data-dialog-target="#field-modal"
                  data-toggle="dialog">
-                {% if field.is_auto_hidden %}
+                {% if field.auto_hidden_reason %}
                     <span class="field-auto-hidden-notice">
-                        <i class="fa fa-eye-slash"></i> {% translate "Currently hidden (only one option available)" %}
+                        <i class="fa fa-eye-slash"></i> {% translate "Currently hidden" %} ({{ field.auto_hidden_reason }})
                     </span>
                 {% endif %}
                 <span class="field-preview-edit-hint">
@@ -432,6 +436,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
           hx-swap="innerHTML">
         {% csrf_token %}
 
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
         {{ form.label.as_field_group }}
         {{ form.help_text.as_field_group }}
         {{ form.visibility.as_field_group }}
@@ -449,6 +459,17 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
         {% if form.max %}
             {{ form.max.as_field_group }}
+        {% endif %}
+
+        {% if form.min_number %}
+            <div class="form-row">
+                <div class="col-6">
+                    {{ form.min_number.as_field_group }}
+                </div>
+                <div class="col-6">
+                    {{ form.max_number.as_field_group }}
+                </div>
+            </div>
         {% endif %}
 
         <div class="form-actions mt-4">
