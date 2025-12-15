@@ -134,6 +134,26 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
                 _("Leave empty to use the default duration for the session type.")
             )
 
+    def _validate_date(self, value):
+        if self.event.datetime_from and value < self.event.datetime_from:
+            raise forms.ValidationError(
+                _("Scheduled times cannot be before the event starts.")
+            )
+        if self.event.datetime_to and value > self.event.datetime_to:
+            raise forms.ValidationError(
+                _("Scheduled times cannot be after the event ends.")
+            )
+
+    def clean_start(self):
+        if value := self.cleaned_data.get("start"):
+            self._validate_date(value)
+        return value
+
+    def clean_end(self):
+        if value := self.cleaned_data.get("end"):
+            self._validate_date(value)
+        return value
+
     def clean(self):
         data = super().clean()
         start = data.get("start")
