@@ -1,0 +1,18 @@
+<!--
+SPDX-FileCopyrightText: 2025-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+{% load i18n %}
+
+<span class="toggle-choice-wrapper d-inline-flex align-items-center">
+    <input type="hidden"
+           name="{{ widget.name }}"
+           value="{{ widget.value }}"
+           class="toggle-choice-input">
+    <button type="button"
+            class="btn btn-outline-info toggle-choice-btn nowrap"
+            data-choices='{{ widget.choices_json }}'
+            data-values='{{ widget.values_json }}'
+            aria-label="{% translate "Toggle value" %}"
+            aria-pressed="{{ widget.aria_pressed }}"><i class="fa fa-exchange-alt mr-1"></i> {{ widget.current_label }}</button>
+</span>
