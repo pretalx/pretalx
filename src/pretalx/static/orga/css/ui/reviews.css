@@ -64,7 +64,8 @@
         }
         &:before {
           content: "\f00d";
-          left: 6px;
+          left: 5px;
+          top: 1px;
         }
         &:checked:before {
           left: 2px;
@@ -74,7 +75,8 @@
       &.accept input {
         &:before {
           content: "\f00c";
-          left: 5px;
+          left: 3px;
+          top: 1px;
         }
         &:checked:before {
           left: 0;
