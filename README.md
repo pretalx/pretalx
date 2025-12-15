@@ -117,7 +117,7 @@
 | src/pretalx/common/plugins.py                                              |       30 |        0 |        8 |        1 |     97% |    63->69 |
 | src/pretalx/common/settings/config.py                                      |       23 |        1 |        2 |        1 |     92% |       172 |
 | src/pretalx/common/signals.py                                              |      117 |       14 |       34 |        3 |     89% |37, 79, 174, 180-185, 189-190, 195-197 |
-| src/pretalx/common/tables.py                                               |      396 |       88 |      164 |       23 |     76% |28->exit, 42-53, 62-69, 72, 75-76, 79-106, 144->142, 149->151, 173, 217-218, 232, 261, 288, 292-293, 295->298, 312, 375->377, 380-381, 384->388, 426-428, 464, 477, 483, 487-490, 557, 568-570, 624, 635->637, 640-641, 655-663, 666-681, 684-691, 699-701, 704-705 |
+| src/pretalx/common/tables.py                                               |      412 |       53 |      172 |       29 |     84% |28->exit, 63, 65->68, 85-87, 90-91, 144->142, 149->151, 173, 217-218, 262, 269, 295, 298-300, 303->306, 310-316, 330, 395->397, 400-401, 404->408, 446-448, 484, 497, 503, 507-510, 577, 588-590, 644, 655->657, 660-661, 679->681, 694, 709-711, 717, 721, 731-733, 736-737 |
 | src/pretalx/common/tasks.py                                                |       40 |       14 |       14 |        3 |     57% |27, 38-39, 54-68 |
 | src/pretalx/common/templatetags/copyable.py                                |       11 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/common/templatetags/datetimerange.py                           |       28 |        5 |        6 |        3 |     76% |31, 33, 46-48 |
@@ -326,7 +326,7 @@
 | src/tests/orga/test\_orga\_permissions.py                                  |       18 |        0 |        0 |        0 |    100% |           |
 | src/tests/orga/test\_orga\_utils.py                                        |        6 |        0 |        0 |        0 |    100% |           |
 | src/tests/orga/test\_templatetags.py                                       |       18 |        0 |        0 |        0 |    100% |           |
-| src/tests/orga/views/test\_orga\_tables.py                                 |      244 |        0 |        0 |        0 |    100% |           |
+| src/tests/orga/views/test\_orga\_tables.py                                 |      282 |        0 |        0 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_admin.py                           |       86 |        0 |        0 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_cfp.py                             |      699 |        0 |        2 |        1 |     99% | 142->exit |
 | src/tests/orga/views/test\_orga\_views\_dashboard.py                       |      112 |        0 |       40 |        0 |    100% |           |
@@ -359,7 +359,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      295 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **33588** | **1977** | **5380** |  **750** | **92%** |           |
+| **TOTAL**                                                                  | **33642** | **1942** | **5388** |  **756** | **92%** |           |
 
 
 ## Setup coverage badge
