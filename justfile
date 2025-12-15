@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: Apache-2.0
 
+[private]
 default:
     @just --list
 
