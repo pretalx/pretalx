@@ -475,7 +475,7 @@ class TemplateColumn(tables.TemplateColumn):
         # extra context into TemplateColumn.
         # So instead we’re adding our own extra context here and then
         # proceed with the vendored TemplateColumn.render() method
-        context = getattr(table, "context", Context())
+        context = getattr(table, "context", None) or Context()
         context["table"] = table
         for key, value in self.template_context.items():
             if callable(value):
