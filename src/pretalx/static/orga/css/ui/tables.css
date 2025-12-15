@@ -49,3 +49,40 @@ td.answer {
     margin-top: 4px;
   }
 }
+
+/* Table loading indicator */
+.table-content {
+  position: relative;
+}
+
+.table-loading-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.7);
+  z-index: 10;
+}
+
+.table-loading-overlay .loading-spinner {
+  position: sticky;
+  top: calc(50vh - 150px);
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  color: #999;
+  font-size: min(50vw, 200px);
+}
+
+.table-content.htmx-request .table-loading-overlay {
+  display: block;
+}
+
+.table-content.htmx-request .table-container {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.table-content.htmx-request nav.text-center {
+  opacity: 0.5;
+  pointer-events: none;
+}

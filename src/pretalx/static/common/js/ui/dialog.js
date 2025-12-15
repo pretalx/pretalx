@@ -3,9 +3,9 @@
 
 /* Minimal enhancement to native modals, by making them close when the user clicks outside the dialog. */
 
-const setupModals = () => {
-    document.querySelectorAll("[data-dialog-target]").forEach((element) => {
-        const outerDialogElement = document.querySelector(
+const setupModals = (container) => {
+    container.querySelectorAll("[data-dialog-target]").forEach((element) => {
+        const outerDialogElement = container.querySelector(
             element.dataset.dialogTarget,
         )
         if (!outerDialogElement) return
@@ -14,7 +14,7 @@ const setupModals = () => {
             outerDialogElement.showModal()
         })
     })
-    document.querySelectorAll("dialog").forEach((element) => {
+    container.querySelectorAll("dialog").forEach((element) => {
         element.querySelectorAll("button.close-dialog").forEach((btn) => btn.addEventListener("click", () => element.close()))
         element.addEventListener("click", (ev) => {
             if (ev.target === element) {
@@ -24,4 +24,4 @@ const setupModals = () => {
     })
 }
 
-onReady(setupModals)
+onReady(() => setupModals(document))

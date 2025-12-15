@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load i18n %}
 
 <a href="{% querystring page_size=pagination_size page="1" %}"
-   {% if page_obj.paginator.per_page == pagination_size %}class="font-weight-bold"{% endif %}>
+   class="table-page-link{% if page_obj.paginator.per_page == pagination_size %} font-weight-bold{% endif %}">
     {% if pagination_size == 100_000 %}
         {{ phrases.base.all_choices }}
     {% else %}

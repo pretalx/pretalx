@@ -38,10 +38,15 @@ if (slider) {
  * When .unmark-radio is clicked, deactivate its neighbored labels and update count
  */
 let count = { accept: 0, reject: 0 }
-const acceptLabel = document.querySelector("#acceptCount")
-const rejectLabel = document.querySelector("#rejectCount")
 
-let updateCount = () => {
+const updateCount = () => {
+    const acceptLabel = document.querySelector("#acceptCount")
+    const rejectLabel = document.querySelector("#rejectCount")
+    const submitBar = document.querySelector("#submitBar")
+    const submitText = document.querySelector("#submitText")
+
+    if (!acceptLabel || !rejectLabel || !submitBar) return
+
     count.accept = 0
     count.reject = 0
     document
@@ -51,7 +56,7 @@ let updateCount = () => {
                 count.reject += 1
                 element.parentElement.parentElement
                     .querySelector(".unmark-radio")
-                    .classList.add("active")
+                    ?.classList.add("active")
             }
         })
     document
@@ -61,30 +66,39 @@ let updateCount = () => {
                 count.accept += 1
                 element.parentElement.parentElement
                     .querySelector(".unmark-radio")
-                    .classList.add("active")
+                    ?.classList.add("active")
             }
         })
-    if (!(count.accept || count.reject)) {
-        document.querySelector("#submitBar").classList.add("d-none")
+    if (count.accept + count.reject == 0) {
+        submitBar.classList.add("d-none")
     } else {
-        document.querySelector("#submitBar").classList.remove("d-none")
+        submitBar.classList.remove("d-none")
     }
     if (acceptLabel.firstChild) acceptLabel.removeChild(acceptLabel.firstChild)
     acceptLabel.appendChild(document.createTextNode(count.accept))
     if (rejectLabel.firstChild) rejectLabel.removeChild(rejectLabel.firstChild)
     rejectLabel.appendChild(document.createTextNode(count.reject))
+
+    if (submitText) submitText.classList.remove("d-none")
 }
-document
-    .querySelectorAll(".review-table tbody .radio input[type=radio]")
-    .forEach((element) => {
-        element.addEventListener("click", (ev) => {
+
+const initReviewRadios = (container = document) => {
+    // When container is document, use full selector. When container is the swapped
+    // table-content div, use simpler selector since .review-table is outside it.
+    const radioSelector = container === document
+        ? ".review-table tbody .radio input[type=radio]"
+        : "tbody .radio input[type=radio]"
+    const unmarkSelector = container === document
+        ? ".review-table tbody .unmark-radio"
+        : "tbody .unmark-radio"
+
+    container.querySelectorAll(radioSelector).forEach((element) => {
+        element.addEventListener("click", () => {
             updateCount()
         })
     })
 
-document
-    .querySelectorAll(".review-table tbody .unmark-radio")
-    .forEach((element) => {
+    container.querySelectorAll(unmarkSelector).forEach((element) => {
         element.addEventListener("click", (ev) => {
             ev.target.parentElement.parentElement
                 .querySelectorAll("input[type=radio]")
@@ -95,47 +109,68 @@ document
             updateCount()
         })
     })
-document.querySelector("#submitText").classList.remove("d-none")
-
-const acceptAll = document.getElementById("a-all")
-if (acceptAll) {
-    acceptAll.addEventListener("click", (ev) => {
-        document.querySelectorAll("tbody .action-row").forEach((td) => {
-            if (
-                td.querySelector(".radio.reject input") &&
-                !td.querySelector(".radio.reject input").checked
-            ) {
-                td.querySelector(".radio.accept input").checked = true
-            }
-        })
-        updateCount()
-    })
 }
 
-const rejectAll = document.getElementById("r-all")
-if (rejectAll) {
-    rejectAll.addEventListener("click", (ev) => {
-        document.querySelectorAll("tbody .action-row").forEach((td) => {
-            if (
-                td.querySelector(".radio.accept input") &&
-                !td.querySelector(".radio.accept input").checked
-            ) {
-                td.querySelector(".radio.reject input").checked = true
-            }
+const initHeaderRadios = () => {
+    const acceptAll = document.getElementById("a-all")
+    if (acceptAll && !acceptAll.dataset.initialized) {
+        acceptAll.dataset.initialized = "true"
+        acceptAll.addEventListener("click", () => {
+            document.querySelectorAll("tbody .action-row").forEach((td) => {
+                if (
+                    td.querySelector(".radio.reject input") &&
+                    !td.querySelector(".radio.reject input").checked
+                ) {
+                    const acceptInput = td.querySelector(".radio.accept input")
+                    if (acceptInput) acceptInput.checked = true
+                }
+            })
+            updateCount()
         })
-        updateCount()
-    })
+    }
+
+    const rejectAll = document.getElementById("r-all")
+    if (rejectAll && !rejectAll.dataset.initialized) {
+        rejectAll.dataset.initialized = "true"
+        rejectAll.addEventListener("click", () => {
+            document.querySelectorAll("tbody .action-row").forEach((td) => {
+                if (
+                    td.querySelector(".radio.accept input") &&
+                    !td.querySelector(".radio.accept input").checked
+                ) {
+                    const rejectInput = td.querySelector(".radio.reject input")
+                    if (rejectInput) rejectInput.checked = true
+                }
+            })
+            updateCount()
+        })
+    }
+
+    const clearAll = document.getElementById("u-all")
+    if (clearAll && !clearAll.dataset.initialized) {
+        clearAll.dataset.initialized = "true"
+        clearAll.addEventListener("click", (ev) => {
+            document.querySelectorAll(".review-table tbody input[type=radio]").forEach((rad) => {
+                rad.checked = false
+            })
+            ev.target.parentElement.classList.remove("active")
+            updateCount()
+        })
+    }
 }
 
-const clearAll = document.getElementById("u-all")
-if (clearAll) {
-    clearAll.addEventListener("click", (ev) => {
-        document.querySelectorAll("input[type=radio]").forEach((rad) => {
-            rad.checked = false
-        })
-        ev.target.parentElement.classList.remove("active")
-        updateCount()
-    })
-}
+onReady(() => {
+    initReviewRadios()
+    initHeaderRadios()
+    updateCount()
+})
 
-updateCount()
+// Re-initialize after HTMX swaps table content
+document.addEventListener("htmx:afterSwap", (event) => {
+    const target = event.detail.target
+    if (target.classList.contains("table-content")) {
+        initReviewRadios(target)
+        initHeaderRadios()
+        updateCount()
+    }
+})

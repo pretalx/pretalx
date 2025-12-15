@@ -25,3 +25,7 @@ def get_static(
 
 def is_htmx(request):
     return bool(request.headers.get("HX-Request"))
+
+
+def get_htmx_target(request):
+    return request.headers.get("HX-Target") or ""

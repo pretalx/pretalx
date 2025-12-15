@@ -35,6 +35,7 @@ from pretalx.common.exceptions import SendMailException
 from pretalx.common.forms.mixins import PretalxI18nModelForm
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, back_button, delete_button
+from pretalx.common.views.helpers import get_htmx_target, is_htmx
 from pretalx.common.views.mixins import Filterable, PaginationMixin
 from pretalx.person.forms import UserForm
 from pretalx.person.models import User
@@ -610,6 +611,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
 
 class OrgaTableMixin(SingleTableMixin):
     table_class = None
+    table_template_name = settings.DJANGO_TABLES2_TEMPLATE
     DEFAULT_PAGINATION = 50
 
     def get_paginate_by(self, queryset=None):
@@ -669,6 +671,20 @@ class OrgaTableMixin(SingleTableMixin):
             self.request, paginate=self.get_table_pagination(table)
         ).configure(table)
         return table
+
+    def get_template_names(self):
+        if is_htmx(self.request) and self.table_class:
+            if get_htmx_target(self.request).startswith("table-content"):
+                return [f"{self.table_template_name}#table-content"]
+        return super().get_template_names()
+
+    def dispatch(self, request, *args, **kwargs):
+        response = super().dispatch(request, *args, **kwargs)
+        # For HTMX table requests, set HX-Push-Url so browser URL stays in sync
+        if is_htmx(request) and self.table_class:
+            if get_htmx_target(request).startswith("table-content"):
+                response["HX-Push-Url"] = request.get_full_path()
+        return response
 
 
 class OrgaCRUDView(OrgaTableMixin, FormSignalMixin, CRUDView):
