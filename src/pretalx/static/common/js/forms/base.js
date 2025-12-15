@@ -47,7 +47,7 @@ const initFormChanges = (form) => {
 }
 
 const initFormButton = (form) => {
-    form.querySelectorAll("button[type=submit]").forEach(submitButton => {
+    form.querySelectorAll("button").forEach(submitButton => {
         const submitButtonText = submitButton.textContent
         let lastSubmit = 0
         form.addEventListener("submit", () => {
