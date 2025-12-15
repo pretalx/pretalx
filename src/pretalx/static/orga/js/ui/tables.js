@@ -104,19 +104,22 @@ const setupPreferenceModal = (form) => {
       return ordering
     }
 
-    form.querySelector(".save-preferences")?.addEventListener("click", async () => {
+    const saveButton = form.querySelector(".save-preferences")
+    saveButton?.addEventListener("click", async () => {
       Array.from(selectedSelect.options).forEach((option) => {
         option.selected = true
       })
 
       const columns = Array.from(selectedSelect.options).map((opt) => opt.value)
       const ordering = getOrdering()
+      const restoreButton = setButtonLoading(saveButton)
 
       try {
         const eventSlug = getEventSlug()
         if (!eventSlug) {
           console.error("Could not determine event slug from URL")
           alert("An error occurred. Please try again.")
+          restoreButton()
           return
         }
         const response = await fetch(`/orga/event/${eventSlug}/preferences/`, {
@@ -137,23 +140,29 @@ const setupPreferenceModal = (form) => {
         } else {
           console.error("Failed to save table preferences")
           alert("Failed to save preferences. Please try again.")
+          restoreButton()
         }
       } catch (error) {
         console.error("Error saving table preferences:", error)
         alert("An error occurred. Please try again.")
+        restoreButton()
       }
     })
 
-    form.querySelector(".reset-preferences")?.addEventListener("click", async () => {
+    const resetButton = form.querySelector(".reset-preferences")
+    resetButton?.addEventListener("click", async () => {
       if (!confirm("Reset table preferences to defaults?")) {
         return
       }
+
+      const restoreButton = setButtonLoading(resetButton)
 
       try {
         const eventSlug = getEventSlug()
         if (!eventSlug) {
           console.error("Could not determine event slug from URL")
           alert("An error occurred. Please try again.")
+          restoreButton()
           return
         }
         const response = await fetch(`/orga/event/${eventSlug}/preferences/`, {
@@ -173,10 +182,12 @@ const setupPreferenceModal = (form) => {
         } else {
           console.error("Failed to reset table preferences")
           alert("Failed to reset preferences. Please try again.")
+          restoreButton()
         }
       } catch (error) {
         console.error("Error resetting table preferences:", error)
         alert("An error occurred. Please try again.")
+        restoreButton()
       }
     })
 
