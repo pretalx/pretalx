@@ -62,6 +62,7 @@ IPython
 iterable
 Jorian
 jQuery
+Kunze
 libffi
 lifecycle
 lightbox
@@ -111,6 +112,7 @@ subtractive
 systemd
 templating
 textboxes
+Tobias
 tracebacks
 transactional
 txt
