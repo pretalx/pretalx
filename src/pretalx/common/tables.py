@@ -297,22 +297,16 @@ class PretalxTable(tables.Table):
         """Merge new column click ordering with saved multi-column ordering.
 
         When user clicks a column header, we receive the new primary sort.
-        If that column was in the secondary position, remove it from there.
-        Preserve the secondary sort if it's a different column.
+        Preserve the secondary sort if present; _validate_ordering will
+        handle deduplication if the same column appears in both positions.
         """
+        new_ordering = [s for s in new_ordering if s]
+        saved_ordering = [s for s in saved_ordering if s]
         if not saved_ordering or not new_ordering:
             return new_ordering
-        if len(saved_ordering) < 2 or len(new_ordering) != 1:
+        if len(new_ordering) == 2 or len(saved_ordering) == 1:
             return new_ordering
-
-        new_primary = new_ordering[0]
-        new_column = new_primary[1:] if new_primary.startswith("-") else new_primary
-        secondary = saved_ordering[1]
-        if secondary:
-            secondary_column = secondary[1:] if secondary.startswith("-") else secondary
-            if secondary_column != new_column:
-                return [new_primary, secondary]
-        return new_ordering
+        return [new_ordering[0], saved_ordering[1]]
 
     def configure(self, request):
         columns = None
@@ -327,7 +321,10 @@ class PretalxTable(tables.Table):
 
             if new_ordering := request.GET.getlist(self.prefixed_order_by_field):
                 ordering = self._merge_ordering(new_ordering, saved_ordering)
-                preferences.set(f"tables.{self.name}.ordering", ordering, commit=True)
+                if ordering := self._validate_ordering(ordering):
+                    preferences.set(
+                        f"tables.{self.name}.ordering", ordering, commit=True
+                    )
             else:
                 ordering = saved_ordering
 
@@ -337,15 +334,13 @@ class PretalxTable(tables.Table):
         columns = columns or getattr(self, "default_columns", None) or self.Meta.fields
         self._set_columns(columns)
 
-        if ordering is not None:
-            ordering = self._validate_ordering(ordering)
-            if ordering:
-                # Apply our custom ordering that handles multi-column sorting with
-                # function-based columns correctly. We modify the underlying queryset
-                # directly and set _order_by for display purposes only.
-                self.data.data = self._apply_ordering(self.data.data, ordering)
-                self._order_by = OrderByTuple(ordering)
-                self._ordering_applied = True
+        if ordering:
+            # Apply our custom ordering that handles multi-column sorting with
+            # function-based columns correctly. We modify the underlying queryset
+            # directly and set _order_by for display purposes only.
+            self.data.data = self._apply_ordering(self.data.data, ordering)
+            self._order_by = OrderByTuple(ordering)
+            self._ordering_applied = True
 
         return page_size
 
