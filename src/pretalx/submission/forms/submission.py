@@ -361,7 +361,6 @@ class SubmissionFilterForm(forms.Form):
     answer = forms.CharField(required=False)
     answer__options = forms.IntegerField(required=False)
     q = forms.CharField(required=False, label=_("Search"), widget=SearchInput)
-    sort = forms.CharField(required=False, widget=forms.HiddenInput())
 
     default_renderer = InlineFormRenderer
 

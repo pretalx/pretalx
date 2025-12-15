@@ -135,7 +135,7 @@ class PretalxTable(tables.Table):
         correctly in multi-column scenarios.
         """
         if self._ordering_applied:
-            # Don't re-order - just update the display value for sort indicators
+            # Don't re-order - just update the display value for sort indicators.
             order_by = () if not value else value
             order_by = order_by.split(",") if isinstance(order_by, str) else order_by
             valid = []
@@ -143,8 +143,12 @@ class PretalxTable(tables.Table):
                 name = OrderBy(alias).bare
                 if name in self.columns and self.columns[name].orderable:
                     valid.append(alias)
+            # Preserve secondary sort if we only received a primary sort
+            if len(valid) == 1 and len(self._order_by) >= 2:
+                secondary = self._order_by[1]
+                if OrderBy(secondary).bare != OrderBy(valid[0]).bare:
+                    valid.append(str(secondary))
             self._order_by = OrderByTuple(valid)
-            # Don't call self.data.order_by()
         else:
             # Use parent's setter which includes ordering
             tables.Table.order_by.fset(self, value)
@@ -300,8 +304,8 @@ class PretalxTable(tables.Table):
         Preserve the secondary sort if present; _validate_ordering will
         handle deduplication if the same column appears in both positions.
         """
-        new_ordering = [s for s in new_ordering if s]
-        saved_ordering = [s for s in saved_ordering if s]
+        new_ordering = [s for s in (new_ordering or []) if s]
+        saved_ordering = [s for s in (saved_ordering or []) if s]
         if not saved_ordering or not new_ordering:
             return new_ordering
         if len(new_ordering) == 2 or len(saved_ordering) == 1:
@@ -433,7 +437,7 @@ class TemplateColumn(tables.TemplateColumn):
     Overrides the default django-tables2 TemplateColumn.
     Changes:
     - Allow to change the context_object_name
-    - Pass the request to the render method, allowing use of queryparam
+    - Pass the request to the render method, allowing use of querystring
     - Return a placeholder if the rendered value is empty
     """
 
@@ -452,6 +456,7 @@ class TemplateColumn(tables.TemplateColumn):
         # So instead we’re adding our own extra context here and then
         # proceed with the vendored TemplateColumn.render() method
         context = getattr(table, "context", Context())
+        context["table"] = table
         for key, value in self.template_context.items():
             if callable(value):
                 context[key] = value(record, table)

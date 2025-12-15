@@ -5,103 +5,169 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% extends "django_tables2/table.html" %}
 
+{% load django_tables2 %}
 {% load i18n %}
+{% load querystring %} {# we need this because django_tables2 overrides django's querystring with its own incompatible version #}
 
 {% block table-wrapper %}
-    {% block table-configuration %}
-        {% if table.configuration_form %}
-            <div class="d-flex justify-content-end mb-2">
-                <button class="btn btn-sm btn-outline-info"
-                        data-dialog-target="#table-preferences-{{ table.name }}">
-                    <i class="fa fa-cog"></i> {% translate "Table options" %}
-                </button>
-
-                <dialog id="table-preferences-{{ table.name }}" class="modal-dialog table-preferences" role="dialog" aria-labelledby="table-preferences-label-{{ table.name }}">
-                    <div class="modal-card-content"><!-- This div is the inner container, to allow users to close the dialog by clicking outside it -->
-                        <div class="modal-card-header">
-                            <h3 id="table-preferences-label-{{ table.name }}">{% translate "Table options" %}</h3>
-                            <button class="dialog-close btn btn-default btn-xs close-dialog" aria-label="{% translate "Close" %}"><i class="fa fa-times"></i></button>
-                        </div>
-                        <form class="table-preferences-form" data-table-name="{{ table.name }}">
-                            <div class="row flex-nowrap">
-                                <div class="col-md-5 text-center">
-                                    <label for="id_available_columns_{{ table.name }}">{{ table.configuration_form.available_columns.label }}</label>
-                                    <select id="id_available_columns_{{ table.name }}"
-                                            name="available_columns"
-                                            multiple
-                                            class="form-control available-columns"
-                                            size="10">
-                                        {% for value, label in table.configuration_form.fields.available_columns.choices %}
-                                            <option value="{{ value }}">{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="direction-buttons d-flex align-items-center justify-content-center">
-                                    <div class="d-flex flex-column">
-                                        <button type="button" class="btn btn-sm btn-success add-columns mb-2 nowrap" title="{% translate "Add selected columns" %}">
-                                            <i class="fa fa-arrow-right"></i> {% translate "Add" %}
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-danger nowrap remove-columns" title="{% translate "Remove selected columns" %}">
-                                            <i class="fa fa-arrow-left"></i> {% translate "Remove" %}
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="col-md-5 text-center">
-                                    <label for="id_columns_{{ table.name }}">{{ table.configuration_form.columns.label }}</label>
-                                    <select id="id_columns_{{ table.name }}"
-                                            name="columns"
-                                            multiple
-                                            class="form-control selected-columns"
-                                            size="10">
-                                        {% for value, label in table.configuration_form.fields.columns.choices %}
-                                            <option value="{{ value }}">{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    <div class="mt-2 d-flex justify-content-center">
-                                        <button type="button" class="btn btn-sm btn-info move-up" aria-label="{% translate "Move up" %}">
-                                            <i class="fa fa-arrow-up"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-info move-down ml-2" aria-label="{% translate "Move down" %}">
-                                            <i class="fa fa-arrow-down"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="sort-preferences mt-3">
-                                <div class="sort-row mb-2">
-                                    <label for="{{ table.configuration_form.sort_column_1.id_for_label }}">{{ table.configuration_form.sort_column_1.label }}</label>
-                                    <div class="d-flex align-items-center">
-                                        {{ table.configuration_form.sort_column_1 }}
-                                        {{ table.configuration_form.sort_direction_1 }}
-                                    </div>
-                                </div>
-                                <div class="sort-row mb-2">
-                                    <label for="{{ table.configuration_form.sort_column_2.id_for_label }}">{{ table.configuration_form.sort_column_2.label }}</label>
-                                    <div class="d-flex align-items-center">
-                                        {{ table.configuration_form.sort_column_2 }}
-                                        {{ table.configuration_form.sort_direction_2 }}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="submit-group mt-4">
-                                <button type="button" class="btn btn-outline-danger mr-2 reset-preferences">
-                                    {% translate "Reset to defaults" %}
-                                </button>
-                                <button type="button" class="btn btn-primary save-preferences">
-                                    {% translate "Save" %}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </dialog>
-            </div>
-        {% endif %}
-    {% endblock table-configuration %}
-    {{ block.super }}
+    <div id="table-content-{{ table.name }}" class="table-content" data-table-name="{{ table.name }}" aria-live="polite">
+        {% partial table-content %}
+    </div>
 {% endblock table-wrapper %}
 
-{% block pagination %}
-    {% include "orga/includes/pagination.html" with page_obj=table.page %}
-{% endblock pagination %}
+{% partialdef table-content %}
+    {% if table.configuration_form %}
+        <div class="d-flex justify-content-end mb-2">
+            <button class="btn btn-sm btn-outline-info"
+                    data-dialog-target="#table-preferences-{{ table.name }}">
+                <i class="fa fa-cog"></i> {% translate "Table options" %}
+            </button>
+
+            <dialog id="table-preferences-{{ table.name }}" class="modal-dialog table-preferences" role="dialog" aria-labelledby="table-preferences-label-{{ table.name }}">
+                <div class="modal-card-content"><!-- This div is the inner container, to allow users to close the dialog by clicking outside it -->
+                    <div class="modal-card-header">
+                        <h3 id="table-preferences-label-{{ table.name }}">{% translate "Table options" %}</h3>
+                        <button class="dialog-close btn btn-default btn-xs close-dialog" aria-label="{% translate "Close" %}"><i class="fa fa-times"></i></button>
+                    </div>
+                    <form class="table-preferences-form" data-table-name="{{ table.name }}">
+                        <div class="row flex-nowrap">
+                            <div class="col-md-5 text-center">
+                                <label for="id_available_columns_{{ table.name }}">{{ table.configuration_form.available_columns.label }}</label>
+                                <select id="id_available_columns_{{ table.name }}"
+                                        name="available_columns"
+                                        multiple
+                                        class="form-control available-columns"
+                                        size="10">
+                                    {% for value, label in table.configuration_form.fields.available_columns.choices %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="direction-buttons d-flex align-items-center justify-content-center">
+                                <div class="d-flex flex-column">
+                                    <button type="button" class="btn btn-sm btn-success add-columns mb-2 nowrap" title="{% translate "Add selected columns" %}">
+                                        <i class="fa fa-arrow-right"></i> {% translate "Add" %}
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-danger nowrap remove-columns" title="{% translate "Remove selected columns" %}">
+                                        <i class="fa fa-arrow-left"></i> {% translate "Remove" %}
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-5 text-center">
+                                <label for="id_columns_{{ table.name }}">{{ table.configuration_form.columns.label }}</label>
+                                <select id="id_columns_{{ table.name }}"
+                                        name="columns"
+                                        multiple
+                                        class="form-control selected-columns"
+                                        size="10">
+                                    {% for value, label in table.configuration_form.fields.columns.choices %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="mt-2 d-flex justify-content-center">
+                                    <button type="button" class="btn btn-sm btn-info move-up" aria-label="{% translate "Move up" %}">
+                                        <i class="fa fa-arrow-up"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-info move-down ml-2" aria-label="{% translate "Move down" %}">
+                                        <i class="fa fa-arrow-down"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sort-preferences mt-3">
+                            <div class="sort-row mb-2">
+                                <label for="{{ table.configuration_form.sort_column_1.id_for_label }}">{{ table.configuration_form.sort_column_1.label }}</label>
+                                <div class="d-flex align-items-center">
+                                    {{ table.configuration_form.sort_column_1 }}
+                                    {{ table.configuration_form.sort_direction_1 }}
+                                </div>
+                            </div>
+                            <div class="sort-row mb-2">
+                                <label for="{{ table.configuration_form.sort_column_2.id_for_label }}">{{ table.configuration_form.sort_column_2.label }}</label>
+                                <div class="d-flex align-items-center">
+                                    {{ table.configuration_form.sort_column_2 }}
+                                    {{ table.configuration_form.sort_direction_2 }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="submit-group mt-4">
+                            <button type="button" class="btn btn-outline-danger mr-2 reset-preferences">
+                                {% translate "Reset to defaults" %}
+                            </button>
+                            <button type="button" class="btn btn-primary save-preferences">
+                                {% translate "Save" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        </div>
+    {% endif %}
+
+    {% if table.include_before_table %}{% include table.include_before_table %}{% endif %}
+    <div class="table-loading-overlay">
+        <div class="loading-spinner">
+            <i class="fa fa-cog animate-spin"></i>
+        </div>
+    </div>
+    <div class="table-container">
+        {% block table %}
+            <table {% render_attrs table.attrs %}>
+                {% block table.thead %}
+                    {% if table.show_header %}
+                        <thead {{ table.attrs.thead.as_html }}>
+                            <tr>
+                                {% for column in table.columns %}
+                                    <th {{ column.attrs.th.as_html }}>
+                                        {% if column.orderable %}
+                                            <a href="{% django_querystring sort=column.order_by_alias.next page=None %}" class="table-sort-link">{{ column.header }}</a>
+                                        {% else %}
+                                            {{ column.header }}
+                                        {% endif %}
+                                    </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                    {% endif %}
+                {% endblock table.thead %}
+                {% block table.tbody %}
+                    <tbody {{ table.attrs.tbody.as_html }}>
+                        {% for row in table.paginated_rows %}
+                            {% block table.tbody.row %}
+                                <tr {{ row.attrs.as_html }}>
+                                    {% for column, cell in row.items %}
+                                        <td {{ column.attrs.td.as_html }}>{% if column.localize == None %}{{ cell }}{% else %}{% if column.localize %}{{ cell|localize }}{% else %}{{ cell|unlocalize }}{% endif %}{% endif %}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endblock table.tbody.row %}
+                        {% empty %}
+                            {% if table.empty_text %}
+                                {% block table.tbody.empty_text %}
+                                    <tr><td colspan="{{ table.columns|length }}">{{ table.empty_text }}</td></tr>
+                                {% endblock table.tbody.empty_text %}
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                {% endblock table.tbody %}
+                {% block table.tfoot %}
+                    {% if table.has_footer %}
+                        <tfoot {{ table.attrs.tfoot.as_html }}>
+                            <tr>
+                                {% for column in table.columns %}
+                                    <td {{ column.attrs.tf.as_html }}>{{ column.footer }}</td>
+                                {% endfor %}
+                            </tr>
+                        </tfoot>
+                    {% endif %}
+                {% endblock table.tfoot %}
+            </table>
+        {% endblock table %}
+    </div>
+    {% if table.include_after_table %}{% include table.include_after_table %}{% endif %}
+
+    {% block pagination %}
+        {% include "orga/includes/pagination.html" with page_obj=table.page %}
+    {% endblock pagination %}
+{% endpartialdef table-content %}

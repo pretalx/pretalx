@@ -303,6 +303,11 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
         kwargs.setdefault("extra_columns", []).extend(extra_columns)
         super().__init__(*args, **kwargs)
 
+        # Set up form wrapper templates for bulk accept/reject
+        if self.can_accept_submissions:
+            self.include_before_table = "orga/tables/review_table.html#before"
+            self.include_after_table = "orga/tables/review_table.html#after"
+
         self.exclude = list(self.exclude) if hasattr(self, "exclude") else []
 
         if self.can_see_all_reviews:
