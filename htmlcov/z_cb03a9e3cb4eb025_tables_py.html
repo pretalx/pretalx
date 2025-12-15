@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_cb03a9e3cb4eb025_tasks_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.0">coverage.py v7.13.0</a>,
-            created at 2025-12-15 22:42 +0000
+            created at 2025-12-15 22:46 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -559,7 +559,7 @@
     <p class="pln"><span class="n"><a id="t475" href="#t475">475</a></span><span class="t">        <span class="com"># extra context into TemplateColumn.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t476" href="#t476">476</a></span><span class="t">        <span class="com"># So instead we&#8217;re adding our own extra context here and then</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t477" href="#t477">477</a></span><span class="t">        <span class="com"># proceed with the vendored TemplateColumn.render() method</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t478" href="#t478">478</a></span><span class="t">        <span class="nam">context</span> <span class="op">=</span> <span class="nam">getattr</span><span class="op">(</span><span class="nam">table</span><span class="op">,</span> <span class="str">"context"</span><span class="op">,</span> <span class="nam">Context</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t478" href="#t478">478</a></span><span class="t">        <span class="nam">context</span> <span class="op">=</span> <span class="nam">getattr</span><span class="op">(</span><span class="nam">table</span><span class="op">,</span> <span class="str">"context"</span><span class="op">,</span> <span class="key">None</span><span class="op">)</span> <span class="key">or</span> <span class="nam">Context</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t479" href="#t479">479</a></span><span class="t">        <span class="nam">context</span><span class="op">[</span><span class="str">"table"</span><span class="op">]</span> <span class="op">=</span> <span class="nam">table</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t480" href="#t480">480</a></span><span class="t">        <span class="key">for</span> <span class="nam">key</span><span class="op">,</span> <span class="nam">value</span> <span class="key">in</span> <span class="nam">self</span><span class="op">.</span><span class="nam">template_context</span><span class="op">.</span><span class="nam">items</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="par run show_par"><span class="n"><a id="t481" href="#t481">481</a></span><span class="t">            <span class="key">if</span> <span class="nam">callable</span><span class="op">(</span><span class="nam">value</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"><span class="annotate short">481&#x202F;&#x219B;&#x202F;484</span><span class="annotate long">line 481 didn't jump to line 484 because the condition on line 481 was always true</span></span></p>
@@ -828,7 +828,7 @@
             <a class="nav" href="z_cb03a9e3cb4eb025_tasks_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.0">coverage.py v7.13.0</a>,
-            created at 2025-12-15 22:42 +0000
+            created at 2025-12-15 22:46 +0000
         </p>
     </div>
 </footer>
