@@ -716,8 +716,10 @@ class QuestionColumn(TemplateColumn):
         if not answer:
             return self.placeholder
 
-        context = getattr(table, "context", {})
-        context["answer"] = answer
+        # Ensure table.context exists so TemplateColumn.render() sees our answer
+        if not hasattr(table, "context"):
+            table.context = {}
+        table.context["answer"] = answer
         return super().render(record, table, value, bound_column, **kwargs)
 
 

@@ -570,3 +570,35 @@ def test_submission_list_sort_by_question_column(
     assert "Alpha Talk" in content
     assert "Zeta Talk" in content
     assert content.find("Zeta Talk") < content.find("Alpha Talk")
+
+
+@pytest.mark.django_db
+def test_submission_list_question_column_renders_answers(
+    orga_client, event, orga_user, question
+):
+    with scope(event=event):
+        sub = Submission.objects.create(
+            title="Test Talk",
+            event=event,
+            submission_type=event.submission_types.first(),
+            content_locale="en",
+        )
+        Answer.objects.create(
+            submission=sub,
+            question=question,
+            answer="42specialteststring",
+        )
+        prefs = orga_user.get_event_preferences(event)
+        prefs.set(
+            "tables.SubmissionTable.columns",
+            ["indicator", "title", f"question_{question.id}", "state"],
+            commit=True,
+        )
+
+    response = orga_client.get(event.orga_urls.submissions, follow=True)
+    assert response.status_code == 200
+
+    content = response.text
+    assert "Test Talk" in content
+    assert "42specialteststring" in content
+    assert "No response" not in content
