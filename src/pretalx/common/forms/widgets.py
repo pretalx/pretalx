@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import datetime as dt
+import json
 from pathlib import Path
 
 from django import forms
@@ -407,3 +408,42 @@ class HoneypotWidget(forms.CheckboxInput):
 
     class Media:
         css = {"all": ["common/css/forms/honeypot.css"]}
+
+
+class ToggleChoiceWidget(forms.Select):
+    """A widget that renders a toggle button for binary choices.
+
+    Displays a button showing the current selection, toggles between the two
+    choices on click.
+    """
+
+    template_name = "common/widgets/toggle_choice.html"
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        choices = list(self.choices)
+        if len(choices) != 2:
+            raise ValueError(
+                f"ToggleChoiceWidget requires exactly 2 choices, got {len(choices)}"
+            )
+
+        choices_data = {
+            str(choices[0][0]): str(choices[0][1]),
+            str(choices[1][0]): str(choices[1][1]),
+        }
+        toggle_values = [str(choices[0][0]), str(choices[1][0])]
+        current_value = str(value) if value else toggle_values[0]
+        if current_value not in toggle_values:
+            current_value = toggle_values[0]
+        current_label = choices_data[current_value]
+        current_index = toggle_values.index(current_value)
+
+        context["widget"]["choices_json"] = json.dumps(choices_data)
+        context["widget"]["values_json"] = json.dumps(toggle_values)
+        context["widget"]["current_label"] = current_label
+        context["widget"]["value"] = current_value
+        context["widget"]["aria_pressed"] = "true" if current_index == 1 else "false"
+        return context
+
+    class Media:
+        js = [forms.Script("common/js/forms/toggle_choice.js", defer="")]

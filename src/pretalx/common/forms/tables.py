@@ -4,7 +4,7 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.forms.widgets import EnhancedSelect
+from pretalx.common.forms.widgets import EnhancedSelect, ToggleChoiceWidget
 
 DIRECTION_CHOICES = [
     ("asc", _("A–Z / low to high ↑")),
@@ -42,7 +42,7 @@ class TablePreferencesForm(forms.Form):
         label=_("Direction"),
         required=False,
         choices=DIRECTION_CHOICES,
-        widget=EnhancedSelect(attrs={"data-position": "top"}),
+        widget=ToggleChoiceWidget(),
     )
     sort_column_2 = forms.ChoiceField(
         label=_("Then by"),
@@ -53,7 +53,7 @@ class TablePreferencesForm(forms.Form):
         label=_("Direction"),
         required=False,
         choices=DIRECTION_CHOICES,
-        widget=EnhancedSelect(attrs={"data-position": "top"}),
+        widget=ToggleChoiceWidget(),
     )
 
     def __init__(self, *args, table=None, **kwargs):
