@@ -145,7 +145,7 @@ class PreferencesView(EventPermissionRequired, View):
             preferences = request.user.get_event_preferences(request.event)
 
             if reset:
-                preferences.clear(f"tables.{table_name}.columns", commit=True)
+                preferences.clear(f"tables.{table_name}.columns", commit=False)
                 preferences.clear(f"tables.{table_name}.ordering", commit=True)
             else:
                 columns = data.get("columns")

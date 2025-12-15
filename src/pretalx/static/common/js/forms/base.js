@@ -6,6 +6,20 @@
  * and deactivates submit button in order to prevent accidental double submits.
  */
 
+/**
+ * Set a button to loading state with spinner. Returns a function to restore it to its regular state.
+ */
+const setButtonLoading = (button) => {
+    const originalContent = button.innerHTML
+    const originalDisabled = button.disabled
+    button.innerHTML = `<i class="fa fa-spinner animate-spin pr-0"></i> ${button.textContent}`
+    button.disabled = true
+    return () => {
+        button.innerHTML = originalContent
+        button.disabled = originalDisabled
+    }
+}
+
 const originalData = {}
 
 const handleUnload = (e) => {

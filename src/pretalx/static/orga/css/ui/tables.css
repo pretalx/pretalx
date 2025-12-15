@@ -26,11 +26,8 @@ dialog.table-preferences {
 
   .sort-preferences {
     .sort-row {
-      gap: 0.5rem;
-
-      label {
-        min-width: 4rem;
-        text-align: right;
+      > .d-flex {
+        gap: 0.5rem;
       }
       .choices {
         width: auto;
