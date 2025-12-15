@@ -38,7 +38,7 @@ const initAvatarCrop = () => {
             if (!currentCropper) return
 
             const applyBtnText = applyBtn.textContent
-            applyBtn.innerHTML = `<i class="fa fa-spinner animate-spin pr-0"></i> ${applyBtnText}`
+            applyBtn.innerHTML = `<i class="fa fa-cog animate-spin pr-0"></i> ${applyBtnText}`
             applyBtn.classList.add('disabled')
 
             const canvas = currentCropper.getCroppedCanvas({

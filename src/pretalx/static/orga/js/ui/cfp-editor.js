@@ -180,7 +180,7 @@ document.body.addEventListener('click', (e) => {
                 const loadingDiv = document.createElement('div')
                 loadingDiv.className = 'loading-indicator'
                 const spinner = document.createElement('i')
-                spinner.className = 'fa fa-spinner fa-spin fa-2x'
+                spinner.className = 'fa fa-cog animate-spin fa-2x'
                 loadingDiv.appendChild(spinner)
                 content.replaceChildren(loadingDiv)
             }

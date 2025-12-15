@@ -265,7 +265,7 @@ dialog textarea {
     padding: 3rem;
     color: var(--color-grey-medium);
 }
-.cfp-editor-loading .fa-spinner {
+.cfp-editor-loading .animate-spin {
     font-size: 1.5rem;
 }
 
