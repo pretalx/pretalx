@@ -94,7 +94,7 @@
 | src/pretalx/common/language.py                                             |       22 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/log\_display.py                                         |       86 |       13 |       38 |        6 |     83% |158-162, 179, 188-193, 195-197, 234, 237 |
 | src/pretalx/common/mail.py                                                 |       54 |        4 |       18 |        2 |     89% |83, 134-136 |
-| src/pretalx/common/management/commands/create\_test\_event.py              |      185 |        4 |       60 |        2 |     97% |150->exit, 155, 164-166 |
+| src/pretalx/common/management/commands/create\_test\_event.py              |      185 |        5 |       60 |        2 |     96% |150->exit, 155, 163-166 |
 | src/pretalx/common/management/commands/devserver.py                        |       16 |       16 |        4 |        0 |      0% |     10-40 |
 | src/pretalx/common/management/commands/init.py                             |       16 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/management/commands/makemessages.py                     |       50 |        6 |       20 |        4 |     83% |45->47, 48-49, 57, 71-73 |
@@ -112,7 +112,7 @@
 | src/pretalx/common/models/fields.py                                        |       11 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/models/file.py                                          |       23 |        2 |        2 |        0 |     84% |     41-43 |
 | src/pretalx/common/models/log.py                                           |       80 |        9 |       32 |        9 |     82% |64-67, 89, 92->96, 101, 104, 109, 113->128, 118->128, 121 |
-| src/pretalx/common/models/mixins.py                                        |      178 |       21 |       72 |        3 |     86% |47, 128, 290->exit, 315-318, 321, 324, 327, 330, 334, 337-347 |
+| src/pretalx/common/models/mixins.py                                        |      178 |       23 |       72 |        3 |     86% |47, 128, 290->exit, 295-296, 315-318, 321, 324, 327, 330, 334, 337-347 |
 | src/pretalx/common/models/transaction.py                                   |       12 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/plugins.py                                              |       30 |        0 |        8 |        1 |     97% |    63->69 |
 | src/pretalx/common/settings/config.py                                      |       23 |        1 |        2 |        1 |     92% |       172 |
@@ -153,7 +153,7 @@
 | src/pretalx/event/models/event.py                                          |      562 |       31 |      124 |       10 |     93% |85, 464, 469, 515, 518, 667-669, 698->712, 730, 734-745, 767-768, 776, 818-827, 965->968 |
 | src/pretalx/event/models/organiser.py                                      |      119 |        8 |       18 |        6 |     90% |48, 55, 69, 77, 258, 266, 273, 315 |
 | src/pretalx/event/rules.py                                                 |       52 |        0 |       12 |        0 |    100% |           |
-| src/pretalx/event/services.py                                              |       57 |        2 |       20 |        2 |     95% |   81, 118 |
+| src/pretalx/event/services.py                                              |       57 |        3 |       20 |        3 |     92% |81, 86, 118 |
 | src/pretalx/event/stages.py                                                |       39 |        0 |       10 |        0 |    100% |           |
 | src/pretalx/event/utils.py                                                 |        7 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/mail/apps.py                                                   |        4 |        0 |        0 |        0 |    100% |           |
@@ -359,7 +359,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      295 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **33575** | **1971** | **5372** |  **747** | **92%** |           |
+| **TOTAL**                                                                  | **33575** | **1975** | **5372** |  **748** | **92%** |           |
 
 
 ## Setup coverage badge
