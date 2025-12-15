@@ -475,8 +475,10 @@ class TemplateColumn(tables.TemplateColumn):
         # extra context into TemplateColumn.
         # So instead we’re adding our own extra context here and then
         # proceed with the vendored TemplateColumn.render() method
-        context = getattr(table, "context", None) or Context()
+        context = getattr(table, "context", None) or {}
         context["table"] = table
+        if not isinstance(context, Context):
+            context = Context(context)
         for key, value in self.template_context.items():
             if callable(value):
                 context[key] = value(record, table)
@@ -717,8 +719,9 @@ class QuestionColumn(TemplateColumn):
             return self.placeholder
 
         # Ensure table.context exists so TemplateColumn.render() sees our answer
-        if not hasattr(table, "context"):
-            table.context = {}
+        # Must be a Django Context object, not a plain dict, for update() context manager
+        if not hasattr(table, "context") or table.context is None:
+            table.context = Context()
         table.context["answer"] = answer
         return super().render(record, table, value, bound_column, **kwargs)
 
