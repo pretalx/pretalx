@@ -8,7 +8,7 @@ import pytest
 from django_scopes import scope
 
 from pretalx.event.models import Event
-from pretalx.submission.models import Submission, SubmissionType
+from pretalx.submission.models import Answer, Submission, SubmissionType
 
 
 @pytest.mark.django_db
@@ -502,3 +502,71 @@ def test_multicolumn_sorting_function_column_descending(orga_client, event, orga
     assert (
         pos_beta < pos_alpha
     ), "ZZZ Type should appear before AAA Type with -submission_type"
+
+
+@pytest.mark.django_db
+def test_submission_list_with_deleted_question_column_in_ordering(
+    orga_client, event, orga_user, submission, question
+):
+    question_id = question.id
+
+    with scope(event=event):
+        prefs = orga_user.get_event_preferences(event)
+        prefs.set(
+            "tables.SubmissionTable.ordering",
+            [f"question_{question_id}"],
+            commit=True,
+        )
+        question.delete()
+
+    response = orga_client.get(event.orga_urls.submissions, follow=True)
+    assert response.status_code == 200
+    assert submission.title in response.text
+
+
+@pytest.mark.django_db
+def test_submission_list_sort_by_question_column(
+    orga_client, event, orga_user, question
+):
+    """Test that sorting by question columns works correctly.
+
+    QuestionColumn uses a custom order() method with subquery annotation,
+    which needs special handling in _apply_ordering.
+    """
+    with scope(event=event):
+        sub_a = Submission.objects.create(
+            title="Alpha Talk",
+            event=event,
+            submission_type=event.submission_types.first(),
+            content_locale="en",
+        )
+        sub_z = Submission.objects.create(
+            title="Zeta Talk",
+            event=event,
+            submission_type=event.submission_types.first(),
+            content_locale="en",
+        )
+        Answer.objects.create(
+            submission=sub_a,
+            question=question,
+            answer="10",
+        )
+        Answer.objects.create(
+            submission=sub_z,
+            question=question,
+            answer="1",
+        )
+        prefs = orga_user.get_event_preferences(event)
+        prefs.set(
+            "tables.SubmissionTable.ordering",
+            [f"question_{question.id}"],
+            commit=True,
+        )
+
+    response = orga_client.get(event.orga_urls.submissions, follow=True)
+    assert response.status_code == 200
+
+    content = response.text
+    assert "Alpha Talk" in content
+    assert "Zeta Talk" in content
+    assert content.find("Zeta Talk") < content.find("Alpha Talk")

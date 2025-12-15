@@ -251,8 +251,9 @@ class PretalxTable(tables.Table):
         This method applies all ordering ourselves by:
         1. Iterating through all columns in the ordering
         2. For function-based columns (FunctionOrderMixin), applying their annotation
-        3. For traditional columns, using their accessor
-        4. Applying all orderings at once with a single order_by() call
+        3. For columns with apply_custom_ordering (like QuestionColumn), using that
+        4. For traditional columns, using their accessor
+        5. Applying all orderings at once with a single order_by() call
 
         This ensures multi-column sorting works correctly even when mixing function-based
         and traditional columns.
@@ -279,6 +280,12 @@ class PretalxTable(tables.Table):
                     queryset, descending
                 )
                 order_by_fields.extend(order_keys)
+            # Check if this column has apply_custom_ordering (e.g., QuestionColumn)
+            elif hasattr(column, "apply_custom_ordering"):
+                queryset, order_keys = column.apply_custom_ordering(
+                    queryset, descending
+                )
+                order_by_fields.extend(order_keys)
             elif bound_column.order_by:
                 for accessor in bound_column.order_by:
                     accessor_str = str(accessor)
@@ -288,14 +295,25 @@ class PretalxTable(tables.Table):
                         order_by_fields.append(accessor_str[1:])
                     else:
                         order_by_fields.append(accessor_str)
-            else:
+            elif self._is_model_field(column_name):
                 order_key = f"-{column_name}" if descending else column_name
                 order_by_fields.append(order_key)
+            # Skip columns that can't be ordered (e.g., deleted question columns)
 
         if order_by_fields:
             queryset = queryset.order_by(*order_by_fields)
 
         return queryset
+
+    def _is_model_field(self, field_name):
+        """Check if field_name is a valid model field that can be used for ordering."""
+        if not hasattr(self, "Meta") or not hasattr(self.Meta, "model"):
+            return False
+        try:
+            self.Meta.model._meta.get_field(field_name)
+            return True
+        except Exception:
+            return False
 
     def _merge_ordering(self, new_ordering, saved_ordering):
         """Merge new column click ordering with saved multi-column ordering.
@@ -330,7 +348,9 @@ class PretalxTable(tables.Table):
                         f"tables.{self.name}.ordering", ordering, commit=True
                     )
             else:
-                ordering = saved_ordering
+                # Validate saved ordering in case columns have been removed
+                # (e.g., deleted questions)
+                ordering = self._validate_ordering(saved_ordering)
 
             columns = preferences.get(f"tables.{self.name}.columns")
             page_size = preferences.get(f"tables.{self.name}.page_size")
@@ -662,7 +682,12 @@ class QuestionColumn(TemplateColumn):
         kwargs["attrs"]["td"]["class"] = f"{existing_class} answer".strip()
         super().__init__(*args, **kwargs)
 
-    def order(self, queryset, is_descending):
+    def apply_custom_ordering(self, queryset, is_descending):
+        """Apply annotation for ordering and return (queryset, order_keys).
+
+        Used by PretalxTable._apply_ordering() for multi-column sorting.
+        This method only annotates - it does NOT call order_by().
+        """
         from pretalx.submission.models import Answer
 
         if hasattr(queryset.model, "user"):
@@ -677,7 +702,12 @@ class QuestionColumn(TemplateColumn):
         annotation_name = f"_question_{self.question.id}_answer"
         queryset = queryset.annotate(**{annotation_name: Subquery(answer_subquery)})
         order_field = f"{'-' if is_descending else ''}{annotation_name}"
-        queryset = queryset.order_by(order_field)
+        return queryset, [order_field]
+
+    def order(self, queryset, is_descending):
+        """Apply ordering for single-column sorting (django-tables2 default mechanism)."""
+        queryset, order_keys = self.apply_custom_ordering(queryset, is_descending)
+        queryset = queryset.order_by(*order_keys)
         return queryset, True
 
     def render(self, record, table, value, bound_column, **kwargs):
