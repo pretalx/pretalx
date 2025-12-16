@@ -155,3 +155,10 @@
 .submit-group .choices {
   align-self: flex-start;
 }
+
+.select-all-events[role=button] {
+  &:hover,
+  &:focus {
+    color: var(--color-primary-text-dark);
+  }
+}

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django import forms
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.forms.widgets import EnhancedSelect, EnhancedSelectMultiple
@@ -31,6 +32,11 @@ class AuthTokenForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.user = user
         self.fields["events"].queryset = user.get_events_with_any_permission()
+        self.fields["events"].help_text = mark_safe(
+            '<span class="select-all-events font-text p-0 text-underline fake-link" role="button" tabindex="0">'
+            + str(_("Select all events"))
+            + "</span>"
+        )
 
         self.endpoint_fields = {}
         for endpoint in ENDPOINTS:

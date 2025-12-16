@@ -395,7 +395,7 @@ iframe {
   border: 0;
 }
 
-a {
+a, .fake-link {
   color: var(--color-primary-text);
   text-decoration: none;
 
@@ -1070,6 +1070,9 @@ pl-0 {
 }
 .text-left {
   text-align: left !important;
+}
+.text-underline {
+  text-decoration: underline !important;
 }
 .font-weight-bold {
   font-weight: bold !important;

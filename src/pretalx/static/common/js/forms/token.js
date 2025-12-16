@@ -71,11 +71,34 @@ const setupPermissionCheckboxes = () => {
     updateAllCheckboxes()
 }
 
+const setupSelectAllEvents = () => {
+    const selectAllButton = document.querySelector('.select-all-events')
+    if (!selectAllButton) return
+
+    const selectAllHandler = (event) => {
+        event.preventDefault()
+        const selectElement = document.querySelector('#id_events')
+        if (!selectElement || !selectElement._choicesInstance) return
+
+        const choices = selectElement._choicesInstance
+        const allValues = Array.from(selectElement.options).map(option => option.value).filter(v => v)
+        choices.setChoiceByValue(allValues)
+    }
+
+    selectAllButton.addEventListener('click', selectAllHandler)
+    selectAllButton.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            selectAllHandler(event)
+        }
+    })
+}
+
 const setupTokenTable = () => {
     const presetField = document.querySelector('#id_permission_preset')
     presetField.addEventListener('change', handleTokenTable)
     handleTokenTable()
     setupPermissionCheckboxes()
+    setupSelectAllEvents()
 }
 
 onReady(setupTokenTable)
