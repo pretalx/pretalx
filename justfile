@@ -39,6 +39,20 @@ deps-outdated:
     direct = {Requirement(d).name.lower() for d in deps}; \
     [print(f\"{p['name']}: {p['version']} → {p['latest_version']}\") for name in sorted(outdated.keys() & direct) if (p := outdated[name])]"
 
+# Bump a dependency version
+[group('development')]
+deps-bump package version:
+    python -c "\
+    import tomllib; \
+    from pathlib import Path; \
+    from packaging.requirements import Requirement; \
+    p = Path('pyproject.toml'); \
+    deps = tomllib.load(open('pyproject.toml', 'rb')).get('project', {}).get('dependencies', []); \
+    old = next((d for d in deps if Requirement(d).name.lower() == '{{package}}'.lower()), None); \
+    old and p.write_text(p.read_text().replace(old, f'{Requirement(old).name}~={{version}}'))"
+    uv lock --upgrade-package {{package}}
+
+
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
 [working-directory("src")]
