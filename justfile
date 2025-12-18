@@ -8,11 +8,13 @@ default:
 # Install dependencies (use --extras to include e.g. dev, devdocs, postgres, redis)
 [group('development')]
 install *args:
+    uv lock --upgrade
     uv sync {{ args }}
 
 # Install all dependencies (dev, devdocs, postgres, redis)
 [group('development')]
 install-all:
+    uv lock --upgrade
     uv sync --all-extras
 
 # Install all dependencies (dev, devdocs, postgres, redis)
