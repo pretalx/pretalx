@@ -28,6 +28,17 @@ install-npm:
 install-plugin path="":
     uv pip install -e {{ path }}
 
+# Check for outdated dependencies
+[group('development')]
+deps-outdated:
+    uv pip list --outdated --format=json | python -c "\
+    import json, sys, tomllib; \
+    from packaging.requirements import Requirement; \
+    outdated = {p['name'].lower(): p for p in json.load(sys.stdin)}; \
+    deps = tomllib.load(open('pyproject.toml', 'rb')).get('project', {}).get('dependencies', []); \
+    direct = {Requirement(d).name.lower() for d in deps}; \
+    [print(f\"{p['name']}: {p['version']} → {p['latest_version']}\") for name in sorted(outdated.keys() & direct) if (p := outdated[name])]"
+
 # Run the development server or other commands, e.g. `just run makemigrations`
 [group('development')]
 [working-directory("src")]
