@@ -121,8 +121,8 @@ djhtml-check:
 
 # Format Django templates with djhtml
 [group('linting')]
-djhtml *args="src":
-    find {{ args }} -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -print | xargs uv run --extra=dev djhtml
+djhtml *args="":
+    find src -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -print | xargs uv run --extra=dev djhtml {{ args }}
 
 # Run all formatters and linters
 [group('linting')]
