@@ -1868,8 +1868,8 @@ msgid ""
 "way. <br> Please return to the last page and try again!"
 msgstr ""
 "Es sieht aus, als wäre die Kommunikation zwischen dir und pretalx irgendwie "
-"schief gelaufen.<br>Bitte geh zurück zur letzten Seite, und versuch es noch "
-"einmal!"
+"schief gelaufen.<br>Bitte gehe zurück zur letzten Seite und versuche es "
+"erneut!"
 
 #: pretalx/common/templates/403_csrf.html:12
 #: pretalx/common/templates/403_csrf.html:16
@@ -1884,7 +1884,7 @@ msgid ""
 msgstr ""
 "Wir konnten nicht sicherstellen, dass diese Anfrage wirklich von dir kam. "
 "Aus Sicherheitsgründen können wir sie deshalb nicht verarbeiten.<br>Bitte "
-"geh zurück zur letzten Seite, lad sie neu, und versuch es dann noch mal."
+"gehe zurück zur letzten Seite, lade sie neu, und versuche es dann erneut."
 
 #: pretalx/common/templates/500.html:15
 msgid "Internal server error."
@@ -2562,7 +2562,7 @@ msgid ""
 "Upload a custom CSS file if changing the primary colour is not sufficient "
 "for you."
 msgstr ""
-"Lad eine eigene CSS-Datei hoch, wenn dir das Ändern der Primärfarbe nicht "
+"Lade eine eigene CSS-Datei hoch, wenn dir das Ändern der Primärfarbe nicht "
 "reicht."
 
 #: pretalx/event/models/event.py:242
@@ -2844,7 +2844,7 @@ msgstr "Richte die Veranstaltung ein"
 
 #: pretalx/event/stages.py:51
 msgid "Gather your team"
-msgstr "Lad das restliche Team ein"
+msgstr "Lade das restliche Team ein"
 
 #: pretalx/event/stages.py:52
 msgid "Write a CfP"
@@ -2868,7 +2868,7 @@ msgstr "Reich selber für die Vortragenden ein"
 
 #: pretalx/event/stages.py:69
 msgid "Invite reviewers"
-msgstr "Lad Leute zum Review-Team ein"
+msgstr "Lade Leute zum Review-Team ein"
 
 #: pretalx/event/stages.py:77
 msgid "Let reviewers do their work"
@@ -3560,7 +3560,7 @@ msgid ""
 "please upload a JSON file with a list of options:"
 msgstr ""
 "Hier kannst du Antwortoptionen hochladen, eine Option pro Zeile. Um "
-"mehrsprachige Optionen zu importieren, lad bitte eine JSON-Datei mit einer "
+"mehrsprachige Optionen zu importieren, lade bitte eine JSON-Datei mit einer "
 "Liste von Optionen hoch:"
 
 #: pretalx/orga/forms/cfp.py:142
@@ -8907,7 +8907,7 @@ msgstr "Bild"
 #: pretalx/submission/models/submission.py:291
 msgid "Use this if you want an illustration to go with your proposal."
 msgstr ""
-"Lad hier ein Bild hoch, wenn Du Deine Einreichung illustrieren möchtest."
+"Lade hier ein Bild hoch, wenn Du Deine Einreichung illustrieren möchtest."
 
 #: pretalx/submission/forms/submission.py:193
 msgid ""
@@ -10250,7 +10250,7 @@ msgstr ""
 #~ "sessions specified in the XML file. The format is expected to be the same "
 #~ "as the XML export provided."
 #~ msgstr ""
-#~ "Lad hier eine XML-Datei hoch, um eine neue Programm-Version zu "
+#~ "Lade hier eine XML-Datei hoch, um eine neue Programm-Version zu "
 #~ "veröffentlichen, die genau die Talks enthält, die in der XML-Datei "
 #~ "aufgeführt werden. Das Format muss dem XML-Export-Format entsprechen."
 
@@ -10959,7 +10959,7 @@ msgstr ""
 #~ "connection to see the current schedule."
 #~ msgstr ""
 #~ "Du siehst gerade eine gespeicherte Version des Programms, weil du nicht "
-#~ "online bist. <strong>Lad die Seite neu</strong>, wenn du wieder Netz "
+#~ "online bist. <strong>Lade die Seite neu</strong>, wenn du wieder Netz "
 #~ "hast, um sicherzustellen, dass du die aktuelle Version siehst."
 
 #~ msgid "No talk matches your search."

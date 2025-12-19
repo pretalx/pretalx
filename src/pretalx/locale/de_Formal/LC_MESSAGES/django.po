@@ -817,7 +817,7 @@ msgid ""
 msgstr ""
 "Wenn Sie Ihre Einreichung Kolleginnen oder Bekannten zeigen möchten, ist "
 "hier ein Link, den Sie für eine nicht-editierbare Ansicht Ihrer Einreichung "
-"verschicken kannst:"
+"verschicken können:"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:92
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:18
@@ -1112,7 +1112,7 @@ msgstr ""
 #, fuzzy
 #| msgid "Permission denied."
 msgid "Form submission failed."
-msgstr "Keine Berechtigung."
+msgstr "Übermitteln des Formulars fehlgeschlagen."
 
 #: pretalx/common/forms/fields.py:200
 #, python-format
@@ -8926,7 +8926,7 @@ msgstr "Bild"
 msgid "Use this if you want an illustration to go with your proposal."
 msgstr ""
 "Laden Sie hier ein Bild hoch, wenn Sie Ihre Einreichung illustrieren "
-"möchtest."
+"möchten."
 
 #: pretalx/submission/forms/submission.py:193
 msgid ""
