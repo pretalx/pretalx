@@ -1,0 +1,64 @@
+<!--
+SPDX-FileCopyrightText: 2025-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+
+{% extends "orga/base.html" %}
+
+{% load i18n %}
+{% load static %}
+
+{% block extra_title %}{% translate "Edit API Token" %} :: {% endblock extra_title %}
+
+{% block content %}
+<fieldset class="m-2">
+    <legend>{% translate "Edit API Token" %}: {{ token.name }}</legend>
+
+    <div id="edit-token">
+        <form method="post">
+            {% csrf_token %}
+
+            {{ edit_form.name.as_field_group }}
+            {{ edit_form.events.as_field_group }}
+            {{ edit_form.expires.as_field_group }}
+            {{ edit_form.permission_preset.as_field_group }}
+
+            <div class="form-group row" id="permission-endpoints">
+                <div class="col-md-3"></div>
+                <div class="col-md-9 table-responsive">
+                    <table class="table table-condensed table-flip no-hover" id="endpoint-permissions-table">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                {% for option in edit_form.fields.endpoint_events.choices %}
+                                    <th class="text-center">
+                                        {{ option.1 }}<br>
+                                        <input type="checkbox" class="permission-col-all" data-permission="{{ option.0 }}">
+                                    </th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for name, field in edit_form.get_endpoint_fields %}
+                                <tr data-endpoint="{{ name }}">
+                                    <th class="d-flex align-items-center justify-content-end">
+                                        {{ field.label }}
+                                        <input type="checkbox" class="permission-row-all" data-endpoint="{{ name }}">
+                                    </th>
+                                    {% for option in field.field.choices %}
+                                        <td class="text-center">
+                                            <input type="checkbox" name="{{ field.name }}" value="{{ option.0 }}" id="id_{{ field.name }}_{{ option.0 }}" data-permission="{{ option.0 }}" {% if option.0 in field.value %}checked{% endif %}>
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {% include "orga/includes/submit_row.html" with submit_buttons=submit_buttons submit_buttons_extra=submit_buttons_extra %}
+        </form>
+    </div>
+</fieldset>
+{% endblock content %}

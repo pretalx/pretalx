@@ -63,8 +63,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                             </form>
                                         {% endif %}
                                     </td>
-                                    <td>
-                                        <ul>
+                                    <td class="align-top">
+                                        <ul class="mb-0">
                                             {% for event in token.events.all %}
                                                 <li><a href="{{ event.orga_urls.base }}">{{ event.name }}</a></li>
                                             {% endfor %}
@@ -93,6 +93,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                     <td>{{ token.expires|date:"SHORT_DATETIME_FORMAT"|default:"-" }}</td>
                                     <td>
                                         {% if token.is_active %}
+                                            <a href="{% url 'orga:user.token.edit' pk=token.pk %}" class="btn btn-outline-primary btn-sm">
+                                                {% translate "Edit" %}
+                                            </a>
                                             <form method="post" class="d-inline">
                                                 {% csrf_token %}
                                                 <button type="submit" name="revoke" value="{{ token.id }}" class="btn btn-danger btn-sm">
