@@ -600,7 +600,8 @@ class ProfileStep(FormFlowStep):
     form_class = SpeakerProfileForm
     template_name = "cfp/event/submission_profile.html"
     priority = 75
-    field_keys = ["biography", "avatar", "availabilities"]
+    field_keys = ["name", "biography", "avatar", "availabilities"]
+    always_required_fields = {"name"}
     label_model = SpeakerProfile
 
     def get_form_kwargs(self):

@@ -26,6 +26,7 @@ def default_settings():
 
 
 _DEFAULT_FIELDS = {
+    "name": {"visibility": "required"},
     "title": {
         "visibility": "required",
         "min_length": None,

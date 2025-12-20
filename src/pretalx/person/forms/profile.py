@@ -91,6 +91,14 @@ class SpeakerProfileForm(
         elif "avatar" in self.fields:
             self.fields["avatar"].required = False
             self.fields["avatar"].widget.is_required = False
+
+        # Re-apply field ordering now that user fields have been added
+        if self.field_configuration:
+            field_order = [
+                field_data["key"] for field_data in self.field_configuration.values()
+            ]
+            self._reorder_fields(field_order)
+
         if self.is_bound and not self.is_valid() and "availabilities" in self.errors:
             # Replace self.data with a version that uses initial["availabilities"]
             # in order to have event and timezone data available

@@ -725,7 +725,9 @@ class CfPEditorMixin:
         auto_required = self.auto_required | always_required
 
         form = self._get_preview_form(step)
-        ordered_keys = self._get_ordered_field_keys(fields_config, step_fields)
+        ordered_keys = self._get_ordered_field_keys(
+            fields_config, step_fields, always_required
+        )
 
         result = []
         for key in ordered_keys:
@@ -745,14 +747,19 @@ class CfPEditorMixin:
             return SpeakerProfileForm(event=self.request.event, read_only=True)
         return None
 
-    def _get_ordered_field_keys(self, fields_config, step_fields):
+    def _get_ordered_field_keys(self, fields_config, step_fields, always_required=None):
+        always_required = always_required or set()
         if fields_config:
             ordered_keys = [f.get("key") for f in fields_config if f.get("key")]
             for key in step_fields:
                 if key not in ordered_keys:
-                    ordered_keys.append(key)
-            return ordered_keys
-        return step_fields
+                    if key in always_required:
+                        ordered_keys.insert(0, key)
+                    else:
+                        ordered_keys.append(key)
+        else:
+            ordered_keys = list(step_fields)
+        return ordered_keys
 
     def _build_field_data(self, key, fields_config, step, form, auto_required):
         auto_hidden_reason = self.auto_hidden.get(key)

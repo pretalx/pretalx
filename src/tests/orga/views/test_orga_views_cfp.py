@@ -127,6 +127,29 @@ def test_cfp_editor_remove_field(orga_client, event):
 
 
 @pytest.mark.django_db
+def test_cfp_editor_profile_name_field_always_included(orga_client, event):
+    """The name field should always be included in the profile step."""
+    url = reverse(
+        "orga:cfp.editor.field_toggle",
+        kwargs={"event": event.slug, "step": "profile", "action": "add"},
+    )
+    response = orga_client.post(url, {"field": "name"})
+    assert response.status_code == 200
+
+    step_url = reverse(
+        "orga:cfp.editor.step", kwargs={"event": event.slug, "step": "profile"}
+    )
+    response = orga_client.get(step_url)
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "dragsort-id=name" in content
+    # It should appear before other fields by default
+    name_pos = content.find("dragsort-id=name")
+    biography_pos = content.find("dragsort-id=biography")
+    assert name_pos < biography_pos, "Name field should appear before biography"
+
+
+@pytest.mark.django_db
 def test_cfp_editor_reorder_fields(orga_client, event):
     url = reverse(
         "orga:cfp.editor.reorder", kwargs={"event": event.slug, "step": "info"}
