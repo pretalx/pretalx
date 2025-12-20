@@ -16,7 +16,7 @@
 | src/pretalx/agenda/views/feed.py                                           |       33 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/agenda/views/schedule.py                                       |      136 |        2 |       34 |        1 |     98% |   64, 165 |
 | src/pretalx/agenda/views/speaker.py                                        |       99 |        9 |       18 |        3 |     86% |78, 108-114, 152, 162-163 |
-| src/pretalx/agenda/views/talk.py                                           |      160 |        5 |       24 |        4 |     93% |70->69, 76->69, 155-158, 169-170 |
+| src/pretalx/agenda/views/talk.py                                           |      166 |        5 |       26 |        4 |     93% |70->69, 76->69, 161-164, 175-176 |
 | src/pretalx/agenda/views/utils.py                                          |       51 |        6 |       22 |        4 |     86% |21, 59, 61, 65-69, 77->79 |
 | src/pretalx/agenda/views/widget.py                                         |       84 |        6 |       30 |        3 |     92% |41, 86-89, 104 |
 | src/pretalx/api/apps.py                                                    |        3 |        0 |        0 |        0 |    100% |           |
@@ -153,7 +153,7 @@
 | src/pretalx/event/models/event.py                                          |      562 |       31 |      124 |       10 |     93% |85, 464, 469, 515, 518, 667-669, 698->712, 730, 734-745, 767-768, 776, 818-827, 965->968 |
 | src/pretalx/event/models/organiser.py                                      |      119 |        8 |       18 |        6 |     90% |48, 55, 69, 77, 258, 266, 273, 315 |
 | src/pretalx/event/rules.py                                                 |       52 |        0 |       12 |        0 |    100% |           |
-| src/pretalx/event/services.py                                              |       57 |        2 |       20 |        3 |     94% |81, 90->exit, 118 |
+| src/pretalx/event/services.py                                              |       57 |        2 |       20 |        2 |     95% |   81, 118 |
 | src/pretalx/event/stages.py                                                |       39 |        0 |       10 |        0 |    100% |           |
 | src/pretalx/event/utils.py                                                 |        7 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/mail/apps.py                                                   |        4 |        0 |        0 |        0 |    100% |           |
@@ -266,7 +266,7 @@
 | src/tests/agenda/views/test\_agenda\_featured.py                           |       57 |        0 |        4 |        0 |    100% |           |
 | src/tests/agenda/views/test\_agenda\_feedback.py                           |       63 |        0 |        0 |        0 |    100% |           |
 | src/tests/agenda/views/test\_agenda\_schedule.py                           |      240 |        0 |       12 |        0 |    100% |           |
-| src/tests/agenda/views/test\_agenda\_talks.py                              |      197 |        0 |        0 |        0 |    100% |           |
+| src/tests/agenda/views/test\_agenda\_talks.py                              |      197 |        2 |        0 |        0 |     99% |   288-289 |
 | src/tests/agenda/views/test\_agenda\_widget.py                             |       42 |        0 |        0 |        0 |    100% |           |
 | src/tests/api/test\_api\_access\_code.py                                   |      116 |        0 |        0 |        0 |    100% |           |
 | src/tests/api/test\_api\_answers.py                                        |      134 |        0 |        2 |        0 |    100% |           |
@@ -359,7 +359,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      295 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **33666** | **1943** | **5394** |  **758** | **92%** |           |
+| **TOTAL**                                                                  | **33672** | **1945** | **5396** |  **757** | **92%** |           |
 
 
 ## Setup coverage badge
