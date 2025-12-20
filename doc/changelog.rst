@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :bug:`schedule` On the “featured sessions” page, only organisers were able to see speaker biographies in the featured sessions.
 - :bug:`orga:schedule` When using the session form to schedule sessions rather than the schedule editor, organisers could schedule sessions outside the event dates.
 - :announcement:`admin` pretalx support now requires PostgreSQL 16 or higher.
 - :feature:`orga` Organisers can now select a secondary sort column in list views.

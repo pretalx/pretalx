@@ -93,6 +93,12 @@ class TalkView(TalkMixin, TemplateView):
             self.request.event.current_schedule or self.request.event.wip_schedule
         )
         if not self.request.user.has_perm("schedule.view_schedule", schedule):
+            result = []
+            speakers = self.submission.speakers.all().with_profiles(self.request.event)
+            for speaker in speakers:
+                speaker.talk_profile = speaker.event_profile(event=self.request.event)
+                result.append(speaker)
+            ctx["speakers"] = result
             return ctx
         qs = (
             schedule.talks.filter(room__isnull=False).select_related("room")
