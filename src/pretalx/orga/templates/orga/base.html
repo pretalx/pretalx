@@ -20,7 +20,7 @@ SPDX-FileContributor: Raphael Michel
         <meta charset="utf-8">
         <title>{% block title %}{% block extra_title %}{% endblock extra_title %}{% if request.event %}{{ request.event.name }} :: {% endif %}{% endblock title %}pretalx</title>
         <meta name="title" content="{% block meta_title %}{% endblock meta_title %} {% if request.event %} - {{ request.event.name }} {% endif %}pretalx">
-        <meta name="description" content="{% block meta_description %}{% if request.event %}Schedule, talks and talk submissions for {{ reqeuest.event.name }}{% else %}Talks and talk submissions by pretalx{% endif %}{% endblock meta_description %}">
+        <meta name="description" content="{% block meta_description %}{% if request.event %}Schedule, talks and talk submissions for {{ request.event.name }}{% else %}Talks and talk submissions by pretalx{% endif %}{% endblock meta_description %}">
         <meta name="application-name" content="pretalx">
         <meta name="generator" content="pretalx">
         <meta name="keywords" content="{% if request.event %}{{ request.event.name }}, {{ request.event.slug }}, {% if request.event.date_from %}{{ request.event.date_from.year }}, {% endif %}{% endif %}schedule, talks, cfp, call for papers, conference, submissions, organizer">
