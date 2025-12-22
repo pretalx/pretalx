@@ -70,6 +70,7 @@ class LogMixin:
                 if any(sensitive_key in key for sensitive_key in SENSITIVE_KEYS):
                     value = data[key]
                     data[key] = "********" if value else value
+            data = json_roundtrip(data)
 
         from pretalx.common.models import ActivityLog
 
