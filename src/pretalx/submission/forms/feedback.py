@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.forms.fields import HoneypotField
 from pretalx.common.forms.renderers import InlineFormRenderer
+from pretalx.common.forms.widgets import StarsWidget
 from pretalx.submission.models import Feedback
 
 
@@ -21,6 +22,7 @@ class FeedbackForm(forms.ModelForm):
         self.fields["speaker"].empty_label = _("All speakers")
         if len(speakers) == 1:
             self.fields["speaker"].widget = forms.HiddenInput()
+        self.fields["rating"].widget = StarsWidget()
 
     def save(self, *args, **kwargs):
         if (
@@ -32,4 +34,4 @@ class FeedbackForm(forms.ModelForm):
 
     class Meta:
         model = Feedback
-        fields = ["speaker", "review"]
+        fields = ["speaker", "rating", "review"]
