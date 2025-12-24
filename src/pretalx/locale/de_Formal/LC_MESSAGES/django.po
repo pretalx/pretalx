@@ -5,8 +5,8 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-17 16:46+0000\n"
-"PO-Revision-Date: 2025-11-28 21:40+0000\n"
-"Last-Translator: Tobias Kunze <r@rixx.de>\n"
+"PO-Revision-Date: 2025-12-24 18:25+0000\n"
+"Last-Translator: \"Michi, der\" <michael.scholz@dlr.de>\n"
 "Language-Team: \n"
 "Language: de_Formal\n"
 "MIME-Version: 1.0\n"
@@ -330,23 +330,21 @@ msgstr ""
 #, python-brace-format
 msgid "You must include the “{invitation_url}” placeholder in your email."
 msgstr ""
+"Sie müssen den “{invitation_url}”-Platzhalter in Ihrer E-Mail einarbeiten."
 
 #: pretalx/cfp/forms/submissions.py:45
-#, fuzzy
-#| msgid "The speaker was already part of the proposal."
 msgid "This person is already a speaker on this proposal."
-msgstr "Der Vortragende war bereits Teil der Einreichung."
+msgstr "Dieser Vortragende ist bereits Teil dieser Einreichung."
 
 #: pretalx/cfp/forms/submissions.py:49
-#, fuzzy
-#| msgid "The speaker has been added to the proposal."
 msgid "This person has already been invited to this proposal."
-msgstr "Der Vortragende wurde der Einreichung hinzugefügt."
+msgstr "Diese Person wurde bereits zu dieser Einreichung eingeladen."
 
 #: pretalx/cfp/forms/submissions.py:58
 #, python-brace-format
 msgid "This would exceed the maximum of {max} speakers per proposal."
 msgstr ""
+"Dies würde das Maximum von {max} Vortragenden pro Einreichung übersteigen."
 
 #: pretalx/cfp/phrases.py:10
 msgid "Go to CfP"
@@ -817,7 +815,7 @@ msgid ""
 msgstr ""
 "Wenn Sie Ihre Einreichung Kolleginnen oder Bekannten zeigen möchten, ist "
 "hier ein Link, den Sie für eine nicht-editierbare Ansicht Ihrer Einreichung "
-"verschicken kannst:"
+"verschicken können:"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:92
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:18
@@ -1006,10 +1004,8 @@ msgstr[0] "Einreichende"
 msgstr[1] "Einreichende"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:41
-#, fuzzy
-#| msgid "pending Invitation"
 msgid "Pending invitation"
-msgstr "ausstehende Einladung"
+msgstr "Ausstehende Einladung"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:44
 #: pretalx/orga/views/organiser.py:196 pretalx/orga/views/submission.py:296
@@ -1017,14 +1013,10 @@ msgid "Retract invitation"
 msgstr "Einladung zurückziehen"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:51
-#, fuzzy
-#| msgid "per speaker"
 msgid "Invite co-speaker"
-msgstr "pro Vortragender"
+msgstr "Mitvortragenden einladen"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:59
-#, fuzzy
-#| msgid "State"
 msgid "Status"
 msgstr "Status"
 
@@ -1085,10 +1077,8 @@ msgid "Are you really sure? Please tick the box"
 msgstr "Wirklich? Bitte setzen Sie diesen Haken"
 
 #: pretalx/cfp/views/user.py:580 pretalx/orga/views/submission.py:325
-#, fuzzy
-#| msgid "The invitation has been sent."
 msgid "The invitation has been retracted."
-msgstr "Die Einladung wurde verschickt."
+msgstr "Die Einladung wurde zurückgezogen."
 
 #: pretalx/cfp/views/user.py:613
 msgid "You cannot accept this invitation."
@@ -1109,10 +1099,8 @@ msgstr ""
 "dieser Endungen haben: "
 
 #: pretalx/common/forms/fields.py:192
-#, fuzzy
-#| msgid "Permission denied."
 msgid "Form submission failed."
-msgstr "Keine Berechtigung."
+msgstr "Übermitteln des Formulars fehlgeschlagen."
 
 #: pretalx/common/forms/fields.py:200
 #, python-format
@@ -1193,39 +1181,35 @@ msgstr "Sie haben {count} Wörter geschrieben."
 #: pretalx/common/forms/mixins.py:169
 #, python-brace-format
 msgid "Please select exactly {count} tags."
-msgstr ""
+msgstr "Bitte wählen Sie exakt {count} Tags."
 
 #: pretalx/common/forms/mixins.py:173
-#, fuzzy, python-brace-format
-#| msgid "Please write between {min_length} and {max_length} words."
+#, python-brace-format
 msgid "Please select between {min} and {max} tags."
-msgstr "Bitte schreiben Sie zwischen {min_length} und {max_length} Wörtern."
+msgstr "Bitte wählen Sie {min} bis {max} Tags."
 
 #: pretalx/common/forms/mixins.py:177
-#, fuzzy, python-brace-format
-#| msgid "Please write at least {min_length} words."
+#, python-brace-format
 msgid "Please select at least {min} tags."
-msgstr "Bitte schreiben Sie mindestens {min_length} Wörter."
+msgstr "Bitte wählen Sie mindestens {min} Tags."
 
 #: pretalx/common/forms/mixins.py:179
-#, fuzzy, python-brace-format
-#| msgid "Please write at most {max_length} words."
+#, python-brace-format
 msgid "Please select at most {max} tags."
-msgstr "Bitte schreiben Sie höchstens {max_length} Wörter."
+msgstr "Bitte wählen Sie höchstens {max} Tags."
 
 #: pretalx/common/forms/mixins.py:187
-#, fuzzy, python-brace-format
-#| msgid "You wrote {count} words."
+#, python-brace-format
 msgid "You selected {count} tags."
-msgstr "Sie haben {count} Wörter geschrieben."
+msgstr "Sie haben {count} Tags ausgewählt."
 
 #: pretalx/common/forms/tables.py:10
 msgid "A–Z / low to high ↑"
-msgstr ""
+msgstr "A–Z / niedrig bis hoch ↑"
 
 #: pretalx/common/forms/tables.py:11
 msgid "Z–A / high to low ↓"
-msgstr ""
+msgstr "Z–A / hoch nach niedrig ↓"
 
 #: pretalx/common/forms/tables.py:17
 msgid "Available Columns"
@@ -1237,29 +1221,23 @@ msgstr "Verwendete Spalten"
 
 #: pretalx/common/forms/tables.py:37
 msgid "Sort by"
-msgstr ""
+msgstr "Sortiere nach"
 
 #: pretalx/common/forms/tables.py:42 pretalx/common/forms/tables.py:53
-#, fuzzy
-#| msgid "Duration"
 msgid "Direction"
-msgstr "Dauer"
+msgstr "Richtung"
 
 #: pretalx/common/forms/tables.py:48
 msgid "Then by"
-msgstr ""
+msgstr "Dann nach"
 
 #: pretalx/common/forms/widgets.py:28
-#, fuzzy
-#| msgid "New password"
 msgid "Show password"
-msgstr "Neues Passwort"
+msgstr "Zeige Passwort"
 
 #: pretalx/common/forms/widgets.py:29
-#, fuzzy
-#| msgid "New password"
 msgid "Hide password"
-msgstr "Neues Passwort"
+msgstr "Verstecke Passwort"
 
 #: pretalx/common/forms/widgets.py:58
 msgid ""
@@ -1303,22 +1281,19 @@ msgid "The organiser {name} was deleted."
 msgstr "Der Veranstalter {name} wurde gelöscht."
 
 #: pretalx/common/log_display.py:37
-#, fuzzy, python-brace-format
-#| msgid "The team invitation was sent again."
+#, python-brace-format
 msgid "A speaker invitation was sent to {email}."
-msgstr "Die Einladung wurde erneut verschickt."
+msgstr "Eine Einladung als Vortragender wurde an {email} versendet."
 
 #: pretalx/common/log_display.py:40
-#, fuzzy, python-brace-format
-#| msgid "A speaker information note was deleted."
+#, python-brace-format
 msgid "A speaker invitation to {email} was accepted."
-msgstr "Eine Information für Vortragende wurde gelöscht."
+msgstr "Die Einladung als Vortragender an {email} wurde angenommen."
 
 #: pretalx/common/log_display.py:43
-#, fuzzy, python-brace-format
-#| msgid "The team invitation was retracted."
+#, python-brace-format
 msgid "A speaker invitation to {email} was retracted."
-msgstr "Die Einladung wurde zurückgezogen."
+msgstr "Die Einladung als Vortragender an {email} wurde zurückgezogen."
 
 #: pretalx/common/log_display.py:65
 msgid "The CfP has been modified."
@@ -1517,22 +1492,16 @@ msgid "A speaker was removed from the proposal."
 msgstr "Eine Vortragende wurde von der Einreichung entfernt."
 
 #: pretalx/common/log_display.py:116
-#, fuzzy
-#| msgid "The invitation was sent!"
 msgid "A speaker invitation was sent."
-msgstr "Die Einladung wurde verschickt!"
+msgstr "Eine Einladung als Vortragender wurde verschickt."
 
 #: pretalx/common/log_display.py:117
-#, fuzzy
-#| msgid "A speaker information note was deleted."
 msgid "A speaker invitation was accepted."
-msgstr "Eine Information für Vortragende wurde gelöscht."
+msgstr "Eine Einladung als Vortragender wurde akzeptiert."
 
 #: pretalx/common/log_display.py:118
-#, fuzzy
-#| msgid "The team invitation was retracted."
 msgid "A speaker invitation was retracted."
-msgstr "Die Einladung wurde zurückgezogen."
+msgstr "Die Einladung als Vortragender wurde zurückgezogen."
 
 #: pretalx/common/log_display.py:119
 msgid "The proposal was unconfirmed."
@@ -2082,7 +2051,7 @@ msgstr "Vorschau"
 
 #: pretalx/common/templates/common/widgets/toggle_choice.html:16
 msgid "Toggle value"
-msgstr ""
+msgstr "Wert umschalten"
 
 #: pretalx/common/templatetags/copyable.py:16
 msgid "Copy"
@@ -2553,7 +2522,7 @@ msgid ""
 "event’s colour scheme."
 msgstr ""
 "Geben Sie hier einen hex-Wert wie #00ff00 ein, wenn Sie pretalx im "
-"Veranstaltungsschema gestalten möchtest."
+"Veranstaltungsschema gestalten möchten."
 
 #: pretalx/event/models/event.py:233
 msgid "Custom Event CSS"
@@ -3688,38 +3657,28 @@ msgid "Recipients"
 msgstr "Empfänger"
 
 #: pretalx/orga/forms/cfp.py:564
-#, fuzzy
-#| msgid "Custom Mail"
 msgid "Custom label"
-msgstr "Eigene E-Mail"
+msgstr "Eigenes Label"
 
 #: pretalx/orga/forms/cfp.py:566
-#, fuzzy
-#| msgid "Leave empty to use the default address: {}"
 msgid "Leave empty to use the default label."
-msgstr "Leer lassen, um die Standardadresse zu verwenden: {}"
+msgstr "Leer lassen, um das Standard-Label zu verwenden."
 
 #: pretalx/orga/forms/cfp.py:570
 #: pretalx/orga/templates/orga/cfp/editor.html:501
-#, fuzzy
-#| msgid "help text"
 msgid "Help text"
 msgstr "Erklärung"
 
 #: pretalx/orga/forms/cfp.py:572
 msgid "Additional instructions shown below the field."
-msgstr ""
+msgstr "Zusätzliche Anweisungen werden unterhalb des Feldes angezeigt."
 
 #: pretalx/orga/forms/cfp.py:576
-#, fuzzy
-#| msgid "Availability"
 msgid "Visibility"
-msgstr "Verfügbarkeit"
+msgstr "Sichtbarkeit"
 
 #: pretalx/orga/forms/cfp.py:578
 #: pretalx/orga/templates/orga/cfp/editor.html:494
-#, fuzzy
-#| msgid "Require"
 msgid "Required"
 msgstr "Verpflichtend"
 
@@ -3732,59 +3691,52 @@ msgid "Maximum length"
 msgstr "Maximallänge"
 
 #: pretalx/orga/forms/cfp.py:596
-#, fuzzy
-#| msgid "Maximum uses"
 msgid "Maximum speakers"
-msgstr "Anwendungen"
+msgstr "Maximum an Vortragenden"
 
 #: pretalx/orga/forms/cfp.py:600
 msgid "Maximum number of speakers per proposal (including submitter)."
 msgstr ""
+"Maximale Anzahl von Vortragenden pro Einreichung (einschließlich "
+"Einreichender)."
 
 #: pretalx/orga/forms/cfp.py:603
-#, fuzzy
-#| msgid "Minimum value"
 msgid "Minimum tags"
-msgstr "Minimalwert"
+msgstr "Minimum an Tags"
 
 #: pretalx/orga/forms/cfp.py:609
-#, fuzzy
-#| msgid "Maximum uses"
 msgid "Maximum tags"
-msgstr "Anwendungen"
+msgstr "Maximum an Tags"
 
 #: pretalx/orga/forms/cfp.py:633
 msgid ""
 "Additional instructions shown below the field. Note: Only public tags will "
 "be shown to submitters."
 msgstr ""
+"Zusätzliche Anweisungen werden unterhalb des Feldes angezeigt. Hinweis: Den "
+"Einreichenden werden nur öffentliche Tags angezeigt."
 
 #: pretalx/orga/forms/cfp.py:646
 msgid "Minimum tags cannot be greater than maximum tags."
 msgstr ""
+"Die Mindestanzahl an Tags darf nicht größer sein als die maximale Anzahl an "
+"Tags."
 
 #: pretalx/orga/forms/cfp.py:653
-#, fuzzy
 msgid "Step title"
-msgstr "Titel"
+msgstr "Schritttitel"
 
 #: pretalx/orga/forms/cfp.py:655
-#, fuzzy
-#| msgid "Leave empty to use the default address: {}"
 msgid "Leave empty to use the default title."
-msgstr "Leer lassen, um die Standardadresse zu verwenden: {}"
+msgstr "Leer lassen, um den Standardtitel zu verwenden."
 
 #: pretalx/orga/forms/cfp.py:659
-#, fuzzy
-#| msgid "description"
 msgid "Step description"
-msgstr "Beschreibung"
+msgstr "Schrittbeschreibung"
 
 #: pretalx/orga/forms/cfp.py:661
-#, fuzzy
-#| msgid "Leave empty to use the default address: {}"
 msgid "Leave empty to use the default description."
-msgstr "Leer lassen, um die Standardadresse zu verwenden: {}"
+msgstr "Leer lassen, um die Standardbeschreibung zu verwenden."
 
 #: pretalx/orga/forms/cfp.py:676
 msgid "If you select no custom field, all will be used."
@@ -4722,16 +4674,12 @@ msgstr ""
 "Leer lassen, um die Standard-Dauer für diesen Einreichungstypen zu nehmen."
 
 #: pretalx/orga/forms/submission.py:140
-#, fuzzy
-#| msgid "The event end cannot be before the start."
 msgid "Scheduled times cannot be before the event starts."
-msgstr "Das Ende dieser Veranstaltung darf nicht vor ihrem Beginn liegen."
+msgstr "Die geplanten Zeiten können nicht vor Beginn der Veranstaltung liegen."
 
 #: pretalx/orga/forms/submission.py:144
-#, fuzzy
-#| msgid "The end time has to be after the start time."
 msgid "Scheduled times cannot be after the event ends."
-msgstr "Der Endzeitpunkt muss nach dem Beginn liegen."
+msgstr "Die geplanten Zeiten können nicht nach Ende der Veranstaltung liegen."
 
 #: pretalx/orga/forms/submission.py:166
 msgid "The end time has to be after the start time."
@@ -4928,16 +4876,12 @@ msgid "Arrived"
 msgstr "Angekommen"
 
 #: pretalx/orga/tables/submission.py:53
-#, fuzzy
-#| msgid "No speakers"
 msgid "Number of speakers"
-msgstr "Keine Vortragenden"
+msgstr "Anzahl an Vortragenden"
 
 #: pretalx/orga/tables/submission.py:58
-#, fuzzy
-#| msgid "pending Invitation"
 msgid "Pending invitations"
-msgstr "ausstehende Einladung"
+msgstr "Ausstehende Einladungen"
 
 #: pretalx/orga/tables/submission.py:76 pretalx/orga/tables/submission.py:219
 msgid "Pending state"
@@ -5054,14 +4998,13 @@ msgid "No email password has been set."
 msgstr "Kein E-Mail-Passwort wurde gesetzt."
 
 #: pretalx/orga/templates/orga/admin/admin.html:107
-#, fuzzy
-#| msgid "Send email"
 msgid "Send test email"
-msgstr "E-Mail verschicken"
+msgstr "Test-E-Mail verschicken"
 
 #: pretalx/orga/templates/orga/admin/admin.html:111
 msgid "Sends a test email to the configured administrator email addresses."
 msgstr ""
+"Sendet eine Test-E-Mail an die konfigurierten Administrator-E-Mail-Adressen."
 
 #: pretalx/orga/templates/orga/admin/admin.html:117
 msgid "System"
@@ -5379,107 +5322,92 @@ msgstr "CfP-Editor"
 #: pretalx/orga/templates/orga/cfp/editor.html:49
 #: pretalx/orga/templates/orga/cfp/editor.html:133
 #: pretalx/orga/templates/orga/cfp/editor.html:147
-#, fuzzy
-#| msgid "Reset to defaults"
 msgid "Reset to Defaults"
-msgstr "Zurücksetzen"
+msgstr "Auf Standardeinstellungen zurücksetzen"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:52
 #: pretalx/orga/templates/orga/cfp/text.html:20
 #: pretalx/orga/templates/orga/cfp/text.html:25
-#, fuzzy
-#| msgid "Settings"
 msgid "CfP Settings"
-msgstr "Einstellungen"
+msgstr "CfP-Einstellungen"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:69
-#, fuzzy
-#| msgid "The event’s logo"
 msgid "The event's logo"
-msgstr "Veranstaltungslogo"
+msgstr "Das Veranstaltungslogo"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:135
 msgid ""
 "This will reset all CfP field settings, custom labels, help texts, and field "
 "ordering to their default values. This action cannot be undone."
 msgstr ""
+"Dadurch werden alle CfP-Feld-Einstellungen, benutzerdefinierten "
+"Bezeichnungen, Hilfetexte und die Feldreihenfolge auf ihre Standardwerte "
+"zurückgesetzt. Diese Aktion kann nicht rückgängig gemacht werden."
 
 #: pretalx/orga/templates/orga/cfp/editor.html:168
 #: pretalx/orga/templates/orga/cfp/editor.html:201
 #: pretalx/orga/templates/orga/cfp/editor.html:250
 #: pretalx/orga/templates/orga/cfp/editor.html:327
-#, fuzzy
-#| msgid "Click here to change"
 msgid "Click to edit"
-msgstr "Klicken Sie hier, um das zu ändern"
+msgstr "Zum Ändern anklicken"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:175
 msgid "This step shows the login/registration form and cannot be customized."
 msgstr ""
+"Dieser Schritt zeigt das Anmelde-/Registrierungsformular und kann nicht "
+"angepasst werden."
 
 #: pretalx/orga/templates/orga/cfp/editor.html:219
-#, fuzzy
-#| msgid "A session type was modified."
 msgid "No session fields configured."
-msgstr "Ein Einreichungstyp wurde verändert."
+msgstr "Keine Sitzungsfelder konfiguriert."
 
 #: pretalx/orga/templates/orga/cfp/editor.html:235
-#, fuzzy
-#| msgid "No redis server has been configured."
 msgid "No speaker fields configured."
-msgstr "Kein redis-Server konfiguriert."
+msgstr "Keine Vortragendenfelder konfiguriert."
 
 #: pretalx/orga/templates/orga/cfp/editor.html:265
 msgid "No fields configured for this step. Add fields from the sidebar."
 msgstr ""
+"Keine Felder für diesen Schritt konfiguriert. Fügen Sie Felder aus der "
+"Seitenleiste hinzu."
 
 #: pretalx/orga/templates/orga/cfp/editor.html:281
-#, fuzzy
-#| msgid "Edit template"
 msgid "Edit Step"
-msgstr "Vorlage editieren"
+msgstr "Schritt editieren"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:306
 msgid "Drag to reorder"
-msgstr ""
+msgstr "Ziehen Sie, um Reihenfolge zu ändern"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:323
-#, fuzzy
-#| msgid "current schedule"
 msgid "Currently hidden"
-msgstr "Aktuelles Programm"
+msgstr "Momentan versteckt"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:341
 msgid "Talk (30 minutes)"
-msgstr ""
+msgstr "Vortrag (30 Minuten)"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:352
-#, fuzzy
-#| msgid "This session will not be recorded."
 msgid "This field cannot be removed."
-msgstr "Dieser Beitrag wird nicht aufgezeichnet."
+msgstr "Dieses Feld kann nicht entfernt werden."
 
 #: pretalx/orga/templates/orga/cfp/editor.html:358
-#, fuzzy
-#| msgid "Activate field"
 msgid "Deactivate field"
-msgstr "Feld aktivieren"
+msgstr "Feld deaktivieren"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:358
-#, fuzzy
-#| msgid "Remove filter"
 msgid "Remove field"
-msgstr "Filter entfernen"
+msgstr "Feld entfernen"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:371
-#, fuzzy
-#| msgid "Availabilities"
 msgid "Available Fields"
-msgstr "Verfügbarkeiten"
+msgstr "Verfügbare Felder"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:373
 msgid "Fields not shown to submitters. Click to add."
 msgstr ""
+"Felder, die den Einreichenden nicht angezeigt werden. Zum Hinzufügen "
+"anklicken."
 
 #: pretalx/orga/templates/orga/cfp/editor.html:379
 #: pretalx/orga/views/cfp.py:130 pretalx/orga/views/cfp.py:149
@@ -5487,32 +5415,24 @@ msgid "New custom field"
 msgstr "Neues Zusatzfeld"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:384
-#, fuzzy
-#| msgid "Session types"
 msgid "Session fields"
-msgstr "Einreichungsarten"
+msgstr "Session-Felder"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:400
-#, fuzzy
-#| msgid "Speaker profile"
 msgid "Speaker fields"
-msgstr "Vortragenden-Profil"
+msgstr "Vortragenden-Felder"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:426
 msgid "All fields are in use."
-msgstr ""
+msgstr "Alle Felder sind in Verwendung."
 
 #: pretalx/orga/templates/orga/cfp/editor.html:433
-#, fuzzy
-#| msgid "Configure rooms"
 msgid "Configure Field"
-msgstr "Räume konfigurieren"
+msgstr "Feld konfigurieren"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:487
-#, fuzzy
-#| msgid "Custom field"
 msgid "Custom Field"
-msgstr "Zusatzfeld"
+msgstr "Benutzerdefiniertes Feld"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:491
 msgid "Type"
@@ -5523,10 +5443,8 @@ msgid "Target"
 msgstr "Ziel"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:512
-#, fuzzy
-#| msgid "Hide field"
 msgid "Edit field"
-msgstr "Feld verstecken"
+msgstr "Feld bearbeiten"
 
 #: pretalx/orga/templates/orga/cfp/question/_form.html:33
 msgid ""
@@ -5874,6 +5792,8 @@ msgid ""
 "Select which plugins you want to enable for this event. You can change this "
 "later in the event settings."
 msgstr ""
+"Wählen Sie, welche Plugins Sie für dieses Event aktivieren möchten. Sie "
+"können dies später in den Einstellungen der Veranstaltung ändern."
 
 #: pretalx/orga/templates/orga/event_list.html:29
 msgid "Your upcoming events"
@@ -6280,7 +6200,7 @@ msgstr "Mehrere Team-Mitglieder hinzufügen?"
 #: pretalx/orga/templates/orga/plugins.html:39
 #: pretalx/orga/templates/orga/widgets/plugin_option.html:13
 msgid "Recommended"
-msgstr ""
+msgstr "Empfohlen"
 
 #: pretalx/orga/templates/orga/plugins.html:43
 msgid "Disable"
@@ -6554,6 +6474,9 @@ msgid ""
 "Please note that your token will have to have the “action” permissions in "
 "order to access the predefined schedule exports via the API."
 msgstr ""
+"Bitte beachten Sie, dass Ihr Token über die Berechtigungen \"action\" "
+"verfügen muss, um über die API auf die vordefinierten Zeitplan-Exporte "
+"zugreifen zu können."
 
 #: pretalx/orga/templates/orga/schedule/export.html:14
 #: pretalx/orga/templates/orga/schedule/export.html:21
@@ -7210,16 +7133,12 @@ msgid "Other proposals by this speaker:"
 msgstr "Andere Einreichungen mit dieser Vortragenden:"
 
 #: pretalx/orga/templates/orga/submission/speakers.html:97
-#, fuzzy
-#| msgid "pending Invitation"
 msgid "Pending Invitations"
-msgstr "ausstehende Einladung"
+msgstr "Ausstehende Einladungen"
 
 #: pretalx/orga/templates/orga/submission/speakers.html:104
-#, fuzzy
-#| msgid "Invitation"
 msgid "Invited on"
-msgstr "Einladung"
+msgstr "Eingeladen am"
 
 #: pretalx/orga/templates/orga/submission/state_change.html:23
 msgid ""
@@ -7381,10 +7300,8 @@ msgid "Version"
 msgstr "Version"
 
 #: pretalx/orga/templates/orga/user.html:42
-#, fuzzy
-#| msgid "Availabilities"
 msgid "Capabilities"
-msgstr "Verfügbarkeiten"
+msgstr "Eigenschaften"
 
 #: pretalx/orga/templates/orga/user.html:43
 msgid "Last used"
@@ -7414,10 +7331,8 @@ msgid "Custom"
 msgstr "Konfigurierbar"
 
 #: pretalx/orga/templates/orga/user.html:85
-#, fuzzy
-#| msgid "Permissions"
 msgid "No permissions"
-msgstr "Berechtigungen"
+msgstr "Keine Berechtigungen"
 
 #: pretalx/orga/templates/orga/user.html:99
 msgid "Revoke"
@@ -7446,28 +7361,30 @@ msgid ""
 "No administrator email addresses are configured. Please set the 'email' "
 "option in the [logging] section of your configuration."
 msgstr ""
+"Es sind keine Administrator-E-Mail-Adressen konfiguriert. Bitte setzen Sie "
+"die Option 'E-Mail' im Abschnitt [logging] Ihrer Konfiguration fest."
 
 #: pretalx/orga/views/admin.py:75
-#, fuzzy
-#| msgid "pretalx website"
 msgid "pretalx test email"
-msgstr "pretalx-Website"
+msgstr "pretalx-Test-E-Mail"
 
 #: pretalx/orga/views/admin.py:77
 msgid ""
 "This is a test email from pretalx to verify your system email configuration "
 "is working correctly."
 msgstr ""
+"Dies ist eine Test-E-Mail von pretalx zum Verifizieren der E-Mail-"
+"Einstellungen Ihres Systems."
 
 #: pretalx/orga/views/admin.py:84
 #, python-brace-format
 msgid "Test email sent successfully to: {emails}"
-msgstr ""
+msgstr "Test-E-Mail erfolgreich verschickt an: {emails}"
 
 #: pretalx/orga/views/admin.py:91
 #, python-brace-format
 msgid "Failed to send test email: {error}"
-msgstr ""
+msgstr "Versenden der Test-E-Mail fehlgeschlagen: {error}"
 
 #: pretalx/orga/views/admin.py:189
 msgid "Last actions"
@@ -7547,33 +7464,27 @@ msgstr "Der Zugangscode wurde verschickt."
 
 #: pretalx/orga/views/cfp.py:662
 msgid "only one option available"
-msgstr ""
+msgstr "nur eine Option verfügbar"
 
 #: pretalx/orga/views/cfp.py:666
 msgid "only one language configured"
-msgstr ""
+msgstr "nur eine Sprache konfiguriert"
 
 #: pretalx/orga/views/cfp.py:668
-#, fuzzy
-#| msgid "Update checks are disabled."
 msgid "tracks are disabled"
-msgstr "Die Update-Prüfung ist deaktiviert."
+msgstr "Tracks sind deaktiviert"
 
 #: pretalx/orga/views/cfp.py:670
 msgid "no tracks exist"
-msgstr ""
+msgstr "keine Tracks vorhanden"
 
 #: pretalx/orga/views/cfp.py:672
-#, fuzzy
-#| msgid "not public yet"
 msgid "no public tags exist"
-msgstr "Noch nicht öffentlich"
+msgstr "keine öffentlichen Tags vorhanden"
 
 #: pretalx/orga/views/cfp.py:1163
-#, fuzzy
-#| msgid "The information has been deleted."
 msgid "CfP configuration has been reset to defaults."
-msgstr "Die Information wurde gelöscht."
+msgstr "CfP-Konfiguration wurde auf Standardeinstellungen zurückgesetzt."
 
 #: pretalx/orga/views/dashboard.py:160
 msgid "until the CfP ends"
@@ -7838,7 +7749,7 @@ msgstr "{count} Mails wurden verschickt."
 msgid "Do you really want to delete this mail?"
 msgid_plural "Do you really want to purge {count} mails?"
 msgstr[0] "Möchten Sie diese Mail wirklich löschen?"
-msgstr[1] "Möchtest du wirklich {count} Mails löschen?"
+msgstr[1] "Möchten Sie wirklich {count} Mails löschen?"
 
 #: pretalx/orga/views/mails.py:258
 msgid ""
@@ -7952,11 +7863,11 @@ msgstr "Das Team wurde entfernt."
 
 #: pretalx/orga/views/organiser.py:197
 msgid "Are you sure you want to retract the invitation to this user?"
-msgstr "Möchtest du diese Einladung wirklich zurückziehen?"
+msgstr "Möchten Sie diese Einladung wirklich zurückziehen?"
 
 #: pretalx/orga/views/organiser.py:216
 msgid "The team invitation was retracted."
-msgstr "Die Einladung wurde zurückgezogen."
+msgstr "Die Team-Einladung wurde zurückgezogen."
 
 #: pretalx/orga/views/organiser.py:222
 msgid "Are you sure you want to resend the invitation to this user?"
@@ -8210,16 +8121,13 @@ msgid "The speaker was not part of this proposal."
 msgstr "Der Vortragende war nicht Teil der Einreichung."
 
 #: pretalx/orga/views/submission.py:299
-#, fuzzy
-#| msgid "Abstract"
 msgid "Retract"
-msgstr "Zusammenfassung"
+msgstr "Zurückziehen"
 
 #: pretalx/orga/views/submission.py:315
-#, fuzzy, python-brace-format
-#| msgid "Are you sure you want to retract the invitation to this user?"
+#, python-brace-format
 msgid "Do you really want to retract the invitation for {email}?"
-msgstr "Möchtest du diese Einladung wirklich zurückziehen?"
+msgstr "Möchten Sie die Einladung für {email} wirklich zurückziehen?"
 
 #: pretalx/orga/views/submission.py:363
 msgid "The speaker has been added to the proposal."
@@ -8312,10 +8220,8 @@ msgstr ""
 "Detail."
 
 #: pretalx/person/forms/auth_token.py:37
-#, fuzzy
-#| msgid "Select all"
 msgid "Select all events"
-msgstr "Alle auswählen"
+msgstr "Alle Veranstaltungen auswählen"
 
 #: pretalx/person/forms/auth_token.py:90
 #, python-brace-format
@@ -8357,6 +8263,8 @@ msgstr "Noch nicht angekommen"
 #: pretalx/person/forms/user.py:31
 msgid "For security reasons, please wait 5 minutes before you try again."
 msgstr ""
+"Aus Sicherheitsgründen warten Sie bitte 5 Minuten, bevor Sie es erneut "
+"versuchen."
 
 #: pretalx/person/forms/user.py:47
 msgid "display name"
@@ -8696,27 +8604,27 @@ msgstr ""
 
 #: pretalx/schedule/models/slot.py:34
 msgid "Break"
-msgstr ""
+msgstr "Pause"
 
 #: pretalx/schedule/models/slot.py:35
 msgid "Blocker"
-msgstr ""
+msgstr "Blocker"
 
 #: pretalx/schedule/models/slot.py:61
 msgid "The room this talk is scheduled in, if any"
 msgstr "Der Raum, in dem dieser Programmpunkt stattfindet, wenn es einen gibt"
 
 #: pretalx/schedule/models/slot.py:74
-#, fuzzy
-#| msgid "Session type"
 msgid "Slot type"
-msgstr "Einreichungsart"
+msgstr "Slot-Art"
 
 #: pretalx/schedule/models/slot.py:76
 msgid ""
 "For non-submission slots: 'break' for public breaks, 'blocker' for hidden "
 "blockers"
 msgstr ""
+"Für nicht eingereichte Slots: 'Pause' für öffentliche Pausen, 'Blocker' für "
+"versteckte Blocker"
 
 #: pretalx/schedule/models/slot.py:81
 msgid "Start"
@@ -8806,7 +8714,7 @@ msgstr "Arabisch"
 
 #: pretalx/settings.py:389
 msgid "Bulgarian"
-msgstr ""
+msgstr "Bulgarisch"
 
 #: pretalx/settings.py:394
 msgid "Czech"
@@ -8896,25 +8804,17 @@ msgid "Please provide a link or upload a file!"
 msgstr "Bitte geben Sie einen Link an oder laden Sie eine Datei hoch!"
 
 #: pretalx/submission/forms/submission.py:42
-#, fuzzy
-#| msgid "Additional Speaker"
 msgid "Additional Speakers"
 msgstr "Zusätzliche Vortragende"
 
 #: pretalx/submission/forms/submission.py:44
-#, fuzzy
-#| msgid ""
-#| "If you have a co-speaker, please add their email address here, and we "
-#| "will invite them to create an account. If you have more than one co-"
-#| "speaker, you can add more speakers after finishing the proposal process."
 msgid ""
 "If you have co-speakers, please add their email addresses here, and we will "
 "invite them to create an account."
 msgstr ""
 "Wenn Sie mit jemandem zusammen vortragen, tragen Sie bitte die Mailadresse "
 "hier ein, und wir verschicken eine Einladung mit der Bitte, einen Account zu "
-"erstellen. Wenn Sie mehr als zwei Vortragende sind, können Sie nach "
-"erfolgter Einreichung weitere Einladungen verschicken."
+"erstellen."
 
 #: pretalx/submission/forms/submission.py:52
 #: pretalx/submission/models/submission.py:290
@@ -8925,8 +8825,7 @@ msgstr "Bild"
 #: pretalx/submission/models/submission.py:291
 msgid "Use this if you want an illustration to go with your proposal."
 msgstr ""
-"Laden Sie hier ein Bild hoch, wenn Sie Ihre Einreichung illustrieren "
-"möchtest."
+"Laden Sie hier ein Bild hoch, wenn Sie Ihre Einreichung illustrieren möchten."
 
 #: pretalx/submission/forms/submission.py:193
 msgid ""
@@ -8937,10 +8836,9 @@ msgstr ""
 "Ihrer Auftritte verändern möchten."
 
 #: pretalx/submission/forms/submission.py:229
-#, fuzzy, python-brace-format
-#| msgid "Invalid permissions selected: {perms}"
+#, python-brace-format
 msgid "Invalid email addresses: {emails}"
-msgstr "Unzulässige Berechtigungen: {perms}"
+msgstr "Ungültige E-Mail-Adressen: {emails}"
 
 #: pretalx/submission/forms/submission.py:244
 #, python-brace-format
@@ -8948,6 +8846,8 @@ msgid ""
 "This would exceed the maximum of {max} speakers per proposal. Currently: "
 "{current} speaker(s) and {pending} pending invitation(s)."
 msgstr ""
+"Dies würde die Maximalanzahl von {max} Vortragenden pro Einreichung "
+"übersteigen. Momentan: {current} Vortragende(r) und {pending} Einladung(en)."
 
 #: pretalx/submission/forms/submission.py:331
 msgid "Proposal states"
@@ -9488,10 +9388,9 @@ msgid "{title_in_quotes} by {list_of_speakers}"
 msgstr "{title_in_quotes} von {list_of_speakers}"
 
 #: pretalx/submission/models/submission.py:1277
-#, fuzzy, python-brace-format
-#| msgid "Invite to team {team} for {email}"
+#, python-brace-format
 msgid "Invite to {submission} for {email}"
-msgstr "Einladung zum Team {team} an {email}"
+msgstr "Einladung zu {submission} an {email}"
 
 #: pretalx/submission/models/tag.py:32 pretalx/submission/models/track.py:42
 msgid "Colour"
@@ -9506,12 +9405,16 @@ msgid ""
 "Public tags can be selected by submitters in the CfP if you activate the "
 "tags field."
 msgstr ""
+"Öffentliche Tags können von Einreichenden im CfP ausgewählt werden, wenn das "
+"Tag-Feld aktiviert wird."
 
 #: pretalx/submission/models/tag.py:45
 msgid ""
 "In a future release of pretalx, public tags may also be shown in the public "
 "schedule."
 msgstr ""
+"In einer zukünftigen Version von pretalx können öffentliche Tags auch im "
+"öffentlichen Zeitplan angezeigt werden."
 
 #: pretalx/submission/models/track.py:55
 msgid ""
@@ -9570,13 +9473,14 @@ msgid "not accepted"
 msgstr "abgelehnt"
 
 msgid "Availabilities"
-msgstr ""
+msgstr "Verfügbarkeiten"
 
 msgid "New blocker"
-msgstr ""
+msgstr "Neuer Blocker"
 
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
+"Ziehen Sie das Feld in den Zeitplan, um einen neuen Blocker zu erstellen"
 
 #~ msgid ""
 #~ "Invite another speaker to your proposal here. Instead of letting us send "
