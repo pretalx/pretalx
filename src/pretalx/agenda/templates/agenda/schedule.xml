@@ -41,10 +41,10 @@
                     <license>{{ talk.submission.license|xmlescape }}</license>
                     <optout>{{ talk.submission.do_not_record|yesno:"true,false" }}</optout>
                 </recording>
-                <links>{% for resource in submission.resources.all %}{% if resource.link %}
+                <links>{% for resource in talk.submission.public_resources.all %}{% if resource.link %}
                     <link href="{{ resource.link }}">{{ resource.description }}</link>
                 {% endif %}{% endfor %}</links>
-                <attachments>{% for resource in submission.resources.all %}{% if resource.resource %}
+                <attachments>{% for resource in talksubmission.public_resources.all %}{% if resource.resource %}
                     <attachment href="{{ base_url }}{{ resource.resource.url }}">{{ resource.description }}</attachment>
                 {% endif %}{% endfor %}</attachments>
 
