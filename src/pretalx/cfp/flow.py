@@ -388,7 +388,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
         for field, model in (("submission_type", SubmissionType), ("track", Track)):
             request_value = self.request.GET.get(field)
             if request_value:
-                with suppress(AttributeError, TypeError):
+                with suppress(AttributeError, ValueError, TypeError):
                     pk = int(request_value.split("-")[0])
                     obj = model.objects.filter(event=self.request.event, pk=pk).first()
                     if obj:
