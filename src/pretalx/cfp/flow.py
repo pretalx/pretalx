@@ -19,6 +19,7 @@ from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import UploadedFile
 from django.db.models import Q
 from django.forms import ValidationError
+from django.forms.models import BaseModelFormSet, modelformset_factory
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -26,6 +27,7 @@ from django.utils.functional import Promise, cached_property
 from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import TemplateResponseMixin
+from django_context_decorator import context
 from i18nfield.strings import LazyI18nString
 from i18nfield.utils import I18nJSONEncoder
 
@@ -36,9 +38,10 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.person.forms import SpeakerProfileForm, UserForm
 from pretalx.person.models import SpeakerProfile, User
-from pretalx.submission.forms import InfoForm, QuestionsForm
+from pretalx.submission.forms import InfoForm, QuestionsForm, ResourceForm
 from pretalx.submission.models import (
     QuestionTarget,
+    Resource,
     SubmissionInvitation,
     SubmissionStates,
     SubmissionType,
@@ -230,15 +233,20 @@ class FormFlowStep(TemplateFlowStep):
     label_model = None
 
     def get_form_initial(self):
-        initial_data = self.cfp_session.get("initial", {}).get(self.identifier, {})
-        previous_data = self.cfp_session.get("data", {}).get(self.identifier, {})
-        return copy.deepcopy({**initial_data, **previous_data})
+        return self.cfp_session.get("initial", {}).get(self.identifier, {})
+
+    def get_form_data(self):
+        data = self.cfp_session.get("data", {}).get(self.identifier, {})
+        if data:
+            data = self.get_form_initial() | data
+        return data
 
     def get_form(self, from_storage=False):
         if self.request.method == "GET" or from_storage:
+            data = self.get_form_data()
             return self.form_class(
-                data=self.get_form_initial() if from_storage else None,
-                initial=self.get_form_initial(),
+                data=data or None,
+                initial=self.get_form_initial() if not data else {},
                 files=self.get_files(),
                 **self.get_form_kwargs(),
             )
@@ -260,6 +268,7 @@ class FormFlowStep(TemplateFlowStep):
         return result
 
     def post(self, request):
+        # needed for self.get_form()
         self.request = request
         form = self.get_form()
         if not form.is_valid():
@@ -268,7 +277,7 @@ class FormFlowStep(TemplateFlowStep):
                 + " ".join(values)
                 for key, values in form.errors.items()
             )
-            messages.error(self.request, error_message)
+            messages.error(request, error_message)
             return self.get(request)
         self.set_data(form.cleaned_data)
         self.set_files(form.files)
@@ -360,8 +369,10 @@ class DedraftMixin:
 
 class InfoStep(DedraftMixin, FormFlowStep):
     identifier = "info"
+    resource_identifier = "resources"
     icon = "paper-plane"
     form_class = InfoForm
+    template_name = "cfp/event/submission_info.html"
     priority = 0
     field_keys = [
         "title",
@@ -395,11 +406,96 @@ class InfoStep(DedraftMixin, FormFlowStep):
                     obj = model.objects.filter(event=self.request.event, pk=pk).first()
                     if obj:
                         result[field] = obj
+        return result
+
+    def get_form_data(self):
+        result = super().get_form_data()
         if "additional_speaker" in result and isinstance(
             result["additional_speaker"], list
         ):
             result["additional_speaker"] = ",".join(result["additional_speaker"])
         return result
+
+    def get_resource_data(self):
+        resources = self.cfp_session.get("data", {}).get(self.resource_identifier, {})
+        data = {}
+        # management form metadata
+        data["resource-TOTAL_FORMS"] = str(len(resources))
+        data["resource-INITIAL_FORMS"] = "0"
+        data["resource-MIN_NUM_FORMS"] = "0"
+        data["resource-MAX_NUM_FORMS"] = "1000"
+        # formset data
+        for i, form_data in enumerate(resources):
+            for field, value in form_data.items():
+                data[f"resource-{i}-{field}"] = value
+        return data
+
+    @property
+    def get_formset_class(self):
+        return modelformset_factory(
+            Resource,
+            form=ResourceForm,
+            formset=BaseModelFormSet,
+            can_delete=True,
+            extra=0,
+        )
+
+    @context
+    @cached_property
+    def resource_formset(self):
+        return self.get_resource_formset()
+
+    def get_resource_formset(self, from_storage=False):
+        formset_class = self.get_formset_class
+
+        if self.request.method == "GET" or from_storage:
+            return formset_class(
+                data=self.get_resource_data(),
+                files=self.get_files(),
+                prefix="resource",
+            )
+        # files are saved into local memory in set_data
+        files = self.get_files()
+
+        return formset_class(data=self.request.POST, files=files, prefix="resource")
+
+    def post(self, request):
+        result = super().post(request)
+        formset = self.get_resource_formset()
+        if not formset.is_valid():
+            error_message = "\n\n".join(
+                (f"{ResourceForm().fields[key].label}: " if key != "__all__" else "")
+                + " ".join(values)
+                for error in formset.errors
+                for key, values in error.items()
+            )
+            messages.error(request, error_message)
+            return self.get(request)
+        self.set_resources_data(formset.cleaned_data)
+        return result
+
+    def set_resources_data(self, data):
+        serialize_data = []
+        for form in data:
+            serialize_form_data = {}
+            for key, value in form.items():
+                with suppress(FileNotFoundError):
+                    if not getattr(value, "file", None):
+                        serialize_form_data[key] = value
+            serialize_data.append(serialize_form_data)
+        self.cfp_session["data"][self.resource_identifier] = json.loads(
+            json.dumps(serialize_data, default=serialize_value)
+        )
+
+    def save_resources(self, submission):
+        resource_formset = self.get_resource_formset(from_storage=True)
+        if not resource_formset.is_valid():
+            return False
+
+        resources = resource_formset.save(commit=False)
+        for res in resources:
+            res.submission = submission
+            res.save()
 
     def done(self, request, draft=False):
         self.request = request
@@ -411,6 +507,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
             form.instance.make_submitted(person=self.request.user)
         form.save()
         submission = form.instance
+        self.save_resources(submission)
         submission.speakers.add(request.user)
         if draft:
             messages.success(
