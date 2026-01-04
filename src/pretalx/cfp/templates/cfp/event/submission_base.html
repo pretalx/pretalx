@@ -54,6 +54,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% block submission_step_text %}<p>{{ text|rich_text }}</p>{% endblock %}
             {% block inner %}
                 {{ form }}
+                {% include "cfp/includes/submission_resources_form.html" with formset=resource_formset can_edit=True %}
             {% endblock inner %}
             {% block buttons %}
                 <div class="row flex-row-reverse">
