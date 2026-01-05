@@ -1456,6 +1456,10 @@ def test_orga_can_see_all_resources(
     resource_ids = {r["id"] for r in submission_data["resources"]}
     assert resource.id in resource_ids
     assert private_resource.id in resource_ids
+    # Verify is_public field is included in response
+    resources_by_id = {r["id"]: r for r in submission_data["resources"]}
+    assert resources_by_id[resource.id]["is_public"] is True
+    assert resources_by_id[private_resource.id]["is_public"] is False
 
 
 @pytest.mark.django_db
