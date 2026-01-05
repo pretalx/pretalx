@@ -1112,7 +1112,7 @@ class AllFeedbacksList(EventPermissionRequired, PaginationMixin, ListView):
 
     def get_queryset(self):
         return (
-            Feedback.objects.order_by("-pk")
+            Feedback.objects.order_by("-talk_id", "-pk")
             .select_related("talk")
             .filter(talk__event=self.request.event)
         )
