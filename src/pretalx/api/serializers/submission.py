@@ -36,7 +36,7 @@ class ResourceSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
     class Meta:
         model = Resource
-        fields = ("id", "resource", "description")
+        fields = ("id", "resource", "description", "is_public")
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
