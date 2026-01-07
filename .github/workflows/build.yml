@@ -48,7 +48,7 @@ jobs:
         with:
           node-version: 'latest'
       - name: Install system dependencies
-        run: sudo apt update && sudo apt install -y gettext unzip
+        run: sudo apt clean && apt update && sudo apt install -y gettext unzip
       - name: Install Python dependencies
         run: just install --extra dev && uv pip install --system wheel
       - name: Install frontend dependencies

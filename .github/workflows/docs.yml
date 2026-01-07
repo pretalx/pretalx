@@ -35,6 +35,7 @@ jobs:
       - uses: extractions/setup-just@v3
       - name: Install system packages
         run: |
+          sudo apt clean
           sudo apt update
           sudo apt install -y enchant-2 hunspell aspell-en
       - name: Install Dependencies
