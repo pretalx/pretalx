@@ -35,6 +35,8 @@ jobs:
       - uses: extractions/setup-just@v3
       - name: Install system packages
         run: |
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
+          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
           sudo apt clean
           sudo apt update
           sudo apt install -y enchant-2 hunspell aspell-en
