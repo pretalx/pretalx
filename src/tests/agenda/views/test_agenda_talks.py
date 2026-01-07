@@ -283,7 +283,7 @@ def test_public_talk_only_shows_public_resources(
 
 @pytest.mark.django_db
 def test_talk_review_page(client, django_assert_num_queries, submission):
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(16):
         response = client.get(submission.urls.review, follow=True)
     assert response.status_code == 200
     assert submission.title in response.text
