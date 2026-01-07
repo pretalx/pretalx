@@ -87,7 +87,7 @@
     <xs:all>
       <xs:element type="xs:string" name="room"/>
       <xs:element type="xs:string" name="title"/>
-      <xs:element type="xs:string" name="subtitle"/>
+      <xs:element type="xs:string" name="subtitle" minOccurs="0"/>
       <xs:element type="xs:string" name="type"/>
       <xs:element type="dateTimeTZ" name="date"/>
       <xs:element type="start" name="start"/>
