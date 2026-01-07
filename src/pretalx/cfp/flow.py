@@ -46,6 +46,8 @@ from pretalx.submission.models import (
 )
 from pretalx.submission.models.submission import Submission
 
+LOGGER = logging.getLogger(__name__)
+
 
 def i18n_string(data, locales):
     if isinstance(data, LazyI18nString):
@@ -444,7 +446,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
                         data={"email": email},
                     )
                 except SendMailException as exception:
-                    logging.getLogger("").warning(str(exception))
+                    LOGGER.warning(str(exception))
                     messages.warning(self.request, phrases.cfp.submission_email_fail)
 
         access_code = getattr(request, "access_code", None)
@@ -692,6 +694,9 @@ class CfPFlow:
 
         steps = [step(event=event) for step in DEFAULT_STEPS]
         for __, response in cfp_steps.send_robust(self.event):
+            if isinstance(response, Exception):  # pragma: no cover
+                LOGGER.warning(str(response))
+                continue
             for step_class in response:
                 steps.append(step_class(event=event))
         steps = sorted(steps, key=lambda step: step.priority)
