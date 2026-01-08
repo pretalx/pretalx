@@ -1,6 +1,59 @@
 // SPDX-FileCopyrightText: 2019-present Tobias Kunze
 // SPDX-License-Identifier: Apache-2.0
 
+// Validate required enhanced selects before form submission
+// This is needed because Choices.js hides the original select element,
+// making it unfocusable for browser's native HTML5 validation tooltip.
+const validateRequiredEnhancedSelects = (form) => {
+    let isValid = true
+    form.querySelectorAll('select.enhanced').forEach(select => {
+        // Check data-required since we remove the required attribute to prevent
+        // browser's native validation (which can't focus hidden elements)
+        const isRequired = select.dataset.required === 'true' || select.hasAttribute('required')
+        const hasSelection = select.multiple
+            ? select.selectedOptions.length > 0
+            : select.value !== ''
+
+        const choicesContainer = select.closest('.choices')
+        if (!choicesContainer) return
+
+        const wrapper = choicesContainer.parentElement
+        const existingError = wrapper.querySelector('.invalid-feedback.js-validation')
+
+        if (isRequired && !hasSelection) {
+            isValid = false
+            choicesContainer.classList.add('is-invalid')
+            if (!existingError) {
+                const errorDiv = document.createElement('div')
+                errorDiv.className = 'invalid-feedback js-validation'
+                errorDiv.style.display = 'block'
+                errorDiv.textContent = select.multiple
+                    ? 'Please select at least one option.'
+                    : 'Please select an option.'
+                wrapper.appendChild(errorDiv)
+            }
+            // Scroll to first invalid field
+            if (isValid === false) {
+                choicesContainer.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }
+        } else {
+            choicesContainer.classList.remove('is-invalid')
+            if (existingError) existingError.remove()
+        }
+    })
+    return isValid
+}
+
+const clearEnhancedSelectError = (select) => {
+    const choicesContainer = select.closest('.choices')
+    if (!choicesContainer) return
+
+    choicesContainer.classList.remove('is-invalid')
+    const wrapper = choicesContainer.parentElement
+    const existingError = wrapper.querySelector('.invalid-feedback.js-validation')
+    if (existingError) existingError.remove()
+}
+
 const isVisible = (element) => {
     if (!element) return false
     return !element.hidden && !element.classList.contains("d-none") && !element.style.display === "none"
@@ -92,5 +145,27 @@ const initSelect = (element) => {
 onReady(() => {
     document
         .querySelectorAll("select.enhanced")
-        .forEach((element) => initSelect(element))
+        .forEach((element) => {
+            initSelect(element)
+            // Clear validation error when user changes selection
+            element.addEventListener('change', () => clearEnhancedSelectError(element))
+            // Remove HTML required attribute - browser can't focus hidden element for validation.
+            // We handle validation ourselves in validateRequiredEnhancedSelects().
+            if (element.hasAttribute('required')) {
+                element.dataset.required = 'true'
+                element.removeAttribute('required')
+            }
+        })
+
+    // Add form submit validation for all forms with enhanced selects
+    document.querySelectorAll('form').forEach(form => {
+        if (form.querySelector('select.enhanced')) {
+            form.addEventListener('submit', (event) => {
+                if (!validateRequiredEnhancedSelects(form)) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
+            })
+        }
+    })
 })
