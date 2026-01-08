@@ -33,7 +33,7 @@ const updateIndependentScoreWeight = () => {
 const addNewScores = (ev) => {
     const parentElement = event.target.closest(".score-group")
     const scoresList = parentElement.querySelector(
-        "input[type=text][id$=new_scores]",
+        'input[name$="-new_scores"]',
     )
     const formID = parentElement
         .querySelector("input[type=number]")
@@ -80,7 +80,7 @@ const addListener = () => {
 
 const clearOldNewScores = () => {
     document
-        .querySelectorAll("input[type=text][id$=new_scores]")
+        .querySelectorAll('input[name$="-new_scores"]')
         .forEach((input) => (input.value = ""))
 }
 
