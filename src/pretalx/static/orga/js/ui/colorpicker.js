@@ -37,7 +37,10 @@ const initColorPicker = (field) => {
     })
 
     field.addEventListener("input", () => {
-        picker.setColor(field.value)
+        const value = field.value.replace(/^#/, "")
+        if (/^[0-9a-fA-F]{6}$/.test(value)) {
+            picker.setColor(field.value)
+        }
     })
 }
 
