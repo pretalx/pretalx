@@ -32,6 +32,7 @@ _DEFAULT_FIELDS = {
         "min_length": None,
         "max_length": None,
     },
+    "submission_type": {"visibility": "required"},
     "abstract": {
         "visibility": "required",
         "min_length": None,
