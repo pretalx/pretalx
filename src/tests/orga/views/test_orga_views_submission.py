@@ -1030,3 +1030,22 @@ def test_orga_can_retract_invitation(orga_client, submission):
             .filter(action_type="pretalx.submission.invitation.retract")
             .exists()
         )
+
+
+@pytest.mark.django_db
+def test_reviewer_can_delete_own_review(review_client, review, submission):
+    with scope(event=submission.event):
+        assert submission.event.active_review_phase.can_review is True
+        review_pk = review.pk
+        from pretalx.submission.models import Review
+
+        assert Review.objects.filter(pk=review_pk).exists()
+
+    response = review_client.get(review.urls.delete, follow=True)
+    assert response.status_code == 200
+
+    response = review_client.post(review.urls.delete, follow=True)
+    assert response.status_code == 200
+
+    with scope(event=submission.event):
+        assert not Review.objects.filter(pk=review_pk).exists()

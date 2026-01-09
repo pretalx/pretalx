@@ -768,10 +768,21 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
 
 
 class ReviewSubmissionDelete(
-    EventPermissionRequired, ReviewViewMixin, ActionConfirmMixin, TemplateView
+    PermissionRequired, ReviewViewMixin, ActionConfirmMixin, TemplateView
 ):
     template_name = "orga/submission/review_delete.html"
     permission_required = "submission.delete_review"
+
+    @cached_property
+    def object(self):
+        return (
+            self.submission.reviews.exclude(user__in=self.submission.speakers.all())
+            .filter(user=self.request.user)
+            .first()
+        )
+
+    def get_object(self):
+        return self.object
 
     def get_permission_object(self):
         return self.object
