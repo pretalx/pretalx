@@ -55,6 +55,7 @@ html_static_path = [
     "_static",
     "../src/pretalx/static/fonts/",
     "../src/pretalx/static/common/img/icons/",
+    "../src/pretalx/static/common/img/logo_white.svg",
 ]
 html_additional_pages = {"index": "index.html"}
 html_extra_path = ["api/schema.yml"]

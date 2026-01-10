@@ -154,8 +154,9 @@ header #logourl {
     max-width: 200px;
 }
 header #logourl img {
-    height: 100%;
+    height: calc(100% - 24px);
     box-shadow: none;
+    padding: 12px 18px;
 }
 header #spacer {
     flex-grow: 1;
