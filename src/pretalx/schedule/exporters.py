@@ -254,7 +254,7 @@ class FrabJsonExporter(ScheduleData):
                                             "url": resource.link,
                                             "type": "related",
                                         }
-                                        for resource in talk.submission.resources.all()
+                                        for resource in talk.submission.public_resources.all()
                                         if resource.link
                                     ],
                                     "feedback_url": talk.submission.urls.feedback.full(),
@@ -265,7 +265,7 @@ class FrabJsonExporter(ScheduleData):
                                             "url": resource.resource.url,
                                             "type": "related",
                                         }
-                                        for resource in talk.submission.resources.all()
+                                        for resource in talk.submission.public_resources.all()
                                         if not resource.link
                                     ],
                                 }
