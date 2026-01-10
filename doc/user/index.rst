@@ -18,6 +18,7 @@ updating it in the coming months.
    :maxdepth: 2
    :caption: Contents:
 
+   organisers
    sessions
    event/widget
    markdown

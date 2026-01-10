@@ -74,12 +74,12 @@ individual permissions.
 Recommended team structures
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Teams are flexible and support many different setups. Here are common patterns:
+Teams are flexible and support many different setups. Here is what we suggest
+you use as a starting point:
 
 **Administrator team**: Keep a small team with full permissions for all events.
 These members can manage other teams and fix mistakes – for example, if someone
-accidentally removes their own team's access to an event. The default
-"Administrators" team serves this purpose.
+accidentally removes their own team's access to an event.
 
 **Organiser team**: For the people running your event day-to-day. If your
 organiser group is stable across years, one team for all events works well. If
@@ -146,8 +146,9 @@ Can change event settings
 Can work with and change proposals
    Members can view, edit, and manage submitted proposals – including changing
    their state, editing content, and managing speakers. This is the primary
-   permission for day-to-day event management, covering scheduling, email
-   templates, and other event operations.
+   permission for day-to-day event management, and is required to handle
+   scheduling, modify email templates and send emails, and other common event
+   operations.
 
 Is a reviewer
    Members can participate in the review process, scoring and commenting on
