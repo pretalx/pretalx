@@ -211,15 +211,19 @@ class TestWizard:
     def test_info_wizard_query_string_handling(self, event, client, track):
         # build query string
         params_dict = QueryDict(f"track={track.pk}&submission_type=academic_talk")
-        current_url = "/test/submit/?{params_dict}"
+        params_encoded = params_dict.urlencode()
+        url = f"/test/submit/?{params_encoded}"
         # Start wizard
-        _, current_url = self.get_response_and_url(client, current_url, method="GET")
+        _, current_url = self.get_response_and_url(client, url, method="GET")
         # get query string from current URL
         url_parts = urlparse(current_url)
-        q = QueryDict(url_parts.query)
+        q_dict = QueryDict(url_parts.query)
         assert url_parts.path.endswith("/info/") is True
-        assert q.get("track") == params_dict.get("academic")
-        assert q.get("submission_type") == params_dict.get("academic_talk")
+        # check if GET params are preserved
+        assert q_dict.get("track") and q_dict.get("track") == params_dict.get("track")
+        assert q_dict.get("submission_type") and q_dict.get(
+            "submission_type"
+        ) == params_dict.get("submission_type")
 
     @pytest.mark.django_db
     def test_wizard_new_user(self, event, question, client):
