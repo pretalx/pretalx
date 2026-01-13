@@ -59,3 +59,14 @@ def test_log_urls(
         activity_log.content_object = mail
         del activity_log.display_object
         assert mail.urls.base in activity_log.display_object
+
+
+@pytest.mark.django_db
+def test_activity_log_display_with_string_data(event, submission):
+    log = ActivityLog(
+        event=event,
+        content_object=event,
+        action_type="pretalx.event.delete",
+        data="not a dict",
+    )
+    assert log.display is not None
