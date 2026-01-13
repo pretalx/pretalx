@@ -92,7 +92,7 @@
 | src/pretalx/common/forms/widgets.py                                        |      229 |        4 |       28 |        4 |     97% |196, 352, 426, 437 |
 | src/pretalx/common/image.py                                                |      105 |       62 |       40 |        6 |     35% |40-82, 87-90, 101-108, 118-140, 159, 162, 166, 173-180, 186, 191 |
 | src/pretalx/common/language.py                                             |       22 |        0 |        0 |        0 |    100% |           |
-| src/pretalx/common/log\_display.py                                         |       86 |       13 |       38 |        6 |     83% |158-162, 179, 188-193, 195-197, 234, 237 |
+| src/pretalx/common/log\_display.py                                         |       86 |       10 |       38 |        6 |     87% |164, 181, 190-195, 197-199, 236, 239 |
 | src/pretalx/common/mail.py                                                 |       54 |        4 |       18 |        2 |     89% |83, 134-136 |
 | src/pretalx/common/management/commands/create\_test\_event.py              |      185 |        5 |       60 |        2 |     96% |150->exit, 155, 163-166 |
 | src/pretalx/common/management/commands/devserver.py                        |       16 |       16 |        4 |        0 |      0% |     10-40 |
@@ -153,7 +153,7 @@
 | src/pretalx/event/models/event.py                                          |      562 |       31 |      124 |       10 |     93% |85, 464, 469, 515, 518, 667-669, 698->712, 730, 734-745, 767-768, 776, 818-827, 965->968 |
 | src/pretalx/event/models/organiser.py                                      |      119 |        8 |       18 |        6 |     90% |48, 55, 69, 77, 258, 266, 273, 315 |
 | src/pretalx/event/rules.py                                                 |       52 |        0 |       12 |        0 |    100% |           |
-| src/pretalx/event/services.py                                              |       57 |        3 |       20 |        3 |     92% |81, 86, 118 |
+| src/pretalx/event/services.py                                              |       57 |        2 |       20 |        2 |     95% |   81, 118 |
 | src/pretalx/event/stages.py                                                |       39 |        0 |       10 |        0 |    100% |           |
 | src/pretalx/event/utils.py                                                 |        7 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/mail/apps.py                                                   |        4 |        0 |        0 |        0 |    100% |           |
@@ -292,7 +292,7 @@
 | src/tests/common/forms/test\_cfp\_forms\_utils.py                          |        5 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/forms/test\_cfp\_forms\_validators.py                     |       11 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/forms/test\_common\_form\_widgets.py                      |       50 |        0 |        0 |        0 |    100% |           |
-| src/tests/common/test\_cfp\_log.py                                         |       39 |        0 |        0 |        0 |    100% |           |
+| src/tests/common/test\_cfp\_log.py                                         |       43 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/test\_cfp\_middleware.py                                  |       57 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/test\_cfp\_serialize.py                                   |        5 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/test\_common\_cache.py                                    |       39 |        0 |        0 |        0 |    100% |           |
@@ -359,7 +359,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      295 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **33697** | **1937** | **5394** |  **757** | **92%** |           |
+| **TOTAL**                                                                  | **33701** | **1933** | **5394** |  **756** | **92%** |           |
 
 
 ## Setup coverage badge
