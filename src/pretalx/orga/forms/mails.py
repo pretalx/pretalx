@@ -14,7 +14,11 @@ from django.utils.translation import gettext_lazy as _
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer, TabularFormRenderer
-from pretalx.common.forms.widgets import EnhancedSelectMultiple, SelectMultipleWithCount
+from pretalx.common.forms.widgets import (
+    EnhancedSelectMultiple,
+    MultiEmailInput,
+    SelectMultipleWithCount,
+)
 from pretalx.common.language import language
 from pretalx.common.text.phrases import phrases
 from pretalx.mail.context import get_available_placeholders, get_invalid_placeholders
@@ -124,6 +128,7 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
     class Meta:
         model = MailTemplate
         fields = ["subject", "text", "reply_to", "bcc"]
+        widgets = {"bcc": MultiEmailInput, "reply_to": MultiEmailInput}
 
 
 class DraftRemindersForm(MailTemplateForm):
@@ -201,7 +206,13 @@ class MailDetailForm(ReadOnlyFlag, forms.ModelForm):
     class Meta:
         model = QueuedMail
         fields = ["to", "to_users", "reply_to", "cc", "bcc", "subject", "text"]
-        widgets = {"to_users": EnhancedSelectMultiple}
+        widgets = {
+            "to_users": EnhancedSelectMultiple,
+            "to": MultiEmailInput,
+            "reply_to": MultiEmailInput,
+            "cc": MultiEmailInput,
+            "bcc": MultiEmailInput,
+        }
 
 
 class WriteMailBaseForm(MailTemplateForm):
