@@ -723,3 +723,32 @@ def test_orga_can_compose_single_mail_from_wrong_template(
     assert response.status_code == 200
     with scope(event=event):
         assert str(mail_template.subject) not in response.text
+
+
+@pytest.mark.django_db
+def test_orga_can_send_draft_reminder(orga_client, event, speaker):
+    from pretalx.submission.models import Submission, SubmissionStates
+
+    with scope(event=event):
+        draft = Submission.objects.create(
+            title="Draft Proposal",
+            event=event,
+            submission_type=event.cfp.default_type,
+            state=SubmissionStates.DRAFT,
+        )
+        draft.speakers.add(speaker)
+
+    djmail.outbox = []
+    response = orga_client.post(
+        event.orga_urls.send_drafts_reminder,
+        follow=True,
+        data={
+            "subject_0": "Reminder: Submit your proposal",
+            "text_0": "Dear {name}, please submit your proposal {submission_title}.",
+        },
+    )
+    assert response.status_code == 200
+    assert "read-only" not in response.text
+    assert len(djmail.outbox) == 1
+    assert djmail.outbox[0].subject == "Reminder: Submit your proposal"
+    assert draft.title in djmail.outbox[0].body

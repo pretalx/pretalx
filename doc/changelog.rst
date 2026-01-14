@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :bug:`orga:mail` The form to send reminders to open draft proposals was read-only and could not be used.
 - :bug:`orga` Organisers could not add new review score settings, but could still modify existing score settings.
 - :bug:`schedule` On the “featured sessions” page, only organisers were able to see speaker biographies in the featured sessions.
 - :bug:`orga:schedule` When using the session form to schedule sessions rather than the schedule editor, organisers could schedule sessions outside the event dates.

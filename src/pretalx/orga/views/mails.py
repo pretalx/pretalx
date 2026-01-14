@@ -565,6 +565,7 @@ class ComposeDraftReminders(EventPermissionRequired, FormView):
     form_class = DraftRemindersForm
     template_name = "orga/mails/send_draft_reminders.html"
     permission_required = "mail.send_queuedmail"
+    write_permission_required = "mail.send_queuedmail"
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
