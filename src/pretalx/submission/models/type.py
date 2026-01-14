@@ -79,16 +79,28 @@ class SubmissionType(PretalxModel):
         """Used in choice drop downs."""
         if not self.default_duration:
             return str(self.name)
-        if self.default_duration > 60 * 24:
+        if self.default_duration >= 60 * 24:
+            days = round(self.default_duration / 60 / 24, 1)
+            if days == 1:
+                return _("{name} (1 day)").format(name=self.name)
             return _("{name} ({duration} days)").format(
                 name=self.name,
-                duration=pleasing_number(round(self.default_duration / 60 / 24, 1)),
+                duration=pleasing_number(days),
             )
         if self.default_duration > 90:
-            return _("{name} ({duration} hours)").format(
-                name=self.name,
-                duration=pleasing_number(round(self.default_duration / 60, 1)),
-            )
+            hours = self.default_duration // 60
+            minutes = self.default_duration % 60
+            if hours == 1 and minutes:
+                duration = _("1 hour, {minutes} minutes").format(minutes=minutes)
+            elif hours == 1:
+                duration = _("1 hour")
+            elif minutes:
+                duration = _("{hours} hours, {minutes} minutes").format(
+                    hours=hours, minutes=minutes
+                )
+            else:
+                duration = _("{hours} hours").format(hours=hours)
+            return f"{self.name} ({duration})"
         return _("{name} ({duration} minutes)").format(
             name=self.name, duration=self.default_duration
         )

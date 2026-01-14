@@ -13,9 +13,10 @@ from pretalx.submission.models import SubmissionType
         (30, "30 minutes"),
         (60, "60 minutes"),
         (90, "90 minutes"),
+        (100, "1 hour, 40 minutes"),
         (120, "2 hours"),
-        (150, "2.5 hours"),
-        (60 * 24, "24 hours"),
+        (150, "2 hours, 30 minutes"),
+        (60 * 24, "1 day"),
         (60 * 48, "2 days"),
     ),
 )
