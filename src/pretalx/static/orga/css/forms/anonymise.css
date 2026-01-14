@@ -20,10 +20,8 @@
   }
 }
 #anon-menu {
-  position: absolute;
-  margin-top: -48px;
-  margin-right: 42px;
-  right: 0;
+  position: fixed;
+  z-index: 1000;
 
   button {
     padding: 0;

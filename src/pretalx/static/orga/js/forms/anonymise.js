@@ -14,24 +14,43 @@ const getSelection = () => {
     return activeElement.value.substring(start, finish)
 }
 
-const getCursorPosition = (element) => {
+const getSelectionCoords = (element) => {
     const div = document.createElement("div")
     const style = getComputedStyle(element)
-    for (const prop of style) {
+    const props = [
+        "fontFamily", "fontSize", "fontWeight", "fontStyle", "fontVariant",
+        "letterSpacing", "wordSpacing", "textIndent", "lineHeight",
+        "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+        "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth",
+        "boxSizing", "whiteSpace", "wordWrap", "overflowWrap", "wordBreak"
+    ]
+    for (const prop of props) {
         div.style[prop] = style[prop]
     }
+    div.style.position = "fixed"
+    div.style.visibility = "hidden"
+    div.style.left = "-9999px"
+    div.style.top = "0"
+    div.style.width = element.clientWidth + "px"
     div.style.height = "auto"
-    div.style.position = "absolute"
-    div.style.width = element.offsetWidth + "px"
-    const text = element.value.substring(0, element.selectionStart)
-    div.textContent = text
-    const span = document.createElement("span")
-    span.textContent = element.value.substring(element.selectionStart)
-    div.appendChild(span)
+    div.style.whiteSpace = "pre-wrap"
+    div.style.overflowWrap = "break-word"
+
+    const textBefore = element.value.substring(0, element.selectionStart)
+    div.textContent = textBefore
+    const marker = document.createElement("span")
+    marker.textContent = "\u200B"
+    div.appendChild(marker)
     document.body.appendChild(div)
-    const result = { x: span.offsetLeft, y: span.offsetTop }
+
+    const markerRect = marker.getBoundingClientRect()
+    const divRect = div.getBoundingClientRect()
+    const coords = {
+        x: markerRect.left - divRect.left,
+        y: markerRect.top - divRect.top
+    }
     document.body.removeChild(div)
-    return result
+    return coords
 }
 
 const updateMenu = () => {
@@ -49,15 +68,18 @@ const updateMenu = () => {
     }
     menu.classList.remove("d-none")
 
-    const cursorPosition = getCursorPosition(activeElement)
-    // get top of relative element to subtract from the cursor position
-    const formOffsetTop = activeElement.getBoundingClientRect().top
+    const button = menu.querySelector("button")
+    const menuHeight = button.offsetHeight + 12
+    const menuWidth = button.offsetWidth
 
-    const menuOffsetHeight = 10
-    const menuOffsetWidth = 0.2 * menu.querySelector("button").offsetWidth
+    const elementRect = activeElement.getBoundingClientRect()
+    const selCoords = getSelectionCoords(activeElement)
 
-    menu.style.left = activeElement.offsetLeft + cursorPosition.x - menuOffsetWidth + "px"
-    menu.style.top = activeElement.offsetTop + cursorPosition.y - menuOffsetHeight + "px"
+    const left = elementRect.left + selCoords.x - menuWidth * 0.3 + 20
+    const top = elementRect.top + selCoords.y - menuHeight
+
+    menu.style.left = Math.max(8, left) + "px"
+    menu.style.top = Math.max(8, top) + "px"
 }
 
 const censor = (ev) => {
@@ -90,5 +112,6 @@ const triggerCensoring = () => {
             element.addEventListener("compositionupdate", onSelect)
             element.addEventListener("blur", onSelect)
         })
+    window.addEventListener("scroll", updateMenu, true)
 }
 onReady(triggerCensoring)
