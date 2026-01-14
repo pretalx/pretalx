@@ -91,6 +91,11 @@ class SpeakerProfileForm(
         elif "avatar" in self.fields:
             self.fields["avatar"].required = False
             self.fields["avatar"].widget.is_required = False
+            if self.event.cfp.require_avatar:
+                self.fields["avatar"].widget.attrs["class"] = (
+                    self.fields["avatar"].widget.attrs.get("class", "")
+                    + " hide-optional"
+                ).strip()
 
         # Re-apply field ordering now that user fields have been added
         if self.field_configuration:

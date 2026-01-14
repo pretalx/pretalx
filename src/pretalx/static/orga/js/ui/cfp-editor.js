@@ -133,7 +133,20 @@ document.body.addEventListener('htmx:timeout', (e) => {
     showErrorInTarget(e.detail.target, 'The request timed out. Please try again.')
 })
 
-document.body.addEventListener('htmx:afterSwap', (e) => {
+const applyHideOptional = (container) => {
+    container.querySelectorAll(".hide-optional").forEach((element) => {
+        while (
+            !element.classList.contains("form-group") &&
+            element.nodeName !== "BODY"
+        ) {
+            element = element.parentElement
+        }
+        if (element.nodeName === "BODY") return
+        element.querySelector(".optional")?.classList.add("d-none")
+    })
+}
+
+const afterHtmxContent = (e) => {
     initDragsort(e.detail.target)
     if (e.detail.target.id === 'step-content-inner') {
         const stepContentInner = e.detail.target.querySelector('.step-content-inner')
@@ -146,7 +159,10 @@ document.body.addEventListener('htmx:afterSwap', (e) => {
             modal.close()
         }
     }
-})
+}
+document.body.addEventListener('htmx:afterSwap', afterHtmxContent)
+document.body.addEventListener('htmx:oobAfterSwap', afterHtmxContent)
+document.body.addEventListener('htmx:afterSettle', () => applyHideOptional(document))
 
 document.body.addEventListener('click', (e) => {
     if (e.target.closest('#cfp-nav-prev')) {
@@ -191,6 +207,7 @@ document.body.addEventListener('click', (e) => {
 
 onReady(() => {
     CfpEditorNav.updateNavButtons()
+    applyHideOptional(document)
     const stepsContainer = document.getElementById('submission-steps')
     if (stepsContainer) {
         stepsContainer.addEventListener('keydown', (e) => CfpEditorNav.handleKeyboardNav(e))

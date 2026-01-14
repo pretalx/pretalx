@@ -130,4 +130,15 @@ onReady(() => {
             initFormButton(form)
         })
     document.querySelectorAll("form textarea").forEach(element => initTextarea(element))
+
+    document.querySelectorAll(".hide-optional").forEach((element) => {
+        while (
+            !element.classList.contains("form-group") &&
+            element.nodeName !== "BODY"
+        ) {
+            element = element.parentElement
+        }
+        if (element.nodeName === "BODY") return
+        element.querySelector(".optional")?.classList.add("d-none")
+    })
 })
