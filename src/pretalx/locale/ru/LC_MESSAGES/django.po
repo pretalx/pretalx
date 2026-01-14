@@ -5,8 +5,8 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-12-17 16:46+0000\n"
-"PO-Revision-Date: 2024-10-28 11:26+0000\n"
-"Last-Translator: aschepilova <ashchepilova@gmail.com>\n"
+"PO-Revision-Date: 2026-01-07 22:56+0000\n"
+"Last-Translator: davidschapiro <david@schapiro.org>\n"
 "Language-Team: none\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -14,7 +14,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
-"X-Generator: Weblate 5.6.2\n"
+"X-Generator: Weblate 5.12.2\n"
 
 #: pretalx/agenda/phrases.py:11
 msgid "Thank you for your feedback!"
@@ -131,6 +131,10 @@ msgid ""
 "presentation. Even a short review can prove valuable to a speaker! Please "
 "take the time and communicate your feedback in a constructive way."
 msgstr ""
+"Отзывы — ценный инструмент для докладчиков, позволяющий улучшить содержание "
+"и презентацию выступления. Даже короткий отзыв может оказаться полезным! "
+"Пожалуйста, уделите время и изложите свою обратную связь в конструктивной "
+"форме."
 
 #: pretalx/agenda/templates/agenda/feedback_form.html:30
 msgid "You can’t give feedback for this session at this time."
@@ -235,15 +239,15 @@ msgstr "Доклад “{title}” на {event}"
 #: pretalx/orga/templates/orga/review/bulk_tag.html:53
 #: pretalx/orga/templates/orga/submission/review.html:56
 msgid "Title"
-msgstr ""
+msgstr "название"
 
 #: pretalx/cfp/flow.py:103
 msgid "Additional speakers"
-msgstr ""
+msgstr "Дополнительные докладчики"
 
 #: pretalx/cfp/flow.py:104 pretalx/schedule/forms.py:19
 msgid "Availability"
-msgstr ""
+msgstr "доступность"
 
 #: pretalx/cfp/flow.py:420
 msgid ""
@@ -276,7 +280,7 @@ msgstr ""
 
 #: pretalx/cfp/flow.py:534
 msgid "Additional information"
-msgstr ""
+msgstr "Дополнительная информация"
 
 #: pretalx/cfp/flow.py:538
 msgid "Tell us more!"
@@ -326,24 +330,29 @@ msgid ""
 "This information will be publicly displayed next to your session - you can "
 "always edit for as long as proposals are still open."
 msgstr ""
+"Эта информация будет отображаться публично рядом с вашей сессией — вы всегда "
+"можете ее отредактировать, пока предложения еще открыты."
 
 #: pretalx/cfp/forms/submissions.py:37
 #, python-brace-format
 msgid "You must include the “{invitation_url}” placeholder in your email."
 msgstr ""
+"Вы должны включить в свое электронное письмо заполняемый элемент "
+"«{invitation_url}»."
 
 #: pretalx/cfp/forms/submissions.py:45
 msgid "This person is already a speaker on this proposal."
-msgstr ""
+msgstr "Этот человек уже является докладчиком по данному предложению."
 
 #: pretalx/cfp/forms/submissions.py:49
 msgid "This person has already been invited to this proposal."
-msgstr ""
+msgstr "Этот человек уже был приглашен к участию к этому предложении."
 
 #: pretalx/cfp/forms/submissions.py:58
 #, python-brace-format
 msgid "This would exceed the maximum of {max} speakers per proposal."
 msgstr ""
+"Это превысит максимальное количество ({max}) докладчиков на одно предложение."
 
 #: pretalx/cfp/phrases.py:10
 msgid "Go to CfP"
@@ -5458,7 +5467,7 @@ msgstr "Пока нет предложений"
 
 #: pretalx/orga/templates/orga/includes/dashboard_block_event.html:31
 msgid "Not public"
-msgstr ""
+msgstr "Не публично"
 
 #: pretalx/orga/templates/orga/includes/event_links_formset.html:53
 msgid "Add link"
