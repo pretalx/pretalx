@@ -15,7 +15,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
-from django.http import FileResponse, HttpResponse, JsonResponse
+from django.http import FileResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
@@ -171,9 +171,11 @@ class ScheduleExportDownloadView(EventPermissionRequired, View):
         if request.headers.get("HX-Request"):
             if res.ready():
                 if res.successful():
-                    response = HttpResponse()
-                    response["HX-Redirect"] = request.path
-                    return response
+                    return render(
+                        request,
+                        "orga/schedule/export_success_partial.html",
+                        {"download_url": request.path},
+                    )
                 return render(request, "orga/schedule/export_error.html")
             return render(
                 request,

@@ -693,7 +693,8 @@ def test_schedule_download_htmx_polling_success(mocker, orga_client, schedule):
     )
 
     assert response.status_code == 200
-    assert "HX-Redirect" in response
+    assert b"Export ready" in response.content
+    assert b"Download" in response.content
 
 
 @pytest.mark.django_db
