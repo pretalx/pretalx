@@ -5,8 +5,8 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-01-14 09:01+0000\n"
-"PO-Revision-Date: 2025-12-24 18:25+0000\n"
-"Last-Translator: \"Michi, der\" <michael.scholz@dlr.de>\n"
+"PO-Revision-Date: 2026-01-14 10:44+0000\n"
+"Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: \n"
 "Language: de_Formal\n"
 "MIME-Version: 1.0\n"
@@ -6526,37 +6526,27 @@ msgstr "API"
 
 #: pretalx/orga/templates/orga/schedule/export_error.html:10
 msgid "Export failed. Please try again."
-msgstr ""
+msgstr "Export fehlgeschlagen. Bitte versuchen Sie es noch einmal."
 
 #: pretalx/orga/templates/orga/schedule/export_error.html:13
-#, fuzzy
-#| msgid "Data Export"
 msgid "Back to Export"
-msgstr "Daten-Export"
+msgstr "Zurück zum Export"
 
 #: pretalx/orga/templates/orga/schedule/export_success_partial.html:10
-#, fuzzy
-#| msgid "Export format"
 msgid "Export ready!"
-msgstr "Export-Format"
+msgstr "Export fertig!"
 
 #: pretalx/orga/templates/orga/schedule/export_success_partial.html:13
-#, fuzzy
-#| msgid "Download ZIP"
 msgid "Download"
-msgstr "ZIP herunterladen"
+msgstr "Download"
 
 #: pretalx/orga/templates/orga/schedule/export_waiting_partial.html:10
-#, fuzzy
-#| msgid "Regenerate Export"
 msgid "Generating export..."
-msgstr "Export neu erstellen"
+msgstr "Export wird erstellt …"
 
 #: pretalx/orga/templates/orga/schedule/export_waiting_partial.html:11
-#, fuzzy
-#| msgid "This domain is already in use for a different event."
 msgid "This may take a few minutes for large events."
-msgstr "Diese Domain wird schon für eine andere Veranstaltung verwendet."
+msgstr "Bei größeren Veranstaltungen kann dies ein paar Minuten dauern."
 
 #: pretalx/orga/templates/orga/schedule/index.html:34
 msgid "New release"
@@ -8034,18 +8024,16 @@ msgid "More exports"
 msgstr "Weitere Exporte"
 
 #: pretalx/orga/views/schedule.py:145
-#, fuzzy
-#| msgid "A new export is being generated and will be available soon."
 msgid "A new export is being generated."
-msgstr "Ein neuer Export wird generiert und steht bald zur Verfügung."
+msgstr "Ein neuer Export wird generiert."
 
 #: pretalx/orga/views/schedule.py:189
 msgid "Export failed, please try again."
-msgstr ""
+msgstr "Export fehlgeschlagen, bitte versuchen Sie es erneut."
 
 #: pretalx/orga/views/schedule.py:202
 msgid "Export file not found. Please regenerate the export."
-msgstr ""
+msgstr "Export nicht gefunden. Bitte erstellen Sie einen neuen Export."
 
 #: pretalx/orga/views/schedule.py:227
 msgid "Release"
@@ -9458,10 +9446,9 @@ msgid ""
 msgstr "Der Einreichungstyp wird nur mit passendem Zugangscode angezeigt."
 
 #: pretalx/submission/models/type.py:85
-#, fuzzy, python-brace-format
-#| msgid "{name} ({duration} days)"
+#, python-brace-format
 msgid "{name} (1 day)"
-msgstr "{name} ({duration} Tage)"
+msgstr "{name} (1 Tag)"
 
 #: pretalx/submission/models/type.py:86
 #, python-brace-format
@@ -9471,21 +9458,21 @@ msgstr "{name} ({duration} Tage)"
 #: pretalx/submission/models/type.py:94
 #, python-brace-format
 msgid "1 hour, {minutes} minutes"
-msgstr ""
+msgstr "1 Stunde, {minutes} Minuten"
 
 #: pretalx/submission/models/type.py:96
 msgid "1 hour"
-msgstr ""
+msgstr "1 Stunde"
 
 #: pretalx/submission/models/type.py:98
 #, python-brace-format
 msgid "{hours} hours, {minutes} minutes"
-msgstr ""
+msgstr "{hours} Stunden, {minutes} Minuten"
 
 #: pretalx/submission/models/type.py:102
 #, python-brace-format
 msgid "{hours} hours"
-msgstr ""
+msgstr "{hours} Stunden"
 
 #: pretalx/submission/models/type.py:104
 #, python-brace-format
