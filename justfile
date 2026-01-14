@@ -63,7 +63,7 @@ run *args="runserver --skip-checks":
 [group('development')]
 [working-directory("src")]
 makemessages:
-    just run collectstatic --npm-install
+    just run rebuild --npm-install
     just run makemessages --keep-pot --all
 
 # Build the documentation

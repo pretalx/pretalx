@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-17 16:46+0000\n"
+"POT-Creation-Date: 2026-01-14 09:01+0000\n"
 "PO-Revision-Date: 2025-12-22 17:03+0000\n"
 "Last-Translator: Vasil Kolew <vasil@ludost.net>\n"
 "Language-Team: none\n"
@@ -107,7 +107,7 @@ msgstr "Първоначалната програма за %(event_name)s е о�
 
 #: pretalx/agenda/templates/agenda/feedback.html:19
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:145
-#: pretalx/orga/templates/orga/base.html:294
+#: pretalx/orga/templates/orga/base.html:295
 #: pretalx/orga/templates/orga/submission/base.html:73
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:24
 #: pretalx/submission/models/feedback.py:41
@@ -213,12 +213,12 @@ msgstr ""
 msgid "Your favourites could only be saved locally in your browser."
 msgstr "Вашите любими могат да се съхранят само във Вашия браузър."
 
-#: pretalx/agenda/views/talk.py:142
+#: pretalx/agenda/views/talk.py:148
 #, python-brace-format
 msgid "The session “{title}” at {event}"
 msgstr "Сесията „{title}“ на {event}"
 
-#: pretalx/cfp/flow.py:102
+#: pretalx/cfp/flow.py:104
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:50
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:92
 #: pretalx/orga/tables/speaker.py:25 pretalx/orga/tables/submission.py:43
@@ -230,20 +230,20 @@ msgstr "Сесията „{title}“ на {event}"
 msgid "Title"
 msgstr "Заглавие"
 
-#: pretalx/cfp/flow.py:103
+#: pretalx/cfp/flow.py:105
 msgid "Additional speakers"
 msgstr "Допълнителни лектори"
 
-#: pretalx/cfp/flow.py:104 pretalx/schedule/forms.py:19
+#: pretalx/cfp/flow.py:106 pretalx/schedule/forms.py:19
 msgid "Availability"
 msgstr "Наличност"
 
-#: pretalx/cfp/flow.py:420
+#: pretalx/cfp/flow.py:422
 msgid ""
 "Your draft was saved. You can continue to edit it as long as the CfP is open."
 msgstr "Черновата е записана. Може да я редактирате, докато CfP е отворено."
 
-#: pretalx/cfp/flow.py:428
+#: pretalx/cfp/flow.py:430
 msgid ""
 "Congratulations, you’ve submitted your proposal! You can continue to make "
 "changes to it up to the submission deadline, and you will be notified of any "
@@ -253,11 +253,11 @@ msgstr ""
 "за подаване на предложения и ще бъдете известявани за всякакви промени или "
 "въпроси."
 
-#: pretalx/cfp/flow.py:465
+#: pretalx/cfp/flow.py:467
 msgid "Hey, nice to meet you!"
 msgstr "Здравейте, радваме се да се запознаем!"
 
-#: pretalx/cfp/flow.py:470
+#: pretalx/cfp/flow.py:472
 msgid ""
 "We’re glad that you want to contribute to our event with your proposal. "
 "Let’s get started, this won’t take long."
@@ -265,19 +265,19 @@ msgstr ""
 "Радваме се, че искате да допринесете към нашето събитие с Вашето "
 "предложение. Да започваме, няма да отнеме много време."
 
-#: pretalx/cfp/flow.py:534
+#: pretalx/cfp/flow.py:536
 msgid "Additional information"
 msgstr "Допълнителна информация"
 
-#: pretalx/cfp/flow.py:538
+#: pretalx/cfp/flow.py:540
 msgid "Tell us more!"
 msgstr "Кажете ни още!"
 
-#: pretalx/cfp/flow.py:543
+#: pretalx/cfp/flow.py:545
 msgid "Before we can save your proposal, we have some more questions for you."
 msgstr "Преди да запазим предложението Ви, имаме още някои въпроси за Вас."
 
-#: pretalx/cfp/flow.py:573
+#: pretalx/cfp/flow.py:575
 msgid ""
 "There was an error when logging in. Please contact the organiser for further "
 "help."
@@ -285,17 +285,17 @@ msgstr ""
 "Имаше грешка при влизането в профила. Моля, свържете се с организаторите за "
 "допълнителна помощ."
 
-#: pretalx/cfp/flow.py:582
+#: pretalx/cfp/flow.py:584
 msgid "Account"
 msgstr "Акаунт"
 
-#: pretalx/cfp/flow.py:587
+#: pretalx/cfp/flow.py:589
 msgid "That’s it about your proposal! We now just need a way to contact you."
 msgstr ""
 "Това беше за Вашето предложение! Сега ни трябва само начин да се свържем с "
 "Вас."
 
-#: pretalx/cfp/flow.py:593
+#: pretalx/cfp/flow.py:595
 msgid ""
 "To create your proposal, you need an account on this page. This not only "
 "gives us a way to contact you, it also gives you the possibility to edit "
@@ -306,15 +306,15 @@ msgstr ""
 "възможност да обработвате предложението си или да видите текущото му "
 "състояние."
 
-#: pretalx/cfp/flow.py:637
+#: pretalx/cfp/flow.py:640
 msgid "Profile"
 msgstr "Профил"
 
-#: pretalx/cfp/flow.py:641
+#: pretalx/cfp/flow.py:644
 msgid "Tell us something about yourself!"
 msgstr "Кажете нещо за себе си!"
 
-#: pretalx/cfp/flow.py:646
+#: pretalx/cfp/flow.py:649
 msgid ""
 "This information will be publicly displayed next to your session - you can "
 "always edit for as long as proposals are still open."
@@ -464,8 +464,8 @@ msgstr ""
 "Имаме технически проблеми с изпращането на писма, но Вашата сесия беше "
 "получена успешно!"
 
-#: pretalx/cfp/phrases.py:65 pretalx/orga/forms/event.py:863
-#: pretalx/orga/forms/event.py:895 pretalx/orga/views/cfp.py:150
+#: pretalx/cfp/phrases.py:65 pretalx/orga/forms/event.py:855
+#: pretalx/orga/forms/event.py:887 pretalx/orga/views/cfp.py:150
 msgid "Custom fields"
 msgstr "Допълнителни полета"
 
@@ -553,8 +553,8 @@ msgid "Abstract:"
 msgstr "Резюме:"
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:48
-#: pretalx/event/models/event.py:622
-#: pretalx/orga/templates/orga/cfp/editor.html:495
+#: pretalx/event/models/event.py:621
+#: pretalx/orga/templates/orga/cfp/editor.html:499
 #: pretalx/submission/models/question.py:570
 #: pretalx/submission/models/submission.py:1124
 msgid "No"
@@ -632,12 +632,12 @@ msgstr ""
 "изпращат напомнящи писма за наближаващия краен срок."
 
 #: pretalx/cfp/templates/cfp/event/submission_questions.html:18
-#: pretalx/orga/templates/orga/cfp/editor.html:210
+#: pretalx/orga/templates/orga/cfp/editor.html:214
 msgid "… about your proposal:"
 msgstr "… за Вашето предложение:"
 
 #: pretalx/cfp/templates/cfp/event/submission_questions.html:26
-#: pretalx/orga/templates/orga/cfp/editor.html:226
+#: pretalx/orga/templates/orga/cfp/editor.html:230
 msgid "… about yourself:"
 msgstr "… за Вас:"
 
@@ -1021,7 +1021,7 @@ msgstr "Продължителност"
 #: pretalx/cfp/templates/cfp/index.html:9
 #: pretalx/cfp/templates/cfp/index.html:13
 #: pretalx/orga/templates/orga/admin/user_detail.html:85
-#: pretalx/orga/templates/orga/base.html:455
+#: pretalx/orga/templates/orga/base.html:456
 #: pretalx/orga/templates/orga/user.html:41
 #: pretalx/person/models/auth_token.py:76
 msgid "Events"
@@ -1597,40 +1597,40 @@ msgstr "Профилът беше променен."
 msgid "The user changed their email address."
 msgstr "Потребителят смени email адреса си."
 
-#: pretalx/common/log_display.py:201 pretalx/common/log_display.py:205
+#: pretalx/common/log_display.py:203 pretalx/common/log_display.py:207
 #: pretalx/orga/tables/cfp.py:230 pretalx/orga/views/cfp.py:145
 msgid "Custom field"
 msgstr "Допълнително поле"
 
-#: pretalx/common/log_display.py:212
+#: pretalx/common/log_display.py:214
 msgid "Response to custom field"
 msgstr "Отговор на допълнително поле"
 
-#: pretalx/common/log_display.py:215 pretalx/orga/forms/event.py:878
-#: pretalx/orga/templates/orga/base.html:240
+#: pretalx/common/log_display.py:217 pretalx/orga/forms/event.py:870
+#: pretalx/orga/templates/orga/base.html:241
 msgid "Call for Proposals"
 msgstr "Покана за предложения"
 
-#: pretalx/common/log_display.py:218
+#: pretalx/common/log_display.py:220
 msgid "Mail template"
 msgstr "Шаблон за писмо"
 
-#: pretalx/common/log_display.py:222 pretalx/event/models/organiser.py:293
+#: pretalx/common/log_display.py:224 pretalx/event/models/organiser.py:293
 #: pretalx/orga/tables/speaker.py:87
 #: pretalx/orga/templates/orga/admin/user_detail.html:45
-#: pretalx/orga/templates/orga/base.html:221
+#: pretalx/orga/templates/orga/base.html:222
 #: pretalx/orga/templates/orga/organiser/team/update.html:19
 #: pretalx/person/models/user.py:134
 #: pretalx/submission/models/submission.py:1257
 msgid "Email"
 msgstr "Писмо"
 
-#: pretalx/common/log_display.py:226
+#: pretalx/common/log_display.py:228
 msgid "Speaker profile"
 msgstr "Профил на лектор"
 
-#: pretalx/common/log_display.py:230 pretalx/event/stages.py:101
-#: pretalx/orga/forms/event.py:877 pretalx/orga/forms/event.py:918
+#: pretalx/common/log_display.py:232 pretalx/event/stages.py:101
+#: pretalx/orga/forms/event.py:869 pretalx/orga/forms/event.py:910
 #: pretalx/orga/templates/orga/admin/user_detail.html:131
 #: pretalx/orga/templates/orga/mails/_placeholder_group.html:19
 #: pretalx/orga/templates/orga/organiser/list.html:34
@@ -1640,9 +1640,9 @@ msgid_plural "Events"
 msgstr[0] "Събитие"
 msgstr[1] "Събития"
 
-#: pretalx/common/models/mixins.py:22 pretalx/orga/forms/event.py:885
-#: pretalx/orga/forms/event.py:896 pretalx/orga/forms/event.py:904
-#: pretalx/orga/forms/event.py:919 pretalx/orga/templates/orga/user.html:44
+#: pretalx/common/models/mixins.py:22 pretalx/orga/forms/event.py:877
+#: pretalx/orga/forms/event.py:888 pretalx/orga/forms/event.py:896
+#: pretalx/orga/forms/event.py:911 pretalx/orga/templates/orga/user.html:44
 msgid "Created"
 msgstr "Създаден"
 
@@ -1843,22 +1843,22 @@ msgstr ""
 "rel=noopener>доклад за грешка</a>!"
 
 #: pretalx/common/templates/common/auth.html:21
-#: pretalx/orga/templates/orga/cfp/editor.html:179
+#: pretalx/orga/templates/orga/cfp/editor.html:183
 msgid "I already have an account"
 msgstr "Вече имам акаунт"
 
 #: pretalx/common/templates/common/auth.html:27
-#: pretalx/orga/templates/orga/cfp/editor.html:182
+#: pretalx/orga/templates/orga/cfp/editor.html:186
 msgid "Log in"
 msgstr "Влизане"
 
 #: pretalx/common/templates/common/auth.html:41
-#: pretalx/orga/templates/orga/cfp/editor.html:185
+#: pretalx/orga/templates/orga/cfp/editor.html:189
 msgid "I need a new account"
 msgstr "Искам нов акаунт"
 
 #: pretalx/common/templates/common/auth.html:49
-#: pretalx/orga/templates/orga/cfp/editor.html:189
+#: pretalx/orga/templates/orga/cfp/editor.html:193
 msgid "Register"
 msgstr "Регистрация"
 
@@ -1912,15 +1912,15 @@ msgstr "Щампа"
 
 #: pretalx/common/templates/common/forms/field.html:12
 #: pretalx/orga/forms/cfp.py:579
-#: pretalx/orga/templates/orga/settings/form.html:75
-#: pretalx/orga/templates/orga/settings/form.html:93
+#: pretalx/orga/templates/orga/settings/form.html:74
+#: pretalx/orga/templates/orga/settings/form.html:92
 msgid "Optional"
 msgstr "Незадължително"
 
 #: pretalx/common/templates/common/includes/modals.html:15
 #: pretalx/common/templates/common/logs.html:69
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:19
-#: pretalx/orga/templates/orga/cfp/editor.html:509
+#: pretalx/orga/templates/orga/cfp/editor.html:513
 #: pretalx/orga/templates/orga/generic/table.html:30
 msgid "Close"
 msgstr "Затвори"
@@ -1993,9 +1993,9 @@ msgstr "Изображение за изрязване"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:25
 #: pretalx/common/text/phrases.py:51
-#: pretalx/orga/templates/orga/cfp/editor.html:144
-#: pretalx/orga/templates/orga/cfp/editor.html:292
-#: pretalx/orga/templates/orga/cfp/editor.html:477
+#: pretalx/orga/templates/orga/cfp/editor.html:148
+#: pretalx/orga/templates/orga/cfp/editor.html:296
+#: pretalx/orga/templates/orga/cfp/editor.html:481
 msgid "Cancel"
 msgstr "Отказ"
 
@@ -2059,8 +2059,8 @@ msgstr "Изпращане"
 
 #. Translators: This is the label on save buttons.
 #: pretalx/common/text/phrases.py:50
-#: pretalx/orga/templates/orga/cfp/editor.html:295
-#: pretalx/orga/templates/orga/cfp/editor.html:480
+#: pretalx/orga/templates/orga/cfp/editor.html:299
+#: pretalx/orga/templates/orga/cfp/editor.html:484
 #: pretalx/orga/templates/orga/generic/table.html:100
 msgid "Save"
 msgstr "Запазване"
@@ -2156,8 +2156,8 @@ msgid "Huh."
 msgstr "Ох."
 
 #: pretalx/common/text/phrases.py:93
-#: pretalx/orga/templates/orga/cfp/editor.html:180
-#: pretalx/orga/templates/orga/cfp/editor.html:187
+#: pretalx/orga/templates/orga/cfp/editor.html:184
+#: pretalx/orga/templates/orga/cfp/editor.html:191
 msgid "Email address"
 msgstr "E-mail адрес"
 
@@ -2402,9 +2402,9 @@ msgstr ""
 "Крайният срок по подразбиране за Вашето CfP. Може да добавяте индивидуални "
 "крайни срокове по видове сесии, които имат приоритет над този краен срок."
 
-#: pretalx/event/forms.py:370 pretalx/event/models/event.py:287
+#: pretalx/event/forms.py:370 pretalx/event/models/event.py:286
 #: pretalx/orga/templates/orga/admin/admin.html:123
-#: pretalx/orga/templates/orga/base.html:227
+#: pretalx/orga/templates/orga/base.html:228
 #: pretalx/orga/templates/orga/plugins.html:21
 #: pretalx/orga/templates/orga/plugins.html:23
 msgid "Plugins"
@@ -2415,11 +2415,11 @@ msgstr "Приставки"
 msgid "Invalid event slug – this slug is reserved: {value}."
 msgstr "Неправилен идентификатор на събитие — „{value}“ вече е запазен."
 
-#: pretalx/event/models/event.py:169 pretalx/event/models/organiser.py:96
+#: pretalx/event/models/event.py:168 pretalx/event/models/organiser.py:96
 #: pretalx/orga/tables/organiser.py:19 pretalx/orga/tables/schedule.py:16
 #: pretalx/orga/tables/speaker.py:74 pretalx/orga/tables/speaker.py:133
 #: pretalx/orga/templates/orga/admin/admin.html:65
-#: pretalx/orga/templates/orga/cfp/editor.html:186
+#: pretalx/orga/templates/orga/cfp/editor.html:190
 #: pretalx/orga/templates/orga/organiser/team/update.html:18
 #: pretalx/orga/templates/orga/user.html:39 pretalx/person/forms/user.py:47
 #: pretalx/person/models/auth_token.py:66 pretalx/person/models/user.py:126
@@ -2428,55 +2428,55 @@ msgstr "Неправилен идентификатор на събитие — 
 msgid "Name"
 msgstr "Име"
 
-#: pretalx/event/models/event.py:178 pretalx/event/models/event.py:184
+#: pretalx/event/models/event.py:177 pretalx/event/models/event.py:183
 #: pretalx/event/models/organiser.py:105
 msgid "The slug may only contain letters, numbers, dots and dashes."
 msgstr "Идентификаторът се състои само от букви, цифри, точки и тирета."
 
-#: pretalx/event/models/event.py:183 pretalx/event/models/organiser.py:109
+#: pretalx/event/models/event.py:182 pretalx/event/models/organiser.py:109
 msgid "Short form"
 msgstr "Съкратен вид"
 
-#: pretalx/event/models/event.py:192
+#: pretalx/event/models/event.py:191
 msgid "Event is public"
 msgstr "Събитието е публично"
 
-#: pretalx/event/models/event.py:193
+#: pretalx/event/models/event.py:192
 msgid "Event start date"
 msgstr "Начална дата на събитието"
 
-#: pretalx/event/models/event.py:194
+#: pretalx/event/models/event.py:193
 msgid "Event end date"
 msgstr "Крайна дата на събитието"
 
-#: pretalx/event/models/event.py:200
+#: pretalx/event/models/event.py:199
 msgid ""
 "All event dates will be localised and interpreted to be in this timezone."
 msgstr ""
 "Всички данни за събитието ще бъдат локализирани и интерпретирани в тази "
 "часова зона."
 
-#: pretalx/event/models/event.py:204
+#: pretalx/event/models/event.py:203
 msgid "Organiser email address"
 msgstr "E-mail адрес на организатора"
 
-#: pretalx/event/models/event.py:205
+#: pretalx/event/models/event.py:204
 msgid "Will be used as Reply-To in emails."
 msgstr "Ще се използва като „Отговор до“ в писмата."
 
-#: pretalx/event/models/event.py:208
+#: pretalx/event/models/event.py:207
 msgid "Custom domain"
 msgstr "Персонализиран домейн"
 
-#: pretalx/event/models/event.py:209
+#: pretalx/event/models/event.py:208
 msgid "Enter a custom domain, such as https://my.event.example.org"
 msgstr "Въведете персонализиран домейн, например https://my.event.example.org"
 
-#: pretalx/event/models/event.py:224
+#: pretalx/event/models/event.py:223
 msgid "Main event colour"
 msgstr "Основен цвят на събитието"
 
-#: pretalx/event/models/event.py:226
+#: pretalx/event/models/event.py:225
 msgid ""
 "Provide a hex value like #00ff00 if you want to style pretalx in your "
 "event’s colour scheme."
@@ -2484,22 +2484,22 @@ msgstr ""
 "Задайте шестнайсетична стойност като #00ff00, ако искате да стилизирате "
 "pretalx в цветовата схема на събитието."
 
-#: pretalx/event/models/event.py:233
+#: pretalx/event/models/event.py:232
 msgid "Custom Event CSS"
 msgstr "Персонализирани CSS стилове за събитието"
 
-#: pretalx/event/models/event.py:235
+#: pretalx/event/models/event.py:234
 msgid ""
 "Upload a custom CSS file if changing the primary colour is not sufficient "
 "for you."
 msgstr ""
 "Качете собствен CSS файл, ако смяната на основния цвят не е достатъчна."
 
-#: pretalx/event/models/event.py:242
+#: pretalx/event/models/event.py:241
 msgid "Logo"
 msgstr "Лого"
 
-#: pretalx/event/models/event.py:244
+#: pretalx/event/models/event.py:243
 msgid ""
 "If you provide a logo image, your event’s name will not be shown in the "
 "event header. The logo will be scaled down to a height of 140px."
@@ -2507,11 +2507,11 @@ msgstr ""
 "Ако качите картинка с лого, името на събитието няма да се показва в "
 "заглавката на събитието. Логото ще бъде смалено до височина 140px."
 
-#: pretalx/event/models/event.py:252
+#: pretalx/event/models/event.py:251
 msgid "Header image"
 msgstr "Заглавна картинка"
 
-#: pretalx/event/models/event.py:254
+#: pretalx/event/models/event.py:253
 msgid ""
 "If you provide a header image, it will be displayed instead of your event’s "
 "color and/or header pattern at the top of all event pages. It will be center-"
@@ -2523,15 +2523,15 @@ msgstr ""
 "Ще бъде центрирана, така че, когато прозорецът се намалява, централната част "
 "ще продължава да се вижда и няма да се разтегля."
 
-#: pretalx/event/models/event.py:265
+#: pretalx/event/models/event.py:264
 msgid "Default language"
 msgstr "Език по подразбиране"
 
-#: pretalx/event/models/event.py:268
+#: pretalx/event/models/event.py:267
 msgid "Landing page text"
 msgstr "Текст на началната страница"
 
-#: pretalx/event/models/event.py:270
+#: pretalx/event/models/event.py:269
 msgid ""
 "This text will be shown on the landing page, alongside with links to the CfP "
 "and schedule, if appropriate."
@@ -2539,11 +2539,11 @@ msgstr ""
 "Този текст ще бъде показван на началната страница заедно с връзки до CfP и "
 "програмата, ако е подходящо."
 
-#: pretalx/event/models/event.py:278
+#: pretalx/event/models/event.py:277
 msgid "Featured sessions text"
 msgstr "Текст за препоръчани сесии"
 
-#: pretalx/event/models/event.py:280
+#: pretalx/event/models/event.py:279
 msgid ""
 "This text will be shown at the top of the featured sessions page instead of "
 "the default text."
@@ -2551,69 +2551,69 @@ msgstr ""
 "Този текст ще бъде показван отгоре на страницата с препоръчани сесии вместо "
 "текста по подразбиране."
 
-#: pretalx/event/models/event.py:290
+#: pretalx/event/models/event.py:289
 msgid "Plain"
 msgstr "Обикновен"
 
-#: pretalx/event/models/event.py:291
+#: pretalx/event/models/event.py:290
 msgid "Circuits"
 msgstr "Платки"
 
-#: pretalx/event/models/event.py:292
+#: pretalx/event/models/event.py:291
 msgid "Circles"
 msgstr "Кръгове"
 
-#: pretalx/event/models/event.py:293
+#: pretalx/event/models/event.py:292
 msgid "Signal"
 msgstr "Сигнал"
 
-#: pretalx/event/models/event.py:294
+#: pretalx/event/models/event.py:293
 msgid "Topography"
 msgstr "Топография"
 
-#: pretalx/event/models/event.py:295
+#: pretalx/event/models/event.py:294
 msgid "Graph Paper"
 msgstr "Милиметрова хартия"
 
-#: pretalx/event/models/event.py:596 pretalx/event/models/event.py:924
-#: pretalx/event/stages.py:73 pretalx/orga/templates/orga/base.html:218
-#: pretalx/orga/templates/orga/base.html:309
-#: pretalx/orga/templates/orga/base.html:317
-#: pretalx/orga/templates/orga/base.html:330
+#: pretalx/event/models/event.py:595 pretalx/event/models/event.py:923
+#: pretalx/event/stages.py:73 pretalx/orga/templates/orga/base.html:219
+#: pretalx/orga/templates/orga/base.html:310
+#: pretalx/orga/templates/orga/base.html:318
+#: pretalx/orga/templates/orga/base.html:331
 #: pretalx/orga/templates/orga/submission/review.html:203
 msgid "Review"
 msgstr "Рецензия"
 
-#: pretalx/event/models/event.py:604
+#: pretalx/event/models/event.py:603
 msgid "Selection"
 msgstr "Избор"
 
-#: pretalx/event/models/event.py:617
+#: pretalx/event/models/event.py:616
 #: pretalx/orga/templates/orga/submission/review.html:198
 #: pretalx/submission/models/review.py:148
 msgid "Score"
 msgstr "Оценка"
 
-#: pretalx/event/models/event.py:627
+#: pretalx/event/models/event.py:626
 msgid "Maybe"
 msgstr "Може би"
 
-#: pretalx/event/models/event.py:632
-#: pretalx/orga/templates/orga/cfp/editor.html:495
+#: pretalx/event/models/event.py:631
+#: pretalx/orga/templates/orga/cfp/editor.html:499
 #: pretalx/submission/models/question.py:568
 #: pretalx/submission/models/submission.py:1124
 msgid "Yes"
 msgstr "Да"
 
-#: pretalx/event/models/event.py:1081
+#: pretalx/event/models/event.py:1080
 msgid "News from your content system"
 msgstr "Новини от Вашата система за съдържание"
 
-#: pretalx/event/models/event.py:1171
+#: pretalx/event/models/event.py:1170
 msgid "Link text"
 msgstr "Текст на връзката"
 
-#: pretalx/event/models/event.py:1172
+#: pretalx/event/models/event.py:1171
 msgid "Link URL"
 msgstr "URL на връзката"
 
@@ -3605,7 +3605,7 @@ msgid "Leave empty to use the default label."
 msgstr "Оставете празно за стандартен надпис."
 
 #: pretalx/orga/forms/cfp.py:570
-#: pretalx/orga/templates/orga/cfp/editor.html:501
+#: pretalx/orga/templates/orga/cfp/editor.html:505
 msgid "Help text"
 msgstr "Помощен текст"
 
@@ -3618,7 +3618,7 @@ msgid "Visibility"
 msgstr "Видимост"
 
 #: pretalx/orga/forms/cfp.py:578
-#: pretalx/orga/templates/orga/cfp/editor.html:494
+#: pretalx/orga/templates/orga/cfp/editor.html:498
 msgid "Required"
 msgstr "Задължително"
 
@@ -3772,22 +3772,10 @@ msgid "Attendees will be able to send in feedback after a session is over."
 msgstr "Посетителите ще може да пращат отзиви след приключването на сесия."
 
 #: pretalx/orga/forms/event.py:131
-msgid "Generate HTML export on schedule release"
-msgstr "Изнасяне на вариант в HTML при публикуването на нова програма"
-
-#: pretalx/orga/forms/event.py:133
-msgid ""
-"The static HTML export will be provided as a .zip archive on the schedule "
-"export page."
-msgstr ""
-"Изнасянето в HTML произвежда архив във формат .zip на страницата с изнесени "
-"програми."
-
-#: pretalx/orga/forms/event.py:138
 msgid "HTML Export URL"
 msgstr "Адрес на изнесеното в HTML"
 
-#: pretalx/orga/forms/event.py:140
+#: pretalx/orga/forms/event.py:133
 msgid ""
 "If you publish your schedule via the HTML export, you will want the correct "
 "absolute URL to be set in various places. Please only set this value once "
@@ -3797,22 +3785,22 @@ msgstr ""
 "публикува правилният абсолютен адрес. Задайте го едва след като сте "
 "публикували програмата. Трябва да завършва с „/“."
 
-#: pretalx/orga/forms/event.py:153
+#: pretalx/orga/forms/event.py:146
 msgid "Ask search engines not to index the event pages"
 msgstr "Заявяване пред търсачките да не индексират страниците на събитието"
 
-#: pretalx/orga/forms/event.py:162
+#: pretalx/orga/forms/event.py:155
 #, python-brace-format
 msgid "Make sure to point a CNAME record from your domain to {site_url}."
 msgstr ""
 "Уверете се, че сте насочили CNAME запис от Вашия домейн към {site_url}."
 
-#: pretalx/orga/forms/event.py:172
+#: pretalx/orga/forms/event.py:165
 #, python-brace-format
 msgid "You can find the page <a {href}>here</a>."
 msgstr "Може да откриете страницата <a {href}>тук</a>."
 
-#: pretalx/orga/forms/event.py:181
+#: pretalx/orga/forms/event.py:174
 msgid ""
 "Please contact your administrator if you need to change the short name of "
 "your event."
@@ -3820,7 +3808,7 @@ msgstr ""
 "Свържете се с администратора си, ако трябва да смените скъсеното име на "
 "събитието."
 
-#: pretalx/orga/forms/event.py:184
+#: pretalx/orga/forms/event.py:177
 msgid ""
 "Any sessions you have scheduled already will be moved if you change the "
 "event dates. You will have to release a new schedule version to notify all "
@@ -3830,11 +3818,11 @@ msgstr ""
 "на събитието. Ще трябва да публикувате нова версия на програмата, за да "
 "известите всички лектори."
 
-#: pretalx/orga/forms/event.py:201
+#: pretalx/orga/forms/event.py:194
 msgid "Please do not choose the default domain as custom event domain."
 msgstr "Не избирайте стандартния домейн като домейн за събитието."
 
-#: pretalx/orga/forms/event.py:212
+#: pretalx/orga/forms/event.py:205
 #, python-brace-format
 msgid ""
 "The domain “{domain}” does not have a name server entry at this time. Please "
@@ -3843,15 +3831,15 @@ msgstr ""
 "Няма запис за домейна „{domain}“ в сървъра за имена. Уверете се, че домейнът "
 "е настроен правилно, преди да го настроите тук."
 
-#: pretalx/orga/forms/event.py:249
+#: pretalx/orga/forms/event.py:242
 msgid "Your default language needs to be one of your active languages."
 msgstr "За стандартен може да изберете само някой от наличните езици."
 
-#: pretalx/orga/forms/event.py:389
+#: pretalx/orga/forms/event.py:381
 msgid "Contact address"
 msgstr "Адрес за контакти"
 
-#: pretalx/orga/forms/event.py:391
+#: pretalx/orga/forms/event.py:383
 msgid ""
 "Reply-To address. If this setting is empty and you have no custom sender, "
 "your event email address will be used as Reply-To address."
@@ -3859,67 +3847,67 @@ msgstr ""
 "Адрес за отговори (Reply-To). Ако настройката е празна и няма избран "
 "подател, e-mail адресът на събитието ще се ползва за отговор (Reply-To)."
 
-#: pretalx/orga/forms/event.py:396
+#: pretalx/orga/forms/event.py:388
 msgid "Mail subject prefix"
 msgstr "Префикс за темата на писмата"
 
-#: pretalx/orga/forms/event.py:398
+#: pretalx/orga/forms/event.py:390
 msgid "The prefix will be prepended to outgoing mail subjects in [brackets]."
 msgstr ""
 "Префиксът се поставя най-отпред в темата на пращаните писма в [квадратни "
 "скоби]."
 
-#: pretalx/orga/forms/event.py:403
+#: pretalx/orga/forms/event.py:395
 msgid "Mail signature"
 msgstr "Подпис на писмата"
 
-#: pretalx/orga/forms/event.py:405
+#: pretalx/orga/forms/event.py:397
 msgid "The signature will be added to outgoing mails, preceded by “-- ”."
 msgstr ""
 "Завършващата част на писмата. Добавя се към пращаните писма, разделена с „-- "
 "“."
 
-#: pretalx/orga/forms/event.py:411
+#: pretalx/orga/forms/event.py:403
 msgid "Use custom SMTP server"
 msgstr "Външен SMTP сървър"
 
-#: pretalx/orga/forms/event.py:413
+#: pretalx/orga/forms/event.py:405
 msgid ""
 "All mail related to your event will be sent over the SMTP server specified "
 "by you."
 msgstr ""
 "Всички писма относно събитието ще се пращат през зададения SMTP сървър."
 
-#: pretalx/orga/forms/event.py:418
+#: pretalx/orga/forms/event.py:410
 msgid "Sender address"
 msgstr "Адрес на подател"
 
-#: pretalx/orga/forms/event.py:419
+#: pretalx/orga/forms/event.py:411
 msgid "Sender address for outgoing emails."
 msgstr "Адрес на подателя за изходящи писма."
 
-#: pretalx/orga/forms/event.py:422
+#: pretalx/orga/forms/event.py:414
 msgid "Hostname"
 msgstr "Име на хост"
 
-#: pretalx/orga/forms/event.py:423
+#: pretalx/orga/forms/event.py:415
 #: pretalx/orga/templates/orga/admin/admin.html:90
 msgid "Port"
 msgstr "Порт"
 
-#: pretalx/orga/forms/event.py:424
+#: pretalx/orga/forms/event.py:416
 msgid "Username"
 msgstr "Потребителско име"
 
-#: pretalx/orga/forms/event.py:426
+#: pretalx/orga/forms/event.py:418
 #: pretalx/orga/templates/orga/admin/admin.html:96
-#: pretalx/orga/templates/orga/cfp/editor.html:181
-#: pretalx/orga/templates/orga/cfp/editor.html:188
+#: pretalx/orga/templates/orga/cfp/editor.html:185
+#: pretalx/orga/templates/orga/cfp/editor.html:192
 #: pretalx/person/forms/user.py:42 pretalx/person/forms/user.py:57
 msgid "Password"
 msgstr "Парола"
 
-#: pretalx/orga/forms/event.py:437
+#: pretalx/orga/forms/event.py:429
 #, python-brace-format
 msgid ""
 "The password contains unsupported letters. Please only use characters A-Z, a-"
@@ -3928,28 +3916,28 @@ msgstr ""
 "Паролата съдържа неподдържани символи. Моля използвайте само A-Z, a-z, 0-9 и "
 "стандартните специални символи ({characters})."
 
-#: pretalx/orga/forms/event.py:446
+#: pretalx/orga/forms/event.py:438
 msgid "Use STARTTLS"
 msgstr "Ползване на STARTTLS"
 
-#: pretalx/orga/forms/event.py:447
+#: pretalx/orga/forms/event.py:439
 msgid "Commonly enabled on port 587."
 msgstr "Най-често е на порт 587."
 
-#: pretalx/orga/forms/event.py:451
+#: pretalx/orga/forms/event.py:443
 msgid "Use SSL"
 msgstr "Ползване на SSL"
 
-#: pretalx/orga/forms/event.py:451
+#: pretalx/orga/forms/event.py:443
 msgid "Commonly enabled on port 465."
 msgstr "Най-често е на порт 465."
 
-#: pretalx/orga/forms/event.py:479
+#: pretalx/orga/forms/event.py:471
 msgid "You have to provide a sender address if you use a custom SMTP server."
 msgstr ""
 "Трябва да укажете адрес на подател, ако сами настройвате сървър за SMTP."
 
-#: pretalx/orga/forms/event.py:488
+#: pretalx/orga/forms/event.py:480
 msgid ""
 "You can activate either SSL or STARTTLS security, but not both at the same "
 "time."
@@ -3957,7 +3945,7 @@ msgstr ""
 "Може да включите или шифроване с SSL, или със STARTTLS, но не и двете "
 "едновременно."
 
-#: pretalx/orga/forms/event.py:505
+#: pretalx/orga/forms/event.py:497
 msgid ""
 "You have to activate either SSL or STARTTLS security if you use a non-local "
 "mailserver due to data protection reasons. Your administrator can add an "
@@ -3969,11 +3957,11 @@ msgstr ""
 "настрои байпас за инсталацията. Ако ползвате такъв, трябва да отразите това "
 "в политиката за лични данни."
 
-#: pretalx/orga/forms/event.py:538
+#: pretalx/orga/forms/event.py:530
 msgid "Enable submission comments"
 msgstr "Позволяване на коментари към предложенията"
 
-#: pretalx/orga/forms/event.py:540
+#: pretalx/orga/forms/event.py:532
 msgid ""
 "Allow organisers and reviewers to comment on submissions, separate from "
 "reviews."
@@ -3981,35 +3969,35 @@ msgstr ""
 "Позволяване на организаторите и рецензентите да коментират предложенията "
 "отделно от рецензиите."
 
-#: pretalx/orga/forms/event.py:545
+#: pretalx/orga/forms/event.py:537
 msgid "Require a review score"
 msgstr "Изискване на оценка към рецензията"
 
-#: pretalx/orga/forms/event.py:548
+#: pretalx/orga/forms/event.py:540
 msgid "Require a review text"
 msgstr "Изискване на текст към рецензията"
 
-#: pretalx/orga/forms/event.py:551
+#: pretalx/orga/forms/event.py:543
 msgid "Score display"
 msgstr "Изобразяване на оценката"
 
-#: pretalx/orga/forms/event.py:554
+#: pretalx/orga/forms/event.py:546
 msgid "Text and score, e.g “Good (3)”"
 msgstr "Текст с число, напр. „Добър (3)“"
 
-#: pretalx/orga/forms/event.py:555
+#: pretalx/orga/forms/event.py:547
 msgid "Score and text, e.g “3 (good)”"
 msgstr "Число с текст, напр. „3 (добър)“"
 
-#: pretalx/orga/forms/event.py:556
+#: pretalx/orga/forms/event.py:548
 msgid "Just scores"
 msgstr "Само числа"
 
-#: pretalx/orga/forms/event.py:557
+#: pretalx/orga/forms/event.py:549
 msgid "Just text"
 msgstr "Само текст"
 
-#: pretalx/orga/forms/event.py:561
+#: pretalx/orga/forms/event.py:553
 msgid ""
 "This is how the score will look like on the review interface. The dashboard "
 "will always show numerical scores."
@@ -4017,23 +4005,23 @@ msgstr ""
 "По този начин оценката се изобразява в интерфейса на рецензията. В таблото "
 "за оценки винаги се показват само числа."
 
-#: pretalx/orga/forms/event.py:566
+#: pretalx/orga/forms/event.py:558
 msgid "Score aggregation method"
 msgstr "Начин на осредняване"
 
-#: pretalx/orga/forms/event.py:568 pretalx/orga/tables/submission.py:141
+#: pretalx/orga/forms/event.py:560 pretalx/orga/tables/submission.py:141
 msgid "Median"
 msgstr "Медиана"
 
-#: pretalx/orga/forms/event.py:568
+#: pretalx/orga/forms/event.py:560
 msgid "Average (mean)"
 msgstr "Средно аритметично"
 
-#: pretalx/orga/forms/event.py:572
+#: pretalx/orga/forms/event.py:564
 msgid "Help text for reviewers"
 msgstr "Помощен текст за рецензентите"
 
-#: pretalx/orga/forms/event.py:574
+#: pretalx/orga/forms/event.py:566
 msgid ""
 "This text will be shown at the top of every review, as long as reviews can "
 "be created or edited."
@@ -4041,11 +4029,11 @@ msgstr ""
 "Текстът се извежда най-отгоре на всяка рецензия, стига да може да се подават "
 "или редактират рецензии."
 
-#: pretalx/orga/forms/event.py:598
+#: pretalx/orga/forms/event.py:590
 msgid "Show the widget even if the schedule is not public"
 msgstr "Извеждане на графичния обект, дори програмата да не е публична"
 
-#: pretalx/orga/forms/event.py:600
+#: pretalx/orga/forms/event.py:592
 msgid ""
 "Set to allow external pages to show the schedule widget, even if the "
 "schedule is not shown here using pretalx."
@@ -4053,37 +4041,37 @@ msgstr ""
 "Позволяване на външни страници да показват графичния обект за програмата, "
 "дори и тя да не се показва от pretalx тук."
 
-#: pretalx/orga/forms/event.py:619
+#: pretalx/orga/forms/event.py:611
 msgid "Limit days"
 msgstr "Ограничаване на дните"
 
-#: pretalx/orga/forms/event.py:624
+#: pretalx/orga/forms/event.py:616
 msgid ""
 "You can limit the days shown in the widget. Leave empty to show all days."
 msgstr ""
 "Може да ограничите дните, показвани в графичния обект. Оставете празно, за "
 "да се показват всички дни."
 
-#: pretalx/orga/forms/event.py:628
+#: pretalx/orga/forms/event.py:620
 msgid "Limit rooms"
 msgstr "Ограничаване на залите"
 
-#: pretalx/orga/forms/event.py:633
+#: pretalx/orga/forms/event.py:625
 msgid ""
 "You can limit the rooms shown in the widget. Leave empty to show all rooms."
 msgstr ""
 "Може да ограничите залите, показвани в графичния обект. Оставете празно, за "
 "да се показват всички зали."
 
-#: pretalx/orga/forms/event.py:639
+#: pretalx/orga/forms/event.py:631
 msgid "Widget language"
 msgstr "Език на графичния обект"
 
-#: pretalx/orga/forms/event.py:663
+#: pretalx/orga/forms/event.py:655
 msgid "Change this in the CfP settings"
 msgstr "Променете го в настройките на CfP"
 
-#: pretalx/orga/forms/event.py:665
+#: pretalx/orga/forms/event.py:657
 #, python-brace-format
 msgid ""
 "Speaker editing is currently disabled at the event level. {link_tag} to "
@@ -4092,20 +4080,20 @@ msgstr ""
 "Редакцията от лектори е изключена на ниво събитие. {link_tag} може да включи "
 "редактирането от лектори."
 
-#: pretalx/orga/forms/event.py:677
+#: pretalx/orga/forms/event.py:669
 msgid "The end of a phase has to be after its start."
 msgstr "Краят на фаза трябва да е след началото ѝ."
 
-#: pretalx/orga/forms/event.py:849
+#: pretalx/orga/forms/event.py:841
 msgid "Object type"
 msgstr "Тип на обекта"
 
-#: pretalx/orga/forms/event.py:854 pretalx/orga/forms/review.py:448
+#: pretalx/orga/forms/event.py:846 pretalx/orga/forms/review.py:448
 msgid "Action"
 msgstr "Действие"
 
-#: pretalx/orga/forms/event.py:862 pretalx/orga/forms/event.py:884
-#: pretalx/orga/forms/mails.py:294 pretalx/orga/forms/mails.py:298
+#: pretalx/orga/forms/event.py:854 pretalx/orga/forms/event.py:876
+#: pretalx/orga/forms/mails.py:305 pretalx/orga/forms/mails.py:309
 #: pretalx/orga/tables/cfp.py:124 pretalx/orga/tables/cfp.py:173
 #: pretalx/orga/tables/mail.py:81 pretalx/orga/tables/speaker.py:92
 #: pretalx/orga/tables/submission.py:398
@@ -4115,11 +4103,11 @@ msgstr "Действие"
 msgid "Proposals"
 msgstr "Предложения"
 
-#: pretalx/orga/forms/event.py:864
+#: pretalx/orga/forms/event.py:856
 msgid "Custom field options"
 msgstr "Опции на допълнителните полета"
 
-#: pretalx/orga/forms/event.py:865 pretalx/orga/tables/submission.py:169
+#: pretalx/orga/forms/event.py:857 pretalx/orga/tables/submission.py:169
 #: pretalx/orga/templates/orga/review/bulk.html:13
 #: pretalx/orga/templates/orga/review/dashboard.html:25
 #: pretalx/orga/templates/orga/submission/base.html:78
@@ -4129,13 +4117,13 @@ msgstr "Опции на допълнителните полета"
 msgid "Reviews"
 msgstr "Рецензии"
 
-#: pretalx/orga/forms/event.py:866
+#: pretalx/orga/forms/event.py:858
 #: pretalx/orga/templates/orga/submission/base.html:83
 msgid "Comments"
 msgstr "Коментари"
 
-#: pretalx/orga/forms/event.py:867 pretalx/orga/forms/review.py:443
-#: pretalx/orga/templates/orga/base.html:287
+#: pretalx/orga/forms/event.py:859 pretalx/orga/forms/review.py:443
+#: pretalx/orga/templates/orga/base.html:288
 #: pretalx/orga/views/submission.py:1143
 #: pretalx/submission/forms/submission.py:58
 #: pretalx/submission/forms/submission.py:357
@@ -4143,162 +4131,162 @@ msgstr "Коментари"
 msgid "Tags"
 msgstr "Етикети"
 
-#: pretalx/orga/forms/event.py:868 pretalx/orga/forms/mails.py:471
-#: pretalx/orga/templates/orga/base.html:258 pretalx/orga/views/cfp.py:529
+#: pretalx/orga/forms/event.py:860 pretalx/orga/forms/mails.py:482
+#: pretalx/orga/templates/orga/base.html:259 pretalx/orga/views/cfp.py:529
 #: pretalx/submission/forms/submission.py:351
 #: pretalx/submission/models/question.py:222
 msgid "Tracks"
 msgstr "Потоци"
 
-#: pretalx/orga/forms/event.py:869
+#: pretalx/orga/forms/event.py:861
 msgid "Proposal types"
 msgstr "Типове на предложения"
 
 #. Translators: Ideally a term that is as broad as possible, to refer to anybody who
 #. presents/owns a session. This word is also used to differentiate accepted „speakers“
 #. from not-yet-accepted „submitters“. Plural, used in headings.
-#: pretalx/orga/forms/event.py:870 pretalx/orga/tables/submission.py:184
-#: pretalx/orga/templates/orga/base.html:444
+#: pretalx/orga/forms/event.py:862 pretalx/orga/tables/submission.py:184
+#: pretalx/orga/templates/orga/base.html:445
 #: pretalx/orga/templates/orga/submission/speakers.html:16
 #: pretalx/schedule/phrases.py:21 pretalx/submission/models/submission.py:197
 msgid "Speakers"
 msgstr "Лектори"
 
-#: pretalx/orga/forms/event.py:871 pretalx/orga/templates/orga/base.html:480
+#: pretalx/orga/forms/event.py:863 pretalx/orga/templates/orga/base.html:481
 #: pretalx/orga/views/admin.py:196
 msgid "Users"
 msgstr "Потребители"
 
-#: pretalx/orga/forms/event.py:872
+#: pretalx/orga/forms/event.py:864
 msgid "Mail templates"
 msgstr "Шаблони за писма"
 
-#: pretalx/orga/forms/event.py:873 pretalx/orga/forms/event.py:903
+#: pretalx/orga/forms/event.py:865 pretalx/orga/forms/event.py:895
 #: pretalx/orga/templates/orga/speaker/form.html:111
 msgid "Emails"
 msgstr "Е-писма"
 
-#: pretalx/orga/forms/event.py:874 pretalx/orga/templates/orga/base.html:384
-#: pretalx/orga/views/schedule.py:598
+#: pretalx/orga/forms/event.py:866 pretalx/orga/templates/orga/base.html:385
+#: pretalx/orga/views/schedule.py:626
 msgid "Rooms"
 msgstr "Зали"
 
-#: pretalx/orga/forms/event.py:875
+#: pretalx/orga/forms/event.py:867
 msgid "Schedules"
 msgstr "Програми"
 
-#: pretalx/orga/forms/event.py:876
+#: pretalx/orga/forms/event.py:868
 msgid "Slots"
 msgstr "Слотове"
 
-#: pretalx/orga/forms/event.py:879 pretalx/orga/tables/admin.py:30
-#: pretalx/orga/templates/orga/base.html:214
-#: pretalx/orga/templates/orga/base.html:438
+#: pretalx/orga/forms/event.py:871 pretalx/orga/tables/admin.py:30
+#: pretalx/orga/templates/orga/base.html:215
+#: pretalx/orga/templates/orga/base.html:439
 #: pretalx/orga/templates/orga/organiser/list.html:12
 #: pretalx/orga/views/admin.py:187 pretalx/orga/views/organiser.py:90
 msgid "Teams"
 msgstr "Екипи"
 
-#: pretalx/orga/forms/event.py:886 pretalx/orga/forms/event.py:897
-#: pretalx/orga/forms/event.py:905 pretalx/orga/forms/event.py:920
+#: pretalx/orga/forms/event.py:878 pretalx/orga/forms/event.py:889
+#: pretalx/orga/forms/event.py:897 pretalx/orga/forms/event.py:912
 msgid "Modified"
 msgstr "Променено"
 
-#: pretalx/orga/forms/event.py:887 pretalx/orga/forms/event.py:888
-#: pretalx/orga/forms/event.py:898 pretalx/orga/forms/event.py:906
+#: pretalx/orga/forms/event.py:879 pretalx/orga/forms/event.py:880
+#: pretalx/orga/forms/event.py:890 pretalx/orga/forms/event.py:898
 msgid "Deleted"
 msgstr "Изтрит"
 
-#: pretalx/orga/forms/event.py:889
+#: pretalx/orga/forms/event.py:881
 msgid "Accepted"
 msgstr "Прието"
 
-#: pretalx/orga/forms/event.py:890
+#: pretalx/orga/forms/event.py:882
 msgid "Rejected"
 msgstr "Отхвърлено"
 
-#: pretalx/orga/forms/event.py:891
+#: pretalx/orga/forms/event.py:883
 msgid "Cancelled"
 msgstr "Отказано"
 
-#: pretalx/orga/forms/event.py:892
+#: pretalx/orga/forms/event.py:884
 msgid "Confirmed"
 msgstr "Потвърдено"
 
-#: pretalx/orga/forms/event.py:893
+#: pretalx/orga/forms/event.py:885
 msgid "Withdrawn"
 msgstr "Оттеглено"
 
-#: pretalx/orga/forms/event.py:899
+#: pretalx/orga/forms/event.py:891
 msgid "Option created"
 msgstr "Опцията създадена"
 
-#: pretalx/orga/forms/event.py:900
+#: pretalx/orga/forms/event.py:892
 msgid "Option modified"
 msgstr "Опцията е променена"
 
-#: pretalx/orga/forms/event.py:901
+#: pretalx/orga/forms/event.py:893
 msgid "Option deleted"
 msgstr "Опцията изтрита"
 
-#: pretalx/orga/forms/event.py:907
+#: pretalx/orga/forms/event.py:899
 msgid "Sent"
 msgstr "Изпратени"
 
-#: pretalx/orga/forms/event.py:908
+#: pretalx/orga/forms/event.py:900
 msgid "Template created"
 msgstr "Шаблонът е създаден"
 
-#: pretalx/orga/forms/event.py:909
+#: pretalx/orga/forms/event.py:901
 msgid "Template modified"
 msgstr "Шаблонът беше променен"
 
-#: pretalx/orga/forms/event.py:910
+#: pretalx/orga/forms/event.py:902
 msgid "Template deleted"
 msgstr "Шаблонът беше изтрит"
 
-#: pretalx/orga/forms/event.py:912
+#: pretalx/orga/forms/event.py:904
 #: pretalx/orga/templates/orga/settings/form.html:61
 msgid "Schedule"
 msgstr "Програма"
 
-#: pretalx/orga/forms/event.py:913
+#: pretalx/orga/forms/event.py:905
 msgid "Released"
 msgstr "Публикувана"
 
-#: pretalx/orga/forms/event.py:914
+#: pretalx/orga/forms/event.py:906
 msgid "Room created"
 msgstr "Създаден зала"
 
-#: pretalx/orga/forms/event.py:915
+#: pretalx/orga/forms/event.py:907
 msgid "Room modified"
 msgstr "Залата е променена"
 
-#: pretalx/orga/forms/event.py:916
+#: pretalx/orga/forms/event.py:908
 msgid "Room deleted"
 msgstr "Залата изтрита"
 
-#: pretalx/orga/forms/event.py:921
+#: pretalx/orga/forms/event.py:913
 msgid "Activated"
 msgstr "Активирано"
 
-#: pretalx/orga/forms/event.py:922
+#: pretalx/orga/forms/event.py:914
 msgid "Deactivated"
 msgstr "Деактивирано"
 
-#: pretalx/orga/forms/event.py:923
+#: pretalx/orga/forms/event.py:915
 msgid "CfP modified"
 msgstr "CfP-то беше променено"
 
-#: pretalx/orga/forms/event.py:943
+#: pretalx/orga/forms/event.py:935
 msgid "All object types"
 msgstr "Всички видове обекти"
 
-#: pretalx/orga/forms/event.py:961
+#: pretalx/orga/forms/event.py:953
 msgid "All action types"
 msgstr "Всички видове действия"
 
-#: pretalx/orga/forms/event.py:985
+#: pretalx/orga/forms/event.py:977
 msgid "Other"
 msgstr "Други"
 
@@ -4343,7 +4331,7 @@ msgstr "Запетая"
 msgid "Please select a delimiter for your CSV export."
 msgstr "Изберете разделител за изнесеното в CSV."
 
-#: pretalx/orga/forms/mails.py:70 pretalx/orga/forms/mails.py:87
+#: pretalx/orga/forms/mails.py:74 pretalx/orga/forms/mails.py:91
 msgid ""
 "Invalid email template! Please check that you don’t have stray { or } "
 "somewhere, and that there are no spaces inside the {} blocks."
@@ -4351,24 +4339,24 @@ msgstr ""
 "Неправилен шаблон за писмо! Проверете дали няма фигурна скоба без съответна "
 "някъде, както и че няма интервали в низовете в {}."
 
-#: pretalx/orga/forms/mails.py:77 pretalx/orga/forms/mails.py:94
+#: pretalx/orga/forms/mails.py:81 pretalx/orga/forms/mails.py:98
 msgid "Unknown placeholder!"
 msgstr "Неправилен заместител!"
 
-#: pretalx/orga/forms/mails.py:116
+#: pretalx/orga/forms/mails.py:120
 #, python-brace-format
 msgid "You have an empty link in your email, labeled “{text}”!"
 msgstr "В писмото има празна хипервръзка с етикет „{text}“!"
 
-#: pretalx/orga/forms/mails.py:174
+#: pretalx/orga/forms/mails.py:179
 msgid "An email needs to have at least one recipient."
 msgstr "Писмото трябва да има поне един получател."
 
-#: pretalx/orga/forms/mails.py:209
+#: pretalx/orga/forms/mails.py:220
 msgid "Send immediately"
 msgstr "Незабавно изпращане"
 
-#: pretalx/orga/forms/mails.py:212
+#: pretalx/orga/forms/mails.py:223
 msgid ""
 "If you check this, the emails will be sent immediately, instead of being put "
 "in the outbox."
@@ -4376,19 +4364,19 @@ msgstr ""
 "Ако изберете това, писмата се пращат незабавно, вместо да се поставят в "
 "изходящата поща."
 
-#: pretalx/orga/forms/mails.py:228
+#: pretalx/orga/forms/mails.py:239
 msgid "Recipient groups"
 msgstr "Групи получатели"
 
-#: pretalx/orga/forms/mails.py:245
+#: pretalx/orga/forms/mails.py:256
 msgid "Reviewers"
 msgstr "Рецензенти"
 
-#: pretalx/orga/forms/mails.py:249
+#: pretalx/orga/forms/mails.py:260
 msgid "Other teams"
 msgstr "Други екипи"
 
-#: pretalx/orga/forms/mails.py:296
+#: pretalx/orga/forms/mails.py:307
 msgid ""
 "Select proposals that should receive the email regardless of the other "
 "filters."
@@ -4396,14 +4384,14 @@ msgstr ""
 "Изберете предложенията, които следва да получат писма независимо от другите "
 "филтри."
 
-#: pretalx/orga/forms/mails.py:305
+#: pretalx/orga/forms/mails.py:316
 msgid ""
 "Select speakers that should receive the email regardless of the other "
 "filters."
 msgstr ""
 "Изберете лектори, които следва да получат писма независимо от другите филтри."
 
-#: pretalx/orga/forms/mails.py:332
+#: pretalx/orga/forms/mails.py:343
 msgid ""
 "If you provide only one language, that language will be used for all emails. "
 "If you provide multiple languages, the best fit for each speaker will be "
@@ -4501,7 +4489,7 @@ msgstr "Известяване на лекторите за промени"
 #: pretalx/orga/forms/schedule.py:36
 #: pretalx/orga/templates/orga/cfp/question/remind.html:22
 #: pretalx/orga/templates/orga/schedule/release.html:59
-#: pretalx/orga/views/mails.py:614 pretalx/orga/views/mails.py:615
+#: pretalx/orga/views/mails.py:615 pretalx/orga/views/mails.py:616
 msgid "Email template"
 msgstr "Шаблон за писма"
 
@@ -4848,9 +4836,9 @@ msgid "You can check for updates <a href=\"%(url)s\">here</a>."
 msgstr "Може да проверите за нови версии <a href='%(url)s'>тук</a>."
 
 #: pretalx/orga/templates/orga/admin/admin.html:45
-#: pretalx/orga/templates/orga/base.html:202
-#: pretalx/orga/templates/orga/base.html:251
-#: pretalx/orga/templates/orga/base.html:431
+#: pretalx/orga/templates/orga/base.html:203
+#: pretalx/orga/templates/orga/base.html:252
+#: pretalx/orga/templates/orga/base.html:432
 #: pretalx/orga/templates/orga/organiser/detail.html:13
 #: pretalx/orga/templates/orga/settings/form.html:10
 #: pretalx/orga/templates/orga/settings/form.html:13
@@ -4894,7 +4882,7 @@ msgid "Media files"
 msgstr "Медийни файлове"
 
 #: pretalx/orga/templates/orga/admin/admin.html:84
-#: pretalx/orga/templates/orga/base.html:397
+#: pretalx/orga/templates/orga/base.html:398
 msgid "Mails"
 msgstr "Писма"
 
@@ -5139,43 +5127,43 @@ msgstr ""
 msgid "Organiser account"
 msgstr "Организаторски акаунт"
 
-#: pretalx/orga/templates/orga/base.html:193
-#: pretalx/orga/templates/orga/base.html:427
+#: pretalx/orga/templates/orga/base.html:194
+#: pretalx/orga/templates/orga/base.html:428
 #: pretalx/orga/templates/orga/event_list.html:15
 msgid "Dashboard"
 msgstr "Табло"
 
-#: pretalx/orga/templates/orga/base.html:224
+#: pretalx/orga/templates/orga/base.html:225
 msgid "Widget"
 msgstr "Графичен обект"
 
-#: pretalx/orga/templates/orga/base.html:248
-#: pretalx/orga/templates/orga/base.html:381
+#: pretalx/orga/templates/orga/base.html:249
+#: pretalx/orga/templates/orga/base.html:382
 msgid "Editor"
 msgstr "Редактор"
 
-#: pretalx/orga/templates/orga/base.html:262 pretalx/orga/views/cfp.py:458
+#: pretalx/orga/templates/orga/base.html:263 pretalx/orga/views/cfp.py:458
 #: pretalx/submission/forms/submission.py:337
 #: pretalx/submission/models/question.py:231
 msgid "Session types"
 msgstr "Видове сесии"
 
-#: pretalx/orga/templates/orga/base.html:265 pretalx/orga/views/cfp.py:563
+#: pretalx/orga/templates/orga/base.html:266 pretalx/orga/views/cfp.py:563
 msgid "Access codes"
 msgstr "Кодове за достъп"
 
-#: pretalx/orga/templates/orga/base.html:290
+#: pretalx/orga/templates/orga/base.html:291
 #: pretalx/orga/templates/orga/submission/stats.html:21
 msgid "Statistics"
 msgstr "Статистика"
 
-#: pretalx/orga/templates/orga/base.html:299
-#: pretalx/orga/templates/orga/base.html:355
-#: pretalx/orga/templates/orga/base.html:387
+#: pretalx/orga/templates/orga/base.html:300
+#: pretalx/orga/templates/orga/base.html:356
+#: pretalx/orga/templates/orga/base.html:388
 msgid "Export"
 msgstr "Изнасяне"
 
-#: pretalx/orga/templates/orga/base.html:320
+#: pretalx/orga/templates/orga/base.html:321
 #: pretalx/orga/templates/orga/review/assignment-import.html:10
 #: pretalx/orga/templates/orga/review/assignment-import.html:13
 #: pretalx/orga/templates/orga/review/assignment.html:12
@@ -5183,47 +5171,47 @@ msgstr "Изнасяне"
 msgid "Assign reviewers"
 msgstr "Разпределяне на рецензенти"
 
-#: pretalx/orga/templates/orga/base.html:323
+#: pretalx/orga/templates/orga/base.html:324
 msgid "Export reviews"
 msgstr "Изнасяне на рецензии"
 
-#: pretalx/orga/templates/orga/base.html:350 pretalx/schedule/models/room.py:55
+#: pretalx/orga/templates/orga/base.html:351 pretalx/schedule/models/room.py:55
 msgid "Speaker Information"
 msgstr "Информация за лектора"
 
-#: pretalx/orga/templates/orga/base.html:371
+#: pretalx/orga/templates/orga/base.html:372
 msgid "Unreleased schedule changes"
 msgstr "Непубликувани промени на програмата"
 
-#: pretalx/orga/templates/orga/base.html:407
+#: pretalx/orga/templates/orga/base.html:408
 msgid "Outbox"
 msgstr "Изходяща поща"
 
-#: pretalx/orga/templates/orga/base.html:410
+#: pretalx/orga/templates/orga/base.html:411
 msgid "Compose emails"
 msgstr "Съставяне на писма"
 
-#: pretalx/orga/templates/orga/base.html:413
+#: pretalx/orga/templates/orga/base.html:414
 msgid "Sent emails"
 msgstr "Изпратени писма"
 
-#: pretalx/orga/templates/orga/base.html:416
+#: pretalx/orga/templates/orga/base.html:417
 msgid "Templates"
 msgstr "Шаблони"
 
-#: pretalx/orga/templates/orga/base.html:459
+#: pretalx/orga/templates/orga/base.html:460
 msgid "Organisers"
 msgstr "Организатори"
 
-#: pretalx/orga/templates/orga/base.html:468
+#: pretalx/orga/templates/orga/base.html:469
 msgid "Administration"
 msgstr "Администриране"
 
-#: pretalx/orga/templates/orga/base.html:477
+#: pretalx/orga/templates/orga/base.html:478
 msgid "Admin information"
 msgstr "Информация за администриране"
 
-#: pretalx/orga/templates/orga/base.html:508
+#: pretalx/orga/templates/orga/base.html:509
 msgid "running in development mode"
 msgstr "режим на разработка"
 
@@ -5234,8 +5222,8 @@ msgid "CfP Editor"
 msgstr "CfP редактор"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:49
-#: pretalx/orga/templates/orga/cfp/editor.html:133
-#: pretalx/orga/templates/orga/cfp/editor.html:147
+#: pretalx/orga/templates/orga/cfp/editor.html:137
+#: pretalx/orga/templates/orga/cfp/editor.html:151
 msgid "Reset to Defaults"
 msgstr "Върни настройки по подразбиране"
 
@@ -5249,7 +5237,7 @@ msgstr "Настройки на CfP"
 msgid "The event's logo"
 msgstr "Лого на събитието"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:135
+#: pretalx/orga/templates/orga/cfp/editor.html:139
 msgid ""
 "This will reset all CfP field settings, custom labels, help texts, and field "
 "ordering to their default values. This action cannot be undone."
@@ -5257,100 +5245,101 @@ msgstr ""
 "Това ще върне всички настройки по CfP - полета, надписи, текстове и подредби "
 "към техните настройки по подразбиране. Това действие не е обратимо."
 
-#: pretalx/orga/templates/orga/cfp/editor.html:168
-#: pretalx/orga/templates/orga/cfp/editor.html:201
-#: pretalx/orga/templates/orga/cfp/editor.html:250
-#: pretalx/orga/templates/orga/cfp/editor.html:327
+#: pretalx/orga/templates/orga/cfp/editor.html:172
+#: pretalx/orga/templates/orga/cfp/editor.html:205
+#: pretalx/orga/templates/orga/cfp/editor.html:254
+#: pretalx/orga/templates/orga/cfp/editor.html:331
 msgid "Click to edit"
 msgstr "Натиснете тук за редакция"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:175
+#: pretalx/orga/templates/orga/cfp/editor.html:179
 msgid "This step shows the login/registration form and cannot be customized."
 msgstr ""
 "Тази стъпка показва формата за вход/регистрация и не може да се променя."
 
-#: pretalx/orga/templates/orga/cfp/editor.html:219
+#: pretalx/orga/templates/orga/cfp/editor.html:223
 msgid "No session fields configured."
 msgstr "Няма конфигурирани полета за сесии."
 
-#: pretalx/orga/templates/orga/cfp/editor.html:235
+#: pretalx/orga/templates/orga/cfp/editor.html:239
 msgid "No speaker fields configured."
 msgstr "Няма настроени полета за лектор."
 
-#: pretalx/orga/templates/orga/cfp/editor.html:265
+#: pretalx/orga/templates/orga/cfp/editor.html:269
 msgid "No fields configured for this step. Add fields from the sidebar."
-msgstr "Няма настроени полета за тази стъпка. Добавете ги от страничната лента."
+msgstr ""
+"Няма настроени полета за тази стъпка. Добавете ги от страничната лента."
 
-#: pretalx/orga/templates/orga/cfp/editor.html:281
+#: pretalx/orga/templates/orga/cfp/editor.html:285
 msgid "Edit Step"
 msgstr "Редакция на стъпка"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:306
+#: pretalx/orga/templates/orga/cfp/editor.html:310
 msgid "Drag to reorder"
 msgstr "Дръпни за пренареждане"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:323
+#: pretalx/orga/templates/orga/cfp/editor.html:327
 msgid "Currently hidden"
 msgstr "Скрито в момента"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:341
+#: pretalx/orga/templates/orga/cfp/editor.html:345
 msgid "Talk (30 minutes)"
 msgstr "Лекция (30 минути)"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:352
+#: pretalx/orga/templates/orga/cfp/editor.html:356
 msgid "This field cannot be removed."
 msgstr "Това поле не може да се премахва."
 
-#: pretalx/orga/templates/orga/cfp/editor.html:358
+#: pretalx/orga/templates/orga/cfp/editor.html:362
 msgid "Deactivate field"
 msgstr "Изключване на поле"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:358
+#: pretalx/orga/templates/orga/cfp/editor.html:362
 msgid "Remove field"
 msgstr "Премахни поле"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:371
+#: pretalx/orga/templates/orga/cfp/editor.html:375
 msgid "Available Fields"
 msgstr "Възможни полета"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:373
+#: pretalx/orga/templates/orga/cfp/editor.html:377
 msgid "Fields not shown to submitters. Click to add."
 msgstr "Полета, непоказвани на изпращащите. Кликни за добавяне."
 
-#: pretalx/orga/templates/orga/cfp/editor.html:379
+#: pretalx/orga/templates/orga/cfp/editor.html:383
 #: pretalx/orga/views/cfp.py:130 pretalx/orga/views/cfp.py:149
 msgid "New custom field"
 msgstr "Ново допълнително поле"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:384
+#: pretalx/orga/templates/orga/cfp/editor.html:388
 msgid "Session fields"
 msgstr "Полета за сесии"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:400
+#: pretalx/orga/templates/orga/cfp/editor.html:404
 msgid "Speaker fields"
 msgstr "Полета за лектори"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:426
+#: pretalx/orga/templates/orga/cfp/editor.html:430
 msgid "All fields are in use."
 msgstr "Всички полета се използват."
 
-#: pretalx/orga/templates/orga/cfp/editor.html:433
+#: pretalx/orga/templates/orga/cfp/editor.html:437
 msgid "Configure Field"
 msgstr "Настрой поле"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:487
+#: pretalx/orga/templates/orga/cfp/editor.html:491
 msgid "Custom Field"
 msgstr "Допълнително поле"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:491
+#: pretalx/orga/templates/orga/cfp/editor.html:495
 msgid "Type"
 msgstr "Вид"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:497
+#: pretalx/orga/templates/orga/cfp/editor.html:501
 msgid "Target"
 msgstr "Цел"
 
-#: pretalx/orga/templates/orga/cfp/editor.html:512
+#: pretalx/orga/templates/orga/cfp/editor.html:516
 msgid "Edit field"
 msgstr "Редакция на поле"
 
@@ -6301,7 +6290,7 @@ msgid "You don’t have reviewer permissions for this event."
 msgstr "Нямате права̀ да сте рецензент за това събитие."
 
 #: pretalx/orga/templates/orga/review/dashboard.html:66
-#: pretalx/orga/views/review.py:797 pretalx/orga/views/review.py:798
+#: pretalx/orga/views/review.py:808 pretalx/orga/views/review.py:809
 msgid "Regenerate decision emails"
 msgstr "Наново съставяне на писмата за решенията"
 
@@ -6348,13 +6337,13 @@ msgid "Export settings"
 msgstr "Изнасяне на настройките"
 
 #: pretalx/orga/templates/orga/review/export.html:56
-#: pretalx/orga/templates/orga/schedule/export.html:120
+#: pretalx/orga/templates/orga/schedule/export.html:114
 #: pretalx/orga/templates/orga/speaker/export.html:103
 msgid "You can also use the API to export or use data."
 msgstr "Може да използвате и API, за да изнесете или ползвате данните."
 
 #: pretalx/orga/templates/orga/review/export.html:60
-#: pretalx/orga/templates/orga/schedule/export.html:123
+#: pretalx/orga/templates/orga/schedule/export.html:117
 #: pretalx/orga/templates/orga/speaker/export.html:107
 msgid ""
 "Some of the general exports are only accessible for organisers, or include "
@@ -6368,7 +6357,7 @@ msgstr ""
 "предоставите токена за идентификация, както се прави за API, ето така:"
 
 #: pretalx/orga/templates/orga/review/export.html:72
-#: pretalx/orga/templates/orga/schedule/export.html:135
+#: pretalx/orga/templates/orga/schedule/export.html:129
 msgid ""
 "Please note that your token will have to have the “action” permissions in "
 "order to access the predefined schedule exports via the API."
@@ -6378,6 +6367,8 @@ msgstr ""
 
 #: pretalx/orga/templates/orga/schedule/export.html:14
 #: pretalx/orga/templates/orga/schedule/export.html:21
+#: pretalx/orga/templates/orga/schedule/export_waiting.html:11
+#: pretalx/orga/templates/orga/schedule/export_waiting.html:22
 msgid "Export schedule data"
 msgstr "Изнасяне на данните за програмата"
 
@@ -6424,19 +6415,43 @@ msgstr ""
 "Програмата може да се изнесе в статичен HTML файл, за да го качите на "
 "стандартен уеб сървър като nginx."
 
-#: pretalx/orga/templates/orga/schedule/export.html:105
-msgid ""
-"This is done automatically on schedule release, but you can also trigger "
-"that action here."
-msgstr ""
-"Това се прави автоматично при публикуване на програмата, но може да го "
-"направите и ръчно от тук."
-
-#: pretalx/orga/templates/orga/schedule/export.html:118
-#: pretalx/orga/views/review.py:961 pretalx/orga/views/schedule.py:123
+#: pretalx/orga/templates/orga/schedule/export.html:112
+#: pretalx/orga/views/review.py:972 pretalx/orga/views/schedule.py:125
 #: pretalx/orga/views/speaker.py:361
 msgid "API"
 msgstr "API"
+
+#: pretalx/orga/templates/orga/schedule/export_error.html:10
+msgid "Export failed. Please try again."
+msgstr ""
+
+#: pretalx/orga/templates/orga/schedule/export_error.html:13
+#, fuzzy
+#| msgid "Export"
+msgid "Back to Export"
+msgstr "Изнасяне"
+
+#: pretalx/orga/templates/orga/schedule/export_success_partial.html:10
+#, fuzzy
+#| msgid "Export format"
+msgid "Export ready!"
+msgstr "Формат за изнасяне"
+
+#: pretalx/orga/templates/orga/schedule/export_success_partial.html:13
+#, fuzzy
+#| msgid "Download ZIP"
+msgid "Download"
+msgstr "Изтегляне на ZIP"
+
+#: pretalx/orga/templates/orga/schedule/export_waiting_partial.html:10
+#, fuzzy
+#| msgid "Regenerate Export"
+msgid "Generating export..."
+msgstr "Генериране на изнасянето наново"
+
+#: pretalx/orga/templates/orga/schedule/export_waiting_partial.html:11
+msgid "This may take a few minutes for large events."
+msgstr ""
 
 #: pretalx/orga/templates/orga/schedule/index.html:34
 msgid "New release"
@@ -6596,15 +6611,15 @@ msgstr "Тук може да поставите коментар."
 msgid "Design"
 msgstr "Дизайн"
 
-#: pretalx/orga/templates/orga/settings/form.html:70
+#: pretalx/orga/templates/orga/settings/form.html:69
 msgid "Other settings"
 msgstr "Други настройки"
 
-#: pretalx/orga/templates/orga/settings/form.html:74
+#: pretalx/orga/templates/orga/settings/form.html:73
 msgid "Header links"
 msgstr "Начални връзки"
 
-#: pretalx/orga/templates/orga/settings/form.html:79
+#: pretalx/orga/templates/orga/settings/form.html:78
 msgid ""
 "These links will be shown at the top of all your schedule-related pages, "
 "e.g. the schedule itself, speaker pages, session pages, etc. You could for "
@@ -6616,11 +6631,11 @@ msgstr ""
 "да дадете връзка към началната страница, потока на живо, страницата за "
 "регистрация и др."
 
-#: pretalx/orga/templates/orga/settings/form.html:92
+#: pretalx/orga/templates/orga/settings/form.html:91
 msgid "Footer links"
 msgstr "Крайни връзки"
 
-#: pretalx/orga/templates/orga/settings/form.html:97
+#: pretalx/orga/templates/orga/settings/form.html:96
 msgid ""
 "These links will be shown in the footer of all your public pages. You could "
 "for example link your terms of service, imprint, or privacy policy here."
@@ -7365,7 +7380,7 @@ msgstr "няма потоци"
 msgid "no public tags exist"
 msgstr "няма публични тагове"
 
-#: pretalx/orga/views/cfp.py:1163
+#: pretalx/orga/views/cfp.py:1170
 msgid "CfP configuration has been reset to defaults."
 msgstr "Конфигурацията на CfP е върната към тази по подразбиране."
 
@@ -7700,12 +7715,12 @@ msgstr "Тази стойност ще се замени на база дина�
 msgid "Subject: {subject}"
 msgstr "Тема: {subject}"
 
-#: pretalx/orga/views/mails.py:514 pretalx/orga/views/mails.py:585
+#: pretalx/orga/views/mails.py:514 pretalx/orga/views/mails.py:586
 #, python-brace-format
 msgid "{count} emails have been sent."
 msgstr "{count} е-писма са пратени."
 
-#: pretalx/orga/views/mails.py:598
+#: pretalx/orga/views/mails.py:599
 msgid ""
 "The template has been saved - note that already pending emails that are "
 "based on this template will not be changed!"
@@ -7713,15 +7728,15 @@ msgstr ""
 "Шаблонът беше записан - забележете, че подготвените писма, базирани на него "
 "няма да бъдат променени!"
 
-#: pretalx/orga/views/mails.py:602
+#: pretalx/orga/views/mails.py:603
 msgid "New custom template"
 msgstr "Нов персонализиран шаблон"
 
-#: pretalx/orga/views/mails.py:617
+#: pretalx/orga/views/mails.py:618
 msgid "New email template"
 msgstr "Нов шаблон за писма"
 
-#: pretalx/orga/views/mails.py:618
+#: pretalx/orga/views/mails.py:619
 msgid "Email templates"
 msgstr "Шаблони за писма"
 
@@ -7832,15 +7847,15 @@ msgstr "Премахнати са тагове от {count} предложени
 msgid "Nice, you have no proposals left to review!"
 msgstr "Чудесно, няма повече предложения да рецензирате!"
 
-#: pretalx/orga/views/review.py:780
+#: pretalx/orga/views/review.py:791
 msgid "Your review"
 msgstr "Вашата рецензия"
 
-#: pretalx/orga/views/review.py:789
+#: pretalx/orga/views/review.py:800
 msgid "The review has been deleted."
 msgstr "Рецензията е изтрита."
 
-#: pretalx/orga/views/review.py:820
+#: pretalx/orga/views/review.py:831
 #, python-format
 msgid ""
 "Do you really want to regenerate %(count)s acceptance and rejection emails? "
@@ -7850,111 +7865,107 @@ msgstr ""
 "отхвърляне на предложения? Те няма да се пратят директно, а ще се поместят в "
 "изходящата поща."
 
-#: pretalx/orga/views/review.py:833
+#: pretalx/orga/views/review.py:844
 #, python-brace-format
 msgid "{count} emails were generated and placed in the outbox."
 msgstr "{count} е-писма са съставени наново и са поставени в изходящата поща."
 
-#: pretalx/orga/views/review.py:864
+#: pretalx/orga/views/review.py:875
 msgid "Assign reviewer teams"
 msgstr "Задаване на екипи за рецензия"
 
-#: pretalx/orga/views/review.py:865
+#: pretalx/orga/views/review.py:876
 msgid "Assign reviewers individually"
 msgstr "Задаване на рецензентите поотделно"
 
-#: pretalx/orga/views/review.py:943
+#: pretalx/orga/views/review.py:954
 msgid "Import"
 msgstr "Внасяне"
 
-#: pretalx/orga/views/review.py:948
+#: pretalx/orga/views/review.py:959
 msgid "The reviewers were assigned successfully."
 msgstr "Рецензентите са зададени успешно."
 
-#: pretalx/orga/views/review.py:960 pretalx/orga/views/schedule.py:121
+#: pretalx/orga/views/review.py:971 pretalx/orga/views/schedule.py:123
 #: pretalx/orga/views/speaker.py:359
 msgid "CSV/JSON exports"
 msgstr "Изнасяне към CSV/JSON"
 
-#: pretalx/orga/views/review.py:973 pretalx/orga/views/schedule.py:129
+#: pretalx/orga/views/review.py:984 pretalx/orga/views/schedule.py:131
 #: pretalx/orga/views/speaker.py:371
 msgid "No data to be exported"
 msgstr "Няма данни за изнасяне"
 
-#: pretalx/orga/views/schedule.py:110
+#: pretalx/orga/views/schedule.py:112
 msgid "Download ZIP"
 msgstr "Изтегляне на ZIP"
 
-#: pretalx/orga/views/schedule.py:113
+#: pretalx/orga/views/schedule.py:115
 msgid "Regenerate Export"
 msgstr "Генериране на изнасянето наново"
 
-#: pretalx/orga/views/schedule.py:122 pretalx/orga/views/speaker.py:360
+#: pretalx/orga/views/schedule.py:124 pretalx/orga/views/speaker.py:360
 msgid "More exports"
 msgstr "Още видове изнасяния"
 
-#: pretalx/orga/views/schedule.py:144
-msgid "A new export is being generated and will be available soon."
+#: pretalx/orga/views/schedule.py:145
+#, fuzzy
+#| msgid "A new export is being generated and will be available soon."
+msgid "A new export is being generated."
 msgstr "Генерира се ново изнасяне, което скоро ще е налично."
 
-#: pretalx/orga/views/schedule.py:151
-msgid ""
-"A new export will be generated on the next scheduled opportunity – please "
-"contact your administrator for details."
+#: pretalx/orga/views/schedule.py:189
+msgid "Export failed, please try again."
 msgstr ""
-"При следваща възможност ще се генерира ново изнасяне. За подробности питайте "
-"системния администратор."
 
-#: pretalx/orga/views/schedule.py:173
-#, python-brace-format
-msgid ""
-"Could not find the current export, please try to regenerate it. ({error})"
-msgstr "Текущото изнесено липсва. Пробвайте да го генерирате наново. ({error})"
+#: pretalx/orga/views/schedule.py:202
+msgid "Export file not found. Please regenerate the export."
+msgstr ""
 
-#: pretalx/orga/views/schedule.py:199
+#: pretalx/orga/views/schedule.py:227
 msgid "Release"
 msgstr "Публикуване"
 
-#: pretalx/orga/views/schedule.py:219
+#: pretalx/orga/views/schedule.py:247
 msgid "You have to provide a new, unique schedule version!"
 msgstr "Трябва да зададете нова, уникална версия на програмата!"
 
-#: pretalx/orga/views/schedule.py:231
+#: pretalx/orga/views/schedule.py:259
 msgid "Nice, your schedule has been released!"
 msgstr "Новата програма е публикувана!"
 
-#: pretalx/orga/views/schedule.py:247
+#: pretalx/orga/views/schedule.py:275
 msgid ""
 "Reset successful – start editing the schedule from your selected version!"
 msgstr ""
 "Успешно изчистване — започнете да редактирате програмата от последно "
 "избраната версия!"
 
-#: pretalx/orga/views/schedule.py:252
+#: pretalx/orga/views/schedule.py:280
 msgid "Error retrieving the schedule version to reset to."
 msgstr ""
 "Грешка при получаване на версията на програмата, към която да се изчисти "
 "всичко."
 
-#: pretalx/orga/views/schedule.py:286
+#: pretalx/orga/views/schedule.py:314
 msgid "You can only regenerate mails after the first schedule was released."
 msgstr ""
 "Може да генерирате е-писмата отново чак след публикуването на началната "
 "версия на програмата."
 
-#: pretalx/orga/views/schedule.py:565
+#: pretalx/orga/views/schedule.py:593
 msgid "The session has been scheduled."
 msgstr "Сесията е включена в програмата."
 
-#: pretalx/orga/views/schedule.py:580 pretalx/orga/views/schedule.py:597
+#: pretalx/orga/views/schedule.py:608 pretalx/orga/views/schedule.py:625
 msgid "New room"
 msgstr "Нова зала"
 
-#: pretalx/orga/views/schedule.py:593 pretalx/schedule/models/slot.py:60
+#: pretalx/orga/views/schedule.py:621 pretalx/schedule/models/slot.py:60
 msgid "Room"
 msgstr "Зала"
 
-#: pretalx/orga/views/schedule.py:607
+#: pretalx/orga/views/schedule.py:635
 msgid "There is or was a session scheduled in this room. It cannot be deleted."
 msgstr "Сега или преди има сесия в тази стая. Тя не може да бъде изтрита."
 
@@ -8039,7 +8050,7 @@ msgid "New {event} proposal: {title}"
 msgstr "Ново предложение за {event}: {title}"
 
 #: pretalx/orga/views/submission.py:921 pretalx/orga/views/submission.py:933
-#: pretalx/submission/models/cfp.py:130
+#: pretalx/submission/models/cfp.py:132
 #: pretalx/submission/models/question.py:199
 #: pretalx/submission/models/type.py:45
 msgid "Deadline"
@@ -8104,30 +8115,30 @@ msgstr "Избрани са невалидни достъпи: {perms}"
 msgid "There already exists an account for this email address."
 msgstr "Вече съществува потребител с този e-mail адрес."
 
-#: pretalx/person/forms/profile.py:136
+#: pretalx/person/forms/profile.py:149
 msgid ""
 "Please provide a profile picture or allow us to load your picture from "
 "gravatar!"
 msgstr ""
 "Предоставете профилна снимка или ни позволете да ползваме тази от gravatar!"
 
-#: pretalx/person/forms/profile.py:257
+#: pretalx/person/forms/profile.py:270
 msgid "Submitters and speakers"
 msgstr "Изпращачи и лектори"
 
-#: pretalx/person/forms/profile.py:259 pretalx/person/forms/profile.py:312
+#: pretalx/person/forms/profile.py:272 pretalx/person/forms/profile.py:325
 msgid "Non-accepted submitters"
 msgstr "Лектори само с отхвърлени предложения"
 
-#: pretalx/person/forms/profile.py:266
+#: pretalx/person/forms/profile.py:279
 msgid "Any arrival status"
 msgstr "Всякакъв статус"
 
-#: pretalx/person/forms/profile.py:267
+#: pretalx/person/forms/profile.py:280
 msgid "Marked as arrived"
 msgstr "Отбелязан като пристигнал"
 
-#: pretalx/person/forms/profile.py:268
+#: pretalx/person/forms/profile.py:281
 msgid "Not yet arrived"
 msgstr "Не е пристигнал още"
 
@@ -8764,23 +8775,23 @@ msgstr ""
 msgid "Redeemed"
 msgstr "Използван"
 
-#: pretalx/submission/models/cfp.py:104
+#: pretalx/submission/models/cfp.py:106
 msgid "headline"
 msgstr "заглавие"
 
-#: pretalx/submission/models/cfp.py:109
+#: pretalx/submission/models/cfp.py:111
 msgid "text"
 msgstr "текст"
 
-#: pretalx/submission/models/cfp.py:116
+#: pretalx/submission/models/cfp.py:118
 msgid "Default session type"
 msgstr "Стандартен вид сесия"
 
-#: pretalx/submission/models/cfp.py:121
+#: pretalx/submission/models/cfp.py:123
 msgid "Opening"
 msgstr "Отваряне"
 
-#: pretalx/submission/models/cfp.py:123
+#: pretalx/submission/models/cfp.py:125
 msgid ""
 "Please put in the date you want to start accepting proposals from "
 "users.Leave the date empty to start accepting proposals immediately once the "
@@ -8790,7 +8801,7 @@ msgstr ""
 "Оставете празно, ако искате да приемате предложения от момента, в който "
 "събитието е активирано."
 
-#: pretalx/submission/models/cfp.py:132
+#: pretalx/submission/models/cfp.py:134
 msgid "Please put in the last date you want to accept proposals from users."
 msgstr ""
 "Въведете крайната дата, до която предложенията на потребителите се приемат."
@@ -9306,17 +9317,37 @@ msgstr ""
 "Този вид сесия се показва само на подаващите, които имат съответния код за "
 "достъп."
 
-#: pretalx/submission/models/type.py:83
+#: pretalx/submission/models/type.py:85
+#, fuzzy, python-brace-format
+#| msgid "{name} ({duration} days)"
+msgid "{name} (1 day)"
+msgstr "{name} ({duration} дни)"
+
+#: pretalx/submission/models/type.py:86
 #, python-brace-format
 msgid "{name} ({duration} days)"
 msgstr "{name} ({duration} дни)"
 
-#: pretalx/submission/models/type.py:88
+#: pretalx/submission/models/type.py:94
 #, python-brace-format
-msgid "{name} ({duration} hours)"
-msgstr "{name} ({duration} часа)"
+msgid "1 hour, {minutes} minutes"
+msgstr ""
 
-#: pretalx/submission/models/type.py:92
+#: pretalx/submission/models/type.py:96
+msgid "1 hour"
+msgstr ""
+
+#: pretalx/submission/models/type.py:98
+#, python-brace-format
+msgid "{hours} hours, {minutes} minutes"
+msgstr ""
+
+#: pretalx/submission/models/type.py:102
+#, python-brace-format
+msgid "{hours} hours"
+msgstr ""
+
+#: pretalx/submission/models/type.py:104
 #, python-brace-format
 msgid "{name} ({duration} minutes)"
 msgstr "{name} ({duration} минути)"
@@ -9331,14 +9362,48 @@ msgctxt "proposal status"
 msgid "not accepted"
 msgstr "неприето"
 
-msgid "Availabilities"
-msgstr "Свободни периоди"
+#~ msgid "Generate HTML export on schedule release"
+#~ msgstr "Изнасяне на вариант в HTML при публикуването на нова програма"
 
-msgid "New blocker"
-msgstr "Нов блокаж"
+#~ msgid ""
+#~ "The static HTML export will be provided as a .zip archive on the schedule "
+#~ "export page."
+#~ msgstr ""
+#~ "Изнасянето в HTML произвежда архив във формат .zip на страницата с "
+#~ "изнесени програми."
 
-msgid "Drag the box to the schedule to create a new blocker"
-msgstr "Изтеглете кутийката до програмата за да създадете нов блокаж"
+#~ msgid ""
+#~ "This is done automatically on schedule release, but you can also trigger "
+#~ "that action here."
+#~ msgstr ""
+#~ "Това се прави автоматично при публикуване на програмата, но може да го "
+#~ "направите и ръчно от тук."
+
+#~ msgid ""
+#~ "A new export will be generated on the next scheduled opportunity – please "
+#~ "contact your administrator for details."
+#~ msgstr ""
+#~ "При следваща възможност ще се генерира ново изнасяне. За подробности "
+#~ "питайте системния администратор."
+
+#, python-brace-format
+#~ msgid ""
+#~ "Could not find the current export, please try to regenerate it. ({error})"
+#~ msgstr ""
+#~ "Текущото изнесено липсва. Пробвайте да го генерирате наново. ({error})"
+
+#, python-brace-format
+#~ msgid "{name} ({duration} hours)"
+#~ msgstr "{name} ({duration} часа)"
+
+#~ msgid "Availabilities"
+#~ msgstr "Свободни периоди"
+
+#~ msgid "New blocker"
+#~ msgstr "Нов блокаж"
+
+#~ msgid "Drag the box to the schedule to create a new blocker"
+#~ msgstr "Изтеглете кутийката до програмата за да създадете нов блокаж"
 
 #~ msgid ""
 #~ "Invite another speaker to your proposal here. Instead of letting us send "
