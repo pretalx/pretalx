@@ -24,13 +24,19 @@ const initNavSearch = () => {
     const summary = wrapper.querySelector("summary")
     const searchInput = wrapper.querySelector("input")
     const searchWrapper = wrapper.querySelector("#nav-search-input-wrapper")
+    const searchResults = searchWrapper.querySelector("#search-results")
+    const loadingTemplate = searchResults.querySelector(".search-loading")
     const apiURL = searchWrapper.getAttribute("data-source")
     const queryStr = "?" + (typeof searchWrapper.getAttribute("data-organiser") !== "undefined" ? "&organiser=" + searchWrapper.getAttribute("data-organiser") : "") + "&query="
 
     let loadIndicatorTimeout = null
     const showLoadIndicator = () => {
         if (!searchWrapper.querySelector(".loading")) {
-            searchWrapper.querySelector("ul").innerHTML = '<li class="loading"><span class="fa fa-4x fa-cog animate-spin"></span></li>'
+            const loadingEl = loadingTemplate.cloneNode(true)
+            loadingEl.classList.remove("d-none", "search-loading")
+            loadingEl.classList.add("loading")
+            loadingEl.querySelector(".loading-spinner")?.classList.add("loading-spinner-xl")
+            searchResults.replaceChildren(loadingTemplate, loadingEl)
         }
     }
 
@@ -54,7 +60,7 @@ const initNavSearch = () => {
             if (loadIndicatorTimeout) clearTimeout(loadIndicatorTimeout)
 
             response.json().then((data) => {
-                searchWrapper.querySelectorAll("li").forEach((el) => el.remove())
+                searchResults.querySelectorAll("li:not(.search-loading)").forEach((el) => el.remove())
                 data.results.forEach((res) => {
                     let content = ""
                     if (res.type === "organiser" || res.type === "user") {
@@ -74,7 +80,7 @@ const initNavSearch = () => {
 
                     const li = document.createElement("li")
                     li.innerHTML = `<a href="${res.url}">${content}</a>`
-                    searchWrapper.querySelector("ul").append(li)
+                    searchResults.append(li)
                 }) /* data.results.forEach */
             }) /* response.json().then */
         }) /* fetch.then */

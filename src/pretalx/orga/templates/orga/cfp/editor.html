@@ -122,7 +122,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <button type="button" class="dialog-close">
             <i class="fa fa-times"></i>
         </button>
-        <div id="field-modal-content" class="modal-card-content"></div>
+        <div id="field-modal-content" class="modal-card-content">
+            <div class="dialog-loading text-center p-4">
+                {% include "common/includes/loading_spinner.html" %}
+            </div>
+        </div>
     </dialog>
 
     <dialog id="reset-modal" class="cfp-field-modal">

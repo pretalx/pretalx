@@ -1210,6 +1210,22 @@ pre {
 }
 
 /* UI elements too small or too common to break out into extra CSS */
+.loading-spinner i {
+  font-size: 1em;
+}
+.loading-spinner-md i,
+.loading-md .loading-spinner i {
+  font-size: 2em;
+}
+.loading-spinner-lg i,
+.loading-lg .loading-spinner i {
+  font-size: 3em;
+}
+.loading-spinner-xl i,
+.loading-xl .loading-spinner i {
+  font-size: 4em;
+}
+
 .copyable-text {
   cursor: pointer;
   &:hover {

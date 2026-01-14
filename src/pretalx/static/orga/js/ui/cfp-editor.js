@@ -177,12 +177,12 @@ document.body.addEventListener('click', (e) => {
             e.preventDefault()
             const content = dialog.querySelector('#field-modal-content')
             if (content) {
-                const loadingDiv = document.createElement('div')
-                loadingDiv.className = 'loading-indicator'
-                const spinner = document.createElement('i')
-                spinner.className = 'fa fa-cog animate-spin fa-2x'
-                loadingDiv.appendChild(spinner)
-                content.replaceChildren(loadingDiv)
+                const loadingTemplate = content.querySelector('.dialog-loading')
+                if (loadingTemplate) {
+                    const loading = loadingTemplate.cloneNode(true)
+                    loading.querySelector(".loading-spinner")?.classList.add("loading-spinner-md")
+                    content.replaceChildren(loading)
+                }
             }
             dialog.showModal()
         }

@@ -8,10 +8,16 @@ const setupHistoryDialog = () => {
     const dialogContent = document.getElementById('dialog-history-details-content')
     if (!dialogContent) return
 
+    const loadingTemplate = dialogContent.querySelector('.dialog-loading')
+
     document.querySelectorAll('.log-detail[hx-get]').forEach((link) => {
         link.addEventListener('click', function(event) {
             event.preventDefault()
-            dialogContent.innerHTML = '<div class="text-center p-4"><i class="fa fa-cog animate-spin fa-2x"></i></div>'
+            if (loadingTemplate) {
+                const loading = loadingTemplate.cloneNode(true)
+                loading.querySelector(".loading-spinner")?.classList.add("loading-spinner-md")
+                dialogContent.replaceChildren(loading)
+            }
             dialog.showModal()
             window.htmx.process(this)
         })
