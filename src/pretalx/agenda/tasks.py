@@ -8,10 +8,20 @@ import logging
 
 from django_scopes import scope, scopes_disabled
 
+from pretalx.agenda.management.commands.export_schedule_html import (
+    get_export_zip_path,
+)
 from pretalx.celery_app import app
 from pretalx.event.models import Event
 
 LOGGER = logging.getLogger(__name__)
+
+
+def is_html_export_stale(event: Event) -> bool:
+    if not event.current_schedule:
+        return False
+    zip_path = get_export_zip_path(event)
+    return event.cache.get("rebuild_schedule_export") or not zip_path.exists()
 
 
 @app.task(name="pretalx.agenda.export_schedule_html")
@@ -37,3 +47,6 @@ def export_schedule_html(*, event_id: int, make_zip=True):
     if make_zip:
         cmd.append("--zip")
     call_command(*cmd)
+
+    with scope(event=event):
+        event.cache.delete("rebuild_schedule_export")

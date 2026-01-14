@@ -90,7 +90,6 @@ def default_feature_flags():
         "show_schedule": True,
         "show_featured": "pre_schedule",  # or always, or never
         "show_widget_if_not_public": False,
-        "export_html_on_release": False,
         "use_tracks": True,
         "use_feedback": True,
         "use_submission_comments": True,

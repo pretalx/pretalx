@@ -9,13 +9,14 @@ import datetime as dt
 import json
 
 import dateutil.parser
+from celery.result import AsyncResult
 from csp.decorators import csp_update
 from django.conf import settings
 from django.contrib import messages
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
-from django.http import FileResponse, JsonResponse
-from django.shortcuts import redirect
+from django.http import FileResponse, HttpResponse, JsonResponse
+from django.shortcuts import redirect, render
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.timezone import now
@@ -26,7 +27,8 @@ from django_context_decorator import context
 from i18nfield.strings import LazyI18nString
 from i18nfield.utils import I18nJSONEncoder
 
-from pretalx.agenda.tasks import export_schedule_html
+from pretalx.agenda.management.commands.export_schedule_html import get_export_zip_path
+from pretalx.agenda.tasks import export_schedule_html, is_html_export_stale
 from pretalx.agenda.views.utils import get_schedule_exporters
 from pretalx.common.language import get_current_language_information
 from pretalx.common.text.path import safe_filename
@@ -135,23 +137,13 @@ class ScheduleExportTriggerView(EventPermissionRequired, View):
     permission_required = "event.update_event"
 
     def post(self, request, event):
-        if not settings.CELERY_TASK_ALWAYS_EAGER:
-            export_schedule_html.apply_async(
-                kwargs={"event_id": self.request.event.id}, ignore_result=True
-            )
-            messages.success(
-                self.request,
-                _("A new export is being generated and will be available soon."),
-            )
-        else:
-            self.request.event.cache.set("rebuild_schedule_export", True, None)
-            messages.success(
-                self.request,
-                _(
-                    "A new export will be generated on the next scheduled opportunity – please contact your administrator for details."
-                ),
-            )
-
+        export_schedule_html.apply_async(
+            kwargs={"event_id": self.request.event.id}, ignore_result=True
+        )
+        messages.success(
+            self.request,
+            _("A new export is being generated."),
+        )
         return redirect(self.request.event.orga_urls.schedule_export)
 
 
@@ -159,21 +151,55 @@ class ScheduleExportDownloadView(EventPermissionRequired, View):
     permission_required = "event.update_event"
 
     def get(self, request, event):
-        from pretalx.agenda.management.commands.export_schedule_html import (
-            get_export_zip_path,
+        if "async_id" in request.GET:
+            return self._check_task_status(
+                request, AsyncResult(request.GET["async_id"])
+            )
+
+        if not is_html_export_stale(request.event):
+            return self._serve_zip(request, get_export_zip_path(request.event))
+
+        # In eager mode (dev), task runs synchronously - serve file directly after
+        if settings.CELERY_TASK_ALWAYS_EAGER:
+            export_schedule_html.apply_async(kwargs={"event_id": request.event.id})
+            return self._serve_zip(request, get_export_zip_path(request.event))
+
+        res = export_schedule_html.apply_async(kwargs={"event_id": request.event.id})
+        return redirect(f"{request.path}?async_id={res.id}")
+
+    def _check_task_status(self, request, res):
+        if request.headers.get("HX-Request"):
+            if res.ready():
+                if res.successful():
+                    response = HttpResponse()
+                    response["HX-Redirect"] = request.path
+                    return response
+                return render(request, "orga/schedule/export_error.html")
+            return render(
+                request,
+                "orga/schedule/export_waiting_partial.html",
+                {"async_id": res.id},
+            )
+
+        if res.ready():
+            if res.successful():
+                return self._serve_zip(request, get_export_zip_path(request.event))
+            messages.error(request, _("Export failed, please try again."))
+            return redirect(request.event.orga_urls.schedule_export)
+
+        return render(
+            request, "orga/schedule/export_waiting.html", {"async_id": res.id}
         )
 
+    def _serve_zip(self, request, zip_path):
         try:
-            zip_path = get_export_zip_path(self.request.event)
             response = FileResponse(open(zip_path, "rb"), as_attachment=True)
-        except Exception as e:
+        except FileNotFoundError:
             messages.error(
                 request,
-                _(
-                    "Could not find the current export, please try to regenerate it. ({error})"
-                ).format(error=str(e)),
+                _("Export file not found. Please regenerate the export."),
             )
-            return redirect(self.request.event.orga_urls.schedule_export)
+            return redirect(request.event.orga_urls.schedule_export)
         response["Content-Disposition"] = "attachment; filename=" + safe_filename(
             zip_path.name
         )

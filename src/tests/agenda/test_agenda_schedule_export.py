@@ -15,7 +15,7 @@ from django.urls import reverse
 from django_scopes import scope
 from lxml import etree
 
-from pretalx.agenda.tasks import export_schedule_html
+from pretalx.agenda.tasks import export_schedule_html, is_html_export_stale
 from pretalx.event.models import Event
 from pretalx.submission.models import Resource
 
@@ -297,67 +297,6 @@ def test_html_export_event_unknown(event):
 
 
 @pytest.mark.django_db
-@override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "lalala",
-        }
-    }
-)
-def test_html_export_release_without_celery(event):
-    with scope(event=event):
-        event.cache.delete("rebuild_schedule_export")
-        assert not event.cache.get("rebuild_schedule_export")
-        event.feature_flags["export_html_on_release"] = True
-        event.save()
-        event.wip_schedule.freeze(name="ohaio means hello")
-        assert event.cache.get("rebuild_schedule_export")
-
-
-@pytest.mark.django_db
-@override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "lalala",
-        }
-    },
-    CELERY_TASK_ALWAYS_EAGER=False,
-)
-def test_html_export_release_with_celery(mocker, event):
-    mocker.patch("pretalx.agenda.tasks.export_schedule_html.apply_async")
-
-    with scope(event=event):
-        event.cache.delete("rebuild_schedule_export")
-        event.feature_flags["export_html_on_release"] = True
-        event.save()
-        event.wip_schedule.freeze(name="ohaio means hello")
-        assert not event.cache.get("rebuild_schedule_export")
-
-    export_schedule_html.apply_async.assert_called_once_with(
-        kwargs={"event_id": event.id},
-        ignore_result=True,
-    )
-
-
-@pytest.mark.django_db
-def test_html_export_release_disabled(mocker, event):
-    mocker.patch("django.core.management.call_command")
-
-    from django.core.management import (  # Import here to avoid overriding mocks
-        call_command,
-    )
-
-    with scope(event=event):
-        event.feature_flags["export_html_on_release"] = False
-        event.save()
-        event.wip_schedule.freeze(name="ohaio means hello")
-
-    call_command.assert_not_called()
-
-
-@pytest.mark.django_db
 @pytest.mark.usefixtures("slot")
 def test_html_export_language(event):
     # Import here to avoid overriding mocks
@@ -402,27 +341,22 @@ def test_schedule_export_schedule_html_task_nozip(mocker, event):
     call_command.assert_called_with("export_schedule_html", event.slug)
 
 
-@override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "lalala",
-        }
-    }
-)
 @pytest.mark.django_db
 def test_schedule_orga_trigger_export_without_celery(
-    orga_client, django_assert_max_num_queries, event
+    mocker, orga_client, django_assert_max_num_queries, event
 ):
-    event.cache.delete("rebuild_schedule_export")
-    assert not event.cache.get("rebuild_schedule_export")
+    mocker.patch("pretalx.agenda.tasks.export_schedule_html.apply_async")
+    from pretalx.agenda.tasks import export_schedule_html
+
     with django_assert_max_num_queries(39):
         response = orga_client.post(
             event.orga_urls.schedule_export_trigger, follow=True
         )
     assert response.status_code == 200
-    event.refresh_from_db()
-    assert event.cache.get("rebuild_schedule_export")
+    export_schedule_html.apply_async.assert_called_once_with(
+        kwargs={"event_id": event.id},
+        ignore_result=True,
+    )
 
 
 @pytest.mark.django_db
@@ -646,3 +580,194 @@ def test_wrong_export(
         follow=True,
     )
     assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_is_html_export_stale_no_schedule(event):
+    with scope(event=event):
+        event.schedules.all().delete()
+        event.refresh_from_db()
+        assert event.current_schedule is None
+        assert not is_html_export_stale(event)
+
+
+@pytest.mark.django_db
+@override_settings(
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "stale-test",
+        }
+    }
+)
+def test_is_html_export_stale_cache_flag(schedule):
+    from pretalx.agenda.management.commands.export_schedule_html import (
+        get_export_zip_path,
+    )
+
+    event = schedule.event
+    # Clear cached_property to use the overridden cache settings
+    if "cache" in event.__dict__:
+        del event.__dict__["cache"]
+
+    # Ensure zip file doesn't exist (so only the cache flag matters)
+    zip_path = get_export_zip_path(event)
+    if zip_path.exists():
+        zip_path.unlink()
+
+    with scope(event=event):
+        event.cache.set("rebuild_schedule_export", True, None)
+        assert is_html_export_stale(event)
+
+
+@pytest.mark.django_db
+def test_is_html_export_stale_no_zip(schedule):
+    from pretalx.agenda.management.commands.export_schedule_html import (
+        get_export_zip_path,
+    )
+
+    event = schedule.event
+    zip_path = get_export_zip_path(event)
+    if zip_path.exists():
+        zip_path.unlink()
+    with scope(event=event):
+        event.cache.delete("rebuild_schedule_export")
+        assert is_html_export_stale(event)
+
+
+@pytest.mark.django_db
+@override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+def test_schedule_download_starts_async_task(mocker, orga_client, schedule):
+    mocker.patch(
+        "pretalx.agenda.tasks.is_html_export_stale",
+        return_value=True,
+    )
+    mock_result = mocker.MagicMock()
+    mock_result.id = "test-task-id"
+    mocker.patch(
+        "pretalx.agenda.tasks.export_schedule_html.apply_async",
+        return_value=mock_result,
+    )
+
+    response = orga_client.get(
+        schedule.event.orga_urls.schedule_export_download, follow=False
+    )
+
+    assert response.status_code == 302
+    assert "async_id=test-task-id" in response.url
+
+
+@pytest.mark.django_db
+@override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+def test_schedule_download_htmx_polling_pending(mocker, orga_client, schedule):
+    mock_result = mocker.MagicMock()
+    mock_result.ready.return_value = False
+    mocker.patch(
+        "pretalx.orga.views.schedule.AsyncResult",
+        return_value=mock_result,
+    )
+
+    response = orga_client.get(
+        f"{schedule.event.orga_urls.schedule_export_download}?async_id=test-id",
+        HTTP_HX_REQUEST="true",
+    )
+
+    assert response.status_code == 200
+    assert b"Generating export" in response.content
+
+
+@pytest.mark.django_db
+@override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+def test_schedule_download_htmx_polling_success(mocker, orga_client, schedule):
+    mock_result = mocker.MagicMock()
+    mock_result.ready.return_value = True
+    mock_result.successful.return_value = True
+    mocker.patch(
+        "pretalx.orga.views.schedule.AsyncResult",
+        return_value=mock_result,
+    )
+
+    response = orga_client.get(
+        f"{schedule.event.orga_urls.schedule_export_download}?async_id=test-id",
+        HTTP_HX_REQUEST="true",
+    )
+
+    assert response.status_code == 200
+    assert "HX-Redirect" in response
+
+
+@pytest.mark.django_db
+@override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+def test_schedule_download_htmx_polling_failure(mocker, orga_client, schedule):
+    mock_result = mocker.MagicMock()
+    mock_result.ready.return_value = True
+    mock_result.successful.return_value = False
+    mocker.patch(
+        "pretalx.orga.views.schedule.AsyncResult",
+        return_value=mock_result,
+    )
+
+    response = orga_client.get(
+        f"{schedule.event.orga_urls.schedule_export_download}?async_id=test-id",
+        HTTP_HX_REQUEST="true",
+    )
+
+    assert response.status_code == 200
+    assert b"Export failed" in response.content
+
+
+@pytest.mark.django_db
+@override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+def test_schedule_download_non_htmx_waiting(mocker, orga_client, schedule):
+    mock_result = mocker.MagicMock()
+    mock_result.ready.return_value = False
+    mocker.patch(
+        "pretalx.orga.views.schedule.AsyncResult",
+        return_value=mock_result,
+    )
+
+    response = orga_client.get(
+        f"{schedule.event.orga_urls.schedule_export_download}?async_id=test-id",
+    )
+
+    assert response.status_code == 200
+    assert b"Generating export" in response.content
+
+
+@pytest.mark.django_db
+@override_settings(CELERY_TASK_ALWAYS_EAGER=False)
+def test_schedule_download_non_htmx_failure(mocker, orga_client, schedule):
+    mock_result = mocker.MagicMock()
+    mock_result.ready.return_value = True
+    mock_result.successful.return_value = False
+    mocker.patch(
+        "pretalx.orga.views.schedule.AsyncResult",
+        return_value=mock_result,
+    )
+
+    response = orga_client.get(
+        f"{schedule.event.orga_urls.schedule_export_download}?async_id=test-id",
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Export failed" in response.content
+
+
+@pytest.mark.django_db
+def test_schedule_download_missing_zip(mocker, orga_client, schedule):
+    mocker.patch(
+        "pretalx.orga.views.schedule.is_html_export_stale",
+        return_value=False,
+    )
+    mocker.patch(
+        "pretalx.orga.views.schedule.get_export_zip_path",
+        return_value=Path("/nonexistent/path.zip"),
+    )
+
+    response = orga_client.get(
+        schedule.event.orga_urls.schedule_export_download, follow=True
+    )
+
+    assert response.status_code == 200
+    assert b"Export file not found" in response.content

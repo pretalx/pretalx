@@ -254,7 +254,7 @@ class Command(BaseCommand):
                 tmp_dir.rename(export_dir)
             except Exception as exc:
                 logging.error(f"Export failed: {exc}")
-                delete_directory(tmp_dir)
+                raise CommandError(f"Export failed: {exc}") from exc
             finally:
                 delete_directory(tmp_dir)
 

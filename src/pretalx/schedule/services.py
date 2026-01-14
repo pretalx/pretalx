@@ -5,13 +5,11 @@ import json
 from collections import defaultdict, namedtuple
 from contextlib import suppress
 
-from django.conf import settings
 from django.db import models, transaction
 from django.db.utils import DatabaseError
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import now
 
-from pretalx.agenda.tasks import export_schedule_html
 from pretalx.schedule.models.slot import SlotType
 from pretalx.schedule.signals import schedule_release
 
@@ -408,14 +406,7 @@ def freeze_schedule(
         del wip_schedule.event.current_schedule
 
     schedule_release.send_robust(schedule.event, schedule=schedule, user=user)
-
-    if schedule.event.get_feature_flag("export_html_on_release"):
-        if not settings.CELERY_TASK_ALWAYS_EAGER:
-            export_schedule_html.apply_async(
-                kwargs={"event_id": schedule.event.id}, ignore_result=True
-            )
-        else:
-            schedule.event.cache.set("rebuild_schedule_export", True, None)
+    schedule.event.cache.set("rebuild_schedule_export", True, None)
 
     # Clear the unreleased changes flag since we just released a schedule
     update_unreleased_schedule_changes(schedule.event, False)

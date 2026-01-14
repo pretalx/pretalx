@@ -1,0 +1,29 @@
+<!--
+SPDX-FileCopyrightText: 2017-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+
+{% extends "orga/schedule/base.html" %}
+
+{% load i18n %}
+{% load static %}
+
+{% block extra_title %}{% translate "Export schedule data" %} :: {% endblock extra_title %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" type="text/css" href="{% static "common/css/ui/export.css" %}" />
+{% endblock stylesheets %}
+
+{% block scripts %}
+    <script defer src="{% static "vendored/htmx.min.js" %}"></script>
+{% endblock scripts %}
+
+{% block schedule_content %}
+    <h2>{% translate "Export schedule data" %}</h2>
+
+    <div hx-get="?async_id={{ async_id }}"
+         hx-trigger="every 2s"
+         hx-swap="innerHTML">
+        {% include "orga/schedule/export_waiting_partial.html" %}
+    </div>
+{% endblock schedule_content %}

@@ -5,8 +5,6 @@ import datetime as dt
 
 import pytest
 from django.core import mail as djmail
-from django.core.cache import cache
-from django.test import override_settings
 from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
@@ -14,7 +12,6 @@ from pretalx.common.models.log import ActivityLog
 from pretalx.event.services import (
     periodic_event_services,
     task_periodic_event_services,
-    task_periodic_schedule_export,
 )
 
 
@@ -114,46 +111,5 @@ def test_periodic_event_services(event):
 
 
 @pytest.mark.django_db
-@override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "lalala",
-        }
-    }
-)
-@pytest.mark.parametrize("should_rebuild_schedule", (True, False))
-def test_periodic_event_services_schedule_export(
-    event, schedule, should_rebuild_schedule
-):
-    ActivityLog.objects.create(event=event, content_object=event, action_type="test")
-    event.feature_flags["export_html_on_release"] = True
-    event.cache.cache = cache
-    event.save()
-    event.cache.set("rebuild_schedule_export", should_rebuild_schedule)
-    assert event.cache.get("rebuild_schedule_export") is should_rebuild_schedule
-    periodic_event_services(event.slug)
-    event = event.__class__.objects.get(slug=event.slug)
-    assert not event.cache.get("rebuild_schedule_export")
-
-
-@pytest.mark.django_db
 def test_periodic_event_fail():
     task_periodic_event_services("lololol")
-
-
-@pytest.mark.django_db
-def test_trigger_schedule_export_unnecessary(event):
-    event.feature_flags["export_html_on_release"] = True
-    event.save()
-    timestamp = now() - dt.timedelta(minutes=10)
-    event.cache.set("last_schedule_rebuild", timestamp)
-    task_periodic_schedule_export(event.slug)
-
-
-@pytest.mark.django_db
-def test_trigger_schedule_export_regularly(event):
-    event.feature_flags["export_html_on_release"] = True
-    event.save()
-    assert not event.cache.get("last_schedule_rebuild")
-    task_periodic_schedule_export(event.slug)

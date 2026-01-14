@@ -126,9 +126,6 @@ def event(organiser):
             date_to=today + dt.timedelta(days=3),
             organiser=organiser,
         )
-        # exporting takes quite some time, so this speeds up our tests
-        event.feature_flags["export_html_on_release"] = False
-        event.save()
         for team in organiser.teams.all():
             team.limit_events.add(event)
     return event
@@ -146,8 +143,6 @@ def other_event(other_organiser):
             date_to=dt.date.today() + dt.timedelta(days=1),
             organiser=other_organiser,
         )
-        event.feature_flags["export_html_on_release"] = False
-        event.save()
         for team in other_organiser.teams.all():
             team.limit_events.add(event)
     return event
@@ -167,8 +162,6 @@ def multilingual_event(organiser):
             locale_array="en,de",
             organiser=organiser,
         )
-        event.feature_flags["export_html_on_release"] = False
-        event.save()
         for team in organiser.teams.all():
             team.limit_events.add(event)
     return event

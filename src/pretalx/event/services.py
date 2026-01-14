@@ -63,38 +63,6 @@ def task_periodic_event_services(event_slug):
             event.settings.sent_mail_event_over = True
 
 
-@app.task(name="pretalx.event.periodic_schedule_export")
-def task_periodic_schedule_export(event_slug):
-    from pretalx.agenda.management.commands.export_schedule_html import (
-        get_export_zip_path,
-    )
-    from pretalx.agenda.tasks import export_schedule_html
-
-    with scopes_disabled():
-        event = (
-            Event.objects.filter(slug=event_slug)
-            .prefetch_related("_settings_objects", "submissions__slots")
-            .first()
-        )
-    with scope(event=event):
-        if not event.get_feature_flag("export_html_on_release"):
-            return
-        zip_path = get_export_zip_path(event)
-        last_time = event.cache.get("last_schedule_rebuild")
-        _now = now()
-        if last_time and _now - last_time < dt.timedelta(hours=1):
-            return
-        should_rebuild_schedule = (
-            event.cache.get("rebuild_schedule_export") or not zip_path.exists()
-        )
-        if should_rebuild_schedule:
-            event.cache.delete("rebuild_schedule_export")
-            event.cache.set("last_schedule_rebuild", _now, None)
-            export_schedule_html.apply_async(
-                kwargs={"event_id": event.id}, ignore_result=True
-            )
-
-
 @receiver(periodic_task)
 def periodic_event_services(sender, **kwargs):
     cutoff = now() - dt.timedelta(days=3)
@@ -103,12 +71,6 @@ def periodic_event_services(sender, **kwargs):
             task_periodic_event_services.apply_async(
                 args=(event.slug,), ignore_result=True
             )
-            if event.current_schedule and event.get_feature_flag(
-                "export_html_on_release"
-            ):
-                task_periodic_schedule_export.apply_async(
-                    args=(event.slug,), ignore_result=True
-                )
             event.update_review_phase()
 
 

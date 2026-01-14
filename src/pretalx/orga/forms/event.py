@@ -127,13 +127,6 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
         ),
         required=False,
     )
-    export_html_on_release = forms.BooleanField(
-        label=_("Generate HTML export on schedule release"),
-        help_text=_(
-            "The static HTML export will be provided as a .zip archive on the schedule export page."
-        ),
-        required=False,
-    )
     html_export_url = forms.URLField(
         label=_("HTML Export URL"),
         help_text=_(
@@ -375,7 +368,6 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             "schedule": "display_settings",
             "show_featured": "feature_flags",
             "use_feedback": "feature_flags",
-            "export_html_on_release": "feature_flags",
             "html_export_url": "display_settings",
             "header_pattern": "display_settings",
             "meta_noindex": "display_settings",

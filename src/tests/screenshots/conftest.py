@@ -52,7 +52,6 @@ def event():
         event.email = "orga@orga.org"
         event.date_from = dt.date.today()
         event.date_to = dt.date.today() + dt.timedelta(days=1)
-        event.feature_flags["export_html_on_release"] = False
         event.display_settings["header_pattern"] = "topo"
         event.primary_color = "#3aa57c"
         event.save()
