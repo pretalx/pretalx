@@ -156,6 +156,15 @@
   align-self: flex-start;
 }
 
+/* Validation error state for enhanced selects */
+.choices.is-invalid .choices__inner {
+  border-color: var(--color-danger);
+}
+
+.choices.is-invalid .choices__inner:has(input:focus) {
+  box-shadow: 0 0 0 0.2rem rgba(var(--color-danger-rgb), 0.25);
+}
+
 .select-all-events[role=button] {
   &:hover,
   &:focus {

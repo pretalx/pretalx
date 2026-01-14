@@ -15,11 +15,64 @@ from django_scopes import scopes_disabled
 
 from pretalx.api.versions import CURRENT_VERSION
 from pretalx.common.text.phrases import phrases
-from pretalx.common.ui import Button
+from pretalx.common.ui import back_button, Button
 from pretalx.common.views.generic import get_next_url
 from pretalx.common.views.helpers import is_form_bound
 from pretalx.orga.views.event import EventPermissionRequired
 from pretalx.person.forms import AuthTokenForm, LoginInfoForm, OrgaProfileForm
+
+
+class TokenEditView(TemplateView):
+    """View for editing an existing API token."""
+
+    template_name = "orga/token_edit.html"
+
+    def get_object(self):
+        with scopes_disabled():
+            return self.request.user.api_tokens.active().filter(
+                pk=self.kwargs["pk"]
+            ).first()
+
+    @cached_property
+    def token(self):
+        return self.get_object()
+
+    def dispatch(self, request, *args, **kwargs):
+        if not self.token:
+            messages.error(request, _("Token not found or already expired."))
+            return redirect("orga:user.view")
+        return super().dispatch(request, *args, **kwargs)
+
+    @context
+    @cached_property
+    def edit_form(self):
+        return AuthTokenForm(
+            instance=self.token,
+            user=self.request.user,
+            data=self.request.POST if self.request.method == "POST" else None,
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["token"] = self.token
+        context["submit_buttons"] = [Button()]
+        context["submit_buttons_extra"] = [back_button(reverse("orga:user.view"))]
+        return context
+
+    def post(self, request, *args, **kwargs):
+        if self.edit_form.is_valid():
+            old_data = self.token.serialize()
+            self.edit_form.save()
+            new_data = self.token.serialize()
+
+            request.user.log_action(
+                "pretalx.user.token.update",
+                data={"old": old_data, "new": new_data},
+            )
+            messages.success(request, _("The API token has been updated."))
+            return redirect("orga:user.view")
+
+        return self.get(request, *args, **kwargs)
 
 
 class UserSettings(TemplateView):
