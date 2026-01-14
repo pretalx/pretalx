@@ -102,6 +102,49 @@ onReady(() => {
         }
     };
 
+    const updateInputHighlight = (input, maxLength) => {
+        if (input.tagName !== 'INPUT') return;
+
+        const highlightWrapper = createWrapper(input, 'character-limit-input-wrapper', 'character-limit-input');
+        let highlightDiv = highlightWrapper.querySelector('.character-limit-highlight-input');
+
+        if (!highlightDiv) {
+            highlightDiv = document.createElement('div');
+            highlightDiv.className = 'character-limit-highlight-input';
+            highlightWrapper.insertBefore(highlightDiv, input);
+
+            // Copy computed styles for reliable alignment
+            const computedStyle = window.getComputedStyle(input);
+            ['padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+             'font-family', 'font-size', 'font-weight', 'font-style',
+             'line-height', 'letter-spacing', 'word-spacing',
+             'border-width', 'box-sizing'].forEach(style => {
+                highlightDiv.style[style] = computedStyle[style];
+            });
+
+            // Sync horizontal scrolling for inputs
+            input.addEventListener('scroll', () => {
+                highlightDiv.scrollLeft = input.scrollLeft;
+            });
+        }
+
+        const normalizedValue = normalizeLineBreaks(input.value);
+        const currentLength = normalizedValue.length;
+
+        if (currentLength > maxLength) {
+            const validText = normalizedValue.substring(0, maxLength);
+            const excessText = normalizedValue.substring(maxLength);
+            highlightDiv.innerHTML =
+                escapeHtml(validText) +
+                '<mark class="character-limit-excess">' + escapeHtml(excessText) + '</mark>';
+            highlightDiv.style.display = 'block';
+            // Sync scroll position
+            highlightDiv.scrollLeft = input.scrollLeft;
+        } else {
+            highlightDiv.style.display = 'none';
+        }
+    };
+
     const validateField = (element) => {
         const maxLength = parseInt(element.dataset.maxlength, 10);
         if (!maxLength) return true;
@@ -110,7 +153,7 @@ onReady(() => {
         if (element.tagName === 'TEXTAREA') {
             updateTextareaHighlight(element, maxLength);
         } else if (element.tagName === 'INPUT') {
-            createWrapper(element, 'character-limit-input-wrapper');
+            updateInputHighlight(element, maxLength);
         }
 
         const isOverLimit = updateCounter(element, currentLength, maxLength);
