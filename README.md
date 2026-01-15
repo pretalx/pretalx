@@ -51,7 +51,7 @@
 | src/pretalx/api/views/mail.py                                              |       15 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/api/views/mixins.py                                            |       77 |        3 |       16 |        6 |     90% |45->47, 62->65, 68->71, 72->76, 106, 116-119 |
 | src/pretalx/api/views/question.py                                          |      115 |        9 |       18 |        3 |     89% |108-112, 159, 172-173, 258-259, 289->301 |
-| src/pretalx/api/views/review.py                                            |       42 |        1 |       10 |        1 |     96% |       112 |
+| src/pretalx/api/views/review.py                                            |       45 |        1 |       12 |        1 |     96% |       117 |
 | src/pretalx/api/views/room.py                                              |       32 |        2 |        2 |        0 |     94% |     65-66 |
 | src/pretalx/api/views/root.py                                              |       19 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/api/views/schedule.py                                          |      129 |        8 |       36 |        8 |     90% |80, 90, 114, 148, 222, 300, 316, 322 |
@@ -274,7 +274,7 @@
 | src/tests/api/test\_api\_feedback.py                                       |      167 |        0 |        0 |        0 |    100% |           |
 | src/tests/api/test\_api\_mail.py                                           |      108 |        0 |        0 |        0 |    100% |           |
 | src/tests/api/test\_api\_questions.py                                      |      446 |        0 |        6 |        0 |    100% |           |
-| src/tests/api/test\_api\_reviews.py                                        |      370 |        0 |        0 |        0 |    100% |           |
+| src/tests/api/test\_api\_reviews.py                                        |      390 |        2 |        4 |        2 |     99% |    77, 98 |
 | src/tests/api/test\_api\_rooms.py                                          |      205 |        0 |        0 |        0 |    100% |           |
 | src/tests/api/test\_api\_root.py                                           |       13 |        0 |        0 |        0 |    100% |           |
 | src/tests/api/test\_api\_schedule.py                                       |      498 |        0 |        6 |        0 |    100% |           |
@@ -359,7 +359,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      295 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **33758** | **1918** | **5406** |  **762** | **92%** |           |
+| **TOTAL**                                                                  | **33781** | **1920** | **5412** |  **764** | **92%** |           |
 
 
 ## Setup coverage badge
