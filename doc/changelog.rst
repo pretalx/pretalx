@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :bug:`schedule` The mobile view of the pretalx schedule did not set a background colour, so the pretalx schedule widget was hard to read when embedded on pages with a dark background colour.
 - :bug:`api` When no review phases were active, organisers would not see any reviews in the API.
 - :feature:`schedule` Instead of jumping directly to the current time, the pretalx schedule (and schedule widget) now offer a “Jump to now” prompt instead.
 - :bug:`orga:mail` The form to send reminders to open draft proposals was read-only and could not be used.
