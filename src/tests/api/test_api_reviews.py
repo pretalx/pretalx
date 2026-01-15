@@ -68,6 +68,46 @@ def test_orga_can_see_reviews(client, orga_user_token, event, review):
 
 
 @pytest.mark.django_db
+def test_orga_can_see_reviews_without_active_review_phase(
+    client, orga_user_token, event, review
+):
+    with scope(event=event):
+        event.review_phases.all().update(is_active=False)
+        if "active_review_phase" in event.__dict__:
+            del event.__dict__["active_review_phase"]
+        assert event.review_phases.filter(is_active=True).count() == 0
+
+    response = client.get(
+        event.api_urls.reviews,
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_token.token}"},
+    )
+    content = json.loads(response.text)
+
+    assert response.status_code == 200
+    assert len(content["results"]) == 1
+
+
+@pytest.mark.django_db
+def test_reviewer_cannot_see_reviews_without_active_review_phase(
+    client, review_user_token, event, review
+):
+    with scope(event=event):
+        event.review_phases.all().update(is_active=False)
+        if "active_review_phase" in event.__dict__:
+            del event.__dict__["active_review_phase"]
+        assert event.review_phases.filter(is_active=True).count() == 0
+
+    response = client.get(
+        event.api_urls.reviews,
+        follow=True,
+        headers={"Authorization": f"Token {review_user_token.token}"},
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.django_db
 def test_orga_can_see_expanded_reviews(
     client,
     orga_user_token,

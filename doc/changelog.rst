@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :bug:`api` When no review phases were active, organisers would not see any reviews in the API.
 - :feature:`schedule` Instead of jumping directly to the current time, the pretalx schedule (and schedule widget) now offer a “Jump to now” prompt instead.
 - :bug:`orga:mail` The form to send reminders to open draft proposals was read-only and could not be used.
 - :bug:`orga` Organisers could not add new review score settings, but could still modify existing score settings.
