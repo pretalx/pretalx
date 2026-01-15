@@ -202,6 +202,7 @@ def schedule_messages(request, **kwargs):
         "favs_not_saved": _(
             "Your favourites could only be saved locally in your browser."
         ),
+        "jump_to_now": _("Jump to now"),
     }
     strings = {key: str(value) for key, value in strings.items()}
     return HttpResponse(
