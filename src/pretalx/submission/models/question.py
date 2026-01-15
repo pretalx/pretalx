@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.db import models
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -13,7 +15,7 @@ from i18nfield.strings import override
 from pretalx.agenda.rules import is_agenda_visible
 from pretalx.common.models.choices import Choices
 from pretalx.common.models.fields import DateField, DateTimeField
-from pretalx.common.models.mixins import OrderedModel, PretalxModel
+from pretalx.common.models.mixins import GenerateCode, OrderedModel, PretalxModel
 from pretalx.common.text.path import path_with_hash
 from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
@@ -148,7 +150,7 @@ QUESTION_PERMISSIONS = {
 }
 
 
-class Question(OrderedModel, PretalxModel):
+class Question(GenerateCode, OrderedModel, PretalxModel):
     """Questions can be asked per.
 
     :class:`~pretalx.submission.models.submission.Submission`, per speaker, or
@@ -175,6 +177,10 @@ class Question(OrderedModel, PretalxModel):
         For 'freeze after' the answer will be allowed before the deadline and frozen after the deadline.
     :param position: Position in the question order in this event.
     """
+
+    _code_length = 8
+    _code_property = "identifier"
+    _code_scope = ("event",)
 
     event = models.ForeignKey(
         to="event.Event", on_delete=models.PROTECT, related_name="questions"
@@ -254,6 +260,24 @@ class Question(OrderedModel, PretalxModel):
         null=True, blank=True, verbose_name=_("default answer")
     )
     position = models.IntegerField(default=0)
+    identifier = models.CharField(
+        max_length=190,
+        verbose_name=_("Internal identifier"),
+        help_text=_(
+            "You can enter any value here to make it easier to match the data "
+            "with other sources. If you do not input one, we will generate one "
+            "automatically."
+        ),
+        validators=[
+            RegexValidator(
+                regex=r"^[a-zA-Z0-9.\-_]+$",
+                message=_(
+                    "The identifier may only contain letters, numbers, dots, "
+                    "dashes, and underscores."
+                ),
+            ),
+        ],
+    )
     active = models.BooleanField(
         default=True,
         verbose_name=_("active"),
@@ -345,6 +369,7 @@ class Question(OrderedModel, PretalxModel):
     class Meta:
         ordering = ("position", "id")
         rules_permissions = QUESTION_PERMISSIONS
+        unique_together = [("event", "identifier")]
 
     @property
     def log_parent(self):
@@ -385,6 +410,18 @@ class Question(OrderedModel, PretalxModel):
 
     def __str__(self):
         return str(self.question)
+
+    @staticmethod
+    def _clean_identifier(event, code, instance=None):
+        if not code:
+            return
+        qs = Question.objects.filter(event=event, identifier__iexact=code)
+        if instance and instance.pk:
+            qs = qs.exclude(pk=instance.pk)
+        if qs.exists():
+            raise ValidationError(
+                _("This identifier is already used for a different question.")
+            )
 
     @staticmethod
     def get_order_queryset(event):
@@ -436,18 +473,40 @@ class Question(OrderedModel, PretalxModel):
         return data
 
 
-class AnswerOption(PretalxModel):
+class AnswerOption(GenerateCode, PretalxModel):
     """Provides the possible answers for.
 
     :class:`~pretalx.submission.models.question.Question` objects of variant
     'choice' or 'multiple_choice'.
     """
 
+    _code_length = 8
+    _code_property = "identifier"
+    _code_scope = ("question",)
+
     question = models.ForeignKey(
         to="submission.Question", on_delete=models.PROTECT, related_name="options"
     )
     answer = I18nCharField(verbose_name=_("Response"))
     position = models.IntegerField(default=0)
+    identifier = models.CharField(
+        max_length=190,
+        verbose_name=_("Internal identifier"),
+        help_text=_(
+            "You can enter any value here to make it easier to match the data "
+            "with other sources. If you do not input one, we will generate one "
+            "automatically."
+        ),
+        validators=[
+            RegexValidator(
+                regex=r"^[a-zA-Z0-9.\-_]+$",
+                message=_(
+                    "The identifier may only contain letters, numbers, dots, "
+                    "dashes, and underscores."
+                ),
+            ),
+        ],
+    )
 
     objects = ScopedManager(event="question__event")
     log_prefix = "pretalx.question.option"
@@ -456,6 +515,7 @@ class AnswerOption(PretalxModel):
         ordering = ("position", "id")
         verbose_name_plural = _("Options")  # Used in question log display
         rules_permissions = QUESTION_PERMISSIONS
+        unique_together = [("question", "identifier")]
 
     @cached_property
     def event(self):
@@ -468,6 +528,18 @@ class AnswerOption(PretalxModel):
     def __str__(self):
         """Used in choice forms."""
         return str(self.answer)
+
+    @staticmethod
+    def _clean_identifier(question, code, instance=None):
+        if not code:
+            return
+        qs = AnswerOption.objects.filter(question=question, identifier__iexact=code)
+        if instance and instance.pk:
+            qs = qs.exclude(pk=instance.pk)
+        if qs.exists():
+            raise ValidationError(
+                _("This identifier is already used for a different option.")
+            )
 
 
 class Answer(PretalxModel):

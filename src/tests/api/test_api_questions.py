@@ -20,6 +20,7 @@ def test_question_serializer(answer):
         data = QuestionSerializer(answer.question).data
     assert set(data.keys()) == {
         "id",
+        "identifier",
         "variant",
         "question",
         "question_required",
@@ -49,7 +50,13 @@ def test_answer_option_serializer(choice_question):
     with scope(event=choice_question.event):
         option = choice_question.options.first()
         data = AnswerOptionSerializer(option).data
-        assert set(data.keys()) == {"id", "answer", "question", "position"}
+        assert set(data.keys()) == {
+            "id",
+            "answer",
+            "question",
+            "position",
+            "identifier",
+        }
         assert data["id"] == option.id
         assert data["answer"]["en"] == option.answer
 
@@ -932,3 +939,85 @@ def test_answer_update_via_api_logs_to_parent(client, orga_user_write_token, ans
         key = f"question-{answer.question_id}"
         assert log.data["changes"][key]["old"] == old_answer
         assert log.data["changes"][key]["new"] == "Updated answer"
+
+
+@pytest.mark.django_db
+def test_question_serializer_includes_identifier(answer):
+    with scope(event=answer.question.event):
+        data = QuestionSerializer(answer.question).data
+    assert "identifier" in data
+    assert data["identifier"] is not None
+
+
+@pytest.mark.django_db
+def test_organiser_can_create_question_with_identifier(
+    event, orga_user_write_token, client
+):
+    response = client.post(
+        event.api_urls.questions,
+        data=json.dumps(
+            {
+                "question": "A question with identifier",
+                "variant": "text",
+                "target": "submission",
+                "identifier": "MY-CUSTOM-ID",
+            }
+        ),
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+    assert response.status_code == 201, response.text
+    content = json.loads(response.text)
+    assert content["identifier"] == "MY-CUSTOM-ID"
+
+
+@pytest.mark.django_db
+def test_organiser_can_create_question_without_identifier(
+    event, orga_user_write_token, client
+):
+    response = client.post(
+        event.api_urls.questions,
+        data=json.dumps(
+            {
+                "question": "A question without identifier",
+                "variant": "text",
+                "target": "submission",
+            }
+        ),
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+    assert response.status_code == 201, response.text
+    content = json.loads(response.text)
+    assert content["identifier"] is not None
+    assert len(content["identifier"]) == 8
+
+
+@pytest.mark.django_db
+def test_answer_option_serializer_includes_identifier(choice_question):
+    with scope(event=choice_question.event):
+        option = choice_question.options.first()
+        data = AnswerOptionSerializer(option).data
+    assert "identifier" in data
+    assert data["identifier"] is not None
+
+
+@pytest.mark.django_db
+def test_create_question_option_with_identifier(
+    event, orga_user_write_token, client, choice_question
+):
+    response = client.post(
+        event.api_urls.question_options,
+        data=json.dumps(
+            {
+                "question": choice_question.pk,
+                "answer": {"en": "Option with ID"},
+                "identifier": "OPT-CUSTOM",
+            }
+        ),
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
+    )
+    assert response.status_code == 201, response.text
+    content = json.loads(response.text)
+    assert content["identifier"] == "OPT-CUSTOM"

@@ -263,11 +263,19 @@ class GenerateCode:
 
     Omits some character pairs because they are hard to
     read/differentiate: 1/I, O/0, 2/Z, 4/A, 5/S, 6/G.
+
+    Configure via class attributes:
+    - _code_length: Length of generated code (default: 6)
+    - _code_charset: Characters to use (default: ABCDEFGHJKLMNPQRSTUVWXYZ3789)
+    - _code_property: Field name to store code (default: "code")
+    - _code_scope: Tuple of field names for scoped uniqueness (default: () for global)
+      Example: ("event",) or ("event", "question")
     """
 
     _code_length = 6
     _code_charset = list("ABCDEFGHJKLMNPQRSTUVWXYZ3789")
     _code_property = "code"
+    _code_scope = ()
 
     @classmethod
     def generate_code(cls, length=None):
@@ -278,22 +286,30 @@ class GenerateCode:
         length = length or self._code_length
         while True:
             code = self.generate_code(length=length)
+            filter_kwargs = {f"{self._code_property}__iexact": code}
+            for field in self._code_scope:
+                filter_kwargs[field] = getattr(self, field)
             with scopes_disabled():
-                if not self.__class__.objects.filter(
-                    **{f"{self._code_property}__iexact": code}
-                ).exists():
+                if not self.__class__.objects.filter(**filter_kwargs).exists():
                     setattr(self, self._code_property, code)
                     return
 
     def save(self, *args, **kwargs):
-        # It’s super duper unlikely for this to fail, but let’s add a short
-        # stupid retry loop regardless
-        for __ in range(3):
-            if not getattr(self, self._code_property, None):
-                self.assign_code()
+        if getattr(self, self._code_property, None):
+            return super().save(*args, **kwargs)
+
+        # Auto-generate code with retry loop to handle unlikely race conditions
+        if "update_fields" in kwargs:
+            kwargs["update_fields"] = {self._code_property}.union(
+                kwargs["update_fields"]
+            )
+        for attempt in range(3):
+            self.assign_code()
             try:
                 return super().save(*args, **kwargs)
             except IntegrityError:
+                if attempt == 2:
+                    raise
                 setattr(self, self._code_property, None)
 
 

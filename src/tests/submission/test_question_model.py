@@ -5,6 +5,7 @@
 # SPDX-FileContributor: Natalia Katsiapi
 
 import pytest
+from django.db import IntegrityError
 from django_scopes import scope
 
 from pretalx.submission.models import Answer, Question
@@ -138,3 +139,70 @@ def test_answer_string_property(event, variant, answer, expected):
         question = Question.objects.create(question="?", variant=variant, event=event)
         answer = Answer.objects.create(question=question, answer=answer)
         assert answer.answer_string == expected
+
+
+@pytest.mark.django_db
+def test_question_identifier_auto_generated(event):
+    with scope(event=event):
+        question = Question.objects.create(
+            question="Test?", variant="text", event=event
+        )
+        assert question.identifier is not None
+        assert len(question.identifier) == 8
+
+
+@pytest.mark.django_db
+def test_question_identifier_custom(event):
+    with scope(event=event):
+        question = Question.objects.create(
+            question="Test?", variant="text", event=event, identifier="MY-CUSTOM-ID"
+        )
+        assert question.identifier == "MY-CUSTOM-ID"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_question_identifier_unique_per_event(event, other_event):
+    with scope(event=event):
+        Question.objects.create(
+            question="Q1", variant="text", event=event, identifier="SAME-ID"
+        )
+        with pytest.raises(IntegrityError):
+            Question.objects.create(
+                question="Q2", variant="text", event=event, identifier="SAME-ID"
+            )
+
+    # Same identifier in different event should be allowed
+    with scope(event=other_event):
+        q = Question.objects.create(
+            question="Q3", variant="text", event=other_event, identifier="SAME-ID"
+        )
+        assert q.identifier == "SAME-ID"
+
+
+@pytest.mark.django_db
+def test_answer_option_identifier_auto_generated(choice_question):
+    with scope(event=choice_question.event):
+        option = choice_question.options.first()
+        assert option.identifier is not None
+        assert len(option.identifier) == 8
+
+
+@pytest.mark.django_db
+def test_answer_option_identifier_custom(choice_question):
+    with scope(event=choice_question.event):
+        option = choice_question.options.create(
+            answer="New Option", position=10, identifier="OPT-CUSTOM"
+        )
+        assert option.identifier == "OPT-CUSTOM"
+
+
+@pytest.mark.django_db
+def test_answer_option_identifier_unique_per_question(choice_question):
+    with scope(event=choice_question.event):
+        choice_question.options.create(
+            answer="Option A", position=10, identifier="SAME-OPT"
+        )
+        with pytest.raises(IntegrityError):
+            choice_question.options.create(
+                answer="Option B", position=11, identifier="SAME-OPT"
+            )
