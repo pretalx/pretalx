@@ -156,7 +156,7 @@ clean:
 [group('tests')]
 test *args:
     uv run --extra=dev --extra=devdocs pytest {{ args }}
-    git co -- src/pretalx/locale
+    git checkout -- src/pretalx/locale
 
 # Run tests in parallel (requires pytest-xdist)
 [group('tests')]
