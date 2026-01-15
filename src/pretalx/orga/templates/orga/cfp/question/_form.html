@@ -91,6 +91,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 {{ form.id }}
                                 {{ form.DELETE }}
                             </div>
+                            {% if form.instance.identifier %}
+                                <label class="text-muted col-md-9 offset-md-3 text-left font-weight-normal">{% translate "Answer option" %} {{ form.instance.identifier }}</label>
+                            {% endif %}
                             <div class="question-option-row flip ml-auto col-md-9 mb-2 d-flex hide-label">
                                 <div class="question-option-input w-100{% if action == "view" %} disabled{% endif %}">
                                     {% include "common/forms/errors.html" %}

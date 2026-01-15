@@ -4,7 +4,11 @@
 from django.db import transaction
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions
-from rest_framework.serializers import PrimaryKeyRelatedField, SlugRelatedField
+from rest_framework.serializers import (
+    CharField,
+    PrimaryKeyRelatedField,
+    SlugRelatedField,
+)
 
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
@@ -27,10 +31,11 @@ from pretalx.submission.rules import questions_for_user
 @register_serializer(versions=CURRENT_VERSIONS)
 class AnswerOptionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     question = PrimaryKeyRelatedField(read_only=True)
+    identifier = CharField(required=False, allow_blank=True)
 
     class Meta:
         model = AnswerOption
-        fields = ("id", "question", "answer", "position")
+        fields = ("id", "question", "answer", "position", "identifier")
         expandable_fields = {
             "question": (
                 "pretalx.api.serializers.question.QuestionSerializer",
@@ -46,6 +51,7 @@ class AnswerOptionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 @register_serializer(versions=CURRENT_VERSIONS)
 class AnswerOptionCreateSerializer(AnswerOptionSerializer):
     question = PrimaryKeyRelatedField(read_only=False, queryset=Question.objects.none())
+    identifier = CharField(required=False, allow_blank=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -64,14 +70,19 @@ class AnswerOptionCreateSerializer(AnswerOptionSerializer):
 
     class Meta(AnswerOptionSerializer.Meta):
         expandable_fields = None
+        # Skip UniqueTogetherValidator since identifier is auto-generated
+        validators = []
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class QuestionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+    identifier = CharField(required=False, allow_blank=True)
+
     class Meta:
         model = Question
         fields = (
             "id",
+            "identifier",
             "question",
             "help_text",
             "default_answer",
@@ -104,7 +115,7 @@ class QuestionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
                 {
                     "many": True,
                     "read_only": True,
-                    "fields": ("id", "answer", "position"),
+                    "fields": ("id", "answer", "position", "identifier"),
                 },
             ),
             "tracks": (

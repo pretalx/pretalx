@@ -151,7 +151,9 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     def __init__(self, *args, event=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.event = event
         self.fields["icon"].required = False
+        self.fields["identifier"].required = False
         if not (
             event.get_feature_flag("use_tracks")
             and event.tracks.all().count()
@@ -213,6 +215,11 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
         if self.cleaned_data.get("is_public"):
             self.cleaned_data.pop("limit_teams", None)
 
+    def clean_identifier(self):
+        identifier = self.cleaned_data.get("identifier")
+        Question._clean_identifier(self.event, identifier, self.instance)
+        return identifier
+
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
         options = self.cleaned_data.get("options")
@@ -261,6 +268,7 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
         model = Question
         fields = [
             "target",
+            "identifier",
             "question",
             "help_text",
             "question_required",

@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`orga` You can assign an identifier to custom fields, making it easier to use them in APIs and across events consistently. For choice fields, identifiers will be randomly assigned to each answer option as well to guarantee stable access.
 - :bug:`schedule` The mobile view of the pretalx schedule did not set a background colour, so the pretalx schedule widget was hard to read when embedded on pages with a dark background colour.
 - :bug:`api` When no review phases were active, organisers would not see any reviews in the API.
 - :feature:`schedule` Instead of jumping directly to the current time, the pretalx schedule (and schedule widget) now offer a “Jump to now” prompt instead.
