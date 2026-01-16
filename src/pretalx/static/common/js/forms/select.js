@@ -6,6 +6,32 @@ const isVisible = (element) => {
     return !element.hidden && !element.classList.contains("d-none") && !element.style.display === "none"
 }
 
+const validateSelect = (element, addErrors = false) => {
+    const container = element.closest('.choices')
+    if (!container) return true
+
+    const isRequired = element.hasAttribute('required')
+    const hasValue = element.value && element.value !== ''
+
+    if (isRequired && !hasValue) {
+        if (addErrors) {
+            container.classList.add('is-invalid')
+            if (!container.nextElementSibling?.classList.contains('js-validation-error')) {
+                const feedback = document.createElement('div')
+                feedback.className = 'invalid-feedback js-validation-error'
+                feedback.textContent = element.dataset.requiredMessage || 'Please select an option.'
+                container.after(feedback)
+            }
+        }
+        return false
+    }
+    container.classList.remove('is-invalid')
+    if (container.nextElementSibling?.classList.contains('js-validation-error')) {
+        container.nextElementSibling.remove()
+    }
+    return true
+}
+
 const initSelect = (element) => {
     const removeItemButton =
         !element.readonly && (!element.required || element.multiple)
@@ -87,10 +113,32 @@ const initSelect = (element) => {
     }
     const choicesInstance = new Choices(element, choicesOptions)
     element._choicesInstance = choicesInstance
+    element.addEventListener('change', () => validateSelect(element))
 }
 
 onReady(() => {
     document
         .querySelectorAll("select.enhanced")
         .forEach((element) => initSelect(element))
+
+    document.querySelectorAll('form').forEach(form => {
+        // Using click on submit buttons, because when the form is invalid, the browser's native validation
+        // will prevent the submit() event from firing. yes, this means that this won't work for enter-submit
+        // but I figure something is better than nothing
+        form.querySelectorAll('button[type="submit"], input[type="submit"], button:not([type])').forEach(button => {
+            button.addEventListener('click', (e) => {
+                if (form.noValidate || button.formNoValidate) return
+                let firstInvalid = null
+                form.querySelectorAll('select.enhanced[required]').forEach(select => {
+                    if (!validateSelect(select, true) && !firstInvalid) firstInvalid = select
+                })
+                if (firstInvalid) {
+                    e.preventDefault()
+                    const container = firstInvalid.closest('.choices')
+                    container?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    container?.querySelector('.choices__input')?.focus()
+                }
+            })
+        })
+    })
 })

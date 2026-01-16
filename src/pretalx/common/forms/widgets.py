@@ -181,6 +181,9 @@ class EnhancedSelectMixin(forms.Select):
             ctx["widget"]["attrs"], "class", "enhanced"
         )
         ctx["widget"]["attrs"]["tabindex"] = "-1"
+        ctx["widget"]["attrs"]["data-required-message"] = str(
+            _("Please select an option.")
+        )
         return ctx
 
     def create_option(

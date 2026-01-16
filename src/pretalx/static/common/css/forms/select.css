@@ -150,6 +150,10 @@
   .choices__list.choices__list--dropdown .choices__item.choice-item-highlight {
     color: var(--color-success);
   }
+
+  &.is-invalid .choices__inner {
+    border-color: var(--color-danger);
+  }
 }
 
 .submit-group .choices {
