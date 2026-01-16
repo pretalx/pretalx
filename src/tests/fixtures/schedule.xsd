@@ -1,4 +1,33 @@
 <?xml version="1.0"?>
+<!-- 
+
+Schema for an XML representation of a conference schedule with speakers, talks and URLs to external content like images, videos or PDFs which are not included in the schedule itself. 
+
+https://c3voc.de/wiki/schedule
+
+
+Publicly first automatically produced by [pentabarf](https://github.com/nevs/pentabarf), extended by [frab](https://frab.github.io/frab/] and continuously supported by [pretalx](https://pretalx.com/p/about/) and [osem](https://osem.io/).
+
+Media Type registration:
+https://www.iana.org/assignments/media-types/application/vnd.c3voc.schedule+xml
+
+
+The current version of this XSD is available at https://c3voc.de/schedule/schema.xsd – previous versions can be found at https://forgejo.c3voc.de/voc/schedule/src/branch/master/validator/xsd/schedule.xml.xsd and https://github.com/voc/schedule/blob/master/validator/xsd/schedule.xml.xsd
+
+
+This is format supported by several software packages used at European conferences over the last 20 years, e.g. Chaos Communication Congress/Camp, and other events by CCC; FOSDEM; FrOSCon; FOSSGIS; etc. – c.f. https://c3voc.de/wiki/events for a more complete list.
+
+Clients consuming this format include
+  - https://github.com/Wilm0r/giggity (Android, Java)
+  - https://github.com/EventFahrplan/EventFahrplan (Android, Kotlin/Java)
+  - https://github.com/saschalalala/pyfahrplan (CLI, Python)
+  - https://congress.conference.systems (iOS)
+  - https://github.com/crs-tools/tracker (Video processing system)
+  - https://github.com/engelsystem/engelsystem (Volunteer planning system) ([[https://github.com/engelsystem/engelsystem/tree/main/src/Helpers/Schedule|PHP]])
+  - https://info-beamer.com/raspberry-pi-digital-signage-scheduled-player-4765.html (digital signage)
+
+
+-->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
   <xs:element name="schedule">
     <xs:complexType>
@@ -93,7 +122,7 @@
       <xs:element type="start" name="start"/>
       <xs:element type="duration" name="duration"/>
       <xs:element type="xs:string" name="abstract"/>
-      <!-- oly expose slug if is not generated 1:1 via title slugify, otherwise we will generated it ourselves-->
+      <!-- only expose slug if is not generated 1:1 via title slugify, otherwise we will generate it ourselves -->
       <xs:element type="voc-slug-new" name="slug" minOccurs="0"/>
       <xs:element type="xs:string" name="track"/>
       <!-- logo is the path or URL to an image, we use httpURI as type here as apps prefer full URLs now -->
@@ -104,13 +133,17 @@
       <xs:element type="recording" name="recording" minOccurs="0"/>
       <xs:element type="links" name="links" minOccurs="0"/>
       <xs:element type="attachments" name="attachments" minOccurs="0"/>
+      <!-- deprecated -->
       <xs:element type="httpURI" name="video_download_url" minOccurs="0"/>
       <xs:element type="httpURI" name="url" minOccurs="0"/>
       <xs:element type="httpURI" name="feedback_url" minOccurs="0"/>
       <xs:element type="httpURI" name="origin_url" minOccurs="0"/>
     </xs:all>
+    <!-- short identifier of the submission, replacing the old "id" attribute -->
     <xs:attribute name="code" type="pretalx-random-code" use="optional"/>
+    <!-- legacy numeric identifier from pretalx, might be non unique when submission has multiple time slots, c.f. https://docs.pretalx.org/developer/concepts/#schedules-and-slots -->
     <xs:attribute name="id" type="xs:positiveInteger" use="required"/>
+    <!-- unique identifier for this event/instance introduced by frab, guaranteed to be unique across all systems -->
     <xs:attribute name="guid" type="uuid" use="required"/>
   </xs:complexType>
 
@@ -168,7 +201,8 @@
 
   <xs:simpleType name="slug">
     <xs:restriction base="xs:string">
-      <xs:pattern value="[a-z0-9-]{2,}"/>
+      <!-- lowercase letters, numbers and hyphens, must start with a letter and be at least two characters long -->
+      <xs:pattern value="[a-z][a-z0-9-]+"/>
     </xs:restriction>
   </xs:simpleType>
 
