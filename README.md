@@ -89,7 +89,7 @@
 | src/pretalx/common/forms/renderers.py                                      |       18 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/forms/tables.py                                         |       40 |        1 |       16 |        2 |     95% |61, 97->102 |
 | src/pretalx/common/forms/validators.py                                     |       51 |        0 |        4 |        0 |    100% |           |
-| src/pretalx/common/forms/widgets.py                                        |      229 |        4 |       28 |        4 |     97% |196, 352, 426, 437 |
+| src/pretalx/common/forms/widgets.py                                        |      230 |        4 |       28 |        4 |     97% |199, 355, 429, 440 |
 | src/pretalx/common/image.py                                                |      105 |       62 |       40 |        6 |     35% |40-82, 87-90, 101-108, 118-140, 159, 162, 166, 173-180, 186, 191 |
 | src/pretalx/common/language.py                                             |       22 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/log\_display.py                                         |       86 |       10 |       38 |        6 |     87% |164, 181, 190-195, 197-199, 236, 239 |
@@ -359,7 +359,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      295 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **33781** | **1920** | **5412** |  **764** | **92%** |           |
+| **TOTAL**                                                                  | **33782** | **1920** | **5412** |  **764** | **92%** |           |
 
 
 ## Setup coverage badge
