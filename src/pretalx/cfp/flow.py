@@ -233,13 +233,12 @@ class FormFlowStep(TemplateFlowStep):
     label_model = None
 
     def get_form_initial(self):
-        return self.cfp_session.get("initial", {}).get(self.identifier, {})
+        return copy.deepcopy(
+            self.cfp_session.get("initial", {}).get(self.identifier, {})
+        )
 
     def get_form_data(self):
-        data = self.cfp_session.get("data", {}).get(self.identifier, {})
-        if data:
-            data = self.get_form_initial() | data
-        return data
+        return copy.deepcopy(self.cfp_session.get("data", {}).get(self.identifier, {}))
 
     def get_form(self, from_storage=False):
         if self.request.method == "GET" or from_storage:
