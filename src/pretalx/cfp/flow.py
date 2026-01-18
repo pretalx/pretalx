@@ -430,9 +430,12 @@ class InfoStep(DedraftMixin, FormFlowStep):
                 data[f"resource-{i}-{field}"] = value
         return data
 
-    @property
-    def get_formset_class(self):
-        return modelformset_factory(
+    @context
+    def resource_formset(self):
+        return self.get_resource_formset()
+
+    def get_resource_formset(self, from_storage=False):
+        formset = modelformset_factory(
             Resource,
             form=ResourceForm,
             formset=BaseModelFormSet,
@@ -440,16 +443,8 @@ class InfoStep(DedraftMixin, FormFlowStep):
             extra=0,
         )
 
-    @context
-    @cached_property
-    def resource_formset(self):
-        return self.get_resource_formset()
-
-    def get_resource_formset(self, from_storage=False):
-        formset_class = self.get_formset_class
-
         if self.request.method == "GET" or from_storage:
-            return formset_class(
+            return formset(
                 data=self.get_resource_data(),
                 files=self.get_files(),
                 prefix="resource",
@@ -457,7 +452,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
         # files are saved into local memory in set_data
         files = self.get_files()
 
-        return formset_class(data=self.request.POST, files=files, prefix="resource")
+        return formset(data=self.request.POST, files=files, prefix="resource")
 
     def post(self, request):
         result = super().post(request)
