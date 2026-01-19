@@ -183,7 +183,7 @@
 | src/pretalx/orga/tables/organiser.py                                       |       14 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/orga/tables/schedule.py                                        |       17 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/orga/tables/speaker.py                                         |       58 |        4 |        4 |        2 |     90% |42, 45, 51, 150 |
-| src/pretalx/orga/tables/submission.py                                      |      169 |       39 |       60 |        6 |     68% |121->123, 132, 160, 163, 236, 238-239, 245->247, 274-276, 317, 328-332, 335-372 |
+| src/pretalx/orga/tables/submission.py                                      |      173 |       40 |       60 |        6 |     68% |120->122, 131, 159, 162, 168, 239, 241-242, 248->250, 277-279, 320, 331-335, 338-375 |
 | src/pretalx/orga/templatetags/formsets.py                                  |       16 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/orga/templatetags/orga\_edit\_link.py                          |       10 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/orga/templatetags/platform\_icons.py                           |        9 |        1 |        2 |        1 |     82% |        16 |
@@ -359,7 +359,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      295 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **33862** | **1948** | **5428** |  **768** | **92%** |           |
+| **TOTAL**                                                                  | **33866** | **1949** | **5428** |  **768** | **92%** |           |
 
 
 ## Setup coverage badge
