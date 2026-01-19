@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_ec03bb219148ab3a_rules_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-01-19 09:49 +0000
+            created at 2026-01-19 15:05 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -406,31 +406,29 @@
     <p class="run"><span class="n"><a id="t322" href="#t322">322</a></span><span class="t">        <span class="key">from</span> <span class="nam">pretalx</span><span class="op">.</span><span class="nam">mail</span><span class="op">.</span><span class="nam">models</span> <span class="key">import</span> <span class="nam">QueuedMail</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t323" href="#t323">323</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t324" href="#t324">324</a></span><span class="t">        <span class="nam">invitation_link</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">invitation_url</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t325" href="#t325">325</a></span><span class="t">        <span class="nam">invitation_text</span> <span class="op">=</span> <span class="nam">_</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t326" href="#t326">326</a></span><span class="t">            <span class="str">"""Hi!</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t327" href="#t327">327</a></span><span class="t"><span class="str">You have been invited to the {name} event organiser team - Please click here to accept:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t328" href="#t328">328</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t329" href="#t329">329</a></span><span class="t"><span class="str">{invitation_link}</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t330" href="#t330">330</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t331" href="#t331">331</a></span><span class="t"><span class="str">See you there,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t332" href="#t332">332</a></span><span class="t"><span class="str">The {organiser} team"""</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t333" href="#t333">333</a></span><span class="t">        <span class="op">)</span><span class="op">.</span><span class="nam">format</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t334" href="#t334">334</a></span><span class="t">            <span class="nam">name</span><span class="op">=</span><span class="nam">str</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">team</span><span class="op">.</span><span class="nam">name</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t335" href="#t335">335</a></span><span class="t">            <span class="nam">invitation_link</span><span class="op">=</span><span class="nam">invitation_link</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t336" href="#t336">336</a></span><span class="t">            <span class="nam">organiser</span><span class="op">=</span><span class="nam">str</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">team</span><span class="op">.</span><span class="nam">organiser</span><span class="op">.</span><span class="nam">name</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t337" href="#t337">337</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t338" href="#t338">338</a></span><span class="t">        <span class="nam">invitation_subject</span> <span class="op">=</span> <span class="nam">_</span><span class="op">(</span><span class="str">"You have been invited to an organiser team"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t339" href="#t339">339</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t340" href="#t340">340</a></span><span class="t">        <span class="nam">mail</span> <span class="op">=</span> <span class="nam">QueuedMail</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">create</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t341" href="#t341">341</a></span><span class="t">            <span class="nam">to</span><span class="op">=</span><span class="nam">self</span><span class="op">.</span><span class="nam">email</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t342" href="#t342">342</a></span><span class="t">            <span class="nam">subject</span><span class="op">=</span><span class="nam">str</span><span class="op">(</span><span class="nam">invitation_subject</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t343" href="#t343">343</a></span><span class="t">            <span class="nam">text</span><span class="op">=</span><span class="nam">str</span><span class="op">(</span><span class="nam">invitation_text</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t344" href="#t344">344</a></span><span class="t">            <span class="nam">locale</span><span class="op">=</span><span class="nam">get_language</span><span class="op">(</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t345" href="#t345">345</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t346" href="#t346">346</a></span><span class="t">        <span class="nam">mail</span><span class="op">.</span><span class="nam">send</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t347" href="#t347">347</a></span><span class="t">        <span class="key">return</span> <span class="nam">mail</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t348" href="#t348">348</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t349" href="#t349">349</a></span><span class="t">    <span class="nam">send</span><span class="op">.</span><span class="nam">alters_data</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t325" href="#t325">325</a></span><span class="t">        <span class="nam">invitation_text</span> <span class="op">=</span> <span class="nam">_</span><span class="op">(</span><span class="str">"""Hi!</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t326" href="#t326">326</a></span><span class="t"><span class="str">You have been invited to the {name} event organiser team - Please click here to accept:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t327" href="#t327">327</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t328" href="#t328">328</a></span><span class="t"><span class="str">{invitation_link}</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t329" href="#t329">329</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t330" href="#t330">330</a></span><span class="t"><span class="str">See you there,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t331" href="#t331">331</a></span><span class="t"><span class="str">The {organiser} team"""</span><span class="op">)</span><span class="op">.</span><span class="nam">format</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t332" href="#t332">332</a></span><span class="t">            <span class="nam">name</span><span class="op">=</span><span class="nam">str</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">team</span><span class="op">.</span><span class="nam">name</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t333" href="#t333">333</a></span><span class="t">            <span class="nam">invitation_link</span><span class="op">=</span><span class="nam">invitation_link</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t334" href="#t334">334</a></span><span class="t">            <span class="nam">organiser</span><span class="op">=</span><span class="nam">str</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">team</span><span class="op">.</span><span class="nam">organiser</span><span class="op">.</span><span class="nam">name</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t335" href="#t335">335</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t336" href="#t336">336</a></span><span class="t">        <span class="nam">invitation_subject</span> <span class="op">=</span> <span class="nam">_</span><span class="op">(</span><span class="str">"You have been invited to an organiser team"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t337" href="#t337">337</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t338" href="#t338">338</a></span><span class="t">        <span class="nam">mail</span> <span class="op">=</span> <span class="nam">QueuedMail</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">create</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t339" href="#t339">339</a></span><span class="t">            <span class="nam">to</span><span class="op">=</span><span class="nam">self</span><span class="op">.</span><span class="nam">email</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t340" href="#t340">340</a></span><span class="t">            <span class="nam">subject</span><span class="op">=</span><span class="nam">str</span><span class="op">(</span><span class="nam">invitation_subject</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t341" href="#t341">341</a></span><span class="t">            <span class="nam">text</span><span class="op">=</span><span class="nam">str</span><span class="op">(</span><span class="nam">invitation_text</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t342" href="#t342">342</a></span><span class="t">            <span class="nam">locale</span><span class="op">=</span><span class="nam">get_language</span><span class="op">(</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t343" href="#t343">343</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t344" href="#t344">344</a></span><span class="t">        <span class="nam">mail</span><span class="op">.</span><span class="nam">send</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t345" href="#t345">345</a></span><span class="t">        <span class="key">return</span> <span class="nam">mail</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t346" href="#t346">346</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t347" href="#t347">347</a></span><span class="t">    <span class="nam">send</span><span class="op">.</span><span class="nam">alters_data</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -440,7 +438,7 @@
             <a class="nav" href="z_ec03bb219148ab3a_rules_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-01-19 09:49 +0000
+            created at 2026-01-19 15:05 +0000
         </p>
     </div>
 </footer>

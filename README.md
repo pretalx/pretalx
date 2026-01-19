@@ -14,7 +14,7 @@
 | src/pretalx/agenda/tasks.py                                                |       29 |        0 |        8 |        0 |    100% |           |
 | src/pretalx/agenda/views/featured.py                                       |       25 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/agenda/views/feed.py                                           |       33 |        0 |        2 |        0 |    100% |           |
-| src/pretalx/agenda/views/schedule.py                                       |      136 |        2 |       34 |        1 |     98% |   64, 165 |
+| src/pretalx/agenda/views/schedule.py                                       |      136 |        2 |       34 |        1 |     98% |   64, 163 |
 | src/pretalx/agenda/views/speaker.py                                        |       99 |        9 |       18 |        3 |     86% |78, 108-114, 152, 162-163 |
 | src/pretalx/agenda/views/talk.py                                           |      166 |        5 |       26 |        4 |     93% |70->69, 76->69, 161-164, 175-176 |
 | src/pretalx/agenda/views/utils.py                                          |       51 |        6 |       22 |        4 |     86% |21, 59, 61, 65-69, 77->79 |
@@ -71,7 +71,7 @@
 | src/pretalx/cfp/views/event.py                                             |       57 |        6 |       10 |        3 |     84% |30, 62, 82, 92-95 |
 | src/pretalx/cfp/views/locale.py                                            |       20 |        1 |        6 |        2 |     88% |21->40, 32 |
 | src/pretalx/cfp/views/robots.py                                            |        5 |        0 |        0 |        0 |    100% |           |
-| src/pretalx/cfp/views/user.py                                              |      362 |       13 |       66 |       11 |     94% |143, 166, 258, 370, 375, 378->372, 418-419, 460->464, 468, 480, 482, 501->503, 613-614, 633 |
+| src/pretalx/cfp/views/user.py                                              |      362 |       13 |       66 |       11 |     94% |143, 166, 252, 364, 369, 372->366, 412-413, 454->458, 462, 474, 476, 495->497, 607-608, 627 |
 | src/pretalx/cfp/views/wizard.py                                            |       82 |        0 |       36 |        0 |    100% |           |
 | src/pretalx/common/apps.py                                                 |        6 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/auth.py                                                 |       20 |        3 |        4 |        1 |     83% | 31-32, 35 |
@@ -133,7 +133,7 @@
 | src/pretalx/common/templatetags/times.py                                   |       13 |        0 |        6 |        0 |    100% |           |
 | src/pretalx/common/templatetags/vite.py                                    |       56 |       28 |       24 |        5 |     41% |20-24, 32, 40-58, 69, 74-84, 91 |
 | src/pretalx/common/templatetags/xmlescape.py                               |       14 |        0 |        0 |        0 |    100% |           |
-| src/pretalx/common/text/console.py                                         |       65 |       24 |       18 |        3 |     65% |42-43, 49-50, 64-65, 82, 88-126 |
+| src/pretalx/common/text/console.py                                         |       65 |       24 |       18 |        3 |     65% |42-43, 49-50, 64-65, 82, 88-124 |
 | src/pretalx/common/text/css.py                                             |       31 |        0 |       14 |        0 |    100% |           |
 | src/pretalx/common/text/daterange.py                                       |       33 |        0 |       18 |        0 |    100% |           |
 | src/pretalx/common/text/path.py                                            |       19 |        0 |        4 |        0 |    100% |           |
@@ -164,7 +164,7 @@
 | src/pretalx/mail/signals.py                                                |        9 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/orga/apps.py                                                   |        4 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/orga/context\_processors.py                                    |       42 |        0 |       18 |        1 |     98% |    17->14 |
-| src/pretalx/orga/forms/cfp.py                                              |      305 |       50 |       80 |       20 |     78% |89->exit, 164, 166, 176-190, 209, 216, 229-262, 329->331, 332, 340, 356->exit, 365->367, 368, 393, 517, 518->exit, 531, 533, 555, 636->639 |
+| src/pretalx/orga/forms/cfp.py                                              |      305 |       50 |       80 |       20 |     78% |89->exit, 164, 166, 176-190, 209, 216, 229-262, 329->331, 332, 340, 356->exit, 365->367, 368, 393, 508, 509->exit, 522, 524, 546, 627->630 |
 | src/pretalx/orga/forms/event.py                                            |      383 |       52 |      114 |       25 |     82% |193, 219-220, 260, 272, 281->289, 291-294, 309, 315->exit, 449, 462-464, 467, 476, 653-661, 693, 711, 734-737, 751-758, 760-763, 793->795, 803-807, 924->exit, 937-939, 961-962, 964, 969-974, 977, 985, 989 |
 | src/pretalx/orga/forms/export.py                                           |       93 |        2 |       34 |        2 |     97% |  125, 145 |
 | src/pretalx/orga/forms/mails.py                                            |      275 |       25 |       90 |       18 |     87% |35->37, 64, 71-72, 80-81, 88-89, 118, 168, 186->204, 198-199, 230, 265, 327-335, 342, 354-355, 411-412, 443->445, 468->467, 494, 497->500, 511 |
@@ -215,7 +215,7 @@
 | src/pretalx/person/models/information.py                                   |       30 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/person/models/preferences.py                                   |       41 |        5 |       18 |        3 |     83% |47-53, 92, 109->112 |
 | src/pretalx/person/models/profile.py                                       |       58 |        2 |        6 |        3 |     92% |119, 140, 146->exit, 151->exit, 156->162 |
-| src/pretalx/person/models/user.py                                          |      274 |        7 |       54 |        8 |     95% |88, 246->250, 256->259, 264, 277, 378->380, 383, 451-453, 478->493 |
+| src/pretalx/person/models/user.py                                          |      274 |        7 |       54 |        8 |     95% |88, 246->250, 256->259, 264, 277, 378->380, 383, 451-453, 478->491 |
 | src/pretalx/person/rules.py                                                |       33 |        2 |       10 |        2 |     91% |    44, 46 |
 | src/pretalx/person/services.py                                             |        9 |        0 |        2 |        1 |     91% |    20->22 |
 | src/pretalx/person/signals.py                                              |        8 |        0 |        0 |        0 |    100% |           |
