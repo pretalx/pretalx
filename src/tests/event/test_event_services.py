@@ -22,11 +22,11 @@ def test_task_periodic_cfp_closed(event):
     assert not event.settings.sent_mail_cfp_closed
     task_periodic_event_services(event.slug)
     event = event.__class__.objects.get(slug=event.slug)
-    assert len(djmail.outbox) == 2  # event created + deadline passed
+    assert len(djmail.outbox) == 1  # deadline passed
     assert event.settings.sent_mail_cfp_closed
     task_periodic_event_services(event.slug)
     event = event.__class__.objects.get(slug=event.slug)
-    assert len(djmail.outbox) == 2
+    assert len(djmail.outbox) == 1
 
 
 @pytest.mark.django_db
@@ -38,11 +38,11 @@ def test_task_periodic_event_over(event, slot):
     assert not event.settings.sent_mail_cfp_closed
     task_periodic_event_services(event.slug)
     event = event.__class__.objects.get(slug=event.slug)
-    assert len(djmail.outbox) == 2  # event created + event over
+    assert len(djmail.outbox) == 1  # event over
     assert event.settings.sent_mail_event_over
     task_periodic_event_services(event.slug)
     event = event.__class__.objects.get(slug=event.slug)
-    assert len(djmail.outbox) == 2
+    assert len(djmail.outbox) == 1
 
 
 @pytest.mark.django_db
@@ -54,11 +54,11 @@ def test_task_periodic_event_over_no_talks(event):
     assert not event.settings.sent_mail_cfp_closed
     task_periodic_event_services(event.slug)
     event = event.__class__.objects.get(slug=event.slug)
-    assert len(djmail.outbox) == 1  # event created
+    assert len(djmail.outbox) == 0
     assert not event.settings.sent_mail_event_over
     task_periodic_event_services(event.slug)
     event = event.__class__.objects.get(slug=event.slug)
-    assert len(djmail.outbox) == 1
+    assert len(djmail.outbox) == 0
 
 
 @pytest.mark.django_db
