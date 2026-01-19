@@ -150,10 +150,10 @@
 | src/pretalx/common/views/shortlink.py                                      |       27 |        0 |       16 |        0 |    100% |           |
 | src/pretalx/event/apps.py                                                  |        4 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/event/forms.py                                                 |      162 |        7 |       34 |        5 |     94% |72-75, 128-129, 142, 237->exit, 292-293, 362->exit |
-| src/pretalx/event/models/event.py                                          |      562 |       31 |      124 |       10 |     93% |85, 463, 468, 514, 517, 666-668, 697->711, 729, 733-744, 766-767, 775, 817-826, 964->967 |
+| src/pretalx/event/models/event.py                                          |      562 |       32 |      124 |       11 |     93% |85, 463, 468, 514, 517, 666-668, 697->711, 729, 733-744, 766-767, 775, 817-826, 952, 964->967 |
 | src/pretalx/event/models/organiser.py                                      |      119 |        8 |       18 |        6 |     90% |48, 55, 69, 77, 258, 266, 273, 315 |
 | src/pretalx/event/rules.py                                                 |       52 |        0 |       12 |        0 |    100% |           |
-| src/pretalx/event/services.py                                              |       36 |        1 |       12 |        1 |     96% |        80 |
+| src/pretalx/event/services.py                                              |       33 |        4 |       10 |        2 |     86% | 62-66, 72 |
 | src/pretalx/event/stages.py                                                |       39 |        0 |       10 |        0 |    100% |           |
 | src/pretalx/event/utils.py                                                 |        7 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/mail/apps.py                                                   |        4 |        0 |        0 |        0 |    100% |           |
@@ -316,7 +316,7 @@
 | src/tests/dummy\_app.py                                                    |       13 |        0 |        0 |        0 |    100% |           |
 | src/tests/dummy\_signals.py                                                |       46 |        0 |        6 |        0 |    100% |           |
 | src/tests/event/test\_event\_model.py                                      |      170 |        0 |        0 |        0 |    100% |           |
-| src/tests/event/test\_event\_services.py                                   |       87 |        0 |        0 |        0 |    100% |           |
+| src/tests/event/test\_event\_services.py                                   |       51 |        9 |        0 |        0 |     82% |27-29, 43-45, 59-61 |
 | src/tests/event/test\_event\_stages.py                                     |       24 |        0 |        6 |        0 |    100% |           |
 | src/tests/event/test\_event\_utils.py                                      |       11 |        0 |        0 |        0 |    100% |           |
 | src/tests/mail/test\_mail\_models.py                                       |       47 |        0 |        4 |        0 |    100% |           |
@@ -359,7 +359,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      295 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **33901** | **1935** | **5430** |  **766** | **92%** |           |
+| **TOTAL**                                                                  | **33862** | **1948** | **5428** |  **768** | **92%** |           |
 
 
 ## Setup coverage badge
