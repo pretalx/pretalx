@@ -201,6 +201,12 @@ def schedule_messages(request, **kwargs):
             "Your favourites could only be saved locally in your browser."
         ),
         "jump_to_now": _("Jump to now"),
+        "schedule_load_error": _(
+            "An error occurred while loading the schedule. Please try again later."
+        ),
+        "schedule_empty": _(
+            "The schedule is not yet available. Please check back later!"
+        ),
     }
     strings = {key: str(value) for key, value in strings.items()}
     return HttpResponse(
