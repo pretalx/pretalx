@@ -322,15 +322,13 @@ class TeamInvite(PretalxModel):
         from pretalx.mail.models import QueuedMail
 
         invitation_link = self.invitation_url
-        invitation_text = _(
-            """Hi!
+        invitation_text = _("""Hi!
 You have been invited to the {name} event organiser team - Please click here to accept:
 
 {invitation_link}
 
 See you there,
-The {organiser} team"""
-        ).format(
+The {organiser} team""").format(
             name=str(self.team.name),
             invitation_link=invitation_link,
             organiser=str(self.team.organiser.name),

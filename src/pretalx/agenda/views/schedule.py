@@ -110,16 +110,14 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
             with_accepted=False,
             with_breaks=True,
         ).data
-        response_start = textwrap.dedent(
-            f"""
+        response_start = textwrap.dedent(f"""
         \033[1m{request.event.name}\033[0m
 
         Get different formats:
            curl {request.event.urls.schedule.full()}\\?format=table (default)
            curl {request.event.urls.schedule.full()}\\?format=list
 
-        """
-        )
+        """)
         output_format = request.GET.get("format", "table")
         if output_format not in ("list", "table"):
             output_format = "table"

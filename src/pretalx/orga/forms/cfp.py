@@ -421,16 +421,9 @@ class AccessCodeSendForm(forms.Form):
     def __init__(self, *args, instance, user, **kwargs):
         self.access_code = instance
         subject = _("Access code for the {event} CfP").format(event=instance.event.name)
-        text = (
-            str(
-                _(
-                    """Hi!
+        text = str(_("""Hi!
 
-This is an access code for the {event} CfP."""
-                ).format(event=instance.event.name)
-            )
-            + " "
-        )
+This is an access code for the {event} CfP.""").format(event=instance.event.name)) + " "
         if instance.track:
             text += (
                 str(
@@ -461,15 +454,13 @@ This is an access code for the {event} CfP."""
                     num=instance.redemptions_left
                 )
             )
-        text += _(
-            """
+        text += _("""
 Please follow this URL to use the code:
 
   {url}
 
 I’m looking forward to your proposal!
-{name}"""
-        ).format(
+{name}""").format(
             url=instance.urls.cfp_url.full(),
             name=user.get_display_name(),
         )

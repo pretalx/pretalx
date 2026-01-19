@@ -38,8 +38,7 @@ class CfPPhrases(Phrases, app="cfp"):
 
     speaker_email = _("Speaker email")
     invite_subject = _("{speaker} invites you to join their session!")
-    invite_text = _(
-        """Hi!
+    invite_text = _("""Hi!
 
 I’d like to invite you to be a speaker in the session
 
@@ -50,8 +49,7 @@ at {event}. Please follow this link to join:
   {url}
 
 I’m looking forward to it!
-{speaker}"""
-    )
+{speaker}""")
     invite_invalid_email = _("Please provide a valid email address.")
     invite_sent = _("The invitation was sent!")
     invite_accepted = _(

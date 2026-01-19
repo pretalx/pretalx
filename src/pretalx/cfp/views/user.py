@@ -210,10 +210,7 @@ class SubmissionsWithdrawView(LoggedInEventPageMixin, SubmissionViewMixin, Detai
             if obj.state == SubmissionStates.ACCEPTED:
                 with override(obj.event.locale):
                     obj.event.send_orga_mail(
-                        str(
-                            _(
-                                textwrap.dedent(
-                                    """
+                        str(_(textwrap.dedent("""
                         Hi,
 
                         this is your content system at {event_dashboard}.
@@ -222,10 +219,7 @@ class SubmissionsWithdrawView(LoggedInEventPageMixin, SubmissionViewMixin, Detai
 
                         Best regards,
                         pretalx
-                        """
-                                )
-                            )
-                        ).format(
+                        """))).format(
                             title=obj.title,
                             speakers=obj.display_speaker_names,
                             user=request.user.get_display_name(),

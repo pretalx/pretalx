@@ -73,9 +73,7 @@ hierarkey.add_default(
 )
 hierarkey.add_default(
     "mail_text_cfp_closed",
-    LazyI18nString.from_gettext(
-        gettext_noop(
-            """Hi,
+    LazyI18nString.from_gettext(gettext_noop("""Hi,
 
 just writing you to let you know that your Call for Participation is now
 closed. Here is a list of links that should be useful in the next days:
@@ -88,16 +86,12 @@ closed. Here is a list of links that should be useful in the next days:
   {event_review}
 - And create your schedule here, once you have accepted proposals:
   {event_schedule}
-"""
-        )
-    ),
+""")),
     LazyI18nString,
 )
 hierarkey.add_default(
     "mail_text_event_over",
-    LazyI18nString.from_gettext(
-        gettext_noop(
-            """Hi,
+    LazyI18nString.from_gettext(gettext_noop("""Hi,
 
 congratulations, your event is over! Hopefully it went well. Here are some
 statistics you might find interesting:
@@ -111,8 +105,6 @@ statistics you might find interesting:
 If there is anything you’re missing, come tell us about it
 at https://github.com/pretalx/pretalx/issues/new or via an
 email to support@pretalx.com!
-"""
-        )
-    ),
+""")),
     LazyI18nString,
 )

@@ -33,14 +33,11 @@ body {
 
 @pytest.fixture
 def invalid_css(valid_css):
-    return (
-        valid_css
-        + """
+    return valid_css + """
 a.other-descriptor {
     content: url("https://malicious.site.com");
 }
 """
-    )
 
 
 def test_valid_css(valid_css):

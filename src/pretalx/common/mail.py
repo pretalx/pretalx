@@ -25,13 +25,13 @@ class CustomSMTPBackend(EmailBackend):
         try:  # pragma: no cover
             self.open()
             self.connection.ehlo_or_helo_if_needed()
-            (code, resp) = self.connection.mail(from_addr, [])
+            code, resp = self.connection.mail(from_addr, [])
             if code != 250:
                 logger.warning(
                     f"Error testing mail settings, code {code}, resp: {resp}"
                 )
                 raise SMTPSenderRefused(code, resp, sender=from_addr)
-            (code, resp) = self.connection.rcpt("testdummy@pretalx.com")
+            code, resp = self.connection.rcpt("testdummy@pretalx.com")
             if code not in (250, 251):
                 logger.warning(
                     f"Error testing mail settings, code {code}, resp: {resp}"
