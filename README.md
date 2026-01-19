@@ -316,7 +316,7 @@
 | src/tests/dummy\_app.py                                                    |       13 |        0 |        0 |        0 |    100% |           |
 | src/tests/dummy\_signals.py                                                |       46 |        0 |        6 |        0 |    100% |           |
 | src/tests/event/test\_event\_model.py                                      |      170 |        0 |        0 |        0 |    100% |           |
-| src/tests/event/test\_event\_services.py                                   |       51 |        9 |        0 |        0 |     82% |27-29, 43-45, 59-61 |
+| src/tests/event/test\_event\_services.py                                   |       51 |        0 |        0 |        0 |    100% |           |
 | src/tests/event/test\_event\_stages.py                                     |       24 |        0 |        6 |        0 |    100% |           |
 | src/tests/event/test\_event\_utils.py                                      |       11 |        0 |        0 |        0 |    100% |           |
 | src/tests/mail/test\_mail\_models.py                                       |       47 |        0 |        4 |        0 |    100% |           |
@@ -359,7 +359,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      295 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **33866** | **1949** | **5428** |  **768** | **92%** |           |
+| **TOTAL**                                                                  | **33866** | **1940** | **5428** |  **768** | **92%** |           |
 
 
 ## Setup coverage badge
