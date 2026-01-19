@@ -55,7 +55,6 @@ hierarkey.add_default("update_check_result_warning", "False", bool)
 hierarkey.add_default("update_check_last", None, dt.datetime)
 hierarkey.add_default("update_check_id", None, str)
 
-hierarkey.add_default("sent_mail_event_created", "False", bool)
 hierarkey.add_default("sent_mail_cfp_closed", "False", bool)
 hierarkey.add_default("sent_mail_event_over", "False", bool)
 
@@ -70,27 +69,6 @@ hierarkey.add_default(
 )
 hierarkey.add_default(
     "mail_text_new_submission",
-    LazyI18nString,
-)
-hierarkey.add_default(
-    "mail_text_event_created",
-    LazyI18nString.from_gettext(
-        gettext_noop(
-            """Hi,
-
-we hope you’re happy with pretalx as your event’s CfP system.
-These links may be helpful in the coming days and weeks:
-
-- Your event’s dashboard: {event_dashboard}
-- A list of proposals: {event_submissions}
-- Your schedule editor: {event_schedule}
-
-If there is anything you’re missing, come tell us about it
-at https://github.com/pretalx/pretalx/issues/new or via an
-email to support@pretalx.com!
-"""
-        )
-    ),
     LazyI18nString,
 )
 hierarkey.add_default(

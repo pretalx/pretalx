@@ -33,14 +33,6 @@ def task_periodic_event_services(event_slug):
 
     _now = now()
     with scope(event=event):
-        if not event.settings.sent_mail_event_created and (
-            dt.timedelta(0)
-            <= (_now - event.log_entries.last().timestamp)
-            <= dt.timedelta(days=1)
-        ):
-            event.send_orga_mail(event.settings.mail_text_event_created)
-            event.settings.sent_mail_event_created = True
-
         if (
             not event.settings.sent_mail_cfp_closed
             and event.cfp.deadline
