@@ -85,9 +85,8 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
         template_name="orga/tables/columns/submission_is_featured.html",
         verbose_name=_("Featured"),
     )
-    do_not_record = BooleanColumn(
-        verbose_name=_("Do not record"),
-    )
+    do_not_record = BooleanColumn(verbose_name=_("Do not record"))
+    content_locale = tables.Column(verbose_name=_("Language"))
     actions = ActionsColumn(
         actions={
             "edit": {"url": "orga_urls.edit"},
@@ -165,6 +164,9 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
     def render_user_score(self, value):
         return f"{value:.1f}"
 
+    def render_content_locale(self, record):
+        return record.get_content_locale_display()
+
     review_count = TemplateColumn(
         verbose_name=_("Reviews"),
         template_name="orga/tables/columns/review_count.html",
@@ -225,6 +227,7 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
     )
     created = DateTimeColumn()
     do_not_record = BooleanColumn(verbose_name=_("Do not record"))
+    content_locale = tables.Column(verbose_name=_("Language"))
 
     @property
     def default_columns(self):
