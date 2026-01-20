@@ -1630,6 +1630,80 @@ paths:
           type: string
         description: Filter by submission code
       - in: query
+        name: submission__content_locale
+        schema:
+          type: string
+        description: Filter by submission content locale
+      - in: query
+        name: submission__pending_state
+        schema:
+          type: array
+          items:
+            type: string
+            nullable: true
+            title: Pending proposal state
+            enum:
+            - accepted
+            - canceled
+            - confirmed
+            - deleted
+            - draft
+            - rejected
+            - submitted
+            - withdrawn
+        description: |-
+          Filter by submission pending state
+
+          * `submitted` - submitted
+          * `accepted` - accepted
+          * `confirmed` - confirmed
+          * `rejected` - rejected
+          * `canceled` - canceled
+          * `withdrawn` - withdrawn
+          * `deleted` - deleted
+          * `draft` - draft
+        explode: true
+        style: form
+      - in: query
+        name: submission__state
+        schema:
+          type: array
+          items:
+            type: string
+            title: Proposal state
+            enum:
+            - accepted
+            - canceled
+            - confirmed
+            - deleted
+            - draft
+            - rejected
+            - submitted
+            - withdrawn
+        description: |-
+          Filter by submission state
+
+          * `submitted` - submitted
+          * `accepted` - accepted
+          * `confirmed` - confirmed
+          * `rejected` - rejected
+          * `canceled` - canceled
+          * `withdrawn` - withdrawn
+          * `deleted` - deleted
+          * `draft` - draft
+        explode: true
+        style: form
+      - in: query
+        name: submission__submission_type
+        schema:
+          type: integer
+        description: Filter by submission type
+      - in: query
+        name: submission__track
+        schema:
+          type: integer
+        description: Filter by submission track
+      - in: query
         name: user
         schema:
           type: string
@@ -1842,6 +1916,80 @@ paths:
         schema:
           type: string
         description: Filter by submission code
+      - in: query
+        name: submission__content_locale
+        schema:
+          type: string
+        description: Filter by submission content locale
+      - in: query
+        name: submission__pending_state
+        schema:
+          type: array
+          items:
+            type: string
+            nullable: true
+            title: Pending proposal state
+            enum:
+            - accepted
+            - canceled
+            - confirmed
+            - deleted
+            - draft
+            - rejected
+            - submitted
+            - withdrawn
+        description: |-
+          Filter by submission pending state
+
+          * `submitted` - submitted
+          * `accepted` - accepted
+          * `confirmed` - confirmed
+          * `rejected` - rejected
+          * `canceled` - canceled
+          * `withdrawn` - withdrawn
+          * `deleted` - deleted
+          * `draft` - draft
+        explode: true
+        style: form
+      - in: query
+        name: submission__state
+        schema:
+          type: array
+          items:
+            type: string
+            title: Proposal state
+            enum:
+            - accepted
+            - canceled
+            - confirmed
+            - deleted
+            - draft
+            - rejected
+            - submitted
+            - withdrawn
+        description: |-
+          Filter by submission state
+
+          * `submitted` - submitted
+          * `accepted` - accepted
+          * `confirmed` - confirmed
+          * `rejected` - rejected
+          * `canceled` - canceled
+          * `withdrawn` - withdrawn
+          * `deleted` - deleted
+          * `draft` - draft
+        explode: true
+        style: form
+      - in: query
+        name: submission__submission_type
+        schema:
+          type: integer
+        description: Filter by submission type
+      - in: query
+        name: submission__track
+        schema:
+          type: integer
+        description: Filter by submission track
       - in: query
         name: user
         schema:
@@ -4840,6 +4988,8 @@ components:
           type: integer
           maximum: 2147483647
           minimum: -2147483648
+        identifier:
+          type: string
       required:
       - answer
       - id
@@ -4865,6 +5015,8 @@ components:
           type: integer
           maximum: 2147483647
           minimum: -2147483648
+        identifier:
+          type: string
       required:
       - answer
       - id
@@ -4887,6 +5039,8 @@ components:
           type: integer
           maximum: 2147483647
           minimum: -2147483648
+        identifier:
+          type: string
       required:
       - answer
       - question
@@ -4906,6 +5060,8 @@ components:
           type: integer
           maximum: 2147483647
           minimum: -2147483648
+        identifier:
+          type: string
       required:
       - answer
     AnswerRequest:
@@ -5776,6 +5932,8 @@ components:
         id:
           type: integer
           readOnly: true
+        identifier:
+          type: string
         question:
           allOf:
           - $ref: '#/components/schemas/Multi-language string'
@@ -5920,6 +6078,8 @@ components:
         id:
           type: integer
           readOnly: true
+        identifier:
+          type: string
         question:
           allOf:
           - $ref: '#/components/schemas/Multi-language string'
@@ -6078,6 +6238,8 @@ components:
         control which fields are displayed, and whether to replace simple
         values with complex, nested serializations
       properties:
+        identifier:
+          type: string
         question:
           allOf:
           - $ref: '#/components/schemas/Multi-language string'
@@ -7401,8 +7563,9 @@ components:
         is_public:
           type: boolean
           title: Show tag publicly
-          description: Tags are currently only in use for organisers and reviewers.
-            They will be visible publicly in a future release of pretalx.
+          description: Public tags can be selected by submitters in the CfP if you
+            activate the tags field. In a future release of pretalx, public tags may
+            also be shown in the public schedule.
       required:
       - color
       - id
@@ -7432,8 +7595,9 @@ components:
         is_public:
           type: boolean
           title: Show tag publicly
-          description: Tags are currently only in use for organisers and reviewers.
-            They will be visible publicly in a future release of pretalx.
+          description: Public tags can be selected by submitters in the CfP if you
+            activate the tags field. In a future release of pretalx, public tags may
+            also be shown in the public schedule.
       required:
       - color
       - tag
