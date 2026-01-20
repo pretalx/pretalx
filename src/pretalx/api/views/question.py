@@ -4,7 +4,6 @@
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
 from django.http import HttpResponse
-from django_filters import rest_framework as filters
 from rest_framework import exceptions, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, AllowAny
@@ -15,6 +14,7 @@ from pretalx.api.documentation import (
     extend_schema,
     extend_schema_view,
 )
+from pretalx.api.filters.answer import AnswerFilterSet
 from pretalx.api.serializers.question import (
     AnswerCreateSerializer,
     AnswerOptionCreateSerializer,
@@ -173,23 +173,6 @@ class AnswerOptionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelV
             raise exceptions.ValidationError(
                 "You cannot delete an option object that has been used in answers."
             )
-
-
-class AnswerFilterSet(filters.FilterSet):
-    question = filters.NumberFilter(field_name="question_id")
-    submission = filters.CharFilter(
-        field_name="submission__code",
-        lookup_expr="iexact",
-    )
-    person = filters.CharFilter(
-        field_name="person__code",
-        lookup_expr="iexact",
-    )
-    review = filters.NumberFilter(field_name="review_id")
-
-    class Meta:
-        model = Answer
-        fields = ("question", "submission", "person", "review")
 
 
 @extend_schema_view(

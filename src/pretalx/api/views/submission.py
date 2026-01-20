@@ -3,8 +3,6 @@
 
 from django.http import Http404
 from django.utils.functional import cached_property
-from django_filters import rest_framework as filters
-from django_scopes import scopes_disabled
 from rest_framework import serializers, status, viewsets
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import (
@@ -24,6 +22,7 @@ from pretalx.api.documentation import (
     extend_schema,
     extend_schema_view,
 )
+from pretalx.api.filters.submission import SubmissionFilter
 from pretalx.api.serializers.legacy import (
     LegacySubmissionOrgaSerializer,
     LegacySubmissionReviewerSerializer,
@@ -43,7 +42,6 @@ from pretalx.common.exceptions import SubmissionError
 from pretalx.submission.models import (
     Submission,
     SubmissionInvitation,
-    SubmissionStates,
     SubmissionType,
     Tag,
     Track,
@@ -63,26 +61,6 @@ class AddSpeakerSerializer(serializers.Serializer):
 
 class RemoveSpeakerSerializer(serializers.Serializer):
     user = serializers.CharField(required=True)
-
-
-with scopes_disabled():
-
-    class SubmissionFilter(filters.FilterSet):
-        state = filters.MultipleChoiceFilter(choices=SubmissionStates.get_choices())
-        pending_state = filters.MultipleChoiceFilter(
-            choices=SubmissionStates.get_choices()
-        )
-
-        class Meta:
-            model = Submission
-            fields = (
-                "state",
-                "pending_state",
-                "content_locale",
-                "submission_type",
-                "track",
-                "is_featured",
-            )
 
 
 @extend_schema_view(
