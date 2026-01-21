@@ -20,7 +20,7 @@
   "dependencies": {
     "buntpapier": "^2.0.0-alpha.25",
     "i18next": "^22.4.8",
-    "lodash": "^4.17.20",
+    "lodash": "^4.17.23",
     "markdown-it": "^12.1.0",
     "moment": "^2.27.0",
     "moment-locales-webpack-plugin": "^1.2.0",
