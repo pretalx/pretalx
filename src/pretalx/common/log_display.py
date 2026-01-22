@@ -140,7 +140,7 @@ LOG_NAMES = {
     "pretalx.speaker_information.create": _("A speaker information note was added."),
     "pretalx.speaker_information.update": _("A speaker information note was modified."),
     "pretalx.speaker_information.delete": _("A speaker information note was deleted."),
-    "pretalx.user.token.reset": _("The API token was created."),
+    "pretalx.user.token.create": _("The API token was created."),
     "pretalx.user.token.reset": _("The API token was reset."),
     "pretalx.user.token.revoke": _("The API token was revoked."),
     "pretalx.user.token.upgrade": _(
