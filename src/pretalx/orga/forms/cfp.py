@@ -246,18 +246,31 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
                 options = [str(opt) for opt in options]
         else:
             existing_options = {str(opt.answer): opt for opt in existing_options}
-        new_options = []
+        new_option_data = []
         changed_options = []
         for index, option in enumerate(options):
             if str(option) not in existing_options:
-                new_options.append(
-                    AnswerOption(question=instance, answer=option, position=index + 1)
-                )
+                new_option_data.append((option, index + 1))
             else:
                 existing_option = existing_options[option]
                 if existing_option.position != index + 1:
                     existing_option.position = index + 1
                     changed_options.append(existing_option)
+
+        new_options = []
+        if new_option_data:
+            codes = AnswerOption.generate_unique_codes(
+                len(new_option_data), question=instance
+            )
+            for (option, position), code in zip(new_option_data, codes):
+                new_options.append(
+                    AnswerOption(
+                        question=instance,
+                        answer=option,
+                        position=position,
+                        identifier=code,
+                    )
+                )
         AnswerOption.objects.bulk_create(new_options)
         AnswerOption.objects.bulk_update(changed_options, ["position"])
 

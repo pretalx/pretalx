@@ -282,6 +282,47 @@ class GenerateCode:
         length = length or cls._code_length
         return get_random_string(length=length, allowed_chars=cls._code_charset)
 
+    @classmethod
+    def generate_unique_codes(cls, count, length=None, **scope_kwargs):
+        """Generate `count` unique codes efficiently for bulk operations.
+
+        Args:
+            count: Number of unique codes to generate
+            length: Code length (uses _code_length if not specified)
+            **scope_kwargs: Scope field values (e.g., question=question_instance)
+
+        Returns:
+            List of unique code strings
+        """
+        length = length or cls._code_length
+
+        # Build filter for existing codes in scope
+        filter_kwargs = {}
+        for field in cls._code_scope:
+            if field not in scope_kwargs:
+                raise ValueError(f"Missing required scope field: {field}")
+            filter_kwargs[field] = scope_kwargs[field]
+
+        # Fetch existing codes (1 query)
+        with scopes_disabled():
+            existing_codes = set(
+                cls.objects.filter(**filter_kwargs).values_list(
+                    cls._code_property, flat=True
+                )
+            )
+
+        # Generate unique codes without additional queries
+        new_codes = []
+        all_codes = {c.upper() for c in existing_codes}  # Case-insensitive
+
+        while len(new_codes) < count:
+            code = cls.generate_code(length=length)
+            if code.upper() not in all_codes:
+                new_codes.append(code)
+                all_codes.add(code.upper())
+
+        return new_codes
+
     def assign_code(self, length=None):
         length = length or self._code_length
         while True:

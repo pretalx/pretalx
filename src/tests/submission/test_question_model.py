@@ -8,7 +8,7 @@ import pytest
 from django.db import IntegrityError
 from django_scopes import scope
 
-from pretalx.submission.models import Answer, Question
+from pretalx.submission.models import Answer, AnswerOption, Question
 
 
 @pytest.mark.parametrize("target", ("submission", "speaker", "reviewer"))
@@ -206,3 +206,14 @@ def test_answer_option_identifier_unique_per_question(choice_question):
             choice_question.options.create(
                 answer="Option B", position=11, identifier="SAME-OPT"
             )
+
+
+@pytest.mark.django_db
+def test_generate_unique_codes_batch(choice_question):
+    with scope(event=choice_question.event):
+        # Generate 50 codes in one batch
+        codes = AnswerOption.generate_unique_codes(50, question=choice_question)
+
+        assert len(codes) == 50
+        assert len(set(codes)) == 50  # All unique
+        assert all(len(c) == 8 for c in codes)
