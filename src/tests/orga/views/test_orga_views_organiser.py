@@ -534,3 +534,20 @@ def test_administrator_can_delete_organiser(event, administrator_client, submiss
     assert response.status_code == 200
     assert Event.objects.count() == 0
     assert Organiser.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_cannot_delete_last_team_with_team_permissions(orga_client, organiser, event):
+    organiser.teams.exclude(
+        pk=organiser.teams.filter(can_change_teams=True).first().pk
+    ).update(can_change_teams=False)
+    team = organiser.teams.filter(can_change_teams=True).first()
+    assert team
+    assert organiser.teams.filter(can_change_teams=True).count() == 1
+    url = reverse(
+        "orga:organiser.teams.delete",
+        kwargs={"organiser": organiser.slug, "pk": team.pk},
+    )
+    response = orga_client.post(url, follow=True)
+    assert response.status_code == 200
+    assert organiser.teams.filter(pk=team.pk).exists()

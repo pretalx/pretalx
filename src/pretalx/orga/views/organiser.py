@@ -161,11 +161,13 @@ class TeamView(OrgaCRUDView):
     @transaction.atomic
     def delete_handler(self, request, *args, **kwargs):
         """POST handler for delete view"""
+        pk = self.object.pk
         try:
             return super().delete_handler(request, *args, **kwargs)
         except Exception as exc:
             messages.error(self.request, str(exc))
-        return self.update(request, *args, **kwargs)
+        self.object.pk = pk
+        return redirect(self.reverse("update", instance=self.object))
 
 
 class InviteMixin(PermissionRequired):
