@@ -148,7 +148,7 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
             result.append(
                 {
                     "url": self.request.event.cfp.urls.public,
-                    "large": phrases.cfp.go_to_cfp,
+                    "large": _("Go to CfP"),
                     "priority": 20,
                 }
             )

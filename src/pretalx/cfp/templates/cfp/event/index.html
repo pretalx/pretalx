@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endif %}
             {% if cfp.is_open and not is_html_export %}
                 <a class="btn btn-info btn-lg btn-block" href="{{ request.event.cfp.urls.public }}{{ submit_qs }}">
-                    {{ phrases.cfp.go_to_cfp }}
+                    {% translate "Submit a proposal" %}
                 </a>
             {% endif %}
             {% if can_see_orga_area %}
