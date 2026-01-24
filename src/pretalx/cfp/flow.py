@@ -266,9 +266,7 @@ class FormFlowStep(TemplateFlowStep):
         result["submission_title"] = previous_data.get("info", {}).get("title")
         return result
 
-    def post(self, request):
-        # needed for self.get_form()
-        self.request = request
+    def is_valid(self):
         form = self.get_form()
         if not form.is_valid():
             error_message = "\n\n".join(
@@ -276,10 +274,18 @@ class FormFlowStep(TemplateFlowStep):
                 + " ".join(values)
                 for key, values in form.errors.items()
             )
-            messages.error(request, error_message)
-            return self.get(request)
+            messages.error(self.request, error_message)
+            return False
         self.set_data(form.cleaned_data)
         self.set_files(form.files)
+        return True
+
+    def post(self, request):
+        # needed for self.get_form()
+        self.request = request
+        if not self.is_valid():
+            return self.get(self.request)
+
         next_url = self.get_next_url(request)
         return redirect(next_url) if next_url else None
 
@@ -453,8 +459,9 @@ class InfoStep(DedraftMixin, FormFlowStep):
 
         return formset(data=self.request.POST, files=files, prefix="resource")
 
-    def post(self, request):
-        result = super().post(request)
+    def is_valid(self):
+        result = super().is_valid()
+
         formset = self.get_resource_formset()
         if not formset.is_valid():
             error_message = "\n\n".join(
@@ -463,8 +470,8 @@ class InfoStep(DedraftMixin, FormFlowStep):
                 for error in formset.errors
                 for key, values in error.items()
             )
-            messages.error(request, error_message)
-            return self.get(request)
+            messages.error(self.request, error_message)
+            return False
         self.set_resources_data(formset.cleaned_data)
         return result
 
@@ -483,9 +490,10 @@ class InfoStep(DedraftMixin, FormFlowStep):
 
     def save_resources(self, submission):
         resource_formset = self.get_resource_formset(from_storage=True)
-        if not resource_formset.is_valid():
-            return False
-
+        # data from storage should be valid at this point
+        # we just need to run full_clean to populate internal formset state
+        # otherwise formset.save() won't work
+        resource_formset.full_clean()
         resources = resource_formset.save(commit=False)
         for res in resources:
             res.submission = submission
