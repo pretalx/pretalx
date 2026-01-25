@@ -1164,6 +1164,10 @@ def test_access_code_redeemed_on_draft_creation(event, client, access_code):
         "slot_count": 1,
         "submission_type": submission_type,
         "additional_speaker": "",
+        "resource-TOTAL_FORMS": 0,
+        "resource-INITIAL_FORMS": 0,
+        "resource-MIN_NUM_FORMS": 0,
+        "resource-MAX_NUM_FORMS": 1000,
     }
     response = client.post(current_url, data=info_data, follow=True)
     current_url = (
