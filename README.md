@@ -337,8 +337,8 @@
 | src/tests/orga/views/test\_orga\_views\_organiser.py                       |      339 |        0 |        2 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_person.py                          |       44 |        0 |        2 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_review.py                          |      348 |        0 |        2 |        0 |    100% |           |
-| src/tests/orga/views/test\_orga\_views\_schedule.py                        |      308 |        0 |        0 |        0 |    100% |           |
-| src/tests/orga/views/test\_orga\_views\_speaker.py                         |      216 |        0 |        2 |        0 |    100% |           |
+| src/tests/orga/views/test\_orga\_views\_schedule.py                        |      339 |        0 |        4 |        0 |    100% |           |
+| src/tests/orga/views/test\_orga\_views\_speaker.py                         |      228 |        0 |        2 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_submission.py                      |      611 |        0 |        6 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_submission\_cards.py               |       14 |        0 |        0 |        0 |    100% |           |
 | src/tests/person/test\_auth\_token\_model.py                               |       11 |        0 |        0 |        0 |    100% |           |
@@ -361,7 +361,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      295 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **33918** | **1943** | **5440** |  **770** | **92%** |           |
+| **TOTAL**                                                                  | **33961** | **1943** | **5444** |  **770** | **92%** |           |
 
 
 ## Setup coverage badge
