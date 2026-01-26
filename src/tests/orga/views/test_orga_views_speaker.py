@@ -395,3 +395,28 @@ def test_orga_can_export_answers_json(
             "Proposal IDs": [submission.code],
         }
     ]
+
+
+@pytest.mark.django_db
+def test_track_limited_reviewer_cannot_access_speaker_export(
+    review_client, review_user, event, submission, other_submission, track, other_track
+):
+    with scope(event=event):
+        submission.track = track
+        submission.save()
+        other_submission.track = other_track
+        other_submission.save()
+        review_user.teams.first().limit_tracks.add(track)
+
+    response = review_client.get(event.orga_urls.speakers + "export/")
+    assert response.status_code == 404
+
+    response = review_client.post(
+        event.orga_urls.speakers + "export/",
+        data={
+            "target": "all",
+            "name": "on",
+            "export_format": "json",
+        },
+    )
+    assert response.status_code == 404

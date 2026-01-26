@@ -566,3 +566,59 @@ def test_orga_can_export_answers_json(
             "Speaker IDs": [speaker.code],
         }
     ]
+
+
+@pytest.mark.django_db
+def test_track_limited_reviewer_cannot_access_schedule_export(
+    review_client, review_user, event, submission, other_submission, track, other_track
+):
+    with scope(event=event):
+        submission.track = track
+        submission.save()
+        other_submission.track = other_track
+        other_submission.save()
+        review_user.teams.first().limit_tracks.add(track)
+
+    response = review_client.get(event.orga_urls.schedule_export)
+    assert response.status_code == 404
+
+    response = review_client.post(
+        event.orga_urls.schedule_export,
+        data={
+            "target": "submitted",
+            "title": "on",
+            "export_format": "json",
+        },
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_track_limited_reviewer_can_access_public_frab_json(
+    client, review_user, event, slot, other_submission, track, other_track
+):
+    with scope(event=event):
+        slot.submission.track = other_track
+        slot.submission.save()
+        other_submission.track = other_track
+        other_submission.save()
+        review_user.teams.first().limit_tracks.add(track)
+
+    client.force_login(review_user)
+    response = client.get(
+        reverse(
+            "agenda:export.schedule.json",
+            kwargs={"event": event.slug},
+        ),
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    content = json.loads(response.text)
+    talks = []
+    for day in content["schedule"]["conference"]["days"]:
+        for room_talks in day["rooms"].values():
+            talks.extend(room_talks)
+    talk_titles = [talk["title"] for talk in talks]
+    assert slot.submission.title in talk_titles
+    assert other_submission.title not in talk_titles
