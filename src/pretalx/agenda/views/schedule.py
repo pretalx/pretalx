@@ -201,6 +201,16 @@ def schedule_messages(request, **kwargs):
             "Your favourites could only be saved locally in your browser."
         ),
         "jump_to_now": _("Jump to now"),
+        "filter": _("Filter"),
+        "filters": _("Filters"),
+        "clear_all": _("Clear all"),
+        "search": _("Search"),
+        "tracks": _("Tracks"),
+        "languages": _("Languages"),
+        "tags": _("Tags"),
+        "show_results": _("Show results"),
+        "no_matching_sessions": _("No sessions match your current filters."),
+        "clear_filters": _("Clear filters"),
         "schedule_load_error": _(
             "An error occurred while loading the schedule. Please try again later."
         ),
