@@ -24,6 +24,15 @@ install-all:
     uv lock --upgrade
     uv sync --all-extras
 
+# Set up development environment (install deps, database, test event, start server)
+[group('development')]
+dev-setup: install-all
+    just run collectstatic --noinput
+    just run migrate
+    just run init
+    just run create_test_event
+    just run
+
 # Install npm dependencies for the schedule editor frontend
 [group('development')]
 [working-directory("src/pretalx/frontend/schedule-editor/")]

@@ -44,9 +44,20 @@ You can clone our git repository::
     git clone https://github.com/pretalx/pretalx.git
     cd pretalx/
 
+If you do not want to use a specific database or existing data, and just want to hit the ground running, run this command::
+
+    $ just dev-setup
+
+This will install all required Python dependencies, create a database, prompt
+you to create a user account and finally create a test event for you, and start
+the development server.
+
+If you want to understand the details, or if you want to modify some settings,
+please continue with the following section:
 
 Working with the code
 ---------------------
+
 
 First up, install all the main application dependencies::
 
