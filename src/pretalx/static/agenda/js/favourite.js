@@ -106,7 +106,7 @@ const pageSetup = async () => {
     setupRun = true
     eventSlug = window.location.pathname.split('/')[1]
     submissionId = window.location.pathname.split('/')[3]
-    loggedIn = document.querySelector('#pretalx-messages').dataset.loggedIn === 'true'
+    loggedIn = document.body.dataset.pretalxLoggedIn === 'true'
     apiBaseUrl = window.location.origin + '/api/events/' + eventSlug + '/'
 
     isFaved = await loadIsFaved()

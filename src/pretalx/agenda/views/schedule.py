@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import json
 import textwrap
 from contextlib import suppress
 from urllib.parse import unquote
@@ -12,6 +11,7 @@ from django.http import (
     HttpResponse,
     HttpResponsePermanentRedirect,
     HttpResponseRedirect,
+    JsonResponse,
 )
 from django.urls import resolve, reverse
 from django.utils.functional import cached_property
@@ -219,10 +219,7 @@ def schedule_messages(request, **kwargs):
         ),
     }
     strings = {key: str(value) for key, value in strings.items()}
-    return HttpResponse(
-        f"const PRETALX_MESSAGES = {json.dumps(strings)};",
-        content_type="application/javascript",
-    )
+    return JsonResponse(strings)
 
 
 def talk_sort_key(talk):

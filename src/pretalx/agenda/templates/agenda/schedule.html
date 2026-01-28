@@ -11,10 +11,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block container_width %} {% if not show_talk_list %}main-schedule{% else %}list-schedule{% endif %}{% endblock container_width %}
 
-{% block agenda_custom_header %}
-    <script id="pretalx-messages" data-logged-in="{% if request.user.is_anonymous %}false{% else %}true{% endif %}" src="{{ request.event.urls.schedule }}widget/messages.js"></script>
-{% endblock agenda_custom_header %}
-
 {% block agenda_stylesheets %}
     <link rel="stylesheet" type="text/css" href="{% static "common/css/ui/dropdown.css" %}" />
     <link rel="stylesheet" type="text/css" href="{% static "common/css/ui/export.css" %}" />

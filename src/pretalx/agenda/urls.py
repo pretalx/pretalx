@@ -60,7 +60,7 @@ urlpatterns = [
                     name="widget.script.legacy",
                 ),
                 path(
-                    "schedule/widget/messages.js",
+                    "schedule/widget/messages.json",
                     schedule.schedule_messages,
                     name="widget.messages",
                 ),
