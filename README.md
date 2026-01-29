@@ -94,9 +94,9 @@
 | src/pretalx/common/forms/widgets.py                                        |      230 |        4 |       28 |        4 |     97% |199, 355, 429, 440 |
 | src/pretalx/common/image.py                                                |      105 |       62 |       40 |        6 |     35% |40-82, 87-90, 101-108, 118-140, 159, 162, 166, 173-180, 186, 191 |
 | src/pretalx/common/language.py                                             |       22 |        0 |        0 |        0 |    100% |           |
-| src/pretalx/common/log\_display.py                                         |       86 |       10 |       38 |        6 |     87% |168, 185, 194-199, 201-203, 240, 243 |
+| src/pretalx/common/log\_display.py                                         |       86 |       10 |       38 |        6 |     87% |170, 187, 196-201, 203-205, 242, 245 |
 | src/pretalx/common/mail.py                                                 |       54 |        4 |       18 |        2 |     89% |83, 134-136 |
-| src/pretalx/common/management/commands/create\_test\_event.py              |      185 |        5 |       60 |        2 |     96% |150->exit, 155, 163-166 |
+| src/pretalx/common/management/commands/create\_test\_event.py              |      185 |        4 |       60 |        2 |     97% |150->exit, 155, 164-166 |
 | src/pretalx/common/management/commands/devserver.py                        |       16 |       16 |        4 |        0 |      0% |     10-40 |
 | src/pretalx/common/management/commands/init.py                             |       16 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/management/commands/makemessages.py                     |       50 |        6 |       20 |        4 |     83% |45->47, 48-49, 57, 71-73 |
@@ -114,7 +114,7 @@
 | src/pretalx/common/models/fields.py                                        |       11 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/models/file.py                                          |       23 |        2 |        2 |        0 |     84% |     41-43 |
 | src/pretalx/common/models/log.py                                           |       80 |        9 |       32 |        9 |     82% |64-67, 89, 92->96, 101, 104, 109, 113->128, 118->128, 121 |
-| src/pretalx/common/models/mixins.py                                        |      206 |       27 |       86 |        6 |     85% |47, 129, 303, 320->318, 344, 347->exit, 351-354, 373-376, 379, 382, 385, 388, 392, 395-405 |
+| src/pretalx/common/models/mixins.py                                        |      206 |       24 |       86 |        7 |     86% |47, 129, 303, 320->318, 344, 347->exit, 353, 373-376, 379, 382, 385, 388, 392, 395-405 |
 | src/pretalx/common/models/transaction.py                                   |       12 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/plugins.py                                              |       30 |        0 |        8 |        1 |     97% |    63->69 |
 | src/pretalx/common/settings/config.py                                      |       23 |        1 |        2 |        1 |     92% |       172 |
@@ -152,8 +152,8 @@
 | src/pretalx/common/views/shortlink.py                                      |       27 |        0 |       16 |        0 |    100% |           |
 | src/pretalx/event/apps.py                                                  |        4 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/event/forms.py                                                 |      162 |        7 |       34 |        5 |     94% |72-75, 128-129, 142, 237->exit, 292-293, 362->exit |
-| src/pretalx/event/models/event.py                                          |      563 |       32 |      122 |       11 |     93% |85, 463, 468, 514, 517, 666-668, 697->711, 729, 733-744, 766-767, 775, 817-826, 959, 971->974 |
-| src/pretalx/event/models/organiser.py                                      |      119 |        8 |       18 |        6 |     90% |48, 55, 69, 77, 258, 266, 273, 315 |
+| src/pretalx/event/models/event.py                                          |      562 |       32 |      122 |       11 |     93% |84, 462, 467, 513, 516, 665-667, 696->710, 728, 732-743, 765-766, 774, 816-825, 958, 970->973 |
+| src/pretalx/event/models/organiser.py                                      |      118 |        8 |       18 |        6 |     90% |47, 54, 68, 76, 255, 263, 270, 312 |
 | src/pretalx/event/rules.py                                                 |       52 |        0 |       12 |        0 |    100% |           |
 | src/pretalx/event/services.py                                              |       33 |        4 |       10 |        2 |     86% | 62-66, 72 |
 | src/pretalx/event/stages.py                                                |       39 |        0 |       10 |        0 |    100% |           |
@@ -361,7 +361,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      289 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       45 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **33941** | **1947** | **5436** |  **769** | **92%** |           |
+| **TOTAL**                                                                  | **33939** | **1943** | **5436** |  **770** | **92%** |           |
 
 
 ## Setup coverage badge
