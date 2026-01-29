@@ -60,7 +60,14 @@ class TestWizard:
         track=None,
         additional_speaker=None,
         tags=None,
+        resources=None,
     ):
+        resources_init = {
+            "resource-TOTAL_FORMS": "0",
+            "resource-INITIAL_FORMS": "0",
+            "resource-MIN_NUM_FORMS": "0",
+            "resource-MAX_NUM_FORMS": "1000",
+        }
         submission_data = {
             "title": title,
             "content_locale": content_locale,
@@ -70,7 +77,9 @@ class TestWizard:
             "slot_count": slot_count,
             "submission_type": submission_type,
             "additional_speaker": additional_speaker or "",
+            **(resources or resources_init),
         }
+
         if track:
             submission_data["track"] = getattr(track, "pk", track)
         if tags:
@@ -486,6 +495,56 @@ class TestWizard:
         assert len(djmail.outbox) == 0
 
     @pytest.mark.django_db
+    def test_wizard_logged_in_user_resources(self, event, client, user):
+        with scope(event=event):
+            submission_type = SubmissionType.objects.filter(event=event).first().pk
+
+        client.force_login(user)
+        response, current_url = self.perform_init_wizard(client, event=event)
+        f1 = SimpleUploadedFile("testfile.txt", b"file_content")
+        f2 = SimpleUploadedFile("testfile.txt", b"removed_file_content")
+        resources = {
+            "resource-TOTAL_FORMS": 4,
+            "resource-INITIAL_FORMS": 0,
+            "resource-MIN_NUM_FORMS": 0,
+            "resource-MAX_NUM_FORMS": 1000,
+            "resource-0-id": "",
+            "resource-0-description": "link to resource",
+            "resource-0-link": "https://pretalx.com",
+            "resource-1-id": "",
+            "resource-1-description": "removed link to resource",
+            "resource-1-link": "https://pretalx.com/removed",
+            "resource-1-DELETE": True,
+            "resource-2-id": "",
+            "resource-2-description": "file 1",
+            "resource-2-resource": f1,
+            "resource-3-id": "",
+            "resource-3-description": "removed file 1",
+            "resource-3-resource": f2,
+            "resource-3-DELETE": True,
+        }
+        response, current_url = self.perform_info_wizard(
+            client,
+            response,
+            current_url,
+            submission_type=submission_type,
+            next_step="profile",
+            event=event,
+            resources=resources,
+        )
+        response, current_url = self.perform_profile_form(
+            client, response, current_url, event=event
+        )
+        submission = self.assert_submission(event)
+        with scope(event=submission.event):
+            resources = submission.resources.all()
+            assert len(resources) == 2
+            assert resources[0].description == "link to resource"
+            assert resources[0].link == "https://pretalx.com"
+            assert resources[1].description == "file 1"
+            assert resources[1].resource.read() == b"file_content"
+
+    @pytest.mark.django_db
     def test_wizard_with_tracks(self, event, client, track, other_track):
         with scope(event=event):
             submission_type = SubmissionType.objects.filter(event=event).first().pk
@@ -848,7 +907,6 @@ def test_infoform_set_submission_type_2nd_event(event, other_event, submission_t
 
 
 class TestWizardDrafts:
-
     @pytest.mark.django_db
     def test_draft_not_saved_with_invalid_data_on_info_step(self, event, client):
         """Test that clicking 'save as draft' with invalid form data doesn't create a draft.
@@ -903,6 +961,13 @@ class TestWizardDrafts:
         response = client.get("/test/submit/", follow=True)
         current_url = response.redirect_chain[-1][0]
 
+        resources_init = {
+            "resource-TOTAL_FORMS": "0",
+            "resource-INITIAL_FORMS": "0",
+            "resource-MIN_NUM_FORMS": "0",
+            "resource-MAX_NUM_FORMS": "1000",
+        }
+
         info_data = {
             "title": "Test Submission",
             "content_locale": "en",
@@ -911,6 +976,7 @@ class TestWizardDrafts:
             "notes": "Notes",
             "slot_count": 1,
             "submission_type": submission_type,
+            **resources_init,
         }
         response = client.post(current_url, data=info_data, follow=True)
         current_url = response.redirect_chain[-1][0]
