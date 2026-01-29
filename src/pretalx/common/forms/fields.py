@@ -241,7 +241,7 @@ class AvailabilitiesField(CharField):
             result["resolution"] = self.resolution
         if event and self.instance and not isinstance(self.instance, Room):
             # Speakers are limited to room availabilities, if any exist
-            room_avails = event.availabilities.filter(room__isnull=False)
+            room_avails = event.valid_availabilities.filter(room__isnull=False)
             if room_avails:
                 merged_avails = Availability.union(room_avails)
                 result["constraints"] = [

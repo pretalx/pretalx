@@ -860,6 +860,13 @@ class Event(PretalxModel):
     def event(self):
         return self
 
+    @property
+    def valid_availabilities(self):
+        return self.availabilities.all().filter(
+            start__lte=self.datetime_to,
+            end__gte=self.datetime_from,
+        )
+
     @cached_property
     def teams(self):
         """Returns all :class:`~pretalx.event.models.organiser.Team` objects

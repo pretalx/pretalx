@@ -473,7 +473,7 @@ class ScheduleAvailabilities(EventPermissionRequired, View):
         # Serializing by hand because it's faster and we don't need
         # IDs or allDay
         speaker_avails = collections.defaultdict(list)
-        for avail in self.request.event.availabilities.filter(
+        for avail in self.request.event.valid_availabilities.filter(
             person__isnull=False
         ).select_related("person__user"):
             speaker_avails[avail.person.user.pk].append(avail)

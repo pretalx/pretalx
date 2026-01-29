@@ -1080,7 +1080,7 @@ class Submission(GenerateCode, PretalxModel):
         """
         from pretalx.schedule.models.availability import Availability
 
-        all_availabilities = self.event.availabilities.filter(
+        all_availabilities = self.event.valid_availabilities.filter(
             person__in=self.speaker_profiles
         )
         return Availability.intersection(all_availabilities)
