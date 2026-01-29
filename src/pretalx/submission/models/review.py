@@ -143,7 +143,7 @@ class Review(PretalxModel):
     user = models.ForeignKey(
         to="person.User", related_name="reviews", on_delete=models.CASCADE
     )
-    text = MarkdownField(verbose_name=_("What do you think?"), null=True, blank=True)
+    text = MarkdownField(verbose_name=_("Review"), null=True, blank=True)
     score = models.DecimalField(
         max_digits=10, decimal_places=2, verbose_name=_("Score"), null=True, blank=True
     )
