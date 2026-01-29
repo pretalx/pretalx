@@ -244,7 +244,6 @@ def test_shred_used_event(
     answered_choice_question,
     personal_answer,
     rejected_submission,
-    deleted_submission,
     mail,
     sent_mail,
     room_availability,

@@ -78,8 +78,7 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
                     choices=[
                         (choice, name)
                         for (choice, name) in SubmissionStates.get_choices()
-                        if choice != SubmissionStates.DELETED
-                        and choice != SubmissionStates.DRAFT
+                        if choice != SubmissionStates.DRAFT
                     ],
                     initial=SubmissionStates.SUBMITTED,
                     required=True,

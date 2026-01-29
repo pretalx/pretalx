@@ -257,7 +257,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         return queryset
 
     def perform_destroy(self, request, *args, **kwargs):
-        self.get_object().remove(force=True, person=self.request.user)
+        self.get_object().delete(person=self.request.user)
 
     @action(detail=True, methods=["POST"])
     def accept(self, request, **kwargs):

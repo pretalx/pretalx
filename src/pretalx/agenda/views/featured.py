@@ -28,7 +28,6 @@ class FeaturedView(EventPermissionRequired, TemplateView):
                     SubmissionStates.REJECTED,
                     SubmissionStates.CANCELED,
                     SubmissionStates.WITHDRAWN,
-                    SubmissionStates.DELETED,
                 ]
             )
             .select_related("event", "submission_type")

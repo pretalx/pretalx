@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :announcement:`admin,2267` When organisers delete a proposal, it is now permanently removed from the database instead of being hidden. Any proposals that were previously soft-deleted will be permanently removed during the upgrade migration.
 - :feature:`api` The review list endpoint now supports additional filters for submission state, pending state, track, submission type, and content locale.
 - :feature:`orga` You can assign an identifier to custom fields, making it easier to use them in APIs and across events consistently. For choice fields, identifiers will be randomly assigned to each answer option as well to guarantee stable access.
 - :bug:`schedule` The mobile view of the pretalx schedule did not set a background colour, so the pretalx schedule widget was hard to read when embedded on pages with a dark background colour.

@@ -68,13 +68,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% include "cfp/event/fragment_state.html" with state="withdrawn" as_badge=False %}
             </a>
         {% endif %}
-        {% if submission.state != "deleted" or submission.pending_state %}
-            <a
-                class="dropdown-item submission-state-deleted"
-                role="menuitem" tabindex="-1"
-                href="{{ submission.orga_urls.delete }}{% if submission.code not in request.path %}{% querystring next=request.path|urlencode %}{% else %}{% querystring next="" %}{% endif %}">
-                {% include "cfp/event/fragment_state.html" with state="deleted" as_badge=False %}
-            </a>
-        {% endif %}
+        <a
+            class="dropdown-item submission-action-delete"
+            role="menuitem" tabindex="-1"
+            href="{{ submission.orga_urls.delete }}{% if submission.code not in request.path %}{% querystring next=request.path|urlencode %}{% else %}{% querystring next="" %}{% endif %}">
+            <i class="fa fa-trash"></i> <span class="nowrap">{% translate "delete" %}</span>
+        </a>
     </div>
 </details>

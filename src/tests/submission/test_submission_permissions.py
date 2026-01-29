@@ -42,7 +42,6 @@ def test_is_speaker_false(event, submission, orga_user):
         "confirmed",
         "canceled",
         "withdrawn",
-        "deleted",
     ),
 )
 @pytest.mark.parametrize(
@@ -53,7 +52,6 @@ def test_is_speaker_false(event, submission, orga_user):
         "confirmed",
         "canceled",
         "withdrawn",
-        "deleted",
     ),
 )
 def test_can_change_state(current_state, target_state):
@@ -64,11 +62,27 @@ def test_can_change_state(current_state, target_state):
         "confirmed": can_be_confirmed,
         "canceled": can_be_canceled,
         "withdrawn": can_be_withdrawn,
-        "deleted": can_be_removed,
     }
     assert permissions[target_state](None, submission) is (
         target_state in SubmissionStates.valid_next_states[current_state]
     )
+
+
+@pytest.mark.parametrize(
+    "state,expected",
+    (
+        ("submitted", True),
+        ("accepted", True),
+        ("rejected", True),
+        ("confirmed", True),
+        ("canceled", True),
+        ("withdrawn", True),
+        ("draft", False),
+    ),
+)
+def test_can_be_removed(state, expected):
+    submission = Submission(state=state)
+    assert can_be_removed(None, submission) is expected
 
 
 def test_reviewer_permission_degrades_gracefully():

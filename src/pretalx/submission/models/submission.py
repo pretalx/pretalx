@@ -79,7 +79,6 @@ class SubmissionStates(Choices):
     CONFIRMED = "confirmed"
     CANCELED = "canceled"
     WITHDRAWN = "withdrawn"
-    DELETED = "deleted"
     DRAFT = "draft"
 
     display_values = {
@@ -89,7 +88,6 @@ class SubmissionStates(Choices):
         REJECTED: _("rejected"),
         CANCELED: _("canceled"),
         WITHDRAWN: _("withdrawn"),
-        DELETED: _("deleted"),
         DRAFT: _("draft"),
     }
     valid_choices = [(key, value) for key, value in display_values.items()]
@@ -101,7 +99,6 @@ class SubmissionStates(Choices):
         CONFIRMED: (ACCEPTED, CANCELED),
         CANCELED: (ACCEPTED, CONFIRMED),
         WITHDRAWN: (SUBMITTED),
-        DELETED: (),
         DRAFT: (SUBMITTED,),
     }
 
@@ -112,7 +109,6 @@ class SubmissionStates(Choices):
         CONFIRMED: "confirm",
         CANCELED: "cancel",
         WITHDRAWN: "withdraw",
-        DELETED: "remove",
     }
 
     accepted_states = (ACCEPTED, CONFIRMED)
@@ -129,17 +125,7 @@ class SubmissionStates(Choices):
 
 class SubmissionManager(models.Manager):
     def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .exclude(state=SubmissionStates.DELETED)
-            .exclude(state=SubmissionStates.DRAFT)
-        )
-
-
-class DeletedSubmissionManager(models.Manager):
-    def get_queryset(self):
-        return super().get_queryset().filter(state=SubmissionStates.DELETED)
+        return super().get_queryset().exclude(state=SubmissionStates.DRAFT)
 
 
 class AllSubmissionManager(models.Manager):
@@ -310,12 +296,13 @@ class Submission(GenerateCode, PretalxModel):
     )
 
     objects = ScopedManager(event="event", _manager_class=SubmissionManager)
-    deleted_objects = ScopedManager(
-        event="event", _manager_class=DeletedSubmissionManager
-    )
     all_objects = ScopedManager(event="event", _manager_class=AllSubmissionManager)
 
     log_prefix = "pretalx.submission"
+
+    @property
+    def log_parent(self):
+        return self.event
 
     class Meta:
         rules_permissions = {
@@ -574,7 +561,6 @@ class Submission(GenerateCode, PretalxModel):
             self.pending_state = None
             if new_state in (
                 SubmissionStates.REJECTED,
-                SubmissionStates.DELETED,
                 SubmissionStates.CANCELED,
                 SubmissionStates.WITHDRAWN,
             ):
@@ -883,35 +869,18 @@ class Submission(GenerateCode, PretalxModel):
 
     withdraw.alters_data = True
 
-    def remove(
-        self,
-        person=None,
-        force: bool = False,
-        orga: bool = True,
-        from_pending: bool = False,
-    ):
-        """Sets the submission's state to 'deleted'."""
-        previous = self.state
-        self._set_state(SubmissionStates.DELETED, force, person=person)
-        for answer in self.answers.all():
-            answer.remove(person=person, force=force)
-        self.log_action(
-            "pretalx.submission.deleted",
-            person=person,
-            orga=True,
-            data={"previous": previous, "from_pending": from_pending},
-        )
-
-    remove.alters_data = True
-
-    def delete(self, force: bool = False, **kwargs):
-        if self.state != SubmissionStates.DRAFT and not force:
-            raise SubmissionError(
-                "Submission is not in draft mode and cannot be deleted completely. Set the deleted flag instead."
-            )
+    def delete(self, person=None, orga: bool = True, **kwargs):
+        self.slots.all().delete()
         self.answers.all().delete()
         self.resources.all().delete()
-        super().delete(**kwargs)
+        super().delete(
+            log_kwargs={
+                "person": person,
+                "orga": orga,
+                "data": {"title": self.title, "code": self.code, "state": self.state},
+            },
+            **kwargs,
+        )
 
     @cached_property
     def integer_uuid(self):
@@ -1040,10 +1009,6 @@ class Submission(GenerateCode, PretalxModel):
     @cached_property
     def public_resources(self):
         return self.active_resources.filter(is_public=True)
-
-    @property
-    def is_deleted(self):
-        return self.state == SubmissionStates.DELETED
 
     @property
     def user_state(self):

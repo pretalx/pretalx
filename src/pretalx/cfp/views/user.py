@@ -152,11 +152,10 @@ class SubmissionViewMixin:
         return super().dispatch(request, *args, **kwargs)
 
     def get_object(self):
-
         return get_object_or_404(
-            Submission.all_objects.filter(event=self.request.event)
-            .exclude(state=SubmissionStates.DELETED)
-            .prefetch_related("answers", "answers__options", "speakers"),
+            Submission.all_objects.filter(event=self.request.event).prefetch_related(
+                "answers", "answers__options", "speakers"
+            ),
             code__iexact=self.kwargs["code"],
         )
 
@@ -318,7 +317,7 @@ class SubmissionDraftDiscardView(
         return context
 
     def post(self, request, *args, **kwargs):
-        self.submission.delete()
+        self.submission.delete(orga=False)
         messages.success(self.request, _("Your draft was discarded."))
         return redirect("cfp:event.user.submissions", event=self.request.event.slug)
 

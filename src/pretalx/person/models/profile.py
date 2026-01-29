@@ -101,11 +101,6 @@ class SpeakerProfile(PretalxModel):
 
     @cached_property
     def submissions(self):
-        """All non-deleted.
-
-        :class:`~pretalx.submission.models.submission.Submission` objects by
-        this user on this event.
-        """
         return self.user.submissions.filter(event=self.event)
 
     @cached_property

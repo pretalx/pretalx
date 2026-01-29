@@ -14,7 +14,7 @@ from pretalx.api.serializers.submission import (
     TrackSerializer,
 )
 from pretalx.api.versions import LEGACY
-from pretalx.submission.models import SubmissionInvitation, SubmissionStates
+from pretalx.submission.models import Submission, SubmissionInvitation, SubmissionStates
 
 
 @pytest.mark.django_db
@@ -1045,7 +1045,7 @@ def test_orga_can_update_submission(client, orga_user_write_token, submission):
 
 @pytest.mark.django_db
 def test_orga_can_delete_submission(client, orga_user_write_token, submission):
-    assert submission.title != "Updated Submission"
+    submission_code = submission.code
     response = client.delete(
         submission.event.api_urls.submissions + f"{submission.code}/",
         follow=True,
@@ -1055,8 +1055,7 @@ def test_orga_can_delete_submission(client, orga_user_write_token, submission):
     )
     assert response.status_code == 204
     with scope(event=submission.event):
-        submission.refresh_from_db()
-        assert submission.state == "deleted"
+        assert not Submission.all_objects.filter(code=submission_code).exists()
 
 
 @pytest.mark.django_db

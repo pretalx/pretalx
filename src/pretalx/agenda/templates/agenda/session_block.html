@@ -23,8 +23,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <div class="title">
             {% if not session.submission %}
                 {{ session.description }}
-            {% elif session.submission.is_deleted %}
-                <span class="pretalx-session-title">[{{ phrases.submission.deleted }}]</span>
             {% else %}
                 {% if session.submission.do_not_record %}
                     <span class="fa-stack">

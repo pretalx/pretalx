@@ -883,15 +883,6 @@ def withdrawn_submission(submission_data, speaker, event):
 
 
 @pytest.fixture
-def deleted_submission(event, submission_data, other_speaker):
-    with scope(event=event):
-        sub = Submission.objects.create(**submission_data)
-        sub.speakers.add(other_speaker)
-        sub.remove(force=True)
-        return sub
-
-
-@pytest.fixture
 def invitation(event):
     with scope(event=event):
         team = event.organiser.teams.filter(

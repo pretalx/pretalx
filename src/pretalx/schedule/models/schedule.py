@@ -99,8 +99,6 @@ class Schedule(PretalxModel):
         """Returns all :class:`~pretalx.schedule.models.slot.TalkSlot` objects
         that have been scheduled and are visible in the schedule (that is, have
         been confirmed at the time of release)."""
-        from pretalx.submission.models import SubmissionStates
-
         return (
             self.talks.select_related(
                 "submission",
@@ -114,7 +112,6 @@ class Schedule(PretalxModel):
                 is_visible=True,
                 submission__isnull=False,
             )
-            .exclude(submission__state=SubmissionStates.DELETED)
         )
 
     @cached_property

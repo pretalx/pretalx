@@ -174,16 +174,19 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
         "accept": SubmissionStates.ACCEPTED,
         "reject": SubmissionStates.REJECTED,
         "confirm": SubmissionStates.CONFIRMED,
-        "delete": SubmissionStates.DELETED,
         "withdraw": SubmissionStates.WITHDRAWN,
         "cancel": SubmissionStates.CANCELED,
     }
 
     @cached_property
-    def _target(self) -> str:
-        """Returns one of
-        submit|accept|reject|confirm|delete|withdraw|cancel."""
-        return self.TARGETS[self.request.resolver_match.url_name.split(".")[-1]]
+    def _action(self) -> str:
+        """Returns one of submit|accept|reject|confirm|withdraw|cancel."""
+        return self.request.resolver_match.url_name.split(".")[-1]
+
+    @cached_property
+    def _target(self):
+        """Returns the target state, or None for delete action."""
+        return self.TARGETS.get(self._action)
 
     @context
     def target(self):
@@ -251,10 +254,6 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
         return redirect(self.get_success_url())
 
     def get_success_url(self):
-        if self.object.state == SubmissionStates.DELETED and (
-            not self.next_url or self.object.code in self.next_url
-        ):
-            return self.request.event.orga_urls.submissions
         return self.next_url or self.request.event.orga_urls.submissions
 
     @context
@@ -269,6 +268,34 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
     @context
     def submit_buttons(self):
         return [Button(label=_("Do it"))]
+
+
+class SubmissionDelete(SubmissionViewMixin, ActionConfirmMixin, TemplateView):
+    permission_required = "submission.state_change_submission"
+    template_name = "orga/submission/delete.html"
+    action_object_name = ""  # Submission is listed in the template header
+
+    @property
+    def action_text(self):
+        current_slots = self.object.current_slots
+        has_scheduled_slots = current_slots is not None and current_slots.exists()
+        if has_scheduled_slots:
+            return _(
+                "This session is part of the current schedule. All its schedule "
+                "slots will also be deleted. You may want to set it to the "
+                '"withdrawn" state instead.'
+            )
+        return phrases.base.delete_warning
+
+    @property
+    def action_back_url(self):
+        return get_next_url(self.request) or self.object.orga_urls.base
+
+    def post(self, request, *args, **kwargs):
+        submission = self.object
+        submission.delete(person=request.user, orga=True)
+        messages.success(request, _("The proposal has been deleted."))
+        return redirect(request.event.orga_urls.submissions)
 
 
 class SubmissionSpeakersDelete(SubmissionViewMixin, View):
@@ -937,9 +964,7 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
 
     @cached_property
     def raw_submission_timeline_data(self):
-        talk_ids = self.request.event.submissions.exclude(
-            state=SubmissionStates.DELETED
-        ).values_list("id", flat=True)
+        talk_ids = self.request.event.submissions.values_list("id", flat=True)
         data = Counter(
             log.timestamp.astimezone(self.request.event.tz).date()
             for log in ActivityLog.objects.filter(

@@ -676,14 +676,13 @@ a, .fake-link {
 .text-muted {
   color: var(--color-grey-medium) !important;
 }
-.submission-state-deleted,
 .submission-state-withdrawn,
-.submission-state-canceled {
+.submission-state-canceled,
+.submission-action-delete {
   --submission-color-primary: var(--color-grey);
   --submission-color-secondary: var(--color-grey);
   --highlight-color: var(--color-grey);
 }
-.submission-state-dropdown.submission-state-pending-deleted,
 .submission-state-dropdown.submission-state-pending-withdrawn,
 .submission-state-dropdown.submission-state-pending-canceled {
   --submission-color-secondary: var(--color-grey);

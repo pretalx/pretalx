@@ -68,7 +68,7 @@ class ScheduleExportForm(ExportForm):
         + [
             (state, name)
             for (state, name) in SubmissionStates.valid_choices
-            if state not in (SubmissionStates.DRAFT, SubmissionStates.DELETED)
+            if state != SubmissionStates.DRAFT
         ],
         widget=EnhancedSelectMultiple(color_field=SubmissionStates.get_color),
         initial=["all"],

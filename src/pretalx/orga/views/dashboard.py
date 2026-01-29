@@ -59,8 +59,7 @@ class DashboardEventListView(TemplateView):
                     submissions__state__in=[
                         state
                         for state in SubmissionStates.display_values.keys()
-                        if state
-                        not in (SubmissionStates.DELETED, SubmissionStates.DRAFT)
+                        if state != SubmissionStates.DRAFT
                     ]
                 ),
             )
@@ -364,7 +363,7 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
                 [
                     f"state=pending_state__{state}"
                     for state, __ in SubmissionStates.get_choices()
-                    if state not in (SubmissionStates.DRAFT, SubmissionStates.DELETED)
+                    if state != SubmissionStates.DRAFT
                 ]
             )
             result["tiles"].append(
