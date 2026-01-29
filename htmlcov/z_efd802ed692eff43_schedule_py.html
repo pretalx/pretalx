@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_efd802ed692eff43_speaker_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-01-29 07:46 +0000
+            created at 2026-01-29 08:59 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -557,7 +557,7 @@
     <p class="pln"><span class="n"><a id="t473" href="#t473">473</a></span><span class="t">        <span class="com"># Serializing by hand because it's faster and we don't need</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t474" href="#t474">474</a></span><span class="t">        <span class="com"># IDs or allDay</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t475" href="#t475">475</a></span><span class="t">        <span class="nam">speaker_avails</span> <span class="op">=</span> <span class="nam">collections</span><span class="op">.</span><span class="nam">defaultdict</span><span class="op">(</span><span class="nam">list</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t476" href="#t476">476</a></span><span class="t">        <span class="key">for</span> <span class="nam">avail</span> <span class="key">in</span> <span class="nam">self</span><span class="op">.</span><span class="nam">request</span><span class="op">.</span><span class="nam">event</span><span class="op">.</span><span class="nam">availabilities</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t476" href="#t476">476</a></span><span class="t">        <span class="key">for</span> <span class="nam">avail</span> <span class="key">in</span> <span class="nam">self</span><span class="op">.</span><span class="nam">request</span><span class="op">.</span><span class="nam">event</span><span class="op">.</span><span class="nam">valid_availabilities</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis mis2 show_mis"><span class="n"><a id="t477" href="#t477">477</a></span><span class="t">            <span class="nam">person__isnull</span><span class="op">=</span><span class="key">False</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis mis2 show_mis"><span class="n"><a id="t478" href="#t478">478</a></span><span class="t">        <span class="op">)</span><span class="op">.</span><span class="nam">select_related</span><span class="op">(</span><span class="str">"person__user"</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t479" href="#t479">479</a></span><span class="t">            <span class="nam">speaker_avails</span><span class="op">[</span><span class="nam">avail</span><span class="op">.</span><span class="nam">person</span><span class="op">.</span><span class="nam">user</span><span class="op">.</span><span class="nam">pk</span><span class="op">]</span><span class="op">.</span><span class="nam">append</span><span class="op">(</span><span class="nam">avail</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -729,7 +729,7 @@
             <a class="nav" href="z_efd802ed692eff43_speaker_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-01-29 07:46 +0000
+            created at 2026-01-29 08:59 +0000
         </p>
     </div>
 </footer>

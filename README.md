@@ -152,7 +152,7 @@
 | src/pretalx/common/views/shortlink.py                                      |       27 |        0 |       16 |        0 |    100% |           |
 | src/pretalx/event/apps.py                                                  |        4 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/event/forms.py                                                 |      162 |        7 |       34 |        5 |     94% |72-75, 128-129, 142, 237->exit, 292-293, 362->exit |
-| src/pretalx/event/models/event.py                                          |      562 |       32 |      124 |       11 |     93% |85, 463, 468, 514, 517, 666-668, 697->711, 729, 733-744, 766-767, 775, 817-826, 952, 964->967 |
+| src/pretalx/event/models/event.py                                          |      565 |       32 |      124 |       11 |     93% |85, 463, 468, 514, 517, 666-668, 697->711, 729, 733-744, 766-767, 775, 817-826, 959, 971->974 |
 | src/pretalx/event/models/organiser.py                                      |      119 |        8 |       18 |        6 |     90% |48, 55, 69, 77, 258, 266, 273, 315 |
 | src/pretalx/event/rules.py                                                 |       52 |        0 |       12 |        0 |    100% |           |
 | src/pretalx/event/services.py                                              |       33 |        4 |       10 |        2 |     86% | 62-66, 72 |
@@ -361,7 +361,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      295 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       41 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **33960** | **1943** | **5444** |  **770** | **92%** |           |
+| **TOTAL**                                                                  | **33963** | **1943** | **5444** |  **770** | **92%** |           |
 
 
 ## Setup coverage badge
