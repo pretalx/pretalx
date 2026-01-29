@@ -63,12 +63,13 @@ LOG_ALIASES = {
 
 LOG_NAMES = {
     "pretalx.cfp.update": _("The CfP has been modified."),
-    "pretalx.event.create": _("The event has been added."),
-    "pretalx.event.update": _("The event was modified."),
     "pretalx.event.activate": _("The event was made public."),
+    "pretalx.event.create": _("The event has been added."),
     "pretalx.event.deactivate": _("The event was deactivated."),
-    "pretalx.event.plugins.enabled": _("A plugin was enabled."),
+    "pretalx.event.delete": _("The event was deleted."),  # old data
     "pretalx.event.plugins.disabled": _("A plugin was disabled."),
+    "pretalx.event.plugins.enabled": _("A plugin was enabled."),
+    "pretalx.event.update": _("The event was modified."),
     "pretalx.invite.orga.accept": _("The invitation to the event orga was accepted."),
     "pretalx.invite.orga.retract": _("An invitation to the event orga was retracted."),
     "pretalx.invite.orga.send": _("An invitation to the event orga was sent."),
@@ -85,6 +86,7 @@ LOG_NAMES = {
     "pretalx.mail_template.create": _("A mail template was added."),
     "pretalx.mail_template.delete": _("A mail template was deleted."),
     "pretalx.mail_template.update": _("A mail template was modified."),
+    "pretalx.organiser.delete": _("The organiser was deleted."),  # old data
     "pretalx.question.create": _("A custom field was added."),
     "pretalx.question.delete": _("A custom field was deleted."),
     "pretalx.question.update": _("A custom field was modified."),

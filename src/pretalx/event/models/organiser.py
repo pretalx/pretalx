@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2018-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import json
 import string
 
 from django.core.validators import RegexValidator
@@ -149,12 +148,10 @@ class Organiser(PretalxModel):
             action_type="pretalx.organiser.delete",
             content_object=self,
             is_orga_action=True,
-            data=json.dumps(
-                {
-                    "slug": self.slug,
-                    "name": str(self.name),
-                }
-            ),
+            data={
+                "slug": self.slug,
+                "name": str(self.name),
+            },
         )
         for event in self.events.all():
             with scope(event=event):

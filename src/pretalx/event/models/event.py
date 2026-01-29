@@ -3,7 +3,6 @@
 
 import copy
 import datetime as dt
-import json
 import zoneinfo
 
 from dateutil.relativedelta import relativedelta
@@ -1123,15 +1122,13 @@ class Event(PretalxModel):
             action_type="pretalx.event.delete",
             content_object=self.organiser,
             is_orga_action=True,
-            data=json.dumps(
-                {
-                    "slug": self.slug,
-                    "name": str(self.name),
-                    # We log the organiser because events and organisers are
-                    # often deleted together.
-                    "organiser": str(self.organiser.name),
-                }
-            ),
+            data={
+                "slug": self.slug,
+                "name": str(self.name),
+                # We log the organiser because events and organisers are
+                # often deleted together.
+                "organiser": str(self.organiser.name),
+            },
         )
         deletion_order = [
             (self.logged_actions(), False),
