@@ -111,19 +111,6 @@ class ReviewScore(PretalxModel):
         ordering = ("value",)
 
 
-class ReviewManager(models.Manager):
-    def get_queryset(self):
-        from pretalx.submission.models.submission import SubmissionStates
-
-        return (
-            super().get_queryset().exclude(submission__state=SubmissionStates.DELETED)
-        )
-
-
-class AllReviewManager(models.Manager):
-    pass
-
-
 class Review(PretalxModel):
     """Reviews model the opinion of reviewers of a.
 
@@ -149,10 +136,7 @@ class Review(PretalxModel):
     )
     scores = models.ManyToManyField(to=ReviewScore, related_name="reviews")
 
-    objects = ScopedManager(event="submission__event", _manager_class=ReviewManager)
-    all_objects = ScopedManager(
-        event="submission__event", _manager_class=AllReviewManager
-    )
+    objects = ScopedManager(event="submission__event")
 
     log_prefix = "pretalx.submission.review"
 

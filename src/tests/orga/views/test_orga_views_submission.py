@@ -246,6 +246,7 @@ def test_orga_can_delete_submission(orga_client, submission, answered_choice_que
         assert submission.answers.count() == 1
         assert Submission.objects.count() == 1
         option_count = answered_choice_question.options.count()
+        submission_code = submission.code
 
     response = orga_client.get(submission.orga_urls.delete, follow=True)
     with scope(event=submission.event):
@@ -258,9 +259,34 @@ def test_orga_can_delete_submission(orga_client, submission, answered_choice_que
     assert response.status_code == 200
     with scope(event=submission.event):
         assert Submission.objects.count() == 0
-        assert Submission.deleted_objects.count() == 1
-        assert Submission.deleted_objects.get(code=submission.code)
+        assert Submission.all_objects.count() == 0
+        assert not Submission.all_objects.filter(code=submission_code).exists()
         assert answered_choice_question.options.count() == option_count
+
+
+@pytest.mark.django_db
+def test_orga_delete_scheduled_submission_shows_warning_and_deletes_slots(
+    orga_client, slot
+):
+    from pretalx.schedule.models import TalkSlot
+
+    with scope(event=slot.schedule.event):
+        submission = slot.submission
+        submission_code = submission.code
+        submission_pk = submission.pk
+        assert submission.current_slots is not None
+        assert submission.current_slots.exists()
+        assert TalkSlot.objects.filter(submission=submission).count() > 0
+
+    response = orga_client.get(submission.orga_urls.delete)
+    assert response.status_code == 200
+    assert "schedule slots will also be deleted" in response.text
+
+    response = orga_client.post(submission.orga_urls.delete, follow=True)
+    assert response.status_code == 200
+    with scope(event=slot.schedule.event):
+        assert not Submission.all_objects.filter(code=submission_code).exists()
+        assert TalkSlot.objects.filter(submission_id=submission_pk).count() == 0
 
 
 @pytest.mark.django_db
@@ -283,7 +309,6 @@ def test_reviewer_cannot_delete_submission(
     assert response.status_code == 404
     with scope(event=submission.event):
         assert Submission.objects.count() == 1
-        assert Submission.deleted_objects.count() == 0
 
 
 @pytest.mark.django_db

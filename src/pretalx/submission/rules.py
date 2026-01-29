@@ -128,9 +128,7 @@ def can_be_canceled(user, obj):
 def can_be_removed(user, obj):
     from pretalx.submission.models import SubmissionStates
 
-    return obj and SubmissionStates.DELETED in SubmissionStates.valid_next_states.get(
-        obj.state, []
-    )
+    return obj and obj.state != SubmissionStates.DRAFT
 
 
 @rules.predicate

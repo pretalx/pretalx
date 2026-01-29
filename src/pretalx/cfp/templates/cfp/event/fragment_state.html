@@ -23,7 +23,5 @@ SPDX-FileContributor: Raphael Michel
     <i class="fa fa-times-circle"></i> <span class="nowrap">{% translate "canceled" %}</span>
 {% elif state == "withdrawn" %}
     <i class="fa fa-times-circle"></i> <span class="nowrap">{% translate "withdrawn" %}</span>
-{% elif state == "deleted" %}
-    <i class="fa fa-times-circle"></i> <span class="nowrap">{{ phrases.submission.deleted }}</span>
 {% endif %}
 {% if as_badge %}</span>{% endif %}

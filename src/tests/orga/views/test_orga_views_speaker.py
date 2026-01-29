@@ -68,19 +68,6 @@ def test_reviewer_cannot_change_speaker_password(
 
 
 @pytest.mark.django_db
-def test_reviewer_cannot_access_speaker_page_with_deleted_submission(
-    review_client, other_speaker, event, deleted_submission
-):
-    with scope(event=event):
-        assert event.submissions.all().count() == 0
-        assert event.submissions(manager="all_objects").count() == 1
-        url = other_speaker.event_profile(event).orga_urls.base
-    response = review_client.get(url, follow=True)
-    assert response.status_code == 404
-    assert other_speaker.name not in response.text
-
-
-@pytest.mark.django_db
 def test_orga_can_edit_speaker(orga_client, speaker, event, submission):
     with scope(event=event):
         url = speaker.event_profile(event).orga_urls.base

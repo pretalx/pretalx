@@ -102,7 +102,10 @@ LOG_NAMES = {
     "pretalx.submission.cancel": _("The proposal was cancelled."),
     "pretalx.submission.confirm": _("The proposal was confirmed."),
     "pretalx.submission.create": _("The proposal was added."),
-    "pretalx.submission.deleted": _("The proposal was deleted."),
+    "pretalx.submission.delete": _("The proposal was deleted."),
+    "pretalx.submission.deleted": _(
+        "The proposal was deleted."
+    ),  # backwards compatibility
     "pretalx.submission.reject": _("The proposal was rejected."),
     "pretalx.submission.resource.create": _("A proposal resource was added."),
     "pretalx.submission.resource.delete": _("A proposal resource was deleted."),

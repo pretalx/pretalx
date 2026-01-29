@@ -432,12 +432,7 @@ class SubmissionTypeView(OrderActionMixin, OrgaCRUDView):
             .annotate(
                 submission_count=Count(
                     "submissions",
-                    filter=~Q(
-                        submissions__state__in=[
-                            SubmissionStates.DELETED,
-                            SubmissionStates.DRAFT,
-                        ]
-                    ),
+                    filter=~Q(submissions__state=SubmissionStates.DRAFT),
                 )
             )
         )
@@ -502,12 +497,7 @@ class TrackView(OrderActionMixin, OrgaCRUDView):
             .annotate(
                 submission_count=Count(
                     "submissions",
-                    filter=~Q(
-                        submissions__state__in=[
-                            SubmissionStates.DELETED,
-                            SubmissionStates.DRAFT,
-                        ]
-                    ),
+                    filter=~Q(submissions__state=SubmissionStates.DRAFT),
                 )
             )
             .order_by("position")
@@ -567,7 +557,7 @@ class AccessCodeView(OrderActionMixin, OrgaCRUDView):
         if self.action in ("detail", "update"):
             context["submissions"] = (
                 self.object.submissions.all()
-                .exclude(state__in=[SubmissionStates.DRAFT, SubmissionStates.DELETED])
+                .exclude(state=SubmissionStates.DRAFT)
                 .prefetch_related("speakers")
             )
         return context

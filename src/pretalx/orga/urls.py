@@ -370,7 +370,7 @@ urlpatterns = [
                             ),
                             path(
                                 "delete",
-                                submission.SubmissionStateChange.as_view(),
+                                submission.SubmissionDelete.as_view(),
                                 name="submissions.delete",
                             ),
                             path(

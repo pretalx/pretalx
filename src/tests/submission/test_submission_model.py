@@ -237,27 +237,15 @@ def test_submission_set_state_error_msg(submission):
         )
 
 
-@pytest.mark.parametrize(
-    "state,expected",
-    ((SubmissionStates.ACCEPTED, False), (SubmissionStates.DELETED, True)),
-)
 @pytest.mark.django_db
-def test_submission_is_deleted(submission, state, expected):
-    with scope(event=submission.event):
-        submission.state = state
-        submission.save()
-
-        assert submission.is_deleted == expected
-
-
-@pytest.mark.django_db
-def test_submission_remove_removes_answers(submission, answer):
+def test_submission_remove_removes_submission(submission, answer):
     with scope(event=submission.event):
         count = Answer.objects.count()
         answer_count = submission.answers.count()
+        submission_count = Submission.all_objects.count()
         assert answer_count
-        submission.remove(force=True)
-        assert submission.is_deleted
+        submission.delete()
+        assert Submission.all_objects.count() == submission_count - 1
         assert Answer.objects.count() == count - answer_count
 
 

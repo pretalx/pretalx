@@ -325,7 +325,7 @@ class SubmissionFilterForm(forms.Form):
         choices=[
             (state, name)
             for (state, name) in SubmissionStates.get_choices()
-            if state not in (SubmissionStates.DELETED, SubmissionStates.DRAFT)
+            if state != SubmissionStates.DRAFT
         ],
         widget=SelectMultipleWithCount(
             attrs={"title": _("Proposal states")},
@@ -422,12 +422,7 @@ class SubmissionFilterForm(forms.Form):
                     "submissions",
                     distinct=True,
                     filter=Q(event=event)
-                    & ~Q(
-                        submissions__state__in=[
-                            SubmissionStates.DELETED,
-                            SubmissionStates.DRAFT,
-                        ]
-                    ),
+                    & ~Q(submissions__state=SubmissionStates.DRAFT),
                 )
             ).order_by("-count")
         else:
@@ -541,8 +536,6 @@ class SubmissionFilterForm(forms.Form):
             option=self.cleaned_data.get("answer__options"),
             unanswered=self.cleaned_data.get("unanswered"),
         )
-        if not self.cleaned_data.get("state"):
-            qs = qs.exclude(state="deleted")
         return qs
 
     class Media:

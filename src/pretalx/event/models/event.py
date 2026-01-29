@@ -1160,10 +1160,7 @@ class Event(PretalxModel):
         for entry, detail in deletion_order:
             if detail:
                 for obj in entry:
-                    if isinstance(obj, Submission):
-                        obj.delete(force=True)
-                    else:
-                        obj.delete()
+                    obj.delete()
             else:
                 entry.delete()
 

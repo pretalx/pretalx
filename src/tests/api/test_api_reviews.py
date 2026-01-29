@@ -157,23 +157,6 @@ def test_orga_can_see_expanded_reviews(
 
 
 @pytest.mark.django_db
-def test_orga_cannot_see_reviews_of_deleted_submission(
-    client, orga_user_token, event, review
-):
-    review.submission.state = "deleted"
-    review.submission.save()
-    response = client.get(
-        event.api_urls.reviews,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    content = json.loads(response.text)
-
-    assert response.status_code == 200
-    assert len(content["results"]) == 0
-
-
-@pytest.mark.django_db
 def test_reviewer_can_see_reviews(
     client, review_user_token, event, review, other_review
 ):
@@ -662,20 +645,6 @@ def test_orga_can_see_expanded_review_detail(
     assert content["user"]["code"] == user.code
     assert content["scores"][0]["category"]["name"]["en"] == category.name
     assert content["answers"][0]["answer"] == "text!"
-
-
-@pytest.mark.django_db
-def test_orga_cannot_see_review_detail_of_deleted_submission(
-    client, orga_user_token, event, review
-):
-    review.submission.state = "deleted"
-    review.submission.save()
-    response = client.get(
-        event.api_urls.reviews + f"{review.pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 404
 
 
 @pytest.mark.django_db

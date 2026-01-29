@@ -66,13 +66,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                         {{ session.start|date:"TIME_FORMAT" }}
                                     {% endifchanged %}
                                 </div>
-                                {% if not schedule.is_archived and session.submission and not session.submission.is_deleted %}
+                                {% if not schedule.is_archived and session.submission %}
                                     <a href="{{ session.submission.urls.public }}">
                                 {% endif %}
 
                                 {% include "agenda/session_block.html" %}
 
-                                {% if not schedule.is_archived and session.submission and not session.submission.is_deleted %}</a>{% endif %}
+                                {% if not schedule.is_archived and session.submission %}</a>{% endif %}
                             {% endfor %}
                         {% else %}
                             <div class="no-session">
