@@ -29,7 +29,8 @@ install-all:
 dev-setup: install-all
     just run collectstatic --noinput
     just run migrate
-    just run init
+    just run createsuperuser
+    uv pip install faker
     just run create_test_event
     just run
 
