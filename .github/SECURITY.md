@@ -1,19 +1,21 @@
 <!--
 SPDX-FileCopyrightText: 2019-present Tobias Kunze
 SPDX-License-Identifier: CC-BY-SA-4.0
+
+Keep in sync with doc/legal/security.rst and https://pretalx.com/.well-known/security.txt
 -->
 
 # Security Policy
 
-## Supported Versions
-
-Due to limited development bandwidth, only the [most recent release](https://pypi.org/project/pretalx/#history) is
-currently supported. If you need support for previous releases, please contact
-[support@pretalx.com](mailto:support@pretalx.com).
-
 ## Reporting a Vulnerability
 
-If you find a vulnerability in pretalx, please contact [support@pretalx.com](mailto:support@pretalx.com). We will
-respond in a timely manner. If appropriate, we will work with you on further processes/publishing and mitigation.
-Since we are a small open source project, we will not be able to pay bounties, but we will acknowledge you in the
-disclosure publication.
+Please see our [Security documentation](https://docs.pretalx.org/legal/security/).
+
+**Contact:** [support@pretalx.com](mailto:support@pretalx.com)
+
+**Encrypted:** [r@rixx.de](mailto:r@rixx.de) ([GPG key](https://keys.openpgp.org/search?q=E1F56CE6693F9C45))
+
+## Version Support
+
+Security support is provided for the current stable release only.
+See our [Release cycle](https://docs.pretalx.org/legal/release-cycle/) documentation for details.

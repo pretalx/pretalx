@@ -12,6 +12,7 @@ Legal & Policies
    :caption: Contents:
 
    licensing
+   security
    gdpr
    cookies
    browser-support
