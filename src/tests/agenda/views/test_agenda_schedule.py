@@ -90,20 +90,36 @@ def test_orga_can_see_wip_schedule(orga_client, event, slot, version):
 
 @pytest.mark.django_db
 @pytest.mark.usefixtures("other_slot")
-def test_can_see_text_schedule(client, event, slot):
-    response = client.get(event.urls.schedule, follow=True, HTTP_ACCEPT="text/plain")
+@pytest.mark.parametrize(
+    "accept_header,is_html",
+    (
+        # curl/wget/httpie default
+        ("*/*", False),
+        # explicit text/plain
+        ("text/plain", False),
+        # Firefox/Safari
+        ("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", True),
+        # Chrome/Edge
+        (
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            True,
+        ),
+        # Explicit HTML request
+        ("text/html", True),
+        # Broken/unknown accept header falls back to HTML
+        ("foo/bar", True),
+    ),
+)
+def test_schedule_content_negotiation(client, event, slot, accept_header, is_html):
+    response = client.get(event.urls.schedule, follow=True, HTTP_ACCEPT=accept_header)
     assert response.status_code == 200
-    with scope(event=event):
-        assert slot.submission.title[:10] in response.text
-
-
-@pytest.mark.django_db
-@pytest.mark.usefixtures("slot", "other_slot")
-def test_can_see_schedule_with_broken_accept_header(client, event):
-    response = client.get(event.urls.schedule, follow=True, HTTP_ACCEPT="foo/bar")
-    assert response.status_code == 200
-    with scope(event=event):
+    if is_html:
+        assert "text/html" in response.headers.get("Content-Type", "")
         assert "<pretalx-schedule" in response.text
+    else:
+        assert "text/plain" in response.headers.get("Content-Type", "")
+        with scope(event=event):
+            assert slot.submission.title[:10] in response.text
 
 
 @pytest.mark.django_db
@@ -240,21 +256,6 @@ def test_schedule_page_text_table(client, django_assert_num_queries, event, slot
     url = event.urls.schedule
     with django_assert_num_queries(8):
         response = client.get(url, follow=True)
-    assert response.status_code == 200
-    title_lines = textwrap.wrap(slot.submission.title, width=16)
-    content = response.text
-    for line in title_lines:
-        assert line in content
-
-
-@pytest.mark.django_db
-@pytest.mark.usefixtures("other_slot")
-def test_schedule_page_text_table_explicit_header(
-    client, django_assert_num_queries, event, slot
-):
-    url = event.urls.schedule
-    with django_assert_num_queries(8):
-        response = client.get(url, follow=True, HTTP_ACCEPT="text/plain")
     assert response.status_code == 200
     title_lines = textwrap.wrap(slot.submission.title, width=16)
     content = response.text

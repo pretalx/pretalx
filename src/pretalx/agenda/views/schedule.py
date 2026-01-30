@@ -140,12 +140,19 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
 
     def get(self, request, **kwargs):
         accept_header = request.headers.get("Accept") or ""
-        if getattr(self, "is_html_export", False) or (
-            accept_header and request.accepts("text/html")
-        ):
+
+        if getattr(self, "is_html_export", False):
             return super().get(request, **kwargs)
 
-        if not accept_header or request.accepts("text/plain"):
+        # No Accept header or just "*/*" (curl's default) - return text
+        if not accept_header or accept_header.strip() == "*/*":
+            return self.get_text(request, **kwargs)
+
+        # Anything else listing "*/*" or HTML explicitly
+        if request.accepts("text/html"):
+            return super().get(request, **kwargs)
+
+        if request.accepts("text/plain"):
             return self.get_text(request, **kwargs)
 
         export_headers = {
@@ -159,9 +166,7 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
                 response.status_code = 303
                 return response
 
-        if "*/*" in accept_header:
-            return self.get_text(request, **kwargs)
-        return super().get(request, **kwargs)  # Fallback to standard HTML response
+        return super().get(request, **kwargs)
 
     def get_object(self):
         if self.version == "wip":
