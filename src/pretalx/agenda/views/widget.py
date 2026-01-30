@@ -15,6 +15,7 @@ from pretalx.agenda.rules import is_widget_visible
 from pretalx.common.views.cache import conditional_cache_page
 
 WIDGET_JS_CHECKSUM = None
+WIDGET_JS_CONTENT = None
 WIDGET_PATH = "agenda/js/pretalx-schedule.min.js"
 
 
@@ -24,14 +25,19 @@ def color_etag(request, event, **kwargs):
     return f"{color}:{request.event.primary_color_needs_dark_text}"
 
 
+def _load_widget_js():
+    global WIDGET_JS_CHECKSUM, WIDGET_JS_CONTENT
+    if WIDGET_JS_CONTENT is None:
+        file_path = finders.find(WIDGET_PATH)
+        with open(file_path, encoding="utf-8") as fp:
+            WIDGET_JS_CONTENT = fp.read().encode()
+        WIDGET_JS_CHECKSUM = hashlib.md5(WIDGET_JS_CONTENT).hexdigest()
+
+
 def widget_js_etag(request, event, **kwargs):
     # The widget is stable across all events, we just return a checksum of the JS file
     # to make sure clients reload the widget when it changes.
-    global WIDGET_JS_CHECKSUM
-    if not WIDGET_JS_CHECKSUM:
-        file_path = finders.find(WIDGET_PATH)
-        with open(file_path, encoding="utf-8") as fp:
-            WIDGET_JS_CHECKSUM = hashlib.md5(fp.read().encode()).hexdigest()
+    _load_widget_js()
     return WIDGET_JS_CHECKSUM
 
 
@@ -121,11 +127,8 @@ def widget_script(request, event):
     if not request.user.has_perm("schedule.view_widget_schedule", request.event):
         raise Http404()
 
-    file_path = finders.find(WIDGET_PATH)
-    with open(file_path, encoding="utf-8") as fp:
-        code = fp.read()
-    data = code.encode()
-    return HttpResponse(data, content_type="text/javascript")
+    _load_widget_js()
+    return HttpResponse(WIDGET_JS_CONTENT, content_type="text/javascript")
 
 
 @condition(etag_func=color_etag)
