@@ -146,6 +146,8 @@ You can assign colours to tracks, in order to make them distinct in the public s
 
 Tracks can also be used to assign reviewer permissions, which is useful if your reviewers are domain experts in specific topics (more in the :ref:`Review Guide <user-guide-review>`).
 
+Tracks that require an access code are only visible to users who have one (more in :ref:`Access codes <user-guide-access-codes>`)
+
 You don’t have to use tracks at all, and you can turn them off in the CfP settings.
 
 Session Types
@@ -161,8 +163,29 @@ Session Types define the format and default duration of sessions. Common example
 Session types make scheduling easier for you, because you can just drag blocks of the correct duration onto the schedule.
 You can always override the duration of a session individually, but offering these categories can help the submitter communicate their intended format from the beginning.
 
+Session types that require an access code are only visible to users who have one (more in :ref:`Access codes <user-guide-access-codes>`)
+
 If you don’t want to use session types, just don’t create any beyond the default one that pretalx creates for you.
 If there is only a single session type, pretalx will not show the session type selection field at all.
+
+.. _`user-guide-access-codes`:
+
+Access Codes
+^^^^^^^^^^^^
+
+Access codes allow you to reveal specific tracks or session types to selected users, whilst keeping them hidden from the general public.
+
+Tracks and session types created with the "Requires access code" option are not visible to general visitors of your event. By creating an access code, you can make these hidden items visible to users who enter it.
+
+Code not assigned to any specific track or session type will unlock all hidden tracks and session types. To restrict a code to particular items, select them from the "Tracks" or "Session type" dropdown lists.
+
+You can also optionally limit:
+
+
+- the validity period of your access codes
+- the maximum number of times each code can be used.
+
+After creating an access code, click the "Copy" or "Email" icon to distribute it.
 
 Tags
 ^^^^
