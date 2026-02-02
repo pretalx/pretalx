@@ -1646,7 +1646,6 @@ paths:
             - accepted
             - canceled
             - confirmed
-            - deleted
             - draft
             - rejected
             - submitted
@@ -1660,7 +1659,6 @@ paths:
           * `rejected` - rejected
           * `canceled` - canceled
           * `withdrawn` - withdrawn
-          * `deleted` - deleted
           * `draft` - draft
         explode: true
         style: form
@@ -1675,7 +1673,6 @@ paths:
             - accepted
             - canceled
             - confirmed
-            - deleted
             - draft
             - rejected
             - submitted
@@ -1689,7 +1686,6 @@ paths:
           * `rejected` - rejected
           * `canceled` - canceled
           * `withdrawn` - withdrawn
-          * `deleted` - deleted
           * `draft` - draft
         explode: true
         style: form
@@ -1933,7 +1929,6 @@ paths:
             - accepted
             - canceled
             - confirmed
-            - deleted
             - draft
             - rejected
             - submitted
@@ -1947,7 +1942,6 @@ paths:
           * `rejected` - rejected
           * `canceled` - canceled
           * `withdrawn` - withdrawn
-          * `deleted` - deleted
           * `draft` - draft
         explode: true
         style: form
@@ -1962,7 +1956,6 @@ paths:
             - accepted
             - canceled
             - confirmed
-            - deleted
             - draft
             - rejected
             - submitted
@@ -1976,7 +1969,6 @@ paths:
           * `rejected` - rejected
           * `canceled` - canceled
           * `withdrawn` - withdrawn
-          * `deleted` - deleted
           * `draft` - draft
         explode: true
         style: form
@@ -3338,7 +3330,6 @@ paths:
             - accepted
             - canceled
             - confirmed
-            - deleted
             - draft
             - rejected
             - submitted
@@ -3350,7 +3341,6 @@ paths:
           * `rejected` - rejected
           * `canceled` - canceled
           * `withdrawn` - withdrawn
-          * `deleted` - deleted
           * `draft` - draft
         explode: true
         style: form
@@ -3370,7 +3360,6 @@ paths:
             - accepted
             - canceled
             - confirmed
-            - deleted
             - draft
             - rejected
             - submitted
@@ -3382,7 +3371,6 @@ paths:
           * `rejected` - rejected
           * `canceled` - canceled
           * `withdrawn` - withdrawn
-          * `deleted` - deleted
           * `draft` - draft
         explode: true
         style: form
@@ -3788,7 +3776,6 @@ paths:
             - accepted
             - canceled
             - confirmed
-            - deleted
             - draft
             - rejected
             - submitted
@@ -3800,7 +3787,6 @@ paths:
           * `rejected` - rejected
           * `canceled` - canceled
           * `withdrawn` - withdrawn
-          * `deleted` - deleted
           * `draft` - draft
         explode: true
         style: form
@@ -3821,7 +3807,6 @@ paths:
             - accepted
             - canceled
             - confirmed
-            - deleted
             - draft
             - rejected
             - submitted
@@ -3833,7 +3818,6 @@ paths:
           * `rejected` - rejected
           * `canceled` - canceled
           * `withdrawn` - withdrawn
-          * `deleted` - deleted
           * `draft` - draft
         explode: true
         style: form
@@ -5174,13 +5158,15 @@ components:
             writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
             uploads endpoint</a>.
         header_image:
-          type: string
-          format: uri
-          nullable: true
-          description: If you provide a header image, it will be displayed instead
-            of your event’s color and/or header pattern at the top of all event pages.
-            It will be center-aligned, so when the window shrinks, the center parts
-            will continue to be displayed, and not stretched.
+          type: str
+          description: When reading data, a URL pointing to a downloadable file. When
+            writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
+            uploads endpoint</a>.
+        og_image:
+          type: str
+          description: When reading data, a URL pointing to a downloadable file. When
+            writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
+            uploads endpoint</a>.
         locale:
           allOf:
           - $ref: '#/components/schemas/LocaleEnum'
@@ -5909,7 +5895,6 @@ components:
       - rejected
       - canceled
       - withdrawn
-      - deleted
       - draft
       type: string
       description: |-
@@ -5919,7 +5904,6 @@ components:
         * `rejected` - rejected
         * `canceled` - canceled
         * `withdrawn` - withdrawn
-        * `deleted` - deleted
         * `draft` - draft
     Question:
       type: object
@@ -6423,7 +6407,7 @@ components:
         text:
           type: string
           nullable: true
-          title: What do you think?
+          title: Review
         score:
           type: string
           format: decimal
@@ -6489,7 +6473,7 @@ components:
         text:
           type: string
           nullable: true
-          title: What do you think?
+          title: Review
         scores:
           type: array
           items:
@@ -6978,7 +6962,6 @@ components:
       - rejected
       - canceled
       - withdrawn
-      - deleted
       - draft
       type: string
       description: |-
@@ -6988,7 +6971,6 @@ components:
         * `rejected` - rejected
         * `canceled` - canceled
         * `withdrawn` - withdrawn
-        * `deleted` - deleted
         * `draft` - draft
     Submission:
       type: object
