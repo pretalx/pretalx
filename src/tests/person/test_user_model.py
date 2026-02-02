@@ -95,9 +95,9 @@ def test_shred_user(user):
 @pytest.mark.parametrize(
     "code,filename,expected_start,expected_end",
     (
-        ("ABCDEF", "foo.jpg", "avatars/ABCDEF", ".jpg"),
-        (None, "foo.jpg", "avatars/foo", ".jpg"),
-        ("ABCDEF", "foo.jpeg", "avatars/ABCDEF", ".jpeg"),
+        ("ABCDEF", "foo.jpg", "avatars/ABCDEF_", ".jpg"),
+        (None, "foo.jpg", "avatars/avatar_", ".jpg"),
+        ("ABCDEF", "foo.jpeg", "avatars/ABCDEF_", ".jpeg"),
     ),
 )
 def test_avatar_path(code, filename, expected_start, expected_end):

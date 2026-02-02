@@ -40,26 +40,41 @@ def test_daterange(locale, start, end, result):
 
 
 @pytest.mark.parametrize(
-    "path,expected",
+    "original_name,target_name,upload_dir,expected",
     (
-        ("foo.bar", "foo_aaaaaaa.bar"),
-        ("foo_.bar", "foo__aaaaaaa.bar"),
-        ("foo", "foo_aaaaaaa"),
-        ("/home/foo.bar", "/home/foo_aaaaaaa.bar"),
-        ("/home/foo_.bar", "/home/foo__aaaaaaa.bar"),
-        ("/home/foo", "/home/foo_aaaaaaa"),
-        ("home/foo.bar", "home/foo_aaaaaaa.bar"),
-        ("home/foo_.bar", "home/foo__aaaaaaa.bar"),
-        ("home/foo", "home/foo_aaaaaaa"),
+        ("foo.bar", "avatar", None, "avatar_aaaaaaa.bar"),
+        ("foo.bar", "logo", "event/img/", "event/img/logo_aaaaaaa.bar"),
+        (
+            "user_file.png",
+            "image",
+            "submissions/ABC/",
+            "submissions/ABC/image_aaaaaaa.png",
+        ),
+        ("foo.bar", "foo", None, "foo_aaaaaaa.bar"),
+        ("foo_.bar", "foo_", None, "foo__aaaaaaa.bar"),
+        ("foo", "foo", None, "foo_aaaaaaa"),
+        (
+            "document.pdf",
+            "document",
+            "event/resources/",
+            "event/resources/document_aaaaaaa.pdf",
+        ),
+        # Paths in filename are stripped (use upload_dir instead)
+        ("/home/foo.bar", "avatar", None, "avatar_aaaaaaa.bar"),
+        ("home/foo.bar", "foo", None, "foo_aaaaaaa.bar"),
+        ("/absolute/path/doc.pdf", "doc", "resources/", "resources/doc_aaaaaaa.pdf"),
     ),
 )
-def test_path_with_hash(path, expected, monkeypatch):
+def test_hashed_path(original_name, target_name, upload_dir, expected, monkeypatch):
     monkeypatch.setattr(
         "pretalx.common.text.path.get_random_string", lambda x: "aaaaaaa"
     )
-    from pretalx.common.text.path import path_with_hash
+    from pretalx.common.text.path import hashed_path
 
-    assert path_with_hash(path) == expected
+    assert (
+        hashed_path(original_name, target_name=target_name, upload_dir=upload_dir)
+        == expected
+    )
 
 
 @pytest.mark.parametrize(

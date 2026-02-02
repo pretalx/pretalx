@@ -6,7 +6,6 @@ import random
 import uuid
 from contextlib import suppress
 from hashlib import md5
-from pathlib import Path
 from urllib.parse import urljoin
 
 from django.conf import settings
@@ -30,7 +29,7 @@ from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.image import create_thumbnail
 from pretalx.common.models import TIMEZONE_CHOICES
 from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode, LogMixin
-from pretalx.common.text.path import path_with_hash
+from pretalx.common.text.path import hashed_path
 from pretalx.common.urls import EventUrls, build_absolute_uri
 from pretalx.person.rules import is_administrator
 
@@ -38,10 +37,9 @@ from ..signals import delete_user as delete_user_signal
 
 
 def avatar_path(instance, filename):
-    if instance.code:
-        extension = Path(filename).suffix
-        filename = f"{instance.code}{extension}"
-    return path_with_hash(filename, base_path="avatars")
+    return hashed_path(
+        filename, target_name=instance.code or "avatar", upload_dir="avatars"
+    )
 
 
 class UserQuerySet(models.QuerySet):

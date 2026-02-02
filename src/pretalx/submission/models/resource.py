@@ -10,13 +10,16 @@ from django.utils.translation import gettext_lazy as _
 from django_scopes import ScopedManager
 
 from pretalx.common.models.mixins import PretalxModel
-from pretalx.common.text.path import path_with_hash
+from pretalx.common.text.path import hashed_path, safe_filename
 from pretalx.common.urls import get_base_url
 
 
 def resource_path(instance, filename):
-    base_path = f"{instance.submission.event.slug}/submissions/{instance.submission.code}/resources/"
-    return path_with_hash(filename, base_path=base_path)
+    return hashed_path(
+        filename,
+        target_name=safe_filename(Path(filename).stem),
+        upload_dir=f"{instance.submission.event.slug}/submissions/{instance.submission.code}/resources/",
+    )
 
 
 class Resource(PretalxModel):

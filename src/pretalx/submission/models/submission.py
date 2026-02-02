@@ -35,7 +35,7 @@ from pretalx.common.exceptions import SubmissionError
 from pretalx.common.models.choices import Choices
 from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
-from pretalx.common.text.path import path_with_hash
+from pretalx.common.text.path import hashed_path
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import serialize_duration
 from pretalx.common.urls import EventUrls
@@ -67,8 +67,10 @@ def generate_invite_code(length=32):
 
 
 def submission_image_path(instance, filename):
-    return path_with_hash(
-        filename, base_path=f"{instance.event.slug}/submissions/{instance.code}/"
+    return hashed_path(
+        filename,
+        target_name="image",
+        upload_dir=f"{instance.event.slug}/submissions/{instance.code}/",
     )
 
 
