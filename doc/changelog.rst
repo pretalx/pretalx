@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :bug:`orga` Sending a test email in the Administration Information page causes a ValueError.
 - :feature:`dev,1974` Plugins can now prevent submission state changes by listening to the new ``before_submission_state_change`` signal and raising ``SubmissionError``.
 - :feature:`schedule,1911` You can filter the schedule to show only sessions that will not be recorded.
 - :bug:`orga` Server administrators would see a button to create a new user on the admin user list, even though pretalx does not have a generic user creation functionality.
