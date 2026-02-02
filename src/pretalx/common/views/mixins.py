@@ -261,6 +261,8 @@ class SocialMediaCardMixin:
                 return FileResponse(image)
         except Exception:
             pass
+        if self.request.event.og_image:
+            return FileResponse(self.request.event.og_image)
         if self.request.event.logo:
             return FileResponse(self.request.event.logo)
         if self.request.event.header_image:
