@@ -5,10 +5,17 @@
 # SPDX-FileContributor: Natalia Katsiapi
 
 import pytest
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.db import IntegrityError
 from django_scopes import scope
 
 from pretalx.submission.models import Answer, AnswerOption, Question
+from pretalx.submission.models.question import (
+    QuestionTarget,
+    QuestionVariant,
+    answer_file_path,
+)
 
 
 @pytest.mark.parametrize("target", ("submission", "speaker", "reviewer"))
@@ -229,12 +236,6 @@ def test_generate_unique_codes_batch(choice_question):
 )
 @pytest.mark.django_db
 def test_answer_file_path(event, submission, speaker, review, target, related_attr):
-    from pretalx.submission.models.question import (
-        QuestionTarget,
-        QuestionVariant,
-        answer_file_path,
-    )
-
     with scope(event=event):
         question = Question.objects.create(
             event=event,
@@ -260,3 +261,56 @@ def test_answer_file_path(event, submission, speaker, review, target, related_at
         assert f"q{question.pk}-{expected_code}_" in path
         assert path.endswith(".pdf")
         assert "user_provided_name" not in path
+
+
+@pytest.mark.django_db
+def test_answer_file_deleted_on_answer_delete(event, submission):
+    with scope(event=event):
+        question = Question.objects.create(
+            event=event,
+            question="Upload a file",
+            variant=QuestionVariant.FILE,
+            target=QuestionTarget.SUBMISSION,
+        )
+        answer = Answer.objects.create(
+            question=question,
+            submission=submission,
+            answer="",
+        )
+        answer.answer_file.save("test.pdf", ContentFile(b"test content"), save=True)
+        file_path = answer.answer_file.name
+
+        assert default_storage.exists(file_path)
+
+        answer.delete()
+
+        assert not default_storage.exists(file_path)
+
+
+@pytest.mark.django_db
+def test_answer_file_deleted_on_file_replace(event, submission):
+    with scope(event=event):
+        question = Question.objects.create(
+            event=event,
+            question="Upload a file",
+            variant=QuestionVariant.FILE,
+            target=QuestionTarget.SUBMISSION,
+        )
+        answer = Answer.objects.create(
+            question=question,
+            submission=submission,
+            answer="",
+        )
+        answer.answer_file.save("old_file.pdf", ContentFile(b"old content"), save=True)
+        old_file_path = answer.answer_file.name
+
+        assert default_storage.exists(old_file_path)
+
+        answer.answer_file.save("new_file.pdf", ContentFile(b"new content"), save=True)
+        new_file_path = answer.answer_file.name
+
+        assert not default_storage.exists(old_file_path)
+        assert default_storage.exists(new_file_path)
+
+        # Cleanup
+        answer.delete()

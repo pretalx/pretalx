@@ -194,26 +194,31 @@ class FileCleanupMixin:
         except Exception:
             return super().save(*args, **kwargs)
 
+        # Collect old file paths before save
+        old_files = {}
         for field in self._file_fields:
             if old_value := getattr(pre_save_instance, field):
                 new_value = getattr(self, field)
                 if new_value and old_value.path != new_value.path:
-                    # We don't want to delete the file immediately, as the save action
-                    # that triggered this task might still fail, so we schedule the
-                    # deletion for 10 seconds in the future, and pass the file field
-                    # to check if the file is still in use.
-                    from pretalx.common.tasks import task_cleanup_file
+                    old_files[field] = old_value.path
 
-                    task_cleanup_file.apply_async(
-                        kwargs={
-                            "model": str(self._meta.model_name.capitalize()),
-                            "pk": self.pk,
-                            "field": field,
-                            "path": old_value.path,
-                        },
-                        countdown=10,
-                    )
-        return super().save(*args, **kwargs)
+        result = super().save(*args, **kwargs)
+
+        # Schedule cleanup after save, so the database has the new path when
+        # the task runs (important for eager mode).
+        for field, path in old_files.items():
+            from pretalx.common.tasks import task_cleanup_file
+
+            task_cleanup_file.apply_async(
+                kwargs={
+                    "model": str(self._meta.model_name.capitalize()),
+                    "pk": self.pk,
+                    "field": field,
+                    "path": path,
+                },
+                countdown=10,
+            )
+        return result
 
     def _delete_files(self):
         for field in self._file_fields:
