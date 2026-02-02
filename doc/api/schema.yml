@@ -3931,6 +3931,64 @@ paths:
               schema:
                 $ref: '#/components/schemas/SubmissionOrga'
           description: ''
+  /api/events/{event}/submissions/{code__iexact}/resources/:
+    post:
+      operationId: submissions_resources_create
+      summary: Add Resource to Submission
+      parameters:
+      - in: path
+        name: code__iexact
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      tags:
+      - submissions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceWriteRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionOrga'
+          description: ''
+  /api/events/{event}/submissions/{code__iexact}/resources/{resource_id}/:
+    delete:
+      operationId: submissions_resources_destroy
+      summary: Remove Resource from Submission
+      parameters:
+      - in: path
+        name: code__iexact
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: event
+        schema:
+          type: string
+          description: The event’s slug
+        required: true
+      - in: path
+        name: resource_id
+        schema:
+          type: string
+          pattern: ^[0-9]+$
+        required: true
+      tags:
+      - submissions
+      responses:
+        '204':
+          description: No response body
   /api/events/{event}/submissions/{code}/favourite/:
     post:
       operationId: submissions_favourite_create
@@ -6391,6 +6449,33 @@ components:
           minLength: 1
       required:
       - user
+    ResourceWriteRequest:
+      type: object
+      description: |-
+        Resources may not be updated, only created and deleted. Use the
+        ``link`` field to provide an external link or the ``resource``
+        field to provide an uploaded file.
+      properties:
+        resource:
+          type: str
+          description: When reading data, a URL pointing to a downloadable file. When
+            writing adata, a reference to a file uploaded via the <a href="https://docs.pretalx.org/api/fundamentals/#file-uploads">file
+            uploads endpoint</a>.
+          nullable: true
+        link:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 400
+        description:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        is_public:
+          type: boolean
+          default: true
+      required:
+      - description
     Review:
       type: object
       description: |-

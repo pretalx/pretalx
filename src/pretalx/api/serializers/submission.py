@@ -28,6 +28,11 @@ from pretalx.submission.models import (
 
 @register_serializer()
 class ResourceSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+    """
+    Submission resources contain a URL,
+    which may point to external sites or to files uploaded to pretalx.
+    """
+
     resource = SerializerMethodField()
 
     @staticmethod
@@ -37,6 +42,40 @@ class ResourceSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     class Meta:
         model = Resource
         fields = ("id", "resource", "description", "is_public")
+
+
+class ResourceWriteSerializer(PretalxSerializer):
+    """
+    Resources may not be updated, only created and deleted. Use the
+    ``link`` field to provide an external link or the ``resource``
+    field to provide an uploaded file.
+    """
+
+    resource = UploadedFileField(required=False, allow_null=True)
+    link = serializers.URLField(
+        required=False, allow_null=True, allow_blank=True, max_length=400
+    )
+    description = serializers.CharField(required=True, max_length=1000)
+    is_public = serializers.BooleanField(required=False, default=True)
+
+    class Meta:
+        model = Resource
+        fields = ("resource", "link", "description", "is_public")
+
+    def validate(self, data):
+        has_resource = data.get("resource") is not None
+        has_link = bool(data.get("link"))
+        if has_resource and has_link:
+            raise serializers.ValidationError(
+                "Provide either a link or a file, not both."
+            )
+        if not has_resource and not has_link:
+            raise serializers.ValidationError("Provide either a link or a file.")
+        return data
+
+    def create(self, validated_data):
+        validated_data["link"] = validated_data.get("link") or ""
+        return super().create(validated_data)
 
 
 @register_serializer(versions=CURRENT_VERSIONS)

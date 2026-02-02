@@ -4,6 +4,8 @@
 import json
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 from django_scopes import scope
 
 from pretalx.api.serializers.submission import (
@@ -14,7 +16,13 @@ from pretalx.api.serializers.submission import (
     TrackSerializer,
 )
 from pretalx.api.versions import LEGACY
-from pretalx.submission.models import Submission, SubmissionInvitation, SubmissionStates
+from pretalx.common.models import CachedFile
+from pretalx.submission.models import (
+    Resource,
+    Submission,
+    SubmissionInvitation,
+    SubmissionStates,
+)
 
 
 @pytest.mark.django_db
@@ -1899,3 +1907,266 @@ def test_orga_can_expand_invitations(client, orga_user_token, submission):
     assert sub_data["invitations"][0]["email"] == "expandtest@example.com"
     assert "id" in sub_data["invitations"][0]
     assert "created" in sub_data["invitations"][0]
+
+
+@pytest.mark.django_db
+def test_orga_can_add_link_resource(client, orga_user_write_token, submission):
+    response = client.post(
+        submission.event.api_urls.submissions + f"{submission.code}/resources/",
+        follow=True,
+        data=json.dumps(
+            {
+                "link": "https://example.com/slides.pdf",
+                "description": "My slides",
+                "is_public": True,
+            }
+        ),
+        content_type="application/json",
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 200, response.text
+    with scope(event=submission.event):
+        submission.refresh_from_db()
+        assert submission.resources.count() == 1
+        resource = submission.resources.first()
+        assert resource.link == "https://example.com/slides.pdf"
+        assert resource.description == "My slides"
+        assert resource.is_public is True
+        log_entry = (
+            submission.logged_actions()
+            .filter(action_type="pretalx.submission.update")
+            .first()
+        )
+        assert log_entry is not None
+        assert "resources" in log_entry.data.get("changes", {})
+
+
+@pytest.mark.django_db
+def test_orga_can_add_file_resource(client, orga_user_write_token, submission):
+    f = SimpleUploadedFile(
+        "testfile.pdf", b"test content", content_type="application/pdf"
+    )
+    cached_file = CachedFile.objects.create(
+        session_key=f"api-upload-{orga_user_write_token.token}",
+        filename="testfile.pdf",
+        content_type="application/pdf",
+        expires=timezone.now() + timezone.timedelta(hours=1),
+    )
+    cached_file.file.save("testfile.pdf", f)
+    cached_file.save()
+
+    response = client.post(
+        submission.event.api_urls.submissions + f"{submission.code}/resources/",
+        follow=True,
+        data=json.dumps(
+            {
+                "resource": f"file:{cached_file.pk}",
+                "description": "Uploaded slides",
+                "is_public": False,
+            }
+        ),
+        content_type="application/json",
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 200, response.text
+    with scope(event=submission.event):
+        submission.refresh_from_db()
+        assert submission.resources.count() == 1
+        resource = submission.resources.first()
+        assert resource.resource is not None
+        assert resource.description == "Uploaded slides"
+        assert resource.is_public is False
+
+
+@pytest.mark.django_db
+def test_orga_cannot_add_resource_both_link_and_file(
+    client, orga_user_write_token, submission
+):
+    f = SimpleUploadedFile(
+        "testfile.pdf", b"test content", content_type="application/pdf"
+    )
+    cached_file = CachedFile.objects.create(
+        session_key=f"api-upload-{orga_user_write_token.token}",
+        filename="testfile.pdf",
+        content_type="application/pdf",
+        expires=timezone.now() + timezone.timedelta(hours=1),
+    )
+    cached_file.file.save("testfile.pdf", f)
+    cached_file.save()
+
+    response = client.post(
+        submission.event.api_urls.submissions + f"{submission.code}/resources/",
+        follow=True,
+        data=json.dumps(
+            {
+                "resource": f"file:{cached_file.pk}",
+                "link": "https://example.com/slides.pdf",
+                "description": "Both link and file",
+            }
+        ),
+        content_type="application/json",
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 400
+    content = json.loads(response.text)
+    assert "either a link or a file" in str(content).lower()
+
+
+@pytest.mark.django_db
+def test_orga_cannot_add_resource_neither(client, orga_user_write_token, submission):
+    response = client.post(
+        submission.event.api_urls.submissions + f"{submission.code}/resources/",
+        follow=True,
+        data=json.dumps(
+            {
+                "description": "No link or file",
+            }
+        ),
+        content_type="application/json",
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 400
+    content = json.loads(response.text)
+    assert "either a link or a file" in str(content).lower()
+
+
+@pytest.mark.django_db
+def test_orga_can_remove_resource(client, orga_user_write_token, submission):
+    resource = Resource.objects.create(
+        submission=submission,
+        link="https://example.com/to-delete.pdf",
+        description="To be deleted",
+    )
+    resource_id = resource.pk
+
+    response = client.delete(
+        submission.event.api_urls.submissions
+        + f"{submission.code}/resources/{resource_id}/",
+        follow=True,
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 204
+    with scope(event=submission.event):
+        assert not Resource.objects.filter(pk=resource_id).exists()
+        log_entry = (
+            submission.logged_actions()
+            .filter(action_type="pretalx.submission.update")
+            .first()
+        )
+        assert log_entry is not None
+        assert "resources" in log_entry.data.get("changes", {})
+
+
+@pytest.mark.django_db
+def test_orga_can_remove_resource_with_existing_file(
+    client, orga_user_write_token, submission, resource
+):
+    resource_id = resource.pk
+    file_path = resource.resource.path
+    assert resource.resource.storage.exists(file_path)
+
+    response = client.delete(
+        submission.event.api_urls.submissions
+        + f"{submission.code}/resources/{resource_id}/",
+        follow=True,
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 204
+    with scope(event=submission.event):
+        assert not Resource.objects.filter(pk=resource_id).exists()
+    assert not resource.resource.storage.exists(file_path)
+
+
+@pytest.mark.django_db
+def test_orga_cannot_add_resource_readonly_token(client, orga_user_token, submission):
+    response = client.post(
+        submission.event.api_urls.submissions + f"{submission.code}/resources/",
+        follow=True,
+        data=json.dumps(
+            {
+                "link": "https://example.com/slides.pdf",
+                "description": "My slides",
+            }
+        ),
+        content_type="application/json",
+        headers={
+            "Authorization": f"Token {orga_user_token.token}",
+        },
+    )
+    assert response.status_code == 403
+    with scope(event=submission.event):
+        assert submission.resources.count() == 0
+
+
+@pytest.mark.django_db
+def test_orga_cannot_remove_resource_readonly_token(
+    client, orga_user_token, submission
+):
+    resource = Resource.objects.create(
+        submission=submission,
+        link="https://example.com/keep.pdf",
+        description="Should not be deleted",
+    )
+    resource_id = resource.pk
+
+    response = client.delete(
+        submission.event.api_urls.submissions
+        + f"{submission.code}/resources/{resource_id}/",
+        follow=True,
+        headers={
+            "Authorization": f"Token {orga_user_token.token}",
+        },
+    )
+    assert response.status_code == 403
+    with scope(event=submission.event):
+        assert Resource.objects.filter(pk=resource_id).exists()
+
+
+@pytest.mark.django_db
+def test_remove_nonexistent_resource_returns_404(
+    client, orga_user_write_token, submission
+):
+    response = client.delete(
+        submission.event.api_urls.submissions + f"{submission.code}/resources/99999/",
+        follow=True,
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_cannot_delete_resource_from_different_submission(
+    client, orga_user_write_token, submission, other_submission
+):
+    resource = Resource.objects.create(
+        submission=other_submission,
+        link="https://example.com/other.pdf",
+        description="Belongs to other submission",
+    )
+    resource_id = resource.pk
+
+    response = client.delete(
+        submission.event.api_urls.submissions
+        + f"{submission.code}/resources/{resource_id}/",
+        follow=True,
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 404
+    with scope(event=submission.event):
+        assert Resource.objects.filter(pk=resource_id).exists()
