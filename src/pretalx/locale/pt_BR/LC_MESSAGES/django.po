@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-01-26 07:38+0000\n"
-"PO-Revision-Date: 2025-12-09 06:41+0000\n"
+"PO-Revision-Date: 2026-01-30 07:25+0000\n"
 "Last-Translator: Renne Rocha <renne@rocha.dev.br>\n"
 "Language-Team: none\n"
 "Language: pt_BR\n"
@@ -837,7 +837,7 @@ msgid ""
 msgstr ""
 "Você pode retirar sua proposta do processo de seleção aqui. Você não pode "
 "desfazer essa ação. - se você está inseguro se pode ou deve manter sua "
-"sessão, por favor primeiro contate a organização."
+"sessão, por favor, primeiro contate a organização."
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:103
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:27
@@ -857,7 +857,7 @@ msgid ""
 msgstr ""
 "Você pode descartar seu rascunho de proposta aqui. Você não pode desfazer "
 "essa ação - se você está inseguro se pode ou deve enviar sua proposta, por "
-"favor contate a organização primeiro."
+"favor, contate a organização primeiro."
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:119
 #: pretalx/orga/views/mails.py:362
@@ -1084,7 +1084,7 @@ msgstr "Sua conta foi excluida."
 
 #: pretalx/cfp/views/user.py:510
 msgid "Are you really sure? Please tick the box"
-msgstr "Você tem certeza? Por favor selecione a caixinha"
+msgstr "Você tem certeza? Por favor, selecione a caixinha"
 
 #: pretalx/cfp/views/user.py:574 pretalx/orga/views/submission.py:325
 #, fuzzy
@@ -1099,7 +1099,7 @@ msgstr "Você não pode aceitar esse convite."
 #: pretalx/common/forms/fields.py:81
 #, python-brace-format
 msgid "Please do not upload files larger than {size}!"
-msgstr "Por favor não faça envio de arquivos maiores que {size}!"
+msgstr "Por favor, não envie de arquivos maiores que {size}!"
 
 #: pretalx/common/forms/fields.py:116
 #, python-brace-format
@@ -1156,32 +1156,32 @@ msgstr "Você está tentando alterar dados disponíveis só para leitura."
 #: pretalx/common/forms/mixins.py:125
 #, python-brace-format
 msgid "Please write between {min_length} and {max_length} words."
-msgstr "Por favor escreva entre {min_length} e {max_length} palavras."
+msgstr "Por favor, escreva entre {min_length} e {max_length} palavras."
 
 #: pretalx/common/forms/mixins.py:128
 #, python-brace-format
 msgid "Please write between {min_length} and {max_length} characters."
-msgstr "Por favor escreva entre {min_length} e {max_length} caracteres."
+msgstr "Por favor, escreva entre {min_length} e {max_length} caracteres."
 
 #: pretalx/common/forms/mixins.py:130
 #, python-brace-format
 msgid "Please write at least {min_length} words."
-msgstr "Por favor escreva pelo menos {min_length} palavras."
+msgstr "Por favor, escreva pelo menos {min_length} palavras."
 
 #: pretalx/common/forms/mixins.py:131
 #, python-brace-format
 msgid "Please write at least {min_length} characters."
-msgstr "Por favor escreva pelo menos {min_length} caracteres."
+msgstr "Por favor, escreva pelo menos {min_length} caracteres."
 
 #: pretalx/common/forms/mixins.py:132
 #, python-brace-format
 msgid "Please write at most {max_length} words."
-msgstr "Por favor escreva no máximo {max_length} palavras."
+msgstr "Por favor, escreva no máximo {max_length} palavras."
 
 #: pretalx/common/forms/mixins.py:133
 #, python-brace-format
 msgid "Please write at most {max_length} characters."
-msgstr "Por favor escreva no máximo {max_length} caracteres."
+msgstr "Por favor, escreva no máximo {max_length} caracteres."
 
 #: pretalx/common/forms/mixins.py:153
 #, python-brace-format
@@ -2148,7 +2148,7 @@ msgstr "Suas mudanças foram salvas."
 
 #: pretalx/common/text/phrases.py:67
 msgid "Please go back and try again."
-msgstr "Por favor volte e tente de novo."
+msgstr "Por favor, volte e tente de novo."
 
 #. Translators: This is an established term in the context of software development.
 #: pretalx/common/text/phrases.py:70
@@ -2162,7 +2162,7 @@ msgstr ""
 
 #: pretalx/common/text/phrases.py:75
 msgid "We had trouble saving your input – Please see below for details."
-msgstr "Tivemos problema em salvar seu envio – Por favor veja detalhes abaixo."
+msgstr "Tivemos problema em salvar seu envio – Por favor, veja detalhes abaixo."
 
 #: pretalx/common/text/phrases.py:77
 msgid "You do not have permission to perform this action."
@@ -2218,7 +2218,8 @@ msgstr "Nova senha (de novo)"
 #: pretalx/common/text/phrases.py:97
 msgid "You entered two different passwords. Please enter the same one twice!"
 msgstr ""
-"Você inseriu duas senhas diferentes. Por favor insira a mesma nas duas vezes!"
+"Você inseriu duas senhas diferentes. Por favor, insira a mesma nas duas "
+"vezes!"
 
 #: pretalx/common/text/phrases.py:99
 msgctxt "noun / heading"
@@ -2359,7 +2360,7 @@ msgstr ""
 
 #: pretalx/event/forms.py:73
 msgid "Please pick at least one permission for this team!"
-msgstr "Por favor selecione pelo menos uma permissão para esta equipe!"
+msgstr "Por favor, selecione pelo menos uma permissão para esta equipe!"
 
 #: pretalx/event/forms.py:112
 msgid "Email addresses"
@@ -7041,7 +7042,7 @@ msgid ""
 "Please confirm that you really want to change the state of these %(count)s "
 "proposals."
 msgstr ""
-"Por favor confirme que você realmente quer mudar o estado destas %(count)s "
+"Por favor, confirme que você realmente quer mudar o estado destas %(count)s "
 "propostas."
 
 #: pretalx/orga/templates/orga/submission/apply_pending.html:26
@@ -7205,7 +7206,7 @@ msgstr "Convite"
 msgid ""
 "Please confirm that you really want to change the state of this proposal."
 msgstr ""
-"Por favor confirme que você realmente quer mudar o estado dessa proposta."
+"Por favor, confirme que você realmente quer mudar o estado dessa proposta."
 
 #: pretalx/orga/templates/orga/submission/stats.html:26
 msgid "Proposal Statistics"
