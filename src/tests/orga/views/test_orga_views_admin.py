@@ -129,7 +129,7 @@ def test_test_mail_sends_email(client, user, settings, mailoutbox):
     user.save()
     client.login(email="dummy@dummy.dummy", password="dummy")
 
-    settings.ADMINS = [("Admin", "admin@example.com")]
+    settings.ADMINS = ["admin@example.com"]
     response = client.post("/orga/admin/test-mail/", follow=True)
     assert "Test email sent successfully" in response.text
     assert len(mailoutbox) == 1
