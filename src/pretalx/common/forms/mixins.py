@@ -501,7 +501,7 @@ class QuestionFieldsMixin:
         elif isinstance(field, forms.FileField):
             if isinstance(value, UploadedFile):
                 answer.answer_file.save(value.name, value, save=False)
-                answer.answer = "file://" + value.name
+                answer.answer = "file://" + answer.answer_file.name
             value = answer.answer
         else:
             answer.answer = value
