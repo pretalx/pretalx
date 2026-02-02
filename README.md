@@ -43,7 +43,7 @@
 | src/pretalx/api/serializers/schedule.py                                    |       71 |        1 |       12 |        1 |     98% |        38 |
 | src/pretalx/api/serializers/speaker.py                                     |       90 |        7 |       26 |        5 |     90% |38, 47, 70, 116, 147-149 |
 | src/pretalx/api/serializers/speaker\_information.py                        |       35 |        1 |        6 |        1 |     95% |        63 |
-| src/pretalx/api/serializers/submission.py                                  |      212 |       21 |       68 |       15 |     86% |82, 94, 120, 171, 185, 330-336, 342->344, 345, 350, 352-354, 363-364, 376, 378-379, 381, 383, 385 |
+| src/pretalx/api/serializers/submission.py                                  |      231 |       21 |       72 |       15 |     87% |121, 133, 159, 210, 224, 369-375, 381->383, 384, 389, 391-393, 402-403, 415, 417-418, 420, 422, 424 |
 | src/pretalx/api/serializers/team.py                                        |       49 |        0 |        8 |        0 |    100% |           |
 | src/pretalx/api/shims.py                                                   |       18 |       18 |        0 |        0 |      0% |     11-35 |
 | src/pretalx/api/versions.py                                                |       30 |        1 |       10 |        1 |     95% |        35 |
@@ -59,7 +59,7 @@
 | src/pretalx/api/views/schedule.py                                          |      129 |        8 |       36 |        8 |     90% |80, 90, 114, 148, 222, 300, 316, 322 |
 | src/pretalx/api/views/speaker.py                                           |       55 |        1 |       12 |        1 |     97% |       157 |
 | src/pretalx/api/views/speaker\_information.py                              |       19 |        0 |        2 |        0 |    100% |           |
-| src/pretalx/api/views/submission.py                                        |      223 |       28 |       28 |        5 |     86% |218, 239, 247, 254, 268-271, 281-284, 294-297, 307-310, 320-323, 375-378 |
+| src/pretalx/api/views/submission.py                                        |      248 |       28 |       28 |        5 |     87% |232, 253, 261, 268, 282-285, 295-298, 308-311, 321-324, 334-337, 389-392 |
 | src/pretalx/api/views/team.py                                              |       93 |        4 |        8 |        0 |     96% |83-84, 187-188 |
 | src/pretalx/api/views/upload.py                                            |       37 |        5 |        8 |        2 |     84% | 64, 75-78 |
 | src/pretalx/cfp/apps.py                                                    |        4 |        0 |        0 |        0 |    100% |           |
@@ -114,7 +114,7 @@
 | src/pretalx/common/models/fields.py                                        |       11 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/models/file.py                                          |       23 |        2 |        2 |        0 |     84% |     41-43 |
 | src/pretalx/common/models/log.py                                           |       81 |        9 |       32 |        9 |     82% |64-67, 90, 96->100, 105, 108, 113, 117->132, 122->132, 125 |
-| src/pretalx/common/models/mixins.py                                        |      206 |       27 |       86 |        6 |     85% |47, 129, 303, 320->318, 344, 347->exit, 351-354, 373-376, 379, 382, 385, 388, 392, 395-405 |
+| src/pretalx/common/models/mixins.py                                        |      206 |       29 |       86 |        7 |     84% |47, 129, 222-223, 303, 320->318, 344, 347->exit, 351-354, 373-376, 379, 382, 385, 388, 392, 395-405 |
 | src/pretalx/common/models/transaction.py                                   |       12 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/plugins.py                                              |       30 |        0 |        8 |        1 |     97% |    63->69 |
 | src/pretalx/common/settings/config.py                                      |       23 |        1 |        2 |        1 |     92% |       172 |
@@ -252,9 +252,9 @@
 | src/pretalx/submission/models/comment.py                                   |       24 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/submission/models/feedback.py                                  |       20 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/submission/models/question.py                                  |      255 |       23 |       60 |        6 |     86% |396, 400-401, 418-422, 428, 470->473, 534-540, 612, 621-623, 654->661, 656, 659-660 |
-| src/pretalx/submission/models/resource.py                                  |       36 |        0 |        6 |        2 |     95% |59->exit, 66->exit |
+| src/pretalx/submission/models/resource.py                                  |       40 |        0 |        8 |        2 |     96% |59->exit, 66->exit |
 | src/pretalx/submission/models/review.py                                    |      125 |       11 |       26 |        7 |     85% |55-56, 59->exit, 72, 76-78, 95, 98->102, 103, 108, 185, 301 |
-| src/pretalx/submission/models/submission.py                                |      518 |       39 |      120 |       16 |     90% |391-393, 469, 514->534, 520, 522, 526-528, 541-542, 659->665, 681-682, 784->exit, 791, 807-809, 812, 891-906, 955, 987, 1033-1035, 1046-1051, 1140->exit, 1159-1171, 1188->exit, 1250 |
+| src/pretalx/submission/models/submission.py                                |      519 |       38 |      122 |       15 |     90% |391-393, 469, 514->534, 522, 526-528, 541-542, 659->665, 681-682, 784->exit, 791, 807-809, 812, 892-907, 956, 988, 1034-1036, 1047-1052, 1141->exit, 1160-1172, 1189->exit, 1251 |
 | src/pretalx/submission/models/tag.py                                       |       24 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/submission/models/track.py                                     |       34 |        1 |        0 |        0 |     97% |        89 |
 | src/pretalx/submission/models/type.py                                      |       39 |        1 |        4 |        1 |     95% |        20 |
@@ -282,7 +282,7 @@
 | src/tests/api/test\_api\_schedule.py                                       |      498 |        0 |        6 |        0 |    100% |           |
 | src/tests/api/test\_api\_speaker\_information.py                           |      141 |        0 |        0 |        0 |    100% |           |
 | src/tests/api/test\_api\_speakers.py                                       |      299 |        0 |        4 |        0 |    100% |           |
-| src/tests/api/test\_api\_submissions.py                                    |      811 |        0 |        2 |        0 |    100% |           |
+| src/tests/api/test\_api\_submissions.py                                    |      906 |        0 |        2 |        0 |    100% |           |
 | src/tests/api/test\_api\_teams.py                                          |      208 |        0 |        0 |        0 |    100% |           |
 | src/tests/api/test\_api\_upload.py                                         |       30 |        0 |        0 |        0 |    100% |           |
 | src/tests/cfp/test\_cfp\_flow.py                                           |      134 |        0 |        0 |        0 |    100% |           |
@@ -358,10 +358,10 @@
 | src/tests/submission/test\_cfp\_model.py                                   |       15 |        0 |        2 |        0 |    100% |           |
 | src/tests/submission/test\_question\_model.py                              |      104 |        0 |        4 |        0 |    100% |           |
 | src/tests/submission/test\_review\_model.py                                |       19 |        0 |        0 |        0 |    100% |           |
-| src/tests/submission/test\_submission\_model.py                            |      289 |        0 |        6 |        0 |    100% |           |
+| src/tests/submission/test\_submission\_model.py                            |      298 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       45 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **33965** | **1942** | **5454** |  **768** | **92%** |           |
+| **TOTAL**                                                                  | **34118** | **1943** | **5462** |  **768** | **92%** |           |
 
 
 ## Setup coverage badge
