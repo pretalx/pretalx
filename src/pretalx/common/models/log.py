@@ -85,7 +85,11 @@ class ActivityLog(models.Model):
         """Returns a link (formatted HTML) to the object in question."""
         from pretalx.common.signals import activitylog_object_link
 
-        if not self.content_object:
+        try:
+            if not self.content_object:
+                return ""
+        except AttributeError:  # pragma: no cover
+            # Content types are terrible, terrible magic
             return ""
 
         responses = activitylog_object_link.send(sender=self.event, activitylog=self)
