@@ -601,6 +601,30 @@ def test_can_edit_and_update_speaker_answers(
         answer.refresh_from_db()
         assert answer.answer == "green as the sky"
 
+    # Test that replacing a file deletes the old one
+    with scope(event=event):
+        file_answer = speaker.answers.get(question_id=speaker_file_question.pk)
+        old_file_path = settings.MEDIA_ROOT / file_answer.answer_file.name
+        assert old_file_path.exists()
+
+    new_file = SimpleUploadedFile("newfile.txt", b"new_file_content")
+    response = speaker_client.post(
+        event.urls.user,
+        data={
+            f"question_{speaker_file_question.id}": new_file,
+            "form": "questions",
+        },
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    with scope(event=event):
+        file_answer.refresh_from_db()
+        new_file_path = settings.MEDIA_ROOT / file_answer.answer_file.name
+        assert file_answer.answer_file.read() == b"new_file_content"
+        assert new_file_path.exists()
+        assert not old_file_path.exists()
+
 
 @pytest.mark.django_db
 def test_cannot_delete_profile_on_first_try(speaker, event, speaker_client):

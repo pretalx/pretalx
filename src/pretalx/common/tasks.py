@@ -10,8 +10,8 @@ from django_scopes import scopes_disabled
 from pretalx.celery_app import app
 from pretalx.common.image import process_image
 from pretalx.event.models import Event
-from pretalx.person.models import User
-from pretalx.submission.models import Submission
+from pretalx.person.models import SpeakerInformation, User
+from pretalx.submission.models import Answer, Resource, Submission
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,10 @@ def task_process_image(*, model: str, pk: int, field: str, generate_thumbnail: b
 @app.task(name="pretalx.cleanup_file")
 def task_cleanup_file(*, model: str, pk: int, field: str, path: str):
     models = {
+        "Answer": Answer,
         "Event": Event,
+        "Resource": Resource,
+        "Speakerinformation": SpeakerInformation,
         "Submission": Submission,
         "User": User,
     }
