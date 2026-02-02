@@ -73,8 +73,6 @@ def test_orga_can_see_reviews_without_active_review_phase(
 ):
     with scope(event=event):
         event.review_phases.all().update(is_active=False)
-        if "active_review_phase" in event.__dict__:
-            del event.__dict__["active_review_phase"]
         assert event.review_phases.filter(is_active=True).count() == 0
 
     response = client.get(
@@ -94,8 +92,6 @@ def test_reviewer_cannot_see_reviews_without_active_review_phase(
 ):
     with scope(event=event):
         event.review_phases.all().update(is_active=False)
-        if "active_review_phase" in event.__dict__:
-            del event.__dict__["active_review_phase"]
         assert event.review_phases.filter(is_active=True).count() == 0
 
     response = client.get(

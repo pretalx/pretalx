@@ -162,9 +162,8 @@ def test_cfp_editor_reorder_fields(orga_client, event):
         flow_config = event.cfp.settings.get("flow", {})
         step_config = flow_config.get("steps", {}).get("info", {})
         fields = step_config.get("fields", [])
-        if fields:
-            field_keys = [f.get("key") for f in fields]
-            assert field_keys[:3] == ["abstract", "title", "description"]
+        field_keys = [f.get("key") for f in fields]
+        assert field_keys[:3] == ["abstract", "title", "description"]
 
 
 @pytest.mark.django_db
