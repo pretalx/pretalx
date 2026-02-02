@@ -36,6 +36,7 @@ def test_event_serializer(event):
         "custom_domain": event.custom_domain,
         "logo": None,
         "header_image": None,
+        "og_image": None,
         "locale": event.locale,
         "locales": event.locales,
         "content_locales": event.content_locales,

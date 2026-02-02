@@ -36,6 +36,8 @@ class EventListSerializer(ModelSerializer):
 @register_serializer()
 class EventSerializer(EventListSerializer):
     logo = UploadedFileField(required=False)
+    header_image = UploadedFileField(required=False)
+    og_image = UploadedFileField(required=False)
 
     class Meta(EventListSerializer.Meta):
         fields = EventListSerializer.Meta.fields + [
@@ -44,6 +46,7 @@ class EventSerializer(EventListSerializer):
             "custom_domain",
             "logo",
             "header_image",
+            "og_image",
             "locale",
             "locales",
             "content_locales",
