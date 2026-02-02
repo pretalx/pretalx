@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-02 09:35+0000\n"
+"POT-Creation-Date: 2026-02-02 10:05+0000\n"
 "PO-Revision-Date: 2025-04-08 14:25+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: none\n"
@@ -1425,16 +1425,22 @@ msgid "The event was modified."
 msgstr "Hội thảo này đã được chỉnh sửa."
 
 #: pretalx/common/log_display.py:73
-msgid "The invitation to the event orga was accepted."
-msgstr "Lời mời tham dự Hội thảo orga đã được chấp nhận."
+#, fuzzy
+#| msgid "A session type was deleted."
+msgid "The invitation was accepted."
+msgstr "Một loại phiên hội thảo đã được xoá."
 
 #: pretalx/common/log_display.py:74
-msgid "An invitation to the event orga was retracted."
-msgstr "Lời mời tham gia hội thảo orga đã được rút lại."
+#, fuzzy
+#| msgid "A session type was deleted."
+msgid "An invitation was retracted."
+msgstr "Một loại phiên hội thảo đã được xoá."
 
 #: pretalx/common/log_display.py:75
-msgid "An invitation to the event orga was sent."
-msgstr "Lời mời tham dự hội thảo orga đã được gửi."
+#, fuzzy
+#| msgid "The invitation was sent!"
+msgid "An invitation was sent."
+msgstr "Lời mời đã được gửi!"
 
 #: pretalx/common/log_display.py:77
 msgid "The invitation to the review team was retracted."
@@ -9743,6 +9749,15 @@ msgstr ""
 
 msgid "Hidden rooms"
 msgstr ""
+
+#~ msgid "The invitation to the event orga was accepted."
+#~ msgstr "Lời mời tham dự Hội thảo orga đã được chấp nhận."
+
+#~ msgid "An invitation to the event orga was retracted."
+#~ msgstr "Lời mời tham gia hội thảo orga đã được rút lại."
+
+#~ msgid "An invitation to the event orga was sent."
+#~ msgstr "Lời mời tham dự hội thảo orga đã được gửi."
 
 #, python-brace-format
 #~ msgid ""

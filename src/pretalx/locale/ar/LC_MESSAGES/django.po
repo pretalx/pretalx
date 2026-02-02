@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-02 09:35+0000\n"
+"POT-Creation-Date: 2026-02-02 10:05+0000\n"
 "PO-Revision-Date: 2025-01-15 10:49+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: none\n"
@@ -1463,16 +1463,22 @@ msgid "The event was modified."
 msgstr "تم تعديل الحدث."
 
 #: pretalx/common/log_display.py:73
-msgid "The invitation to the event orga was accepted."
-msgstr "تم قبول دعوة الحدث."
+#, fuzzy
+#| msgid "Speaker information note"
+msgid "The invitation was accepted."
+msgstr "ملاحظة معلومات المتحدث"
 
 #: pretalx/common/log_display.py:74
-msgid "An invitation to the event orga was retracted."
-msgstr "تم ابطال دعوة الحدث."
+#, fuzzy
+#| msgid "Speaker information note"
+msgid "An invitation was retracted."
+msgstr "ملاحظة معلومات المتحدث"
 
 #: pretalx/common/log_display.py:75
-msgid "An invitation to the event orga was sent."
-msgstr "تم إرسال دعوة الحدث."
+#, fuzzy
+#| msgid "The invitation was sent!"
+msgid "An invitation was sent."
+msgstr "تم إرسال الدعوة!"
 
 #: pretalx/common/log_display.py:77
 msgid "The invitation to the review team was retracted."
@@ -10222,6 +10228,15 @@ msgstr ""
 
 msgid "Hidden rooms"
 msgstr ""
+
+#~ msgid "The invitation to the event orga was accepted."
+#~ msgstr "تم قبول دعوة الحدث."
+
+#~ msgid "An invitation to the event orga was retracted."
+#~ msgstr "تم ابطال دعوة الحدث."
+
+#~ msgid "An invitation to the event orga was sent."
+#~ msgstr "تم إرسال دعوة الحدث."
 
 #~ msgid "What do you think?"
 #~ msgstr "ماذا تعتقد؟"

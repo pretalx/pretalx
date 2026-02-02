@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-02 09:35+0000\n"
+"POT-Creation-Date: 2026-02-02 10:05+0000\n"
 "PO-Revision-Date: 2026-01-20 13:42+0000\n"
 "Last-Translator: Vasil Kolew <vasil@ludost.net>\n"
 "Language-Team: none\n"
@@ -1378,16 +1378,22 @@ msgid "The event was modified."
 msgstr "Събитието беше променено."
 
 #: pretalx/common/log_display.py:73
-msgid "The invitation to the event orga was accepted."
-msgstr "Поканата до организационния екип беше приета."
+#, fuzzy
+#| msgid "A speaker invitation was accepted."
+msgid "The invitation was accepted."
+msgstr "Покана за лектор беше приета."
 
 #: pretalx/common/log_display.py:74
-msgid "An invitation to the event orga was retracted."
-msgstr "Покана до организационния екип беше оттеглена."
+#, fuzzy
+#| msgid "A speaker invitation was retracted."
+msgid "An invitation was retracted."
+msgstr "Поканата за лектор беше оттеглена."
 
 #: pretalx/common/log_display.py:75
-msgid "An invitation to the event orga was sent."
-msgstr "Покана до организационния екип беше изпратена."
+#, fuzzy
+#| msgid "The invitation was sent!"
+msgid "An invitation was sent."
+msgstr "Поканата е изпратена!"
 
 #: pretalx/common/log_display.py:77
 msgid "The invitation to the review team was retracted."
@@ -9464,6 +9470,15 @@ msgstr "разглежда се"
 msgctxt "proposal status"
 msgid "not accepted"
 msgstr "неприето"
+
+#~ msgid "The invitation to the event orga was accepted."
+#~ msgstr "Поканата до организационния екип беше приета."
+
+#~ msgid "An invitation to the event orga was retracted."
+#~ msgstr "Покана до организационния екип беше оттеглена."
+
+#~ msgid "An invitation to the event orga was sent."
+#~ msgstr "Покана до организационния екип беше изпратена."
 
 #~ msgid "What do you think?"
 #~ msgstr "Какво мислите?"

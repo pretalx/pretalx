@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-02 09:35+0000\n"
+"POT-Creation-Date: 2026-02-02 10:05+0000\n"
 "PO-Revision-Date: 2025-03-21 21:22+0000\n"
 "Last-Translator: Lysandros Nikolaou <lisandrosnik@gmail.com>\n"
 "Language-Team: none\n"
@@ -1485,16 +1485,22 @@ msgid "The event was modified."
 msgstr "Η εκδήλωση έχει τροποποιηθεί."
 
 #: pretalx/common/log_display.py:73
-msgid "The invitation to the event orga was accepted."
-msgstr "Η πρόσκληση στην οργάνωση της εκδήλωσης έγινε αποδεκτή."
+#, fuzzy
+#| msgid "Speaker information note"
+msgid "The invitation was accepted."
+msgstr "Σημείωση για Πληροφορίες Ομιλητή"
 
 #: pretalx/common/log_display.py:74
-msgid "An invitation to the event orga was retracted."
-msgstr "Η πρόσκληση στην οργάνωση της εκδήλωσης δεν έγινε αποδεκτή."
+#, fuzzy
+#| msgid "The team invitation was retracted."
+msgid "An invitation was retracted."
+msgstr "Η ομαδική πρόσκληση ανακλήθηκε."
 
 #: pretalx/common/log_display.py:75
-msgid "An invitation to the event orga was sent."
-msgstr "Η πρόσκληση στην εκδήλωση έχει αποσταλεί."
+#, fuzzy
+#| msgid "The invitation was sent!"
+msgid "An invitation was sent."
+msgstr "Η πρόσκληση έχει σταλεί!"
 
 #: pretalx/common/log_display.py:77
 msgid "The invitation to the review team was retracted."
@@ -10367,6 +10373,15 @@ msgstr ""
 
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
+
+#~ msgid "The invitation to the event orga was accepted."
+#~ msgstr "Η πρόσκληση στην οργάνωση της εκδήλωσης έγινε αποδεκτή."
+
+#~ msgid "An invitation to the event orga was retracted."
+#~ msgstr "Η πρόσκληση στην οργάνωση της εκδήλωσης δεν έγινε αποδεκτή."
+
+#~ msgid "An invitation to the event orga was sent."
+#~ msgstr "Η πρόσκληση στην εκδήλωση έχει αποσταλεί."
 
 #~ msgid "What do you think?"
 #~ msgstr "Ποιά η γνώμη σας?"

@@ -70,9 +70,9 @@ LOG_NAMES = {
     "pretalx.event.plugins.disabled": _("A plugin was disabled."),
     "pretalx.event.plugins.enabled": _("A plugin was enabled."),
     "pretalx.event.update": _("The event was modified."),
-    "pretalx.invite.orga.accept": _("The invitation to the event orga was accepted."),
-    "pretalx.invite.orga.retract": _("An invitation to the event orga was retracted."),
-    "pretalx.invite.orga.send": _("An invitation to the event orga was sent."),
+    "pretalx.invite.orga.accept": _("The invitation was accepted."),
+    "pretalx.invite.orga.retract": _("An invitation was retracted."),
+    "pretalx.invite.orga.send": _("An invitation was sent."),
     "pretalx.invite.reviewer.retract": _(
         "The invitation to the review team was retracted."
     ),

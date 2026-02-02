@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-02 09:35+0000\n"
+"POT-Creation-Date: 2026-02-02 10:05+0000\n"
 "PO-Revision-Date: 2024-04-20 13:14+0000\n"
 "Last-Translator: jving <j.vingback@gmail.com>\n"
 "Language-Team: none\n"
@@ -1418,16 +1418,22 @@ msgid "The event was modified."
 msgstr "Evenemanget har ändrats."
 
 #: pretalx/common/log_display.py:73
-msgid "The invitation to the event orga was accepted."
-msgstr "Inbjudan till evenmangsorganisationen har accepterats."
+#, fuzzy
+#| msgid "A session type was deleted."
+msgid "The invitation was accepted."
+msgstr "En sessionstyp har raderats."
 
 #: pretalx/common/log_display.py:74
-msgid "An invitation to the event orga was retracted."
-msgstr "En inbjudan till evenemangsorganisationen drogs tillbaka."
+#, fuzzy
+#| msgid "A session type was deleted."
+msgid "An invitation was retracted."
+msgstr "En sessionstyp har raderats."
 
 #: pretalx/common/log_display.py:75
-msgid "An invitation to the event orga was sent."
-msgstr "En inbjudan till evenemangsorganisationen skickades."
+#, fuzzy
+#| msgid "The invitation was sent!"
+msgid "An invitation was sent."
+msgstr "Inbjudan har skickats!"
 
 #: pretalx/common/log_display.py:77
 msgid "The invitation to the review team was retracted."
@@ -9176,6 +9182,15 @@ msgstr ""
 
 msgid "Hidden rooms"
 msgstr ""
+
+#~ msgid "The invitation to the event orga was accepted."
+#~ msgstr "Inbjudan till evenmangsorganisationen har accepterats."
+
+#~ msgid "An invitation to the event orga was retracted."
+#~ msgstr "En inbjudan till evenemangsorganisationen drogs tillbaka."
+
+#~ msgid "An invitation to the event orga was sent."
+#~ msgstr "En inbjudan till evenemangsorganisationen skickades."
 
 #, python-brace-format
 #~ msgid ""

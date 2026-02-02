@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-02 09:35+0000\n"
+"POT-Creation-Date: 2026-02-02 10:05+0000\n"
 "PO-Revision-Date: 2026-01-14 10:44+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: \n"
@@ -1406,16 +1406,22 @@ msgid "The event was modified."
 msgstr "Die Veranstaltung wurde geändert."
 
 #: pretalx/common/log_display.py:73
-msgid "The invitation to the event orga was accepted."
-msgstr "Die Einladung zum Orga-Team wurde angenommen."
+#, fuzzy
+#| msgid "A speaker invitation was accepted."
+msgid "The invitation was accepted."
+msgstr "Eine Einladung als Vortragender wurde akzeptiert."
 
 #: pretalx/common/log_display.py:74
-msgid "An invitation to the event orga was retracted."
-msgstr "Eine Einladung zum Orga-Team wurde zurückgezogen."
+#, fuzzy
+#| msgid "A speaker invitation was retracted."
+msgid "An invitation was retracted."
+msgstr "Die Einladung als Vortragender wurde zurückgezogen."
 
 #: pretalx/common/log_display.py:75
-msgid "An invitation to the event orga was sent."
-msgstr "Eine Einladung zum Orga-Team wurde verschickt."
+#, fuzzy
+#| msgid "The invitation was sent!"
+msgid "An invitation was sent."
+msgstr "Die Einladung wurde verschickt!"
 
 #: pretalx/common/log_display.py:77
 msgid "The invitation to the review team was retracted."
@@ -9605,6 +9611,15 @@ msgstr "Review läuft"
 msgctxt "proposal status"
 msgid "not accepted"
 msgstr "abgelehnt"
+
+#~ msgid "The invitation to the event orga was accepted."
+#~ msgstr "Die Einladung zum Orga-Team wurde angenommen."
+
+#~ msgid "An invitation to the event orga was retracted."
+#~ msgstr "Eine Einladung zum Orga-Team wurde zurückgezogen."
+
+#~ msgid "An invitation to the event orga was sent."
+#~ msgstr "Eine Einladung zum Orga-Team wurde verschickt."
 
 #~ msgid "What do you think?"
 #~ msgstr "Was denken Sie?"

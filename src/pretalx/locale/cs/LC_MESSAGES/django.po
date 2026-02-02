@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-02 09:35+0000\n"
+"POT-Creation-Date: 2026-02-02 10:05+0000\n"
 "PO-Revision-Date: 2025-12-22 11:14+0000\n"
 "Last-Translator: Michal Stanke <michal@stanke.cz>\n"
 "Language-Team: none\n"
@@ -1377,16 +1377,22 @@ msgid "The event was modified."
 msgstr "Událost byla upravena."
 
 #: pretalx/common/log_display.py:73
-msgid "The invitation to the event orga was accepted."
-msgstr "Pozvánka mezi organizátory byla přijata."
+#, fuzzy
+#| msgid "A speaker invitation was accepted."
+msgid "The invitation was accepted."
+msgstr "Pozvánka pro přednášejícího byla přijata."
 
 #: pretalx/common/log_display.py:74
-msgid "An invitation to the event orga was retracted."
-msgstr "Pozvánka mezi organizátory byla stažena."
+#, fuzzy
+#| msgid "A speaker invitation was retracted."
+msgid "An invitation was retracted."
+msgstr "Pozvánka pro přednášejícího byla zrušena."
 
 #: pretalx/common/log_display.py:75
-msgid "An invitation to the event orga was sent."
-msgstr "Pozvánka k spoluorganizování události byla odeslána."
+#, fuzzy
+#| msgid "The invitation was sent!"
+msgid "An invitation was sent."
+msgstr "Pozvánka byla odeslána!"
 
 #: pretalx/common/log_display.py:77
 msgid "The invitation to the review team was retracted."
@@ -9448,6 +9454,15 @@ msgstr ""
 
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
+
+#~ msgid "The invitation to the event orga was accepted."
+#~ msgstr "Pozvánka mezi organizátory byla přijata."
+
+#~ msgid "An invitation to the event orga was retracted."
+#~ msgstr "Pozvánka mezi organizátory byla stažena."
+
+#~ msgid "An invitation to the event orga was sent."
+#~ msgstr "Pozvánka k spoluorganizování události byla odeslána."
 
 #~ msgid "What do you think?"
 #~ msgstr "Co si myslíte?"

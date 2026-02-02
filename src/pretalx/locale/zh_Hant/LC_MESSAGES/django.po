@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-02 09:35+0000\n"
+"POT-Creation-Date: 2026-02-02 10:05+0000\n"
 "PO-Revision-Date: 2025-12-04 17:41+0000\n"
 "Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
@@ -1362,16 +1362,22 @@ msgid "The event was modified."
 msgstr "已變更此活動。"
 
 #: pretalx/common/log_display.py:73
-msgid "The invitation to the event orga was accepted."
-msgstr "成為活動主辦單位的邀請已被接受。"
+#, fuzzy
+#| msgid "A speaker information note was deleted."
+msgid "The invitation was accepted."
+msgstr "已刪除一則講者資訊備忘。"
 
 #: pretalx/common/log_display.py:74
-msgid "An invitation to the event orga was retracted."
-msgstr "成為活動主辦單位的邀請已被收回。"
+#, fuzzy
+#| msgid "The team invitation was retracted."
+msgid "An invitation was retracted."
+msgstr "團隊邀請已撤回。"
 
 #: pretalx/common/log_display.py:75
-msgid "An invitation to the event orga was sent."
-msgstr "成為活動主辦單位的邀請已傳送。"
+#, fuzzy
+#| msgid "The invitation was sent!"
+msgid "An invitation was sent."
+msgstr "已送出邀請！"
 
 #: pretalx/common/log_display.py:77
 msgid "The invitation to the review team was retracted."
@@ -9374,6 +9380,15 @@ msgstr ""
 
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
+
+#~ msgid "The invitation to the event orga was accepted."
+#~ msgstr "成為活動主辦單位的邀請已被接受。"
+
+#~ msgid "An invitation to the event orga was retracted."
+#~ msgstr "成為活動主辦單位的邀請已被收回。"
+
+#~ msgid "An invitation to the event orga was sent."
+#~ msgstr "成為活動主辦單位的邀請已傳送。"
 
 #~ msgid "What do you think?"
 #~ msgstr "您的想法是什麼？"

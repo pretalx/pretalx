@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-02 09:35+0000\n"
+"POT-Creation-Date: 2026-02-02 10:05+0000\n"
 "PO-Revision-Date: 2025-12-04 17:41+0000\n"
 "Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
@@ -1396,16 +1396,22 @@ msgid "The event was modified."
 msgstr "이벤트가 수정되었습니다."
 
 #: pretalx/common/log_display.py:73
-msgid "The invitation to the event orga was accepted."
-msgstr "이벤트 운영진에 대한 초대가 수락되었습니다."
+#, fuzzy
+#| msgid "A speaker information note was deleted."
+msgid "The invitation was accepted."
+msgstr "발표자 정보 노트가 삭제되었습니다."
 
 #: pretalx/common/log_display.py:74
-msgid "An invitation to the event orga was retracted."
-msgstr "이벤트 운영진에 대한 초대가 철회되었습니다."
+#, fuzzy
+#| msgid "The team invitation was retracted."
+msgid "An invitation was retracted."
+msgstr "팀 초대가 철회되었습니다."
 
 #: pretalx/common/log_display.py:75
-msgid "An invitation to the event orga was sent."
-msgstr "이벤트 운영진에 대한 초대가 보내졌습니다."
+#, fuzzy
+#| msgid "The invitation was sent!"
+msgid "An invitation was sent."
+msgstr "초대장이 전송되었습니다!"
 
 #: pretalx/common/log_display.py:77
 msgid "The invitation to the review team was retracted."
@@ -9544,6 +9550,15 @@ msgstr ""
 
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
+
+#~ msgid "The invitation to the event orga was accepted."
+#~ msgstr "이벤트 운영진에 대한 초대가 수락되었습니다."
+
+#~ msgid "An invitation to the event orga was retracted."
+#~ msgstr "이벤트 운영진에 대한 초대가 철회되었습니다."
+
+#~ msgid "An invitation to the event orga was sent."
+#~ msgstr "이벤트 운영진에 대한 초대가 보내졌습니다."
 
 #~ msgid "What do you think?"
 #~ msgstr "어떻게 생각하십니까?"

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-02 09:35+0000\n"
+"POT-Creation-Date: 2026-02-02 10:05+0000\n"
 "PO-Revision-Date: 2025-12-04 17:41+0000\n"
 "Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
@@ -1389,16 +1389,22 @@ msgid "The event was modified."
 msgstr "该事件已被修改。"
 
 #: pretalx/common/log_display.py:73
-msgid "The invitation to the event orga was accepted."
-msgstr "活动orga的邀请被接受了。”"
+#, fuzzy
+#| msgid "A speaker information note was deleted."
+msgid "The invitation was accepted."
+msgstr "一条发言人信息备注已被删除"
 
 #: pretalx/common/log_display.py:74
-msgid "An invitation to the event orga was retracted."
-msgstr "\"活动 orga 的邀请被撤回了。\""
+#, fuzzy
+#| msgid "The team invitation was retracted."
+msgid "An invitation was retracted."
+msgstr "团队邀请被撤销。"
 
 #: pretalx/common/log_display.py:75
-msgid "An invitation to the event orga was sent."
-msgstr "一份邀请函已经发送至orga的活动。"
+#, fuzzy
+#| msgid "The invitation was sent!"
+msgid "An invitation was sent."
+msgstr "邀请已发送！"
 
 #: pretalx/common/log_display.py:77
 msgid "The invitation to the review team was retracted."
@@ -9831,6 +9837,15 @@ msgstr ""
 
 msgid "Hidden rooms"
 msgstr ""
+
+#~ msgid "The invitation to the event orga was accepted."
+#~ msgstr "活动orga的邀请被接受了。”"
+
+#~ msgid "An invitation to the event orga was retracted."
+#~ msgstr "\"活动 orga 的邀请被撤回了。\""
+
+#~ msgid "An invitation to the event orga was sent."
+#~ msgstr "一份邀请函已经发送至orga的活动。"
 
 #~ msgid "What do you think?"
 #~ msgstr "你认为怎么样？"

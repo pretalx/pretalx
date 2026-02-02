@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-02 09:35+0000\n"
+"POT-Creation-Date: 2026-02-02 10:05+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1245,15 +1245,15 @@ msgid "The event was modified."
 msgstr ""
 
 #: pretalx/common/log_display.py:73
-msgid "The invitation to the event orga was accepted."
+msgid "The invitation was accepted."
 msgstr ""
 
 #: pretalx/common/log_display.py:74
-msgid "An invitation to the event orga was retracted."
+msgid "An invitation was retracted."
 msgstr ""
 
 #: pretalx/common/log_display.py:75
-msgid "An invitation to the event orga was sent."
+msgid "An invitation was sent."
 msgstr ""
 
 #: pretalx/common/log_display.py:77
