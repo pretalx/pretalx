@@ -217,3 +217,46 @@ def test_generate_unique_codes_batch(choice_question):
         assert len(codes) == 50
         assert len(set(codes)) == 50  # All unique
         assert all(len(c) == 8 for c in codes)
+
+
+@pytest.mark.parametrize(
+    "target,related_attr",
+    [
+        ("submission", "submission"),
+        ("speaker", "person"),
+        ("reviewer", "review"),
+    ],
+)
+@pytest.mark.django_db
+def test_answer_file_path(event, submission, speaker, review, target, related_attr):
+    from pretalx.submission.models.question import (
+        QuestionTarget,
+        QuestionVariant,
+        answer_file_path,
+    )
+
+    with scope(event=event):
+        question = Question.objects.create(
+            event=event,
+            question="Upload a file",
+            variant=QuestionVariant.FILE,
+            target=target,
+        )
+
+        answer = Answer(question=question, answer="")
+        if target == QuestionTarget.SUBMISSION:
+            answer.submission = submission
+            expected_code = submission.code
+        elif target == QuestionTarget.SPEAKER:
+            answer.person = speaker
+            expected_code = speaker.code
+        elif target == QuestionTarget.REVIEWER:
+            answer.review = review
+            expected_code = f"r{review.pk}"
+
+        path = answer_file_path(answer, "user_provided_name.pdf")
+
+        assert path.startswith(f"{event.slug}/question_uploads/")
+        assert f"q{question.pk}-{expected_code}_" in path
+        assert path.endswith(".pdf")
+        assert "user_provided_name" not in path
