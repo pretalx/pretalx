@@ -255,7 +255,7 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             self.change_timezone()
         result = super().save(*args, **kwargs)
         css_text = self.cleaned_data["custom_css_text"]
-        for image_field in ("logo", "header_image"):
+        for image_field in ("logo", "header_image", "og_image"):
             if image_field in self.changed_data:
                 self.instance.process_image(image_field)
         if css_text and "custom_css_text" in self.changed_data:
@@ -347,12 +347,14 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             "custom_css",
             "logo",
             "header_image",
+            "og_image",
             "landing_page_text",
             "featured_sessions_text",
         ]
         field_classes = {
             "logo": ImageField,
             "header_image": ImageField,
+            "og_image": ImageField,
             "primary_color": ColorField,
         }
         widgets = {

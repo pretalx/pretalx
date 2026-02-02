@@ -26,7 +26,7 @@ from pretalx.common.models.mixins import OrderedModel, PretalxModel
 from pretalx.common.models.settings import hierarkey
 from pretalx.common.plugins import get_all_plugins
 from pretalx.common.text.daterange import daterange
-from pretalx.common.text.path import path_with_hash
+from pretalx.common.text.path import path_with_hash, prefixed_path_with_hash
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import has_good_contrast
 from pretalx.common.urls import EventUrls
@@ -81,7 +81,17 @@ def event_css_path(instance, filename):
 
 
 def event_logo_path(instance, filename):
-    return path_with_hash(filename, base_path=f"{instance.slug}/img/")
+    return prefixed_path_with_hash(filename, "logo", base_path=f"{instance.slug}/img/")
+
+
+def event_header_path(instance, filename):
+    return prefixed_path_with_hash(
+        filename, "header", base_path=f"{instance.slug}/img/"
+    )
+
+
+def event_og_path(instance, filename):
+    return prefixed_path_with_hash(filename, "og", base_path=f"{instance.slug}/img/")
 
 
 def default_feature_flags():
@@ -244,14 +254,25 @@ class Event(PretalxModel):
         ),
     )
     header_image = models.ImageField(
-        upload_to=event_logo_path,
+        upload_to=event_header_path,
         null=True,
         blank=True,
         verbose_name=_("Header image"),
         help_text=_(
-            "If you provide a header image, it will be displayed instead of your event’s color and/or header pattern "
+            "If you provide a header image, it will be displayed instead of your event's color and/or header pattern "
             "at the top of all event pages. It will be center-aligned, so when the window shrinks, the center parts will "
             "continue to be displayed, and not stretched."
+        ),
+    )
+    og_image = models.ImageField(
+        upload_to=event_og_path,
+        null=True,
+        blank=True,
+        verbose_name=_("Preview image"),
+        help_text=_(
+            "This image will be shown as a preview when links to your event are shared on "
+            "social media or messaging apps. For best results, use an image at least 1200x630 pixels. "
+            "If not set, the logo or header image will be used instead."
         ),
     )
     locale_array = models.TextField(default=settings.LANGUAGE_CODE)

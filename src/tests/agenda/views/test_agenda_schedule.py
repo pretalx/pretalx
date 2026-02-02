@@ -6,6 +6,7 @@ import textwrap
 from urllib.parse import quote
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from django.urls import reverse
 from django_scopes import scope
@@ -349,3 +350,40 @@ def test_versioned_schedule_page(
     with django_assert_num_queries(queries_redirect):
         redirected_response = client.get(url, follow=True, HTTP_ACCEPT="text/html")
     assert redirected_response._request.path == response._request.path
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "og_image,logo,header_image,expected_status",
+    [
+        (True, False, False, 200),  # og_image set → returns it
+        (False, True, False, 200),  # no og_image, logo set → returns logo
+        (False, False, True, 200),  # no og_image/logo, header_image → returns it
+        (False, False, False, 404),  # nothing set → 404
+        (True, True, True, 200),  # all set → returns og_image (highest priority)
+    ],
+)
+def test_event_social_card_fallback(
+    client, event, og_image, logo, header_image, expected_status
+):
+    if og_image:
+        event.og_image.save("og.png", SimpleUploadedFile("og.png", b"og_content"))
+    if logo:
+        event.logo.save("logo.png", SimpleUploadedFile("logo.png", b"logo_content"))
+    if header_image:
+        event.header_image.save(
+            "header.png", SimpleUploadedFile("header.png", b"header_content")
+        )
+    event.save()
+
+    response = client.get(event.urls.social_image, follow=True)
+    assert response.status_code == expected_status
+
+    if expected_status == 200:
+        content = b"".join(response.streaming_content)
+        if og_image:
+            assert content == b"og_content"
+        elif logo:
+            assert content == b"logo_content"
+        elif header_image:
+            assert content == b"header_content"

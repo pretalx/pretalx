@@ -29,5 +29,12 @@ def path_with_hash(name, base_path=None, max_length=100):
     return str(Path(base_path) / dir_name / f"{file_root}_{random}{file_ext}")
 
 
+def prefixed_path_with_hash(name, prefix, base_path=None):
+    base_path = base_path or ""
+    file_ext = os.path.splitext(name)[1]
+    random = get_random_string(7)
+    return str(Path(base_path) / f"{prefix}_{random}{file_ext}")
+
+
 def safe_filename(filename):
     return unicodedata.normalize("NFD", filename).encode("ASCII", "ignore").decode()
