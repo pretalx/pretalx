@@ -7,7 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django_scopes import scope
 
 from pretalx.common.exceptions import SubmissionError
-from pretalx.submission.models import Answer, Submission, SubmissionStates
+from pretalx.submission.models import Answer, Resource, Submission, SubmissionStates
 from pretalx.submission.models.submission import submission_image_path
 
 
@@ -247,6 +247,23 @@ def test_submission_remove_removes_submission(submission, answer):
         submission.delete()
         assert Submission.all_objects.count() == submission_count - 1
         assert Answer.objects.count() == count - answer_count
+
+
+@pytest.mark.django_db
+def test_submission_delete_cleans_up_resource_files(submission):
+    f = SimpleUploadedFile("testresource.txt", b"test content")
+    resource = Resource.objects.create(
+        submission=submission,
+        resource=f,
+        description="Test resource",
+    )
+    file_path = resource.resource.path
+    assert resource.resource.storage.exists(file_path)
+
+    with scope(event=submission.event):
+        submission.delete()
+
+    assert not resource.resource.storage.exists(file_path)
 
 
 @pytest.mark.django_db

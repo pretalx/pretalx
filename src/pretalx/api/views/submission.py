@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db import transaction
 from django.http import Http404
 from django.utils.functional import cached_property
 from rest_framework import serializers, status, viewsets
@@ -29,6 +30,7 @@ from pretalx.api.serializers.legacy import (
     LegacySubmissionSerializer,
 )
 from pretalx.api.serializers.submission import (
+    ResourceWriteSerializer,
     SubmissionOrgaSerializer,
     SubmissionSerializer,
     SubmissionTypeSerializer,
@@ -40,6 +42,7 @@ from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
 from pretalx.submission.models import (
+    Resource,
     Submission,
     SubmissionInvitation,
     SubmissionType,
@@ -132,6 +135,15 @@ class RemoveSpeakerSerializer(serializers.Serializer):
         request=RemoveSpeakerSerializer,
         responses={200: SubmissionOrgaSerializer},
     ),
+    add_resource=extend_schema(
+        summary="Add Resource to Submission",
+        request=ResourceWriteSerializer,
+        responses={200: SubmissionOrgaSerializer},
+    ),
+    remove_resource=extend_schema(
+        summary="Remove Resource from Submission",
+        responses={204: None},
+    ),
 )
 class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
     serializer_class = SubmissionSerializer
@@ -147,6 +159,8 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         "remove_speaker": "submission.update_submission",
         "invite_speaker": "submission.update_submission",
         "retract_invitation": "submission.update_submission",
+        "add_resource": "submission.update_submission",
+        "remove_resource": "submission.update_submission",
     }
     endpoint = "submissions"
 
@@ -413,6 +427,57 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             )
 
         invitation.retract(person=request.user, orga=True)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["POST"], url_path="resources")
+    @transaction.atomic
+    def add_resource(self, request, **kwargs):
+        submission = self.get_object()
+        old_data = submission._get_instance_data()
+        serializer = ResourceWriteSerializer(
+            data=request.data, context=self.get_serializer_context()
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(submission=submission)
+        new_data = submission._get_instance_data()
+        submission.log_action(
+            ".update",
+            person=request.user,
+            orga=True,
+            old_data=old_data,
+            new_data=new_data,
+        )
+        return Response(
+            SubmissionOrgaSerializer(
+                submission, context=self.get_serializer_context()
+            ).data
+        )
+
+    @action(
+        detail=True,
+        methods=["DELETE"],
+        url_path=r"resources/(?P<resource_id>[0-9]+)",
+    )
+    @transaction.atomic
+    def remove_resource(self, request, resource_id=None, **kwargs):
+        submission = self.get_object()
+        try:
+            resource = Resource.objects.get(pk=resource_id, submission=submission)
+        except Resource.DoesNotExist:
+            return Response(
+                {"detail": "Resource not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        old_data = submission._get_instance_data()
+        resource.delete()
+        new_data = submission._get_instance_data()
+        submission.log_action(
+            ".update",
+            person=request.user,
+            orga=True,
+            old_data=old_data,
+            new_data=new_data,
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

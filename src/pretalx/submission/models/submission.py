@@ -872,7 +872,8 @@ class Submission(GenerateCode, PretalxModel):
     def delete(self, person=None, orga: bool = True, **kwargs):
         self.slots.all().delete()
         self.answers.all().delete()
-        self.resources.all().delete()
+        for resource in self.resources.all():
+            resource.delete()
         super().delete(
             log_kwargs={
                 "person": person,

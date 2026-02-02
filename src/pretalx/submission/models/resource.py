@@ -65,3 +65,8 @@ class Resource(PretalxModel):
         with suppress(ValueError):
             if self.resource:
                 return Path(self.resource.name).name
+
+    def delete(self, *args, **kwargs):
+        if self.resource:
+            self.resource.delete(save=False)
+        return super().delete(*args, **kwargs)
