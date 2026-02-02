@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2024-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import os
 import unicodedata
 from pathlib import Path
 
@@ -9,31 +8,36 @@ from django.conf import settings
 from django.utils.crypto import get_random_string
 
 
-def path_with_hash(name, base_path=None, max_length=100):
-    base_path = base_path or ""
-    dir_name, file_name = os.path.split(name)
-    file_root, file_ext = os.path.splitext(file_name)
-    file_root = safe_filename(file_root)
-    random = get_random_string(7)
-    if base_path and max_length:
-        # We need to resolve the base path for its actual total length, as absolute
-        # paths are stored in the database.
-        full_base_path = Path(settings.MEDIA_ROOT) / base_path
-        total_length = len(
-            str(full_base_path / dir_name / f"{file_root}_{random}{file_ext}")
-        )
-        if total_length > max_length:
-            # If the total length of the path exceeds the max length, we need to
-            # shorten the file name by the difference.
-            file_root = file_root[: -(total_length - max_length)]
-    return str(Path(base_path) / dir_name / f"{file_root}_{random}{file_ext}")
+def hashed_path(original_name, target_name, upload_dir=None, max_length=100):
+    """Generate upload path with hash for uniqueness.
 
+    Args:
+        original_name: Original filename (used only for extension extraction)
+        target_name: Base name for the generated file (required)
+        upload_dir: Directory path prefix
+        max_length: Maximum total path length
 
-def prefixed_path_with_hash(name, prefix, base_path=None):
-    base_path = base_path or ""
-    file_ext = os.path.splitext(name)[1]
+    Returns:
+        Path like "{upload_dir}/{target_name}_{random}.{ext}"
+    """
+    upload_dir = upload_dir or ""
+    file_path = Path(original_name)
+    file_ext = file_path.suffix
     random = get_random_string(7)
-    return str(Path(base_path) / f"{prefix}_{random}{file_ext}")
+
+    file_root = target_name
+
+    result = str(Path(upload_dir) / f"{file_root}_{random}{file_ext}")
+
+    if max_length:
+        full_path = str(Path(settings.MEDIA_ROOT) / result)
+        if len(full_path) > max_length:
+            excess = len(full_path) - max_length
+            if len(file_root) > excess:
+                file_root = file_root[:-excess]
+                result = str(Path(upload_dir) / f"{file_root}_{random}{file_ext}")
+
+    return result
 
 
 def safe_filename(filename):

@@ -7,7 +7,7 @@ from django.utils.translation import pgettext_lazy
 from i18nfield.fields import I18nCharField, I18nTextField
 
 from pretalx.common.models.mixins import PretalxModel
-from pretalx.common.text.path import path_with_hash
+from pretalx.common.text.path import hashed_path
 from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import can_change_event_settings
@@ -16,8 +16,13 @@ from pretalx.submission.rules import orga_can_change_submissions
 
 
 def resource_path(instance, filename):
-    return path_with_hash(
-        filename, base_path=f"{instance.event.slug}/speaker_information/"
+    target_name = "info"
+    if instance.pk:
+        target_name = f"info_{instance.pk}"
+    return hashed_path(
+        filename,
+        target_name=target_name,
+        upload_dir=f"{instance.event.slug}/speaker_information/",
     )
 
 

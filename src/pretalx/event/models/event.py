@@ -26,7 +26,7 @@ from pretalx.common.models.mixins import OrderedModel, PretalxModel
 from pretalx.common.models.settings import hierarkey
 from pretalx.common.plugins import get_all_plugins
 from pretalx.common.text.daterange import daterange
-from pretalx.common.text.path import path_with_hash, prefixed_path_with_hash
+from pretalx.common.text.path import hashed_path
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import has_good_contrast
 from pretalx.common.urls import EventUrls
@@ -77,21 +77,23 @@ def validate_event_slug_permitted(value):
 
 
 def event_css_path(instance, filename):
-    return path_with_hash(filename, base_path=f"{instance.slug}/css/")
+    return hashed_path(
+        filename, target_name="custom", upload_dir=f"{instance.slug}/css/"
+    )
 
 
 def event_logo_path(instance, filename):
-    return prefixed_path_with_hash(filename, "logo", base_path=f"{instance.slug}/img/")
+    return hashed_path(filename, target_name="logo", upload_dir=f"{instance.slug}/img/")
 
 
 def event_header_path(instance, filename):
-    return prefixed_path_with_hash(
-        filename, "header", base_path=f"{instance.slug}/img/"
+    return hashed_path(
+        filename, target_name="header", upload_dir=f"{instance.slug}/img/"
     )
 
 
 def event_og_path(instance, filename):
-    return prefixed_path_with_hash(filename, "og", base_path=f"{instance.slug}/img/")
+    return hashed_path(filename, target_name="og", upload_dir=f"{instance.slug}/img/")
 
 
 def default_feature_flags():

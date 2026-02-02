@@ -16,7 +16,7 @@ from pretalx.agenda.rules import is_agenda_visible
 from pretalx.common.models.choices import Choices
 from pretalx.common.models.fields import DateField, DateTimeField
 from pretalx.common.models.mixins import GenerateCode, OrderedModel, PretalxModel
-from pretalx.common.text.path import prefixed_path_with_hash
+from pretalx.common.text.path import hashed_path
 from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import can_change_event_settings
@@ -42,9 +42,9 @@ def answer_file_path(instance, filename):
     else:
         code = "unknown"
 
-    prefix = f"q{question_id}-{code}"
-    return prefixed_path_with_hash(
-        filename, prefix, base_path=f"{event_slug}/question_uploads/"
+    target_name = f"q{question_id}-{code}"
+    return hashed_path(
+        filename, target_name=target_name, upload_dir=f"{event_slug}/question_uploads/"
     )
 
 
