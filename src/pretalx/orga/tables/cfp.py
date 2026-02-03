@@ -112,9 +112,10 @@ class TrackTable(UnsortableMixin, PretalxTable):
         "proposals",
     )
 
-    name = tables.Column(
+    name = TemplateColumn(
         linkify=lambda record: record.urls.edit,
         verbose_name=_("Track"),
+        template_name="orga/tables/columns/track_name.html",
     )
     color = TemplateColumn(
         template_name="orga/tables/columns/color_square.html",
