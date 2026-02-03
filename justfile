@@ -90,6 +90,12 @@ makemessages:
     just run rebuild --npm-install
     just run makemessages --keep-pot --all
 
+# Run the background task worker
+[group('development')]
+[working-directory("src")]
+worker:
+    uv run celery -A pretalx.celery_app worker -l info
+
 # Build the documentation
 [group('documentation')]
 [working-directory("doc")]
