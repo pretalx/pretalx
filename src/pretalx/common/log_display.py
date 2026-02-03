@@ -164,10 +164,10 @@ def default_activitylog_display(sender: Event, activitylog: ActivityLog, **kwarg
         message = str(templated_entry)
         # Check if all placeholders are present in activitylog.data
         placeholders = {v[1] for v in string.Formatter().parse(message) if v[1]}
-        if isinstance(activitylog.json_data, dict) and placeholders <= set(
-            activitylog.json_data.keys()
+        if isinstance(activitylog.data, dict) and placeholders <= set(
+            activitylog.data.keys()
         ):
-            return message.format(**activitylog.json_data)
+            return message.format(**activitylog.data)
     action_type = LOG_ALIASES.get(activitylog.action_type, activitylog.action_type)
     return LOG_NAMES.get(action_type)
 

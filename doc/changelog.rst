@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :announcement:`admin` The ``legacy_data`` field on activity logs is being removed. This field contained sparse and often incomplete data from before pretalx switched to structured activity logging. If you wish to retain this data, please follow `this guide <https://gist.github.com/rixx/cd06dab05d3ae34bb6c81cc07be3cf4d>`_ **before** upgrading to v2026.1.0.
 - :feature:`orga` Organisers can now upload a custom preview image that will be shown when event links are shared on social media or messaging apps.
 - :feature:`api,2134` Organisers can now add and remove resources (files or links) from submissions via the API.
 - :announcement:`admin,2267` When organisers delete a proposal, it is now permanently removed from the database instead of being hidden. Any proposals that were previously soft-deleted will be permanently removed during the upgrade migration.

@@ -12,7 +12,7 @@ def test_log_hides_password(submission):
             "test.hide", data={"password": "12345", "non-sensitive": "foo"}
         )
         log = submission.logged_actions().get(action_type="test.hide")
-        assert log.json_data["password"] != "12345"
+        assert log.data["password"] != "12345"
         assert log.json_data["non-sensitive"] == "foo"
 
 
@@ -66,11 +66,11 @@ def test_log_action_with_changes(submission):
         submission.log_action("test.update", old_data=old_data, new_data=new_data)
 
         log = submission.logged_actions().get(action_type="test.update")
-        assert "changes" in log.json_data
-        assert "title" in log.json_data["changes"]
-        assert log.json_data["changes"]["title"]["old"] == "Old Title"
-        assert log.json_data["changes"]["title"]["new"] == "New Title"
-        assert "state" not in log.json_data["changes"]
+        assert "changes" in log.data
+        assert "title" in log.data["changes"]
+        assert log.data["changes"]["title"]["old"] == "Old Title"
+        assert log.data["changes"]["title"]["new"] == "New Title"
+        assert "state" not in log.data["changes"]
 
 
 @pytest.mark.django_db
@@ -91,8 +91,8 @@ def test_log_action_no_changes_with_explicit_data_still_logs(submission):
         )
 
         log = submission.logged_actions().get(action_type="test.update")
-        assert log.json_data["custom"] == "info"
-        assert "changes" not in log.json_data
+        assert log.data["custom"] == "info"
+        assert "changes" not in log.data
 
 
 @pytest.mark.django_db
@@ -109,7 +109,7 @@ def test_log_action_changes_with_additional_data(submission):
         )
 
         log = submission.logged_actions().get(action_type="test.update")
-        assert "changes" in log.json_data
-        assert "reason" in log.json_data
-        assert log.json_data["reason"] == "user requested"
-        assert log.json_data["changes"]["title"]["old"] == "Old Title"
+        assert "changes" in log.data
+        assert "reason" in log.data
+        assert log.data["reason"] == "user requested"
+        assert log.data["changes"]["title"]["old"] == "Old Title"

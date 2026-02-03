@@ -459,10 +459,10 @@ def test_orga_can_edit_submission(orga_client, event, accepted_submission):
         assert logs.count() > initial_log_count
         update_log = logs.filter(action_type="pretalx.submission.update").first()
         assert update_log is not None
-        assert "changes" in update_log.json_data
-        assert "title" in update_log.json_data["changes"]
-        assert update_log.json_data["changes"]["title"]["old"] == old_title
-        assert update_log.json_data["changes"]["title"]["new"] == "title"
+        assert "changes" in update_log.data
+        assert "title" in update_log.data["changes"]
+        assert update_log.data["changes"]["title"]["old"] == old_title
+        assert update_log.data["changes"]["title"]["new"] == "title"
 
 
 @pytest.mark.django_db

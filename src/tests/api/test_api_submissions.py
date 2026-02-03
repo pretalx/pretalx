@@ -1045,10 +1045,10 @@ def test_orga_can_update_submission(client, orga_user_write_token, submission):
             .filter(action_type="pretalx.submission.update")
             .first()
         )
-        assert "changes" in update_log.json_data
-        assert "title" in update_log.json_data["changes"]
-        assert update_log.json_data["changes"]["title"]["old"] == old_title
-        assert update_log.json_data["changes"]["title"]["new"] == "Updated Submission"
+        assert "changes" in update_log.data
+        assert "title" in update_log.data["changes"]
+        assert update_log.data["changes"]["title"]["old"] == old_title
+        assert update_log.data["changes"]["title"]["new"] == "Updated Submission"
 
 
 @pytest.mark.django_db

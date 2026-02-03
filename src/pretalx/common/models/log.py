@@ -1,9 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-import json
 import logging
-from contextlib import suppress
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -42,7 +40,6 @@ class ActivityLog(models.Model):
     content_object = GenericForeignKey("content_type", "object_id")
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     action_type = models.CharField(max_length=200)
-    legacy_data = models.TextField(null=True, blank=True)
     data = models.JSONField(null=True, blank=True, default=dict)
     is_orga_action = models.BooleanField(default=False)
 
@@ -59,12 +56,8 @@ class ActivityLog(models.Model):
 
     @cached_property
     def json_data(self):
-        if self.data is not None:
-            return self.data
-        if self.legacy_data:
-            with suppress(json.JSONDecodeError):
-                return json.loads(self.legacy_data)
-        return {}
+        # Kept for backwards compatibility, as well as to avoid None-checks
+        return self.data or {}
 
     @cached_property
     def display(self) -> str:
