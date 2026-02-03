@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_b119ef16fe4e981f_test_api_teams_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-02 12:56 +0000
+            created at 2026-02-03 10:00 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -1129,10 +1129,10 @@
     <p class="run run2"><span class="n"><a id="t1045" href="#t1045">1045</a></span><span class="t">            <span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">action_type</span><span class="op">=</span><span class="str">"pretalx.submission.update"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t1046" href="#t1046">1046</a></span><span class="t">            <span class="op">.</span><span class="nam">first</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t1047" href="#t1047">1047</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t1048" href="#t1048">1048</a></span><span class="t">        <span class="key">assert</span> <span class="str">"changes"</span> <span class="key">in</span> <span class="nam">update_log</span><span class="op">.</span><span class="nam">json_data</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t1049" href="#t1049">1049</a></span><span class="t">        <span class="key">assert</span> <span class="str">"title"</span> <span class="key">in</span> <span class="nam">update_log</span><span class="op">.</span><span class="nam">json_data</span><span class="op">[</span><span class="str">"changes"</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t1050" href="#t1050">1050</a></span><span class="t">        <span class="key">assert</span> <span class="nam">update_log</span><span class="op">.</span><span class="nam">json_data</span><span class="op">[</span><span class="str">"changes"</span><span class="op">]</span><span class="op">[</span><span class="str">"title"</span><span class="op">]</span><span class="op">[</span><span class="str">"old"</span><span class="op">]</span> <span class="op">==</span> <span class="nam">old_title</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t1051" href="#t1051">1051</a></span><span class="t">        <span class="key">assert</span> <span class="nam">update_log</span><span class="op">.</span><span class="nam">json_data</span><span class="op">[</span><span class="str">"changes"</span><span class="op">]</span><span class="op">[</span><span class="str">"title"</span><span class="op">]</span><span class="op">[</span><span class="str">"new"</span><span class="op">]</span> <span class="op">==</span> <span class="str">"Updated Submission"</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1048" href="#t1048">1048</a></span><span class="t">        <span class="key">assert</span> <span class="str">"changes"</span> <span class="key">in</span> <span class="nam">update_log</span><span class="op">.</span><span class="nam">data</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1049" href="#t1049">1049</a></span><span class="t">        <span class="key">assert</span> <span class="str">"title"</span> <span class="key">in</span> <span class="nam">update_log</span><span class="op">.</span><span class="nam">data</span><span class="op">[</span><span class="str">"changes"</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1050" href="#t1050">1050</a></span><span class="t">        <span class="key">assert</span> <span class="nam">update_log</span><span class="op">.</span><span class="nam">data</span><span class="op">[</span><span class="str">"changes"</span><span class="op">]</span><span class="op">[</span><span class="str">"title"</span><span class="op">]</span><span class="op">[</span><span class="str">"old"</span><span class="op">]</span> <span class="op">==</span> <span class="nam">old_title</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1051" href="#t1051">1051</a></span><span class="t">        <span class="key">assert</span> <span class="nam">update_log</span><span class="op">.</span><span class="nam">data</span><span class="op">[</span><span class="str">"changes"</span><span class="op">]</span><span class="op">[</span><span class="str">"title"</span><span class="op">]</span><span class="op">[</span><span class="str">"new"</span><span class="op">]</span> <span class="op">==</span> <span class="str">"Updated Submission"</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1052" href="#t1052">1052</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1053" href="#t1053">1053</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1054" href="#t1054">1054</a></span><span class="t"><span class="op">@</span><span class="nam">pytest</span><span class="op">.</span><span class="nam">mark</span><span class="op">.</span><span class="nam">django_db</span>&nbsp;</span><span class="r"></span></p>
@@ -2263,7 +2263,7 @@
             <a class="nav" href="z_b119ef16fe4e981f_test_api_teams_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-02 12:56 +0000
+            created at 2026-02-03 10:00 +0000
         </p>
     </div>
 </footer>
