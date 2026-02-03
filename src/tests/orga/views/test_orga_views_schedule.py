@@ -284,33 +284,15 @@ def test_orga_can_see_schedule_release_view(orga_client, event):
 
 
 @pytest.mark.django_db
-def test_orga_cannot_reset_to_wrong_version(orga_client, event):
-    with scope(event=event):
-        assert Schedule.objects.count() == 1
-    response = orga_client.get(
-        event.orga_urls.reset_schedule, follow=True, data={"version": "Test version 2"}
-    )
-    assert response.status_code == 200
-    with scope(event=event):
-        assert Schedule.objects.count() == 1
-
-
-@pytest.mark.django_db
 @pytest.mark.usefixtures("accepted_submission")
 @pytest.mark.usefixtures("room")
-def test_orga_can_release_and_reset_schedule(orga_client, event):
+def test_orga_can_release_schedule(orga_client, event):
     with scope(event=event):
         assert Schedule.objects.count() == 1
     response = orga_client.post(
         event.orga_urls.release_schedule,
         follow=True,
         data={"version": "Test version 2"},
-    )
-    assert response.status_code == 200
-    with scope(event=event):
-        assert Schedule.objects.count() == 2
-    response = orga_client.get(
-        event.orga_urls.reset_schedule, follow=True, data={"version": "Test version 2"}
     )
     assert response.status_code == 200
     with scope(event=event):

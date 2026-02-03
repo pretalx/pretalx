@@ -69,19 +69,10 @@ class ScheduleView(EventPermissionRequired, TemplateView):
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
-        version = self.request.GET.get("version")
-
         # get current translations language from django
         language_information = get_current_language_information()
         path = language_information.get("path", language_information.get("code"))
         result["gettext_language"] = path.replace("-", "_")
-
-        result["schedule_version"] = version
-        result["active_schedule"] = (
-            self.request.event.schedules.filter(version=version).first()
-            if version
-            else self.request.event.wip_schedule
-        )
         return result
 
 
@@ -257,28 +248,6 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
             comment=form.cleaned_data["comment"],
         )
         messages.success(self.request, _("Nice, your schedule has been released!"))
-        return redirect(self.request.event.orga_urls.schedule)
-
-
-class ScheduleResetView(EventPermissionRequired, View):
-    permission_required = "schedule.release_schedule"
-
-    def dispatch(self, request, event):
-        super().dispatch(request, event)
-        schedule_version = self.request.GET.get("version")
-        schedule = self.request.event.schedules.filter(version=schedule_version).first()
-        if schedule:
-            schedule.unfreeze(user=request.user)
-            messages.success(
-                self.request,
-                _(
-                    "Reset successful – start editing the schedule from your selected version!"
-                ),
-            )
-        else:
-            messages.error(
-                self.request, _("Error retrieving the schedule version to reset to.")
-            )
         return redirect(self.request.event.orga_urls.schedule)
 
 

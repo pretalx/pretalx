@@ -387,7 +387,6 @@ class Event(PretalxModel):
         schedule_export_trigger = "{schedule_export}trigger"
         schedule_export_download = "{schedule_export}download"
         release_schedule = "{schedule}release"
-        reset_schedule = "{schedule}reset"
         toggle_schedule = "{schedule}toggle"
         reviews = "{base}reviews/"
         review_assignments = "{reviews}assign/"

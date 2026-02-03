@@ -575,11 +575,6 @@ urlpatterns = [
                     name="schedule.quick",
                 ),
                 path(
-                    "schedule/reset",
-                    schedule.ScheduleResetView.as_view(),
-                    name="schedule.reset",
-                ),
-                path(
                     "schedule/toggle",
                     schedule.ScheduleToggleView.as_view(),
                     name="schedule.toggle",
