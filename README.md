@@ -103,7 +103,7 @@
 | src/pretalx/common/management/commands/makemigrations.py                   |       24 |        0 |        4 |        0 |    100% |           |
 | src/pretalx/common/management/commands/migrate.py                          |       13 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/common/management/commands/move\_event.py                      |       29 |        0 |        4 |        1 |     97% |  39->exit |
-| src/pretalx/common/management/commands/rebuild.py                          |       35 |        1 |        2 |        1 |     95% |        68 |
+| src/pretalx/common/management/commands/rebuild.py                          |       35 |        3 |        2 |        1 |     89% | 49-50, 68 |
 | src/pretalx/common/management/commands/runperiodic.py                      |        6 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/management/commands/shell.py                            |        9 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/management/commands/spectacular.py                      |        6 |        0 |        0 |        0 |    100% |           |
@@ -180,7 +180,7 @@
 | src/pretalx/orga/receivers.py                                              |       16 |        2 |        4 |        2 |     80% |    17, 29 |
 | src/pretalx/orga/rules.py                                                  |        8 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/orga/signals.py                                                |       28 |        0 |        0 |        0 |    100% |           |
-| src/pretalx/orga/tables/cfp.py                                             |       84 |        4 |        6 |        3 |     92% |70, 92, 258, 260 |
+| src/pretalx/orga/tables/cfp.py                                             |       84 |        4 |        6 |        3 |     92% |70, 92, 259, 261 |
 | src/pretalx/orga/tables/mail.py                                            |       36 |        3 |        2 |        0 |     87% |   110-112 |
 | src/pretalx/orga/tables/organiser.py                                       |       14 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/orga/tables/schedule.py                                        |       17 |        0 |        0 |        0 |    100% |           |
@@ -361,7 +361,7 @@
 | src/tests/submission/test\_submission\_model.py                            |      298 |        0 |        6 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       45 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **34083** | **1937** | **5456** |  **767** | **92%** |           |
+| **TOTAL**                                                                  | **34083** | **1939** | **5456** |  **767** | **92%** |           |
 
 
 ## Setup coverage badge
