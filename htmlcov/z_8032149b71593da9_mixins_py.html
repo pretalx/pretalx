@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_8032149b71593da9_renderers_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-04 15:44 +0000
+            created at 2026-02-04 15:54 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -585,7 +585,7 @@
     <p class="run"><span class="n"><a id="t501" href="#t501">501</a></span><span class="t">        <span class="key">elif</span> <span class="nam">isinstance</span><span class="op">(</span><span class="nam">field</span><span class="op">,</span> <span class="nam">forms</span><span class="op">.</span><span class="nam">FileField</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t502" href="#t502">502</a></span><span class="t">            <span class="key">if</span> <span class="nam">isinstance</span><span class="op">(</span><span class="nam">value</span><span class="op">,</span> <span class="nam">UploadedFile</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t503" href="#t503">503</a></span><span class="t">                <span class="nam">answer</span><span class="op">.</span><span class="nam">answer_file</span><span class="op">.</span><span class="nam">save</span><span class="op">(</span><span class="nam">value</span><span class="op">.</span><span class="nam">name</span><span class="op">,</span> <span class="nam">value</span><span class="op">,</span> <span class="nam">save</span><span class="op">=</span><span class="key">False</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t504" href="#t504">504</a></span><span class="t">                <span class="nam">answer</span><span class="op">.</span><span class="nam">answer</span> <span class="op">=</span> <span class="str">"file://"</span> <span class="op">+</span> <span class="nam">value</span><span class="op">.</span><span class="nam">name</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t504" href="#t504">504</a></span><span class="t">                <span class="nam">answer</span><span class="op">.</span><span class="nam">answer</span> <span class="op">=</span> <span class="str">"file://"</span> <span class="op">+</span> <span class="nam">answer</span><span class="op">.</span><span class="nam">answer_file</span><span class="op">.</span><span class="nam">name</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t505" href="#t505">505</a></span><span class="t">            <span class="nam">value</span> <span class="op">=</span> <span class="nam">answer</span><span class="op">.</span><span class="nam">answer</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t506" href="#t506">506</a></span><span class="t">        <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t507" href="#t507">507</a></span><span class="t">            <span class="nam">answer</span><span class="op">.</span><span class="nam">answer</span> <span class="op">=</span> <span class="nam">value</span>&nbsp;</span><span class="r"></span></p>
@@ -707,7 +707,7 @@
             <a class="nav" href="z_8032149b71593da9_renderers_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-04 15:44 +0000
+            created at 2026-02-04 15:54 +0000
         </p>
     </div>
 </footer>
