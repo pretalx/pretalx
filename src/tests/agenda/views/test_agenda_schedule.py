@@ -43,7 +43,7 @@ def test_can_see_schedule(
 )
 @pytest.mark.usefixtures("other_slot")
 def test_can_see_changelog(
-    client, django_assert_max_num_queries, user, event, slot, other_slot
+    client, django_assert_num_queries, user, event, slot, other_slot
 ):
     with scope(event=event):
         assert user.has_perm("schedule.list_schedule", event)
@@ -58,16 +58,14 @@ def test_can_see_changelog(
         event.release_schedule("v3")
         url = event.urls.schedule + "changelog/"
 
-    # This page performs one lookup fewer when using sqlite, so we’re using
-    # an upper bound, even though that reduces the use of the caching check below.
-    with django_assert_max_num_queries(18):
+    with django_assert_num_queries(18):
         response = client.get(url, follow=True, HTTP_ACCEPT="text/html")
 
     assert response.status_code == 200
     assert slot.submission.title in response.content.decode()
 
     # Make sure that the next call uses fewer db queries, as the results are cached
-    with django_assert_max_num_queries(17):
+    with django_assert_num_queries(17):
         response = client.get(url, follow=True, HTTP_ACCEPT="text/html")
 
     assert response.status_code == 200
@@ -309,13 +307,12 @@ def test_schedule_page_text_wrong_format(
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     "version,queries_main,queries_versioned,queries_redirect",
-    (("js", 6, 8, 13), ("nojs", 7, 12, 16)),
+    (("js", 6, 7, 13), ("nojs", 7, 10, 16)),
 )
 @pytest.mark.usefixtures("other_slot")
 def test_versioned_schedule_page(
     client,
     django_assert_num_queries,
-    django_assert_max_num_queries,
     event,
     slot,
     schedule,
@@ -340,7 +337,7 @@ def test_versioned_schedule_page(
         assert test_string not in response.text
 
     url = schedule.urls.public if version == "js" else schedule.urls.nojs
-    with django_assert_max_num_queries(queries_versioned):
+    with django_assert_num_queries(queries_versioned):
         response = client.get(url, follow=True, HTTP_ACCEPT="text/html")
     assert response.status_code == 200
     assert test_string in response.text

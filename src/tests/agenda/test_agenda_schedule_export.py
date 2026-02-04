@@ -69,9 +69,9 @@ def test_schedule_json_schema_is_up_to_date():
 @pytest.mark.django_db
 @pytest.mark.usefixtures("break_slot")
 def test_schedule_frab_xml_export(
-    slot, client, django_assert_max_num_queries, schedule_schema_xml
+    slot, client, django_assert_num_queries, schedule_schema_xml
 ):
-    with django_assert_max_num_queries(15):
+    with django_assert_num_queries(13):
         response = client.get(
             reverse(
                 "agenda:export.schedule.xml",
@@ -90,7 +90,7 @@ def test_schedule_frab_xml_export(
     etree.fromstring(
         response.content, parser
     )  # Will raise if the schedule does not match the schema
-    with django_assert_max_num_queries(11):
+    with django_assert_num_queries(11):
         response = client.get(
             reverse(
                 "agenda:export.schedule.xml",
@@ -103,13 +103,11 @@ def test_schedule_frab_xml_export(
 
 
 @pytest.mark.django_db
-def test_schedule_frab_xml_export_control_char(
-    slot, client, django_assert_max_num_queries
-):
+def test_schedule_frab_xml_export_control_char(slot, client, django_assert_num_queries):
     slot.submission.description = "control char: \a"
     slot.submission.save()
 
-    with django_assert_max_num_queries(12):
+    with django_assert_num_queries(12):
         response = client.get(
             reverse(
                 "agenda:export.schedule.xml",
@@ -127,11 +125,11 @@ def test_schedule_frab_xml_export_control_char(
 def test_schedule_frab_json_export(
     slot,
     client,
-    django_assert_max_num_queries,
+    django_assert_num_queries,
     orga_user,
     schedule_schema_json,
 ):
-    with django_assert_max_num_queries(17):
+    with django_assert_num_queries(15):
         regular_response = client.get(
             reverse(
                 "agenda:export.schedule.json",
@@ -140,7 +138,7 @@ def test_schedule_frab_json_export(
             follow=True,
         )
     client.force_login(orga_user)
-    with django_assert_max_num_queries(23):
+    with django_assert_num_queries(16):
         orga_response = client.get(
             reverse(
                 "agenda:export.schedule.json",
@@ -172,8 +170,8 @@ def test_schedule_frab_json_export(
 
 @pytest.mark.django_db
 @pytest.mark.usefixtures("break_slot")
-def test_schedule_frab_xcal_export(slot, client, django_assert_max_num_queries):
-    with django_assert_max_num_queries(11):
+def test_schedule_frab_xcal_export(slot, client, django_assert_num_queries):
+    with django_assert_num_queries(10):
         response = client.get(
             reverse(
                 "agenda:export.schedule.xcal",
@@ -188,8 +186,8 @@ def test_schedule_frab_xcal_export(slot, client, django_assert_max_num_queries):
 
 
 @pytest.mark.django_db
-def test_schedule_ical_export(slot, orga_client, django_assert_max_num_queries):
-    with django_assert_max_num_queries(15):
+def test_schedule_ical_export(slot, orga_client, django_assert_num_queries):
+    with django_assert_num_queries(13):
         response = orga_client.get(
             reverse(
                 "agenda:export.schedule.ics",
@@ -204,8 +202,8 @@ def test_schedule_ical_export(slot, orga_client, django_assert_max_num_queries):
 
 
 @pytest.mark.django_db
-def test_schedule_single_ical_export(slot, client, django_assert_max_num_queries):
-    with django_assert_max_num_queries(16):
+def test_schedule_single_ical_export(slot, client, django_assert_num_queries):
+    with django_assert_num_queries(13):
         response = client.get(slot.submission.urls.ical, follow=True)
     assert response.status_code == 200
 
@@ -218,14 +216,12 @@ def test_schedule_single_ical_export(slot, client, django_assert_max_num_queries
     "exporter",
     ("schedule.xml", "schedule.json", "schedule.xcal", "schedule.ics", "feed"),
 )
-def test_schedule_export_nonpublic(
-    exporter, slot, client, django_assert_max_num_queries
-):
+def test_schedule_export_nonpublic(exporter, slot, client, django_assert_num_queries):
     slot.submission.event.is_public = False
     slot.submission.event.save()
     exporter = "feed" if exporter == "feed" else f"export.{exporter}"
 
-    with django_assert_max_num_queries(6):
+    with django_assert_num_queries(5):
         response = client.get(
             reverse(f"agenda:{exporter}", kwargs={"event": slot.submission.event.slug}),
             follow=True,
@@ -235,13 +231,20 @@ def test_schedule_export_nonpublic(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "exporter",
-    ("schedule.xml", "schedule.json", "schedule.xcal", "feed"),
+    "exporter,queries",
+    (
+        ("schedule.xml", 13),
+        ("schedule.json", 15),
+        ("schedule.xcal", 10),
+        ("feed", 10),
+    ),
 )
-def test_schedule_export_public(exporter, slot, client, django_assert_max_num_queries):
+def test_schedule_export_public(
+    exporter, queries, slot, client, django_assert_num_queries
+):
     exporter = "feed" if exporter == "feed" else f"export.{exporter}"
 
-    with django_assert_max_num_queries(15):
+    with django_assert_num_queries(queries):
         response = client.get(
             reverse(f"agenda:{exporter}", kwargs={"event": slot.submission.event.slug}),
             follow=True,
@@ -251,12 +254,12 @@ def test_schedule_export_public(exporter, slot, client, django_assert_max_num_qu
 
 @pytest.mark.django_db
 def test_schedule_speaker_ical_export(
-    slot, other_slot, client, django_assert_max_num_queries
+    slot, other_slot, client, django_assert_num_queries
 ):
     with scope(event=slot.submission.event):
         speaker = slot.submission.speakers.all()[0]
         profile = speaker.profiles.get(event=slot.event)
-    with django_assert_max_num_queries(17):
+    with django_assert_num_queries(17):
         response = client.get(profile.urls.talks_ical, follow=True)
     assert response.status_code == 200
 
@@ -266,8 +269,8 @@ def test_schedule_speaker_ical_export(
 
 
 @pytest.mark.django_db
-def test_feed_view(slot, client, django_assert_max_num_queries, schedule):
-    with django_assert_max_num_queries(10):
+def test_feed_view(slot, client, django_assert_num_queries, schedule):
+    with django_assert_num_queries(10):
         response = client.get(slot.submission.event.urls.feed)
     assert response.status_code == 200
     assert schedule.version in response.text
@@ -377,7 +380,6 @@ def test_html_export_full(
     confirmed_resource,
     canceled_talk,
     orga_client,
-    django_assert_max_num_queries,
     zip,
 ):
     from django.core.management import (  # Import here to avoid overriding mocks
@@ -488,8 +490,8 @@ def test_html_export_full(
 
 
 @pytest.mark.django_db
-def test_speaker_csv_export(slot, orga_client, django_assert_max_num_queries):
-    with django_assert_max_num_queries(17):
+def test_speaker_csv_export(slot, orga_client, django_assert_num_queries):
+    with django_assert_num_queries(15):
         response = orga_client.get(
             reverse(
                 "agenda:export",
@@ -502,8 +504,8 @@ def test_speaker_csv_export(slot, orga_client, django_assert_max_num_queries):
 
 
 @pytest.mark.django_db
-def test_empty_speaker_csv_export(orga_client, django_assert_max_num_queries, event):
-    with django_assert_max_num_queries(12):
+def test_empty_speaker_csv_export(orga_client, django_assert_num_queries, event):
+    with django_assert_num_queries(10):
         response = orga_client.get(
             reverse(
                 "agenda:export",

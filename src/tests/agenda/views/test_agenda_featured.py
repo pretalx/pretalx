@@ -6,9 +6,11 @@ from django_scopes import scope
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("featured", ("always", "never", "pre_schedule"))
+@pytest.mark.parametrize(
+    "featured,queries", (("always", 8), ("never", 6), ("pre_schedule", 8))
+)
 def test_featured_invisible_because_setting(
-    client, django_assert_max_num_queries, event, featured, confirmed_submission
+    client, django_assert_num_queries, event, featured, queries, confirmed_submission
 ):
     with scope(event=event):
         event.feature_flags["show_featured"] = featured
@@ -16,7 +18,7 @@ def test_featured_invisible_because_setting(
         confirmed_submission.is_featured = True
         confirmed_submission.save()
     url = str(event.urls.featured)
-    with django_assert_max_num_queries(9):
+    with django_assert_num_queries(queries):
         response = client.get(url, follow=True)
     if featured == "never":
         assert response.status_code == 404
@@ -28,16 +30,18 @@ def test_featured_invisible_because_setting(
         assert response.url == event.urls.featured
 
 
-@pytest.mark.parametrize("featured", ("always", "never", "pre_schedule"))
+@pytest.mark.parametrize(
+    "featured,queries", (("always", 7), ("never", 6), ("pre_schedule", 6))
+)
 @pytest.mark.django_db
 def test_featured_invisible_because_schedule(
-    client, django_assert_max_num_queries, event, featured
+    client, django_assert_num_queries, event, featured, queries
 ):
     with scope(event=event):
         event.feature_flags["show_featured"] = featured
         event.save()
         event.release_schedule("42")
-    with django_assert_max_num_queries(8):
+    with django_assert_num_queries(queries):
         response = client.get(event.urls.featured)
 
     if featured != "always":
@@ -52,14 +56,14 @@ def test_featured_invisible_because_schedule(
 @pytest.mark.django_db
 @pytest.mark.parametrize("featured", ("always", "pre_schedule"))
 def test_featured_visible_despite_schedule(
-    client, django_assert_max_num_queries, event, featured
+    client, django_assert_num_queries, event, featured
 ):
     event.feature_flags["show_featured"] = featured
     event.feature_flags["show_schedule"] = False
     event.save()
     with scope(event=event):
         event.release_schedule("42")
-    with django_assert_max_num_queries(8):
+    with django_assert_num_queries(7):
         response = client.get(event.urls.featured, follow=True)
     assert response.status_code == 200
     assert "featured" in response.text
@@ -68,7 +72,7 @@ def test_featured_visible_despite_schedule(
 @pytest.mark.django_db
 def test_featured_talk_list(
     client,
-    django_assert_max_num_queries,
+    django_assert_num_queries,
     event,
     confirmed_submission,
     other_confirmed_submission,
@@ -79,7 +83,7 @@ def test_featured_talk_list(
     event.feature_flags["show_featured"] = True
     event.save()
 
-    with django_assert_max_num_queries(9):
+    with django_assert_num_queries(8):
         response = client.get(event.urls.featured, follow=True)
     assert response.status_code == 200
     content = response.text
