@@ -26,10 +26,10 @@ tr[dragsort-id] {
 .dragsort-button:not(:disabled) {
   &,
   button {
-    cursor: grab;
+    cursor: grab !important;
   }
   &:active {
-    cursor: grabbing;
+    cursor: grabbing !important;
   }
 }
 div[dragsort-id] {

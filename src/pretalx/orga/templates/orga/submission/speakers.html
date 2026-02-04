@@ -11,12 +11,19 @@ SPDX-FileContributor: Florian Mösch
 {% load i18n %}
 {% load rich_text %}
 {% load rules %}
+{% load static %}
 {% load thumbnail %}
 
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static "orga/css/ui/dragsort.css" %}">
 {% endblock stylesheets %}
+
+{% block scripts %}
+    {{ block.super }}
+    <script defer src="{% static "orga/js/ui/dragsort.js" %}"></script>
+{% endblock scripts %}
+
 {% block submission_title %}{% translate "Speakers" %} :: {% endblock submission_title %}
 
 {% block submission_content %}
@@ -83,17 +90,22 @@ SPDX-FileContributor: Florian Mösch
                         {% include "orga/includes/mark_speakers_arrived.html" with speaker=speaker.profile %}
                     {% endif %}
                     {% if can_send_mails %}
-                        <a class="btn btn-outline-info" href="{{ speaker.orga_urls.send_mail }}">
+                        <a class="btn btn-outline-info" role="button" href="{{ speaker.orga_urls.send_mail }}">
                             <i class="fa fa-envelope"></i>
                             {% translate "Send email" %}
                         </a>
                     {% endif %}
                     <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.user.code %}"
-                       class="btn btn-info">
+                       role="button" class="btn btn-info">
                         <i class="fa fa-edit"></i> {{ phrases.base.edit }}
                     </a>
+                    {% if speakers|length > 1 %}
+                        <div role="button" class="btn btn-info dragsort-button" draggable="true" title="{% translate "Drag to reorder" %}">
+                            <i class="fa fa-bars"></i> {% translate "Change order" %}
+                        </div>
+                    {% endif %}
                     <a href="{{ submission.orga_urls.delete_speaker }}?id={{ speaker.user.id }}"
-                       class="btn btn-danger">
+                       role="button" class="btn btn-danger">
                         <i class="fa fa-trash"></i> {% translate "Remove" %}
                     </a>
                 {% endif %}
