@@ -79,6 +79,7 @@ dev = [
   "freezegun",
   "isort",
   "jsonschema",
+  "polib",
   "pytest",
   "pytest-cov",
   "pytest-django",
