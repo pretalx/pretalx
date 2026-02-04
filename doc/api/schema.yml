@@ -3668,6 +3668,7 @@ paths:
   /api/events/{event}/submissions/{code__iexact}/invitations/:
     post:
       operationId: submissions_invitations_create
+      summary: Invite Speaker to Submission
       parameters:
       - in: path
         name: code__iexact
@@ -3686,18 +3687,19 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SubmissionRequest'
+              $ref: '#/components/schemas/AddSpeakerRequest'
         required: true
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Submission'
+                $ref: '#/components/schemas/SubmissionOrga'
           description: ''
   /api/events/{event}/submissions/{code__iexact}/invitations/{invitation_id}/:
     delete:
       operationId: submissions_invitations_destroy
+      summary: Retract Speaker Invitation
       parameters:
       - in: path
         name: code__iexact

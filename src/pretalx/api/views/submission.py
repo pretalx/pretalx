@@ -144,6 +144,15 @@ class RemoveSpeakerSerializer(serializers.Serializer):
         summary="Remove Resource from Submission",
         responses={204: None},
     ),
+    invite_speaker=extend_schema(
+        summary="Invite Speaker to Submission",
+        request=AddSpeakerSerializer,
+        responses={200: SubmissionOrgaSerializer},
+    ),
+    retract_invitation=extend_schema(
+        summary="Retract Speaker Invitation",
+        responses={204: None},
+    ),
 )
 class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
     serializer_class = SubmissionSerializer
