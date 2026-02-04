@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import datetime as dt
 import urllib
 from collections import defaultdict
 from contextlib import suppress
@@ -9,11 +10,14 @@ from urllib.parse import quote
 from csp.decorators import csp_exempt
 from django import forms
 from django.conf import settings
+from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django_context_decorator import context
 from formtools.wizard.forms import ManagementForm
@@ -21,6 +25,8 @@ from rules.contrib.views import PermissionRequiredMixin
 
 from pretalx.common.forms import SearchForm
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
+from pretalx.common.models.file import CachedFile
+from pretalx.common.text.path import safe_filename
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, back_button
 
@@ -373,3 +379,123 @@ class OrderActionMixin:
                 obj.position = index
                 obj.save(update_fields=["position"])
         return self.list(request, *args, **kwargs)
+
+
+class AsyncFileDownloadMixin:
+    """Mixin for views that generate and serve files asynchronously via Celery.
+
+    Tasks store results in a CachedFile, tracked by Celery task ID.
+
+    Subclasses must implement:
+    - get_error_redirect_url(): URL to redirect to on error
+    - get_async_download_filename(): Filename for the download
+    - start_async_task(cached_file): Start the Celery task, return AsyncResult
+
+    Optional overrides:
+    - async_download_expiry: timedelta for CachedFile expiry (default: 24 hours)
+    - async_download_content_type: Content-Type for CachedFile (default: "application/zip")
+    - get_async_download_context(): Extra context for templates
+    - get_async_waiting_template(): Template for waiting page
+    """
+
+    async_download_expiry = dt.timedelta(hours=24)
+    async_download_content_type = "application/zip"
+
+    def get_error_redirect_url(self):
+        raise NotImplementedError
+
+    def get_async_download_filename(self):
+        raise NotImplementedError
+
+    def start_async_task(self, cached_file):
+        raise NotImplementedError
+
+    def get_async_download_context(self):
+        return {}
+
+    def get_async_waiting_template(self):
+        return "orga/includes/async_download_waiting.html"
+
+    def handle_async_download(self, request):
+        cached_file_id = request.GET.get("cached_file")
+        if cached_file_id:
+            try:
+                cached_file = CachedFile.objects.filter(id=cached_file_id).first()
+            except (ValueError, ValidationError):
+                cached_file = None
+            if cached_file and cached_file.file:
+                return self._serve_cached_file(request, cached_file)
+            messages.error(request, _("Export file not found. Please try again."))
+            return redirect(self.get_error_redirect_url())
+        async_id = request.GET.get("async_id")
+        if async_id:
+            return self._check_task_status(request, async_id)
+        return self._start_task(request)
+
+    def _start_task(self, request):
+        cached_file = CachedFile.objects.create(
+            expires=now() + self.async_download_expiry,
+            filename=self.get_async_download_filename(),
+            content_type=self.async_download_content_type,
+        )
+        result = self.start_async_task(cached_file)
+
+        if settings.CELERY_TASK_ALWAYS_EAGER:
+            cached_file.refresh_from_db()
+            return self._serve_cached_file(request, cached_file)
+
+        return redirect(f"{request.path}?async_id={result.id}")
+
+    def _check_task_status(self, request, async_id):
+        from celery.result import AsyncResult
+
+        result = AsyncResult(async_id)
+        is_ready = result.ready()
+        is_successful = result.successful() if is_ready else False
+
+        cached_file = None
+        if is_ready and is_successful and result.result:
+            try:
+                cached_file = CachedFile.objects.filter(id=result.result).first()
+            except (ValueError, ValidationError):
+                cached_file = None
+            is_successful = cached_file is not None and bool(cached_file.file)
+
+        context = {"async_id": async_id, **self.get_async_download_context()}
+
+        if request.headers.get("HX-Request"):
+            if is_ready:
+                if is_successful:
+                    context["download_url"] = (
+                        f"{request.path}?cached_file={result.result}"
+                    )
+                    return render(
+                        request, "orga/includes/async_download.html#success", context
+                    )
+                context["back_url"] = self.get_error_redirect_url()
+                return render(
+                    request, "orga/includes/async_download.html#error", context
+                )
+            return render(
+                request, "orga/includes/async_download.html#waiting-spinner", context
+            )
+
+        if is_ready:
+            if is_successful:
+                return self._serve_cached_file(request, cached_file)
+            messages.error(request, _("Export failed. Please try again."))
+            return redirect(self.get_error_redirect_url())
+
+        return render(request, self.get_async_waiting_template(), context)
+
+    def _serve_cached_file(self, request, cached_file):
+        try:
+            response = FileResponse(
+                cached_file.file.open("rb"),
+                as_attachment=True,
+                filename=safe_filename(cached_file.filename),
+            )
+        except (FileNotFoundError, ValueError):
+            messages.error(request, _("Export file not found. Please try again."))
+            return redirect(self.get_error_redirect_url())
+        return response

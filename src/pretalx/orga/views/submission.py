@@ -592,7 +592,6 @@ class SubmissionContent(
             or self._questions_form.has_changed()
             or self._formset.has_changed()
         ):
-            self.request.event.cache.set("rebuild_schedule_export", True, None)
             if not created:
                 new_submission_data = form.instance._get_instance_data() or {}
                 new_questions_data = self._questions_form.serialize_answers() or {}

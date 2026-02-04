@@ -6,17 +6,21 @@
 # SPDX-FileContributor: Natalia Katsiapi
 
 import datetime as dt
+from io import BytesIO
+from zipfile import ZipFile
 from zoneinfo import ZoneInfo
 
 import pytest
 from django.core import mail as djmail
+from django.core.files.base import ContentFile
 from django.urls import reverse
 from django_scopes import scope
 
+from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
 from pretalx.mail.models import QueuedMail
-from pretalx.submission.models import Question, QuestionTarget
-from pretalx.submission.models.question import QuestionRequired
+from pretalx.submission.models import Question, QuestionTarget, Submission
+from pretalx.submission.models.question import Answer, QuestionRequired, QuestionVariant
 
 
 @pytest.mark.django_db
@@ -1209,3 +1213,134 @@ def test_cfp_editor_track_auto_hidden_when_disabled(orga_client, event):
     assert response.status_code == 200
     assert b"Currently hidden" in response.content
     assert b"tracks are disabled" in response.content
+
+
+@pytest.mark.django_db
+def test_question_file_download_non_file_question(orga_client, question):
+    response = orga_client.get(question.urls.download, follow=True)
+    assert response.status_code == 200
+    assert "does not support file downloads" in response.text
+
+
+@pytest.mark.django_db
+def test_question_file_download_permission_denied(client, file_question):
+    response = client.get(file_question.urls.download)
+    assert response.status_code == 302
+
+
+@pytest.mark.django_db
+def test_question_file_download_creates_cached_file(
+    orga_client, event, file_question, submission, speaker
+):
+    with scope(event=event):
+        answer = Answer.objects.create(
+            submission=submission,
+            question=file_question,
+            person=speaker,
+            answer="doc.pdf",
+        )
+        answer.answer_file.save("doc.pdf", ContentFile(b"pdf content"))
+        answer.save()
+
+    initial_count = CachedFile.objects.count()
+    response = orga_client.get(file_question.urls.download, follow=False)
+    # In eager mode (tests), task runs synchronously, so we get a 200 response directly
+    assert response.status_code == 200
+    assert CachedFile.objects.count() == initial_count + 1
+
+
+@pytest.mark.django_db
+def test_question_file_download_generates_zip(
+    orga_client, event, file_question, submission, speaker
+):
+    with scope(event=event):
+        answer = Answer.objects.create(
+            submission=submission,
+            question=file_question,
+            person=speaker,
+            answer="test.txt",
+        )
+        answer.answer_file.save("test.txt", ContentFile(b"test content"))
+        answer.save()
+
+    response = orga_client.get(file_question.urls.download)
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/zip"
+
+    zip_content = b"".join(response.streaming_content)
+    with ZipFile(BytesIO(zip_content), "r") as zf:
+        names = zf.namelist()
+        assert len(names) == 1
+        assert submission.code in names[0]
+        assert zf.read(names[0]) == b"test content"
+
+
+@pytest.mark.django_db
+def test_question_file_download_duplicate_filenames(
+    orga_client, event, submission, speaker
+):
+    with scope(event=event):
+        file_question = Question.objects.create(
+            event=event,
+            question="Upload file",
+            variant=QuestionVariant.FILE,
+            target="submission",
+        )
+        other_submission = Submission.objects.create(
+            event=event,
+            title="Other submission",
+            submission_type=event.cfp.default_type,
+        )
+        other_submission.speakers.add(speaker)
+        answer1 = Answer.objects.create(
+            submission=submission,
+            question=file_question,
+            person=speaker,
+            answer="same.txt",
+        )
+        answer1.answer_file.save("same.txt", ContentFile(b"content 1"))
+        answer1.save()
+
+        answer2 = Answer.objects.create(
+            submission=other_submission,
+            question=file_question,
+            person=speaker,
+            answer="same.txt",
+        )
+        answer2.answer_file.save("same.txt", ContentFile(b"content 2"))
+        answer2.save()
+
+    response = orga_client.get(file_question.urls.download)
+    assert response.status_code == 200
+
+    zip_content = b"".join(response.streaming_content)
+    with ZipFile(BytesIO(zip_content), "r") as zf:
+        names = zf.namelist()
+        assert len(names) == 2
+        contents = {zf.read(name) for name in names}
+        assert contents == {b"content 1", b"content 2"}
+
+
+@pytest.mark.django_db
+def test_question_file_download_speaker_question(
+    orga_client, event, speaker_file_question, speaker
+):
+    with scope(event=event):
+        answer = Answer.objects.create(
+            question=speaker_file_question,
+            person=speaker,
+            answer="cv.pdf",
+        )
+        answer.answer_file.save("cv.pdf", ContentFile(b"CV content"))
+        answer.save()
+
+    response = orga_client.get(speaker_file_question.urls.download)
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/zip"
+
+    zip_content = b"".join(response.streaming_content)
+    with ZipFile(BytesIO(zip_content), "r") as zf:
+        names = zf.namelist()
+        assert len(names) == 1
+        assert speaker.code in names[0]
+        assert zf.read(names[0]) == b"CV content"

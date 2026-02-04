@@ -9,14 +9,13 @@ import datetime as dt
 import json
 
 import dateutil.parser
-from celery.result import AsyncResult
 from csp.decorators import csp_update
 from django.conf import settings
 from django.contrib import messages
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
-from django.http import FileResponse, JsonResponse
-from django.shortcuts import redirect, render
+from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.timezone import now
@@ -27,15 +26,15 @@ from django_context_decorator import context
 from i18nfield.strings import LazyI18nString
 from i18nfield.utils import I18nJSONEncoder
 
-from pretalx.agenda.management.commands.export_schedule_html import get_export_zip_path
-from pretalx.agenda.tasks import export_schedule_html, is_html_export_stale
+from pretalx.agenda.tasks import export_schedule_html
 from pretalx.agenda.views.utils import get_schedule_exporters
 from pretalx.common.language import get_current_language_information
-from pretalx.common.text.path import safe_filename
+from pretalx.common.models.file import CachedFile
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, LinkButton, api_buttons, back_button
 from pretalx.common.views.generic import OrgaCRUDView
 from pretalx.common.views.mixins import (
+    AsyncFileDownloadMixin,
     EventPermissionRequired,
     OrderActionMixin,
     PermissionRequired,
@@ -128,75 +127,47 @@ class ScheduleExportTriggerView(EventPermissionRequired, View):
     permission_required = "event.update_event"
 
     def post(self, request, event):
-        export_schedule_html.apply_async(
-            kwargs={"event_id": self.request.event.id}, ignore_result=True
-        )
-        messages.success(
-            self.request,
-            _("A new export is being generated."),
-        )
-        return redirect(self.request.event.orga_urls.schedule_export)
+        cached_file_id = request.event.cache.get("schedule_export_cached_file")
+        if cached_file_id:
+            CachedFile.objects.filter(id=cached_file_id).delete()
+            request.event.cache.delete("schedule_export_cached_file")
+        return redirect(request.event.orga_urls.schedule_export_download)
 
 
-class ScheduleExportDownloadView(EventPermissionRequired, View):
+class ScheduleExportDownloadView(AsyncFileDownloadMixin, EventPermissionRequired, View):
     permission_required = "event.update_event"
 
+    def get_error_redirect_url(self):
+        return self.request.event.orga_urls.schedule_export
+
+    def get_async_download_filename(self):
+        return f"{self.request.event.slug}_schedule.zip"
+
+    def start_async_task(self, cached_file):
+        result = export_schedule_html.apply_async(
+            kwargs={
+                "event_id": self.request.event.id,
+                "cached_file_id": str(cached_file.id),
+            }
+        )
+        self.request.event.cache.set(
+            "schedule_export_cached_file", str(cached_file.id), None
+        )
+        return result
+
+    def get_async_waiting_template(self):
+        return "orga/schedule/export_waiting.html"
+
     def get(self, request, event):
-        if "async_id" in request.GET:
-            return self._check_task_status(
-                request, AsyncResult(request.GET["async_id"])
-            )
-
-        if not is_html_export_stale(request.event):
-            return self._serve_zip(request, get_export_zip_path(request.event))
-
-        # In eager mode (dev), task runs synchronously - serve file directly after
-        if settings.CELERY_TASK_ALWAYS_EAGER:
-            export_schedule_html.apply_async(kwargs={"event_id": request.event.id})
-            return self._serve_zip(request, get_export_zip_path(request.event))
-
-        res = export_schedule_html.apply_async(kwargs={"event_id": request.event.id})
-        return redirect(f"{request.path}?async_id={res.id}")
-
-    def _check_task_status(self, request, res):
-        if request.headers.get("HX-Request"):
-            if res.ready():
-                if res.successful():
-                    return render(
-                        request,
-                        "orga/schedule/export_success_partial.html",
-                        {"download_url": request.path},
-                    )
-                return render(request, "orga/schedule/export_error.html")
-            return render(
-                request,
-                "orga/schedule/export_waiting_partial.html",
-                {"async_id": res.id},
-            )
-
-        if res.ready():
-            if res.successful():
-                return self._serve_zip(request, get_export_zip_path(request.event))
-            messages.error(request, _("Export failed, please try again."))
-            return redirect(request.event.orga_urls.schedule_export)
-
-        return render(
-            request, "orga/schedule/export_waiting.html", {"async_id": res.id}
-        )
-
-    def _serve_zip(self, request, zip_path):
-        try:
-            response = FileResponse(open(zip_path, "rb"), as_attachment=True)
-        except FileNotFoundError:
-            messages.error(
-                request,
-                _("Export file not found. Please regenerate the export."),
-            )
-            return redirect(request.event.orga_urls.schedule_export)
-        response["Content-Disposition"] = "attachment; filename=" + safe_filename(
-            zip_path.name
-        )
-        return response
+        if "async_id" not in request.GET and "cached_file" not in request.GET:
+            cached_file_id = request.event.cache.get("schedule_export_cached_file")
+            if cached_file_id:
+                cached_file = CachedFile.objects.filter(id=cached_file_id).first()
+                if cached_file and cached_file.file:
+                    return self._serve_cached_file(request, cached_file)
+                else:
+                    request.event.cache.delete("schedule_export_cached_file")
+        return self.handle_async_download(request)
 
 
 class ScheduleReleaseView(EventPermissionRequired, FormView):

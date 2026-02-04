@@ -115,7 +115,6 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
                     old_data=old_profile_data,
                     new_data=new_profile_data,
                 )
-                self.request.event.cache.set("rebuild_schedule_export", True, None)
         elif self.questions_form.is_bound and self.questions_form.is_valid():
             profile = self.request.user.event_profile(self.request.event)
             old_questions_data = self.questions_form.serialize_answers()
@@ -128,7 +127,6 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
                     old_data=old_questions_data,
                     new_data=new_questions_data,
                 )
-                self.request.event.cache.set("rebuild_schedule_export", True, None)
         else:
             return super().get(request, *args, **kwargs)
 
@@ -481,8 +479,6 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
                 old_data=json_roundtrip(old_submission_data | old_questions_data),
                 new_data=json_roundtrip(new_submission_data | new_questions_data),
             )
-            self.request.event.cache.set("rebuild_schedule_export", True, None)
-
         elif (
             form.instance.state == SubmissionStates.DRAFT
             and self.request.POST.get("action", "submit") == "dedraft"

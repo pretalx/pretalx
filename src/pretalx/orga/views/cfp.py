@@ -29,6 +29,7 @@ from pretalx.common.text.serialize import I18nStrJSONEncoder, serialize_i18n
 from pretalx.common.ui import send_button
 from pretalx.common.views.generic import OrgaCRUDView, get_next_url
 from pretalx.common.views.mixins import (
+    AsyncFileDownloadMixin,
     EventPermissionRequired,
     OrderActionMixin,
     PermissionRequired,
@@ -349,6 +350,44 @@ class CfPQuestionToggle(PermissionRequired, View):
         question.active = not question.active
         question.save(update_fields=["active"])
         return redirect(question.urls.base)
+
+
+class QuestionFileDownloadView(AsyncFileDownloadMixin, PermissionRequired, View):
+    permission_required = "submission.orga_view_question"
+
+    @cached_property
+    def question(self):
+        return Question.objects.filter(
+            event=self.request.event, pk=self.kwargs.get("pk")
+        ).first()
+
+    def get_object(self):
+        return self.question
+
+    def get_permission_object(self):
+        return self.question
+
+    def get_async_download_filename(self):
+        return f"{self.request.event.slug}_question_{self.question.pk}_files.zip"
+
+    def get_error_redirect_url(self):
+        return self.question.urls.base
+
+    def start_async_task(self, cached_file):
+        from pretalx.submission.tasks import export_question_files
+
+        return export_question_files.apply_async(
+            kwargs={
+                "question_id": self.question.pk,
+                "cached_file_id": str(cached_file.id),
+            }
+        )
+
+    def get(self, request, *args, **kwargs):
+        if not self.question or self.question.variant != "file":
+            messages.error(request, _("This field does not support file downloads."))
+            return redirect(request.event.cfp.urls.questions)
+        return self.handle_async_download(request)
 
 
 class CfPQuestionRemind(EventPermissionRequired, FormView):

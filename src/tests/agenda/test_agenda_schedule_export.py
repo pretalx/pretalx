@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 import urllib3
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management.base import CommandError
 from django.test import override_settings
@@ -15,7 +16,8 @@ from django.urls import reverse
 from django_scopes import scope
 from lxml import etree
 
-from pretalx.agenda.tasks import export_schedule_html, is_html_export_stale
+from pretalx.agenda.tasks import export_schedule_html
+from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
 from pretalx.submission.models import Resource
 
@@ -322,60 +324,48 @@ def test_schedule_export_schedule_html_task(mocker, event):
         call_command,
     )
 
-    export_schedule_html.apply_async(kwargs={"event_id": event.id}, ignore_result=True)
+    cached_file = CachedFile.objects.create(
+        expires="2099-01-01T00:00:00Z",
+        filename="test.zip",
+        content_type="application/zip",
+    )
+    export_schedule_html.apply_async(
+        kwargs={"event_id": event.id, "cached_file_id": str(cached_file.id)}
+    )
 
     call_command.assert_called_with("export_schedule_html", event.slug, "--zip")
 
 
 @pytest.mark.django_db
-@pytest.mark.usefixtures("slot")
-def test_schedule_export_schedule_html_task_nozip(mocker, event):
-    mocker.patch("django.core.management.call_command")
-    from django.core.management import (  # Import here to avoid overriding mocks
-        call_command,
-    )
-
-    export_schedule_html.apply_async(
-        kwargs={"event_id": event.id, "make_zip": False}, ignore_result=True
-    )
-    call_command.assert_called_with("export_schedule_html", event.slug)
+def test_schedule_orga_trigger_export_redirects_to_download(orga_client, event):
+    response = orga_client.post(event.orga_urls.schedule_export_trigger, follow=False)
+    assert response.status_code == 302
+    assert response.url == event.orga_urls.schedule_export_download
 
 
 @pytest.mark.django_db
-def test_schedule_orga_trigger_export_without_celery(
-    mocker, orga_client, django_assert_max_num_queries, event
-):
-    mocker.patch("pretalx.agenda.tasks.export_schedule_html.apply_async")
-    from pretalx.agenda.tasks import export_schedule_html
+@override_settings(
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "trigger-test",
+        }
+    }
+)
+def test_schedule_orga_trigger_export_clears_cached_file(orga_client, event):
+    if "cache" in event.__dict__:
+        del event.__dict__["cache"]
 
-    with django_assert_max_num_queries(39):
-        response = orga_client.post(
-            event.orga_urls.schedule_export_trigger, follow=True
-        )
-    assert response.status_code == 200
-    export_schedule_html.apply_async.assert_called_once_with(
-        kwargs={"event_id": event.id},
-        ignore_result=True,
+    cached_file = CachedFile.objects.create(
+        expires="2099-01-01T00:00:00Z",
+        filename="test.zip",
+        content_type="application/zip",
     )
+    event.cache.set("schedule_export_cached_file", str(cached_file.id), None)
 
-
-@pytest.mark.django_db
-@override_settings(CELERY_TASK_ALWAYS_EAGER=False)
-def test_schedule_orga_trigger_export_with_celery(
-    mocker, orga_client, django_assert_max_num_queries, event
-):
-    mocker.patch("pretalx.agenda.tasks.export_schedule_html.apply_async")
-    from pretalx.agenda.tasks import export_schedule_html
-
-    with django_assert_max_num_queries(39):
-        response = orga_client.post(
-            event.orga_urls.schedule_export_trigger, follow=True
-        )
-    assert response.status_code == 200
-    export_schedule_html.apply_async.assert_called_once_with(
-        kwargs={"event_id": event.id},
-        ignore_result=True,
-    )
+    response = orga_client.post(event.orga_urls.schedule_export_trigger, follow=False)
+    assert response.status_code == 302
+    assert not CachedFile.objects.filter(pk=cached_file.pk).exists()
 
 
 @pytest.mark.parametrize("zip", (True, False))
@@ -491,10 +481,9 @@ def test_html_export_full(
     assert slot.submission.title in talk_ics
     assert event.is_public is False
 
-    with django_assert_max_num_queries(33):
-        response = orga_client.get(
-            event.orga_urls.schedule_export_download, follow=True
-        )
+    # Downloads always generate a fresh export via Celery (runs inline in eager mode),
+    # so query count includes the full HTML export generation.
+    response = orga_client.get(event.orga_urls.schedule_export_download, follow=True)
     assert response.status_code == 200
 
 
@@ -583,65 +572,8 @@ def test_wrong_export(
 
 
 @pytest.mark.django_db
-def test_is_html_export_stale_no_schedule(event):
-    with scope(event=event):
-        event.schedules.all().delete()
-        event.refresh_from_db()
-        assert event.current_schedule is None
-        assert not is_html_export_stale(event)
-
-
-@pytest.mark.django_db
-@override_settings(
-    CACHES={
-        "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "stale-test",
-        }
-    }
-)
-def test_is_html_export_stale_cache_flag(schedule):
-    from pretalx.agenda.management.commands.export_schedule_html import (
-        get_export_zip_path,
-    )
-
-    event = schedule.event
-    # Clear cached_property to use the overridden cache settings
-    if "cache" in event.__dict__:
-        del event.__dict__["cache"]
-
-    # Ensure zip file doesn't exist (so only the cache flag matters)
-    zip_path = get_export_zip_path(event)
-    if zip_path.exists():
-        zip_path.unlink()
-
-    with scope(event=event):
-        event.cache.set("rebuild_schedule_export", True, None)
-        assert is_html_export_stale(event)
-
-
-@pytest.mark.django_db
-def test_is_html_export_stale_no_zip(schedule):
-    from pretalx.agenda.management.commands.export_schedule_html import (
-        get_export_zip_path,
-    )
-
-    event = schedule.event
-    zip_path = get_export_zip_path(event)
-    if zip_path.exists():
-        zip_path.unlink()
-    with scope(event=event):
-        event.cache.delete("rebuild_schedule_export")
-        assert is_html_export_stale(event)
-
-
-@pytest.mark.django_db
 @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
 def test_schedule_download_starts_async_task(mocker, orga_client, schedule):
-    mocker.patch(
-        "pretalx.agenda.tasks.is_html_export_stale",
-        return_value=True,
-    )
     mock_result = mocker.MagicMock()
     mock_result.id = "test-task-id"
     mocker.patch(
@@ -663,7 +595,7 @@ def test_schedule_download_htmx_polling_pending(mocker, orga_client, schedule):
     mock_result = mocker.MagicMock()
     mock_result.ready.return_value = False
     mocker.patch(
-        "pretalx.orga.views.schedule.AsyncResult",
+        "celery.result.AsyncResult",
         return_value=mock_result,
     )
 
@@ -673,17 +605,25 @@ def test_schedule_download_htmx_polling_pending(mocker, orga_client, schedule):
     )
 
     assert response.status_code == 200
-    assert b"Generating export" in response.content
+    assert b"Generating" in response.content
 
 
 @pytest.mark.django_db
 @override_settings(CELERY_TASK_ALWAYS_EAGER=False)
 def test_schedule_download_htmx_polling_success(mocker, orga_client, schedule):
+    cached_file = CachedFile.objects.create(
+        expires="2099-01-01T00:00:00Z",
+        filename="test.zip",
+        content_type="application/zip",
+    )
+    cached_file.file.save("test.zip", ContentFile(b"zipdata"))
+
     mock_result = mocker.MagicMock()
     mock_result.ready.return_value = True
     mock_result.successful.return_value = True
+    mock_result.result = str(cached_file.id)
     mocker.patch(
-        "pretalx.orga.views.schedule.AsyncResult",
+        "celery.result.AsyncResult",
         return_value=mock_result,
     )
 
@@ -693,7 +633,7 @@ def test_schedule_download_htmx_polling_success(mocker, orga_client, schedule):
     )
 
     assert response.status_code == 200
-    assert b"Export ready" in response.content
+    assert b"Download ready" in response.content
     assert b"Download" in response.content
 
 
@@ -704,7 +644,7 @@ def test_schedule_download_htmx_polling_failure(mocker, orga_client, schedule):
     mock_result.ready.return_value = True
     mock_result.successful.return_value = False
     mocker.patch(
-        "pretalx.orga.views.schedule.AsyncResult",
+        "celery.result.AsyncResult",
         return_value=mock_result,
     )
 
@@ -723,7 +663,7 @@ def test_schedule_download_non_htmx_waiting(mocker, orga_client, schedule):
     mock_result = mocker.MagicMock()
     mock_result.ready.return_value = False
     mocker.patch(
-        "pretalx.orga.views.schedule.AsyncResult",
+        "celery.result.AsyncResult",
         return_value=mock_result,
     )
 
@@ -732,7 +672,7 @@ def test_schedule_download_non_htmx_waiting(mocker, orga_client, schedule):
     )
 
     assert response.status_code == 200
-    assert b"Generating export" in response.content
+    assert b"Generating" in response.content
 
 
 @pytest.mark.django_db
@@ -742,7 +682,7 @@ def test_schedule_download_non_htmx_failure(mocker, orga_client, schedule):
     mock_result.ready.return_value = True
     mock_result.successful.return_value = False
     mocker.patch(
-        "pretalx.orga.views.schedule.AsyncResult",
+        "celery.result.AsyncResult",
         return_value=mock_result,
     )
 
@@ -753,22 +693,3 @@ def test_schedule_download_non_htmx_failure(mocker, orga_client, schedule):
 
     assert response.status_code == 200
     assert b"Export failed" in response.content
-
-
-@pytest.mark.django_db
-def test_schedule_download_missing_zip(mocker, orga_client, schedule):
-    mocker.patch(
-        "pretalx.orga.views.schedule.is_html_export_stale",
-        return_value=False,
-    )
-    mocker.patch(
-        "pretalx.orga.views.schedule.get_export_zip_path",
-        return_value=Path("/nonexistent/path.zip"),
-    )
-
-    response = orga_client.get(
-        schedule.event.orga_urls.schedule_export_download, follow=True
-    )
-
-    assert response.status_code == 200
-    assert b"Export file not found" in response.content

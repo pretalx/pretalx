@@ -39,8 +39,6 @@ def answer_file_path(instance, filename):
         code = instance.person.code
     elif target == QuestionTarget.REVIEWER and instance.review:
         code = f"r{instance.review.pk}"
-    else:
-        code = "unknown"
 
     target_name = f"q{question_id}-{code}"
     return hashed_path(
@@ -420,7 +418,8 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
         base = "{self.event.cfp.urls.questions}{self.pk}/"
         edit = "{base}edit/"
         delete = "{base}delete/"
-        toggle = "{self.event.cfp.urls.questions}{self.pk}/toggle/"
+        toggle = "{base}toggle/"
+        download = "{base}download/"
 
     def __str__(self):
         return str(self.question)

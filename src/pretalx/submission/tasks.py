@@ -2,11 +2,19 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import logging
+import os
+import shutil
+import tempfile
+import zipfile
 
+from django.core.files import File
 from django_scopes import scope, scopes_disabled
 
 from pretalx.celery_app import app
+from pretalx.common.models.file import CachedFile
+from pretalx.common.text.path import safe_filename
 from pretalx.event.models import Event
+from pretalx.submission.models import Question
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,3 +32,75 @@ def recalculate_all_review_scores(*, event_id: int):
     with scope(event=event):
         for submission in event.submissions.all():
             submission.update_review_scores()
+
+
+@app.task(name="pretalx.submission.export_question_files")
+def export_question_files(*, question_id: int, cached_file_id: str):
+    with scopes_disabled():
+        question = (
+            Question.all_objects.select_related("event").filter(pk=question_id).first()
+        )
+        cached_file = CachedFile.objects.filter(id=cached_file_id).first()
+
+    if not question:
+        LOGGER.error(f"Could not find Question ID {question_id} for file export.")
+        return
+    if not cached_file:
+        LOGGER.error(f"Could not find CachedFile ID {cached_file_id} for file export.")
+        return
+    if question.variant != "file":
+        LOGGER.error(f"Question {question_id} is not a file question.")
+        return
+
+    event = question.event
+
+    with scope(event=event):
+        answers = (
+            question.answers.filter(answer_file__isnull=False)
+            .exclude(answer_file="")
+            .select_related("submission", "person", "review")
+        )
+
+        used_filenames = set()
+        tmp_zip_fd, tmp_zip_path = tempfile.mkstemp(suffix=".zip")
+        os.close(tmp_zip_fd)
+
+        try:
+            with zipfile.ZipFile(tmp_zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                for answer in answers:
+                    if not answer.answer_file:
+                        continue
+
+                    base_filename = safe_filename(
+                        os.path.basename(answer.answer_file.name)
+                    )
+                    filename = base_filename
+
+                    counter = 1
+                    while filename in used_filenames:
+                        name, ext = os.path.splitext(base_filename)
+                        filename = f"{name}_{counter}{ext}"
+                        counter += 1
+
+                    used_filenames.add(filename)
+
+                    try:
+                        with zf.open(filename, "w") as dest:
+                            with answer.answer_file.open("rb") as src:
+                                shutil.copyfileobj(src, dest)
+                    except Exception as e:
+                        LOGGER.warning(
+                            f"Could not read file for answer {answer.pk}: {e}"
+                        )
+
+            with open(tmp_zip_path, "rb") as f:
+                cached_file.file.save(cached_file.filename, File(f))
+
+        except Exception as e:
+            LOGGER.exception(f"Failed to export question files: {e}")
+            return None
+
+        finally:
+            os.unlink(tmp_zip_path)
+
+    return cached_file_id
