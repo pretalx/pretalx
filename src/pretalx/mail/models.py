@@ -49,6 +49,7 @@ class MailTemplateRoles(models.TextChoices):
         "Add a speaker to a proposal (existing account)"
     )
     QUESTION_REMINDER = "question.reminder", _("Custom fields reminder")
+    DRAFT_REMINDER = "draft.reminder", _("Draft proposal reminder")
     NEW_SCHEDULE = "schedule.new", _("New schedule published")
 
 
@@ -60,6 +61,7 @@ PLACEHOLDER_KWARGS = {
     MailTemplateRoles.NEW_SPEAKER_INVITE: ["submission", "event", "user"],
     MailTemplateRoles.EXISTING_SPEAKER_INVITE: ["submission", "event", "user"],
     MailTemplateRoles.QUESTION_REMINDER: ["event", "user"],
+    MailTemplateRoles.DRAFT_REMINDER: ["submission", "event", "user"],
     MailTemplateRoles.NEW_SCHEDULE: ["event", "user"],
 }
 

@@ -107,6 +107,23 @@ Please follow this link to edit your user profile and see the state of your prop
 The {event_name} organisers"""))
 
 
+DRAFT_REMINDER_SUBJECT = LazyI18nString.from_gettext(
+    _("Reminder: Submit your proposal")
+)
+DRAFT_REMINDER_TEXT = LazyI18nString.from_gettext(_("""Hi!
+
+You have started a proposal "{submission_title}" for {event_name},
+but you haven't submitted it yet. Please go to
+
+    {submission_url}
+
+to complete and submit your proposal.
+
+Please do not hesitate to contact us if you have any questions!
+
+The {event_name} organisers"""))
+
+
 def get_default_template(role):
     from pretalx.mail.models import MailTemplateRoles
 
@@ -120,6 +137,7 @@ def get_default_template(role):
         ),
         MailTemplateRoles.NEW_SCHEDULE: (UPDATE_SUBJECT, UPDATE_TEXT),
         MailTemplateRoles.QUESTION_REMINDER: (QUESTION_SUBJECT, QUESTION_TEXT),
+        MailTemplateRoles.DRAFT_REMINDER: (DRAFT_REMINDER_SUBJECT, DRAFT_REMINDER_TEXT),
         MailTemplateRoles.NEW_SPEAKER_INVITE: (
             SPEAKER_INVITE_SUBJECT,
             NEW_SPEAKER_INVITE_TEXT,

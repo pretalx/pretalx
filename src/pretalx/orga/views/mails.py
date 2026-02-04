@@ -27,10 +27,14 @@ from pretalx.common.views.mixins import (
     Filterable,
     PermissionRequired,
 )
-from pretalx.mail.models import MailTemplate, QueuedMail, get_prefixed_subject
+from pretalx.mail.models import (
+    MailTemplate,
+    MailTemplateRoles,
+    QueuedMail,
+    get_prefixed_subject,
+)
 from pretalx.mail.signals import request_pre_send
 from pretalx.orga.forms.mails import (
-    DraftRemindersForm,
     MailDetailForm,
     MailTemplateForm,
     QueuedMailFilterForm,
@@ -561,31 +565,43 @@ class ComposeSessionMail(ComposeMailBaseView):
         return kwargs
 
 
-class ComposeDraftReminders(EventPermissionRequired, FormView):
-    form_class = DraftRemindersForm
+class ComposeDraftReminders(EventPermissionRequired, TemplateView):
     template_name = "orga/mails/send_draft_reminders.html"
     permission_required = "mail.send_queuedmail"
-    write_permission_required = "mail.send_queuedmail"
 
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs["event"] = self.request.event
-        return kwargs
+    @context
+    @cached_property
+    def draft_reminder_template(self):
+        return self.request.event.get_mail_template(MailTemplateRoles.DRAFT_REMINDER)
 
     @context
     def submit_buttons(self):
         return [send_button()]
 
-    def get_success_url(self):
-        return self.request.event.orga_urls.base
+    def post(self, request, *args, **kwargs):
+        from pretalx.submission.models import Submission, SubmissionStates
 
-    def form_valid(self, form):
-        result = form.save()
-        messages.success(
-            self.request,
-            _("{count} emails have been sent.").format(count=result),
+        template = self.draft_reminder_template
+        submissions = Submission.all_objects.filter(
+            state=SubmissionStates.DRAFT, event=request.event
         )
-        return super().form_valid(form)
+        mail_count = 0
+        for submission in submissions:
+            for user in submission.sorted_speakers:
+                template.to_mail(
+                    user=user,
+                    event=request.event,
+                    locale=submission.get_email_locale(user.locale),
+                    context_kwargs={"submission": submission, "user": user},
+                    skip_queue=True,
+                    commit=False,
+                )
+                mail_count += 1
+        messages.success(
+            request,
+            _("{count} emails have been sent.").format(count=mail_count),
+        )
+        return redirect(request.event.orga_urls.base)
 
 
 class MailTemplateView(OrgaCRUDView):
