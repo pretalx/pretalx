@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_08b4cb1648a15a99_dummy_app_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-04 22:20 +0000
+            created at 2026-02-04 22:52 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -952,7 +952,7 @@
     <p class="run"><span class="n"><a id="t868" href="#t868">868</a></span><span class="t">        <span class="nam">sub</span> <span class="op">=</span> <span class="nam">Submission</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">create</span><span class="op">(</span><span class="op">**</span><span class="nam">submission_data</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t869" href="#t869">869</a></span><span class="t">        <span class="nam">sub</span><span class="op">.</span><span class="nam">save</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t870" href="#t870">870</a></span><span class="t">        <span class="nam">sub</span><span class="op">.</span><span class="nam">speakers</span><span class="op">.</span><span class="nam">add</span><span class="op">(</span><span class="nam">speaker</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t871" href="#t871">871</a></span><span class="t">        <span class="nam">sub</span><span class="op">.</span><span class="nam">cancel</span><span class="op">(</span><span class="nam">force</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t871" href="#t871">871</a></span><span class="t">        <span class="nam">sub</span><span class="op">.</span><span class="nam">cancel</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t872" href="#t872">872</a></span><span class="t">        <span class="key">return</span> <span class="nam">sub</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t873" href="#t873">873</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t874" href="#t874">874</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -962,7 +962,7 @@
     <p class="run"><span class="n"><a id="t878" href="#t878">878</a></span><span class="t">        <span class="nam">sub</span> <span class="op">=</span> <span class="nam">Submission</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">create</span><span class="op">(</span><span class="op">**</span><span class="nam">submission_data</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t879" href="#t879">879</a></span><span class="t">        <span class="nam">sub</span><span class="op">.</span><span class="nam">save</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t880" href="#t880">880</a></span><span class="t">        <span class="nam">sub</span><span class="op">.</span><span class="nam">speakers</span><span class="op">.</span><span class="nam">add</span><span class="op">(</span><span class="nam">speaker</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t881" href="#t881">881</a></span><span class="t">        <span class="nam">sub</span><span class="op">.</span><span class="nam">withdraw</span><span class="op">(</span><span class="nam">force</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t881" href="#t881">881</a></span><span class="t">        <span class="nam">sub</span><span class="op">.</span><span class="nam">withdraw</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t882" href="#t882">882</a></span><span class="t">        <span class="key">return</span> <span class="nam">sub</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t883" href="#t883">883</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t884" href="#t884">884</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -1152,7 +1152,7 @@
     <p class="run"><span class="n"><a id="t1068" href="#t1068">1068</a></span><span class="t"><span class="op">@</span><span class="nam">pytest</span><span class="op">.</span><span class="nam">fixture</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1069" href="#t1069">1069</a></span><span class="t"><span class="key">def</span> <span class="nam">canceled_talk</span><span class="op">(</span><span class="nam">past_slot</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1070" href="#t1070">1070</a></span><span class="t">    <span class="key">with</span> <span class="nam">scope</span><span class="op">(</span><span class="nam">event</span><span class="op">=</span><span class="nam">past_slot</span><span class="op">.</span><span class="nam">submission</span><span class="op">.</span><span class="nam">event</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t1071" href="#t1071">1071</a></span><span class="t">        <span class="nam">past_slot</span><span class="op">.</span><span class="nam">submission</span><span class="op">.</span><span class="nam">cancel</span><span class="op">(</span><span class="nam">force</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1071" href="#t1071">1071</a></span><span class="t">        <span class="nam">past_slot</span><span class="op">.</span><span class="nam">submission</span><span class="op">.</span><span class="nam">cancel</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1072" href="#t1072">1072</a></span><span class="t">        <span class="nam">past_slot</span><span class="op">.</span><span class="nam">submission</span><span class="op">.</span><span class="nam">event</span><span class="op">.</span><span class="nam">wip_schedule</span><span class="op">.</span><span class="nam">freeze</span><span class="op">(</span><span class="str">"vcanceled"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1073" href="#t1073">1073</a></span><span class="t">        <span class="key">return</span> <span class="nam">past_slot</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1074" href="#t1074">1074</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -1262,7 +1262,7 @@
             <a class="nav" href="z_08b4cb1648a15a99_dummy_app_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-04 22:20 +0000
+            created at 2026-02-04 22:52 +0000
         </p>
     </div>
 </footer>
