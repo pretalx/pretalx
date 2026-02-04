@@ -57,6 +57,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% translate "This field is currently inactive, and will not be asked during submission." %}
                     <a class="btn btn-sm btn-success" href="{{ question.urls.toggle }}">{% translate "Activate field" %}</a>
                 {% endif %}
+                {% if question.variant == "file" and answer_count %}
+                    <a class="btn btn-sm btn-info" href="{{ question.urls.download }}">
+                        <i class="fa fa-download"></i>
+                        {% translate "Download all files" %}
+                    </a>
+                {% endif %}
             </p>
 
             {% if not answer_count %}

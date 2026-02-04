@@ -195,6 +195,11 @@ urlpatterns = [
                     cfp.CfPQuestionToggle.as_view(),
                     name="cfp.question.toggle",
                 ),
+                path(
+                    "cfp/questions/<int:pk>/download/",
+                    cfp.QuestionFileDownloadView.as_view(),
+                    name="cfp.question.download",
+                ),
                 path("cfp/text", cfp.CfPTextDetail.as_view(), name="cfp.text.view"),
                 *cfp.SubmissionTypeView.get_urls(
                     url_base="cfp/types",

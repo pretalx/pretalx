@@ -9,7 +9,7 @@ from django_scopes import scope, scopes_disabled
 
 from pretalx.celery_app import app
 from pretalx.common.models.file import CachedFile
-from pretalx.common.signals import periodic_task
+from pretalx.common.signals import minimum_interval, periodic_task
 from pretalx.event.models import Event
 
 
@@ -67,6 +67,7 @@ def periodic_event_services(sender, **kwargs):
 
 
 @receiver(signal=periodic_task)
+@minimum_interval(minutes_after_success=15)
 def clean_cached_files(sender, **kwargs):
     for cf in CachedFile.objects.filter(expires__lt=now()):
         cf.delete()

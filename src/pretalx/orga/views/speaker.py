@@ -244,8 +244,6 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
                 new_data=json_roundtrip(new_data | new_questions_data),
             )
 
-        if form.has_changed() or self.questions_form.has_changed():
-            self.request.event.cache.set("rebuild_schedule_export", True, None)
         return result
 
     def get_form_kwargs(self):

@@ -406,7 +406,6 @@ def freeze_schedule(
         del wip_schedule.event.current_schedule
 
     schedule_release.send_robust(schedule.event, schedule=schedule, user=user)
-    schedule.event.cache.set("rebuild_schedule_export", True, None)
 
     # Clear the unreleased changes flag since we just released a schedule
     update_unreleased_schedule_changes(schedule.event, False)

@@ -6,26 +6,21 @@
 
 import logging
 
+from django.core.files import File
 from django_scopes import scope, scopes_disabled
 
 from pretalx.agenda.management.commands.export_schedule_html import (
     get_export_zip_path,
 )
 from pretalx.celery_app import app
+from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
 
 LOGGER = logging.getLogger(__name__)
 
 
-def is_html_export_stale(event: Event) -> bool:
-    if not event.current_schedule:
-        return False
-    zip_path = get_export_zip_path(event)
-    return event.cache.get("rebuild_schedule_export") or not zip_path.exists()
-
-
 @app.task(name="pretalx.agenda.export_schedule_html")
-def export_schedule_html(*, event_id: int, make_zip=True):
+def export_schedule_html(*, event_id: int, cached_file_id: str = None):
     from django.core.management import call_command
 
     with scopes_disabled():
@@ -43,10 +38,18 @@ def export_schedule_html(*, event_id: int, make_zip=True):
             )
             return
 
-    cmd = ["export_schedule_html", event.slug]
-    if make_zip:
-        cmd.append("--zip")
+    cmd = ["export_schedule_html", event.slug, "--zip"]
     call_command(*cmd)
 
-    with scope(event=event):
-        event.cache.delete("rebuild_schedule_export")
+    if cached_file_id:
+        cached_file = CachedFile.objects.filter(id=cached_file_id).first()
+        if cached_file:
+            zip_path = get_export_zip_path(event)
+            try:
+                with open(zip_path, "rb") as f:
+                    cached_file.file.save(cached_file.filename, File(f))
+                zip_path.unlink(missing_ok=True)
+            except FileNotFoundError:
+                LOGGER.error(f"Export zip not found at {zip_path}")
+                return
+            return cached_file_id
