@@ -144,7 +144,7 @@
 | src/pretalx/common/update\_check.py                                        |       67 |        0 |       20 |        0 |    100% |           |
 | src/pretalx/common/views/cache.py                                          |       63 |       11 |       32 |       14 |     74% |20, 26, 53, 76, 78, 80, 86->89, 106->109, 115, 117, 120, 126, 132->138, 139 |
 | src/pretalx/common/views/errors.py                                         |       24 |        0 |        4 |        0 |    100% |           |
-| src/pretalx/common/views/generic.py                                        |      497 |       66 |      144 |       21 |     82% |72-77, 88-98, 139->142, 190-191, 213, 218-219, 300-301, 320, 328-330, 367->exit, 377-379, 416, 419, 422-435, 453->455, 458-460, 464, 503->506, 513->522, 519->522, 594->exit, 621->629, 630-651, 662, 677-678, 685-686, 704->706, 712->714, 724 |
+| src/pretalx/common/views/generic.py                                        |      503 |       59 |      148 |       23 |     85% |73, 75, 76->69, 89-90, 94-98, 148->151, 199-200, 222, 227-228, 309-310, 329, 337-339, 376->exit, 386-388, 425, 428, 431-444, 462->464, 467-469, 473, 512->515, 522->531, 528->531, 603->exit, 630->638, 639-660, 671, 686-687, 694-695, 713->715, 721->723, 733 |
 | src/pretalx/common/views/helpers.py                                        |        8 |        1 |        0 |        0 |     88% |        31 |
 | src/pretalx/common/views/mixins.py                                         |      323 |       79 |      114 |       16 |     72% |41, 45, 47-48, 58-82, 92-93, 109-116, 133, 169-170, 182-186, 191, 201-202, 223, 249, 267, 291-301, 309, 343-347, 374, 389-392, 428, 433-440, 471-472, 496, 509-511 |
 | src/pretalx/common/views/redirect.py                                       |       26 |       11 |        6 |        0 |     47% |13-23, 33-43 |
@@ -337,7 +337,7 @@
 | src/tests/orga/views/test\_orga\_views\_person.py                          |       44 |        0 |        2 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_review.py                          |      373 |        0 |        2 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_schedule.py                        |      327 |        0 |        4 |        0 |    100% |           |
-| src/tests/orga/views/test\_orga\_views\_speaker.py                         |      219 |        0 |        2 |        0 |    100% |           |
+| src/tests/orga/views/test\_orga\_views\_speaker.py                         |      240 |        0 |        2 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_submission.py                      |      681 |        0 |        8 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_submission\_cards.py               |       14 |        0 |        0 |        0 |    100% |           |
 | src/tests/person/test\_auth\_token\_model.py                               |       11 |        0 |        0 |        0 |    100% |           |
@@ -361,7 +361,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       45 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       64 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **34507** | **1944** | **5486** |  **769** | **92%** |           |
+| **TOTAL**                                                                  | **34534** | **1937** | **5490** |  **771** | **92%** |           |
 
 
 ## Setup coverage badge
