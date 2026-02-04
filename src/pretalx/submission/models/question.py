@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from enum import nonmember
+
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
@@ -13,7 +15,6 @@ from i18nfield.fields import I18nCharField
 from i18nfield.strings import override
 
 from pretalx.agenda.rules import is_agenda_visible
-from pretalx.common.models.choices import Choices
 from pretalx.common.models.fields import DateField, DateTimeField
 from pretalx.common.models.mixins import GenerateCode, OrderedModel, PretalxModel
 from pretalx.common.text.path import hashed_path
@@ -60,93 +61,73 @@ class AllQuestionManager(models.Manager):
     pass
 
 
-class QuestionVariant(Choices):
-    NUMBER = "number"
-    STRING = "string"
-    TEXT = "text"
-    URL = "url"
-    DATE = "date"
-    DATETIME = "datetime"
-    BOOLEAN = "boolean"
-    FILE = "file"
-    CHOICES = "choices"
-    MULTIPLE = "multiple_choice"
+class QuestionVariant(models.TextChoices):
+    NUMBER = "number", _("Number")
+    STRING = "string", _("Text (one-line)")
+    TEXT = "text", _("Multi-line text")
+    URL = "url", _("URL")
+    DATE = "date", _("Date")
+    DATETIME = "datetime", _("Date and time")
+    BOOLEAN = "boolean", _("Yes/No")
+    FILE = "file", _("File upload")
+    CHOICES = "choices", _("Choose one from a list")
+    MULTIPLE = "multiple_choice", _("Choose multiple from a list")
 
-    short_answers = (
-        NUMBER,
-        STRING,
-        URL,
-        DATE,
-        DATETIME,
-        BOOLEAN,
-        FILE,
-        CHOICES,
-        MULTIPLE,
+    short_answers = nonmember(
+        (
+            "number",
+            "string",
+            "url",
+            "date",
+            "datetime",
+            "boolean",
+            "file",
+            "choices",
+            "multiple_choice",
+        )
     )
-    long_answers = (TEXT,)
+    long_answers = nonmember(("text",))
 
-    valid_choices = [
-        (NUMBER, _("Number")),
-        (STRING, _("Text (one-line)")),
-        (TEXT, _("Multi-line text")),
-        (URL, _("URL")),
-        (DATE, _("Date")),
-        (DATETIME, _("Date and time")),
-        (BOOLEAN, _("Yes/No")),
-        (FILE, _("File upload")),
-        (CHOICES, _("Choose one from a list")),
-        (MULTIPLE, _("Choose multiple from a list")),
-    ]
+    @classmethod
+    def get_max_length(cls):
+        return max(len(val) for val in cls.values)
 
 
-class QuestionTarget(Choices):
-    SUBMISSION = "submission"
-    SPEAKER = "speaker"
-    REVIEWER = "reviewer"
+class QuestionTarget(models.TextChoices):
+    SUBMISSION = "submission", _("per proposal")
+    SPEAKER = "speaker", _("per speaker")
+    REVIEWER = "reviewer", _("for reviewers")
 
-    valid_choices = [
-        (SUBMISSION, _("per proposal")),
-        (SPEAKER, _("per speaker")),
-        (REVIEWER, _("for reviewers")),
-    ]
+    @classmethod
+    def get_max_length(cls):
+        return max(len(val) for val in cls.values)
 
 
-class QuestionRequired(Choices):
-    OPTIONAL = "optional"
-    REQUIRED = "required"
-    AFTER_DEADLINE = "after_deadline"
+class QuestionRequired(models.TextChoices):
+    OPTIONAL = "optional", _("always optional")
+    REQUIRED = "required", _("always required")
+    AFTER_DEADLINE = "after_deadline", _("required after a deadline")
 
-    valid_choices = [
-        (OPTIONAL, _("always optional")),
-        (REQUIRED, _("always required")),
-        (AFTER_DEADLINE, _("required after a deadline")),
-    ]
+    @classmethod
+    def get_max_length(cls):
+        return max(len(val) for val in cls.values)
 
 
-class QuestionIcon(Choices):
-    NONE = "-"
-    BSKY = "bsky"
-    DISCORD = "discord"
-    GITHUB = "github"
-    INSTAGRAM = "instagram"
-    LINKEDIN = "linkedin"
-    MASTODON = "mastodon"
-    TWITTER = "twitter"
-    WEB = "web"
-    YOUTUBE = "youtube"
+class QuestionIcon(models.TextChoices):
+    NONE = "-", _("No icon")
+    BSKY = "bsky", _("Bluesky")
+    DISCORD = "discord", _("Discord")
+    GITHUB = "github", _("GitHub")
+    INSTAGRAM = "instagram", _("Instagram")
+    LINKEDIN = "linkedin", _("LinkedIn")
+    MASTODON = "mastodon", _("Mastodon")
+    TWITTER = "twitter", _("Twitter")
+    WEB = "web", _("Website")
+    YOUTUBE = "youtube", _("YouTube")
 
-    valid_choices = [
-        (NONE, _("No icon")),
-        (BSKY, _("Bluesky")),
-        (DISCORD, _("Discord")),
-        (GITHUB, _("GitHub")),
-        (INSTAGRAM, _("Instagram")),
-        (LINKEDIN, _("LinkedIn")),
-        (MASTODON, _("Mastodon")),
-        (TWITTER, _("Twitter")),
-        (WEB, _("Website")),
-        (YOUTUBE, _("YouTube")),
-    ]
+    @classmethod
+    def get_max_length(cls):
+        return max(len(val) for val in cls.values)
 
 
 # Question and question option permissions should be in sync
@@ -199,12 +180,12 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
     )
     variant = models.CharField(
         max_length=QuestionVariant.get_max_length(),
-        choices=QuestionVariant.get_choices(),
+        choices=QuestionVariant.choices,
         default=QuestionVariant.STRING,
     )
     target = models.CharField(
         max_length=QuestionTarget.get_max_length(),
-        choices=QuestionTarget.get_choices(),
+        choices=QuestionTarget.choices,
         default=QuestionTarget.SUBMISSION,
         verbose_name=_("Field type"),
         help_text=_(
@@ -227,7 +208,7 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
     )
     question_required = models.CharField(
         max_length=QuestionRequired.get_max_length(),
-        choices=QuestionRequired.get_choices(),
+        choices=QuestionRequired.choices,
         default=QuestionRequired.OPTIONAL,
         verbose_name=_("Field required"),
     )
@@ -364,7 +345,7 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
     )
     icon = models.CharField(
         max_length=QuestionIcon.get_max_length(),
-        choices=QuestionIcon.get_choices(),
+        choices=QuestionIcon.choices,
         default=None,
         null=True,
         blank=False,

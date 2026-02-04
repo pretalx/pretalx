@@ -316,9 +316,9 @@ class ReviewExportForm(ExportForm):
         label=_n("Proposal", "Proposals", 1),
         choices=(
             ("all", phrases.base.all_choices),
-            ("accepted", SubmissionStates.display_values[SubmissionStates.ACCEPTED]),
-            ("confirmed", SubmissionStates.display_values[SubmissionStates.CONFIRMED]),
-            ("rejected", SubmissionStates.display_values[SubmissionStates.REJECTED]),
+            ("accepted", SubmissionStates.ACCEPTED.label),
+            ("confirmed", SubmissionStates.CONFIRMED.label),
+            ("rejected", SubmissionStates.REJECTED.label),
         ),
         widget=forms.RadioSelect,
         initial="all",

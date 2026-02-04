@@ -12,11 +12,9 @@ from pretalx.submission.models import Submission, SubmissionStates
 with scopes_disabled():
 
     class SubmissionFilter(django_filters.FilterSet):
-        state = django_filters.MultipleChoiceFilter(
-            choices=SubmissionStates.get_choices()
-        )
+        state = django_filters.MultipleChoiceFilter(choices=SubmissionStates.choices)
         pending_state = django_filters.MultipleChoiceFilter(
-            choices=SubmissionStates.get_choices()
+            choices=SubmissionStates.choices
         )
 
         class Meta:

@@ -67,7 +67,7 @@ class ScheduleExportForm(ExportForm):
         choices=[("all", phrases.base.all_choices)]
         + [
             (state, name)
-            for (state, name) in SubmissionStates.valid_choices
+            for (state, name) in SubmissionStates.choices
             if state != SubmissionStates.DRAFT
         ],
         widget=EnhancedSelectMultiple(color_field=SubmissionStates.get_color),
