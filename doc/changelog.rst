@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :bug:`orga` Server administrators would see a button to create a new user on the admin user list, even though pretalx does not have a generic user creation functionality.
 - :feature:`orga:speaker,975` Organisers can now change the order that speakers are listed in on session pages.
 - :announcement:`admin` The ``legacy_data`` field on activity logs is being removed. This field contained sparse and often incomplete data from before pretalx switched to structured activity logging. If you wish to retain this data, please follow `this guide <https://gist.github.com/rixx/cd06dab05d3ae34bb6c81cc07be3cf4d>`_ **before** upgrading to v2026.1.0.
 - :feature:`orga` Organisers can now upload a custom preview image that will be shown when event links are shared on social media or messaging apps.

@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block content %}
     <h2 class="d-flex">
         {% block page_title %}{{ generic_title }}{% endblock page_title %}
-        {% if has_create_permission %}
+        {% if has_create_permission and create_url %}
             <div class="ml-auto mb-3">
                 <a class="btn btn-success" href="{{ create_url }}">
                     <i class="fa fa-plus"></i>
