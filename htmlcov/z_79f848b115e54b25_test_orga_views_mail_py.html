@@ -55,8 +55,8 @@
             </div>
         </aside>
         <h2>
-            <span class="text">398 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">398<span class="text"> run</span></button>
+            <span class="text">396 statements &nbsp;</span>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">396<span class="text"> run</span></button>
             <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">0<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
             <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">0<span class="text"> partial</span></button>
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_79f848b115e54b25_test_orga_views_organiser_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-04 19:58 +0000
+            created at 2026-02-04 20:16 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -826,16 +826,10 @@
     <p class="run"><span class="n"><a id="t742" href="#t742">742</a></span><span class="t">    <span class="nam">response</span> <span class="op">=</span> <span class="nam">orga_client</span><span class="op">.</span><span class="nam">post</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t743" href="#t743">743</a></span><span class="t">        <span class="nam">event</span><span class="op">.</span><span class="nam">orga_urls</span><span class="op">.</span><span class="nam">send_drafts_reminder</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t744" href="#t744">744</a></span><span class="t">        <span class="nam">follow</span><span class="op">=</span><span class="key">True</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t745" href="#t745">745</a></span><span class="t">        <span class="nam">data</span><span class="op">=</span><span class="op">{</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t746" href="#t746">746</a></span><span class="t">            <span class="str">"subject_0"</span><span class="op">:</span> <span class="str">"Reminder: Submit your proposal"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t747" href="#t747">747</a></span><span class="t">            <span class="str">"text_0"</span><span class="op">:</span> <span class="str">"Dear {name}, please submit your proposal {submission_title}."</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t748" href="#t748">748</a></span><span class="t">        <span class="op">}</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t749" href="#t749">749</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t750" href="#t750">750</a></span><span class="t">    <span class="key">assert</span> <span class="nam">response</span><span class="op">.</span><span class="nam">status_code</span> <span class="op">==</span> <span class="num">200</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t751" href="#t751">751</a></span><span class="t">    <span class="key">assert</span> <span class="str">"read-only"</span> <span class="key">not</span> <span class="key">in</span> <span class="nam">response</span><span class="op">.</span><span class="nam">text</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t752" href="#t752">752</a></span><span class="t">    <span class="key">assert</span> <span class="nam">len</span><span class="op">(</span><span class="nam">djmail</span><span class="op">.</span><span class="nam">outbox</span><span class="op">)</span> <span class="op">==</span> <span class="num">1</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t753" href="#t753">753</a></span><span class="t">    <span class="key">assert</span> <span class="nam">djmail</span><span class="op">.</span><span class="nam">outbox</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">.</span><span class="nam">subject</span> <span class="op">==</span> <span class="str">"Reminder: Submit your proposal"</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t754" href="#t754">754</a></span><span class="t">    <span class="key">assert</span> <span class="nam">draft</span><span class="op">.</span><span class="nam">title</span> <span class="key">in</span> <span class="nam">djmail</span><span class="op">.</span><span class="nam">outbox</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">.</span><span class="nam">body</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t745" href="#t745">745</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t746" href="#t746">746</a></span><span class="t">    <span class="key">assert</span> <span class="nam">response</span><span class="op">.</span><span class="nam">status_code</span> <span class="op">==</span> <span class="num">200</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t747" href="#t747">747</a></span><span class="t">    <span class="key">assert</span> <span class="nam">len</span><span class="op">(</span><span class="nam">djmail</span><span class="op">.</span><span class="nam">outbox</span><span class="op">)</span> <span class="op">==</span> <span class="num">1</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t748" href="#t748">748</a></span><span class="t">    <span class="key">assert</span> <span class="nam">draft</span><span class="op">.</span><span class="nam">title</span> <span class="key">in</span> <span class="nam">djmail</span><span class="op">.</span><span class="nam">outbox</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">.</span><span class="nam">body</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -845,7 +839,7 @@
             <a class="nav" href="z_79f848b115e54b25_test_orga_views_organiser_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-04 19:58 +0000
+            created at 2026-02-04 20:16 +0000
         </p>
     </div>
 </footer>
