@@ -13,6 +13,10 @@ SPDX-FileContributor: Florian Mösch
 {% load rules %}
 {% load thumbnail %}
 
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static "orga/css/ui/dragsort.css" %}">
+{% endblock stylesheets %}
 {% block submission_title %}{% translate "Speakers" %} :: {% endblock submission_title %}
 
 {% block submission_content %}
@@ -36,14 +40,18 @@ SPDX-FileContributor: Florian Mösch
         </form>
     </div>{% endif %}
 
+    {% if speakers|length > 1 and can_edit_speakers %}
+        <div dragsort-url="{{ submission.orga_urls.reorder_speakers }}">
+    {% endif %}
     {% for speaker in speakers %}
-        <div class="card mb-3 speaker-card"><div class="card-body">
+        {% if speakers|length > 1 and can_edit_speakers %}<div class="speaker-sort-wrapper" dragsort-id="{{ speaker.role.pk }}">{% endif %}
+        <div class="card {% if speakers|length <= 1 or not can_edit_speakers %}mb-3{% endif %} speaker-card"><div class="card-body">
             <h3 class="card-title">
                 <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.user.code %}">
                     {{ speaker.user.get_display_name }}
                 </a>
                 {% if speaker.user.avatar and request.event.cfp.request_avatar %}
-                    <div class="float-right">
+                    <div class="float-right speaker-detail">
                         <a href="{{ speaker.user.avatar.url }}" data-lightbox>
                             <img loading="lazy" width="100%" src="{{ speaker.user.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
                         </a>
@@ -51,12 +59,12 @@ SPDX-FileContributor: Florian Mösch
                 {% endif %}
             </h3>
             {% if request.event.cfp.request_biography %}
-                <p class="card-text">
+                <div class="card-text speaker-detail">
                     <h5>{% translate "Biography" %}:</h5>
                     {{ speaker.profile.biography|rich_text|default:"-" }}
-                </p>
+                </div>
             {% endif %}
-            <p class="card-text">
+            <div class="card-text speaker-detail">
                 {% if speaker.other_submissions %}
                     <h5>{% translate "Other proposals by this speaker:" %}</h5>
                     <ul>
@@ -68,8 +76,8 @@ SPDX-FileContributor: Florian Mösch
                         {% endfor %}
                     </ul>
                 {% endif %}
-            </p>
-            <div class="row ml-3 mr-2 align-items-end justify-content-end gap-2">
+            </div>
+            <div class="row w-100 ml-3 pr-3 align-items-end justify-content-end gap-2">
                 {% if can_edit_speakers %}
                     {% if can_mark_speaker and submission.state in 'accepted,confirmed' %}
                         {% include "orga/includes/mark_speakers_arrived.html" with speaker=speaker.profile %}
@@ -91,7 +99,11 @@ SPDX-FileContributor: Florian Mösch
                 {% endif %}
             </div>
         </div></div>
+        {% if speakers|length > 1 and can_edit_speakers %}</div>{% endif %}
     {% endfor %}
+    {% if speakers|length > 1 and can_edit_speakers %}
+        </div>
+    {% endif %}
 
     {% if invitations %}
         <h4 class="mt-4">{% translate "Pending Invitations" %}</h4>

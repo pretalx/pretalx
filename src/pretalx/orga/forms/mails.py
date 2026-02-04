@@ -143,7 +143,7 @@ class DraftRemindersForm(MailTemplateForm):
         )
         mail_count = 0
         for submission in submissions:
-            for user in submission.speakers.all():
+            for user in submission.sorted_speakers:
                 template.to_mail(
                     user=user,
                     event=self.event,
@@ -391,7 +391,7 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
         result = []
         for submission in submissions:
             for slot in submission.current_slots or []:
-                for speaker in submission.speakers.all():
+                for speaker in submission.sorted_speakers:
                     result.append(
                         {
                             "submission": submission,
@@ -400,7 +400,7 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
                         }
                     )
             else:
-                for speaker in submission.speakers.all():
+                for speaker in submission.sorted_speakers:
                     result.append(
                         {
                             "submission": submission,

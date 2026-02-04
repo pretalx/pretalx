@@ -26,7 +26,7 @@ from pretalx.submission.models import Submission, SubmissionStates
 
 class TalkMixin(PermissionRequired):
     permission_required = "submission.view_public_submission"
-    prefetches = ("slots", "resources", "speakers")
+    prefetches = ("slots", "resources", sorted_speakers_prefetch())
 
     def get_queryset(self):
         return self.request.event.submissions.prefetch_related(
@@ -94,7 +94,7 @@ class TalkView(TalkMixin, TemplateView):
         )
         if not self.request.user.has_perm("schedule.view_schedule", schedule):
             result = []
-            speakers = self.submission.speakers.all().with_profiles(self.request.event)
+            speakers = self.submission.sorted_speakers.with_profiles(self.request.event)
             for speaker in speakers:
                 speaker.talk_profile = speaker.event_profile(event=self.request.event)
                 result.append(speaker)
@@ -242,7 +242,7 @@ class FeedbackView(TalkMixin, FormView):
     @context
     @cached_property
     def speakers(self):
-        return self.talk.speakers.all()
+        return self.talk.sorted_speakers
 
     @cached_property
     def is_speaker(self):

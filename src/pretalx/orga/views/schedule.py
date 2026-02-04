@@ -278,7 +278,7 @@ def serialize_slot(slot, warnings=None):
             "id": slot.pk,
             "title": str(slot.submission.title),
             "speakers": [
-                {"name": speaker.name} for speaker in slot.submission.speakers.all()
+                {"name": speaker.name} for speaker in slot.submission.sorted_speakers
             ],
             "submission_type": str(slot.submission.submission_type.name),
             "track": (
@@ -433,7 +433,7 @@ class ScheduleAvailabilities(EventPermissionRequired, View):
             else:
                 all_speaker_avails = [
                     speaker_avails[speaker.pk]
-                    for speaker in talk.submission.speakers.all()
+                    for speaker in talk.submission.sorted_speakers
                     if speaker_avails[speaker.pk]
                 ]
                 if not all_speaker_avails:

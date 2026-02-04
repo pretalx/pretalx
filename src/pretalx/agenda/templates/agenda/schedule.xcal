@@ -25,7 +25,7 @@
             <category>{{ talk.submission.submission_type.name }}</category>
             <url>{{ url }}{{ talk.submission.urls.public }}</url>
             <location>{{ room.name }}</location>
-            {% for person in talk.submission.speakers.all %}
+            {% for person in talk.submission.sorted_speakers %}
             <attendee>{{ person.get_display_name }}</attendee>
             {% endfor %}
         </vevent>

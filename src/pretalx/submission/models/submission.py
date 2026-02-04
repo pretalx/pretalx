@@ -145,11 +145,24 @@ class SpeakerRole(models.Model):
     user = models.ForeignKey(
         to="person.User", on_delete=models.CASCADE, related_name="speaker_roles"
     )
+    position = models.PositiveIntegerField(null=True, blank=True)
 
     objects = ScopedManager(event="submission__event")
 
     class Meta:
+        ordering = ("position",)
         unique_together = (("submission", "user"),)
+
+    def save(self, *args, **kwargs):
+        if self.position is None:
+            max_position = (
+                SpeakerRole.objects.filter(submission=self.submission)
+                .exclude(pk=self.pk)
+                .aggregate(max_pos=models.Max("position"))
+                .get("max_pos")
+            )
+            self.position = (max_position or 0) + 1
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"SpeakerRole(submission={self.submission.code}, speaker={self.user})"
@@ -372,6 +385,7 @@ class Submission(GenerateCode, PretalxModel):
         cancel = "{base}cancel"
         speakers = "{base}speakers/"
         delete_speaker = "{speakers}delete"
+        reorder_speakers = "{speakers}reorder"
         retract_invitation = "{speakers}invitation/retract"
         reviews = "{base}reviews/"
         feedback = "{base}feedback/"
@@ -823,7 +837,7 @@ class Submission(GenerateCode, PretalxModel):
         else:
             return
 
-        for speaker in self.speakers.all():
+        for speaker in self.sorted_speakers:
             template.to_mail(
                 user=speaker,
                 locale=self.get_email_locale(speaker.locale),
@@ -945,9 +959,15 @@ class Submission(GenerateCode, PretalxModel):
         return self.current_slots
 
     @cached_property
+    def sorted_speakers(self):
+        if "speakers" in getattr(self, "_prefetched_objects_cache", {}):
+            return self.speakers.all()
+        return self.speakers.all().order_by("speaker_roles__position")
+
+    @cached_property
     def display_speaker_names(self):
         """Helper method for a consistent speaker name display."""
-        return ", ".join(speaker.get_display_name() for speaker in self.speakers.all())
+        return ", ".join(s.get_display_name() for s in self.sorted_speakers)
 
     @cached_property
     def display_title_with_speakers(self):
