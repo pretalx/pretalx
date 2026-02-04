@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django_scopes import scope
 
+from pretalx.common.exceptions import SubmissionError
 from pretalx.submission.models import Answer, Resource, Submission, SubmissionStates
 from pretalx.submission.models.submission import submission_image_path
 
@@ -429,3 +430,64 @@ def test_editable_with_access_code_for_submission_type(submission):
 
         del submission.editable
         assert submission.editable
+
+
+@pytest.mark.django_db
+def test_before_state_change_signal_fires(submission):
+    submission.event.plugins = "tests"
+    submission.event.save()
+    with scope(event=submission.event):
+        submission.state = SubmissionStates.SUBMITTED
+        submission.save()
+
+        submission.accept()
+
+        assert submission.state == SubmissionStates.ACCEPTED
+        assert submission._before_state_change_called == 1
+        assert submission._state_change_called == 1
+
+
+@pytest.mark.django_db
+def test_before_state_change_signal_veto(submission):
+    submission.event.plugins = "tests"
+    submission.event.save()
+    with scope(event=submission.event):
+        submission.state = SubmissionStates.SUBMITTED
+        submission.save()
+        submission._veto_state_change = True
+
+        with pytest.raises(SubmissionError):
+            submission.accept()
+
+        assert submission.state == SubmissionStates.SUBMITTED
+        assert submission._before_state_change_called == 1
+        assert getattr(submission, "_state_change_called", 0) == 0
+
+
+@pytest.mark.django_db
+def test_before_state_change_signal_no_fire_on_noop(submission):
+    submission.event.plugins = "tests"
+    submission.event.save()
+    with scope(event=submission.event):
+        submission.state = SubmissionStates.ACCEPTED
+        submission.save()
+
+        submission.accept()
+
+        assert submission.state == SubmissionStates.ACCEPTED
+        assert getattr(submission, "_before_state_change_called", 0) == 0
+
+
+@pytest.mark.django_db
+def test_before_state_change_signal_no_fire_on_initial_submit(submission):
+    submission.event.plugins = "tests"
+    submission.event.save()
+    with scope(event=submission.event):
+        submission.state = SubmissionStates.DRAFT
+        submission.save()
+        submission._veto_state_change = True
+
+        submission.make_submitted()
+
+        assert submission.state == SubmissionStates.SUBMITTED
+        assert getattr(submission, "_before_state_change_called", 0) == 0

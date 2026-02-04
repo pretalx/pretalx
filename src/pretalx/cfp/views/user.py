@@ -28,6 +28,7 @@ from django_context_decorator import context
 
 from pretalx.cfp.forms.submissions import SubmissionInvitationForm
 from pretalx.cfp.views.event import LoggedInEventPageMixin
+from pretalx.common.exceptions import SubmissionError
 from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.image import gravatar_csp
 from pretalx.common.middleware.event import get_login_redirect
@@ -225,7 +226,13 @@ class SubmissionsWithdrawView(LoggedInEventPageMixin, SubmissionViewMixin, Detai
                             url=obj.orga_urls.edit.full(),
                         )
                     )
-            obj.withdraw(person=request.user)
+            try:
+                obj.withdraw(person=request.user)
+            except SubmissionError as e:
+                messages.error(self.request, str(e))
+                return redirect(
+                    "cfp:event.user.submissions", event=self.request.event.slug
+                )
             messages.success(self.request, phrases.cfp.submission_withdrawn)
         else:
             messages.error(self.request, phrases.cfp.submission_not_withdrawn)
@@ -288,7 +295,13 @@ class SubmissionConfirmView(LoggedInEventPageMixin, SubmissionViewMixin, FormVie
         submission = self.submission
         form.save()
         if self.request.user.has_perm("submission.confirm_submission", submission):
-            submission.confirm(person=self.request.user)
+            try:
+                submission.confirm(person=self.request.user)
+            except SubmissionError as e:
+                messages.error(self.request, str(e))
+                return redirect(
+                    "cfp:event.user.submissions", event=self.request.event.slug
+                )
             messages.success(self.request, phrases.cfp.submission_confirmed)
         elif submission.state == SubmissionStates.CONFIRMED:
             messages.success(self.request, phrases.cfp.submission_was_confirmed)

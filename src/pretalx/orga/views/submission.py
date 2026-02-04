@@ -24,6 +24,7 @@ from django.views.generic import FormView, ListView, TemplateView, UpdateView, V
 from django_context_decorator import context
 
 from pretalx.agenda.rules import is_agenda_submission_visible
+from pretalx.common.exceptions import SubmissionError
 from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
@@ -217,7 +218,11 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
 
         current = self.object.state
         pending = form.cleaned_data.get("pending")
-        self.do(pending=pending)
+        try:
+            self.do(pending=pending)
+        except SubmissionError as e:
+            messages.error(self.request, str(e))
+            return redirect(self.get_success_url())
 
         if pending:
             return redirect(self.get_success_url())
@@ -812,7 +817,10 @@ class ApplyPending(SubmissionViewMixin, View):
 
     def post(self, request, *args, **kwargs):
         submission = self.object
-        submission.apply_pending_state(person=request.user)
+        try:
+            submission.apply_pending_state(person=request.user)
+        except SubmissionError as e:
+            messages.error(request, str(e))
         return redirect(submission.orga_urls.base)
 
 
@@ -1259,12 +1267,19 @@ class ApplyPendingBulk(
         return len(self.submissions)
 
     def post(self, request, *args, **kwargs):
+        errors = []
         for submission in self.submissions:
-            submission.apply_pending_state(person=self.request.user)
+            try:
+                submission.apply_pending_state(person=self.request.user)
+            except SubmissionError as e:
+                errors.append(f"{submission.title}: {e}")
+        if errors:
+            for error in errors:
+                messages.error(self.request, error)
         messages.success(
             self.request,
             str(_("Changed {count} proposal states.")).format(
-                count=self.submission_count
+                count=self.submission_count - len(errors)
             ),
         )
         return redirect(self.next_url)
