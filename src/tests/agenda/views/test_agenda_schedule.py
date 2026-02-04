@@ -351,17 +351,35 @@ def test_versioned_schedule_page(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "og_image,logo,header_image,expected_status",
+    "og_image,logo,header_image,expected_status,expected_content",
     [
-        (True, False, False, 200),  # og_image set → returns it
-        (False, True, False, 200),  # no og_image, logo set → returns logo
-        (False, False, True, 200),  # no og_image/logo, header_image → returns it
-        (False, False, False, 404),  # nothing set → 404
-        (True, True, True, 200),  # all set → returns og_image (highest priority)
+        (True, False, False, 200, b"og_content"),  # og_image set → returns it
+        (
+            False,
+            True,
+            False,
+            200,
+            b"logo_content",
+        ),  # no og_image, logo set → returns logo
+        (
+            False,
+            False,
+            True,
+            200,
+            b"header_content",
+        ),  # no og_image/logo, header_image → returns it
+        (False, False, False, 404, None),  # nothing set → 404
+        (
+            True,
+            True,
+            True,
+            200,
+            b"og_content",
+        ),  # all set → returns og_image (highest priority)
     ],
 )
 def test_event_social_card_fallback(
-    client, event, og_image, logo, header_image, expected_status
+    client, event, og_image, logo, header_image, expected_status, expected_content
 ):
     if og_image:
         event.og_image.save("og.png", SimpleUploadedFile("og.png", b"og_content"))
@@ -378,9 +396,4 @@ def test_event_social_card_fallback(
 
     if expected_status == 200:
         content = b"".join(response.streaming_content)
-        if og_image:
-            assert content == b"og_content"
-        elif logo:
-            assert content == b"logo_content"
-        elif header_image:
-            assert content == b"header_content"
+        assert content == expected_content
