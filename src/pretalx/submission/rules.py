@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import rules
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Count, Exists, OuterRef, Q, Subquery
 
 from pretalx.person.rules import is_only_reviewer, is_reviewer
@@ -199,10 +200,14 @@ def can_be_reviewed(user, obj):
 @rules.predicate
 def has_reviewer_access(user, obj):
     obj = getattr(obj, "submission", obj)
-    if not obj or not obj.event or not obj.event.active_review_phase:
+    try:
+        event = getattr(obj, "event", None)
+    except (AttributeError, ObjectDoesNotExist):
         return False
-    if obj.event.active_review_phase.proposal_visibility == "all":
-        return obj.event.teams.filter(
+    if event or not event.active_review_phase:
+        return False
+    if event.active_review_phase.proposal_visibility == "all":
+        return event.teams.filter(
             Q(limit_tracks__isnull=True) | Q(limit_tracks__in=[obj.track]),
             members__in=[user],
             is_reviewer=True,
