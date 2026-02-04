@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_bc678c3e2285c028_forms_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-04 15:54 +0000
+            created at 2026-02-04 18:31 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -140,7 +140,7 @@
     <p class="run run2"><span class="n"><a id="t56" href="#t56">56</a></span><span class="t">                <span class="str">"submission__track"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t57" href="#t57">57</a></span><span class="t">                <span class="str">"room"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t58" href="#t58">58</a></span><span class="t">            <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t59" href="#t59">59</a></span><span class="t">            <span class="op">.</span><span class="nam">prefetch_related</span><span class="op">(</span><span class="str">"submission__speakers"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t59" href="#t59">59</a></span><span class="t">            <span class="op">.</span><span class="nam">with_sorted_speakers</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t60" href="#t60">60</a></span><span class="t">            <span class="op">.</span><span class="nam">order_by</span><span class="op">(</span><span class="str">"start"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t61" href="#t61">61</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t62" href="#t62">62</a></span><span class="t">        <span class="nam">data</span> <span class="op">=</span> <span class="op">{</span>&nbsp;</span><span class="r"></span></p>
@@ -329,7 +329,7 @@
     <p class="run run2"><span class="n"><a id="t245" href="#t245">245</a></span><span class="t">                                                <span class="nam">self</span><span class="op">.</span><span class="nam">event</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t246" href="#t246">246</a></span><span class="t">                                            <span class="op">)</span><span class="op">.</span><span class="nam">urls</span><span class="op">.</span><span class="nam">public</span><span class="op">.</span><span class="nam">full</span><span class="op">(</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t247" href="#t247">247</a></span><span class="t">                                        <span class="op">}</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t248" href="#t248">248</a></span><span class="t">                                        <span class="key">for</span> <span class="nam">person</span> <span class="key">in</span> <span class="nam">talk</span><span class="op">.</span><span class="nam">submission</span><span class="op">.</span><span class="nam">speakers</span><span class="op">.</span><span class="nam">all</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t248" href="#t248">248</a></span><span class="t">                                        <span class="key">for</span> <span class="nam">person</span> <span class="key">in</span> <span class="nam">talk</span><span class="op">.</span><span class="nam">submission</span><span class="op">.</span><span class="nam">sorted_speakers</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t249" href="#t249">249</a></span><span class="t">                                    <span class="op">]</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t250" href="#t250">250</a></span><span class="t">                                    <span class="str">"links"</span><span class="op">:</span> <span class="op">[</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t251" href="#t251">251</a></span><span class="t">                                        <span class="op">{</span>&nbsp;</span><span class="r"></span></p>
@@ -391,7 +391,7 @@
     <p class="run"><span class="n"><a id="t307" href="#t307">307</a></span><span class="t">    <span class="key">def</span> <span class="nam">get_data</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="op">**</span><span class="nam">kwargs</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t308" href="#t308">308</a></span><span class="t">        <span class="nam">talks</span> <span class="op">=</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t309" href="#t309">309</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">schedule</span><span class="op">.</span><span class="nam">talks</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">is_visible</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t310" href="#t310">310</a></span><span class="t">            <span class="op">.</span><span class="nam">prefetch_related</span><span class="op">(</span><span class="str">"submission__speakers"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t310" href="#t310">310</a></span><span class="t">            <span class="op">.</span><span class="nam">with_sorted_speakers</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t311" href="#t311">311</a></span><span class="t">            <span class="op">.</span><span class="nam">select_related</span><span class="op">(</span><span class="str">"submission"</span><span class="op">,</span> <span class="str">"room"</span><span class="op">,</span> <span class="str">"submission__event"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t312" href="#t312">312</a></span><span class="t">            <span class="op">.</span><span class="nam">order_by</span><span class="op">(</span><span class="str">"start"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t313" href="#t313">313</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -433,7 +433,7 @@
             <a class="nav" href="z_bc678c3e2285c028_forms_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-04 15:54 +0000
+            created at 2026-02-04 18:31 +0000
         </p>
     </div>
 </footer>

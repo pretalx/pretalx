@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_29b0e4584ac00093_organiser_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-04 15:54 +0000
+            created at 2026-02-04 18:31 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -1095,7 +1095,7 @@
     <p class="run"><span class="n"><a id="t1011" href="#t1011">1011</a></span><span class="t">            <span class="key">return</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t1012" href="#t1012">1012</a></span><span class="t">                <span class="nam">self</span><span class="op">.</span><span class="nam">submissions</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">slots__in</span><span class="op">=</span><span class="nam">self</span><span class="op">.</span><span class="nam">current_schedule</span><span class="op">.</span><span class="nam">scheduled_talks</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t1013" href="#t1013">1013</a></span><span class="t">                <span class="op">.</span><span class="nam">select_related</span><span class="op">(</span><span class="str">"submission_type"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t1014" href="#t1014">1014</a></span><span class="t">                <span class="op">.</span><span class="nam">prefetch_related</span><span class="op">(</span><span class="str">"speakers"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t1014" href="#t1014">1014</a></span><span class="t">                <span class="op">.</span><span class="nam">with_sorted_speakers</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t1015" href="#t1015">1015</a></span><span class="t">            <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1016" href="#t1016">1016</a></span><span class="t">        <span class="key">return</span> <span class="nam">Submission</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">none</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1017" href="#t1017">1017</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -1292,7 +1292,7 @@
             <a class="nav" href="z_29b0e4584ac00093_organiser_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-04 15:54 +0000
+            created at 2026-02-04 18:31 +0000
         </p>
     </div>
 </footer>
