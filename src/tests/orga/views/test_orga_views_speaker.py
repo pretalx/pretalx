@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import json
+from unittest.mock import MagicMock
 
 import pytest
 from django_scopes import scope, scopes_disabled
@@ -407,3 +408,42 @@ def test_track_limited_reviewer_cannot_access_speaker_export(
         },
     )
     assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_signal_extra_forms_saved_on_post(orga_client, speaker, event, submission):
+    from pretalx.orga.signals import speaker_form
+
+    event.plugins = "tests"
+    event.save()
+
+    mock_form = MagicMock()
+    mock_form.is_valid.return_value = True
+
+    def signal_receiver(sender, request, **kwargs):
+        return mock_form
+
+    speaker_form.connect(signal_receiver)
+    try:
+        with scope(event=event):
+            url = speaker.event_profile(event).orga_urls.base
+
+        # GET: extra forms render in context
+        response = orga_client.get(url, follow=True)
+        assert response.status_code == 200
+        assert mock_form in response.context["extra_forms"]
+
+        # POST: extra form must be validated and saved
+        response = orga_client.post(
+            url,
+            data={
+                "name": "BESTSPEAKAR",
+                "biography": "I rule!",
+                "email": speaker.email,
+            },
+            follow=True,
+        )
+        assert response.status_code == 200
+        mock_form.save.assert_called_once()
+    finally:
+        speaker_form.disconnect(signal_receiver)
