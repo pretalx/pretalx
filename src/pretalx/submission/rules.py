@@ -204,7 +204,7 @@ def has_reviewer_access(user, obj):
         event = getattr(obj, "event", None)
     except (AttributeError, ObjectDoesNotExist):
         return False
-    if event or not event.active_review_phase:
+    if not event or not event.active_review_phase:
         return False
     if event.active_review_phase.proposal_visibility == "all":
         return event.teams.filter(
