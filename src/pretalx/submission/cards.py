@@ -88,7 +88,7 @@ class SubmissionCard(Flowable):
             Paragraph(
                 _text(
                     ", ".join(
-                        s.get_display_name() for s in self.submission.speakers.all()
+                        s.get_display_name() for s in self.submission.sorted_speakers
                     )
                 ),
                 style=self.styles["Speaker"],

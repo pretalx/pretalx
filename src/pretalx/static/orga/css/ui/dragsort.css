@@ -43,6 +43,24 @@ div[dragsort-id] {
     cursor: grabbing !important;
   }
 }
+.speaker-sort-wrapper {
+  padding: 0.5rem 0;
+}
+body.dragging .speaker-sort-wrapper .speaker-detail {
+  display: none;
+}
+body.dragging .speaker-sort-wrapper .card-title {
+  margin-bottom: 0;
+}
+.speaker-sort-wrapper.dragging {
+  & > .card {
+    border: 2px solid var(--color-primary);
+    opacity: 0.7;
+  }
+  &.drag-indicator {
+    box-shadow: none;
+  }
+}
 thead.drag-indicator.insert-after {
   box-shadow: 0 2px var(--color-text-lighter);
 }

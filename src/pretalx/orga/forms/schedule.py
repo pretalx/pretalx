@@ -213,10 +213,10 @@ class ScheduleExportForm(ExportForm):
         return question.answers.filter(submission=obj).first()
 
     def _get_speaker_ids_value(self, obj):
-        return list(obj.speakers.all().values_list("code", flat=True))
+        return list(obj.sorted_speakers.values_list("code", flat=True))
 
     def _get_speaker_names_value(self, obj):
-        return list(obj.speakers.all().values_list("name", flat=True))
+        return list(obj.sorted_speakers.values_list("name", flat=True))
 
     def _get_room_value(self, obj):
         slot = obj.slot

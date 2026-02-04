@@ -245,7 +245,7 @@ class FrabJsonExporter(ScheduleData):
                                                 self.event
                                             ).urls.public.full(),
                                         }
-                                        for person in talk.submission.speakers.all()
+                                        for person in talk.submission.sorted_speakers
                                     ],
                                     "links": [
                                         {

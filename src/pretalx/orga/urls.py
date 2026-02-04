@@ -394,6 +394,11 @@ urlpatterns = [
                                 name="submissions.speakers.delete",
                             ),
                             path(
+                                "speakers/reorder",
+                                submission.SubmissionSpeakersReorder.as_view(),
+                                name="submissions.speakers.reorder",
+                            ),
+                            path(
                                 "speakers/invitation/retract",
                                 submission.SubmissionInvitationRetract.as_view(),
                                 name="submissions.speakers.invitation.retract",

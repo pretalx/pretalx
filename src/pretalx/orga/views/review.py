@@ -613,7 +613,7 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
     def profiles(self):
         return [
             speaker.event_profile(self.request.event)
-            for speaker in self.submission.speakers.all()
+            for speaker in self.submission.sorted_speakers
         ]
 
     @context

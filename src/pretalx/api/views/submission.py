@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.db import transaction
+from django.db.models import Prefetch
 from django.http import Http404
 from django.utils.functional import cached_property
 from rest_framework import serializers, status, viewsets
@@ -263,11 +264,11 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         queryset = (
             submissions_for_user(self.event, self.request.user)
             .select_related("event", "track", "submission_type")
-            .prefetch_related("speakers", "answers", "slots")
+            .prefetch_related(
+                Prefetch("speakers", queryset=speakers_qs), "answers", "slots"
+            )
             .order_by("code")
         )
-        if self.check_expanded_fields("speakers.user"):
-            queryset = queryset.prefetch_related("speakers__profiles")
         if fields := self.check_expanded_fields(
             "answers.question",
             "answers.question.tracks",

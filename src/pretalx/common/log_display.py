@@ -117,6 +117,7 @@ LOG_NAMES = {
     "pretalx.submission.review.create": _("A review was added."),
     "pretalx.submission.speakers.add": _("A speaker was added to the proposal."),
     "pretalx.submission.speakers.invite": _("A speaker was invited to the proposal."),
+    "pretalx.submission.speakers.reorder": _("The speaker order was changed."),
     "pretalx.submission.speakers.remove": _("A speaker was removed from the proposal."),
     "pretalx.submission.invitation.send": _("A speaker invitation was sent."),
     "pretalx.submission.invitation.accept": _("A speaker invitation was accepted."),

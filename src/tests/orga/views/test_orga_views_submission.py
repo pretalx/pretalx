@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import datetime as dt
+from contextlib import suppress
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -9,8 +10,13 @@ from django.utils.timezone import now
 from django_scopes import scope
 
 from pretalx.common.models.log import ActivityLog
-from pretalx.submission.models import Submission, SubmissionInvitation, SubmissionStates
+from pretalx.submission.models import (
+    Submission,
+    SubmissionInvitation,
+    SubmissionStates,
+)
 from pretalx.submission.models.question import QuestionRequired, QuestionVariant
+from pretalx.submission.models.submission import SpeakerRole
 
 
 @pytest.mark.django_db
@@ -383,6 +389,74 @@ def test_orga_can_remove_wrong_speaker(orga_client, submission, other_speaker):
     assert response.status_code == 200
     assert submission.speakers.count() == 1
     assert "not part of this proposal" in response.text
+
+
+@pytest.mark.django_db
+def test_speaker_role_auto_assigns_position(submission, other_speaker):
+    with scope(event=submission.event):
+        role1 = SpeakerRole.objects.get(submission=submission)
+        assert role1.position == 1
+        submission.speakers.add(other_speaker)
+        role2 = SpeakerRole.objects.get(submission=submission, user=other_speaker)
+        assert role2.position == 2
+
+
+@pytest.mark.django_db
+def test_speakers_ordered_by_position(submission, speaker, other_speaker):
+    with scope(event=submission.event):
+        submission.speakers.add(other_speaker)
+        role1 = SpeakerRole.objects.get(submission=submission, user=speaker)
+        role2 = SpeakerRole.objects.get(submission=submission, user=other_speaker)
+        role1.position = 2
+        role1.save(update_fields=["position"])
+        role2.position = 1
+        role2.save(update_fields=["position"])
+        ordered = list(submission.sorted_speakers)
+        assert ordered == [other_speaker, speaker]
+
+
+@pytest.mark.django_db
+def test_display_speaker_names_respects_position(submission, speaker, other_speaker):
+    with scope(event=submission.event):
+        submission.speakers.add(other_speaker)
+        role1 = SpeakerRole.objects.get(submission=submission, user=speaker)
+        role2 = SpeakerRole.objects.get(submission=submission, user=other_speaker)
+        role1.position = 2
+        role1.save(update_fields=["position"])
+        role2.position = 1
+        role2.save(update_fields=["position"])
+        for attr in ("sorted_speakers", "display_speaker_names"):
+            with suppress(AttributeError):
+                delattr(submission, attr)
+        names = submission.display_speaker_names
+        assert names.index(other_speaker.get_display_name()) < names.index(
+            speaker.get_display_name()
+        )
+
+
+@pytest.mark.django_db
+def test_orga_can_reorder_speakers(orga_client, submission, speaker, other_speaker):
+    with scope(event=submission.event):
+        submission.speakers.add(other_speaker)
+        role1 = SpeakerRole.objects.get(submission=submission, user=speaker)
+        role2 = SpeakerRole.objects.get(submission=submission, user=other_speaker)
+    response = orga_client.post(
+        submission.orga_urls.reorder_speakers,
+        data={"order": f"{role2.pk},{role1.pk}"},
+    )
+    assert response.status_code == 204
+    with scope(event=submission.event):
+        ordered = list(submission.sorted_speakers)
+        assert ordered == [other_speaker, speaker]
+
+
+@pytest.mark.django_db
+def test_orga_reorder_speakers_empty_order(orga_client, submission, speaker):
+    response = orga_client.post(
+        submission.orga_urls.reorder_speakers,
+        data={"order": ""},
+    )
+    assert response.status_code == 400
 
 
 @pytest.mark.django_db

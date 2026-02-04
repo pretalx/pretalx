@@ -274,7 +274,7 @@ class Schedule(PretalxModel):
                 }
             )
 
-        for speaker in talk.submission.speakers.all():
+        for speaker in talk.submission.sorted_speakers:
             if with_speakers:
                 if speaker_profiles:
                     profile = speaker_profiles.get(speaker)
@@ -448,10 +448,10 @@ class Schedule(PretalxModel):
 
         speakers = defaultdict(lambda: {"create": [], "update": []})
         for new_talk in self.changes["new_talks"]:
-            for speaker in new_talk.submission.speakers.all():
+            for speaker in new_talk.submission.sorted_speakers:
                 speakers[speaker]["create"].append(new_talk)
         for moved_talk in self.changes["moved_talks"]:
-            for speaker in moved_talk["submission"].speakers.all():
+            for speaker in moved_talk["submission"].sorted_speakers:
                 speakers[speaker]["update"].append(moved_talk)
         return speakers
 
@@ -542,7 +542,7 @@ class Schedule(PretalxModel):
             rooms.add(talk.room)
             if talk.submission:
                 tracks.add(talk.submission.track)
-                speakers |= set(talk.submission.speakers.all())
+                speakers |= set(talk.submission.sorted_speakers)
                 result["talks"].append(
                     {
                         "code": talk.submission.code if talk.submission else None,
@@ -556,7 +556,10 @@ class Schedule(PretalxModel):
                             talk.submission.abstract if talk.submission else None
                         ),
                         "speakers": (
-                            [speaker.code for speaker in talk.submission.speakers.all()]
+                            [
+                                speaker.code
+                                for speaker in talk.submission.sorted_speakers
+                            ]
                             if talk.submission
                             else None
                         ),

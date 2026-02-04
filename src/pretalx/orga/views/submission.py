@@ -362,15 +362,20 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
     @cached_property
     def speakers(self):
         submission = self.object
+        roles = {
+            role.user_id: role
+            for role in SpeakerRole.objects.filter(submission=submission)
+        }
         return [
             {
                 "user": speaker,
+                "role": roles.get(speaker.pk),
                 "profile": speaker.event_profile(submission.event),
                 "other_submissions": speaker.submissions.filter(
                     event=submission.event
                 ).exclude(code=submission.code),
             }
-            for speaker in submission.speakers.all()
+            for speaker in submission.sorted_speakers
         ]
 
     @context
