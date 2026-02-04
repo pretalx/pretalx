@@ -77,7 +77,7 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
                     label=_("Proposal state"),
                     choices=[
                         (choice, name)
-                        for (choice, name) in SubmissionStates.get_choices()
+                        for (choice, name) in SubmissionStates.choices
                         if choice != SubmissionStates.DRAFT
                     ],
                     initial=SubmissionStates.SUBMITTED,

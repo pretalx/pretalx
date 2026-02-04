@@ -10,6 +10,7 @@ import copy
 import datetime as dt
 import json
 import statistics
+from enum import nonmember
 from itertools import repeat
 
 from django.conf import settings
@@ -32,7 +33,6 @@ from pretalx.agenda.rules import (
     is_submission_visible_via_schedule,
 )
 from pretalx.common.exceptions import SubmissionError
-from pretalx.common.models.choices import Choices
 from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
 from pretalx.common.text.path import hashed_path
@@ -74,54 +74,51 @@ def submission_image_path(instance, filename):
     )
 
 
-class SubmissionStates(Choices):
-    SUBMITTED = "submitted"
-    ACCEPTED = "accepted"
-    REJECTED = "rejected"
-    CONFIRMED = "confirmed"
-    CANCELED = "canceled"
-    WITHDRAWN = "withdrawn"
-    DRAFT = "draft"
+class SubmissionStates(models.TextChoices):
+    SUBMITTED = "submitted", pgettext_lazy("proposal status", "submitted")
+    ACCEPTED = "accepted", _("accepted")
+    CONFIRMED = "confirmed", _("confirmed")
+    REJECTED = "rejected", _("rejected")
+    CANCELED = "canceled", _("canceled")
+    WITHDRAWN = "withdrawn", _("withdrawn")
+    DRAFT = "draft", _("draft")
 
-    display_values = {
-        SUBMITTED: pgettext_lazy("proposal status", "submitted"),
-        ACCEPTED: _("accepted"),
-        CONFIRMED: _("confirmed"),
-        REJECTED: _("rejected"),
-        CANCELED: _("canceled"),
-        WITHDRAWN: _("withdrawn"),
-        DRAFT: _("draft"),
-    }
-    valid_choices = [(key, value) for key, value in display_values.items()]
+    valid_next_states = nonmember(
+        {
+            "submitted": ("rejected", "withdrawn", "accepted"),
+            "rejected": ("accepted", "submitted"),
+            "accepted": ("confirmed", "canceled", "rejected", "submitted", "withdrawn"),
+            "confirmed": ("accepted", "canceled"),
+            "canceled": ("accepted", "confirmed"),
+            "withdrawn": ("submitted",),
+            "draft": ("submitted",),
+        }
+    )
 
-    valid_next_states = {
-        SUBMITTED: (REJECTED, WITHDRAWN, ACCEPTED),
-        REJECTED: (ACCEPTED, SUBMITTED),
-        ACCEPTED: (CONFIRMED, CANCELED, REJECTED, SUBMITTED, WITHDRAWN),
-        CONFIRMED: (ACCEPTED, CANCELED),
-        CANCELED: (ACCEPTED, CONFIRMED),
-        WITHDRAWN: (SUBMITTED),
-        DRAFT: (SUBMITTED,),
-    }
+    method_names = nonmember(
+        {
+            "submitted": "make_submitted",
+            "rejected": "reject",
+            "accepted": "accept",
+            "confirmed": "confirm",
+            "canceled": "cancel",
+            "withdrawn": "withdraw",
+        }
+    )
 
-    method_names = {
-        SUBMITTED: "make_submitted",
-        REJECTED: "reject",
-        ACCEPTED: "accept",
-        CONFIRMED: "confirm",
-        CANCELED: "cancel",
-        WITHDRAWN: "withdraw",
-    }
+    accepted_states = nonmember(("accepted", "confirmed"))
 
-    accepted_states = (ACCEPTED, CONFIRMED)
+    @classmethod
+    def get_max_length(cls):
+        return max(len(val) for val in cls.values)
 
     @staticmethod
     def get_color(state):
         return {
-            SubmissionStates.SUBMITTED: "--color-info",
-            SubmissionStates.ACCEPTED: "--color-success",
-            SubmissionStates.CONFIRMED: "--color-success",
-            SubmissionStates.REJECTED: "--color-danger",
+            "submitted": "--color-info",
+            "accepted": "--color-success",
+            "confirmed": "--color-success",
+            "rejected": "--color-danger",
         }.get(state, "--color-grey")
 
 
@@ -227,7 +224,7 @@ class Submission(GenerateCode, PretalxModel):
     )
     state = models.CharField(
         max_length=SubmissionStates.get_max_length(),
-        choices=SubmissionStates.get_choices(),
+        choices=SubmissionStates.choices,
         default=SubmissionStates.SUBMITTED,
         verbose_name=_("Proposal state"),
     )
@@ -235,7 +232,7 @@ class Submission(GenerateCode, PretalxModel):
         null=True,
         blank=True,
         max_length=SubmissionStates.get_max_length(),
-        choices=SubmissionStates.get_choices(),
+        choices=SubmissionStates.choices,
         default=None,
         verbose_name=_("Pending proposal state"),
     )
@@ -606,7 +603,7 @@ class Submission(GenerateCode, PretalxModel):
                 'used in talk confirm/accept/reject/...-errors, like "... must be accepted OR foo OR bar ..."',
                 " or ",
             )
-            state_names = dict(SubmissionStates.get_choices())
+            state_names = dict(SubmissionStates.choices)
             source_states = trans_or.join(
                 str(state_names[state]) for state in source_states
             )

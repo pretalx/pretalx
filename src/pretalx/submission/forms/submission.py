@@ -324,7 +324,7 @@ class SubmissionFilterForm(forms.Form):
         required=False,
         choices=[
             (state, name)
-            for (state, name) in SubmissionStates.get_choices()
+            for (state, name) in SubmissionStates.choices
             if state != SubmissionStates.DRAFT
         ],
         widget=SelectMultipleWithCount(

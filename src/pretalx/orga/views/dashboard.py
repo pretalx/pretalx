@@ -58,7 +58,7 @@ class DashboardEventListView(TemplateView):
                 filter=Q(
                     submissions__state__in=[
                         state
-                        for state in SubmissionStates.display_values.keys()
+                        for state in SubmissionStates.values
                         if state != SubmissionStates.DRAFT
                     ]
                 ),
@@ -362,7 +362,7 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
             states = "&".join(
                 [
                     f"state=pending_state__{state}"
-                    for state, __ in SubmissionStates.get_choices()
+                    for state, __ in SubmissionStates.choices
                     if state != SubmissionStates.DRAFT
                 ]
             )

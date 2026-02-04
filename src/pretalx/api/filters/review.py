@@ -35,12 +35,12 @@ with scopes_disabled():
             help_text="Filter by speaker code (for the submission being reviewed)",
         )
         submission__state = django_filters.MultipleChoiceFilter(
-            choices=SubmissionStates.get_choices(),
+            choices=SubmissionStates.choices,
             field_name="submission__state",
             help_text="Filter by submission state",
         )
         submission__pending_state = django_filters.MultipleChoiceFilter(
-            choices=SubmissionStates.get_choices(),
+            choices=SubmissionStates.choices,
             field_name="submission__pending_state",
             help_text="Filter by submission pending state",
         )

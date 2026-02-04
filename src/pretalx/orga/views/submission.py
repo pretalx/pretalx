@@ -952,10 +952,7 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
                 str(submission_type): submission_type.id
                 for submission_type in self.request.event.submission_types.all()
             },
-            "state": {
-                str(value): key
-                for key, value in SubmissionStates.display_values.items()
-            },
+            "state": {str(value): key for key, value in SubmissionStates.choices},
         }
         if self.show_tracks:
             data["track"] = {
