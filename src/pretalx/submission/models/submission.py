@@ -32,6 +32,7 @@ from pretalx.agenda.rules import (
     is_agenda_visible,
     is_submission_visible_via_schedule,
 )
+from pretalx.common.exceptions import SubmissionError
 from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
 from pretalx.common.text.path import hashed_path
@@ -55,7 +56,10 @@ from pretalx.submission.rules import (
     orga_can_change_submissions,
     orga_or_reviewer_can_change_submission,
 )
-from pretalx.submission.signals import submission_state_change
+from pretalx.submission.signals import (
+    before_submission_state_change,
+    submission_state_change,
+)
 
 
 def generate_invite_code(length=32):
@@ -547,6 +551,20 @@ class Submission(GenerateCode, PretalxModel):
             self.save(update_fields=["state", "pending_state"])
             self.update_talk_slots()
             return
+        is_initial = new_state == SubmissionStates.SUBMITTED and self.state in (
+            None,
+            SubmissionStates.DRAFT,
+        )
+        if not is_initial:
+            responses = before_submission_state_change.send_robust(
+                self.event,
+                submission=self,
+                new_state=new_state,
+                user=person,
+            )
+            exceptions = [r[1] for r in responses if isinstance(r[1], SubmissionError)]
+            if exceptions:
+                raise exceptions[0]
         old_state = self.state
         self.state = new_state
         self.pending_state = None

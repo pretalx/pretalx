@@ -19,7 +19,7 @@ Core
    :members: periodic_task, register_locales, auth_html
 
 .. automodule:: pretalx.submission.signals
-   :members: submission_state_change
+   :members: before_submission_state_change, submission_state_change
 
 .. automodule:: pretalx.schedule.signals
    :members: schedule_release

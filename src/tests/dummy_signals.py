@@ -6,6 +6,7 @@ from django.dispatch import receiver
 from pretalx.agenda.recording import BaseRecordingProvider
 from pretalx.agenda.signals import register_recording_provider
 from pretalx.cfp.signals import footer_link, html_above_profile_page, html_head
+from pretalx.common.exceptions import SubmissionError
 from pretalx.common.signals import register_locales
 from pretalx.orga.signals import (
     activate_event,
@@ -13,7 +14,10 @@ from pretalx.orga.signals import (
     nav_event_settings,
     nav_global,
 )
-from pretalx.submission.signals import submission_state_change
+from pretalx.submission.signals import (
+    before_submission_state_change,
+    submission_state_change,
+)
 
 
 @receiver(register_locales)
@@ -59,6 +63,15 @@ def nav_global_test(sender, request, **kwargs):
 def activate_event_test(sender, request, **kwargs):
     if sender.slug == "donottakelive":
         raise Exception("It's not safe to go alone take this")
+
+
+@receiver(before_submission_state_change)
+def before_submission_state_change_test(sender, submission, new_state, **kwargs):
+    submission._before_state_change_called = (
+        getattr(submission, "_before_state_change_called", 0) + 1
+    )
+    if getattr(submission, "_veto_state_change", False):
+        raise SubmissionError("State change vetoed by plugin")
 
 
 @receiver(submission_state_change)
