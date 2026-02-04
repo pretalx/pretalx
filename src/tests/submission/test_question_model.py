@@ -248,10 +248,10 @@ def test_answer_file_path(event, submission, speaker, review, target, related_at
         if target == QuestionTarget.SUBMISSION:
             answer.submission = submission
             expected_code = submission.code
-        elif target == QuestionTarget.SPEAKER:
+        if target == QuestionTarget.SPEAKER:
             answer.person = speaker
             expected_code = speaker.code
-        elif target == QuestionTarget.REVIEWER:
+        if target == QuestionTarget.REVIEWER:
             answer.review = review
             expected_code = f"r{review.pk}"
 

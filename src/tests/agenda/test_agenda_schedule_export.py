@@ -36,7 +36,8 @@ def test_schedule_xsd_is_up_to_date():
         "GET",
         "https://raw.githubusercontent.com/voc/schedule/master/validator/xsd/schedule.xml.xsd",
     )
-    if response.status == 429:  # don’t fail tests on rate limits
+    if response.status == 429:  # pragma: no cover
+        # don’t fail tests on rate limits
         return
     assert response.status == 200
     path = Path(__file__).parent / "../fixtures/schedule.xsd"
@@ -58,7 +59,8 @@ def test_schedule_json_schema_is_up_to_date():
         "GET",
         "https://raw.githubusercontent.com/voc/schedule/master/validator/json/schema.json",
     )
-    if response.status == 429:  # don’t fail tests on rate limits
+    if response.status == 429:  # pragma: no cover
+        # don’t fail tests on rate limits
         return
     assert response.status == 200
     path = Path(__file__).parent / "../fixtures/schedule.json"
@@ -356,9 +358,7 @@ def test_schedule_orga_trigger_export_redirects_to_download(orga_client, event):
     }
 )
 def test_schedule_orga_trigger_export_clears_cached_file(orga_client, event):
-    if "cache" in event.__dict__:
-        del event.__dict__["cache"]
-
+    event.__dict__.pop("cache", None)
     cached_file = CachedFile.objects.create(
         expires="2099-01-01T00:00:00Z",
         filename="test.zip",

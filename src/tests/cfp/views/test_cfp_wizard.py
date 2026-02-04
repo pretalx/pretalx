@@ -198,14 +198,12 @@ class TestWizard:
                 assert answ.answer == "green"
         return user
 
-    def assert_mail(self, submission, user, count=1, extra=None):
+    def assert_mail(self, submission, user, count=1):
         assert len(djmail.outbox) == count
-        mail = djmail.outbox[0 if not extra else 1]
+        mail = djmail.outbox[0]
         assert submission.title in mail.subject
         assert submission.title in mail.body
         assert user.email in mail.to
-        if extra:
-            assert djmail.outbox[0].to == [extra]
 
     @pytest.mark.django_db
     def test_info_wizard_query_string_handling(self, event, client, track):
