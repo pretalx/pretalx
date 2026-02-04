@@ -137,7 +137,24 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </form>
         </div>
 
-        {% include "orga/includes/base_form.html" %}
+        {% partialdef assignment-field %}
+            <div id="assignment-field-{{ form_field.html_name }}" class="assignment-field-wrapper">
+                <form hx-post="{% url 'orga:reviews.assign' event=request.event.slug %}?direction={{ direction }}"
+                      hx-target="#assignment-field-{{ form_field.html_name }}"
+                      hx-swap="outerHTML"
+                      hx-trigger="change from:find select">
+                    {% csrf_token %}
+                    <input type="hidden" name="_field" value="{{ field_code }}">
+                    {{ form_field.as_field_group }}
+                </form>
+            </div>
+        {% endpartialdef %}
+
+        {% for form_field in form %}
+            {% with field_code=form_field.name %}
+                {% partial assignment-field %}
+            {% endwith %}
+        {% endfor %}
 
     </section>
 {% endblock content %}
