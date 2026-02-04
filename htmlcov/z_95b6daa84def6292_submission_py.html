@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for src/pretalx/orga/forms/submission.py: 87%</title>
+    <title>Coverage for src/pretalx/orga/forms/submission.py: 86%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
     <link rel="stylesheet" href="style_cb_9ff733b0.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>src&#8201;/&#8201;pretalx&#8201;/&#8201;orga&#8201;/&#8201;forms&#8201;/&#8201;submission.py</b>:
-            <span class="pc_cov">87%</span>
+            <span class="pc_cov">86%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -56,10 +56,10 @@
         </aside>
         <h2>
             <span class="text">178 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">161<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">17<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">160<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">18<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
-            <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">15<span class="text"> partial</span></button>
+            <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">16<span class="text"> partial</span></button>
         </h2>
         <p class="text">
             <a id="prevFileLink" class="nav" href="z_95b6daa84def6292_speaker_py.html">&#xab; prev</a> &nbsp; &nbsp;
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_95b6daa84def6292_widgets_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-04 08:30 +0000
+            created at 2026-02-04 15:33 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -139,8 +139,8 @@
     <p class="run"><span class="n"><a id="t55" href="#t55">55</a></span><span class="t">                <span class="nam">initial</span><span class="op">[</span><span class="nam">key</span><span class="op">]</span> <span class="op">=</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t56" href="#t56">56</a></span><span class="t">                    <span class="nam">previous_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="nam">key</span><span class="op">)</span> <span class="key">or</span> <span class="nam">getattr</span><span class="op">(</span><span class="nam">instance</span><span class="op">,</span> <span class="nam">key</span><span class="op">,</span> <span class="key">None</span><span class="op">)</span> <span class="key">or</span> <span class="str">""</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t57" href="#t57">57</a></span><span class="t">                <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t58" href="#t58">58</a></span><span class="t">                <span class="key">if</span> <span class="nam">hasattr</span><span class="op">(</span><span class="nam">initial</span><span class="op">[</span><span class="nam">key</span><span class="op">]</span><span class="op">,</span> <span class="str">"all"</span><span class="op">)</span><span class="op">:</span>  <span class="com"># Tags, for the moment</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t59" href="#t59">59</a></span><span class="t">                    <span class="nam">initial</span><span class="op">[</span><span class="nam">key</span><span class="op">]</span> <span class="op">=</span> <span class="nam">initial</span><span class="op">[</span><span class="nam">key</span><span class="op">]</span><span class="op">.</span><span class="nam">all</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="par run show_par"><span class="n"><a id="t58" href="#t58">58</a></span><span class="t">                <span class="key">if</span> <span class="nam">hasattr</span><span class="op">(</span><span class="nam">initial</span><span class="op">[</span><span class="nam">key</span><span class="op">]</span><span class="op">,</span> <span class="str">"all"</span><span class="op">)</span><span class="op">:</span>  <span class="com"># Tags, for the moment</span>&nbsp;</span><span class="r"><span class="annotate short">58&#x202F;&#x219B;&#x202F;59</span><span class="annotate long">line 58 didn't jump to line 59 because the condition on line 58 was never true</span></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t59" href="#t59">59</a></span><span class="t">                    <span class="nam">initial</span><span class="op">[</span><span class="nam">key</span><span class="op">]</span> <span class="op">=</span> <span class="nam">initial</span><span class="op">[</span><span class="nam">key</span><span class="op">]</span><span class="op">.</span><span class="nam">all</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t60" href="#t60">60</a></span><span class="t">            <span class="nam">kwargs</span><span class="op">[</span><span class="str">"initial"</span><span class="op">]</span> <span class="op">=</span> <span class="nam">initial</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t61" href="#t61">61</a></span><span class="t">        <span class="nam">kwargs</span><span class="op">[</span><span class="str">"initial"</span><span class="op">]</span> <span class="op">=</span> <span class="nam">kwargs</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"initial"</span><span class="op">)</span> <span class="key">or</span> <span class="op">{</span><span class="op">}</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t62" href="#t62">62</a></span><span class="t">        <span class="nam">kwargs</span><span class="op">[</span><span class="str">"initial"</span><span class="op">]</span><span class="op">.</span><span class="nam">update</span><span class="op">(</span><span class="nam">initial_slot</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -467,7 +467,7 @@
             <a class="nav" href="z_95b6daa84def6292_widgets_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-04 08:30 +0000
+            created at 2026-02-04 15:33 +0000
         </p>
     </div>
 </footer>
