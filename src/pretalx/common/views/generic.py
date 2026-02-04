@@ -112,11 +112,18 @@ class FormLoggingMixin:
     def get_log_action(self):
         return f".{self.action}"
 
+    def _save_form(self, form):
+        form.save()
+        self.object = form.instance
+        return redirect(self.get_success_url())
+
     def form_valid(self, form, skip_logging=False):
+        _has_super = hasattr(super(), "form_valid")
+
         if skip_logging:
-            form.save()
-            self.object = form.instance
-            return redirect(self.get_success_url())
+            if _has_super:
+                return super().form_valid(form)
+            return self._save_form(form)
 
         old_data = None
         if (
@@ -127,8 +134,10 @@ class FormLoggingMixin:
             old_object = self.object.__class__.objects.get(pk=self.object.pk)
             old_data = old_object._get_instance_data()
 
-        form.save()
-        self.object = form.instance
+        if _has_super:
+            result = super().form_valid(form)
+        else:
+            result = self._save_form(form)
 
         action = getattr(self, "action", getattr(self, "permission_action", None))
         if message := self.messages.get(action):
@@ -145,7 +154,7 @@ class FormLoggingMixin:
                 log_kwargs["new_data"] = new_data
 
             self.object.log_action(self.get_log_action(), **log_kwargs)
-        return redirect(self.get_success_url())
+        return result
 
 
 class CreateOrUpdateView(
