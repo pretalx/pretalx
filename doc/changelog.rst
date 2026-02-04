@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`schedule,1911` You can filter the schedule to show only sessions that will not be recorded.
 - :bug:`orga` Server administrators would see a button to create a new user on the admin user list, even though pretalx does not have a generic user creation functionality.
 - :feature:`orga:mail,1424` The draft proposal reminder email is now a stored template, so that organisers can draft the reminder text ahead of time and reuse it later.
 - :feature:`orga:speaker,975` Organisers can now change the order that speakers are listed in on session pages.
