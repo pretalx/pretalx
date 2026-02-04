@@ -83,7 +83,7 @@ class SpeakerView(PermissionRequired, TemplateView):
             .select_related(
                 "submission", "room", "submission__event", "submission__track"
             )
-            .prefetch_related("submission__speakers")
+            .with_sorted_speakers()
         )
 
     def get_permission_object(self):

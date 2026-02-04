@@ -423,7 +423,7 @@ class ScheduleAvailabilities(EventPermissionRequired, View):
         for talk in (
             self.request.event.wip_schedule.talks.filter(submission__isnull=False)
             .select_related("submission")
-            .prefetch_related("submission__speakers")
+            .with_sorted_speakers()
         ):
             if talk.submission.speakers.count() == 1:
                 result[talk.id] = [

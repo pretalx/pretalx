@@ -105,7 +105,7 @@ class Schedule(PretalxModel):
                 "submission__event",
                 "room",
             )
-            .prefetch_related("submission__speakers")
+            .with_sorted_speakers()
             .filter(
                 room__isnull=False,
                 start__isnull=False,
@@ -348,7 +348,7 @@ class Schedule(PretalxModel):
                 "submission__event",
                 "schedule__event",
             )
-            .prefetch_related("submission__speakers")
+            .with_sorted_speakers()
         )
         if filter_updated:
             talks = talks.filter(updated__gte=filter_updated)
@@ -524,7 +524,7 @@ class Schedule(PretalxModel):
             "submission__track",
             "submission__event",
             "submission__submission_type",
-        ).prefetch_related("submission__speakers")
+        ).with_sorted_speakers()
         talks = talks.order_by("start")
         rooms = set() if not all_rooms else set(self.event.rooms.all())
         tracks = set()

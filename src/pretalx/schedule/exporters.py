@@ -56,7 +56,7 @@ class ScheduleData(BaseExporter):
                 "submission__track",
                 "room",
             )
-            .prefetch_related("submission__speakers")
+            .with_sorted_speakers()
             .order_by("start")
         )
         data = {
@@ -307,7 +307,7 @@ class ICalExporter(BaseExporter):
     def get_data(self, **kwargs):
         talks = (
             self.schedule.talks.filter(is_visible=True)
-            .prefetch_related("submission__speakers")
+            .with_sorted_speakers()
             .select_related("submission", "room", "submission__event")
             .order_by("start")
         )

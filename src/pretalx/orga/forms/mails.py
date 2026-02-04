@@ -377,14 +377,14 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
             submissions = (
                 self.filter_queryset(self.event.submissions)
                 .select_related("track", "submission_type", "event")
-                .prefetch_related("speakers")
+                .with_sorted_speakers()
             )
 
         if added_submissions:
             specific_submissions = (
                 self.event.submissions.filter(code__in=added_submissions)
                 .select_related("track", "submission_type", "event")
-                .prefetch_related("speakers")
+                .with_sorted_speakers()
             )
             submissions = submissions | specific_submissions
 

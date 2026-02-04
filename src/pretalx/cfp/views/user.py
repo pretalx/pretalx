@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth import logout
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.db import transaction
+from django.db import models, transaction
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, reverse
@@ -44,6 +44,7 @@ from pretalx.person.rules import can_view_information
 from pretalx.submission.forms import InfoForm, QuestionsForm, ResourceForm
 from pretalx.submission.models import (
     Resource,
+    SpeakerRole,
     Submission,
     SubmissionInvitation,
     SubmissionStates,
@@ -604,6 +605,15 @@ class SubmissionInviteAcceptView(LoggedInEventPageMixin, DetailView):
         submission = self.invitation.submission
         email = self.invitation.email
         submission.speakers.add(self.request.user)
+        max_position = (
+            SpeakerRole.objects.filter(submission=submission)
+            .exclude(user=self.request.user)
+            .aggregate(max_pos=models.Max("position"))
+            .get("max_pos")
+        )
+        SpeakerRole.objects.filter(
+            submission=submission, user=self.request.user
+        ).update(position=(max_position or 0) + 1)
         submission.log_action(
             "pretalx.submission.invitation.accept",
             person=self.request.user,

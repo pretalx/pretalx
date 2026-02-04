@@ -16,7 +16,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.db.models.fields.files import FieldFile
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
@@ -125,12 +125,17 @@ class SubmissionStates(Choices):
         }.get(state, "--color-grey")
 
 
-class SubmissionManager(models.Manager):
+class SubmissionQuerySet(models.QuerySet):
+    def with_sorted_speakers(self):
+        return self.prefetch_related(sorted_speakers_prefetch())
+
+
+class SubmissionManager(models.Manager.from_queryset(SubmissionQuerySet)):
     def get_queryset(self):
         return super().get_queryset().exclude(state=SubmissionStates.DRAFT)
 
 
-class AllSubmissionManager(models.Manager):
+class AllSubmissionManager(models.Manager.from_queryset(SubmissionQuerySet)):
     pass
 
 
@@ -145,7 +150,7 @@ class SpeakerRole(models.Model):
     user = models.ForeignKey(
         to="person.User", on_delete=models.CASCADE, related_name="speaker_roles"
     )
-    position = models.PositiveIntegerField(null=True, blank=True)
+    position = models.PositiveIntegerField(default=0)
 
     objects = ScopedManager(event="submission__event")
 
@@ -153,19 +158,19 @@ class SpeakerRole(models.Model):
         ordering = ("position",)
         unique_together = (("submission", "user"),)
 
-    def save(self, *args, **kwargs):
-        if self.position is None:
-            max_position = (
-                SpeakerRole.objects.filter(submission=self.submission)
-                .exclude(pk=self.pk)
-                .aggregate(max_pos=models.Max("position"))
-                .get("max_pos")
-            )
-            self.position = (max_position or 0) + 1
-        super().save(*args, **kwargs)
-
     def __str__(self):
         return f"SpeakerRole(submission={self.submission.code}, speaker={self.user})"
+
+
+def sorted_speakers_prefetch(prefix=""):
+    """Prefetch for speakers ordered by their speaking position.
+
+    Use prefix="submission__" when prefetching from slot querysets.
+    """
+    from pretalx.person.models import User
+
+    lookup = f"{prefix}speakers" if prefix else "speakers"
+    return Prefetch(lookup, queryset=User.objects.order_by("speaker_roles__position"))
 
 
 class Submission(GenerateCode, PretalxModel):
@@ -1138,6 +1143,15 @@ class Submission(GenerateCode, PretalxModel):
             )
 
         self.speakers.add(speaker)
+        max_position = (
+            SpeakerRole.objects.filter(submission=self)
+            .exclude(user=speaker)
+            .aggregate(max_pos=models.Max("position"))
+            .get("max_pos")
+        )
+        SpeakerRole.objects.filter(submission=self, user=speaker).update(
+            position=(max_position or 0) + 1
+        )
         self.log_action(
             "pretalx.submission.speakers.add",
             person=user,

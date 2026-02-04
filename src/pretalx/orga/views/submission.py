@@ -41,6 +41,7 @@ from pretalx.common.views.mixins import (
     EventPermissionRequired,
     PaginationMixin,
     PermissionRequired,
+    reorder_queryset,
 )
 from pretalx.mail.models import MailTemplateRoles
 from pretalx.orga.forms.submission import (
@@ -71,6 +72,7 @@ from pretalx.submission.models import (
     SubmissionStates,
     Tag,
 )
+from pretalx.submission.models.submission import SpeakerRole
 from pretalx.submission.rules import (
     annotate_assigned,
     get_reviewer_tracks,
@@ -150,7 +152,7 @@ class ReviewerSubmissionFilter:
                 "submission_type__event",
                 "submission_type__event__cfp",
             )
-            .prefetch_related("speakers")
+            .with_sorted_speakers()
         )
         if self.is_only_reviewer:
             queryset = limit_for_reviewers(
@@ -314,6 +316,30 @@ class SubmissionSpeakersDelete(SubmissionViewMixin, View):
         else:
             messages.warning(request, _("The speaker was not part of this proposal."))
         return redirect(submission.orga_urls.speakers)
+
+
+class SubmissionSpeakersReorder(SubmissionViewMixin, View):
+    permission_required = "submission.update_submission"
+
+    def post(self, request, *args, **kwargs):
+        order = request.POST.get("order", "")
+        if not order:
+            return HttpResponse(status=400)
+        roles = SpeakerRole.objects.filter(submission=self.object).select_related(
+            "user"
+        )
+        old_order = ", ".join(role.user.name for role in roles)
+        reorder_queryset(roles, order.split(","))
+        role_map = {str(role.pk): role.user.name for role in roles}
+        new_order = ", ".join(role_map[pk] for pk in order.split(",") if pk in role_map)
+        self.object.log_action(
+            "pretalx.submission.speakers.reorder",
+            person=request.user,
+            orga=True,
+            old_data={"speakers": old_order},
+            new_data={"speakers": new_order},
+        )
+        return HttpResponse(status=204)
 
 
 class SubmissionInvitationRetract(

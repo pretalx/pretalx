@@ -236,8 +236,12 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             event=self.event, user__in=speaker_ids
         ).distinct()
         if serializer := self.get_extra_flex_field("speakers", profiles):
-            return serializer.data
-        return obj.speakers.values_list("code", flat=True)
+            # Re-sort to match speaker position order
+            data = serializer.data
+            id_order = {uid: i for i, uid in enumerate(speaker_ids)}
+            data.sort(key=lambda p: id_order.get(p.get("user"), 0))
+            return data
+        return obj.sorted_speakers.values_list("code", flat=True)
 
     @extend_schema_field(list[int])
     def get_answers(self, obj):

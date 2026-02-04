@@ -26,12 +26,14 @@ from pretalx.submission.models import Submission, SubmissionStates
 
 class TalkMixin(PermissionRequired):
     permission_required = "submission.view_public_submission"
-    prefetches = ("slots", "resources", sorted_speakers_prefetch())
+    prefetches = ("slots", "resources")
 
     def get_queryset(self):
-        return self.request.event.submissions.prefetch_related(
-            *self.prefetches
-        ).select_related("submission_type", "track", "event")
+        return (
+            self.request.event.submissions.prefetch_related(*self.prefetches)
+            .with_sorted_speakers()
+            .select_related("submission_type", "track", "event")
+        )
 
     @cached_property
     def object(self):
@@ -122,15 +124,13 @@ class TalkView(TalkMixin, TemplateView):
         other_submissions = self.request.event.submissions.filter(
             slots__in=other_slots
         ).select_related("event")
-        speakers = (
-            self.submission.speakers.all()
-            .with_profiles(self.request.event)
-            .prefetch_related(
-                Prefetch(
-                    "submissions",
-                    queryset=other_submissions,
-                    to_attr="other_submissions",
-                )
+        speakers = self.submission.sorted_speakers.with_profiles(
+            self.request.event
+        ).prefetch_related(
+            Prefetch(
+                "submissions",
+                queryset=other_submissions,
+                to_attr="other_submissions",
             )
         )
         for speaker in speakers:

@@ -91,7 +91,7 @@ def deserialize_schedule_changes(serialized: dict, event) -> dict:
             sub.code: sub
             for sub in Submission.objects.filter(code__in=submission_codes, event=event)
             .select_related("event")
-            .prefetch_related("speakers")
+            .with_sorted_speakers()
         }
 
     slots_by_id = {}
