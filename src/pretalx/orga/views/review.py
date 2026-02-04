@@ -309,7 +309,7 @@ class ReviewDashboard(
                 total["error"] += 1
                 continue
             if not request.user.has_perm(
-                "submission." + value + "_submission", submission
+                "submission.accept_or_reject_submission", submission
             ):
                 total["error"] += 1
                 continue

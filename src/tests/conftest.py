@@ -868,7 +868,7 @@ def canceled_submission(submission_data, speaker, event):
         sub = Submission.objects.create(**submission_data)
         sub.save()
         sub.speakers.add(speaker)
-        sub.cancel(force=True)
+        sub.cancel()
         return sub
 
 
@@ -878,7 +878,7 @@ def withdrawn_submission(submission_data, speaker, event):
         sub = Submission.objects.create(**submission_data)
         sub.save()
         sub.speakers.add(speaker)
-        sub.withdraw(force=True)
+        sub.withdraw()
         return sub
 
 
@@ -1068,7 +1068,7 @@ def blocker_slot(room, event):
 @pytest.fixture
 def canceled_talk(past_slot):
     with scope(event=past_slot.submission.event):
-        past_slot.submission.cancel(force=True)
+        past_slot.submission.cancel()
         past_slot.submission.event.wip_schedule.freeze("vcanceled")
         return past_slot
 

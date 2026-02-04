@@ -84,45 +84,14 @@ def is_speaker(user, obj):
 def can_be_withdrawn(user, obj):
     from pretalx.submission.models import SubmissionStates
 
-    return obj and SubmissionStates.WITHDRAWN in SubmissionStates.valid_next_states.get(
-        obj.state, []
-    )
-
-
-@rules.predicate
-def can_be_rejected(user, obj):
-    from pretalx.submission.models import SubmissionStates
-
-    return obj and SubmissionStates.REJECTED in SubmissionStates.valid_next_states.get(
-        obj.state, []
-    )
-
-
-@rules.predicate
-def can_be_accepted(user, obj):
-    from pretalx.submission.models import SubmissionStates
-
-    return obj and SubmissionStates.ACCEPTED in SubmissionStates.valid_next_states.get(
-        obj.state, []
-    )
+    return obj and obj.state in (SubmissionStates.SUBMITTED, SubmissionStates.ACCEPTED)
 
 
 @rules.predicate
 def can_be_confirmed(user, obj):
     from pretalx.submission.models import SubmissionStates
 
-    return obj and SubmissionStates.CONFIRMED in SubmissionStates.valid_next_states.get(
-        obj.state, []
-    )
-
-
-@rules.predicate
-def can_be_canceled(user, obj):
-    from pretalx.submission.models import SubmissionStates
-
-    return obj and SubmissionStates.CANCELED in SubmissionStates.valid_next_states.get(
-        obj.state, []
-    )
+    return obj and obj.state == SubmissionStates.ACCEPTED
 
 
 @rules.predicate

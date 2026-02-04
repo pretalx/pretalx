@@ -24,7 +24,6 @@ from django.views.generic import FormView, ListView, TemplateView, UpdateView, V
 from django_context_decorator import context
 
 from pretalx.agenda.rules import is_agenda_submission_visible
-from pretalx.common.exceptions import SubmissionError
 from pretalx.common.forms.fields import SizeFileInput
 from pretalx.common.models import ActivityLog
 from pretalx.common.text.phrases import phrases
@@ -194,7 +193,7 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
     def target(self):
         return self._target
 
-    def do(self, force=False, pending=False):
+    def do(self, pending=False):
         if pending:
             self.object.pending_state = self._target
             self.object.save()
@@ -203,7 +202,7 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
                 self.object.update_talk_slots()
         else:
             method = getattr(self.object, SubmissionStates.method_names[self._target])
-            method(person=self.request.user, force=force, orga=True)
+            method(person=self.request.user, orga=True)
 
     @transaction.atomic
     def form_valid(self, form):
@@ -218,10 +217,7 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
 
         current = self.object.state
         pending = form.cleaned_data.get("pending")
-        try:
-            self.do(pending=pending)
-        except SubmissionError:
-            self.do(force=True, pending=pending)
+        self.do(pending=pending)
 
         if pending:
             return redirect(self.get_success_url())
@@ -816,10 +812,7 @@ class ApplyPending(SubmissionViewMixin, View):
 
     def post(self, request, *args, **kwargs):
         submission = self.object
-        try:
-            submission.apply_pending_state(person=request.user)
-        except Exception:
-            submission.apply_pending_state(person=request.user, force=True)
+        submission.apply_pending_state(person=request.user)
         return redirect(submission.orga_urls.base)
 
 
@@ -1267,10 +1260,7 @@ class ApplyPendingBulk(
 
     def post(self, request, *args, **kwargs):
         for submission in self.submissions:
-            try:
-                submission.apply_pending_state(person=self.request.user)
-            except Exception:
-                submission.apply_pending_state(person=self.request.user, force=True)
+            submission.apply_pending_state(person=self.request.user)
         messages.success(
             self.request,
             str(_("Changed {count} proposal states.")).format(

@@ -41,7 +41,6 @@ from pretalx.api.serializers.submission import (
 from pretalx.api.versions import LEGACY
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.auth import TokenAuthentication
-from pretalx.common.exceptions import SubmissionError
 from pretalx.person.models import User
 from pretalx.submission.models import (
     Resource,
@@ -166,6 +165,10 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
     ordering = ("code",)
     permission_map = {
         "make_submitted": "submission.state_change_submission",
+        "accept": "submission.state_change_submission",
+        "reject": "submission.state_change_submission",
+        "confirm": "submission.state_change_submission",
+        "cancel": "submission.state_change_submission",
         "add_speaker": "submission.update_submission",
         "remove_speaker": "submission.update_submission",
         "invite_speaker": "submission.update_submission",
@@ -290,68 +293,33 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
 
     @action(detail=True, methods=["POST"])
     def accept(self, request, **kwargs):
-        try:
-            submission = self.get_object()
-            submission.accept(person=request.user, orga=True)
-            return Response(SubmissionOrgaSerializer(submission).data)
-        except SubmissionError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response(
-                {"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        submission = self.get_object()
+        submission.accept(person=request.user, orga=True)
+        return Response(SubmissionOrgaSerializer(submission).data)
 
     @action(detail=True, methods=["POST"])
     def reject(self, request, **kwargs):
-        try:
-            submission = self.get_object()
-            submission.reject(person=request.user, orga=True)
-            return Response(SubmissionOrgaSerializer(submission).data)
-        except SubmissionError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response(
-                {"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        submission = self.get_object()
+        submission.reject(person=request.user, orga=True)
+        return Response(SubmissionOrgaSerializer(submission).data)
 
     @action(detail=True, methods=["POST"])
     def confirm(self, request, **kwargs):
-        try:
-            submission = self.get_object()
-            submission.confirm(person=request.user, orga=True)
-            return Response(SubmissionOrgaSerializer(submission).data)
-        except SubmissionError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response(
-                {"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        submission = self.get_object()
+        submission.confirm(person=request.user, orga=True)
+        return Response(SubmissionOrgaSerializer(submission).data)
 
     @action(detail=True, methods=["POST"])
     def cancel(self, request, **kwargs):
-        try:
-            submission = self.get_object()
-            submission.cancel(person=request.user, orga=True)
-            return Response(SubmissionOrgaSerializer(submission).data)
-        except SubmissionError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response(
-                {"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        submission = self.get_object()
+        submission.cancel(person=request.user, orga=True)
+        return Response(SubmissionOrgaSerializer(submission).data)
 
     @action(detail=True, methods=["POST"], url_path="make-submitted")
     def make_submitted(self, request, **kwargs):
-        try:
-            submission = self.get_object()
-            submission.make_submitted(person=request.user, orga=True)
-            return Response(SubmissionOrgaSerializer(submission).data)
-        except SubmissionError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response(
-                {"detail": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        submission = self.get_object()
+        submission.make_submitted(person=request.user, orga=True)
+        return Response(SubmissionOrgaSerializer(submission).data)
 
     @action(detail=True, methods=["POST"], url_path="add-speaker")
     def add_speaker(self, request, **kwargs):
