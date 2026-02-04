@@ -14,7 +14,7 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from django.utils.timezone import now
@@ -362,6 +362,22 @@ class ActionConfirmMixin:
         return ctx
 
 
+def reorder_queryset(queryset, id_list):
+    """Update position fields on a queryset given an ordered list of PKs.
+
+    Validates that each PK exists in the queryset (404 otherwise).
+    """
+    objects = {str(obj.pk): obj for obj in queryset}
+    to_update = []
+    for index, pk in enumerate(id_list):
+        if pk not in objects:
+            raise Http404
+        obj = objects[pk]
+        obj.position = index
+        to_update.append(obj)
+    queryset.model.objects.bulk_update(to_update, ["position"])
+
+
 class OrderActionMixin:
     """Change an ordered model with a POST endpoint to a CRUDView list view."""
 
@@ -372,12 +388,7 @@ class OrderActionMixin:
     def order_handler(self, request, *args, **kwargs):
         order = request.POST.get("order")
         if order:
-            order = order.split(",")
-            queryset = self.get_queryset()
-            for index, pk in enumerate(order):
-                obj = get_object_or_404(queryset, pk=pk)
-                obj.position = index
-                obj.save(update_fields=["position"])
+            reorder_queryset(self.get_queryset(), order.split(","))
         return self.list(request, *args, **kwargs)
 
 

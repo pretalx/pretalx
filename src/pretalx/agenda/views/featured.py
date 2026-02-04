@@ -31,7 +31,7 @@ class FeaturedView(EventPermissionRequired, TemplateView):
                 ]
             )
             .select_related("event", "submission_type")
-            .prefetch_related("speakers")
+            .with_sorted_speakers()
             .order_by("title")
         )
 

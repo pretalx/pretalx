@@ -35,6 +35,17 @@ class SlotType(models.TextChoices):
     BLOCKER = "blocker", _("Blocker")
 
 
+class TalkSlotQuerySet(models.QuerySet):
+    def with_sorted_speakers(self):
+        from pretalx.submission.models.submission import sorted_speakers_prefetch
+
+        return self.prefetch_related(sorted_speakers_prefetch("submission__"))
+
+
+class TalkSlotManager(models.Manager.from_queryset(TalkSlotQuerySet)):
+    pass
+
+
 class TalkSlot(PretalxModel):
     """The TalkSlot object is the scheduled version of a.
 
@@ -88,7 +99,7 @@ class TalkSlot(PretalxModel):
     )
     description = I18nCharField(null=True)
 
-    objects = ScopedManager(event="schedule__event")
+    objects = ScopedManager(event="schedule__event", _manager_class=TalkSlotManager)
 
     class Meta:
         ordering = ("start",)

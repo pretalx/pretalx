@@ -16,7 +16,7 @@ class SubmissionCards(EventPermissionRequired, View):
     def get_queryset(self):
         return (
             self.request.event.submissions.select_related("submission_type")
-            .prefetch_related("speakers")
+            .with_sorted_speakers()
             .filter(
                 state__in=[
                     SubmissionStates.ACCEPTED,

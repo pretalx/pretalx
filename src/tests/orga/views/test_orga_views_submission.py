@@ -392,13 +392,15 @@ def test_orga_can_remove_wrong_speaker(orga_client, submission, other_speaker):
 
 
 @pytest.mark.django_db
-def test_speaker_role_auto_assigns_position(submission, other_speaker):
+def test_add_speaker_assigns_position(submission, other_speaker):
     with scope(event=submission.event):
         role1 = SpeakerRole.objects.get(submission=submission)
-        assert role1.position == 1
-        submission.speakers.add(other_speaker)
+        assert role1.position == 0
+        submission.add_speaker(
+            email=other_speaker.email, user=other_speaker, name=other_speaker.name
+        )
         role2 = SpeakerRole.objects.get(submission=submission, user=other_speaker)
-        assert role2.position == 2
+        assert role2.position == 1
 
 
 @pytest.mark.django_db

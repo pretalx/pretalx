@@ -42,6 +42,7 @@ from pretalx.api.versions import LEGACY
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
+from pretalx.person.models import User
 from pretalx.submission.models import (
     Resource,
     Submission,
@@ -261,6 +262,10 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         if not self.event:
             # This is just during api doc creation
             return self.queryset
+
+        speakers_qs = User.objects.order_by("speaker_roles__position")
+        if self.check_expanded_fields("speakers.user"):
+            speakers_qs = speakers_qs.prefetch_related("profiles")
         queryset = (
             submissions_for_user(self.event, self.request.user)
             .select_related("event", "track", "submission_type")
