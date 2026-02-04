@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for src/pretalx/submission/rules.py: 89%</title>
+    <title>Coverage for src/pretalx/submission/rules.py: 93%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
     <link rel="stylesheet" href="style_cb_9ff733b0.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>src&#8201;/&#8201;pretalx&#8201;/&#8201;submission&#8201;/&#8201;rules.py</b>:
-            <span class="pc_cov">89%</span>
+            <span class="pc_cov">93%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -56,10 +56,10 @@
         </aside>
         <h2>
             <span class="text">215 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">195<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">20<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">202<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">13<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
-            <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">9<span class="text"> partial</span></button>
+            <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">7<span class="text"> partial</span></button>
         </h2>
         <p class="text">
             <a id="prevFileLink" class="nav" href="z_08503e3d102b759c_phrases_py.html">&#xab; prev</a> &nbsp; &nbsp;
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_08503e3d102b759c_signals_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-04 15:33 +0000
+            created at 2026-02-04 15:44 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -248,10 +248,10 @@
     <p class="pln"><span class="n"><a id="t164" href="#t164">164</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t165" href="#t165">165</a></span><span class="t"><span class="op">@</span><span class="nam">rules</span><span class="op">.</span><span class="nam">predicate</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t166" href="#t166">166</a></span><span class="t"><span class="key">def</span> <span class="nam">can_view_reviewer_names</span><span class="op">(</span><span class="nam">user</span><span class="op">,</span> <span class="nam">obj</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t167" href="#t167">167</a></span><span class="t">    <span class="nam">event</span> <span class="op">=</span> <span class="nam">obj</span><span class="op">.</span><span class="nam">event</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t168" href="#t168">168</a></span><span class="t">    <span class="key">return</span> <span class="nam">bool</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t169" href="#t169">169</a></span><span class="t">        <span class="nam">event</span><span class="op">.</span><span class="nam">active_review_phase</span> <span class="key">and</span> <span class="nam">event</span><span class="op">.</span><span class="nam">active_review_phase</span><span class="op">.</span><span class="nam">can_see_reviewer_names</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t170" href="#t170">170</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t167" href="#t167">167</a></span><span class="t">    <span class="nam">event</span> <span class="op">=</span> <span class="nam">obj</span><span class="op">.</span><span class="nam">event</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t168" href="#t168">168</a></span><span class="t">    <span class="key">return</span> <span class="nam">bool</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t169" href="#t169">169</a></span><span class="t">        <span class="nam">event</span><span class="op">.</span><span class="nam">active_review_phase</span> <span class="key">and</span> <span class="nam">event</span><span class="op">.</span><span class="nam">active_review_phase</span><span class="op">.</span><span class="nam">can_see_reviewer_names</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t170" href="#t170">170</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t171" href="#t171">171</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t172" href="#t172">172</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t173" href="#t173">173</a></span><span class="t"><span class="op">@</span><span class="nam">rules</span><span class="op">.</span><span class="nam">predicate</span>&nbsp;</span><span class="r"></span></p>
@@ -288,15 +288,15 @@
     <p class="run"><span class="n"><a id="t204" href="#t204">204</a></span><span class="t">        <span class="nam">event</span> <span class="op">=</span> <span class="nam">getattr</span><span class="op">(</span><span class="nam">obj</span><span class="op">,</span> <span class="str">"event"</span><span class="op">,</span> <span class="key">None</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t205" href="#t205">205</a></span><span class="t">    <span class="key">except</span> <span class="op">(</span><span class="nam">AttributeError</span><span class="op">,</span> <span class="nam">ObjectDoesNotExist</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t206" href="#t206">206</a></span><span class="t">        <span class="key">return</span> <span class="key">False</span>&nbsp;</span><span class="r"></span></p>
-    <p class="par run show_par"><span class="n"><a id="t207" href="#t207">207</a></span><span class="t">    <span class="key">if</span> <span class="nam">event</span> <span class="key">or</span> <span class="key">not</span> <span class="nam">event</span><span class="op">.</span><span class="nam">active_review_phase</span><span class="op">:</span>&nbsp;</span><span class="r"><span class="annotate short">207&#x202F;&#x219B;&#x202F;209</span><span class="annotate long">line 207 didn't jump to line 209 because the condition on line 207 was always true</span></span></p>
+    <p class="run"><span class="n"><a id="t207" href="#t207">207</a></span><span class="t">    <span class="key">if</span> <span class="key">not</span> <span class="nam">event</span> <span class="key">or</span> <span class="key">not</span> <span class="nam">event</span><span class="op">.</span><span class="nam">active_review_phase</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t208" href="#t208">208</a></span><span class="t">        <span class="key">return</span> <span class="key">False</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t209" href="#t209">209</a></span><span class="t">    <span class="key">if</span> <span class="nam">event</span><span class="op">.</span><span class="nam">active_review_phase</span><span class="op">.</span><span class="nam">proposal_visibility</span> <span class="op">==</span> <span class="str">"all"</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t210" href="#t210">210</a></span><span class="t">        <span class="key">return</span> <span class="nam">event</span><span class="op">.</span><span class="nam">teams</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t211" href="#t211">211</a></span><span class="t">            <span class="nam">Q</span><span class="op">(</span><span class="nam">limit_tracks__isnull</span><span class="op">=</span><span class="key">True</span><span class="op">)</span> <span class="op">|</span> <span class="nam">Q</span><span class="op">(</span><span class="nam">limit_tracks__in</span><span class="op">=</span><span class="op">[</span><span class="nam">obj</span><span class="op">.</span><span class="nam">track</span><span class="op">]</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t212" href="#t212">212</a></span><span class="t">            <span class="nam">members__in</span><span class="op">=</span><span class="op">[</span><span class="nam">user</span><span class="op">]</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t213" href="#t213">213</a></span><span class="t">            <span class="nam">is_reviewer</span><span class="op">=</span><span class="key">True</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t214" href="#t214">214</a></span><span class="t">        <span class="op">)</span><span class="op">.</span><span class="nam">exists</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t215" href="#t215">215</a></span><span class="t">    <span class="key">return</span> <span class="nam">user</span> <span class="key">in</span> <span class="nam">obj</span><span class="op">.</span><span class="nam">assigned_reviewers</span><span class="op">.</span><span class="nam">all</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t209" href="#t209">209</a></span><span class="t">    <span class="key">if</span> <span class="nam">event</span><span class="op">.</span><span class="nam">active_review_phase</span><span class="op">.</span><span class="nam">proposal_visibility</span> <span class="op">==</span> <span class="str">"all"</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t210" href="#t210">210</a></span><span class="t">        <span class="key">return</span> <span class="nam">event</span><span class="op">.</span><span class="nam">teams</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t211" href="#t211">211</a></span><span class="t">            <span class="nam">Q</span><span class="op">(</span><span class="nam">limit_tracks__isnull</span><span class="op">=</span><span class="key">True</span><span class="op">)</span> <span class="op">|</span> <span class="nam">Q</span><span class="op">(</span><span class="nam">limit_tracks__in</span><span class="op">=</span><span class="op">[</span><span class="nam">obj</span><span class="op">.</span><span class="nam">track</span><span class="op">]</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t212" href="#t212">212</a></span><span class="t">            <span class="nam">members__in</span><span class="op">=</span><span class="op">[</span><span class="nam">user</span><span class="op">]</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t213" href="#t213">213</a></span><span class="t">            <span class="nam">is_reviewer</span><span class="op">=</span><span class="key">True</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t214" href="#t214">214</a></span><span class="t">        <span class="op">)</span><span class="op">.</span><span class="nam">exists</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t215" href="#t215">215</a></span><span class="t">    <span class="key">return</span> <span class="nam">user</span> <span class="key">in</span> <span class="nam">obj</span><span class="op">.</span><span class="nam">assigned_reviewers</span><span class="op">.</span><span class="nam">all</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t216" href="#t216">216</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t217" href="#t217">217</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t218" href="#t218">218</a></span><span class="t"><span class="key">def</span> <span class="nam">filter_answers_by_team_access</span><span class="op">(</span><span class="nam">answers</span><span class="op">,</span> <span class="nam">user</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -382,9 +382,9 @@
     <p class="par run show_par"><span class="n"><a id="t298" href="#t298">298</a></span><span class="t">    <span class="key">if</span> <span class="key">not</span> <span class="op">(</span><span class="nam">phase</span> <span class="op">:=</span> <span class="nam">event</span><span class="op">.</span><span class="nam">active_review_phase</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"><span class="annotate short">298&#x202F;&#x219B;&#x202F;299</span><span class="annotate long">line 298 didn't jump to line 299 because the condition on line 298 was never true</span></span></p>
     <p class="mis show_mis"><span class="n"><a id="t299" href="#t299">299</a></span><span class="t">        <span class="nam">queryset</span> <span class="op">=</span> <span class="nam">event</span><span class="op">.</span><span class="nam">submissions</span><span class="op">.</span><span class="nam">none</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t300" href="#t300">300</a></span><span class="t">    <span class="nam">queryset</span> <span class="op">=</span> <span class="nam">queryset</span><span class="op">.</span><span class="nam">exclude</span><span class="op">(</span><span class="nam">speakers__in</span><span class="op">=</span><span class="op">[</span><span class="nam">user</span><span class="op">]</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="par run show_par"><span class="n"><a id="t301" href="#t301">301</a></span><span class="t">    <span class="key">if</span> <span class="nam">phase</span> <span class="key">and</span> <span class="nam">phase</span><span class="op">.</span><span class="nam">proposal_visibility</span> <span class="op">==</span> <span class="str">"assigned"</span><span class="op">:</span>&nbsp;</span><span class="r"><span class="annotate short">301&#x202F;&#x219B;&#x202F;302</span><span class="annotate long">line 301 didn't jump to line 302 because the condition on line 301 was never true</span></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t302" href="#t302">302</a></span><span class="t">        <span class="nam">queryset</span> <span class="op">=</span> <span class="nam">annotate_assigned</span><span class="op">(</span><span class="nam">queryset</span><span class="op">,</span> <span class="nam">event</span><span class="op">,</span> <span class="nam">user</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t303" href="#t303">303</a></span><span class="t">        <span class="key">return</span> <span class="nam">queryset</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">is_assigned__gte</span><span class="op">=</span><span class="num">1</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t301" href="#t301">301</a></span><span class="t">    <span class="key">if</span> <span class="nam">phase</span> <span class="key">and</span> <span class="nam">phase</span><span class="op">.</span><span class="nam">proposal_visibility</span> <span class="op">==</span> <span class="str">"assigned"</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t302" href="#t302">302</a></span><span class="t">        <span class="nam">queryset</span> <span class="op">=</span> <span class="nam">annotate_assigned</span><span class="op">(</span><span class="nam">queryset</span><span class="op">,</span> <span class="nam">event</span><span class="op">,</span> <span class="nam">user</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t303" href="#t303">303</a></span><span class="t">        <span class="key">return</span> <span class="nam">queryset</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">is_assigned__gte</span><span class="op">=</span><span class="num">1</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t304" href="#t304">304</a></span><span class="t">    <span class="key">if</span> <span class="nam">add_assignments</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t305" href="#t305">305</a></span><span class="t">        <span class="nam">queryset</span> <span class="op">=</span> <span class="nam">annotate_assigned</span><span class="op">(</span><span class="nam">queryset</span><span class="op">,</span> <span class="nam">event</span><span class="op">,</span> <span class="nam">user</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t306" href="#t306">306</a></span><span class="t">    <span class="key">if</span> <span class="nam">reviewer_tracks</span> <span class="key">is</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -483,7 +483,7 @@
             <a class="nav" href="z_08503e3d102b759c_signals_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-04 15:33 +0000
+            created at 2026-02-04 15:44 +0000
         </p>
     </div>
 </footer>
