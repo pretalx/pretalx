@@ -4,12 +4,9 @@
 import pytest
 from django_scopes import scope
 
-from pretalx.submission.models import Submission, SubmissionStates
+from pretalx.submission.models import Submission
 from pretalx.submission.rules import (
-    can_be_accepted,
-    can_be_canceled,
     can_be_confirmed,
-    can_be_rejected,
     can_be_removed,
     can_be_reviewed,
     can_be_withdrawn,
@@ -34,38 +31,35 @@ def test_is_speaker_false(event, submission, orga_user):
 
 
 @pytest.mark.parametrize(
-    "current_state",
+    "state,expected",
     (
-        "submitted",
-        "accepted",
-        "rejected",
-        "confirmed",
-        "canceled",
-        "withdrawn",
+        ("submitted", True),
+        ("accepted", True),
+        ("rejected", False),
+        ("confirmed", False),
+        ("canceled", False),
+        ("withdrawn", False),
     ),
 )
+def test_can_be_withdrawn(state, expected):
+    submission = Submission(state=state)
+    assert can_be_withdrawn(None, submission) is expected
+
+
 @pytest.mark.parametrize(
-    "target_state",
+    "state,expected",
     (
-        "accepted",
-        "rejected",
-        "confirmed",
-        "canceled",
-        "withdrawn",
+        ("submitted", False),
+        ("accepted", True),
+        ("rejected", False),
+        ("confirmed", False),
+        ("canceled", False),
+        ("withdrawn", False),
     ),
 )
-def test_can_change_state(current_state, target_state):
-    submission = Submission(state=current_state)
-    permissions = {
-        "accepted": can_be_accepted,
-        "rejected": can_be_rejected,
-        "confirmed": can_be_confirmed,
-        "canceled": can_be_canceled,
-        "withdrawn": can_be_withdrawn,
-    }
-    assert permissions[target_state](None, submission) is (
-        target_state in SubmissionStates.valid_next_states[current_state]
-    )
+def test_can_be_confirmed(state, expected):
+    submission = Submission(state=state)
+    assert can_be_confirmed(None, submission) is expected
 
 
 @pytest.mark.parametrize(

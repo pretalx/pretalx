@@ -32,7 +32,6 @@ from pretalx.agenda.rules import (
     is_agenda_visible,
     is_submission_visible_via_schedule,
 )
-from pretalx.common.exceptions import SubmissionError
 from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
 from pretalx.common.text.path import hashed_path
@@ -43,11 +42,8 @@ from pretalx.mail.models import get_prefixed_subject
 from pretalx.person.rules import is_reviewer
 from pretalx.submission.rules import (
     are_featured_submissions_visible,
-    can_be_accepted,
-    can_be_canceled,
     can_be_confirmed,
     can_be_edited,
-    can_be_rejected,
     can_be_removed,
     can_be_reviewed,
     can_be_withdrawn,
@@ -82,18 +78,6 @@ class SubmissionStates(models.TextChoices):
     CANCELED = "canceled", _("canceled")
     WITHDRAWN = "withdrawn", _("withdrawn")
     DRAFT = "draft", _("draft")
-
-    valid_next_states = nonmember(
-        {
-            "submitted": ("rejected", "withdrawn", "accepted"),
-            "rejected": ("accepted", "submitted"),
-            "accepted": ("confirmed", "canceled", "rejected", "submitted", "withdrawn"),
-            "confirmed": ("accepted", "canceled"),
-            "canceled": ("accepted", "confirmed"),
-            "withdrawn": ("submitted",),
-            "draft": ("submitted",),
-        }
-    )
 
     method_names = nonmember(
         {
@@ -343,10 +327,7 @@ class Submission(GenerateCode, PretalxModel):
             "state_change": orga_or_reviewer_can_change_submission,
             "accept_or_reject": orga_or_reviewer_can_change_submission,
             "withdraw": can_be_withdrawn & is_speaker,
-            "reject": can_be_rejected & orga_or_reviewer_can_change_submission,
-            "accept": can_be_accepted & orga_or_reviewer_can_change_submission,
             "confirm": can_be_confirmed & (is_speaker | orga_can_change_submissions),
-            "cancel": can_be_canceled & orga_can_change_submissions,
             "remove": can_be_removed & orga_can_change_submissions,
             "view_feedback_page": event_uses_feedback & is_agenda_submission_visible,
             "view_scheduling_details": is_submission_visible_via_schedule,
@@ -559,61 +540,30 @@ class Submission(GenerateCode, PretalxModel):
         for review in self.reviews.all():
             review.save(update_score=True)
 
-    def _set_state(self, new_state, force=False, person=None):
-        """Check if the new state is valid for this Submission (based on
-        SubmissionStates.valid_next_states).
-
-        If yes, set it and save the object. if no, raise a
-        SubmissionError with a helpful message.
-        """
-        valid_next_states = SubmissionStates.valid_next_states.get(self.state, [])
-
+    def _set_state(self, new_state, person=None):
+        """Set the submission's state and save."""
         if self.state == new_state:
             self.pending_state = None
             self.save(update_fields=["state", "pending_state"])
             self.update_talk_slots()
             return
-        if force or new_state in valid_next_states:
-            old_state = self.state
-            self.state = new_state
-            self.pending_state = None
-            if new_state in (
-                SubmissionStates.REJECTED,
-                SubmissionStates.CANCELED,
-                SubmissionStates.WITHDRAWN,
-            ):
-                self.is_featured = False
-            self.save(update_fields=["state", "pending_state"])
-            self.update_talk_slots()
-            submission_state_change.send_robust(
-                self.event,
-                submission=self,
-                old_state=old_state if old_state != SubmissionStates.DRAFT else None,
-                user=person,
-            )
-        else:
-            source_states = (
-                src
-                for src, dsts in SubmissionStates.valid_next_states.items()
-                if new_state in dsts
-            )
-
-            # build an error message mentioning all states, which are valid source states for the desired new state.
-            trans_or = pgettext_lazy(
-                'used in talk confirm/accept/reject/...-errors, like "... must be accepted OR foo OR bar ..."',
-                " or ",
-            )
-            state_names = dict(SubmissionStates.choices)
-            source_states = trans_or.join(
-                str(state_names[state]) for state in source_states
-            )
-            raise SubmissionError(
-                _(
-                    "Proposal must be {src_states} not {state} to be {new_state}."
-                ).format(
-                    src_states=source_states, state=self.state, new_state=new_state
-                )
-            )
+        old_state = self.state
+        self.state = new_state
+        self.pending_state = None
+        if new_state in (
+            SubmissionStates.REJECTED,
+            SubmissionStates.CANCELED,
+            SubmissionStates.WITHDRAWN,
+        ):
+            self.is_featured = False
+        self.save(update_fields=["state", "pending_state"])
+        self.update_talk_slots()
+        submission_state_change.send_robust(
+            self.event,
+            submission=self,
+            old_state=old_state if old_state != SubmissionStates.DRAFT else None,
+            user=person,
+        )
 
     def update_talk_slots(self):
         """Makes sure the correct amount of.
@@ -717,13 +667,12 @@ class Submission(GenerateCode, PretalxModel):
     def make_submitted(
         self,
         person=None,
-        force: bool = False,
         orga: bool = False,
         from_pending: bool = False,
     ):
         """Sets the submission's state to 'submitted'."""
         previous = self.state
-        self._set_state(SubmissionStates.SUBMITTED, force, person=person)
+        self._set_state(SubmissionStates.SUBMITTED, person=person)
         if previous != SubmissionStates.DRAFT:
             self.log_action(
                 "pretalx.submission.make_submitted",
@@ -737,13 +686,12 @@ class Submission(GenerateCode, PretalxModel):
     def confirm(
         self,
         person=None,
-        force: bool = False,
         orga: bool = False,
         from_pending: bool = False,
     ):
         """Sets the submission's state to 'confirmed'."""
         previous = self.state
-        self._set_state(SubmissionStates.CONFIRMED, force, person=person)
+        self._set_state(SubmissionStates.CONFIRMED, person=person)
         self.log_action(
             "pretalx.submission.confirm",
             person=person,
@@ -756,7 +704,6 @@ class Submission(GenerateCode, PretalxModel):
     def accept(
         self,
         person=None,
-        force: bool = False,
         orga: bool = True,
         from_pending: bool = False,
     ):
@@ -766,7 +713,7 @@ class Submission(GenerateCode, PretalxModel):
         unless the submission was previously confirmed.
         """
         previous = self.state
-        self._set_state(SubmissionStates.ACCEPTED, force, person=person)
+        self._set_state(SubmissionStates.ACCEPTED, person=person)
         self.log_action(
             "pretalx.submission.accept",
             person=person,
@@ -782,7 +729,6 @@ class Submission(GenerateCode, PretalxModel):
     def reject(
         self,
         person=None,
-        force: bool = False,
         orga: bool = True,
         from_pending: bool = False,
     ):
@@ -791,7 +737,7 @@ class Submission(GenerateCode, PretalxModel):
         :class:`~pretalx.mail.models.QueuedMail`.
         """
         previous = self.state
-        self._set_state(SubmissionStates.REJECTED, force, person=person)
+        self._set_state(SubmissionStates.REJECTED, person=person)
         self.log_action(
             "pretalx.submission.reject",
             person=person,
@@ -804,7 +750,7 @@ class Submission(GenerateCode, PretalxModel):
 
     reject.alters_data = True
 
-    def apply_pending_state(self, person=None, force: bool = False):
+    def apply_pending_state(self, person=None):
         if not self.pending_state:
             return
 
@@ -814,7 +760,7 @@ class Submission(GenerateCode, PretalxModel):
             return
 
         getattr(self, SubmissionStates.method_names[self.pending_state])(
-            force=force, person=person, from_pending=True
+            person=person, from_pending=True
         )
 
     apply_pending_state.alters_data = True
@@ -852,13 +798,12 @@ class Submission(GenerateCode, PretalxModel):
     def cancel(
         self,
         person=None,
-        force: bool = False,
         orga: bool = True,
         from_pending: bool = False,
     ):
         """Sets the submission's state to 'canceled'."""
         previous = self.state
-        self._set_state(SubmissionStates.CANCELED, force, person=person)
+        self._set_state(SubmissionStates.CANCELED, person=person)
         self.log_action(
             "pretalx.submission.cancel",
             person=person,
@@ -871,13 +816,12 @@ class Submission(GenerateCode, PretalxModel):
     def withdraw(
         self,
         person=None,
-        force: bool = False,
         orga: bool = False,
         from_pending: bool = False,
     ):
         """Sets the submission's state to 'withdrawn'."""
         previous = self.state
-        self._set_state(SubmissionStates.WITHDRAWN, force, person=person)
+        self._set_state(SubmissionStates.WITHDRAWN, person=person)
         self.log_action(
             "pretalx.submission.withdraw",
             person=person,

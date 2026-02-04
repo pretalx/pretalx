@@ -188,7 +188,7 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             self.instance.content_locale = self.event.locale
         instance = super().save(*args, **kwargs)
         if self.is_creating:
-            instance._set_state(self.cleaned_data["state"], force=True)
+            instance._set_state(self.cleaned_data["state"])
         else:
             if "duration" in self.changed_data:
                 instance.update_duration()

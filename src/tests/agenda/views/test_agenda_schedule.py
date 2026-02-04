@@ -175,7 +175,7 @@ def test_speaker_page(
 ):
     with scope(event=event):
         other_submission.speakers.add(speaker)
-        slot.submission.accept(force=True)
+        slot.submission.accept()
         slot.submission.save()
         event.wip_schedule.freeze("testversion 2")
         other_submission.slots.all().update(is_visible=True)
@@ -198,7 +198,7 @@ def test_speaker_page_other_submissions_only_if_visible(
 ):
     with scope(event=event):
         other_submission.speakers.add(speaker)
-        slot.submission.accept(force=True)
+        slot.submission.accept()
         slot.submission.save()
         event.wip_schedule.freeze("testversion 2")
         other_submission.slots.all().update(is_visible=False)
