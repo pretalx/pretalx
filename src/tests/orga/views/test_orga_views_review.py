@@ -573,6 +573,61 @@ def test_orga_can_assign_submission_to_reviewer(orga_client, review_user, submis
 
 
 @pytest.mark.django_db
+def test_orga_can_assign_reviewer_to_submission_htmx(
+    orga_client, review_user, submission
+):
+    with scope(event=submission.event):
+        assert submission.assigned_reviewers.all().count() == 0
+    response = orga_client.post(
+        submission.event.orga_urls.reviews + "assign/?direction=submission",
+        {
+            "_field": submission.code,
+            f"submission-{submission.code}": [review_user.id],
+        },
+        HTTP_HX_REQUEST="true",
+    )
+    assert response.status_code == 204
+    with scope(event=submission.event):
+        assert submission.assigned_reviewers.all().count() == 1
+
+
+@pytest.mark.django_db
+def test_orga_can_assign_submission_to_reviewer_htmx(
+    orga_client, review_user, submission
+):
+    with scope(event=submission.event):
+        assert submission.assigned_reviewers.all().count() == 0
+    response = orga_client.post(
+        submission.event.orga_urls.reviews + "assign/?direction=reviewer",
+        {
+            "_field": review_user.code,
+            f"reviewer-{review_user.code}": [submission.id],
+        },
+        HTTP_HX_REQUEST="true",
+    )
+    assert response.status_code == 204
+    with scope(event=submission.event):
+        assert submission.assigned_reviewers.all().count() == 1
+
+
+@pytest.mark.django_db
+def test_orga_can_clear_assignment_htmx(orga_client, review_user, submission):
+    with scope(event=submission.event):
+        submission.assigned_reviewers.add(review_user)
+        assert submission.assigned_reviewers.all().count() == 1
+    response = orga_client.post(
+        submission.event.orga_urls.reviews + "assign/?direction=submission",
+        {
+            "_field": submission.code,
+        },
+        HTTP_HX_REQUEST="true",
+    )
+    assert response.status_code == 204
+    with scope(event=submission.event):
+        assert submission.assigned_reviewers.all().count() == 0
+
+
+@pytest.mark.django_db
 def test_orga_can_export_reviews(review, orga_client):
     response = orga_client.get(review.event.orga_urls.reviews + "export/")
     assert response.status_code == 200

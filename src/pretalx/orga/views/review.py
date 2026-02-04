@@ -19,7 +19,8 @@ from django.db.models import (
     Subquery,
     When,
 )
-from django.shortcuts import get_object_or_404, redirect
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, ListView, TemplateView
@@ -30,6 +31,7 @@ from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, api_buttons
 from pretalx.common.views.generic import CreateOrUpdateView, OrgaTableMixin
+from pretalx.common.views.helpers import is_htmx
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     EventPermissionRequired,
@@ -862,6 +864,10 @@ class ReviewAssignment(EventPermissionRequired, FormView):
         return direction
 
     @context
+    def direction(self):
+        return self.form_type
+
+    @context
     @cached_property
     def direction_form(self):
         return DirectionForm(self.request.GET)
@@ -927,18 +933,47 @@ class ReviewAssignment(EventPermissionRequired, FormView):
             form_class = ReviewerForProposalForm
         else:
             form_class = ProposalForReviewerForm
+        kwargs = {}
+        if is_htmx(self.request):
+            field_code = self.request.POST.get("_field", "")
+            if self.form_type == "submission":
+                kwargs["submissions"] = self.request.event.submissions.filter(
+                    code=field_code
+                )
+            else:
+                kwargs["reviewers"] = User.objects.filter(
+                    code=field_code,
+                    teams__in=self.request.event.teams.filter(is_reviewer=True),
+                ).distinct()
         return form_class(
             self.request.POST if self.request.method == "POST" else None,
             files=self.request.FILES if self.request.method == "POST" else None,
             event=self.request.event,
             prefix=self.form_type,
             review_mapping=self.review_mapping,
+            **kwargs,
         )
 
     def form_valid(self, form):
         form.save()
+        if is_htmx(self.request):
+            return HttpResponse(status=204)
         messages.success(self.request, phrases.base.saved)
         return redirect(self.request.event.orga_urls.review_assignments)
+
+    def form_invalid(self, form):
+        if is_htmx(self.request):
+            field_code = self.request.POST.get("_field", "")
+            return render(
+                self.request,
+                "orga/review/assignment.html#assignment-field",
+                {
+                    "form_field": form[field_code],
+                    "field_code": field_code,
+                    "direction": self.form_type,
+                },
+            )
+        return super().form_invalid(form)
 
 
 class ReviewAssignmentImport(EventPermissionRequired, FormView):

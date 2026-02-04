@@ -200,16 +200,32 @@ class DirectionForm(forms.Form):
 
 
 class ReviewAssignmentForm(forms.Form):
-    def __init__(self, *args, event=None, review_mapping=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        event=None,
+        review_mapping=None,
+        submissions=None,
+        reviewers=None,
+        **kwargs,
+    ):
         self.event = event
         self.review_mapping = review_mapping or {}
         self.reviewers = (
-            User.objects.filter(teams__in=self.event.teams.filter(is_reviewer=True))
+            reviewers
+            if reviewers is not None
+            else User.objects.filter(
+                teams__in=self.event.teams.filter(is_reviewer=True)
+            )
             .order_by("name")
             .distinct()
         ).prefetch_related("assigned_reviews", "teams", "teams__limit_tracks")
         self.submissions = (
-            self.event.submissions.order_by("title")
+            (
+                submissions
+                if submissions is not None
+                else self.event.submissions.order_by("title")
+            )
             .select_related("track")
             .prefetch_related("assigned_reviewers")
         )
@@ -225,7 +241,10 @@ class ReviewAssignmentForm(forms.Form):
         super().__init__(*args, **kwargs)
 
     class Media:
-        js = [forms.Script("orga/js/forms/assignment.js", defer="")]
+        js = [
+            forms.Script("vendored/htmx.min.js", defer=""),
+            forms.Script("orga/js/forms/assignment.js", defer=""),
+        ]
 
 
 class ReviewerForProposalForm(ReviewAssignmentForm):
