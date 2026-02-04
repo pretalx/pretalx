@@ -742,13 +742,7 @@ def test_orga_can_send_draft_reminder(orga_client, event, speaker):
     response = orga_client.post(
         event.orga_urls.send_drafts_reminder,
         follow=True,
-        data={
-            "subject_0": "Reminder: Submit your proposal",
-            "text_0": "Dear {name}, please submit your proposal {submission_title}.",
-        },
     )
     assert response.status_code == 200
-    assert "read-only" not in response.text
     assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].subject == "Reminder: Submit your proposal"
     assert draft.title in djmail.outbox[0].body

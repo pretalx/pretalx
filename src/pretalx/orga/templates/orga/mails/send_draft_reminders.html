@@ -16,8 +16,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             the draft authors.
         {% endblocktranslate %}
     </div>
-
-    {% include "orga/includes/base_form.html" with submit_label=phrases.base.send %}
-
+    <p>
+        <a href="{{ draft_reminder_template.urls.base }}">
+            {% translate "Email template" %}:
+            {% translate "Draft proposal reminder" %}
+        </a>
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        {% include "orga/includes/submit_row.html" %}
     </form>
 {% endblock mail_content %}
