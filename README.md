@@ -59,7 +59,7 @@
 | src/pretalx/api/views/schedule.py                                          |      129 |        8 |       36 |        8 |     90% |80, 90, 114, 148, 222, 300, 316, 322 |
 | src/pretalx/api/views/speaker.py                                           |       55 |        1 |       12 |        1 |     97% |       157 |
 | src/pretalx/api/views/speaker\_information.py                              |       19 |        0 |        2 |        0 |    100% |           |
-| src/pretalx/api/views/submission.py                                        |      248 |       28 |       28 |        5 |     87% |232, 253, 261, 268, 282-285, 295-298, 308-311, 321-324, 334-337, 389-392 |
+| src/pretalx/api/views/submission.py                                        |      248 |       28 |       28 |        5 |     87% |241, 262, 270, 277, 291-294, 304-307, 317-320, 330-333, 343-346, 398-401 |
 | src/pretalx/api/views/team.py                                              |       93 |        4 |        8 |        0 |     96% |83-84, 187-188 |
 | src/pretalx/api/views/upload.py                                            |       37 |        5 |        8 |        2 |     84% | 64, 75-78 |
 | src/pretalx/cfp/apps.py                                                    |        4 |        0 |        0 |        0 |    100% |           |
