@@ -213,6 +213,8 @@ def schedule_messages(request, **kwargs):
         "tracks": _("Tracks"),
         "languages": _("Languages"),
         "tags": _("Tags"),
+        "recording": _("Recording"),
+        "not_recorded": _("Not recorded"),
         "show_results": _("Show results"),
         "no_matching_sessions": _("No sessions match your current filters."),
         "clear_filters": _("Clear filters"),
