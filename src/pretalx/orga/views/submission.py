@@ -328,17 +328,20 @@ class SubmissionSpeakersReorder(SubmissionViewMixin, View):
         roles = SpeakerRole.objects.filter(submission=self.object).select_related(
             "user"
         )
-        old_order = ", ".join(role.user.name for role in roles)
+        old_order = "\n".join(f"- {role.user.get_display_name()}" for role in roles)
         reorder_queryset(roles, order.split(","))
-        role_map = {str(role.pk): role.user.name for role in roles}
-        new_order = ", ".join(role_map[pk] for pk in order.split(",") if pk in role_map)
-        self.object.log_action(
-            "pretalx.submission.speakers.reorder",
-            person=request.user,
-            orga=True,
-            old_data={"speakers": old_order},
-            new_data={"speakers": new_order},
+        role_map = {str(role.pk): role.user.get_display_name() for role in roles}
+        new_order = "\n".join(
+            f"- {role_map[pk]}" for pk in order.split(",") if pk in role_map
         )
+        if old_order != new_order:
+            self.object.log_action(
+                "pretalx.submission.speakers.reorder",
+                person=request.user,
+                orga=True,
+                old_data={"speakers": old_order},
+                new_data={"speakers": new_order},
+            )
         return HttpResponse(status=204)
 
 
