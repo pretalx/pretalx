@@ -20,7 +20,7 @@ Please make sure you have the following dependencies installed:
 +----------------------------------+------------------+
 | Tool                             | Debian package   |
 +==================================+==================+
-| Python 3.10(!) or newer          |                  |
+| Python 3.12 or newer             |                  |
 +----------------------------------+------------------+
 | ``python-dev`` for Python 3      | ``python3-dev``  |
 +----------------------------------+------------------+
