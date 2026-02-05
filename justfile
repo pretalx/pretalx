@@ -168,17 +168,19 @@ check: black-check isort-check djhtml-check flake8 && _check-done
 @_check-done:
     echo '{{ GREEN }}All checks passed{{ NORMAL }}'
 
-# Open Django shell scoped to a specific event
+# Open Django shell scoped to a specific event if given
 [group('development')]
 [no-exit-message]
 shell event="" *args:
-    just run shell --event {{ event }} {{ args }}
+    just run shell {{ if event == "" { "--unsafe-disable-scopes" } else { "--event " + event } }} {{ args }}
 
 # Open Django shell with all scopes disabled (unsafe, full database access)
 [group('development')]
 [no-exit-message]
-unsafe-shell *args:
-    just run shell --unsafe-disable-scopes {{ args }}
+[positional-arguments]
+[working-directory("src")]
+python *args:
+    {{ python }} manage.py shell --no-pretalx-information --unsafe-disable-scopes "$@"
 
 # Remove Python caches, build artifacts, and coverage reports
 [group('development')]
