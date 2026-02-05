@@ -35,6 +35,7 @@ class ExportForm(forms.Form):
         choices=(
             ("newline", _("Newline")),
             ("comma", _("Comma")),
+            ("tab", _("Tab")),
         ),
         widget=forms.RadioSelect,
     )
@@ -151,6 +152,7 @@ class ExportForm(forms.Form):
         delimiters = {
             "newline": "\n",
             "comma": ", ",
+            "tab": "\t",
         }
         delimiter = delimiters[self.cleaned_data.get("data_delimiter") or "newline"]
 
