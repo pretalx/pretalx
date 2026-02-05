@@ -83,11 +83,21 @@ class Command(shell.Command):  # pragma: no cover
                 startup_file_name = f.name
                 f.write(runline)
             os.environ["PYTHONSTARTUP"] = startup_file_name
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f'Your shell is scoped to the event {event.name}. Use the "event" variable to access it.'
-                )
-            )
+            use_ipython_style = False
+            interface = options.get("interface")
+            if interface not in ("bpython", "python"):
+                with suppress(ImportError):
+                    import IPython  # noqa: F401
+
+                    use_ipython_style = True
+
+            if use_ipython_style:
+                self.stdout.write(self.style.SUCCESS("In [0]: ") + "event")
+                self.stdout.write(self.style.ERROR("Out[0]: ") + repr(event))
+            else:
+                self.stdout.write(self.style.SUCCESS(">>> event"))
+                self.stdout.write(self.style.SUCCESS(repr(event)))
+            self.stdout.write()
 
             with scope(event=event):
                 return super().handle(*args, **options)
