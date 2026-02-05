@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.agenda.rules import can_view_schedule, is_speaker_viewable
 from pretalx.common.models.fields import MarkdownField
-from pretalx.common.models.mixins import PretalxModel
+from pretalx.common.models.mixins import GenerateCode, PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import (
@@ -18,7 +18,7 @@ from pretalx.person.rules import (
 from pretalx.submission.rules import orga_can_change_submissions
 
 
-class SpeakerProfile(PretalxModel):
+class SpeakerProfile(GenerateCode, PretalxModel):
     """All :class:`~pretalx.event.models.event.Event` related data concerning
     a.
 
@@ -27,6 +27,8 @@ class SpeakerProfile(PretalxModel):
     :param has_arrived: Can be set to track speaker arrival. Will be used in
         warnings about missing speakers.
     """
+
+    _code_scope = ("event",)
 
     user = models.ForeignKey(
         to="person.User",
@@ -38,6 +40,10 @@ class SpeakerProfile(PretalxModel):
     event = models.ForeignKey(
         to="event.Event", related_name="+", on_delete=models.CASCADE
     )
+    name = models.CharField(
+        max_length=120, null=True, blank=True, verbose_name=_("Name")
+    )
+    code = models.CharField(max_length=16)
     biography = MarkdownField(
         verbose_name=_("Biography"),
         null=True,
@@ -58,6 +64,7 @@ class SpeakerProfile(PretalxModel):
     log_prefix = "pretalx.user.profile"
 
     class Meta:
+        unique_together = (("event", "code"), ("event", "user"))
         # These permissions largely apply to event-scoped user actions
         rules_permissions = {
             "list": can_view_schedule | (is_reviewer & can_view_speaker_names),
@@ -76,28 +83,28 @@ class SpeakerProfile(PretalxModel):
         }
 
     class urls(EventUrls):
-        public = "{self.event.urls.base}speaker/{self.user.code}/"
+        public = "{self.event.urls.base}speaker/{self.code}/"
         social_image = "{public}og-image"
-        talks_ical = "{self.urls.public}talks.ics"
+        talks_ical = "{public}talks.ics"
 
     class orga_urls(EventUrls):
-        base = "{self.event.orga_urls.speakers}{self.user.code}/"
-        password_reset = "{self.event.orga_urls.speakers}{self.user.code}/reset"
-        toggle_arrived = (
-            "{self.event.orga_urls.speakers}{self.user.code}/toggle-arrived"
-        )
-        send_mail = (
-            "{self.event.orga_urls.compose_mails_sessions}?speakers={self.user.code}"
-        )
+        base = "{self.event.orga_urls.speakers}{self.code}/"
+        password_reset = "{base}reset"
+        toggle_arrived = "{base}toggle-arrived"
+        send_mail = "{self.event.orga_urls.compose_mails_sessions}?speakers={self.code}"
 
     def __str__(self):
         """Help when debugging."""
-        user = self.user.get_display_name() if self.user else None
-        return f"SpeakerProfile(event={self.event.slug}, user={user})"
+        return (
+            f"SpeakerProfile(event={self.event.slug}, user={self.get_display_name()})"
+        )
 
-    @cached_property
-    def code(self):
-        return self.user.code
+    def get_display_name(self):
+        return (
+            self.name
+            or (self.user.name if self.user else None)
+            or str(_("Unnamed speaker"))
+        )
 
     @cached_property
     def submissions(self):
@@ -150,8 +157,10 @@ class SpeakerProfile(PretalxModel):
         data = {}
         if self.pk:
             data = {
-                "name": self.user.name,
-                "email": self.user.email,
-                "avatar": self.user.avatar.name if self.user.avatar else None,
+                "name": self.name or (self.user.name if self.user else None),
+                "email": self.user.email if self.user else None,
+                "avatar": (
+                    self.user.avatar.name if self.user and self.user.avatar else None
+                ),
             }
         return super()._get_instance_data() | data
