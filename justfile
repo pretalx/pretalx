@@ -28,6 +28,7 @@ install-all:
 [group('development')]
 dev-setup: install-all
     just run collectstatic --noinput
+    just run compilemessages
     just run migrate
     just run createsuperuser
     uv pip install faker
