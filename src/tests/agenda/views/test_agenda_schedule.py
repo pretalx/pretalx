@@ -171,8 +171,9 @@ def test_speaker_list(client, django_assert_num_queries, event, speaker):
 @pytest.mark.django_db
 @pytest.mark.usefixtures("other_slot")
 def test_speaker_page(
-    client, django_assert_num_queries, event, speaker, slot, other_submission
+    client, django_assert_num_queries, event, speaker_profile, slot, other_submission
 ):
+    speaker = speaker_profile.user
     with scope(event=event):
         other_submission.speakers.add(speaker)
         slot.submission.accept()
@@ -180,7 +181,9 @@ def test_speaker_page(
         event.wip_schedule.freeze("testversion 2")
         other_submission.slots.all().update(is_visible=True)
         slot.submission.slots.all().update(is_visible=True)
-    url = reverse("agenda:speaker", kwargs={"code": speaker.code, "event": event.slug})
+    url = reverse(
+        "agenda:speaker", kwargs={"code": speaker_profile.code, "event": event.slug}
+    )
     with django_assert_num_queries(14):
         response = client.get(url, follow=True)
     assert response.status_code == 200
@@ -194,7 +197,13 @@ def test_speaker_page(
 @pytest.mark.django_db
 @pytest.mark.usefixtures("other_slot")
 def test_speaker_page_other_submissions_only_if_visible(
-    client, django_assert_num_queries, event, speaker, slot, other_submission
+    client,
+    django_assert_num_queries,
+    event,
+    speaker,
+    speaker_profile,
+    slot,
+    other_submission,
 ):
     with scope(event=event):
         other_submission.speakers.add(speaker)
@@ -206,7 +215,10 @@ def test_speaker_page_other_submissions_only_if_visible(
             is_visible=True
         )
 
-    url = reverse("agenda:speaker", kwargs={"code": speaker.code, "event": event.slug})
+    url = reverse(
+        "agenda:speaker",
+        kwargs={"code": speaker_profile.code, "event": event.slug},
+    )
     with django_assert_num_queries(13):
         response = client.get(url, follow=True)
 
@@ -217,9 +229,12 @@ def test_speaker_page_other_submissions_only_if_visible(
 
 @pytest.mark.django_db
 @pytest.mark.usefixtures("slot")
-def test_speaker_social_media(client, django_assert_num_queries, event, speaker):
+def test_speaker_social_media(
+    client, django_assert_num_queries, event, speaker_profile
+):
     url = reverse(
-        "agenda:speaker-social", kwargs={"code": speaker.code, "event": event.slug}
+        "agenda:speaker-social",
+        kwargs={"code": speaker_profile.code, "event": event.slug},
     )
     with django_assert_num_queries(10):
         response = client.get(url, follow=True)
@@ -229,8 +244,10 @@ def test_speaker_social_media(client, django_assert_num_queries, event, speaker)
 @pytest.mark.django_db
 @pytest.mark.usefixtures("slot", "other_slot")
 def test_speaker_redirect(client, event, speaker):
+    with scope(event=event):
+        profile = speaker.event_profile(event)
     target_url = reverse(
-        "agenda:speaker", kwargs={"code": speaker.code, "event": event.slug}
+        "agenda:speaker", kwargs={"code": profile.code, "event": event.slug}
     )
     url = event.urls.speakers + f"by-id/{speaker.pk}/"
     response = client.get(url)

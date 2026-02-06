@@ -20,6 +20,7 @@ from lxml import etree
 from pretalx.agenda.tasks import export_schedule_html
 from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import Resource
 
 
@@ -259,7 +260,7 @@ def test_schedule_speaker_ical_export(
     with scope(event=slot.submission.event):
         speaker = slot.submission.speakers.all()[0]
         profile = speaker.profiles.get(event=slot.event)
-    with django_assert_num_queries(17):
+    with django_assert_num_queries(15):
         response = client.get(profile.urls.talks_ical, follow=True)
     assert response.status_code == 200
 
@@ -427,6 +428,15 @@ def test_html_export_full(
         assert full_path.exists()
         return
 
+    with scope(event=event):
+        speaker_paths = [
+            f"test/speaker/{profile.code}/index.html"
+            for profile in SpeakerProfile.objects.filter(
+                event=event,
+                user__in=list(slot.submission.speakers.all()),
+            )
+        ]
+
     paths = [
         "static/common/img/icons/favicon.ico",
         f"media/test/submissions/{slot.submission.code}/resources/{resource_filename}",
@@ -436,10 +446,7 @@ def test_html_export_full(
         "test/schedule/export/schedule.json",
         "test/schedule/export/schedule.xcal",
         "test/schedule/export/schedule.xml",
-        *[
-            f"test/speaker/{speaker.code}/index.html"
-            for speaker in slot.submission.speakers.all()
-        ],
+        *speaker_paths,
         f"test/talk/{slot.submission.code}/index.html",
         f"test/talk/{slot.submission.code}.ics",
         confirmed_resource.resource.url.lstrip("/"),
