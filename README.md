@@ -96,7 +96,7 @@
 | src/pretalx/common/language.py                                             |       22 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/log\_display.py                                         |       86 |       10 |       38 |        6 |     87% |171, 188, 197-202, 204-206, 243, 246 |
 | src/pretalx/common/mail.py                                                 |       54 |        4 |       18 |        2 |     89% |83, 134-136 |
-| src/pretalx/common/management/commands/create\_test\_event.py              |      185 |        4 |       60 |        3 |     96% |150->exit, 155, 164-166, 383->exit |
+| src/pretalx/common/management/commands/create\_test\_event.py              |      185 |        5 |       60 |        2 |     96% |150->exit, 155, 163-166 |
 | src/pretalx/common/management/commands/devserver.py                        |       16 |       16 |        4 |        0 |      0% |     10-40 |
 | src/pretalx/common/management/commands/init.py                             |       16 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/management/commands/makemessages.py                     |       50 |        6 |       20 |        4 |     83% |45->47, 48-49, 57, 71-73 |
@@ -113,7 +113,7 @@
 | src/pretalx/common/models/fields.py                                        |       11 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/models/file.py                                          |       23 |        1 |        2 |        1 |     92% |        43 |
 | src/pretalx/common/models/log.py                                           |       73 |        5 |       28 |        8 |     87% |83, 89->93, 98, 101, 106, 110->125, 115->125, 118 |
-| src/pretalx/common/models/mixins.py                                        |      210 |       24 |       88 |        7 |     86% |47, 129, 308, 325->323, 349, 352->exit, 358, 378-381, 384, 387, 390, 393, 397, 400-410 |
+| src/pretalx/common/models/mixins.py                                        |      210 |       27 |       88 |        6 |     85% |47, 129, 308, 325->323, 349, 352->exit, 356-359, 378-381, 384, 387, 390, 393, 397, 400-410 |
 | src/pretalx/common/models/transaction.py                                   |       12 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/plugins.py                                              |       30 |        0 |        8 |        1 |     97% |    63->69 |
 | src/pretalx/common/settings/config.py                                      |       23 |        1 |        2 |        1 |     92% |       172 |
@@ -335,7 +335,7 @@
 | src/tests/orga/views/test\_orga\_views\_mail.py                            |      396 |        0 |       10 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_organiser.py                       |      339 |        0 |        2 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_person.py                          |       44 |        0 |        2 |        0 |    100% |           |
-| src/tests/orga/views/test\_orga\_views\_review.py                          |      373 |        3 |        2 |        0 |     99% |362, 383-384 |
+| src/tests/orga/views/test\_orga\_views\_review.py                          |      373 |        0 |        2 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_schedule.py                        |      327 |        0 |        4 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_speaker.py                         |      240 |        0 |        2 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_submission.py                      |      681 |        0 |        8 |        0 |    100% |           |
@@ -361,7 +361,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       64 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **34502** | **1935** | **5494** |  **773** | **92%** |           |
+| **TOTAL**                                                                  | **34502** | **1936** | **5494** |  **771** | **92%** |           |
 
 
 ## Setup coverage badge
