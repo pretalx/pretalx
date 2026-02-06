@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import tempfile
+from contextlib import suppress
 from pathlib import Path
 
 from django.core.management.commands import shell
