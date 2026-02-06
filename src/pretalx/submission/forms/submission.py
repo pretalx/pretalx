@@ -416,7 +416,7 @@ class SubmissionFilterForm(forms.Form):
             ]
         else:
             self.fields.pop("submission_type", None)
-        if len(tracks) > 1:
+        if len(tracks) > 1 or not event.cfp.require_track:
             self.fields["track"].queryset = tracks.annotate(
                 count=Count(
                     "submissions",

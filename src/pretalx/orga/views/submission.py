@@ -755,7 +755,7 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
                 return len(self.limit_tracks) > 1
             return (
                 self.request.event.tracks.all().count() > 1
-                or not self.request.event.cfp.require_tracks
+                or not self.request.event.cfp.require_track
             )
 
     @context
