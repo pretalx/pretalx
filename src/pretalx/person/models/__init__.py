@@ -3,11 +3,13 @@
 
 from .auth_token import UserApiToken
 from .information import SpeakerInformation
+from .picture import ProfilePicture
 from .preferences import UserEventPreferences
 from .profile import SpeakerProfile
 from .user import User
 
 __all__ = [
+    "ProfilePicture",
     "SpeakerInformation",
     "SpeakerProfile",
     "User",
