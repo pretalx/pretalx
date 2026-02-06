@@ -34,7 +34,9 @@ def test_shortlink_submission_no_access(client, submission, event):
 def test_shortlink_user_admin_access(client, speaker, event):
     admin_user = User.objects.create_user("admin@example.com", is_administrator=True)
     client.force_login(admin_user)
-    response = client.get(f"/redirect/{speaker.code}")
+    with scope(event=event):
+        profile = SpeakerProfile.objects.get(user=speaker, event=event)
+    response = client.get(f"/redirect/{profile.code}")
     assert response.status_code == 302
     assert response.url == speaker.orga_urls.admin
 
@@ -43,7 +45,7 @@ def test_shortlink_user_admin_access(client, speaker, event):
 def test_shortlink_user_orga_access_to_profile(orga_client, speaker, event):
     with scope(event=event):
         profile = SpeakerProfile.objects.get(user=speaker, event=event)
-        response = orga_client.get(f"/redirect/{speaker.code}")
+        response = orga_client.get(f"/redirect/{profile.code}")
         assert response.status_code == 302
         assert response.url == profile.orga_urls.base
 
@@ -52,7 +54,8 @@ def test_shortlink_user_orga_access_to_profile(orga_client, speaker, event):
 def test_shortlink_user_self_access(client, speaker, event):
     client.force_login(speaker)
     with scope(event=event):
-        response = client.get(f"/redirect/{speaker.code}")
+        profile = SpeakerProfile.objects.get(user=speaker, event=event)
+        response = client.get(f"/redirect/{profile.code}")
         assert response.status_code == 302
         assert response.url == event.urls.user
 
@@ -63,7 +66,7 @@ def test_shortlink_user_public_profile_access(client, slot):
     event = slot.submission.event
     with scope(event=event):
         profile = SpeakerProfile.objects.get(user=speaker, event=event)
-        response = client.get(f"/redirect/{speaker.code}")
+        response = client.get(f"/redirect/{profile.code}")
         assert response.status_code == 302
         assert response.url == profile.urls.public
 
@@ -77,7 +80,8 @@ def test_shortlink_user_no_profiles(client, user):
 @pytest.mark.django_db
 def test_shortlink_user_no_access(client, other_speaker, event):
     with scope(event=event):
-        response = client.get(f"/redirect/{other_speaker.code}")
+        profile = SpeakerProfile.objects.get(user=other_speaker, event=event)
+        response = client.get(f"/redirect/{profile.code}")
         assert response.status_code == 404
 
 
@@ -97,13 +101,15 @@ def test_shortlink_empty_code(client):
 def test_shortlink_multiple_profiles_latest_first(
     orga_client, speaker, event, other_event
 ):
+    with scope(event=event):
+        profile = SpeakerProfile.objects.get(user=speaker, event=event)
     with scope(event=other_event):
         SpeakerProfile.objects.get_or_create(user=speaker, event=other_event)
 
-    response = orga_client.get(f"/redirect/{speaker.code}")
+    response = orga_client.get(f"/redirect/{profile.code}")
     assert response.status_code == 302
     assert "/orga/event/" in response.url
-    assert f"/speakers/{speaker.code}/" in response.url
+    assert f"/speakers/{profile.code}/" in response.url
 
 
 @pytest.mark.django_db
@@ -111,9 +117,13 @@ def test_shortlink_user_multiple_events_no_orga_access(
     client, speaker, event, other_event
 ):
     client.force_login(speaker)
+    with scope(event=event):
+        profile = SpeakerProfile.objects.get(user=speaker, event=event)
     with scope(event=other_event):
-        SpeakerProfile.objects.get_or_create(user=speaker, event=other_event)
+        other_profile, _ = SpeakerProfile.objects.get_or_create(
+            user=speaker, event=other_event
+        )
 
-    response = client.get(f"/redirect/{speaker.code}")
+    response = client.get(f"/redirect/{profile.code}")
     assert response.status_code == 302
-    assert response.url == other_event.urls.user
+    assert response.url == event.urls.user

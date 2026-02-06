@@ -92,7 +92,7 @@ def test_can_see_talk_edit_btn(
 ):
     with scope(event=event):
         slot.submission.speakers.add(orga_user)
-    with django_assert_num_queries(24):
+    with django_assert_num_queries(25):
         response = orga_client.get(slot.submission.urls.public, follow=True)
     assert response.status_code == 200
     content = response.text

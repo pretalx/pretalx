@@ -166,6 +166,8 @@ class SpeakerProfileForm(
                 setattr(self.user, user_attribute, value)
             self.user.save(update_fields=[user_attribute])
 
+        if "name" in self.cleaned_data:
+            self.instance.name = self.cleaned_data["name"]
         self.instance.event = self.event
         self.instance.user = self.user
         result = super().save(**kwargs)

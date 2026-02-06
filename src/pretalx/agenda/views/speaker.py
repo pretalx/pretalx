@@ -48,10 +48,10 @@ class SpeakerList(EventPermissionRequired, Filterable, ListView):
         speaker_mapping = defaultdict(list)
         for talk in self.request.event.talks.all():
             for speaker in talk.sorted_speakers:
-                speaker_mapping[speaker.code].append(talk)
+                speaker_mapping[speaker.pk].append(talk)
 
         for profile in qs:
-            profile.talks = speaker_mapping[profile.user.code]
+            profile.talks = speaker_mapping[profile.user_id]
         return qs
 
 
@@ -65,7 +65,7 @@ class SpeakerView(PermissionRequired, TemplateView):
     def profile(self):
         return (
             SpeakerProfile.objects.filter(
-                event=self.request.event, user__code__iexact=self.kwargs["code"]
+                event=self.request.event, code__iexact=self.kwargs["code"]
             )
             .select_related("user")
             .first()
@@ -78,7 +78,7 @@ class SpeakerView(PermissionRequired, TemplateView):
             return []
         return (
             self.request.event.current_schedule.talks.filter(
-                submission__speakers__code=self.kwargs["code"], is_visible=True
+                submission__speakers=self.profile.user, is_visible=True
             )
             .select_related(
                 "submission", "room", "submission__event", "submission__track"
@@ -143,9 +143,13 @@ class SpeakerTalksIcalView(PermissionRequired, DetailView):
     slug_field = "code"
 
     def get_object(self, queryset=None):
-        return SpeakerProfile.objects.filter(
-            event=self.request.event, user__code__iexact=self.kwargs["code"]
-        ).first()
+        return (
+            SpeakerProfile.objects.filter(
+                event=self.request.event, code__iexact=self.kwargs["code"]
+            )
+            .select_related("user")
+            .first()
+        )
 
     def get(self, request, event, *args, **kwargs):
         if not self.request.event.current_schedule:
