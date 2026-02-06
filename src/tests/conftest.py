@@ -743,16 +743,21 @@ def default_submission_type(event):
 
 
 @pytest.fixture
-def speaker(event):
+def speaker_profile(event):
     with scopes_disabled():
         user = User.objects.create_user(
             password="speakerpwd1!", name="Jane Speaker", email="jane@speaker.org"
         )
     with scope(event=event):
-        SpeakerProfile.objects.create(
+        profile = SpeakerProfile.objects.create(
             user=user, event=event, biography="Best speaker in the world."
         )
-    return user
+    return profile
+
+
+@pytest.fixture
+def speaker(speaker_profile):
+    return speaker_profile.user
 
 
 @pytest.fixture

@@ -37,7 +37,7 @@ from pretalx.person.forms import (
     SpeakerInformationForm,
     SpeakerProfileForm,
 )
-from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
+from pretalx.person.models import SpeakerInformation, SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
 from pretalx.submission.forms import QuestionsForm
 from pretalx.submission.models import Answer, QuestionTarget, QuestionVariant
@@ -137,14 +137,10 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
 class SpeakerViewMixin(PermissionRequired):
     def get_object(self):
         return get_object_or_404(
-            User.objects.filter(
-                profiles__in=speaker_profiles_for_user(
-                    self.request.event, self.request.user
-                )
-            )
-            .order_by("id")
-            .distinct(),
-            code=self.kwargs["code"],
+            speaker_profiles_for_user(
+                self.request.event, self.request.user
+            ).select_related("user"),
+            code__iexact=self.kwargs["code"],
         )
 
     @cached_property
@@ -154,7 +150,7 @@ class SpeakerViewMixin(PermissionRequired):
     @context
     @cached_property
     def profile(self):
-        return self.object.event_profile(self.request.event)
+        return self.object
 
     def get_permission_object(self):
         return self.profile
@@ -169,17 +165,17 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
     template_name = "orga/speaker/form.html"
     form_class = SpeakerProfileForm
     extra_forms_signal = "pretalx.orga.signals.speaker_form"
-    model = User
+    model = SpeakerProfile
     permission_required = "person.orga_list_speakerprofile"
     write_permission_required = "person.update_speakerprofile"
 
     def get_success_url(self) -> str:
-        return self.profile.orga_urls.base
+        return self.object.orga_urls.base
 
     @context
     @cached_property
     def submissions(self, **kwargs):
-        qs = self.request.event.submissions.filter(speakers__in=[self.object])
+        qs = self.request.event.submissions.filter(speakers__in=[self.object.user])
         if is_only_reviewer(self.request.user, self.request.event):
             return limit_for_reviewers(qs, self.request.event, self.request.user)
         return qs
@@ -192,19 +188,18 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
     @context
     @cached_property
     def mails(self):
-        return self.object.mails.filter(
+        return self.object.user.mails.filter(
             sent__isnull=False, event=self.request.event
         ).order_by("-sent")
 
     @context
     @cached_property
     def questions_form(self):
-        speaker = self.get_object()
         return QuestionsForm(
             self.request.POST if self.request.method == "POST" else None,
             files=self.request.FILES if self.request.method == "POST" else None,
             target="speaker",
-            speaker=speaker,
+            speaker=self.object.user,
             event=self.request.event,
             for_reviewers=(
                 not self.request.user.has_perm(
@@ -248,33 +243,33 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs.update({"event": self.request.event, "user": self.object})
+        kwargs.update({"event": self.request.event, "user": self.object.user})
         return kwargs
 
 
 class SpeakerPasswordReset(SpeakerViewMixin, ActionConfirmMixin, DetailView):
     permission_required = "person.update_speakerprofile"
-    model = User
+    model = SpeakerProfile
     context_object_name = "speaker"
     action_confirm_icon = "key"
     action_confirm_label = phrases.base.password_reset_heading
     action_title = phrases.base.password_reset_heading
     action_text = _(
-        "Do your really want to reset this user’s password? They won’t be able to log in until they set a new password."
+        "Do your really want to reset this user's password? They won't be able to log in until they set a new password."
     )
 
     def action_object_name(self):
-        user = self.get_object()
-        return f"{user.get_display_name()} ({user.email})"
+        speaker = self.get_object()
+        return f"{speaker.get_display_name()} ({speaker.user.email})"
 
     def action_back_url(self):
-        return self.get_object().event_profile(self.request.event).orga_urls.base
+        return self.get_object().orga_urls.base
 
     def post(self, request, *args, **kwargs):
-        user = self.get_object()
+        speaker = self.get_object()
         try:
             with transaction.atomic():
-                user.reset_password(
+                speaker.user.reset_password(
                     event=getattr(self.request, "event", None),
                     user=self.request.user,
                     orga=False,
@@ -282,21 +277,21 @@ class SpeakerPasswordReset(SpeakerViewMixin, ActionConfirmMixin, DetailView):
                 messages.success(self.request, phrases.orga.password_reset_success)
         except SendMailException:  # pragma: no cover
             messages.error(self.request, phrases.orga.password_reset_fail)
-        return redirect(user.event_profile(self.request.event).orga_urls.base)
+        return redirect(speaker.orga_urls.base)
 
 
 class SpeakerToggleArrived(SpeakerViewMixin, View):
     permission_required = "person.update_speakerprofile"
 
     def post(self, request, event, code):
-        self.profile.has_arrived = not self.profile.has_arrived
-        self.profile.save()
+        self.object.has_arrived = not self.object.has_arrived
+        self.object.save()
         action = (
             "pretalx.speaker.arrived"
-            if self.profile.has_arrived
+            if self.object.has_arrived
             else "pretalx.speaker.unarrived"
         )
-        self.object.log_action(
+        self.object.user.log_action(
             action,
             data={"event": self.request.event.slug},
             person=self.request.user,
@@ -304,7 +299,7 @@ class SpeakerToggleArrived(SpeakerViewMixin, View):
         )
         if url := get_next_url(request):
             return redirect(url)
-        return redirect(self.profile.orga_urls.base)
+        return redirect(self.object.orga_urls.base)
 
 
 class SpeakerInformationView(OrgaCRUDView):
