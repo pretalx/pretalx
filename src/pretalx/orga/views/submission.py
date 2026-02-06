@@ -753,7 +753,10 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
         if self.request.event.feature_flags["use_tracks"]:
             if self.limit_tracks:
                 return len(self.limit_tracks) > 1
-            return self.request.event.tracks.all().count() > 1
+            return (
+                self.request.event.tracks.all().count() > 1
+                or not self.request.event.cfp.require_tracks
+            )
 
     @context
     @cached_property
