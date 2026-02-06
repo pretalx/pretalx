@@ -173,6 +173,13 @@ class User(
             "If you have registered with an email address that has a gravatar account, we can retrieve your profile picture from there."
         ),
     )
+    profile_picture = models.ForeignKey(
+        "person.ProfilePicture",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="users",
+    )
     pw_reset_token = models.CharField(
         null=True, max_length=160, verbose_name="Password reset token"
     )
