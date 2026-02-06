@@ -60,6 +60,13 @@ class SpeakerProfile(GenerateCode, PretalxModel):
             "Internal notes for other organisers/reviewers. Not visible to the speakers or the public."
         ),
     )
+    profile_picture = models.ForeignKey(
+        "person.ProfilePicture",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="speakers",
+    )
 
     log_prefix = "pretalx.user.profile"
 
