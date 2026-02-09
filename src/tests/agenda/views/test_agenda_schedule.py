@@ -236,7 +236,7 @@ def test_speaker_social_media(
         "agenda:speaker-social",
         kwargs={"code": speaker_profile.code, "event": event.slug},
     )
-    with django_assert_num_queries(10):
+    with django_assert_num_queries(9):
         response = client.get(url, follow=True)
     assert response.status_code == 404  # no images available
 

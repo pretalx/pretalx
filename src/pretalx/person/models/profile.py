@@ -152,13 +152,13 @@ class SpeakerProfile(GenerateCode, PretalxModel):
 
     @cached_property
     def avatar(self):
-        if self.event.cfp.request_avatar:
-            return self.user.avatar
+        if self.profile_picture_id:
+            return self.profile_picture.avatar
 
     @cached_property
     def avatar_url(self):
-        if self.event.cfp.request_avatar:
-            return self.user.get_avatar_url(event=self.event)
+        if self.profile_picture_id:
+            return self.profile_picture.get_avatar_url(event=self.event)
 
     def _get_instance_data(self):
         data = {}
@@ -167,7 +167,9 @@ class SpeakerProfile(GenerateCode, PretalxModel):
                 "name": self.name or (self.user.name if self.user else None),
                 "email": self.user.email if self.user else None,
                 "avatar": (
-                    self.user.avatar.name if self.user and self.user.avatar else None
+                    self.profile_picture.avatar.name
+                    if self.profile_picture_id and self.profile_picture.avatar
+                    else None
                 ),
             }
         return super()._get_instance_data() | data

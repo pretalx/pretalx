@@ -43,6 +43,24 @@ def populate_profile_pictures(apps, schema_editor):
     )
 
 
+def reverse_populate_profile_pictures(apps, schema_editor):
+    User = apps.get_model("person", "User")
+    ProfilePicture = apps.get_model("person", "ProfilePicture")
+
+    picture_qs = ProfilePicture.objects.filter(user_id=OuterRef("pk"))
+    User.objects.filter(profile_picture__isnull=False).update(
+        avatar=Subquery(picture_qs.values("avatar")[:1]),
+        avatar_thumbnail=Subquery(picture_qs.values("avatar_thumbnail")[:1]),
+        avatar_thumbnail_tiny=Subquery(picture_qs.values("avatar_thumbnail_tiny")[:1]),
+        get_gravatar=Subquery(picture_qs.values("get_gravatar")[:1]),
+        profile_picture=None,
+    )
+
+    SpeakerProfile = apps.get_model("person", "SpeakerProfile")
+    SpeakerProfile.objects.update(profile_picture=None)
+    ProfilePicture.objects.all().delete()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -50,5 +68,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(populate_profile_pictures, migrations.RunPython.noop),
+        migrations.RunPython(
+            populate_profile_pictures, reverse_populate_profile_pictures
+        ),
     ]
