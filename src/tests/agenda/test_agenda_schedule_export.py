@@ -20,7 +20,7 @@ from lxml import etree
 from pretalx.agenda.tasks import export_schedule_html
 from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
-from pretalx.person.models import SpeakerProfile
+from pretalx.person.models import ProfilePicture, SpeakerProfile
 from pretalx.submission.models import Resource
 
 
@@ -405,9 +405,16 @@ def test_html_export_full(
     f = SimpleUploadedFile(nonascii_filename, b"file_content")
     with scope(event=event):
         speaker = slot.submission.speakers.first()
-        speaker.avatar.save(nonascii_filename, f)
+        picture = ProfilePicture.objects.create(user=speaker)
+        picture.avatar.save(nonascii_filename, f)
+        picture.save()
+        speaker.profile_picture = picture
         speaker.save()
-        avatar_filename = speaker.avatar.name.split("/")[-1]
+        # Also link the picture to the speaker's event profile
+        profile = speaker.event_profile(event)
+        profile.profile_picture = picture
+        profile.save()
+        avatar_filename = picture.avatar.name.split("/")[-1]
         resource = Resource.objects.create(submission=slot.submission)
         resource.resource.save(nonascii_filename, f)
         resource.save()

@@ -4,7 +4,8 @@
 import pytest
 from django_scopes import scope, scopes_disabled
 
-from pretalx.person.models.user import User, avatar_path
+from pretalx.person.models.picture import picture_path
+from pretalx.person.models.user import User
 from pretalx.submission.models.question import Answer
 
 
@@ -100,17 +101,20 @@ def test_shred_user(user):
         ("ABCDEF", "foo.jpeg", "avatars/ABCDEF_", ".jpeg"),
     ),
 )
-def test_avatar_path(code, filename, expected_start, expected_end):
+def test_picture_path(code, filename, expected_start, expected_end):
+    from pretalx.person.models.picture import ProfilePicture
+
     user = User()
     user.code = code
-    ap = avatar_path(user, filename)
+    picture = ProfilePicture(user=user)
+    ap = picture_path(picture, filename)
     assert ap.startswith(expected_start)
     assert ap.endswith(expected_end)
 
 
 @pytest.mark.django_db
-def test_user_attributes(orga_user):
-    assert not orga_user.has_avatar
+def test_user_profile_picture(orga_user):
+    assert not orga_user.profile_picture_id
 
 
 @pytest.mark.django_db

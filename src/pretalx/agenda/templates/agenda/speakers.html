@@ -17,8 +17,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <div class="pretalx-session">
                         <div class="pretalx-session-time-box avatar">
                             <div class="avatar-wrapper">
-                                {% if speaker.user.avatar_url and request.event.cfp.request_avatar %}
-                                    <img loading="lazy" src="{{ speaker.user.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
+                                {% if speaker.avatar_url and request.event.cfp.request_avatar %}
+                                    <img loading="lazy" src="{{ speaker.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
                                 {% else %}
                                     <img loading="lazy" src="{{ request.event.urls.speakers }}avatar.svg" alt="{% translate "The speaker’s profile picture" %}">
                                 {% endif %}

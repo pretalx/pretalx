@@ -21,6 +21,7 @@ from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import SpeakerProfile, User
+from pretalx.person.models.picture import ProfilePicture
 from pretalx.submission.models import QuestionTarget
 
 
@@ -135,7 +136,7 @@ class SpeakerOrgaSerializer(AvailabilitiesMixin, SpeakerSerializer):
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class SpeakerUpdateSerializer(SpeakerOrgaSerializer):
-    avatar = UploadedFileField(required=False, source="speaker.user")
+    avatar = UploadedFileField(required=False)
 
     def update(self, instance, validated_data):
         avatar = validated_data.pop("avatar", None)
@@ -145,9 +146,17 @@ class SpeakerUpdateSerializer(SpeakerOrgaSerializer):
             setattr(instance.user, key, value)
             instance.user.save(update_fields=[key])
         if avatar:
-            instance.avatar.save(Path(avatar.name).name, avatar, save=False)
-            instance.save(update_fields=("avatar",))
-            instance.user.process_image("avatar", generate_thumbnail=True)
+            picture = instance.profile_picture
+            if not picture:
+                picture = ProfilePicture.objects.create(user=instance.user)
+                instance.profile_picture = picture
+                instance.save(update_fields=["profile_picture"])
+            if not instance.user.profile_picture:
+                instance.user.profile_picture = picture
+                instance.user.save(update_fields=["profile_picture"])
+            picture.avatar.save(Path(avatar.name).name, avatar, save=False)
+            picture.save(update_fields=["avatar"])
+            picture.process_image("avatar", generate_thumbnail=True)
         return instance
 
     def validate_email(self, value):

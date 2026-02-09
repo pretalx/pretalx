@@ -5,8 +5,6 @@
 
 from django.db import migrations, models
 
-import pretalx.person.models.user
-
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -17,15 +15,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="user",
             name="avatar_thumbnail",
-            field=models.ImageField(
-                null=True, upload_to=pretalx.person.models.user.avatar_path
-            ),
+            field=models.ImageField(null=True),
         ),
         migrations.AddField(
             model_name="user",
             name="avatar_thumbnail_tiny",
-            field=models.ImageField(
-                null=True, upload_to=pretalx.person.models.user.avatar_path
-            ),
+            field=models.ImageField(null=True),
         ),
     ]

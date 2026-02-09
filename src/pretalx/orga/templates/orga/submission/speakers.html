@@ -57,10 +57,10 @@ SPDX-FileContributor: Florian Mösch
                 <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.user.code %}">
                     {{ speaker.user.get_display_name }}
                 </a>
-                {% if speaker.user.avatar and request.event.cfp.request_avatar %}
+                {% if speaker.profile.avatar and request.event.cfp.request_avatar %}
                     <div class="float-right speaker-detail">
-                        <a href="{{ speaker.user.avatar.url }}" data-lightbox>
-                            <img loading="lazy" width="100%" src="{{ speaker.user.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
+                        <a href="{{ speaker.profile.avatar_url }}" data-lightbox>
+                            <img loading="lazy" width="100%" src="{{ speaker.profile.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
                         </a>
                     </div>
                 {% endif %}

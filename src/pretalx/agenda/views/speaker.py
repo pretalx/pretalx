@@ -40,7 +40,7 @@ class SpeakerList(EventPermissionRequired, Filterable, ListView):
             SpeakerProfile.objects.filter(
                 user__in=self.request.event.speakers, event=self.request.event
             )
-            .select_related("user", "event")
+            .select_related("user", "event", "profile_picture")
             .order_by("user__name")
         )
         qs = self.filter_queryset(qs)
@@ -67,7 +67,7 @@ class SpeakerView(PermissionRequired, TemplateView):
             SpeakerProfile.objects.filter(
                 event=self.request.event, code__iexact=self.kwargs["code"]
             )
-            .select_related("user")
+            .select_related("user", "profile_picture")
             .first()
         )
 
@@ -116,7 +116,7 @@ class SpeakerView(PermissionRequired, TemplateView):
         context["long_answers"] = long_answers
         context["icon_answers"] = icon_answers
         context["show_avatar"] = (
-            speaker.avatar_url and self.request.event.cfp.request_avatar
+            self.profile.avatar_url and self.request.event.cfp.request_avatar
         )
         context["show_sidebar"] = (
             context["show_avatar"] or len(short_answers) or len(icon_answers)
@@ -176,7 +176,8 @@ class SpeakerTalksIcalView(PermissionRequired, DetailView):
 
 class SpeakerSocialMediaCard(SocialMediaCardMixin, SpeakerView):
     def get_image(self):
-        return self.profile.avatar
+        if self.request.event.cfp.request_avatar:
+            return self.profile.avatar
 
 
 @cache_page(60 * 60)

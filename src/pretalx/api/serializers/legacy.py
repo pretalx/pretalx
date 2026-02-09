@@ -33,6 +33,7 @@ from pretalx.submission.rules import filter_answers_by_team_access
 
 class LegacySubmitterSerializer(ModelSerializer):
     biography = SerializerMethodField()
+    avatar = SerializerMethodField()
 
     def __init__(self, *args, **kwargs):
         self.event = kwargs.pop("event", None)
@@ -48,6 +49,10 @@ class LegacySubmitterSerializer(ModelSerializer):
                 obj.profiles.filter(event=self.event).first(), "biography", ""
             )
         return ""
+
+    def get_avatar(self, obj):
+        if self.event and self.event.cfp.request_avatar:
+            return obj.profiles.filter(event=self.event).first().avatar_url
 
 
 class LegacySubmitterOrgaSerializer(LegacySubmitterSerializer):
