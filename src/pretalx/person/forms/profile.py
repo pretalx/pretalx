@@ -22,7 +22,12 @@ from pretalx.common.forms.widgets import (
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.event.models import Event
-from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
+from pretalx.person.models import (
+    ProfilePicture,
+    SpeakerInformation,
+    SpeakerProfile,
+    User,
+)
 from pretalx.schedule.models import Availability
 from pretalx.submission.models import Question
 from pretalx.submission.models.submission import SubmissionStates
@@ -42,7 +47,8 @@ class SpeakerProfileForm(
     RequestRequire,
     forms.ModelForm,
 ):
-    USER_FIELDS = ["name", "email", "avatar", "get_gravatar"]
+    USER_FIELDS = ["name", "email"]
+    PICTURE_FIELDS = ["avatar", "get_gravatar"]
     FIRST_TIME_EXCLUDE = ["email"]
 
     availabilities = AvailabilitiesField()
@@ -72,6 +78,10 @@ class SpeakerProfileForm(
             initial.update(
                 {field: getattr(self.user, field) for field in self.user_fields}
             )
+            picture = self.user.profile_picture
+            if picture:
+                initial["avatar"] = picture.avatar
+                initial["get_gravatar"] = picture.get_gravatar
         for field in self.user_fields:
             field_class = self.Meta.field_classes.get(
                 field, User._meta.get_field(field).formfield
@@ -80,6 +90,19 @@ class SpeakerProfileForm(
                 initial=initial.get(field),
                 disabled=read_only,
                 help_text=User._meta.get_field(field).help_text,
+            )
+            if field in self.Meta.widgets:
+                self.fields[field].widget = self.Meta.widgets[field]()
+            self._update_cfp_texts(field)
+
+        for field in self.PICTURE_FIELDS:
+            field_class = self.Meta.field_classes.get(
+                field, ProfilePicture._meta.get_field(field).formfield
+            )
+            self.fields[field] = field_class(
+                initial=initial.get(field),
+                disabled=read_only,
+                help_text=ProfilePicture._meta.get_field(field).help_text,
             )
             if field in self.Meta.widgets:
                 self.fields[field].widget = self.Meta.widgets[field]()
@@ -137,9 +160,15 @@ class SpeakerProfileForm(
 
     def clean(self):
         data = super().clean()
+        has_existing_avatar = (
+            self.user
+            and self.user.profile_picture_id
+            and self.user.profile_picture.has_avatar
+        )
         if (
             self.event.cfp.require_avatar
             and not data.get("avatar")
+            and not has_existing_avatar
             and not data.get("get_gravatar")
         ):
             self.add_error(
@@ -155,29 +184,49 @@ class SpeakerProfileForm(
     def save(self, **kwargs):
         for user_attribute in self.user_fields:
             value = self.cleaned_data.get(user_attribute)
-            if user_attribute == "avatar":
-                if value is False:
-                    self.user.avatar = None
-                elif value:
-                    self.user.avatar = value
-            elif value is None and user_attribute == "get_gravatar":
-                self.user.get_gravatar = False
-            else:
-                setattr(self.user, user_attribute, value)
+            setattr(self.user, user_attribute, value)
             self.user.save(update_fields=[user_attribute])
+
+        # Handle avatar/get_gravatar via ProfilePicture
+        avatar_value = self.cleaned_data.get("avatar")
+        get_gravatar_value = self.cleaned_data.get("get_gravatar") or False
+        picture = self.instance.profile_picture
+
+        if avatar_value is False and picture:
+            picture.delete()
+        elif avatar_value and "avatar" in self.changed_data:
+            picture = ProfilePicture.objects.create(user=self.user, avatar=avatar_value)
+            self.instance.profile_picture = picture
+            self.instance.save(update_fields=["profile_picture"])
+        elif get_gravatar_value:
+            picture = ProfilePicture.objects.create(user=self.user, get_gravatar=True)
+            self.instance.profile_picture = picture
+            self.instance.save(update_fields=["profile_picture"])
 
         if "name" in self.cleaned_data:
             self.instance.name = self.cleaned_data["name"]
         self.instance.event = self.event
         self.instance.user = self.user
+
+        # Link the profile_picture to the user too, if they do not have one yet
+        if picture and not self.user.profile_picture:
+            self.user.profile_picture = picture
+            self.user.save(update_fields=["profile_picture"])
+
         result = super().save(**kwargs)
 
         availabilities = self.cleaned_data.get("availabilities")
         if availabilities is not None:
             Availability.replace_for_instance(self.instance, availabilities)
 
-        if self.user.avatar and "avatar" in self.changed_data:
-            self.user.process_image("avatar", generate_thumbnail=True)
+        if picture and picture.avatar and "avatar" in self.changed_data:
+            picture.process_image("avatar", generate_thumbnail=True)
+
+        if picture and get_gravatar_value:
+            from pretalx.person.tasks import gravatar_cache
+
+            gravatar_cache.apply_async(args=(picture.pk,), ignore_result=True)
+
         return result
 
     class Media:

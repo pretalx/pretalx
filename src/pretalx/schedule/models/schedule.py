@@ -614,16 +614,25 @@ class Schedule(PretalxModel):
                 "code": user.code,
                 "name": user.name,
                 "avatar": (
-                    user.get_avatar_url(event=self.event) if include_avatar else None
+                    # TODO use speaker profile picture
+                    user.profile_picture.get_avatar_url(event=self.event)
+                    if include_avatar and user.profile_picture_id
+                    else None
                 ),
                 "avatar_thumbnail_default": (
-                    user.get_avatar_url(event=self.event, thumbnail="default")
-                    if include_avatar
+                    # TODO use speaker profile picture
+                    user.profile_picture.get_avatar_url(
+                        event=self.event, thumbnail="default"
+                    )
+                    if include_avatar and user.profile_picture_id
                     else None
                 ),
                 "avatar_thumbnail_tiny": (
-                    user.get_avatar_url(event=self.event, thumbnail="tiny")
-                    if include_avatar
+                    # TODO use speaker profile picture
+                    user.profile_picture.get_avatar_url(
+                        event=self.event, thumbnail="tiny"
+                    )
+                    if include_avatar and user.profile_picture_id
                     else None
                 ),
             }

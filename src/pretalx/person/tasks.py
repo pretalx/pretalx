@@ -14,20 +14,25 @@ from requests import get
 
 from pretalx.celery_app import app
 from pretalx.common.signals import minimum_interval, periodic_task
-from pretalx.person.models import User, UserApiToken
+from pretalx.person.models import UserApiToken
+from pretalx.person.models.picture import ProfilePicture
 
 logger = logging.getLogger(__name__)
 
 
 @app.task(name="pretalx.person.gravatar_cache")
-def gravatar_cache(person_id: int):
-    user = User.objects.filter(pk=person_id, get_gravatar=True).first()
+def gravatar_cache(profile_picture_id: int):
+    picture = (
+        ProfilePicture.objects.filter(pk=profile_picture_id, get_gravatar=True)
+        .select_related("user")
+        .first()
+    )
 
-    if not user:
+    if not picture:
         return
 
     response = get(
-        f"https://www.gravatar.com/avatar/{user.gravatar_parameter}?s=512",
+        f"https://www.gravatar.com/avatar/{picture.gravatar_parameter}?s=512",
         timeout=10,
     )
 
@@ -38,9 +43,7 @@ def gravatar_cache(person_id: int):
     )
 
     if 400 <= response.status_code <= 499:
-        # avatar not found.
-        user.get_gravatar = False
-        user.save()
+        picture.delete()
         return
     if response.status_code != 200:
         return
@@ -58,21 +61,20 @@ def gravatar_cache(person_id: int):
         else:
             extension = "jpg"
 
-        user.get_gravatar = False
-        user.save()
-        user.avatar.save(f"{user.gravatar_parameter}.{extension}", File(tmp_img))
+        picture.get_gravatar = False
+        picture.save(update_fields=["get_gravatar"])
+        picture.avatar.save(f"{picture.gravatar_parameter}.{extension}", File(tmp_img))
+        logger.info("set avatar for user %s to %s", picture.user.name, picture.avatar.url)
 
-        logger.info("set avatar for user %s to %s", user.name, user.avatar.url)
-
-    user.process_image("avatar", generate_thumbnail=True)
+    picture.process_image("avatar", generate_thumbnail=True)
 
 
 @receiver(periodic_task)
 def refetch_gravatars(sender, **kwargs):
-    users_with_gravatar = User.objects.filter(get_gravatar=True)
+    pictures_with_gravatar = ProfilePicture.objects.filter(get_gravatar=True)
 
-    for user in users_with_gravatar:
-        gravatar_cache.apply_async(args=(user.pk,), ignore_result=True)
+    for picture in pictures_with_gravatar:
+        gravatar_cache.apply_async(args=(picture.pk,), ignore_result=True)
 
 
 @receiver(signal=periodic_task)

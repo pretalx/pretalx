@@ -155,7 +155,12 @@ def sorted_speakers_prefetch(prefix=""):
     from pretalx.person.models import User  # noqa: PLC0415
 
     lookup = f"{prefix}speakers" if prefix else "speakers"
-    return Prefetch(lookup, queryset=User.objects.order_by("speaker_roles__position"))
+    return Prefetch(
+        lookup,
+        queryset=User.objects.select_related("profile_picture").order_by(
+            "speaker_roles__position"
+        ),
+    )
 
 
 class Submission(GenerateCode, PretalxModel):

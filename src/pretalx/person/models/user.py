@@ -6,7 +6,6 @@ import random
 import uuid
 from contextlib import suppress
 from hashlib import md5
-from urllib.parse import urljoin
 
 from django.conf import settings
 from django.contrib.auth.models import (
@@ -26,19 +25,11 @@ from rest_framework.authtoken.models import Token
 from rules.contrib.models import RulesModelBase, RulesModelMixin
 
 from pretalx.common.exceptions import UserDeletionError
-from pretalx.common.image import create_thumbnail
 from pretalx.common.models import TIMEZONE_CHOICES
 from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode, LogMixin
-from pretalx.common.text.path import hashed_path
 from pretalx.common.urls import EventUrls, build_absolute_uri
 from pretalx.person.rules import is_administrator
 from pretalx.person.signals import delete_user as delete_user_signal
-
-
-def avatar_path(instance, filename):
-    return hashed_path(
-        filename, target_name=instance.code or "avatar", upload_dir="avatars"
-    )
 
 
 class UserQuerySet(models.QuerySet):
@@ -156,23 +147,6 @@ class User(
         max_length=32,
         default="UTC",
     )
-    avatar = models.ImageField(
-        null=True,
-        blank=True,
-        verbose_name=_("Profile picture"),
-        upload_to=avatar_path,
-    )
-    avatar_thumbnail = models.ImageField(null=True, blank=True, upload_to="avatars/")
-    avatar_thumbnail_tiny = models.ImageField(
-        null=True, blank=True, upload_to="avatars/"
-    )
-    get_gravatar = models.BooleanField(
-        default=False,
-        verbose_name=_("Retrieve profile picture via gravatar"),
-        help_text=_(
-            "If you have registered with an email address that has a gravatar account, we can retrieve your profile picture from there."
-        ),
-    )
     profile_picture = models.ForeignKey(
         "person.ProfilePicture",
         null=True,
@@ -218,19 +192,9 @@ class User(
         """Returns a user's name or 'Unnamed user'."""
         return str(self)
 
-    def save(self, *args, skip_gravatar_processing=False, **kwargs):
+    def save(self, *args, **kwargs):
         self.email = self.email.lower().strip()
-        result = super().save(*args, **kwargs)
-
-        # Check if we need to get the profile picture from gravatar
-        update_gravatar = (
-            not kwargs.get("update_fields") or "get_gravatar" in kwargs["update_fields"]
-        )
-        if self.get_gravatar and update_gravatar and not skip_gravatar_processing:
-            from pretalx.person.tasks import gravatar_cache  # noqa: PLC0415
-
-            gravatar_cache.apply_async(args=(self.pk,), ignore_result=True)
-        return result
+        return super().save(*args, **kwargs)
 
     def event_profile(self, event):
         """Retrieve (and/or create) the event.
@@ -250,7 +214,9 @@ class User(
                 return profile
 
         try:
-            profile = self.profiles.select_related("event").get(event=event)
+            profile = self.profiles.select_related("event", "profile_picture").get(
+                event=event
+            )
         except Exception:
             from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
 
@@ -292,6 +258,11 @@ class User(
         from pretalx.common.models import ActivityLog  # noqa: PLC0415
 
         return ActivityLog.objects.filter(person=self)
+
+    def _delete_files(self):
+        for picture in self.pictures.all():
+            picture.delete()
+        return super()._delete_files()
 
     @transaction.atomic
     def deactivate(self):
@@ -354,36 +325,6 @@ class User(
     @cached_property
     def gravatar_parameter(self) -> str:
         return md5(self.email.strip().encode()).hexdigest()
-
-    @cached_property
-    def has_avatar(self) -> bool:
-        return bool(self.avatar) and self.avatar != "False"
-
-    @cached_property
-    def avatar_url(self) -> str:
-        if self.has_avatar:
-            return self.avatar.url
-
-    def get_avatar_url(self, event=None, thumbnail=None):
-        """Returns the full avatar URL, where user.avatar_url returns the
-        absolute URL."""
-        if not self.avatar_url:
-            return ""
-        if not thumbnail:
-            image = self.avatar
-        else:
-            image = (
-                self.avatar_thumbnail_tiny
-                if thumbnail == "tiny"
-                else self.avatar_thumbnail
-            )
-            if not image:
-                image = create_thumbnail(self.avatar, thumbnail)
-        if not image:
-            return
-        if event and event.custom_domain:
-            return urljoin(event.custom_domain, image.url)
-        return urljoin(settings.SITE_URL, image.url)
 
     def get_events_with_any_permission(self):
         """Returns a queryset of events for which this user has any type of

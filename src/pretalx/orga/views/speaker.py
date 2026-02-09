@@ -67,7 +67,7 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
     def get_queryset(self):
         qs = (
             speaker_profiles_for_user(self.request.event, self.request.user)
-            .select_related("event", "user")
+            .select_related("event", "user", "profile_picture")
             .annotate(
                 submission_count=Count(
                     "user__submissions",
@@ -139,7 +139,7 @@ class SpeakerViewMixin(PermissionRequired):
         return get_object_or_404(
             speaker_profiles_for_user(
                 self.request.event, self.request.user
-            ).select_related("user"),
+            ).select_related("user", "profile_picture"),
             code__iexact=self.kwargs["code"],
         )
 

@@ -6,7 +6,6 @@
 from django.db import migrations, models
 
 import pretalx.person.models.information
-import pretalx.person.models.user
 
 
 class Migration(migrations.Migration):
@@ -27,8 +26,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="user",
             name="avatar",
-            field=models.ImageField(
-                blank=True, null=True, upload_to=pretalx.person.models.user.avatar_path
-            ),
+            field=models.ImageField(blank=True, null=True),
         ),
     ]

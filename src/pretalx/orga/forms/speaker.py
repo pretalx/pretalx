@@ -77,10 +77,16 @@ class SpeakerExportForm(ExportForm):
                     state__in=[SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]
                 )
             ).distinct()
-        return queryset.prefetch_related("profiles", "profiles__event").order_by("code")
+        return (
+            queryset.select_related("profile_picture")
+            .prefetch_related("profiles", "profiles__event")
+            .order_by("code")
+        )
 
     def _get_avatar_value(self, obj):
-        return obj.get_avatar_url(event=self.event)
+        if obj.profile_picture_id:
+            return obj.profile_picture.get_avatar_url(event=self.event)
+        return ""
 
     def _get_biography_value(self, obj):
         return obj._profile.biography
