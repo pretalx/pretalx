@@ -48,7 +48,7 @@ class SpeakerProfileForm(
     forms.ModelForm,
 ):
     USER_FIELDS = ["name", "email"]
-    PICTURE_FIELDS = ["avatar", "get_gravatar"]
+    PICTURE_FIELDS = ["avatar"]
     FIRST_TIME_EXCLUDE = ["email"]
 
     availabilities = AvailabilitiesField()
@@ -81,7 +81,6 @@ class SpeakerProfileForm(
             picture = self.user.profile_picture
             if picture:
                 initial["avatar"] = picture.avatar
-                initial["get_gravatar"] = picture.get_gravatar
         for field in self.user_fields:
             field_class = self.Meta.field_classes.get(
                 field, User._meta.get_field(field).formfield
@@ -110,7 +109,6 @@ class SpeakerProfileForm(
 
         if not self.event.cfp.request_avatar:
             self.fields.pop("avatar", None)
-            self.fields.pop("get_gravatar", None)
         elif "avatar" in self.fields:
             self.fields["avatar"].required = False
             self.fields["avatar"].widget.is_required = False
@@ -169,15 +167,11 @@ class SpeakerProfileForm(
             self.event.cfp.require_avatar
             and not data.get("avatar")
             and not has_existing_avatar
-            and not data.get("get_gravatar")
         ):
+            # TODO move this to a picturefield class
             self.add_error(
                 "avatar",
-                forms.ValidationError(
-                    _(
-                        "Please provide a profile picture or allow us to load your picture from gravatar!"
-                    )
-                ),
+                forms.ValidationError(_("Please provide a profile picture!")),
             )
         return data
 
@@ -187,19 +181,14 @@ class SpeakerProfileForm(
             setattr(self.user, user_attribute, value)
             self.user.save(update_fields=[user_attribute])
 
-        # Handle avatar/get_gravatar via ProfilePicture
+        # Handle avatar via ProfilePicture. TODO: move to profilepicturefield
         avatar_value = self.cleaned_data.get("avatar")
-        get_gravatar_value = self.cleaned_data.get("get_gravatar") or False
         picture = self.instance.profile_picture
 
         if avatar_value is False and picture:
             picture.delete()
         elif avatar_value and "avatar" in self.changed_data:
             picture = ProfilePicture.objects.create(user=self.user, avatar=avatar_value)
-            self.instance.profile_picture = picture
-            self.instance.save(update_fields=["profile_picture"])
-        elif get_gravatar_value:
-            picture = ProfilePicture.objects.create(user=self.user, get_gravatar=True)
             self.instance.profile_picture = picture
             self.instance.save(update_fields=["profile_picture"])
 
@@ -221,11 +210,6 @@ class SpeakerProfileForm(
 
         if picture and picture.avatar and "avatar" in self.changed_data:
             picture.process_image("avatar", generate_thumbnail=True)
-
-        if picture and get_gravatar_value:
-            from pretalx.person.tasks import gravatar_cache
-
-            gravatar_cache.apply_async(args=(picture.pk,), ignore_result=True)
 
         return result
 

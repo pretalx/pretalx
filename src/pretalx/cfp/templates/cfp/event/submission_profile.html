@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
     {{ form.name.as_field_group }}
     {{ form.biography.as_field_group }}
-    {% if form.avatar or form.get_gravatar %}
+    {% if form.avatar %}
         {% include "common/avatar.html" with user=user form=form %}
     {% endif %}
     {{ form.availabilities.as_field_group }}

@@ -42,7 +42,6 @@ class Migration(migrations.Migration):
                     "avatar_thumbnail_tiny",
                     models.ImageField(null=True, upload_to="avatars/"),
                 ),
-                ("get_gravatar", models.BooleanField(default=False)),
                 (
                     "user",
                     models.ForeignKey(

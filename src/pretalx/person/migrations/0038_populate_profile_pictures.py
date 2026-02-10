@@ -23,7 +23,6 @@ def populate_profile_pictures(apps, schema_editor):
                 avatar=user.avatar,
                 avatar_thumbnail=user.avatar_thumbnail,
                 avatar_thumbnail_tiny=user.avatar_thumbnail_tiny,
-                get_gravatar=user.get_gravatar,
             )
         )
         user_pks.append(user.pk)
@@ -52,7 +51,6 @@ def reverse_populate_profile_pictures(apps, schema_editor):
         avatar=Subquery(picture_qs.values("avatar")[:1]),
         avatar_thumbnail=Subquery(picture_qs.values("avatar_thumbnail")[:1]),
         avatar_thumbnail_tiny=Subquery(picture_qs.values("avatar_thumbnail_tiny")[:1]),
-        get_gravatar=Subquery(picture_qs.values("get_gravatar")[:1]),
         profile_picture=None,
     )
 
