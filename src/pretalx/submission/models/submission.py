@@ -132,8 +132,10 @@ class SpeakerRole(models.Model):
         on_delete=models.CASCADE,
         related_name="speaker_roles",
     )
-    user = models.ForeignKey(
-        to="person.User", on_delete=models.CASCADE, related_name="speaker_roles"
+    speaker = models.ForeignKey(
+        to="person.SpeakerProfile",
+        on_delete=models.CASCADE,
+        related_name="speaker_roles",
     )
     position = models.PositiveIntegerField(default=0)
 
@@ -141,10 +143,10 @@ class SpeakerRole(models.Model):
 
     class Meta:
         ordering = ("position",)
-        unique_together = (("submission", "user"),)
+        unique_together = (("submission", "speaker"),)
 
     def __str__(self):
-        return f"SpeakerRole(submission={self.submission.code}, speaker={self.user})"
+        return f"SpeakerRole(submission={self.submission.code}, speaker={self.speaker})"
 
 
 def sorted_speakers_prefetch(prefix=""):
@@ -152,12 +154,12 @@ def sorted_speakers_prefetch(prefix=""):
 
     Use prefix="submission__" when prefetching from slot querysets.
     """
-    from pretalx.person.models import User  # noqa: PLC0415
+    from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
 
     lookup = f"{prefix}speakers" if prefix else "speakers"
     return Prefetch(
         lookup,
-        queryset=User.objects.select_related("profile_picture").order_by(
+        queryset=SpeakerProfile.objects.select_related("profile_picture").order_by(
             "speaker_roles__position"
         ),
     )
@@ -186,7 +188,7 @@ class Submission(GenerateCode, PretalxModel):
 
     code = models.CharField(max_length=16, unique=True)
     speakers = models.ManyToManyField(
-        to="person.User",
+        to="person.SpeakerProfile",
         related_name="submissions",
         through=SpeakerRole,
         blank=True,
