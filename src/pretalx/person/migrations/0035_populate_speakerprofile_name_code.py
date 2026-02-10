@@ -31,7 +31,6 @@ def populate_speaker_profile_fields(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("person", "0034_speakerprofile_code_speakerprofile_name_and_more"),
     ]

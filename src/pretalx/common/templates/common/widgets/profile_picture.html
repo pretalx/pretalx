@@ -1,0 +1,71 @@
+<!--
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+
+{% load i18n %}
+
+<div class="pp-widget" data-widget-id="{{ widget.widget_id }}">
+    <input type="hidden" name="{{ widget.name }}_action" value="keep" class="pp-action-input">
+    <input type="file" name="{{ widget.name }}" class="pp-file-input" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
+
+    <div class="pp-inline">
+        <div class="pp-preview{% if not widget.current_picture %} pp-empty{% endif %}">
+            {% if widget.current_picture %}
+                <img src="{{ widget.current_picture.thumbnail_url }}" alt="{% translate "Profile picture" %}" class="pp-preview-img">
+            {% else %}
+                <i class="fa fa-user pp-placeholder-icon"></i>
+            {% endif %}
+        </div>
+        <button type="button" class="btn btn-primary btn-sm pp-edit-btn">
+            {% if widget.current_picture %}{% translate "Change" %}{% else %}{% translate "Add" %}{% endif %}
+        </button>
+    </div>
+
+    <dialog class="pp-dialog" aria-label="{% translate "Profile picture" %}">
+        <div class="pp-dialog-content">
+            <div class="pp-dialog-header">
+                <h3>{% translate "Profile picture" %}</h3>
+                <button type="button" class="btn btn-primary btn-xs close-dialog pp-close-btn" aria-label="{% translate "Close" %}"><i class="fa fa-times"></i></button>
+            </div>
+
+            <div class="pp-selection-view">
+                <div class="pp-upload-zone" tabindex="0" role="button" aria-label="{% translate "Add" %}">
+                    <i class="fa fa-folder-open"></i>
+                    <strong>{% translate "Upload image" %}</strong>
+                    <small>{% translate "Click or drag" %}</small>
+                </div>
+
+                {% if widget.other_pictures %}
+                    <h4>{% translate "Your other pictures" %}</h4>
+                    <div class="pp-picture-grid">
+                        {% for pic in widget.other_pictures %}
+                            <button type="button" class="pp-picture-option{% if pic.is_current %} pp-current{% endif %}" data-pk="{{ pic.pk }}" data-url="{{ pic.url }}">
+                                <img src="{{ pic.thumbnail_url }}" alt="" loading="lazy">
+                                {% if pic.label %}<small>{{ pic.label }}</small>{% endif %}
+                            </button>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if widget.current_picture %}
+                    <div class="pp-dialog-footer">
+                        <button type="button" class="pp-remove-btn">
+                            <i class="fa fa-trash"></i> {% translate "Remove picture" %}
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="pp-crop-view" hidden>
+                <div class="pp-crop-container">
+                    <img class="pp-crop-image" src="" alt="{% translate "Apply Crop" %}">
+                </div>
+                <div class="pp-crop-actions">
+                    <button type="button" class="btn btn-primary pp-crop-back">{% translate "Back" %}</button>
+                    <button type="button" class="btn btn-success pp-crop-apply">{% translate "Apply Crop" %}</button>
+                </div>
+            </div>
+        </div>
+    </dialog>
+</div>
