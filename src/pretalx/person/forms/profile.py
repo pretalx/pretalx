@@ -8,7 +8,11 @@ from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
 
 from pretalx.cfp.forms.cfp import CfPFormMixin
-from pretalx.common.forms.fields import AvailabilitiesField, ImageField, SizeFileField
+from pretalx.common.forms.fields import (
+    AvailabilitiesField,
+    ProfilePictureField,
+    SizeFileField,
+)
 from pretalx.common.forms.mixins import (
     PretalxI18nModelForm,
     ReadOnlyFlag,
@@ -16,14 +20,12 @@ from pretalx.common.forms.mixins import (
 )
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
-    AvatarCropWidget,
     EnhancedSelect,
     EnhancedSelectMultiple,
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.event.models import Event
 from pretalx.person.models import (
-    ProfilePicture,
     SpeakerInformation,
     SpeakerProfile,
     User,
@@ -48,10 +50,10 @@ class SpeakerProfileForm(
     forms.ModelForm,
 ):
     USER_FIELDS = ["name", "email"]
-    PICTURE_FIELDS = ["avatar"]
     FIRST_TIME_EXCLUDE = ["email"]
 
     availabilities = AvailabilitiesField()
+    avatar = ProfilePictureField()
 
     def __init__(self, *args, name=None, **kwargs):
         self.user = kwargs.pop("user", None)
@@ -67,7 +69,6 @@ class SpeakerProfileForm(
             self.fields["availabilities"].event = self.event
             self.fields["availabilities"].instance = kwargs.get("instance")
             self.fields["availabilities"].set_initial_from_instance()
-            # Also set form-level initial data for error handling
             if self.fields["availabilities"].initial:
                 self.initial["availabilities"] = self.fields["availabilities"].initial
         read_only = kwargs.get("read_only", False)
@@ -78,40 +79,28 @@ class SpeakerProfileForm(
             initial.update(
                 {field: getattr(self.user, field) for field in self.user_fields}
             )
-            picture = self.user.profile_picture
-            if picture:
-                initial["avatar"] = picture.avatar
         for field in self.user_fields:
-            field_class = self.Meta.field_classes.get(
-                field, User._meta.get_field(field).formfield
-            )
+            field_class = User._meta.get_field(field).formfield
             self.fields[field] = field_class(
                 initial=initial.get(field),
                 disabled=read_only,
                 help_text=User._meta.get_field(field).help_text,
             )
-            if field in self.Meta.widgets:
-                self.fields[field].widget = self.Meta.widgets[field]()
-            self._update_cfp_texts(field)
-
-        for field in self.PICTURE_FIELDS:
-            field_class = self.Meta.field_classes.get(
-                field, ProfilePicture._meta.get_field(field).formfield
-            )
-            self.fields[field] = field_class(
-                initial=initial.get(field),
-                disabled=read_only,
-                help_text=ProfilePicture._meta.get_field(field).help_text,
-            )
-            if field in self.Meta.widgets:
-                self.fields[field].widget = self.Meta.widgets[field]()
             self._update_cfp_texts(field)
 
         if not self.event.cfp.request_avatar:
             self.fields.pop("avatar", None)
         elif "avatar" in self.fields:
-            self.fields["avatar"].required = False
-            self.fields["avatar"].widget.is_required = False
+            current_picture = (
+                self.instance.profile_picture
+                if self.instance and self.instance.pk
+                else None
+            )
+            self.fields["avatar"].user = self.user
+            self.fields["avatar"].current_picture = current_picture
+            self.fields["avatar"].require_picture = self.event.cfp.require_avatar
+            self.fields["avatar"].widget.user = self.user
+            self.fields["avatar"].widget.current_picture = current_picture
             if self.event.cfp.require_avatar:
                 self.fields["avatar"].widget.attrs["class"] = (
                     self.fields["avatar"].widget.attrs.get("class", "")
@@ -126,8 +115,6 @@ class SpeakerProfileForm(
             self._reorder_fields(field_order)
 
         if self.is_bound and not self.is_valid() and "availabilities" in self.errors:
-            # Replace self.data with a version that uses initial["availabilities"]
-            # in order to have event and timezone data available
             self.data = self.data.copy()
             if "availabilities" in self.initial:
                 self.data["availabilities"] = self.initial["availabilities"]
@@ -156,66 +143,27 @@ class SpeakerProfileForm(
             raise ValidationError(get_email_address_error())
         return email
 
-    def clean(self):
-        data = super().clean()
-        has_existing_avatar = (
-            self.user
-            and self.user.profile_picture_id
-            and self.user.profile_picture.has_avatar
-        )
-        if (
-            self.event.cfp.require_avatar
-            and not data.get("avatar")
-            and not has_existing_avatar
-        ):
-            # TODO move this to a picturefield class
-            self.add_error(
-                "avatar",
-                forms.ValidationError(_("Please provide a profile picture!")),
-            )
-        return data
-
     def save(self, **kwargs):
         for user_attribute in self.user_fields:
             value = self.cleaned_data.get(user_attribute)
             setattr(self.user, user_attribute, value)
             self.user.save(update_fields=[user_attribute])
 
-        # Handle avatar via ProfilePicture. TODO: move to profilepicturefield
-        avatar_value = self.cleaned_data.get("avatar")
-        picture = self.instance.profile_picture
-
-        if avatar_value is False and picture:
-            picture.delete()
-        elif avatar_value and "avatar" in self.changed_data:
-            picture = ProfilePicture.objects.create(user=self.user, avatar=avatar_value)
-            self.instance.profile_picture = picture
-            self.instance.save(update_fields=["profile_picture"])
-
         if "name" in self.cleaned_data:
             self.instance.name = self.cleaned_data["name"]
         self.instance.event = self.event
         self.instance.user = self.user
 
-        # Link the profile_picture to the user too, if they do not have one yet
-        if picture and not self.user.profile_picture:
-            self.user.profile_picture = picture
-            self.user.save(update_fields=["profile_picture"])
-
         result = super().save(**kwargs)
+
+        if "avatar" in self.fields:
+            self.fields["avatar"].save(self.instance, self.user)
 
         availabilities = self.cleaned_data.get("availabilities")
         if availabilities is not None:
             Availability.replace_for_instance(self.instance, availabilities)
 
-        if picture and picture.avatar and "avatar" in self.changed_data:
-            picture.process_image("avatar", generate_thumbnail=True)
-
         return result
-
-    class Media:
-        js = [forms.Script("common/js/forms/avatar.js", defer="")]
-        css = {"all": ["common/css/forms/avatar.css"]}
 
     class Meta:
         model = SpeakerProfile
@@ -224,12 +172,6 @@ class SpeakerProfileForm(
             "internal_notes",
         )
         public_fields = ["name", "biography", "avatar"]
-        widgets = {
-            "avatar": AvatarCropWidget,
-        }
-        field_classes = {
-            "avatar": ImageField,
-        }
         request_require = {"biography", "availabilities"}
 
 

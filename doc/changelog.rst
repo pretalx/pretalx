@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`cfp` Speakers can now use different profile pictures for each event they submit proposals to, with the option to re-use profile pictures they used for other events.
 - :announcement:`cfp` We no longer support pulling in profile pictures from external sources like gravatar.
 - :feature:`admin` As administrator, you can now use the ``sendtestemail`` command to check if email sending works with the default settings (which are used e.g. for password resets even when event-specific settings are configured), just like the test email sending interface on the administrator page.
 - :feature:`dev,1974` Plugins can now prevent submission state changes by listening to the new ``before_submission_state_change`` signal and raising ``SubmissionError``.

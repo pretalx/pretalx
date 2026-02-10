@@ -21,8 +21,10 @@ from pretalx.common.forms.widgets import (
     ImageInput,
     PasswordConfirmationInput,
     PasswordStrengthInput,
+    ProfilePictureWidget,
 )
 from pretalx.common.templatetags.filesize import filesize
+from pretalx.person.models import ProfilePicture
 from pretalx.schedule.models import Availability, Room
 
 IMAGE_EXTENSIONS = {
@@ -124,6 +126,117 @@ class ExtensionFileField(ExtensionFileInput, SizeFileField):
 class ImageField(ExtensionFileField):
     widget = ImageInput
     extensions = IMAGE_EXTENSIONS
+
+
+class ProfilePictureField(FileField):
+    widget = ProfilePictureWidget
+
+    ALLOWED_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+    MAX_SIZE = settings.FILE_UPLOAD_DEFAULT_LIMIT
+
+    def __init__(
+        self, *args, user=None, current_picture=None, require_picture=False, **kwargs
+    ):
+        self.user = user
+        self.current_picture = current_picture
+        self.require_picture = require_picture
+        kwargs.setdefault("required", False)
+        kwargs.setdefault("label", _("Profile picture"))
+        super().__init__(*args, **kwargs)
+        self.widget.user = user
+        self.widget.current_picture = current_picture
+
+    def clean(self, value, initial=None):
+        if not isinstance(value, dict):
+            return None
+
+        action = value.get("action", "keep")
+        file = value.get("file")
+
+        if action == "keep":
+            if self.require_picture and not self.current_picture:
+                raise ValidationError(
+                    _("Please provide a profile picture!"),
+                    code="required",
+                )
+            self._cleaned_value = None
+            return None
+
+        if action == "remove":
+            if self.require_picture:
+                raise ValidationError(
+                    _("Please provide a profile picture!"),
+                    code="required",
+                )
+            self._cleaned_value = False
+            return False
+
+        if action.startswith("select_"):
+            pk_str = action[len("select_") :]
+            try:
+                pk = int(pk_str)
+            except (ValueError, TypeError):
+                raise ValidationError(_("Invalid picture selection."), code="invalid")
+            from pretalx.person.models import ProfilePicture
+
+            try:
+                picture = ProfilePicture.objects.get(pk=pk, user=self.user)
+            except ProfilePicture.DoesNotExist:
+                raise ValidationError(_("Invalid picture selection."), code="invalid")
+            self._cleaned_value = picture
+            return picture
+
+        if action == "upload":
+            if not file:
+                raise ValidationError(_("No file was uploaded."), code="required")
+            if file.content_type not in self.ALLOWED_TYPES:
+                raise ValidationError(
+                    _("Please upload an image file (JPG, PNG, GIF, or WebP)."),
+                    code="invalid",
+                )
+            if file.size > self.MAX_SIZE:
+                raise ValidationError(
+                    _("Please do not upload files larger than {size}!").format(
+                        size="10 MB"
+                    ),
+                    code="invalid",
+                )
+            self._cleaned_value = file
+            return file
+
+    def has_changed(self, initial, data):
+        if not isinstance(data, dict):
+            return False
+        return data.get("action", "keep") != "keep"
+
+    def save(self, instance, user):
+        value = getattr(self, "_cleaned_value", None)
+        if value is None:
+            return
+
+        old_picture = instance.profile_picture
+        new_picture = None
+
+        if value is False:
+            # Remove profile picture
+            new_picture = None
+        elif isinstance(value, ProfilePicture):
+            new_picture = value
+        elif isinstance(value, UploadedFile):
+            new_picture = ProfilePicture.objects.create(user=user, avatar=value)
+            new_picture.process_image("avatar", generate_thumbnail=True)
+
+        if new_picture != old_picture:
+            instance.profile_picture = new_picture
+            instance.save(update_fields=["profile_picture"])
+            if old_picture:
+                # Update old picture to bump its last modified timestamp,
+                # so we can figure out when to clean it up.
+                old_picture.save(update_fields=["updated"])
+
+        if new_picture and not user.profile_picture:
+            user.profile_picture = new_picture
+            user.save(update_fields=["profile_picture"])
 
 
 class ColorField(RegexField):
