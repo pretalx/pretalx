@@ -5,7 +5,6 @@ import html
 import random
 import uuid
 from contextlib import suppress
-from hashlib import md5
 
 from django.conf import settings
 from django.contrib.auth.models import (
@@ -321,10 +320,6 @@ class User(
     @cached_property
     def guid(self) -> str:
         return str(uuid.uuid5(uuid.NAMESPACE_URL, f"acct:{self.email.strip()}"))
-
-    @cached_property
-    def gravatar_parameter(self) -> str:
-        return md5(self.email.strip().encode()).hexdigest()
 
     def get_events_with_any_permission(self):
         """Returns a queryset of events for which this user has any type of

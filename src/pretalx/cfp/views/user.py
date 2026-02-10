@@ -12,7 +12,6 @@ from django.db import models, transaction
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, reverse
-from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import override
@@ -30,7 +29,6 @@ from pretalx.cfp.forms.submissions import SubmissionInvitationForm
 from pretalx.cfp.views.event import LoggedInEventPageMixin
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.forms.fields import SizeFileInput
-from pretalx.common.image import gravatar_csp
 from pretalx.common.middleware.event import get_login_redirect
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
@@ -52,7 +50,6 @@ from pretalx.submission.models import (
 )
 
 
-@method_decorator(gravatar_csp(), name="dispatch")
 class ProfileView(LoggedInEventPageMixin, TemplateView):
     template_name = "cfp/event/user_profile.html"
 

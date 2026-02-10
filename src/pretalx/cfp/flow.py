@@ -625,8 +625,6 @@ class ProfileStep(FormFlowStep):
         if email is None:
             data = self.cfp_session.get("data", {}).get("user", {})
             email = data.get("register_email", "")
-        if email:
-            result["gravatar_parameter"] = User(email=email).gravatar_parameter
         return result
 
     def done(self, request, draft=False):
@@ -648,12 +646,6 @@ class ProfileStep(FormFlowStep):
         return _(
             "This information will be publicly displayed next to your session - you can always edit for as long as proposals are still open."
         )
-
-    def get_csp_update(self, request):
-        return {
-            "img-src": "https://www.gravatar.com",
-            "connect-src": "'self' https://www.gravatar.com",
-        }
 
 
 DEFAULT_STEPS = (

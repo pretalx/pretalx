@@ -9,19 +9,6 @@ from pretalx.person.models.user import User
 from pretalx.submission.models.question import Answer
 
 
-@pytest.mark.parametrize(
-    ("email", "expected"),
-    (
-        ("one@two.com", "ac5be7f974137dc75bacee19b94fe0f8"),
-        ("a_very_long.email@orga.org", "79bd022bbbd718d8e30f730169067b2a"),
-    ),
-)
-def test_gravatar_parameter(email, expected):
-    user = User(email=email)
-    assert user.gravatar_parameter == expected
-
-
-@pytest.mark.django_db
 def test_user_deactivate(speaker, personal_answer, impersonal_answer, other_speaker):
     with scopes_disabled():
         assert Answer.objects.count() == 2
