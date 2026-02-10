@@ -11,14 +11,3 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block orga_edit_link %}
     {% orga_edit_link request.event.cfp.urls.text "information" %}
 {% endblock orga_edit_link %}
-
-{% block inner %}
-
-    {{ form.name.as_field_group }}
-    {{ form.biography.as_field_group }}
-    {% if form.avatar %}
-        {% include "common/avatar.html" with user=user form=form %}
-    {% endif %}
-    {{ form.availabilities.as_field_group }}
-
-{% endblock inner %}

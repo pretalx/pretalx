@@ -60,7 +60,6 @@ def reverse_populate_profile_pictures(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("person", "0037_profilepicture"),
     ]

@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("event", "0041_event_og_image"),
         ("person", "0035_populate_speakerprofile_name_code"),

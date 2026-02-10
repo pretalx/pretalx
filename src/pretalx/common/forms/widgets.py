@@ -11,6 +11,10 @@ from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from i18nfield.forms import I18nTextarea
+from django.db.models import Count
+from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
+from django_scopes import scopes_disabled
 
 from pretalx.common.text.phrases import phrases
 
@@ -391,22 +395,97 @@ class AvailabilitiesWidget(forms.TextInput):
         css = {"all": ["common/css/forms/availabilities.css"]}
 
 
-class AvatarCropWidget(ClearableBasenameFileInput):
-    template_name = "common/widgets/avatar_crop_input.html"
+class ProfilePictureWidget(forms.Widget):
+    template_name = "common/widgets/profile_picture.html"
+
+    def __init__(self, user=None, current_picture=None, attrs=None):
+        super().__init__(attrs)
+        self.user = user
+        self.current_picture = current_picture
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        widget_id = attrs.get("id", name) if attrs else name
+
+        current = None
+        if self.current_picture and self.current_picture.has_avatar:
+            current = {
+                "pk": self.current_picture.pk,
+                "url": self.current_picture.avatar.url,
+                "thumbnail_url": self.current_picture.get_avatar_url(
+                    thumbnail="default"
+                )
+                or self.current_picture.avatar.url,
+            }
+
+        other_pictures = []
+        if self.user:
+            with scopes_disabled():
+                # beware circular imports
+                from pretalx.person.models import ProfilePicture
+
+                pictures = (
+                    ProfilePicture.objects.filter(user=self.user)
+                    .exclude(avatar="")
+                    .exclude(avatar__isnull=True)
+                    .annotate(event_count=Count("speakers__event", distinct=True))
+                    .select_related("user")
+                    .prefetch_related("speakers__event")
+                    .order_by("-updated")
+                )
+                for pic in pictures:
+                    is_current = (
+                        self.current_picture and pic.pk == self.current_picture.pk
+                    )
+                    event_count = pic.event_count
+                    if event_count == 1:
+                        first_speaker = pic.speakers.first()
+                        label = str(first_speaker.event.name) if first_speaker else ""
+                    elif event_count > 1:
+                        label = _("{count} events").format(count=event_count)
+                    else:
+                        label = ""
+                    other_pictures.append(
+                        {
+                            "pk": pic.pk,
+                            "url": pic.avatar.url,
+                            "thumbnail_url": pic.get_avatar_url(thumbnail="default")
+                            or pic.avatar.url,
+                            "label": label,
+                            "is_current": is_current,
+                        }
+                    )
+
+        context["widget"].update(
+            {
+                "widget_id": widget_id,
+                "current_picture": current,
+                "other_pictures": other_pictures,
+            }
+        )
+        return context
+
+    def value_from_datadict(self, data, files, name):
+        action = data.get(f"{name}_action", "keep")
+        file = files.get(name)
+        return {"action": action, "file": file}
+
+    def use_required_attribute(self, initial):
+        return False
 
     class Media:
-        css = {
-            "all": [
-                "vendored/cropper.min.css",
-                "common/css/forms/avatar_crop.css",
-                "common/css/forms/image.css",
-            ]
-        }
         js = [
             forms.Script("vendored/cropper.min.js", defer=""),
-            forms.Script("common/js/forms/avatar_crop.js", defer=""),
-            forms.Script("common/js/forms/filesize.js", defer=""),
+            forms.Script("common/js/ui/dialog.js", defer=""),
+            forms.Script("common/js/forms/profile_picture.js", defer=""),
         ]
+        css = {
+            "all": [
+                "common/css/ui/dialog.css",
+                "vendored/cropper.min.css",
+                "common/css/forms/profile_picture.css",
+            ]
+        }
 
 
 class HoneypotWidget(forms.CheckboxInput):
