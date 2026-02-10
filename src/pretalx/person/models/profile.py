@@ -114,10 +114,6 @@ class SpeakerProfile(GenerateCode, PretalxModel):
         )
 
     @cached_property
-    def submissions(self):
-        return self.user.submissions.filter(event=self.event)
-
-    @cached_property
     def talks(self):
         """A queryset of.
 
