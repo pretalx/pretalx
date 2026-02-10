@@ -6,7 +6,6 @@ from django.db import transaction
 from django.db.models import Count, Exists, OuterRef, Q
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404, redirect
-from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, FormView, ListView, View
@@ -14,7 +13,6 @@ from django_context_decorator import context
 
 from pretalx.agenda.views.utils import get_schedule_exporters
 from pretalx.common.exceptions import SendMailException
-from pretalx.common.image import gravatar_csp
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import api_buttons
@@ -160,7 +158,6 @@ class SpeakerViewMixin(PermissionRequired):
         return self.get_permission_object()
 
 
-@method_decorator(gravatar_csp(), name="dispatch")
 class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
     template_name = "orga/speaker/form.html"
     form_class = SpeakerProfileForm

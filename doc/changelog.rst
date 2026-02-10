@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :announcement:`cfp` We no longer support pulling in profile pictures from external sources like gravatar.
 - :feature:`cfp,1316` Resources (file uploads and links) can now be added during initial proposal submission.
 - :bug:`cfp,2306` Confirmation emails for new submissions no longer contain broken image links when image processing runs asynchronously.
 - :announcement:`admin` If you are running pretalx without Celery workers, you should set them up – without background workers, tasks like sending emails and processing images run inside the request/response cycle, causing noticeably slow page loads.
@@ -320,7 +321,6 @@ Release Notes
 - :feature:`orga:schedule` Completely rewrote the schedule editor, making it look like the actual schedule, and added some powerful features like hiding rooms, easy duration changes, and more.
 - :feature:`admin` The ``pretalx init`` command now has a ``--no-input`` flag for all your automation needs.
 - :announcement:`admin` pretalx no longer logs 404 responses, as you can get those equally from your web server logs.
-- :feature:`schedule,399` pretalx will now locally cache gravatar avatars to avoid GDPR issues when using gravatar.
 - :bug:`schedule,1498` Talks that were scheduled, but not confirmed by the speaker yet would be shown in the public speaker profile.
 - :feature:`orga:review` pretalx always showed the anonymised version of proposals if there was one. Now it reverts to the non-anonymised one once the anonymisation period is over.
 - :feature:`orga:speaker` Organiser pages for speakers now use their alphanumeric ``code`` identifier in the URL rather than the numeric ID, matching the public and API pages.
@@ -368,7 +368,7 @@ Release Notes
 - :feature:`orga:review` If you limit reviewer teams to specific tracks, they won’t be able to see speaker profiles from outside their track(s) anymore.
 - :feature:`schedule` Not so much a feature as a change: Speaker images are now cropped to the centre in the speaker list squares instead of to the top.
 - :bug:`schedule` Fix social media preview images sometimes not showing up due to robots.txt constraints.
-- :feature:`schedule` Use speaker profile images as social media preview where possible (does not include gravatar support at the moment).
+- :feature:`schedule` Use speaker profile images as social media preview where possible.
 - :feature:`schedule` Header images are now used as fallback for social media preview images if there’s no logo.
 - :bug:`cfp` Events with per-submission-type questions sometimes saw empty questions pages in the CfP flow.
 - :feature:`orga:review` Organisers can now assign reviewers to proposals in bulk, by uploading a JSON file.
@@ -453,7 +453,6 @@ Release Notes
 - :feature:`schedule,1171` Organisers can now disable audience feedback.
 - :feature:`schedule,1163` You can now link to specific days on the schedule again, as with our old schedule. The link is generated when you click the tabs leading to specific days.
 - :feature:`dev` Plugin languages can now be either globally available or only for active events – plugin developers, please adjust your plugins!
-- :feature:`cfp` Organisers can now disable the optional inclusion of gravatar images.
 - :feature:`schedule` If you attach ``?lang=en`` to a request, pretalx will serve the page in the requested language (if active in the current event).
 - :bug:`orga,1157` When adding a new organisers to a team, email suggestions from known users did not work.
 - :bug:`orga:submission,1157` When adding a new speaker to a proposal, pretalx would suggest organiser accounts rather than speaker accounts.
@@ -535,7 +534,6 @@ Release Notes
 - :announcement:`admin` Remember to check your access logs before upgrading to v2.1 to warn users about failing widgets.
 - :feature:`api` There are two new API endpoints, ``/questions/`` and ``/answers/``, that incidentally are our first writable API endpoints. The API docs have been updated.
 - :feature:`admin` Email error reporting (sent to instance administrators) now includes a short explanation and a link to the pretalx issue tracker.
-- :feature:`api` If a speaker has selected to show their gravatar, it is now also exposed in the API in the avatar field.
 - :feature:`orga:email` When you send out reminders about unanswered questions, you can now target specific questions, or tracks, or submission types.
 - :feature:`cfp` pretalx now limits file uploads to 10MB.
 - :feature:`orga:schedule,979` In the schedule editor, you can now search for talks by speaker name.
@@ -730,7 +728,7 @@ Release Notes
 - :feature:`orga:review` The review settings have moved from the CfP page to their own settings page.
 - :feature:`orga` You can now decide to add the ``robots=noindex`` meta tag to prevent bots from crawling your event pages.
 - :feature:`dev` Plugin developers can now use the ``is_available`` hook to decide if their plugin should be shown on a per-event basis.
-- :bug:`orga:speaker` Speaker without an avatar and with gravatar disabled had a broken avatar-image in the speaker’s view in the organiser backend.
+- :bug:`orga:speaker` Speaker without an avatar had a broken avatar-image in the speaker’s view in the organiser backend.
 - :bug:`schedule` The visual representation of a speaker’s avatar is now consistent across all image-sizes and bio-texts.
 - :bug:`cfp,583` When signing up with an email address with upper case letters included, pretalx only allowed to log in with a lower-cased email address.
 - :bug:`orga:speaker,572` People who had only deleted submissions in an event were still shown in the submitter list, which was unexpected and was since fixed.
@@ -941,7 +939,6 @@ Release Notes
 - :bug:`-` If a user was both an organiser member and a reviewer, they could encounter access rights issues.
 - :bug:`-` When removing the custom event colour, and then adding it again, caching issues could occur.
 - :bug:`-` Inactive questions (questions not visible to speakers) were not editable.
-- :bug:`-` In some places, gravatar images of the visiting user were visible instead of the speaker.
 - :bug:`-` The event stage display could show conflicting phases as active.
 - :bug:`287` The default submission type was not, in fact, suggested by default.
 - :release:`0.1.0 <2017-11-01>`
