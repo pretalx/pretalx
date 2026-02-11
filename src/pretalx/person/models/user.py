@@ -14,6 +14,7 @@ from django.contrib.auth.models import (
 )
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models import OuterRef, Subquery
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.timezone import now
@@ -41,9 +42,22 @@ class UserQuerySet(models.QuerySet):
                 queryset=SpeakerProfile.objects.filter(event=event).select_related(
                     "event"
                 ),
-                to_attr="_event_profiles",
+                to_attr="_speakers",
             ),
         ).distinct()
+
+    def with_speaker_code(self, event):
+        from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
+
+        return self.annotate(
+            speaker_code=Subquery(
+                SpeakerProfile.objects.filter(
+                    user_id=OuterRef("pk"),
+                    event=event,
+                    submissions__isnull=False,
+                ).values("code")[:1]
+            )
+        )
 
 
 class UserManager(BaseUserManager):
@@ -171,7 +185,7 @@ class User(
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.permission_cache = {}
-        self.event_profile_cache = {}
+        self.speaker_cache = {}
         self.event_permission_cache = {}
         self.event_preferences_cache = {}
 
@@ -195,7 +209,7 @@ class User(
         self.email = self.email.lower().strip()
         return super().save(*args, **kwargs)
 
-    def event_profile(self, event):
+    def get_speaker(self, event):
         """Retrieve (and/or create) the event.
 
         :class:`~pretalx.person.models.profile.SpeakerProfile` for this user.
@@ -203,28 +217,28 @@ class User(
         :type event: :class:`pretalx.event.models.event.Event`
         :retval: :class:`~pretalx.person.models.profile.EventProfile`
         """
-        if profile := self.event_profile_cache.get(event.pk):
-            return profile
+        if speaker := self.speaker_cache.get(event.pk):
+            return speaker
 
-        if hasattr(self, "_event_profiles") and len(self._event_profiles) == 1:
-            profile = self._event_profiles[0]
-            if profile.event_id == event.pk:
-                self.event_profile_cache[event.pk] = profile
-                return profile
+        if hasattr(self, "_speakers") and len(self._speakers) == 1:
+            speaker = self._speakers[0]
+            if speaker.event_id == event.pk:
+                self.speaker_cache[event.pk] = speaker
+                return speaker
 
         try:
-            profile = self.profiles.select_related("event", "profile_picture").get(
+            speaker = self.profiles.select_related("event", "profile_picture").get(
                 event=event
             )
         except Exception:
             from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
 
-            profile = SpeakerProfile(event=event, user=self)
+            speaker = SpeakerProfile(event=event, user=self)
             if self.pk:
-                profile.save()
+                speaker.save()
 
-        self.event_profile_cache[event.pk] = profile
-        return profile
+        self.speaker_cache[event.pk] = speaker
+        return speaker
 
     def get_event_preferences(self, event):
         if preferences := self.event_preferences_cache.get(event.pk):
@@ -302,7 +316,7 @@ class User(
 
         with scopes_disabled():
             if (
-                Submission.all_objects.filter(speakers__in=[self]).count()
+                Submission.all_objects.filter(speakers__user=self).count()
                 or self.teams.count()
                 or self.answers.count()
             ):

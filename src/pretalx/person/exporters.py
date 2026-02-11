@@ -4,7 +4,7 @@
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.exporter import BaseExporter, CSVExporterMixin
-from pretalx.submission.models import SubmissionStates
+from pretalx.submission.models import Submission, SubmissionStates
 
 
 class CSVSpeakerExporter(CSVExporterMixin, BaseExporter):
@@ -22,19 +22,24 @@ class CSVSpeakerExporter(CSVExporterMixin, BaseExporter):
     def get_csv_data(self, request, **kwargs):
         fieldnames = ["name", "email", "confirmed"]
         data = []
+        submissions = Submission.objects.filter(
+            event=self.event,
+            state__in=[SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED],
+        )
         for speaker in self.event.submitters:
-            accepted_talks = speaker.submissions.filter(
-                event=self.event, state=SubmissionStates.ACCEPTED
+            speaker_subs = submissions.filter(speakers=speaker)
+            accepted_talks = speaker_subs.filter(
+                state=SubmissionStates.ACCEPTED
             ).exists()
-            confirmed_talks = speaker.submissions.filter(
-                event=self.event, state=SubmissionStates.CONFIRMED
+            confirmed_talks = speaker_subs.filter(
+                state=SubmissionStates.CONFIRMED
             ).exists()
             if not accepted_talks and not confirmed_talks:
                 continue
             data.append(
                 {
                     "name": speaker.get_display_name(),
-                    "email": speaker.email,
+                    "email": speaker.user.email,
                     "confirmed": str(bool(confirmed_talks)),
                 }
             )

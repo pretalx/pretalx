@@ -38,7 +38,7 @@ class EventStartpage(EventPageMixin, TemplateView):
         return (
             not self.request.user.is_anonymous
             and self.request.event.submissions.filter(
-                speakers__in=[self.request.user]
+                speakers__user=self.request.user
             ).exists()
         )
 

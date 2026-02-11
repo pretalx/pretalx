@@ -7,6 +7,7 @@ import pytest
 from django.utils.timezone import now
 from django_scopes import scope
 
+from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import TalkSlot
 
 
@@ -14,7 +15,7 @@ from pretalx.schedule.models import TalkSlot
 def test_can_create_feedback(django_assert_num_queries, past_slot, client, event):
     with scope(event=event):
         assert past_slot.submission.speakers.count() == 1
-    with django_assert_num_queries(38):
+    with django_assert_num_queries(37):
         response = client.post(
             past_slot.submission.urls.feedback, {"review": "cool!"}, follow=True
         )
@@ -23,7 +24,7 @@ def test_can_create_feedback(django_assert_num_queries, past_slot, client, event
         assert past_slot.submission.feedback.first().review == "cool!"
         assert (
             past_slot.submission.feedback.first().speaker
-            == past_slot.submission.speakers.first()
+            == past_slot.submission.speakers.first().user
         )
         assert past_slot.submission.title in str(past_slot.submission.feedback.first())
 
@@ -33,10 +34,14 @@ def test_can_create_feedback_for_multiple_speakers(
     django_assert_num_queries, past_slot, client, other_speaker, speaker, event
 ):
     with scope(event=event):
-        past_slot.submission.speakers.add(other_speaker)
-        past_slot.submission.speakers.add(speaker)
+        other_speaker_profile = SpeakerProfile.objects.get(
+            user=other_speaker, event=event
+        )
+        speaker_profile = SpeakerProfile.objects.get(user=speaker, event=event)
+        past_slot.submission.speakers.add(other_speaker_profile)
+        past_slot.submission.speakers.add(speaker_profile)
         assert past_slot.submission.speakers.count() == 2
-    with django_assert_num_queries(38):
+    with django_assert_num_queries(37):
         response = client.post(
             past_slot.submission.urls.feedback, {"review": "cool!"}, follow=True
         )
@@ -67,9 +72,10 @@ def test_cannot_create_feedback_before_talk(
         assert slot.submission.speakers.count() == 1
 
 
-@pytest.mark.django_db
-def test_can_see_feedback(django_assert_num_queries, feedback, client):
-    client.force_login(feedback.talk.speakers.first())
+def test_can_see_feedback(django_assert_num_queries, feedback, client, event):
+    with scope(event=event):
+        user = feedback.talk.speakers.first().user
+    client.force_login(user)
     with django_assert_num_queries(16):
         response = client.get(feedback.talk.urls.feedback)
     assert response.status_code == 200

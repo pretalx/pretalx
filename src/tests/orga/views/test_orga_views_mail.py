@@ -7,6 +7,7 @@ from django_scopes import scope
 
 from pretalx.mail.models import MailTemplate, MailTemplateRoles, QueuedMail
 from pretalx.submission.models import Submission, SubmissionStates
+from pretalx.person.models import SpeakerProfile
 
 
 @pytest.mark.django_db
@@ -637,7 +638,7 @@ def test_orga_can_compose_single_mail_selected_submissions(
         mails = list(QueuedMail.objects.filter(sent__isnull=True))
         assert len(mails) == 1
         assert not mails[0].to
-        assert list(mails[0].to_users.all()) == [other_submission.speakers.first()]
+        assert list(mails[0].to_users.all()) == [other_submission.speakers.first().user]
 
 
 @pytest.mark.django_db
@@ -691,7 +692,9 @@ def test_orga_can_compose_mail_to_speakers_with_no_slides(
         mails = list(QueuedMail.objects.filter(sent__isnull=True))
         assert len(mails) == 2
         assert not mails[-1].to
-        assert list(mails[-1].to_users.all()) == [confirmed_submission.speakers.first()]
+        assert list(mails[-1].to_users.all()) == [
+            confirmed_submission.speakers.first().user
+        ]
 
 
 @pytest.mark.django_db
@@ -735,7 +738,8 @@ def test_orga_can_send_draft_reminder(orga_client, event, speaker):
             submission_type=event.cfp.default_type,
             state=SubmissionStates.DRAFT,
         )
-        draft.speakers.add(speaker)
+        speaker_profile = SpeakerProfile.objects.get(user=speaker, event=event)
+        draft.speakers.add(speaker_profile)
 
     djmail.outbox = []
     response = orga_client.post(

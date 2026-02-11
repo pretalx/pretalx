@@ -35,7 +35,9 @@ def test_missing_answers_submission_question(submission, target, question):
             )
         elif target == "speaker":
             Answer.objects.create(
-                answer="True", person=submission.speakers.first(), question=question
+                answer="True",
+                person=submission.speakers.first().user,
+                question=question,
             )
         assert question.missing_answers() == 0
 

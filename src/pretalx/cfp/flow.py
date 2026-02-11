@@ -384,7 +384,7 @@ class DedraftMixin:
                     event=self.event,
                     code=code,
                     state=SubmissionStates.DRAFT,
-                    speakers__in=[self.request.user],
+                    speakers__user=self.request.user,
                 )
 
     def get_form_kwargs(self):
@@ -571,7 +571,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
 
         form.save()
         submission = form.instance
-        submission.speakers.add(request.user)
+        submission.add_speaker(request.user)
 
         if self._resources_enabled:
             formset = self.get_resource_formset(

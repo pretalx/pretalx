@@ -1021,25 +1021,30 @@ class Event(PretalxModel):
     def speakers(self):
         """Returns a queryset of all speakers (of type.
 
-        :class:`~pretalx.person.models.user.User`) visible in the current
-        released schedule.
+        :class:`~pretalx.person.models.profile.SpeakerProfile`) visible in the
+        current released schedule.
         """
-        from pretalx.person.models import User  # noqa: PLC0415
+        from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
 
-        return User.objects.filter(submissions__in=self.talks).order_by("id").distinct()
+        return (
+            SpeakerProfile.objects.filter(submissions__in=self.talks)
+            .order_by("id")
+            .distinct()
+        )
 
     @cached_property
     def submitters(self):
-        """Returns a queryset of all :class:`~pretalx.person.models.user.User`
-        objects who have submitted to this event.
+        """Returns a queryset of all
+        :class:`~pretalx.person.models.profile.SpeakerProfile` objects who have
+        submitted to this event.
 
-        Ignores users who have deleted all of their submissions.
+        Ignores speakers who have deleted all of their submissions.
         """
-        from pretalx.person.models import User  # noqa: PLC0415
+        from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
 
         return (
-            User.objects.filter(submissions__in=self.submissions.all())
-            .prefetch_related("submissions")
+            SpeakerProfile.objects.filter(submissions__in=self.submissions.all())
+            .select_related("event", "user")
             .order_by("id")
             .distinct()
         )

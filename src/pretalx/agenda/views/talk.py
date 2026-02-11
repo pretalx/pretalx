@@ -22,6 +22,7 @@ from pretalx.schedule.ical import get_submission_ical
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.forms import FeedbackForm
 from pretalx.submission.models import Submission, SubmissionStates
+from pretalx.submission.rules import is_speaker
 
 
 class TalkMixin(PermissionRequired):
@@ -80,6 +81,10 @@ class TalkView(TalkMixin, TemplateView):
         return {}
 
     @context
+    def is_speaker(self):
+        return is_speaker(self.request.user, self.submission)
+
+    @context
     def recording_iframe(self):
         return self.recording.get("iframe")
 
@@ -95,12 +100,7 @@ class TalkView(TalkMixin, TemplateView):
             self.request.event.current_schedule or self.request.event.wip_schedule
         )
         if not self.request.user.has_perm("schedule.view_schedule", schedule):
-            result = []
-            speakers = self.submission.sorted_speakers.with_profiles(self.request.event)
-            for speaker in speakers:
-                speaker.talk_profile = speaker.event_profile(event=self.request.event)
-                result.append(speaker)
-            ctx["speakers"] = result
+            ctx["speakers"] = self.submission.sorted_speakers
             return ctx
         qs = (
             schedule.talks.filter(room__isnull=False).select_related("room")
@@ -112,31 +112,21 @@ class TalkView(TalkMixin, TemplateView):
             .order_by("start")
             .select_related("room")
         )
-        result = []
-        other_slots = (
-            schedule.talks.exclude(submission_id=self.submission.pk).filter(
-                is_visible=True
-            )
-            if schedule
-            else TalkSlot.objects.none()
+        other_slots = schedule.talks.exclude(submission_id=self.submission.pk).filter(
+            is_visible=True
         )
-
         other_submissions = self.request.event.submissions.filter(
             slots__in=other_slots
         ).select_related("event")
-        speakers = self.submission.sorted_speakers.with_profiles(
-            self.request.event
-        ).prefetch_related(
-            Prefetch(
-                "submissions",
-                queryset=other_submissions,
-                to_attr="other_submissions",
+        ctx["speakers"] = list(
+            self.submission.sorted_speakers.prefetch_related(
+                Prefetch(
+                    "submissions",
+                    queryset=other_submissions,
+                    to_attr="other_submissions",
+                )
             )
         )
-        for speaker in speakers:
-            speaker.talk_profile = speaker.event_profile(event=self.request.event)
-            result.append(speaker)
-        ctx["speakers"] = result
         return ctx
 
     @context
@@ -243,7 +233,7 @@ class FeedbackView(TalkMixin, FormView):
 
     @cached_property
     def is_speaker(self):
-        return self.request.user in self.speakers
+        return any(s.user_id == self.request.user.id for s in self.speakers)
 
     @cached_property
     def template_name(self):

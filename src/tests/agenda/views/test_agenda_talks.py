@@ -8,6 +8,8 @@ from django.utils import formats
 from django.utils.timezone import now
 from django_scopes import scope
 
+from pretalx.person.models import SpeakerProfile
+
 
 @pytest.mark.django_db
 @pytest.mark.usefixtures("slot", "other_slot")
@@ -21,7 +23,7 @@ def test_can_see_talk_list(client, django_assert_num_queries, event):
 @pytest.mark.django_db
 @pytest.mark.usefixtures("other_slot")
 def test_can_see_talk(client, django_assert_num_queries, event, slot):
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(19):
         response = client.get(slot.submission.urls.public, follow=True)
     assert response.status_code == 200
     content = response.text
@@ -41,7 +43,7 @@ def test_can_see_talk(client, django_assert_num_queries, event, slot):
 def test_can_see_talk_with_iframe(client, django_assert_num_queries, event, slot):
     event.plugins = "tests"
     event.save()
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(19):
         response = client.get(slot.submission.urls.public, follow=True)
     assert response.status_code == 200
     content = response.text
@@ -70,7 +72,7 @@ def test_orga_can_see_new_talk(
     orga_client, django_assert_num_queries, event, unreleased_slot
 ):
     slot = unreleased_slot
-    with django_assert_num_queries(23):
+    with django_assert_num_queries(22):
         response = orga_client.get(slot.submission.urls.public, follow=True)
     assert response.status_code == 200
     content = response.text
@@ -91,8 +93,11 @@ def test_can_see_talk_edit_btn(
     orga_client, django_assert_num_queries, orga_user, event, slot
 ):
     with scope(event=event):
-        slot.submission.speakers.add(orga_user)
-    with django_assert_num_queries(25):
+        orga_profile, _ = SpeakerProfile.objects.get_or_create(
+            user=orga_user, event=event
+        )
+        slot.submission.speakers.add(orga_profile)
+    with django_assert_num_queries(21):
         response = orga_client.get(slot.submission.urls.public, follow=True)
     assert response.status_code == 200
     content = response.text
@@ -105,7 +110,7 @@ def test_can_see_talk_do_not_record(client, event, django_assert_num_queries, sl
     with scope(event=event):
         slot.submission.do_not_record = True
         slot.submission.save()
-    with django_assert_num_queries(19):
+    with django_assert_num_queries(18):
         response = client.get(slot.submission.urls.public, follow=True)
     assert response.status_code == 200
     content = response.text
@@ -121,7 +126,7 @@ def test_can_see_talk_does_accept_feedback(
         slot.start = now() - dt.timedelta(days=1)
         slot.end = slot.start + dt.timedelta(hours=1)
         slot.save()
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(19):
         response = client.get(slot.submission.urls.public, follow=True)
     assert response.status_code == 200
     content = response.text
@@ -173,7 +178,7 @@ def test_event_talk_visiblity_accepted(
 def test_event_talk_visiblity_confirmed(
     client, django_assert_num_queries, confirmed_submission
 ):
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(17):
         response = client.get(confirmed_submission.urls.public, follow=True)
     assert response.status_code == 200
 
@@ -204,25 +209,27 @@ def test_talk_speaker_other_submissions(
     client, django_assert_num_queries, event, speaker, other_submission
 ):
     with scope(event=event):
-        other_submission.speakers.add(speaker)
-    with django_assert_num_queries(18):
+        speaker_profile = SpeakerProfile.objects.get(user=speaker, event=event)
+        other_submission.speakers.add(speaker_profile)
+    with django_assert_num_queries(17):
         response = client.get(other_submission.urls.public, follow=True)
 
     assert response.status_code == 200
     assert response.context["speakers"]
     assert len(response.context["speakers"]) == 2, response.context["speakers"]
     speaker_response = next(
-        s for s in response.context["speakers"] if s.name == speaker.name
+        s for s in response.context["speakers"] if s.get_display_name() == speaker.name
     )
     other_response = next(
-        s for s in response.context["speakers"] if s.name != speaker.name
+        s for s in response.context["speakers"] if s.get_display_name() != speaker.name
     )
     assert len(speaker_response.other_submissions) == 1
     assert len(other_response.other_submissions) == 0
     with scope(event=event):
+        profile = SpeakerProfile.objects.get(user=speaker, event=event)
         assert (
             speaker_response.other_submissions[0].title
-            == speaker.submissions.first().title
+            == profile.submissions.first().title
         )
 
 
@@ -237,7 +244,8 @@ def test_talk_speaker_other_submissions_only_if_visible(
     other_submission,
 ):
     with scope(event=event):
-        other_submission.speakers.add(speaker)
+        speaker_profile = SpeakerProfile.objects.get(user=speaker, event=event)
+        other_submission.speakers.add(speaker_profile)
         slot.submission.accept()
         slot.submission.save()
         event.wip_schedule.freeze("testversion 2")
@@ -246,17 +254,17 @@ def test_talk_speaker_other_submissions_only_if_visible(
             is_visible=False
         )
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(17):
         response = client.get(other_submission.urls.public, follow=True)
 
     assert response.status_code == 200
     assert response.context["speakers"]
     assert len(response.context["speakers"]) == 2, response.context["speakers"]
     speaker_response = next(
-        s for s in response.context["speakers"] if s.name == speaker.name
+        s for s in response.context["speakers"] if s.get_display_name() == speaker.name
     )
     other_response = next(
-        s for s in response.context["speakers"] if s.name != speaker.name
+        s for s in response.context["speakers"] if s.get_display_name() != speaker.name
     )
     assert len(speaker_response.other_submissions) == 0
     assert len(other_response.other_submissions) == 0
@@ -283,7 +291,7 @@ def test_public_talk_only_shows_public_resources(
 
 @pytest.mark.django_db
 def test_talk_review_page(client, django_assert_num_queries, submission):
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(15):
         response = client.get(submission.urls.review, follow=True)
     assert response.status_code == 200
     assert submission.title in response.text

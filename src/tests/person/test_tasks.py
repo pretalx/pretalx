@@ -66,14 +66,15 @@ def test_clean_orphaned_profile_pictures_keeps_user_referenced(speaker):
 
 
 @pytest.mark.django_db
-def test_clean_orphaned_profile_pictures_keeps_speaker_referenced(speaker, event):
+def test_clean_orphaned_profile_pictures_keeps_speaker_referenced(
+    speaker, speaker_profile, event
+):
     with scopes_disabled():
         pic = ProfilePicture.objects.create(user=speaker, avatar=_make_image())
         file_path = pic.avatar.name
     with scope(event=event):
-        profile = speaker.event_profile(event)
-        profile.profile_picture = pic
-        profile.save(update_fields=["profile_picture"])
+        speaker_profile.profile_picture = pic
+        speaker_profile.save(update_fields=["profile_picture"])
     with scopes_disabled():
         ProfilePicture.objects.filter(pk=pic.pk).update(
             updated=now() - dt.timedelta(days=31)

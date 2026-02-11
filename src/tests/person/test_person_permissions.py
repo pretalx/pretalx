@@ -21,5 +21,6 @@ def test_can_view_information(information, submission, target_group, expected):
         information.target_group = target_group
         information.save()
         assert (
-            can_view_information(submission.speakers.first(), information) is expected
+            can_view_information(submission.speakers.first().user, information)
+            is expected
         )

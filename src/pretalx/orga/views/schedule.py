@@ -278,7 +278,8 @@ def serialize_slot(slot, warnings=None):
             "id": slot.pk,
             "title": str(slot.submission.title),
             "speakers": [
-                {"name": speaker.name} for speaker in slot.submission.sorted_speakers
+                {"name": speaker.get_display_name()}
+                for speaker in slot.submission.sorted_speakers
             ],
             "submission_type": str(slot.submission.submission_type.name),
             "track": (
@@ -415,8 +416,8 @@ class ScheduleAvailabilities(EventPermissionRequired, View):
         speaker_avails = collections.defaultdict(list)
         for avail in self.request.event.valid_availabilities.filter(
             person__isnull=False
-        ).select_related("person__user"):
-            speaker_avails[avail.person.user.pk].append(avail)
+        ):
+            speaker_avails[avail.person_id].append(avail)
 
         result = {}
 

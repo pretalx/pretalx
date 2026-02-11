@@ -497,7 +497,7 @@ def test_orga_cant_export_answers_csv_without_delimiter(
 
 @pytest.mark.django_db
 def test_orga_can_export_answers_csv(
-    orga_client, speaker, event, submission, answered_choice_question
+    orga_client, speaker, speaker_profile, event, submission, answered_choice_question
 ):
     with scope(event=event):
         answered_choice_question.target = "submission"
@@ -517,13 +517,13 @@ def test_orga_can_export_answers_csv(
     assert response.status_code == 200
     assert (
         response.text
-        == f"ID,Proposal title,Speaker IDs,{answered_choice_question.question}\r\n{submission.code},{submission.title},{speaker.code},{answer}\r\n"
+        == f"ID,Proposal title,Speaker IDs,{answered_choice_question.question}\r\n{submission.code},{submission.title},{speaker_profile.code},{answer}\r\n"
     )
 
 
 @pytest.mark.django_db
 def test_orga_can_export_answers_json(
-    orga_client, speaker, event, submission, answered_choice_question
+    orga_client, speaker, speaker_profile, event, submission, answered_choice_question
 ):
     with scope(event=event):
         answered_choice_question.target = "submission"
@@ -545,7 +545,7 @@ def test_orga_can_export_answers_json(
             "ID": submission.code,
             "Proposal title": submission.title,
             answered_choice_question.question: answer,
-            "Speaker IDs": [speaker.code],
+            "Speaker IDs": [speaker_profile.code],
         }
     ]
 

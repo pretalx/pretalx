@@ -36,7 +36,7 @@ Users and profiles
 ------------------
 
 .. autoclass:: pretalx.person.models.user.User(*args, **kwargs)
-   :members: get_display_name,event_profile,log_action,get_events_with_any_permission,get_events_for_permission,get_permissions_for_event
+   :members: get_display_name,get_speaker,log_action,get_events_with_any_permission,get_events_for_permission,get_permissions_for_event
 
 .. autoclass:: pretalx.person.models.profile.SpeakerProfile(*args, **kwargs)
    :members: submissions,talks,answers

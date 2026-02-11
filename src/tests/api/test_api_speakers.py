@@ -36,10 +36,15 @@ def test_speaker_list_anonymous_nopublic(client, event, speaker):
 
 @pytest.mark.django_db
 def test_speaker_list_anonymous_public(
-    client, event, slot, speaker, accepted_submission, rejected_submission
+    client,
+    event,
+    slot,
+    speaker,
+    speaker_profile,
+    accepted_submission,
+    rejected_submission,
 ):
     with scope(event=event):
-        profile = speaker.event_profile(event)
         submission = slot.submission
 
     response = client.get(event.api_urls.speakers, follow=True)
@@ -51,7 +56,7 @@ def test_speaker_list_anonymous_public(
     result = content["results"][0]
     assert result["code"] == speaker.code
     assert result["name"] == speaker.name
-    assert result["biography"] == profile.biography
+    assert result["biography"] == speaker_profile.biography
     assert accepted_submission.code not in result["submissions"]
     assert rejected_submission.code not in result["submissions"]
     assert submission.code in result["submissions"]
@@ -111,7 +116,7 @@ def test_speaker_list_reviewer_nopublic_names_visible(
 
     with scope(event=event):
         speakers = {
-            sub.speakers.first().code
+            sub.speakers.first().user.code
             for sub in [accepted_submission, rejected_submission]
         }
 
@@ -196,7 +201,8 @@ def test_speaker_list_search_by_name(
     client, event, speaker, slot, other_slot, other_speaker
 ):
     with scope(event=event):
-        other_slot.submission.speakers.add(other_speaker)
+        profile = other_speaker.get_speaker(event)
+        other_slot.submission.speakers.add(profile)
     name_to_find = speaker.name
     response = client.get(
         event.api_urls.speakers + f"?q={name_to_find}",
@@ -213,7 +219,8 @@ def test_speaker_list_search_by_email_public(
     client, event, speaker, slot, other_slot, other_speaker
 ):
     with scope(event=event):
-        other_slot.submission.speakers.add(other_speaker)
+        profile = other_speaker.get_speaker(event)
+        other_slot.submission.speakers.add(profile)
     email_to_find = speaker.email
     response = client.get(
         event.api_urls.speakers + f"?q={email_to_find}",
@@ -229,7 +236,10 @@ def test_speaker_list_search_by_email_authenticated(
     client, orga_user_token, event, speaker, slot, other_slot, other_speaker
 ):
     with scope(event=event):
-        other_slot.submission.speakers.add(other_speaker)
+        profile, _ = SpeakerProfile.objects.get_or_create(
+            user=other_speaker, event=event
+        )
+        other_slot.submission.speakers.add(profile)
     email_to_find = speaker.email
     response = client.get(
         event.api_urls.speakers + f"?q={email_to_find}",
@@ -329,7 +339,7 @@ def test_speaker_list_multiple_talks_not_duplicated(client, event, slot, other_s
     content = json.loads(response.text)
 
     assert content["count"] == 1
-    assert content["results"][0]["code"] == speaker.code
+    assert content["results"][0]["code"] == speaker.user.code
     assert set(content["results"][0]["submissions"]) == {
         submission.code,
         other_submission.code,
@@ -350,15 +360,16 @@ def test_speaker_retrieve_anonymous_public(
 ):
     with scope(event=event):
         speaker = accepted_submission.speakers.first()
-        profile = speaker.event_profile(event)
         submission = slot.submission
 
-    response = client.get(event.api_urls.speakers + f"{speaker.code}/", follow=True)
+    response = client.get(
+        event.api_urls.speakers + f"{speaker.user.code}/", follow=True
+    )
     assert response.status_code == 200
     content = json.loads(response.text)
-    assert content["code"] == speaker.code
-    assert content["name"] == speaker.name
-    assert content["biography"] == profile.biography
+    assert content["code"] == speaker.user.code
+    assert content["name"] == speaker.user.name
+    assert content["biography"] == speaker.biography
     assert accepted_submission.code not in content["submissions"]
     assert submission.code in content["submissions"]
     assert "email" not in content
@@ -448,7 +459,7 @@ def test_speaker_answer_visibility(
 
 @pytest.mark.django_db
 def test_speaker_update_by_orga(
-    client, orga_user_write_token, event, speaker, submission
+    client, orga_user_write_token, event, speaker, speaker_profile, submission
 ):
     new_bio = "An updated biography."
     response = client.patch(
@@ -463,10 +474,10 @@ def test_speaker_update_by_orga(
     assert content["biography"] == new_bio
 
     with scope(event=event):
-        profile = speaker.event_profile(event)
-        assert profile.biography == new_bio
+        speaker_profile.refresh_from_db()
+        assert speaker_profile.biography == new_bio
         assert (
-            profile.logged_actions()
+            speaker_profile.logged_actions()
             .filter(action_type="pretalx.user.profile.update")
             .exists()
         )
@@ -513,10 +524,8 @@ def test_speaker_update_by_anonymous(client, event, speaker, slot):
 
 @pytest.mark.django_db
 def test_speaker_update_change_name_email(
-    client, orga_user_write_token, event, speaker, submission
+    client, orga_user_write_token, event, speaker, speaker_profile, submission
 ):
-    with scope(event=event):
-        profile = speaker.event_profile(event)
     new_name = "New Speaker Name"
     new_email = "new.speaker@example.com"
     response = client.patch(
@@ -536,7 +545,7 @@ def test_speaker_update_change_name_email(
         assert speaker.name == new_name
         assert speaker.email == new_email
         assert (
-            profile.logged_actions()
+            speaker_profile.logged_actions()
             .filter(action_type="pretalx.user.profile.update")
             .exists()
         )
@@ -575,9 +584,9 @@ def test_speaker_retrieve_answers_scoped_to_event(
         sub2 = Submission(**submission_data)
         sub2.event = other_event
         sub2.save()
-        sub2.speakers.add(speaker)
+        other_profile = SpeakerProfile.objects.create(user=speaker, event=other_event)
+        sub2.speakers.add(other_profile)
         sub2.save()
-        SpeakerProfile.objects.create(user=speaker, event=other_event)
         question2 = Question.objects.create(
             event=other_event,
             question="Question for Event 2?",

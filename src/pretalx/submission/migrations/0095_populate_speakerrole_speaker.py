@@ -66,9 +66,7 @@ def reverse_speaker(apps, schema_editor):
         user_id=Subquery(
             SpeakerProfile.objects.filter(
                 pk=OuterRef("speaker_id"),
-            ).values(
-                "user_id"
-            )[:1]
+            ).values("user_id")[:1]
         )
     )
 

@@ -62,10 +62,10 @@ def test_shortlink_user_self_access(client, speaker, event):
 
 @pytest.mark.django_db
 def test_shortlink_user_public_profile_access(client, slot):
-    speaker = slot.submission.speakers.first()
     event = slot.submission.event
     with scope(event=event):
-        profile = SpeakerProfile.objects.get(user=speaker, event=event)
+        speaker = slot.submission.speakers.first()
+        profile = speaker
         response = client.get(f"/redirect/{profile.code}")
         assert response.status_code == 302
         assert response.url == profile.urls.public
@@ -83,6 +83,15 @@ def test_shortlink_user_no_access(client, other_speaker, event):
         profile = SpeakerProfile.objects.get(user=other_speaker, event=event)
         response = client.get(f"/redirect/{profile.code}")
         assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_shortlink_user_code_fallback_admin(client, speaker):
+    admin_user = User.objects.create_user("admin@example.com", is_administrator=True)
+    client.force_login(admin_user)
+    response = client.get(f"/redirect/{speaker.code}")
+    assert response.status_code == 302
+    assert response.url == speaker.orga_urls.admin
 
 
 @pytest.mark.django_db
@@ -120,7 +129,7 @@ def test_shortlink_user_multiple_events_no_orga_access(
     with scope(event=event):
         profile = SpeakerProfile.objects.get(user=speaker, event=event)
     with scope(event=other_event):
-        other_profile, _ = SpeakerProfile.objects.get_or_create(
+        _other_profile, _ = SpeakerProfile.objects.get_or_create(
             user=speaker, event=other_event
         )
 

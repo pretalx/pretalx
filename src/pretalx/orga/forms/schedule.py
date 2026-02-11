@@ -217,7 +217,7 @@ class ScheduleExportForm(ExportForm):
         return list(obj.sorted_speakers.values_list("code", flat=True))
 
     def _get_speaker_names_value(self, obj):
-        return list(obj.sorted_speakers.values_list("name", flat=True))
+        return [s.get_display_name() for s in obj.sorted_speakers]
 
     def _get_room_value(self, obj):
         slot = obj.slot

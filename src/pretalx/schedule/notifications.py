@@ -13,7 +13,7 @@ def get_notification_date_format():
     return get_day_month_date_format() + ", " + get_format("TIME_FORMAT")
 
 
-def render_notifications(data, event, speaker=None):
+def render_notifications(data, event):
     """Renders the schedule notifications sent to speakers, in the form of a
     Markdown list.
 
@@ -26,22 +26,26 @@ def render_notifications(data, event, speaker=None):
         return template.render({"START_DATE_FORMAT": date_format, **data})
 
 
-def get_full_notifications(speaker, event):
-    """Builds a notification dict for a speaker, pretending that the current schedule
+def get_full_notifications(user, event):
+    """Builds a notification dict for a user, pretending that the current schedule
     version is the first one. That is, all talks will be included in the ``create``
     section."""
     if not event.current_schedule:
         return {"create": [], "update": []}
     return {
         "create": event.current_schedule.scheduled_talks.filter(
-            submission__speakers=speaker
+            submission__speakers__user=user
         ),
         "update": [],
     }
 
 
-def get_current_notifications(speaker, event):
+def get_current_notifications(user, event):
     empty_result = {"create": [], "update": []}
     if not event.current_schedule:
         return empty_result
-    return event.current_schedule.speakers_concerned.get(speaker, empty_result)
+    concerned = event.current_schedule.speakers_concerned
+    for profile, data in concerned.items():
+        if profile.user_id == user.pk:
+            return data
+    return empty_result

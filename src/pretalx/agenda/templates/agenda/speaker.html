@@ -10,17 +10,17 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load static %}
 {% load thumbnail %}
 
-{% block title %}{{ profile.user.get_display_name }} ::{% endblock title %}
-{% block meta_title %}{{ profile.user.get_display_name }}{% endblock meta_title %}
-{% block social_title %}{{ profile.user.get_display_name }}{% endblock social_title %}
+{% block title %}{{ speaker.get_display_name }} ::{% endblock title %}
+{% block meta_title %}{{ speaker.get_display_name }}{% endblock meta_title %}
+{% block social_title %}{{ speaker.get_display_name }}{% endblock social_title %}
 {% block meta_image %}
-    {% if profile.avatar_url and request.event.cfp.request_avatar %}
-        <meta property="thumbnail" content="{{ profile.urls.social_image.full }}">
-        <meta property="og:image" content="{{ profile.urls.social_image.full }}">
+    {% if speaker.avatar_url and request.event.cfp.request_avatar %}
+        <meta property="thumbnail" content="{{ speaker.urls.social_image.full }}">
+        <meta property="og:image" content="{{ speaker.urls.social_image.full }}">
     {% endif %}
 {% endblock meta_image %}
 {% block alternate_link %}
-    <link rel="alternate" type="application/json" title="{{ request.event.name }} API" href="{{ request.event.api_urls.speakers.full }}{{ profile.code }}" />
+    <link rel="alternate" type="application/json" title="{{ request.event.name }} API" href="{{ request.event.api_urls.speakers.full }}{{ speaker.code }}" />
 {% endblock alternate_link %}
 {% block agenda_stylesheets %}
     <link rel="stylesheet" href="{% static "agenda/css/speaker.css" %}" />
@@ -30,10 +30,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <article>
         <div class="d-flex mb-2">
             <h3 class="heading-with-buttons">
-                {{ profile.user.get_display_name }}
+                {{ speaker.get_display_name }}
                 {% if request.event.current_schedule %}
                     <div class="buttons ml-auto flip">
-                        <a class="btn btn-outline-primary" href="{{ profile.urls.talks_ical }}">
+                        <a class="btn btn-outline-primary" href="{{ speaker.urls.talks_ical }}">
                             <i class="fa fa-calendar"></i> .ical
                         </a>
                     </div>
@@ -42,13 +42,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </div>
         <div class="speaker-container">
             <section class="speaker-info">
-                <div class="speaker-bio">{{ profile.biography|rich_text }}</div>
+                <div class="speaker-bio">{{ speaker.biography|rich_text }}</div>
                 {% if show_sidebar %}
                     <div class="speaker-avatar-container{% if short_answers %} outline-container{% endif %}">
                         {% if show_avatar %}
                             <div class="speaker-avatar">
-                                <a href="{{ profile.avatar.url }}" data-lightbox>
-                                    <img loading="lazy" width="100%" src="{{ profile.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
+                                <a href="{{ speaker.avatar_url }}" data-lightbox>
+                                    <img loading="lazy" width="100%" src="{{ speaker.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
                                 </a>
                             </div>
                         {% endif %}
@@ -84,16 +84,16 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </section>
             {% endif %}
             <hr />
-            {% if talks %}
+            {% if speaker.current_talk_slots %}
                 <section class="speaker-talks">
                     <h4>
-                        {% blocktranslate trimmed count count=talks.count %}
+                        {% blocktranslate trimmed count count=speaker.current_talk_slots|length %}
                             Session
                         {% plural %}
                             Sessions
                         {% endblocktranslate %}
                     </h4>
-                    {% for session in talks %}
+                    {% for session in speaker.current_talk_slots %}
                         <a href="{{ session.submission.urls.public }}">
 
                             {% include "agenda/session_block.html" with show_date=True %}

@@ -153,7 +153,7 @@ class AdminUserView(OrgaCRUDView):
             "teams__organiser__events",
             "teams__limit_events",
         ).annotate(
-            submission_count=Count("submissions", distinct=True),
+            submission_count=Count("profiles__submissions", distinct=True),
         )
 
     def has_permission(self, *args):

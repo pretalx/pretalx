@@ -41,7 +41,7 @@ def test_schedule_notification_retrieval(event, slot):
         assert list(result["update"]) == list(expected["update"])
 
     with scope(event=event):
-        speaker = slot.submission.speakers.first()
+        speaker = slot.submission.speakers.first().user
         expected = {
             "create": event.current_schedule.talks.filter(submission=slot.submission),
             "update": [],

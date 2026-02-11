@@ -113,3 +113,9 @@ class Room(OrderedModel, PretalxModel):
         optional) form of the track name.
         """
         return f"{self.id}-{slugify(self.name)}"
+
+    @cached_property
+    def full_availability(self):
+        from pretalx.schedule.models import Availability  # noqa: PLC0415
+
+        return Availability.union(self.availabilities.all())

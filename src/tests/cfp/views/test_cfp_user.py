@@ -778,7 +778,8 @@ def test_cannot_invite_speaker_existing_invite(speaker_client, submission):
 
 @pytest.mark.django_db
 def test_can_accept_invitation(orga_client, submission):
-    assert submission.speakers.count() == 1
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
     invitation = SubmissionInvitation.objects.create(
         submission=submission, email="orga@orga.org"
     )
@@ -786,21 +787,24 @@ def test_can_accept_invitation(orga_client, submission):
     response = orga_client.post(invitation.urls.base.full(), follow=True)
     submission.refresh_from_db()
     assert response.status_code == 200
-    assert submission.speakers.count() == 2
+    with scopes_disabled():
+        assert submission.speakers.count() == 2
     with scopes_disabled():
         assert not SubmissionInvitation.objects.filter(pk=invitation_pk).exists()
 
 
 @pytest.mark.django_db
 def test_wrong_acceptance_link(orga_client, submission):
-    assert submission.speakers.count() == 1
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
     invitation = SubmissionInvitation.objects.create(
         submission=submission, email="orga@orga.org"
     )
     response = orga_client.post(invitation.urls.base.full() + "olololol", follow=True)
     submission.refresh_from_db()
     assert response.status_code == 404
-    assert submission.speakers.count() == 1
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
 
 
 @pytest.mark.django_db
