@@ -5,7 +5,7 @@ import datetime as dt
 import json
 
 import pytest
-from django_scopes import scope
+from django_scopes import scope, scopes_disabled
 
 from pretalx.event.models import Event
 from pretalx.submission.models import Answer, Submission, SubmissionType
@@ -120,7 +120,8 @@ def test_submission_list_with_saved_preferences(
     assert response.status_code == 200
 
     assert submission.title in response.text
-    assert submission.speakers.first().name not in response.text
+    with scopes_disabled():
+        assert submission.speakers.first().get_display_name() not in response.text
 
 
 @pytest.mark.django_db
@@ -174,7 +175,11 @@ def test_submission_list_with_excluded_column(
         event.orga_urls.submissions + "?state=submitted", follow=True
     )
     assert response.status_code == 200
-    assert submission.speakers.first().name not in response.content.decode()
+    with scopes_disabled():
+        assert (
+            submission.speakers.first().get_display_name()
+            not in response.content.decode()
+        )
 
 
 @pytest.mark.django_db

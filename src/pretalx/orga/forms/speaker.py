@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.text.phrases import phrases
 from pretalx.orga.forms.export import ExportForm
-from pretalx.person.models import User
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import SubmissionStates
 
 
@@ -24,11 +24,15 @@ class SpeakerExportForm(ExportForm):
     )
 
     class Meta:
-        model = User
-        model_fields = ["name", "email"]
+        model = SpeakerProfile
+        model_fields = ["name", "biography"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["email"] = forms.BooleanField(
+            required=False,
+            label=_("Email"),
+        )
         self.fields["submission_ids"] = forms.BooleanField(
             required=False,
             label=_("Proposal IDs"),
@@ -37,10 +41,6 @@ class SpeakerExportForm(ExportForm):
         self.fields["submission_titles"] = forms.BooleanField(
             required=False,
             label=_("Proposal titles"),
-        )
-        self.fields["biography"] = forms.BooleanField(
-            required=False,
-            label=_("Biography"),
         )
         self.fields["avatar"] = forms.BooleanField(
             required=False,
@@ -62,7 +62,7 @@ class SpeakerExportForm(ExportForm):
     def export_field_names(self):
         return [
             *self.Meta.model_fields,
-            "biography",
+            "email",
             "avatar",
             "submission_ids",
             "submission_titles",
@@ -77,33 +77,22 @@ class SpeakerExportForm(ExportForm):
                     state__in=[SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED]
                 )
             ).distinct()
-        return (
-            queryset.select_related("profile_picture")
-            .prefetch_related("profiles", "profiles__event")
-            .order_by("code")
-        )
+        return queryset.select_related("user", "profile_picture").order_by("code")
+
+    def _get_name_value(self, obj):
+        return obj.get_display_name()
 
     def _get_avatar_value(self, obj):
-        if obj.profile_picture_id:
-            return obj.profile_picture.get_avatar_url(event=self.event)
-        return ""
+        return obj.avatar_url
 
-    def _get_biography_value(self, obj):
-        return obj._profile.biography
+    def _get_email_value(self, obj):
+        return obj.user.email
 
     def _get_submission_ids_value(self, obj):
-        return list(
-            obj.submissions.filter(event=self.event).values_list("code", flat=True)
-        )
+        return list(obj.submissions.values_list("code", flat=True))
 
     def _get_submission_titles_value(self, obj):
-        return list(
-            obj.submissions.filter(event=self.event).values_list("title", flat=True)
-        )
-
-    def _prepare_object_data(self, obj):
-        obj._profile = obj.event_profile(self.event)
-        return obj
+        return list(obj.submissions.values_list("title", flat=True))
 
     def get_answer(self, question, obj):
-        return question.answers.filter(person=obj).first()
+        return question.answers.filter(person=obj.user).first()

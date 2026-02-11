@@ -52,7 +52,7 @@ from pretalx.orga.forms.submission import (
     SubmissionStateChangeForm,
 )
 from pretalx.orga.tables.submission import SubmissionTable, TagTable
-from pretalx.person.models import User
+from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
 from pretalx.submission.forms import (
     QuestionsForm,
@@ -245,7 +245,7 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
             pending_emails = self.request.event.queued_mails.filter(
                 template=template,
                 sent__isnull=True,
-                to_users__in=self.object.speakers.all(),
+                to_users__in=self.object.speakers.values_list("user", flat=True),
             )
             if pending_emails.exists():
                 messages.warning(
@@ -307,9 +307,11 @@ class SubmissionSpeakersDelete(SubmissionViewMixin, View):
     def dispatch(self, request, *args, **kwargs):
         super().dispatch(request, *args, **kwargs)
         submission = self.object
-        speaker = get_object_or_404(User, pk=request.GET.get("id"))
+        speaker = get_object_or_404(
+            SpeakerProfile, pk=request.GET.get("id"), event=request.event
+        )
 
-        if submission in speaker.submissions.all():
+        if submission.speakers.filter(pk=speaker.pk).exists():
             submission.remove_speaker(speaker, user=self.request.user)
             messages.success(
                 request, _("The speaker has been removed from the proposal.")
@@ -327,11 +329,11 @@ class SubmissionSpeakersReorder(SubmissionViewMixin, View):
         if not order:
             return HttpResponse(status=400)
         roles = SpeakerRole.objects.filter(submission=self.object).select_related(
-            "user"
+            "speaker", "speaker__user"
         )
-        old_order = "\n".join(f"- {role.user.get_display_name()}" for role in roles)
+        old_order = "\n".join(f"- {role.speaker.get_display_name()}" for role in roles)
         reorder_queryset(roles, order.split(","))
-        role_map = {str(role.pk): role.user.get_display_name() for role in roles}
+        role_map = {str(role.pk): role.speaker.get_display_name() for role in roles}
         new_order = "\n".join(
             f"- {role_map[pk]}" for pk in order.split(",") if pk in role_map
         )
@@ -393,17 +395,14 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
     def speakers(self):
         submission = self.object
         roles = {
-            role.user_id: role
+            role.speaker_id: role
             for role in SpeakerRole.objects.filter(submission=submission)
         }
         return [
             {
-                "user": speaker,
+                "speaker": speaker,
                 "role": roles.get(speaker.pk),
-                "profile": speaker.event_profile(submission.event),
-                "other_submissions": speaker.submissions.filter(
-                    event=submission.event
-                ).exclude(code=submission.code),
+                "other_submissions": speaker.submissions.exclude(code=submission.code),
             }
             for speaker in submission.sorted_speakers
         ]
@@ -415,7 +414,7 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
 
     def form_valid(self, form):
         if email := form.cleaned_data.get("email"):
-            speaker = self.object.add_speaker(
+            speaker = self.object.invite_speaker(
                 email=email,
                 name=form.cleaned_data.get("name"),
                 locale=form.cleaned_data.get("locale"),
@@ -424,7 +423,7 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
             messages.success(
                 self.request, _("The speaker has been added to the proposal.")
             )
-            return redirect(speaker.event_profile(self.request.event).orga_urls.base)
+            return redirect(speaker.orga_urls.base)
         return super().form_valid(form)
 
     def get_form_kwargs(self):
@@ -609,7 +608,7 @@ class SubmissionContent(
         stay_on_page = False
         if created:
             if speaker_form and (email := speaker_form.cleaned_data["email"]):
-                form.instance.add_speaker(
+                form.instance.invite_speaker(
                     email=email,
                     name=self.new_speaker_form.cleaned_data["name"],
                     locale=self.new_speaker_form.cleaned_data.get("locale"),
@@ -688,6 +687,7 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
         if self.request.user.has_perm(
             "person.orga_list_speakerprofile", self.request.event
         ):
+            default_filters.add("speakers__user__name__icontains")
             default_filters.add("speakers__name__icontains")
         return default_filters
 

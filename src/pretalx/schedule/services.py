@@ -121,11 +121,17 @@ def deserialize_schedule_changes(serialized: dict, event) -> dict:
     for item in serialized["new_talks"]:
         slot = slots_by_id.get(item["id"])
         if slot:
+            submission = submissions_by_code.get(item["submission_code"])
+            if submission:
+                slot.submission = submission
             changes["new_talks"].append(slot)
 
     for item in serialized["canceled_talks"]:
         slot = slots_by_id.get(item["id"])
         if slot:
+            submission = submissions_by_code.get(item["submission_code"])
+            if submission:
+                slot.submission = submission
             changes["canceled_talks"].append(slot)
 
     for item in serialized["moved_talks"]:

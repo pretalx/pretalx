@@ -40,7 +40,7 @@ class SubmissionInvitationForm(forms.Form):
 
     def clean_speaker(self):
         email = self.cleaned_data["speaker"].strip().lower()
-        if self.submission.speakers.filter(email__iexact=email).exists():
+        if self.submission.speakers.filter(user__email__iexact=email).exists():
             raise forms.ValidationError(
                 _("This person is already a speaker on this proposal.")
             )

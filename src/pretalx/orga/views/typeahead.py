@@ -132,14 +132,16 @@ def nav_typeahead(request):
                 SpeakerProfile.objects.filter(
                     Q(user__name__icontains=query)
                     | Q(user__email__iexact=query)
-                    | Q(user__code__istartswith=query),
+                    | Q(name__email__iexact=query)
+                    | Q(user__code__istartswith=query)
+                    | Q(code__istartswith=query),
                     event__in=full_events,
                 )
                 .annotate(
-                    # We need this subquery to filter out profiles without submissions.
+                    # We need this subquery to filter out profiles without (visible) submissions.
                     has_submission=Exists(
                         Submission.objects.filter(
-                            event=OuterRef("event"), speakers__in=OuterRef("user")
+                            event=OuterRef("event"), speakers=OuterRef("pk")
                         )
                     )
                 )

@@ -402,7 +402,7 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
     @staticmethod
     def get_missing_answers(*, questions, person, submissions):
         missing = []
-        submissions = submissions.filter(speakers__in=[person])
+        submissions = submissions.filter(speakers=person)
         for question in questions:
             if question.target == QuestionTarget.SUBMISSION:
                 for submission in submissions:
@@ -410,7 +410,7 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
                     if not answer or not answer.is_answered:
                         missing.append(question)
             elif question.target == QuestionTarget.SPEAKER:
-                answer = question.answers.filter(person=person).first()
+                answer = question.answers.filter(person=person.user).first()
                 if not answer or not answer.is_answered:
                     missing.append(question)
         return missing
@@ -445,10 +445,10 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
                 self.request.event.get_mail_template(
                     MailTemplateRoles.QUESTION_REMINDER
                 ).to_mail(
-                    person,
+                    person.user,
                     event=self.request.event,
                     context=data,
-                    context_kwargs={"user": person},
+                    context_kwargs={"user": person.user},
                 )
         return super().form_valid(form)
 

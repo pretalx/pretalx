@@ -45,8 +45,10 @@ def get_slots_ical(event, slots, prodid_suffix=None):
     return cal
 
 
-def get_speaker_ical(event, speaker, slots):
-    return get_slots_ical(event, slots, prodid_suffix=f"speaker//{speaker.code}")
+def get_speaker_ical(event, speaker):
+    return get_slots_ical(
+        event, speaker.current_talk_slots, prodid_suffix=f"speaker//{speaker.code}"
+    )
 
 
 def get_submission_ical(submission, slots):

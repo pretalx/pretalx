@@ -62,6 +62,7 @@ from pretalx.submission.models import (
 from pretalx.submission.rules import (
     get_missing_reviews,
     get_reviewable_submissions,
+    is_speaker,
     questions_for_user,
     reviews_are_open,
 )
@@ -552,11 +553,7 @@ class ReviewViewMixin:
 
     @cached_property
     def object(self):
-        return (
-            self.submission.reviews.exclude(user__in=self.submission.speakers.all())
-            .filter(user=self.request.user)
-            .first()
-        )
+        return self.submission.reviews.filter(user=self.request.user).first()
 
     def get_object(self):
         return self.object
@@ -567,7 +564,7 @@ class ReviewViewMixin:
     @context
     @cached_property
     def read_only(self):
-        if self.request.user in self.submission.speakers.all():
+        if self.submission.speakers.filter(user=self.request.user).exists():
             return True
         if self.object and self.object.pk:
             return not self.request.user.has_perm(
@@ -588,8 +585,13 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
 
     @context
     @cached_property
+    def is_speaker(self):
+        return is_speaker(self.request.user, self.submission)
+
+    @context
+    @cached_property
     def review_display(self):
-        if self.object:
+        if self.object and not self.is_speaker:
             review = self.object
             return {
                 "score": review.display_score,
@@ -613,13 +615,6 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
         )
 
     @context
-    def profiles(self):
-        return [
-            speaker.event_profile(self.request.event)
-            for speaker in self.submission.sorted_speakers
-        ]
-
-    @context
     @cached_property
     def score_categories(self):
         return self.submission.score_categories
@@ -640,6 +635,8 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
 
     @context
     def reviews(self):
+        if self.is_speaker:
+            return []
         question_queryset = questions_for_user(
             self.request.event, self.request.user, for_answers=True
         )
@@ -776,11 +773,7 @@ class ReviewSubmissionDelete(
 
     @cached_property
     def object(self):
-        return (
-            self.submission.reviews.exclude(user__in=self.submission.speakers.all())
-            .filter(user=self.request.user)
-            .first()
-        )
+        return self.submission.reviews.filter(user=self.request.user).first()
 
     def get_object(self):
         return self.object

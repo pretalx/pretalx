@@ -269,7 +269,7 @@ class AnswerCreateSerializer(AnswerSerializer):
         )
         self.fields["submission"].queryset = request.event.submissions.all()
         self.fields["person"].queryset = User.objects.filter(
-            submissions__event=request.event
+            profiles__submissions__event=request.event
         )
         self.fields["review"].queryset = request.event.reviews.all()
 

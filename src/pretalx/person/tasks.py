@@ -12,6 +12,7 @@ from django.utils.timezone import now
 
 from pretalx.common.signals import minimum_interval, periodic_task
 from pretalx.person.models import UserApiToken
+from pretalx.person.models import ProfilePicture
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,6 @@ def run_update_check(sender, **kwargs):
 @receiver(signal=periodic_task)
 @minimum_interval(minutes_after_success=60 * 24)
 def clean_orphaned_profile_pictures(sender, **kwargs):
-    from pretalx.person.models import ProfilePicture
 
     cutoff = now() - dt.timedelta(days=30)
     pictures = ProfilePicture.objects.filter(

@@ -404,7 +404,9 @@ def answer(event, submission, question):
 def speaker_answer(event, submission, speaker_question):
     with scope(event=event):
         return Answer.objects.create(
-            answer="11", person=submission.speakers.first(), question=speaker_question
+            answer="11",
+            person=submission.speakers.first().user,
+            question=speaker_question,
         )
 
 
@@ -750,7 +752,10 @@ def speaker_profile(event):
         )
     with scope(event=event):
         profile = SpeakerProfile.objects.create(
-            user=user, event=event, biography="Best speaker in the world."
+            user=user,
+            event=event,
+            biography="Best speaker in the world.",
+            name=user.name,
         )
     return profile
 
@@ -798,11 +803,11 @@ def submission_data(event, submission_type):
 
 
 @pytest.fixture
-def submission(submission_data, speaker, event):
+def submission(submission_data, speaker, speaker_profile, event):
     with scope(event=event):
         sub = Submission.objects.create(**submission_data)
         sub.save()
-        sub.speakers.add(speaker)
+        sub.speakers.add(speaker_profile)
         return sub
 
 
@@ -819,16 +824,17 @@ def other_submission(event, other_speaker):
             content_locale="en",
         )
         sub.save()
-        sub.speakers.add(other_speaker)
+        profile = SpeakerProfile.objects.get(user=other_speaker, event=event)
+        sub.speakers.add(profile)
         return sub
 
 
 @pytest.fixture
-def accepted_submission(speaker, submission_data, event):
+def accepted_submission(speaker, speaker_profile, submission_data, event):
     with scope(event=event):
         sub = Submission.objects.create(**submission_data)
         sub.save()
-        sub.speakers.add(speaker)
+        sub.speakers.add(speaker_profile)
         sub.accept()
         return sub
 
@@ -845,17 +851,18 @@ def rejected_submission(submission_data, other_speaker, event):
     with scope(event=event):
         sub = Submission.objects.create(**submission_data)
         sub.save()
-        sub.speakers.add(other_speaker)
+        profile = SpeakerProfile.objects.get(user=other_speaker, event=event)
+        sub.speakers.add(profile)
         sub.reject()
         return sub
 
 
 @pytest.fixture
-def confirmed_submission(submission_data, speaker, event):
+def confirmed_submission(submission_data, speaker, speaker_profile, event):
     with scope(event=event):
         sub = Submission.objects.create(**submission_data)
         sub.save()
-        sub.speakers.add(speaker)
+        sub.speakers.add(speaker_profile)
         sub.accept()
         sub.confirm()
         return sub
@@ -869,21 +876,21 @@ def other_confirmed_submission(other_accepted_submission, event):
 
 
 @pytest.fixture
-def canceled_submission(submission_data, speaker, event):
+def canceled_submission(submission_data, speaker, speaker_profile, event):
     with scope(event=event):
         sub = Submission.objects.create(**submission_data)
         sub.save()
-        sub.speakers.add(speaker)
+        sub.speakers.add(speaker_profile)
         sub.cancel()
         return sub
 
 
 @pytest.fixture
-def withdrawn_submission(submission_data, speaker, event):
+def withdrawn_submission(submission_data, speaker, speaker_profile, event):
     with scope(event=event):
         sub = Submission.objects.create(**submission_data)
         sub.save()
-        sub.speakers.add(speaker)
+        sub.speakers.add(speaker_profile)
         sub.withdraw()
         return sub
 
@@ -1089,7 +1096,7 @@ def feedback(past_slot):
 def submission_comment(submission):
     with scope(event=submission.event):
         return submission.comments.create(
-            text="This is a comment", user=submission.speakers.first()
+            text="This is a comment", user=submission.speakers.first().user
         )
 
 

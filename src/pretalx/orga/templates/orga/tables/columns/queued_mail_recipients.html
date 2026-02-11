@@ -5,8 +5,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 {% for user in record.to_users.all %}
-    {% if user in request.event.submitters %}
-        <a href="{% url "orga:speakers.view" event=request.event.slug code=user.code %}">
+    {% if user.speaker_code %}
+        <a href="{% url "orga:speakers.view" event=request.event.slug code=user.speaker_code %}">
             {{ user }}
         </a>{% else %}{{ user }}{% endif %}{% if not forloop.last or record.to %},<br>{% endif %}
 {% endfor %}

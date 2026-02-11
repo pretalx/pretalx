@@ -711,7 +711,7 @@ def test_talk_slot_expand_parameters(client, orga_user_token, event, slot):
     with scope(event=event):
         submission_code = slot.submission.code
         room_pk = slot.room.pk
-        speaker = slot.submission.speakers.first().code
+        speaker = slot.submission.speakers.first().user.code
 
     response = client.get(url, headers=base_headers)
     assert response.status_code == 200
@@ -749,7 +749,6 @@ def test_schedule_expand_slots(client, event, slot, track):
         submission_type = slot.submission.submission_type
         slot.submission.track = track
         slot.submission.save()
-        profile = speaker.event_profile(event)
         event.feature_flags["use_tracks"] = True
         event.save()
     response = client.get(
@@ -775,9 +774,9 @@ def test_schedule_expand_slots(client, event, slot, track):
     assert submission_content["submission_type"]["name"]["en"] == submission_type.name
     assert isinstance(submission_content["speakers"], list)
     speaker_data = submission_content["speakers"][0]
-    assert speaker_data["code"] == speaker.code
-    assert speaker_data["name"] == speaker.name
-    assert speaker_data["biography"] == profile.biography
+    assert speaker_data["code"] == speaker.user.code
+    assert speaker_data["name"] == speaker.user.name
+    assert speaker_data["biography"] == speaker.biography
 
 
 @pytest.mark.django_db

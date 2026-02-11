@@ -4,6 +4,7 @@
 import pytest
 from django.test import override_settings
 from django.urls import reverse
+from django_scopes import scopes_disabled
 
 from pretalx.common.models.settings import GlobalSettings
 
@@ -83,7 +84,8 @@ def test_user_can_access_event_urls(
 
 @pytest.mark.django_db
 def test_speaker_cannot_see_submission_in_orga_area(speaker, submission, client):
-    assert speaker in submission.speakers.all()
+    with scopes_disabled():
+        assert submission.speakers.filter(user=speaker).exists()
     client.force_login(speaker)
     response = client.get(submission.orga_urls.base, follow=True)
     assert response.status_code == 404

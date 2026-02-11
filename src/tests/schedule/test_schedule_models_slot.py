@@ -83,7 +83,7 @@ def test_slot_warning_when_speaker_unavailable(slot, availability, room_availabi
     with scope(event=slot.event):
         availability.start -= dt.timedelta(days=7)
         availability.end -= dt.timedelta(days=7)
-        availability.person = slot.submission.speakers.first().event_profile(slot.event)
+        availability.person = slot.submission.speakers.first()
         availability.pk = None
         availability.save()
         warnings = slot.schedule.get_talk_warnings(slot)
@@ -100,12 +100,12 @@ def test_slot_warning_when_speaker_overbooked(
     slot, availability, other_slot, room_availability
 ):
     with scope(event=slot.event):
-        availability.person = slot.submission.speakers.first().event_profile(slot.event)
+        availability.person = slot.submission.speakers.first()
         availability.pk = None
         availability.save()
         other_slot.start = slot.start + dt.timedelta(minutes=10)
         other_slot.end = slot.end - dt.timedelta(minutes=10)
-        other_slot.submission.speakers.add(availability.person.user)
+        other_slot.submission.speakers.add(availability.person)
         other_slot.save()
         other_slot.submission.save()
         warnings = slot.schedule.get_talk_warnings(slot)

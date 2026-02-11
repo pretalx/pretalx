@@ -7,6 +7,7 @@ from rest_framework.serializers import SlugRelatedField
 
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
+from pretalx.person.models import User
 from pretalx.submission.models import Feedback, Submission
 
 
@@ -26,7 +27,9 @@ class FeedbackWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         super().__init__(*args, **kwargs)
         if self.event:
             self.fields["submission"].queryset = self.event.talks
-            self.fields["speaker"].queryset = self.event.speakers
+            self.fields["speaker"].queryset = User.objects.filter(
+                profiles__submissions__in=self.event.talks
+            ).distinct()
 
     def validate_submission(self, value):
         if not value.does_accept_feedback:
@@ -39,7 +42,7 @@ class FeedbackWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         data = super().validate(data)
         speaker = data.get("speaker")
         talk = data.get("talk")
-        if speaker and talk and speaker not in talk.speakers.all():
+        if speaker and talk and not talk.speakers.filter(user=speaker).exists():
             raise exceptions.ValidationError(
                 {"speaker": "This speaker is not a speaker of the given submission."}
             )

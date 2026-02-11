@@ -176,13 +176,17 @@ class ProfilePictureField(FileField):
             try:
                 pk = int(pk_str)
             except (ValueError, TypeError):
-                raise ValidationError(_("Invalid picture selection."), code="invalid")
-            from pretalx.person.models import ProfilePicture
+                raise ValidationError(
+                    _("Invalid picture selection."), code="invalid"
+                ) from None
+            from pretalx.person.models import ProfilePicture  # noqa: PLC0415
 
             try:
                 picture = ProfilePicture.objects.get(pk=pk, user=self.user)
             except ProfilePicture.DoesNotExist:
-                raise ValidationError(_("Invalid picture selection."), code="invalid")
+                raise ValidationError(
+                    _("Invalid picture selection."), code="invalid"
+                ) from None
             self._cleaned_value = picture
             return picture
 

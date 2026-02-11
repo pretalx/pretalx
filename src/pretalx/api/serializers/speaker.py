@@ -43,7 +43,7 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         submissions = self.context.get("submissions")
         if not submissions:
             return []
-        submissions = submissions.filter(speakers__in=[obj.user])
+        submissions = submissions.filter(speakers=obj)
         if serializer := self.get_extra_flex_field("submissions", submissions):
             return serializer.data
         return submissions.values_list("code", flat=True)
@@ -66,20 +66,14 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
     def update(self, instance, validated_data):
         availabilities_data = validated_data.pop("availabilities", None)
-        profile = super().update(instance, validated_data)
+        speaker = super().update(instance, validated_data)
         if availabilities_data is not None:
-            self._handle_availabilities(profile, availabilities_data, field="person")
-        return profile
+            self._handle_availabilities(speaker, availabilities_data, field="person")
+        return speaker
 
     class Meta:
         model = SpeakerProfile
         fields = ("code", "name", "biography", "submissions", "avatar_url", "answers")
-        expandable_fields = {
-            "submissions": (
-                "pretalx.api.serializers.submission.SubmissionSerializer",
-                {"read_only": True, "many": True},
-            ),
-        }
         extra_expandable_fields = {
             "answers": (
                 "pretalx.api.serializers.question.AnswerSerializer",
@@ -126,12 +120,6 @@ class SpeakerOrgaSerializer(AvailabilitiesMixin, SpeakerSerializer):
             "availabilities",
             "internal_notes",
         )
-        expandable_fields = {
-            "submissions": (
-                "pretalx.api.serializers.submission.SubmissionSerializer",
-                {"read_only": True, "many": True},
-            ),
-        }
 
 
 @register_serializer(versions=CURRENT_VERSIONS)

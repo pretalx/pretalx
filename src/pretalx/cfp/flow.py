@@ -350,7 +350,7 @@ class DedraftMixin:
                         event=self.event,
                         code=code,
                         state=SubmissionStates.DRAFT,
-                        speakers__in=[self.request.user],
+                        speakers__user=self.request.user,
                     )
                 )
             ):
@@ -414,7 +414,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
             )
         form.save()
         submission = form.instance
-        submission.speakers.add(request.user)
+        submission.add_speaker(request.user)
         if draft:
             messages.success(
                 self.request,

@@ -121,7 +121,29 @@ class SpeakerProfile(GenerateCode, PretalxModel):
 
         Contains all visible talks by this user on this event.
         """
-        return self.event.talks.filter(speakers__in=[self.user])
+        return self.event.talks.filter(speakers=self)
+
+    def get_talk_slots(self, schedule=None):
+        schedule = schedule or self.event.current_schedule
+        from pretalx.schedule.models import TalkSlot  # noqa: PLC0415
+
+        if not schedule:
+            return TalkSlot.objects.none()
+        return (
+            schedule.talks.filter(submission__speakers=self, is_visible=True)
+            .select_related(
+                "submission",
+                "room",
+                "submission__event",
+                "submission__track",
+                "submission__submission_type",
+            )
+            .with_sorted_speakers()
+        )
+
+    @cached_property
+    def current_talk_slots(self):
+        return self.get_talk_slots()
 
     @cached_property
     def answers(self):
@@ -133,9 +155,7 @@ class SpeakerProfile(GenerateCode, PretalxModel):
         """
         from pretalx.submission.models import Answer, Submission  # noqa: PLC0415
 
-        submissions = Submission.objects.filter(
-            event=self.event, speakers__in=[self.user]
-        )
+        submissions = Submission.objects.filter(event=self.event, speakers=self)
         return Answer.objects.filter(
             models.Q(submission__in=submissions) | models.Q(person=self.user)
         ).order_by("question__position")
@@ -169,3 +189,9 @@ class SpeakerProfile(GenerateCode, PretalxModel):
                 ),
             }
         return super()._get_instance_data() | data
+
+    @cached_property
+    def full_availability(self):
+        from pretalx.schedule.models import Availability  # noqa: PLC0415
+
+        return Availability.union(self.availabilities.all())

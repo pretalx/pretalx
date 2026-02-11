@@ -62,10 +62,10 @@ def test_shortlink_user_self_access(client, speaker, event):
 
 @pytest.mark.django_db
 def test_shortlink_user_public_profile_access(client, slot):
-    speaker = slot.submission.speakers.first()
     event = slot.submission.event
     with scope(event=event):
-        profile = SpeakerProfile.objects.get(user=speaker, event=event)
+        speaker = slot.submission.speakers.first()
+        profile = speaker
         response = client.get(f"/redirect/{profile.code}")
         assert response.status_code == 302
         assert response.url == profile.urls.public
@@ -120,7 +120,7 @@ def test_shortlink_user_multiple_events_no_orga_access(
     with scope(event=event):
         profile = SpeakerProfile.objects.get(user=speaker, event=event)
     with scope(event=other_event):
-        other_profile, _ = SpeakerProfile.objects.get_or_create(
+        _other_profile, _ = SpeakerProfile.objects.get_or_create(
             user=speaker, event=other_event
         )
 

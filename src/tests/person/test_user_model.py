@@ -7,6 +7,7 @@ from django_scopes import scope, scopes_disabled
 from pretalx.person.models.picture import picture_path
 from pretalx.person.models.user import User
 from pretalx.submission.models.question import Answer
+from pretalx.person.models.picture import ProfilePicture
 
 
 def test_user_deactivate(speaker, personal_answer, impersonal_answer, other_speaker):
@@ -15,7 +16,7 @@ def test_user_deactivate(speaker, personal_answer, impersonal_answer, other_spea
         count = speaker.own_actions().count()
         name = speaker.name
         email = speaker.email
-        organiser = speaker.submissions.first().event.organiser
+        organiser = speaker.profiles.first().submissions.first().event.organiser
         team = organiser.teams.first()
         team.members.add(speaker)
         team.save()
@@ -89,8 +90,6 @@ def test_shred_user(user):
     ),
 )
 def test_picture_path(code, filename, expected_start, expected_end):
-    from pretalx.person.models.picture import ProfilePicture
-
     user = User()
     user.code = code
     picture = ProfilePicture(user=user)

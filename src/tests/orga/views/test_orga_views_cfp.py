@@ -19,6 +19,7 @@ from django_scopes import scope
 from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
 from pretalx.mail.models import QueuedMail
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import Question, QuestionTarget, Submission
 from pretalx.submission.models.question import Answer, QuestionRequired, QuestionVariant
 
@@ -1297,7 +1298,8 @@ def test_question_file_download_duplicate_filenames(
             title="Other submission",
             submission_type=event.cfp.default_type,
         )
-        other_submission.speakers.add(speaker)
+        speaker_profile = SpeakerProfile.objects.get(user=speaker, event=event)
+        other_submission.speakers.add(speaker_profile)
         answer1 = Answer.objects.create(
             submission=submission,
             question=file_question,

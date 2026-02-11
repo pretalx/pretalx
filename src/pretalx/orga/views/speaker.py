@@ -43,7 +43,7 @@ from pretalx.submission.models.submission import SubmissionStates
 from pretalx.submission.rules import (
     limit_for_reviewers,
     questions_for_user,
-    speaker_profiles_for_user,
+    speakers_for_user,
 )
 
 
@@ -64,18 +64,18 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
 
     def get_queryset(self):
         qs = (
-            speaker_profiles_for_user(self.request.event, self.request.user)
+            speakers_for_user(self.request.event, self.request.user)
             .select_related("event", "user", "profile_picture")
             .annotate(
                 submission_count=Count(
-                    "user__submissions",
-                    filter=Q(user__submissions__event=self.request.event),
+                    "submissions",
+                    filter=Q(submissions__event=self.request.event),
                     distinct=True,
                 ),
                 accepted_submission_count=Count(
-                    "user__submissions",
-                    filter=Q(user__submissions__event=self.request.event)
-                    & Q(user__submissions__state__in=SubmissionStates.accepted_states),
+                    "submissions",
+                    filter=Q(submissions__event=self.request.event)
+                    & Q(submissions__state__in=SubmissionStates.accepted_states),
                     distinct=True,
                 ),
             )
@@ -135,9 +135,9 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
 class SpeakerViewMixin(PermissionRequired):
     def get_object(self):
         return get_object_or_404(
-            speaker_profiles_for_user(
-                self.request.event, self.request.user
-            ).select_related("user", "profile_picture"),
+            speakers_for_user(self.request.event, self.request.user).select_related(
+                "user", "profile_picture", "event"
+            ),
             code__iexact=self.kwargs["code"],
         )
 
@@ -145,13 +145,8 @@ class SpeakerViewMixin(PermissionRequired):
     def object(self):
         return self.get_object()
 
-    @context
-    @cached_property
-    def profile(self):
-        return self.object
-
     def get_permission_object(self):
-        return self.profile
+        return self.object
 
     @cached_property
     def permission_object(self):
@@ -172,7 +167,7 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
     @context
     @cached_property
     def submissions(self, **kwargs):
-        qs = self.request.event.submissions.filter(speakers__in=[self.object.user])
+        qs = self.request.event.submissions.filter(speakers=self.object)
         if is_only_reviewer(self.request.user, self.request.event):
             return limit_for_reviewers(qs, self.request.event, self.request.user)
         return qs
@@ -213,8 +208,8 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
         if not self.questions_form.is_valid():
             return self.get(self.request, *self.args, **self.kwargs)
 
-        old_profile = form.instance.__class__.objects.get(pk=form.instance.pk)
-        old_data = old_profile._get_instance_data()
+        old_speaker = form.instance.__class__.objects.get(pk=form.instance.pk)
+        old_data = old_speaker._get_instance_data()
         old_questions_data = self.questions_form.serialize_answers()
 
         # Save the form and show success message (skipping FormLoggingMixin's logging)

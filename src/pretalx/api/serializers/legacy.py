@@ -86,9 +86,7 @@ class LegacySpeakerSerializer(ModelSerializer):
         talks = (
             obj.event.current_schedule.talks.all() if obj.event.current_schedule else []
         )
-        return obj.user.submissions.filter(
-            event=obj.event, slots__in=talks
-        ).values_list("code", flat=True)
+        return obj.submissions.filter(slots__in=talks).values_list("code", flat=True)
 
     def answers_queryset(self, obj):
         return obj.answers.all().filter(
@@ -122,9 +120,7 @@ class LegacySpeakerOrgaSerializer(LegacySpeakerSerializer):
         return queryset.none()
 
     def get_submissions(self, obj):
-        return obj.user.submissions.filter(event=obj.event).values_list(
-            "code", flat=True
-        )
+        return obj.submissions.values_list("code", flat=True)
 
     class Meta(LegacySpeakerSerializer.Meta):
         fields = (*LegacySpeakerSerializer.Meta.fields, "email", "availabilities")

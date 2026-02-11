@@ -54,13 +54,13 @@ SPDX-FileContributor: Florian Mösch
         {% if speakers|length > 1 and can_edit_speakers %}<div class="speaker-sort-wrapper" dragsort-id="{{ speaker.role.pk }}">{% endif %}
         <div class="card {% if speakers|length <= 1 or not can_edit_speakers %}mb-3{% endif %} speaker-card"><div class="card-body">
             <h3 class="card-title">
-                <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.user.code %}">
-                    {{ speaker.user.get_display_name }}
+                <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.speaker.code %}">
+                    {{ speaker.speaker.get_display_name }}
                 </a>
-                {% if speaker.profile.avatar and request.event.cfp.request_avatar %}
+                {% if speaker.speaker.avatar and request.event.cfp.request_avatar %}
                     <div class="float-right speaker-detail">
-                        <a href="{{ speaker.profile.avatar_url }}" data-lightbox>
-                            <img loading="lazy" width="100%" src="{{ speaker.profile.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
+                        <a href="{{ speaker.speaker.avatar_url }}" data-lightbox>
+                            <img loading="lazy" width="100%" src="{{ speaker.speaker.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
                         </a>
                     </div>
                 {% endif %}
@@ -68,7 +68,7 @@ SPDX-FileContributor: Florian Mösch
             {% if request.event.cfp.request_biography %}
                 <div class="card-text speaker-detail">
                     <h5>{% translate "Biography" %}:</h5>
-                    {{ speaker.profile.biography|rich_text|default:"-" }}
+                    {{ speaker.speaker.biography|rich_text|default:"-" }}
                 </div>
             {% endif %}
             <div class="card-text speaker-detail">
@@ -87,15 +87,15 @@ SPDX-FileContributor: Florian Mösch
             <div class="row w-100 ml-3 pr-3 align-items-end justify-content-end gap-2">
                 {% if can_edit_speakers %}
                     {% if can_mark_speaker and submission.state in 'accepted,confirmed' %}
-                        {% include "orga/includes/mark_speakers_arrived.html" with speaker=speaker.profile %}
+                        {% include "orga/includes/mark_speakers_arrived.html" with speaker=speaker.speaker %}
                     {% endif %}
                     {% if can_send_mails %}
-                        <a class="btn btn-outline-info" role="button" href="{{ speaker.orga_urls.send_mail }}">
+                        <a class="btn btn-outline-info" role="button" href="{{ speaker.speaker.orga_urls.send_mail }}">
                             <i class="fa fa-envelope"></i>
                             {% translate "Send email" %}
                         </a>
                     {% endif %}
-                    <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.user.code %}"
+                    <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.speaker.code %}"
                        role="button" class="btn btn-info">
                         <i class="fa fa-edit"></i> {{ phrases.base.edit }}
                     </a>
@@ -104,7 +104,7 @@ SPDX-FileContributor: Florian Mösch
                             <i class="fa fa-bars"></i> {% translate "Change order" %}
                         </div>
                     {% endif %}
-                    <a href="{{ submission.orga_urls.delete_speaker }}?id={{ speaker.user.id }}"
+                    <a href="{{ submission.orga_urls.delete_speaker }}?id={{ speaker.speaker.id }}"
                        role="button" class="btn btn-danger">
                         <i class="fa fa-trash"></i> {% translate "Remove" %}
                     </a>

@@ -9,6 +9,7 @@ from django.utils.timezone import now
 from django_scopes import scope
 
 from pretalx.api.serializers.feedback import FeedbackSerializer
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import Feedback
 
 
@@ -115,7 +116,8 @@ def test_orga_can_see_expanded_feedback_speaker(
     client, orga_user_token, event, feedback, past_slot, speaker
 ):
     with scope(event=event):
-        past_slot.submission.speakers.add(speaker)
+        profile, _ = SpeakerProfile.objects.get_or_create(user=speaker, event=event)
+        past_slot.submission.speakers.add(profile)
         feedback.speaker = speaker
         feedback.save()
 
@@ -188,7 +190,8 @@ def test_anon_can_create_feedback_without_rating(client, event, past_slot):
 @pytest.mark.django_db
 def test_anon_can_create_feedback_with_speaker(client, event, past_slot, speaker):
     with scope(event=event):
-        past_slot.submission.speakers.add(speaker)
+        profile, _ = SpeakerProfile.objects.get_or_create(user=speaker, event=event)
+        past_slot.submission.speakers.add(profile)
 
     url = event.api_urls.feedback
     data = {
