@@ -242,14 +242,10 @@ class FrabJsonExporter(ScheduleData):
                                                 and self.event.cfp.request_avatar
                                                 else None
                                             ),
-                                            "biography": person.event_profile(
-                                                self.event
-                                            ).biography,
+                                            "biography": person.biography,
                                             "public_name": person.get_display_name(),  # deprecated
-                                            "guid": person.guid,
-                                            "url": person.event_profile(
-                                                self.event
-                                            ).urls.public.full(),
+                                            "guid": person.user.guid,
+                                            "url": person.urls.public.full(),
                                         }
                                         for person in talk.submission.sorted_speakers
                                     ],

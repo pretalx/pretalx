@@ -65,7 +65,7 @@ def test_can_see_changelog(
     assert slot.submission.title in response.content.decode()
 
     # Make sure that the next call uses fewer db queries, as the results are cached
-    with django_assert_num_queries(17):
+    with django_assert_num_queries(15):
         response = client.get(url, follow=True, HTTP_ACCEPT="text/html")
 
     assert response.status_code == 200
@@ -175,7 +175,7 @@ def test_speaker_page(
 ):
     speaker = speaker_profile.user
     with scope(event=event):
-        other_submission.speakers.add(speaker)
+        other_submission.speakers.add(speaker_profile)
         slot.submission.accept()
         slot.submission.save()
         event.wip_schedule.freeze("testversion 2")
@@ -184,11 +184,10 @@ def test_speaker_page(
     url = reverse(
         "agenda:speaker", kwargs={"code": speaker_profile.code, "event": event.slug}
     )
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(12):
         response = client.get(url, follow=True)
     assert response.status_code == 200
-    assert len(response.context["talks"]) == 2, response.context["talks"]
-    assert response.context["talks"].filter(submission=other_submission)
+    assert other_submission.title in response.content.decode()
     with scope(event=event):
         assert speaker.profiles.get(event=event).biography in response.text
         assert slot.submission.title in response.text
@@ -206,7 +205,7 @@ def test_speaker_page_other_submissions_only_if_visible(
     other_submission,
 ):
     with scope(event=event):
-        other_submission.speakers.add(speaker)
+        other_submission.speakers.add(speaker_profile)
         slot.submission.accept()
         slot.submission.save()
         event.wip_schedule.freeze("testversion 2")
@@ -219,12 +218,11 @@ def test_speaker_page_other_submissions_only_if_visible(
         "agenda:speaker",
         kwargs={"code": speaker_profile.code, "event": event.slug},
     )
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(12):
         response = client.get(url, follow=True)
 
     assert response.status_code == 200
-    assert len(response.context["talks"]) == 1
-    assert not response.context["talks"].filter(submission=other_submission)
+    assert other_submission.title not in response.content.decode()
 
 
 @pytest.mark.django_db
@@ -236,20 +234,18 @@ def test_speaker_social_media(
         "agenda:speaker-social",
         kwargs={"code": speaker_profile.code, "event": event.slug},
     )
-    with django_assert_num_queries(9):
+    with django_assert_num_queries(8):
         response = client.get(url, follow=True)
     assert response.status_code == 404  # no images available
 
 
 @pytest.mark.django_db
 @pytest.mark.usefixtures("slot", "other_slot")
-def test_speaker_redirect(client, event, speaker):
-    with scope(event=event):
-        profile = speaker.event_profile(event)
+def test_speaker_redirect(client, event, speaker_profile):
     target_url = reverse(
-        "agenda:speaker", kwargs={"code": profile.code, "event": event.slug}
+        "agenda:speaker", kwargs={"code": speaker_profile.code, "event": event.slug}
     )
-    url = event.urls.speakers + f"by-id/{speaker.pk}/"
+    url = event.urls.speakers + f"by-id/{speaker_profile.pk}/"
     response = client.get(url)
     assert response.status_code == 302
     assert response.headers["location"].endswith(target_url)

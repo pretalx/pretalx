@@ -21,18 +21,20 @@ def test_orga_can_access_speakers_list(orga_client, speaker, event, submission, 
 
 
 @pytest.mark.django_db
-def test_orga_can_access_speaker_page(orga_client, speaker, event, submission):
+def test_orga_can_access_speaker_page(orga_client, speaker_profile, event, submission):
     with scope(event=event):
-        url = speaker.event_profile(event).orga_urls.base
+        url = speaker_profile.orga_urls.base
     response = orga_client.get(url, follow=True)
     assert response.status_code == 200
-    assert speaker.name in response.text
+    assert speaker_profile.name in response.text
 
 
 @pytest.mark.django_db
-def test_orga_can_change_speaker_password(orga_client, speaker, event, submission):
+def test_orga_can_change_speaker_password(
+    orga_client, speaker, speaker_profile, event, submission
+):
     with scope(event=event):
-        url = speaker.event_profile(event).orga_urls.password_reset
+        url = speaker_profile.orga_urls.password_reset
         assert not speaker.pw_reset_token
     response = orga_client.get(url, follow=True)
     assert response.status_code == 200
@@ -47,21 +49,23 @@ def test_orga_can_change_speaker_password(orga_client, speaker, event, submissio
 
 
 @pytest.mark.django_db
-def test_reviewer_can_access_speaker_page(review_client, speaker, event, submission):
+def test_reviewer_can_access_speaker_page(
+    review_client, speaker_profile, event, submission
+):
     with scope(event=event):
-        url = speaker.event_profile(event).orga_urls.base
+        url = speaker_profile.orga_urls.base
     response = review_client.get(url, follow=True)
     assert response.status_code == 200
-    assert speaker.name in response.text
+    assert speaker_profile.name in response.text
 
 
 @pytest.mark.django_db
 def test_reviewer_cannot_change_speaker_password(
-    review_client, speaker, event, submission
+    review_client, speaker, speaker_profile, event, submission
 ):
     assert not speaker.pw_reset_token
     with scope(event=event):
-        url = speaker.event_profile(event).orga_urls.password_reset
+        url = speaker_profile.orga_urls.password_reset
     response = review_client.post(url, follow=True)
     assert response.status_code == 404
     with scope(event=event):
@@ -70,11 +74,12 @@ def test_reviewer_cannot_change_speaker_password(
 
 
 @pytest.mark.django_db
-def test_orga_can_edit_speaker(orga_client, speaker, event, submission):
+def test_orga_can_edit_speaker(
+    orga_client, speaker, speaker_profile, event, submission
+):
     with scope(event=event):
-        url = speaker.event_profile(event).orga_urls.base
-        profile = speaker.event_profile(event)
-        count = profile.logged_actions().all().count()
+        url = speaker_profile.orga_urls.base
+        count = speaker_profile.logged_actions().all().count()
     response = orga_client.post(
         url,
         data={
@@ -87,20 +92,19 @@ def test_orga_can_edit_speaker(orga_client, speaker, event, submission):
     assert response.status_code == 200
     with scope(event=event):
         speaker.refresh_from_db()
-        assert count + 1 == profile.logged_actions().all().count()
+        assert count + 1 == speaker_profile.logged_actions().all().count()
     assert speaker.name == "BESTSPEAKAR", response.text
     assert speaker.email == "foo@foooobar.de"
 
 
 @pytest.mark.django_db
 def test_orga_can_edit_speaker_with_custom_field_consolidated_log(
-    orga_client, speaker, event, submission, speaker_question
+    orga_client, speaker, speaker_profile, event, submission, speaker_question
 ):
     with scope(event=event):
-        url = speaker.event_profile(event).orga_urls.base
-        profile = speaker.event_profile(event)
+        url = speaker_profile.orga_urls.base
         old_name = speaker.name
-        initial_log_count = profile.logged_actions().count()
+        initial_log_count = speaker_profile.logged_actions().count()
 
     response = orga_client.post(
         url,
@@ -117,7 +121,7 @@ def test_orga_can_edit_speaker_with_custom_field_consolidated_log(
     with scope(event=event):
         speaker.refresh_from_db()
 
-        logs = profile.logged_actions()
+        logs = speaker_profile.logged_actions()
         new_log_count = logs.count()
         assert new_log_count == initial_log_count + 1
         update_log = logs.filter(action_type="pretalx.user.profile.update").first()
@@ -130,18 +134,19 @@ def test_orga_can_edit_speaker_with_custom_field_consolidated_log(
 
 
 @pytest.mark.django_db
-def test_orga_can_edit_speaker_unchanged(orga_client, speaker, event, submission):
+def test_orga_can_edit_speaker_unchanged(
+    orga_client, speaker, speaker_profile, event, submission
+):
     with scope(event=event):
-        url = speaker.event_profile(event).orga_urls.base
-        profile = speaker.event_profile(event)
-        count = profile.logged_actions().all().count()
+        url = speaker_profile.orga_urls.base
+        count = speaker_profile.logged_actions().all().count()
         event.cfp.fields["availabilities"]["visibility"] = "do_not_ask"
         event.cfp.save()
     response = orga_client.post(
         url,
         data={
             "name": speaker.name,
-            "biography": profile.biography,
+            "biography": speaker_profile.biography,
             "email": speaker.email,
         },
         follow=True,
@@ -149,15 +154,15 @@ def test_orga_can_edit_speaker_unchanged(orga_client, speaker, event, submission
     assert response.status_code == 200
     with scope(event=event):
         speaker.refresh_from_db()
-        assert count == profile.logged_actions().all().count()
+        assert count == speaker_profile.logged_actions().all().count()
 
 
 @pytest.mark.django_db
 def test_orga_cannot_edit_speaker_without_filling_questions(
-    orga_client, speaker, event, submission, speaker_question
+    orga_client, speaker, speaker_profile, event, submission, speaker_question
 ):
     with scope(event=event):
-        url = speaker.event_profile(event).orga_urls.base
+        url = speaker_profile.orga_urls.base
         speaker_question.question_required = QuestionRequired.REQUIRED
         speaker_question.save()
     response = orga_client.post(
@@ -177,12 +182,12 @@ def test_orga_cannot_edit_speaker_without_filling_questions(
 
 @pytest.mark.django_db
 def test_orga_cant_assign_duplicate_address(
-    orga_client, speaker, event, submission, other_speaker
+    orga_client, speaker, speaker_profile, event, submission, other_speaker
 ):
     event.cfp.fields["availabilities"]["visibility"] = "do_not_ask"
     event.cfp.save()
     with scope(event=event):
-        url = speaker.event_profile(event).orga_urls.base
+        url = speaker_profile.orga_urls.base
     response = orga_client.post(
         url,
         data={
@@ -223,9 +228,11 @@ def test_orga_can_edit_speaker_status(orga_client, speaker, event, submission):
 
 
 @pytest.mark.django_db
-def test_reviewer_cannot_edit_speaker(review_client, speaker, event, submission):
+def test_reviewer_cannot_edit_speaker(
+    review_client, speaker, speaker_profile, event, submission
+):
     with scope(event=event):
-        url = speaker.event_profile(event).orga_urls.base
+        url = speaker_profile.orga_urls.base
     response = review_client.post(
         url,
         data={"name": "BESTSPEAKAR", "biography": "I rule!"},
@@ -339,6 +346,7 @@ def test_orga_can_export_answers_csv(
         answered_choice_question.target = "speaker"
         answered_choice_question.save()
         answer = answered_choice_question.answers.all().first().answer_string
+        profile = speaker.get_speaker(event)
     response = orga_client.post(
         event.orga_urls.speakers + "export/",
         data={
@@ -353,7 +361,7 @@ def test_orga_can_export_answers_csv(
     assert response.status_code == 200
     assert (
         response.text
-        == f"ID,Name,Proposal IDs,{answered_choice_question.question}\r\n{speaker.code},{speaker.name},{submission.code},{answer}\r\n"
+        == f"ID,Name,Proposal IDs,{answered_choice_question.question}\r\n{profile.code},{speaker.name},{submission.code},{answer}\r\n"
     )
 
 
@@ -365,6 +373,7 @@ def test_orga_can_export_answers_json(
         answered_choice_question.target = "speaker"
         answered_choice_question.save()
         answer = answered_choice_question.answers.all().first().answer_string
+        profile = speaker.get_speaker(event)
     response = orga_client.post(
         event.orga_urls.speakers + "export/",
         data={
@@ -378,7 +387,7 @@ def test_orga_can_export_answers_json(
     assert response.status_code == 200
     assert json.loads(response.text) == [
         {
-            "ID": speaker.code,
+            "ID": profile.code,
             "Name": speaker.name,
             answered_choice_question.question: answer,
             "Proposal IDs": [submission.code],
@@ -412,7 +421,10 @@ def test_track_limited_reviewer_cannot_access_speaker_export(
 
 
 @pytest.mark.django_db
-def test_signal_extra_forms_saved_on_post(orga_client, speaker, event, submission):
+def test_signal_extra_forms_saved_on_post(
+    orga_client, speaker, speaker_profile, event, submission
+):
+
     event.plugins = "tests"
     event.save()
 
@@ -425,7 +437,7 @@ def test_signal_extra_forms_saved_on_post(orga_client, speaker, event, submissio
     speaker_form.connect(signal_receiver)
     try:
         with scope(event=event):
-            url = speaker.event_profile(event).orga_urls.base
+            url = speaker_profile.orga_urls.base
 
         # GET: extra forms render in context
         response = orga_client.get(url, follow=True)

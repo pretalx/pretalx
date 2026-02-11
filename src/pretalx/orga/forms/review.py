@@ -407,7 +407,7 @@ class ReviewExportForm(ExportForm):
                 submission__in=self.event.submissions.filter(state=target)
             ).distinct()
         # TODO auto-adjust further to available tracks etc
-        queryset = queryset.exclude(submission__speakers__in=[self.user]).distinct()
+        queryset = queryset.exclude(submission__speakers__user=self.user).distinct()
         return queryset.select_related("submission", "user").prefetch_related(
             "answers", "answers__question", "scores", "scores__category"
         )

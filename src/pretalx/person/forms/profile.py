@@ -62,7 +62,7 @@ class SpeakerProfileForm(
         self.essential_only = kwargs.pop("essential_only", False)
         kwargs["instance"] = None
         if self.user:
-            kwargs["instance"] = self.user.event_profile(self.event)
+            kwargs["instance"] = self.user.get_speaker(self.event)
         super().__init__(*args, **kwargs)
 
         if self.event and "availabilities" in self.fields:
@@ -178,14 +178,14 @@ class SpeakerProfileForm(
 class SpeakerAvailabilityForm(forms.Form):
     """Form for handling speaker availability during submission confirmation."""
 
-    def __init__(self, *args, event=None, speaker_profile=None, **kwargs):
+    def __init__(self, *args, event=None, speaker=None, **kwargs):
         self.event = event
-        self.speaker_profile = speaker_profile
+        self.speaker = speaker
         super().__init__(*args, **kwargs)
 
-        if self.event and self.speaker_profile:
+        if self.event and self.speaker:
             self.fields["availabilities"] = AvailabilitiesField(
-                event=self.event, instance=self.speaker_profile
+                event=self.event, instance=self.speaker
             )
 
     def save(self):
@@ -193,9 +193,9 @@ class SpeakerAvailabilityForm(forms.Form):
             return None
 
         availabilities = self.cleaned_data.get("availabilities")
-        if availabilities is not None and self.speaker_profile:
-            Availability.replace_for_instance(self.speaker_profile, availabilities)
-        return self.speaker_profile
+        if availabilities is not None and self.speaker:
+            Availability.replace_for_instance(self.speaker, availabilities)
+        return self.speaker
 
 
 class OrgaProfileForm(forms.ModelForm):
@@ -275,13 +275,13 @@ class SpeakerFilterForm(forms.Form):
         data = self.cleaned_data
         if data.get("role") == "true":
             queryset = queryset.filter(
-                user__submissions__in=self.event.submissions.filter(
+                submissions__in=self.event.submissions.filter(
                     state__in=SubmissionStates.accepted_states
                 )
             )
         elif data.get("role") == "false":
             queryset = queryset.exclude(
-                user__submissions__in=self.event.submissions.filter(
+                submissions__in=self.event.submissions.filter(
                     state__in=SubmissionStates.accepted_states
                 )
             )

@@ -60,7 +60,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <i class="fa fa-comments"></i> {{ phrases.agenda.feedback }}
                         </a>
                     {% endif %}
-                    {% if request.user in submission.speakers.all %}
+                    {% if is_speaker %}
                         <a href="{{ submission.urls.user_base }}" class="btn btn-info ml-1">
                             <i class="fa fa-edit"></i> {{ phrases.base.edit }}
                         </a>
@@ -167,7 +167,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% for speaker in speakers %}
         <div class="pretalx-session">
             <div class="pretalx-session-time-box avatar">
-                {% if not hide_speaker_links %}<a href="{{ speaker.talk_profile.urls.public }}">{% endif %}
+                {% if not hide_speaker_links %}<a href="{{ speaker.urls.public }}">{% endif %}
                 <div class="avatar-wrapper">
                     {% if speaker.avatar_url and request.event.cfp.request_avatar %}
                         <img loading="lazy" src="{{ speaker.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
@@ -182,10 +182,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% if hide_speaker_links %}
                         {{ speaker.get_display_name }}
                     {% else %}
-                        <a href="{{ speaker.talk_profile.urls.public }}">{{ speaker.get_display_name }}</a>
+                        <a href="{{ speaker.urls.public }}">{{ speaker.get_display_name }}</a>
                     {% endif %}
                 </div>
-                <div class="abstract">{{ speaker.talk_profile.biography|default:""|rich_text }}</div>
+                <div class="abstract">{{ speaker.biography|default:""|rich_text }}</div>
                 {% if speaker.other_submissions and not hide_speaker_links %}
                     {% translate "This speaker also appears in:" %}
                     <ul>

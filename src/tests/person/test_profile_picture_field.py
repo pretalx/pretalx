@@ -29,12 +29,11 @@ def profile_picture(speaker):
 
 
 @pytest.fixture
-def speaker_with_picture(speaker, event, profile_picture):
+def speaker_with_picture(speaker_profile, event, profile_picture):
     with scope(event=event):
-        profile = speaker.event_profile(event)
-        profile.profile_picture = profile_picture
-        profile.save(update_fields=["profile_picture"])
-    return speaker
+        speaker_profile.profile_picture = profile_picture
+        speaker_profile.save(update_fields=["profile_picture"])
+    return speaker_profile
 
 
 @pytest.fixture
@@ -118,13 +117,13 @@ def test_profile_picture_field_require_with_existing(profile_picture):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "action,expected",
-    [
+    ("action", "expected"),
+    (
         ("keep", False),
         ("remove", True),
         ("select_1", True),
         ("upload", True),
-    ],
+    ),
 )
 def test_profile_picture_field_has_changed(action, expected):
     field = ProfilePictureField()
@@ -132,14 +131,13 @@ def test_profile_picture_field_has_changed(action, expected):
 
 
 @pytest.mark.django_db
-def test_profile_picture_field_save_none(speaker, event):
+def test_profile_picture_field_save_none(speaker, speaker_profile, event):
     field = ProfilePictureField()
     field._cleaned_value = None
     with scope(event=event):
-        profile = speaker.event_profile(event)
-        field.save(profile, speaker)
-        profile.refresh_from_db()
-        assert profile.profile_picture is None
+        field.save(speaker_profile, speaker)
+        speaker_profile.refresh_from_db()
+        assert speaker_profile.profile_picture is None
 
 
 @pytest.mark.django_db
@@ -149,46 +147,43 @@ def test_profile_picture_field_save_remove(
     field = ProfilePictureField()
     field._cleaned_value = False
     with scope(event=event):
-        profile = speaker_with_picture.event_profile(event)
-        assert profile.profile_picture == profile_picture
+        assert speaker_with_picture.profile_picture == profile_picture
         old_updated = profile_picture.updated
-        field.save(profile, speaker_with_picture)
-        profile.refresh_from_db()
-        assert profile.profile_picture is None
-        profile_picture.refresh_from_db()
+        field.save(speaker_with_picture, speaker_with_picture.user)
+        speaker_with_picture.refresh_from_db()
+        assert speaker_with_picture.profile_picture is None
+        speaker_with_picture.refresh_from_db()
         assert profile_picture.updated >= old_updated
 
 
 @pytest.mark.django_db
 def test_profile_picture_field_save_select(
-    speaker, event, profile_picture, other_profile_pictures
+    speaker, speaker_profile, event, profile_picture, other_profile_pictures
 ):
     field = ProfilePictureField()
     target = other_profile_pictures[0]
     field._cleaned_value = target
     with scope(event=event):
-        profile = speaker.event_profile(event)
-        field.save(profile, speaker)
-        profile.refresh_from_db()
-        assert profile.profile_picture == target
+        field.save(speaker_profile, speaker)
+        speaker_profile.refresh_from_db()
+        assert speaker_profile.profile_picture == target
         speaker.refresh_from_db()
         assert speaker.profile_picture == target
 
 
 @pytest.mark.django_db
-def test_profile_picture_field_save_upload(speaker, event):
+def test_profile_picture_field_save_upload(speaker, speaker_profile, event):
     field = ProfilePictureField()
     image = _make_image()
     field._cleaned_value = image
     with scope(event=event):
-        profile = speaker.event_profile(event)
         old_count = ProfilePicture.objects.filter(user=speaker).count()
-        field.save(profile, speaker)
-        profile.refresh_from_db()
-        assert profile.profile_picture is not None
+        field.save(speaker_profile, speaker)
+        speaker_profile.refresh_from_db()
+        assert speaker_profile.profile_picture is not None
         assert ProfilePicture.objects.filter(user=speaker).count() == old_count + 1
         speaker.refresh_from_db()
-        assert speaker.profile_picture == profile.profile_picture
+        assert speaker.profile_picture == speaker_profile.profile_picture
 
 
 @pytest.mark.django_db
@@ -200,8 +195,7 @@ def test_profile_picture_field_save_upload_bumps_old(
     field._cleaned_value = image
     old_updated = profile_picture.updated
     with scope(event=event):
-        profile = speaker_with_picture.event_profile(event)
-        field.save(profile, speaker_with_picture)
+        field.save(speaker_with_picture, speaker_with_picture.user)
         profile_picture.refresh_from_db()
         assert profile_picture.updated >= old_updated
 
@@ -264,9 +258,11 @@ def test_profile_picture_widget_current_highlighted(speaker, profile_picture):
 
 
 @pytest.mark.django_db
-def test_orga_edit_speaker_upload_avatar(orga_client, speaker, event, submission):
+def test_orga_edit_speaker_upload_avatar(
+    orga_client, speaker, speaker_profile, event, submission
+):
     with scope(event=event):
-        url = speaker.event_profile(event).orga_urls.base
+        url = speaker_profile.orga_urls.base
     image = _make_image()
     response = orga_client.post(
         url,
@@ -281,9 +277,8 @@ def test_orga_edit_speaker_upload_avatar(orga_client, speaker, event, submission
     )
     assert response.status_code == 200
     with scope(event=event):
-        profile = speaker.event_profile(event)
-        profile.refresh_from_db()
-        assert profile.profile_picture is not None
+        speaker_profile.refresh_from_db()
+        assert speaker_profile.profile_picture is not None
 
 
 @pytest.mark.django_db
@@ -292,12 +287,12 @@ def test_orga_edit_speaker_select_existing_picture(
 ):
     target = other_profile_pictures[0]
     with scope(event=event):
-        url = speaker_with_picture.event_profile(event).orga_urls.base
+        url = speaker_with_picture.orga_urls.base
     response = orga_client.post(
         url,
         data={
             "name": speaker_with_picture.name,
-            "email": speaker_with_picture.email,
+            "email": speaker_with_picture.user.email,
             "biography": "bio",
             "avatar_action": f"select_{target.pk}",
         },
@@ -305,9 +300,8 @@ def test_orga_edit_speaker_select_existing_picture(
     )
     assert response.status_code == 200
     with scope(event=event):
-        profile = speaker_with_picture.event_profile(event)
-        profile.refresh_from_db()
-        assert profile.profile_picture == target
+        speaker_with_picture.refresh_from_db()
+        assert speaker_with_picture.profile_picture == target
 
 
 @pytest.mark.django_db
@@ -315,12 +309,12 @@ def test_orga_edit_speaker_remove_avatar(
     orga_client, speaker_with_picture, event, submission
 ):
     with scope(event=event):
-        url = speaker_with_picture.event_profile(event).orga_urls.base
+        url = speaker_with_picture.orga_urls.base
     response = orga_client.post(
         url,
         data={
             "name": speaker_with_picture.name,
-            "email": speaker_with_picture.email,
+            "email": speaker_with_picture.user.email,
             "biography": "bio",
             "avatar_action": "remove",
         },
@@ -328,9 +322,8 @@ def test_orga_edit_speaker_remove_avatar(
     )
     assert response.status_code == 200
     with scope(event=event):
-        profile = speaker_with_picture.event_profile(event)
-        profile.refresh_from_db()
-        assert profile.profile_picture is None
+        speaker_with_picture.refresh_from_db()
+        assert speaker_with_picture.profile_picture is None
 
 
 @pytest.mark.django_db
@@ -338,12 +331,12 @@ def test_orga_edit_speaker_avatar_no_change(
     orga_client, speaker_with_picture, event, submission, profile_picture
 ):
     with scope(event=event):
-        url = speaker_with_picture.event_profile(event).orga_urls.base
+        url = speaker_with_picture.orga_urls.base
     response = orga_client.post(
         url,
         data={
             "name": speaker_with_picture.name,
-            "email": speaker_with_picture.email,
+            "email": speaker_with_picture.user.email,
             "biography": "bio",
             "avatar_action": "keep",
         },
@@ -351,14 +344,13 @@ def test_orga_edit_speaker_avatar_no_change(
     )
     assert response.status_code == 200
     with scope(event=event):
-        profile = speaker_with_picture.event_profile(event)
-        profile.refresh_from_db()
-        assert profile.profile_picture == profile_picture
+        speaker_with_picture.refresh_from_db()
+        assert speaker_with_picture.profile_picture == profile_picture
 
 
 @pytest.mark.django_db
 def test_orga_edit_speaker_avatar_not_shown_when_disabled(
-    orga_client, speaker, event, submission
+    orga_client, speaker_profile, event, submission
 ):
     with scopes_disabled():
         fields = event.cfp.fields.copy()
@@ -366,7 +358,7 @@ def test_orga_edit_speaker_avatar_not_shown_when_disabled(
         event.cfp.fields = fields
         event.cfp.save(update_fields=["fields"])
     with scope(event=event):
-        url = speaker.event_profile(event).orga_urls.base
+        url = speaker_profile.orga_urls.base
     response = orga_client.get(url, follow=True)
     assert response.status_code == 200
     assert "pp-widget" not in response.text

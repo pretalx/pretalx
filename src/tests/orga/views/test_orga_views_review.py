@@ -7,6 +7,7 @@ import tempfile
 import pytest
 from django_scopes import scope
 
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models.question import QuestionRequired
 
 
@@ -260,7 +261,10 @@ def test_reviewer_cannot_review_own_submission(review_user, review_client, submi
     with scope(event=submission.event):
         category = submission.event.score_categories.first()
         score = category.scores.filter(value=1).first()
-        submission.speakers.add(review_user)
+        review_profile, _ = SpeakerProfile.objects.get_or_create(
+            user=review_user, event=submission.event
+        )
+        submission.speakers.add(review_profile)
         submission.save()
         assert submission.reviews.count() == 0
     response = review_client.post(

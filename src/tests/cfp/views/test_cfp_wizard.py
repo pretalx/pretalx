@@ -190,9 +190,10 @@ class TestWizard:
         answer=None,
     ):
         with scope(event=submission.event):
-            user = submission.speakers.get(email=email)
+            profile = submission.speakers.get(user__email=email)
+            user = profile.user
             assert user.name == name
-            assert user.profiles.get(event=submission.event).biography == biography
+            assert profile.biography == biography
             if question:
                 answ = user.answers.filter(question__target="speaker").first()
                 assert answ

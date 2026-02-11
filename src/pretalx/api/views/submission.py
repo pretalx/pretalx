@@ -42,7 +42,7 @@ from pretalx.api.versions import LEGACY
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
-from pretalx.person.models import User
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import (
     Resource,
     Submission,
@@ -53,7 +53,7 @@ from pretalx.submission.models import (
 )
 from pretalx.submission.rules import (
     questions_for_user,
-    speaker_profiles_for_user,
+    speakers_for_user,
     submissions_for_user,
 )
 
@@ -242,10 +242,10 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         return super().get_serializer(*args, **kwargs)
 
     @cached_property
-    def speaker_profiles_for_user(self):
+    def speakers_for_user(self):
         if not self.event:
             return
-        return speaker_profiles_for_user(self.event, self.request.user)
+        return speakers_for_user(self.event, self.request.user)
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -254,7 +254,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         context["questions"] = questions_for_user(
             self.event, self.request.user, for_answers=True
         )
-        context["speakers"] = self.speaker_profiles_for_user
+        context["speakers"] = self.speakers_for_user
         context["schedule"] = self.event.current_schedule
         context["public_slots"] = not self.has_perm("delete")
         context["public_resources"] = not self.is_orga
@@ -267,9 +267,11 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             # This is just during api doc creation
             return self.queryset
 
-        speakers_qs = User.objects.order_by("speaker_roles__position")
+        speakers_qs = SpeakerProfile.objects.filter(event=self.event).order_by(
+            "speaker_roles__position"
+        )
         if self.check_expanded_fields("speakers.user"):
-            speakers_qs = speakers_qs.prefetch_related("profiles")
+            speakers_qs = speakers_qs.select_related("user")
         queryset = (
             submissions_for_user(self.event, self.request.user)
             .select_related("event", "track", "submission_type")
@@ -343,8 +345,11 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         submission = self.get_object()
-        submission.add_speaker(
-            email=data["email"], name=data.get("name"), locale=data.get("locale")
+        submission.invite_speaker(
+            email=data["email"],
+            name=data.get("name"),
+            locale=data.get("locale"),
+            user=self.request.user,
         )
         submission.refresh_from_db()
         return Response(SubmissionOrgaSerializer(submission).data)
@@ -373,7 +378,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         submission = self.get_object()
         email = data["email"].lower()
 
-        if submission.speakers.filter(email__iexact=email).exists():
+        if submission.speakers.filter(user__email__iexact=email).exists():
             return Response(
                 {"detail": "This person is already a speaker on this proposal."},
                 status=status.HTTP_400_BAD_REQUEST,

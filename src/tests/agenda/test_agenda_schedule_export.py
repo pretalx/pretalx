@@ -15,12 +15,13 @@ from django.test import override_settings
 from django.urls import reverse
 from django_scopes import scope
 from jsonschema import validate
+from django_scopes import scopes_disabled
 from lxml import etree
 
 from pretalx.agenda.tasks import export_schedule_html
 from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
-from pretalx.person.models import ProfilePicture, SpeakerProfile
+from pretalx.person.models import ProfilePicture
 from pretalx.submission.models import Resource
 
 
@@ -133,7 +134,7 @@ def test_schedule_frab_json_export(
     orga_user,
     schedule_schema_json,
 ):
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         regular_response = client.get(
             reverse(
                 "agenda:export.schedule.json",
@@ -142,7 +143,7 @@ def test_schedule_frab_json_export(
             follow=True,
         )
     client.force_login(orga_user)
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(15):
         orga_response = client.get(
             reverse(
                 "agenda:export.schedule.json",
@@ -235,7 +236,7 @@ def test_schedule_export_nonpublic(exporter, slot, client, django_assert_num_que
     ("exporter", "queries"),
     (
         ("schedule.xml", 13),
-        ("schedule.json", 15),
+        ("schedule.json", 14),
         ("schedule.xcal", 10),
         ("feed", 10),
     ),
@@ -258,9 +259,8 @@ def test_schedule_speaker_ical_export(
     slot, other_slot, client, django_assert_num_queries
 ):
     with scope(event=slot.submission.event):
-        speaker = slot.submission.speakers.all()[0]
-        profile = speaker.profiles.get(event=slot.event)
-    with django_assert_num_queries(15):
+        profile = slot.submission.speakers.all()[0]
+    with django_assert_num_queries(14):
         response = client.get(profile.urls.talks_ical, follow=True)
     assert response.status_code == 200
 
@@ -404,14 +404,12 @@ def test_html_export_full(
     nonascii_filename = "lüstíg.jpg"
     f = SimpleUploadedFile(nonascii_filename, b"file_content")
     with scope(event=event):
-        speaker = slot.submission.speakers.first()
-        picture = ProfilePicture.objects.create(user=speaker)
+        profile = slot.submission.speakers.first()
+        picture = ProfilePicture.objects.create(user=profile.user)
         picture.avatar.save(nonascii_filename, f)
         picture.save()
-        speaker.profile_picture = picture
-        speaker.save()
-        # Also link the picture to the speaker's event profile
-        profile = speaker.event_profile(event)
+        profile.user.profile_picture = picture
+        profile.user.save()
         profile.profile_picture = picture
         profile.save()
         avatar_filename = picture.avatar.name.split("/")[-1]
@@ -438,10 +436,7 @@ def test_html_export_full(
     with scope(event=event):
         speaker_paths = [
             f"test/speaker/{profile.code}/index.html"
-            for profile in SpeakerProfile.objects.filter(
-                event=event,
-                user__in=list(slot.submission.speakers.all()),
-            )
+            for profile in slot.submission.speakers.all()
         ]
 
     paths = [
@@ -477,7 +472,8 @@ def test_html_export_full(
     talk_html = html_path.read_text()
     assert talk_html.count(slot.submission.title) >= 2
 
-    speaker = slot.submission.speakers.all()[0]
+    with scope(event=event):
+        profile = slot.submission.speakers.all()[0]
     html_path = settings.HTMLEXPORT_ROOT / "test" / "test/schedule/index.html"
     schedule_html = html_path.read_text()
     assert "Contact us" in schedule_html  # locale
@@ -491,7 +487,7 @@ def test_html_export_full(
     xcal_path = settings.HTMLEXPORT_ROOT / "test/test/schedule/export/schedule.xcal"
     schedule_xcal = xcal_path.read_text()
     assert event.slug in schedule_xcal
-    assert speaker.name in schedule_xcal
+    assert profile.get_display_name() in schedule_xcal
 
     xml_path = settings.HTMLEXPORT_ROOT / "test/test/schedule/export/schedule.xml"
     schedule_xml = xml_path.read_text()
@@ -513,7 +509,7 @@ def test_html_export_full(
 
 @pytest.mark.django_db
 def test_speaker_csv_export(slot, orga_client, django_assert_num_queries):
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = orga_client.get(
             reverse(
                 "agenda:export",
@@ -522,7 +518,8 @@ def test_speaker_csv_export(slot, orga_client, django_assert_num_queries):
             follow=True,
         )
     assert response.status_code == 200, str(response.text)
-    assert slot.submission.speakers.first().name in response.text
+    with scopes_disabled():
+        assert slot.submission.speakers.first().get_display_name() in response.text
 
 
 @pytest.mark.django_db
@@ -574,7 +571,8 @@ def test_speaker_question_csv_export(slot, orga_client):
         follow=True,
     )
     assert response.status_code == 200, str(response.text)
-    assert slot.submission.speakers.first().name in response.text
+    with scopes_disabled():
+        assert slot.submission.speakers.first().get_display_name() in response.text
 
 
 @pytest.mark.django_db

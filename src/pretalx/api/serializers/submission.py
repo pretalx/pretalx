@@ -14,7 +14,7 @@ from pretalx.api.documentation import extend_schema_field
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
-from pretalx.person.models import SpeakerProfile, User
+from pretalx.person.models import User
 from pretalx.submission.models import (
     QuestionTarget,
     Resource,
@@ -231,17 +231,10 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     def get_speakers(self, obj):
         if not self.event:
             return []
-        speaker_ids = list(obj.sorted_speakers.values_list("pk", flat=True))
-        profiles = SpeakerProfile.objects.filter(
-            event=self.event, user__in=speaker_ids
-        ).distinct()
-        if serializer := self.get_extra_flex_field("speakers", profiles):
-            # Re-sort to match speaker position order
-            data = serializer.data
-            id_order = {uid: i for i, uid in enumerate(speaker_ids)}
-            data.sort(key=lambda p: id_order.get(p.get("user"), 0))
-            return data
-        return obj.sorted_speakers.values_list("code", flat=True)
+        speakers = obj.sorted_speakers.all()
+        if serializer := self.get_extra_flex_field("speakers", speakers):
+            return serializer.data
+        return speakers.values_list("code", flat=True)
 
     @extend_schema_field(list[int])
     def get_answers(self, obj):

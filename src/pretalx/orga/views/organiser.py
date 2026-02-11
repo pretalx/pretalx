@@ -443,14 +443,16 @@ class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListV
             .prefetch_related("profiles", "profiles__event")
             .annotate(
                 submission_count=Count(
-                    "submissions",
-                    filter=Q(submissions__event__in=self.events),
+                    "profiles__submissions",
+                    filter=Q(profiles__submissions__event__in=self.events),
                     distinct=True,
                 ),
                 accepted_submission_count=Count(
-                    "submissions",
-                    filter=Q(submissions__event__in=self.events)
-                    & Q(submissions__state__in=SubmissionStates.accepted_states),
+                    "profiles__submissions",
+                    filter=Q(profiles__submissions__event__in=self.events)
+                    & Q(
+                        profiles__submissions__state__in=SubmissionStates.accepted_states
+                    ),
                     distinct=True,
                 ),
             )

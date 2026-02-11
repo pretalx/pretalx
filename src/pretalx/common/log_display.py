@@ -154,7 +154,7 @@ LOG_NAMES = {
     ),
     "pretalx.user.password.reset": phrases.base.password_reset_success,
     "pretalx.user.password.update": _("The password was modified."),
-    "pretalx.user.profile.update": _("The profile was modified."),
+    "pretalx.user.profile.update": _("The speaker was modified."),
     "pretalx.user.email.update": _("The user changed their email address."),
 }
 
@@ -232,7 +232,7 @@ def default_activitylog_object_link(sender: Event, activitylog: ActivityLog, **k
         link_text = escape(activitylog.content_object.subject)
     elif isinstance(activitylog.content_object, SpeakerProfile):
         url = activitylog.content_object.orga_urls.base
-        text = _("Speaker profile")
+        text = _("Speaker")
         link_text = escape(activitylog.content_object.user.get_display_name())
     elif isinstance(activitylog.content_object, Event):
         url = activitylog.content_object.orga_urls.base

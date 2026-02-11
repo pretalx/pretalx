@@ -9,7 +9,8 @@ from contextlib import suppress
 from django.http import Http404, HttpResponseRedirect
 from django_scopes import scopes_disabled
 
-from pretalx.person.models.profile import SpeakerProfile
+from pretalx.person.models import SpeakerProfile
+from pretalx.person.models.user import User
 from pretalx.submission.models.submission import Submission
 
 
@@ -21,19 +22,23 @@ def shortlink_view(request, code, *args, **kwargs):
             return HttpResponseRedirect(submission.orga_urls.base)
         if request.user.has_perm("submission.view_public_submission", submission):
             return HttpResponseRedirect(submission.urls.public)
-    profiles = (
+    speakers = (
         SpeakerProfile.objects.filter(code=code)
         .select_related("event", "user")
         .order_by("-created")
     )
-    for profile in profiles:
-        if request.user.has_perm("person.administrator_user", profile.user):
-            return HttpResponseRedirect(profile.user.orga_urls.admin)
-        if request.user.has_perm("person.orga_list_speakerprofile", profile):
-            return HttpResponseRedirect(profile.orga_urls.base)
-    if profile := profiles.first():
-        if request.user == profile.user:
-            return HttpResponseRedirect(profile.event.urls.user)
-        if request.user.has_perm("person.view_speakerprofile", profile):
-            return HttpResponseRedirect(profile.urls.public)
+    for speaker in speakers:
+        if request.user.has_perm("person.administrator_user", speaker.user):
+            return HttpResponseRedirect(speaker.user.orga_urls.admin)
+        if request.user.has_perm("person.orga_list_speakerprofile", speaker):
+            return HttpResponseRedirect(speaker.orga_urls.base)
+        if speaker.user == request.user:
+            return HttpResponseRedirect(speaker.event.urls.user)
+    for speaker in speakers:
+        if request.user.has_perm("person.view_speakerprofile", speaker):
+            return HttpResponseRedirect(speaker.urls.public)
+    with suppress(User.DoesNotExist):
+        user = User.objects.get(code=code)
+        if request.user.has_perm("person.administrator_user", user):
+            return HttpResponseRedirect(user.orga_urls.admin)
     raise Http404

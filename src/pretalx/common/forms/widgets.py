@@ -422,7 +422,7 @@ class ProfilePictureWidget(forms.Widget):
         if self.user:
             with scopes_disabled():
                 # beware circular imports
-                from pretalx.person.models import ProfilePicture
+                from pretalx.person.models import ProfilePicture  # noqa: PLC0415
 
                 pictures = (
                     ProfilePicture.objects.filter(user=self.user)

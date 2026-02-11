@@ -23,7 +23,7 @@ from pretalx.common.language import language
 from pretalx.common.text.phrases import phrases
 from pretalx.mail.context import get_available_placeholders, get_invalid_placeholders
 from pretalx.mail.models import MailTemplate, QueuedMail
-from pretalx.person.models import User
+from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.forms import SubmissionFilterForm
 from pretalx.submission.models import Track
 
@@ -136,7 +136,9 @@ class MailDetailForm(ReadOnlyFlag, forms.ModelForm):
         if not self.instance or not self.instance.to_users.all().count():
             self.fields.pop("to_users")
         else:
-            self.fields["to_users"].queryset = self.instance.event.submitters.all()
+            self.fields["to_users"].queryset = User.objects.filter(
+                profiles__in=self.instance.event.submitters
+            ).distinct()
             self.fields["to_users"].required = False
 
     def clean(self, *args, **kwargs):
@@ -278,7 +280,7 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
         widget=EnhancedSelectMultiple(attrs={"placeholder": _("Proposals")}),
     )
     speakers = forms.ModelMultipleChoiceField(
-        queryset=User.objects.none(),
+        queryset=SpeakerProfile.objects.none(),
         required=False,
         label=phrases.schedule.speakers,
         help_text=_(
@@ -406,9 +408,12 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
             with suppress(
                 SendMailException
             ):  # This happens when there are template errors
-                locale = context["user"].locale
+                speaker = context["user"]
+                user = speaker.user if hasattr(speaker, "user") else speaker
+                context["user"] = user
+                locale = user.locale
                 if submission := context.get("submission"):
-                    locale = submission.get_email_locale(context["user"].locale)
+                    locale = submission.get_email_locale(user.locale)
                 mail = template.to_mail(
                     user=None,
                     event=self.event,
@@ -417,7 +422,7 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
                     commit=False,
                     allow_empty_address=True,
                 )
-                mails_by_user[context["user"]].append((mail, context))
+                mails_by_user[user].append((mail, context))
 
         result = []
         for user, user_mails in mails_by_user.items():

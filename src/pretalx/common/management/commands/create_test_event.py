@@ -233,16 +233,18 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
         email = self.fake.user_name() + "@example.org"
         user = User.objects.filter(email__iexact=email).first()
         if user:  # pragma: no cover
-            return user
+            speaker, _ = SpeakerProfile.objects.get_or_create(
+                user=user, event=self.event
+            )
+            return speaker
         user = self.create_user_with_retry(
             name=self.fake.name(),
             email_base=email,
             # TODO: generate avatar,
         )
-        SpeakerProfile.objects.create(
+        return SpeakerProfile.objects.create(
             user=user, event=self.event, biography="\n\n".join(self.fake.texts(2))
         )
-        return user
 
     def build_submission(self, speaker, submission_type, submission_time):
         with self.freeze_time(submission_time):
@@ -256,7 +258,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
                 content_locale="en",
                 do_not_record=random.choice([False] * 10 + [True]),
             )
-            submission.log_action("pretalx.submission.create", person=speaker)
+            submission.log_action("pretalx.submission.create", person=speaker.user)
         submission.speakers.add(speaker)
         return submission
 

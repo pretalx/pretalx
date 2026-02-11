@@ -7,7 +7,6 @@ from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import is_reviewer
 from pretalx.submission.rules import (
     are_featured_submissions_visible,
-    is_speaker,
     orga_can_change_submissions,
 )
 
@@ -58,11 +57,11 @@ def is_agenda_submission_visible(user, submission):
 
 
 @rules.predicate
-def is_viewable_profile(user, profile):
-    return is_speaker(profile.user, profile.event)
+def is_viewable_speaker(user, speaker):
+    return speaker.event.speakers.filter(pk=speaker.pk).exists()
 
 
-is_speaker_viewable = is_viewable_profile & can_view_schedule
+is_speaker_viewable = is_viewable_speaker & can_view_schedule
 
 
 @rules.predicate
