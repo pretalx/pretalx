@@ -5,6 +5,7 @@
 # SPDX-FileContributor: Raphael Michel
 
 import logging
+import re
 from contextlib import suppress
 from email.utils import formataddr
 from smtplib import SMTPResponseException, SMTPSenderRefused
@@ -111,6 +112,8 @@ def mail_send_task(
     else:
         sender = formataddr(("pretalx", settings.MAIL_FROM))
         backend = get_connection(fail_silently=False)
+
+    subject = re.sub(r"[\x00-\x1f\x7f]+", " ", str(subject)).strip()
 
     email = EmailMultiAlternatives(
         subject=subject,
