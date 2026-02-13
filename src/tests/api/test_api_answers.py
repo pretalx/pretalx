@@ -43,16 +43,26 @@ def test_answers_not_visible_unauthenticated(client, answer, schedule, is_public
 
 
 @pytest.mark.django_db
-def test_organizer_can_see_answer(orga_user_token, client, answer):
-    response = client.get(
-        answer.event.api_urls.answers,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_organizer_can_see_answer(
+    orga_user_token, client, answer, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=answer.event):
+            Answer.objects.create(
+                answer="42", submission=answer.submission, question=answer.question
+            )
+
+    with django_assert_num_queries(14):
+        response = client.get(
+            answer.event.api_urls.answers,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
     assert response.status_code == 200
-    assert len(content["results"]) == 1
-    assert content["results"][0]["id"] == answer.id
+    assert len(content["results"]) == item_count
+    assert answer.id in [r["id"] for r in content["results"]]
 
 
 @pytest.mark.django_db

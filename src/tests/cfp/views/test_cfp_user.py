@@ -23,10 +23,55 @@ from pretalx.submission.models import (
 
 
 @pytest.mark.django_db
-def test_can_see_submission_list(speaker_client, submission):
-    response = speaker_client.get(submission.event.urls.user_submissions, follow=True)
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_can_see_submission_list(
+    speaker_client,
+    speaker,
+    speaker_profile,
+    event,
+    submission,
+    django_assert_num_queries,
+    item_count,
+):
+    with scope(event=event):
+        if item_count == 2:
+            second_sub = Submission.objects.create(
+                title="Second Talk",
+                event=event,
+                submission_type=event.cfp.default_type,
+                content_locale="en",
+            )
+            second_sub.speakers.add(speaker_profile)
+
+    with django_assert_num_queries(13):
+        response = speaker_client.get(event.urls.user_submissions, follow=True)
     assert response.status_code == 200
     assert submission.title in response.text
+    if item_count == 2:
+        assert "Second Talk" in response.text
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_can_see_mail_list(
+    speaker_client,
+    event,
+    speaker,
+    mail_template,
+    django_assert_num_queries,
+    item_count,
+):
+    with scope(event=event):
+        mail1 = mail_template.to_mail(speaker, event)
+        mail1.send()
+        if item_count != 1:
+            mail2 = mail_template.to_mail(speaker, event)
+            mail2.send()
+
+    with django_assert_num_queries(9):
+        response = speaker_client.get(event.urls.user_mails, follow=True)
+    assert response.status_code == 200
+    assert mail1.subject in response.text
 
 
 @pytest.mark.django_db

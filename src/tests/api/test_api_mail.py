@@ -8,6 +8,7 @@ from django_scopes import scope
 
 from pretalx.api.serializers.mail import MailTemplateSerializer
 from pretalx.api.versions import LEGACY
+from pretalx.mail.models import MailTemplate
 
 
 @pytest.mark.django_db
@@ -37,19 +38,29 @@ def test_cannot_see_mail_templates(client, mail_template, is_public):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_mail_templates(client, orga_user_token, mail_template):
-    response = client.get(
-        mail_template.event.api_urls.mail_templates,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_see_mail_templates(
+    client, orga_user_token, mail_template, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=mail_template.event):
+            MailTemplate.objects.create(
+                event=mail_template.event,
+                subject="Other Template",
+                text="Other content",
+            )
+
+    with django_assert_num_queries(11):
+        response = client.get(
+            mail_template.event.api_urls.mail_templates,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200
     assert content["count"] > 0
-    assert mail_template.subject in [
-        template["subject"]["en"] for template in content["results"]
-    ]
+    assert mail_template.subject in [r["subject"].get("en") for r in content["results"]]
 
 
 @pytest.mark.django_db
