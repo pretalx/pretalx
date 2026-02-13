@@ -76,8 +76,11 @@ from pretalx.submission.models.submission import SpeakerRole
 from pretalx.submission.rules import (
     annotate_assigned,
     get_reviewer_tracks,
+    has_reviewer_access,
     limit_for_reviewers,
+    orga_can_change_submissions,
     questions_for_user,
+    submission_comments_active,
 )
 
 
@@ -149,6 +152,7 @@ class ReviewerSubmissionFilter:
                 "submission_type",
                 "event",
                 "track",
+                "track__event",
                 "submission_type__event",
                 "submission_type__event__cfp",
             )
@@ -1217,6 +1221,20 @@ class CommentList(SubmissionViewMixin, FormView):
     @cached_property
     def comments(self):
         return self.object.comments.all().select_related("user").order_by("created")
+
+    @context
+    @cached_property
+    def can_delete_own_comments(self):
+        """Pre-compute if the user could delete their own comments."""
+        user = self.request.user
+        submission = self.object
+        return bool(
+            submission_comments_active(user, submission)
+            and (
+                has_reviewer_access(user, submission)
+                or orga_can_change_submissions(user, submission)
+            )
+        )
 
     def form_valid(self, form):
         form.save()

@@ -60,6 +60,7 @@ class TeamView(OrgaCRUDView):
         return (
             self.request.organiser.teams.all()
             .annotate(member_count=Count("members"))
+            .prefetch_related("members")
             .order_by("-all_events", "name")
         )
 
@@ -460,8 +461,13 @@ class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListV
         qs = self.filter_queryset(qs)
         return qs
 
-    def get_table_data(self):
-        return self.get_queryset()
+    def get(self, request, *args, **kwargs):
+        # Eagerly evaluate the queryset while scopes_disabled is active
+        # (TemplateResponse renders after dispatch returns, outside the scope).
+        # Using a list also lets the table and context share one evaluation.
+        self.object_list = list(self.get_queryset())
+        context = self.get_context_data()
+        return self.render_to_response(context)
 
     def get_table(self, *args, **kwargs):
         table = super().get_table(*args, **kwargs)
@@ -470,10 +476,10 @@ class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListV
         )  # access property to force fetching while scopes disabled
         return table
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context[self.context_object_name] = list(context[self.context_object_name])
-        return context
+    def get_table_data(self):
+        if hasattr(self, "object_list"):
+            return self.object_list
+        return self.get_queryset()
 
 
 def speaker_search(request, *args, **kwargs):

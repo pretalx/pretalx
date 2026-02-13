@@ -11,7 +11,7 @@ from collections import defaultdict
 from django.contrib import messages
 from django.core.exceptions import FieldDoesNotExist
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
 from django.http import JsonResponse
@@ -578,7 +578,15 @@ class AccessCodeView(OrderActionMixin, OrgaCRUDView):
     create_button_label = _("New access code")
 
     def get_queryset(self):
-        return self.request.event.submitter_access_codes.all().order_by("valid_until")
+        return (
+            self.request.event.submitter_access_codes.all()
+            .annotate(
+                has_submissions=Exists(
+                    self.request.event.submissions.filter(access_code=OuterRef("pk"))
+                )
+            )
+            .order_by("valid_until")
+        )
 
     def get_generic_title(self, instance=None):
         if instance:

@@ -53,7 +53,7 @@ def test_organizer_can_see_answer(
                 answer="42", submission=answer.submission, question=answer.question
             )
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(13):
         response = client.get(
             answer.event.api_urls.answers,
             follow=True,

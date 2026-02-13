@@ -56,7 +56,7 @@ def test_orga_can_see_teams(
             organiser=organiser, name="Other Team", can_change_submissions=True
         )
 
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(12):
         response = client.get(
             f"/api/organisers/{organiser.slug}/teams/",
             follow=True,

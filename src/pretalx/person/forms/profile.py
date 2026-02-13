@@ -314,7 +314,7 @@ class UserSpeakerFilterForm(forms.Form):
     def __init__(self, *args, events=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.events = events
-        if events.count() > 1:
+        if len(events) > 1:
             self.fields["events"].queryset = events
         else:
             self.fields.pop("events")

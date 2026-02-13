@@ -173,7 +173,9 @@ def test_event_list_num_queries(
         orga_user.is_administrator = True
         orga_user.save()
 
-    with django_assert_num_queries(6):
+    # Admin path (item_count=2) skips team-based filtering, using fewer queries
+    expected_queries = 5 if item_count == 2 else 6
+    with django_assert_num_queries(expected_queries):
         response = orga_client.get(reverse("orga:event.list"))
     assert response.status_code == 200
     assert event.slug in response.text
@@ -213,15 +215,15 @@ def test_organiser_event_list_num_queries(
 def test_organiser_speakers_num_queries(
     orga_client,
     event,
-    submission,
-    other_submission,
+    slot,
+    other_slot,
     speaker_profile,
     other_speaker,
     django_assert_num_queries,
     item_count,
 ):
-    if item_count != 2:
-        with scope(event=event):
+    with scope(event=event):
+        if item_count != 2:
             profile = SpeakerProfile.objects.get(user=other_speaker, event=event)
             profile.user = None
             profile.save()

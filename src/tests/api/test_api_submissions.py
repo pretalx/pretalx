@@ -167,7 +167,7 @@ def test_orga_can_see_all_submissions(
         with scope(event=submission.event):
             rejected_submission.delete()
 
-    with django_assert_num_queries(46):
+    with django_assert_num_queries(22):
         response = client.get(
             submission.event.api_urls.submissions + "?questions=all",
             follow=True,

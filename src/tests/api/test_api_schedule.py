@@ -461,7 +461,7 @@ def test_list_slots_orga_sees_slots_in_current_schedule_by_default(
             event.current_schedule.talks.values_list("pk", flat=True)
         )
 
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(12):
         response = client.get(
             event.api_urls.slots,
             follow=True,
