@@ -192,7 +192,7 @@ class TestWizard:
         with scope(event=submission.event):
             profile = submission.speakers.get(user__email=email)
             user = profile.user
-            assert user.name == name
+            assert profile.name == name
             assert profile.biography == biography
             if question:
                 answ = user.answers.filter(question__target="speaker").first()
