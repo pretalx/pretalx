@@ -66,7 +66,7 @@ class TestMailView(PermissionRequired, View):
             )
             return redirect(reverse("orga:admin.dashboard"))
 
-        admin_emails = [email for name, email in settings.ADMINS]
+        admin_emails = list(settings.ADMINS)
 
         try:
             mail_send_task.apply(

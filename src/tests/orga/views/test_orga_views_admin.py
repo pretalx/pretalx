@@ -5,6 +5,7 @@ import json
 
 import pytest
 import responses
+from django.test import override_settings
 
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.person.models import User
@@ -113,23 +114,23 @@ def test_test_mail_requires_admin(client, user):
 
 
 @pytest.mark.django_db
-def test_test_mail_no_admins_configured(client, user, settings):
+@override_settings(ADMINS=[])
+def test_test_mail_no_admins_configured(client, user):
     user.is_administrator = True
     user.save()
     client.login(email="dummy@dummy.dummy", password="dummy")
 
-    settings.ADMINS = []
     response = client.post("/orga/admin/test-mail/", follow=True)
     assert "No administrator email addresses are configured" in response.text
 
 
 @pytest.mark.django_db
-def test_test_mail_sends_email(client, user, settings, mailoutbox):
+@override_settings(ADMINS=["admin@example.com"])
+def test_test_mail_sends_email(client, user, mailoutbox):
     user.is_administrator = True
     user.save()
     client.login(email="dummy@dummy.dummy", password="dummy")
 
-    settings.ADMINS = [("Admin", "admin@example.com")]
     response = client.post("/orga/admin/test-mail/", follow=True)
     assert "Test email sent successfully" in response.text
     assert len(mailoutbox) == 1

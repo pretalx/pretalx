@@ -133,7 +133,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% if settings.ADMINS %}
                 {% translate "On errors, emails will be sent to:" %}
                 {% for admin in settings.ADMINS %}
-                    <code>{{ admin.0|copyable }}</code>
+                    <code>{{ admin|copyable }}</code>
                     {% if not forloop.last %},{% endif %}
                 {% endfor %}
             {% else %}
