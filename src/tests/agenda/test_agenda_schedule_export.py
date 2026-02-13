@@ -279,6 +279,16 @@ def test_feed_view(slot, client, django_assert_num_queries, schedule):
 
 
 @pytest.mark.django_db
+def test_feed_view_with_control_characters(slot, client, schedule):
+    schedule.version = "Version\x0b1"
+    schedule.save()
+    response = client.get(slot.submission.event.urls.feed)
+    assert response.status_code == 200
+    assert "Version1" in response.text
+    assert "\x0b" not in response.text
+
+
+@pytest.mark.django_db
 def test_html_export_event_required():
     from django.core.management import (  # Import here to avoid overriding mocks
         call_command,
