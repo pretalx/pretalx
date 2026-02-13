@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-
 import datetime as dt
 from contextlib import suppress
 
@@ -12,11 +11,14 @@ from django_scopes import scope, scopes_disabled
 from pretalx.common.models.log import ActivityLog
 from pretalx.schedule.models import TalkSlot
 from pretalx.person.models import SpeakerProfile
+from pretalx.schedule.models import TalkSlot
 from pretalx.submission.models import (
+    Feedback,
     Review,
     Submission,
     SubmissionInvitation,
     SubmissionStates,
+    Tag,
 )
 from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from pretalx.submission.models.submission import SpeakerRole
@@ -24,8 +26,41 @@ from pretalx.person.models import User
 
 
 @pytest.mark.django_db
-def test_orga_can_see_submissions(orga_client, event, submission):
-    response = orga_client.get(event.orga_urls.submissions, follow=True)
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_see_submissions(
+    orga_client,
+    event,
+    submission,
+    other_submission,
+    django_assert_num_queries,
+    item_count,
+):
+    if item_count != 2:
+        with scope(event=event):
+            other_submission.delete()
+
+    with django_assert_num_queries(36):
+        response = orga_client.get(event.orga_urls.submissions, follow=True)
+    assert response.status_code == 200
+    assert submission.title in response.text
+
+
+@pytest.mark.django_db
+def test_orga_can_see_single_submission(
+    orga_client, event, submission, django_assert_num_queries
+):
+    with django_assert_num_queries(33):
+        response = orga_client.get(submission.orga_urls.base, follow=True)
+    assert response.status_code == 200
+    assert submission.title in response.text
+
+
+@pytest.mark.django_db
+def test_orga_can_see_single_submission_speakers(
+    orga_client, event, submission, django_assert_num_queries
+):
+    with django_assert_num_queries(27):
+        response = orga_client.get(submission.orga_urls.speakers, follow=True)
     assert response.status_code == 200
     assert submission.title in response.text
 
@@ -111,13 +146,6 @@ def test_orga_can_miss_search_submissions(orga_client, event, submission):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_single_submission(orga_client, event, submission):
-    response = orga_client.get(submission.orga_urls.base, follow=True)
-    assert response.status_code == 200
-    assert submission.title in response.text
-
-
-@pytest.mark.django_db
 def test_orga_can_see_submission_404(orga_client, event, submission):
     response = orga_client.get(submission.orga_urls.base + "JJ", follow=True)
     assert response.status_code == 404
@@ -152,16 +180,18 @@ def test_reviewer_can_see_single_submission_but_hide_question(
 
 
 @pytest.mark.django_db
-def test_orga_can_see_single_submission_feedback(orga_client, event, feedback):
-    response = orga_client.get(feedback.talk.orga_urls.feedback, follow=True)
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_see_single_submission_feedback(
+    orga_client, event, feedback, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=event):
+            Feedback.objects.create(talk=feedback.talk, review="I also liked it!")
+
+    with django_assert_num_queries(31):
+        response = orga_client.get(feedback.talk.orga_urls.feedback, follow=True)
     assert response.status_code == 200
     assert feedback.review in response.text
-
-
-@pytest.mark.django_db
-def test_orga_can_see_single_submission_speakers(orga_client, event, submission):
-    response = orga_client.get(submission.orga_urls.speakers, follow=True)
-    assert response.status_code == 200
 
 
 @pytest.mark.django_db
@@ -867,11 +897,19 @@ def test_orga_can_edit_submission_wrong_datetime_answer(
 
 
 @pytest.mark.django_db
-def test_orga_can_see_all_feedback(orga_client, event, feedback):
-    response = orga_client.get(event.orga_urls.feedback, follow=True)
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_see_all_feedback(
+    orga_client, event, feedback, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=event):
+            Feedback.objects.create(talk=feedback.talk, review="Also great!")
+
+    with django_assert_num_queries(21):
+        response = orga_client.get(event.orga_urls.feedback, follow=True)
     assert response.status_code == 200
-    assert feedback.talk.title in response.text
     assert feedback.review in response.text
+    assert feedback.talk.title in response.text
 
 
 @pytest.mark.django_db
@@ -1003,8 +1041,14 @@ def test_submission_apply_pending_single(submission, orga_client):
 
 
 @pytest.mark.django_db
-def test_can_see_tags(orga_client, tag):
-    response = orga_client.get(tag.event.orga_urls.tags)
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_can_see_tags(orga_client, tag, event, django_assert_num_queries, item_count):
+    if item_count == 2:
+        with scope(event=event):
+            Tag.objects.create(event=event, tag="Other Tag", color="#ff0000")
+
+    with django_assert_num_queries(21):
+        response = orga_client.get(event.orga_urls.tags)
     assert response.status_code == 200
     assert tag.tag in response.text
 
@@ -1104,8 +1148,18 @@ def test_can_delete_used_tag(orga_client, tag, event, submission):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_submission_comments(orga_client, submission, submission_comment):
-    response = orga_client.get(submission.orga_urls.comments, follow=True)
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_see_submission_comments(
+    orga_client, submission, submission_comment, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=submission.event):
+            submission.comments.create(
+                text="Second comment", user=submission.speakers.first().user
+            )
+
+    with django_assert_num_queries(29):
+        response = orga_client.get(submission.orga_urls.comments, follow=True)
     assert response.status_code == 200
     assert submission_comment.text in response.text
 
@@ -1139,7 +1193,10 @@ def test_orga_cannot_post_empty_submission_comment(orga_client, submission):
 
 
 @pytest.mark.django_db
-def test_orga_can_view_submission_history(orga_client, event, submission, orga_user):
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_view_submission_history(
+    orga_client, event, submission, orga_user, django_assert_num_queries, item_count
+):
     with scope(event=event):
         submission.log_action(
             "pretalx.submission.update",
@@ -1148,8 +1205,17 @@ def test_orga_can_view_submission_history(orga_client, event, submission, orga_u
             old_data={"title": "Old Title"},
             new_data={"title": "New Title"},
         )
+        if item_count == 2:
+            submission.log_action(
+                "pretalx.submission.update",
+                person=orga_user,
+                orga=True,
+                old_data={"title": "New Title"},
+                new_data={"title": "Newer Title"},
+            )
 
-    response = orga_client.get(submission.orga_urls.history, follow=True)
+    with django_assert_num_queries(31):
+        response = orga_client.get(submission.orga_urls.history, follow=True)
     assert response.status_code == 200
     assert "History" in response.text or "Activity" in response.text
 

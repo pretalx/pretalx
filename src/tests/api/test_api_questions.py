@@ -481,24 +481,27 @@ def test_get_expanded_fields(
 
 
 @pytest.mark.django_db
-def test_bulk_get_questions(event, orga_user_token, client):
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_bulk_get_questions(
+    event, orga_user_token, client, django_assert_num_queries, item_count
+):
     with scope(event=event):
-        event.questions.create(
-            question="Question 1", variant="text", target="submission"
-        )
         event.questions.create(question="Question 2", variant="text", target="speaker")
+        if item_count == 2:
+            event.questions.create(
+                question="Question 1", variant="text", target="submission"
+            )
 
-    response = client.get(
-        event.api_urls.questions,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+    with django_assert_num_queries(15):
+        response = client.get(
+            event.api_urls.questions,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     assert response.status_code == 200, response.text
     content = json.loads(response.text)
 
-    assert content["count"] == 2
-    questions = {q["question"]["en"] for q in content["results"]}
-    assert "Question 1" in questions
-    assert "Question 2" in questions
+    assert content["count"] == item_count
+    assert "Question 2" in [r["question"]["en"] for r in content["results"]]
 
 
 @pytest.mark.django_db

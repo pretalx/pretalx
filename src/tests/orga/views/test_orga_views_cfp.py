@@ -20,7 +20,13 @@ from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
 from pretalx.mail.models import QueuedMail
 from pretalx.person.models import SpeakerProfile
-from pretalx.submission.models import Question, QuestionTarget, Submission
+from pretalx.submission.models import (
+    Question,
+    QuestionTarget,
+    Submission,
+    SubmitterAccessCode,
+    Track,
+)
 from pretalx.submission.models.question import Answer, QuestionRequired, QuestionVariant
 
 
@@ -486,13 +492,45 @@ def test_delete_default_submission_type(
 
 
 @pytest.mark.django_db
-def test_all_questions_in_list(orga_client, question, inactive_question, event):
-    with scope(event=event):
-        assert event.questions.count() == 1
-        assert Question.all_objects.filter(event=event).count() == 2
-    response = orga_client.get(event.cfp.urls.questions, follow=True)
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_all_questions_in_list(
+    orga_client,
+    question,
+    inactive_question,
+    event,
+    django_assert_num_queries,
+    item_count,
+):
+    if item_count != 2:
+        with scope(event=event):
+            inactive_question.delete()
+
+    with django_assert_num_queries(25):
+        response = orga_client.get(event.cfp.urls.questions, follow=True)
+    assert response.status_code == 200
     assert question.question in response.text
-    assert inactive_question.question in response.text
+    if item_count == 2:
+        assert inactive_question.question in response.text
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_submission_type_list_num_queries(
+    orga_client,
+    event,
+    submission_type,
+    default_submission_type,
+    django_assert_num_queries,
+    item_count,
+):
+    if item_count != 2:
+        with scope(event=event):
+            submission_type.delete()
+
+    with django_assert_num_queries(22):
+        response = orga_client.get(event.cfp.urls.types)
+    assert response.status_code == 200
+    assert str(default_submission_type.name) in response.text
 
 
 @pytest.mark.django_db
@@ -897,10 +935,18 @@ def test_can_activate_inactive_question(orga_client, inactive_question):
 
 
 @pytest.mark.django_db
-def test_can_see_tracks(orga_client, track):
-    response = orga_client.get(track.event.cfp.urls.tracks)
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_can_see_tracks(
+    orga_client, track, event, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=event):
+            Track.objects.create(event=event, name="Other Track", color="#ff0000")
+
+    with django_assert_num_queries(21):
+        response = orga_client.get(event.cfp.urls.tracks)
     assert response.status_code == 200
-    assert track.name in response.text
+    assert str(track.name) in response.text
 
 
 @pytest.mark.django_db
@@ -973,8 +1019,15 @@ def test_cannot_delete_used_track(orga_client, track, event, submission):
 
 
 @pytest.mark.django_db
-def test_can_see_access_codes(orga_client, access_code):
-    response = orga_client.get(access_code.event.cfp.urls.access_codes)
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_can_see_access_codes(
+    orga_client, access_code, event, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        SubmitterAccessCode.objects.create(event=event, code="OTHERCODE")
+
+    with django_assert_num_queries(22):
+        response = orga_client.get(event.cfp.urls.access_codes)
     assert response.status_code == 200
     assert access_code.code in response.text
 

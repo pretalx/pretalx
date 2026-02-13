@@ -11,17 +11,36 @@ from pretalx.person.models import SpeakerProfile
 
 
 @pytest.mark.django_db
-def test_orga_can_view_pending_mails(orga_client, event, mail, other_mail):
-    response = orga_client.get(event.orga_urls.outbox)
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_view_pending_mails(
+    orga_client, event, mail, other_mail, django_assert_num_queries, item_count
+):
+    if item_count != 2:
+        with scope(event=event):
+            other_mail.delete()
+
+    with django_assert_num_queries(28):
+        response = orga_client.get(event.orga_urls.outbox)
     assert response.status_code == 200
     assert mail.subject in response.text
 
 
 @pytest.mark.django_db
-def test_orga_can_view_sent_mails(orga_client, event, sent_mail):
-    response = orga_client.get(event.orga_urls.sent_mails)
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_view_sent_mails(
+    orga_client, event, mail_template, speaker, django_assert_num_queries, item_count
+):
+    with scope(event=event):
+        sent1 = mail_template.to_mail(speaker, event)
+        sent1.send()
+        if item_count == 2:
+            sent2 = mail_template.to_mail(speaker, event)
+            sent2.send()
+
+    with django_assert_num_queries(27):
+        response = orga_client.get(event.orga_urls.sent_mails)
     assert response.status_code == 200
-    assert sent_mail.subject in response.text
+    assert sent1.subject in response.text
 
 
 @pytest.mark.django_db
@@ -256,9 +275,23 @@ def test_orga_can_copy_sent_mail(orga_client, event, sent_mail):
 
 
 @pytest.mark.django_db
-def test_orga_can_view_templates(orga_client, event, mail_template):
-    response = orga_client.get(event.orga_urls.mail_templates, follow=True)
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_view_templates(
+    orga_client, event, mail_template, django_assert_num_queries, item_count
+):
+    with scope(event=event):
+        if item_count != 1:
+            MailTemplate.objects.create(
+                event=event,
+                subject="Another Mail",
+                text="More mail content!",
+                reply_to="orga@orga.org",
+            )
+
+    with django_assert_num_queries(21):
+        response = orga_client.get(event.orga_urls.mail_templates, follow=True)
     assert response.status_code == 200
+    assert mail_template.subject in response.text
 
 
 @pytest.mark.django_db

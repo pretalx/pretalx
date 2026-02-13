@@ -154,21 +154,33 @@ def test_orga_can_see_expanded_reviews(
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("item_count", [1, 2])
 def test_reviewer_can_see_reviews(
-    client, review_user_token, event, review, other_review
+    client,
+    review_user_token,
+    event,
+    review,
+    other_review,
+    django_assert_num_queries,
+    item_count,
 ):
     with scope(event=event):
         event.active_review_phase.can_see_other_reviews = "always"
         event.active_review_phase.save()
-    response = client.get(
-        event.api_urls.reviews,
-        follow=True,
-        headers={"Authorization": f"Token {review_user_token.token}"},
-    )
+        if item_count != 2:
+            other_review.delete()
+
+    with django_assert_num_queries(18):
+        response = client.get(
+            event.api_urls.reviews,
+            follow=True,
+            headers={"Authorization": f"Token {review_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200, content
-    assert len(content["results"]) == 2, content
+    assert len(content["results"]) == item_count
+    assert review.pk in [r["id"] for r in content["results"]]
 
 
 @pytest.mark.django_db

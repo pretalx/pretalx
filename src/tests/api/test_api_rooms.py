@@ -10,6 +10,7 @@ from django_scopes import scope
 
 from pretalx.api.serializers.room import RoomOrgaSerializer, RoomSerializer
 from pretalx.api.versions import LEGACY
+from pretalx.schedule.models import Room
 
 
 @pytest.mark.django_db
@@ -65,17 +66,25 @@ def test_can_see_rooms_public_event(client, room, slot):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_rooms(client, orga_user_token, room):
-    response = client.get(
-        room.event.api_urls.rooms,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_see_rooms(
+    client, orga_user_token, room, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=room.event):
+            Room.objects.create(event=room.event, name="Other Room")
+
+    with django_assert_num_queries(13):
+        response = client.get(
+            room.event.api_urls.rooms,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200
-    assert content["count"] == 1
-    assert content["results"][0]["name"]["en"] == room.name
+    assert content["count"] == item_count
+    assert room.name in [r["name"]["en"] for r in content["results"]]
 
 
 @pytest.mark.django_db
