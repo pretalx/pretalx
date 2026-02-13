@@ -72,13 +72,11 @@ class QuestionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewS
     endpoint = "questions"
 
     def get_queryset(self):
-        queryset = questions_for_user(self.event, self.request.user).select_related(
-            "event"
+        queryset = (
+            questions_for_user(self.event, self.request.user)
+            .select_related("event")
+            .prefetch_related("options", "tracks", "submission_types")
         )
-        if fields := self.check_expanded_fields(
-            "tracks", "submission_types", "options"
-        ):
-            queryset = queryset.prefetch_related(*fields)
         return queryset
 
     def get_unversioned_serializer_class(self):
@@ -228,7 +226,8 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
             Answer.objects.filter(
                 question__in=questions_for_user(self.event, self.request.user)
             )
-            .select_related("question", "question__event")
+            .select_related("question", "question__event", "submission", "person")
+            .prefetch_related("options")
             .order_by("pk")
         )
         queryset = filter_answers_by_team_access(queryset, self.request.user)

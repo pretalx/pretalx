@@ -50,7 +50,10 @@ class RoomViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
     ordering = ("position", "id")
 
     def get_queryset(self):
-        return self.event.rooms.all().select_related("event")
+        qs = self.event.rooms.all().select_related("event")
+        if self.has_perm("update"):
+            qs = qs.prefetch_related("availabilities")
+        return qs
 
     def get_unversioned_serializer_class(self):
         if self.request.method not in SAFE_METHODS or self.has_perm("update"):

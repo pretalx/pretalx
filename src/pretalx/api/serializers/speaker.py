@@ -40,29 +40,32 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
     @extend_schema_field(list[str])
     def get_submissions(self, obj):
-        submissions = self.context.get("submissions")
-        if not submissions:
+        if not self.context.get("submissions"):
             return []
-        submissions = submissions.filter(speakers=obj)
+        # When used as an embedded serializer (e.g. expanded speakers on the
+        # submission endpoint), the context won't contain "submissions", so we
+        # return [] above. When used from SpeakerViewSet, get_queryset()
+        # prefetches "submissions" with the visibility-filtered queryset from
+        # submissions_for_user, so .all() returns only permitted submissions.
+        submissions = obj.submissions.all()
         if serializer := self.get_extra_flex_field("submissions", submissions):
             return serializer.data
-        return submissions.values_list("code", flat=True)
+        return [s.code for s in submissions]
 
     @extend_schema_field(list[int])
     def get_answers(self, obj):
         questions = self.context.get("questions", [])
-        qs = (
-            obj.answers.filter(
-                question__in=questions,
-                question__event=self.event,
-                question__target=QuestionTarget.SPEAKER,
-            )
-            .select_related("question")
-            .order_by("question__position")
+        if not questions:
+            return []
+        question_pks = {q.pk for q in questions if q.target == QuestionTarget.SPEAKER}
+        # Use prefetched user.answers, filter in Python
+        answers = sorted(
+            [a for a in obj.user.answers.all() if a.question_id in question_pks],
+            key=lambda a: a.question.position,
         )
-        if serializer := self.get_extra_flex_field("answers", qs):
+        if serializer := self.get_extra_flex_field("answers", answers):
             return serializer.data
-        return qs.values_list("pk", flat=True)
+        return [a.pk for a in answers]
 
     def update(self, instance, validated_data):
         availabilities_data = validated_data.pop("availabilities", None)

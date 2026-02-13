@@ -34,8 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <div class="text-muted ml-auto">
                         {{ comment.created|date:"SHORT_DATETIME_FORMAT" }}
                     </div>
-                    {% has_perm 'submission.delete_submissioncomment' request.user comment as can_delete_comment %}
-                    {% if can_delete_comment %}
+                    {% if can_delete_own_comments and comment.user_id == request.user.pk %}
                         <a href="{{ comment.urls.delete }}" class="btn btn-sm btn-danger ml-2">
                             <i class="fa fa-trash" title="{{ phrases.base.delete_button }}"></i>
                         </a>

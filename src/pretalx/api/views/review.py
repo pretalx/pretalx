@@ -99,10 +99,8 @@ class ReviewViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
                 submission__event=self.request.event,
                 submission__in=self.visible_submissions,
             )
-            .select_related(
-                "submission",
-            )
-            .prefetch_related("scores", "scores__category")
+            .select_related("submission", "user")
+            .prefetch_related("scores", "scores__category", "answers")
             .order_by("pk")
         )
         if fields := self.check_expanded_fields(

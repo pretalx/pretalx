@@ -62,14 +62,12 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
     ordering = ("id",)
 
     def get_queryset(self):
-        queryset = (
+        return (
             self.request.organiser.teams.all()
             .select_related("organiser")
+            .prefetch_related("members", "invites", "limit_events", "limit_tracks")
             .order_by("pk")
         )
-        if fields := self.check_expanded_fields("members", "limit_tracks", "invites"):
-            queryset = queryset.prefetch_related(*fields)
-        return queryset
 
     def dispatch(self, *args, **kwargs):
         with scopes_disabled():

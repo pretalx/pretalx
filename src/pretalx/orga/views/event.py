@@ -10,6 +10,7 @@ from csp.decorators import csp_update
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
+from django.contrib.contenttypes.prefetch import GenericPrefetch
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.db import transaction
@@ -292,8 +293,15 @@ class EventHistory(Filterable, EventSettingsPermission, ListView):
     filter_form_class = EventHistoryFilterForm
 
     def get_queryset(self):
-        qs = ActivityLog.objects.filter(event=self.request.event).select_related(
-            "person", "content_type"
+        qs = (
+            ActivityLog.objects.filter(event=self.request.event)
+            .select_related("person", "content_type", "event")
+            .prefetch_related(
+                GenericPrefetch(
+                    "content_object",
+                    [self.request.event.submissions.select_related("event")],
+                )
+            )
         )
         return self.filter_queryset(qs)
 

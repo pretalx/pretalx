@@ -170,7 +170,7 @@ def test_reviewer_can_see_reviews(
         if item_count != 2:
             other_review.delete()
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(17):
         response = client.get(
             event.api_urls.reviews,
             follow=True,
