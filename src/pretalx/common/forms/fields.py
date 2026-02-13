@@ -135,16 +135,24 @@ class ProfilePictureField(FileField):
     MAX_SIZE = settings.FILE_UPLOAD_DEFAULT_LIMIT
 
     def __init__(
-        self, *args, user=None, current_picture=None, require_picture=False, **kwargs
+        self,
+        *args,
+        user=None,
+        current_picture=None,
+        require_picture=False,
+        upload_only=False,
+        **kwargs,
     ):
         self.user = user
         self.current_picture = current_picture
         self.require_picture = require_picture
+        self.upload_only = upload_only
         kwargs.setdefault("required", False)
         kwargs.setdefault("label", _("Profile picture"))
         super().__init__(*args, **kwargs)
         self.widget.user = user
         self.widget.current_picture = current_picture
+        self.widget.upload_only = upload_only
 
     def clean(self, value, initial=None):
         if not isinstance(value, dict):
@@ -172,6 +180,8 @@ class ProfilePictureField(FileField):
             return False
 
         if action.startswith("select_"):
+            if self.upload_only:
+                raise ValidationError(_("Invalid picture selection."), code="invalid")
             pk_str = action[len("select_") :]
             try:
                 pk = int(pk_str)

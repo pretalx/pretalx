@@ -235,7 +235,9 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs.update({"event": self.request.event, "user": self.object.user})
+        kwargs.update(
+            {"event": self.request.event, "user": self.object.user, "is_orga": True}
+        )
         return kwargs
 
 
