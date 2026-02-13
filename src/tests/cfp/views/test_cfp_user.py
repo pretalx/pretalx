@@ -491,8 +491,9 @@ def test_can_edit_profile(speaker, event, speaker_client):
     assert response.status_code == 200
     with scope(event=event):
         speaker.refresh_from_db()
-        assert speaker.profiles.get(event=event).biography == "Ruling since forever."
-        assert speaker.name == "Lady Imperator"
+        profile = speaker.profiles.get(event=event)
+        assert profile.biography == "Ruling since forever."
+        assert profile.name == "Lady Imperator"
     response = speaker_client.post(
         event.urls.user,
         data={
@@ -505,8 +506,9 @@ def test_can_edit_profile(speaker, event, speaker_client):
     assert response.status_code == 200
     with scope(event=event):
         speaker.refresh_from_db()
-        assert speaker.profiles.get(event=event).biography == "Ruling since forever."
-        assert speaker.name == "Lady Imperator"
+        profile = speaker.profiles.get(event=event)
+        assert profile.biography == "Ruling since forever."
+        assert profile.name == "Lady Imperator"
 
 
 @pytest.mark.django_db
