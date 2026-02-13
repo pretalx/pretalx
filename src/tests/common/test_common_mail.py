@@ -31,6 +31,28 @@ def test_mail_send_ignored_sender_but_custom_reply_to(event):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    "subject",
+    [
+        "Talk about\x0bthings",
+        "Talk about\nthings",
+        "Talk about\r\nthings",
+        "Talk about\x00things",
+        "Talk about\x7fthings",
+    ],
+)
+def test_mail_send_strips_control_chars_from_subject(event, subject):
+    djmail.outbox = []
+    mail_send_task("m@example.com", subject, "B", None, [], event.pk)
+    assert len(djmail.outbox) == 1
+    assert "\x0b" not in djmail.outbox[0].subject
+    assert "\n" not in djmail.outbox[0].subject
+    assert "\r" not in djmail.outbox[0].subject
+    assert "Talk about" in djmail.outbox[0].subject
+    assert "things" in djmail.outbox[0].subject
+
+
+@pytest.mark.django_db
 def test_mail_send_exits_early_without_address(event):
     djmail.outbox = []
     mail_send_task("", "S", "B", None, [], event.pk)
