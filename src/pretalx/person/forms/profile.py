@@ -49,7 +49,7 @@ class SpeakerProfileForm(
     RequestRequire,
     forms.ModelForm,
 ):
-    USER_FIELDS = ["name", "email"]
+    USER_FIELDS = ["email"]
     FIRST_TIME_EXCLUDE = ["email"]
 
     availabilities = AvailabilitiesField()
@@ -74,7 +74,18 @@ class SpeakerProfileForm(
                 self.initial["availabilities"] = self.fields["availabilities"].initial
         read_only = kwargs.get("read_only", False)
         initial = kwargs.get("initial", {})
-        initial["name"] = name
+
+        # Name: use existing profile name, fall back to user.name for new profiles
+        if self.instance and self.instance.name:
+            name_initial = self.instance.name
+        else:
+            name_initial = name or (self.user.name if self.user else None)
+        self.fields["name"] = User._meta.get_field("name").formfield(
+            initial=name_initial,
+            disabled=read_only,
+            help_text=User._meta.get_field("name").help_text,
+        )
+        self._update_cfp_texts("name")
 
         if self.user:
             initial.update(
@@ -155,6 +166,10 @@ class SpeakerProfileForm(
 
         if "name" in self.cleaned_data:
             self.instance.name = self.cleaned_data["name"]
+            # Sync to user.name only if user has no name yet
+            if self.user and not self.user.name:
+                self.user.name = self.cleaned_data["name"]
+                self.user.save(update_fields=["name"])
         self.instance.event = self.event
         self.instance.user = self.user
 

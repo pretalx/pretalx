@@ -126,8 +126,9 @@ def test_orga_can_edit_speaker(
     assert response.status_code == 200
     with scope(event=event):
         speaker.refresh_from_db()
+        speaker_profile.refresh_from_db()
         assert count + 1 == speaker_profile.logged_actions().all().count()
-    assert speaker.name == "BESTSPEAKAR", response.text
+    assert speaker_profile.name == "BESTSPEAKAR", response.text
     assert speaker.email == "foo@foooobar.de"
 
 
@@ -137,7 +138,7 @@ def test_orga_can_edit_speaker_with_custom_field_consolidated_log(
 ):
     with scope(event=event):
         url = speaker_profile.orga_urls.base
-        old_name = speaker.name
+        old_name = speaker_profile.name
         initial_log_count = speaker_profile.logged_actions().count()
 
     response = orga_client.post(
@@ -179,7 +180,7 @@ def test_orga_can_edit_speaker_unchanged(
     response = orga_client.post(
         url,
         data={
-            "name": speaker.name,
+            "name": speaker_profile.name,
             "biography": speaker_profile.biography,
             "email": speaker.email,
         },
@@ -210,8 +211,8 @@ def test_orga_cannot_edit_speaker_without_filling_questions(
     )
     assert response.status_code == 200
     with scope(event=event):
-        speaker.refresh_from_db()
-    assert speaker.name != "BESTSPEAKAR", response.text
+        speaker_profile.refresh_from_db()
+    assert speaker_profile.name != "BESTSPEAKAR", response.text
 
 
 @pytest.mark.django_db
@@ -233,8 +234,9 @@ def test_orga_cant_assign_duplicate_address(
     )
     assert response.status_code == 200
     with scope(event=event):
+        speaker_profile.refresh_from_db()
         speaker.refresh_from_db()
-    assert speaker.name != "BESTSPEAKAR", response.text
+    assert speaker_profile.name != "BESTSPEAKAR", response.text
     assert speaker.email != other_speaker.email
 
 
@@ -274,8 +276,8 @@ def test_reviewer_cannot_edit_speaker(
     )
     assert response.status_code == 200
     with scope(event=event):
-        speaker.refresh_from_db()
-    assert speaker.name != "BESTSPEAKAR", response.text
+        speaker_profile.refresh_from_db()
+    assert speaker_profile.name != "BESTSPEAKAR", response.text
 
 
 @pytest.mark.django_db
