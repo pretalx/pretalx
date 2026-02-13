@@ -398,10 +398,11 @@ class AvailabilitiesWidget(forms.TextInput):
 class ProfilePictureWidget(forms.Widget):
     template_name = "common/widgets/profile_picture.html"
 
-    def __init__(self, user=None, current_picture=None, attrs=None):
+    def __init__(self, user=None, current_picture=None, upload_only=False, attrs=None):
         super().__init__(attrs)
         self.user = user
         self.current_picture = current_picture
+        self.upload_only = upload_only
 
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
@@ -419,7 +420,7 @@ class ProfilePictureWidget(forms.Widget):
             }
 
         other_pictures = []
-        if self.user:
+        if self.user and not self.upload_only:
             with scopes_disabled():
                 # beware circular imports
                 from pretalx.person.models import ProfilePicture  # noqa: PLC0415

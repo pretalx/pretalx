@@ -60,6 +60,7 @@ class SpeakerProfileForm(
         self.event = kwargs.pop("event", None)
         self.with_email = kwargs.pop("with_email", True)
         self.essential_only = kwargs.pop("essential_only", False)
+        self.is_orga = kwargs.pop("is_orga", False)
         kwargs["instance"] = None
         if self.user:
             kwargs["instance"] = self.user.get_speaker(self.event)
@@ -101,6 +102,9 @@ class SpeakerProfileForm(
             self.fields["avatar"].require_picture = self.event.cfp.require_avatar
             self.fields["avatar"].widget.user = self.user
             self.fields["avatar"].widget.current_picture = current_picture
+            if self.is_orga:
+                self.fields["avatar"].upload_only = True
+                self.fields["avatar"].widget.upload_only = True
             if self.event.cfp.require_avatar:
                 self.fields["avatar"].widget.attrs["class"] = (
                     self.fields["avatar"].widget.attrs.get("class", "")
