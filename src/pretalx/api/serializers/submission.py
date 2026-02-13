@@ -26,6 +26,12 @@ from pretalx.submission.models import (
 )
 
 
+def _is_active_resource(r):
+    has_resource = r.resource and str(r.resource) not in ("", "None")
+    has_link = r.link is not None and r.link != ""
+    return has_resource or has_link
+
+
 @register_serializer()
 class ResourceSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     """
@@ -231,26 +237,27 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     def get_speakers(self, obj):
         if not self.event:
             return []
-        speakers = obj.sorted_speakers.all()
+        speakers = obj.sorted_speakers
         if serializer := self.get_extra_flex_field("speakers", speakers):
             return serializer.data
-        return speakers.values_list("code", flat=True)
+        return [s.code for s in speakers]
 
     @extend_schema_field(list[int])
     def get_answers(self, obj):
         questions = self.context.get("questions", [])
-        qs = (
-            obj.answers.filter(
-                question__in=questions,
-                question__event=self.event,
-                question__target=QuestionTarget.SUBMISSION,
-            )
-            .select_related("question")
-            .order_by("question__position")
+        if not questions:
+            return []
+        question_pks = {
+            q.pk for q in questions if q.target == QuestionTarget.SUBMISSION
+        }
+        # Use prefetched answers, filter in Python to avoid busting prefetch cache
+        answers = sorted(
+            [a for a in obj.answers.all() if a.question_id in question_pks],
+            key=lambda a: a.question.position,
         )
-        if serializer := self.get_extra_flex_field("answers", qs):
+        if serializer := self.get_extra_flex_field("answers", answers):
             return serializer.data
-        return qs.values_list("pk", flat=True)
+        return [a.pk for a in answers]
 
     @extend_schema_field(list[int])
     def get_slots(self, obj):
@@ -258,22 +265,25 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         if not schedule:
             return []
         public_slots = self.context.get("public_slots", True)
-        qs = obj.slots.filter(schedule=schedule)
+        # Use prefetched slots, filter in Python to avoid busting prefetch cache
+        slots = [s for s in obj.slots.all() if s.schedule_id == schedule.pk]
         if public_slots:
-            qs = qs.filter(is_visible=True)
-        if serializer := self.get_extra_flex_field("slots", qs):
+            slots = [s for s in slots if s.is_visible]
+        if serializer := self.get_extra_flex_field("slots", slots):
             return serializer.data
-        return qs.values_list("pk", flat=True)
+        return [s.pk for s in slots]
 
     @extend_schema_field(list[int])
     def get_resources(self, obj):
         public_resources = self.context.get("public_resources", True)
-        qs = obj.active_resources
+        # Use prefetched resources, filter in Python to avoid busting prefetch cache
+        resources = [r for r in obj.resources.all() if _is_active_resource(r)]
         if public_resources:
-            qs = obj.public_resources
-        if serializer := self.get_extra_flex_field("resources", qs):
+            resources = [r for r in resources if r.is_public]
+        resources.sort(key=lambda r: r.link or "")
+        if serializer := self.get_extra_flex_field("resources", resources):
             return serializer.data
-        return qs.values_list("pk", flat=True)
+        return [r.pk for r in resources]
 
     class Meta:
         model = Submission
@@ -351,10 +361,10 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
 
     @extend_schema_field(list[int])
     def get_invitations(self, obj):
-        qs = obj.invitations.all()
-        if serializer := self.get_extra_flex_field("invitations", qs):
+        invitations = obj.invitations.all()
+        if serializer := self.get_extra_flex_field("invitations", invitations):
             return serializer.data
-        return qs.values_list("pk", flat=True)
+        return [i.pk for i in invitations]
 
     def validate_content_locale(self, value):
         if self.event and value not in self.event.content_locales:

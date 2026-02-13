@@ -43,7 +43,7 @@ def test_can_see_submission_list(
             )
             second_sub.speakers.add(speaker_profile)
 
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(12):
         response = speaker_client.get(event.urls.user_submissions, follow=True)
     assert response.status_code == 200
     assert submission.title in response.text

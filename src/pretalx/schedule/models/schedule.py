@@ -490,7 +490,8 @@ class Schedule(PretalxModel):
             "submission__submission_type",
         ).with_sorted_speakers()
         talks = talks.order_by("start")
-        rooms = set() if not all_rooms else set(self.event.rooms.all())
+        all_event_rooms = list(self.event.rooms.all())
+        rooms = set() if not all_rooms else set(all_event_rooms)
         tracks = set()
         speakers = set()
         result = {
@@ -570,7 +571,7 @@ class Schedule(PretalxModel):
                 "name": room.name,
                 "description": room.description,
             }
-            for room in self.event.rooms.all()
+            for room in all_event_rooms
             if room in rooms
         ]
         include_avatar = self.event.cfp.request_avatar

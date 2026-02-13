@@ -28,7 +28,10 @@ def test_talk_list(
         with scope(event=event):
             event.wip_schedule.talks.filter(submission=accepted_submission).delete()
 
-    with django_assert_num_queries(12):
+    # item_count=1 has only a break slot (no submissions to prefetch speakers for);
+    # item_count=2 adds one speaker prefetch query for the accepted submission's speakers.
+    expected_queries = 11 if item_count == 1 else 12
+    with django_assert_num_queries(expected_queries):
         response = orga_client.get(
             reverse("orga:schedule.api.talks", kwargs={"event": event.slug}),
             follow=True,

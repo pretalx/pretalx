@@ -44,6 +44,7 @@ from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import (
+    Answer,
     Resource,
     Submission,
     SubmissionInvitation,
@@ -272,12 +273,19 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         )
         if self.check_expanded_fields("speakers.user"):
             speakers_qs = speakers_qs.select_related("user")
+        prefetches = [
+            Prefetch("speakers", queryset=speakers_qs),
+            Prefetch("answers", queryset=Answer.objects.select_related("question")),
+            "slots",
+            "tags",
+            "resources",
+        ]
+        if self.is_orga:
+            prefetches += ["reviews", "assigned_reviewers", "invitations"]
         queryset = (
             submissions_for_user(self.event, self.request.user)
             .select_related("event", "track", "submission_type")
-            .prefetch_related(
-                Prefetch("speakers", queryset=speakers_qs), "answers", "slots"
-            )
+            .prefetch_related(*prefetches)
             .order_by("code")
         )
         if fields := self.check_expanded_fields(
@@ -443,6 +451,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         )
         serializer.is_valid(raise_exception=True)
         serializer.save(submission=submission)
+        submission._prefetched_objects_cache.pop("resources", None)
         new_data = submission._get_instance_data()
         submission.log_action(
             ".update",
@@ -474,6 +483,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
 
         old_data = submission._get_instance_data()
         resource.delete()
+        submission._prefetched_objects_cache.pop("resources", None)
         new_data = submission._get_instance_data()
         submission.log_action(
             ".update",

@@ -5,6 +5,7 @@ import json
 from unittest.mock import MagicMock
 
 import pytest
+from django.contrib.contenttypes.models import ContentType
 from django_scopes import scope, scopes_disabled
 
 from pretalx.orga.signals import speaker_form
@@ -52,7 +53,11 @@ def test_orga_can_access_speaker_page(
 ):
     with scope(event=event):
         url = speaker_profile.orga_urls.base
-    with django_assert_num_queries(23):
+    # The history sidebar calls ContentType.objects.get_for_model(), which
+    # caches results in memory. Prior tests can populate this cache, saving
+    # a query and making the count flaky without this reset.
+    ContentType.objects.clear_cache()
+    with django_assert_num_queries(22):
         response = orga_client.get(url, follow=True)
     assert response.status_code == 200
     assert speaker_profile.name in response.text

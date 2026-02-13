@@ -1026,7 +1026,7 @@ def test_can_see_access_codes(
     if item_count == 2:
         SubmitterAccessCode.objects.create(event=event, code="OTHERCODE")
 
-    with django_assert_num_queries(22):
+    with django_assert_num_queries(21):
         response = orga_client.get(event.cfp.urls.access_codes)
     assert response.status_code == 200
     assert access_code.code in response.text

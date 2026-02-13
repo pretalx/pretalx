@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db.models import Prefetch
 from django.utils.functional import cached_property
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, viewsets
@@ -25,6 +26,7 @@ from pretalx.api.serializers.speaker import (
 from pretalx.api.versions import LEGACY
 from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.person.models import SpeakerProfile
+from pretalx.submission.models import Answer
 from pretalx.submission.rules import (
     questions_for_user,
     speakers_for_user,
@@ -162,7 +164,15 @@ class SpeakerViewSet(
                 self.event, self.request.user, submissions=self.submissions_for_user
             )
             .select_related("user", "event", "profile_picture")
-            .prefetch_related("submissions", "user__answers")
+            .prefetch_related(
+                Prefetch(
+                    "submissions", queryset=self.submissions_for_user.order_by("code")
+                ),
+                Prefetch(
+                    "user__answers",
+                    queryset=Answer.objects.select_related("question"),
+                ),
+            )
             .order_by("user__code")
         )
         if fields := self.check_expanded_fields(
