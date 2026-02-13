@@ -4,6 +4,7 @@
 import json
 
 import pytest
+from django_scopes import scope
 
 from pretalx.api.serializers.event import EventListSerializer, EventSerializer
 
@@ -76,17 +77,23 @@ def test_can_only_see_public_events_in_detail(client, event):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_nonpublic_events(client, event, other_event, orga_user_token):
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_see_nonpublic_events(
+    client, event, other_event, orga_user_token, django_assert_num_queries, item_count
+):
     event.is_public = False
     event.save()
-    assert not event.is_public
-    assert other_event.is_public
 
-    response = client.get(
-        "/api/events/", headers={"Authorization": f"Token {orga_user_token.token}"}
-    )
+    if item_count != 2:
+        with scope(event=other_event):
+            other_event.shred()
+
+    with django_assert_num_queries(5):
+        response = client.get(
+            "/api/events/", headers={"Authorization": f"Token {orga_user_token.token}"}
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200
-    assert len(content) == 2, content
-    assert content[-1]["name"]["en"] == event.name
+    assert len(content) == item_count
+    assert event.name in [e["name"]["en"] for e in content]

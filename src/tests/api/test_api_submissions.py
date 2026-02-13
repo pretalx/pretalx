@@ -23,6 +23,9 @@ from pretalx.submission.models import (
     Submission,
     SubmissionInvitation,
     SubmissionStates,
+    SubmissionType,
+    Tag,
+    Track,
 )
 
 
@@ -148,6 +151,7 @@ def test_can_only_see_public_submissions_if_public_schedule(
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("item_count", [1, 2])
 def test_orga_can_see_all_submissions(
     client,
     orga_user_token,
@@ -156,27 +160,24 @@ def test_orga_can_see_all_submissions(
     rejected_submission,
     submission,
     answer,
+    django_assert_num_queries,
+    item_count,
 ):
-    response = client.get(
-        submission.event.api_urls.submissions + "?questions=all",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+    if item_count != 2:
+        with scope(event=submission.event):
+            rejected_submission.delete()
+
+    with django_assert_num_queries(46):
+        response = client.get(
+            submission.event.api_urls.submissions + "?questions=all",
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200, content
-    assert content["count"] == 4
-    assert content["results"][0]["title"] == slot.submission.title
-    assert (
-        len(
-            [
-                submission
-                for submission in content["results"]
-                if submission["answers"] == []
-            ]
-        )
-        > 0
-    )
+    assert content["count"] == item_count + 2
+    assert slot.submission.title in [r["title"] for r in content["results"]]
 
 
 @pytest.mark.django_db
@@ -360,17 +361,25 @@ def test_cannot_see_tags(client, tag):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_tags(client, orga_user_token, tag):
-    response = client.get(
-        tag.event.api_urls.tags,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_see_tags(
+    client, orga_user_token, tag, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=tag.event):
+            Tag.objects.create(event=tag.event, tag="Other Tag", color="#ff0000")
+
+    with django_assert_num_queries(11):
+        response = client.get(
+            tag.event.api_urls.tags,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200
-    assert content["count"] == 1
-    assert content["results"][0]["tag"] == tag.tag
+    assert content["count"] == item_count
+    assert tag.tag in [r["tag"] for r in content["results"]]
 
 
 @pytest.mark.django_db
@@ -573,17 +582,25 @@ def test_can_see_tracks_public_event(client, track, slot):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_tracks(client, orga_user_token, track):
-    response = client.get(
-        track.event.api_urls.tracks,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_see_tracks(
+    client, orga_user_token, track, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=track.event):
+            Track.objects.create(event=track.event, name="Other Track", color="#ff0000")
+
+    with django_assert_num_queries(12):
+        response = client.get(
+            track.event.api_urls.tracks,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200
-    assert content["count"] == 1
-    assert content["results"][0]["name"]["en"] == track.name
+    assert content["count"] == item_count
+    assert track.name in [r["name"]["en"] for r in content["results"]]
 
 
 @pytest.mark.django_db
@@ -774,17 +791,27 @@ def test_can_see_submission_types_public_event(client, submission_type, slot):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_submission_types(client, orga_user_token, submission_type):
-    response = client.get(
-        submission_type.event.api_urls.submission_types,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_see_submission_types(
+    client, orga_user_token, submission_type, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=submission_type.event):
+            SubmissionType.objects.create(
+                event=submission_type.event, name="Other Type"
+            )
+
+    with django_assert_num_queries(11):
+        response = client.get(
+            submission_type.event.api_urls.submission_types,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200
-    assert content["count"] == 2
-    assert content["results"][1]["name"]["en"] == submission_type.name
+    assert content["count"] == item_count + 1
+    assert submission_type.name in [r["name"]["en"] for r in content["results"]]
 
 
 @pytest.mark.django_db

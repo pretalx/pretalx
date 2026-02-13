@@ -7,6 +7,7 @@ import pytest
 from django_scopes import scopes_disabled
 
 from pretalx.api.serializers.team import TeamSerializer
+from pretalx.event.models import Team
 
 
 @pytest.fixture
@@ -46,17 +47,26 @@ def test_cannot_see_teams_unauthenticated(client, organiser):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_teams(client, orga_user_token, organiser, team):
-    response = client.get(
-        f"/api/organisers/{organiser.slug}/teams/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_see_teams(
+    client, orga_user_token, organiser, team, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        Team.objects.create(
+            organiser=organiser, name="Other Team", can_change_submissions=True
+        )
+
+    with django_assert_num_queries(20):
+        response = client.get(
+            f"/api/organisers/{organiser.slug}/teams/",
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200
     assert content["count"] > 0
-    assert team.name in [t["name"] for t in content["results"]]
+    assert team.name in [r["name"] for r in content["results"]]
 
 
 @pytest.mark.django_db

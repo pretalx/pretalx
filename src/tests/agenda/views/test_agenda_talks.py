@@ -12,8 +12,9 @@ from pretalx.person.models import SpeakerProfile
 
 
 @pytest.mark.django_db
-@pytest.mark.usefixtures("slot", "other_slot")
-def test_can_see_talk_list(client, django_assert_num_queries, event):
+def test_can_see_talk_list(
+    client, django_assert_num_queries, event, slot, other_slot
+):
     with django_assert_num_queries(6):
         response = client.get(event.urls.talks, follow=True, HTTP_ACCEPT="text/html")
     assert response.status_code == 200

@@ -51,23 +51,34 @@ def test_cannot_see_speaker_information(client, event, is_public):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_speaker_information(client, orga_user_token, event):
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_see_speaker_information(
+    client, orga_user_token, event, django_assert_num_queries, item_count
+):
     with scope(event=event):
-        speaker_info = event.information.create(
+        event.information.create(
             title="Test Info",
             text="This is some test information",
             target_group="accepted",
         )
-    response = client.get(
-        event.api_urls.speaker_information,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+        if item_count == 2:
+            event.information.create(
+                title="Other Info",
+                text="Other information",
+                target_group="confirmed",
+            )
+
+    with django_assert_num_queries(13):
+        response = client.get(
+            event.api_urls.speaker_information,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200
-    assert content["count"] == 1
-    assert content["results"][0]["title"]["en"] == speaker_info.title
+    assert content["count"] == item_count
+    assert "Test Info" in [r["title"]["en"] for r in content["results"]]
 
 
 @pytest.mark.django_db

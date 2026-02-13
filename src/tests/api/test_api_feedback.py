@@ -30,17 +30,25 @@ def test_anon_cannot_list_feedback(client, event, feedback):
 
 
 @pytest.mark.django_db
-def test_orga_can_list_feedback(client, orga_user_token, event, feedback):
-    response = client.get(
-        event.api_urls.feedback,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_list_feedback(
+    client, orga_user_token, event, feedback, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=event):
+            Feedback.objects.create(talk=feedback.talk, review="Also great!")
+
+    with django_assert_num_queries(12):
+        response = client.get(
+            event.api_urls.feedback,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200
-    assert len(content["results"]) == 1
-    assert content["results"][0]["id"] == feedback.pk
+    assert len(content["results"]) == item_count
+    assert feedback.pk in [r["id"] for r in content["results"]]
 
 
 @pytest.mark.django_db

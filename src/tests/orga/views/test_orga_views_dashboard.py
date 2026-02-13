@@ -9,6 +9,8 @@ from django.utils.timezone import now
 from django_scopes import scope
 
 from pretalx.common.models.log import ActivityLog
+from pretalx.event.models import Event, Team
+from pretalx.person.models import SpeakerProfile
 
 
 @pytest.mark.parametrize("test_user", ("orga", "speaker", "superuser", "None"))
@@ -122,11 +124,15 @@ def test_dashboard_organiser_list(
 
 
 @pytest.mark.django_db
-def test_event_dashboard_with_talks(event, orga_client, review_user, review, slot):
+def test_event_dashboard_with_talks(
+    event, orga_client, review_user, review, slot, django_assert_num_queries
+):
     with scope(event=event):
         event.cfp.deadline = now()
         event.save()
-    response = orga_client.get(event.orga_urls.base)
+    expected_queries = 34
+    with django_assert_num_queries(expected_queries):
+        response = orga_client.get(event.orga_urls.base)
     assert response.status_code == 200
 
 
@@ -139,6 +145,114 @@ def test_event_dashboard_with_accepted(
         event.save()
     response = orga_client.get(event.orga_urls.base)
     assert response.status_code == 200
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_organiser_list_num_queries(
+    orga_client, orga_user, event, other_event, django_assert_num_queries, item_count
+):
+    orga_user.is_administrator = True
+    orga_user.save()
+
+    if item_count != 2:
+        other_event.organiser.shred()
+
+    with django_assert_num_queries(6):
+        response = orga_client.get(reverse("orga:organiser.list"))
+    assert response.status_code == 200
+    assert event.organiser.name in response.text
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_event_list_num_queries(
+    orga_client, orga_user, event, other_event, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        orga_user.is_administrator = True
+        orga_user.save()
+
+    with django_assert_num_queries(6):
+        response = orga_client.get(reverse("orga:event.list"))
+    assert response.status_code == 200
+    assert event.slug in response.text
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_organiser_event_list_num_queries(
+    orga_client, orga_user, event, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=event):
+            second_event = Event.objects.create(
+                name="Second Event",
+                slug="second",
+                email="orga@orga.org",
+                date_from=dt.date.today(),
+                date_to=dt.date.today(),
+                organiser=event.organiser,
+            )
+            for team in event.organiser.teams.all():
+                team.limit_events.add(second_event)
+
+    with django_assert_num_queries(8):
+        response = orga_client.get(
+            reverse(
+                "orga:organiser.dashboard",
+                kwargs={"organiser": event.organiser.slug},
+            )
+        )
+    assert response.status_code == 200
+    assert event.slug in response.text
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_organiser_speakers_num_queries(
+    orga_client,
+    event,
+    submission,
+    other_submission,
+    speaker_profile,
+    other_speaker,
+    django_assert_num_queries,
+    item_count,
+):
+    if item_count != 2:
+        with scope(event=event):
+            profile = SpeakerProfile.objects.get(user=other_speaker, event=event)
+            profile.user = None
+            profile.save()
+            profile.delete()
+
+    with django_assert_num_queries(13):
+        response = orga_client.get(
+            reverse(
+                "orga:organiser.speakers",
+                kwargs={"organiser": event.organiser.slug},
+            )
+        )
+    assert response.status_code == 200
+    assert speaker_profile.get_display_name() in response.text
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_teams_list_num_queries(
+    orga_client, event, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=event):
+            Team.objects.create(
+                name="Extra Team", organiser=event.organiser, is_reviewer=True
+            )
+
+    with django_assert_num_queries(14):
+        response = orga_client.get(event.organiser.orga_urls.teams)
+    assert response.status_code == 200
+    assert "Organisers" in response.text
 
 
 @pytest.mark.django_db

@@ -11,6 +11,7 @@ from django.core import mail as djmail
 from django.utils.timezone import now
 from django_scopes import scope
 
+from pretalx.common.models.log import ActivityLog
 from pretalx.event.models import Event
 
 
@@ -885,6 +886,32 @@ def test_widget_settings(event, orga_client):
     assert response.status_code == 200
     event = Event.objects.get(slug=event.slug)
     assert event.feature_flags["show_widget_if_not_public"]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_event_history_num_queries(
+    orga_client, orga_user, event, submission, django_assert_num_queries, item_count
+):
+    with scope(event=event):
+        ActivityLog.objects.create(
+            event=event,
+            person=orga_user,
+            content_object=submission,
+            action_type="pretalx.submission.update",
+        )
+        if item_count == 2:
+            ActivityLog.objects.create(
+                event=event,
+                person=orga_user,
+                content_object=submission,
+                action_type="pretalx.submission.update",
+            )
+
+    with django_assert_num_queries(20):
+        response = orga_client.get(event.orga_urls.history)
+    assert response.status_code == 200
+    assert "History" in response.text or "Activity" in response.text
 
 
 @pytest.mark.django_db

@@ -41,19 +41,26 @@ def test_cannot_see_access_codes(client, event, is_public):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_access_codes(client, orga_user_token, event):
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_orga_can_see_access_codes(
+    client, orga_user_token, event, django_assert_num_queries, item_count
+):
     with scope(event=event):
-        access_code = event.submitter_access_codes.create(code="testcode")
-    response = client.get(
-        event.api_urls.access_codes,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+        event.submitter_access_codes.create(code="testcode")
+        if item_count != 1:
+            event.submitter_access_codes.create(code="othercode")
+
+    with django_assert_num_queries(11):
+        response = client.get(
+            event.api_urls.access_codes,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200
-    assert content["count"] > 0
-    assert access_code.code in [code["code"] for code in content["results"]]
+    assert content["count"] == item_count
+    assert "testcode" in [r["code"] for r in content["results"]]
 
 
 @pytest.mark.django_db

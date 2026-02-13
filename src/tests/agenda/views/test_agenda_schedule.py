@@ -11,6 +11,8 @@ from django.test import override_settings
 from django.urls import reverse
 from django_scopes import scope
 
+from pretalx.person.models import SpeakerProfile
+
 
 @pytest.mark.django_db
 @pytest.mark.usefixtures("other_slot")
@@ -159,13 +161,27 @@ def test_cannot_see_no_schedule(client, user, event, featured):
 
 
 @pytest.mark.django_db
-@pytest.mark.usefixtures("slot", "other_slot")
-def test_speaker_list(client, django_assert_num_queries, event, speaker):
-    url = event.urls.speakers
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_speaker_list(
+    client,
+    django_assert_num_queries,
+    event,
+    speaker,
+    other_speaker,
+    slot,
+    other_slot,
+    item_count,
+):
+    if item_count != 2:
+        with scope(event=event):
+            SpeakerProfile.objects.filter(user=other_speaker, event=event).delete()
+
     with django_assert_num_queries(9):
-        response = client.get(url, follow=True)
+        response = client.get(event.urls.speakers, follow=True)
     assert response.status_code == 200
     assert speaker.name in response.text
+    if item_count == 2:
+        assert other_speaker.name in response.text
 
 
 @pytest.mark.django_db

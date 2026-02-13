@@ -8,6 +8,7 @@ import pytest
 from django_scopes import scope, scopes_disabled
 
 from pretalx.orga.signals import speaker_form
+from pretalx.person.models import SpeakerInformation, SpeakerProfile
 from pretalx.submission.models.question import QuestionRequired
 
 
@@ -21,10 +22,38 @@ def test_orga_can_access_speakers_list(orga_client, speaker, event, submission, 
 
 
 @pytest.mark.django_db
-def test_orga_can_access_speaker_page(orga_client, speaker_profile, event, submission):
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_speaker_list_num_queries(
+    orga_client,
+    event,
+    submission,
+    other_submission,
+    speaker,
+    other_speaker,
+    django_assert_num_queries,
+    item_count,
+):
+    if item_count != 2:
+        with scope(event=event):
+            other_profile = SpeakerProfile.objects.get(user=other_speaker, event=event)
+            other_profile.user = None
+            other_profile.save()
+            other_profile.delete()
+
+    with django_assert_num_queries(24):
+        response = orga_client.get(event.orga_urls.speakers)
+    assert response.status_code == 200
+    assert speaker.name in response.text
+
+
+@pytest.mark.django_db
+def test_orga_can_access_speaker_page(
+    orga_client, speaker_profile, event, submission, django_assert_num_queries
+):
     with scope(event=event):
         url = speaker_profile.orga_urls.base
-    response = orga_client.get(url, follow=True)
+    with django_assert_num_queries(23):
+        response = orga_client.get(url, follow=True)
     assert response.status_code == 200
     assert speaker_profile.name in response.text
 
@@ -242,6 +271,23 @@ def test_reviewer_cannot_edit_speaker(
     with scope(event=event):
         speaker.refresh_from_db()
     assert speaker.name != "BESTSPEAKAR", response.text
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("item_count", [1, 2])
+def test_speaker_information_list_num_queries(
+    orga_client, event, information, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=event):
+            SpeakerInformation.objects.create(
+                event=event, title="Second Info", text="Also important"
+            )
+
+    with django_assert_num_queries(27):
+        response = orga_client.get(event.orga_urls.information)
+    assert response.status_code == 200
+    assert information.title in response.text
 
 
 @pytest.mark.django_db
