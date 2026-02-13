@@ -5,26 +5,14 @@ import urllib.parse
 
 from django.contrib.syndication.views import Feed
 from django.http import Http404
+from django.template.loader import render_to_string
 from django.utils import feedgenerator
 
-XML_REPLACE = str.maketrans(
-    {
-        "<": "&lt;",
-        ">": "&gt;",
-        "&": "&amp;",
-        "'": "&apos;",
-        '"': "&quot;",
-    }
-)
-
-
-def sanitize_xml(text):
-    return str(text or "").translate(XML_REPLACE)
+from pretalx.common.text.xml import strip_control_characters
 
 
 class ScheduleFeed(Feed):
     feed_type = feedgenerator.Atom1Feed
-    description_template = "agenda/feed/description.html"
 
     def get_object(self, request, *args, **kwargs):
         if not request.user.has_perm("schedule.list_schedule", request.event):
@@ -32,7 +20,7 @@ class ScheduleFeed(Feed):
         return request.event
 
     def title(self, obj):
-        return f"{sanitize_xml(obj.name)} schedule updates"
+        return f"{strip_control_characters(obj.name)} schedule updates"
 
     def link(self, obj):
         return obj.urls.schedule.full()
@@ -44,13 +32,17 @@ class ScheduleFeed(Feed):
         return obj.urls.feed.full()
 
     def description(self, obj):
-        return f"Updates to the {sanitize_xml(obj.name)} schedule."
+        return f"Updates to the {strip_control_characters(obj.name)} schedule."
 
     def items(self, obj):
         return obj.schedules.filter(version__isnull=False).order_by("-published")
 
     def item_title(self, item):
-        return f"New {sanitize_xml(item.event.name)} schedule released ({sanitize_xml(item.version)})"
+        return f"New {strip_control_characters(item.event.name)} schedule released ({strip_control_characters(item.version)})"
+
+    def item_description(self, item):
+        content = render_to_string("agenda/feed/description.html", {"obj": item})
+        return strip_control_characters(content)
 
     def item_link(self, item):
         url = item.event.urls.changelog.full()
