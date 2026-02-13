@@ -258,6 +258,25 @@ def test_profile_picture_widget_current_highlighted(speaker, profile_picture):
 
 
 @pytest.mark.django_db
+def test_profile_picture_widget_upload_only(
+    speaker, profile_picture, other_profile_pictures
+):
+    widget = ProfilePictureWidget(
+        user=speaker, current_picture=profile_picture, upload_only=True
+    )
+    ctx = widget.get_context("avatar", None, {"id": "id_avatar"})
+    assert ctx["widget"]["other_pictures"] == []
+    assert ctx["widget"]["current_picture"] is not None
+
+
+@pytest.mark.django_db
+def test_profile_picture_field_upload_only_rejects_select(speaker, profile_picture):
+    field = ProfilePictureField(user=speaker, upload_only=True)
+    with pytest.raises(ValidationError):
+        field.clean({"action": f"select_{profile_picture.pk}", "file": None})
+
+
+@pytest.mark.django_db
 def test_orga_edit_speaker_upload_avatar(
     orga_client, speaker, speaker_profile, event, submission
 ):
@@ -283,7 +302,12 @@ def test_orga_edit_speaker_upload_avatar(
 
 @pytest.mark.django_db
 def test_orga_edit_speaker_select_existing_picture(
-    orga_client, speaker_with_picture, event, submission, other_profile_pictures
+    orga_client,
+    speaker_with_picture,
+    event,
+    submission,
+    other_profile_pictures,
+    profile_picture,
 ):
     target = other_profile_pictures[0]
     with scope(event=event):
@@ -301,7 +325,8 @@ def test_orga_edit_speaker_select_existing_picture(
     assert response.status_code == 200
     with scope(event=event):
         speaker_with_picture.refresh_from_db()
-        assert speaker_with_picture.profile_picture == target
+        # Orga cannot select from speaker's picture library — picture stays unchanged
+        assert speaker_with_picture.profile_picture == profile_picture
 
 
 @pytest.mark.django_db
