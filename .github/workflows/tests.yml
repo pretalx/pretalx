@@ -92,7 +92,7 @@ jobs:
       - name: Compile messages
         run: just run compilemessages
       - name: Run tests
-        run: just test-parallel auto -p no:sugar
+        run: just test-coverage -n auto -p no:sugar
         env:
           PRETALX_CONFIG_FILE: 'src/tests/ci_${{ matrix.database }}.cfg'
       - name: Coverage comment

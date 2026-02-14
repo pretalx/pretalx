@@ -148,7 +148,7 @@ filterwarnings = [
     # This warning *should* get suppressed via our own settings anyway …
     "ignore:Cache key contains characters that will cause errors if used with memcached::django.core.cache.backends.base:"
 ]
-addopts = "-p no:doctest -p no:pastebin -p no:nose --cov=src --cov-report=term-missing:skip-covered --cov-config=pyproject.toml"
+addopts = "-p no:doctest -p no:pastebin -p no:nose"
 
 [tool.coverage.run]
 branch = true

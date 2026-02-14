@@ -239,15 +239,13 @@ test *args:
 
 # Run tests in parallel (requires pytest-xdist)
 [group('tests')]
-[working-directory("src")]
 test-parallel n="auto" *args:
     just test -n {{ n }} {{ args }}
 
 # Run tests with coverage report
 [group('tests')]
-[working-directory("src")]
 test-coverage *args:
-    just test {{ args }}
+    just test --cov=src --cov-report=term-missing:skip-covered --cov-config=pyproject.toml {{ args }}
 
 # Show test coverage report in browser
 [group('tests')]
