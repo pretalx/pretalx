@@ -73,6 +73,16 @@ scoping protection::
 
     $ python -m pretalx shell --unsafe-disable-scopes
 
+``sendtestemail``
+~~~~~~~~~~~~~~~~~
+
+The ``sendtestemail`` command sends a test email to one or more addresses to
+verify that your email configuration is working correctly::
+
+    $ python -m pretalx sendtestemail admin@example.com
+
+You can provide multiple addresses to send a test email to each of them.
+
 ``print_settings``
 ~~~~~~~~~~~~~~~~~~
 

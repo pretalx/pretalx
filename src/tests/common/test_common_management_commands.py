@@ -8,6 +8,7 @@ from contextlib import suppress
 
 import pytest
 import responses
+from django.core import mail as djmail
 from django.core.management import call_command
 from django_scopes import scope
 
@@ -112,3 +113,26 @@ def test_common_move_event(event, slot):
 def test_generate_api_docs():
     # Just make sure there is no exception
     call_command("spectacular")
+
+
+@pytest.mark.django_db
+def test_sendtestemail(settings):
+    djmail.outbox = []
+    call_command("sendtestemail", "test@example.com")
+    assert len(djmail.outbox) == 1
+    mail = djmail.outbox[0]
+    assert mail.to == ["test@example.com"]
+    assert mail.from_email == f"pretalx <{settings.MAIL_FROM}>"
+    assert "test" in mail.subject
+    assert "pretalx" in mail.body
+
+
+@pytest.mark.django_db
+def test_sendtestemail_failure(mocker):
+    djmail.outbox = []
+    mocker.patch(
+        "pretalx.common.mail.mail_send_task.apply",
+        side_effect=Exception("connection refused"),
+    )
+    call_command("sendtestemail", "test@example.com")
+    assert djmail.outbox == []
