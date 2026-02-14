@@ -695,14 +695,14 @@ class QuestionsStep(DedraftMixin, FormFlowStep):
         else:
             result["submission_type"] = info_data.get("submission_type")
         if not self.request.user.is_anonymous:
-            result["speaker"] = self.request.user
+            result["speaker"] = self.request.user.get_speaker(self.request.event)
         if hasattr(self.request, "submission"):
             result.setdefault("submission", self.request.submission)
         return result
 
     def done(self, request, draft=False):
         form = self.get_form(from_storage=True)
-        form.speaker = request.user
+        form.speaker = request.user.get_speaker(request.event)
         form.submission = request.submission
         form.is_valid()
         form.save()

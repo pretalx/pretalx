@@ -43,7 +43,7 @@ def test_answers_not_visible_unauthenticated(client, answer, schedule, is_public
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_organizer_can_see_answer(
     orga_user_token, client, answer, django_assert_num_queries, item_count
 ):
@@ -83,7 +83,7 @@ def test_answers_not_visible_by_default_to_reviewers(
 
 @pytest.mark.django_db
 def test_organizer_can_create_answer(
-    event, orga_user_write_token, client, question, submission, speaker
+    event, orga_user_write_token, client, question, submission, speaker_profile
 ):
     with scope(event=event):
         count = Answer.objects.filter(question__event=event).count()
@@ -93,7 +93,7 @@ def test_organizer_can_create_answer(
             {
                 "question": question.id,
                 "submission": submission.code,
-                "person": speaker.code,
+                "person": speaker_profile.code,
                 "answer": "Tralalalala",
             }
         ),
@@ -110,7 +110,14 @@ def test_organizer_can_create_answer(
 @pytest.mark.parametrize("target", ("submission", "reviewer", "speaker"))
 @pytest.mark.django_db
 def test_organizer_cannot_create_answer_superflous_fields(
-    event, orga_user_write_token, client, question, submission, speaker, review, target
+    event,
+    orga_user_write_token,
+    client,
+    question,
+    submission,
+    speaker_profile,
+    review,
+    target,
 ):
     with scope(event=event):
         count = Answer.objects.filter(question__event=event).count()
@@ -122,7 +129,7 @@ def test_organizer_cannot_create_answer_superflous_fields(
             {
                 "question": question.id,
                 "submission": submission.code,
-                "person": speaker.code,
+                "person": speaker_profile.code,
                 "review": review.pk,
                 "answer": "Tralalalala",
             }
@@ -137,7 +144,7 @@ def test_organizer_cannot_create_answer_superflous_fields(
 
 @pytest.mark.django_db
 def test_duplicate_answer_updates_existing_answer(
-    event, orga_user_write_token, client, question, submission, speaker, answer
+    event, orga_user_write_token, client, question, submission, speaker_profile, answer
 ):
     with scope(event=event):
         count = Answer.objects.filter(question__event=event).count()
@@ -177,7 +184,7 @@ def test_organizer_can_edit_answers(event, orga_user_write_token, client, answer
 
 @pytest.mark.django_db
 def test_reviewer_cannot_create_answer(
-    event, client, review_user_token, question, submission, speaker
+    event, client, review_user_token, question, submission, speaker_profile
 ):
     with scope(event=event):
         count = Answer.objects.filter(question__event=event).count()
@@ -186,7 +193,7 @@ def test_reviewer_cannot_create_answer(
         {
             "question": question.id,
             "submission": submission.code,
-            "person": speaker.code,
+            "person": speaker_profile.code,
             "answer": "Tralalalala",
         },
         headers={"Authorization": f"Token {review_user_token.token}"},
@@ -333,7 +340,7 @@ def test_answer_validation_reviewer_question(
 
 @pytest.mark.django_db
 def test_answer_validation_speaker_question(
-    event, orga_user_write_token, client, speaker
+    event, orga_user_write_token, client, speaker_profile
 ):
     with scope(event=event):
         question = event.questions.create(
@@ -360,7 +367,7 @@ def test_answer_validation_speaker_question(
             {
                 "question": question.pk,
                 "answer": "Test answer",
-                "person": speaker.code,
+                "person": speaker_profile.code,
                 "submission": "abc123",
             }
         ),

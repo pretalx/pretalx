@@ -12,12 +12,12 @@ class AnswerFilterSet(django_filters.FilterSet):
         field_name="submission__code",
         lookup_expr="iexact",
     )
-    person = django_filters.CharFilter(
-        field_name="person__code",
+    speaker = django_filters.CharFilter(
+        field_name="speaker__code",
         lookup_expr="iexact",
     )
     review = django_filters.NumberFilter(field_name="review_id")
 
     class Meta:
         model = Answer
-        fields = ("question", "submission", "person", "review")
+        fields = ("question", "submission", "speaker", "review")

@@ -72,12 +72,11 @@ def test_export_question_files_no_answers(event, file_question):
 
 
 @pytest.mark.django_db
-def test_export_question_files_creates_zip(event, file_question, submission, speaker):
+def test_export_question_files_creates_zip(event, file_question, submission):
     with scope(event=event):
         answer = Answer.objects.create(
             submission=submission,
             question=file_question,
-            person=speaker,
             answer="doc.pdf",
         )
         answer.answer_file.save("doc.pdf", ContentFile(b"pdf content"))
@@ -100,11 +99,13 @@ def test_export_question_files_creates_zip(event, file_question, submission, spe
 
 
 @pytest.mark.django_db
-def test_export_question_files_speaker_target(event, speaker_file_question, speaker):
+def test_export_question_files_speaker_target(
+    event, speaker_file_question, speaker_profile
+):
     with scope(event=event):
         answer = Answer.objects.create(
             question=speaker_file_question,
-            person=speaker,
+            speaker=speaker_profile,
             answer="cv.pdf",
         )
         answer.answer_file.save("cv.pdf", ContentFile(b"CV content"))
@@ -123,7 +124,7 @@ def test_export_question_files_speaker_target(event, speaker_file_question, spea
     with ZipFile(BytesIO(cached_file.file.read()), "r") as zf:
         names = zf.namelist()
         assert len(names) == 1
-        assert speaker.code in names[0]
+        assert speaker_profile.code in names[0]
 
 
 @pytest.mark.django_db

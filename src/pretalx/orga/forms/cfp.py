@@ -547,9 +547,7 @@ class QuestionFilterForm(forms.Form):
         talks = self.get_submissions()
         speakers = self.event.submitters.filter(submissions__in=talks)
         answers = (
-            question.answers.filter(
-                Q(person__in=speakers.values("user")) | Q(submission__in=talks)
-            )
+            question.answers.filter(Q(speaker__in=speakers) | Q(submission__in=talks))
             .order_by("pk")
             .distinct()
         )

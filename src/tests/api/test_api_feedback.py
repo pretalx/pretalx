@@ -30,7 +30,7 @@ def test_anon_cannot_list_feedback(client, event, feedback):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_list_feedback(
     client, orga_user_token, event, feedback, django_assert_num_queries, item_count
 ):

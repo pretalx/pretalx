@@ -161,7 +161,7 @@ def test_cannot_see_no_schedule(client, user, event, featured):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_speaker_list(
     client,
     django_assert_num_queries,

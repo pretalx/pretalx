@@ -154,7 +154,7 @@ def test_orga_can_see_expanded_reviews(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_reviewer_can_see_reviews(
     client,
     review_user_token,

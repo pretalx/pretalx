@@ -9,7 +9,6 @@ from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
 from pretalx.common.models.log import ActivityLog
-from pretalx.schedule.models import TalkSlot
 from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.models import (
@@ -26,7 +25,7 @@ from pretalx.person.models import User
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_see_submissions(
     orga_client,
     event,
@@ -180,7 +179,7 @@ def test_reviewer_can_see_single_submission_but_hide_question(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_see_single_submission_feedback(
     orga_client, event, feedback, django_assert_num_queries, item_count
 ):
@@ -897,7 +896,7 @@ def test_orga_can_edit_submission_wrong_datetime_answer(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_see_all_feedback(
     orga_client, event, feedback, django_assert_num_queries, item_count
 ):
@@ -1041,7 +1040,7 @@ def test_submission_apply_pending_single(submission, orga_client):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_can_see_tags(orga_client, tag, event, django_assert_num_queries, item_count):
     if item_count == 2:
         with scope(event=event):
@@ -1148,7 +1147,7 @@ def test_can_delete_used_tag(orga_client, tag, event, submission):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_see_submission_comments(
     orga_client, submission, submission_comment, django_assert_num_queries, item_count
 ):
@@ -1193,7 +1192,7 @@ def test_orga_cannot_post_empty_submission_comment(orga_client, submission):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_view_submission_history(
     orga_client, event, submission, orga_user, django_assert_num_queries, item_count
 ):

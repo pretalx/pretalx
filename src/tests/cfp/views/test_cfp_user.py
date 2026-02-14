@@ -23,7 +23,7 @@ from pretalx.submission.models import (
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_can_see_submission_list(
     speaker_client,
     speaker,
@@ -52,7 +52,7 @@ def test_can_see_submission_list(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_can_see_mail_list(
     speaker_client,
     event,
@@ -582,7 +582,7 @@ def test_can_edit_login_info_wrong_password(speaker, event, speaker_client):
 
 @pytest.mark.django_db
 def test_can_edit_and_update_speaker_answers(
-    speaker,
+    speaker_profile,
     event,
     speaker_question,
     speaker_boolean_question,
@@ -591,7 +591,7 @@ def test_can_edit_and_update_speaker_answers(
     speaker_file_question,
 ):
     with scope(event=event):
-        answer = speaker.answers.filter(question_id=speaker_question.pk).first()
+        answer = speaker_profile.answers.filter(question_id=speaker_question.pk).first()
         assert not answer
     f = SimpleUploadedFile("testfile.txt", b"file_content")
     response = speaker_client.post(
@@ -608,18 +608,18 @@ def test_can_edit_and_update_speaker_answers(
     assert response.status_code == 200
 
     with scope(event=event):
-        answer = speaker.answers.get(question_id=speaker_question.pk)
+        answer = speaker_profile.answers.get(question_id=speaker_question.pk)
         assert answer.answer == "black as the night"
         assert (
-            speaker.answers.get(question_id=speaker_boolean_question.pk).answer
+            speaker_profile.answers.get(question_id=speaker_boolean_question.pk).answer
             == "True"
         )
         assert (
-            speaker.answers.get(question_id=speaker_text_question.pk).answer
+            speaker_profile.answers.get(question_id=speaker_text_question.pk).answer
             == "Green is totally the best color."
         )
 
-        file_answer = speaker.answers.get(question_id=speaker_file_question.pk)
+        file_answer = speaker_profile.answers.get(question_id=speaker_file_question.pk)
         assert file_answer.answer.startswith("file://")
         assert file_answer.answer_file.read() == b"file_content"
         assert (settings.MEDIA_ROOT / file_answer.answer_file.name).exists()
@@ -652,7 +652,7 @@ def test_can_edit_and_update_speaker_answers(
 
     # Test that replacing a file deletes the old one
     with scope(event=event):
-        file_answer = speaker.answers.get(question_id=speaker_file_question.pk)
+        file_answer = speaker_profile.answers.get(question_id=speaker_file_question.pk)
         old_file_path = settings.MEDIA_ROOT / file_answer.answer_file.name
         assert old_file_path.exists()
 

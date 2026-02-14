@@ -13,7 +13,7 @@ from rest_framework.serializers import (
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
-from pretalx.person.models import User
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import (
     Answer,
     AnswerOption,
@@ -197,6 +197,7 @@ class AnswerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         slug_field="code",
         read_only=True,
         required=False,
+        source="speaker",
     )
     review = PrimaryKeyRelatedField(read_only=True, required=False)
     answer_file = UploadedFileField(required=False)
@@ -243,10 +244,11 @@ class AnswerCreateSerializer(AnswerSerializer):
         allow_null=True,
     )
     person = SlugRelatedField(
-        queryset=User.objects.none(),
+        queryset=SpeakerProfile.objects.none(),
         slug_field="code",
         required=False,
         allow_null=True,
+        source="speaker",
     )
     review = PrimaryKeyRelatedField(
         queryset=Review.objects.none(),
@@ -268,9 +270,7 @@ class AnswerCreateSerializer(AnswerSerializer):
             request.event, request.user
         )
         self.fields["submission"].queryset = request.event.submissions.all()
-        self.fields["person"].queryset = User.objects.filter(
-            profiles__submissions__event=request.event
-        )
+        self.fields["person"].queryset = request.event.submitters
         self.fields["review"].queryset = request.event.reviews.all()
 
     def validate(self, data):
@@ -295,7 +295,7 @@ class AnswerCreateSerializer(AnswerSerializer):
         target = question.target
         submission = self.get_with_fallback(data, "submission")
         review = self.get_with_fallback(data, "review")
-        person = self.get_with_fallback(data, "person")
+        speaker = self.get_with_fallback(data, "person")
         if target == QuestionTarget.SUBMISSION and not submission:
             raise exceptions.ValidationError(
                 {"submission": "This field is required for submission questions."}
@@ -304,7 +304,7 @@ class AnswerCreateSerializer(AnswerSerializer):
             raise exceptions.ValidationError(
                 {"review": "This field is required for reviewer questions."}
             )
-        if target == QuestionTarget.SPEAKER and not person:
+        if target == QuestionTarget.SPEAKER and not speaker:
             raise exceptions.ValidationError(
                 {"person": "This field is required for speaker questions."}
             )
