@@ -218,7 +218,7 @@
 | src/pretalx/person/models/information.py                                   |       33 |        0 |        2 |        1 |     97% |    20->22 |
 | src/pretalx/person/models/preferences.py                                   |       41 |        5 |       18 |        3 |     83% |47-53, 92, 109->112 |
 | src/pretalx/person/models/profile.py                                       |       58 |        2 |        6 |        3 |     92% |114, 135, 141->exit, 146->exit, 151->157 |
-| src/pretalx/person/models/user.py                                          |      270 |        7 |       52 |        8 |     95% |86, 244->248, 254->257, 262, 275, 376->378, 381, 449-451, 476->489 |
+| src/pretalx/person/models/user.py                                          |      270 |        7 |       52 |        8 |     95% |85, 243->247, 253->256, 261, 274, 375->377, 380, 448-450, 475->488 |
 | src/pretalx/person/rules.py                                                |       33 |        2 |       10 |        2 |     91% |    44, 46 |
 | src/pretalx/person/services.py                                             |        9 |        0 |        2 |        1 |     91% |    20->22 |
 | src/pretalx/person/signals.py                                              |        8 |        0 |        0 |        0 |    100% |           |
