@@ -92,7 +92,11 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
     def build_score_field(
         self, category, read_only=False, initial=None, hide_optional=False
     ):
-        choices = [("-", _("No score"))] if not category.required else []
+        choices = (
+            [("-", _("No score"))]
+            if (not category.required or self.allow_empty)
+            else []
+        )
         choices.extend(
             (
                 score.id,

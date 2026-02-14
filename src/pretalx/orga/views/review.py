@@ -452,6 +452,11 @@ class BulkReview(EventPermissionRequired, TemplateView):
             .select_related("submission")
             .prefetch_related("scores", "scores__category")
         }
+        categories = defaultdict(list)
+        for category in self.categories:
+            for track in category.limit_tracks.all():
+                categories[track.pk].append(category)
+            categories[None].append(category)
         return {
             submission.code: self._build_form(
                 submission,
