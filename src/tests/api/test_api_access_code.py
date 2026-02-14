@@ -41,7 +41,7 @@ def test_cannot_see_access_codes(client, event, is_public):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_see_access_codes(
     client, orga_user_token, event, django_assert_num_queries, item_count
 ):

@@ -90,20 +90,20 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
         if question and (answer or option):
             if option:
                 answers = Answer.objects.filter(
-                    person_id=OuterRef("user_id"),
+                    speaker_id=OuterRef("pk"),
                     question_id=question,
                     options__pk=option,
                 )
             else:
                 answers = Answer.objects.filter(
-                    person_id=OuterRef("user_id"),
+                    speaker_id=OuterRef("pk"),
                     question_id=question,
                     answer__exact=answer,
                 )
             qs = qs.annotate(has_answer=Exists(answers)).filter(has_answer=True)
         elif question and unanswered:
             answers = Answer.objects.filter(
-                question_id=question, person_id=OuterRef("user_id")
+                question_id=question, speaker_id=OuterRef("pk")
             )
             qs = qs.annotate(has_answer=Exists(answers)).filter(has_answer=False)
         return qs.order_by("id").distinct().order_by(Lower("user__name"))
@@ -191,7 +191,7 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
             self.request.POST if self.request.method == "POST" else None,
             files=self.request.FILES if self.request.method == "POST" else None,
             target="speaker",
-            speaker=self.object.user,
+            speaker=self.object,
             event=self.request.event,
             for_reviewers=(
                 not self.request.user.has_perm(

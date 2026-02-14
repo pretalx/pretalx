@@ -38,7 +38,7 @@ def test_cannot_see_mail_templates(client, mail_template, is_public):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_see_mail_templates(
     client, orga_user_token, mail_template, django_assert_num_queries, item_count
 ):

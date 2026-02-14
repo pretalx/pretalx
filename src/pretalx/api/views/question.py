@@ -135,7 +135,7 @@ class QuestionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewS
     partial_update=extend_schema(summary="Update Question Option (Partial Update)"),
     destroy=extend_schema(
         summary="Delete Question Option",
-        description="Deleting a question option is only possible if it hasn't been used in any answers yet.",
+        description="Deleting a question option is only possible if it hasn’t been used in any answers yet.",
     ),
 )
 class AnswerOptionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
@@ -196,11 +196,11 @@ class AnswerOptionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelV
     create=extend_schema(summary="Create Answer"),
     update=extend_schema(
         summary="Update Answer",
-        description="Please note that you cannot change an answer’s related objects (question, submission, review, person).",
+        description="Please note that you cannot change an answer’s related objects (question, submission, review, speaker).",
     ),
     partial_update=extend_schema(
         summary="Update Answer (Partial Update)",
-        description="Please note that you cannot change an answer’s related objects (question, submission, review, person).",
+        description="Please note that you cannot change an answer’s related objects (question, submission, review, speaker).",
     ),
     destroy=extend_schema(summary="Delete Answer"),
 )
@@ -226,7 +226,7 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
             Answer.objects.filter(
                 question__in=questions_for_user(self.event, self.request.user)
             )
-            .select_related("question", "question__event", "submission", "person")
+            .select_related("question", "question__event", "submission", "speaker")
             .prefetch_related("options")
             .order_by("pk")
         )
@@ -252,7 +252,7 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
             question=serializer.validated_data["question"],
             review=serializer.validated_data.get("review"),
             submission=serializer.validated_data.get("submission"),
-            person=serializer.validated_data.get("person"),
+            speaker=serializer.validated_data.get("speaker"),
         ).first()
 
         if existing_answer:
@@ -263,7 +263,7 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
             question=serializer.validated_data["question"],
             review=serializer.validated_data.get("review"),
             submission=serializer.validated_data.get("submission"),
-            person=serializer.validated_data.get("person"),
+            speaker=serializer.validated_data.get("speaker"),
             defaults={"answer": serializer.validated_data["answer"]},
         )
 

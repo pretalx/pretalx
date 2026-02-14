@@ -29,17 +29,17 @@ class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
                 question__target="speaker",
                 question__event=self.event,
                 question__active=True,
-                person__isnull=False,
+                speaker__isnull=False,
             )
-            .select_related("question", "person")
-            .order_by("person__name")
+            .select_related("question", "speaker", "speaker__user")
+            .order_by("speaker__name")
         )
         qs = filter_answers_by_team_access(qs, request.user)
         data = [
             {
-                "code": answer.person.code,
-                "name": answer.person.name,
-                "email": answer.person.email,
+                "code": answer.speaker.code,
+                "name": answer.speaker.name,
+                "email": answer.speaker.user.email,
                 "question": answer.question.question,
                 "answer": answer.answer_string,
             }

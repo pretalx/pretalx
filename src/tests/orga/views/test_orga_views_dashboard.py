@@ -148,7 +148,7 @@ def test_event_dashboard_with_accepted(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_organiser_list_num_queries(
     orga_client, orga_user, event, other_event, django_assert_num_queries, item_count
 ):
@@ -165,7 +165,7 @@ def test_organiser_list_num_queries(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_event_list_num_queries(
     orga_client, orga_user, event, other_event, django_assert_num_queries, item_count
 ):
@@ -182,7 +182,7 @@ def test_event_list_num_queries(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_organiser_event_list_num_queries(
     orga_client, orga_user, event, django_assert_num_queries, item_count
 ):
@@ -211,7 +211,7 @@ def test_organiser_event_list_num_queries(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_organiser_speakers_num_queries(
     orga_client,
     event,
@@ -241,7 +241,7 @@ def test_organiser_speakers_num_queries(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_teams_list_num_queries(
     orga_client, event, django_assert_num_queries, item_count
 ):

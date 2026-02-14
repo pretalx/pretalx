@@ -23,7 +23,7 @@ def test_orga_can_access_speakers_list(orga_client, speaker, event, submission, 
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_speaker_list_num_queries(
     orga_client,
     event,
@@ -281,7 +281,7 @@ def test_reviewer_cannot_edit_speaker(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_speaker_information_list_num_queries(
     orga_client, event, information, django_assert_num_queries, item_count
 ):

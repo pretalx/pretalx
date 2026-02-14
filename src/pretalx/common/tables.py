@@ -29,7 +29,7 @@ class QuestionColumnMixin:
             from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
 
             if self.Meta.model == SpeakerProfile:
-                self._question_model = "user"
+                self._question_model = "speaker"
             else:
                 self._question_model = "submission"
 
@@ -67,7 +67,7 @@ class QuestionColumnMixin:
         return self._answers_cache.get(record.pk, {}).get(question_id)
 
     def _get_answer_filter_field(self):
-        model = "person" if self._question_model == "user" else "submission"
+        model = "speaker" if self._question_model == "speaker" else "submission"
         return f"{model}_id__in"
 
     def _load_all_answers(self):
@@ -92,7 +92,9 @@ class QuestionColumnMixin:
             .prefetch_related("options")
         )
         self._answers_cache = {}
-        cache_key = "person_id" if self._question_model == "user" else "submission_id"
+        cache_key = (
+            "speaker_id" if self._question_model == "speaker" else "submission_id"
+        )
         for answer in answers:
             answer_key = getattr(answer, cache_key, None)
             self._answers_cache.setdefault(answer_key, {})[answer.question_id] = answer

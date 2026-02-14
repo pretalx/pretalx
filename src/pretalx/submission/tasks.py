@@ -61,7 +61,7 @@ def export_question_files(*, question_id: int, cached_file_id: str):
         answers = (
             question.answers.filter(answer_file__isnull=False)
             .exclude(answer_file="")
-            .select_related("submission", "person", "review")
+            .select_related("submission", "speaker", "review")
         )
 
         used_filenames = set()

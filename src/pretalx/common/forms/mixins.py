@@ -464,7 +464,7 @@ class QuestionFieldsMixin:
                     if field.question.target == QuestionTarget.SUBMISSION
                     else None
                 ),
-                person=(
+                speaker=(
                     self.speaker
                     if field.question.target == QuestionTarget.SPEAKER
                     else None

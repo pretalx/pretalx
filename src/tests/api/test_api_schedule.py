@@ -442,7 +442,7 @@ def test_list_slots_anonymous_schedule_public_only_visible(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_list_slots_orga_sees_slots_in_current_schedule_by_default(
     client,
     orga_user_token,

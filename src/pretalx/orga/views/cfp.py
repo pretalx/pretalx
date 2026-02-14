@@ -410,7 +410,7 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
                     if not answer or not answer.is_answered:
                         missing.append(question)
             elif question.target == QuestionTarget.SPEAKER:
-                answer = question.answers.filter(person=person.user).first()
+                answer = question.answers.filter(speaker=person).first()
                 if not answer or not answer.is_answered:
                     missing.append(question)
         return missing

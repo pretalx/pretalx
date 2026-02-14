@@ -6,27 +6,28 @@ from django.db.models import Exists, OuterRef, Subquery
 
 
 def populate_speaker(apps, schema_editor):
-    SpeakerRole = apps.get_model("submission", "SpeakerRole")
+    Answer = apps.get_model("submission", "Answer")
     SpeakerProfile = apps.get_model("person", "SpeakerProfile")
     User = apps.get_model("person", "User")
     Event = apps.get_model("event", "Event")
 
     # Step 1: Create missing SpeakerProfiles (safety net)
-    roles_without_profile = (
-        SpeakerRole.objects.annotate(
+    answers_needing_profile = (
+        Answer.objects.filter(person__isnull=False)
+        .annotate(
             has_profile=Exists(
                 SpeakerProfile.objects.filter(
-                    user_id=OuterRef("user_id"),
-                    event_id=OuterRef("submission__event_id"),
+                    user_id=OuterRef("person_id"),
+                    event_id=OuterRef("question__event_id"),
                 )
             )
         )
         .filter(has_profile=False)
-        .values_list("user_id", "submission__event_id")
+        .values_list("person_id", "question__event_id")
         .distinct()
     )
 
-    missing_pairs = list(roles_without_profile)
+    missing_pairs = list(answers_needing_profile)
     if missing_pairs:
         user_ids = {pair[0] for pair in missing_pairs}
         user_data = dict(User.objects.filter(pk__in=user_ids).values_list("pk", "code"))
@@ -48,10 +49,10 @@ def populate_speaker(apps, schema_editor):
 
     # Step 2: Bulk populate speaker FK, per-event to avoid joined OuterRef
     for event in Event.objects.all():
-        SpeakerRole.objects.filter(submission__event=event).update(
+        Answer.objects.filter(question__event=event, person__isnull=False).update(
             speaker_id=Subquery(
                 SpeakerProfile.objects.filter(
-                    user_id=OuterRef("user_id"),
+                    user_id=OuterRef("person_id"),
                     event_id=event.pk,
                 ).values("id")[:1]
             )
@@ -59,11 +60,11 @@ def populate_speaker(apps, schema_editor):
 
 
 def reverse_speaker(apps, schema_editor):
-    SpeakerRole = apps.get_model("submission", "SpeakerRole")
+    Answer = apps.get_model("submission", "Answer")
     SpeakerProfile = apps.get_model("person", "SpeakerProfile")
 
-    SpeakerRole.objects.filter(speaker__isnull=False).update(
-        user_id=Subquery(
+    Answer.objects.filter(speaker__isnull=False).update(
+        person_id=Subquery(
             SpeakerProfile.objects.filter(
                 pk=OuterRef("speaker_id"),
             ).values("user_id")[:1]
@@ -73,7 +74,7 @@ def reverse_speaker(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("submission", "0094_speakerrole_add_speaker_fk"),
+        ("submission", "0097_remove_answer_person_answer_speaker"),
     ]
 
     operations = [

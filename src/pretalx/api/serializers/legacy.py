@@ -89,7 +89,7 @@ class LegacySpeakerSerializer(ModelSerializer):
         return obj.submissions.filter(slots__in=talks).values_list("code", flat=True)
 
     def answers_queryset(self, obj):
-        return obj.answers.all().filter(
+        return obj.answers.filter(
             question__is_public=True, question__active=True, question__target="speaker"
         )
 
@@ -113,7 +113,7 @@ class LegacySpeakerOrgaSerializer(LegacySpeakerSerializer):
     )
 
     def answers_queryset(self, obj):
-        queryset = obj.answers.all()
+        queryset = obj.all_answers
         request = self.context.get("request")
         if request:
             return filter_answers_by_team_access(queryset, request.user)

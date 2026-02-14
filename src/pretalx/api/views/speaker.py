@@ -169,7 +169,7 @@ class SpeakerViewSet(
                     "submissions", queryset=self.submissions_for_user.order_by("code")
                 ),
                 Prefetch(
-                    "user__answers",
+                    "answers",
                     queryset=Answer.objects.select_related("question"),
                 ),
             )
@@ -183,13 +183,6 @@ class SpeakerViewSet(
             "submissions.track",
             "submissions.submission_type",
         ):
-            prefetches = [
-                (
-                    field.replace(".", "__")
-                    if field.startswith("submissions")
-                    else f"user__{field.replace('.', '__')}"
-                )
-                for field in fields
-            ]
+            prefetches = [field.replace(".", "__") for field in fields]
             queryset = queryset.prefetch_related(*prefetches)
         return queryset

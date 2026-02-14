@@ -72,9 +72,8 @@ class SpeakerView(PermissionRequired, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user = self.speaker.user
         answers = (
-            user.answers.filter(
+            self.speaker.answers.filter(
                 question__is_public=True,
                 question__event=self.request.event,
                 question__target=QuestionTarget.SPEAKER,
