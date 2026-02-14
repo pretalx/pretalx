@@ -258,5 +258,5 @@ Which you can use in your code like this::
 .. _Django application: https://docs.djangoproject.com/en/stable/ref/applications/
 .. _signal dispatcher: https://docs.djangoproject.com/en/stable/topics/signals/
 .. _namespace packages: http://legacy.python.org/dev/peps/pep-0420/
-.. _entry point: https://setuptools.pypa.io/en/latest/pkg_resources.html#locating-plugins
+.. _entry point: https://setuptools.pypa.io/en/latest/userguide/entry_point.html#entry-points-for-plugins
 .. _cookiecutter: https://cookiecutter.readthedocs.io/en/latest/
