@@ -32,8 +32,7 @@ from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode, LogMixi
 from pretalx.common.text.path import hashed_path
 from pretalx.common.urls import EventUrls, build_absolute_uri
 from pretalx.person.rules import is_administrator
-
-from ..signals import delete_user as delete_user_signal
+from pretalx.person.signals import delete_user as delete_user_signal
 
 
 def avatar_path(instance, filename):
