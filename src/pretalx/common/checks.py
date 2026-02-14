@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from email.utils import parseaddr
+
 from django.conf import settings
 from django.core.checks import ERROR, INFO, WARNING, CheckMessage, register
 
@@ -109,7 +111,16 @@ def check_system_email(app_configs, **kwargs):
                 id="pretalx.E002",
             )
         )
-    return []
+    if settings.MAIL_FROM and "@" not in parseaddr(settings.MAIL_FROM)[1]:
+        errors.append(
+            CheckMessage(
+                level=ERROR,
+                msg="MAIL_FROM is set but does not contain a valid email address.",
+                hint=f"{CONFIG_HINT}#the-mail-section",
+                id="pretalx.E003",
+            )
+        )
+    return errors
 
 
 @register(deploy=True)

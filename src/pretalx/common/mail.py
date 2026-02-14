@@ -7,7 +7,7 @@
 import logging
 import re
 from contextlib import suppress
-from email.utils import formataddr
+from email.utils import formataddr, parseaddr
 from smtplib import SMTPResponseException, SMTPSenderRefused
 
 from django.conf import settings
@@ -46,6 +46,11 @@ class TolerantDict(dict):
     def __missing__(self, key):
         """Don't fail when formatting strings with a dict with missing keys."""
         return key
+
+
+def _format_email(addr, fallback_name):
+    parsed_name, parsed_email = parseaddr(addr)
+    return formataddr((parsed_name or fallback_name, parsed_email))
 
 
 DEBUG_DOMAINS = [
@@ -105,12 +110,12 @@ def mail_send_task(
             reply_to = event.email
 
         if isinstance(reply_to, str):
-            reply_to = [formataddr((str(event.name), reply_to))]
+            reply_to = [_format_email(reply_to, str(event.name))]
 
-        sender = formataddr((str(event.name), sender or settings.MAIL_FROM))
+        sender = formataddr((str(event.name), parseaddr(sender)[1]))
 
     else:
-        sender = formataddr(("pretalx", settings.MAIL_FROM))
+        sender = _format_email(settings.MAIL_FROM, "pretalx")
         backend = get_connection(fail_silently=False)
 
     subject = re.sub(r"[\x00-\x1f\x7f]+", " ", str(subject)).strip()

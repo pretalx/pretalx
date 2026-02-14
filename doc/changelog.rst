@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`admin` As administrator, you can now use the ``sendtestemail`` command to check if email sending works with the default settings (which are used e.g. for password resets even when event-specific settings are configured), just like the test email sending interface on the administrator page.
 - :feature:`dev,1974` Plugins can now prevent submission state changes by listening to the new ``before_submission_state_change`` signal and raising ``SubmissionError``.
 - :feature:`schedule,1911` You can filter the schedule to show only sessions that will not be recorded.
 - :bug:`orga` Server administrators would see a button to create a new user on the admin user list, even though pretalx does not have a generic user creation functionality.
