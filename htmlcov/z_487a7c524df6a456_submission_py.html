@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_487a7c524df6a456_team_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-14 22:51 +0000
+            created at 2026-02-14 23:03 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -576,7 +576,7 @@
     <p class="run"><span class="n"><a id="t492" href="#t492">492</a></span><span class="t"><span class="op">@</span><span class="nam">authentication_classes</span><span class="op">(</span><span class="op">(</span><span class="nam">SessionAuthentication</span><span class="op">,</span> <span class="nam">TokenAuthentication</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t493" href="#t493">493</a></span><span class="t"><span class="key">def</span> <span class="nam">favourites_view</span><span class="op">(</span><span class="nam">request</span><span class="op">,</span> <span class="nam">event</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t494" href="#t494">494</a></span><span class="t">    <span class="key">if</span> <span class="key">not</span> <span class="nam">request</span><span class="op">.</span><span class="nam">user</span><span class="op">.</span><span class="nam">has_perm</span><span class="op">(</span><span class="str">"schedule.list_schedule"</span><span class="op">,</span> <span class="nam">request</span><span class="op">.</span><span class="nam">event</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t495" href="#t495">495</a></span><span class="t">        <span class="key">raise</span> <span class="nam">PermissionDenied</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t495" href="#t495">495</a></span><span class="t">        <span class="key">raise</span> <span class="nam">PermissionDenied</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t496" href="#t496">496</a></span><span class="t">    <span class="key">return</span> <span class="nam">Response</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t497" href="#t497">497</a></span><span class="t">        <span class="op">[</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t498" href="#t498">498</a></span><span class="t">            <span class="nam">sub</span><span class="op">.</span><span class="nam">code</span>&nbsp;</span><span class="r"></span></p>
@@ -601,7 +601,7 @@
     <p class="run"><span class="n"><a id="t517" href="#t517">517</a></span><span class="t"><span class="op">@</span><span class="nam">authentication_classes</span><span class="op">(</span><span class="op">(</span><span class="nam">SessionAuthentication</span><span class="op">,</span> <span class="nam">TokenAuthentication</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t518" href="#t518">518</a></span><span class="t"><span class="key">def</span> <span class="nam">favourite_view</span><span class="op">(</span><span class="nam">request</span><span class="op">,</span> <span class="nam">event</span><span class="op">,</span> <span class="nam">code</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t519" href="#t519">519</a></span><span class="t">    <span class="key">if</span> <span class="key">not</span> <span class="nam">request</span><span class="op">.</span><span class="nam">user</span><span class="op">.</span><span class="nam">has_perm</span><span class="op">(</span><span class="str">"schedule.list_schedule"</span><span class="op">,</span> <span class="nam">request</span><span class="op">.</span><span class="nam">event</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t520" href="#t520">520</a></span><span class="t">        <span class="key">raise</span> <span class="nam">PermissionDenied</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t520" href="#t520">520</a></span><span class="t">        <span class="key">raise</span> <span class="nam">PermissionDenied</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t521" href="#t521">521</a></span><span class="t">    <span class="nam">submission</span> <span class="op">=</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t522" href="#t522">522</a></span><span class="t">        <span class="nam">submissions_for_user</span><span class="op">(</span><span class="nam">request</span><span class="op">.</span><span class="nam">event</span><span class="op">,</span> <span class="nam">request</span><span class="op">.</span><span class="nam">user</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t523" href="#t523">523</a></span><span class="t">        <span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">code__iexact</span><span class="op">=</span><span class="nam">code</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -688,7 +688,7 @@
             <a class="nav" href="z_487a7c524df6a456_team_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-14 22:51 +0000
+            created at 2026-02-14 23:03 +0000
         </p>
     </div>
 </footer>

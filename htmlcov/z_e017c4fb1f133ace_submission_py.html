@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_e017c4fb1f133ace_team_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-14 22:51 +0000
+            created at 2026-02-14 23:03 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -514,37 +514,38 @@
     <p class="run"><span class="n"><a id="t430" href="#t430">430</a></span><span class="t">        <span class="key">return</span> <span class="nam">submission</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t431" href="#t431">431</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t432" href="#t432">432</a></span><span class="t">    <span class="key">class</span> <span class="nam">Meta</span><span class="op">(</span><span class="nam">SubmissionSerializer</span><span class="op">.</span><span class="nam">Meta</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t433" href="#t433">433</a></span><span class="t">        <span class="nam">fields</span> <span class="op">=</span> <span class="nam">SubmissionSerializer</span><span class="op">.</span><span class="nam">Meta</span><span class="op">.</span><span class="nam">fields</span> <span class="op">+</span> <span class="op">[</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t434" href="#t434">434</a></span><span class="t">            <span class="str">"pending_state"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t435" href="#t435">435</a></span><span class="t">            <span class="str">"is_featured"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t436" href="#t436">436</a></span><span class="t">            <span class="str">"notes"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t437" href="#t437">437</a></span><span class="t">            <span class="str">"internal_notes"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t438" href="#t438">438</a></span><span class="t">            <span class="str">"invitation_token"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t439" href="#t439">439</a></span><span class="t">            <span class="str">"access_code"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t440" href="#t440">440</a></span><span class="t">            <span class="str">"review_code"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t441" href="#t441">441</a></span><span class="t">            <span class="str">"anonymised_data"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t442" href="#t442">442</a></span><span class="t">            <span class="str">"reviews"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t443" href="#t443">443</a></span><span class="t">            <span class="str">"assigned_reviewers"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t444" href="#t444">444</a></span><span class="t">            <span class="str">"is_anonymised"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t445" href="#t445">445</a></span><span class="t">            <span class="str">"median_score"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t446" href="#t446">446</a></span><span class="t">            <span class="str">"mean_score"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t447" href="#t447">447</a></span><span class="t">            <span class="str">"created"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t448" href="#t448">448</a></span><span class="t">            <span class="str">"updated"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t449" href="#t449">449</a></span><span class="t">            <span class="str">"invitations"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t450" href="#t450">450</a></span><span class="t">        <span class="op">]</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t451" href="#t451">451</a></span><span class="t">        <span class="com"># Reviews and assigned reviewers are currently not expandable because</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t452" href="#t452">452</a></span><span class="t">        <span class="com"># reviewers are also receiving the ReviewerOrgaSerializer, but may</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t453" href="#t453">453</a></span><span class="t">        <span class="com"># not be cleared to see all reviews or who is assigned to which review.</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t454" href="#t454">454</a></span><span class="t">        <span class="nam">extra_expandable_fields</span> <span class="op">=</span> <span class="nam">SubmissionSerializer</span><span class="op">.</span><span class="nam">Meta</span><span class="op">.</span><span class="nam">extra_expandable_fields</span> <span class="op">|</span> <span class="op">{</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t455" href="#t455">455</a></span><span class="t">            <span class="str">"speakers"</span><span class="op">:</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t456" href="#t456">456</a></span><span class="t">                <span class="str">"pretalx.api.serializers.speaker.SpeakerOrgaSerializer"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t457" href="#t457">457</a></span><span class="t">                <span class="op">{</span><span class="str">"many"</span><span class="op">:</span> <span class="key">True</span><span class="op">,</span> <span class="str">"read_only"</span><span class="op">:</span> <span class="key">True</span><span class="op">}</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t458" href="#t458">458</a></span><span class="t">            <span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t459" href="#t459">459</a></span><span class="t">            <span class="str">"invitations"</span><span class="op">:</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t460" href="#t460">460</a></span><span class="t">                <span class="str">"pretalx.api.serializers.submission.SubmissionInvitationSerializer"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t461" href="#t461">461</a></span><span class="t">                <span class="op">{</span><span class="str">"many"</span><span class="op">:</span> <span class="key">True</span><span class="op">,</span> <span class="str">"read_only"</span><span class="op">:</span> <span class="key">True</span><span class="op">}</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t462" href="#t462">462</a></span><span class="t">            <span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t463" href="#t463">463</a></span><span class="t">        <span class="op">}</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t433" href="#t433">433</a></span><span class="t">        <span class="nam">fields</span> <span class="op">=</span> <span class="op">[</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t434" href="#t434">434</a></span><span class="t">            <span class="op">*</span><span class="nam">SubmissionSerializer</span><span class="op">.</span><span class="nam">Meta</span><span class="op">.</span><span class="nam">fields</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t435" href="#t435">435</a></span><span class="t">            <span class="str">"pending_state"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t436" href="#t436">436</a></span><span class="t">            <span class="str">"is_featured"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t437" href="#t437">437</a></span><span class="t">            <span class="str">"notes"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t438" href="#t438">438</a></span><span class="t">            <span class="str">"internal_notes"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t439" href="#t439">439</a></span><span class="t">            <span class="str">"invitation_token"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t440" href="#t440">440</a></span><span class="t">            <span class="str">"access_code"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t441" href="#t441">441</a></span><span class="t">            <span class="str">"review_code"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t442" href="#t442">442</a></span><span class="t">            <span class="str">"anonymised_data"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t443" href="#t443">443</a></span><span class="t">            <span class="str">"reviews"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t444" href="#t444">444</a></span><span class="t">            <span class="str">"assigned_reviewers"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t445" href="#t445">445</a></span><span class="t">            <span class="str">"is_anonymised"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t446" href="#t446">446</a></span><span class="t">            <span class="str">"median_score"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t447" href="#t447">447</a></span><span class="t">            <span class="str">"mean_score"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t448" href="#t448">448</a></span><span class="t">            <span class="str">"created"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t449" href="#t449">449</a></span><span class="t">            <span class="str">"updated"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t450" href="#t450">450</a></span><span class="t">            <span class="str">"invitations"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t451" href="#t451">451</a></span><span class="t">        <span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t452" href="#t452">452</a></span><span class="t">        <span class="com"># Reviews and assigned reviewers are currently not expandable because</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t453" href="#t453">453</a></span><span class="t">        <span class="com"># reviewers are also receiving the ReviewerOrgaSerializer, but may</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t454" href="#t454">454</a></span><span class="t">        <span class="com"># not be cleared to see all reviews or who is assigned to which review.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t455" href="#t455">455</a></span><span class="t">        <span class="nam">extra_expandable_fields</span> <span class="op">=</span> <span class="nam">SubmissionSerializer</span><span class="op">.</span><span class="nam">Meta</span><span class="op">.</span><span class="nam">extra_expandable_fields</span> <span class="op">|</span> <span class="op">{</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t456" href="#t456">456</a></span><span class="t">            <span class="str">"speakers"</span><span class="op">:</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t457" href="#t457">457</a></span><span class="t">                <span class="str">"pretalx.api.serializers.speaker.SpeakerOrgaSerializer"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t458" href="#t458">458</a></span><span class="t">                <span class="op">{</span><span class="str">"many"</span><span class="op">:</span> <span class="key">True</span><span class="op">,</span> <span class="str">"read_only"</span><span class="op">:</span> <span class="key">True</span><span class="op">}</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t459" href="#t459">459</a></span><span class="t">            <span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t460" href="#t460">460</a></span><span class="t">            <span class="str">"invitations"</span><span class="op">:</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t461" href="#t461">461</a></span><span class="t">                <span class="str">"pretalx.api.serializers.submission.SubmissionInvitationSerializer"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t462" href="#t462">462</a></span><span class="t">                <span class="op">{</span><span class="str">"many"</span><span class="op">:</span> <span class="key">True</span><span class="op">,</span> <span class="str">"read_only"</span><span class="op">:</span> <span class="key">True</span><span class="op">}</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t463" href="#t463">463</a></span><span class="t">            <span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t464" href="#t464">464</a></span><span class="t">        <span class="op">}</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -554,7 +555,7 @@
             <a class="nav" href="z_e017c4fb1f133ace_team_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-14 22:51 +0000
+            created at 2026-02-14 23:03 +0000
         </p>
     </div>
 </footer>

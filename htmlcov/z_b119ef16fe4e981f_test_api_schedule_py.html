@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_b119ef16fe4e981f_test_api_speaker_information_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-14 22:51 +0000
+            created at 2026-02-14 23:03 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -846,7 +846,7 @@
     <p class="run"><span class="n"><a id="t762" href="#t762">762</a></span><span class="t">    <span class="key">assert</span> <span class="nam">isinstance</span><span class="op">(</span><span class="nam">content</span><span class="op">[</span><span class="str">"slots"</span><span class="op">]</span><span class="op">,</span> <span class="nam">list</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t763" href="#t763">763</a></span><span class="t">    <span class="key">assert</span> <span class="nam">len</span><span class="op">(</span><span class="nam">content</span><span class="op">[</span><span class="str">"slots"</span><span class="op">]</span><span class="op">)</span> <span class="op">></span> <span class="num">0</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t764" href="#t764">764</a></span><span class="t">    <span class="key">assert</span> <span class="nam">all</span><span class="op">(</span><span class="nam">isinstance</span><span class="op">(</span><span class="nam">s</span><span class="op">,</span> <span class="nam">dict</span><span class="op">)</span> <span class="key">for</span> <span class="nam">s</span> <span class="key">in</span> <span class="nam">content</span><span class="op">[</span><span class="str">"slots"</span><span class="op">]</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t765" href="#t765">765</a></span><span class="t">    <span class="nam">expanded_slot</span> <span class="op">=</span> <span class="op">[</span><span class="nam">s</span> <span class="key">for</span> <span class="nam">s</span> <span class="key">in</span> <span class="nam">content</span><span class="op">[</span><span class="str">"slots"</span><span class="op">]</span> <span class="key">if</span> <span class="nam">s</span><span class="op">[</span><span class="str">"id"</span><span class="op">]</span> <span class="op">==</span> <span class="nam">slot</span><span class="op">.</span><span class="nam">pk</span><span class="op">]</span><span class="op">[</span><span class="num">0</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t765" href="#t765">765</a></span><span class="t">    <span class="nam">expanded_slot</span> <span class="op">=</span> <span class="nam">next</span><span class="op">(</span><span class="nam">s</span> <span class="key">for</span> <span class="nam">s</span> <span class="key">in</span> <span class="nam">content</span><span class="op">[</span><span class="str">"slots"</span><span class="op">]</span> <span class="key">if</span> <span class="nam">s</span><span class="op">[</span><span class="str">"id"</span><span class="op">]</span> <span class="op">==</span> <span class="nam">slot</span><span class="op">.</span><span class="nam">pk</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t766" href="#t766">766</a></span><span class="t">    <span class="key">assert</span> <span class="nam">expanded_slot</span> <span class="key">is</span> <span class="key">not</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t767" href="#t767">767</a></span><span class="t">    <span class="key">assert</span> <span class="str">"start"</span> <span class="key">in</span> <span class="nam">expanded_slot</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t768" href="#t768">768</a></span><span class="t">    <span class="key">assert</span> <span class="str">"end"</span> <span class="key">in</span> <span class="nam">expanded_slot</span>&nbsp;</span><span class="r"></span></p>
@@ -890,7 +890,7 @@
             <a class="nav" href="z_b119ef16fe4e981f_test_api_speaker_information_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-14 22:51 +0000
+            created at 2026-02-14 23:03 +0000
         </p>
     </div>
 </footer>

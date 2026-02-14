@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_b7c2a73dc1642b83_test_common_forms_utils_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-14 22:51 +0000
+            created at 2026-02-14 23:03 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -93,17 +93,17 @@
     <p class="run"><span class="n"><a id="t9" href="#t9">9</a></span><span class="t"><span class="key">def</span> <span class="nam">test_common_base_exporter_raises_proper_exceptions</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t10" href="#t10">10</a></span><span class="t">    <span class="nam">exporter</span> <span class="op">=</span> <span class="nam">BaseExporter</span><span class="op">(</span><span class="key">None</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="exc show_exc"><span class="n"><a id="t11" href="#t11">11</a></span><span class="t">    <span class="key">with</span> <span class="nam">pytest</span><span class="op">.</span><span class="nam">raises</span><span class="op">(</span><span class="nam">NotImplementedError</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="exc show_exc"><span class="n"><a id="t12" href="#t12">12</a></span><span class="t">        <span class="nam">exporter</span><span class="op">.</span><span class="nam">identifier</span>&nbsp;</span><span class="r"></span></p>
+    <p class="exc show_exc"><span class="n"><a id="t12" href="#t12">12</a></span><span class="t">        <span class="nam">exporter</span><span class="op">.</span><span class="nam">identifier</span>  <span class="com"># noqa: B018</span>&nbsp;</span><span class="r"></span></p>
     <p class="exc show_exc"><span class="n"><a id="t13" href="#t13">13</a></span><span class="t">    <span class="key">with</span> <span class="nam">pytest</span><span class="op">.</span><span class="nam">raises</span><span class="op">(</span><span class="nam">NotImplementedError</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="exc show_exc"><span class="n"><a id="t14" href="#t14">14</a></span><span class="t">        <span class="nam">exporter</span><span class="op">.</span><span class="nam">verbose_name</span>&nbsp;</span><span class="r"></span></p>
+    <p class="exc show_exc"><span class="n"><a id="t14" href="#t14">14</a></span><span class="t">        <span class="nam">exporter</span><span class="op">.</span><span class="nam">verbose_name</span>  <span class="com"># noqa: B018</span>&nbsp;</span><span class="r"></span></p>
     <p class="exc show_exc"><span class="n"><a id="t15" href="#t15">15</a></span><span class="t">    <span class="key">with</span> <span class="nam">pytest</span><span class="op">.</span><span class="nam">raises</span><span class="op">(</span><span class="nam">NotImplementedError</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="exc show_exc"><span class="n"><a id="t16" href="#t16">16</a></span><span class="t">        <span class="nam">exporter</span><span class="op">.</span><span class="nam">public</span>&nbsp;</span><span class="r"></span></p>
+    <p class="exc show_exc"><span class="n"><a id="t16" href="#t16">16</a></span><span class="t">        <span class="nam">exporter</span><span class="op">.</span><span class="nam">public</span>  <span class="com"># noqa: B018</span>&nbsp;</span><span class="r"></span></p>
     <p class="exc show_exc"><span class="n"><a id="t17" href="#t17">17</a></span><span class="t">    <span class="key">with</span> <span class="nam">pytest</span><span class="op">.</span><span class="nam">raises</span><span class="op">(</span><span class="nam">NotImplementedError</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="exc show_exc"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t">        <span class="nam">exporter</span><span class="op">.</span><span class="nam">icon</span>&nbsp;</span><span class="r"></span></p>
+    <p class="exc show_exc"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t">        <span class="nam">exporter</span><span class="op">.</span><span class="nam">icon</span>  <span class="com"># noqa: B018</span>&nbsp;</span><span class="r"></span></p>
     <p class="exc show_exc"><span class="n"><a id="t19" href="#t19">19</a></span><span class="t">    <span class="key">with</span> <span class="nam">pytest</span><span class="op">.</span><span class="nam">raises</span><span class="op">(</span><span class="nam">NotImplementedError</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="exc show_exc"><span class="n"><a id="t20" href="#t20">20</a></span><span class="t">        <span class="nam">exporter</span><span class="op">.</span><span class="nam">render</span><span class="op">(</span><span class="key">None</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="exc show_exc"><span class="n"><a id="t21" href="#t21">21</a></span><span class="t">    <span class="key">with</span> <span class="nam">pytest</span><span class="op">.</span><span class="nam">raises</span><span class="op">(</span><span class="nam">NotImplementedError</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="exc show_exc"><span class="n"><a id="t22" href="#t22">22</a></span><span class="t">        <span class="nam">str</span><span class="op">(</span><span class="nam">exporter</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="exc show_exc"><span class="n"><a id="t22" href="#t22">22</a></span><span class="t">        <span class="nam">str</span><span class="op">(</span><span class="nam">exporter</span><span class="op">)</span>  <span class="com"># noqa: B018</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t23" href="#t23">23</a></span><span class="t">    <span class="key">assert</span> <span class="nam">exporter</span><span class="op">.</span><span class="nam">cors</span> <span class="key">is</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t24" href="#t24">24</a></span><span class="t">    <span class="key">assert</span> <span class="nam">exporter</span><span class="op">.</span><span class="nam">group</span> <span class="op">==</span> <span class="str">"submission"</span>&nbsp;</span><span class="r"></span></p>
 </main>
@@ -115,7 +115,7 @@
             <a class="nav" href="z_b7c2a73dc1642b83_test_common_forms_utils_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-14 22:51 +0000
+            created at 2026-02-14 23:03 +0000
         </p>
     </div>
 </footer>
