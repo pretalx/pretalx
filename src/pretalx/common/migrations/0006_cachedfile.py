@@ -11,7 +11,6 @@ import pretalx.common.models.file
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("common", "0005_auto_20180202_1116"),
     ]

@@ -28,6 +28,7 @@ from pretalx.submission.models import (
     SubmissionStates,
     Tag,
 )
+from pretalx.submission.rules import filter_answers_by_team_access
 
 
 class LegacySubmitterSerializer(ModelSerializer):
@@ -51,7 +52,7 @@ class LegacySubmitterSerializer(ModelSerializer):
 
 class LegacySubmitterOrgaSerializer(LegacySubmitterSerializer):
     class Meta(LegacySubmitterSerializer.Meta):
-        fields = LegacySubmitterSerializer.Meta.fields + ("email",)
+        fields = (*LegacySubmitterSerializer.Meta.fields, "email")
 
 
 class LegacySpeakerSerializer(ModelSerializer):
@@ -109,8 +110,6 @@ class LegacySpeakerOrgaSerializer(LegacySpeakerSerializer):
     )
 
     def answers_queryset(self, obj):
-        from pretalx.submission.rules import filter_answers_by_team_access
-
         queryset = obj.answers.all()
         request = self.context.get("request")
         if request:
@@ -123,13 +122,11 @@ class LegacySpeakerOrgaSerializer(LegacySpeakerSerializer):
         )
 
     class Meta(LegacySpeakerSerializer.Meta):
-        fields = LegacySpeakerSerializer.Meta.fields + ("email", "availabilities")
+        fields = (*LegacySpeakerSerializer.Meta.fields, "email", "availabilities")
 
 
 class LegacySpeakerReviewerSerializer(LegacySpeakerOrgaSerializer):
     def answers_queryset(self, obj):
-        from pretalx.submission.rules import filter_answers_by_team_access
-
         queryset = obj.reviewer_answers.all()
         request = self.context.get("request")
         if request:
@@ -269,8 +266,6 @@ class LegacySubmissionOrgaSerializer(LegacySubmissionSerializer):
     speaker_serializer_class = LegacySubmitterOrgaSerializer
 
     def answers_queryset(self, obj):
-        from pretalx.submission.rules import filter_answers_by_team_access
-
         queryset = obj.answers.all()
         request = self.context.get("request")
         if request:
@@ -287,7 +282,8 @@ class LegacySubmissionOrgaSerializer(LegacySubmissionSerializer):
         return list(obj.tags.all().values_list("id", flat=True))
 
     class Meta(LegacySubmissionSerializer.Meta):
-        fields = LegacySubmissionSerializer.Meta.fields + [
+        fields = [
+            *LegacySubmissionSerializer.Meta.fields,
             "created",
             "pending_state",
             "answers",
@@ -300,8 +296,6 @@ class LegacySubmissionOrgaSerializer(LegacySubmissionSerializer):
 
 class LegacySubmissionReviewerSerializer(LegacySubmissionOrgaSerializer):
     def answers_queryset(self, obj):
-        from pretalx.submission.rules import filter_answers_by_team_access
-
         queryset = obj.reviewer_answers.all()
         request = self.context.get("request")
         if request:
@@ -355,7 +349,7 @@ class LegacyRoomOrgaSerializer(LegacyRoomSerializer):
 
     class Meta:
         model = Room
-        fields = LegacyRoomSerializer.Meta.fields + ("speaker_info", "availabilities")
+        fields = (*LegacyRoomSerializer.Meta.fields, "speaker_info", "availabilities")
 
 
 class LegacyAnswerOptionSerializer(ModelSerializer):

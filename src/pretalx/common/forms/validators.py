@@ -22,7 +22,7 @@ class ZXCVBNValidator:
         return self.validate(value)
 
     def validate(self, password, user=None):
-        from zxcvbn import zxcvbn
+        from zxcvbn import zxcvbn  # noqa: PLC0415
 
         user_inputs = [
             getattr(user, attribute, None) for attribute in self.user_attributes

@@ -116,11 +116,11 @@ class BaseCfPStep:
 
     @property
     def identifier(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def label(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def priority(self):
@@ -130,7 +130,7 @@ class BaseCfPStep:
         return True
 
     def is_completed(self, request):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @cached_property
     def cfp_session(self):
@@ -219,7 +219,7 @@ class TemplateFlowStep(TemplateResponseMixin, BaseCfPStep):
 
     @property
     def identifier(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class FormFlowStep(TemplateFlowStep):
@@ -289,10 +289,10 @@ class FormFlowStep(TemplateFlowStep):
         saved_files = self.cfp_session["files"].get(self.identifier, {})
         files = {}
         for field, field_dict in saved_files.items():
-            field_dict = field_dict.copy()
-            tmp_name = field_dict.pop("tmp_name")
+            file_data = field_dict.copy()
+            tmp_name = file_data.pop("tmp_name")
             files[field] = UploadedFile(
-                file=self.file_storage.open(tmp_name), **field_dict
+                file=self.file_storage.open(tmp_name), **file_data
             )
         return files or None
 
@@ -697,8 +697,7 @@ class CfPFlow:
             if isinstance(response, Exception):  # pragma: no cover
                 LOGGER.warning(str(response))
                 continue
-            for step_class in response:
-                steps.append(step_class(event=event))
+            steps.extend(step_class(event=event) for step_class in response)
         steps = sorted(steps, key=lambda step: step.priority)
         self.steps_dict = OrderedDict()
         for step in steps:

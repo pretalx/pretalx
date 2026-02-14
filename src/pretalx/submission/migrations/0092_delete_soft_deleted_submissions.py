@@ -27,7 +27,7 @@ def _delete_soft_deleted_submissions(apps):
         return
 
     logger.info(
-        f"Found {len(deleted_ids)} soft-deleted submissions to permanently delete"
+        "Found %d soft-deleted submissions to permanently delete", len(deleted_ids)
     )
 
     Answer = apps.get_model("submission", "Answer")
@@ -38,7 +38,7 @@ def _delete_soft_deleted_submissions(apps):
     slots = TalkSlot.objects.filter(submission_id__in=deleted_ids)
     slot_count = slots.count()
     if slot_count:
-        logger.info(f"Deleting {slot_count} TalkSlot objects")
+        logger.info("Deleting %d TalkSlot objects", slot_count)
         slots.delete()
 
     answers = Answer.objects.filter(submission_id__in=deleted_ids)
@@ -46,21 +46,21 @@ def _delete_soft_deleted_submissions(apps):
     review_answers = Answer.objects.filter(review__submission_id__in=deleted_ids)
     review_answer_count = review_answers.count()
     if answer_count:
-        logger.info(f"Deleting {answer_count} Answer objects (submission answers)")
+        logger.info("Deleting %d Answer objects (submission answers)", answer_count)
         answers.delete()
     if review_answer_count:
-        logger.info(f"Deleting {review_answer_count} Answer objects (review answers)")
+        logger.info("Deleting %d Answer objects (review answers)", review_answer_count)
         review_answers.delete()
 
     resources = Resource.objects.filter(submission_id__in=deleted_ids)
     resource_count = resources.count()
     if resource_count:
-        logger.info(f"Deleting {resource_count} Resource objects")
+        logger.info("Deleting %d Resource objects", resource_count)
         resources.delete()
 
     # Step 2: Discover and delete any other related objects (e.g., from plugins)
-    from django.apps import apps as django_apps
-    from django.db.models.fields.related import ForeignKey
+    from django.apps import apps as django_apps  # noqa: PLC0415
+    from django.db.models.fields.related import ForeignKey  # noqa: PLC0415
 
     handled_models = {
         "schedule.TalkSlot",
@@ -93,34 +93,40 @@ def _delete_soft_deleted_submissions(apps):
                 if count > 0:
                     found_plugin_relations = True
                     logger.info(
-                        f"Deleting {count} {model._meta.label} objects "
-                        f"(plugin model, field: {field_name})"
+                        "Deleting %d %s objects (plugin model, field: %s)",
+                        count,
+                        model._meta.label,
+                        field_name,
                     )
                     related_qs.delete()
             except Exception as e:
                 logger.warning(
-                    f"Could not delete {model._meta.label}.{field_name} objects: {e}"
+                    "Could not delete %s.%s objects: %s",
+                    model._meta.label,
+                    field_name,
+                    e,
                 )
 
     if not found_plugin_relations:
         logger.info("No plugin-related objects found")
 
     # Step 3: Delete the submissions themselves
-    logger.info(f"Deleting {len(deleted_ids)} submissions")
+    logger.info("Deleting %d submissions", len(deleted_ids))
     try:
         Submission.objects.filter(id__in=deleted_ids).delete()
         logger.info(
-            f"Successfully permanently deleted {len(deleted_ids)} "
-            "previously soft-deleted submissions"
+            "Successfully permanently deleted %d previously soft-deleted submissions",
+            len(deleted_ids),
         )
     except Exception as e:
         error_msg = str(e)
         logger.error(
-            f"Failed to delete soft-deleted submissions: {error_msg}\n"
+            "Failed to delete soft-deleted submissions: %s\n"
             "This is likely due to database tables from plugins that reference "
             "Submission but are not registered in Django. You may need to:\n"
             "1. Install the plugin that owns the referencing table, OR\n"
-            "2. Manually delete the referencing records from the database"
+            "2. Manually delete the referencing records from the database",
+            error_msg,
         )
         raise
 

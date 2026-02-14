@@ -19,7 +19,7 @@ class BaseMailTextPlaceholder:
     def identifier(self):
         """This should return the identifier of this placeholder in the
         email."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def is_visible(self):
@@ -35,7 +35,7 @@ class BaseMailTextPlaceholder:
         attributes specified in ``required_context``. You are expected
         to return a plain-text string.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def render_sample(self, event):
         """This method is called to generate a text to be used in email
@@ -43,7 +43,7 @@ class BaseMailTextPlaceholder:
 
         This may only depend on the event.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def explanation(self):

@@ -41,8 +41,9 @@ class SubmitterAccessCodeTable(PretalxTable):
         order_by=Lower(Translate("track__name")),
     )
     submission_type = SortableColumn(
-        linkify=lambda record: record.submission_type
-        and record.submission_type.urls.base,
+        linkify=lambda record: (
+            record.submission_type and record.submission_type.urls.base
+        ),
         order_by=Lower(Translate("submission_type__name")),
     )
     valid_until = DateTimeColumn()
@@ -63,16 +64,18 @@ class SubmitterAccessCodeTable(PretalxTable):
 
     def render_uses(self, record):
         redeemed = record.redeemed or 0
-        maximum = record.maximum_uses if record.maximum_uses else "∞ "
+        maximum = record.maximum_uses or "∞ "
         return f"{redeemed} / {maximum}"
 
     def render_maximum_uses(self, record):
-        return record.maximum_uses if record.maximum_uses else "∞"
+        return record.maximum_uses or "∞"
 
     actions = ActionsColumn(
         actions={
             "copy": {
-                "extra_attrs": lambda record: f'role="button" data-destination="{record.urls.cfp_url.full()}"',
+                "extra_attrs": lambda record: (
+                    f'role="button" data-destination="{record.urls.cfp_url.full()}"'
+                ),
                 "title": _("Copy access code link"),
             },
             "send": {
@@ -123,7 +126,9 @@ class TrackTable(UnsortableMixin, PretalxTable):
     )
     proposals = tables.Column(
         verbose_name=_("Proposals"),
-        linkify=lambda record: f"{record.event.orga_urls.submissions}?track={record.id}",
+        linkify=lambda record: (
+            f"{record.event.orga_urls.submissions}?track={record.id}"
+        ),
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
         accessor="submission_count",
     )
@@ -172,7 +177,9 @@ class SubmissionTypeTable(PretalxTable):
     )
     proposals = tables.Column(
         verbose_name=_("Proposals"),
-        linkify=lambda record: f"{record.event.orga_urls.submissions}?submission_type={record.id}",
+        linkify=lambda record: (
+            f"{record.event.orga_urls.submissions}?submission_type={record.id}"
+        ),
         accessor="submission_count",
         order_by="submission_count",
         initial_sort_descending=True,

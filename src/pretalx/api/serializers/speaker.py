@@ -116,7 +116,8 @@ class SpeakerOrgaSerializer(AvailabilitiesMixin, SpeakerSerializer):
                     self.fields[field].required = True
 
     class Meta(SpeakerSerializer.Meta):
-        fields = SpeakerSerializer.Meta.fields + (
+        fields = (
+            *SpeakerSerializer.Meta.fields,
             "email",
             "timezone",
             "locale",
@@ -160,4 +161,4 @@ class SpeakerUpdateSerializer(SpeakerOrgaSerializer):
         return value
 
     class Meta(SpeakerOrgaSerializer.Meta):
-        fields = SpeakerOrgaSerializer.Meta.fields + ("avatar",)
+        fields = (*SpeakerOrgaSerializer.Meta.fields, "avatar")

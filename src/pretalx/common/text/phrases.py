@@ -10,7 +10,7 @@ from django.utils.translation import pgettext_lazy
 _phrase_book = {}
 
 
-class PhrasesMetaClass(ABCMeta):  # noqa
+class PhrasesMetaClass(ABCMeta):
     def __new__(cls, class_name, bases, namespace, app):
         new = super().__new__(cls, class_name, bases, namespace)
         _phrase_book[app] = new()

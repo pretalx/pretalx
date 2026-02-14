@@ -12,7 +12,7 @@ from pretalx.common.templatetags.xmlescape import xmlescape
 
 
 @pytest.mark.parametrize(
-    "number,output",
+    ("number", "output"),
     (
         (1, "once"),
         (2, "twice"),
@@ -29,7 +29,7 @@ def test_common_templatetag_times(number, output):
 
 
 @pytest.mark.parametrize(
-    "input_,output",
+    ("input_", "output"),
     (
         ("i am a normal string ??!!$%/()=?", "i am a normal string ??!!$%/()=?"),
         ("<", "&lt;"),
@@ -46,7 +46,7 @@ def test_common_templatetag_xmlescape(input_, output):
 
 
 @pytest.mark.parametrize(
-    "text,richer_text,noopener",
+    ("text", "richer_text", "noopener"),
     (
         ("foo.notatld", "foo.notatld", False),
         (
@@ -70,7 +70,7 @@ def test_common_templatetag_rich_text(text, richer_text, noopener):
 
 
 @pytest.mark.parametrize(
-    "value,copy",
+    ("value", "copy"),
     (
         ('"foo', '"foo'),
         (

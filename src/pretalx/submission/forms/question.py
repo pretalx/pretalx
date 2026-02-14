@@ -105,13 +105,13 @@ class QuestionsForm(CfPFormMixin, QuestionFieldsMixin, forms.Form):
 
     def serialize_answers(self):
         data = {}
-        for key, field in self.fields.items():
+        for field in self.fields.values():
             if question := getattr(field, "question", None):
-                key = f"question-{question.pk}"
+                data_key = f"question-{question.pk}"
                 if hasattr(field, "answer") and field.answer:
-                    data[key] = field.answer.answer_string
+                    data[data_key] = field.answer.answer_string
                 else:
-                    data[key] = None
+                    data[data_key] = None
         return data
 
     def save(self):

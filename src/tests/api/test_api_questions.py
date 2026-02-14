@@ -294,7 +294,7 @@ def test_reviewer_cannot_edit_question(client, event, review_user_token, questio
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("is_detail, method", ((False, "post"), (True, "put")))
+@pytest.mark.parametrize(("is_detail", "method"), ((False, "post"), (True, "put")))
 def test_field_question_required(
     client, event, orga_user_write_token, question, is_detail, method
 ):
@@ -313,7 +313,7 @@ def test_field_question_required(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "is_detail, method",
+    ("is_detail", "method"),
     (
         (False, "post"),
         (True, "put"),
@@ -341,7 +341,7 @@ def test_field_question_required_valid_choice(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "is_detail, method",
+    ("is_detail", "method"),
     (
         (False, "post"),
         (True, "put"),

@@ -51,11 +51,10 @@ class UserEventPreferences(TimestampedModel, models.Model):
                     )
                 else:
                     return None, keys[-1]
+            elif create:
+                value = value.setdefault(key, {})
             else:
-                if create:
-                    value = value.setdefault(key, {})
-                else:
-                    return None, keys[-1]
+                return None, keys[-1]
 
         return value, keys[-1]
 

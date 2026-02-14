@@ -11,28 +11,28 @@ SPECTACULAR_LOADED = False
 if settings.LOAD_SPECTACULAR:
     with suppress(ImportError):
         from drf_spectacular.types import OpenApiTypes
-        from drf_spectacular.utils import (  # noqa
-            OpenApiExample,
-            OpenApiParameter,
-            OpenApiResponse,
-            extend_schema,
-            extend_schema_field,
-            extend_schema_serializer,
-            extend_schema_view,
+        from drf_spectacular.utils import (
+            OpenApiExample,  # noqa: F401
+            OpenApiParameter,  # noqa: F401
+            OpenApiResponse,  # noqa: F401
+            extend_schema,  # noqa: F401
+            extend_schema_field,  # noqa: F401
+            extend_schema_serializer,  # noqa: F401
+            extend_schema_view,  # noqa: F401
         )
 
         SPECTACULAR_LOADED = True
 
 if not settings.LOAD_SPECTACULAR or not SPECTACULAR_LOADED:
-    from pretalx.api.shims import (  # noqa
-        OpenApiExample,
-        OpenApiParameter,
-        OpenApiResponse,
-        OpenApiTypes,
-        extend_schema,
-        extend_schema_field,
-        extend_schema_serializer,
-        extend_schema_view,
+    from pretalx.api.shims import (
+        OpenApiExample,  # noqa: F401
+        OpenApiParameter,  # noqa: F401
+        OpenApiResponse,  # noqa: F401
+        OpenApiTypes,  # noqa: F401
+        extend_schema,  # noqa: F401
+        extend_schema_field,  # noqa: F401
+        extend_schema_serializer,  # noqa: F401
+        extend_schema_view,  # noqa: F401
     )
 
 

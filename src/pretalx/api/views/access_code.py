@@ -59,4 +59,4 @@ class SubmitterAccessCodeViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
         except ProtectedError:
             raise exceptions.ValidationError(
                 "You cannot delete an access code that has been used already."
-            )
+            ) from None

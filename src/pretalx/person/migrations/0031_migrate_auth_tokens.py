@@ -1,13 +1,17 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import logging
+
 from django.db import migrations
 from django.db.models import Q
 
 from pretalx.person.models.auth_token import READ_PERMISSIONS
 
+logger = logging.getLogger(__name__)
 
-def get_events_with_any_permission(Event, user):
+
+def get_events_with_any_permission(Event, user):  # noqa: N803
     if user.is_administrator:
         return Event.objects.all()
 
@@ -22,10 +26,10 @@ def get_events_with_any_permission(Event, user):
 
 
 def migrate_drf_tokens_to_userapitokens(apps, schema_editor):
-    OldToken = apps.get_model("authtoken", "Token")
-    Event = apps.get_model("event", "Event")
-    User = apps.get_model("person", "User")
-    UserApiToken = apps.get_model("person", "UserApiToken")
+    OldToken = apps.get_model("authtoken", "Token")  # noqa: N806
+    Event = apps.get_model("event", "Event")  # noqa: N806
+    User = apps.get_model("person", "User")  # noqa: N806
+    UserApiToken = apps.get_model("person", "UserApiToken")  # noqa: N806
 
     # Not included: new endpoints, like tracks, teams, submission types, mail templates,
     # access codes, file uploads, speaker information, question options
@@ -42,7 +46,7 @@ def migrate_drf_tokens_to_userapitokens(apps, schema_editor):
         "slots",
     ]
     legacy_permissions = list(READ_PERMISSIONS)
-    endpoints_data = {endpoint: legacy_permissions for endpoint in legacy_endpoints}
+    endpoints_data = dict.fromkeys(legacy_endpoints, legacy_permissions)
     token_name = "Migrated legacy API token"
 
     # We only migrate users with any teams
@@ -72,23 +76,24 @@ def migrate_drf_tokens_to_userapitokens(apps, schema_editor):
             token_events.append(permitted_events)
             delete_tokens.append(old_token.pk)
         except Exception as e:
-            print(f"Failed to migrate auth token for user {user.email}: {e}")
+            logger.warning(
+                "Failed to migrate auth token for user %s: %s", user.email, e
+            )
     tokens = UserApiToken.objects.bulk_create(new_tokens)
-    for token, events in zip(tokens, token_events):
+    for token, events in zip(tokens, token_events, strict=False):
         token.events.set(events)
     OldToken.objects.filter(pk__in=delete_tokens).delete()
 
 
 def migrate_drf_tokens_to_userapitokens_reverse(apps, schema_editor):
-    OldToken = apps.get_model("authtoken", "Token")
-    UserApiToken = apps.get_model("person", "UserApiToken")
+    OldToken = apps.get_model("authtoken", "Token")  # noqa: N806
+    UserApiToken = apps.get_model("person", "UserApiToken")  # noqa: N806
     for token in UserApiToken.objects.filter(version="LEGACY"):
         OldToken.objects.get_or_create(key=token.token, user=token.user)
     UserApiToken.objects.all().delete()
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("person", "0030_userapitoken"),
         ("authtoken", "0004_alter_tokenproxy_options"),

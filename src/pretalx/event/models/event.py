@@ -36,6 +36,8 @@ from pretalx.event.rules import (
     has_any_permission,
     is_event_visible,
 )
+from django.utils.translation import override
+
 
 # Slugs need to start and end with an alphanumeric character,
 # but may contain dashes and dots in between.
@@ -471,7 +473,7 @@ class Event(PretalxModel):
 
     @cached_property
     def named_plugin_locales(self) -> list:
-        from pretalx.common.signals import register_locales
+        from pretalx.common.signals import register_locales  # noqa: PLC0415
 
         locale_names = copy.copy(LANGUAGE_NAMES)
         locale_names.update(self.named_locales)
@@ -571,7 +573,7 @@ class Event(PretalxModel):
         )
 
     def _get_default_submission_type(self):
-        from pretalx.submission.models import SubmissionType
+        from pretalx.submission.models import SubmissionType  # noqa: PLC0415
 
         sub_type = SubmissionType.objects.filter(event=self).first()
         if sub_type:
@@ -579,8 +581,8 @@ class Event(PretalxModel):
         return SubmissionType.objects.create(event=self, name="Talk")
 
     def get_mail_template(self, role):
-        from pretalx.mail.default_templates import get_default_template
-        from pretalx.mail.models import MailTemplate
+        from pretalx.mail.default_templates import get_default_template  # noqa: PLC0415
+        from pretalx.mail.models import MailTemplate  # noqa: PLC0415
 
         try:
             return self.mail_templates.get(role=role)
@@ -592,9 +594,9 @@ class Event(PretalxModel):
             return template
 
     def build_initial_data(self):
-        from pretalx.mail.models import MailTemplateRoles
-        from pretalx.schedule.models import Schedule
-        from pretalx.submission.models import CfP
+        from pretalx.mail.models import MailTemplateRoles  # noqa: PLC0415
+        from pretalx.schedule.models import Schedule  # noqa: PLC0415
+        from pretalx.submission.models import CfP  # noqa: PLC0415
 
         if not hasattr(self, "cfp"):
             CfP.objects.create(
@@ -608,7 +610,7 @@ class Event(PretalxModel):
             self.get_mail_template(role)
 
         if not self.review_phases.all().exists():
-            from pretalx.submission.models import ReviewPhase
+            from pretalx.submission.models import ReviewPhase  # noqa: PLC0415
 
             cfp_deadline = self.cfp.deadline
             rp = ReviewPhase.objects.create(
@@ -630,7 +632,7 @@ class Event(PretalxModel):
                 can_change_submission_state=True,
             )
         if not self.score_categories.all().exists():
-            from pretalx.submission.models import ReviewScore, ReviewScoreCategory
+            from pretalx.submission.models import ReviewScore, ReviewScoreCategory  # noqa: PLC0415
 
             category = ReviewScoreCategory.objects.create(
                 event=self,
@@ -657,7 +659,7 @@ class Event(PretalxModel):
 
     @scopes_disabled()
     def copy_data_from(self, other_event, skip_attributes=None):
-        from pretalx.orga.signals import event_copy_data
+        from pretalx.orga.signals import event_copy_data  # noqa: PLC0415
 
         delta = self.date_from - other_event.date_from
 
@@ -837,7 +839,7 @@ class Event(PretalxModel):
             schedule, _ = self.schedules.get_or_create(version__isnull=True)
         except MultipleObjectsReturned:
             # No idea how this happens – a race condition due to transaction weirdness?
-            from pretalx.schedule.models import TalkSlot
+            from pretalx.schedule.models import TalkSlot  # noqa: PLC0415
 
             schedules = list(self.schedules.filter(version__isnull=True))
             schedule = schedules[0]
@@ -863,7 +865,7 @@ class Event(PretalxModel):
         return (self.date_to - self.date_from).days + 1
 
     def get_mail_backend(self, force_custom: bool = False) -> BaseEmailBackend:
-        from pretalx.common.mail import CustomSMTPBackend
+        from pretalx.common.mail import CustomSMTPBackend  # noqa: PLC0415
 
         if self.mail_settings["smtp_use_custom"] or force_custom:
             return CustomSMTPBackend(
@@ -900,7 +902,7 @@ class Event(PretalxModel):
 
     @cached_property
     def reviewers(self):
-        from pretalx.person.models import User
+        from pretalx.person.models import User  # noqa: PLC0415
 
         return User.objects.filter(
             teams__in=self.teams.filter(is_reviewer=True)
@@ -934,7 +936,7 @@ class Event(PretalxModel):
 
     @cached_property
     def reviews(self):
-        from pretalx.submission.models import Review
+        from pretalx.submission.models import Review  # noqa: PLC0415
 
         return Review.objects.filter(submission__event=self)
 
@@ -943,7 +945,7 @@ class Event(PretalxModel):
         if phase := self.review_phases.filter(is_active=True).first():
             return phase
         if not self.review_phases.all().exists():
-            from pretalx.submission.models import ReviewPhase
+            from pretalx.submission.models import ReviewPhase  # noqa: PLC0415
 
             cfp_deadline = self.cfp.deadline
             return ReviewPhase.objects.create(
@@ -1005,7 +1007,7 @@ class Event(PretalxModel):
         :class:`~pretalx.submission.models.submission.Submission` object in the
         current released schedule.
         """
-        from pretalx.submission.models.submission import Submission
+        from pretalx.submission.models.submission import Submission  # noqa: PLC0415
 
         if self.current_schedule:
             return (
@@ -1022,7 +1024,7 @@ class Event(PretalxModel):
         :class:`~pretalx.person.models.user.User`) visible in the current
         released schedule.
         """
-        from pretalx.person.models import User
+        from pretalx.person.models import User  # noqa: PLC0415
 
         return User.objects.filter(submissions__in=self.talks).order_by("id").distinct()
 
@@ -1033,7 +1035,7 @@ class Event(PretalxModel):
 
         Ignores users who have deleted all of their submissions.
         """
-        from pretalx.person.models import User
+        from pretalx.person.models import User  # noqa: PLC0415
 
         return (
             User.objects.filter(submissions__in=self.submissions.all())
@@ -1044,7 +1046,7 @@ class Event(PretalxModel):
 
     @cached_property
     def cfp_flow(self):
-        from pretalx.cfp.flow import CfPFlow
+        from pretalx.cfp.flow import CfPFlow  # noqa: PLC0415
 
         return CfPFlow(self)
 
@@ -1061,9 +1063,7 @@ class Event(PretalxModel):
             return self.feature_flags[feature]
         return default_feature_flags().get(feature, False)
 
-    def release_schedule(
-        self, name: str, user=None, notify_speakers: bool = False, comment: str = None
-    ):
+    def release_schedule(self, name, user=None, notify_speakers=False, comment=None):
         """Releases a new :class:`~pretalx.schedule.models.schedule.Schedule`
         by finalising the current WIP schedule.
 
@@ -1080,9 +1080,7 @@ class Event(PretalxModel):
     release_schedule.alters_data = True
 
     def send_orga_mail(self, text, stats=False):
-        from django.utils.translation import override
-
-        from pretalx.mail.models import QueuedMail
+        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
 
         context = {
             "event_dashboard": self.orga_urls.base.full(),
@@ -1120,17 +1118,17 @@ class Event(PretalxModel):
         - Talks are rescheduled
         - A schedule is released
         """
-        from pretalx.schedule.services import has_unreleased_schedule_changes
+        from pretalx.schedule.services import has_unreleased_schedule_changes  # noqa: PLC0415
 
         return has_unreleased_schedule_changes(self)
 
     @transaction.atomic
     def shred(self, person=None):
         """Irrevocably deletes an event and all related data."""
-        from pretalx.common.models import ActivityLog
-        from pretalx.person.models import SpeakerProfile
-        from pretalx.schedule.models import TalkSlot
-        from pretalx.submission.models import (
+        from pretalx.common.models import ActivityLog  # noqa: PLC0415
+        from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
+        from pretalx.schedule.models import TalkSlot  # noqa: PLC0415
+        from pretalx.submission.models import (  # noqa: PLC0415
             Answer,
             AnswerOption,
             Feedback,

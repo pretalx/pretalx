@@ -13,7 +13,7 @@ from pretalx.schedule.utils import guess_schedule_version
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "previous,suggestion",
+    ("previous", "suggestion"),
     (
         (None, "0.1"),
         ("0.1", "0.2"),

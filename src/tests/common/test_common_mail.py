@@ -34,13 +34,13 @@ def test_mail_send_ignored_sender_but_custom_reply_to(event):
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     "subject",
-    [
+    (
         "Talk about\x0bthings",
         "Talk about\nthings",
         "Talk about\r\nthings",
         "Talk about\x00things",
         "Talk about\x7fthings",
-    ],
+    ),
 )
 def test_mail_send_strips_control_chars_from_subject(event, subject):
     djmail.outbox = []
@@ -81,11 +81,11 @@ def test_mail_send_respects_display_name_in_reply_to(event):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "mail_from,expected_from",
-    [
+    ("mail_from", "expected_from"),
+    (
         ("Custom Sender <orga@orga.org>", "Custom Sender <orga@orga.org>"),
         ("orga@orga.org", "pretalx <orga@orga.org>"),
-    ],
+    ),
 )
 def test_mail_send_without_event(mail_from, expected_from):
     with override_settings(MAIL_FROM=mail_from):

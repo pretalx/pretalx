@@ -201,9 +201,8 @@ class EnhancedSelectMixin(forms.Select):
                 color := getattr(value.instance, self.color_field, None)
             ):
                 option["attrs"]["data-color"] = color
-        else:
-            if self.color_field and callable(self.color_field):
-                option["attrs"]["data-color"] = self.color_field(value)
+        elif self.color_field and callable(self.color_field):
+            option["attrs"]["data-color"] = self.color_field(value)
         return option
 
     class Media:
@@ -331,7 +330,6 @@ class HtmlTimeInput(forms.TimeInput):
 
 
 class ColorPickerWidget(forms.TextInput):
-
     def __init__(self, attrs=None):
         attrs = add_attribute(attrs, "class", "colorpicker")
         super().__init__(attrs=attrs)
@@ -366,7 +364,6 @@ class MultiEmailInput(forms.TextInput):
 
 
 class AvailabilitiesWidget(forms.TextInput):
-
     def __init__(self, attrs=None):
         attrs = add_attribute(attrs, "class", "availabilities-editor-data")
         super().__init__(attrs=attrs)

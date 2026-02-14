@@ -7,7 +7,7 @@ from django_scopes import scope
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "featured,queries", (("always", 8), ("never", 6), ("pre_schedule", 8))
+    ("featured", "queries"), (("always", 8), ("never", 6), ("pre_schedule", 8))
 )
 def test_featured_invisible_because_setting(
     client, django_assert_num_queries, event, featured, queries, confirmed_submission
@@ -31,7 +31,7 @@ def test_featured_invisible_because_setting(
 
 
 @pytest.mark.parametrize(
-    "featured,queries", (("always", 7), ("never", 6), ("pre_schedule", 6))
+    ("featured", "queries"), (("always", 7), ("never", 6), ("pre_schedule", 6))
 )
 @pytest.mark.django_db
 def test_featured_invisible_because_schedule(

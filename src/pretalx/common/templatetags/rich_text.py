@@ -82,8 +82,7 @@ def link_callback(attrs, is_new, **kwargs):
     safelink = kwargs.get("safelink", True)
     url = attrs.get((None, "href"), "/")
     if (
-        url.startswith("mailto:")
-        or url.startswith("tel:")
+        url.startswith(("mailto:", "tel:"))
         # Exclude internal links
         or url_has_allowed_host_and_scheme(url, allowed_hosts=None)
     ):
@@ -111,7 +110,7 @@ CLEANER = bleach.Cleaner(
             parse_email=True,
             email_re=EMAIL_REGEX,
             skip_tags={"pre", "code"},
-            callbacks=bleach.linkifier.DEFAULT_CALLBACKS + [safelink_callback],
+            callbacks=[*bleach.linkifier.DEFAULT_CALLBACKS, safelink_callback],
         )
     ],
 )
@@ -126,7 +125,7 @@ ABSLINK_CLEANER = bleach.Cleaner(
             parse_email=True,
             email_re=EMAIL_REGEX,
             skip_tags={"pre", "code"},
-            callbacks=bleach.linkifier.DEFAULT_CALLBACKS + [abslink_callback],
+            callbacks=[*bleach.linkifier.DEFAULT_CALLBACKS, abslink_callback],
         )
     ],
 )

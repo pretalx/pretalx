@@ -8,13 +8,7 @@ from pathlib import Path
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.uploadedfile import UploadedFile
-from django.forms import (
-    BooleanField,
-    CharField,
-    FileField,
-    RegexField,
-    ValidationError,
-)
+from django.forms import BooleanField, CharField, FileField, RegexField, ValidationError
 from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField
@@ -110,7 +104,7 @@ class ExtensionFileInput:
         if value:
             filename = value.name
             extension = Path(filename).suffix.lower()
-            if extension not in self.extensions.keys():
+            if extension not in self.extensions:
                 raise ValidationError(
                     _(
                         "This filetype ({extension}) is not allowed, it has to be one of the following: "
@@ -262,7 +256,7 @@ class AvailabilitiesField(CharField):
                 self.error_messages["invalid_json"],
                 code="invalid_json",
                 params={"error": e},
-            )
+            ) from None
         if not isinstance(rawdata, dict):
             raise ValidationError(
                 self.error_messages["invalid_format"],
@@ -310,13 +304,12 @@ class AvailabilitiesField(CharField):
         except (TypeError, ValueError):
             raise ValidationError(
                 self.error_messages["invalid_date"], code="invalid_date"
-            )
+            ) from None
 
         timeframe_start = dt.datetime.combine(
             self.event.date_from, dt.time(), tzinfo=self.event.tz
         )
-        if rawavail["start"] < timeframe_start:
-            rawavail["start"] = timeframe_start
+        rawavail["start"] = max(rawavail["start"], timeframe_start)
 
         timeframe_end = dt.datetime.combine(
             self.event.date_to, dt.time(), tzinfo=self.event.tz

@@ -5,9 +5,11 @@ import pytest
 from django.test import override_settings
 from django.urls import reverse
 
+from pretalx.common.models.settings import GlobalSettings
+
 
 @pytest.mark.parametrize(
-    "url", ["login", "logout", "event.list", "organiser.list", "user.view"]
+    "url", ("login", "logout", "event.list", "organiser.list", "user.view")
 )
 @pytest.mark.parametrize("logged_in", (True, False))
 @pytest.mark.django_db
@@ -19,8 +21,8 @@ def test_user_can_access_url(orga_client, logged_in, url, template_patch):
 
 
 @pytest.mark.parametrize(
-    "url,orga_access,reviewer_access",
-    [
+    ("url", "orga_access", "reviewer_access"),
+    (
         ("event.dashboard", 200, 200),
         ("event.history", 200, 404),
         ("cfp.questions.list", 200, 404),
@@ -53,7 +55,7 @@ def test_user_can_access_url(orga_client, logged_in, url, template_patch):
         ("schedule.rooms.list", 200, 404),
         ("schedule.rooms.create", 200, 404),
         ("schedule.api.talks", 200, 404),
-    ],
+    ),
 )
 @pytest.mark.django_db
 def test_user_can_access_event_urls(
@@ -106,7 +108,7 @@ def test_user_can_see_correct_events(
 
     if test_user == "speaker":
         assert response.status_code == 404, response.status_code
-    elif test_user == "orga" or test_user == "superuser":
+    elif test_user in ("orga", "superuser"):
         assert response.status_code == 200
     else:
         current_url = response.redirect_chain[-1][0]
@@ -125,8 +127,6 @@ def test_dev_settings_warning(orga_client, event):
 @pytest.mark.django_db
 @override_settings(DEBUG=True)
 def test_update_check_warning(orga_user, orga_client, event):
-    from pretalx.common.models.settings import GlobalSettings
-
     orga_user.is_administrator = True
     orga_user.save()
     gs = GlobalSettings()

@@ -3,7 +3,7 @@
 
 import hashlib
 import time
-from typing import Callable
+from collections.abc import Callable
 
 from django.core.cache import caches
 from django.db.models import Model
@@ -49,19 +49,19 @@ class NamespacedCache:
             newvalues[self._prefix_key(key)] = value
         return self.cache.set_many(newvalues, timeout)
 
-    def delete(self, key: str):  # NOQA
+    def delete(self, key: str):
         return self.cache.delete(self._prefix_key(key))
 
-    def delete_many(self, keys: list[str]):  # NOQA
+    def delete_many(self, keys: list[str]):
         return self.cache.delete_many([self._prefix_key(key) for key in keys])
 
-    def incr(self, key: str, by: int = 1):  # NOQA
+    def incr(self, key: str, by: int = 1):
         return self.cache.incr(self._prefix_key(key), by)
 
-    def decr(self, key: str, by: int = 1):  # NOQA
+    def decr(self, key: str, by: int = 1):
         return self.cache.decr(self._prefix_key(key), by)
 
-    def close(self):  # NOQA
+    def close(self):
         pass
 
     def _prefix_key(self, original_key: str, known_prefix=None) -> str:

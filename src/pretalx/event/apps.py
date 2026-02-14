@@ -8,4 +8,4 @@ class EventConfig(AppConfig):
     name = "pretalx.event"
 
     def ready(self):
-        from . import services  # noqa
+        from . import services  # noqa: F401, PLC0415

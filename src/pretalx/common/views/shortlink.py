@@ -34,4 +34,4 @@ def shortlink_view(request, code, *args, **kwargs):
                 return HttpResponseRedirect(profile.event.urls.user)
             if request.user.has_perm("person.view_speakerprofile", profile):
                 return HttpResponseRedirect(profile.urls.public)
-    raise Http404()
+    raise Http404

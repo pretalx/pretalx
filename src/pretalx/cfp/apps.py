@@ -8,4 +8,4 @@ class CfPConfig(AppConfig):
     name = "pretalx.cfp"
 
     def ready(self):
-        from .phrases import CfPPhrases  # noqa
+        from .phrases import CfPPhrases  # noqa: F401, PLC0415

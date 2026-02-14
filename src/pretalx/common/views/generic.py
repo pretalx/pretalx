@@ -134,10 +134,7 @@ class FormLoggingMixin:
             old_object = self.object.__class__.objects.get(pk=self.object.pk)
             old_data = old_object._get_instance_data()
 
-        if _has_super:
-            result = super().form_valid(form)
-        else:
-            result = self._save_form(form)
+        result = super().form_valid(form) if _has_super else self._save_form(form)
 
         action = getattr(self, "action", getattr(self, "permission_action", None))
         if message := self.messages.get(action):
@@ -312,7 +309,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
                 + f"?next={quote(self.request.path)}"
                 + params
             )
-        raise Http404()
+        raise Http404
 
     @cached_property
     def is_generic(self):
@@ -568,7 +565,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
         )
 
     @classonlymethod
-    def as_view(cls, action, url_name, namespace):
+    def as_view(cls, action, url_name, namespace):  # noqa: N805
         def view(request, *args, **kwargs):
             self = cls()
             self.action = action
@@ -590,7 +587,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
         return view
 
     @classonlymethod
-    def get_url_pattern(cls, url_base, action):
+    def get_url_pattern(cls, url_base, action):  # noqa: N805
         if action == "list":
             return f"{url_base}/"
         if action == "create":
@@ -604,7 +601,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
             return f"{url_base}/delete/"
 
     @classonlymethod
-    def get_urls(cls, url_base, url_name, namespace=None, actions=None):
+    def get_urls(cls, url_base, url_name, namespace=None, actions=None):  # noqa: N805
         actions = actions or CRUDHandlerMap.keys()
         if cls.detail_is_update:
             actions = [action for action in actions if action != "detail"]
@@ -682,22 +679,27 @@ class OrgaTableMixin(SingleTableMixin):
         return table
 
     def get_template_names(self):
-        if is_htmx(self.request) and self.table_class:
-            if get_htmx_target(self.request).startswith("table-content"):
-                return [f"{self.table_template_name}#table-content"]
+        if (
+            is_htmx(self.request)
+            and self.table_class
+            and get_htmx_target(self.request).startswith("table-content")
+        ):
+            return [f"{self.table_template_name}#table-content"]
         return super().get_template_names()
 
     def dispatch(self, request, *args, **kwargs):
         response = super().dispatch(request, *args, **kwargs)
         # For HTMX table requests, set HX-Push-Url so browser URL stays in sync
-        if is_htmx(request) and self.table_class:
-            if get_htmx_target(request).startswith("table-content"):
-                response["HX-Push-Url"] = request.get_full_path()
+        if (
+            is_htmx(request)
+            and self.table_class
+            and get_htmx_target(request).startswith("table-content")
+        ):
+            response["HX-Push-Url"] = request.get_full_path()
         return response
 
 
 class OrgaCRUDView(OrgaTableMixin, FormSignalMixin, CRUDView):
-
     @cached_property
     def event(self):
         return getattr(self.request, "event", None)
@@ -740,7 +742,7 @@ class OrgaCRUDView(OrgaTableMixin, FormSignalMixin, CRUDView):
 
     def get_template_names(self):
         result = super().get_template_names()
-        return result[:-1] + [f"orga/generic/{self.action}.html"]
+        return [*result[:-1], f"orga/generic/{self.action}.html"]
 
     def get_table_kwargs(self):
         kwargs = super().get_table_kwargs()

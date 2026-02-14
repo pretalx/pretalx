@@ -8,7 +8,7 @@ from pretalx.submission.cards import _text
 
 
 @pytest.mark.parametrize(
-    "text,length,expected",
+    ("text", "length", "expected"),
     (
         ("12345", 3, "12…"),
         ("12345", 5, "12345"),

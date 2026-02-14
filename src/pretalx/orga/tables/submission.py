@@ -238,8 +238,10 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
             else:
                 columns.append("mean_score")
             if self.independent_categories:
-                for category in self.independent_categories:
-                    columns.append(f"independent_score_{category.pk}")
+                columns.extend(
+                    f"independent_score_{category.pk}"
+                    for category in self.independent_categories
+                )
         if self.is_reviewer:
             columns.append("user_score")
         columns.extend(["review_count", "title"])
@@ -335,13 +337,10 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
         return self._scores_cache.get(submission.pk, {}).get(category_id)
 
     def _load_all_scores(self):
-        submission_ids = []
         try:
-            for row in self.rows:
-                submission_ids.append(row.record.pk)
+            submission_ids = [row.record.pk for row in self.rows]
         except (AttributeError, TypeError):
-            for submission in self.data:
-                submission_ids.append(submission.pk)
+            submission_ids = [submission.pk for submission in self.data]
 
         if not submission_ids:
             self._scores_cache = {}
@@ -401,8 +400,9 @@ class TagTable(PretalxTable):
         verbose_name=_("Proposals"),
         accessor="submission_count",
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
-        linkify=lambda record: record.event.orga_urls.submissions
-        + f"?tags={record.pk}",
+        linkify=lambda record: (
+            record.event.orga_urls.submissions + f"?tags={record.pk}"
+        ),
         initial_sort_descending=True,
     )
     is_public = BooleanColumn()

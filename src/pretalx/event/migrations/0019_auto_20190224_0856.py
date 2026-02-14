@@ -7,7 +7,7 @@ from django.db import migrations
 
 
 def fix_update_template(apps, schema_editor):
-    from pretalx.mail.default_templates import UPDATE_SUBJECT, UPDATE_TEXT
+    from pretalx.mail.default_templates import UPDATE_SUBJECT, UPDATE_TEXT  # noqa: PLC0415
 
     Event = apps.get_model("event", "Event")
     for event in Event.objects.all():

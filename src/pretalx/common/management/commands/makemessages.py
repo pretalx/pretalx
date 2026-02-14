@@ -42,16 +42,15 @@ class Command(Parent):
             path = Path(module.__path__[0])
             for locale in response:
                 # if it's a tuple, use the first part
-                if isinstance(locale, tuple):
-                    locale = locale[0]
-                if "-" in locale:
-                    locale_parts = locale.split("-")
-                    locale = (
+                locale_str = locale[0] if isinstance(locale, tuple) else locale
+                if "-" in locale_str:
+                    locale_parts = locale_str.split("-")
+                    locale_str = (
                         locale_parts[0]
                         + "_"
                         + "_".join(part.capitalize() for part in locale_parts[1:])
                     )
-                locales[locale] = path
+                locales[locale_str] = path
 
         if not locales:
             super().handle(*args, **options)
@@ -88,7 +87,10 @@ class Command(Parent):
         # We only need one file, as it's empty anyway
         # (and we don't use numbers or other fancy features.)
         subprocess.run(
-            "npm run i18n:convert2gettext", check=True, shell=True, cwd=frontend_path
+            "npm run i18n:convert2gettext",
+            check=True,
+            shell=True,
+            cwd=frontend_path,
         )
 
         # Now merge the js file with the django file in each language

@@ -16,10 +16,10 @@ VALID_EMAIL_SETTINGS = {
 
 @pytest.mark.parametrize(
     "mail_from",
-    [
+    (
         "not-an-email",
         "Just A Name",
-    ],
+    ),
 )
 def test_check_system_email_invalid_mail_from(mail_from):
     with override_settings(**VALID_EMAIL_SETTINGS, MAIL_FROM=mail_from):
@@ -30,10 +30,10 @@ def test_check_system_email_invalid_mail_from(mail_from):
 
 @pytest.mark.parametrize(
     "mail_from",
-    [
+    (
         "orga@example.com",
         "Custom Sender <orga@example.com>",
-    ],
+    ),
 )
 def test_check_system_email_valid_mail_from(mail_from):
     with override_settings(**VALID_EMAIL_SETTINGS, MAIL_FROM=mail_from):

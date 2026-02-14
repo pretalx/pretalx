@@ -9,7 +9,7 @@ from pretalx.submission.models.question import Answer
 
 
 @pytest.mark.parametrize(
-    "email,expected",
+    ("email", "expected"),
     (
         ("one@two.com", "ac5be7f974137dc75bacee19b94fe0f8"),
         ("a_very_long.email@orga.org", "79bd022bbbd718d8e30f730169067b2a"),
@@ -80,7 +80,7 @@ def test_organizer_permissions(event, orga_user):
 @pytest.mark.django_db
 def test_do_not_shred_user_with_teams(orga_user):
     assert User.objects.count() == 1
-    with pytest.raises(Exception):  # noqa
+    with pytest.raises(Exception):  # noqa: B017, PT011
         orga_user.shred()
     assert User.objects.count() == 1
 
@@ -93,7 +93,7 @@ def test_shred_user(user):
 
 
 @pytest.mark.parametrize(
-    "code,filename,expected_start,expected_end",
+    ("code", "filename", "expected_start", "expected_end"),
     (
         ("ABCDEF", "foo.jpg", "avatars/ABCDEF_", ".jpg"),
         (None, "foo.jpg", "avatars/avatar_", ".jpg"),

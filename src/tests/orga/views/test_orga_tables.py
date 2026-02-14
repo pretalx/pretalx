@@ -499,9 +499,9 @@ def test_multicolumn_sorting_function_column_descending(orga_client, event, orga
 
     pos_alpha = content.find("Alpha Talk")
     pos_beta = content.find("Beta Session")
-    assert (
-        pos_beta < pos_alpha
-    ), "ZZZ Type should appear before AAA Type with -submission_type"
+    assert pos_beta < pos_alpha, (
+        "ZZZ Type should appear before AAA Type with -submission_type"
+    )
 
 
 @pytest.mark.django_db

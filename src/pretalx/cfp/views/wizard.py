@@ -29,7 +29,7 @@ class SubmitStartView(EventPageMixin, View):
             "cfp:event.submit",
             kwargs={
                 "event": request.event.slug,
-                "step": list(request.event.cfp_flow.steps_dict.keys())[0],
+                "step": next(iter(request.event.cfp_flow.steps_dict.keys())),
                 "tmpid": tmpid,
             },
         )
@@ -72,7 +72,7 @@ class SubmitWizard(EventPageMixin, View):
             step.is_before = True
             step.resolved_url = step.get_step_url(request)
         if getattr(step, "is_before", False):  # The current step URL is incorrect
-            raise Http404()
+            raise Http404
         handler = getattr(step, request.method.lower(), self.http_method_not_allowed)
         result = handler(request)
 

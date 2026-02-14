@@ -7,6 +7,7 @@ import pytest
 from django_scopes import scope
 
 from pretalx.api.serializers.access_code import SubmitterAccessCodeSerializer
+from pretalx.api.versions import LEGACY
 
 
 @pytest.mark.django_db
@@ -72,8 +73,6 @@ def test_orga_can_see_single_access_code(client, orga_user_token, event):
 
 @pytest.mark.django_db
 def test_no_legacy_access_code_api(client, orga_user_token, event):
-    from pretalx.api.versions import LEGACY
-
     with scope(event=event):
         access_code = event.submitter_access_codes.create(code="testcode")
     response = client.get(

@@ -28,7 +28,7 @@ class BaseExporter:
         This should be short but self-explaining. Good examples include
         'JSON' or 'Microsoft Excel'.
         """
-        raise NotImplementedError()  # NOQA
+        raise NotImplementedError
 
     @property
     def filename_identifier(self) -> str:
@@ -40,7 +40,7 @@ class BaseExporter:
         You do not have to implement this property if you set both
         ``identifier`` and ``filename`` instead.
         """
-        raise NotImplementedError()  # NOQA
+        raise NotImplementedError
 
     @property
     def extension(self) -> str:
@@ -50,7 +50,7 @@ class BaseExporter:
         You do not have to implement this property if you implement
         ``filename`` instead.
         """
-        raise NotImplementedError()  # NOQA
+        raise NotImplementedError
 
     @property
     def content_type(self) -> str:
@@ -58,7 +58,7 @@ class BaseExporter:
 
         You do not need to implement this property if you override ``render``.
         """
-        raise NotImplementedError()  # NOQA
+        raise NotImplementedError
 
     @property
     def identifier(self) -> str:
@@ -99,7 +99,7 @@ class BaseExporter:
         ``is_public(self, request, **kwargs)`` method, which overrides this
         property.
         """
-        raise NotImplementedError()  # NOQA
+        raise NotImplementedError
 
     @property
     def show_public(self) -> bool:
@@ -128,7 +128,7 @@ class BaseExporter:
     def icon(self) -> str:
         """Return either a fa- string or some other symbol to accompany the
         exporter in displays."""
-        raise NotImplementedError()  # NOQA
+        raise NotImplementedError
 
     @property
     def group(self) -> str:
@@ -142,7 +142,7 @@ class BaseExporter:
 
     def get_data(self, request, **kwargs) -> str:
         """Return the file contents that ``render`` should return."""
-        raise NotImplementedError()  # NOQA
+        raise NotImplementedError
 
     def render(self, request, **kwargs) -> tuple[str, str, str]:
         return (
@@ -160,9 +160,9 @@ class BaseExporter:
         base = "{self.event.urls.export}{self.quoted_identifier}"
 
     def get_qrcode(self):
-        import qrcode
-        import qrcode.image.svg
-        from defusedxml import ElementTree
+        import qrcode  # noqa: PLC0415
+        import qrcode.image.svg  # noqa: PLC0415
+        from defusedxml import ElementTree  # noqa: PLC0415
 
         image = qrcode.make(
             self.urls.base.full(), image_factory=qrcode.image.svg.SvgPathFillImage
@@ -175,7 +175,7 @@ class CSVExporterMixin:
     content_type = "text/plain"
 
     def get_data(self, request, **kwargs):
-        from defusedcsv import csv
+        from defusedcsv import csv  # noqa: PLC0415
 
         fieldnames, data = self.get_csv_data(request, **kwargs)
         output = StringIO()

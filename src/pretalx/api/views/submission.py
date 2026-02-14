@@ -492,7 +492,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
 @authentication_classes((SessionAuthentication, TokenAuthentication))
 def favourites_view(request, event):
     if not request.user.has_perm("schedule.list_schedule", request.event):
-        raise PermissionDenied()
+        raise PermissionDenied
     return Response(
         [
             sub.code
@@ -517,7 +517,7 @@ def favourites_view(request, event):
 @authentication_classes((SessionAuthentication, TokenAuthentication))
 def favourite_view(request, event, code):
     if not request.user.has_perm("schedule.list_schedule", request.event):
-        raise PermissionDenied()
+        raise PermissionDenied
     submission = (
         submissions_for_user(request.event, request.user)
         .filter(code__iexact=code)

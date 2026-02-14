@@ -90,6 +90,7 @@ def system_information(request):
                 warnings.warn(
                     "Please return a list in your footer_link signal receiver, not a dictionary.",
                     DeprecationWarning,
+                    stacklevel=2,
                 )
         context["footer_links"] += _footer
 

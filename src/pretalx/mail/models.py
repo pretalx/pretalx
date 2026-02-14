@@ -37,16 +37,19 @@ def get_prefixed_subject(event, subject):
 
 class MailTemplateRoles(models.TextChoices):
     NEW_SUBMISSION = "submission.new", _("Acknowledge proposal submission")
-    NEW_SUBMISSION_INTERNAL = "submission.new.internal", _(
-        "New proposal (organiser notification)"
+    NEW_SUBMISSION_INTERNAL = (
+        "submission.new.internal",
+        _("New proposal (organiser notification)"),
     )
     SUBMISSION_ACCEPT = "submission.state.accepted", _("Proposal accepted")
     SUBMISSION_REJECT = "submission.state.rejected", _("Proposal rejected")
-    NEW_SPEAKER_INVITE = "speaker.invite", _(
-        "Add a speaker to a proposal (new account)"
+    NEW_SPEAKER_INVITE = (
+        "speaker.invite",
+        _("Add a speaker to a proposal (new account)"),
     )
-    EXISTING_SPEAKER_INVITE = "speaker.invite.existing", _(
-        "Add a speaker to a proposal (existing account)"
+    EXISTING_SPEAKER_INVITE = (
+        "speaker.invite.existing",
+        _("Add a speaker to a proposal (existing account)"),
     )
     QUESTION_REMINDER = "question.reminder", _("Custom fields reminder")
     DRAFT_REMINDER = "draft.reminder", _("Draft proposal reminder")
@@ -144,14 +147,14 @@ class MailTemplate(PretalxModel):
         self,
         user,
         event,
-        locale: str = None,
-        context: dict = None,
-        context_kwargs: dict = None,
-        skip_queue: bool = False,
-        commit: bool = True,
-        allow_empty_address: bool = False,
-        submissions: list = None,
-        attachments: list = False,
+        locale=None,
+        context=None,
+        context_kwargs=None,
+        skip_queue=False,
+        commit=True,
+        allow_empty_address=False,
+        submissions=None,
+        attachments=False,
     ):
         """Creates a :class:`~pretalx.mail.models.QueuedMail` object from a
         MailTemplate.
@@ -172,7 +175,7 @@ class MailTemplate(PretalxModel):
             remove any logging and traces.
         :param commit: Set ``False`` to return an unsaved object.
         """
-        from pretalx.person.models import User
+        from pretalx.person.models import User  # noqa: PLC0415
 
         if isinstance(user, str):
             address = user
@@ -205,8 +208,8 @@ class MailTemplate(PretalxModel):
                 text = str(self.text).format(**context)
             except KeyError as e:
                 raise SendMailException(
-                    f"Experienced KeyError when rendering email text: {str(e)}"
-                )
+                    f"Experienced KeyError when rendering email text: {e!s}"
+                ) from e
 
             if len(subject) > 200:
                 subject = subject[:198] + "…"
@@ -382,7 +385,7 @@ class QueuedMail(PretalxModel):
         return f"OutboxMail(to={self.to}, subject={self.subject}, sent={sent})"
 
     def make_html(self):
-        from pretalx.common.templatetags.rich_text import render_markdown_abslinks
+        from pretalx.common.templatetags.rich_text import render_markdown_abslinks  # noqa: PLC0415
 
         event = getattr(self, "event", None)
         sig = None
@@ -448,7 +451,7 @@ class QueuedMail(PretalxModel):
             # so there is nothing left for us to do.
             return
 
-        from pretalx.common.mail import mail_send_task
+        from pretalx.common.mail import mail_send_task  # noqa: PLC0415
 
         text = self.make_text()
         body_html = self.make_html()

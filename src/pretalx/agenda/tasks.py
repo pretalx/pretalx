@@ -9,32 +9,31 @@ import logging
 from django.core.files import File
 from django_scopes import scope, scopes_disabled
 
-from pretalx.agenda.management.commands.export_schedule_html import (
-    get_export_zip_path,
-)
+from pretalx.agenda.management.commands.export_schedule_html import get_export_zip_path
 from pretalx.celery_app import app
 from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
+
 
 LOGGER = logging.getLogger(__name__)
 
 
 @app.task(name="pretalx.agenda.export_schedule_html")
-def export_schedule_html(*, event_id: int, cached_file_id: str = None):
-    from django.core.management import call_command
+def export_schedule_html(*, event_id, cached_file_id=None):
+    from django.core.management import call_command  # noqa: PLC0415
 
     with scopes_disabled():
         event = (
             Event.objects.prefetch_related("submissions").filter(pk=event_id).first()
         )
     if not event:
-        LOGGER.error(f"Could not find Event ID {event_id} for export.")
+        LOGGER.error("Could not find Event ID %s for export.", event_id)
         return
 
     with scope(event=event):
         if not event.current_schedule:
             LOGGER.error(
-                f"Event {event.slug} could not be exported: it has no schedule."
+                "Event %s could not be exported: it has no schedule.", event.slug
             )
             return
 
@@ -46,10 +45,10 @@ def export_schedule_html(*, event_id: int, cached_file_id: str = None):
         if cached_file:
             zip_path = get_export_zip_path(event)
             try:
-                with open(zip_path, "rb") as f:
+                with zip_path.open("rb") as f:
                     cached_file.file.save(cached_file.filename, File(f))
                 zip_path.unlink(missing_ok=True)
             except FileNotFoundError:
-                LOGGER.error(f"Export zip not found at {zip_path}")
+                LOGGER.error("Export zip not found at %s", zip_path)
                 return
             return cached_file_id

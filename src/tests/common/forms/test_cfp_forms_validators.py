@@ -8,7 +8,7 @@ from pretalx.common.forms.validators import ZXCVBNValidator
 
 
 @pytest.mark.parametrize(
-    "score,works",
+    ("score", "works"),
     (
         (-1, False),
         (0, True),
@@ -21,12 +21,12 @@ def test_zxcvbn_validator_init_works(score, works):
     if works:
         ZXCVBNValidator(min_score=score)
     else:
-        with pytest.raises(Exception):  # noqa: it really is an Exception
+        with pytest.raises(Exception):  # noqa: B017, PT011
             ZXCVBNValidator(min_score=score)
 
 
 @pytest.mark.parametrize(
-    "password,works",
+    ("password", "works"),
     (
         ("password", False),
         ("theMightyPassword", True),
@@ -36,5 +36,5 @@ def test_password_validation(password, works):
     if works:
         ZXCVBNValidator()(password)
     else:
-        with pytest.raises(ValidationError):  # noqa: it really is an Exception
+        with pytest.raises(ValidationError):
             ZXCVBNValidator()(password)

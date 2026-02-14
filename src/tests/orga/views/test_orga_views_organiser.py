@@ -114,7 +114,7 @@ def test_orga_edit_team_illegal(orga_client, organiser, event):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("is_administrator", [True, False])
+@pytest.mark.parametrize("is_administrator", (True, False))
 def test_orga_create_team(orga_client, organiser, event, is_administrator, orga_user):
     orga_user.is_administrator = is_administrator
     orga_user.save()
@@ -353,9 +353,9 @@ class TestEventCreation:
         event = Event.objects.get(slug=f"newevent{now().year}")
         assert Event.objects.count() == count + 1
         assert organiser.teams.count() == team_count + 1
-        assert organiser.teams.filter(
-            name__icontains="new"
-        ).exists(), organiser.teams.all()
+        assert organiser.teams.filter(name__icontains="new").exists(), (
+            organiser.teams.all()
+        )
         assert str(event.name) == "New event!"
         assert event.locales == ["en", "de"]
         assert event.content_locales == ["en", "de"]
@@ -385,9 +385,9 @@ class TestEventCreation:
         event = Event.objects.get(slug="newevent")
         assert Event.objects.count() == count + 1
         assert organiser.teams.count() == team_count + 1
-        assert organiser.teams.filter(
-            name__icontains="new"
-        ).exists(), organiser.teams.all()
+        assert organiser.teams.filter(name__icontains="new").exists(), (
+            organiser.teams.all()
+        )
         assert str(event.name) == "New event!"
         assert event.locales == ["en", "de"]
         assert event.content_locales == ["en", "de"]
@@ -411,9 +411,9 @@ class TestEventCreation:
         self.submit_plugins(client=orga_client)
         assert Event.objects.count() == count + 1
         assert organiser.teams.count() == team_count + 1
-        assert organiser.teams.filter(
-            name__icontains="new"
-        ).exists(), organiser.teams.all()
+        assert organiser.teams.filter(name__icontains="new").exists(), (
+            organiser.teams.all()
+        )
         new_event = Event.objects.exclude(pk=event.pk).first()
         with scopes_disabled():
             assert (

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import hashlib
+from pathlib import Path
 from urllib.parse import unquote
 
 from csp.decorators import csp_exempt
@@ -26,10 +27,10 @@ def color_etag(request, event, **kwargs):
 
 
 def _load_widget_js():
-    global WIDGET_JS_CHECKSUM, WIDGET_JS_CONTENT
+    global WIDGET_JS_CHECKSUM, WIDGET_JS_CONTENT  # noqa: PLW0603
     if WIDGET_JS_CONTENT is None:
-        file_path = finders.find(WIDGET_PATH)
-        with open(file_path, encoding="utf-8") as fp:
+        file_path = Path(finders.find(WIDGET_PATH))
+        with file_path.open(encoding="utf-8") as fp:
             WIDGET_JS_CONTENT = fp.read().encode()
         WIDGET_JS_CHECKSUM = hashlib.md5(WIDGET_JS_CONTENT).hexdigest()
 
@@ -45,11 +46,9 @@ def is_public_and_versioned(request, event, version=None):
     if version and version == "wip":
         # We never cache the wip schedule
         return False
-    if not is_widget_visible(None, request.event):
-        # This will be either a 404, or a page only accessible to the user
-        # due to their logged-in status, so we don't want to cache it.
-        return False
-    return True
+    # This will be either a 404, or a page only accessible to the user
+    # due to their logged-in status, so we don't want to cache it.
+    return is_widget_visible(None, request.event)
 
 
 def version_prefix(request, event, version=None):
@@ -94,20 +93,20 @@ def widget_data(request, event, version=None):
         response["Access-Control-Allow-Headers"] = "authorization,content-type"
         return response
     if not request.user.has_perm("schedule.view_widget_schedule", event):
-        raise Http404()
+        raise Http404
 
     version = version or unquote(request.GET.get("v") or "")
     schedule = None
     if version and version == "wip":
         if not request.user.has_perm("schedule.orga_view_schedule", event):
-            raise Http404()
+            raise Http404
         schedule = request.event.wip_schedule
     elif version:
         schedule = event.schedules.filter(version__iexact=version).first()
 
     schedule = schedule or event.current_schedule
     if not schedule:
-        raise Http404()
+        raise Http404
 
     result = schedule.build_data(all_talks=not schedule.version)
     response = JsonResponse(result, encoder=I18nJSONEncoder)
@@ -125,7 +124,7 @@ def widget_script(request, event):
     # by about 80% for the schedule.js file, which is the largest file on the
     # main schedule page).
     if not request.user.has_perm("schedule.view_widget_schedule", request.event):
-        raise Http404()
+        raise Http404
 
     _load_widget_js()
     return HttpResponse(WIDGET_JS_CONTENT, content_type="text/javascript")

@@ -40,7 +40,8 @@ class EventSerializer(EventListSerializer):
     og_image = UploadedFileField(required=False)
 
     class Meta(EventListSerializer.Meta):
-        fields = EventListSerializer.Meta.fields + [
+        fields = [
+            *EventListSerializer.Meta.fields,
             "email",  # Email is public in the footer anyway
             "primary_color",
             "custom_domain",

@@ -27,6 +27,8 @@ from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.submission.icons import PLATFORM_ICONS
 from pretalx.submission.models import Answer, AnswerOption, Question, QuestionVariant
 from pretalx.submission.rules import questions_for_user
+from pretalx.submission.rules import filter_answers_by_team_access
+
 
 OPTIONS_HELP = (
     "Please note that any update to the options field will delete the "
@@ -93,7 +95,7 @@ class QuestionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewS
         except ProtectedError:
             raise exceptions.ValidationError(
                 "You cannot delete a question object that has answers."
-            )
+            ) from None
 
     @action(
         detail=True,
@@ -172,7 +174,7 @@ class AnswerOptionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelV
         except ProtectedError:
             raise exceptions.ValidationError(
                 "You cannot delete an option object that has been used in answers."
-            )
+            ) from None
 
 
 @extend_schema_view(
@@ -222,8 +224,6 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
     }
 
     def get_queryset(self):
-        from pretalx.submission.rules import filter_answers_by_team_access
-
         queryset = (
             Answer.objects.filter(
                 question__in=questions_for_user(self.event, self.request.user)

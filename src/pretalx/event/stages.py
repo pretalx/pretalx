@@ -141,6 +141,6 @@ def get_stages(event):
             inactive_state = "todo"
         stages[stage]["phase"] = "current" if is_stage_active else inactive_state
         for link in stages[stage].get("links", []):
-            if "url" in link and link["url"]:
+            if link.get("url"):
                 link["url"] = build_event_url(event, link["url"])
     return stages

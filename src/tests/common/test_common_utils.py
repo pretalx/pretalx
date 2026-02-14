@@ -13,7 +13,7 @@ from pretalx.common.text.serialize import I18nStrJSONEncoder
 
 
 @pytest.mark.parametrize(
-    "locale,start,end,result",
+    ("locale", "start", "end", "result"),
     (
         ("de", date(2003, 2, 1), date(2003, 2, 1), "1. Februar 2003"),
         ("en", date(2003, 2, 1), date(2003, 2, 1), "Feb. 1, 2003"),
@@ -40,7 +40,7 @@ def test_daterange(locale, start, end, result):
 
 
 @pytest.mark.parametrize(
-    "original_name,target_name,upload_dir,expected",
+    ("original_name", "target_name", "upload_dir", "expected"),
     (
         ("foo.bar", "avatar", None, "avatar_aaaaaaa.bar"),
         ("foo.bar", "logo", "event/img/", "event/img/logo_aaaaaaa.bar"),
@@ -69,7 +69,7 @@ def test_hashed_path(original_name, target_name, upload_dir, expected, monkeypat
     monkeypatch.setattr(
         "pretalx.common.text.path.get_random_string", lambda x: "aaaaaaa"
     )
-    from pretalx.common.text.path import hashed_path
+    from pretalx.common.text.path import hashed_path  # noqa: PLC0415
 
     assert (
         hashed_path(original_name, target_name=target_name, upload_dir=upload_dir)
@@ -78,7 +78,7 @@ def test_hashed_path(original_name, target_name, upload_dir, expected, monkeypat
 
 
 @pytest.mark.parametrize(
-    "filename,expected",
+    ("filename", "expected"),
     (
         ("ö", "o"),
         ("å", "a"),

@@ -30,7 +30,7 @@ def availabilities_field(event):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "json,error",
+    ("json", "error"),
     (
         ("{{{", "not valid json"),  # invalid json
         ("[]", "format"),  # not a dict
@@ -153,7 +153,7 @@ def test_validate_availability_daylightsaving(availabilities_field):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "strdate,expected",
+    ("strdate", "expected"),
     (
         ("2017-01-01 10:00:00", dt.datetime(2017, 1, 1, 10)),
         ("2017-01-01 10:00:00-05:00", dt.datetime(2017, 1, 1, 10)),
@@ -173,7 +173,7 @@ def test_parse_datetime(availabilities_field, strdate, expected):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "json,error",
+    ("json", "error"),
     (
         ("{{", "not valid json"),
         ('{"availabilities": [1]}', "format"),
@@ -188,7 +188,7 @@ def test_clean_availabilities_fail(availabilities_field, json, error):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "json,expected",
+    ("json", "expected"),
     (
         ('{"availabilities": []}', []),
         (
@@ -210,7 +210,7 @@ def test_clean_availabilities_success(availabilities_field, json, expected):
 
     assert len(actual) == len(expected)
 
-    for act, exp in zip(actual, expected):
+    for act, exp in zip(actual, expected, strict=False):
         assert act.start.replace(tzinfo=None) == exp.start
         assert act.end.replace(tzinfo=None) == exp.end
         assert act.event_id == availabilities_field.event.id
@@ -219,7 +219,7 @@ def test_clean_availabilities_success(availabilities_field, json, expected):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "avail,expected",
+    ("avail", "expected"),
     (
         (
             Availability(
@@ -256,17 +256,6 @@ def test_clean_availabilities_success(availabilities_field, json, expected):
         ),
         (
             Availability(
-                start=dt.datetime(2017, 1, 1, 10, tzinfo=ZoneInfo("UTC")),
-                end=dt.datetime(2017, 1, 2, tzinfo=ZoneInfo("UTC")),
-            ),
-            {
-                "start": "2017-01-01T10:00:00+00:00",
-                "end": "2017-01-02T00:00:00+00:00",
-                "allDay": False,
-            },
-        ),
-        (
-            Availability(
                 start=dt.datetime(2017, 1, 1, tzinfo=ZoneInfo("UTC")),
                 end=dt.datetime(2017, 1, 2, tzinfo=ZoneInfo("UTC")),
             ),
@@ -287,7 +276,7 @@ def test_serialize_availability(avail, expected):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "avails,expected,tzname",
+    ("avails", "expected", "tzname"),
     (
         (
             [
@@ -366,7 +355,7 @@ def test_serialize(availabilities_field, avails, expected, tzname):
             instance = None
 
         if avails:
-            for a, j in zip(avails, expected["availabilities"]):
+            for a, j in zip(avails, expected["availabilities"], strict=False):
                 j["id"] = a.pk
 
         actual = json.loads(

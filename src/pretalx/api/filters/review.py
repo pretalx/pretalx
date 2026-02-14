@@ -70,9 +70,9 @@ with scopes_disabled():
                     submissions__in=submissions
                 )
                 self.filters["submission__track"].queryset = event.tracks.all()
-                self.filters["submission__submission_type"].queryset = (
-                    event.submission_types.all()
-                )
+                self.filters[
+                    "submission__submission_type"
+                ].queryset = event.submission_types.all()
 
         class Meta:
             model = Review

@@ -61,9 +61,9 @@ def test_common_test_event_without_user():
 
 @pytest.mark.django_db
 def test_common_uncallable(event):
-    with pytest.raises(OSError):
+    with pytest.raises(OSError):  # noqa: PT011
         call_command("init")
-    with pytest.raises(Exception):  # noqa
+    with pytest.raises(Exception):  # noqa: PT011, B017
         call_command("shell", "--unsafe-disable-scopes")
 
 
@@ -83,7 +83,8 @@ def test_common_custom_makemessages_does_not_blow_up():
                 "--",
                 "pretalx/locale/de_DE",
                 "pretalx/locale/django.pot",
-            ]
+            ],
+            check=False,
         )
 
 

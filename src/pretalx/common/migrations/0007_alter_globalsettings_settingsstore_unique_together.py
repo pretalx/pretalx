@@ -6,7 +6,6 @@ from hierarkey.utils import CleanHierarkeyDuplicates
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("common", "0006_cachedfile"),
     ]

@@ -219,7 +219,7 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
         schedule = self.get_object()
         response = get_schedule_exporter_content(request, name, schedule)
         if not response:
-            raise Http404()
+            raise Http404
         return response
 
 

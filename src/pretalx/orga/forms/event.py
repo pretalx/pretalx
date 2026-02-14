@@ -47,6 +47,8 @@ from pretalx.event.models.event import Event, EventExtraLink
 from pretalx.orga.forms.widgets import HeaderSelect, MultipleLanguagesWidget
 from pretalx.schedule.models import Availability, Room, TalkSlot
 from pretalx.submission.models import ReviewPhase, ReviewScore, ReviewScoreCategory
+from pretalx.common.models import ActivityLog
+
 
 ENCRYPTED_PASSWORD_PLACEHOLDER = "*" * 24
 
@@ -194,7 +196,7 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
                 _("Please do not choose the default domain as custom event domain.")
             )
         if not data.startswith("https://"):
-            data = data[len("http://") :] if data.startswith("http://") else data
+            data = data.removeprefix("http://")
             data = "https://" + data
         data = data.rstrip("/")
         try:
@@ -204,7 +206,7 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
                 _(
                     "The domain “{domain}” does not have a name server entry at this time. Please make sure the domain is working before configuring it here."
                 ).format(domain=data)
-            )
+            ) from None
         return data
 
     def clean_custom_css(self):
@@ -925,8 +927,6 @@ class EventHistoryFilterForm(forms.Form):
         # Build object type choices from existing logs
         if event:
             # Get distinct content types that have logs for this event
-            from pretalx.common.models import ActivityLog
-
             content_type_ids = (
                 ActivityLog.objects.filter(event=event)
                 .values_list("content_type", flat=True)

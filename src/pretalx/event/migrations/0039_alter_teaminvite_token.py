@@ -9,7 +9,6 @@ import pretalx.event.models.organiser
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("event", "0038_eventextralink"),
     ]

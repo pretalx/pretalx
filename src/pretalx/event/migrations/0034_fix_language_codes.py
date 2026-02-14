@@ -17,7 +17,7 @@ def lang_data_needs_fixing(lang_data):
         return False
     if not lang_data:
         return False
-    return any(key != key.lower() for key in lang_data.keys())
+    return any(key != key.lower() for key in lang_data)
 
 
 def fix_language_codes(apps, schema_editor):
@@ -73,10 +73,13 @@ def fix_language_codes(apps, schema_editor):
             obj_changed = False
             for field in fields:
                 value = getattr(obj, field)
-                if value and getattr(value, "data", None):
-                    if lang_data_needs_fixing(value.data):
-                        value.data = fix_lang_data(value.data)
-                        obj_changed = True
+                if (
+                    value
+                    and getattr(value, "data", None)
+                    and lang_data_needs_fixing(value.data)
+                ):
+                    value.data = fix_lang_data(value.data)
+                    obj_changed = True
             if obj_changed:
                 update_list.append(obj)
         if update_list:
@@ -106,17 +109,15 @@ def fix_language_codes(apps, schema_editor):
 
         for step_name, step in lang_data["steps"].items():
             for key in ("title", "text"):
-                if key in step:
-                    if lang_data_needs_fixing(step[key]):
-                        step[key] = fix_lang_data(step[key])
-                        data_changed = True
-            if "fields" in step and step["fields"]:
+                if key in step and lang_data_needs_fixing(step[key]):
+                    step[key] = fix_lang_data(step[key])
+                    data_changed = True
+            if step.get("fields"):
                 for field in step["fields"]:
                     for key in ("label", "help_text", "added_help_text"):
-                        if key in field:
-                            if lang_data_needs_fixing(field[key]):
-                                field[key] = fix_lang_data(field[key])
-                                data_changed = True
+                        if key in field and lang_data_needs_fixing(field[key]):
+                            field[key] = fix_lang_data(field[key])
+                            data_changed = True
 
             lang_data["steps"][step_name] = step
         if data_changed:

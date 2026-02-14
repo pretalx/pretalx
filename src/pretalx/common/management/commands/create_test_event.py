@@ -183,29 +183,28 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
         for _ in range(total_submissions - target_speaker_count):
             speakers.append(random.choice(speakers))
 
-        submission_times = []
         max_submission_time = min(now(), self.event.cfp.deadline)
-        for _ in range(int(total_submissions / 10)):
-            submission_times.append(
-                self.fake.date_time_between_dates(
-                    datetime_start=max_submission_time - dt.timedelta(days=20),
-                    datetime_end=max_submission_time - dt.timedelta(days=7),
-                )
+        submission_times = [
+            self.fake.date_time_between_dates(
+                datetime_start=max_submission_time - dt.timedelta(days=20),
+                datetime_end=max_submission_time - dt.timedelta(days=7),
             )
-        for _ in range(int(total_submissions / 20)):
-            submission_times.append(
-                self.fake.date_time_between_dates(
-                    datetime_start=max_submission_time - dt.timedelta(days=7),
-                    datetime_end=max_submission_time - dt.timedelta(days=3),
-                )
+            for _ in range(int(total_submissions / 10))
+        ]
+        submission_times.extend(
+            self.fake.date_time_between_dates(
+                datetime_start=max_submission_time - dt.timedelta(days=7),
+                datetime_end=max_submission_time - dt.timedelta(days=3),
             )
-        for _ in range(int(total_submissions / 20)):
-            submission_times.append(
-                self.fake.date_time_between_dates(
-                    datetime_start=max_submission_time - dt.timedelta(days=3),
-                    datetime_end=max_submission_time - dt.timedelta(days=1),
-                )
+            for _ in range(int(total_submissions / 20))
+        )
+        submission_times.extend(
+            self.fake.date_time_between_dates(
+                datetime_start=max_submission_time - dt.timedelta(days=3),
+                datetime_end=max_submission_time - dt.timedelta(days=1),
             )
+            for _ in range(int(total_submissions / 20))
+        )
         while len(submission_times) < total_submissions:
             submission_times.append(
                 self.fake.date_time_between_dates(
@@ -222,7 +221,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
         submissions = [
             self.build_submission(speaker, submission_type, submission_time)
             for speaker, submission_type, submission_time in zip(
-                speakers, submission_types, submission_times
+                speakers, submission_types, submission_times, strict=False
             )
         ]
         for _ in range(self.fake.random_int(min=5, max=15)):
@@ -350,7 +349,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
     @transaction.atomic
     def handle(self, *args, **options):
         try:
-            from faker import Faker
+            from faker import Faker  # noqa: PLC0415
 
             seed = options.get("seed")
             if seed:
@@ -364,7 +363,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
             return
 
         try:
-            from freezegun import freeze_time
+            from freezegun import freeze_time  # noqa: PLC0415
 
             self.freeze_time = freeze_time
         except ImportError:  # pragma: no cover

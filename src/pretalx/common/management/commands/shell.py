@@ -16,7 +16,6 @@ from pretalx.event.models import Event
 
 
 class Command(shell.Command):  # pragma: no cover
-
     def add_arguments(self, parser):
         super().add_arguments(parser)
         parser.add_argument(
@@ -32,7 +31,8 @@ class Command(shell.Command):  # pragma: no cover
         parser.add_argument("--event", help="Event (slug) to scope all queries to.")
 
     def get_auto_imports(self):
-        return super().get_auto_imports() + [
+        return [
+            *super().get_auto_imports(),
             "django.conf.settings",
             "django.db.models.Q",
             "django.utils.timezone.now",
@@ -88,7 +88,7 @@ class Command(shell.Command):  # pragma: no cover
             interface = options.get("interface")
             if interface not in ("bpython", "python"):
                 with suppress(ImportError):
-                    import IPython  # noqa: F401
+                    import IPython  # noqa: F401, PLC0415
 
                     use_ipython_style = True
 
@@ -111,8 +111,8 @@ class Command(shell.Command):  # pragma: no cover
                 startup_file.unlink()
 
     def ipython(self, options):
-        from IPython import start_ipython
-        from traitlets.config import Config
+        from IPython import start_ipython  # noqa: PLC0415
+        from traitlets.config import Config  # noqa: PLC0415
 
         config = Config()
         config.TerminalIPythonApp.display_banner = False

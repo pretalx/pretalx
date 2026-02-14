@@ -20,7 +20,6 @@ class UserDeletionError(Exception):
 
 
 class PretalxExceptionReporter(ExceptionReporter):
-
     def get_traceback_text(self):  # pragma: no cover
         traceback_text = super().get_traceback_text()
         # Don't try to send fancy emails in dev
@@ -108,8 +107,7 @@ class PretalxAdminEmailHandler(AdminEmailHandler):
 
     def format_subject(self, subject):
         subject = super().format_subject(subject)
-        if subject.startswith(settings.EMAIL_SUBJECT_PREFIX):
-            subject = subject[len(settings.EMAIL_SUBJECT_PREFIX) :]
+        subject = subject.removeprefix(settings.EMAIL_SUBJECT_PREFIX)
         return subject
 
     def emit(self, record):  # pragma: no cover

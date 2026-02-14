@@ -31,13 +31,13 @@ class PretalxViewSetMixin:
         try:
             return get_api_version_from_request(self.request)
         except Exception:
-            raise ApiVersionException()
+            raise ApiVersionException from None
 
     def get_versioned_serializer(self, name):
         try:
             return get_serializer_by_version(name, self.api_version)
         except KeyError:
-            raise ApiVersionException()
+            raise ApiVersionException from None
 
     def get_serializer_class(self):
         if hasattr(self, "get_unversioned_serializer_class"):
@@ -90,7 +90,6 @@ class PretalxViewSetMixin:
 
 
 class ActivityLogMixin:
-
     @extend_schema(
         summary="Object changelog",
         description="Changelog entries related to this object.",

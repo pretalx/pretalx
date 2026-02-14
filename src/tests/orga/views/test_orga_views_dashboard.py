@@ -8,6 +8,8 @@ from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scope
 
+from pretalx.common.models.log import ActivityLog
+
 
 @pytest.mark.parametrize("test_user", ("orga", "speaker", "superuser", "None"))
 @pytest.mark.parametrize("query", ("", "?q=e"))
@@ -49,8 +51,6 @@ def test_dashboard_event_list(
 def test_event_dashboard(
     orga_user, orga_client, review_user, speaker, event, test_user, slot, query
 ):
-    from pretalx.common.models.log import ActivityLog
-
     ActivityLog.objects.create(
         event=event,
         person=speaker,
@@ -143,7 +143,7 @@ def test_event_dashboard_with_accepted(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "start_diff,end_diff",
+    ("start_diff", "end_diff"),
     (
         (0, 0),
         (-3, -3),

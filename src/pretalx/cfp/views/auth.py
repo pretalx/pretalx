@@ -44,7 +44,7 @@ class LoginView(GenericLoginView):
 
     def dispatch(self, request, *args, **kwargs):
         if not request.event.is_public:
-            raise Http404()
+            raise Http404
         return super().dispatch(request, *args, **kwargs)
 
     def get_error_url(self):
@@ -114,7 +114,7 @@ class EventAuth(View):
         try:
             data = store.load()
         except Exception:
-            raise PermissionDenied(phrases.base.back_try_again)
+            raise PermissionDenied(phrases.base.back_try_again) from None
 
         key = f"pretalx_event_access_{request.event.pk}"
         parent = data.get(key)
@@ -123,7 +123,7 @@ class EventAuth(View):
         try:
             parentdata = sparent.load()
         except Exception:
-            raise PermissionDenied(phrases.base.back_try_again)
+            raise PermissionDenied(phrases.base.back_try_again) from None
         else:
             if "event_access" not in parentdata:
                 raise PermissionDenied(phrases.base.back_try_again)

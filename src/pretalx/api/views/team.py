@@ -81,7 +81,7 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
                 super().perform_update(serializer)
                 check_access_permissions(self.request.organiser)
         except Exception as e:
-            raise exceptions.ValidationError(str(e))
+            raise exceptions.ValidationError(str(e)) from None
 
     def perform_destroy(self, instance):
         try:
@@ -91,7 +91,7 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
                 super().perform_destroy(instance)
                 check_access_permissions(organiser)
         except Exception as e:
-            raise exceptions.ValidationError(str(e))
+            raise exceptions.ValidationError(str(e)) from None
 
     @extend_schema(
         summary="Invite Member to Team",
@@ -165,7 +165,9 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
         try:
             user_to_remove = User.objects.get(code=user_code)
         except User.DoesNotExist:
-            raise exceptions.ValidationError("User with the specified code not found.")
+            raise exceptions.ValidationError(
+                "User with the specified code not found."
+            ) from None
 
         if not team.members.filter(pk=user_to_remove.pk).exists():
             raise exceptions.ValidationError("This user is not a member of this team.")
@@ -185,6 +187,6 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
                     },
                 )
         except Exception as e:
-            raise exceptions.ValidationError(str(e))
+            raise exceptions.ValidationError(str(e)) from None
 
         return Response(status=status.HTTP_204_NO_CONTENT)

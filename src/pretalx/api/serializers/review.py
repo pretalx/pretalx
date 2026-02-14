@@ -145,4 +145,4 @@ class ReviewSerializer(ReviewWriteSerializer):
     answers = AnswerSerializer(read_only=True, many=True)
 
     class Meta(ReviewWriteSerializer.Meta):
-        fields = ReviewWriteSerializer.Meta.fields + ["user"]
+        fields = [*ReviewWriteSerializer.Meta.fields, "user"]

@@ -64,7 +64,7 @@ class MultiDomainMiddleware:
             except (Event.DoesNotExist, ValueError):
                 # A ValueError can happen if the event slug contains malicious input
                 # like NUL bytes. We return a 404 here to avoid leaking information.
-                raise Http404()
+                raise Http404 from None
             request.event = event
             if event.custom_domain:
                 custom_domain = urlparse(event.custom_domain)
@@ -82,7 +82,7 @@ class MultiDomainMiddleware:
             # to the proper domain would leak information, so we will show a 404
             # instead.
             if not request.path.startswith("/orga"):
-                raise Http404()
+                raise Http404
 
         if domain == default_domain:
             return None

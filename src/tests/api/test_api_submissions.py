@@ -166,8 +166,15 @@ def test_orga_can_see_all_submissions(
     assert response.status_code == 200, content
     assert content["count"] == 4
     assert content["results"][0]["title"] == slot.submission.title
-    assert len(
-        [submission for submission in content["results"] if submission["answers"] == []]
+    assert (
+        len(
+            [
+                submission
+                for submission in content["results"]
+                if submission["answers"] == []
+            ]
+        )
+        > 0
     )
 
 
@@ -202,7 +209,7 @@ def test_orga_can_filter_by_track(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "is_visible_to_reviewers,is_reviewer,length",
+    ("is_visible_to_reviewers", "is_reviewer", "length"),
     (
         (True, True, 1),
         (False, True, 0),
@@ -1664,7 +1671,7 @@ def test_orga_can_see_submission_log(
 
     assert response.status_code == 200, content
     assert "results" in content or isinstance(content, list)
-    results = content["results"] if "results" in content else content
+    results = content.get("results", content)
     assert len(results) >= 2
     log_entry = results[0]
     assert "id" in log_entry

@@ -12,7 +12,14 @@ from pretalx.event.stages import STAGE_ORDER, in_stage
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "target,is_public,from_delta,to_delta,deadline_delta,has_submissions",
+    (
+        "target",
+        "is_public",
+        "from_delta",
+        "to_delta",
+        "deadline_delta",
+        "has_submissions",
+    ),
     (
         ("PREPARATION", False, 2, 3, 1, False),
         ("PREPARATION", False, 2, 3, 1, True),
@@ -51,8 +58,8 @@ def test_event_stages(
             submission.state = "DELETED"
             submission.save()
         for stage in STAGE_ORDER:
-            assert in_stage(event, stage) == (
-                stage == target
-            ), f'Event is{" not" if stage == target else ""} {stage} when it should be {target}!'
+            assert in_stage(event, stage) == (stage == target), (
+                f"Event is{' not' if stage == target else ''} {stage} when it should be {target}!"
+            )
             if stage == target and target != "WRAPUP":
                 break

@@ -37,7 +37,7 @@ class SlotType(models.TextChoices):
 
 class TalkSlotQuerySet(models.QuerySet):
     def with_sorted_speakers(self):
-        from pretalx.submission.models.submission import sorted_speakers_prefetch
+        from pretalx.submission.models.submission import sorted_speakers_prefetch  # noqa: PLC0415
 
         return self.prefetch_related(sorted_speakers_prefetch("submission__"))
 
@@ -119,7 +119,7 @@ class TalkSlot(PretalxModel):
 
     def __str__(self):
         """Help when debugging."""
-        return f'TalkSlot(event={self.schedule.event.slug}, submission={getattr(self.submission, "title", None)}, schedule={self.schedule.version})'
+        return f"TalkSlot(event={self.schedule.event.slug}, submission={getattr(self.submission, 'title', None)}, schedule={self.schedule.version})"
 
     @cached_property
     def event(self):
@@ -172,7 +172,7 @@ class TalkSlot(PretalxModel):
         :class:`~pretalx.schedule.models.availability.Availability`, useful for
         availability arithmetic.
         """
-        from pretalx.schedule.models import Availability
+        from pretalx.schedule.models import Availability  # noqa: PLC0415
 
         return Availability(
             start=self.start,
@@ -230,9 +230,9 @@ class TalkSlot(PretalxModel):
     def uuid(self):
         """A UUID5, calculated from the submission code and the instance
         identifier."""
-        global INSTANCE_IDENTIFIER
+        global INSTANCE_IDENTIFIER  # noqa: PLW0603
         if not INSTANCE_IDENTIFIER:
-            from pretalx.common.models.settings import GlobalSettings
+            from pretalx.common.models.settings import GlobalSettings  # noqa: PLC0415
 
             INSTANCE_IDENTIFIER = GlobalSettings().get_instance_identifier()
         return uuid.uuid5(INSTANCE_IDENTIFIER, self.submission.code + self.id_suffix)
@@ -245,14 +245,16 @@ class TalkSlot(PretalxModel):
 
         with patch_out_timezone_cache(self.event.tz):
             vevent = calendar.add("vevent")
-            vevent.add("summary").value = (
+            vevent.add(
+                "summary"
+            ).value = (
                 f"{self.submission.title} - {self.submission.display_speaker_names}"
             )
             vevent.add("dtstamp").value = creation_time
             vevent.add("location").value = str(self.room.name)
-            vevent.add("uid").value = "pretalx-{}-{}{}@{}".format(
-                self.submission.event.slug, self.submission.code, self.id_suffix, netloc
-            )
+            vevent.add(
+                "uid"
+            ).value = f"pretalx-{self.submission.event.slug}-{self.submission.code}{self.id_suffix}@{netloc}"
 
             vevent.add("dtstart").value = self.local_start
             vevent.add("dtend").value = self.local_end

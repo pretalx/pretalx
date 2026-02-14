@@ -9,7 +9,6 @@ import pretalx.person.models.user
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("person", "0027_created_updated_everywhere"),
     ]

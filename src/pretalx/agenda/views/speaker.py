@@ -134,7 +134,7 @@ class SpeakerRedirect(DetailView):
             "person.view_speakerprofile", profile
         ):
             return redirect(profile.urls.public.full())
-        raise Http404()
+        raise Http404
 
 
 class SpeakerTalksIcalView(PermissionRequired, DetailView):
@@ -149,7 +149,7 @@ class SpeakerTalksIcalView(PermissionRequired, DetailView):
 
     def get(self, request, event, *args, **kwargs):
         if not self.request.event.current_schedule:
-            raise Http404()
+            raise Http404
         speaker = self.get_object()
         slots = self.request.event.current_schedule.talks.filter(
             submission__speakers=speaker.user, is_visible=True

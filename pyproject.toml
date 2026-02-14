@@ -67,17 +67,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "black",
   "build",
   "check-manifest",
   "coverage",
   "django-watchfiles",
   "djhtml",
-  "flake8",
-  "flake8-bugbear",
-  "flake8-pyproject",
   "freezegun",
-  "isort",
   "jsonschema",
   "polib",
   "pytest",
@@ -87,6 +82,7 @@ dev = [
   "pytest-sugar",
   "pytest-xdist",
   "responses",
+  "ruff",
   "twine",
   "urllib3",
 ]
@@ -179,46 +175,57 @@ exclude_also = [
   "NotImplementedError",
 ]
 
-[tool.isort]
-profile = "black"
-known_first_party = "pretalx"
-skip = [
-  "celery_app.py",
-  "local",
-  "migrations",
-  "settings.py",
-  "test_settings.py",
-  "wsgi.py",
-]
-
-[tool.flake8]
-max-line-length = 160
-exclude = [
-  "*settings.py",
-  ".venv",
-  "build",
-  "doc",
-  "local",
-  "migrations",
-  "static",
-]
-ignore-names = [
-  "allDay",
-  "get_allDay",
-  "urls",
-  "orga_urls",
-  "api_urls",
-  "SendMailException",
-  "extendMarkdown",
-  "setUp",
-  "setUpTestData",
+[tool.ruff.lint]
+extend-select = [
+  "A",  # flake8-builtins
+  "B",  # flake8-bugbear
+  "C4",  # Use comprehensions rather than generators
+  "E",  # pycodestyle errors
+  "ERA",  # Drop commented-out code
+  "F",  # pyflakes
+  "FURB",  # Refactoring
+  "G",  # logging: formatting
+  "INT",  # gettext
+  "LOG",  # logging: logger
+  "N",  # PEP8-naming
+  "PERF",  # Performance issues
+  "PGH",  # no blanket noqa
+  "PIE",  # Mixed checks
+  "PL",  # pylint
+  "PLC0415",  # pylint: top-level imports
+  "PT",  # pytest
+  "PTH",  # use pathlib
+  "RSE",  # raising exceptions
+  "RUF",  # Ruff
+  "SIM",  # Possible simplifications
+  "T10",  # Catch debugger statements
+  "T20",  # Catch print statements
+  "TID",  # Tidy imports
+  "UP",  # pyupgrade
+  "W",  # pycodestyle warnings
 ]
 ignore = [
-  "E203",  # Whitespace before ‘,’, ‘;’, or ‘:’
-  "E231",  # Missing whitespace after ‘,’, ‘;’, or ‘:’
-  "E266",  # Too many leading ‘#’ for block comment
   "E501",  # Line too long
-  "W503",  # Line break before binary operator
-  "W605",  # Invalid escape sequence
-  "B028",  # No explicit stacklevel argument found
+  "PLR",  # Refactoring: Too many branches, arguments, statements, etc
+  "RUF001",  # ambiguous characters
+  "RUF002",  # ambiguous characters
+  "RUF003",  # ambiguous characters
+  "RUF012",  # Mutable default in class attribute is just how django rolls
+  "RUF100",  # Unused noqa; problematic when run in isolation
+]
+
+[tool.ruff.lint.flake8-pytest-style]
+parametrize-values-type = "tuple"
+
+[tool.ruff.lint.pep8-naming]
+extend-ignore-names = [
+  "allDay",
+  "api_urls",
+  "EventSettings",
+  "extendMarkdown",
+  "get_allDay",
+  "orga_urls",
+  "SendMailException",
+  "setUpTestData",
+  "urls",
 ]

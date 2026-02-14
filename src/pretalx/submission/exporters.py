@@ -35,16 +35,16 @@ class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
             .order_by("person__name")
         )
         qs = filter_answers_by_team_access(qs, request.user)
-        for answer in qs:
-            data.append(
-                {
-                    "code": answer.person.code,
-                    "name": answer.person.name,
-                    "email": answer.person.email,
-                    "question": answer.question.question,
-                    "answer": answer.answer_string,
-                }
-            )
+        data = [
+            {
+                "code": answer.person.code,
+                "name": answer.person.name,
+                "email": answer.person.email,
+                "question": answer.question.question,
+                "answer": answer.answer_string,
+            }
+            for answer in qs
+        ]
         return field_names, data
 
 
@@ -72,15 +72,15 @@ class SubmissionQuestionData(CSVExporterMixin, BaseExporter):
             question__active=True,
         ).order_by("submission__title")
         qs = filter_answers_by_team_access(qs, request.user)
-        for answer in qs:
-            data.append(
-                {
-                    "code": answer.submission.code,
-                    "title": answer.submission.title,
-                    "question": answer.question.question,
-                    "answer": answer.answer_string,
-                }
-            )
+        data = [
+            {
+                "code": answer.submission.code,
+                "title": answer.submission.title,
+                "question": answer.question.question,
+                "answer": answer.answer_string,
+            }
+            for answer in qs
+        ]
         return field_names, data
 
 

@@ -155,12 +155,12 @@ def test_cannot_reset_password_without_account(speaker, client, event):
 
 
 @pytest.mark.parametrize(
-    "remote_addr,x_forwarded_for,expected",
-    [
+    ("remote_addr", "x_forwarded_for", "expected"),
+    (
         ("192.168.1.1", None, "192.168.1.1"),
         ("127.0.0.1", "203.0.113.1, 10.0.0.1", "203.0.113.1"),
         ("127.0.0.1", "  8.8.8.8  ", "8.8.8.8"),
-    ],
+    ),
 )
 def test_get_client_ip(rf, remote_addr, x_forwarded_for, expected):
     request = rf.get("/")

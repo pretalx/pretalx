@@ -9,7 +9,7 @@ from pretalx.orga.templatetags.review_score import _review_score_number, review_
 
 
 @pytest.mark.parametrize(
-    "score,expected",
+    ("score", "expected"),
     (
         (3, "3"),
         (0, "0"),
@@ -18,7 +18,7 @@ from pretalx.orga.templatetags.review_score import _review_score_number, review_
         (None, "×"),
     ),
 )
-@pytest.mark.django_db()
+@pytest.mark.django_db
 def test_templatetag_review_score(score, expected, event):
     with scope(event=event):
         assert _review_score_number(event, score) == expected
@@ -33,7 +33,7 @@ def test_template_tag_review_score_numeric(review):
 
 
 @pytest.mark.parametrize(
-    "url,target,result",
+    ("url", "target", "result"),
     (
         (
             "https://foo.bar",

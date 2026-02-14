@@ -26,10 +26,8 @@ def get_settings_dict(settings, keys, mapping):
 def update_custom_domain(apps, schema_editor):
     Event = apps.get_model("event", "Event")
     EventSettings = apps.get_model("event", "Event_SettingsStore")
-    # CfP = apps.get_model("submission", "CfP")
     for event in Event.objects.all():
         settings = {s.key: s.value for s in EventSettings.objects.filter(object=event)}
-        # cfp = CfP.objects.filter(event=event).first()
         event.feature_flags.update(
             get_settings_dict(
                 settings,

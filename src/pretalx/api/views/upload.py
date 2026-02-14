@@ -75,7 +75,7 @@ class UploadView(APIView):
             try:
                 validate_image(file_obj)
             except DjangoValidationError as e:
-                raise ValidationError(e.message)
+                raise ValidationError(e.message) from None
 
         cf = CachedFile.objects.create(
             expires=now() + datetime.timedelta(days=1),

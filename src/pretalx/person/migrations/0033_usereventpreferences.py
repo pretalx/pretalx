@@ -8,7 +8,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("event", "0040_alter_event_settingsstore_unique_together"),
         ("person", "0032_speakerprofile_internal_notes"),

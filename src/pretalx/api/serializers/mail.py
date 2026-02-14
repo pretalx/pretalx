@@ -38,7 +38,7 @@ class MailTemplateSerializer(PretalxSerializer):
                 "Invalid email template! "
                 "Please check that you don’t have stray { or } somewhere, "
                 "and that there are no spaces inside the {} blocks."
-            )
+            ) from None
         if fields:
             fields = ", ".join("{" + field + "}" for field in fields)
             raise exceptions.ValidationError(f"Unknown placeholder! {fields}")

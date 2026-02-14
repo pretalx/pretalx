@@ -3,6 +3,7 @@
 
 import datetime as dt
 import json
+from pathlib import Path
 
 import pytest
 from django.conf import settings
@@ -111,7 +112,7 @@ def test_test_mail_settings(orga_client, event, availability):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "path,allowed",
+    ("path", "allowed"),
     (
         ("src/tests/fixtures/custom.css", True),
         ("src/tests/fixtures/malicious.css", False),
@@ -120,7 +121,7 @@ def test_test_mail_settings(orga_client, event, availability):
 )
 def test_add_custom_css(event, orga_client, path, allowed):
     assert not event.custom_css
-    with open(path) as custom_css:
+    with Path(path).open() as custom_css:
         data = get_settings_form_data(event)
         data["custom_css"] = custom_css
         response = orga_client.post(event.orga_urls.edit_settings, data, follow=True)
@@ -131,7 +132,7 @@ def test_add_custom_css(event, orga_client, path, allowed):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "path,allowed",
+    ("path", "allowed"),
     (
         ("src/tests/fixtures/custom.css", True),
         ("src/tests/fixtures/malicious.css", False),
@@ -140,7 +141,7 @@ def test_add_custom_css(event, orga_client, path, allowed):
 )
 def test_add_custom_css_as_text(event, orga_client, path, allowed):
     assert not event.custom_css
-    with open(path) as custom_css:
+    with Path(path).open() as custom_css:
         data = get_settings_form_data(event)
         data["custom_css_text"] = custom_css.read()
         data["slug"] = "csstest"
@@ -161,7 +162,7 @@ def test_add_custom_css_as_text(event, orga_client, path, allowed):
 )
 def test_add_custom_css_as_administrator(event, administrator_client, path):
     assert not event.custom_css
-    with open(path) as custom_css:
+    with Path(path).open() as custom_css:
         data = get_settings_form_data(event)
         data["custom_css"] = custom_css
         data["slug"] = "csstest"
@@ -175,7 +176,7 @@ def test_add_custom_css_as_administrator(event, administrator_client, path):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "domain,result",
+    ("domain", "result"),
     (
         ("example.org", "https://example.org"),
         ("http://example.org", "https://example.org"),
@@ -184,9 +185,9 @@ def test_add_custom_css_as_administrator(event, administrator_client, path):
     ),
 )
 def test_change_custom_domain(event, orga_client, monkeypatch, domain, result):
-    from pretalx.orga.forms.event import socket
+    from pretalx.orga.forms.event import socket  # noqa: PLC0415
 
-    yessocket = lambda x: True  # noqa
+    yessocket = lambda x: True  # noqa: E731
     monkeypatch.setattr(socket, "gethostbyname", yessocket)
     domain = domain or settings.SITE_URL
     assert not event.custom_domain
@@ -202,7 +203,7 @@ def test_change_custom_domain(event, orga_client, monkeypatch, domain, result):
 def test_change_custom_domain_to_unavailable_domain(
     event, orga_client, other_event, monkeypatch
 ):
-    from pretalx.orga.forms.event import socket
+    from pretalx.orga.forms.event import socket  # noqa: PLC0415
 
     def nosocket(param):
         raise OSError

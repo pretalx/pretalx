@@ -209,7 +209,9 @@ class SubmissionsWithdrawView(LoggedInEventPageMixin, SubmissionViewMixin, Detai
             if obj.state == SubmissionStates.ACCEPTED:
                 with override(obj.event.locale):
                     obj.event.send_orga_mail(
-                        str(_(textwrap.dedent("""
+                        str(
+                            _(
+                                textwrap.dedent("""
                         Hi,
 
                         this is your content system at {event_dashboard}.
@@ -218,7 +220,9 @@ class SubmissionsWithdrawView(LoggedInEventPageMixin, SubmissionViewMixin, Detai
 
                         Best regards,
                         pretalx
-                        """))).format(
+                        """)
+                            )
+                        ).format(
                             title=obj.title,
                             speakers=obj.display_speaker_names,
                             user=request.user.get_display_name(),
@@ -272,9 +276,9 @@ class SubmissionConfirmView(LoggedInEventPageMixin, SubmissionViewMixin, FormVie
         if not self.request.event.cfp.request_availabilities:
             form.fields.pop("availabilities")
         else:
-            form.fields["availabilities"].required = (
-                self.request.event.cfp.require_availabilities
-            )
+            form.fields[
+                "availabilities"
+            ].required = self.request.event.cfp.require_availabilities
         return form
 
     def get_context_data(self, **kwargs):
@@ -319,7 +323,7 @@ class SubmissionDraftDiscardView(
     def get_object(self):
         submission = super().get_object()
         if submission.state != SubmissionStates.DRAFT:
-            raise Http404()
+            raise Http404
         return submission
 
     def get_context_data(self, **kwargs):

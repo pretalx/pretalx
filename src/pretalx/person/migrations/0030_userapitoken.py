@@ -13,7 +13,6 @@ import pretalx.person.models.auth_token
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("event", "0039_alter_teaminvite_token"),
         ("person", "0029_alter_user_avatar_thumbnail_and_more"),

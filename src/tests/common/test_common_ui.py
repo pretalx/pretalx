@@ -7,7 +7,7 @@ from pretalx.common.ui import has_good_contrast
 
 
 @pytest.mark.parametrize(
-    "color,expected",
+    ("color", "expected"),
     (
         # Dark colors - should have good contrast with white text
         ("#000000", True),  # Black - 21:1 contrast
@@ -36,7 +36,7 @@ def test_has_good_contrast(color, expected):
 
 
 @pytest.mark.parametrize(
-    "color,threshold,expected",
+    ("color", "threshold", "expected"),
     (
         ("#767676", 4.5, True),  # Passes at 4.5
         ("#767676", 4.6, False),  # Fails at higher threshold

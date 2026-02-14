@@ -168,14 +168,11 @@ class TalkView(TalkMixin, TemplateView):
     @context
     @cached_property
     def icon_answers(self):
-        all_answers = self.submission.public_answers
-        icon_answers = []
-
-        for answer in all_answers:
-            if answer.question.show_icon:
-                icon_answers.append(answer)
-
-        return icon_answers
+        return [
+            answer
+            for answer in self.submission.public_answers
+            if answer.question.show_icon
+        ]
 
 
 class TalkReviewView(TalkView):

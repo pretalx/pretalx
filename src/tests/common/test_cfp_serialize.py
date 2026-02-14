@@ -7,7 +7,7 @@ from pretalx.common.text.serialize import serialize_duration
 
 
 @pytest.mark.parametrize(
-    "minutes,result",
+    ("minutes", "result"),
     (
         (1, "00:01"),
         (0, "00:00"),

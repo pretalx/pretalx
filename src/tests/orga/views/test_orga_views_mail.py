@@ -6,6 +6,7 @@ from django.core import mail as djmail
 from django_scopes import scope
 
 from pretalx.mail.models import MailTemplate, MailTemplateRoles, QueuedMail
+from pretalx.submission.models import Submission, SubmissionStates
 
 
 @pytest.mark.django_db
@@ -407,7 +408,7 @@ def test_orga_can_compose_single_mail_team_by_pk(
         assert QueuedMail.objects.filter(sent__isnull=False).count() == 0
         assert len(djmail.outbox) == 2
         for user in (orga_user, review_user):
-            mail = [m for m in djmail.outbox if m.subject == f"foo {user.name}"][0]
+            mail = next(m for m in djmail.outbox if m.subject == f"foo {user.name}")
             assert mail.body == f"bar {user.email}"
 
 
@@ -439,7 +440,7 @@ def test_orga_can_compose_single_mail(
     with scope(event=event):
         mails = QueuedMail.objects.filter(sent__isnull=True)
         assert mails.count() == 2  # one of them is the accept mail!
-        mail = [m for m in mails if m.subject == f"foo {speaker.name}"][0]
+        mail = next(m for m in mails if m.subject == f"foo {speaker.name}")
         assert mail.text == f"bar {submission.title}"
 
 
@@ -496,7 +497,7 @@ def test_orga_can_compose_single_mail_with_specific_submission(
         mails = QueuedMail.objects.filter(sent__isnull=True)
         assert mails.count() == 2
         for title in (slot.submission.title, other_submission.title):
-            mail = [m for m in mails if m.text == f"bar {title}"][0]
+            mail = next(m for m in mails if m.text == f"bar {title}")
             assert mail
 
 
@@ -527,7 +528,7 @@ def test_orga_can_compose_single_mail_with_specific_submission_immediately(
         assert QueuedMail.objects.filter(sent__isnull=False).count() == 2
         assert len(djmail.outbox) == 2
         for title in (slot.submission.title, other_submission.title):
-            mail = [m for m in djmail.outbox if m.body == f"bar {title}"][0]
+            mail = next(m for m in djmail.outbox if m.body == f"bar {title}")
             assert mail
 
 
@@ -727,8 +728,6 @@ def test_orga_can_compose_single_mail_from_wrong_template(
 
 @pytest.mark.django_db
 def test_orga_can_send_draft_reminder(orga_client, event, speaker):
-    from pretalx.submission.models import Submission, SubmissionStates
-
     with scope(event=event):
         draft = Submission.objects.create(
             title="Draft Proposal",

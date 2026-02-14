@@ -12,7 +12,7 @@ from pretalx.schedule.models import TalkSlot
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "start,end,duration,has_submission",
+    ("start", "end", "duration", "has_submission"),
     (
         (None, None, "sub", True),
         (0, None, "sub", True),

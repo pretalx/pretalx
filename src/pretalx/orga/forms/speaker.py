@@ -60,7 +60,8 @@ class SpeakerExportForm(ExportForm):
 
     @cached_property
     def export_field_names(self):
-        return self.Meta.model_fields + [
+        return [
+            *self.Meta.model_fields,
             "biography",
             "avatar",
             "submission_ids",

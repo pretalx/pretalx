@@ -217,7 +217,7 @@ def test_fields_required_on_create(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "is_detail, method",
+    ("is_detail", "method"),
     (
         (False, "post"),
         (True, "put"),

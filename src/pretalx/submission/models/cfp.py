@@ -81,7 +81,7 @@ def field_helper(cls):
             self.fields.get(field, default_fields()[field])["visibility"] == "required"
         )
 
-    for field in default_fields().keys():
+    for field in default_fields():
         setattr(
             cls, f"request_{field}", property(partial(is_field_requested, field=field))
         )

@@ -29,7 +29,6 @@ def unset_roles(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("event", "0036_alter_event_header_image_alter_event_logo"),
         ("mail", "0012_queuedmail_submissions"),

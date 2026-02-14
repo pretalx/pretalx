@@ -14,6 +14,7 @@ from django.core.management.base import CommandError
 from django.test import override_settings
 from django.urls import reverse
 from django_scopes import scope
+from jsonschema import validate
 from lxml import etree
 
 from pretalx.agenda.tasks import export_schedule_html
@@ -164,10 +165,7 @@ def test_schedule_frab_json_export(
 
     assert regular_content == orga_content
 
-    from jsonschema import validate
-
     validate(instance=regular_content, schema=schedule_schema_json)
-    # validate(instance=orga_content, schema=schedule_schema_json)
 
 
 @pytest.mark.django_db
@@ -233,7 +231,7 @@ def test_schedule_export_nonpublic(exporter, slot, client, django_assert_num_que
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "exporter,queries",
+    ("exporter", "queries"),
     (
         ("schedule.xml", 13),
         ("schedule.json", 15),
@@ -290,9 +288,9 @@ def test_feed_view_with_control_characters(slot, client, schedule):
 
 @pytest.mark.django_db
 def test_html_export_event_required():
-    from django.core.management import (  # Import here to avoid overriding mocks
+    from django.core.management import (  # noqa: PLC0415
         call_command,
-    )
+    )  # Import here to avoid overriding mocks
 
     with pytest.raises(CommandError) as excinfo:
         call_command("export_schedule_html")
@@ -302,9 +300,9 @@ def test_html_export_event_required():
 
 @pytest.mark.django_db
 def test_html_export_event_unknown(event):
-    from django.core.management import (  # Import here to avoid overriding mocks
+    from django.core.management import (  # noqa: PLC0415
         call_command,
-    )
+    )  # Import here to avoid overriding mocks
 
     with pytest.raises(CommandError) as excinfo:
         call_command("export_schedule_html", "foobar222")
@@ -317,7 +315,7 @@ def test_html_export_event_unknown(event):
 @pytest.mark.usefixtures("slot")
 def test_html_export_language(event):
     # Import here to avoid overriding mocks
-    from django.core.management import call_command
+    from django.core.management import call_command  # noqa: PLC0415
 
     event.locale = "de"
     event.locale_array = "de,en"
@@ -335,9 +333,9 @@ def test_html_export_language(event):
 @pytest.mark.usefixtures("slot")
 def test_schedule_export_schedule_html_task(mocker, event):
     mocker.patch("django.core.management.call_command")
-    from django.core.management import (  # Import here to avoid overriding mocks
+    from django.core.management import (  # noqa: PLC0415
         call_command,
-    )
+    )  # Import here to avoid overriding mocks
 
     cached_file = CachedFile.objects.create(
         expires="2099-01-01T00:00:00Z",
@@ -381,7 +379,7 @@ def test_schedule_orga_trigger_export_clears_cached_file(orga_client, event):
     assert not CachedFile.objects.filter(pk=cached_file.pk).exists()
 
 
-@pytest.mark.parametrize("zip", (True, False))
+@pytest.mark.parametrize("use_zip", (True, False))
 @pytest.mark.django_db
 def test_html_export_full(
     event,
@@ -390,11 +388,11 @@ def test_html_export_full(
     confirmed_resource,
     canceled_talk,
     orga_client,
-    zip,
+    use_zip,
 ):
-    from django.core.management import (  # Import here to avoid overriding mocks
+    from django.core.management import (  # noqa: PLC0415
         call_command,
-    )
+    )  # Import here to avoid overriding mocks
 
     event.primary_color = "#111111"
     event.is_public = False
@@ -420,11 +418,11 @@ def test_html_export_full(
     call_command("rebuild")
     event = Event.objects.get(slug=event.slug)
     args = ["export_schedule_html", event.slug]
-    if zip:
+    if use_zip:
         args.append("--zip")
     call_command(*args)
 
-    if zip:
+    if use_zip:
         full_path = settings.HTMLEXPORT_ROOT / "test.zip"
         assert full_path.exists()
         return
@@ -452,9 +450,9 @@ def test_html_export_full(
         assert full_path.exists()
 
     for path in (settings.HTMLEXPORT_ROOT / "test/media/").glob("*"):
-        path = str(path)
-        assert event.slug in path
-        assert other_event.slug not in path
+        path_str = str(path)
+        assert event.slug in path_str
+        assert other_event.slug not in path_str
 
     # views and templates are the same for export and online viewing, so a naive test is enough here
     html_path = (

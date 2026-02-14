@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("person", "0028_user_avatar_thumbnail_user_avatar_thumbnail_tiny"),
     ]

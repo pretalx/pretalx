@@ -116,10 +116,7 @@ class RequestRequire:
     def get_help_text(text, min_length, max_length, count_in="chars"):
         if not min_length and not max_length:
             return text
-        if text:
-            text = str(text) + " "
-        else:
-            text = ""
+        text = str(text) + " " if text else ""
         texts = {
             "minmaxwords": _(
                 "Please write between {min_length} and {max_length} words."
@@ -160,10 +157,7 @@ class RequestRequire:
     def get_tag_help_text(text, min_number, max_number):
         if not min_number and not max_number:
             return text
-        if text:
-            text = str(text) + " "
-        else:
-            text = ""
+        text = str(text) + " " if text else ""
         if min_number and max_number:
             if min_number == max_number:
                 message = _("Please select exactly {count} tags.").format(
@@ -196,8 +190,8 @@ class QuestionFieldsMixin:
         css = {"all": ["common/css/forms/character-limit.css"]}
 
     def get_field(self, *, question, initial, initial_object, readonly):
-        from pretalx.common.templatetags.rich_text import rich_text
-        from pretalx.submission.models import QuestionVariant
+        from pretalx.common.templatetags.rich_text import rich_text  # noqa: PLC0415
+        from pretalx.submission.models import QuestionVariant  # noqa: PLC0415
 
         read_only = readonly or question.read_only
         original_help_text = question.help_text
@@ -446,7 +440,7 @@ class QuestionFieldsMixin:
 
     def save_questions(self, key, value):
         """Receives a key and value from cleaned_data."""
-        from pretalx.submission.models import Answer, QuestionTarget
+        from pretalx.submission.models import Answer, QuestionTarget  # noqa: PLC0415
 
         field = self.fields[key]
         if field.answer:
@@ -594,12 +588,11 @@ class HierarkeyMixin:
 
     def get_new_filename(self, name: str) -> str:
         nonce = get_random_string(length=8)
-        suffix = name.split(".")[-1]
+        suffix = name.rsplit(".", maxsplit=1)[-1]
         return f"{self.obj._meta.model_name}-{self.attribute_name}/{self.obj.pk}/{name}.{nonce}.{suffix}"
 
 
 class PretalxI18nFormMixin(I18nFormMixin):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():

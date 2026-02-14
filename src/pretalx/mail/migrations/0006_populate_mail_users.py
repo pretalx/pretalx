@@ -14,8 +14,8 @@ def populate_to_users(apps, schema_editor):
     }
     for mail in QueuedMail.objects.all():
         addresses = []
-        for address in (mail.to or "").split(","):
-            address = address.lower().strip()
+        for raw_address in (mail.to or "").split(","):
+            address = raw_address.lower().strip()
             if address:
                 addresses.append(address)
         for address in addresses:

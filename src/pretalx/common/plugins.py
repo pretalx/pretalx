@@ -40,7 +40,7 @@ def get_all_plugins(event=None):
                 continue
 
             plugins.append(meta)
-    return sorted(plugins, key=lambda module: plugin_sort_key(module))
+    return sorted(plugins, key=plugin_sort_key)
 
 
 def plugin_group_key(plugin):

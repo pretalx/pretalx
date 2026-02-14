@@ -61,7 +61,7 @@ class ActivityLog(models.Model):
 
     @cached_property
     def display(self) -> str:
-        from pretalx.common.signals import activitylog_display
+        from pretalx.common.signals import activitylog_display  # noqa: PLC0415
 
         for _receiver, response in activitylog_display.send(
             self.event, activitylog=self
@@ -70,13 +70,13 @@ class ActivityLog(models.Model):
                 return response
 
         logger = logging.getLogger(__name__)
-        logger.warning(f'Unknown log action "{self.action_type}".')
+        logger.warning('Unknown log action "%s".', self.action_type)
         return self.action_type
 
     @cached_property
     def display_object(self) -> str:
         """Returns a link (formatted HTML) to the object in question."""
-        from pretalx.common.signals import activitylog_object_link
+        from pretalx.common.signals import activitylog_object_link  # noqa: PLC0415
 
         try:
             if not self.content_object:
@@ -96,8 +96,8 @@ class ActivityLog(models.Model):
     def changes(self):
         if not self.data or not self.event or not self.data.get("changes"):
             return
-        object = self.content_object
-        if not object:
+        obj = self.content_object
+        if not obj:
             return
         result = {}
         for key, value in self.data["changes"].items():
@@ -112,7 +112,7 @@ class ActivityLog(models.Model):
                     display["label"] = question.question
             else:
                 try:
-                    if field := object.__class__._meta.get_field(key):
+                    if field := obj.__class__._meta.get_field(key):
                         display["field"] = field
                         if isinstance(field, (ManyToOneRel, ManyToManyRel)):
                             display["label"] = (

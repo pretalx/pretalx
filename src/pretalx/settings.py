@@ -356,7 +356,7 @@ try:
     import json
 
     translation_percentages_path = LOCALE_PATHS[0] / "translation_percentages.json"
-    with open(translation_percentages_path) as f:
+    with translation_percentages_path.open() as f:
         translation_percentages = json.load(f)
 except (FileNotFoundError, json.JSONDecodeError):
     translation_percentages = {}
@@ -615,13 +615,13 @@ VITE_IGNORE = False  # Used to ignore `collectstatic`/`rebuild`
 
 ## EXTERNAL APP SETTINGS
 with suppress(ImportError):
-    import django_extensions  # noqa
+    import django_extensions  # noqa: F401
 
     INSTALLED_APPS.append("django_extensions")
 
 if DEBUG:
     with suppress(ImportError):
-        from debug_toolbar import settings as toolbar_settings  # noqa
+        from debug_toolbar import settings as toolbar_settings  # noqa: F401
 
         INTERNAL_IPS = ["127.0.0.1", "0.0.0.0", "::1"]
         INSTALLED_APPS.append("debug_toolbar")
@@ -689,7 +689,7 @@ REST_FLEX_FIELDS = {
 LOAD_SPECTACULAR = False
 if "spectacular" in sys.argv:
     with suppress(ImportError):
-        import drf_spectacular  # noqa
+        import drf_spectacular  # noqa: F401
 
         INSTALLED_APPS.append("drf_spectacular")
         REST_FRAMEWORK["DEFAULT_SCHEMA_CLASS"] = "drf_spectacular.openapi.AutoSchema"
@@ -703,7 +703,7 @@ if DEBUG:
         import subprocess
 
         PRETALX_VERSION = (
-            subprocess.check_output(["/usr/bin/git", "describe", "--always", "--tags"])
+            subprocess.check_output(["git", "describe", "--always", "--tags"])
             .decode()
             .strip()
         )
@@ -717,7 +717,7 @@ SILENCED_SYSTEM_CHECKS = [
 ]
 
 with suppress(ImportError):
-    from .override_settings import *  # noqa
+    from .override_settings import *  # noqa: F403
 
 if "--no-pretalx-information" in sys.argv:
     sys.argv.remove("--no-pretalx-information")

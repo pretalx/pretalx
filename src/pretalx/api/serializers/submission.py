@@ -430,7 +430,8 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
         return submission
 
     class Meta(SubmissionSerializer.Meta):
-        fields = SubmissionSerializer.Meta.fields + [
+        fields = [
+            *SubmissionSerializer.Meta.fields,
             "pending_state",
             "is_featured",
             "notes",

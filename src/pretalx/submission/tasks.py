@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 import zipfile
+from pathlib import Path
 
 from django.core.files import File
 from django_scopes import scope, scopes_disabled
@@ -26,7 +27,7 @@ def recalculate_all_review_scores(*, event_id: int):
             Event.objects.prefetch_related("submissions").filter(pk=event_id).first()
         )
     if not event:
-        LOGGER.error(f"Could not find Event ID {event_id} for export.")
+        LOGGER.error("Could not find Event ID %s for export.", event_id)
         return
 
     with scope(event=event):
@@ -43,13 +44,13 @@ def export_question_files(*, question_id: int, cached_file_id: str):
         cached_file = CachedFile.objects.filter(id=cached_file_id).first()
 
     if not question:
-        LOGGER.error(f"Could not find Question ID {question_id} for file export.")
+        LOGGER.error("Could not find Question ID %s for file export.", question_id)
         return
     if not cached_file:
-        LOGGER.error(f"Could not find CachedFile ID {cached_file_id} for file export.")
+        LOGGER.error("Could not find CachedFile ID %s for file export.", cached_file_id)
         return
     if question.variant != "file":
-        LOGGER.error(f"Question {question_id} is not a file question.")
+        LOGGER.error("Question %s is not a file question.", question_id)
         return
 
     event = question.event
@@ -71,36 +72,37 @@ def export_question_files(*, question_id: int, cached_file_id: str):
                     if not answer.answer_file:
                         continue
 
-                    base_filename = safe_filename(
-                        os.path.basename(answer.answer_file.name)
-                    )
+                    base_filename = safe_filename(Path(answer.answer_file.name).name)
                     filename = base_filename
 
                     counter = 1
                     while filename in used_filenames:
-                        name, ext = os.path.splitext(base_filename)
+                        base_path = Path(base_filename)
+                        name, ext = base_path.stem, base_path.suffix
                         filename = f"{name}_{counter}{ext}"
                         counter += 1
 
                     used_filenames.add(filename)
 
                     try:
-                        with zf.open(filename, "w") as dest:
-                            with answer.answer_file.open("rb") as src:
-                                shutil.copyfileobj(src, dest)
+                        with (
+                            zf.open(filename, "w") as dest,
+                            answer.answer_file.open("rb") as src,
+                        ):
+                            shutil.copyfileobj(src, dest)
                     except Exception as e:
                         LOGGER.warning(
-                            f"Could not read file for answer {answer.pk}: {e}"
+                            "Could not read file for answer %s: %s", answer.pk, e
                         )
 
-            with open(tmp_zip_path, "rb") as f:
+            with Path(tmp_zip_path).open("rb") as f:
                 cached_file.file.save(cached_file.filename, File(f))
 
         except Exception as e:
-            LOGGER.exception(f"Failed to export question files: {e}")
+            LOGGER.exception("Failed to export question files: %s", e)
             return None
 
         finally:
-            os.unlink(tmp_zip_path)
+            Path(tmp_zip_path).unlink()
 
     return cached_file_id

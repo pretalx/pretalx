@@ -81,7 +81,7 @@ def test_edit_cfp_flow_shows_in_frontend(orga_client, event):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("step", ["info", "questions", "user", "profile"])
+@pytest.mark.parametrize("step", ("info", "questions", "user", "profile"))
 def test_cfp_editor_step_view(orga_client, event, step):
     url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": step})
     response = orga_client.get(url)
@@ -743,7 +743,9 @@ def test_can_edit_choice_question(orga_client, event, choice_question):
         assert str(choice_question.options.first().answer) == "African"
 
 
-@pytest.mark.parametrize("role,count", (("accepted", 1), ("confirmed", 1), ("", 2)))
+@pytest.mark.parametrize(
+    ("role", "count"), (("accepted", 1), ("confirmed", 1), ("", 2))
+)
 @pytest.mark.django_db
 def test_can_remind_speaker_question(
     orga_client,
@@ -767,7 +769,9 @@ def test_can_remind_speaker_question(
         assert QueuedMail.objects.count() == original_count + count
 
 
-@pytest.mark.parametrize("role,count", (("accepted", 1), ("confirmed", 1), ("", 2)))
+@pytest.mark.parametrize(
+    ("role", "count"), (("accepted", 1), ("confirmed", 1), ("", 2))
+)
 @pytest.mark.django_db
 def test_can_remind_submission_question(
     orga_client,
@@ -790,7 +794,9 @@ def test_can_remind_submission_question(
         assert QueuedMail.objects.count() == original_count + count
 
 
-@pytest.mark.parametrize("role,count", (("accepted", 1), ("confirmed", 1), ("", 2)))
+@pytest.mark.parametrize(
+    ("role", "count"), (("accepted", 1), ("confirmed", 1), ("", 2))
+)
 @pytest.mark.django_db
 def test_can_remind_multiple_questions(
     orga_client,
@@ -826,7 +832,9 @@ def test_can_remind_submission_question_broken_filter(
     assert "Could not send mails" in response.text
 
 
-@pytest.mark.parametrize("role,count", (("accepted", 0), ("confirmed", 0), ("", 0)))
+@pytest.mark.parametrize(
+    ("role", "count"), (("accepted", 0), ("confirmed", 0), ("", 0))
+)
 @pytest.mark.django_db
 def test_can_remind_answered_submission_question(
     orga_client,
@@ -840,8 +848,6 @@ def test_can_remind_answered_submission_question(
     count,
 ):
     with scope(event=event):
-        from pretalx.submission.models.question import Answer
-
         question.question_required = QuestionRequired.REQUIRED
         question.deadline = None
         question.save()

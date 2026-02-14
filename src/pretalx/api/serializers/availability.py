@@ -20,7 +20,6 @@ class AvailabilitySerializer(ModelSerializer):
 
 
 class AvailabilitiesMixin:
-
     def _handle_availabilities(self, instance, availabilities_data, field):
         availabilities = []
         for avail_data in availabilities_data:

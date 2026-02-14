@@ -20,7 +20,7 @@ def get_static(
             filename=filename,
         )
     except Exception:
-        raise Http404()
+        raise Http404 from None
 
 
 def is_htmx(request):

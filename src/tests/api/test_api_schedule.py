@@ -762,7 +762,7 @@ def test_schedule_expand_slots(client, event, slot, track):
     assert isinstance(content["slots"], list)
     assert len(content["slots"]) > 0
     assert all(isinstance(s, dict) for s in content["slots"])
-    expanded_slot = [s for s in content["slots"] if s["id"] == slot.pk][0]
+    expanded_slot = next(s for s in content["slots"] if s["id"] == slot.pk)
     assert expanded_slot is not None
     assert "start" in expanded_slot
     assert "end" in expanded_slot

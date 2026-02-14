@@ -22,6 +22,8 @@ from pretalx.common.models.transaction import rolledback_transaction
 from pretalx.common.signals import register_data_exporters
 from pretalx.event.models import Event
 
+logger = logging.getLogger(__name__)
+
 SERVER_NAME = settings.SITE_URL.split("://")[1]
 
 
@@ -141,7 +143,7 @@ def get_content(response):
 
 def dump_content(destination, path, getter):
     destination = Path(destination)
-    logging.debug(path)
+    logger.debug(path)
 
     # We need to urldecode the file path, as otherwise we will end up with a file name
     # that won't be found when the export is served by a web server.
@@ -155,7 +157,7 @@ def dump_content(destination, path, getter):
 
     content = getter(path)
 
-    with open(file_path, "wb") as output_file:
+    with file_path.open("wb") as output_file:
         output_file.write(content)
     return content
 
@@ -168,7 +170,7 @@ def get_mediastatic_content(url):
     elif url.startswith(settings.MEDIA_URL):
         local_path = settings.MEDIA_ROOT / url[len(settings.MEDIA_URL) :]
     else:
-        raise FileNotFoundError()
+        raise FileNotFoundError
 
     # Prevent directory traversal, make sure the path is inside the media or static root
     local_path = local_path.resolve(strict=True)
@@ -176,9 +178,9 @@ def get_mediastatic_content(url):
         path in local_path.parents
         for path in (settings.MEDIA_ROOT, settings.STATIC_ROOT)
     ):
-        raise FileNotFoundError()  # pragma: no cover
+        raise FileNotFoundError  # pragma: no cover
 
-    with open(local_path, "rb") as media_file:
+    with local_path.open("rb") as media_file:
         return media_file.read()
 
 
@@ -187,11 +189,11 @@ def export_event(event, destination):
         override_timezone(event.timezone),
         fake_admin(event) as get,
     ):
-        logging.info("Collecting URLs for export")
+        logger.info("Collecting URLs for export")
         urls = list(event_urls(event))
         assets = set()
 
-        logging.info(f"Exporting {len(urls)} pages")
+        logger.info("Exporting %d pages", len(urls))
         for url in map(get_path, urls):
             content = dump_content(destination, url, get)
             if not url.startswith("/media/") and not url.startswith("/static/"):
@@ -199,14 +201,14 @@ def export_event(event, destination):
 
         css_assets = set()
 
-        logging.info(f"Exporting {len(assets)} static files from HTML links")
+        logger.info("Exporting %d static files from HTML links", len(assets))
         for url in assets:
             content = dump_content(destination, url, get)
 
             if url.endswith(".css"):
                 css_assets |= set(find_urls(content))
 
-        logging.info(f"Exporting {len(css_assets)} files from CSS links")
+        logger.info("Exporting %d files from CSS links", len(css_assets))
         for url_path in (get_path(urllib.parse.unquote(url)) for url in css_assets):
             dump_content(destination, url_path, get)
 
@@ -237,10 +239,12 @@ class Command(BaseCommand):
             try:
                 event = Event.objects.get(slug__iexact=event_slug)
             except Event.DoesNotExist:
-                raise CommandError(f'Could not find event with slug "{event_slug}".')
+                raise CommandError(
+                    f'Could not find event with slug "{event_slug}".'
+                ) from None
 
         with scope(event=event):
-            logging.info(f"Exporting {event.name}")
+            logger.info("Exporting %s", event.name)
             export_dir = get_export_path(event)
             zip_path = get_export_zip_path(event)
             tmp_dir = export_dir.with_name(export_dir.name + "-new")
@@ -253,7 +257,7 @@ class Command(BaseCommand):
                 delete_directory(export_dir)
                 tmp_dir.rename(export_dir)
             except Exception as exc:
-                logging.error(f"Export failed: {exc}")
+                logger.error("Export failed: %s", exc)
                 raise CommandError(f"Export failed: {exc}") from exc
             finally:
                 delete_directory(tmp_dir)
@@ -267,6 +271,6 @@ class Command(BaseCommand):
                 )
                 delete_directory(export_dir)
 
-                logging.info(f"Exported to {zip_path}")
+                logger.info("Exported to %s", zip_path)
             else:
-                logging.info(f"Exported to {export_dir}")
+                logger.info("Exported to %s", export_dir)

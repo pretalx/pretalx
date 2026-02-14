@@ -15,6 +15,7 @@ from pretalx.api.documentation import extend_schema_field
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.schedule.models import Schedule, TalkSlot
+from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
 
 
 @register_serializer()
@@ -44,7 +45,7 @@ class ScheduleSerializer(ScheduleListSerializer):
         return qs.values_list("pk", flat=True)
 
     class Meta(ScheduleListSerializer.Meta):
-        fields = ScheduleListSerializer.Meta.fields + ["comment", "slots"]
+        fields = [*ScheduleListSerializer.Meta.fields, "comment", "slots"]
         extra_expandable_fields = {
             "slots": (
                 "pretalx.api.serializers.schedule.TalkSlotSerializer",
@@ -108,8 +109,9 @@ class TalkSlotSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 @register_serializer(versions=CURRENT_VERSIONS)
 class TalkSlotOrgaSerializer(TalkSlotSerializer):
     class Meta(TalkSlotSerializer.Meta):
-        fields = TalkSlotSerializer.Meta.fields + ["is_visible", "slot_type"]
-        read_only_fields = TalkSlotSerializer.Meta.read_only_fields + [
+        fields = [*TalkSlotSerializer.Meta.fields, "is_visible", "slot_type"]
+        read_only_fields = [
+            *TalkSlotSerializer.Meta.read_only_fields,
             "is_visible",
             "slot_type",
         ]
@@ -130,8 +132,6 @@ class TalkSlotOrgaSerializer(TalkSlotSerializer):
         return value
 
     def update(self, instance, validated_data):
-        from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
-
         result = super().update(instance, validated_data)
         task_update_unreleased_schedule_changes.apply_async(
             kwargs={"event": instance.event.slug}

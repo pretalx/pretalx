@@ -615,9 +615,8 @@ class SubmissionContent(
                     locale=self.new_speaker_form.cleaned_data.get("locale"),
                     user=self.request.user,
                 )
-        else:
-            if not self.save_formset(form.instance):  # validation failed
-                stay_on_page = True
+        elif not self.save_formset(form.instance):  # validation failed
+            stay_on_page = True
 
         if message := self.messages.get(self.permission_action):
             messages.success(self.request, message)
@@ -908,7 +907,7 @@ class SubmissionFeed(Feed):
     def get_object(self, request, *args, **kwargs):
         event = request.event
         if not request.user.has_perm("submission.orga_list_submission", event):
-            raise Http404()
+            raise Http404
         return event
 
     def title(self, obj):

@@ -12,14 +12,14 @@ from pretalx.person.models.auth_token import (
 
 
 @pytest.mark.parametrize(
-    "endpoints,expected_preset",
-    [
+    ("endpoints", "expected_preset"),
+    (
         ({ep: list(READ_PERMISSIONS) for ep in ENDPOINTS}, "read"),
         ({ep: list(WRITE_PERMISSIONS) for ep in ENDPOINTS}, "write"),
         ({}, "custom"),
         ({"events": ["list", "retrieve"], "submissions": ["list"]}, "custom"),
         ({ep: list(READ_PERMISSIONS) for ep in list(ENDPOINTS)[:-1]}, "custom"),
-    ],
+    ),
     ids=["read_all", "write_all", "empty", "partial", "missing_endpoint"],
 )
 def test_permission_preset(endpoints, expected_preset):
@@ -28,8 +28,8 @@ def test_permission_preset(endpoints, expected_preset):
 
 
 @pytest.mark.parametrize(
-    "endpoints,expected",
-    [
+    ("endpoints", "expected"),
+    (
         ({}, []),
         (
             {"events": ["list", "retrieve"]},
@@ -39,7 +39,7 @@ def test_permission_preset(endpoints, expected_preset):
             {"events": ["list"], "submissions": ["create", "update"]},
             [("/events", ["Read list"]), ("/submissions", ["Create", "Update"])],
         ),
-    ],
+    ),
     ids=["empty", "single_endpoint", "multiple_endpoints"],
 )
 def test_get_endpoint_permissions_display(endpoints, expected):

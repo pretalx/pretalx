@@ -9,7 +9,7 @@ from django_scopes import scope
     "url", ("widgets/schedule.js", "schedule/widgets/schedule.json")
 )
 @pytest.mark.parametrize(
-    "show_schedule,show_widget_if_not_public,expected",
+    ("show_schedule", "show_widget_if_not_public", "expected"),
     (
         (True, False, 200),
         (True, True, 200),

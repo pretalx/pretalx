@@ -31,7 +31,7 @@ def test_is_speaker_false(event, submission, orga_user):
 
 
 @pytest.mark.parametrize(
-    "state,expected",
+    ("state", "expected"),
     (
         ("submitted", True),
         ("accepted", True),
@@ -47,7 +47,7 @@ def test_can_be_withdrawn(state, expected):
 
 
 @pytest.mark.parametrize(
-    "state,expected",
+    ("state", "expected"),
     (
         ("submitted", False),
         ("accepted", True),
@@ -63,7 +63,7 @@ def test_can_be_confirmed(state, expected):
 
 
 @pytest.mark.parametrize(
-    "state,expected",
+    ("state", "expected"),
     (
         ("submitted", True),
         ("accepted", True),
@@ -92,7 +92,7 @@ def test_without_review_phases(event):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("value,expected", (("always", True), ("never", False)))
+@pytest.mark.parametrize(("value", "expected"), (("always", True), ("never", False)))
 def test_can_view_reviews(event, value, expected):
     with scope(event=event):
         phase = event.active_review_phase

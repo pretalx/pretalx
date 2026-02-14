@@ -66,8 +66,6 @@ def screenshot_review_submission(live_server, logged_in_client, event):
         submission = event.submissions.first()
         logged_in_client.get(
             live_server.url
-            + "/orga/event/{}/submissions/{}/reviews".format(
-                event.slug, submission.code
-            )
+            + f"/orga/event/{event.slug}/submissions/{submission.code}/reviews"
         )
     screenshot(logged_in_client, "website/review_submission.png")
