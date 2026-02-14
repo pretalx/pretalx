@@ -75,7 +75,7 @@ jobs:
       - name: Install Dependencies
         run: just install --extra devdocs
       - name: Linkcheck docs
-        run: just docs linkcheck
+        run: just docs-linkcheck
       - name: Put linkcheck result into summary
         run: |
           echo "## Linkcheck results" >> $GITHUB_STEP_SUMMARY

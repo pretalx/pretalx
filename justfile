@@ -6,6 +6,7 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 _ := require("uv")
 python := "uv run python"
 uv_dev := "uv run --extra=dev"
+uv_devdocs := "uv run --extra=devdocs"
 src_dir := "src"
 
 [private]
@@ -97,18 +98,36 @@ makemessages:
 worker:
     uv run celery -A pretalx.celery_app worker -l info
 
-# Build the documentation
+# Clean documentation build artifacts
 [group('documentation')]
 [working-directory("doc")]
-docs *args="html":
-    uv run make {{ args }}
+@docs-clean:
+    rm -rf _build/*
+
+# Build documentation (use `just docs-build dirhtml` for production)
+[group('documentation')]
+[working-directory("doc")]
+docs-build format="html":
+    {{ uv_devdocs }} python -m sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }}
+
+# Build and deploy documentation to a target directory
+[group('documentation')]
+docs-deploy target:
+    just docs-build dirhtml
+    rsync -avu --delete doc/_build/dirhtml/ {{ target }}
+
+# Check documentation for broken links
+[group('documentation')]
+[working-directory("doc")]
+docs-linkcheck:
+    {{ uv_devdocs }} python -m sphinx -b linkcheck -d _build/doctrees . _build/linkcheck
 
 # Serve the documentation from a live server
 [group('documentation')]
 [working-directory("doc")]
 docs-serve *args="--port 8001":
     rm -rf _build/html
-    uv run sphinx-autobuild . _build/html {{ args }}
+    {{ uv_devdocs }} sphinx-autobuild . _build/html {{ args }}
 
 # Update the API documentation
 [group('documentation')]
@@ -178,7 +197,7 @@ check: black-check isort-check djhtml-check flake8 && _check-done
 [group('documentation')]
 [working-directory("doc")]
 docs-spelling:
-    uv run make spelling
+    {{ uv_devdocs }} python -m sphinx -b spelling -d _build/doctrees . _build/spelling
     @! find _build -type f -name '*.spelling' | grep -q .
 
 # Run most CI checks
@@ -210,6 +229,7 @@ python *args:
     -find . -type f -name "*.pyc" -delete
     -find . -type d -name "*.egg-info" -exec rm -rf {} +
     -rm -rf .pytest_cache .coverage htmlcov dist build
+    -just docs-clean
 
 # Run the test suite
 [group('tests')]

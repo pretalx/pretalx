@@ -182,18 +182,7 @@ them in the future, we can talk about merging them into core.
 Working with the documentation
 ------------------------------
 
-To build the documentation, the documentation dependencies will already be installed if you ran
-``uv sync --all-extras`` earlier. If not, you can install them by running::
-
-    $ uv sync --extra devdocs
-
-Then, go to the ``doc`` directory and run ``make html`` to build the documentation::
-
-    $ just docs
-
-You will now find the generated documentation in the ``doc/_build/html/`` subdirectory.
-If you find yourself working with the documentation more than a little, give the ``autobuild``
-functionality a try::
+Build and preview the documentation running the following command::
 
     $ just serve-docs
 
