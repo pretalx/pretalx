@@ -889,7 +889,7 @@ def test_widget_settings(event, orga_client):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_event_history_num_queries(
     orga_client, orga_user, event, submission, django_assert_num_queries, item_count
 ):

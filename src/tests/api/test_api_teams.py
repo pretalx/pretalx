@@ -47,7 +47,7 @@ def test_cannot_see_teams_unauthenticated(client, organiser):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_see_teams(
     client, orga_user_token, organiser, team, django_assert_num_queries, item_count
 ):

@@ -300,8 +300,9 @@ class User(
         self.save()
         self.profiles.all().update(biography="")
         for answer in Answer.objects.filter(
-            person=self, question__contains_personal_data=True
-        ):
+            models.Q(speaker__user=self) | models.Q(submission__speakers__user=self),
+            question__contains_personal_data=True,
+        ).distinct():
             answer.delete()  # Iterate to delete answer files, too
         for team in self.teams.all():
             team.members.remove(self)
@@ -312,13 +313,18 @@ class User(
     @transaction.atomic
     def shred(self):
         """Actually remove the user account."""
-        from pretalx.submission.models import Submission  # noqa: PLC0415
+        from pretalx.submission.models import Answer, Submission  # noqa: PLC0415
 
         with scopes_disabled():
             if (
                 Submission.all_objects.filter(speakers__user=self).count()
                 or self.teams.count()
-                or self.answers.count()
+                or Answer.objects.filter(
+                    models.Q(speaker__user=self)
+                    | models.Q(submission__speakers__user=self)
+                )
+                .distinct()
+                .count()
             ):
                 raise UserDeletionError(
                     f"Cannot delete user <{self.email}> because they have submissions, answers, or teams. Please deactivate this user instead."

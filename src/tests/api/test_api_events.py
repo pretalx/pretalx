@@ -77,7 +77,7 @@ def test_can_only_see_public_events_in_detail(client, event):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_see_nonpublic_events(
     client, event, other_event, orga_user_token, django_assert_num_queries, item_count
 ):

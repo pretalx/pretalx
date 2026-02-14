@@ -58,9 +58,9 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         if not questions:
             return []
         question_pks = {q.pk for q in questions if q.target == QuestionTarget.SPEAKER}
-        # Use prefetched user.answers, filter in Python
+        # Use prefetched answers, filter in Python
         answers = sorted(
-            [a for a in obj.user.answers.all() if a.question_id in question_pks],
+            [a for a in obj.answers.all() if a.question_id in question_pks],
             key=lambda a: a.question.position,
         )
         if serializer := self.get_extra_flex_field("answers", answers):

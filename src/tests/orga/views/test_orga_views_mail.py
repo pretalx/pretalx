@@ -11,7 +11,7 @@ from pretalx.person.models import SpeakerProfile
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_view_pending_mails(
     orga_client, event, mail, other_mail, django_assert_num_queries, item_count
 ):
@@ -26,7 +26,7 @@ def test_orga_can_view_pending_mails(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_view_sent_mails(
     orga_client, event, mail_template, speaker, django_assert_num_queries, item_count
 ):
@@ -275,7 +275,7 @@ def test_orga_can_copy_sent_mail(orga_client, event, sent_mail):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_view_templates(
     orga_client, event, mail_template, django_assert_num_queries, item_count
 ):

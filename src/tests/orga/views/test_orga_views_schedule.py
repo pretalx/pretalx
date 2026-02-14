@@ -15,7 +15,7 @@ from pretalx.schedule.models import Schedule
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_talk_list(
     orga_client,
     event,
@@ -357,7 +357,7 @@ def test_orga_can_toggle_schedule_visibility(orga_client, event):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_room_list_num_queries(
     orga_client, event, room, other_room, django_assert_num_queries, item_count
 ):

@@ -146,7 +146,7 @@ class SpeakerProfile(GenerateCode, PretalxModel):
         return self.get_talk_slots()
 
     @cached_property
-    def answers(self):
+    def all_answers(self):
         """A queryset of :class:`~pretalx.submission.models.question.Answer`
         objects.
 
@@ -157,12 +157,12 @@ class SpeakerProfile(GenerateCode, PretalxModel):
 
         submissions = Submission.objects.filter(event=self.event, speakers=self)
         return Answer.objects.filter(
-            models.Q(submission__in=submissions) | models.Q(person=self.user)
+            models.Q(submission__in=submissions) | models.Q(speaker=self)
         ).order_by("question__position")
 
     @property
     def reviewer_answers(self):
-        return self.answers.filter(question__is_visible_to_reviewers=True).order_by(
+        return self.all_answers.filter(question__is_visible_to_reviewers=True).order_by(
             "question__position"
         )
 

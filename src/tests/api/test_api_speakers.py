@@ -11,7 +11,7 @@ from pretalx.submission.models import Answer, Question, QuestionTarget, Submissi
 
 
 @pytest.fixture
-def personal_answer(event, speaker):
+def personal_answer(event, speaker_profile):
     with scope(event=event):
         question = Question.objects.create(
             event=event,
@@ -22,7 +22,7 @@ def personal_answer(event, speaker):
         return Answer.objects.create(
             answer="foo",
             question=question,
-            person=speaker,
+            speaker=speaker_profile,
         )
 
 
@@ -132,7 +132,7 @@ def test_speaker_list_reviewer_nopublic_names_visible(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_speaker_list_orga_nopublic(
     client,
     orga_user_token,
@@ -289,7 +289,9 @@ def test_speaker_list_expand_answers(
 ):
     with scope(event=event):
         Answer.objects.create(
-            question=personal_answer.question, answer="foobarbar", person=other_speaker
+            question=personal_answer.question,
+            answer="foobarbar",
+            speaker=other_speaker.get_speaker(event),
         )
     response = client.get(
         event.api_urls.speakers + "?expand=answers,answers.question",
@@ -320,7 +322,9 @@ def test_speaker_list_expand_block_recursion(
 ):
     with scope(event=event):
         Answer.objects.create(
-            question=personal_answer.question, answer="foobarbar", person=other_speaker
+            question=personal_answer.question,
+            answer="foobarbar",
+            speaker=other_speaker.get_speaker(event),
         )
     response = client.get(
         event.api_urls.speakers
@@ -600,7 +604,7 @@ def test_speaker_retrieve_answers_scoped_to_event(
             active=True,
         )
         answer2 = Answer.objects.create(
-            answer="Answer 2", question=question2, person=speaker
+            answer="Answer 2", question=question2, speaker=other_profile
         )
         team = other_event.teams.first()
         team.members.add(orga_user)

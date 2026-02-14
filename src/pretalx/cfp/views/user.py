@@ -87,7 +87,7 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
         return QuestionsForm(
             data=self.request.POST if bind else None,
             files=self.request.FILES if bind else None,
-            speaker=self.request.user,
+            speaker=self.request.user.get_speaker(self.request.event),
             readonly=not self.can_edit_speaker,
             event=self.request.event,
             target="speaker",

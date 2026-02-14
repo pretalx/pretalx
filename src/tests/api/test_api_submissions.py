@@ -151,7 +151,7 @@ def test_can_only_see_public_submissions_if_public_schedule(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_see_all_submissions(
     client,
     orga_user_token,
@@ -361,7 +361,7 @@ def test_cannot_see_tags(client, tag):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_see_tags(
     client, orga_user_token, tag, django_assert_num_queries, item_count
 ):
@@ -582,7 +582,7 @@ def test_can_see_tracks_public_event(client, track, slot):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_see_tracks(
     client, orga_user_token, track, django_assert_num_queries, item_count
 ):
@@ -791,7 +791,7 @@ def test_can_see_submission_types_public_event(client, submission_type, slot):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_see_submission_types(
     client, orga_user_token, submission_type, django_assert_num_queries, item_count
 ):
@@ -1514,7 +1514,7 @@ def test_public_submission_expandable_fields(
         slot.submission.save()
         speaker_profile = slot.submission.speakers.first()
         answer.submission = slot.submission
-        answer.person = speaker_profile.user
+        answer.speaker = speaker_profile
         answer.save()
         answer.question.is_public = True
         answer.question.target = "submission"

@@ -492,7 +492,7 @@ def test_delete_default_submission_type(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_all_questions_in_list(
     orga_client,
     question,
@@ -514,7 +514,7 @@ def test_all_questions_in_list(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_submission_type_list_num_queries(
     orga_client,
     event,
@@ -894,13 +894,11 @@ def test_can_remind_answered_submission_question(
         Answer.objects.create(
             submission=slot.submission,
             question=question,
-            person=speaker,
             answer="something",
         )
         Answer.objects.create(
             submission=other_submission,
             question=question,
-            person=other_speaker,
             answer="something",
         )
     response = orga_client.post(
@@ -935,7 +933,7 @@ def test_can_activate_inactive_question(orga_client, inactive_question):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_can_see_tracks(
     orga_client, track, event, django_assert_num_queries, item_count
 ):
@@ -1019,7 +1017,7 @@ def test_cannot_delete_used_track(orga_client, track, event, submission):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_can_see_access_codes(
     orga_client, access_code, event, django_assert_num_queries, item_count
 ):
@@ -1296,7 +1294,6 @@ def test_question_file_download_creates_cached_file(
         answer = Answer.objects.create(
             submission=submission,
             question=file_question,
-            person=speaker,
             answer="doc.pdf",
         )
         answer.answer_file.save("doc.pdf", ContentFile(b"pdf content"))
@@ -1317,7 +1314,6 @@ def test_question_file_download_generates_zip(
         answer = Answer.objects.create(
             submission=submission,
             question=file_question,
-            person=speaker,
             answer="test.txt",
         )
         answer.answer_file.save("test.txt", ContentFile(b"test content"))
@@ -1356,7 +1352,6 @@ def test_question_file_download_duplicate_filenames(
         answer1 = Answer.objects.create(
             submission=submission,
             question=file_question,
-            person=speaker,
             answer="same.txt",
         )
         answer1.answer_file.save("same.txt", ContentFile(b"content 1"))
@@ -1365,7 +1360,6 @@ def test_question_file_download_duplicate_filenames(
         answer2 = Answer.objects.create(
             submission=other_submission,
             question=file_question,
-            person=speaker,
             answer="same.txt",
         )
         answer2.answer_file.save("same.txt", ContentFile(b"content 2"))
@@ -1384,12 +1378,12 @@ def test_question_file_download_duplicate_filenames(
 
 @pytest.mark.django_db
 def test_question_file_download_speaker_question(
-    orga_client, event, speaker_file_question, speaker
+    orga_client, event, speaker_file_question, speaker_profile
 ):
     with scope(event=event):
         answer = Answer.objects.create(
             question=speaker_file_question,
-            person=speaker,
+            speaker=speaker_profile,
             answer="cv.pdf",
         )
         answer.answer_file.save("cv.pdf", ContentFile(b"CV content"))
@@ -1403,5 +1397,5 @@ def test_question_file_download_speaker_question(
     with ZipFile(BytesIO(zip_content), "r") as zf:
         names = zf.namelist()
         assert len(names) == 1
-        assert speaker.code in names[0]
+        assert speaker_profile.code in names[0]
         assert zf.read(names[0]) == b"CV content"

@@ -481,7 +481,7 @@ def test_get_expanded_fields(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_bulk_get_questions(
     event, orga_user_token, client, django_assert_num_queries, item_count
 ):

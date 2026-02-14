@@ -23,7 +23,7 @@ def test_answer_serializer(answer):
             "answer",
             "answer_file",
             "submission",
-            "person",
+            "speaker",
             "review",
             "options",
         }
@@ -43,7 +43,7 @@ def test_answers_not_visible_unauthenticated(client, answer, schedule, is_public
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("item_count", [1, 2])
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_organizer_can_see_answer(
     orga_user_token, client, answer, django_assert_num_queries, item_count
 ):
@@ -333,7 +333,7 @@ def test_answer_validation_reviewer_question(
 
 @pytest.mark.django_db
 def test_answer_validation_speaker_question(
-    event, orga_user_write_token, client, speaker
+    event, orga_user_write_token, client, speaker_profile
 ):
     with scope(event=event):
         question = event.questions.create(
@@ -352,7 +352,7 @@ def test_answer_validation_speaker_question(
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400
-    assert "person" in response.data
+    assert "speaker" in response.data
 
     response = client.post(
         event.api_urls.answers,
@@ -360,7 +360,7 @@ def test_answer_validation_speaker_question(
             {
                 "question": question.pk,
                 "answer": "Test answer",
-                "person": speaker.code,
+                "speaker": speaker_profile.code,
                 "submission": "abc123",
             }
         ),
