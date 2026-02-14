@@ -64,12 +64,7 @@ class QuestionColumnMixin:
 
         if not hasattr(self, "_answers_cache"):
             self._load_all_answers()
-
-        cache_key = self._get_record_cache_key(record)
-        return self._answers_cache.get(cache_key, {}).get(question_id)
-
-    def _get_record_cache_key(self, record):
-        return record.user_id if self._question_model == "user" else record.pk
+        return self._answers_cache.get(record.pk, {}).get(question_id)
 
     def _get_answer_filter_field(self):
         model = "person" if self._question_model == "user" else "submission"
@@ -79,9 +74,9 @@ class QuestionColumnMixin:
         from pretalx.submission.models import Answer  # noqa: PLC0415
 
         try:
-            record_ids = [self._get_record_cache_key(row.record) for row in self.rows]
+            record_ids = [row.record.pk for row in self.rows]
         except (AttributeError, TypeError):
-            record_ids = [self._get_record_cache_key(record) for record in self.data]
+            record_ids = [record.pk for record in self.data]
 
         if not record_ids:
             self._answers_cache = {}

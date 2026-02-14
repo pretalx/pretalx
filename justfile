@@ -149,7 +149,6 @@ djhtml-check:
 djhtml *args="":
     find src -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -print | xargs {{ uv_dev }} djhtml {{ args }}
 
-
 # Run ruff format
 [group('linting')]
 format *args="":
