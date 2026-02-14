@@ -27,7 +27,7 @@ class Button:
         name="",
         value="",
         _type="",
-        id=None,
+        _id=None,
     ):
         self.label = label or self.label
         self.name = name
@@ -37,7 +37,7 @@ class Button:
         self.icon = icon or (self.icon if icon is not None else None)
         self.extra_classes = extra_classes
         self.type = _type or self._type
-        self.id = id
+        self.id = _id
         self.template_context = (
             "label",
             "color",

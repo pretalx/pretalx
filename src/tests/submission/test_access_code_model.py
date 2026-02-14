@@ -9,7 +9,7 @@ from pretalx.submission.models import SubmitterAccessCode
 
 
 @pytest.mark.parametrize(
-    "maximum_uses,redeemed,redemptions_left",
+    ("maximum_uses", "redeemed", "redemptions_left"),
     (
         (0, 0, math.inf),
         (0, 10, math.inf),

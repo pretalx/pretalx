@@ -76,9 +76,7 @@ def should_cache(request, response):
         return False
     if not request.COOKIES and response.cookies and has_vary_header(response, "Cookie"):
         return False
-    if "private" in response.get("Cache-Control", ()):
-        return False
-    return True
+    return "private" not in response.get("Cache-Control", ())
 
 
 def patched_response(response, timeout, headers=None):

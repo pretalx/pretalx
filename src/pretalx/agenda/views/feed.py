@@ -16,7 +16,7 @@ class ScheduleFeed(Feed):
 
     def get_object(self, request, *args, **kwargs):
         if not request.user.has_perm("schedule.list_schedule", request.event):
-            raise Http404()
+            raise Http404
         return request.event
 
     def title(self, obj):

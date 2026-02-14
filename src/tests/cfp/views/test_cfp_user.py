@@ -5,6 +5,7 @@ import datetime as dt
 from contextlib import suppress
 
 import pytest
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core import mail as djmail
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -1015,8 +1016,6 @@ def test_draft_submission_allowed_with_access_code(
         response = speaker_client.get(url)
         assert response.status_code == 200
 
-        from bs4 import BeautifulSoup
-
         for _step in "info", "question", "profile":
             soup = BeautifulSoup(response.render().content, "html.parser")
             form = soup.find_all("form")[1]
@@ -1070,7 +1069,7 @@ def test_draft_submission_prevented_when_submission_type_requires_access_code(
         assert submission.state == SubmissionStates.DRAFT
 
 
-@pytest.mark.parametrize("max_uses,exhausted", ((1, True), (2, False)))
+@pytest.mark.parametrize(("max_uses", "exhausted"), ((1, True), (2, False)))
 @pytest.mark.django_db
 def test_draft_with_deadline_access_code_exhausted(
     event, access_code, submission, max_uses, exhausted
@@ -1090,9 +1089,9 @@ def test_draft_with_deadline_access_code_exhausted(
         assert access_code.is_valid is not exhausted
         assert access_code.time_valid
 
-        assert (
-            submission.editable
-        ), "Draft should be editable even after access code redemptions are exhausted"
+        assert submission.editable, (
+            "Draft should be editable even after access code redemptions are exhausted"
+        )
 
 
 @pytest.mark.django_db
@@ -1109,12 +1108,12 @@ def test_draft_with_deadline_access_code_expired(event, access_code, submission)
 
         assert not access_code.is_valid
         assert not access_code.time_valid
-        assert (
-            not submission.editable
-        ), "Draft should not be editable after access code time limit expires"
+        assert not submission.editable, (
+            "Draft should not be editable after access code time limit expires"
+        )
 
 
-@pytest.mark.parametrize("max_uses,exhausted", ((1, True), (2, False)))
+@pytest.mark.parametrize(("max_uses", "exhausted"), ((1, True), (2, False)))
 @pytest.mark.django_db
 def test_draft_with_track_access_code_exhausted(
     event, speaker, access_code, submission, track, max_uses, exhausted
@@ -1136,9 +1135,9 @@ def test_draft_with_track_access_code_exhausted(
         assert access_code.is_valid is not exhausted
         assert access_code.time_valid
 
-        assert (
-            submission.editable
-        ), "Draft should be editable even after track access code redemptions are exhausted"
+        assert submission.editable, (
+            "Draft should be editable even after track access code redemptions are exhausted"
+        )
 
 
 @pytest.mark.django_db
@@ -1187,9 +1186,9 @@ def test_access_code_redeemed_on_draft_creation(event, client, access_code):
     }
     response = client.post(current_url, data=profile_data, follow=True)
     access_code.refresh_from_db()
-    assert (
-        access_code.redeemed == 1
-    ), "Access code should be redeemed when creating a draft"
+    assert access_code.redeemed == 1, (
+        "Access code should be redeemed when creating a draft"
+    )
 
 
 @pytest.mark.django_db
@@ -1239,8 +1238,6 @@ def test_access_code_not_redeemed_again_on_dedraft(
     response = speaker_client.get(url)
     assert response.status_code == 200
 
-    from bs4 import BeautifulSoup
-
     for _step in "info", "profile":
         soup = BeautifulSoup(response.render().content, "html.parser")
         form = soup.find_all("form")[1]
@@ -1257,9 +1254,9 @@ def test_access_code_not_redeemed_again_on_dedraft(
         assert response.status_code == 200
 
     access_code.refresh_from_db()
-    assert (
-        access_code.redeemed == 1
-    ), "Access code should NOT be redeemed again when submitting a draft"
+    assert access_code.redeemed == 1, (
+        "Access code should NOT be redeemed again when submitting a draft"
+    )
 
     submission.refresh_from_db()
     assert submission.state == SubmissionStates.SUBMITTED

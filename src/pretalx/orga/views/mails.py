@@ -42,6 +42,7 @@ from pretalx.orga.forms.mails import (
     WriteTeamsMailForm,
 )
 from pretalx.orga.tables.mail import MailTemplateTable, OutboxMailTable, SentMailTable
+from pretalx.submission.models import Submission, SubmissionStates
 
 
 def get_send_mail_exceptions(request):
@@ -431,7 +432,7 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
                 initial["text"] = template.text
                 initial["reply_to"] = template.reply_to
                 initial["bcc"] = template.bcc
-        for key in self.form_class.base_fields.keys():
+        for key in self.form_class.base_fields:
             if key in self.request.GET:
                 initial[key] = self.request.GET.get(key)
         kwargs["initial"] = initial
@@ -474,9 +475,9 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
                 )
                 return self.get(self.request, *self.args, **self.kwargs)
 
-            import bleach
+            import bleach  # noqa: PLC0415
 
-            from pretalx.common.templatetags.rich_text import render_markdown_abslinks
+            from pretalx.common.templatetags.rich_text import render_markdown_abslinks  # noqa: PLC0415
 
             for locale in self.request.event.locales:
                 with language(locale):
@@ -579,8 +580,6 @@ class ComposeDraftReminders(EventPermissionRequired, TemplateView):
         return [send_button()]
 
     def post(self, request, *args, **kwargs):
-        from pretalx.submission.models import Submission, SubmissionStates
-
         template = self.draft_reminder_template
         submissions = Submission.all_objects.filter(
             state=SubmissionStates.DRAFT, event=request.event

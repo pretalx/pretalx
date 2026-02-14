@@ -29,13 +29,13 @@ class CustomSMTPBackend(EmailBackend):
             code, resp = self.connection.mail(from_addr, [])
             if code != 250:
                 logger.warning(
-                    f"Error testing mail settings, code {code}, resp: {resp}"
+                    "Error testing mail settings, code %s, resp: %s", code, resp
                 )
                 raise SMTPSenderRefused(code, resp, sender=from_addr)
             code, resp = self.connection.rcpt("testdummy@pretalx.com")
             if code not in (250, 251):
                 logger.warning(
-                    f"Error testing mail settings, code {code}, resp: {resp}"
+                    "Error testing mail settings, code %s, resp: %s", code, resp
                 )
                 raise SMTPSenderRefused(code, resp, sender=from_addr)
         finally:
@@ -63,16 +63,16 @@ DEBUG_DOMAINS = [
 @app.task(bind=True, name="pretalx.common.send_mail")
 def mail_send_task(
     self,
-    to: list,
-    subject: str,
-    body: str,
-    html: str,
-    reply_to: list = None,
-    event: int = None,
-    cc: list = None,
-    bcc: list = None,
-    headers: dict = None,
-    attachments: list = None,
+    to,
+    subject,
+    body,
+    html,
+    reply_to=None,
+    event=None,
+    cc=None,
+    bcc=None,
+    headers=None,
+    attachments=None,
 ):
     if isinstance(to, str):
         to = [to]
@@ -131,7 +131,7 @@ def mail_send_task(
         reply_to=reply_to,
     )
     if html is not None:
-        import css_inline
+        import css_inline  # noqa: PLC0415
 
         inliner = css_inline.CSSInliner(keep_style_tags=False)
         body_html = inliner.inline(html)
@@ -155,7 +155,11 @@ def mail_send_task(
         if exception.smtp_code in (101, 111, 421, 422, 431, 442, 447, 452):
             self.retry(max_retries=5, countdown=2 ** (self.request.retries * 2))
         logger.exception("Error sending email")
-        raise SendMailException(f"Failed to send an email to {to}: {exception}")
+        raise SendMailException(
+            f"Failed to send an email to {to}: {exception}"
+        ) from exception
     except Exception as exception:  # pragma: no cover
         logger.exception("Error sending email")
-        raise SendMailException(f"Failed to send an email to {to}: {exception}")
+        raise SendMailException(
+            f"Failed to send an email to {to}: {exception}"
+        ) from exception

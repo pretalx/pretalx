@@ -65,4 +65,4 @@ class RoomViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
         except ProtectedError:
             raise exceptions.ValidationError(
                 "You cannot delete a room that has been used in the schedule."
-            )
+            ) from None

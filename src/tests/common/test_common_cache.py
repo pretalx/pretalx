@@ -44,21 +44,21 @@ class CacheTest(TestCase):
     def test_interference(self):
         django_cache.clear()
         self.cache.set(self.testkey, "foo")
-        self.assertIsNone(django_cache.get(self.testkey))
-        self.assertIn(self.cache.get(self.testkey), (None, "foo"))
+        assert django_cache.get(self.testkey) is None
+        assert self.cache.get(self.testkey) in (None, "foo")
 
     def test_longkey(self):
         self.cache.set(self.testkey * 100, "foo")
-        self.assertEqual(self.cache.get(self.testkey * 100), "foo")
+        assert self.cache.get(self.testkey * 100) == "foo"
 
     def test_get_or_set(self):
-        self.assertEqual(self.cache.get_or_set(self.testkey, "foo"), "foo")
-        self.assertEqual(self.cache.get_or_set(self.testkey, "foo"), "foo")
+        assert self.cache.get_or_set(self.testkey, "foo") == "foo"
+        assert self.cache.get_or_set(self.testkey, "foo") == "foo"
 
     def test_invalidation(self):
         self.cache.set(self.testkey, "foo")
         self.cache.clear()
-        self.assertIsNone(self.cache.get(self.testkey))
+        assert self.cache.get(self.testkey) is None
 
     def test_many(self):
         inp = {
@@ -66,9 +66,9 @@ class CacheTest(TestCase):
             "b": "bar",
         }
         self.cache.set_many(inp)
-        self.assertEqual(inp, self.cache.get_many(inp.keys()))
+        assert inp == self.cache.get_many(inp.keys())
 
 
 def test_incorrect_cache_creation():
-    with pytest.raises(Exception):  # noqa
+    with pytest.raises(Exception):  # noqa: B017, PT011
         ObjectRelatedCache(1)

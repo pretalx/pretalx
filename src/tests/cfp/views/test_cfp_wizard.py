@@ -78,18 +78,18 @@ class TestWizard:
         response, current_url = self.get_response_and_url(
             client, url, data=submission_data
         )
-        assert (
-            f"/{next_step}/" in current_url
-        ), f"{current_url} does not end with /{next_step}/!"
+        assert f"/{next_step}/" in current_url, (
+            f"{current_url} does not end with /{next_step}/!"
+        )
         return response, current_url
 
     def perform_question_wizard(
         self, client, response, url, data, next_step="profile", event=None
     ):
         response, current_url = self.get_response_and_url(client, url, data=data)
-        assert (
-            f"/{next_step}/" in current_url
-        ), f"{current_url} does not end with /{next_step}/!"
+        assert f"/{next_step}/" in current_url, (
+            f"{current_url} does not end with /{next_step}/!"
+        )
         return response, current_url
 
     def perform_user_wizard(
@@ -113,9 +113,9 @@ class TestWizard:
         else:
             data = {"login_email": email, "login_password": password}
         response, current_url = self.get_response_and_url(client, url, data=data)
-        assert (
-            f"/{next_step}/" in current_url
-        ), f"{current_url} does not end with /{next_step}/!"
+        assert f"/{next_step}/" in current_url, (
+            f"{current_url} does not end with /{next_step}/!"
+        )
         return response, current_url
 
     def perform_profile_form(
@@ -131,9 +131,9 @@ class TestWizard:
     ):
         data = {"name": name, "biography": bio}
         response, current_url = self.get_response_and_url(client, url, data=data)
-        assert (
-            f"/{next_step}/" in current_url
-        ), f"{current_url} does not end with /{next_step}/!"
+        assert f"/{next_step}/" in current_url, (
+            f"{current_url} does not end with /{next_step}/!"
+        )
         doc = bs4.BeautifulSoup(response.rendered_content, "lxml")
         assert bool(doc.select(".alert-success")) is success
         assert bool(doc.select("#user-dropdown-label")) is success
@@ -218,10 +218,10 @@ class TestWizard:
         q_dict = QueryDict(url_parts.query)
         assert url_parts.path.endswith("/info/") is True
         # check if GET params are preserved
-        assert q_dict.get("track") and q_dict.get("track") == params_dict.get("track")
-        assert q_dict.get("submission_type") and q_dict.get(
-            "submission_type"
-        ) == params_dict.get("submission_type")
+        assert q_dict.get("track")
+        assert q_dict.get("track") == params_dict.get("track")
+        assert q_dict.get("submission_type")
+        assert q_dict.get("submission_type") == params_dict.get("submission_type")
 
     @pytest.mark.django_db
     def test_wizard_new_user(self, event, question, client):
@@ -846,7 +846,6 @@ def test_infoform_set_submission_type_2nd_event(event, other_event, submission_t
 
 
 class TestWizardDrafts:
-
     @pytest.mark.django_db
     def test_draft_not_saved_with_invalid_data_on_info_step(self, event, client):
         """Test that clicking 'save as draft' with invalid form data doesn't create a draft.

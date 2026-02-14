@@ -14,7 +14,7 @@ from django_scopes import scope
 
 @pytest.mark.django_db
 @pytest.mark.usefixtures("other_slot")
-@pytest.mark.parametrize("version,queries", (("js", 6), ("nojs", 8)))
+@pytest.mark.parametrize(("version", "queries"), (("js", 6), ("nojs", 8)))
 def test_can_see_schedule(
     client, django_assert_num_queries, user, event, slot, version, queries
 ):
@@ -90,7 +90,7 @@ def test_orga_can_see_wip_schedule(orga_client, event, slot, version):
 @pytest.mark.django_db
 @pytest.mark.usefixtures("other_slot")
 @pytest.mark.parametrize(
-    "accept_header,is_html",
+    ("accept_header", "is_html"),
     (
         # curl/wget/httpie default
         ("*/*", False),
@@ -263,7 +263,7 @@ def test_schedule_page_text_table(client, django_assert_num_queries, event, slot
 
 
 @pytest.mark.parametrize(
-    "header,target",
+    ("header", "target"),
     (
         ("application/json", "frab_json"),
         ("application/xml", "frab_xml"),
@@ -306,7 +306,7 @@ def test_schedule_page_text_wrong_format(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "version,queries_main,queries_versioned,queries_redirect",
+    ("version", "queries_main", "queries_versioned", "queries_redirect"),
     (("js", 6, 7, 13), ("nojs", 7, 10, 16)),
 )
 @pytest.mark.usefixtures("other_slot")
@@ -351,8 +351,8 @@ def test_versioned_schedule_page(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "og_image,logo,header_image,expected_status,expected_content",
-    [
+    ("og_image", "logo", "header_image", "expected_status", "expected_content"),
+    (
         (True, False, False, 200, b"og_content"),  # og_image set → returns it
         (
             False,
@@ -376,7 +376,7 @@ def test_versioned_schedule_page(
             200,
             b"og_content",
         ),  # all set → returns og_image (highest priority)
-    ],
+    ),
 )
 def test_event_social_card_fallback(
     client, event, og_image, logo, header_image, expected_status, expected_content

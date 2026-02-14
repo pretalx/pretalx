@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("mail", "0011_created_updated_everywhere"),
         ("submission", "0077_answeroption_position"),

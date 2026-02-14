@@ -103,15 +103,15 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
             if (not category.required or self.allow_empty)
             else []
         )
-        for score in category.scores.all():
-            choices.append(
-                (
-                    score.id,
-                    score.format(
-                        self.event.review_settings.get("score_format", "words_numbers")
-                    ),
-                )
+        choices.extend(
+            (
+                score.id,
+                score.format(
+                    self.event.review_settings.get("score_format", "words_numbers")
+                ),
             )
+            for score in category.scores.all()
+        )
 
         field = forms.ChoiceField(
             choices=choices,
@@ -393,21 +393,17 @@ class ReviewExportForm(ExportForm):
 
     @cached_property
     def export_field_names(self):
-        return (
-            [
-                "score",
-                "text",
-            ]
-            + self.score_field_names
-            + [
-                "submission_id",
-                "submission_title",
-                "created",
-                "updated",
-                "user_name",
-                "user_email",
-            ]
-        )
+        return [
+            "score",
+            "text",
+            *self.score_field_names,
+            "submission_id",
+            "submission_title",
+            "created",
+            "updated",
+            "user_name",
+            "user_email",
+        ]
 
     def _build_score_fields(self):
         for score_category in self.score_categories:
@@ -513,7 +509,9 @@ class ReviewAssignImportForm(DirectionForm):
             self._user_cache[text] = user
             return user
         except Exception:
-            raise forms.ValidationError(str(_("Unknown user: {}")).format(text))
+            raise forms.ValidationError(
+                str(_("Unknown user: {}")).format(text)
+            ) from None
 
     def _get_submission(self, text):
         if not self._submissions_cache:
@@ -523,14 +521,16 @@ class ReviewAssignImportForm(DirectionForm):
         try:
             return self._submissions_cache[text.strip().upper()]
         except Exception:
-            raise forms.ValidationError(str(_("Unknown proposal: {}")).format(text))
+            raise forms.ValidationError(
+                str(_("Unknown proposal: {}")).format(text)
+            ) from None
 
     def clean_import_file(self):
         uploaded_file = self.cleaned_data["import_file"]
         try:
             data = json.load(uploaded_file)
         except Exception:
-            raise forms.ValidationError(self.JSON_ERROR_MESSAGE)
+            raise forms.ValidationError(self.JSON_ERROR_MESSAGE) from None
         return data
 
     def clean(self):

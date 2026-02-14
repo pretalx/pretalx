@@ -12,6 +12,11 @@ from django.db.models import F
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django_scopes import scope
+from pretalx.common.models.settings import GlobalSettings
+from pretalx.event.models import Event, Team
+from pretalx.person.models import User
+from pretalx.schedule.models import TalkSlot
+from pretalx.submission.models import AnswerOption, Question, QuestionVariant
 
 SEED = random.randint(0, 100000)
 
@@ -32,12 +37,6 @@ def fix_settings(live_server):
 
 @pytest.fixture(autouse=True)
 def event():
-    from pretalx.common.models.settings import GlobalSettings
-    from pretalx.event.models import Event
-    from pretalx.person.models import User
-    from pretalx.schedule.models import TalkSlot
-    from pretalx.submission.models import AnswerOption, Question, QuestionVariant
-
     gs = GlobalSettings()
     gs.settings.update_check_result_warning = False
     gs.settings.update_check_ack = True
@@ -90,9 +89,6 @@ def event():
 
 @pytest.fixture
 def user(event):
-    from pretalx.event.models import Team
-    from pretalx.person.models import User
-
     team = Team.objects.create(
         name=_("Organisers"),
         organiser=event.organiser,
@@ -122,8 +118,7 @@ def logged_in_client(live_server, selenium, user):
     selenium.get(live_server.url + "/orga/login/")
     assert "Sign in" in selenium.title, selenium.title
     selenium.implicitly_wait(8)
-
-    from selenium.webdriver.common.by import By
+    from selenium.webdriver.common.by import By  # noqa: PLC0415
 
     selenium.find_element(By.CSS_SELECTOR, "form input[name=login_email]").send_keys(
         user.email

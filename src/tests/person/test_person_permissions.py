@@ -9,7 +9,7 @@ from pretalx.person.rules import can_view_information
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "target_group,expected",
+    ("target_group", "expected"),
     (
         ("submitters", True),
         ("accepted", False),

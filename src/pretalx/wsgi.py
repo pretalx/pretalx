@@ -10,6 +10,6 @@ import os
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pretalx.settings")
 
-from django.core.wsgi import get_wsgi_application  # NOQA
+from django.core.wsgi import get_wsgi_application  # noqa: F401
 
 application = get_wsgi_application()

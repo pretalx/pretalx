@@ -25,7 +25,7 @@ def rolledback_transaction():
     try:
         with transaction.atomic():
             yield
-            raise DummyRollbackError()
+            raise DummyRollbackError
     except DummyRollbackError:
         pass
     else:  # pragma: no cover

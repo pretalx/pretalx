@@ -26,7 +26,7 @@ class QuestionColumnMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if hasattr(self, "Meta") and hasattr(self.Meta, "model"):
-            from pretalx.person.models import SpeakerProfile
+            from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
 
             if self.Meta.model == SpeakerProfile:
                 self._question_model = "user"
@@ -76,15 +76,12 @@ class QuestionColumnMixin:
         return f"{model}_id__in"
 
     def _load_all_answers(self):
-        from pretalx.submission.models import Answer
+        from pretalx.submission.models import Answer  # noqa: PLC0415
 
-        record_ids = []
         try:
-            for row in self.rows:
-                record_ids.append(self._get_record_cache_key(row.record))
+            record_ids = [self._get_record_cache_key(row.record) for row in self.rows]
         except (AttributeError, TypeError):
-            for record in self.data:
-                record_ids.append(self._get_record_cache_key(record))
+            record_ids = [self._get_record_cache_key(record) for record in self.data]
 
         if not record_ids:
             self._answers_cache = {}
@@ -136,7 +133,7 @@ class PretalxTable(tables.Table):
         """
         if self._ordering_applied:
             # Don't re-order - just update the display value for sort indicators.
-            order_by = () if not value else value
+            order_by = value or ()
             order_by = order_by.split(",") if isinstance(order_by, str) else order_by
             valid = []
             for alias in order_by:
@@ -234,11 +231,11 @@ class PretalxTable(tables.Table):
         valid_ordering = []
         seen_columns = set()
         for field in ordering:
-            column_name = field[1:] if field.startswith("-") else field
+            column_name = field.removeprefix("-")
             if column_name in sortable and column_name not in seen_columns:
                 valid_ordering.append(field)
                 seen_columns.add(column_name)
-        return valid_ordering if valid_ordering else None
+        return valid_ordering or None
 
     def _apply_ordering(self, queryset, ordering):
         """Apply multi-column ordering to the queryset, handling function-based columns.
@@ -479,11 +476,11 @@ class TemplateColumn(tables.TemplateColumn):
         context["table"] = table
         if not isinstance(context, Context):
             context = Context(context)
-        for key, value in self.template_context.items():
-            if callable(value):
-                context[key] = value(record, table)
+        for key, context_value in self.template_context.items():
+            if callable(context_value):
+                context[key] = context_value(record, table)
             else:
-                context[key] = value
+                context[key] = context_value
         context[self.context_object_name] = record
 
         additional_context = {
@@ -690,7 +687,7 @@ class QuestionColumn(TemplateColumn):
         Used by PretalxTable._apply_ordering() for multi-column sorting.
         This method only annotates - it does NOT call order_by().
         """
-        from pretalx.submission.models import Answer
+        from pretalx.submission.models import Answer  # noqa: PLC0415
 
         if hasattr(queryset.model, "user"):
             answer_subquery = Answer.objects.filter(

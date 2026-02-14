@@ -71,9 +71,7 @@ class Schedule(PretalxModel):
         widget_data = "{public}widgets/schedule.json"
         nojs = "{public}nojs"
 
-    def freeze(
-        self, name: str, user=None, notify_speakers: bool = True, comment: str = None
-    ):
+    def freeze(self, name: str, user=None, notify_speakers=True, comment=None):
         """Releases the current WIP schedule as a fixed schedule version.
 
         :param name: The new schedule name. May not be in use in this event,
@@ -130,7 +128,7 @@ class Schedule(PretalxModel):
         :class:`~pretalx.schedule.models.slot.TalkSlot` objects in this
         schedule.
         """
-        from pretalx.submission.models import Submission
+        from pretalx.submission.models import Submission  # noqa: PLC0415
 
         return Submission.objects.filter(
             id__in=self.scheduled_talks.values_list("submission", flat=True)
@@ -172,7 +170,7 @@ class Schedule(PretalxModel):
             diff = -diff
             new = new_slots[:diff]
             new_slots = new_slots[diff:]
-        for move in zip(old_slots, new_slots):
+        for move in zip(old_slots, new_slots, strict=False):
             old_slot = move[0]
             new_slot = move[1]
             moved.append(
@@ -205,7 +203,7 @@ class Schedule(PretalxModel):
 
     @cached_property
     def use_room_availabilities(self):
-        from pretalx.schedule.models import Availability
+        from pretalx.schedule.models import Availability  # noqa: PLC0415
 
         return Availability.objects.filter(
             room__isnull=False, event=self.event
@@ -225,7 +223,7 @@ class Schedule(PretalxModel):
         ``speaker``, for now) and a ``message`` fit for public display.
         This property only shows availability based warnings.
         """
-        from pretalx.schedule.models import Availability, TalkSlot
+        from pretalx.schedule.models import Availability, TalkSlot  # noqa: PLC0415
 
         if not talk.start or not talk.submission or not talk.room:
             return []
@@ -363,7 +361,7 @@ class Schedule(PretalxModel):
         speaker_avails = None
         speaker_profiles = None
         if with_speakers:
-            from pretalx.person.models import SpeakerProfile
+            from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
 
             speaker_profiles = {
                 profile.user: profile
@@ -403,7 +401,7 @@ class Schedule(PretalxModel):
         visible due to their unconfirmed status, and ``no_track`` are
         submissions without a track in a conference that uses tracks.
         """
-        from pretalx.submission.models import SubmissionStates
+        from pretalx.submission.models import SubmissionStates  # noqa: PLC0415
 
         talks = self.talks.filter(submission__isnull=False)
         warnings = {
@@ -431,7 +429,7 @@ class Schedule(PretalxModel):
         """
         result = {}
         if self.changes["action"] == "create":
-            from pretalx.person.models import User
+            from pretalx.person.models import User  # noqa: PLC0415
 
             for speaker in User.objects.filter(submissions__slots__schedule=self):
                 talks = self.talks.filter(
@@ -458,7 +456,7 @@ class Schedule(PretalxModel):
     def generate_notifications(self, save=False):
         """A list of unsaved :class:`~pretalx.mail.models.QueuedMail` objects
         to be sent on schedule release."""
-        from pretalx.mail.models import MailTemplateRoles
+        from pretalx.mail.models import MailTemplateRoles  # noqa: PLC0415
 
         mails = []
         for speaker, data in self.speakers_concerned.items():

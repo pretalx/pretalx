@@ -142,7 +142,8 @@ class QuestionOrgaSerializer(QuestionSerializer):
     )
 
     class Meta(QuestionSerializer.Meta):
-        fields = QuestionSerializer.Meta.fields + (
+        fields = (
+            *QuestionSerializer.Meta.fields,
             "active",
             "is_public",
             "contains_personal_data",
@@ -154,9 +155,9 @@ class QuestionOrgaSerializer(QuestionSerializer):
         request = kwargs.get("context", {}).get("request")
         if request and hasattr(request, "event"):
             self.fields["tracks"].queryset = request.event.tracks.all()
-            self.fields["submission_types"].queryset = (
-                request.event.submission_types.all()
-            )
+            self.fields[
+                "submission_types"
+            ].queryset = request.event.submission_types.all()
         else:
             self.fields["tracks"].queryset = Track.objects.none()
             self.fields["submission_types"].queryset = SubmissionType.objects.none()

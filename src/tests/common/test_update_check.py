@@ -220,7 +220,7 @@ def test_result_table_up2date():
     update_check.apply(throw=True)
     tbl = check_result_table()
     assert tbl[0] == ("pretalx", __version__, "1.0.0", False)
-    plugin = [e for e in tbl if e[0] == "Plugin: test plugin for pretalx"][0]
+    plugin = next(e for e in tbl if e[0] == "Plugin: test plugin for pretalx")
     assert plugin
     assert plugin[2] == "?"
 

@@ -93,7 +93,7 @@ class EventPermissionMiddleware:
                     request.event = get_object_or_404(queryset, slug__iexact=event_slug)
                 except ValueError:
                     # Happens mostly on malformed or malicious input
-                    raise Http404()
+                    raise Http404 from None
         event = getattr(request, "event", None)
 
         self._select_locale(request)
@@ -166,9 +166,9 @@ class EventPermissionMiddleware:
             if not language_code_re.search(accept_lang):
                 continue
 
-            accept_lang = self._validate_language(accept_lang, supported)
-            if accept_lang:
-                return accept_lang
+            validated = self._validate_language(accept_lang, supported)
+            if validated:
+                return validated
 
     def _language_from_cookie(self, request, supported):
         cookie_value = request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME)

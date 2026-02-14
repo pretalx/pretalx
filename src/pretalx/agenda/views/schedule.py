@@ -91,11 +91,10 @@ class ExporterView(EventPermissionRequired, ScheduleMixin, TemplateView):
         else:
             name = url.url_name
 
-        if name.startswith("export."):
-            name = name[len("export.") :]
+        name = name.removeprefix("export.")
         response = get_schedule_exporter_content(request, name, self.schedule)
         if not response:
-            raise Http404()
+            raise Http404
         return response
 
 
@@ -173,7 +172,7 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
             return self.request.event.wip_schedule
         schedule = super().get_object()
         if not schedule:
-            raise Http404()
+            raise Http404
         return schedule
 
     def get_permission_object(self):

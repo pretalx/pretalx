@@ -80,14 +80,17 @@ class TablePreferencesForm(forms.Form):
         self.fields["columns"].initial = []
         self.fields["available_columns"].choices = sorted(hidden)
 
-        sortable_columns = [("", "---------")] + sorted(
-            [
-                (name, str(column.verbose_name))
-                for name, column in table.columns.items()
-                if column.orderable and name not in table.exempt_columns
-            ],
-            key=lambda x: x[1],
-        )
+        sortable_columns = [
+            ("", "---------"),
+            *sorted(
+                [
+                    (name, str(column.verbose_name))
+                    for name, column in table.columns.items()
+                    if column.orderable and name not in table.exempt_columns
+                ],
+                key=lambda x: x[1],
+            ),
+        ]
 
         self.fields["sort_column_1"].choices = sortable_columns
         self.fields["sort_column_2"].choices = sortable_columns

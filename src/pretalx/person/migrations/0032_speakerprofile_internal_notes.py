@@ -8,7 +8,6 @@ import pretalx.common.models.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("person", "0031_migrate_auth_tokens"),
     ]

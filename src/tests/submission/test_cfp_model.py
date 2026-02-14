@@ -11,7 +11,7 @@ from pretalx.submission.models import SubmissionType
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "deadline,deadlines,is_open",
+    ("deadline", "deadlines", "is_open"),
     (
         (dt.datetime(year=2000, month=10, day=20), [], False),  # CfP deadline past
         (

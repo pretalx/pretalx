@@ -32,7 +32,9 @@ def gravatar_cache(person_id: int):
     )
 
     logger.info(
-        f"gravatar returned http {response.status_code} when getting avatar for user {user.name}"
+        "gravatar returned http %s when getting avatar for user %s",
+        response.status_code,
+        user.name,
     )
 
     if 400 <= response.status_code <= 499:
@@ -60,7 +62,7 @@ def gravatar_cache(person_id: int):
         user.save()
         user.avatar.save(f"{user.gravatar_parameter}.{extension}", File(tmp_img))
 
-        logger.info(f"set avatar for user {user.name} to {user.avatar.url}")
+        logger.info("set avatar for user %s to %s", user.name, user.avatar.url)
 
     user.process_image("avatar", generate_thumbnail=True)
 

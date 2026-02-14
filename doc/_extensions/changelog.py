@@ -16,6 +16,7 @@ will refer to the categories defined below for grouping.
 This Sphinx extension is heavily inspired by the `releases` Sphinx extension by Jeff
 'bitprophet' Forcier.
 """
+
 import re
 from collections import defaultdict
 
@@ -79,7 +80,7 @@ class Release(nodes.Element):
         return self["number"]
 
     def __repr__(self):
-        return "<release {}>".format(self.number)
+        return f"<release {self.number}>"
 
 
 def issues_role(name, rawtext, text, *args, **kwargs):
@@ -89,7 +90,7 @@ def issues_role(name, rawtext, text, *args, **kwargs):
         if attr not in ("", "-", "0")
     ]
 
-    categories = [c for c in attrs if c in CATEGORIES.keys()]
+    categories = [c for c in attrs if c in CATEGORIES]
     category = categories[0] if categories else None
 
     issues = [i for i in attrs if i.isdigit()]
@@ -98,7 +99,7 @@ def issues_role(name, rawtext, text, *args, **kwargs):
     type_label_str = f'[<span style="color: #{ISSUE_TYPES[name]["color"]};">{ISSUE_TYPES[name]["label"]}</span>]'
     type_label = [nodes.raw(text=type_label_str, format="html")]
 
-    nodelist = type_label + [nodes.inline(text=" ")]
+    nodelist = [*type_label, nodes.inline(text=" ")]
     node = Issue(number=issue, type_=name, nodelist=nodelist, category=category)
     return [node], []
 
@@ -155,7 +156,7 @@ def collect_releases(entries):
             continue
         elif not isinstance(obj, Issue):
             msg = f"Found issue node ({obj}) which is not an Issue! Please double-check your ReST syntax!"
-            msg += f"Context: {str(obj.parent)}"
+            msg += f"Context: {obj.parent!s}"
             raise ValueError(msg)
 
         releases[-1]["entries"][obj.category].append(
@@ -190,7 +191,7 @@ def construct_issue_nodes(issue, description):
 
 def construct_release_nodes(release, entries):
     show_category_headers = len(entries) > 1
-    for category in CATEGORIES.keys():
+    for category, name in CATEGORIES.items():
         issues = entries.get(category)
         if not issues:
             continue
@@ -199,7 +200,7 @@ def construct_release_nodes(release, entries):
             release["nodelist"][0].append(
                 nodes.raw(
                     rawtext="",
-                    text=f'<h4 style="margin-bottom: 0.3em;">{CATEGORIES[category]}</h4>',
+                    text=f'<h4 style="margin-bottom: 0.3em;">{name}</h4>',
                     format="html",
                 )
             )
@@ -244,7 +245,7 @@ def generate_changelog(app, doctree, docname):
 
 def setup(app):
     # Register intermediate roles
-    for name in ISSUE_TYPES.keys():
+    for name in ISSUE_TYPES:
         app.add_role(name, issues_role)
     app.add_role("release", release_role)
     # Hook in our changelog transmutation at appropriate step

@@ -10,6 +10,7 @@ from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
 from pretalx.event.models import Event
+from pretalx.submission.models.review import ReviewPhase
 
 
 @pytest.fixture
@@ -29,7 +30,7 @@ def event():
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "locale_array,count",
+    ("locale_array", "count"),
     (
         ("de", 1),
         ("de,en", 2),
@@ -296,8 +297,6 @@ def test_event_update_review_phase_do_not_keep_outdated_phase(event):
 
 @pytest.mark.django_db
 def test_event_update_review_phase_activate_next_phase(event):
-    from pretalx.submission.models.review import ReviewPhase
-
     with scope(event=event):
         event.review_phases.all().delete()
         active_phase = event.active_review_phase
@@ -311,7 +310,7 @@ def test_event_update_review_phase_activate_next_phase(event):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "color,needs_dark_text",
+    ("color", "needs_dark_text"),
     (
         # Dark colors - white text is fine, no dark text needed
         ("#000000", False),  # Black - 21:1 contrast

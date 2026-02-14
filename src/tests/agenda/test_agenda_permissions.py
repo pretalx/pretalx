@@ -9,7 +9,7 @@ from pretalx.agenda.rules import is_agenda_visible, is_speaker_viewable
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "is_public,show_schedule,has_schedule,result",
+    ("is_public", "show_schedule", "has_schedule", "result"),
     (
         (True, True, True, True),
         (True, True, False, False),
@@ -32,7 +32,7 @@ def test_agenda_permission_is_agenda_visible(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "agenda_visible,result",
+    ("agenda_visible", "result"),
     (
         (True, True),
         (False, False),

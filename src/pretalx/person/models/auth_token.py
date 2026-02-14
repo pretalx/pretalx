@@ -23,7 +23,7 @@ def generate_api_token():
 
 
 READ_PERMISSIONS = ("list", "retrieve")
-WRITE_PERMISSIONS = READ_PERMISSIONS + ("create", "update", "destroy", "actions")
+WRITE_PERMISSIONS = (*READ_PERMISSIONS, "create", "update", "destroy", "actions")
 PERMISSION_CHOICES = (
     ("list", _p("API endpoint permissions", "Read list")),
     ("retrieve", _p("API endpoint permissions", "Read details")),
@@ -55,7 +55,6 @@ ENDPOINTS = (
 
 
 class UserApiTokenManager(models.Manager):
-
     def active(self):
         return self.get_queryset().filter(
             Q(expires__isnull=True) | Q(expires__gt=now())

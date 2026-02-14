@@ -291,10 +291,14 @@ class AnonymiseForm(SubmissionForm):
             self.fields.pop(key, None)
 
     def save(self):
-        anonymised_data = {"_anonymised": True}
-        for key, value in self.cleaned_data.items():
-            if value != getattr(self._instance, key, ""):
-                anonymised_data[key] = value
+        anonymised_data = {
+            "_anonymised": True,
+            **{
+                key: value
+                for key, value in self.cleaned_data.items()
+                if value != getattr(self._instance, key, "")
+            },
+        }
         self._instance.anonymised_data = json.dumps(anonymised_data)
         self._instance.save(update_fields=["anonymised_data"])
 

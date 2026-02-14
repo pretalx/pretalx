@@ -127,7 +127,7 @@ def test_question_base_properties(submission, question):
 
 
 @pytest.mark.parametrize(
-    "variant,answer,expected",
+    ("variant", "answer", "expected"),
     (
         ("number", "1", "1"),
         ("string", "hm", "hm"),
@@ -227,12 +227,12 @@ def test_generate_unique_codes_batch(choice_question):
 
 
 @pytest.mark.parametrize(
-    "target,related_attr",
-    [
+    ("target", "related_attr"),
+    (
         ("submission", "submission"),
         ("speaker", "person"),
         ("reviewer", "review"),
-    ],
+    ),
 )
 @pytest.mark.django_db
 def test_answer_file_path(event, submission, speaker, review, target, related_attr):

@@ -8,7 +8,7 @@ from django.urls import reverse
 
 
 @pytest.mark.parametrize(
-    "search,orga_results",
+    ("search", "orga_results"),
     (
         ("a", 0),
         ("aa", 0),
@@ -40,7 +40,8 @@ def test_user_typeahead(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "follow,expected", (("/orga/", "/orga/"), ("https://example.com", "/orga/event/"))
+    ("follow", "expected"),
+    (("/orga/", "/orga/"), ("https://example.com", "/orga/event/")),
 )
 def test_remove_superuser(orga_client, orga_user, follow, expected):
     orga_user.is_superuser = True

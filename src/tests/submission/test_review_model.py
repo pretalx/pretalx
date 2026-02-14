@@ -12,7 +12,7 @@ from pretalx.submission.models import Review
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "scores,expected",
+    ("scores", "expected"),
     (
         ([], None),
         ([None], None),
@@ -43,7 +43,7 @@ def test_median_review_score(submission, scores, expected):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "score,expected",
+    ("score", "expected"),
     (
         (0, "0"),
         (1, "1"),

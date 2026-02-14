@@ -8,7 +8,7 @@ from pretalx.orga.utils.i18n import get_moment_locale
 
 
 @pytest.mark.parametrize(
-    "locale,expected",
+    ("locale", "expected"),
     (
         ("af", "af"),
         ("hy-am", "hy-am"),

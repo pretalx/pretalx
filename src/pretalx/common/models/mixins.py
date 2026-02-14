@@ -66,13 +66,12 @@ class LogMixin:
                 raise TypeError(
                     f"Logged data should always be a dictionary, not {type(data)}."
                 )
-            for key, value in data.items():
+            for key in data:
                 if any(sensitive_key in key for sensitive_key in SENSITIVE_KEYS):
-                    value = data[key]
-                    data[key] = "********" if value else value
+                    data[key] = "********" if data[key] else data[key]
             data = json_roundtrip(data)
 
-        from pretalx.common.models import ActivityLog
+        from pretalx.common.models import ActivityLog  # noqa: PLC0415
 
         return ActivityLog.objects.create(
             event=getattr(self, "event", None),
@@ -146,7 +145,7 @@ class LogMixin:
         return data
 
     def logged_actions(self):
-        from pretalx.common.models import ActivityLog
+        from pretalx.common.models import ActivityLog  # noqa: PLC0415
 
         return (
             ActivityLog.objects.filter(
@@ -207,7 +206,7 @@ class FileCleanupMixin:
         # Schedule cleanup after save, so the database has the new path when
         # the task runs (important for eager mode).
         for field, path in old_files.items():
-            from pretalx.common.tasks import task_cleanup_file
+            from pretalx.common.tasks import task_cleanup_file  # noqa: PLC0415
 
             task_cleanup_file.apply_async(
                 kwargs={
@@ -232,7 +231,7 @@ class FileCleanupMixin:
         return super().delete(*args, **kwargs)
 
     def process_image(self, field, generate_thumbnail=False):
-        from pretalx.common.tasks import task_process_image
+        from pretalx.common.tasks import task_process_image  # noqa: PLC0415
 
         task_process_image.apply_async(
             kwargs={

@@ -74,7 +74,7 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
                     "Please check that you don’t have stray { or } somewhere, "
                     "and that there are no spaces inside the {} blocks."
                 )
-            )
+            ) from None
         if warnings:
             warnings = ", ".join("{" + warning + "}" for warning in warnings)
             raise forms.ValidationError(str(_("Unknown placeholder!")) + " " + warnings)
@@ -91,14 +91,14 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
                     "Please check that you don’t have stray { or } somewhere, "
                     "and that there are no spaces inside the {} blocks."
                 )
-            )
+            ) from None
         if warnings:
             warnings = ", ".join("{" + warning + "}" for warning in warnings)
             raise forms.ValidationError(str(_("Unknown placeholder!")) + " " + warnings)
 
-        from bs4 import BeautifulSoup
+        from bs4 import BeautifulSoup  # noqa: PLC0415
 
-        from pretalx.common.templatetags.rich_text import render_markdown_abslinks
+        from pretalx.common.templatetags.rich_text import render_markdown_abslinks  # noqa: PLC0415
 
         for locale in self.event.locales:
             with language(locale):
@@ -360,25 +360,23 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
         result = []
         for submission in submissions:
             for slot in submission.current_slots or []:
-                for speaker in submission.sorted_speakers:
-                    result.append(
-                        {
-                            "submission": submission,
-                            "slot": slot,
-                            "user": speaker,
-                        }
-                    )
-            else:
-                for speaker in submission.sorted_speakers:
-                    result.append(
-                        {
-                            "submission": submission,
-                            "user": speaker,
-                        }
-                    )
+                result.extend(
+                    {
+                        "submission": submission,
+                        "slot": slot,
+                        "user": speaker,
+                    }
+                    for speaker in submission.sorted_speakers
+                )
+            result.extend(
+                {
+                    "submission": submission,
+                    "user": speaker,
+                }
+                for speaker in submission.sorted_speakers
+            )
         if added_speakers:
-            for user in added_speakers:
-                result.append({"user": user})
+            result.extend({"user": user} for user in added_speakers)
         return result
 
     def clean_question(self):

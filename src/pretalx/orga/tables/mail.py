@@ -31,7 +31,7 @@ class MailTemplateTable(PretalxTable):
         extra_context={"show_custom": True},
         verbose_name=_("Template"),
     )
-    subject = SortableColumn(order_by=Lower(Translate(("subject"))))
+    subject = SortableColumn(order_by=Lower(Translate("subject")))
     actions = ActionsColumn(
         actions={
             "send": {
@@ -39,7 +39,9 @@ class MailTemplateTable(PretalxTable):
                 "condition": lambda record: not record.role,
                 "color": "primary",
                 "icon": None,
-                "url": lambda record: f"{record.event.orga_urls.compose_mails_sessions}?template={record.pk}",
+                "url": lambda record: (
+                    f"{record.event.orga_urls.compose_mails_sessions}?template={record.pk}"
+                ),
             },
             "delete": {
                 "condition": lambda record: not record.role,

@@ -15,7 +15,6 @@ MODEL_PERMISSION_MAP = {
 
 
 class ApiPermission(BasePermission):
-
     def get_permission_object(self, view, obj, request, detail=False):
         return obj or getattr(request, "event", None) or request.organiser
 

@@ -65,6 +65,8 @@ from pretalx.submission.rules import (
     questions_for_user,
     reviews_are_open,
 )
+from pretalx.submission.rules import filter_answers_by_team_access
+from pretalx.common.views.generic import get_next_url
 
 
 class ReviewDashboard(
@@ -409,8 +411,7 @@ class BulkReview(EventPermissionRequired, TemplateView):
         for category in self.categories:
             for track in category.limit_tracks.all():
                 categories[track.pk].append(category)
-            else:
-                categories[None].append(category)
+            categories[None].append(category)
         return {
             submission.code: ReviewForm(
                 event=self.request.event,
@@ -532,8 +533,6 @@ class BulkTagging(EventPermissionRequired, SubmissionListMixin, TemplateView):
                 )
 
         # Redirect to next_url if available, otherwise stay on page
-        from pretalx.common.views.generic import get_next_url
-
         next_url = get_next_url(request)
         if next_url:
             return redirect(next_url)
@@ -686,8 +685,6 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
         )
 
     def get_context_data(self, **kwargs):
-        from pretalx.submission.rules import filter_answers_by_team_access
-
         result = super().get_context_data(**kwargs)
         result["done"] = self.request.user.reviews.filter(
             submission__event=self.request.event

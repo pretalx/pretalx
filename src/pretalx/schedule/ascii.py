@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import textwrap
-from itertools import repeat
+from itertools import repeat, pairwise
 
 from dateutil import rrule
 from django.utils.translation import gettext_lazy as _
@@ -85,14 +85,16 @@ def talk_card(talk, col_width):
             if height_after_title > 4:
                 yield empty_line
                 yielded_lines += 1
-            yield " " * (
-                text_width - 2
-            ) + f"  \033[38;5;246m{talk.submission.content_locale}\033[0m  "
+            yield (
+                " " * (text_width - 2)
+                + f"  \033[38;5;246m{talk.submission.content_locale}\033[0m  "
+            )
             yielded_lines += 1
     elif talk.submission:
-        yield " " * (
-            text_width - 2
-        ) + f"  \033[38;5;246m{talk.submission.content_locale}\033[0m  "
+        yield (
+            " " * (text_width - 2)
+            + f"  \033[38;5;246m{talk.submission.content_locale}\033[0m  "
+        )
         yielded_lines += 1
     for __ in repeat(None, height - yielded_lines + 1):
         yield empty_line
@@ -143,7 +145,7 @@ def draw_dt_line(
     else:
         line_parts.append(fill_char * (col_width + 1))
 
-    for loc1, loc2 in zip(rooms[:-1], rooms[1:]):
+    for loc1, loc2 in pairwise(rooms):
         start1, run1, end1 = (
             starting_events[loc1],
             running_events[loc1],

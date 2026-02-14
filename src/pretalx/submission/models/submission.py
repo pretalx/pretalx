@@ -152,7 +152,7 @@ def sorted_speakers_prefetch(prefix=""):
 
     Use prefix="submission__" when prefetching from slot querysets.
     """
-    from pretalx.person.models import User
+    from pretalx.person.models import User  # noqa: PLC0415
 
     lookup = f"{prefix}speakers" if prefix else "speakers"
     return Prefetch(lookup, queryset=User.objects.order_by("speaker_roles__position"))
@@ -455,7 +455,7 @@ class Submission(GenerateCode, PretalxModel):
 
     @cached_property
     def public_answers(self):
-        from pretalx.submission.models.question import QuestionTarget
+        from pretalx.submission.models.question import QuestionTarget  # noqa: PLC0415
 
         qs = (
             self.answers.filter(
@@ -592,7 +592,7 @@ class Submission(GenerateCode, PretalxModel):
         deleted, or all created, or the number of talk slots might need
         to be adjusted.
         """
-        from pretalx.schedule.models import TalkSlot
+        from pretalx.schedule.models import TalkSlot  # noqa: PLC0415
 
         scheduling_allowed = (
             self.state in SubmissionStates.accepted_states
@@ -636,7 +636,7 @@ class Submission(GenerateCode, PretalxModel):
     update_talk_slots.alters_data = True
 
     def send_initial_mails(self, person):
-        from pretalx.mail.models import MailTemplateRoles
+        from pretalx.mail.models import MailTemplateRoles  # noqa: PLC0415
 
         template = self.event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
         template_text = copy.deepcopy(template.text)
@@ -794,7 +794,7 @@ class Submission(GenerateCode, PretalxModel):
         return str(dict(self.event.named_content_locales)[self.content_locale])
 
     def send_state_mail(self):
-        from pretalx.mail.models import MailTemplateRoles
+        from pretalx.mail.models import MailTemplateRoles  # noqa: PLC0415
 
         if self.state == SubmissionStates.ACCEPTED:
             template = self.event.get_mail_template(MailTemplateRoles.SUBMISSION_ACCEPT)
@@ -869,7 +869,8 @@ class Submission(GenerateCode, PretalxModel):
         # codes can contain 34 different characters (including compatibility with frab imported data) and normally have
         # 6 charactes. Since log2(34 **6) == 30.52, that just fits in to a positive 32-bit signed integer (that
         # Engelsystem expects), if we do it correctly.
-        charset = self._code_charset + [
+        charset = [
+            *self._code_charset,
             "1",
             "2",
             "4",
@@ -1017,7 +1018,7 @@ class Submission(GenerateCode, PretalxModel):
 
     @cached_property
     def speaker_profiles(self):
-        from pretalx.person.models.profile import SpeakerProfile
+        from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
 
         return SpeakerProfile.objects.filter(
             event=self.event, user__in=self.speakers.all()
@@ -1030,7 +1031,7 @@ class Submission(GenerateCode, PretalxModel):
         :class:`~pretalx.schedule.models.availability.Availability` objects of
         all speakers of this submission.
         """
-        from pretalx.schedule.models.availability import Availability
+        from pretalx.schedule.models.availability import Availability  # noqa: PLC0415
 
         all_availabilities = self.event.valid_availabilities.filter(
             person__in=self.speaker_profiles
@@ -1082,10 +1083,10 @@ class Submission(GenerateCode, PretalxModel):
         return result
 
     def add_speaker(self, email, name=None, locale=None, user=None):
-        from pretalx.common.urls import build_absolute_uri
-        from pretalx.mail.models import MailTemplateRoles
-        from pretalx.person.models import SpeakerProfile, User
-        from pretalx.person.services import create_user
+        from pretalx.common.urls import build_absolute_uri  # noqa: PLC0415
+        from pretalx.mail.models import MailTemplateRoles  # noqa: PLC0415
+        from pretalx.person.models import SpeakerProfile, User  # noqa: PLC0415
+        from pretalx.person.services import create_user  # noqa: PLC0415
 
         user_created = False
         context = {}
@@ -1147,7 +1148,7 @@ class Submission(GenerateCode, PretalxModel):
             )
 
     def send_invite(self, to, _from=None, subject=None, text=None):
-        from pretalx.mail.models import QueuedMail
+        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
 
         if not _from and (not subject or not text):
             raise Exception("Please enter a sender for this invitation.")
@@ -1240,7 +1241,7 @@ class SubmissionInvitation(PretalxModel):
         )
 
     def send(self, _from=None, subject=None, text=None):
-        from pretalx.mail.models import QueuedMail
+        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
 
         if not _from:
             raise Exception("Please enter a sender for this invitation.")

@@ -8,7 +8,7 @@ from pretalx.common.forms.mixins import RequestRequire
 
 
 @pytest.mark.parametrize(
-    "value,min_length,max_length,count_in,valid",
+    ("value", "min_length", "max_length", "count_in", "valid"),
     (
         ("word word word", None, None, "chars", True),
         ("word word word", None, None, "words", True),

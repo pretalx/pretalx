@@ -11,7 +11,7 @@ def is_event_visible(user, event):
 
 
 def get_events_for_user(user, queryset=None):
-    from pretalx.event.models import Event
+    from pretalx.event.models import Event  # noqa: PLC0415
 
     queryset = queryset or Event.objects.all()
     if user.is_anonymous:

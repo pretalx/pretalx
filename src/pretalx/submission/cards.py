@@ -138,10 +138,7 @@ def get_style():
 
 def get_story(doc, queryset):
     styles = get_style()
-    story = []
-    for s in queryset:
-        story.append(SubmissionCard(s, styles, doc.width / 2))
-    return story
+    return [SubmissionCard(s, styles, doc.width / 2) for s in queryset]
 
 
 def build_cards(queryset, event):

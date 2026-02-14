@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+# ruff: noqa: F405
+
 import atexit
 import os
 import tempfile
@@ -14,7 +16,7 @@ config_path = Path("test/sqlite.cfg")
 if config_path.exists():
     os.environ.setdefault("PRETALX_CONFIG_FILE", str(config_path))
 
-from pretalx.settings import *  # NOQA
+from pretalx.settings import *  # noqa: F403, E402
 
 BASE_DIR = Path(tmpdir.name)
 DATA_DIR = BASE_DIR
@@ -28,19 +30,19 @@ SITE_NETLOC = urlparse(SITE_URL).netloc
 for directory in (BASE_DIR, DATA_DIR, LOG_DIR, MEDIA_ROOT, HTMLEXPORT_ROOT):
     directory.mkdir(parents=True, exist_ok=True)
 
-INSTALLED_APPS.append("tests.dummy_app.PluginApp")  # noqa
+INSTALLED_APPS.append("tests.dummy_app.PluginApp")
 
 atexit.register(tmpdir.cleanup)
 
 EMAIL_BACKEND = "django.core.mail.outbox"
 MAIL_FROM = "orga@orga.org"
 
-STORAGES["staticfiles"][
-    "BACKEND"
-] = "django.contrib.staticfiles.storage.StaticFilesStorage"
+STORAGES["staticfiles"]["BACKEND"] = (
+    "django.contrib.staticfiles.storage.StaticFilesStorage"
+)
 
-TEMPLATES[0]["OPTIONS"]["loaders"] = (  # NOQA
-    ("django.template.loaders.cached.Loader", template_loaders),  # NOQA
+TEMPLATES[0]["OPTIONS"]["loaders"] = (
+    ("django.template.loaders.cached.Loader", template_loaders),
 )
 
 DEBUG = False
@@ -63,8 +65,8 @@ CACHES = {
 }
 
 with suppress(ValueError):
-    INSTALLED_APPS.remove("debug_toolbar.apps.DebugToolbarConfig")  # noqa
-    MIDDLEWARE.remove("debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa
+    INSTALLED_APPS.remove("debug_toolbar.apps.DebugToolbarConfig")
+    MIDDLEWARE.remove("debug_toolbar.middleware.DebugToolbarMiddleware")
 
 
 # Don't run migrations

@@ -32,7 +32,7 @@ def hack_model_fields():
     modelops.AlterModelOptions.ALTER_OPTION_KEYS.remove("default_manager_name")
     modelops.AlterModelOptions.ALTER_OPTION_KEYS.remove("permissions")
     modelops.AlterModelOptions.ALTER_OPTION_KEYS.remove("default_permissions")
-    IGNORED_ATTRS = [
+    ignored_attrs = [
         # (field type, attribute name, blacklist of field sub-types)
         (models.Field, "verbose_name", []),
         (models.Field, "help_text", []),
@@ -65,7 +65,7 @@ def hack_model_fields():
 
     def new_deconstruct(self):
         name, path, args, kwargs = original_deconstruct(self)
-        for ftype, attr, blacklist in IGNORED_ATTRS:
+        for ftype, attr, blacklist in ignored_attrs:
             if isinstance(self, ftype) and not any(
                 isinstance(self, ft) for ft in blacklist
             ):
@@ -76,7 +76,6 @@ def hack_model_fields():
 
 
 class Command(Parent):
-
     def handle(self, *args, **kwargs):
         hack_model_fields()
         return super().handle(*args, **kwargs)

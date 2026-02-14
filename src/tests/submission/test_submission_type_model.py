@@ -8,7 +8,7 @@ from pretalx.submission.models import SubmissionType
 
 
 @pytest.mark.parametrize(
-    "duration,string",
+    ("duration", "string"),
     (
         (30, "30 minutes"),
         (60, "60 minutes"),

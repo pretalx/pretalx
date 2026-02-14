@@ -11,7 +11,6 @@ import pretalx.common.models.mixins
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("event", "0037_remove_event_accept_template_and_more"),
     ]

@@ -7,7 +7,7 @@ from pretalx.common.text.console import get_separator, print_line
 
 
 @pytest.mark.parametrize(
-    "args,expected",
+    ("args", "expected"),
     (
         (
             (False, True, True, False),

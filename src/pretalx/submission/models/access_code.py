@@ -121,7 +121,7 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
         return self.maximum_uses - self.redeemed
 
     def send_invite(self, to, subject, text):
-        from pretalx.mail.models import QueuedMail
+        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
 
         to = to.split(",") if isinstance(to, str) else to
         for invite in to:

@@ -400,7 +400,7 @@ def test_speaker_retrieve_expand_answers(
 @pytest.mark.django_db
 @pytest.mark.parametrize("expand", (False, True))
 @pytest.mark.parametrize(
-    "is_visible_to_reviewers, is_reviewer, can_see",
+    ("is_visible_to_reviewers", "is_reviewer", "can_see"),
     (
         (True, True, True),  # Visible question, reviewer -> can see
         (False, True, False),  # Hidden question, reviewer -> cannot see

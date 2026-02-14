@@ -11,7 +11,6 @@ import pretalx.common.models.mixins
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("submission", "0077_answeroption_position"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

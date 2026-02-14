@@ -12,6 +12,6 @@ logger = logging.getLogger(__name__)
 
 def api_exception_handler(exc, context):
     if isinstance(exc, exceptions.APIException):
-        logger.debug(f"API Exception [{exc.status_code}]: {json.dumps(exc.detail)}")
+        logger.debug("API Exception [%s]: %s", exc.status_code, json.dumps(exc.detail))
 
     return exception_handler(exc, context)

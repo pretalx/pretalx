@@ -23,7 +23,7 @@ def test_talk_list(orga_client, event, break_slot):
     content = json.loads(response.text)
     assert response.status_code == 200
     assert len(content["talks"]) == 2
-    assert len([talk for talk in content["talks"] if talk["title"]])
+    assert len([talk for talk in content["talks"] if talk["title"]]) > 0
 
 
 @pytest.mark.django_db

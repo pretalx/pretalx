@@ -432,8 +432,8 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
         :param filter_speakers: Apply only to these speakers.
         :param filter_talks: Apply only to these talks.
         """
-        from pretalx.person.models import User
-        from pretalx.submission.models import Submission
+        from pretalx.person.models import User  # noqa: PLC0415
+        from pretalx.submission.models import Submission  # noqa: PLC0415
 
         answers = self.answers.all()
         filter_talks = filter_talks or Submission.objects.none()
@@ -590,8 +590,7 @@ class Answer(PretalxModel):
             # To escape this complexity, we restrict the entire endpoint to people
             # with "change_event_settings" permissions for now, and tackle this
             # properly if there is demand and a) funding or b) contributions.
-            "api": can_change_event_settings
-            & orga_can_change_submissions
+            "api": can_change_event_settings & orga_can_change_submissions
         }
 
     @cached_property

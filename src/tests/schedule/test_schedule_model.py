@@ -48,12 +48,12 @@ def test_freeze(slot):
         assert not new.version
 
 
-@pytest.mark.parametrize("version", ["wip", "latest", None, ""])
+@pytest.mark.parametrize("version", ("wip", "latest", None, ""))
 @pytest.mark.django_db
 def test_freeze_fail(slot, schedule, version):
     with scope(event=slot.submission.event):
         schedule_count = Schedule.objects.count()
-        with pytest.raises(Exception):  # noqa
+        with pytest.raises(Exception):  # noqa: B017, PT011
             slot.submission.event.wip_schedule.freeze(
                 version if version is not None else schedule.version
             )
@@ -66,7 +66,7 @@ def test_freeze_fail_repeat(slot, schedule):
         schedule_count = Schedule.objects.count()
         old, _ = slot.submission.event.wip_schedule.freeze("version")
         assert Schedule.objects.count() == schedule_count + 1
-        with pytest.raises(Exception):  # noqa
+        with pytest.raises(Exception):  # noqa: B017, PT011
             old.freeze("version")
         assert Schedule.objects.count() == schedule_count + 1
 
@@ -131,7 +131,7 @@ def test_unfreeze_bug72(slot):
 
 @pytest.mark.django_db
 def test_unfreeze_unreleased_schedule(event):
-    with scope(event=event), pytest.raises(Exception):  # noqa
+    with scope(event=event), pytest.raises(Exception):  # noqa: B017, PT011
         event.wip_schedule.unfreeze()
 
 

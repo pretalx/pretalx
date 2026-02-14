@@ -7,6 +7,7 @@ It runs the local frontend server, if node is installed and the setting
 is set.
 """
 
+from subprocess import Popen
 from pathlib import Path
 
 from django.conf import settings
@@ -25,8 +26,6 @@ class Command(Parent):
             return
 
         # Start the vite server in the background
-        from subprocess import Popen
-
         # run "npm start" in the frontend directory
         frontend_dir = (
             Path(__file__).parent.parent.parent.parent / "frontend/schedule-editor"

@@ -64,7 +64,7 @@ def get_schedule_exporter_content(request, exporter_name, schedule):
         etag = hashlib.sha1(str(data).encode()).hexdigest()
     except Exception:
         logger.exception(
-            f"Failed to use {exporter.identifier} for {request.event.slug}"
+            "Failed to use %s for %s", exporter.identifier, request.event.slug
         )
         return
     if request.headers.get("If-None-Match") == etag:

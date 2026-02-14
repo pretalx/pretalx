@@ -139,31 +139,6 @@ api-docs:
 @reuse:
     uvx reuse lint
 
-# Format code with black
-[group('linting')]
-black *args=src_dir:
-    {{ uv_dev }} black {{ args }}
-
-# Check code with black (check only)
-[group('linting')]
-black-check *args=src_dir:
-    just black --check {{ args }}
-
-# Check import sorting with isort (check only)
-[group('linting')]
-isort-check *args=src_dir:
-    just isort --check {{ args }}
-
-# Sort imports with isort
-[group('linting')]
-isort *args=src_dir:
-    {{ uv_dev }} isort {{ args }}
-
-# Run flake8 linter
-[group('linting')]
-flake8 *args=src_dir:
-    {{ uv_dev }} flake8 {{ args }}
-
 # Check Django templates with djhtml (check only)
 [group('linting')]
 djhtml-check:
@@ -174,19 +149,24 @@ djhtml-check:
 djhtml *args="":
     find src -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -print | xargs {{ uv_dev }} djhtml {{ args }}
 
+
 # Run all formatters and linters
 [group('linting')]
-[parallel]
-fmt: black djhtml isort && flake8
+format *args="":
+    {{ uv_dev }} ruff format {{ args }}
+
+# Run all formatters and linters
+[group('linting')]
+check *args="":
+    {{ uv_dev }} ruff check {{ args }}
+
+# Run all formatters and linters
+[group('linting')]
+fmt: format check
 
 # Run all code quality checks
 [group('linting')]
-[parallel]
-check: black-check isort-check djhtml-check flake8 && _check-done
-
-[private]
-@_check-done:
-    echo '{{ GREEN }}All checks passed{{ NORMAL }}'
+fmt-check: (format "--check") check
 
 # Check for untrimmed blocktranslate tags
 [group('linting')]

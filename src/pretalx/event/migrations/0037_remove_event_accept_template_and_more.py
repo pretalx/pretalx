@@ -7,7 +7,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("event", "0036_alter_event_header_image_alter_event_logo"),
         ("mail", "0013_mailtemplate_role"),

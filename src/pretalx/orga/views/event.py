@@ -72,6 +72,7 @@ from pretalx.person.forms import UserForm
 from pretalx.person.models import User
 from pretalx.submission.models import ReviewPhase, ReviewScoreCategory
 from pretalx.submission.tasks import recalculate_all_review_scores
+import itertools
 
 
 class EventSettingsPermission(EventPermissionRequired):
@@ -249,7 +250,7 @@ class EventLive(EventSettingsPermission, TemplateView):
                     if isinstance(response[1], Exception)
                 ]
                 if exceptions:
-                    from pretalx.common.templatetags.rich_text import render_markdown
+                    from pretalx.common.templatetags.rich_text import render_markdown  # noqa: PLC0415
 
                     messages.error(
                         request,
@@ -268,19 +269,18 @@ class EventLive(EventSettingsPermission, TemplateView):
                     for response in responses:
                         if isinstance(response[1], str):
                             messages.success(request, response[1])
-        else:  # action == 'deactivate'
-            if not event.is_public:
-                messages.success(request, _("This event was already hidden."))
-            else:
-                event.is_public = False
-                event.save()
-                event.log_action(
-                    "pretalx.event.deactivate",
-                    person=self.request.user,
-                    orga=True,
-                    data={},
-                )
-                messages.success(request, _("This event is now hidden."))
+        elif not event.is_public:
+            messages.success(request, _("This event was already hidden."))
+        else:
+            event.is_public = False
+            event.save()
+            event.log_action(
+                "pretalx.event.deactivate",
+                person=self.request.user,
+                orga=True,
+                data={},
+            )
+            messages.success(request, _("This event is now hidden."))
         return redirect(event.orga_urls.base)
 
 
@@ -410,7 +410,7 @@ class EventReviewSettings(EventSettingsPermission, FormView):
             # and show an error message if any exist. Raise an exception to
             # get out of the transaction.
             review_phases = self.request.event.reorder_review_phases()
-            for phase, next_phase in zip(review_phases, review_phases[1:]):
+            for phase, next_phase in itertools.pairwise(review_phases):
                 if not phase.end:
                     raise ValidationError(
                         _("Only the last review phase may be open-ended.")
@@ -484,7 +484,6 @@ class EventReviewSettings(EventSettingsPermission, FormView):
 
 
 class PhaseActivate(EventSettingsPermission, View):
-
     def get_object(self):
         return get_object_or_404(
             ReviewPhase, event=self.request.event, pk=self.kwargs.get("pk")
@@ -738,7 +737,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
         if not has_control_rights:
             team = Team.objects.create(
                 organiser=event.organiser,
-                name=_(f"Team {event.name}"),
+                name=_("Team {event.name}").format(event=event),
                 can_change_event_settings=True,
                 can_change_submissions=True,
             )
@@ -824,7 +823,7 @@ class WidgetSettings(EventSettingsPermission, FormView):
         result = super().get_context_data(**kwargs)
         result["extra_form"] = WidgetGenerationForm(instance=self.request.event)
         result["generate_submit"] = [
-            Button(id="generate-widget", _type=None, label=_("Generate widget"))
+            Button(_id="generate-widget", _type=None, label=_("Generate widget"))
         ]
         return result
 

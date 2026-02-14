@@ -12,7 +12,7 @@ from pretalx.mail.models import QueuedMail
 
 
 @pytest.mark.parametrize(
-    "key,value",
+    ("key", "value"),
     (
         ("1", "a"),
         ("2", "b"),
@@ -27,7 +27,7 @@ def test_tolerant_dict(key, value):
 @pytest.mark.django_db
 def test_sent_mail_sending(sent_mail):
     assert str(sent_mail)
-    with pytest.raises(Exception):  # noqa
+    with pytest.raises(Exception):  # noqa: B017, PT011
         sent_mail.send()
 
 
@@ -69,7 +69,7 @@ def test_mail_submission_present_in_context(mail_template, submission, event):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "text,signature,expected",
+    ("text", "signature", "expected"),
     (
         ("test", None, "test"),
         ("test", "sig", "test\n-- \nsig"),
@@ -85,7 +85,7 @@ def test_mail_make_text(event, text, signature, expected):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "text,prefix,expected",
+    ("text", "prefix", "expected"),
     (
         ("test", None, "test"),
         ("test", "pref", "[pref] test"),

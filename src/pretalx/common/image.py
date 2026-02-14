@@ -49,7 +49,7 @@ def validate_image(f):
     else:
         file = BytesIO(f["content"])
 
-    from PIL import Image
+    from PIL import Image  # noqa: PLC0415
 
     try:
         try:
@@ -61,7 +61,7 @@ def validate_image(f):
                 _(
                     "The file you uploaded has a very large number of pixels, please upload a picture with smaller dimensions."
                 )
-            )
+            ) from None
 
         # load() is a potential DoS vector (see Django bug #18520), so we verify the size first
         if image.width * image.height > Image.MAX_IMAGE_PIXELS:
@@ -91,7 +91,7 @@ def _save_image_as_webp(img, field, filename):
 
 
 def load_img(image):
-    from PIL import Image
+    from PIL import Image  # noqa: PLC0415
 
     try:
         img = Image.open(image)
@@ -118,7 +118,7 @@ def process_image(*, image, generate_thumbnail=False):
     img = load_img(image)
     if not img:
         return
-    from PIL import Image, ImageOps
+    from PIL import Image, ImageOps  # noqa: PLC0415
 
     img = ImageOps.exif_transpose(img)
     img_without_exif = Image.new(img.mode, img.size)
@@ -170,7 +170,7 @@ def create_thumbnail(image, size, processed_img=None):
     if not img:
         return
 
-    from PIL import Image
+    from PIL import Image  # noqa: PLC0415
 
     img.thumbnail(THUMBNAIL_SIZES[size], resample=Image.Resampling.LANCZOS)
     thumbnail_field = getattr(image.instance, thumbnail_field_name)

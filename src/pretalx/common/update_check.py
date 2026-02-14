@@ -65,7 +65,7 @@ def update_check():
             for plugin in get_all_plugins()
         ],
     }
-    import requests
+    import requests  # noqa: PLC0415
 
     try:
         response = requests.post(

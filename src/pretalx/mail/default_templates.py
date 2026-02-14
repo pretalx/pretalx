@@ -6,7 +6,8 @@ from i18nfield.strings import LazyI18nString
 
 GENERIC_SUBJECT = LazyI18nString.from_gettext(_("Your proposal: {submission_title}"))
 
-ACK_TEXT = LazyI18nString.from_gettext(_("""Hi!
+ACK_TEXT = LazyI18nString.from_gettext(
+    _("""Hi!
 
 We have received your proposal “{submission_title}” to
 {event_name}. We will notify you once we have had time to consider all
@@ -15,9 +16,11 @@ proposals, but until then you can see and edit your proposal at
 
 Please do not hesitate to contact us if you have any questions!
 
-The {event_name} organisers"""))
+The {event_name} organisers""")
+)
 
-ACCEPT_TEXT = LazyI18nString.from_gettext(_("""Hi!
+ACCEPT_TEXT = LazyI18nString.from_gettext(
+    _("""Hi!
 
 We are happy to tell you that we accept your proposal “{submission_title}”
 to {event_name}. Please click this link to confirm your attendance:
@@ -30,19 +33,23 @@ about your slot in the schedule and technical details concerning the room
 and presentation tech.
 
 See you there!
-The {event_name} organisers"""))
+The {event_name} organisers""")
+)
 
-REJECT_TEXT = LazyI18nString.from_gettext(_("""Hi!
+REJECT_TEXT = LazyI18nString.from_gettext(
+    _("""Hi!
 
 We are sorry to tell you that we cannot accept your proposal
 “{submission_title}” to {event_name}. There were just too many great
 proposals - we hope to see you at {event_name} as an attendee instead
 of a speaker!
 
-The {event_name} organisers"""))
+The {event_name} organisers""")
+)
 
 UPDATE_SUBJECT = LazyI18nString.from_gettext(_("New schedule!"))
-UPDATE_TEXT = LazyI18nString.from_gettext(_("""Hi!
+UPDATE_TEXT = LazyI18nString.from_gettext(
+    _("""Hi!
 
 We have released a new schedule version, and wanted to tell you:
 
@@ -50,12 +57,14 @@ We have released a new schedule version, and wanted to tell you:
 
 We look forward to seeing you, and please contact us if there is any problem with your session or assigned slot.
 
-The {event_name} organisers"""))
+The {event_name} organisers""")
+)
 
 QUESTION_SUBJECT = LazyI18nString.from_gettext(
     _("We have some questions about your proposal")
 )
-QUESTION_TEXT = LazyI18nString.from_gettext(_("""Hi!
+QUESTION_TEXT = LazyI18nString.from_gettext(
+    _("""Hi!
 
 We have some open questions about yourself and your proposal that we’d
 like to ask you to answer:
@@ -66,12 +75,14 @@ You can answer them at {url}.
 
 Please do not hesitate to contact us if you have any questions in turn!
 
-The {event_name} organisers"""))
+The {event_name} organisers""")
+)
 
 NEW_SUBMISSION_SUBJECT = LazyI18nString.from_gettext(
     _("New proposal: {proposal_title}")
 )
-NEW_SUBMISSION_TEXT = LazyI18nString.from_gettext(_("""Hi,
+NEW_SUBMISSION_TEXT = LazyI18nString.from_gettext(
+    _("""Hi,
 
 you have received a new proposal for your event {event_name}:
 “{submission_title}” by {speakers}.
@@ -81,13 +92,15 @@ You can see details at
 
 All the best,
 your {event_name} CfP system.
-"""))
+""")
+)
 
 SPEAKER_INVITE_SUBJECT = LazyI18nString.from_gettext(
     _("You have been added to a proposal for {event_name}")
 )
 
-NEW_SPEAKER_INVITE_TEXT = LazyI18nString.from_gettext(_("""Hi!
+NEW_SPEAKER_INVITE_TEXT = LazyI18nString.from_gettext(
+    _("""Hi!
 
 You have been added to a proposal of {event_name}, titled “{proposal_title}”.
 An account has been created for you – please follow this link to set your account password.
@@ -96,21 +109,25 @@ An account has been created for you – please follow this link to set your acco
 
 Afterwards, you can edit your user profile and see the state of your proposal.
 
-The {event} orga crew"""))
-EXISTING_SPEAKER_INVITE_TEXT = LazyI18nString.from_gettext(_("""Hi!
+The {event} orga crew""")
+)
+EXISTING_SPEAKER_INVITE_TEXT = LazyI18nString.from_gettext(
+    _("""Hi!
 
 You have been added to a proposal of {event_name}, titled “{proposal_title}”.
 Please follow this link to edit your user profile and see the state of your proposal:
 
 {proposal_url}
 
-The {event_name} organisers"""))
+The {event_name} organisers""")
+)
 
 
 DRAFT_REMINDER_SUBJECT = LazyI18nString.from_gettext(
     _("Reminder: Submit your proposal")
 )
-DRAFT_REMINDER_TEXT = LazyI18nString.from_gettext(_("""Hi!
+DRAFT_REMINDER_TEXT = LazyI18nString.from_gettext(
+    _("""Hi!
 
 You have started a proposal "{submission_title}" for {event_name},
 but you haven't submitted it yet. Please go to
@@ -121,13 +138,14 @@ to complete and submit your proposal.
 
 Please do not hesitate to contact us if you have any questions!
 
-The {event_name} organisers"""))
+The {event_name} organisers""")
+)
 
 
 def get_default_template(role):
-    from pretalx.mail.models import MailTemplateRoles
+    from pretalx.mail.models import MailTemplateRoles  # noqa: PLC0415
 
-    TEMPLATE_MAPPING = {
+    template_mapping = {
         MailTemplateRoles.SUBMISSION_ACCEPT: (GENERIC_SUBJECT, ACCEPT_TEXT),
         MailTemplateRoles.SUBMISSION_REJECT: (GENERIC_SUBJECT, REJECT_TEXT),
         MailTemplateRoles.NEW_SUBMISSION: (GENERIC_SUBJECT, ACK_TEXT),
@@ -147,4 +165,4 @@ def get_default_template(role):
             EXISTING_SPEAKER_INVITE_TEXT,
         ),
     }
-    return TEMPLATE_MAPPING[role]
+    return template_mapping[role]

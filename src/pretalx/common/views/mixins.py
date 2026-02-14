@@ -23,6 +23,7 @@ from django_context_decorator import context
 from formtools.wizard.forms import ManagementForm
 from rules.contrib.views import PermissionRequiredMixin
 
+
 from pretalx.common.forms import SearchForm
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.models.file import CachedFile
@@ -140,7 +141,7 @@ class PermissionRequired(PermissionRequiredMixin):
             if permission := self.create_permission_required:
                 # If there is a create_permission and we don't have it, raise
                 if not self._check_permission(permission):
-                    raise Http404()
+                    raise Http404
                 return "create"
             if self._check_permission(self.write_permission_required):
                 # If there is no create permission, we're probably not in an object view
@@ -168,7 +169,9 @@ class PermissionRequired(PermissionRequiredMixin):
         if not hasattr(self, "get_permission_object"):
             for key in ("permission_object", "object"):
                 if getattr(self, key, None):
-                    self.get_permission_object = lambda self: getattr(self, key)  # noqa
+                    self.get_permission_object = lambda self, key=key: getattr(
+                        self, key
+                    )  # noqa: E731
 
     def has_permission(self):
         result = None
@@ -188,7 +191,7 @@ class PermissionRequired(PermissionRequiredMixin):
 
     def get_login_url(self):
         """We do this to avoid leaking data about existing pages."""
-        raise Http404()
+        raise Http404
 
     def handle_no_permission(self):
         request = getattr(self, "request", None)
@@ -202,7 +205,7 @@ class PermissionRequired(PermissionRequiredMixin):
             return redirect(
                 request.event.urls.login + f"?next={quote(request.path)}" + params
             )
-        raise Http404()
+        raise Http404
 
 
 class EventPermissionRequired(PermissionRequired):
@@ -261,23 +264,20 @@ class SocialMediaCardMixin:
 
     @csp_exempt()
     def get(self, request, *args, **kwargs):
-        try:
+        with suppress(Exception):
             image = self.get_image()
             if image:
                 return FileResponse(image)
-        except Exception:
-            pass
         if self.request.event.og_image:
             return FileResponse(self.request.event.og_image)
         if self.request.event.logo:
             return FileResponse(self.request.event.logo)
         if self.request.event.header_image:
             return FileResponse(self.request.event.header_image)
-        raise Http404()
+        raise Http404
 
 
 class PaginationMixin:
-
     DEFAULT_PAGINATION = 50
 
     def get_paginate_by(self, queryset=None):
@@ -302,7 +302,7 @@ class PaginationMixin:
         return default
 
     def get_context_data(self, **kwargs):
-        from pretalx.common.views.generic import CRUDView
+        from pretalx.common.views.generic import CRUDView  # noqa: PLC0415
 
         ctx = super().get_context_data(**kwargs)
         if isinstance(self, CRUDView) and self.permission_action != "list":
@@ -458,7 +458,7 @@ class AsyncFileDownloadMixin:
         return redirect(f"{request.path}?async_id={result.id}")
 
     def _check_task_status(self, request, async_id):
-        from celery.result import AsyncResult
+        from celery.result import AsyncResult  # noqa: PLC0415
 
         result = AsyncResult(async_id)
         is_ready = result.ready()

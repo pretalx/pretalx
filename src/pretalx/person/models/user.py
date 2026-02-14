@@ -43,12 +43,10 @@ def avatar_path(instance, filename):
 
 class UserQuerySet(models.QuerySet):
     def with_profiles(self, event):
-        from django.db.models import Prefetch
-
-        from pretalx.person.models.profile import SpeakerProfile
+        from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
 
         return self.prefetch_related(
-            Prefetch(
+            models.Prefetch(
                 "profiles",
                 queryset=SpeakerProfile.objects.filter(event=event).select_related(
                     "event"
@@ -61,7 +59,7 @@ class UserQuerySet(models.QuerySet):
 class UserManager(BaseUserManager):
     """The user manager class."""
 
-    def create_user(self, password: str = None, **kwargs):
+    def create_user(self, password=None, **kwargs):
         user = self.model(**kwargs)
         user.set_password(password)
         user.save()
@@ -77,7 +75,7 @@ class UserManager(BaseUserManager):
 
 
 def validate_username(value):
-    from pretalx.common.templatetags.rich_text import render_markdown
+    from pretalx.common.templatetags.rich_text import render_markdown  # noqa: PLC0415
 
     result = render_markdown(value)[3:-4]  # strip <p> tags
     result = html.unescape(result)  # permit single <, > etc
@@ -222,7 +220,7 @@ class User(
             not kwargs.get("update_fields") or "get_gravatar" in kwargs["update_fields"]
         )
         if self.get_gravatar and update_gravatar and not skip_gravatar_processing:
-            from pretalx.person.tasks import gravatar_cache
+            from pretalx.person.tasks import gravatar_cache  # noqa: PLC0415
 
             gravatar_cache.apply_async(args=(self.pk,), ignore_result=True)
         return result
@@ -247,7 +245,7 @@ class User(
         try:
             profile = self.profiles.select_related("event").get(event=event)
         except Exception:
-            from pretalx.person.models.profile import SpeakerProfile
+            from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
 
             profile = SpeakerProfile(event=event, user=self)
             if self.pk:
@@ -260,7 +258,7 @@ class User(
         if preferences := self.event_preferences_cache.get(event.pk):
             return preferences
 
-        from pretalx.person.models.preferences import UserEventPreferences
+        from pretalx.person.models.preferences import UserEventPreferences  # noqa: PLC0415
 
         preferences, _ = UserEventPreferences.objects.get_or_create(
             event=event, user=self
@@ -284,14 +282,14 @@ class User(
     def own_actions(self):
         """Returns all log entries that were made by this user.
         To get actions concerning this user, use logged_actions()."""
-        from pretalx.common.models import ActivityLog
+        from pretalx.common.models import ActivityLog  # noqa: PLC0415
 
         return ActivityLog.objects.filter(person=self)
 
     @transaction.atomic
     def deactivate(self):
         """Delete the user by unsetting all of their information."""
-        from pretalx.submission.models import Answer
+        from pretalx.submission.models import Answer  # noqa: PLC0415
 
         self.email = f"deleted_user_{random.randint(0, 999)}@localhost"
         while self.__class__.objects.filter(
@@ -323,7 +321,7 @@ class User(
     @transaction.atomic
     def shred(self):
         """Actually remove the user account."""
-        from pretalx.submission.models import Submission
+        from pretalx.submission.models import Submission  # noqa: PLC0415
 
         with scopes_disabled():
             if (
@@ -383,7 +381,7 @@ class User(
     def get_events_with_any_permission(self):
         """Returns a queryset of events for which this user has any type of
         permission."""
-        from pretalx.event.models import Event
+        from pretalx.event.models import Event  # noqa: PLC0415
 
         if self.is_administrator:
             return Event.objects.all()
@@ -404,7 +402,7 @@ class User(
         Permissions are given as named arguments, e.g.
         ``get_events_for_permission(is_reviewer=True)``.
         """
-        from pretalx.event.models import Event
+        from pretalx.event.models import Event  # noqa: PLC0415
 
         if self.is_administrator:
             return Event.objects.all()
@@ -462,7 +460,7 @@ class User(
 
     @transaction.atomic
     def reset_password(self, event, user=None, mail_text=None, orga=False):
-        from pretalx.mail.models import QueuedMail
+        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
 
         self.pw_reset_token = get_random_string(32)
         self.pw_reset_time = now()
@@ -503,7 +501,7 @@ the pretalx robot""")
 
     @transaction.atomic
     def change_password(self, new_password):
-        from pretalx.mail.models import QueuedMail
+        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
 
         self.set_password(new_password)
         self.pw_reset_token = None
@@ -536,7 +534,7 @@ the pretalx team""")
 
     @transaction.atomic
     def change_email(self, new_email):
-        from pretalx.mail.models import QueuedMail
+        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
 
         old_email = self.email
         self.email = new_email.lower().strip()

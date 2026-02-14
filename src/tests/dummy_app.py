@@ -9,7 +9,7 @@ class PluginApp(AppConfig):
     verbose_name = "test app for pretalx"
 
     def ready(self):
-        from .dummy_signals import footer_link_test  # noqa
+        from .dummy_signals import footer_link_test  # noqa: F401, PLC0415
 
     def is_available(self, event):
         return event != "totally hidden"

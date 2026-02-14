@@ -106,7 +106,7 @@ def test_no_crash_on_robots_txt(client):
 
 
 @pytest.mark.parametrize(
-    "url,expected",
+    ("url", "expected"),
     (
         ("/400", 400),
         ("/403", 403),

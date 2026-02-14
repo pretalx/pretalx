@@ -13,7 +13,6 @@ def set_existing_breaks(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("schedule", "0017_created_updated_everywhere"),
     ]

@@ -130,24 +130,24 @@ def validate_key(*, key, style):
 
 
 def validate_rules(rules):
-    from cssutils.css import CSSMediaRule
+    from cssutils.css import CSSMediaRule  # noqa: PLC0415
 
     for rule in rules:
         if isinstance(rule, CSSMediaRule):
             validate_rules(rule.cssRules)
         else:
             style = rule.style
-            for key in style.keys():
+            for key in style.keys():  # noqa: SIM118
                 validate_key(key=key, style=style)
 
 
 def validate_css(css):
-    from cssutils import CSSParser
+    from cssutils import CSSParser  # noqa: PLC0415
 
     try:
         parser = CSSParser(raiseExceptions=True, parseComments=False)
         stylesheet = parser.parseString(css)
     except Exception as exception:
-        raise ValidationError(str(exception).split("\n")[0])
+        raise ValidationError(str(exception).split("\n")[0]) from None
     validate_rules(stylesheet.cssRules)
     return css

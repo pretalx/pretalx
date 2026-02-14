@@ -67,6 +67,7 @@ from pretalx.submission.models import (
 )
 from pretalx.submission.models.cfp import default_fields
 from pretalx.submission.rules import questions_for_user
+from pretalx.submission.tasks import export_question_files
 
 
 class CfPTextDetail(PermissionRequired, UpdateView):
@@ -374,8 +375,6 @@ class QuestionFileDownloadView(AsyncFileDownloadMixin, PermissionRequired, View)
         return self.question.urls.base
 
     def start_async_task(self, cached_file):
-        from pretalx.submission.tasks import export_question_files
-
         return export_question_files.apply_async(
             kwargs={
                 "question_id": self.question.pk,
@@ -895,19 +894,17 @@ class CfPFlowEditor(CfPEditorMixin, EventPermissionRequired, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        steps = []
-        for step in self.flow.steps:
-            if step.identifier == CfPFlow.STEP_USER or hasattr(step, "form_class"):
-                steps.append(
-                    {
-                        "identifier": step.identifier,
-                        "label": step.label,
-                        "icon": step.icon,
-                        "is_static": step.identifier
-                        in (CfPFlow.STEP_USER, CfPFlow.STEP_QUESTIONS),
-                    }
-                )
-        ctx["steps"] = steps
+        ctx["steps"] = [
+            {
+                "identifier": step.identifier,
+                "label": step.label,
+                "icon": step.icon,
+                "is_static": step.identifier
+                in (CfPFlow.STEP_USER, CfPFlow.STEP_QUESTIONS),
+            }
+            for step in self.flow.steps
+            if step.identifier == CfPFlow.STEP_USER or hasattr(step, "form_class")
+        ]
         active_step = self.request.GET.get("step", CfPFlow.STEP_INFO)
         ctx["active_step"] = active_step
         ctx.update(self.get_step_context(active_step))
@@ -1046,7 +1043,7 @@ class CfPEditorFieldToggle(CfPEditorMixin, EventPermissionRequired, View):
             except Question.DoesNotExist:
                 return JsonResponse({"error": "Question not found"}, status=404)
         else:
-            if field_key not in default_fields().keys():
+            if field_key not in default_fields():
                 return JsonResponse({"error": "Invalid field key"}, status=400)
 
             cfp = request.event.cfp
@@ -1068,7 +1065,7 @@ class CfPEditorField(CfPEditorMixin, EventPermissionRequired, TemplateView):
 
     def dispatch(self, request, *args, **kwargs):
         field_key = kwargs.get("field_key")
-        if field_key not in default_fields().keys():
+        if field_key not in default_fields():
             return JsonResponse({"error": "Invalid field key"}, status=404)
         return super().dispatch(request, *args, **kwargs)
 

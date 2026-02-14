@@ -37,5 +37,5 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         updated_percentages = get_language_scores()
         json_path = settings.LOCALE_PATHS[0] / "translation_percentages.json"
-        with open(json_path, "w") as f:
+        with json_path.open("w") as f:
             json.dump(updated_percentages, f, indent=2, sort_keys=True)

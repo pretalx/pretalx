@@ -10,7 +10,9 @@ from django.utils.timezone import now
 from django_scopes import scope
 
 from pretalx.common.models.log import ActivityLog
+from pretalx.schedule.models import TalkSlot
 from pretalx.submission.models import (
+    Review,
     Submission,
     SubmissionInvitation,
     SubmissionStates,
@@ -274,8 +276,6 @@ def test_orga_can_delete_submission(orga_client, submission, answered_choice_que
 def test_orga_delete_scheduled_submission_shows_warning_and_deletes_slots(
     orga_client, slot
 ):
-    from pretalx.schedule.models import TalkSlot
-
     with scope(event=slot.schedule.event):
         submission = slot.submission
         submission_code = submission.code
@@ -322,10 +322,7 @@ def test_reviewer_cannot_delete_submission(
 def test_orga_can_add_speakers(orga_client, submission, other_orga_user, user):
     assert submission.speakers.count() == 1
 
-    if user == "EMAIL":
-        user = other_orga_user.email
-    else:
-        user = "some_unused@mail.org"
+    user = other_orga_user.email if user == "EMAIL" else "some_unused@mail.org"
 
     response = orga_client.post(
         submission.orga_urls.speakers,
@@ -767,7 +764,7 @@ def test_orga_can_toggle_submission_featured(orga_client, event, submission):
     "question_type", (QuestionVariant.DATE, QuestionVariant.DATETIME)
 )
 @pytest.mark.parametrize(
-    "delta,success",
+    ("delta", "success"),
     (
         (dt.timedelta(days=-1), False),
         (dt.timedelta(days=1), True),
@@ -898,10 +895,8 @@ def test_submission_statistics(use_tracks, slot, other_slot, orga_client):
     with scope(event=slot.event):
         slot.event.feature_flags["use_tracks"] = use_tracks
         slot.event.save()
-        logs = []
         subs = [slot.submission, other_slot.submission]
-        for i in range(2):
-            logs.append(subs[i].log_action("pretalx.submission.create"))
+        logs = [subs[i].log_action("pretalx.submission.create") for i in range(2)]
         ActivityLog.objects.filter(pk=logs[0].pk).update(
             timestamp=logs[0].timestamp - dt.timedelta(days=2)
         )
@@ -1138,8 +1133,6 @@ def test_reviewer_can_delete_own_review(review_client, review, submission):
     with scope(event=submission.event):
         assert submission.event.active_review_phase.can_review is True
         review_pk = review.pk
-        from pretalx.submission.models import Review
-
         assert Review.objects.filter(pk=review_pk).exists()
 
     response = review_client.get(review.urls.delete, follow=True)

@@ -9,7 +9,7 @@ from pretalx.schedule.models import Availability
 
 
 @pytest.mark.parametrize(
-    "one,two,expected_strict,expected",
+    ("one", "two", "expected_strict", "expected"),
     (
         (
             #    0000
@@ -76,7 +76,7 @@ def test_overlaps(one, two, expected_strict, expected):
 
 
 @pytest.mark.parametrize(
-    "one,two,expected",
+    ("one", "two", "expected"),
     (
         (
             # real overlap
@@ -118,7 +118,7 @@ def test_merge_with(one, two, expected):
 
 
 @pytest.mark.parametrize(
-    "method,args,expected",
+    ("method", "args", "expected"),
     (
         (Availability.overlaps, ["i_am_no_availability", False], "Availability object"),
         (Availability.merge_with, ["i_am_no_availability"], "Availability object"),
@@ -146,14 +146,14 @@ def test_merge_with(one, two, expected):
 def test_availability_fail(method, args, expected):
     avail = Availability(start=dt.datetime(2017, 1, 1), end=dt.datetime(2017, 1, 1, 1))
 
-    with pytest.raises(Exception) as excinfo:
+    with pytest.raises(Exception) as excinfo:  # noqa: PT011
         method(avail, *args)
 
     assert expected in str(excinfo.value)
 
 
 @pytest.mark.parametrize(
-    "avails,expected",
+    ("avails", "expected"),
     (
         (
             [],
@@ -278,13 +278,13 @@ def test_union(avails, expected):
 
     assert len(actual) == len(expected)
 
-    for act, exp in zip(actual, expected):
+    for act, exp in zip(actual, expected, strict=True):
         assert act.start == exp.start
         assert act.end == exp.end
 
 
 @pytest.mark.parametrize(
-    "availsets,expected",
+    ("availsets", "expected"),
     (
         (
             [],
@@ -506,7 +506,7 @@ def test_intersection(availsets, expected):
     assert len(actual1) == len(expected)
     assert len(actual2) == len(expected)
 
-    for act1, act2, exp in zip(actual1, actual2, expected):
+    for act1, act2, exp in zip(actual1, actual2, expected, strict=True):
         assert act1.start == act2.start == exp.start
         assert act1.end == act2.end == exp.end
         assert act1 == act2 == exp
@@ -525,7 +525,7 @@ def test_availability_equality():
 
 
 @pytest.mark.parametrize(
-    "one,two,expected",
+    ("one", "two", "expected"),
     (
         (
             #    0000

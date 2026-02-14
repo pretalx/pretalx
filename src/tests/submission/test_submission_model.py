@@ -4,10 +4,17 @@
 import pytest
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils.timezone import now, timedelta
 from django_scopes import scope
 
 from pretalx.common.exceptions import SubmissionError
-from pretalx.submission.models import Answer, Resource, Submission, SubmissionStates
+from pretalx.submission.models import (
+    Answer,
+    Resource,
+    Submission,
+    SubmissionStates,
+    SubmitterAccessCode,
+)
 from pretalx.submission.models.submission import submission_image_path
 
 
@@ -220,8 +227,8 @@ def test_submission_change_slot_count(accepted_submission):
 
 @pytest.mark.django_db
 def test_submission_assign_code(submission, monkeypatch):
-    from pretalx.common.models import mixins as models_mixins
-    from pretalx.submission.models import submission as pretalx_submission
+    from pretalx.common.models import mixins as models_mixins  # noqa: PLC0415
+    from pretalx.submission.models import submission as pretalx_submission  # noqa: PLC0415
 
     called = -1
     submission_codes = [submission.code, submission.code, "abcdef"]
@@ -240,7 +247,7 @@ def test_submission_assign_code(submission, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "data,loaded",
+    ("data", "loaded"),
     (
         ("", {}),
         (None, {}),
@@ -259,7 +266,7 @@ def test_submission_anonymise(data, loaded):
 
 
 @pytest.mark.parametrize(
-    "state,expected",
+    ("state", "expected"),
     (
         (SubmissionStates.SUBMITTED, 0),
         (SubmissionStates.ACCEPTED, 1),
@@ -329,7 +336,7 @@ def test_content_for_mail(submission, file_question, boolean_question):
 
 @pytest.mark.django_db
 def test_send_invite_requires_signature(submission):
-    with scope(event=submission.event), pytest.raises(Exception):  # noqa
+    with scope(event=submission.event), pytest.raises(Exception):  # noqa: B017, PT011
         submission.send_invite(None)
 
 
@@ -374,8 +381,6 @@ def test_pending_state(submission, state, pending_state):
 
 @pytest.mark.django_db
 def test_editable_with_access_code_requirement(submission, track):
-    from pretalx.submission.models import SubmitterAccessCode
-
     with scope(event=submission.event):
         submission.state = SubmissionStates.DRAFT
         submission.save()
@@ -399,8 +404,6 @@ def test_editable_with_access_code_requirement(submission, track):
         del submission.editable
         assert submission.editable
 
-        from django.utils.timezone import now, timedelta
-
         access_code.valid_until = now() - timedelta(hours=1)
         access_code.save()
 
@@ -410,8 +413,6 @@ def test_editable_with_access_code_requirement(submission, track):
 
 @pytest.mark.django_db
 def test_editable_with_access_code_for_submission_type(submission):
-    from pretalx.submission.models import SubmitterAccessCode
-
     with scope(event=submission.event):
         submission.state = SubmissionStates.DRAFT
         submission.save()

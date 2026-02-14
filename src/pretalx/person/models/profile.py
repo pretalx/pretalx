@@ -121,7 +121,7 @@ class SpeakerProfile(PretalxModel):
         Includes all answers the user has given either for themselves or
         for their talks for this event.
         """
-        from pretalx.submission.models import Answer, Submission
+        from pretalx.submission.models import Answer, Submission  # noqa: PLC0415
 
         submissions = Submission.objects.filter(
             event=self.event, speakers__in=[self.user]

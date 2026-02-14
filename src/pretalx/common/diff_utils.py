@@ -24,11 +24,7 @@ def detect_markdown(text):
         r"\n",
     ]
 
-    for pattern in indicators:
-        if re.search(pattern, str(text), re.MULTILINE):
-            return True
-
-    return False
+    return any(re.search(pattern, str(text), re.MULTILINE) for pattern in indicators)
 
 
 def render_diff(old_value, new_value, threshold=None):
@@ -54,7 +50,7 @@ def render_diff(old_value, new_value, threshold=None):
         and (not threshold or (len(old_str) >= threshold or len(new_str) >= threshold))
     )
 
-    from pretalx.common.templatetags.rich_text import render_markdown
+    from pretalx.common.templatetags.rich_text import render_markdown  # noqa: PLC0415
 
     if not should_diff:
         result = {"is_diff": False}
@@ -80,14 +76,14 @@ def render_diff(old_value, new_value, threshold=None):
     new_html_parts = []
     for op, text in diffs:
         # Remove the separator, preserving original whitespace (including newlines)
-        text = text.replace(separator, "")
+        cleaned = text.replace(separator, "")
         if op == diff_match_patch.DIFF_DELETE:
-            old_html_parts.append(f"<del>{escape(text)}</del>")
+            old_html_parts.append(f"<del>{escape(cleaned)}</del>")
         elif op == diff_match_patch.DIFF_INSERT:
-            new_html_parts.append(f"<ins>{escape(text)}</ins>")
+            new_html_parts.append(f"<ins>{escape(cleaned)}</ins>")
         elif op == diff_match_patch.DIFF_EQUAL:
-            old_html_parts.append(escape(text))
-            new_html_parts.append(escape(text))
+            old_html_parts.append(escape(cleaned))
+            new_html_parts.append(escape(cleaned))
 
     old_html = "".join(old_html_parts)
     new_html = "".join(new_html_parts)

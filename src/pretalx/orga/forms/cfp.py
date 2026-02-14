@@ -176,7 +176,7 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
         try:
             content = options.read().decode("utf-8")
         except Exception:
-            raise forms.ValidationError(_("Could not read file."))
+            raise forms.ValidationError(_("Could not read file.")) from None
 
         try:
             options = json.loads(content)
@@ -262,7 +262,7 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
             codes = AnswerOption.generate_unique_codes(
                 len(new_option_data), question=instance
             )
-            for (option, position), code in zip(new_option_data, codes):
+            for (option, position), code in zip(new_option_data, codes, strict=False):
                 new_options.append(
                     AnswerOption(
                         question=instance,
@@ -434,9 +434,14 @@ class AccessCodeSendForm(forms.Form):
     def __init__(self, *args, instance, user, **kwargs):
         self.access_code = instance
         subject = _("Access code for the {event} CfP").format(event=instance.event.name)
-        text = str(_("""Hi!
+        text = (
+            str(
+                _("""Hi!
 
-This is an access code for the {event} CfP.""").format(event=instance.event.name)) + " "
+This is an access code for the {event} CfP.""").format(event=instance.event.name)
+            )
+            + " "
+        )
         if instance.track:
             text += (
                 str(

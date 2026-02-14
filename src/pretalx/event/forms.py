@@ -23,6 +23,8 @@ from pretalx.common.text.phrases import phrases
 from pretalx.event.models import Event, Organiser, Team, TeamInvite
 from pretalx.orga.forms.widgets import HeaderSelect, MultipleLanguagesWidget
 from pretalx.submission.models import Track
+from pretalx.common.plugins import get_all_plugins_grouped
+from pretalx.orga.forms.widgets import PluginSelectWidget
 
 
 class TeamForm(ReadOnlyFlag, PretalxI18nModelForm):
@@ -120,8 +122,8 @@ class TeamInviteForm(ReadOnlyFlag, forms.ModelForm):
         if not data:
             return []
         result = []
-        for email in data.split("\n"):
-            email = email.strip()
+        for raw_email in data.split("\n"):
+            email = raw_email.strip()
             try:
                 validate_email(email)
                 result.append(email)
@@ -332,9 +334,9 @@ class EventWizardDisplayForm(forms.Form):
         )
         if copy_from_event:
             self.fields["primary_color"].initial = copy_from_event.primary_color
-            self.fields["header_pattern"].initial = (
-                copy_from_event.display_settings.get("header_pattern")
-            )
+            self.fields[
+                "header_pattern"
+            ].initial = copy_from_event.display_settings.get("header_pattern")
 
 
 class EventWizardPluginForm(forms.Form):
@@ -347,9 +349,6 @@ class EventWizardPluginForm(forms.Form):
         copy_from_event=None,
         **kwargs,
     ):
-        from pretalx.common.plugins import get_all_plugins_grouped
-        from pretalx.orga.forms.widgets import PluginSelectWidget
-
         super().__init__(*args, **kwargs)
         self.grouped_plugins = get_all_plugins_grouped()
         all_plugins = []

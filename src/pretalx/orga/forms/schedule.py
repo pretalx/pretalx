@@ -32,9 +32,9 @@ class ScheduleReleaseForm(PretalxI18nModelForm):
         self.fields["version"].required = True
         self.fields["comment"].widget.attrs["rows"] = 4
         url = self.event.get_mail_template(MailTemplateRoles.NEW_SCHEDULE).urls.base
-        self.fields["notify_speakers"].help_text = (
-            f"<a href='{url}'>{_('Email template')}</a>"
-        )
+        self.fields[
+            "notify_speakers"
+        ].help_text = f"<a href='{url}'>{_('Email template')}</a>"
         if not self.event.current_schedule:
             self.fields["comment"].initial = phrases.schedule.first_schedule
         else:
@@ -182,7 +182,8 @@ class ScheduleExportForm(ExportForm):
 
     @cached_property
     def export_field_names(self):
-        return self.Meta.model_fields + [
+        return [
+            *self.Meta.model_fields,
             "speaker_ids",
             "speaker_names",
             "room",

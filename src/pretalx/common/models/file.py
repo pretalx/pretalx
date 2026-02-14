@@ -11,7 +11,7 @@ from django.utils.crypto import get_random_string
 
 def cachedfile_name(instance, filename: str) -> str:
     secret = get_random_string(length=12)
-    ext = filename.split(".")[-1]
+    ext = filename.rsplit(".", maxsplit=1)[-1]
     return f"cachedfiles/{instance.id}.{secret}.{ext}"
 
 
@@ -34,6 +34,9 @@ class CachedFile(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=["expires"])]
+
+    def __str__(self):
+        return f"CachedFile(id={self.id}, file={self.file})"
 
 
 @receiver(post_delete, sender=CachedFile)

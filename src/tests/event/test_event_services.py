@@ -9,10 +9,7 @@ from django.utils.timezone import now
 
 from pretalx.common.models.file import CachedFile
 from pretalx.common.models.log import ActivityLog
-from pretalx.event.services import (
-    clean_cached_files,
-    task_periodic_event_services,
-)
+from pretalx.event.services import clean_cached_files, task_periodic_event_services
 
 
 @pytest.mark.django_db

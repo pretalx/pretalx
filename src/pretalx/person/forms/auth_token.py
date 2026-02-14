@@ -53,9 +53,7 @@ class AuthTokenForm(forms.ModelForm):
 
     def get_endpoint_fields(self):
         """Used in templates, so has to return the actual fields."""
-        return [
-            (field_name, self[field_name]) for field_name in self.endpoint_fields.keys()
-        ]
+        return [(field_name, self[field_name]) for field_name in self.endpoint_fields]
 
     def save(self, *args, **kwargs):
         self.instance.user = self.user
@@ -75,12 +73,12 @@ class AuthTokenForm(forms.ModelForm):
     def clean(self):
         data = super().clean()
         if data.get("permission_preset") == "read":
-            data["endpoints"] = {endpoint: READ_PERMISSIONS for endpoint in ENDPOINTS}
+            data["endpoints"] = dict.fromkeys(ENDPOINTS, READ_PERMISSIONS)
         elif data.get("permission_preset") == "write":
-            data["endpoints"] = {endpoint: WRITE_PERMISSIONS for endpoint in ENDPOINTS}
+            data["endpoints"] = dict.fromkeys(ENDPOINTS, WRITE_PERMISSIONS)
         else:
             data["endpoints"] = {}
-            for field_name in self.endpoint_fields.keys():
+            for field_name in self.endpoint_fields:
                 permissions = self.cleaned_data.get(field_name)
                 endpoint = field_name.replace("endpoint_", "")
                 invalid_perms = set(permissions) - set(WRITE_PERMISSIONS)

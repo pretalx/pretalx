@@ -97,10 +97,8 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
 
     def _set_track(self, instance=None):
         if "track" in self.fields:
-            if (
-                not self.event.get_feature_flag("use_tracks")
-                or instance
-                and instance.state != SubmissionStates.SUBMITTED
+            if not self.event.get_feature_flag("use_tracks") or (
+                instance and instance.state != SubmissionStates.SUBMITTED
             ):
                 self.fields.pop("track")
                 return
@@ -159,7 +157,7 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
             pks |= {instance.submission_type.pk}
         if len(pks) == 1:
             self.default_values["submission_type"] = submission_types.get(
-                pk=list(pks)[0]
+                pk=next(iter(pks))
             )
             self.fields.pop("submission_type")
         else:
@@ -214,8 +212,8 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
         emails = []
         errors = []
 
-        for email in raw_emails:
-            email = email.strip()
+        for raw_email in raw_emails:
+            email = raw_email.strip()
             if not email:
                 continue
             try:

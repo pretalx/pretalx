@@ -10,7 +10,6 @@ import pretalx.common.models.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("event", "0039_alter_teaminvite_token"),
     ]

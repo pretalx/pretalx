@@ -53,4 +53,4 @@ class RoomOrgaSerializer(RoomSerializer):
 
     class Meta:
         model = Room
-        fields = RoomSerializer.Meta.fields + ("speaker_info", "availabilities")
+        fields = (*RoomSerializer.Meta.fields, "speaker_info", "availabilities")

@@ -3,8 +3,9 @@
 
 import logging
 import uuid
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
 import django.dispatch
 from django.apps import apps

@@ -17,7 +17,7 @@ def test_event_css_no_color(event, client):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "color,expect_dark_text_override",
+    ("color", "expect_dark_text_override"),
     (
         # Dark colors - no override needed, white text is fine
         ("#000000", False),

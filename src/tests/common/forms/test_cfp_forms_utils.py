@@ -7,7 +7,7 @@ from pretalx.common.forms.mixins import RequestRequire
 
 
 @pytest.mark.parametrize(
-    "text,min_length,max_length,_type,warning",
+    ("text", "min_length", "max_length", "_type", "warning"),
     (
         ("t", 1, 3, "chars", "t Please write between 1 and 3 characters."),
         ("", 1, 3, "chars", "Please write between 1 and 3 characters."),

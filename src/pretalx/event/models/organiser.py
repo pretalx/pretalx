@@ -141,7 +141,7 @@ class Organiser(PretalxModel):
     def shred(self, person=None):
         """Irrevocably deletes the organiser and all related events and their
         data."""
-        from pretalx.common.models import ActivityLog
+        from pretalx.common.models import ActivityLog  # noqa: PLC0415
 
         ActivityLog.objects.create(
             person=person,
@@ -245,8 +245,7 @@ class Team(PretalxModel):
         return {
             attr
             for attr in attribs
-            if (attr.startswith("can_") or attr.startswith("is_"))
-            and getattr(self, attr, False) is True
+            if attr.startswith(("can_", "is_")) and getattr(self, attr, False) is True
         }
 
     @cached_property
@@ -316,7 +315,7 @@ class TeamInvite(PretalxModel):
         return build_absolute_uri("orga:invitation.view", kwargs={"code": self.token})
 
     def send(self):
-        from pretalx.mail.models import QueuedMail
+        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
 
         invitation_link = self.invitation_url
         invitation_text = _("""Hi!

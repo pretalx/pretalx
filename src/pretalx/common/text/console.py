@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import logging
 import os
 import textwrap
 from contextlib import suppress
@@ -9,6 +10,8 @@ from pathlib import Path
 from sys import executable
 
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 ESCAPE = "\033"
 BOLD = f"{ESCAPE}[1m"
@@ -40,16 +43,16 @@ def get_separator(*args):
 
 def start_box(size):
     try:
-        print("┏" + "━" * size + "┓")
+        logger.info("┏%s┓", "━" * size)
     except (UnicodeDecodeError, UnicodeEncodeError):  # pragma: no cover
-        print("-" * (size + 2))
+        logger.info("-" * (size + 2))
 
 
 def end_box(size):
     try:
-        print("┗" + "━" * size + "┛")
+        logger.info("┗%s┛", "━" * size)
     except (UnicodeDecodeError, UnicodeEncodeError):  # pragma: no cover
-        print("-" * (size + 2))
+        logger.info("-" * (size + 2))
 
 
 def print_line(string, box=False, bold=False, color=None, size=None):
@@ -66,16 +69,16 @@ def print_line(string, box=False, bold=False, color=None, size=None):
         string = f"┃ {string} ┃"
         alt_string = f"| {alt_string} |"
     try:
-        print(string)
+        logger.info(string)
     except (UnicodeDecodeError, UnicodeEncodeError):  # pragma: no cover
         try:
-            print(alt_string)
+            logger.info(alt_string)
         except (UnicodeDecodeError, UnicodeEncodeError):
-            print("unprintable setting")
+            logger.info("unprintable setting")
 
 
 def log_initial():
-    from pretalx import __version__
+    from pretalx import __version__  # noqa: PLC0415
 
     with suppress(Exception):  # geteuid is not available on all OS
         if os.geteuid() == 0:
@@ -90,7 +93,7 @@ def log_initial():
     # Lines is a list of (text, bold)
     lines = [
         (f"pretalx v{__version__}", True),
-        (f'Settings:  {", ".join(settings.CONFIG_FILES)}', False),
+        (f"Settings:  {', '.join(settings.CONFIG_FILES)}", False),
         (f"Database:  {db_settings.get('NAME')} ({db_backend})", False),
         (f"Logging:   {settings.LOG_DIR}", False),
         (f"Python:    {executable}", False),

@@ -268,7 +268,6 @@ class TeamMemberMixin(PermissionRequired):
 
 
 class TeamMemberDelete(TeamMemberMixin, ActionConfirmMixin, DetailView):
-
     def post(self, request, *args, **kwargs):
         warnings = []
         try:

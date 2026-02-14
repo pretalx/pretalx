@@ -3,11 +3,13 @@
 
 import os
 import sys
-from datetime import date
+from contextlib import suppress
+from pathlib import Path
+
 from pretalx import __version__
 
-sys.path.insert(0, os.path.abspath("../src"))
-sys.path.insert(0, os.path.abspath("./_extensions"))
+sys.path.insert(0, str(Path("../src").resolve()))
+sys.path.insert(0, str(Path("./_extensions").resolve()))
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "pretalx.settings")
 import django
@@ -15,18 +17,17 @@ import django
 django.setup()
 
 project = "pretalx"
-copyright = "2017-present, Tobias Kunze. "
-copyright += 'Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target=_blank>CC BY-SA 4.0</a>'
+copyright = "2017-present, Tobias Kunze. "  # noqa: A001
+copyright += 'Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target=_blank>CC BY-SA 4.0</a>'  # noqa: A001
 author = "Tobias Kunze"
 version = ".".join(__version__.split(".")[:2])
 release = __version__
 
-try:
-    import enchant
+HAS_PYENCHANT = False
+with suppress(ImportError):
+    import enchant  # noqa: F401
 
     HAS_PYENCHANT = True
-except:
-    HAS_PYENCHANT = False
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -60,7 +61,7 @@ html_static_path = [
 html_additional_pages = {"index": "index.html"}
 html_extra_path = ["api/schema.yml"]
 html_theme = "pretalx_theme"
-html_theme_path = [os.path.abspath("_themes")]
+html_theme_path = [str(Path("_themes").resolve())]
 html_context = {
     "display_github": True,  # Integrate GitHub
     "github_user": "pretalx",  # Username

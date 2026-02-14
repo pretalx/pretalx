@@ -36,7 +36,7 @@ def can_mark_speakers_arrived(user, obj):
 
 @rules.predicate
 def can_view_information(user, obj):
-    from pretalx.submission.models.submission import SubmissionStates
+    from pretalx.submission.models.submission import SubmissionStates  # noqa: PLC0415
 
     event = obj.event
     qs = event.submissions.filter(speakers__in=[user])

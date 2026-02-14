@@ -10,7 +10,8 @@ from django.db.utils import DatabaseError
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import now
 
-from pretalx.schedule.models.slot import SlotType
+from pretalx.schedule.models.slot import SlotType, TalkSlot
+
 from pretalx.schedule.signals import schedule_release
 
 
@@ -82,8 +83,8 @@ def deserialize_schedule_changes(serialized: dict, event) -> dict:
         if item.get("old_room"):
             room_ids.add(item["old_room"])
 
-    from pretalx.schedule.models import Room, TalkSlot
-    from pretalx.submission.models import Submission
+    from pretalx.schedule.models import Room  # noqa: PLC0415
+    from pretalx.submission.models import Submission  # noqa: PLC0415
 
     submissions_by_code = {}
     if submission_codes:
@@ -268,7 +269,7 @@ def _handle_submission_move(submission, old_slots, new_slots):
         new = new_slots_filtered[:diff]
         new_slots_filtered = new_slots_filtered[diff:]
 
-    for move in zip(old_slots_filtered, new_slots_filtered):
+    for move in zip(old_slots_filtered, new_slots_filtered, strict=False):
         old_slot = move[0]
         new_slot = move[1]
         moved.append(
@@ -348,9 +349,7 @@ def update_unreleased_schedule_changes(event, value=None):
     event.cache.set(cache_key, value, 24 * 60 * 60)
 
 
-def freeze_schedule(
-    schedule, name: str, user=None, notify_speakers: bool = True, comment: str = None
-):
+def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=None):
     """Freeze a schedule as a new version."""
 
     if name in ("wip", "latest"):
@@ -362,8 +361,7 @@ def freeze_schedule(
     if not name:
         raise Exception("Cannot create schedule version without a version name.")
 
-    from pretalx.schedule.models import TalkSlot
-    from pretalx.submission.models import SubmissionStates
+    from pretalx.submission.models import SubmissionStates  # noqa: PLC0415
 
     with transaction.atomic():
         schedule.version = name
@@ -371,7 +369,7 @@ def freeze_schedule(
         schedule.published = now()
 
         # Create WIP schedule first, to avoid race conditions
-        from pretalx.schedule.models import Schedule
+        from pretalx.schedule.models import Schedule  # noqa: PLC0415
 
         wip_schedule = Schedule.objects.create(event=schedule.event)
 
@@ -387,9 +385,10 @@ def freeze_schedule(
         ).update(is_visible=True)
 
         # Copy all talks to new WIP schedule
-        talks = []
-        for talk in schedule.talks.select_related("submission", "room").all():
-            talks.append(talk.copy_to_schedule(wip_schedule, save=False))
+        talks = [
+            talk.copy_to_schedule(wip_schedule, save=False)
+            for talk in schedule.talks.select_related("submission", "room").all()
+        ]
         TalkSlot.objects.bulk_create(talks)
 
         # Delete blockers from the released schedule (they should only exist in WIP)
@@ -415,7 +414,7 @@ def freeze_schedule(
 
 def unfreeze_schedule(schedule, user=None):
     """Resets the current WIP schedule to an older schedule version."""
-    from pretalx.schedule.models import Schedule, TalkSlot
+    from pretalx.schedule.models import Schedule  # noqa: PLC0415
 
     if not schedule.version:
         raise Exception("Cannot unfreeze schedule version: not released yet.")
@@ -430,9 +429,7 @@ def unfreeze_schedule(schedule, user=None):
 
     with transaction.atomic():
         wip_schedule = Schedule.objects.create(event=schedule.event)
-        new_talks = []
-        for talk in talks:
-            new_talks.append(talk.copy_to_schedule(wip_schedule, save=False))
+        new_talks = [talk.copy_to_schedule(wip_schedule, save=False) for talk in talks]
         TalkSlot.objects.bulk_create(new_talks)
 
         schedule.event.wip_schedule.talks.all().delete()

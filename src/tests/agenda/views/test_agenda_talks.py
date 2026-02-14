@@ -211,12 +211,12 @@ def test_talk_speaker_other_submissions(
     assert response.status_code == 200
     assert response.context["speakers"]
     assert len(response.context["speakers"]) == 2, response.context["speakers"]
-    speaker_response = [
+    speaker_response = next(
         s for s in response.context["speakers"] if s.name == speaker.name
-    ][0]
-    other_response = [
+    )
+    other_response = next(
         s for s in response.context["speakers"] if s.name != speaker.name
-    ][0]
+    )
     assert len(speaker_response.other_submissions) == 1
     assert len(other_response.other_submissions) == 0
     with scope(event=event):
@@ -252,12 +252,12 @@ def test_talk_speaker_other_submissions_only_if_visible(
     assert response.status_code == 200
     assert response.context["speakers"]
     assert len(response.context["speakers"]) == 2, response.context["speakers"]
-    speaker_response = [
+    speaker_response = next(
         s for s in response.context["speakers"] if s.name == speaker.name
-    ][0]
-    other_response = [
+    )
+    other_response = next(
         s for s in response.context["speakers"] if s.name != speaker.name
-    ][0]
+    )
     assert len(speaker_response.other_submissions) == 0
     assert len(other_response.other_submissions) == 0
 
