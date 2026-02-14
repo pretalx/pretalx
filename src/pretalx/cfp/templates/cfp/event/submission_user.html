@@ -29,5 +29,5 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock submission_step_text %}
 
 {% block inner %}
-    {% include "common/auth.html" with form=form no_form=True no_buttons=True %}
+    {{ form }}
 {% endblock inner %}

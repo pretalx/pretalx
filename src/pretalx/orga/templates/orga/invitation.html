@@ -29,7 +29,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </div>
         <hr>
 
-        {% include "common/auth.html" %}
+        <form method="post">
+            {% csrf_token %}
+            {{ form }}
+        </form>
 
     {% else %}
         <form method="post" class="col-md-6 ml-auto mr-auto">

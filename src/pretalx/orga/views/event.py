@@ -564,9 +564,11 @@ class InvitationView(FormView):
     def invitation(self):
         return get_object_or_404(TeamInvite, token__iexact=self.kwargs.get("code"))
 
-    @context
-    def password_reset_link(self):
-        return reverse("orga:auth.reset")
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["request"] = self.request
+        kwargs["password_reset_link"] = reverse("orga:auth.reset")
+        return kwargs
 
     def post(self, *args, **kwargs):
         if not self.request.user.is_anonymous:

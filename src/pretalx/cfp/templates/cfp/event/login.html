@@ -31,6 +31,9 @@ SPDX-FileContributor: Raphael Michel
         {% endblocktranslate %}
     </p>
 
-    {% include "common/auth.html" %}
+    <form method="post">
+        {% csrf_token %}
+        {{ form }}
+    </form>
 
 {% endblock content %}

@@ -10,6 +10,7 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.utils import timezone, translation
 from django.utils.functional import cached_property
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.cfp.forms.cfp import CfPFormMixin
@@ -26,6 +27,7 @@ LOGIN_RATE_LIMIT_WINDOW = 300  # seconds
 
 class UserForm(CfPFormMixin, forms.Form):
     default_renderer = InlineFormLabelRenderer
+    template_name = "common/forms/auth.html"
     error_messages = {
         "rate_limit": _(
             "For security reasons, please wait 5 minutes before you try again."
@@ -67,10 +69,43 @@ class UserForm(CfPFormMixin, forms.Form):
         "Please fill all fields of either the login or the registration form."
     )
 
-    def __init__(self, *args, request=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        request=None,
+        hide_login=False,
+        hide_register=False,
+        no_buttons=False,
+        password_reset_link=None,
+        success_url=None,
+        **kwargs,
+    ):
         kwargs.pop("event", None)
         self.request = request
+        self.hide_login = hide_login
+        self.hide_register = hide_register
+        self.no_buttons = no_buttons
+        self.password_reset_link = password_reset_link
+        self.success_url = success_url
         super().__init__(*args, **kwargs)
+
+    def get_context(self):
+        context = super().get_context()
+        context["hide_login"] = self.hide_login
+        context["hide_register"] = self.hide_register
+        context["no_buttons"] = self.no_buttons
+        context["password_reset_link"] = self.password_reset_link
+        context["success_url"] = self.success_url
+        return context
+
+    def render(self, template_name=None, context=None, renderer=None):
+        # Override to pass request to the renderer, so that request context
+        # processors (request, phrases, etc.) are available in the template.
+        renderer = renderer or self.default_renderer
+        template_name = template_name or self.template_name
+        if context is None:
+            context = self.get_context()
+        return mark_safe(renderer.render(template_name, context, request=self.request))
 
     @cached_property
     def ratelimit_key(self):
@@ -112,7 +147,7 @@ class UserForm(CfPFormMixin, forms.Form):
         if not user.is_active:
             raise ValidationError(_("Sorry, your account is currently disabled."))
 
-        data["user_id"] = user.pk
+        return data | {"user_id": user.pk}
 
     def _clean_register(self, data):
         if data.get("register_password") != data.get("register_password_repeat"):
@@ -131,6 +166,7 @@ class UserForm(CfPFormMixin, forms.Form):
                     )
                 ),
             )
+        return data
 
     def clean(self):
         data = super().clean()
@@ -143,13 +179,13 @@ class UserForm(CfPFormMixin, forms.Form):
                 raise ValidationError(
                     self.error_messages["rate_limit"], code="rate_limit"
                 )
-            self._clean_login(data)
+            data = self._clean_login(data)
         elif (
             data.get("register_email")
             and data.get("register_password")
             and data.get("register_name")
         ):
-            self._clean_register(data)
+            data = self._clean_register(data)
         else:
             raise ValidationError(self.FIELDS_ERROR)
 
@@ -157,8 +193,8 @@ class UserForm(CfPFormMixin, forms.Form):
 
     def save(self):
         data = self.cleaned_data
-        if data.get("login_email") and data.get("login_password"):
-            return data["user_id"]
+        if user_id := data.get("user_id"):
+            return user_id
 
         # We already checked that all fields are filled, but sometimes
         # they end up empty regardless. No idea why and how.
