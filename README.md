@@ -13,7 +13,7 @@
 | src/pretalx/agenda/signals.py                                              |        7 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/agenda/tasks.py                                                |       34 |        0 |        8 |        2 |     95% |44->exit, 46->exit |
 | src/pretalx/agenda/views/featured.py                                       |       25 |        0 |        2 |        0 |    100% |           |
-| src/pretalx/agenda/views/feed.py                                           |       33 |        0 |        2 |        0 |    100% |           |
+| src/pretalx/agenda/views/feed.py                                           |       34 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/agenda/views/schedule.py                                       |      137 |        2 |       36 |        1 |     98% |   64, 145 |
 | src/pretalx/agenda/views/speaker.py                                        |       99 |        9 |       18 |        3 |     86% |78, 108-114, 152, 162-163 |
 | src/pretalx/agenda/views/talk.py                                           |      166 |        5 |       26 |        4 |     93% |72->71, 78->71, 161-164, 175-176 |
@@ -133,13 +133,14 @@
 | src/pretalx/common/templatetags/thumbnail.py                               |        9 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/templatetags/times.py                                   |       13 |        0 |        6 |        0 |    100% |           |
 | src/pretalx/common/templatetags/vite.py                                    |       56 |       28 |       24 |        5 |     41% |20-24, 32, 40-58, 69, 74-84, 91 |
-| src/pretalx/common/templatetags/xmlescape.py                               |       14 |        0 |        0 |        0 |    100% |           |
+| src/pretalx/common/templatetags/xmlescape.py                               |        7 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/text/console.py                                         |       65 |       24 |       18 |        3 |     65% |42-43, 49-50, 64-65, 82, 88-124 |
 | src/pretalx/common/text/css.py                                             |       31 |        0 |       14 |        0 |    100% |           |
 | src/pretalx/common/text/daterange.py                                       |       33 |        0 |       18 |        0 |    100% |           |
 | src/pretalx/common/text/path.py                                            |       21 |        4 |        6 |        2 |     70% |32->40, 35-38 |
 | src/pretalx/common/text/phrases.py                                         |       52 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/common/text/serialize.py                                       |       27 |        1 |        8 |        1 |     94% |        40 |
+| src/pretalx/common/text/xml.py                                             |       12 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/ui.py                                                   |       52 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/update\_check.py                                        |       67 |        0 |       20 |        0 |    100% |           |
 | src/pretalx/common/views/cache.py                                          |       63 |       11 |       32 |       14 |     74% |20, 26, 53, 76, 78, 80, 86->89, 106->109, 115, 117, 120, 126, 132->138, 139 |
@@ -262,7 +263,7 @@
 | src/pretalx/submission/signals.py                                          |        5 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/submission/tasks.py                                            |       69 |       12 |       16 |        4 |     81% |29-30, 34, 72, 81-83, 91-92, 99-101 |
 | src/tests/agenda/test\_agenda\_permissions.py                              |       22 |        0 |        2 |        0 |    100% |           |
-| src/tests/agenda/test\_agenda\_schedule\_export.py                         |      337 |        0 |        8 |        0 |    100% |           |
+| src/tests/agenda/test\_agenda\_schedule\_export.py                         |      345 |        0 |        8 |        0 |    100% |           |
 | src/tests/agenda/test\_agenda\_widget.py                                   |       41 |        0 |        2 |        0 |    100% |           |
 | src/tests/agenda/views/test\_agenda\_featured.py                           |       57 |        0 |        4 |        0 |    100% |           |
 | src/tests/agenda/views/test\_agenda\_feedback.py                           |       63 |        0 |        0 |        0 |    100% |           |
@@ -361,7 +362,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       64 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **34503** | **1936** | **5494** |  **771** | **92%** |           |
+| **TOTAL**                                                                  | **34517** | **1936** | **5494** |  **771** | **92%** |           |
 
 
 ## Setup coverage badge
