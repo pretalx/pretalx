@@ -169,6 +169,26 @@ check: black-check isort-check djhtml-check flake8 && _check-done
 @_check-done:
     echo '{{ GREEN }}All checks passed{{ NORMAL }}'
 
+# Check for untrimmed blocktranslate tags
+[group('linting')]
+@blocktranslate-check:
+    ! git grep ' blocktranslate ' -- '*.html' | grep -v trimmed
+
+# Check documentation for spelling errors
+[group('documentation')]
+[working-directory("doc")]
+docs-spelling:
+    uv run make spelling
+    @! find _build -type f -name '*.spelling' | grep -q .
+
+# Run most CI checks
+[group('tests')]
+ci: fmt reuse blocktranslate-check docs-spelling (run "compilemessages") install-npm release-checks test-parallel && _ci-done
+
+[private]
+@_ci-done:
+    echo '{{ GREEN }}All CI checks passed{{ NORMAL }}'
+
 # Open Django shell scoped to a specific event if given
 [group('development')]
 [no-exit-message]
@@ -225,6 +245,7 @@ test-coverage-report: test-coverage
 [group('release')]
 release-checks:
     uv run check-manifest
+    rm -rf dist
     {{ python }} -m build
     uv run twine check dist/*
     unzip -l dist/pretalx*whl | grep frontend || exit 1

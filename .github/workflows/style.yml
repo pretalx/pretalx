@@ -94,8 +94,8 @@ jobs:
         run: just install --extra dev
       - name: Run djhtml
         run: just djhtml-check
-      - name: Make sure we always use trimmed translation strings
-        run: "! git grep ' blocktranslate ' | grep -v trimmed"
+      - name: Check for untrimmed blocktranslate tags
+        run: just blocktranslate-check
   compliance:
     name: Licensing and compliance checks
     runs-on: ubuntu-latest
@@ -108,5 +108,6 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
+      - uses: extractions/setup-just@v3
       - name: Run REUSE
-        run: uvx reuse lint
+        run: just reuse
