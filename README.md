@@ -95,7 +95,7 @@
 | src/pretalx/common/image.py                                                |      105 |       62 |       40 |        6 |     35% |40-82, 87-90, 101-108, 118-140, 159, 162, 166, 173-180, 186, 191 |
 | src/pretalx/common/language.py                                             |       22 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/log\_display.py                                         |       86 |       10 |       38 |        6 |     87% |171, 188, 197-202, 204-206, 243, 246 |
-| src/pretalx/common/mail.py                                                 |       54 |        4 |       18 |        2 |     89% |83, 134-136 |
+| src/pretalx/common/mail.py                                                 |       56 |        4 |       18 |        2 |     89% |84, 137-139 |
 | src/pretalx/common/management/commands/create\_test\_event.py              |      185 |        5 |       60 |        2 |     96% |150->exit, 155, 163-166 |
 | src/pretalx/common/management/commands/devserver.py                        |       16 |       16 |        4 |        0 |      0% |     10-40 |
 | src/pretalx/common/management/commands/init.py                             |       16 |        0 |        0 |        0 |    100% |           |
@@ -302,7 +302,7 @@
 | src/tests/common/test\_common\_css.py                                      |       14 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/test\_common\_exporter.py                                 |        6 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/test\_common\_forms\_utils.py                             |        9 |        0 |        2 |        0 |    100% |           |
-| src/tests/common/test\_common\_mail.py                                     |       27 |        0 |        0 |        0 |    100% |           |
+| src/tests/common/test\_common\_mail.py                                     |       38 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/test\_common\_management\_commands.py                     |       61 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/test\_common\_middleware\_domains.py                      |       12 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/test\_common\_models\_log.py                              |       76 |        0 |        0 |        0 |    100% |           |
@@ -362,7 +362,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       64 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **34517** | **1936** | **5494** |  **771** | **92%** |           |
+| **TOTAL**                                                                  | **34530** | **1936** | **5494** |  **771** | **92%** |           |
 
 
 ## Setup coverage badge
