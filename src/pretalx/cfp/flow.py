@@ -556,11 +556,12 @@ class UserStep(FormFlowStep):
     def is_applicable(self, request):
         return not request.user.is_authenticated
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Needed for support for external auth providers
-        context["success_url"] = context["next_url"]
-        return context
+    def get_form_kwargs(self):
+        result = super().get_form_kwargs()
+        result["request"] = self.request
+        result["no_buttons"] = True
+        result["success_url"] = self.get_next_url(self.request)
+        return result
 
     def done(self, request, draft=False):
         if not getattr(request.user, "is_authenticated", False):

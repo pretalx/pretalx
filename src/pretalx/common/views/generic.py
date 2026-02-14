@@ -26,7 +26,6 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, View
 from django.views.generic.detail import SingleObjectTemplateResponseMixin
 from django.views.generic.edit import ModelFormMixin, ProcessFormView
-from django_context_decorator import context
 from django_tables2 import RequestConfig
 from django_tables2.views import SingleTableMixin
 
@@ -180,13 +179,14 @@ class CreateOrUpdateView(
 class GenericLoginView(FormView):
     form_class = UserForm
 
-    @context
-    def password_reset_link(self):
-        return self.get_password_reset_link()
+    def get_password_reset_link(self):
+        return None
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["request"] = self.request
+        kwargs["password_reset_link"] = self.get_password_reset_link()
+        kwargs["success_url"] = self.get_success_url()
         return kwargs
 
     def dispatch(self, request, *args, **kwargs):
@@ -213,10 +213,11 @@ class GenericLoginView(FormView):
             self.request, self.success_url, ignore_next=ignore_next
         )
 
-    @context
     @cached_property
     def success_url(self):
-        return self.get_success_url()
+        raise NotImplementedError(
+            "Subclasses must define success_url as a property or cached_property."
+        )
 
     def get_redirect(self):
         try:

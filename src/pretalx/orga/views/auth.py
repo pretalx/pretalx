@@ -30,6 +30,11 @@ class LoginView(GenericLoginView):
             return self.event.orga_urls.base
         return reverse("orga:event.list")
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["hide_register"] = True
+        return kwargs
+
     def get_password_reset_link(self):
         if self.event:
             return reverse("orga:event.auth.reset", kwargs={"event": self.event.slug})

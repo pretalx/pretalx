@@ -8,5 +8,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load static %}
 {% block title %}{% translate "Sign in" %}{% endblock title %}
 {% block content %}
-    {% include "common/auth.html" with hide_register=True %}
+    <form method="post">
+        {% csrf_token %}
+        {{ form }}
+    </form>
 {% endblock content %}
