@@ -50,6 +50,8 @@ const initMarkdown = (element) => {
             })
         selectedTab.setAttribute("aria-selected", "true")
         selectedPanel.setAttribute("aria-hidden", "false")
+        const tb = ev.target.closest(".markdown-wrapper")?.querySelector("markdown-toolbar")
+        if (tb) tb.hidden = selectedPanel.classList.contains("markdown-preview")
     }
     element.querySelectorAll("input[role=tab]").forEach((tab) => {
         tab.addEventListener("change", updateTabPanels)
