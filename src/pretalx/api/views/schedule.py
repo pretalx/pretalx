@@ -300,7 +300,7 @@ class TalkSlotViewSet(
             return self.queryset
 
         queryset = TalkSlot.objects.filter(schedule__event=self.event).select_related(
-            "submission", "room", "schedule"
+            "submission", "submission__event", "room", "schedule"
         )
         if not self.is_orga:
             queryset = queryset.filter(is_visible=True).exclude(

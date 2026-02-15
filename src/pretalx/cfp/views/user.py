@@ -8,11 +8,10 @@ from django.contrib import messages
 from django.contrib.auth import logout
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.db import models, transaction
+from django.db import transaction
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, reverse
-from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import override
@@ -30,7 +29,6 @@ from pretalx.cfp.forms.submissions import SubmissionInvitationForm
 from pretalx.cfp.views.event import LoggedInEventPageMixin
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.forms.fields import SizeFileInput
-from pretalx.common.image import gravatar_csp
 from pretalx.common.middleware.event import get_login_redirect
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
@@ -45,14 +43,12 @@ from pretalx.person.rules import can_view_information
 from pretalx.submission.forms import InfoForm, QuestionsForm, ResourceForm
 from pretalx.submission.models import (
     Resource,
-    SpeakerRole,
     Submission,
     SubmissionInvitation,
     SubmissionStates,
 )
 
 
-@method_decorator(gravatar_csp(), name="dispatch")
 class ProfileView(LoggedInEventPageMixin, TemplateView):
     template_name = "cfp/event/user_profile.html"
 
@@ -65,7 +61,7 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
         )
 
     @cached_property
-    def can_edit_profile(self):
+    def can_edit_speaker(self):
         return self.request.event.get_feature_flag("speakers_can_edit_submissions")
 
     @context
@@ -75,7 +71,7 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
         return SpeakerProfileForm(
             user=self.request.user,
             event=self.request.event,
-            read_only=not self.can_edit_profile,
+            read_only=not self.can_edit_speaker,
             with_email=False,
             field_configuration=self.request.event.cfp_flow.config.get(
                 "profile", {}
@@ -91,8 +87,8 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
         return QuestionsForm(
             data=self.request.POST if bind else None,
             files=self.request.FILES if bind else None,
-            speaker=self.request.user,
-            readonly=not self.can_edit_profile,
+            speaker=self.request.user.get_speaker(self.request.event),
+            readonly=not self.can_edit_speaker,
             event=self.request.event,
             target="speaker",
         )
@@ -106,24 +102,24 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
             self.login_form.save()
             request.user.log_action("pretalx.user.password.update")
         elif self.profile_form.is_bound and self.profile_form.is_valid():
-            profile = self.request.user.event_profile(self.request.event)
-            old_profile_data = profile._get_instance_data()
+            speaker = self.request.user.get_speaker(self.request.event)
+            old_data = speaker._get_instance_data()
             self.profile_form.save()
             if self.profile_form.has_changed():
-                new_profile_data = self.profile_form.instance._get_instance_data()
-                profile.log_action(
+                new_data = self.profile_form.instance._get_instance_data()
+                speaker.log_action(
                     "pretalx.user.profile.update",
                     person=request.user,
-                    old_data=old_profile_data,
-                    new_data=new_profile_data,
+                    old_data=old_data,
+                    new_data=new_data,
                 )
         elif self.questions_form.is_bound and self.questions_form.is_valid():
-            profile = self.request.user.event_profile(self.request.event)
+            speaker = self.request.user.get_speaker(self.request.event)
             old_questions_data = self.questions_form.serialize_answers()
             self.questions_form.save()
             if self.questions_form.has_changed():
                 new_questions_data = self.questions_form.serialize_answers()
-                profile.log_action(
+                speaker.log_action(
                     "pretalx.user.profile.update",
                     person=request.user,
                     old_data=old_questions_data,
@@ -145,7 +141,7 @@ class SubmissionViewMixin:
         )
 
     def dispatch(self, request, *args, **kwargs):
-        if self.request.user not in self.object.speakers.all():
+        if not self.object.speakers.filter(user=self.request.user).exists():
             # User has permission to see permission, but not to see this particular
             # page, so we redirect them to the organiser page
             return redirect(self.object.orga_urls.base)
@@ -186,12 +182,14 @@ class SubmissionsListView(LoggedInEventPageMixin, ListView):
     def drafts(self):
         return Submission.all_objects.filter(
             event=self.request.event,
-            speakers__in=[self.request.user],
+            speakers__user=self.request.user,
             state=SubmissionStates.DRAFT,
         )
 
     def get_queryset(self):
-        return self.request.event.submissions.filter(speakers__in=[self.request.user])
+        return self.request.event.submissions.filter(
+            speakers__user=self.request.user
+        ).select_related("submission_type")
 
 
 class SubmissionsWithdrawView(LoggedInEventPageMixin, SubmissionViewMixin, DetailView):
@@ -262,12 +260,12 @@ class SubmissionConfirmView(LoggedInEventPageMixin, SubmissionViewMixin, FormVie
         return super().dispatch(request, *args, **kwargs)
 
     @cached_property
-    def speaker_profile(self):
-        return self.request.user.event_profile(self.request.event)
+    def speaker(self):
+        return self.request.user.get_speaker(self.request.event)
 
     def get_form_kwargs(self):
         result = super().get_form_kwargs()
-        result["speaker_profile"] = self.speaker_profile
+        result["speaker"] = self.speaker
         result["event"] = self.request.event
         return result
 
@@ -620,21 +618,11 @@ class SubmissionInviteAcceptView(LoggedInEventPageMixin, DetailView):
             messages.error(self.request, _("You cannot accept this invitation."))
             return redirect(self.request.event.urls.user)
         submission = self.invitation.submission
-        email = self.invitation.email
-        submission.speakers.add(self.request.user)
-        max_position = (
-            SpeakerRole.objects.filter(submission=submission)
-            .exclude(user=self.request.user)
-            .aggregate(max_pos=models.Max("position"))
-            .get("max_pos")
-        )
-        SpeakerRole.objects.filter(
-            submission=submission, user=self.request.user
-        ).update(position=(max_position or 0) + 1)
+        submission.add_speaker(self.request.user)
         submission.log_action(
             "pretalx.submission.invitation.accept",
             person=self.request.user,
-            data={"email": email},
+            data={"email": self.invitation.email},
         )
         self.invitation.delete()
         messages.success(self.request, phrases.cfp.invite_accepted)

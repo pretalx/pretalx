@@ -1,29 +1,64 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
-
 import datetime as dt
 from contextlib import suppress
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.timezone import now
-from django_scopes import scope
+from django_scopes import scope, scopes_disabled
 
 from pretalx.common.models.log import ActivityLog
+from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.models import (
+    Feedback,
     Review,
     Submission,
     SubmissionInvitation,
     SubmissionStates,
+    Tag,
 )
 from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from pretalx.submission.models.submission import SpeakerRole
 
 
 @pytest.mark.django_db
-def test_orga_can_see_submissions(orga_client, event, submission):
-    response = orga_client.get(event.orga_urls.submissions, follow=True)
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_orga_can_see_submissions(
+    orga_client,
+    event,
+    submission,
+    other_submission,
+    django_assert_num_queries,
+    item_count,
+):
+    if item_count != 2:
+        with scope(event=event):
+            other_submission.delete()
+
+    with django_assert_num_queries(36):
+        response = orga_client.get(event.orga_urls.submissions, follow=True)
+    assert response.status_code == 200
+    assert submission.title in response.text
+
+
+@pytest.mark.django_db
+def test_orga_can_see_single_submission(
+    orga_client, event, submission, django_assert_num_queries
+):
+    with django_assert_num_queries(33):
+        response = orga_client.get(submission.orga_urls.base, follow=True)
+    assert response.status_code == 200
+    assert submission.title in response.text
+
+
+@pytest.mark.django_db
+def test_orga_can_see_single_submission_speakers(
+    orga_client, event, submission, django_assert_num_queries
+):
+    with django_assert_num_queries(27):
+        response = orga_client.get(submission.orga_urls.speakers, follow=True)
     assert response.status_code == 200
     assert submission.title in response.text
 
@@ -39,8 +74,10 @@ def test_orga_can_search_submissions(orga_client, event, submission):
 
 @pytest.mark.django_db
 def test_orga_can_search_submissions_by_speaker(orga_client, event, submission):
+    with scopes_disabled():
+        speaker_name = submission.speakers.first().get_display_name()[:5]
     response = orga_client.get(
-        event.orga_urls.submissions + f"?q={submission.speakers.first().name[:5]}",
+        event.orga_urls.submissions + f"?q={speaker_name}",
         follow=True,
     )
     assert response.status_code == 200
@@ -49,9 +86,10 @@ def test_orga_can_search_submissions_by_speaker(orga_client, event, submission):
 
 @pytest.mark.django_db
 def test_reviewer_can_search_submissions_by_speaker(review_client, event, submission):
+    with scopes_disabled():
+        speaker_name = submission.speakers.first().get_display_name()[:5]
     response = review_client.get(
-        event.orga_urls.submissions
-        + f"?q={submission.speakers.first().name[:5]}&state=submitted",
+        event.orga_urls.submissions + f"?q={speaker_name}&state=submitted",
         follow=True,
     )
     assert response.status_code == 200
@@ -66,8 +104,10 @@ def test_reviewer_cannot_search_submissions_by_speaker_when_anonymised(
         submission.event.active_review_phase.can_see_speaker_names = False
         submission.event.active_review_phase.save()
         assert not review_user.has_perm("person.orga_list_speakerprofile", event)
+    with scopes_disabled():
+        speaker_name = submission.speakers.first().get_display_name()[:5]
     response = review_client.get(
-        event.orga_urls.submissions + f"?q={submission.speakers.first().name[:5]}",
+        event.orga_urls.submissions + f"?q={speaker_name}",
         follow=True,
     )
     assert response.status_code == 200
@@ -84,8 +124,10 @@ def test_reviewer_cannot_search_submissions_by_speaker_when_anonymised_on_team_l
         team.save()
         assert submission.event.active_review_phase.can_see_speaker_names
         assert not review_user.has_perm("person.orga_list_speakerprofile", event)
+    with scopes_disabled():
+        speaker_name = submission.speakers.first().get_display_name()[:5]
     response = review_client.get(
-        event.orga_urls.submissions + f"?q={submission.speakers.first().name[:5]}",
+        event.orga_urls.submissions + f"?q={speaker_name}",
         follow=True,
     )
     assert response.status_code == 200
@@ -99,13 +141,6 @@ def test_orga_can_miss_search_submissions(orga_client, event, submission):
     )
     assert response.status_code == 200
     assert submission.title not in response.text
-
-
-@pytest.mark.django_db
-def test_orga_can_see_single_submission(orga_client, event, submission):
-    response = orga_client.get(submission.orga_urls.base, follow=True)
-    assert response.status_code == 200
-    assert submission.title in response.text
 
 
 @pytest.mark.django_db
@@ -143,16 +178,18 @@ def test_reviewer_can_see_single_submission_but_hide_question(
 
 
 @pytest.mark.django_db
-def test_orga_can_see_single_submission_feedback(orga_client, event, feedback):
-    response = orga_client.get(feedback.talk.orga_urls.feedback, follow=True)
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_orga_can_see_single_submission_feedback(
+    orga_client, event, feedback, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=event):
+            Feedback.objects.create(talk=feedback.talk, review="I also liked it!")
+
+    with django_assert_num_queries(31):
+        response = orga_client.get(feedback.talk.orga_urls.feedback, follow=True)
     assert response.status_code == 200
     assert feedback.review in response.text
-
-
-@pytest.mark.django_db
-def test_orga_can_see_single_submission_speakers(orga_client, event, submission):
-    response = orga_client.get(submission.orga_urls.speakers, follow=True)
-    assert response.status_code == 200
 
 
 @pytest.mark.django_db
@@ -320,7 +357,8 @@ def test_reviewer_cannot_delete_submission(
 @pytest.mark.django_db
 @pytest.mark.parametrize("user", ("EMAIL", "NEW_EMAIL"))
 def test_orga_can_add_speakers(orga_client, submission, other_orga_user, user):
-    assert submission.speakers.count() == 1
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
 
     user = other_orga_user.email if user == "EMAIL" else "some_unused@mail.org"
 
@@ -331,13 +369,15 @@ def test_orga_can_add_speakers(orga_client, submission, other_orga_user, user):
     )
     submission.refresh_from_db()
 
-    assert submission.speakers.count() == 2
+    with scopes_disabled():
+        assert submission.speakers.count() == 2
     assert response.status_code == 200
 
 
 @pytest.mark.django_db
 def test_orga_can_add_speakers_with_incorrect_address(orga_client, submission):
-    assert submission.speakers.count() == 1
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
     response = orga_client.post(
         submission.orga_urls.speakers,
         data={"speaker": "foooobaaaaar", "name": "Name"},
@@ -345,46 +385,54 @@ def test_orga_can_add_speakers_with_incorrect_address(orga_client, submission):
     )
     submission.refresh_from_db()
     assert response.status_code == 200
-    assert submission.speakers.count() == 1
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
 
 
 @pytest.mark.django_db
 def test_orga_can_readd_speaker(orga_client, submission):
-    assert submission.speakers.count() == 1
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
+        speaker_email = submission.speakers.first().user.email
     response = orga_client.post(
         submission.orga_urls.speakers,
-        data={"speaker": submission.speakers.first().email, "name": "Name"},
+        data={"speaker": speaker_email, "name": "Name"},
         follow=True,
     )
     submission.refresh_from_db()
     assert response.status_code == 200
-    assert submission.speakers.count() == 1
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
 
 
 @pytest.mark.django_db
 def test_orga_can_remove_speaker(orga_client, submission):
-    assert submission.speakers.count() == 1
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
+        speaker_pk = submission.speakers.first().pk
     response = orga_client.get(
-        submission.orga_urls.delete_speaker
-        + "?id="
-        + str(submission.speakers.first().pk),
+        submission.orga_urls.delete_speaker + "?id=" + str(speaker_pk),
         follow=True,
     )
     submission.refresh_from_db()
     assert response.status_code == 200
-    assert submission.speakers.count() == 0
+    with scopes_disabled():
+        assert submission.speakers.count() == 0
 
 
 @pytest.mark.django_db
-def test_orga_can_remove_wrong_speaker(orga_client, submission, other_speaker):
-    assert submission.speakers.count() == 1
+def test_orga_can_remove_wrong_speaker(orga_client, submission, other_speaker, event):
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
+        other_profile = SpeakerProfile.objects.get(user=other_speaker, event=event)
     response = orga_client.get(
-        submission.orga_urls.delete_speaker + "?id=" + str(other_speaker.pk),
+        submission.orga_urls.delete_speaker + "?id=" + str(other_profile.pk),
         follow=True,
     )
     submission.refresh_from_db()
     assert response.status_code == 200
-    assert submission.speakers.count() == 1
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
     assert "not part of this proposal" in response.text
 
 
@@ -393,33 +441,48 @@ def test_add_speaker_assigns_position(submission, other_speaker):
     with scope(event=submission.event):
         role1 = SpeakerRole.objects.get(submission=submission)
         assert role1.position == 0
-        submission.add_speaker(
+        submission.invite_speaker(
             email=other_speaker.email, user=other_speaker, name=other_speaker.name
         )
-        role2 = SpeakerRole.objects.get(submission=submission, user=other_speaker)
+        other_profile = SpeakerProfile.objects.get(
+            user=other_speaker, event=submission.event
+        )
+        role2 = SpeakerRole.objects.get(submission=submission, speaker=other_profile)
         assert role2.position == 1
 
 
 @pytest.mark.django_db
 def test_speakers_ordered_by_position(submission, speaker, other_speaker):
     with scope(event=submission.event):
-        submission.speakers.add(other_speaker)
-        role1 = SpeakerRole.objects.get(submission=submission, user=speaker)
-        role2 = SpeakerRole.objects.get(submission=submission, user=other_speaker)
+        speaker_profile = SpeakerProfile.objects.get(
+            user=speaker, event=submission.event
+        )
+        other_profile = SpeakerProfile.objects.get(
+            user=other_speaker, event=submission.event
+        )
+        submission.speakers.add(other_profile)
+        role1 = SpeakerRole.objects.get(submission=submission, speaker=speaker_profile)
+        role2 = SpeakerRole.objects.get(submission=submission, speaker=other_profile)
         role1.position = 2
         role1.save(update_fields=["position"])
         role2.position = 1
         role2.save(update_fields=["position"])
         ordered = list(submission.sorted_speakers)
-        assert ordered == [other_speaker, speaker]
+        assert ordered == [other_profile, speaker_profile]
 
 
 @pytest.mark.django_db
 def test_display_speaker_names_respects_position(submission, speaker, other_speaker):
     with scope(event=submission.event):
-        submission.speakers.add(other_speaker)
-        role1 = SpeakerRole.objects.get(submission=submission, user=speaker)
-        role2 = SpeakerRole.objects.get(submission=submission, user=other_speaker)
+        speaker_profile = SpeakerProfile.objects.get(
+            user=speaker, event=submission.event
+        )
+        other_profile = SpeakerProfile.objects.get(
+            user=other_speaker, event=submission.event
+        )
+        submission.speakers.add(other_profile)
+        role1 = SpeakerRole.objects.get(submission=submission, speaker=speaker_profile)
+        role2 = SpeakerRole.objects.get(submission=submission, speaker=other_profile)
         role1.position = 2
         role1.save(update_fields=["position"])
         role2.position = 1
@@ -428,17 +491,23 @@ def test_display_speaker_names_respects_position(submission, speaker, other_spea
             with suppress(AttributeError):
                 delattr(submission, attr)
         names = submission.display_speaker_names
-        assert names.index(other_speaker.get_display_name()) < names.index(
-            speaker.get_display_name()
+        assert names.index(other_profile.get_display_name()) < names.index(
+            speaker_profile.get_display_name()
         )
 
 
 @pytest.mark.django_db
 def test_orga_can_reorder_speakers(orga_client, submission, speaker, other_speaker):
     with scope(event=submission.event):
-        submission.speakers.add(other_speaker)
-        role1 = SpeakerRole.objects.get(submission=submission, user=speaker)
-        role2 = SpeakerRole.objects.get(submission=submission, user=other_speaker)
+        speaker_profile = SpeakerProfile.objects.get(
+            user=speaker, event=submission.event
+        )
+        other_profile = SpeakerProfile.objects.get(
+            user=other_speaker, event=submission.event
+        )
+        submission.speakers.add(other_profile)
+        role1 = SpeakerRole.objects.get(submission=submission, speaker=speaker_profile)
+        role2 = SpeakerRole.objects.get(submission=submission, speaker=other_profile)
     response = orga_client.post(
         submission.orga_urls.reorder_speakers,
         data={"order": f"{role2.pk},{role1.pk}"},
@@ -446,7 +515,7 @@ def test_orga_can_reorder_speakers(orga_client, submission, speaker, other_speak
     assert response.status_code == 204
     with scope(event=submission.event):
         ordered = list(submission.sorted_speakers)
-        assert ordered == [other_speaker, speaker]
+        assert ordered == [other_profile, speaker_profile]
 
 
 @pytest.mark.django_db
@@ -814,11 +883,19 @@ def test_orga_can_edit_submission_wrong_datetime_answer(
 
 
 @pytest.mark.django_db
-def test_orga_can_see_all_feedback(orga_client, event, feedback):
-    response = orga_client.get(event.orga_urls.feedback, follow=True)
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_orga_can_see_all_feedback(
+    orga_client, event, feedback, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=event):
+            Feedback.objects.create(talk=feedback.talk, review="Also great!")
+
+    with django_assert_num_queries(21):
+        response = orga_client.get(event.orga_urls.feedback, follow=True)
     assert response.status_code == 200
-    assert feedback.talk.title in response.text
     assert feedback.review in response.text
+    assert feedback.talk.title in response.text
 
 
 @pytest.mark.django_db
@@ -950,8 +1027,14 @@ def test_submission_apply_pending_single(submission, orga_client):
 
 
 @pytest.mark.django_db
-def test_can_see_tags(orga_client, tag):
-    response = orga_client.get(tag.event.orga_urls.tags)
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_can_see_tags(orga_client, tag, event, django_assert_num_queries, item_count):
+    if item_count == 2:
+        with scope(event=event):
+            Tag.objects.create(event=event, tag="Other Tag", color="#ff0000")
+
+    with django_assert_num_queries(21):
+        response = orga_client.get(event.orga_urls.tags)
     assert response.status_code == 200
     assert tag.tag in response.text
 
@@ -1051,8 +1134,18 @@ def test_can_delete_used_tag(orga_client, tag, event, submission):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_submission_comments(orga_client, submission, submission_comment):
-    response = orga_client.get(submission.orga_urls.comments, follow=True)
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_orga_can_see_submission_comments(
+    orga_client, submission, submission_comment, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=submission.event):
+            submission.comments.create(
+                text="Second comment", user=submission.speakers.first().user
+            )
+
+    with django_assert_num_queries(29):
+        response = orga_client.get(submission.orga_urls.comments, follow=True)
     assert response.status_code == 200
     assert submission_comment.text in response.text
 
@@ -1086,7 +1179,10 @@ def test_orga_cannot_post_empty_submission_comment(orga_client, submission):
 
 
 @pytest.mark.django_db
-def test_orga_can_view_submission_history(orga_client, event, submission, orga_user):
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_orga_can_view_submission_history(
+    orga_client, event, submission, orga_user, django_assert_num_queries, item_count
+):
     with scope(event=event):
         submission.log_action(
             "pretalx.submission.update",
@@ -1095,8 +1191,17 @@ def test_orga_can_view_submission_history(orga_client, event, submission, orga_u
             old_data={"title": "Old Title"},
             new_data={"title": "New Title"},
         )
+        if item_count == 2:
+            submission.log_action(
+                "pretalx.submission.update",
+                person=orga_user,
+                orga=True,
+                old_data={"title": "New Title"},
+                new_data={"title": "Newer Title"},
+            )
 
-    response = orga_client.get(submission.orga_urls.history, follow=True)
+    with django_assert_num_queries(31):
+        response = orga_client.get(submission.orga_urls.history, follow=True)
     assert response.status_code == 200
     assert "History" in response.text or "Activity" in response.text
 

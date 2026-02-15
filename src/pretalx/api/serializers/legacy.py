@@ -33,6 +33,7 @@ from pretalx.submission.rules import filter_answers_by_team_access
 
 class LegacySubmitterSerializer(ModelSerializer):
     biography = SerializerMethodField()
+    avatar = SerializerMethodField()
 
     def __init__(self, *args, **kwargs):
         self.event = kwargs.pop("event", None)
@@ -48,6 +49,10 @@ class LegacySubmitterSerializer(ModelSerializer):
                 obj.profiles.filter(event=self.event).first(), "biography", ""
             )
         return ""
+
+    def get_avatar(self, obj):
+        if self.event and self.event.cfp.request_avatar:
+            return obj.profiles.filter(event=self.event).first().avatar_url
 
 
 class LegacySubmitterOrgaSerializer(LegacySubmitterSerializer):
@@ -81,12 +86,10 @@ class LegacySpeakerSerializer(ModelSerializer):
         talks = (
             obj.event.current_schedule.talks.all() if obj.event.current_schedule else []
         )
-        return obj.user.submissions.filter(
-            event=obj.event, slots__in=talks
-        ).values_list("code", flat=True)
+        return obj.submissions.filter(slots__in=talks).values_list("code", flat=True)
 
     def answers_queryset(self, obj):
-        return obj.answers.all().filter(
+        return obj.answers.filter(
             question__is_public=True, question__active=True, question__target="speaker"
         )
 
@@ -110,16 +113,14 @@ class LegacySpeakerOrgaSerializer(LegacySpeakerSerializer):
     )
 
     def answers_queryset(self, obj):
-        queryset = obj.answers.all()
+        queryset = obj.all_answers
         request = self.context.get("request")
         if request:
             return filter_answers_by_team_access(queryset, request.user)
         return queryset.none()
 
     def get_submissions(self, obj):
-        return obj.user.submissions.filter(event=obj.event).values_list(
-            "code", flat=True
-        )
+        return obj.submissions.values_list("code", flat=True)
 
     class Meta(LegacySpeakerSerializer.Meta):
         fields = (*LegacySpeakerSerializer.Meta.fields, "email", "availabilities")

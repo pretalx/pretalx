@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.db.models import Prefetch
 from django.utils.functional import cached_property
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, viewsets
@@ -25,9 +26,10 @@ from pretalx.api.serializers.speaker import (
 from pretalx.api.versions import LEGACY
 from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.person.models import SpeakerProfile
+from pretalx.submission.models import Answer
 from pretalx.submission.rules import (
     questions_for_user,
-    speaker_profiles_for_user,
+    speakers_for_user,
     submissions_for_user,
 )
 
@@ -99,7 +101,7 @@ class SpeakerViewSet(
             return (
                 SpeakerProfile.objects.filter(
                     event=self.event,
-                    user__submissions__pk__in=self.event.current_schedule.talks.all().values_list(
+                    submissions__pk__in=self.event.current_schedule.talks.all().values_list(
                         "submission_id", flat=True
                     ),
                 )
@@ -151,16 +153,26 @@ class SpeakerViewSet(
     def get_queryset(self):
         if self.api_version == LEGACY:  # pragma: no cover
             queryset = self.get_legacy_queryset() or self.queryset
-            return queryset.select_related("user", "event", "event__cfp")
+            return queryset.select_related(
+                "user", "event", "event__cfp", "profile_picture"
+            )
         if not self.event:
             # This is just during api doc creation
             return self.queryset
         queryset = (
-            speaker_profiles_for_user(
+            speakers_for_user(
                 self.event, self.request.user, submissions=self.submissions_for_user
             )
-            .select_related("user", "event")
-            .prefetch_related("user__submissions", "user__answers")
+            .select_related("user", "event", "profile_picture")
+            .prefetch_related(
+                Prefetch(
+                    "submissions", queryset=self.submissions_for_user.order_by("code")
+                ),
+                Prefetch(
+                    "answers",
+                    queryset=Answer.objects.select_related("question"),
+                ),
+            )
             .order_by("user__code")
         )
         if fields := self.check_expanded_fields(
@@ -171,6 +183,6 @@ class SpeakerViewSet(
             "submissions.track",
             "submissions.submission_type",
         ):
-            prefetches = [f"user__{field.replace('.', '__')}" for field in fields]
+            prefetches = [field.replace(".", "__") for field in fields]
             queryset = queryset.prefetch_related(*prefetches)
         return queryset

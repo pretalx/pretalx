@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from functools import cached_property
+
 import django_tables2 as tables
 from django.db.models.functions import Lower
 from django.utils.html import format_html
@@ -22,6 +24,7 @@ from pretalx.submission.models import (
     SubmitterAccessCode,
     Track,
 )
+from pretalx.submission.rules import questions_for_user
 
 
 class SubmitterAccessCodeTable(PretalxTable):
@@ -83,7 +86,7 @@ class SubmitterAccessCodeTable(PretalxTable):
             },
             "edit": {},
             "delete": {
-                "condition": lambda record: not record.submissions.exists(),
+                "condition": lambda record: not record.has_submissions,
             },
         }
     )
@@ -255,12 +258,21 @@ class QuestionTable(UnsortableMixin, PretalxTable):
         super().__init__(*args, **kwargs)
         self.attrs["dragsort-url"] = self.event.cfp.urls.questions
 
+    @cached_property
+    def _accessible_question_ids(self):
+        # Pre-compute accessible question IDs to avoid per-question DB queries
+        if self.event and self.user:
+            accessible = questions_for_user(self.event, self.user, for_answers=True)
+            if accessible is not None:
+                return set(accessible.values_list("id", flat=True))
+        return set()
+
     def render_question(self, record, value):
         # Can’t automatically linkify: We can only link to the detail view if
         # the user can see answers.
         request = getattr(self, "request", None)
         if request and hasattr(request, "user") and record:
-            if request.user.has_perm("submission.orga_view_question", record):
+            if record.pk in self._accessible_question_ids:
                 url = record.urls.base
             else:
                 url = record.urls.edit

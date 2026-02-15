@@ -13,11 +13,9 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView, View
 from django_context_decorator import context
-from django_scopes import scopes_disabled
 
 from pretalx.celery_app import app
 from pretalx.common.exceptions import UserDeletionError
-from pretalx.common.image import gravatar_csp
 from pretalx.common.mail import mail_send_task
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.phrases import phrases
@@ -139,11 +137,6 @@ class AdminUserView(OrgaCRUDView):
     extra_actions = {"detail": {"get": "detail", "post": "reset_password"}}
     detail_is_update = False
 
-    @gravatar_csp()
-    def dispatch(self, *args, **kwargs):
-        with scopes_disabled():
-            return super().dispatch(*args, **kwargs)
-
     def get_queryset(self):
         if self.action == "list":
             search = self.request.GET.get("q", "").strip()
@@ -160,7 +153,7 @@ class AdminUserView(OrgaCRUDView):
             "teams__organiser__events",
             "teams__limit_events",
         ).annotate(
-            submission_count=Count("submissions", distinct=True),
+            submission_count=Count("profiles__submissions", distinct=True),
         )
 
     def has_permission(self, *args):

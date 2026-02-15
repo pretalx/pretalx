@@ -77,7 +77,9 @@ def use_tracks(user, obj):
 @rules.predicate
 def is_speaker(user, obj):
     obj = getattr(obj, "submission", obj)
-    return obj and obj.pk and user in obj.speakers.all()
+    if not obj or not obj.pk:
+        return False
+    return any(s.user_id == user.id for s in obj.speakers.all())
 
 
 @rules.predicate
@@ -264,7 +266,7 @@ def limit_for_reviewers(
 ):
     if not (phase := event.active_review_phase):
         queryset = event.submissions.none()
-    queryset = queryset.exclude(speakers__in=[user])
+    queryset = queryset.exclude(speakers__user=user)
     if phase and phase.proposal_visibility == "assigned":
         queryset = annotate_assigned(queryset, event, user)
         return queryset.filter(is_assigned__gte=1)
@@ -322,13 +324,13 @@ def submission_comments_active(user, obj):
     return obj.event.get_feature_flag("use_submission_comments")
 
 
-def speaker_profiles_for_user(event, user, submissions=None):
+def speakers_for_user(event, user, submissions=None):
     submissions = submissions or submissions_for_user(event, user)
-    from pretalx.person.models import SpeakerProfile, User  # noqa: PLC0415
+    from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
 
     return SpeakerProfile.objects.filter(
-        event=event, user__in=User.objects.filter(submissions__in=submissions)
-    )
+        event=event, submissions__in=submissions
+    ).distinct()
 
 
 def get_reviewable_submissions(event, user, queryset=None):

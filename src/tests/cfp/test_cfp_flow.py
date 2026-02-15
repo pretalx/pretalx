@@ -269,7 +269,7 @@ def test_speaker_profile_form_avatar_required_matches_cfp(
         event.cfp.fields["avatar"] = {"visibility": visibility}
         event.cfp.save()
         form = SpeakerProfileForm(event=event, user=speaker)
-        # Field itself is never required (gravatar checkbox is an alternative)
+        # Field itself is never required
         assert form.fields["avatar"].required is False
         # Widget has hide-optional class when avatar is required
         widget_class = form.fields["avatar"].widget.attrs.get("class", "")

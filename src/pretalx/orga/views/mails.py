@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.contrib import messages
+from django.db.models import Prefetch
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
@@ -43,6 +44,7 @@ from pretalx.orga.forms.mails import (
 )
 from pretalx.orga.tables.mail import MailTemplateTable, OutboxMailTable, SentMailTable
 from pretalx.submission.models import Submission, SubmissionStates
+from pretalx.person.models import User
 
 
 def get_send_mail_exceptions(request):
@@ -74,7 +76,13 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     def get_queryset(self):
         qs = (
             self.request.event.queued_mails.prefetch_related(
-                "to_users", "submissions", "submissions__track", "submissions__event"
+                Prefetch(
+                    "to_users",
+                    queryset=User.objects.with_speaker_code(self.request.event),
+                ),
+                "submissions",
+                "submissions__track",
+                "submissions__event",
             )
             .select_related("template")
             .filter(sent__isnull=True)
@@ -129,7 +137,13 @@ class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     def get_queryset(self):
         qs = (
             self.request.event.queued_mails.prefetch_related(
-                "to_users", "submissions", "submissions__track", "submissions__event"
+                Prefetch(
+                    "to_users",
+                    queryset=User.objects.with_speaker_code(self.request.event),
+                ),
+                "submissions",
+                "submissions__track",
+                "submissions__event",
             )
             .select_related("template")
             .filter(sent__isnull=False)
@@ -323,7 +337,16 @@ class MailDetail(PermissionRequired, CreateOrUpdateView):
     messages = {}
 
     def get_object(self, queryset=None) -> QueuedMail:
-        return self.request.event.queued_mails.filter(pk=self.kwargs.get("pk")).first()
+        return (
+            self.request.event.queued_mails.prefetch_related(
+                Prefetch(
+                    "to_users",
+                    queryset=User.objects.with_speaker_code(self.request.event),
+                )
+            )
+            .filter(pk=self.kwargs.get("pk"))
+            .first()
+        )
 
     def get_success_url(self):
         return self.object.event.orga_urls.outbox
@@ -586,12 +609,15 @@ class ComposeDraftReminders(EventPermissionRequired, TemplateView):
         )
         mail_count = 0
         for submission in submissions:
-            for user in submission.sorted_speakers:
+            for speaker in submission.sorted_speakers:
                 template.to_mail(
-                    user=user,
+                    user=speaker.user,
                     event=request.event,
-                    locale=submission.get_email_locale(user.locale),
-                    context_kwargs={"submission": submission, "user": user},
+                    locale=submission.get_email_locale(speaker.user.locale),
+                    context_kwargs={
+                        "submission": submission,
+                        "user": speaker.user,
+                    },
                     skip_queue=True,
                     commit=False,
                 )

@@ -234,16 +234,18 @@ class FrabJsonExporter(ScheduleData):
                                         {
                                             "code": person.code,
                                             "name": person.get_display_name(),
-                                            "avatar": person.get_avatar_url(self.event)
-                                            or None,
-                                            "biography": person.event_profile(
-                                                self.event
-                                            ).biography,
+                                            "avatar": (
+                                                person.profile_picture.get_avatar_url(
+                                                    event=self.event
+                                                )
+                                                if person.profile_picture_id
+                                                and self.event.cfp.request_avatar
+                                                else None
+                                            ),
+                                            "biography": person.biography,
                                             "public_name": person.get_display_name(),  # deprecated
-                                            "guid": person.guid,
-                                            "url": person.event_profile(
-                                                self.event
-                                            ).urls.public.full(),
+                                            "guid": person.user.guid,
+                                            "url": person.urls.public.full(),
                                         }
                                         for person in talk.submission.sorted_speakers
                                     ],

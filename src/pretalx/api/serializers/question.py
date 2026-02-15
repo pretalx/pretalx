@@ -13,7 +13,7 @@ from rest_framework.serializers import (
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
-from pretalx.person.models import User
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import (
     Answer,
     AnswerOption,
@@ -193,7 +193,7 @@ class AnswerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         read_only=True,
         required=False,
     )
-    person = SlugRelatedField(
+    speaker = SlugRelatedField(
         slug_field="code",
         read_only=True,
         required=False,
@@ -210,7 +210,7 @@ class AnswerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             "answer_file",
             "submission",
             "review",
-            "person",
+            "speaker",
             "options",
         )
         expandable_fields = {
@@ -222,7 +222,7 @@ class AnswerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
                 "pretalx.api.serializers.question.AnswerOptionSerializer",
                 {"many": True, "read_only": True, "omit": ("question",)},
             ),
-            "person": (
+            "speaker": (
                 "pretalx.api.serializers.speaker.SpeakerSerializer",
                 {"read_only": True, "omit": ("answers",)},
             ),
@@ -242,8 +242,8 @@ class AnswerCreateSerializer(AnswerSerializer):
         required=False,
         allow_null=True,
     )
-    person = SlugRelatedField(
-        queryset=User.objects.none(),
+    speaker = SlugRelatedField(
+        queryset=SpeakerProfile.objects.none(),
         slug_field="code",
         required=False,
         allow_null=True,
@@ -268,7 +268,7 @@ class AnswerCreateSerializer(AnswerSerializer):
             request.event, request.user
         )
         self.fields["submission"].queryset = request.event.submissions.all()
-        self.fields["person"].queryset = User.objects.filter(
+        self.fields["speaker"].queryset = SpeakerProfile.objects.filter(
             submissions__event=request.event
         )
         self.fields["review"].queryset = request.event.reviews.all()
@@ -295,7 +295,7 @@ class AnswerCreateSerializer(AnswerSerializer):
         target = question.target
         submission = self.get_with_fallback(data, "submission")
         review = self.get_with_fallback(data, "review")
-        person = self.get_with_fallback(data, "person")
+        speaker = self.get_with_fallback(data, "speaker")
         if target == QuestionTarget.SUBMISSION and not submission:
             raise exceptions.ValidationError(
                 {"submission": "This field is required for submission questions."}
@@ -304,9 +304,9 @@ class AnswerCreateSerializer(AnswerSerializer):
             raise exceptions.ValidationError(
                 {"review": "This field is required for reviewer questions."}
             )
-        if target == QuestionTarget.SPEAKER and not person:
+        if target == QuestionTarget.SPEAKER and not speaker:
             raise exceptions.ValidationError(
-                {"person": "This field is required for speaker questions."}
+                {"speaker": "This field is required for speaker questions."}
             )
 
         # Only allow the field matching the question target

@@ -11,6 +11,8 @@ from django.test import override_settings
 from django.urls import reverse
 from django_scopes import scope
 
+from pretalx.person.models import SpeakerProfile
+
 
 @pytest.mark.django_db
 @pytest.mark.usefixtures("other_slot")
@@ -65,7 +67,7 @@ def test_can_see_changelog(
     assert slot.submission.title in response.content.decode()
 
     # Make sure that the next call uses fewer db queries, as the results are cached
-    with django_assert_num_queries(17):
+    with django_assert_num_queries(15):
         response = client.get(url, follow=True, HTTP_ACCEPT="text/html")
 
     assert response.status_code == 200
@@ -159,33 +161,49 @@ def test_cannot_see_no_schedule(client, user, event, featured):
 
 
 @pytest.mark.django_db
-@pytest.mark.usefixtures("slot", "other_slot")
-def test_speaker_list(client, django_assert_num_queries, event, speaker):
-    url = event.urls.speakers
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_speaker_list(
+    client,
+    django_assert_num_queries,
+    event,
+    speaker,
+    other_speaker,
+    slot,
+    other_slot,
+    item_count,
+):
+    if item_count != 2:
+        with scope(event=event):
+            SpeakerProfile.objects.filter(user=other_speaker, event=event).delete()
+
     with django_assert_num_queries(9):
-        response = client.get(url, follow=True)
+        response = client.get(event.urls.speakers, follow=True)
     assert response.status_code == 200
     assert speaker.name in response.text
+    if item_count == 2:
+        assert other_speaker.name in response.text
 
 
 @pytest.mark.django_db
 @pytest.mark.usefixtures("other_slot")
 def test_speaker_page(
-    client, django_assert_num_queries, event, speaker, slot, other_submission
+    client, django_assert_num_queries, event, speaker_profile, slot, other_submission
 ):
+    speaker = speaker_profile.user
     with scope(event=event):
-        other_submission.speakers.add(speaker)
+        other_submission.speakers.add(speaker_profile)
         slot.submission.accept()
         slot.submission.save()
         event.wip_schedule.freeze("testversion 2")
         other_submission.slots.all().update(is_visible=True)
         slot.submission.slots.all().update(is_visible=True)
-    url = reverse("agenda:speaker", kwargs={"code": speaker.code, "event": event.slug})
-    with django_assert_num_queries(14):
+    url = reverse(
+        "agenda:speaker", kwargs={"code": speaker_profile.code, "event": event.slug}
+    )
+    with django_assert_num_queries(12):
         response = client.get(url, follow=True)
     assert response.status_code == 200
-    assert len(response.context["talks"]) == 2, response.context["talks"]
-    assert response.context["talks"].filter(submission=other_submission)
+    assert other_submission.title in response.content.decode()
     with scope(event=event):
         assert speaker.profiles.get(event=event).biography in response.text
         assert slot.submission.title in response.text
@@ -194,10 +212,16 @@ def test_speaker_page(
 @pytest.mark.django_db
 @pytest.mark.usefixtures("other_slot")
 def test_speaker_page_other_submissions_only_if_visible(
-    client, django_assert_num_queries, event, speaker, slot, other_submission
+    client,
+    django_assert_num_queries,
+    event,
+    speaker,
+    speaker_profile,
+    slot,
+    other_submission,
 ):
     with scope(event=event):
-        other_submission.speakers.add(speaker)
+        other_submission.speakers.add(speaker_profile)
         slot.submission.accept()
         slot.submission.save()
         event.wip_schedule.freeze("testversion 2")
@@ -206,33 +230,38 @@ def test_speaker_page_other_submissions_only_if_visible(
             is_visible=True
         )
 
-    url = reverse("agenda:speaker", kwargs={"code": speaker.code, "event": event.slug})
-    with django_assert_num_queries(13):
+    url = reverse(
+        "agenda:speaker",
+        kwargs={"code": speaker_profile.code, "event": event.slug},
+    )
+    with django_assert_num_queries(12):
         response = client.get(url, follow=True)
 
     assert response.status_code == 200
-    assert len(response.context["talks"]) == 1
-    assert not response.context["talks"].filter(submission=other_submission)
+    assert other_submission.title not in response.content.decode()
 
 
 @pytest.mark.django_db
 @pytest.mark.usefixtures("slot")
-def test_speaker_social_media(client, django_assert_num_queries, event, speaker):
+def test_speaker_social_media(
+    client, django_assert_num_queries, event, speaker_profile
+):
     url = reverse(
-        "agenda:speaker-social", kwargs={"code": speaker.code, "event": event.slug}
+        "agenda:speaker-social",
+        kwargs={"code": speaker_profile.code, "event": event.slug},
     )
-    with django_assert_num_queries(10):
+    with django_assert_num_queries(8):
         response = client.get(url, follow=True)
     assert response.status_code == 404  # no images available
 
 
 @pytest.mark.django_db
 @pytest.mark.usefixtures("slot", "other_slot")
-def test_speaker_redirect(client, event, speaker):
+def test_speaker_redirect(client, event, speaker_profile):
     target_url = reverse(
-        "agenda:speaker", kwargs={"code": speaker.code, "event": event.slug}
+        "agenda:speaker", kwargs={"code": speaker_profile.code, "event": event.slug}
     )
-    url = event.urls.speakers + f"by-id/{speaker.pk}/"
+    url = event.urls.speakers + f"by-id/{speaker_profile.pk}/"
     response = client.get(url)
     assert response.status_code == 302
     assert response.headers["location"].endswith(target_url)

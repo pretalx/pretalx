@@ -4,30 +4,19 @@
 import pytest
 from django_scopes import scope, scopes_disabled
 
-from pretalx.person.models.user import User, avatar_path
+from pretalx.person.models.picture import picture_path
+from pretalx.person.models.user import User
 from pretalx.submission.models.question import Answer
+from pretalx.person.models.picture import ProfilePicture
 
 
-@pytest.mark.parametrize(
-    ("email", "expected"),
-    (
-        ("one@two.com", "ac5be7f974137dc75bacee19b94fe0f8"),
-        ("a_very_long.email@orga.org", "79bd022bbbd718d8e30f730169067b2a"),
-    ),
-)
-def test_gravatar_parameter(email, expected):
-    user = User(email=email)
-    assert user.gravatar_parameter == expected
-
-
-@pytest.mark.django_db
 def test_user_deactivate(speaker, personal_answer, impersonal_answer, other_speaker):
     with scopes_disabled():
         assert Answer.objects.count() == 2
         count = speaker.own_actions().count()
         name = speaker.name
         email = speaker.email
-        organiser = speaker.submissions.first().event.organiser
+        organiser = speaker.profiles.first().submissions.first().event.organiser
         team = organiser.teams.first()
         team.members.add(speaker)
         team.save()
@@ -100,17 +89,18 @@ def test_shred_user(user):
         ("ABCDEF", "foo.jpeg", "avatars/ABCDEF_", ".jpeg"),
     ),
 )
-def test_avatar_path(code, filename, expected_start, expected_end):
+def test_picture_path(code, filename, expected_start, expected_end):
     user = User()
     user.code = code
-    ap = avatar_path(user, filename)
+    picture = ProfilePicture(user=user)
+    ap = picture_path(picture, filename)
     assert ap.startswith(expected_start)
     assert ap.endswith(expected_end)
 
 
 @pytest.mark.django_db
-def test_user_attributes(orga_user):
-    assert not orga_user.has_avatar
+def test_user_profile_picture(orga_user):
+    assert not orga_user.profile_picture_id
 
 
 @pytest.mark.django_db

@@ -37,7 +37,7 @@ SPDX-FileContributor: Florian Mösch
     {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
     {% has_perm "person.mark_arrived_speakerprofile" request.user request.event as can_mark_speaker %}
     <h2 class="d-flex justify-content-between align-items-baseline">
-        {% include "orga/includes/user_name.html" with user=form.instance.user lightbox=True %}
+        {% include "orga/includes/user_name.html" with user=form.instance lightbox=True %}
         <span class="ml-2">
             ({{ submissions.count }}
             {% blocktranslate asvar proposal_title trimmed count count=submissions.count %}
@@ -87,10 +87,7 @@ SPDX-FileContributor: Florian Mösch
 
         {{ form.name.as_field_group }}
         {{ form.email.as_field_group }}
-        {% if form.avatar %}
-            {% include "common/avatar.html" with user=form.instance.user form=form %}
-        {% endif %}
-
+        {{ form.avatar.as_field_group }}
         {{ form.biography.as_field_group }}
         {{ form.availabilities.as_field_group }}
         {{ form.internal_notes.as_field_group }}

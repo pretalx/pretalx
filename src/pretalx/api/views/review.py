@@ -81,7 +81,7 @@ class ReviewViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
         if not self.event:
             return Submission.objects.none()
         submissions = self.event.submissions.all().exclude(
-            speakers__in=[self.request.user]
+            speakers__user=self.request.user
         )
         # Organizers can see all submissions' reviews regardless of review phase
         # Only pure reviewers are subject to review phase restrictions
@@ -101,8 +101,9 @@ class ReviewViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
             )
             .select_related(
                 "submission",
+                "user",
             )
-            .prefetch_related("scores", "scores__category")
+            .prefetch_related("scores", "scores__category", "answers")
             .order_by("pk")
         )
         if fields := self.check_expanded_fields(

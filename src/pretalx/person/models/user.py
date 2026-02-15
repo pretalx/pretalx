@@ -5,8 +5,6 @@ import html
 import random
 import uuid
 from contextlib import suppress
-from hashlib import md5
-from urllib.parse import urljoin
 
 from django.conf import settings
 from django.contrib.auth.models import (
@@ -16,6 +14,7 @@ from django.contrib.auth.models import (
 )
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models import OuterRef, Subquery
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.timezone import now
@@ -26,19 +25,11 @@ from rest_framework.authtoken.models import Token
 from rules.contrib.models import RulesModelBase, RulesModelMixin
 
 from pretalx.common.exceptions import UserDeletionError
-from pretalx.common.image import create_thumbnail
 from pretalx.common.models import TIMEZONE_CHOICES
 from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode, LogMixin
-from pretalx.common.text.path import hashed_path
 from pretalx.common.urls import EventUrls, build_absolute_uri
 from pretalx.person.rules import is_administrator
 from pretalx.person.signals import delete_user as delete_user_signal
-
-
-def avatar_path(instance, filename):
-    return hashed_path(
-        filename, target_name=instance.code or "avatar", upload_dir="avatars"
-    )
 
 
 class UserQuerySet(models.QuerySet):
@@ -51,9 +42,22 @@ class UserQuerySet(models.QuerySet):
                 queryset=SpeakerProfile.objects.filter(event=event).select_related(
                     "event"
                 ),
-                to_attr="_event_profiles",
+                to_attr="_speakers",
             ),
         ).distinct()
+
+    def with_speaker_code(self, event):
+        from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
+
+        return self.annotate(
+            speaker_code=Subquery(
+                SpeakerProfile.objects.filter(
+                    user_id=OuterRef("pk"),
+                    event=event,
+                    submissions__isnull=False,
+                ).values("code")[:1]
+            )
+        )
 
 
 class UserManager(BaseUserManager):
@@ -156,22 +160,12 @@ class User(
         max_length=32,
         default="UTC",
     )
-    avatar = models.ImageField(
+    profile_picture = models.ForeignKey(
+        "person.ProfilePicture",
         null=True,
         blank=True,
-        verbose_name=_("Profile picture"),
-        upload_to=avatar_path,
-    )
-    avatar_thumbnail = models.ImageField(null=True, blank=True, upload_to="avatars/")
-    avatar_thumbnail_tiny = models.ImageField(
-        null=True, blank=True, upload_to="avatars/"
-    )
-    get_gravatar = models.BooleanField(
-        default=False,
-        verbose_name=_("Retrieve profile picture via gravatar"),
-        help_text=_(
-            "If you have registered with an email address that has a gravatar account, we can retrieve your profile picture from there."
-        ),
+        on_delete=models.SET_NULL,
+        related_name="users",
     )
     pw_reset_token = models.CharField(
         null=True, max_length=160, verbose_name="Password reset token"
@@ -191,7 +185,7 @@ class User(
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.permission_cache = {}
-        self.event_profile_cache = {}
+        self.speaker_cache = {}
         self.event_permission_cache = {}
         self.event_preferences_cache = {}
 
@@ -211,21 +205,11 @@ class User(
         """Returns a user's name or 'Unnamed user'."""
         return str(self)
 
-    def save(self, *args, skip_gravatar_processing=False, **kwargs):
+    def save(self, *args, **kwargs):
         self.email = self.email.lower().strip()
-        result = super().save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
-        # Check if we need to get the profile picture from gravatar
-        update_gravatar = (
-            not kwargs.get("update_fields") or "get_gravatar" in kwargs["update_fields"]
-        )
-        if self.get_gravatar and update_gravatar and not skip_gravatar_processing:
-            from pretalx.person.tasks import gravatar_cache  # noqa: PLC0415
-
-            gravatar_cache.apply_async(args=(self.pk,), ignore_result=True)
-        return result
-
-    def event_profile(self, event):
+    def get_speaker(self, event):
         """Retrieve (and/or create) the event.
 
         :class:`~pretalx.person.models.profile.SpeakerProfile` for this user.
@@ -233,26 +217,28 @@ class User(
         :type event: :class:`pretalx.event.models.event.Event`
         :retval: :class:`~pretalx.person.models.profile.EventProfile`
         """
-        if profile := self.event_profile_cache.get(event.pk):
-            return profile
+        if speaker := self.speaker_cache.get(event.pk):
+            return speaker
 
-        if hasattr(self, "_event_profiles") and len(self._event_profiles) == 1:
-            profile = self._event_profiles[0]
-            if profile.event_id == event.pk:
-                self.event_profile_cache[event.pk] = profile
-                return profile
+        if hasattr(self, "_speakers") and len(self._speakers) == 1:
+            speaker = self._speakers[0]
+            if speaker.event_id == event.pk:
+                self.speaker_cache[event.pk] = speaker
+                return speaker
 
         try:
-            profile = self.profiles.select_related("event").get(event=event)
+            speaker = self.profiles.select_related("event", "profile_picture").get(
+                event=event
+            )
         except Exception:
             from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
 
-            profile = SpeakerProfile(event=event, user=self)
+            speaker = SpeakerProfile(event=event, user=self)
             if self.pk:
-                profile.save()
+                speaker.save()
 
-        self.event_profile_cache[event.pk] = profile
-        return profile
+        self.speaker_cache[event.pk] = speaker
+        return speaker
 
     def get_event_preferences(self, event):
         if preferences := self.event_preferences_cache.get(event.pk):
@@ -286,6 +272,11 @@ class User(
 
         return ActivityLog.objects.filter(person=self)
 
+    def _delete_files(self):
+        for picture in self.pictures.all():
+            picture.delete()
+        return super()._delete_files()
+
     @transaction.atomic
     def deactivate(self):
         """Delete the user by unsetting all of their information."""
@@ -309,8 +300,9 @@ class User(
         self.save()
         self.profiles.all().update(biography="")
         for answer in Answer.objects.filter(
-            person=self, question__contains_personal_data=True
-        ):
+            models.Q(speaker__user=self) | models.Q(submission__speakers__user=self),
+            question__contains_personal_data=True,
+        ).distinct():
             answer.delete()  # Iterate to delete answer files, too
         for team in self.teams.all():
             team.members.remove(self)
@@ -321,13 +313,18 @@ class User(
     @transaction.atomic
     def shred(self):
         """Actually remove the user account."""
-        from pretalx.submission.models import Submission  # noqa: PLC0415
+        from pretalx.submission.models import Answer, Submission  # noqa: PLC0415
 
         with scopes_disabled():
             if (
-                Submission.all_objects.filter(speakers__in=[self]).count()
+                Submission.all_objects.filter(speakers__user=self).count()
                 or self.teams.count()
-                or self.answers.count()
+                or Answer.objects.filter(
+                    models.Q(speaker__user=self)
+                    | models.Q(submission__speakers__user=self)
+                )
+                .distinct()
+                .count()
             ):
                 raise UserDeletionError(
                     f"Cannot delete user <{self.email}> because they have submissions, answers, or teams. Please deactivate this user instead."
@@ -343,40 +340,6 @@ class User(
     @cached_property
     def guid(self) -> str:
         return str(uuid.uuid5(uuid.NAMESPACE_URL, f"acct:{self.email.strip()}"))
-
-    @cached_property
-    def gravatar_parameter(self) -> str:
-        return md5(self.email.strip().encode()).hexdigest()
-
-    @cached_property
-    def has_avatar(self) -> bool:
-        return bool(self.avatar) and self.avatar != "False"
-
-    @cached_property
-    def avatar_url(self) -> str:
-        if self.has_avatar:
-            return self.avatar.url
-
-    def get_avatar_url(self, event=None, thumbnail=None):
-        """Returns the full avatar URL, where user.avatar_url returns the
-        absolute URL."""
-        if not self.avatar_url:
-            return ""
-        if not thumbnail:
-            image = self.avatar
-        else:
-            image = (
-                self.avatar_thumbnail_tiny
-                if thumbnail == "tiny"
-                else self.avatar_thumbnail
-            )
-            if not image:
-                image = create_thumbnail(self.avatar, thumbnail)
-        if not image:
-            return
-        if event and event.custom_domain:
-            return urljoin(event.custom_domain, image.url)
-        return urljoin(settings.SITE_URL, image.url)
 
     def get_events_with_any_permission(self):
         """Returns a queryset of events for which this user has any type of

@@ -31,7 +31,7 @@ def start_redirect_view(request):
     with scopes_disabled():
         orga_events = set(request.user.get_events_with_any_permission())
         speaker_events = set(
-            Event.objects.filter(submissions__speakers__in=[request.user])
+            Event.objects.filter(submissions__speakers__user=request.user)
         )
 
     # Users with only one event, in only one role, are redirected to that event
@@ -78,7 +78,7 @@ class DashboardEventListView(TemplateView):
             else:
                 context["past_orga_events"].append(event)
         context["speaker_events"] = (
-            Event.objects.filter(submissions__speakers__in=[self.request.user])
+            Event.objects.filter(submissions__speakers__user=self.request.user)
             .distinct()
             .order_by("-date_from")
         )

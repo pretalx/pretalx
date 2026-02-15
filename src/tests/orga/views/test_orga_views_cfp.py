@@ -19,7 +19,14 @@ from django_scopes import scope
 from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
 from pretalx.mail.models import QueuedMail
-from pretalx.submission.models import Question, QuestionTarget, Submission
+from pretalx.person.models import SpeakerProfile
+from pretalx.submission.models import (
+    Question,
+    QuestionTarget,
+    Submission,
+    SubmitterAccessCode,
+    Track,
+)
 from pretalx.submission.models.question import Answer, QuestionRequired, QuestionVariant
 
 
@@ -485,13 +492,45 @@ def test_delete_default_submission_type(
 
 
 @pytest.mark.django_db
-def test_all_questions_in_list(orga_client, question, inactive_question, event):
-    with scope(event=event):
-        assert event.questions.count() == 1
-        assert Question.all_objects.filter(event=event).count() == 2
-    response = orga_client.get(event.cfp.urls.questions, follow=True)
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_all_questions_in_list(
+    orga_client,
+    question,
+    inactive_question,
+    event,
+    django_assert_num_queries,
+    item_count,
+):
+    if item_count != 2:
+        with scope(event=event):
+            inactive_question.delete()
+
+    with django_assert_num_queries(25):
+        response = orga_client.get(event.cfp.urls.questions, follow=True)
+    assert response.status_code == 200
     assert question.question in response.text
-    assert inactive_question.question in response.text
+    if item_count == 2:
+        assert inactive_question.question in response.text
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_submission_type_list_num_queries(
+    orga_client,
+    event,
+    submission_type,
+    default_submission_type,
+    django_assert_num_queries,
+    item_count,
+):
+    if item_count != 2:
+        with scope(event=event):
+            submission_type.delete()
+
+    with django_assert_num_queries(22):
+        response = orga_client.get(event.cfp.urls.types)
+    assert response.status_code == 200
+    assert str(default_submission_type.name) in response.text
 
 
 @pytest.mark.django_db
@@ -855,13 +894,11 @@ def test_can_remind_answered_submission_question(
         Answer.objects.create(
             submission=slot.submission,
             question=question,
-            person=speaker,
             answer="something",
         )
         Answer.objects.create(
             submission=other_submission,
             question=question,
-            person=other_speaker,
             answer="something",
         )
     response = orga_client.post(
@@ -896,10 +933,18 @@ def test_can_activate_inactive_question(orga_client, inactive_question):
 
 
 @pytest.mark.django_db
-def test_can_see_tracks(orga_client, track):
-    response = orga_client.get(track.event.cfp.urls.tracks)
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_can_see_tracks(
+    orga_client, track, event, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=event):
+            Track.objects.create(event=event, name="Other Track", color="#ff0000")
+
+    with django_assert_num_queries(21):
+        response = orga_client.get(event.cfp.urls.tracks)
     assert response.status_code == 200
-    assert track.name in response.text
+    assert str(track.name) in response.text
 
 
 @pytest.mark.django_db
@@ -972,8 +1017,15 @@ def test_cannot_delete_used_track(orga_client, track, event, submission):
 
 
 @pytest.mark.django_db
-def test_can_see_access_codes(orga_client, access_code):
-    response = orga_client.get(access_code.event.cfp.urls.access_codes)
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_can_see_access_codes(
+    orga_client, access_code, event, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        SubmitterAccessCode.objects.create(event=event, code="OTHERCODE")
+
+    with django_assert_num_queries(21):
+        response = orga_client.get(event.cfp.urls.access_codes)
     assert response.status_code == 200
     assert access_code.code in response.text
 
@@ -1242,7 +1294,6 @@ def test_question_file_download_creates_cached_file(
         answer = Answer.objects.create(
             submission=submission,
             question=file_question,
-            person=speaker,
             answer="doc.pdf",
         )
         answer.answer_file.save("doc.pdf", ContentFile(b"pdf content"))
@@ -1263,7 +1314,6 @@ def test_question_file_download_generates_zip(
         answer = Answer.objects.create(
             submission=submission,
             question=file_question,
-            person=speaker,
             answer="test.txt",
         )
         answer.answer_file.save("test.txt", ContentFile(b"test content"))
@@ -1297,11 +1347,11 @@ def test_question_file_download_duplicate_filenames(
             title="Other submission",
             submission_type=event.cfp.default_type,
         )
-        other_submission.speakers.add(speaker)
+        speaker_profile = SpeakerProfile.objects.get(user=speaker, event=event)
+        other_submission.speakers.add(speaker_profile)
         answer1 = Answer.objects.create(
             submission=submission,
             question=file_question,
-            person=speaker,
             answer="same.txt",
         )
         answer1.answer_file.save("same.txt", ContentFile(b"content 1"))
@@ -1310,7 +1360,6 @@ def test_question_file_download_duplicate_filenames(
         answer2 = Answer.objects.create(
             submission=other_submission,
             question=file_question,
-            person=speaker,
             answer="same.txt",
         )
         answer2.answer_file.save("same.txt", ContentFile(b"content 2"))
@@ -1329,12 +1378,12 @@ def test_question_file_download_duplicate_filenames(
 
 @pytest.mark.django_db
 def test_question_file_download_speaker_question(
-    orga_client, event, speaker_file_question, speaker
+    orga_client, event, speaker_file_question, speaker_profile
 ):
     with scope(event=event):
         answer = Answer.objects.create(
             question=speaker_file_question,
-            person=speaker,
+            speaker=speaker_profile,
             answer="cv.pdf",
         )
         answer.answer_file.save("cv.pdf", ContentFile(b"CV content"))
@@ -1348,5 +1397,5 @@ def test_question_file_download_speaker_question(
     with ZipFile(BytesIO(zip_content), "r") as zf:
         names = zf.namelist()
         assert len(names) == 1
-        assert speaker.code in names[0]
+        assert speaker_profile.code in names[0]
         assert zf.read(names[0]) == b"CV content"

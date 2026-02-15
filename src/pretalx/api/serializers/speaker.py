@@ -21,6 +21,7 @@ from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import SpeakerProfile, User
+from pretalx.person.models.picture import ProfilePicture
 from pretalx.submission.models import QuestionTarget
 
 
@@ -39,46 +40,43 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
     @extend_schema_field(list[str])
     def get_submissions(self, obj):
-        submissions = self.context.get("submissions")
-        if not submissions:
+        if not self.context.get("submissions"):
             return []
-        submissions = submissions.filter(speakers__in=[obj.user])
+        # When used as an embedded serializer (e.g. expanded speakers on the
+        # submission endpoint), the context won't contain "submissions", so we
+        # return [] above. When used from SpeakerViewSet, get_queryset()
+        # prefetches "submissions" with the visibility-filtered queryset from
+        # submissions_for_user, so .all() returns only permitted submissions.
+        submissions = obj.submissions.all()
         if serializer := self.get_extra_flex_field("submissions", submissions):
             return serializer.data
-        return submissions.values_list("code", flat=True)
+        return [s.code for s in submissions]
 
     @extend_schema_field(list[int])
     def get_answers(self, obj):
         questions = self.context.get("questions", [])
-        qs = (
-            obj.answers.filter(
-                question__in=questions,
-                question__event=self.event,
-                question__target=QuestionTarget.SPEAKER,
-            )
-            .select_related("question")
-            .order_by("question__position")
+        if not questions:
+            return []
+        question_pks = {q.pk for q in questions if q.target == QuestionTarget.SPEAKER}
+        # Use prefetched answers, filter in Python
+        answers = sorted(
+            [a for a in obj.answers.all() if a.question_id in question_pks],
+            key=lambda a: a.question.position,
         )
-        if serializer := self.get_extra_flex_field("answers", qs):
+        if serializer := self.get_extra_flex_field("answers", answers):
             return serializer.data
-        return qs.values_list("pk", flat=True)
+        return [a.pk for a in answers]
 
     def update(self, instance, validated_data):
         availabilities_data = validated_data.pop("availabilities", None)
-        profile = super().update(instance, validated_data)
+        speaker = super().update(instance, validated_data)
         if availabilities_data is not None:
-            self._handle_availabilities(profile, availabilities_data, field="person")
-        return profile
+            self._handle_availabilities(speaker, availabilities_data, field="person")
+        return speaker
 
     class Meta:
         model = SpeakerProfile
         fields = ("code", "name", "biography", "submissions", "avatar_url", "answers")
-        expandable_fields = {
-            "submissions": (
-                "pretalx.api.serializers.submission.SubmissionSerializer",
-                {"read_only": True, "many": True},
-            ),
-        }
         extra_expandable_fields = {
             "answers": (
                 "pretalx.api.serializers.question.AnswerSerializer",
@@ -125,17 +123,11 @@ class SpeakerOrgaSerializer(AvailabilitiesMixin, SpeakerSerializer):
             "availabilities",
             "internal_notes",
         )
-        expandable_fields = {
-            "submissions": (
-                "pretalx.api.serializers.submission.SubmissionSerializer",
-                {"read_only": True, "many": True},
-            ),
-        }
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class SpeakerUpdateSerializer(SpeakerOrgaSerializer):
-    avatar = UploadedFileField(required=False, source="speaker.user")
+    avatar = UploadedFileField(required=False)
 
     def update(self, instance, validated_data):
         avatar = validated_data.pop("avatar", None)
@@ -145,9 +137,17 @@ class SpeakerUpdateSerializer(SpeakerOrgaSerializer):
             setattr(instance.user, key, value)
             instance.user.save(update_fields=[key])
         if avatar:
-            instance.avatar.save(Path(avatar.name).name, avatar, save=False)
-            instance.save(update_fields=("avatar",))
-            instance.user.process_image("avatar", generate_thumbnail=True)
+            picture = instance.profile_picture
+            if not picture:
+                picture = ProfilePicture.objects.create(user=instance.user)
+                instance.profile_picture = picture
+                instance.save(update_fields=["profile_picture"])
+            if not instance.user.profile_picture:
+                instance.user.profile_picture = picture
+                instance.user.save(update_fields=["profile_picture"])
+            picture.avatar.save(Path(avatar.name).name, avatar, save=False)
+            picture.save(update_fields=["avatar"])
+            picture.process_image("avatar", generate_thumbnail=True)
         return instance
 
     def validate_email(self, value):

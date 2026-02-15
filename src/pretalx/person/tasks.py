@@ -4,78 +4,35 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: fkusei
 
+import datetime as dt
 import logging
 
-from django.core.files import File
-from django.core.files.temp import NamedTemporaryFile
 from django.dispatch import receiver
 from django.utils.timezone import now
-from requests import get
 
-from pretalx.celery_app import app
 from pretalx.common.signals import minimum_interval, periodic_task
-from pretalx.person.models import User, UserApiToken
+from pretalx.person.models import UserApiToken
+from pretalx.person.models import ProfilePicture
 
 logger = logging.getLogger(__name__)
-
-
-@app.task(name="pretalx.person.gravatar_cache")
-def gravatar_cache(person_id: int):
-    user = User.objects.filter(pk=person_id, get_gravatar=True).first()
-
-    if not user:
-        return
-
-    response = get(
-        f"https://www.gravatar.com/avatar/{user.gravatar_parameter}?s=512",
-        timeout=10,
-    )
-
-    logger.info(
-        "gravatar returned http %s when getting avatar for user %s",
-        response.status_code,
-        user.name,
-    )
-
-    if 400 <= response.status_code <= 499:
-        # avatar not found.
-        user.get_gravatar = False
-        user.save()
-        return
-    if response.status_code != 200:
-        return
-
-    with NamedTemporaryFile(delete=True) as tmp_img:
-        for chunk in response:
-            tmp_img.write(chunk)
-        tmp_img.flush()
-
-        content_type = response.headers.get("Content-Type")
-        if content_type == "image/png":
-            extension = "png"
-        elif content_type == "image/gif":
-            extension = "gif"
-        else:
-            extension = "jpg"
-
-        user.get_gravatar = False
-        user.save()
-        user.avatar.save(f"{user.gravatar_parameter}.{extension}", File(tmp_img))
-
-        logger.info("set avatar for user %s to %s", user.name, user.avatar.url)
-
-    user.process_image("avatar", generate_thumbnail=True)
-
-
-@receiver(periodic_task)
-def refetch_gravatars(sender, **kwargs):
-    users_with_gravatar = User.objects.filter(get_gravatar=True)
-
-    for user in users_with_gravatar:
-        gravatar_cache.apply_async(args=(user.pk,), ignore_result=True)
 
 
 @receiver(signal=periodic_task)
 @minimum_interval(minutes_after_success=60)
 def run_update_check(sender, **kwargs):
     UserApiToken.objects.filter(expires__lt=now()).delete()
+
+
+@receiver(signal=periodic_task)
+@minimum_interval(minutes_after_success=60 * 24)
+def clean_orphaned_profile_pictures(sender, **kwargs):
+
+    cutoff = now() - dt.timedelta(days=30)
+    pictures = ProfilePicture.objects.filter(
+        users__isnull=True,
+        speakers__isnull=True,
+        updated__lt=cutoff,
+    )
+    for picture in pictures:
+        # Object-level delete to trigger file cleanup
+        picture.delete()

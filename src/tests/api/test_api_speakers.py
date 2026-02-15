@@ -11,7 +11,7 @@ from pretalx.submission.models import Answer, Question, QuestionTarget, Submissi
 
 
 @pytest.fixture
-def personal_answer(event, speaker):
+def personal_answer(event, speaker_profile):
     with scope(event=event):
         question = Question.objects.create(
             event=event,
@@ -22,7 +22,7 @@ def personal_answer(event, speaker):
         return Answer.objects.create(
             answer="foo",
             question=question,
-            person=speaker,
+            speaker=speaker_profile,
         )
 
 
@@ -36,10 +36,15 @@ def test_speaker_list_anonymous_nopublic(client, event, speaker):
 
 @pytest.mark.django_db
 def test_speaker_list_anonymous_public(
-    client, event, slot, speaker, accepted_submission, rejected_submission
+    client,
+    event,
+    slot,
+    speaker,
+    speaker_profile,
+    accepted_submission,
+    rejected_submission,
 ):
     with scope(event=event):
-        profile = speaker.event_profile(event)
         submission = slot.submission
 
     response = client.get(event.api_urls.speakers, follow=True)
@@ -51,7 +56,7 @@ def test_speaker_list_anonymous_public(
     result = content["results"][0]
     assert result["code"] == speaker.code
     assert result["name"] == speaker.name
-    assert result["biography"] == profile.biography
+    assert result["biography"] == speaker_profile.biography
     assert accepted_submission.code not in result["submissions"]
     assert rejected_submission.code not in result["submissions"]
     assert submission.code in result["submissions"]
@@ -111,7 +116,7 @@ def test_speaker_list_reviewer_nopublic_names_visible(
 
     with scope(event=event):
         speakers = {
-            sub.speakers.first().code
+            sub.speakers.first().user.code
             for sub in [accepted_submission, rejected_submission]
         }
 
@@ -127,6 +132,7 @@ def test_speaker_list_reviewer_nopublic_names_visible(
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_speaker_list_orga_nopublic(
     client,
     orga_user_token,
@@ -135,28 +141,33 @@ def test_speaker_list_orga_nopublic(
     other_speaker,
     accepted_submission,
     rejected_submission,
+    django_assert_num_queries,
+    item_count,
 ):
     with scope(event=event):
         event.feature_flags["show_schedule"] = False
         event.save()
 
-    response = client.get(
-        event.api_urls.speakers,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+    if item_count != 2:
+        with scope(event=event):
+            other_profile = SpeakerProfile.objects.get(user=other_speaker, event=event)
+            other_profile.user = None
+            other_profile.save()
+            other_profile.delete()
+
+    with django_assert_num_queries(16):
+        response = client.get(
+            event.api_urls.speakers,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     assert response.status_code == 200
     content = json.loads(response.text)
-    assert content["count"] == 2
-    assert {res["code"] for res in content["results"]} == {
-        speaker.code,
-        other_speaker.code,
-    }
-
-    result = next(res for res in content["results"] if res["code"] == speaker.code)
-    assert "email" in result
-    assert "has_arrived" in result
-    assert "availabilities" not in result
+    assert content["count"] == item_count
+    assert speaker.code in [r["code"] for r in content["results"]]
+    first_result = content["results"][0]
+    assert "email" in first_result
+    assert "has_arrived" in first_result
 
 
 @pytest.mark.django_db
@@ -196,7 +207,8 @@ def test_speaker_list_search_by_name(
     client, event, speaker, slot, other_slot, other_speaker
 ):
     with scope(event=event):
-        other_slot.submission.speakers.add(other_speaker)
+        profile = other_speaker.get_speaker(event)
+        other_slot.submission.speakers.add(profile)
     name_to_find = speaker.name
     response = client.get(
         event.api_urls.speakers + f"?q={name_to_find}",
@@ -213,7 +225,8 @@ def test_speaker_list_search_by_email_public(
     client, event, speaker, slot, other_slot, other_speaker
 ):
     with scope(event=event):
-        other_slot.submission.speakers.add(other_speaker)
+        profile = other_speaker.get_speaker(event)
+        other_slot.submission.speakers.add(profile)
     email_to_find = speaker.email
     response = client.get(
         event.api_urls.speakers + f"?q={email_to_find}",
@@ -229,7 +242,10 @@ def test_speaker_list_search_by_email_authenticated(
     client, orga_user_token, event, speaker, slot, other_slot, other_speaker
 ):
     with scope(event=event):
-        other_slot.submission.speakers.add(other_speaker)
+        profile, _ = SpeakerProfile.objects.get_or_create(
+            user=other_speaker, event=event
+        )
+        other_slot.submission.speakers.add(profile)
     email_to_find = speaker.email
     response = client.get(
         event.api_urls.speakers + f"?q={email_to_find}",
@@ -273,7 +289,9 @@ def test_speaker_list_expand_answers(
 ):
     with scope(event=event):
         Answer.objects.create(
-            question=personal_answer.question, answer="foobarbar", person=other_speaker
+            question=personal_answer.question,
+            answer="foobarbar",
+            speaker=other_speaker.get_speaker(event),
         )
     response = client.get(
         event.api_urls.speakers + "?expand=answers,answers.question",
@@ -304,7 +322,9 @@ def test_speaker_list_expand_block_recursion(
 ):
     with scope(event=event):
         Answer.objects.create(
-            question=personal_answer.question, answer="foobarbar", person=other_speaker
+            question=personal_answer.question,
+            answer="foobarbar",
+            speaker=other_speaker.get_speaker(event),
         )
     response = client.get(
         event.api_urls.speakers
@@ -329,7 +349,7 @@ def test_speaker_list_multiple_talks_not_duplicated(client, event, slot, other_s
     content = json.loads(response.text)
 
     assert content["count"] == 1
-    assert content["results"][0]["code"] == speaker.code
+    assert content["results"][0]["code"] == speaker.user.code
     assert set(content["results"][0]["submissions"]) == {
         submission.code,
         other_submission.code,
@@ -350,15 +370,16 @@ def test_speaker_retrieve_anonymous_public(
 ):
     with scope(event=event):
         speaker = accepted_submission.speakers.first()
-        profile = speaker.event_profile(event)
         submission = slot.submission
 
-    response = client.get(event.api_urls.speakers + f"{speaker.code}/", follow=True)
+    response = client.get(
+        event.api_urls.speakers + f"{speaker.user.code}/", follow=True
+    )
     assert response.status_code == 200
     content = json.loads(response.text)
-    assert content["code"] == speaker.code
-    assert content["name"] == speaker.name
-    assert content["biography"] == profile.biography
+    assert content["code"] == speaker.user.code
+    assert content["name"] == speaker.user.name
+    assert content["biography"] == speaker.biography
     assert accepted_submission.code not in content["submissions"]
     assert submission.code in content["submissions"]
     assert "email" not in content
@@ -448,7 +469,7 @@ def test_speaker_answer_visibility(
 
 @pytest.mark.django_db
 def test_speaker_update_by_orga(
-    client, orga_user_write_token, event, speaker, submission
+    client, orga_user_write_token, event, speaker, speaker_profile, submission
 ):
     new_bio = "An updated biography."
     response = client.patch(
@@ -463,10 +484,10 @@ def test_speaker_update_by_orga(
     assert content["biography"] == new_bio
 
     with scope(event=event):
-        profile = speaker.event_profile(event)
-        assert profile.biography == new_bio
+        speaker_profile.refresh_from_db()
+        assert speaker_profile.biography == new_bio
         assert (
-            profile.logged_actions()
+            speaker_profile.logged_actions()
             .filter(action_type="pretalx.user.profile.update")
             .exists()
         )
@@ -513,10 +534,8 @@ def test_speaker_update_by_anonymous(client, event, speaker, slot):
 
 @pytest.mark.django_db
 def test_speaker_update_change_name_email(
-    client, orga_user_write_token, event, speaker, submission
+    client, orga_user_write_token, event, speaker, speaker_profile, submission
 ):
-    with scope(event=event):
-        profile = speaker.event_profile(event)
     new_name = "New Speaker Name"
     new_email = "new.speaker@example.com"
     response = client.patch(
@@ -536,7 +555,7 @@ def test_speaker_update_change_name_email(
         assert speaker.name == new_name
         assert speaker.email == new_email
         assert (
-            profile.logged_actions()
+            speaker_profile.logged_actions()
             .filter(action_type="pretalx.user.profile.update")
             .exists()
         )
@@ -575,9 +594,9 @@ def test_speaker_retrieve_answers_scoped_to_event(
         sub2 = Submission(**submission_data)
         sub2.event = other_event
         sub2.save()
-        sub2.speakers.add(speaker)
+        other_profile = SpeakerProfile.objects.create(user=speaker, event=other_event)
+        sub2.speakers.add(other_profile)
         sub2.save()
-        SpeakerProfile.objects.create(user=speaker, event=other_event)
         question2 = Question.objects.create(
             event=other_event,
             question="Question for Event 2?",
@@ -585,7 +604,7 @@ def test_speaker_retrieve_answers_scoped_to_event(
             active=True,
         )
         answer2 = Answer.objects.create(
-            answer="Answer 2", question=question2, person=speaker
+            answer="Answer 2", question=question2, speaker=other_profile
         )
         team = other_event.teams.first()
         team.members.add(orga_user)

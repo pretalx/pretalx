@@ -8,6 +8,7 @@ import pytest
 from django_scopes import scope
 
 from pretalx.api.serializers.review import ReviewSerializer
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import Answer, Review, ReviewScore, ReviewScoreCategory
 
 
@@ -144,7 +145,7 @@ def test_orga_can_see_expanded_reviews(
     assert len(content["results"]) == 1
     data = content["results"][0]
     assert data["submission"]["code"] == review.submission.code
-    assert data["submission"]["speakers"][0]["code"] == speaker.code
+    assert data["submission"]["speakers"][0]["code"] == speaker.user.code
     assert data["submission"]["track"]["name"]["en"] == track.name
     assert data["submission"]["submission_type"]["name"]["en"] == submission_type.name
     assert data["user"]["code"] == user.code
@@ -153,21 +154,33 @@ def test_orga_can_see_expanded_reviews(
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_reviewer_can_see_reviews(
-    client, review_user_token, event, review, other_review
+    client,
+    review_user_token,
+    event,
+    review,
+    other_review,
+    django_assert_num_queries,
+    item_count,
 ):
     with scope(event=event):
         event.active_review_phase.can_see_other_reviews = "always"
         event.active_review_phase.save()
-    response = client.get(
-        event.api_urls.reviews,
-        follow=True,
-        headers={"Authorization": f"Token {review_user_token.token}"},
-    )
+        if item_count != 2:
+            other_review.delete()
+
+    with django_assert_num_queries(17):
+        response = client.get(
+            event.api_urls.reviews,
+            follow=True,
+            headers={"Authorization": f"Token {review_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200, content
-    assert len(content["results"]) == 2, content
+    assert len(content["results"]) == item_count
+    assert review.pk in [r["id"] for r in content["results"]]
 
 
 @pytest.mark.django_db
@@ -227,7 +240,8 @@ def test_reviewer_cannot_see_review_to_own_talk(
     with scope(event=event):
         event.active_review_phase.can_see_other_reviews = "always"
         event.active_review_phase.save()
-        other_review.submission.speakers.add(review_user)
+        profile, _ = SpeakerProfile.objects.get_or_create(user=review_user, event=event)
+        other_review.submission.speakers.add(profile)
     response = client.get(
         event.api_urls.reviews,
         follow=True,
@@ -327,7 +341,8 @@ def test_reviewer_cannot_create_review_for_own_submission(
     client, review_user_token, event, submission, review_user
 ):
     with scope(event=event):
-        submission.speakers.add(review_user)
+        profile, _ = SpeakerProfile.objects.get_or_create(user=review_user, event=event)
+        submission.speakers.add(profile)
         submission.save()
         url = event.api_urls.reviews
         data = {"submission": submission.code, "text": "Review for my own talk."}
@@ -633,7 +648,7 @@ def test_orga_can_see_expanded_review_detail(
     assert response.status_code == 200
     assert content["id"] == review.pk
     assert content["submission"]["code"] == review.submission.code
-    assert content["submission"]["speakers"][0]["code"] == speaker.code
+    assert content["submission"]["speakers"][0]["code"] == speaker.user.code
     assert content["submission"]["track"]["name"]["en"] == track.name
     assert (
         content["submission"]["submission_type"]["name"]["en"] == submission_type.name
@@ -700,7 +715,8 @@ def test_reviewer_cannot_see_review_detail_for_own_talk(
     with scope(event=event):
         event.active_review_phase.can_see_other_reviews = "always"
         event.active_review_phase.save()
-        other_review.submission.speakers.add(review_user)
+        profile, _ = SpeakerProfile.objects.get_or_create(user=review_user, event=event)
+        other_review.submission.speakers.add(profile)
 
     response = client.get(
         event.api_urls.reviews + f"{other_review.pk}/",

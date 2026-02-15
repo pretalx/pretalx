@@ -132,8 +132,10 @@ class SpeakerRole(models.Model):
         on_delete=models.CASCADE,
         related_name="speaker_roles",
     )
-    user = models.ForeignKey(
-        to="person.User", on_delete=models.CASCADE, related_name="speaker_roles"
+    speaker = models.ForeignKey(
+        to="person.SpeakerProfile",
+        on_delete=models.CASCADE,
+        related_name="speaker_roles",
     )
     position = models.PositiveIntegerField(default=0)
 
@@ -141,10 +143,10 @@ class SpeakerRole(models.Model):
 
     class Meta:
         ordering = ("position",)
-        unique_together = (("submission", "user"),)
+        unique_together = (("submission", "speaker"),)
 
     def __str__(self):
-        return f"SpeakerRole(submission={self.submission.code}, speaker={self.user})"
+        return f"SpeakerRole(submission={self.submission.code}, speaker={self.speaker})"
 
 
 def sorted_speakers_prefetch(prefix=""):
@@ -152,10 +154,15 @@ def sorted_speakers_prefetch(prefix=""):
 
     Use prefix="submission__" when prefetching from slot querysets.
     """
-    from pretalx.person.models import User  # noqa: PLC0415
+    from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
 
     lookup = f"{prefix}speakers" if prefix else "speakers"
-    return Prefetch(lookup, queryset=User.objects.order_by("speaker_roles__position"))
+    return Prefetch(
+        lookup,
+        queryset=SpeakerProfile.objects.select_related(
+            "profile_picture", "event", "user"
+        ).order_by("speaker_roles__position"),
+    )
 
 
 class Submission(GenerateCode, PretalxModel):
@@ -181,7 +188,7 @@ class Submission(GenerateCode, PretalxModel):
 
     code = models.CharField(max_length=16, unique=True)
     speakers = models.ManyToManyField(
-        to="person.User",
+        to="person.SpeakerProfile",
         related_name="submissions",
         through=SpeakerRole,
         blank=True,
@@ -805,9 +812,9 @@ class Submission(GenerateCode, PretalxModel):
 
         for speaker in self.sorted_speakers:
             template.to_mail(
-                user=speaker,
-                locale=self.get_email_locale(speaker.locale),
-                context_kwargs={"submission": self, "user": speaker},
+                user=speaker.user,
+                locale=self.get_email_locale(speaker.user.locale),
+                context_kwargs={"submission": self, "user": speaker.user},
                 event=self.event,
             )
 
@@ -939,7 +946,7 @@ class Submission(GenerateCode, PretalxModel):
         title = (
             f"{phrases.base.quotation_open}{self.title}{phrases.base.quotation_close}"
         )
-        if not self.speakers.exists():
+        if not self.sorted_speakers:
             return title
         return _("{title_in_quotes} by {list_of_speakers}").format(
             title_in_quotes=title,
@@ -1016,14 +1023,6 @@ class Submission(GenerateCode, PretalxModel):
     def export_duration(self):
         return serialize_duration(minutes=self.get_duration())
 
-    @cached_property
-    def speaker_profiles(self):
-        from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
-
-        return SpeakerProfile.objects.filter(
-            event=self.event, user__in=self.speakers.all()
-        )
-
     @property
     def availabilities(self):
         """The intersection of all.
@@ -1034,7 +1033,7 @@ class Submission(GenerateCode, PretalxModel):
         from pretalx.schedule.models.availability import Availability  # noqa: PLC0415
 
         all_availabilities = self.event.valid_availabilities.filter(
-            person__in=self.speaker_profiles
+            person__in=self.speakers.all()
         )
         return Availability.intersection(all_availabilities)
 
@@ -1082,55 +1081,77 @@ class Submission(GenerateCode, PretalxModel):
             result += f"**{field_name}**: {field_content}\n\n"
         return result
 
-    def add_speaker(self, email, name=None, locale=None, user=None):
+    def invite_speaker(self, email, name=None, locale=None, user=None):
         from pretalx.common.urls import build_absolute_uri  # noqa: PLC0415
         from pretalx.mail.models import MailTemplateRoles  # noqa: PLC0415
-        from pretalx.person.models import SpeakerProfile, User  # noqa: PLC0415
+        from pretalx.person.models import User  # noqa: PLC0415
         from pretalx.person.services import create_user  # noqa: PLC0415
 
         user_created = False
         context = {}
         try:
-            speaker = User.objects.get(email__iexact=email)
-            if not speaker.profiles.filter(event=self.event).exists():
-                SpeakerProfile.objects.create(user=speaker, event=self.event)
+            speaker_user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
-            speaker = create_user(email=email, name=name, event=self.event)
+            speaker_user = create_user(email=email, name=name, event=self.event)
             user_created = True
             context["invitation_link"] = build_absolute_uri(
                 "cfp:event.new_recover",
-                kwargs={"event": self.event.slug, "token": speaker.pw_reset_token},
+                kwargs={"event": self.event.slug, "token": speaker_user.pw_reset_token},
             )
 
-        self.speakers.add(speaker)
-        max_position = (
-            SpeakerRole.objects.filter(submission=self)
-            .exclude(user=speaker)
-            .aggregate(max_pos=models.Max("position"))
-            .get("max_pos")
-        )
-        SpeakerRole.objects.filter(submission=self, user=speaker).update(
-            position=(max_position or 0) + 1
-        )
-        self.log_action(
-            "pretalx.submission.speakers.add",
-            person=user,
-            orga=True,
-            data={"code": speaker.code, "name": speaker.name, "email": speaker.email},
-        )
-        context["user"] = speaker
+        speaker = self.add_speaker(user=speaker_user, log_user=user)
+        context["user"] = speaker_user
         template = self.event.get_mail_template(
             MailTemplateRoles.EXISTING_SPEAKER_INVITE
             if not user_created
             else MailTemplateRoles.NEW_SPEAKER_INVITE
         )
         template.to_mail(
-            user=speaker,
+            user=speaker_user,
             event=self.event,
             context=context,
-            context_kwargs={"user": speaker, "submission": self, "event": self.event},
+            context_kwargs={
+                "user": speaker_user,
+                "submission": self,
+                "event": self.event,
+            },
             locale=locale or self.event.locale,
         )
+        return speaker
+
+    def add_speaker(self, user=None, speaker=None, log_user=None):
+        """
+        Add a speaker to this submission. Pass a speaker object
+        if it exists, or a user object with optional additional information
+        to be used in the new speaker object.
+        """
+        from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
+
+        if not speaker:
+            speaker, _ = SpeakerProfile.objects.get_or_create(
+                user=user, event=self.event, defaults={"name": user.name}
+            )
+        self.speakers.add(speaker)
+        max_position = (
+            SpeakerRole.objects.filter(submission=self)
+            .exclude(speaker=speaker)
+            .aggregate(max_pos=models.Max("position"))
+            .get("max_pos")
+        )
+        SpeakerRole.objects.filter(submission=self, speaker=speaker).update(
+            position=(max_position or 0) + 1
+        )
+        if log_user:
+            self.log_action(
+                "pretalx.submission.speakers.add",
+                person=log_user,
+                orga=True,
+                data={
+                    "code": speaker.code,
+                    "name": speaker.get_display_name(),
+                    "email": user.email,
+                },
+            )
         return speaker
 
     def remove_speaker(self, speaker, orga=True, user=None):
@@ -1138,12 +1159,12 @@ class Submission(GenerateCode, PretalxModel):
             self.speakers.remove(speaker)
             self.log_action(
                 "pretalx.submission.speakers.remove",
-                person=user or speaker,
+                person=user or speaker.user,
                 orga=orga,
                 data={
                     "code": speaker.code,
-                    "email": speaker.email,
-                    "name": speaker.name,
+                    "email": speaker.user.email,
+                    "name": speaker.get_display_name(),
                 },
             )
 

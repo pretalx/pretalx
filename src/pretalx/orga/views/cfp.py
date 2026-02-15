@@ -11,7 +11,7 @@ from collections import defaultdict
 from django.contrib import messages
 from django.core.exceptions import FieldDoesNotExist
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
 from django.http import JsonResponse
@@ -402,7 +402,7 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
     @staticmethod
     def get_missing_answers(*, questions, person, submissions):
         missing = []
-        submissions = submissions.filter(speakers__in=[person])
+        submissions = submissions.filter(speakers=person)
         for question in questions:
             if question.target == QuestionTarget.SUBMISSION:
                 for submission in submissions:
@@ -410,7 +410,7 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
                     if not answer or not answer.is_answered:
                         missing.append(question)
             elif question.target == QuestionTarget.SPEAKER:
-                answer = question.answers.filter(person=person).first()
+                answer = question.answers.filter(speaker=person).first()
                 if not answer or not answer.is_answered:
                     missing.append(question)
         return missing
@@ -445,10 +445,10 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
                 self.request.event.get_mail_template(
                     MailTemplateRoles.QUESTION_REMINDER
                 ).to_mail(
-                    person,
+                    person.user,
                     event=self.request.event,
                     context=data,
-                    context_kwargs={"user": person},
+                    context_kwargs={"user": person.user},
                 )
         return super().form_valid(form)
 
@@ -578,7 +578,15 @@ class AccessCodeView(OrderActionMixin, OrgaCRUDView):
     create_button_label = _("New access code")
 
     def get_queryset(self):
-        return self.request.event.submitter_access_codes.all().order_by("valid_until")
+        return (
+            self.request.event.submitter_access_codes.all()
+            .annotate(
+                has_submissions=Exists(
+                    self.request.event.submissions.filter(access_code=OuterRef("pk"))
+                )
+            )
+            .order_by("valid_until")
+        )
 
     def get_generic_title(self, instance=None):
         if instance:

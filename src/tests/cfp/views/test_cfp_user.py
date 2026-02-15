@@ -14,6 +14,7 @@ from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
 from pretalx.submission.models import (
+    Submission,
     SubmissionInvitation,
     SubmissionStates,
     SubmitterAccessCode,
@@ -22,10 +23,55 @@ from pretalx.submission.models import (
 
 
 @pytest.mark.django_db
-def test_can_see_submission_list(speaker_client, submission):
-    response = speaker_client.get(submission.event.urls.user_submissions, follow=True)
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_can_see_submission_list(
+    speaker_client,
+    speaker,
+    speaker_profile,
+    event,
+    submission,
+    django_assert_num_queries,
+    item_count,
+):
+    with scope(event=event):
+        if item_count == 2:
+            second_sub = Submission.objects.create(
+                title="Second Talk",
+                event=event,
+                submission_type=event.cfp.default_type,
+                content_locale="en",
+            )
+            second_sub.speakers.add(speaker_profile)
+
+    with django_assert_num_queries(12):
+        response = speaker_client.get(event.urls.user_submissions, follow=True)
     assert response.status_code == 200
     assert submission.title in response.text
+    if item_count == 2:
+        assert "Second Talk" in response.text
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_can_see_mail_list(
+    speaker_client,
+    event,
+    speaker,
+    mail_template,
+    django_assert_num_queries,
+    item_count,
+):
+    with scope(event=event):
+        mail1 = mail_template.to_mail(speaker, event)
+        mail1.send()
+        if item_count != 1:
+            mail2 = mail_template.to_mail(speaker, event)
+            mail2.send()
+
+    with django_assert_num_queries(9):
+        response = speaker_client.get(event.urls.user_mails, follow=True)
+    assert response.status_code == 200
+    assert mail1.subject in response.text
 
 
 @pytest.mark.django_db
@@ -445,8 +491,9 @@ def test_can_edit_profile(speaker, event, speaker_client):
     assert response.status_code == 200
     with scope(event=event):
         speaker.refresh_from_db()
-        assert speaker.profiles.get(event=event).biography == "Ruling since forever."
-        assert speaker.name == "Lady Imperator"
+        profile = speaker.profiles.get(event=event)
+        assert profile.biography == "Ruling since forever."
+        assert profile.name == "Lady Imperator"
     response = speaker_client.post(
         event.urls.user,
         data={
@@ -459,8 +506,9 @@ def test_can_edit_profile(speaker, event, speaker_client):
     assert response.status_code == 200
     with scope(event=event):
         speaker.refresh_from_db()
-        assert speaker.profiles.get(event=event).biography == "Ruling since forever."
-        assert speaker.name == "Lady Imperator"
+        profile = speaker.profiles.get(event=event)
+        assert profile.biography == "Ruling since forever."
+        assert profile.name == "Lady Imperator"
 
 
 @pytest.mark.django_db
@@ -534,7 +582,7 @@ def test_can_edit_login_info_wrong_password(speaker, event, speaker_client):
 
 @pytest.mark.django_db
 def test_can_edit_and_update_speaker_answers(
-    speaker,
+    speaker_profile,
     event,
     speaker_question,
     speaker_boolean_question,
@@ -543,7 +591,7 @@ def test_can_edit_and_update_speaker_answers(
     speaker_file_question,
 ):
     with scope(event=event):
-        answer = speaker.answers.filter(question_id=speaker_question.pk).first()
+        answer = speaker_profile.answers.filter(question_id=speaker_question.pk).first()
         assert not answer
     f = SimpleUploadedFile("testfile.txt", b"file_content")
     response = speaker_client.post(
@@ -560,18 +608,18 @@ def test_can_edit_and_update_speaker_answers(
     assert response.status_code == 200
 
     with scope(event=event):
-        answer = speaker.answers.get(question_id=speaker_question.pk)
+        answer = speaker_profile.answers.get(question_id=speaker_question.pk)
         assert answer.answer == "black as the night"
         assert (
-            speaker.answers.get(question_id=speaker_boolean_question.pk).answer
+            speaker_profile.answers.get(question_id=speaker_boolean_question.pk).answer
             == "True"
         )
         assert (
-            speaker.answers.get(question_id=speaker_text_question.pk).answer
+            speaker_profile.answers.get(question_id=speaker_text_question.pk).answer
             == "Green is totally the best color."
         )
 
-        file_answer = speaker.answers.get(question_id=speaker_file_question.pk)
+        file_answer = speaker_profile.answers.get(question_id=speaker_file_question.pk)
         assert file_answer.answer.startswith("file://")
         assert file_answer.answer_file.read() == b"file_content"
         assert (settings.MEDIA_ROOT / file_answer.answer_file.name).exists()
@@ -604,7 +652,7 @@ def test_can_edit_and_update_speaker_answers(
 
     # Test that replacing a file deletes the old one
     with scope(event=event):
-        file_answer = speaker.answers.get(question_id=speaker_file_question.pk)
+        file_answer = speaker_profile.answers.get(question_id=speaker_file_question.pk)
         old_file_path = settings.MEDIA_ROOT / file_answer.answer_file.name
         assert old_file_path.exists()
 
@@ -777,7 +825,8 @@ def test_cannot_invite_speaker_existing_invite(speaker_client, submission):
 
 @pytest.mark.django_db
 def test_can_accept_invitation(orga_client, submission):
-    assert submission.speakers.count() == 1
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
     invitation = SubmissionInvitation.objects.create(
         submission=submission, email="orga@orga.org"
     )
@@ -785,21 +834,24 @@ def test_can_accept_invitation(orga_client, submission):
     response = orga_client.post(invitation.urls.base.full(), follow=True)
     submission.refresh_from_db()
     assert response.status_code == 200
-    assert submission.speakers.count() == 2
+    with scopes_disabled():
+        assert submission.speakers.count() == 2
     with scopes_disabled():
         assert not SubmissionInvitation.objects.filter(pk=invitation_pk).exists()
 
 
 @pytest.mark.django_db
 def test_wrong_acceptance_link(orga_client, submission):
-    assert submission.speakers.count() == 1
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
     invitation = SubmissionInvitation.objects.create(
         submission=submission, email="orga@orga.org"
     )
     response = orga_client.post(invitation.urls.base.full() + "olololol", follow=True)
     submission.refresh_from_db()
     assert response.status_code == 404
-    assert submission.speakers.count() == 1
+    with scopes_disabled():
+        assert submission.speakers.count() == 1
 
 
 @pytest.mark.django_db

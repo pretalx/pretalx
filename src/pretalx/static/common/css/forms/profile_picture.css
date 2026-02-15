@@ -1,0 +1,233 @@
+/*
+ * SPDX-FileCopyrightText: 2026-present Tobias Kunze
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+.pp-widget {
+  position: relative;
+}
+
+.pp-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pp-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--color-offwhite);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-lightest);
+}
+
+.pp-preview.pp-empty {
+  border-style: dashed;
+}
+
+.pp-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pp-placeholder-icon {
+  font-size: 28px;
+  color: var(--color-text-muted);
+}
+
+/* Dialog */
+.pp-dialog {
+  max-width: 520px;
+  width: 90vw;
+}
+
+.pp-dialog-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.pp-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+
+  h3 {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+}
+
+/* Upload zone */
+.pp-upload-zone[role=button] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 24px;
+  margin: 16px 20px;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--size-border-radius);
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+
+  i {
+    font-size: 24px;
+    color: var(--color-text-muted);
+  }
+
+  small, strong {
+    color: var(--color-text-muted);
+  }
+
+  &:hover,
+  &.pp-dragover {
+    border-color: var(--color-primary);
+    background-color: var(--color-offwhite);
+  }
+}
+
+/* Picture grid */
+.pp-selection-view {
+  h4 {
+    margin: 12px 20px 8px;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+  }
+}
+
+.pp-picture-grid {
+  display: flex;
+  gap: 10px;
+  padding: 0 20px 12px;
+  overflow-x: auto;
+}
+
+.pp-picture-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 2px solid transparent;
+  border-radius: var(--size-border-radius);
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+
+  img {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  small {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &:hover {
+    border-color: var(--color-primary);
+  }
+
+  &.pp-current {
+    border-color: var(--color-primary);
+  }
+}
+
+/* Remove button */
+.pp-dialog-footer {
+  padding: 8px 20px 16px;
+}
+
+.pp-remove-btn {
+  background: none;
+  border: none;
+  color: var(--color-danger-text);
+  cursor: pointer;
+  padding: 4px 0;
+  font-size: 0.9rem;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* Crop view */
+.pp-crop-container {
+  position: relative;
+  background-color: var(--color-offwhite);
+  min-height: 350px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.pp-crop-image {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+}
+
+.pp-crop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Cropper.js overrides */
+.pp-crop-container .circle-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 9999px rgba(0, 0, 0, 0.3),
+    inset 0 0 20px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.pp-crop-container .cropper-crop-box {
+  position: relative;
+  border: 3px solid var(--color-primary);
+}
+.pp-crop-container .cropper-view-box {
+  outline: 3px solid var(--color-primary);
+  outline-offset: -3px;
+}
+.pp-crop-container .cropper-line {
+  background-color: var(--color-primary);
+  opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+  .pp-dialog {
+    width: 95vw;
+  }
+
+  .pp-crop-container {
+    min-height: 280px;
+  }
+}

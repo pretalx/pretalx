@@ -92,9 +92,8 @@ def event_talk_urls(event):
 
 def event_speaker_urls(event):
     for speaker in event.speakers:
-        profile = speaker.event_profile(event)
-        yield profile.urls.public
-        yield profile.urls.talks_ical
+        yield speaker.urls.public
+        yield speaker.urls.talks_ical
 
 
 def event_exporter_urls(event):

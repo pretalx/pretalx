@@ -36,8 +36,8 @@ def answer_file_path(instance, filename):
     target = instance.question.target
     if target == QuestionTarget.SUBMISSION and instance.submission:
         code = instance.submission.code
-    elif target == QuestionTarget.SPEAKER and instance.person:
-        code = instance.person.code
+    elif target == QuestionTarget.SPEAKER and instance.speaker:
+        code = instance.speaker.code
     elif target == QuestionTarget.REVIEWER and instance.review:
         code = f"r{instance.review.pk}"
 
@@ -429,18 +429,18 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
         This method only supports submission questions and speaker questions.
         For missing reviews, please use the get_missing_reviews method.
 
-        :param filter_speakers: Apply only to these speakers.
+        :param filter_speakers: Apply only to these speakers (SpeakerProfile queryset).
         :param filter_talks: Apply only to these talks.
         """
-        from pretalx.person.models import User  # noqa: PLC0415
+        from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
         from pretalx.submission.models import Submission  # noqa: PLC0415
 
         answers = self.answers.all()
         filter_talks = filter_talks or Submission.objects.none()
-        filter_speakers = filter_speakers or User.objects.none()
+        filter_speakers = filter_speakers or SpeakerProfile.objects.none()
         if filter_speakers or filter_talks:
             answers = answers.filter(
-                models.Q(person__in=filter_speakers)
+                models.Q(speaker__in=filter_speakers)
                 | models.Q(submission__in=filter_talks)
             )
         answer_count = answers.count()
@@ -448,10 +448,10 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
             submissions = filter_talks or self.event.submissions.all()
             return max(submissions.count() - answer_count, 0)
         if self.target == QuestionTarget.SPEAKER:
-            users = filter_speakers or User.objects.filter(
+            speakers = filter_speakers or SpeakerProfile.objects.filter(
                 submissions__event_id=self.event.pk
             )
-            return max(users.count() - answer_count, 0)
+            return max(speakers.count() - answer_count, 0)
         return 0
 
     def _get_instance_data(self):
@@ -540,7 +540,7 @@ class Answer(PretalxModel):
     """Answers are connected to a.
 
     :class:`~pretalx.submission.models.question.Question`, and, depending on
-    type, a :class:`~pretalx.person.models.user.User`, a
+    type, a :class:`~pretalx.person.models.profile.SpeakerProfile`, a
     :class:`~pretalx.submission.models.submission.Submission`, or a
     :class:`~pretalx.submission.models.review.Review`.
     """
@@ -557,8 +557,8 @@ class Answer(PretalxModel):
         null=True,
         blank=True,
     )
-    person = models.ForeignKey(
-        to="person.User",
+    speaker = models.ForeignKey(
+        to="person.SpeakerProfile",
         on_delete=models.PROTECT,
         related_name="answers",
         null=True,
@@ -603,7 +603,7 @@ class Answer(PretalxModel):
             return self.submission
         if self.question.target == QuestionTarget.REVIEWER:
             return self.review
-        return self.person.event_profile(self.event)
+        return self.speaker
 
     def __str__(self):
         """Help when debugging."""
@@ -646,7 +646,7 @@ class Answer(PretalxModel):
     def log_action(self, *args, content_object=None, **kwargs):
         if not content_object:
             if self.question.target == QuestionTarget.SPEAKER:
-                content_object = self.person
+                content_object = self.speaker
             elif self.question.target == QuestionTarget.SUBMISSION:
                 content_object = self.submission
             elif self.question.target == QuestionTarget.REVIEWER:

@@ -43,7 +43,9 @@ class SpeakerInformationViewSet(
     permission_map = {"retrieve": "person.orga_view_speakerinformation"}
 
     def get_queryset(self):
-        queryset = self.event.information.all().select_related("event").order_by("pk")
-        if fields := self.check_expanded_fields("limit_tracks", "limit_types"):
-            queryset = queryset.prefetch_related(*fields)
-        return queryset
+        return (
+            self.event.information.all()
+            .select_related("event")
+            .prefetch_related("limit_tracks", "limit_types")
+            .order_by("pk")
+        )

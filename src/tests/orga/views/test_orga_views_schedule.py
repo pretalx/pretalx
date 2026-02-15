@@ -15,15 +15,31 @@ from pretalx.schedule.models import Schedule
 
 
 @pytest.mark.django_db
-@pytest.mark.usefixtures("accepted_submission")
-def test_talk_list(orga_client, event, break_slot):
-    response = orga_client.get(
-        reverse("orga:schedule.api.talks", kwargs={"event": event.slug}), follow=True
-    )
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_talk_list(
+    orga_client,
+    event,
+    break_slot,
+    accepted_submission,
+    django_assert_num_queries,
+    item_count,
+):
+    if item_count != 2:
+        with scope(event=event):
+            event.wip_schedule.talks.filter(submission=accepted_submission).delete()
+
+    # item_count=1 has only a break slot (no submissions to prefetch speakers for);
+    # item_count=2 adds one speaker prefetch query for the accepted submission's speakers.
+    expected_queries = 11 if item_count == 1 else 12
+    with django_assert_num_queries(expected_queries):
+        response = orga_client.get(
+            reverse("orga:schedule.api.talks", kwargs={"event": event.slug}),
+            follow=True,
+        )
     content = json.loads(response.text)
     assert response.status_code == 200
-    assert len(content["talks"]) == 2
-    assert len([talk for talk in content["talks"] if talk["title"]]) > 0
+    assert len(content["talks"]) == item_count
+    assert all(t["title"] for t in content["talks"])
 
 
 @pytest.mark.django_db
@@ -341,6 +357,21 @@ def test_orga_can_toggle_schedule_visibility(orga_client, event):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_room_list_num_queries(
+    orga_client, event, room, other_room, django_assert_num_queries, item_count
+):
+    if item_count != 2:
+        with scope(event=event):
+            other_room.delete()
+
+    with django_assert_num_queries(21):
+        response = orga_client.get(event.orga_urls.room_settings)
+    assert response.status_code == 200
+    assert room.name in response.text
+
+
+@pytest.mark.django_db
 def test_create_room(orga_client, event, availability):
     with scope(event=event):
         assert event.rooms.count() == 0
@@ -497,7 +528,7 @@ def test_orga_cant_export_answers_csv_without_delimiter(
 
 @pytest.mark.django_db
 def test_orga_can_export_answers_csv(
-    orga_client, speaker, event, submission, answered_choice_question
+    orga_client, speaker, speaker_profile, event, submission, answered_choice_question
 ):
     with scope(event=event):
         answered_choice_question.target = "submission"
@@ -517,13 +548,13 @@ def test_orga_can_export_answers_csv(
     assert response.status_code == 200
     assert (
         response.text
-        == f"ID,Proposal title,Speaker IDs,{answered_choice_question.question}\r\n{submission.code},{submission.title},{speaker.code},{answer}\r\n"
+        == f"ID,Proposal title,Speaker IDs,{answered_choice_question.question}\r\n{submission.code},{submission.title},{speaker_profile.code},{answer}\r\n"
     )
 
 
 @pytest.mark.django_db
 def test_orga_can_export_answers_json(
-    orga_client, speaker, event, submission, answered_choice_question
+    orga_client, speaker, speaker_profile, event, submission, answered_choice_question
 ):
     with scope(event=event):
         answered_choice_question.target = "submission"
@@ -545,7 +576,7 @@ def test_orga_can_export_answers_json(
             "ID": submission.code,
             "Proposal title": submission.title,
             answered_choice_question.question: answer,
-            "Speaker IDs": [speaker.code],
+            "Speaker IDs": [speaker_profile.code],
         }
     ]
 

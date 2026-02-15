@@ -35,7 +35,9 @@ def test_missing_answers_submission_question(submission, target, question):
             )
         elif target == "speaker":
             Answer.objects.create(
-                answer="True", person=submission.speakers.first(), question=question
+                answer="True",
+                speaker=submission.speakers.first(),
+                question=question,
             )
         assert question.missing_answers() == 0
 
@@ -230,12 +232,14 @@ def test_generate_unique_codes_batch(choice_question):
     ("target", "related_attr"),
     (
         ("submission", "submission"),
-        ("speaker", "person"),
+        ("speaker", "speaker"),
         ("reviewer", "review"),
     ),
 )
 @pytest.mark.django_db
-def test_answer_file_path(event, submission, speaker, review, target, related_attr):
+def test_answer_file_path(
+    event, submission, speaker_profile, review, target, related_attr
+):
     with scope(event=event):
         question = Question.objects.create(
             event=event,
@@ -249,8 +253,8 @@ def test_answer_file_path(event, submission, speaker, review, target, related_at
             answer.submission = submission
             expected_code = submission.code
         if target == QuestionTarget.SPEAKER:
-            answer.person = speaker
-            expected_code = speaker.code
+            answer.speaker = speaker_profile
+            expected_code = speaker_profile.code
         if target == QuestionTarget.REVIEWER:
             answer.review = review
             expected_code = f"r{review.pk}"

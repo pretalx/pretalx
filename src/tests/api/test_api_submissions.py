@@ -17,11 +17,15 @@ from pretalx.api.serializers.submission import (
 )
 from pretalx.api.versions import LEGACY
 from pretalx.common.models import CachedFile
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import (
     Resource,
     Submission,
     SubmissionInvitation,
     SubmissionStates,
+    SubmissionType,
+    Tag,
+    Track,
 )
 
 
@@ -147,6 +151,7 @@ def test_can_only_see_public_submissions_if_public_schedule(
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_see_all_submissions(
     client,
     orga_user_token,
@@ -155,27 +160,24 @@ def test_orga_can_see_all_submissions(
     rejected_submission,
     submission,
     answer,
+    django_assert_num_queries,
+    item_count,
 ):
-    response = client.get(
-        submission.event.api_urls.submissions + "?questions=all",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+    if item_count != 2:
+        with scope(event=submission.event):
+            rejected_submission.delete()
+
+    with django_assert_num_queries(22):
+        response = client.get(
+            submission.event.api_urls.submissions + "?questions=all",
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200, content
-    assert content["count"] == 4
-    assert content["results"][0]["title"] == slot.submission.title
-    assert (
-        len(
-            [
-                submission
-                for submission in content["results"]
-                if submission["answers"] == []
-            ]
-        )
-        > 0
-    )
+    assert content["count"] == item_count + 2
+    assert slot.submission.title in [r["title"] for r in content["results"]]
 
 
 @pytest.mark.django_db
@@ -283,11 +285,11 @@ def test_can_only_see_public_talks(
     assert content["count"] == 1
     assert content["results"][0]["title"] == slot.submission.title
     with scope(event=event):
-        speaker_user = slot.submission.speakers.first()
-        assert content["results"][0]["speakers"][0]["name"] == speaker_user.name
+        speaker_profile = slot.submission.speakers.first()
+        assert content["results"][0]["speakers"][0]["name"] == speaker_profile.user.name
         assert (
             content["results"][0]["speakers"][0]["biography"]
-            == speaker_user.event_profile(event).biography
+            == speaker_profile.biography
         )
 
 
@@ -359,17 +361,25 @@ def test_cannot_see_tags(client, tag):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_tags(client, orga_user_token, tag):
-    response = client.get(
-        tag.event.api_urls.tags,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_orga_can_see_tags(
+    client, orga_user_token, tag, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=tag.event):
+            Tag.objects.create(event=tag.event, tag="Other Tag", color="#ff0000")
+
+    with django_assert_num_queries(11):
+        response = client.get(
+            tag.event.api_urls.tags,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200
-    assert content["count"] == 1
-    assert content["results"][0]["tag"] == tag.tag
+    assert content["count"] == item_count
+    assert tag.tag in [r["tag"] for r in content["results"]]
 
 
 @pytest.mark.django_db
@@ -572,17 +582,25 @@ def test_can_see_tracks_public_event(client, track, slot):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_tracks(client, orga_user_token, track):
-    response = client.get(
-        track.event.api_urls.tracks,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_orga_can_see_tracks(
+    client, orga_user_token, track, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=track.event):
+            Track.objects.create(event=track.event, name="Other Track", color="#ff0000")
+
+    with django_assert_num_queries(12):
+        response = client.get(
+            track.event.api_urls.tracks,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200
-    assert content["count"] == 1
-    assert content["results"][0]["name"]["en"] == track.name
+    assert content["count"] == item_count
+    assert track.name in [r["name"]["en"] for r in content["results"]]
 
 
 @pytest.mark.django_db
@@ -773,17 +791,27 @@ def test_can_see_submission_types_public_event(client, submission_type, slot):
 
 
 @pytest.mark.django_db
-def test_orga_can_see_submission_types(client, orga_user_token, submission_type):
-    response = client.get(
-        submission_type.event.api_urls.submission_types,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+@pytest.mark.parametrize("item_count", (1, 2))
+def test_orga_can_see_submission_types(
+    client, orga_user_token, submission_type, django_assert_num_queries, item_count
+):
+    if item_count == 2:
+        with scope(event=submission_type.event):
+            SubmissionType.objects.create(
+                event=submission_type.event, name="Other Type"
+            )
+
+    with django_assert_num_queries(11):
+        response = client.get(
+            submission_type.event.api_urls.submission_types,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
 
     assert response.status_code == 200
-    assert content["count"] == 2
-    assert content["results"][1]["name"]["en"] == submission_type.name
+    assert content["count"] == item_count + 1
+    assert submission_type.name in [r["name"]["en"] for r in content["results"]]
 
 
 @pytest.mark.django_db
@@ -1324,15 +1352,15 @@ def test_orga_cannot_make_submitted_submission_readonly_token(
 
 @pytest.mark.django_db
 def test_orga_can_add_speaker_to_submission(
-    client, orga_user_write_token, submission, speaker
+    client, orga_user_write_token, submission, speaker_profile
 ):
     with scope(event=submission.event):
-        submission.speakers.remove(speaker)
-        assert speaker not in submission.speakers.all()
+        submission.speakers.remove(speaker_profile)
+        assert speaker_profile not in submission.speakers.all()
     response = client.post(
         submission.event.api_urls.submissions + f"{submission.code}/add-speaker/",
         follow=True,
-        data=json.dumps({"email": speaker.email}),
+        data=json.dumps({"email": speaker_profile.user.email}),
         content_type="application/json",
         headers={
             "Authorization": f"Token {orga_user_write_token.token}",
@@ -1341,7 +1369,7 @@ def test_orga_can_add_speaker_to_submission(
     assert response.status_code == 200, response.text
     with scope(event=submission.event):
         submission.refresh_from_db()
-        assert speaker in submission.speakers.all()
+        assert speaker_profile in submission.speakers.all()
         assert (
             submission.logged_actions()
             .filter(action_type="pretalx.submission.speakers.add")
@@ -1354,8 +1382,11 @@ def test_orga_cannot_add_speaker_to_submission_readonly_token(
     client, orga_user_token, submission, speaker
 ):
     with scope(event=submission.event):
-        submission.speakers.remove(speaker)
-        assert speaker not in submission.speakers.all()
+        profile, _ = SpeakerProfile.objects.get_or_create(
+            user=speaker, event=submission.event
+        )
+        submission.speakers.remove(profile)
+        assert profile not in submission.speakers.all()
     response = client.post(
         submission.event.api_urls.submissions + f"{submission.code}/add-speaker/",
         follow=True,
@@ -1368,7 +1399,7 @@ def test_orga_cannot_add_speaker_to_submission_readonly_token(
     assert response.status_code == 403
     with scope(event=submission.event):
         submission.refresh_from_db()
-        assert speaker not in submission.speakers.all()
+        assert profile not in submission.speakers.all()
         assert (
             not submission.logged_actions()
             .filter(action_type="pretalx.submission.speakers.add")
@@ -1378,15 +1409,12 @@ def test_orga_cannot_add_speaker_to_submission_readonly_token(
 
 @pytest.mark.django_db
 def test_orga_can_remove_speaker_from_submission(
-    client, orga_user_write_token, submission, speaker
+    client, orga_user_write_token, submission, speaker_profile
 ):
-    with scope(event=submission.event):
-        submission.speakers.add(speaker)
-    assert speaker in submission.speakers.all()
     response = client.post(
         submission.event.api_urls.submissions + f"{submission.code}/remove-speaker/",
         follow=True,
-        data=json.dumps({"user": speaker.code}),
+        data=json.dumps({"user": speaker_profile.code}),
         content_type="application/json",
         headers={
             "Authorization": f"Token {orga_user_write_token.token}",
@@ -1395,7 +1423,7 @@ def test_orga_can_remove_speaker_from_submission(
     assert response.status_code == 200, response.text
     with scope(event=submission.event):
         submission.refresh_from_db()
-        assert speaker not in submission.speakers.all()
+        assert speaker_profile not in submission.speakers.all()
         assert (
             submission.logged_actions()
             .filter(action_type="pretalx.submission.speakers.remove")
@@ -1405,14 +1433,12 @@ def test_orga_can_remove_speaker_from_submission(
 
 @pytest.mark.django_db
 def test_orga_cannot_remove_speaker_from_submission_readonly_token(
-    client, orga_user_token, submission, speaker
+    client, orga_user_token, submission, speaker_profile
 ):
-    with scope(event=submission.event):
-        submission.speakers.add(speaker)
     response = client.post(
         submission.event.api_urls.submissions + f"{submission.code}/remove-speaker/",
         follow=True,
-        data=json.dumps({"user": speaker.code}),
+        data=json.dumps({"user": speaker_profile.code}),
         content_type="application/json",
         headers={
             "Authorization": f"Token {orga_user_token.token}",
@@ -1421,7 +1447,7 @@ def test_orga_cannot_remove_speaker_from_submission_readonly_token(
     assert response.status_code == 403
     with scope(event=submission.event):
         submission.refresh_from_db()
-        assert speaker in submission.speakers.all()
+        assert speaker_profile in submission.speakers.all()
         assert (
             not submission.logged_actions()
             .filter(action_type="pretalx.submission.speakers.remove")
@@ -1486,9 +1512,9 @@ def test_public_submission_expandable_fields(
         slot.submission.state = SubmissionStates.ACCEPTED
         slot.submission.track = track
         slot.submission.save()
-        speaker_user = slot.submission.speakers.first()
+        speaker_profile = slot.submission.speakers.first()
         answer.submission = slot.submission
-        answer.person = speaker_user
+        answer.speaker = speaker_profile
         answer.save()
         answer.question.is_public = True
         answer.question.target = "submission"
@@ -1525,7 +1551,7 @@ def test_public_submission_expandable_fields(
             submission_data["submission_type"]["name"]["en"]
             == slot.submission.submission_type.name
         )
-        assert submission_data["speakers"][0]["name"] == speaker_user.name
+        assert submission_data["speakers"][0]["name"] == speaker_profile.user.name
         assert len(submission_data["speakers"][0]["answers"]) == 1
         assert (
             submission_data["speakers"][0]["answers"][0]["question"]["id"]

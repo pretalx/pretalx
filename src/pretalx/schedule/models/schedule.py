@@ -214,8 +214,6 @@ class Schedule(PretalxModel):
         talk,
         with_speakers=True,
         room_avails=None,
-        speaker_avails=None,
-        speaker_profiles=None,
     ) -> list:
         """A list of warnings that apply to this slot.
 
@@ -223,7 +221,7 @@ class Schedule(PretalxModel):
         ``speaker``, for now) and a ``message`` fit for public display.
         This property only shows availability based warnings.
         """
-        from pretalx.schedule.models import Availability, TalkSlot  # noqa: PLC0415
+        from pretalx.schedule.models import TalkSlot  # noqa: PLC0415
 
         if not talk.start or not talk.submission or not talk.room:
             return []
@@ -232,10 +230,10 @@ class Schedule(PretalxModel):
         url = talk.submission.orga_urls.base
         if self.use_room_availabilities:
             if room_avails is None:
-                room_avails = talk.room.availabilities.all()
+                room_avails = talk.room.full_availability
             if room_avails and not any(
                 room_availability.contains(availability)
-                for room_availability in Availability.union(room_avails)
+                for room_availability in room_avails
             ):
                 warnings.append(
                     {
@@ -274,21 +272,10 @@ class Schedule(PretalxModel):
 
         for speaker in talk.submission.sorted_speakers:
             if with_speakers:
-                if speaker_profiles:
-                    profile = speaker_profiles.get(speaker)
-                else:
-                    profile = speaker.event_profile(self.event)
-                if profile and speaker_avails is not None:
-                    profile_availabilities = speaker_avails.get(profile.pk)
-                else:
-                    profile_availabilities = (
-                        list(profile.availabilities.all()) if profile else []
-                    )
-                if profile_availabilities and not any(
+                speaker_avails = speaker.full_availability
+                if speaker_avails and not any(
                     speaker_availability.contains(availability)
-                    for speaker_availability in Availability.union(
-                        profile_availabilities
-                    )
+                    for speaker_availability in speaker_avails
                 ):
                     warnings.append(
                         {
@@ -304,9 +291,7 @@ class Schedule(PretalxModel):
                         }
                     )
             overlaps = (
-                TalkSlot.objects.filter(
-                    schedule=self, submission__speakers__in=[speaker]
-                )
+                TalkSlot.objects.filter(schedule=self, submission__speakers=speaker)
                 .exclude(pk=talk.pk)
                 .filter(
                     models.Q(start__lt=talk.start, end__gt=talk.start)
@@ -347,6 +332,7 @@ class Schedule(PretalxModel):
                 "schedule__event",
             )
             .with_sorted_speakers()
+            .prefetch_related("speakers__availabilities")
         )
         if filter_updated:
             talks = talks.filter(updated__gte=filter_updated)
@@ -354,38 +340,16 @@ class Schedule(PretalxModel):
         room_avails = defaultdict(
             list,
             {
-                room.pk: room.availabilities.all()
+                room.pk: room.full_availability
                 for room in self.event.rooms.all().prefetch_related("availabilities")
             },
         )
-        speaker_avails = None
-        speaker_profiles = None
-        if with_speakers:
-            from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
-
-            speaker_profiles = {
-                profile.user: profile
-                for profile in SpeakerProfile.objects.filter(
-                    event=self.event
-                ).select_related("user")
-            }
-            speaker_avails = defaultdict(
-                list,
-                {
-                    profile.pk: profile.availabilities.all()
-                    for profile in SpeakerProfile.objects.filter(
-                        event=self.event
-                    ).prefetch_related("availabilities")
-                },
-            )
         result = {}
         for talk in talks:
             talk_warnings = self.get_talk_warnings(
                 talk=talk,
                 with_speakers=with_speakers,
                 room_avails=room_avails.get(talk.room_id) if talk.room_id else None,
-                speaker_avails=speaker_avails,
-                speaker_profiles=speaker_profiles,
             )
             if talk_warnings:
                 result[talk] = talk_warnings
@@ -429,9 +393,11 @@ class Schedule(PretalxModel):
         """
         result = {}
         if self.changes["action"] == "create":
-            from pretalx.person.models import User  # noqa: PLC0415
+            from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
 
-            for speaker in User.objects.filter(submissions__slots__schedule=self):
+            for speaker in SpeakerProfile.objects.filter(
+                submissions__slots__schedule=self
+            ):
                 talks = self.talks.filter(
                     submission__speakers=speaker,
                     room__isnull=False,
@@ -460,16 +426,16 @@ class Schedule(PretalxModel):
 
         mails = []
         for speaker, data in self.speakers_concerned.items():
-            locale = speaker.get_locale_for_event(self.event)
+            locale = speaker.user.get_locale_for_event(self.event)
             slots = list(data.get("create") or []) + [
                 talk["new_slot"] for talk in (data.get("update") or [])
             ]
             submissions = [slot.submission for slot in slots if slot]
             mails.append(
                 self.event.get_mail_template(MailTemplateRoles.NEW_SCHEDULE).to_mail(
-                    user=speaker,
+                    user=speaker.user,
                     event=self.event,
-                    context_kwargs={"user": speaker},
+                    context_kwargs={"user": speaker.user},
                     commit=save,
                     locale=locale,
                     submissions=submissions,
@@ -524,7 +490,8 @@ class Schedule(PretalxModel):
             "submission__submission_type",
         ).with_sorted_speakers()
         talks = talks.order_by("start")
-        rooms = set() if not all_rooms else set(self.event.rooms.all())
+        all_event_rooms = list(self.event.rooms.all())
+        rooms = set() if not all_rooms else set(all_event_rooms)
         tracks = set()
         speakers = set()
         result = {
@@ -604,29 +571,31 @@ class Schedule(PretalxModel):
                 "name": room.name,
                 "description": room.description,
             }
-            for room in self.event.rooms.all()
+            for room in all_event_rooms
             if room in rooms
         ]
         include_avatar = self.event.cfp.request_avatar
         result["speakers"] = [
             {
-                "code": user.code,
-                "name": user.name,
-                "avatar": (
-                    user.get_avatar_url(event=self.event) if include_avatar else None
-                ),
+                "code": speaker.code,
+                "name": speaker.get_display_name(),
+                "avatar": speaker.avatar_url if include_avatar else None,
                 "avatar_thumbnail_default": (
-                    user.get_avatar_url(event=self.event, thumbnail="default")
-                    if include_avatar
+                    speaker.profile_picture.get_avatar_url(
+                        event=self.event, thumbnail="default"
+                    )
+                    if include_avatar and speaker.profile_picture_id
                     else None
                 ),
                 "avatar_thumbnail_tiny": (
-                    user.get_avatar_url(event=self.event, thumbnail="tiny")
-                    if include_avatar
+                    speaker.profile_picture.get_avatar_url(
+                        event=self.event, thumbnail="tiny"
+                    )
+                    if include_avatar and speaker.profile_picture_id
                     else None
                 ),
             }
-            for user in speakers
+            for speaker in speakers
         ]
         return result
 

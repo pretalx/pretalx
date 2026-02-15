@@ -186,14 +186,15 @@ class TestWizard:
         answer=None,
     ):
         with scope(event=submission.event):
-            user = submission.speakers.get(email=email)
-            assert user.name == name
-            assert user.profiles.get(event=submission.event).biography == biography
+            profile = submission.speakers.get(user__email=email)
+            user = profile.user
+            assert profile.name == name
+            assert profile.biography == biography
             if question:
-                answ = user.answers.filter(question__target="speaker").first()
+                answ = profile.answers.filter(question__target="speaker").first()
                 assert answ
                 assert answ.question == question
-                assert answ.person == user
+                assert answ.speaker == profile
                 assert not answ.submission
                 assert answ.answer == "green"
         return user

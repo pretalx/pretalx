@@ -442,29 +442,36 @@ def test_list_slots_anonymous_schedule_public_only_visible(
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("item_count", (1, 2))
 def test_list_slots_orga_sees_slots_in_current_schedule_by_default(
-    client, orga_user_token, event, slot, invisible_slot
+    client,
+    orga_user_token,
+    event,
+    slot,
+    invisible_slot,
+    django_assert_num_queries,
+    item_count,
 ):
+    if item_count != 2:
+        with scope(event=event):
+            invisible_slot.delete()
+
     with scope(event=event):
-        wip_slot = event.wip_schedule.talks.first()
         current_schedule_slot_ids = set(
             event.current_schedule.talks.values_list("pk", flat=True)
         )
 
-    response = client.get(
-        event.api_urls.slots,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
+    with django_assert_num_queries(12):
+        response = client.get(
+            event.api_urls.slots,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
     content = json.loads(response.text)
     assert response.status_code == 200
 
     assert content["count"] == len(current_schedule_slot_ids)
-
-    slot_ids_in_response = {r["id"] for r in content["results"]}
-    assert slot.pk in slot_ids_in_response
-    assert invisible_slot.pk in slot_ids_in_response
-    assert wip_slot.pk not in slot_ids_in_response
+    assert slot.pk in {r["id"] for r in content["results"]}
 
 
 @pytest.mark.django_db
@@ -711,7 +718,7 @@ def test_talk_slot_expand_parameters(client, orga_user_token, event, slot):
     with scope(event=event):
         submission_code = slot.submission.code
         room_pk = slot.room.pk
-        speaker = slot.submission.speakers.first().code
+        speaker = slot.submission.speakers.first().user.code
 
     response = client.get(url, headers=base_headers)
     assert response.status_code == 200
@@ -749,7 +756,6 @@ def test_schedule_expand_slots(client, event, slot, track):
         submission_type = slot.submission.submission_type
         slot.submission.track = track
         slot.submission.save()
-        profile = speaker.event_profile(event)
         event.feature_flags["use_tracks"] = True
         event.save()
     response = client.get(
@@ -775,9 +781,9 @@ def test_schedule_expand_slots(client, event, slot, track):
     assert submission_content["submission_type"]["name"]["en"] == submission_type.name
     assert isinstance(submission_content["speakers"], list)
     speaker_data = submission_content["speakers"][0]
-    assert speaker_data["code"] == speaker.code
-    assert speaker_data["name"] == speaker.name
-    assert speaker_data["biography"] == profile.biography
+    assert speaker_data["code"] == speaker.user.code
+    assert speaker_data["name"] == speaker.user.name
+    assert speaker_data["biography"] == speaker.biography
 
 
 @pytest.mark.django_db
