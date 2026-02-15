@@ -151,6 +151,7 @@ class MarkdownWidget(forms.Textarea):
         js = [
             forms.Script("vendored/marked.min.js", defer=""),
             forms.Script("vendored/purify.min.js", defer=""),
+            forms.Script("vendored/markdown-toolbar.js", defer=""),
             forms.Script("common/js/ui/tabs.js", defer=""),
             forms.Script("common/js/forms/markdown.js", defer=""),
             forms.Script("common/js/forms/character-limit.js", defer=""),
