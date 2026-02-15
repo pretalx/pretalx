@@ -214,8 +214,7 @@ python *args:
 # Run the test suite
 [group('tests')]
 test *args:
-    {{ uv_dev }} --extra=devdocs pytest {{ args }}
-    git checkout -- src/pretalx/locale
+    {{ uv_dev }} --extra=devdocs pytest {{ args }}; status=$?; git checkout -- src/pretalx/locale; exit $status
 
 # Run tests in parallel (requires pytest-xdist)
 [group('tests')]
