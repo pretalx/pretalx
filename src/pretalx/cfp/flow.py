@@ -409,9 +409,6 @@ class InfoStep(DedraftMixin, FormFlowStep):
             form.instance.state = SubmissionStates.DRAFT
         elif form.instance.state == SubmissionStates.DRAFT:
             form.instance.make_submitted(person=self.request.user)
-            form.instance.log_action(
-                "pretalx.submission.create", person=self.request.user
-            )
         form.save()
         submission = form.instance
         submission.speakers.add(request.user)
