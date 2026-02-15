@@ -63,7 +63,7 @@
 | src/pretalx/api/views/team.py                                              |       93 |        4 |        8 |        0 |     96% |83-84, 189-190 |
 | src/pretalx/api/views/upload.py                                            |       37 |        5 |        8 |        2 |     84% | 64, 75-78 |
 | src/pretalx/cfp/apps.py                                                    |        4 |        0 |        0 |        0 |    100% |           |
-| src/pretalx/cfp/flow.py                                                    |      533 |        8 |      148 |        7 |     98% |177, 448-450, 701, 715, 721->724, 782, 786, 802->804, 804->814 |
+| src/pretalx/cfp/flow.py                                                    |      532 |        8 |      148 |        7 |     98% |177, 445-447, 698, 712, 718->721, 779, 783, 799->801, 801->811 |
 | src/pretalx/cfp/forms/auth.py                                              |       26 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/cfp/forms/cfp.py                                               |       30 |        2 |       18 |        1 |     94% |    47, 53 |
 | src/pretalx/cfp/forms/submissions.py                                       |       43 |        4 |       10 |        1 |     87% |     53-56 |
@@ -364,7 +364,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       64 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **34393** | **1912** | **5358** |  **760** | **92%** |           |
+| **TOTAL**                                                                  | **34392** | **1912** | **5358** |  **760** | **92%** |           |
 
 
 ## Setup coverage badge
