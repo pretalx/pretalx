@@ -10,6 +10,7 @@ from pretalx.submission.models.question import Answer
 from pretalx.person.models.picture import ProfilePicture
 
 
+@pytest.mark.django_db
 def test_user_deactivate(speaker, personal_answer, impersonal_answer, other_speaker):
     with scopes_disabled():
         assert Answer.objects.count() == 2

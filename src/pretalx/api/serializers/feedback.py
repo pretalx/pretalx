@@ -7,7 +7,7 @@ from rest_framework.serializers import SlugRelatedField
 
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
-from pretalx.person.models import User
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import Feedback, Submission
 
 
@@ -18,7 +18,7 @@ class FeedbackWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     )
     speaker = SlugRelatedField(
         slug_field="code",
-        queryset=Submission.objects.none(),
+        queryset=SpeakerProfile.objects.none(),
         required=False,
         allow_null=True,
     )
@@ -27,8 +27,8 @@ class FeedbackWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         super().__init__(*args, **kwargs)
         if self.event:
             self.fields["submission"].queryset = self.event.talks
-            self.fields["speaker"].queryset = User.objects.filter(
-                profiles__submissions__in=self.event.talks
+            self.fields["speaker"].queryset = SpeakerProfile.objects.filter(
+                event=self.event, submissions__in=self.event.talks
             ).distinct()
 
     def validate_submission(self, value):
@@ -42,7 +42,7 @@ class FeedbackWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         data = super().validate(data)
         speaker = data.get("speaker")
         talk = data.get("talk")
-        if speaker and talk and not talk.speakers.filter(user=speaker).exists():
+        if speaker and talk and not talk.speakers.filter(pk=speaker.pk).exists():
             raise exceptions.ValidationError(
                 {"speaker": "This speaker is not a speaker of the given submission."}
             )
@@ -71,8 +71,7 @@ class FeedbackSerializer(FeedbackWriteSerializer):
                 {"read_only": True, "omit": ("slots",), "source": "talk"},
             ),
             "speaker": (
-                # Feedback.speaker is a User, not a SpeakerProfile
-                "pretalx.api.serializers.review.ReviewerSerializer",
-                {"read_only": True, "omit": ("email",)},
+                "pretalx.api.serializers.speaker.SpeakerSerializer",
+                {"read_only": True},
             ),
         }

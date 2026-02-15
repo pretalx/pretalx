@@ -30,7 +30,7 @@ class Feedback(PretalxModel):
         verbose_name=_n("Session", "Sessions", 1),
     )
     speaker = models.ForeignKey(
-        to="person.User",
+        to="person.SpeakerProfile",
         related_name="feedback",
         null=True,
         blank=True,
