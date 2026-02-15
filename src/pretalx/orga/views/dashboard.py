@@ -264,9 +264,16 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
         can_change_settings = self.request.user.has_perm(
             "event.change_settings.event", event
         )
+        can_view_speakers = self.request.user.has_perm(
+            "person.orga_list_speakerprofile", event
+        )
+        can_view_submissions = self.request.user.has_perm(
+            "submission.orga_list_submission", event
+        )
         can_change_submissions = self.request.user.has_perm(
             "submission.orga_update_submission", event
         )
+        can_view_emails = self.request.user.has_perm("mail.list_queuedmail", event)
         result["tiles"] = self.get_cfp_tiles(
             _now, can_change_submissions=can_change_submissions
         )
@@ -332,18 +339,30 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
                     # component, instead show accepted + confirmed
                     "large": talk_count or (accepted_count + confirmed_count),
                     "small": ngettext_lazy("session", "sessions", talk_count),
-                    "url": event.orga_urls.submissions
-                    + f"?state={SubmissionStates.ACCEPTED}&state={SubmissionStates.CONFIRMED}",
+                    "url": (
+                        event.orga_urls.submissions
+                        + f"?state={SubmissionStates.ACCEPTED}&state={SubmissionStates.CONFIRMED}"
+                        if can_view_submissions
+                        else None
+                    ),
                     "priority": 55,
                     "right": {
                         "text": str(_("unconfirmed")) + f": {accepted_count}",
-                        "url": event.orga_urls.submissions
-                        + f"?state={SubmissionStates.ACCEPTED}",
+                        "url": (
+                            event.orga_urls.submissions
+                            + f"?state={SubmissionStates.ACCEPTED}"
+                            if can_view_submissions
+                            else None
+                        ),
                         "color": "error" if accepted_count else "info",
                     },
                     "left": {
                         "text": str(_("confirmed")) + f": {confirmed_count}",
-                        "url": event.orga_urls.submissions,
+                        "url": (
+                            event.orga_urls.submissions
+                            if can_view_submissions
+                            else None
+                        ),
                         "color": "success",
                     },
                 }
@@ -354,7 +373,9 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
                 {
                     "large": count,
                     "small": ngettext_lazy("proposal", "proposals", count),
-                    "url": event.orga_urls.submissions,
+                    "url": (
+                        event.orga_urls.submissions if can_view_submissions else None
+                    ),
                     "priority": 60,
                 }
             )
@@ -374,7 +395,11 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
                         "submissions with pending changes",
                         pending_state_submissions,
                     ),
-                    "url": event.orga_urls.submissions + f"?{states}",
+                    "url": (
+                        event.orga_urls.submissions + f"?{states}"
+                        if can_view_submissions
+                        else None
+                    ),
                     "priority": 56,
                 }
             )
@@ -385,21 +410,29 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
             .distinct()
             .count()
         )
-        if speaker_count:
+        if bool(speaker_count):
             result["tiles"].append(
                 {
                     "large": speaker_count,
                     "small": ngettext_lazy("speaker", "speakers", speaker_count),
-                    "url": event.orga_urls.speakers + "?role=true",
+                    "url": (
+                        event.orga_urls.speakers + "?role=true"
+                        if can_view_speakers
+                        else None
+                    ),
                     "priority": 56,
                     "right": {
                         "text": _("rejected") + f": {rejected_count}",
-                        "url": event.orga_urls.speakers + "?role=false",
+                        "url": (
+                            event.orga_urls.speakers + "?role=false"
+                            if can_view_speakers
+                            else None
+                        ),
                         "color": "error",
                     },
                     "left": {
                         "text": phrases.submission.submitted + f": {submitter_count}",
-                        "url": event.orga_urls.speakers,
+                        "url": event.orga_urls.speakers if can_view_speakers else None,
                         "color": "success",
                     },
                 }
@@ -409,7 +442,7 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
                 {
                     "large": submitter_count,
                     "small": ngettext_lazy("submitter", "submitters", submitter_count),
-                    "url": event.orga_urls.speakers,
+                    "url": event.orga_urls.speakers if can_view_speakers else None,
                     "priority": 60,
                 }
             )
@@ -418,7 +451,7 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
             {
                 "large": count,
                 "small": ngettext_lazy("sent email", "sent emails", count),
-                "url": event.orga_urls.sent_mails,
+                "url": event.orga_urls.sent_mails if can_view_emails else None,
                 "priority": 80,
             }
         )
