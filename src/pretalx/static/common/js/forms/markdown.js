@@ -23,6 +23,7 @@ const initMarkdown = (element) => {
         dirtyInputs.push(element)
     }
     inputElement.addEventListener("change", handleInput, false)
+    inputElement.addEventListener("input", handleInput, false)
     inputElement.addEventListener("keyup", handleInput, false)
     inputElement.addEventListener("keypress", handleInput, false)
     inputElement.addEventListener("keydown", handleInput, false)
@@ -50,7 +51,7 @@ const initMarkdown = (element) => {
         selectedTab.setAttribute("aria-selected", "true")
         selectedPanel.setAttribute("aria-hidden", "false")
     }
-    element.parentElement.querySelectorAll("input[role=tab]").forEach((tab) => {
+    element.querySelectorAll("input[role=tab]").forEach((tab) => {
         tab.addEventListener("change", updateTabPanels)
     })
 }

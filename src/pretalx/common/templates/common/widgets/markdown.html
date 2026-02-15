@@ -4,14 +4,28 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 -->
 
 {% load i18n %}
-<div class="markdown-nav" role="tablist" id="nav-tab-{{ widget.name }}">
-  <input role="tab" type="radio" id="tab-markdown-{{ widget.name }}-text" name="markdown-nav-{{ widget.name }}" aria-controls="tabpanel-markdown-{{ widget.name }}-text" aria-selected="true" checked>
-  <label for="tab-markdown-{{ widget.name }}-text">{% translate "Text" %}</label>
-  <input role="tab" type="radio" id="tab-markdown-{{ widget.name }}-preview" name="markdown-nav-{{ widget.name }}" aria-controls="tabpanel-markdown-{{ widget.name }}-preview" aria-selected="false">
-  <label for="tab-markdown-{{ widget.name }}-preview">{% translate "Preview" %}</label>
-</div>
-
 <div class="markdown-wrapper">
+  <div class="markdown-header">
+    <div class="markdown-nav" role="tablist" id="nav-tab-{{ widget.name }}">
+      <input role="tab" type="radio" id="tab-markdown-{{ widget.name }}-text" name="markdown-nav-{{ widget.name }}" aria-controls="tabpanel-markdown-{{ widget.name }}-text" aria-selected="true" checked>
+      <label for="tab-markdown-{{ widget.name }}-text">{% translate "Text" %}</label>
+      <input role="tab" type="radio" id="tab-markdown-{{ widget.name }}-preview" name="markdown-nav-{{ widget.name }}" aria-controls="tabpanel-markdown-{{ widget.name }}-preview" aria-selected="false">
+      <label for="tab-markdown-{{ widget.name }}-preview">{% translate "Preview" %}</label>
+    </div>
+    <markdown-toolbar for="{{ widget.attrs.id }}" class="markdown-toolbar">
+      <md-bold aria-label="{% translate "Bold" %}"><i class="fa fa-bold" aria-hidden="true"></i></md-bold>
+      <md-italic aria-label="{% translate "Italic" %}"><i class="fa fa-italic" aria-hidden="true"></i></md-italic>
+      <md-strikethrough aria-label="{% translate "Strikethrough" %}"><i class="fa fa-strikethrough" aria-hidden="true"></i></md-strikethrough>
+      <span class="markdown-toolbar-divider"></span>
+      <md-header level="2" aria-label="{% translate "Header" %}"><i class="fa fa-header" aria-hidden="true"></i></md-header>
+      <md-link aria-label="{% translate "Link" %}"><i class="fa fa-link" aria-hidden="true"></i></md-link>
+      <md-quote aria-label="{% translate "Quote" %}"><i class="fa fa-quote-left" aria-hidden="true"></i></md-quote>
+      <md-code aria-label="{% translate "Code" %}"><i class="fa fa-code" aria-hidden="true"></i></md-code>
+      <span class="markdown-toolbar-divider"></span>
+      <md-unordered-list aria-label="{% translate "Unordered list" %}"><i class="fa fa-list-ul" aria-hidden="true"></i></md-unordered-list>
+      <md-ordered-list aria-label="{% translate "Ordered list" %}"><i class="fa fa-list-ol" aria-hidden="true"></i></md-ordered-list>
+    </markdown-toolbar>
+  </div>
   <div role="tabpanel" id="tabpanel-markdown-{{ widget.name }}-text" aria-labelledby="tab-markdown-{{ widget.name }}-text" tabindex="0" aria-hidden="false">
     {% include "django/forms/widgets/textarea.html" %}
   </div>
