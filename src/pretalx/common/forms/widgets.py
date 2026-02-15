@@ -7,8 +7,10 @@ from pathlib import Path
 
 from django import forms
 from django.core.files import File
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+from i18nfield.forms import I18nTextarea
 
 from pretalx.common.text.phrases import phrases
 
@@ -163,6 +165,16 @@ class MarkdownWidget(forms.Textarea):
                 "common/css/forms/character-limit.css",
             ]
         }
+
+
+class I18nMarkdownTextarea(I18nTextarea):
+    widget = MarkdownWidget
+
+    def format_output(self, rendered_widgets, id_):
+        css_classes = "i18n-form-group i18n-markdown-group"
+        if len(rendered_widgets) <= 1:
+            css_classes += " i18n-form-single-language"
+        return f'<div class="{css_classes}" id="{escape(id_)}">{"".join(rendered_widgets)}</div>'
 
 
 class EnhancedSelectMixin(forms.Select):

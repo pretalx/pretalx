@@ -56,9 +56,13 @@
       margin: 0 4px;
     }
   }
-  [role=tabpanel] {
+  .markdown-tabpanel {
+    display: none;
     background-color: var(--color-offwhite);
     padding: 1px;
+    &[aria-hidden="false"] {
+      display: block;
+    }
   }
   textarea {
     min-height: 140px;
@@ -90,4 +94,24 @@
       border-bottom-right-radius: var(--size-border-radius);
     }
   }
+}
+
+.i18n-markdown-group > .markdown-wrapper + .markdown-wrapper {
+  margin-top: 0.5rem;
+}
+
+.i18n-markdown-group .markdown-wrapper textarea[lang] {
+  background-image: none !important;
+  padding-left: 0.75rem;
+}
+
+.i18n-form-group .markdown-header[lang] {
+  background-repeat: no-repeat;
+  background-position: 20px center;
+  padding-left: 50px;
+}
+
+.i18n-form-single-language .markdown-header[lang] {
+  background: none !important;
+  padding-left: 0;
 }

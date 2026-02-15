@@ -13,7 +13,7 @@ from django.core.files.uploadedfile import UploadedFile
 from django.utils.crypto import get_random_string
 from django.utils.translation import gettext_lazy as _
 from hierarkey.forms import HierarkeyForm
-from i18nfield.forms import I18nFormField, I18nFormMixin, I18nModelForm
+from i18nfield.forms import I18nFormField, I18nFormMixin, I18nModelForm, I18nTextarea
 
 from pretalx.common.forms.fields import ExtensionFileField
 from pretalx.common.forms.validators import (
@@ -27,6 +27,7 @@ from pretalx.common.forms.widgets import (
     EnhancedSelectMultiple,
     HtmlDateInput,
     HtmlDateTimeInput,
+    I18nMarkdownTextarea,
 )
 from pretalx.submission.models.cfp import default_fields
 
@@ -596,10 +597,17 @@ class PretalxI18nFormMixin(I18nFormMixin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
-            if isinstance(field, I18nFormField) and not field.widget.attrs.get(
-                "placeholder"
-            ):
-                field.widget.attrs["placeholder"] = field.label
+            if isinstance(field, I18nFormField):
+                if type(field.widget) is I18nTextarea:
+                    old = field.widget
+                    field.widget = I18nMarkdownTextarea(
+                        locales=old.locales,
+                        field=old.field,
+                        attrs=dict(old.attrs),
+                    )
+                    field.widget.enabled_locales = old.enabled_locales
+                if not field.widget.attrs.get("placeholder"):
+                    field.widget.attrs["placeholder"] = field.label
 
     class Media:
         css = {"all": ["orga/css/forms/i18n.css"]}
