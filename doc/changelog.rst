@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`cfp,2299` Markdown fields now support keyboard shortcuts for formatting (bold, italic, code, link, lists, preview toggle), and pasting a URL with text selected wraps it as a Markdown link.
 - :feature:`cfp,2299` In fields supporting Markdown, there is now a toolbar helping you with text formatting.
 - :feature:`admin` As administrator, you can now use the ``sendtestemail`` command to check if email sending works with the default settings (which are used e.g. for password resets even when event-specific settings are configured), just like the test email sending interface on the administrator page.
 - :feature:`dev,1974` Plugins can now prevent submission state changes by listening to the new ``before_submission_state_change`` signal and raising ``SubmissionError``.
