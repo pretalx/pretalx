@@ -44,7 +44,7 @@ const initMarkdown = (element) => {
                 element.setAttribute("aria-selected", "false")
             })
         selectedPanel.parentElement
-            .querySelectorAll("[role=tabpanel][aria-hidden=false]")
+            .querySelectorAll(".markdown-tabpanel[aria-hidden=false]")
             .forEach((element) => {
                 element.setAttribute("aria-hidden", "true")
             })
