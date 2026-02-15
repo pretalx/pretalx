@@ -24,7 +24,7 @@ def test_can_create_feedback(django_assert_num_queries, past_slot, client, event
         assert past_slot.submission.feedback.first().review == "cool!"
         assert (
             past_slot.submission.feedback.first().speaker
-            == past_slot.submission.speakers.first().user
+            == past_slot.submission.speakers.first()
         )
         assert past_slot.submission.title in str(past_slot.submission.feedback.first())
 
@@ -72,6 +72,7 @@ def test_cannot_create_feedback_before_talk(
         assert slot.submission.speakers.count() == 1
 
 
+@pytest.mark.django_db
 def test_can_see_feedback(django_assert_num_queries, feedback, client, event):
     with scope(event=event):
         user = feedback.talk.speakers.first().user

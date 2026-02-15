@@ -126,7 +126,7 @@ def test_orga_can_see_expanded_feedback_speaker(
     with scope(event=event):
         profile, _ = SpeakerProfile.objects.get_or_create(user=speaker, event=event)
         past_slot.submission.speakers.add(profile)
-        feedback.speaker = speaker
+        feedback.speaker = profile
         feedback.save()
 
     response = client.get(
@@ -139,8 +139,9 @@ def test_orga_can_see_expanded_feedback_speaker(
     assert response.status_code == 200
     assert len(content["results"]) == 1
     data = content["results"][0]
-    # We do not leak any private information here, e.g. email addresses.
-    assert data["speaker"] == {"code": speaker.code, "name": speaker.name}
+    assert data["speaker"]["code"] == speaker.code
+    assert data["speaker"]["name"] == speaker.name
+    assert "email" not in data["speaker"]
 
 
 @pytest.mark.django_db
@@ -205,7 +206,7 @@ def test_anon_can_create_feedback_with_speaker(client, event, past_slot, speaker
     data = {
         "submission": past_slot.submission.code,
         "review": "Great speaker!",
-        "speaker": speaker.code,
+        "speaker": profile.code,
     }
 
     response = client.post(url, data=json.dumps(data), content_type="application/json")
@@ -213,19 +214,21 @@ def test_anon_can_create_feedback_with_speaker(client, event, past_slot, speaker
 
     with scope(event=event):
         new_feedback = Feedback.objects.get(talk=past_slot.submission)
-        assert new_feedback.speaker == speaker
+        assert new_feedback.speaker == profile
 
 
 @pytest.mark.django_db
 def test_anon_cannot_create_feedback_with_unrelated_speaker(
     client, event, past_slot, speaker
 ):
-    # The speaker is not a speaker of the submission
+    # The speaker has a profile but is not a speaker of the submission
+    with scope(event=event):
+        profile, _ = SpeakerProfile.objects.get_or_create(user=speaker, event=event)
     url = event.api_urls.feedback
     data = {
         "submission": past_slot.submission.code,
         "review": "Great speaker!",
-        "speaker": speaker.code,
+        "speaker": profile.code,
     }
 
     response = client.post(url, data=json.dumps(data), content_type="application/json")
