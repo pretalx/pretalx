@@ -11,6 +11,12 @@ SPDX-FileContributor: michalpirchala
 {% load i18n %}
 {% load rich_text %}
 {% load rules %}
+{% load stars %}
+{% load static %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{% static "common/css/forms/stars.css" %}" />
+{% endblock stylesheets %}
 
 {% block extra_title %}{% translate "Attendee feedback" %} :: {% endblock extra_title %}
 
@@ -28,7 +34,13 @@ SPDX-FileContributor: michalpirchala
             {% has_perm "submission.view_feedback_submission" request.user entry.talk as can_see_feedback %}
             {% if can_see_feedback %}
                 <div class="card mb-2">
-                    <div class="card-body pb-0">{{ entry.review|rich_text }}</div>
+                    <div class="card-body pb-0">
+                        <span class="text-muted float-right">
+                            {{ entry.created|date:"SHORT_DATETIME_FORMAT" }}
+                        </span>
+                        {{ entry.rating|stars }}
+                        {{ entry.review|rich_text }}
+                    </div>
                 </div>
             {% endif %}
         {% endfor %}

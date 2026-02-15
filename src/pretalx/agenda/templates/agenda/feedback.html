@@ -7,10 +7,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 {% load rich_text %}
+{% load stars %}
 {% load static %}
 
 {% block agenda_stylesheets %}
     <link rel="stylesheet" href="{% static "agenda/css/feedback.css" %}" />
+    <link rel="stylesheet" href="{% static "common/css/forms/stars.css" %}" />
 {% endblock agenda_stylesheets %}
 
 {% block content %}
@@ -31,7 +33,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </div>
                 {% endif %}
                 <i class="fa fa-quote-left quote" aria-hidden="true"></i>
-                <div class="feedback-text">{{ opinion.review|rich_text }}</div>
+                <div class="feedback-text">
+                    <span class="text-muted float-right">
+                        {{ opinion.created|date:"SHORT_DATETIME_FORMAT" }}
+                    </span>
+                    {{ opinion.rating|stars }}
+                    {{ opinion.review|rich_text }}
+                </div>
                 <i class="fa fa-quote-right quote float-right" aria-hidden="true"></i>
             </div>
         {% empty %}

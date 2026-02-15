@@ -164,6 +164,23 @@ class MarkdownWidget(forms.Textarea):
         }
 
 
+class StarsWidget(forms.Textarea):
+    template_name = "common/widgets/stars.html"
+
+    def __init__(self, attrs=None, max=5):
+        self.max = max
+        super().__init__(attrs)
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context["widget"]["stars"] = range(1, self.max)
+        return context
+
+    class Media:
+        js = [forms.Script("common/js/forms/stars.js", defer="")]
+        css = {"all": ["common/css/forms/stars.css"]}
+
+
 class EnhancedSelectMixin(forms.Select):
     # - add the "class: enhanced" attribute to the select widget
     # - if `description_field` is set, set data-description on options
