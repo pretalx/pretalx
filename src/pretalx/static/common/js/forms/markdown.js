@@ -54,6 +54,56 @@ const initMarkdown = (element) => {
     element.querySelectorAll("input[role=tab]").forEach((tab) => {
         tab.addEventListener("change", updateTabPanels)
     })
+
+    // Keyboard shortcuts
+    const toolbar = element.querySelector("markdown-toolbar")
+    if (!toolbar) return
+
+    const shortcutMap = {
+        b: "md-bold",
+        i: "md-italic",
+        e: "md-code",
+        k: "md-link",
+    }
+    const shiftShortcutMap = {
+        7: "md-ordered-list",
+        8: "md-unordered-list",
+    }
+
+    inputElement.addEventListener("keydown", (e) => {
+        if (!(e.ctrlKey || e.metaKey)) return
+
+        if (!e.shiftKey && shortcutMap[e.key]) {
+            e.preventDefault()
+            toolbar.querySelector(shortcutMap[e.key])?.click()
+        } else if (e.shiftKey && shiftShortcutMap[e.key]) {
+            e.preventDefault()
+            toolbar.querySelector(shiftShortcutMap[e.key])?.click()
+        }
+    })
+
+    // Ctrl+V: paste URL as markdown link when text is selected
+    inputElement.addEventListener("paste", (e) => {
+        const { selectionStart, selectionEnd } = inputElement
+        if (selectionStart === selectionEnd) return
+        const url = e.clipboardData.getData("text")
+        if (!url.startsWith("http://") && !url.startsWith("https://")) return
+        e.preventDefault()
+        const selected = inputElement.value.slice(selectionStart, selectionEnd)
+        document.execCommand("insertText", false, `[${selected}](${url})`)
+    })
+
+    // Ctrl+Shift+P: toggle Write/Preview (on wrapper so it works from preview too)
+    element.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "p") {
+            e.preventDefault()
+            const unchecked = element.querySelector("input[role=tab]:not(:checked)")
+            if (unchecked) {
+                unchecked.checked = true
+                unchecked.dispatchEvent(new Event("change", { bubbles: true }))
+            }
+        }
+    })
 }
 
 const checkForChanges = () => {
