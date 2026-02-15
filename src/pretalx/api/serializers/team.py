@@ -62,6 +62,8 @@ class TeamSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             "can_change_teams",
             "can_change_organiser_settings",
             "can_change_event_settings",
+            "can_view_speakers",
+            "can_view_submissions",
             "can_change_submissions",
             "is_reviewer",
             "force_hide_speaker_names",
@@ -104,6 +106,8 @@ class TeamSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             "can_change_teams",
             "can_change_organiser_settings",
             "can_change_event_settings",
+            "can_view_speakers",
+            "can_view_submissions",
             "can_change_submissions",
             "is_reviewer",
         )

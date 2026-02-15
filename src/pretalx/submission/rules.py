@@ -44,7 +44,18 @@ def orga_can_change_submissions(user, obj):
     return "can_change_submissions" in user.get_permissions_for_event(event)
 
 
-orga_can_view_submissions = orga_can_change_submissions | is_reviewer
+@rules.predicate
+def orga_can_view_submissions(user, obj):
+    event = getattr(obj, "event", None)
+    if not user or user.is_anonymous or not obj or not event:
+        return False
+    if user.is_administrator:
+        return True
+    if orga_can_change_submissions(user, obj) | is_reviewer(user, obj):
+        return True
+    return "can_view_submissions" in user.get_permissions_for_event(event)
+
+
 orga_or_reviewer_can_change_submission = orga_can_change_submissions | (
     is_reviewer & reviewer_can_change_submissions
 )

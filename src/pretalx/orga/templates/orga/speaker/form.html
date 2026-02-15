@@ -33,6 +33,7 @@ SPDX-FileContributor: Florian Mösch
 {% endblock alternate_link %}
 
 {% block content %}
+    {% has_perm "submission.orga_list_submission" request.user request.event as can_view_submissions %}
     {% has_perm "person.update_speakerprofile" request.user form.instance as can_edit_speaker %}
     {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
     {% has_perm "person.mark_arrived_speakerprofile" request.user request.event as can_mark_speaker %}
@@ -72,10 +73,14 @@ SPDX-FileContributor: Florian Mösch
             <ul>
                 {% for submission in submissions %}
                     <li>
-                        <a href="{{ submission.orga_urls.base }}">
-                            {{ submission.title }}
-                            ({% include "cfp/event/fragment_state.html" with state=submission.state %}{% if submission.pending_state %}, {% translate "pending" %}{% include "cfp/event/fragment_state.html" with state=submission.pending_state %}{% endif %})
-                        </a>
+                        {% if can_view_submissions %}
+                            <a href="{{ submission.orga_urls.base }}">
+                        {% endif %}
+                        {{ submission.title }}
+                        ({% include "cfp/event/fragment_state.html" with state=submission.state %}{% if submission.pending_state %}, {% translate "pending" %}{% include "cfp/event/fragment_state.html" with state=submission.pending_state %}{% endif %})
+                        {% if can_view_submissions %}
+                            </a>
+                        {% endif %}
                     </li>
                 {% endfor %}
             </ul>

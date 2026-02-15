@@ -54,6 +54,7 @@ from pretalx.submission.rules import (
     is_feedback_ready,
     is_speaker,
     orga_can_change_submissions,
+    orga_can_view_submissions,
     orga_or_reviewer_can_change_submission,
 )
 from pretalx.submission.signals import (
@@ -311,15 +312,15 @@ class Submission(GenerateCode, PretalxModel):
 
     class Meta:
         rules_permissions = {
-            "list": is_agenda_visible | orga_can_change_submissions | is_reviewer,
+            "list": is_agenda_visible | orga_can_view_submissions | is_reviewer,
             "list_featured": are_featured_submissions_visible
-            | orga_can_change_submissions,
+            | orga_can_view_submissions,
             "view": is_agenda_submission_visible
             | is_speaker
-            | orga_can_change_submissions
+            | orga_can_view_submissions
             | has_reviewer_access,
-            "view_public": is_agenda_submission_visible | orga_can_change_submissions,
-            "orga_list": orga_can_change_submissions | is_reviewer,
+            "view_public": is_agenda_submission_visible | orga_can_view_submissions,
+            "orga_list": orga_can_view_submissions | is_reviewer,
             "orga_update": orga_can_change_submissions,
             "review": has_reviewer_access & can_be_reviewed,
             "view_reviews": has_reviewer_access | orga_can_change_submissions,

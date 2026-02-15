@@ -28,6 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     {% if submission %}
         {% has_perm "submission.update_submission" request.user submission as can_edit_submission %}
         {% has_perm "submission.view_reviews_submission" request.user submission as can_view_reviews %}
+        {% has_perm 'submission.view_submissioncomment' request.user submission as can_view_comment %}
         {% has_perm "submission.review_submission" request.user submission as can_review %}
         {% has_perm "person.orga_list_speakerprofile" request.user request.event as can_view_speakers %}
         {% has_perm "mail.send_queuedmail" request.user request.event as can_send_mails %}
@@ -78,7 +79,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     {% translate "Reviews" %}
                 </a>
             {% endif %}
-            {% if request.event|get_feature_flag:"use_submission_comments" %}
+            {% if can_view_comment and request.event|get_feature_flag:"use_submission_comments" %}
                 <a role="tab" href="{{ submission.orga_urls.comments }}" {% if "submissions.comments" in url_name %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
                     {% translate "Comments" %}
                     {% with submission.comments.count as comment_count %}
