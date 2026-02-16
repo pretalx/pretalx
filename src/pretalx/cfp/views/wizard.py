@@ -4,8 +4,6 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: Raphael Michel
 
-import logging
-
 from django.contrib import messages
 from django.db import transaction
 from django.http import Http404
@@ -17,8 +15,7 @@ from django.views import View
 
 from pretalx.cfp.flow import cfp_session
 from pretalx.cfp.views.event import EventPageMixin
-from pretalx.common.exceptions import SendMailException
-from pretalx.common.text.phrases import phrases
+from pretalx.submission.tasks import task_send_initial_mails
 
 
 class SubmitStartView(EventPageMixin, View):
@@ -124,11 +121,13 @@ class SubmitWizard(EventPageMixin, View):
                 step.done(request, draft=draft)
 
         if not draft:
-            try:
-                request.submission.send_initial_mails(person=request.user)
-            except SendMailException as exception:
-                logging.getLogger("").warning(str(exception))
-                messages.warning(request, phrases.cfp.submission_email_fail)
+            task_send_initial_mails.apply_async(
+                kwargs={
+                    "submission_id": request.submission.pk,
+                    "person_id": request.user.pk,
+                },
+                countdown=60,
+            )
 
         return redirect(
             reverse("cfp:event.user.submissions", kwargs={"event": request.event.slug})
