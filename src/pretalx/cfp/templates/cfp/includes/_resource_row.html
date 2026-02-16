@@ -1,0 +1,34 @@
+<!--
+SPDX-FileCopyrightText: 2025-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+{% load i18n %}
+
+<div class="resource-option-row flip ml-auto d-flex">
+    <div class="d-flex flex-column flex-grow-1 mr-2 resource-option">
+        <div class="mb-2">
+            {{ form.description.as_field_group }}
+        </div>
+        {% if show_link or form.link.value %}
+            {{ form.link.as_field_group }}
+        {% elif form.stored_filename %}
+            <div class="form-group form-group-inline">
+                <label class="inline-form-label">{% translate "File" %}</label>
+                <div class="d-flex align-items-center ml-2 text-success">
+                    <i class="fa fa-file mr-2"></i>
+                    <span>{{ form.stored_filename }}</span>
+                </div>
+            </div>
+        {% else %} {# show_file or just no stored file #}
+            {{ form.resource.as_field_group }}
+        {% endif %}
+        <div class="resource-option-public mb-2 mt-2">
+            {{ form.is_public.as_field_group }}
+        </div>
+    </div>
+    <div class="resource-option-delete mt-3 pt-1">
+        <button type="button" class="btn btn-danger btn-sm mt-3" data-formset-delete-button>
+            <i class="fa fa-trash"></i>
+        </button>
+    </div>
+</div>
