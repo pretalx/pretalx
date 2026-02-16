@@ -93,28 +93,6 @@
     }
   }
 }
-#submitBar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: baseline;
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  background: var(--color-grey-lightest);
-  width: 100%;
-  z-index: 50;
-  > span {
-    font-size: 16px;
-    margin-right: 16px;
-    span {
-      font-weight: bold;
-      margin-right: 16px;
-    }
-  }
-  button {
-    margin: 16px;
-  }
-}
 .bulk-tag-controls {
   .form-group-inline {
     margin-bottom: 0;

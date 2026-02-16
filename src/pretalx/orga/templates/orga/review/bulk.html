@@ -16,6 +16,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <link rel="stylesheet" href="{% static "orga/css/ui/reviews.css" %}" />
 {% endblock stylesheets %}
 
+{% block scripts %}
+    <script defer src="{% static "vendored/htmx.min.js" %}"></script>
+    <script defer src="{% static "orga/js/forms/bulkreview.js" %}"></script>
+{% endblock scripts %}
+
 {% block content %}
     {% has_perm "person.reviewer_list_speakerprofile" request.user request.event as can_view_speakers %}
     <div class="alert alert-info">
@@ -50,52 +55,67 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
     {% include "orga/includes/review_filter_form.html" %}
 
-    <form method="post">
-        {% csrf_token %}
-        <div class="table-responsive-sm">
-            <table class="table table-sm table-flip table-sticky">
-                <thead>
-                    <tr>
-                        <th>{% translate "Title" %}</th>
-                        {% if can_view_speakers %}<th>{{ phrases.schedule.speakers }}</th>{% endif %}
-                        {% for category in categories %}<th>{{ category.name }}</th>{% endfor %}
-                        <th>{% translate "Comment" %}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in table %}
-                        <tr>
-                            <td>
-                                <a href="{{ row.submission.orga_urls.base }}">{{ row.submission.title }}</a>
-                            </td>
-                            {% if can_view_speakers %}
-                                <td>
-                                    {% for speaker in row.submission.sorted_speakers %}
-                                        {% include "orga/includes/user_name.html" with user=speaker lightbox=True %}<br>
-                                    {% endfor %}
-                                </td>
-                            {% endif %}
-                            {% for score in row.score_fields %}
-                                <td class="pt-2">
-                                    {% if score %}
-                                        {{ score.as_field_group }}
-                                    {% endif %}
-                                </td>
-                            {% endfor %}
-                            <td class="pt-2">
-                                {{ row.form.text.as_field_group }}
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan=10>{% translate "You don’t seem to have any proposals yet." %}</td>
-                        </tr>
+    {% partialdef bulk-review-row %}
+        <tr id="review-row-{{ row.submission.code }}">
+            <td>
+                <input type="hidden" name="_submission" value="{{ row.submission.code }}">
+                <a href="{{ row.submission.orga_urls.base }}">{{ row.submission.title }}</a>
+            </td>
+            {% if can_view_speakers %}
+                <td>
+                    {% for speaker in row.submission.sorted_speakers %}
+                        {% include "orga/includes/user_name.html" with user=speaker lightbox=True %}<br>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <div id="submitBar">
-            <button type="submit" class="btn btn-success">{{ phrases.base.save }}</button>
-        </div>
-    </form>
+                </td>
+            {% endif %}
+            {% for score in row.score_fields %}
+                <td class="pt-2">
+                    {% if score %}
+                        {{ score.as_field_group }}
+                    {% endif %}
+                </td>
+            {% endfor %}
+            <td class="pt-2">
+                {{ row.form.text.as_field_group }}
+            </td>
+            <td class="pt-2">
+                {% if row.form.non_field_errors %}
+                    <div class="text-danger small">{{ row.form.non_field_errors }}</div>
+                {% endif %}
+                <button type="button" class="btn btn-xs bulk-review-save mt-1 {% if row.state == "saved" %}btn-outline-success{% elif row.state == "error" %}btn-danger{% else %}btn-success{% endif %}" disabled
+                        hx-post="{{ request.path }}"
+                        hx-include="#review-row-{{ row.submission.code }}"
+                        hx-target="#review-row-{{ row.submission.code }}"
+                        hx-swap="outerHTML"
+                        hx-disabled-elt="this"
+                        title="{{ phrases.base.save }}">
+                    <i class="fa fa-check bulk-review-icon"></i>
+                    <i class="fa fa-cog animate-spin bulk-review-loading d-none"></i>
+                </button>
+            </td>
+        </tr>
+    {% endpartialdef %}
+
+    <div class="table-responsive-sm">
+        <table class="table table-sm table-flip table-sticky bulk-review-table">
+            <thead>
+                <tr>
+                    <th>{% translate "Title" %}</th>
+                    {% if can_view_speakers %}<th>{{ phrases.schedule.speakers }}</th>{% endif %}
+                    {% for category in categories %}<th>{{ category.name }}</th>{% endfor %}
+                    <th>{% translate "Comment" %}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in table %}
+                    {% partial bulk-review-row %}
+                {% empty %}
+                    <tr>
+                        <td colspan=10>{% translate "You don’t seem to have any proposals yet." %}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% endblock content %}

@@ -166,6 +166,55 @@ def test_reviewer_can_add_review_without_score(review_client, submission):
 
 
 @pytest.mark.django_db
+def test_reviewer_cannot_add_review_without_score_when_mandatory(
+    review_client, submission
+):
+    with scope(event=submission.event):
+        category = submission.event.score_categories.first()
+        submission.event.review_settings["score_mandatory"] = True
+        submission.event.save()
+    response = review_client.post(
+        submission.orga_urls.reviews,
+        follow=True,
+        data={
+            f"score_{category.id}": "",
+            "text": "LGTM",
+        },
+    )
+    assert response.status_code == 200
+    with scope(event=submission.event):
+        assert submission.reviews.count() == 0
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("action", ("skip_for_now", "abstain"))
+def test_reviewer_can_skip_review_with_required_fields(
+    review_client, submission, action
+):
+    with scope(event=submission.event):
+        category = submission.event.score_categories.first()
+        category.required = True
+        category.save()
+        submission.event.review_settings["text_mandatory"] = True
+        submission.event.save()
+    response = review_client.post(
+        submission.orga_urls.reviews,
+        data={
+            f"score_{category.id}": "",
+            "text": "",
+            "review_submit": action,
+        },
+    )
+    assert response.status_code == 302
+    with scope(event=submission.event):
+        if action == "abstain":
+            assert submission.reviews.count() == 1
+            assert submission.reviews.first().score is None
+        else:
+            assert submission.reviews.count() == 0
+
+
+@pytest.mark.django_db
 def test_reviewer_cannot_use_wrong_score(review_client, submission):
     with scope(event=submission.event):
         category = submission.event.score_categories.first()
@@ -648,6 +697,134 @@ def test_orga_can_export_reviews(review, orga_client):
     )
     assert response.status_code == 200
     assert review.text in response.text
+
+
+@pytest.mark.django_db
+def test_reviewer_can_bulk_review_via_htmx(review_client, review_user, submission):
+    with scope(event=submission.event):
+        bulk_url = submission.event.orga_urls.reviews + "bulk/"
+        category = submission.event.score_categories.first()
+        score = category.scores.filter(value=1).first()
+
+    response = review_client.post(
+        bulk_url,
+        data={
+            "_submission": submission.code,
+            f"{submission.code}-score_{category.id}": score.id,
+            f"{submission.code}-text": "Bulk LGTM",
+        },
+        headers={"HX-Request": "true"},
+    )
+    assert response.status_code == 200
+    assert "btn-outline-success" in response.content.decode()
+    with scope(event=submission.event):
+        assert submission.reviews.count() == 1
+        review = submission.reviews.first()
+        assert review.text == "Bulk LGTM"
+        assert review.user == review_user
+
+
+@pytest.mark.django_db
+def test_reviewer_bulk_review_htmx_invalid_submission(review_client, submission):
+    with scope(event=submission.event):
+        bulk_url = submission.event.orga_urls.reviews + "bulk/"
+
+    response = review_client.post(
+        bulk_url,
+        data={"_submission": "INVALID"},
+        headers={"HX-Request": "true"},
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_reviewer_bulk_review_htmx_validates_required_fields(
+    review_client, review_user, submission
+):
+    with scope(event=submission.event):
+        bulk_url = submission.event.orga_urls.reviews + "bulk/"
+        category = submission.event.score_categories.first()
+        category.required = True
+        category.save()
+        submission.event.review_settings["text_mandatory"] = True
+        submission.event.save()
+
+    response = review_client.post(
+        bulk_url,
+        data={
+            "_submission": submission.code,
+            f"{submission.code}-text": "",
+        },
+        headers={"HX-Request": "true"},
+    )
+    assert response.status_code == 200
+    assert "btn-danger" in response.content.decode()
+    with scope(event=submission.event):
+        assert submission.reviews.count() == 0
+
+
+@pytest.mark.django_db
+def test_reviewer_can_bulk_review_without_htmx(review_client, review_user, submission):
+    with scope(event=submission.event):
+        bulk_url = submission.event.orga_urls.reviews + "bulk/"
+        category = submission.event.score_categories.first()
+        score = category.scores.filter(value=1).first()
+
+    response = review_client.post(
+        bulk_url,
+        data={
+            "_submission": submission.code,
+            f"{submission.code}-score_{category.id}": score.id,
+            f"{submission.code}-text": "Non-HTMX review",
+        },
+    )
+    assert response.status_code == 302
+    assert response.url == bulk_url
+    with scope(event=submission.event):
+        assert submission.reviews.count() == 1
+        assert submission.reviews.first().text == "Non-HTMX review"
+
+
+@pytest.mark.django_db
+def test_reviewer_can_update_existing_bulk_review(
+    review_client, review_user, submission
+):
+    with scope(event=submission.event):
+        bulk_url = submission.event.orga_urls.reviews + "bulk/"
+        category = submission.event.score_categories.first()
+        old_score = category.scores.filter(value=1).first()
+        new_score = category.scores.filter(value=2).first()
+
+    # Create the initial review
+    review_client.post(
+        bulk_url,
+        data={
+            "_submission": submission.code,
+            f"{submission.code}-score_{category.id}": old_score.id,
+            f"{submission.code}-text": "First pass",
+        },
+        headers={"HX-Request": "true"},
+    )
+    with scope(event=submission.event):
+        assert submission.reviews.count() == 1
+
+    # Update the existing review
+    response = review_client.post(
+        bulk_url,
+        data={
+            "_submission": submission.code,
+            f"{submission.code}-score_{category.id}": new_score.id,
+            f"{submission.code}-text": "Revised opinion",
+        },
+        headers={"HX-Request": "true"},
+    )
+    assert response.status_code == 200
+    assert "btn-outline-success" in response.content.decode()
+    with scope(event=submission.event):
+        assert submission.reviews.count() == 1
+        review = submission.reviews.first()
+        assert review.text == "Revised opinion"
+        assert review.score == new_score.value
 
 
 @pytest.mark.django_db
