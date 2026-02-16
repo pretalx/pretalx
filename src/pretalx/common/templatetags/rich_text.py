@@ -138,6 +138,7 @@ NO_LINKS_CLEANER = bleach.Cleaner(
     protocols=ALLOWED_PROTOCOLS,
     strip=True,
 )
+PLAINTEXT_CLEANER = bleach.Cleaner(tags=set(), strip=True)
 
 
 STRIKETHROUGH_RE = "(~{2})(.+?)(~{2})"
@@ -177,6 +178,14 @@ def render_markdown_abslinks(text: str) -> str:
     """Process markdown and cleans HTML in a text input, but use absolute links instead
     of safelink redirects."""
     return render_markdown(text, cleaner=ABSLINK_CLEANER)
+
+
+def render_markdown_plaintext(text: str) -> str:
+    """Render markdown to HTML, then strip all tags to produce plain text."""
+    if not text:
+        return ""
+    result = PLAINTEXT_CLEANER.clean(md.reset().convert(str(text)))
+    return result.strip()
 
 
 @register.filter

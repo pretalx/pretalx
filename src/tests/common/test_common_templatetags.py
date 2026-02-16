@@ -6,7 +6,7 @@ from django_scopes import scope
 
 from pretalx.common.templatetags.copyable import copyable
 from pretalx.common.templatetags.html_signal import html_signal
-from pretalx.common.templatetags.rich_text import rich_text
+from pretalx.common.templatetags.rich_text import render_markdown_plaintext, rich_text
 from pretalx.common.templatetags.times import times
 from pretalx.common.templatetags.xmlescape import xmlescape
 
@@ -43,6 +43,22 @@ def test_common_templatetag_times(number, output):
 )
 def test_common_templatetag_xmlescape(input_, output):
     assert xmlescape(input_) == output
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    (
+        ("", ""),
+        (None, ""),
+        ("plain text", "plain text"),
+        ("**bold** and *italic*", "bold and italic"),
+        ("A [link](https://example.com) here", "A link here"),
+        ("Line 1\nLine 2", "Line 1\nLine 2"),
+        ("<script>alert('xss')</script>", "alert('xss')"),
+    ),
+)
+def test_render_markdown_plaintext(text, expected):
+    assert render_markdown_plaintext(text) == expected
 
 
 @pytest.mark.parametrize(

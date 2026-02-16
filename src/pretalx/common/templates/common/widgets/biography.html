@@ -1,0 +1,21 @@
+<!--
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+
+{% load i18n %}
+{% if suggestions %}
+    <div class="biography-suggestions mb-2 mt-1">
+        <label>{% translate "Use a biography from another event" %}</label>
+        {{ biographies|json_script:"biography-data" }}
+        <select class="enhanced biography-suggestion-select">
+            <option value="">---------</option>
+            {% for s in suggestions %}
+                <option value="{{ s.id }}" data-description="{{ s.preview }}">
+                    {{ s.event_name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+{% endif %}
+{% include "common/widgets/markdown.html" %}

@@ -6,6 +6,7 @@ from django import forms
 from django_scopes import scope
 
 from pretalx.common.forms.fields import HoneypotField
+from pretalx.common.forms.widgets import BiographyWidget, MarkdownWidget
 from pretalx.submission.forms.question import QuestionsForm
 from pretalx.submission.forms.submission import InfoForm
 from pretalx.submission.models import QuestionVariant
@@ -78,3 +79,49 @@ def test_honeypot_field_accepts_unchecked_value():
 def test_honeypot_field_accepts_empty_string():
     form = HoneypotTestForm(data={"honeypot": "", "content": "test"})
     assert form.is_valid()
+
+
+def test_biography_widget_without_suggestions():
+    widget = BiographyWidget()
+    ctx = widget.get_context("biography", "", {})
+    assert ctx["suggestions"] == []
+    assert ctx["biographies"] == {}
+    assert isinstance(widget, MarkdownWidget)
+
+
+def test_biography_widget_with_suggestions():
+    suggestions = [
+        {"id": 1, "event_name": "PyCon", "biography": "I am a **Python** developer."},
+        {"id": 2, "event_name": "JSConf", "biography": "I do JavaScript too."},
+    ]
+    widget = BiographyWidget(suggestions=suggestions)
+    ctx = widget.get_context("biography", "", {})
+    assert len(ctx["suggestions"]) == 2
+    assert ctx["suggestions"][0]["event_name"] == "PyCon"
+    assert ctx["suggestions"][0]["id"] == "1"
+    assert "biography" not in ctx["suggestions"][0]
+    assert "Python" in ctx["suggestions"][0]["preview"]
+    assert "**" not in ctx["suggestions"][0]["preview"]
+    assert ctx["biographies"]["1"] == "I am a **Python** developer."
+    assert ctx["biographies"]["2"] == "I do JavaScript too."
+
+
+def test_biography_widget_truncates_long_preview():
+    long_bio = "A" * 300
+    widget = BiographyWidget(
+        suggestions=[{"id": 1, "event_name": "Conf", "biography": long_bio}]
+    )
+    ctx = widget.get_context("biography", "", {})
+    preview = ctx["suggestions"][0]["preview"]
+    assert len(preview) == 201  # 200 chars + ellipsis
+    assert preview.endswith("…")
+
+
+def test_biography_widget_no_ellipsis_for_short_preview():
+    short_bio = "Short bio."
+    widget = BiographyWidget(
+        suggestions=[{"id": 1, "event_name": "Conf", "biography": short_bio}]
+    )
+    ctx = widget.get_context("biography", "", {})
+    preview = ctx["suggestions"][0]["preview"]
+    assert "…" not in preview
