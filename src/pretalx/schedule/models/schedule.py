@@ -63,6 +63,7 @@ class Schedule(PretalxModel):
             | (is_reviewer & can_view_speaker_names),
             "orga_view": orga_can_change_submissions
             | (is_reviewer & can_view_speaker_names),
+            "export": orga_can_change_submissions,
             "release": orga_can_change_submissions,
         }
 

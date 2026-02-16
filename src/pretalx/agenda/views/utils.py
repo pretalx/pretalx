@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def is_visible(exporter, request, public=False):
     if not public:
-        return request.user.has_perm("schedule.orga_view_schedule", request.event)
+        return request.user.has_perm("schedule.export_schedule", request.event)
     if not request.user.has_perm("schedule.list_schedule", request.event):
         return False
     if hasattr(exporter, "is_public"):
@@ -48,7 +48,7 @@ def find_schedule_exporter(request, name, public=False):
 
 
 def get_schedule_exporter_content(request, exporter_name, schedule):
-    is_organiser = request.user.has_perm("schedule.orga_view_schedule", request.event)
+    is_organiser = request.user.has_perm("schedule.export_schedule", request.event)
     exporter = find_schedule_exporter(request, exporter_name, public=not is_organiser)
     if not exporter:
         return

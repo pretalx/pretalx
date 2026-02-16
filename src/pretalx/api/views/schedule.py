@@ -70,7 +70,7 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
     lookup_value_regex = "[^/]+"
     permission_map = {
         "redirect_version": "schedule.list_schedule",
-        "get_exporter": "schedule.orga_view_schedule",
+        "get_exporter": "schedule.export_schedule",
     }
 
     def get_unversioned_serializer_class(self):

@@ -576,6 +576,15 @@ def test_track_limited_reviewer_cannot_access_schedule_export(
 
 
 @pytest.mark.django_db
+def test_reviewer_cannot_access_nonpublic_exporter(review_client, event, slot):
+    response = review_client.get(
+        reverse("agenda:export", kwargs={"event": event.slug, "name": "speakers.csv"}),
+        follow=True,
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
 def test_track_limited_reviewer_can_access_public_frab_json(
     client, review_user, event, slot, other_submission, track, other_track
 ):
