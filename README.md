@@ -63,7 +63,7 @@
 | src/pretalx/api/views/team.py                                              |       93 |        4 |        8 |        0 |     96% |83-84, 189-190 |
 | src/pretalx/api/views/upload.py                                            |       37 |        5 |        8 |        2 |     84% | 64, 75-78 |
 | src/pretalx/cfp/apps.py                                                    |        4 |        0 |        0 |        0 |    100% |           |
-| src/pretalx/cfp/flow.py                                                    |      532 |        8 |      148 |        7 |     98% |177, 445-447, 698, 712, 718->721, 779, 783, 799->801, 801->811 |
+| src/pretalx/cfp/flow.py                                                    |      645 |       14 |      206 |       15 |     96% |181, 260, 434->428, 483, 543, 545, 579->590, 581->580, 583-584, 620-622, 873, 887, 893->896, 954, 958, 974->976, 976->986 |
 | src/pretalx/cfp/forms/auth.py                                              |       26 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/cfp/forms/cfp.py                                               |       30 |        2 |       18 |        1 |     94% |    47, 53 |
 | src/pretalx/cfp/forms/submissions.py                                       |       43 |        4 |       10 |        1 |     87% |     53-56 |
@@ -291,7 +291,7 @@
 | src/tests/cfp/views/test\_cfp\_base.py                                     |       70 |        0 |        0 |        0 |    100% |           |
 | src/tests/cfp/views/test\_cfp\_user.py                                     |      799 |        0 |       12 |        0 |    100% |           |
 | src/tests/cfp/views/test\_cfp\_view\_flow.py                               |        0 |        0 |        0 |        0 |    100% |           |
-| src/tests/cfp/views/test\_cfp\_wizard.py                                   |      447 |        0 |       20 |        0 |    100% |           |
+| src/tests/cfp/views/test\_cfp\_wizard.py                                   |      604 |        0 |       34 |        0 |    100% |           |
 | src/tests/common/forms/test\_cfp\_forms\_utils.py                          |        5 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/forms/test\_cfp\_forms\_validators.py                     |       13 |        0 |        2 |        0 |    100% |           |
 | src/tests/common/forms/test\_common\_form\_widgets.py                      |       50 |        0 |        0 |        0 |    100% |           |
@@ -364,7 +364,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **34552** | **1882** | **5366** |  **756** | **92%** |           |
+| **TOTAL**                                                                  | **34822** | **1888** | **5438** |  **764** | **92%** |           |
 
 
 ## Setup coverage badge
