@@ -38,7 +38,7 @@ To install pretalx, you will need to provide the following dependencies:
   without redis and Celery, we strongly advise against it in production:
   without background workers, all tasks like sending emails, processing images,
   and generating exports will run inside the request/response cycle, making
-  pages noticeably slow and processing things in suboptimal order.
+  pages noticeably slow and processing things not in the optimal order.
 * `nodejs`_ and npm (usually bundled with nodejs). You’ll need a `supported
   version of nodejs`_.
 
