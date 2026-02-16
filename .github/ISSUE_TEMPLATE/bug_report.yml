@@ -11,46 +11,19 @@ body:
   - type: textarea
     id: current
     attributes:
-      label: Problem and impact
-      description: What problem you're running into? What impact does it have on you / your event?
+      label: Problem description
+      description: What problem you're running into? What impact does it have on your event? What steps are needed to reproduce the problem? Please include screenshots if applicable.
       placeholder: When trying to do ____, pretalx suddenly shows me an error saying "...".
-  - type: textarea
-    id: expected
-    attributes:
-      label: Expected behaviour
-      description: Sometimes bugs are subtle and the expected behaviour may need some explanation. Leave empty if it's just "Don't be broken."
-  - type: textarea
-    id: reproduction
-    attributes:
-      label: Steps to reproduce
-      description: "Please give as much context as possible: Are there any settings that impact this behaviour? Which stage is your event in?"
-      value: |
-        1.
-        2.
-        3.
-        4.
-  - type: textarea
-    id: screenshots
-    attributes:
-      label: Screenshots
-      description: If possible, show screenshots of the problem.
   - type: input
     id: link
     attributes:
-      label: Link
-      description: Link to the page where the bug occurs
+      label: Link/URL
   - type: input
-    id: browser
+    id: technical_information
     attributes:
-      label: Browser (software, desktop or mobile?) and version
-      description: Leave empty for backend problems
-  - type: input
-    id: os
-    attributes:
-      label: Operating system, dependency versions
-      description: Leave empty for frontend problems
+      label: Browser version, operating system
   - type: input
     id: version
     attributes:
-      label: Version
+      label: Pretalx version
       description: The pretalx version in use. (Leave empty if unknown.)
