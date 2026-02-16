@@ -49,7 +49,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endif %}
         {% endif %}
 
-        <form method="post" id="review-form">
+        {# novalidate: browser validation must be off because skip/abstain bypass #}
+        {# form validation server-side, and required fields would block submission #}
+        <form method="post" id="review-form" novalidate>
             {% csrf_token %}
             {% include "common/forms/errors.html" %}
             <div class="form-group row">

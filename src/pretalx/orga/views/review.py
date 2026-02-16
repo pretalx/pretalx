@@ -4,6 +4,7 @@
 from collections import defaultdict
 from contextlib import suppress
 
+from django import forms
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import (
@@ -396,6 +397,50 @@ class BulkReview(EventPermissionRequired, TemplateView):
             .prefetch_related("limit_tracks", "scores")
         )
 
+    @cached_property
+    def _categories_by_track(self):
+        result = defaultdict(list)
+        for category in self.categories:
+            for track in category.limit_tracks.all():
+                result[track.pk].append(category)
+            result[None].append(category)
+        return result
+
+    def _categories_for_submission(self, submission):
+        return (
+            self._categories_by_track[submission.track_id]
+            if submission.track_id
+            else []
+        ) + self._categories_by_track[None]
+
+    def _build_form(self, submission, instance=None, bind_data=False):
+        form = ReviewForm(
+            event=self.request.event,
+            user=self.request.user,
+            submission=submission,
+            read_only=False,
+            instance=instance,
+            prefix=submission.code,
+            categories=self._categories_for_submission(submission),
+            data=(self.request.POST if bind_data else None),
+            default_renderer=InlineFormRenderer,
+        )
+        # The default widget is the full MarkdownWidget with preview, editor row etc,
+        # which is a lot of clutter when you can see hundreds of these fields on a
+        # single page, so we are using a standard textarea here instead.
+        form.fields["text"].widget = forms.Textarea(attrs={"rows": 2})
+        return form
+
+    def _build_row(self, submission, form, state="initial"):
+        return {
+            "submission": submission,
+            "form": form,
+            "score_fields": [
+                form.get_score_field(category) for category in self.categories
+            ],
+            "state": state,
+        }
+
     @context
     @cached_property
     def forms(self):
@@ -407,26 +452,10 @@ class BulkReview(EventPermissionRequired, TemplateView):
             .select_related("submission")
             .prefetch_related("scores", "scores__category")
         }
-        categories = defaultdict(list)
-        for category in self.categories:
-            for track in category.limit_tracks.all():
-                categories[track.pk].append(category)
-            categories[None].append(category)
         return {
-            submission.code: ReviewForm(
-                event=self.request.event,
-                user=self.request.user,
-                submission=submission,
-                read_only=False,
-                allow_empty=True,
+            submission.code: self._build_form(
+                submission,
                 instance=own_reviews.get(submission.pk),
-                prefix=f"{submission.code}",
-                categories=(
-                    categories[submission.track_id] if submission.track_id else []
-                )
-                + categories[None],
-                data=(self.request.POST if self.request.method == "POST" else None),
-                default_renderer=InlineFormRenderer,
             )
             for submission in self.submissions
         }
@@ -435,27 +464,48 @@ class BulkReview(EventPermissionRequired, TemplateView):
     @cached_property
     def table(self):
         return [
-            {
-                "submission": submission,
-                "form": self.forms[submission.code],
-                "score_fields": [
-                    self.forms[submission.code].get_score_field(category)
-                    for category in self.categories
-                ],
-            }
+            self._build_row(submission, self.forms[submission.code])
             for submission in self.submissions
         ]
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        if not all(form.is_valid() for form in self.forms.values()):
-            messages.error(self.request, phrases.base.error_saving_changes)
-            return super().get(request, *args, **kwargs)
-        for form in self.forms.values():
+        submission_code = request.POST.get("_submission", "")
+        submission = self.submissions.filter(code=submission_code).first()
+        if not submission:
+            if is_htmx(request):
+                return HttpResponse(status=404)
+            messages.error(request, phrases.base.error_saving_changes)
+            return redirect(request.path)
+
+        instance = (
+            request.event.reviews.filter(user=request.user, submission=submission)
+            .prefetch_related("scores", "scores__category")
+            .first()
+        )
+        form = self._build_form(submission, instance=instance, bind_data=True)
+
+        if form.is_valid():
             if form.has_changed():
                 form.save()
-        messages.success(self.request, phrases.base.saved)
-        return super().get(request, *args, **kwargs)
+            if not is_htmx(request):
+                messages.success(request, phrases.base.saved)
+                return redirect(request.path)
+            row = self._build_row(submission, form, state="saved")
+        else:
+            if not is_htmx(request):
+                messages.error(request, phrases.base.error_saving_changes)
+                return redirect(request.path)
+            row = self._build_row(submission, form, state="error")
+
+        can_view_speakers = request.user.has_perm(
+            "person.reviewer_list_speakerprofile", request.event
+        )
+        return render(
+            request,
+            "orga/review/bulk.html#bulk-review-row",
+            {"row": row, "can_view_speakers": can_view_speakers},
+        )
 
 
 class BulkTagging(EventPermissionRequired, SubmissionListMixin, TemplateView):

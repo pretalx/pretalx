@@ -60,7 +60,6 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
         instance=None,
         categories=None,
         submission=None,
-        allow_empty=False,
         default_renderer=None,
         **kwargs,
     ):
@@ -68,16 +67,11 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
         self.user = user
         self.categories = categories
         self.submission = submission
-        self.allow_empty = allow_empty
         self.default_renderer = default_renderer or self.default_renderer
 
         super().__init__(*args, instance=instance, **kwargs)
 
-        # We validate existing score/text server-side to allow form-submit to skip/abstain
-        self.fields["text"].required = False
-        if self.event.review_settings["text_mandatory"]:
-            self.fields["text"].widget.attrs["class"] = "hide-optional"
-
+        self.fields["text"].required = self.event.review_settings["text_mandatory"]
         self.scores = (
             {
                 score.category: score.id
@@ -98,11 +92,7 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
     def build_score_field(
         self, category, read_only=False, initial=None, hide_optional=False
     ):
-        choices = (
-            [("-", _("No score"))]
-            if (not category.required or self.allow_empty)
-            else []
-        )
+        choices = [("-", _("No score"))] if not category.required else []
         choices.extend(
             (
                 score.id,
@@ -115,7 +105,7 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
 
         field = forms.ChoiceField(
             choices=choices,
-            required=False,
+            required=category.required,
             widget=forms.RadioSelect,
             disabled=read_only,
             initial=initial,
@@ -135,34 +125,19 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
             return self[f"score_{category.id}"]
 
     def clean(self):
-        # We have to run all validation in the clean method rather than in the
-        # clean_* methods, because we want to allow completely empty forms if
-        # allow_empty is True, but we still need to validate **all** fields if
-        # the form is not empty.
-
         cleaned_data = super().clean()
 
-        # Early exit if the form is completely empty
-        missing_data = [key for key, value in cleaned_data.items() if not value]
-        if len(missing_data) == len(self.fields) and self.allow_empty:
-            return cleaned_data
-
-        # This validation would normally run in the clean_text method
-        if (
-            not cleaned_data.get("text")
-            and self.event.review_settings["text_mandatory"]
-            and not self.allow_empty
-        ):
-            self.add_error("text", _("Please provide a review text!"))
-
-        # This validation would normally run in the clean_score_category_{pk} method
+        has_any_score = False
         for category in self.categories:
             key = f"score_{category.id}"
             score = cleaned_data.get(key)
-            if score in ("", "-", None) and category.required and not self.allow_empty:
-                self.add_error(key, _("Please provide a review score!"))
+            if score not in ("", "-", None):
+                has_any_score = True
             if score == "-":
                 cleaned_data[key] = ""
+
+        if not has_any_score and self.event.review_settings["score_mandatory"]:
+            self.add_error(None, _("Please provide at least one review score!"))
 
         return cleaned_data
 
