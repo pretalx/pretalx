@@ -265,9 +265,10 @@ triggered from an event context) and team invitations.
 The celery section
 ------------------
 
-Celery is not a requirement for pretalx. Celery runs as a separate process, and
-allows you to execute long-running tasks away from the usual request-response
-cycle.
+Celery runs as a separate process and handles long-running tasks like sending
+emails, processing images, and cleaning up files outside of the request/response
+cycle. In production, you should always configure and run Celery workers –
+without them, these tasks will block page loads and degrade user experience.
 
 .. warning:: If this config section is present, pretalx will assume that Celery
              workers exist and collect talks. If you include this section without

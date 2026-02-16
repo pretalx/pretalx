@@ -34,9 +34,11 @@ To install pretalx, you will need to provide the following dependencies:
   setups, we highly recommend using PostgreSQL.
 * A reverse proxy like nginx to allow HTTPS connections and serve
   files from the filesystem
-* A `redis`_ server. You can technically run pretalx without it, but you will
-  experience major performance problems, as redis is used for caching and to
-  run asynchronous tasks.
+* A `redis`_ server and **Celery workers**. While pretalx can technically run
+  without redis and Celery, we strongly advise against it in production:
+  without background workers, all tasks like sending emails, processing images,
+  and generating exports will run inside the request/response cycle, making
+  pages noticeably slow and processing things in suboptimal order.
 * `nodejs`_ and npm (usually bundled with nodejs). You’ll need a `supported
   version of nodejs`_.
 
@@ -147,10 +149,10 @@ Now, upgrade your pip and then install the required Python packages::
 | PostgreSQL      | ``python -m pip install --upgrade-strategy eager -U "pretalx[postgres]"`` |
 +-----------------+---------------------------------------------------------------------------+
 
-If you intend to run pretalx with asynchronous task runners or with redis as
-cache server, you can add ``[redis]`` to the installation command, which will
-pull in the appropriate dependencies. Please note that you should also use
-``pretalx[redis]`` when you upgrade pretalx in this case.
+For production setups, you should add ``[redis]`` to the installation command
+(e.g. ``pretalx[redis]`` or ``pretalx[postgres,redis]``), which will pull in
+the dependencies needed for caching and background task processing. Make sure
+to also use the same extras when you upgrade pretalx.
 
 Next, check that your configuration is ready for production::
 
@@ -191,10 +193,10 @@ adjust the content to fit your system::
     [Install]
     WantedBy=multi-user.target
 
-pretalx optionally runs with Celery, a service that allows for long-running
-tasks (like sending many emails) to be performed asynchronously in the
-background. We strongly recommend running pretalx with Celery workers, as some
-things, like cleaning up unused files, are otherwise not going to work.
+pretalx uses Celery to run tasks like sending emails, processing images, and
+cleaning up files in the background. In production, you should always run
+Celery workers – without them, these tasks will run inside the request/response
+cycle, causing slow page loads and degraded user experience.
 
 To run Celery workers, you’ll need a second service
 ``/etc/systemd/system/pretalx-worker.service`` with the following content::

@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :announcement:`admin` If you are running pretalx without Celery workers, you should set them up – without background workers, tasks like sending emails and processing images run inside the request/response cycle, causing noticeably slow page loads.
 - :feature:`orga:schedule,1606` The schedule editor now has a grid interval dropdown (60m/30m/15m/5m) next to the condensed/expanded toggle, in addition to the existing click-to-expand behaviour for finer time resolution.
 - :feature:`schedule` The schedule widget can now show resources (file uploads and links) like the pretalx session pages do.
 - :bug:`orga` Reviewers no longer have access to non-public data exporters, which are now restricted to organisers.
