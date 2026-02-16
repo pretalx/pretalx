@@ -12,10 +12,12 @@ from django.core.files import File
 from django_scopes import scope, scopes_disabled
 
 from pretalx.celery_app import app
+from pretalx.common.exceptions import SendMailException
 from pretalx.common.models.file import CachedFile
 from pretalx.common.text.path import safe_filename
 from pretalx.event.models import Event
-from pretalx.submission.models import Question
+from pretalx.person.models import User
+from pretalx.submission.models import Question, Submission
 
 LOGGER = logging.getLogger(__name__)
 
@@ -106,3 +108,25 @@ def export_question_files(*, question_id: int, cached_file_id: str):
             Path(tmp_zip_path).unlink()
 
     return cached_file_id
+
+
+@app.task(name="pretalx.submission.send_initial_mails")
+def task_send_initial_mails(*, submission_id: int, person_id: int):
+    with scopes_disabled():
+        submission = Submission.all_objects.filter(pk=submission_id).first()
+        person = User.objects.filter(pk=person_id).first()
+
+    if not submission:
+        LOGGER.warning(
+            "Could not find Submission ID %s for initial mails.", submission_id
+        )
+        return
+    if not person:
+        LOGGER.warning("Could not find User ID %s for initial mails.", person_id)
+        return
+
+    with scope(event=submission.event):
+        try:
+            submission.send_initial_mails(person=person)
+        except SendMailException as exception:
+            LOGGER.warning(str(exception))
