@@ -58,6 +58,7 @@ _DEFAULT_FIELDS = {
     "content_locale": {"visibility": "required"},
     "additional_speaker": {"visibility": "optional", "max": None},
     "tags": {"visibility": "do_not_ask", "min": None, "max": None},
+    "resources": {"visibility": "do_not_ask"},
 }
 
 

@@ -70,6 +70,10 @@ class TestWizard:
             "slot_count": slot_count,
             "submission_type": submission_type,
             "additional_speaker": additional_speaker or "",
+            "resource-TOTAL_FORMS": "0",
+            "resource-INITIAL_FORMS": "0",
+            "resource-MIN_NUM_FORMS": "0",
+            "resource-MAX_NUM_FORMS": "1000",
         }
         if track:
             submission_data["track"] = getattr(track, "pk", track)
@@ -995,3 +999,261 @@ class TestWizardDrafts:
             assert draft.notes == "Draft notes"
 
         assert "Draft Submission" in response.content.decode()
+
+
+class TestWizardResources(TestWizard):
+    RESOURCE_MANAGEMENT_DATA = {
+        "resource-TOTAL_FORMS": "0",
+        "resource-INITIAL_FORMS": "0",
+        "resource-MIN_NUM_FORMS": "0",
+        "resource-MAX_NUM_FORMS": "1000",
+    }
+
+    def _enable_resources(self, event, visibility="optional"):
+        with scope(event=event):
+            submission_type = SubmissionType.objects.filter(event=event).first().pk
+            event.cfp.fields["resources"] = {"visibility": visibility}
+            event.cfp.save()
+        return submission_type
+
+    def _submission_data(
+        self, submission_type, title="Talk with resources", resources=None, **extra
+    ):
+        data = {
+            "title": title,
+            "content_locale": "en",
+            "description": "Description",
+            "abstract": "Abstract",
+            "notes": "Notes",
+            "slot_count": 1,
+            "submission_type": submission_type,
+            "additional_speaker": "",
+            **self.RESOURCE_MANAGEMENT_DATA,
+            **extra,
+        }
+        if resources:
+            data["resource-TOTAL_FORMS"] = str(len(resources))
+            for i, res in enumerate(resources):
+                for key, value in res.items():
+                    data[f"resource-{i}-{key}"] = value
+        return data
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize(
+        ("resource", "expect_link"),
+        (
+            (
+                {
+                    "description": "My slides",
+                    "link": "https://example.com/slides.pdf",
+                    "is_public": "on",
+                },
+                True,
+            ),
+            (
+                {"description": "My slides", "is_public": "on"},
+                False,
+            ),
+        ),
+        ids=["link", "file_upload"],
+    )
+    def test_wizard_with_resource(self, event, client, user, resource, expect_link):
+        submission_type = self._enable_resources(event)
+        if not expect_link:
+            resource["resource"] = SimpleUploadedFile(
+                "slides.pdf", b"fake pdf content", content_type="application/pdf"
+            )
+
+        client.force_login(user)
+        response, current_url = self.perform_init_wizard(client, event=event)
+        info_url = current_url
+        data = self._submission_data(submission_type, resources=[resource])
+        response, current_url = self.get_response_and_url(
+            client, current_url, data=data
+        )
+        assert "/profile/" in current_url
+
+        # Navigate back to info step and verify resource data is preserved
+        response, current_url = self.get_response_and_url(
+            client, info_url, method="GET"
+        )
+        assert "/info/" in current_url
+        content = response.content.decode()
+        assert "My slides" in content
+        if expect_link:
+            assert "https://example.com/slides.pdf" in content
+
+        # Resubmit info step (re-create file for file uploads)
+        if not expect_link:
+            data = self._submission_data(
+                submission_type,
+                resources=[
+                    {
+                        "description": "My slides",
+                        "is_public": "on",
+                        "resource": SimpleUploadedFile(
+                            "slides.pdf",
+                            b"fake pdf content",
+                            content_type="application/pdf",
+                        ),
+                    }
+                ],
+            )
+        response, current_url = self.get_response_and_url(client, info_url, data=data)
+        assert "/profile/" in current_url
+
+        response, current_url = self.perform_profile_form(
+            client, response, current_url, event=event
+        )
+        with scope(event=event):
+            sub = Submission.objects.last()
+            assert sub.title == "Talk with resources"
+            assert sub.resources.count() == 1
+            result = sub.resources.first()
+            assert result.description == "My slides"
+            assert result.is_public is True
+            if expect_link:
+                assert result.link == "https://example.com/slides.pdf"
+            else:
+                assert result.resource
+                assert not result.link
+
+    @pytest.mark.django_db
+    def test_wizard_with_resources_optional_none_provided(self, event, client, user):
+        submission_type = self._enable_resources(event)
+
+        client.force_login(user)
+        response, current_url = self.perform_init_wizard(client, event=event)
+        response, current_url = self.perform_info_wizard(
+            client,
+            response,
+            current_url,
+            submission_type=submission_type,
+            next_step="profile",
+            event=event,
+        )
+        response, current_url = self.perform_profile_form(
+            client, response, current_url, event=event
+        )
+        with scope(event=event):
+            sub = Submission.objects.last()
+            assert sub.title == "Submission title"
+            assert sub.resources.count() == 0
+
+    @pytest.mark.django_db
+    def test_wizard_with_resources_required(self, event, client, user):
+        submission_type = self._enable_resources(event, visibility="required")
+
+        client.force_login(user)
+        response, current_url = self.perform_init_wizard(client, event=event)
+
+        # Submit without resources — should stay on info step
+        data = self._submission_data(
+            submission_type,
+            title="Talk without resources",
+        )
+        response, current_url = self.get_response_and_url(
+            client, current_url, data=data
+        )
+        assert "/info/" in current_url
+
+        # Now submit with a resource — should proceed
+        data = self._submission_data(
+            submission_type,
+            title="Talk without resources",
+            resources=[
+                {
+                    "description": "Required resource",
+                    "link": "https://example.com/required",
+                    "is_public": "on",
+                }
+            ],
+        )
+        response, current_url = self.get_response_and_url(
+            client, current_url, data=data
+        )
+        assert "/profile/" in current_url
+        response, current_url = self.perform_profile_form(
+            client, response, current_url, event=event
+        )
+        with scope(event=event):
+            sub = Submission.objects.last()
+            assert sub.resources.count() == 1
+
+    @pytest.mark.django_db
+    def test_wizard_resource_link_preserved_on_back_navigation(
+        self, event, client, user
+    ):
+        submission_type = self._enable_resources(event)
+
+        client.force_login(user)
+        response, current_url = self.perform_init_wizard(client, event=event)
+        info_url = current_url
+        data = self._submission_data(
+            submission_type,
+            resources=[
+                {
+                    "description": "My slides",
+                    "link": "https://example.com/slides.pdf",
+                    "is_public": "on",
+                }
+            ],
+        )
+        response, current_url = self.get_response_and_url(
+            client, current_url, data=data
+        )
+        assert "/profile/" in current_url
+
+        # Navigate back to info step
+        response, current_url = self.get_response_and_url(
+            client, info_url, method="GET"
+        )
+        assert "/info/" in current_url
+        content = response.content.decode()
+        assert "My slides" in content
+        assert "https://example.com/slides.pdf" in content
+
+        # Resubmit the info step and complete the wizard
+        response, current_url = self.get_response_and_url(client, info_url, data=data)
+        assert "/profile/" in current_url
+        response, current_url = self.perform_profile_form(
+            client, response, current_url, event=event
+        )
+        with scope(event=event):
+            sub = Submission.objects.last()
+            assert sub.title == "Talk with resources"
+            assert sub.resources.count() == 1
+            resource = sub.resources.first()
+            assert resource.description == "My slides"
+            assert resource.link == "https://example.com/slides.pdf"
+
+    @pytest.mark.django_db
+    def test_wizard_draft_with_resources(self, event, client, user):
+        submission_type = self._enable_resources(event)
+
+        client.force_login(user)
+        _response, current_url = self.perform_init_wizard(client, event=event)
+        data = self._submission_data(
+            submission_type,
+            title="Draft with resources",
+            resources=[
+                {
+                    "description": "Draft slides",
+                    "link": "https://example.com/draft-slides",
+                    "is_public": "on",
+                }
+            ],
+            action="draft",
+        )
+        _response, current_url = self.get_response_and_url(
+            client, current_url, data=data
+        )
+        assert "/me/submissions/" in current_url
+        with scope(event=event):
+            sub = Submission.all_objects.filter(state=SubmissionStates.DRAFT).last()
+            assert sub is not None
+            assert sub.title == "Draft with resources"
+            assert sub.resources.count() == 1
+            resource = sub.resources.first()
+            assert resource.description == "Draft slides"
+            assert resource.link == "https://example.com/draft-slides"

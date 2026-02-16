@@ -1,0 +1,13 @@
+<!--
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+
+{% extends "cfp/event/submission_base.html" %}
+
+{% block inner %}
+    {{ form }}
+    {% if resources_enabled and resource_formset %}
+        {% include "cfp/includes/submission_resources_form.html" with formset=resource_formset can_edit=True %}
+    {% endif %}
+{% endblock inner %}

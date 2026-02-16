@@ -43,7 +43,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </div>
     </div>
     {% block cfp_form %}
-        <form method="post"{% if form.is_multipart %} enctype="multipart/form-data"{% endif %}>
+        <form method="post"{% if form.is_multipart or force_multipart %} enctype="multipart/form-data"{% endif %}>
             {% csrf_token %}
             {{ wizard.management_form }}
             <div class="d-flex align-items-start">

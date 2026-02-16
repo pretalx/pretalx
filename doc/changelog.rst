@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`cfp,1316` Resources (file uploads and links) can now be added during initial proposal submission.
 - :bug:`cfp,2306` Confirmation emails for new submissions no longer contain broken image links when image processing runs asynchronously.
 - :announcement:`admin` If you are running pretalx without Celery workers, you should set them up – without background workers, tasks like sending emails and processing images run inside the request/response cycle, causing noticeably slow page loads.
 - :feature:`orga:schedule,1606` The schedule editor now has a grid interval dropdown (60m/30m/15m/5m) next to the condensed/expanded toggle, in addition to the existing click-to-expand behaviour for finer time resolution.

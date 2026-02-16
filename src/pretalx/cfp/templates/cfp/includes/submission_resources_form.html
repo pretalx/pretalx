@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             {% if form.instance.link %}
                                 {{ form.link.as_field_group }}
                             {% else %}
-                                <label class="inline-form-label" for="id_resource-1-link">{% translate "File" %}</label>
+                                <label class="inline-form-label">{% translate "File" %}</label>
                                 <div>
                                     <i class="fa fa-paperclip mr-1 ml-2 pt-1"></i> <a href="{{ form.instance.url }}">{{ form.instance.filename }}</a>
                                 </div>
