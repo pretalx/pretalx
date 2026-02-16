@@ -640,9 +640,6 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
 
     @context
     def reviews(self):
-        question_queryset = questions_for_user(
-            self.request.event, self.request.user, for_answers=True
-        )
         return [
             {
                 "score": review.display_score,
@@ -651,7 +648,7 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
                 "user": review.user,
                 "answers": [
                     review.answers.filter(question=question).first()
-                    for question in question_queryset
+                    for question in self.qform.queryset
                 ],
             }
             for review in self.submission.reviews.exclude(
