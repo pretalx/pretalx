@@ -74,7 +74,7 @@
 | src/pretalx/cfp/views/locale.py                                            |       20 |        1 |        6 |        2 |     88% |21->40, 32 |
 | src/pretalx/cfp/views/robots.py                                            |        5 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/cfp/views/user.py                                              |      370 |       19 |       66 |       11 |     93% |143, 165, 235-237, 261, 304-306, 379, 384, 387->381, 427-428, 469->473, 477, 489, 491, 508->510, 620-621, 649 |
-| src/pretalx/cfp/views/wizard.py                                            |       82 |        0 |       36 |        0 |    100% |           |
+| src/pretalx/cfp/views/wizard.py                                            |       76 |        0 |       36 |        0 |    100% |           |
 | src/pretalx/common/apps.py                                                 |        6 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/auth.py                                                 |       20 |        3 |        4 |        1 |     83% | 31-32, 35 |
 | src/pretalx/common/cache.py                                                |       58 |        4 |       10 |        0 |     94% |56, 59, 62, 65 |
@@ -262,7 +262,7 @@
 | src/pretalx/submission/phrases.py                                          |        6 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/submission/rules.py                                            |      190 |       11 |       56 |        5 |     93% |13-14, 30-31, 174-175, 189, 196, 225, 237, 266 |
 | src/pretalx/submission/signals.py                                          |        5 |        0 |        0 |        0 |    100% |           |
-| src/pretalx/submission/tasks.py                                            |       70 |       13 |       16 |        4 |     80% |30-31, 35, 73, 80-83, 93-94, 101-103 |
+| src/pretalx/submission/tasks.py                                            |       88 |       13 |       20 |        4 |     84% |32-33, 37, 75, 82-85, 95-96, 103-105 |
 | src/tests/agenda/test\_agenda\_permissions.py                              |       22 |        0 |        2 |        0 |    100% |           |
 | src/tests/agenda/test\_agenda\_schedule\_export.py                         |      340 |        0 |        8 |        0 |    100% |           |
 | src/tests/agenda/test\_agenda\_widget.py                                   |       41 |        0 |        2 |        0 |    100% |           |
@@ -362,9 +362,9 @@
 | src/tests/submission/test\_review\_model.py                                |       19 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_model.py                            |      261 |        0 |        2 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
-| src/tests/submission/test\_submission\_tasks.py                            |       64 |        0 |        0 |        0 |    100% |           |
+| src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **34506** | **1882** | **5362** |  **756** | **92%** |           |
+| **TOTAL**                                                                  | **34552** | **1882** | **5366** |  **756** | **92%** |           |
 
 
 ## Setup coverage badge
