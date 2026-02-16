@@ -150,19 +150,20 @@ djhtml *args="":
     find src -name "*.html" -not -path '*/vendored/*' -not -path '*/node_modules/*' -not -path '*/htmlcov/*' -not -path '*/local/*' -not -path '*dist/*' -not -path "*.min.html" -not -path '*/pretalx-schedule' -print | xargs {{ uv_dev }} djhtml {{ args }}
 
 
-# Run all formatters and linters
+# Run ruff format
 [group('linting')]
 format *args="":
     {{ uv_dev }} ruff format {{ args }}
 
-# Run all formatters and linters
+# Run ruff check
 [group('linting')]
 check *args="":
     {{ uv_dev }} ruff check {{ args }}
 
 # Run all formatters and linters
 [group('linting')]
-fmt: format check
+[parallel]
+fmt: format check djhtml
 
 # Run all code quality checks
 [group('linting')]
