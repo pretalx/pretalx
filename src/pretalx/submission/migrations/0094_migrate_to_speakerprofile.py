@@ -8,11 +8,12 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("person", "0039_remove_user_avatar_fields"),
+        ("person", "0034_speakerprofile_and_profilepicture"),
         ("submission", "0093_speakerrole_position"),
     ]
 
     operations = [
+        # SpeakerRole: add speaker FK, make user nullable
         migrations.AddField(
             model_name="speakerrole",
             name="speaker",
@@ -33,6 +34,30 @@ class Migration(migrations.Migration):
                 on_delete=django.db.models.deletion.CASCADE,
                 related_name="speaker_roles",
                 to=settings.AUTH_USER_MODEL,
+            ),
+        ),
+        # Answer: add speaker FK
+        migrations.AddField(
+            model_name="answer",
+            name="speaker",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="answers",
+                to="person.speakerprofile",
+            ),
+        ),
+        # Feedback: add speaker_profile FK
+        migrations.AddField(
+            model_name="feedback",
+            name="speaker_profile",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="+",
+                to="person.speakerprofile",
             ),
         ),
     ]
