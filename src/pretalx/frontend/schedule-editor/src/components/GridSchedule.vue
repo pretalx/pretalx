@@ -61,6 +61,10 @@ export default {
 		displayMode: {
 			type: String,
 			default: 'expanded'
+		},
+		gridInterval: {
+			type: Number,
+			default: 30
 		}
 	},
 	data () {
@@ -102,7 +106,7 @@ export default {
 			return null
 		},
 		timeslices () {
-			const minimumSliceMins = 30
+			const minimumSliceMins = this.gridInterval
 			const slices = []
 			const slicesLookup = {}
 			const pushSlice = function (date, {hasStart = false, hasEnd = false, hasSession = false, isExpanded = false} = {}) {
@@ -174,7 +178,7 @@ export default {
 			if (this.hoverEndSlice) pushSlice(this.hoverEndSlice, {hasEnd: true})
 			const sliceIsFraction = function (slice) {
 				if (!slice) return
-				return slice.date.minutes() !== 0 && slice.date.minutes() !== minimumSliceMins
+				return slice.date.minutes() % minimumSliceMins !== 0
 			}
 			const sliceShouldDisplay = function (slice, index) {
 				if (!slice) return
@@ -221,14 +225,14 @@ export default {
 			// Inside normal conference hours, from 9am to 6pm, we show all half and full hour marks, plus all dates that were click-expanded, plus all start times of talks
 			// Outside, we only show the first slice, which can be expanded
 		  return this.timeslices.filter(slice => {
-			  return slice.date.minute() % 30 === 0 || this.expandedTimes.includes(slice.date) || this.oddTimeslices.includes(slice.date) || this.explicitAvailabilityTimes.some(availTime => slice.date.isSame(availTime))
+			  return slice.date.minute() % this.gridInterval === 0 || this.expandedTimes.includes(slice.date) || this.oddTimeslices.includes(slice.date) || this.explicitAvailabilityTimes.some(availTime => slice.date.isSame(availTime))
 		  })
 		},
 		oddTimeslices () {
 			const result = []
 			this.sessions.forEach(session => {
-				if (session.start.minute() % 30 !== 0) result.push(session.start)
-				if (session.end.minute() % 30 !== 0) result.push(session.end)
+				if (session.start.minute() % this.gridInterval !== 0) result.push(session.start)
+				if (session.end.minute() % this.gridInterval !== 0) result.push(session.end)
 			})
 			return [...new Set(result)]
 		},
@@ -253,10 +257,10 @@ export default {
 							result.push(endTime)
 						}
 
-						// Add 30-minute intervals within the availability range
+						// Add intervals within the availability range
 						const current = startTime.clone()
 						while (current.isBefore(endTime)) {
-							current.add(30, 'minutes')
+							current.add(this.gridInterval, 'minutes')
 							if (current.isSameOrBefore(endTime)) {
 								const intervalKey = current.format()
 								if (!seen.has(intervalKey)) {
@@ -286,7 +290,7 @@ export default {
 				} else if (slice.datebreak) {
 					height = datebreakHeight
 				} else if (next) {
-					height = Math.min(maxHeight, next.date.diff(slice.date, 'minutes') * baseMultiplier)
+					height = Math.max(12, Math.min(maxHeight, next.date.diff(slice.date, 'minutes') * baseMultiplier))
 				}
 				return `[${slice.name}] minmax(${height}px, auto)`
 			}).join(' ')
@@ -371,7 +375,30 @@ export default {
 		},
 	},
 	watch: {
-		currentDay: 'changeDay'
+		currentDay: 'changeDay',
+		gridInterval () {
+			// Find the first visible full-hour timeslice and remember its viewport offset
+			let anchorSliceName = null
+			let anchorOffset = 0
+			const scrollTop = this.scrollParent.scrollTop
+			for (const slice of this.visibleTimeslices) {
+				if (slice.date.minute() !== 0 || slice.datebreak) continue
+				const el = this.$refs[slice.name]?.[0]
+				if (!el) continue
+				if (el.offsetTop >= scrollTop) {
+					anchorSliceName = slice.name
+					anchorOffset = el.offsetTop - scrollTop
+					break
+				}
+			}
+			this.expandedTimes = []
+			this.$nextTick(() => {
+				if (!anchorSliceName) return
+				const el = this.$refs[anchorSliceName]?.[0]
+				if (!el) return
+				this.scrollParent.scrollTop = el.offsetTop - anchorOffset
+			})
+		}
 	},
 	async mounted () {
 		await this.$nextTick()
@@ -424,12 +451,12 @@ export default {
 				this.expandedTimes.push(slice.date.clone().add(5, 'm'))
 			} else {
 				const end = this.visibleTimeslices[index + 1].date.clone()
-				// if next time slice is within 30 minutes, set interval to 5 minutes, otherwise to 30 minutes
+				// if next time slice is within the grid interval, set interval to 5 minutes, otherwise to the grid interval
 				let interval = 0
-				if (end.diff(slice.date, 'minutes') <= 30) {
+				if (end.diff(slice.date, 'minutes') <= this.gridInterval) {
 					interval = 5
 				} else {
-					interval = 30
+					interval = this.gridInterval
 				}
 				const time = slice.date.clone().add(interval, 'm')
 				while (time.isBefore(end)) {
@@ -486,6 +513,7 @@ export default {
 			return classes
 		},
 		isSliceExpandable (slice) {
+			if (this.gridInterval <= 5) return false
 			const index = this.visibleTimeslices.indexOf(slice)
 			if (index + 1 === this.visibleTimeslices.length) return false
 			const nextSlice = this.visibleTimeslices[index + 1]
