@@ -198,31 +198,32 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
 def schedule_messages(request, **kwargs):
     """This view is cached for a day, as it is small and non-critical, but loaded synchronously."""
     strings = {
+        "clear_all": _("Clear all"),
+        "clear_filters": _("Clear filters"),
         "favs_not_logged_in": _(
             "You're currently not logged in, so your favourited talks will only be stored locally in your browser."
         ),
         "favs_not_saved": _(
             "Your favourites could only be saved locally in your browser."
         ),
-        "jump_to_now": _("Jump to now"),
         "filter": _("Filter"),
         "filters": _("Filters"),
-        "clear_all": _("Clear all"),
-        "search": _("Search"),
-        "tracks": _("Tracks"),
+        "jump_to_now": _("Jump to now"),
         "languages": _("Languages"),
-        "tags": _("Tags"),
-        "recording": _("Recording"),
-        "not_recorded": _("Not recorded"),
-        "show_results": _("Show results"),
         "no_matching_sessions": _("No sessions match your current filters."),
-        "clear_filters": _("Clear filters"),
+        "not_recorded": _("Not recorded"),
+        "recording": _("Recording"),
         "schedule_load_error": _(
             "An error occurred while loading the schedule. Please try again later."
         ),
         "schedule_empty": _(
             "The schedule is not yet available. Please check back later!"
         ),
+        "show_results": _("Show results"),
+        "search": _("Search"),
+        "see_also": _("See also:"),
+        "tags": _("Tags"),
+        "tracks": _("Tracks"),
     }
     strings = {key: str(value) for key, value in strings.items()}
     return JsonResponse(strings)

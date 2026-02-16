@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`schedule` The schedule widget can now show resources (file uploads and links) like the pretalx session pages do.
 - :bug:`orga` Reviewers no longer have access to non-public data exporters, which are now restricted to organisers.
 - :feature:`cfp,2299` Markdown fields now support keyboard shortcuts for formatting (bold, italic, code, link, lists, preview toggle), and pasting a URL with text selected wraps it as a Markdown link.
 - :feature:`cfp,2299` In fields supporting Markdown, there is now a toolbar helping you with text formatting.
