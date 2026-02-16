@@ -11,6 +11,11 @@ SPDX-License-Identifier: Apache-2.0
 				button.mode-toggle-button(@click="toggleDisplayMode", :class="{'active': displayMode === 'condensed'}")
 					i.fa(:class="displayMode === 'condensed' ? 'fa-expand' : 'fa-compress'")
 					span.mode-label {{ displayMode === 'condensed' ? $t('Expanded View') : $t('Condensed View') }}
+				select.grid-interval-select(v-model.number="gridInterval", @change="onGridIntervalChange")
+					option(:value="60") 𐌎 60m
+					option(:value="30") 𐌎 30m
+					option(:value="15") 𐌎 15m
+					option(:value="5") 𐌎 5m
 			#schedule-action-wrapper-target
 		#main-wrapper
 			#unassigned.no-print(v-scrollbar.y="", @pointerenter="isUnassigning = true", @pointerleave="isUnassigning = false", :class="{'pinned': unassignedPanelPinned, 'collapse-container': displayMode === 'condensed'}")
@@ -51,6 +56,7 @@ SPDX-License-Identifier: Apache-2.0
 					:currentDay="currentDay",
 					:draggedSession="draggedSession",
 					:displayMode="displayMode",
+					:gridInterval="gridInterval",
 					@changeDay="currentDay = $event",
 					@startDragging="startDragging",
 					@rescheduleSession="rescheduleSession",
@@ -154,6 +160,7 @@ export default {
 			newSlotTooltip: '',
 			newSlotTooltipType: null,
 			displayMode: localStorage.getItem('scheduleDisplayMode') || 'expanded',
+			gridInterval: parseInt(localStorage.getItem('scheduleGridInterval'), 10) || 30,
 			unassignedPanelPinned: false,
 			getLocalizedString,
 			// i18next-parser doesn't have a pug parser / fails to parse translated
@@ -371,6 +378,9 @@ export default {
 		// TODO destroy observers
 	},
 	methods: {
+		onGridIntervalChange () {
+			localStorage.setItem('scheduleGridInterval', this.gridInterval)
+		},
 		toggleDisplayMode () {
 			const newMode = this.displayMode === 'expanded' ? 'condensed' : 'expanded'
 			this.displayMode = newMode
@@ -778,6 +788,7 @@ export default {
 				cursor: pointer
 				font-size: 14px
 				color: $clr-primary-text-light
+				white-space: nowrap
 				transition: all 0.2s
 				&:hover
 					background-color: $clr-grey-100
@@ -788,6 +799,22 @@ export default {
 					border-color: var(--color-primary)
 				.fa
 					font-size: 16px
+			.grid-interval-select
+				padding: 8px 16px
+				background-color: $clr-white
+				border: 1px solid $clr-dividers-light
+				border-radius: 4px
+				font-family: var(--font-family-title)
+				font-size: 14px
+				color: $clr-primary-text-light
+				cursor: pointer
+				transition: all 0.2s
+				&:hover
+					background-color: $clr-grey-100
+					border-color: var(--color-primary)
+				&:focus
+					outline: none
+					border-color: var(--color-primary)
 		#schedule-action-wrapper-target
 			display: flex
 			align-items: center
