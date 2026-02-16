@@ -2,7 +2,32 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.db import migrations
-from django.db.models import OuterRef, Subquery
+from django.db.models import Count, Max, OuterRef, Subquery
+
+
+def deduplicate_speaker_profiles(apps, schema_editor):
+    SpeakerProfile = apps.get_model("person", "SpeakerProfile")
+    # Find (user, event) pairs with duplicates
+    dupes = (
+        SpeakerProfile.objects.values("user", "event")
+        .annotate(count=Count("id"), max_id=Max("id"))
+        .filter(count__gt=1)
+    )
+    for dupe in dupes:
+        # Keep the profile with the highest ID, delete the rest
+        SpeakerProfile.objects.filter(
+            user_id=dupe["user"], event_id=dupe["event"]
+        ).exclude(id=dupe["max_id"]).delete()
+
+
+def populate_speaker_profile_fields(apps, schema_editor):
+    SpeakerProfile = apps.get_model("person", "SpeakerProfile")
+    User = apps.get_model("person", "User")
+    user_qs = User.objects.filter(pk=OuterRef("user_id"))
+    SpeakerProfile.objects.update(
+        code=Subquery(user_qs.values("code")[:1]),
+        name=Subquery(user_qs.values("name")[:1]),
+    )
 
 
 def populate_profile_pictures(apps, schema_editor):
@@ -61,10 +86,18 @@ def reverse_populate_profile_pictures(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("person", "0037_profilepicture"),
+        ("person", "0034_speakerprofile_and_profilepicture"),
     ]
 
     operations = [
+        migrations.RunPython(
+            deduplicate_speaker_profiles,
+            migrations.RunPython.noop,
+        ),
+        migrations.RunPython(
+            populate_speaker_profile_fields,
+            migrations.RunPython.noop,
+        ),
         migrations.RunPython(
             populate_profile_pictures, reverse_populate_profile_pictures
         ),

@@ -7,7 +7,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("submission", "0095_populate_speakerrole_speaker"),
+        ("submission", "0095_speakerprofile_data"),
     ]
 
     operations = [
@@ -37,6 +37,31 @@ class Migration(migrations.Migration):
                 through="submission.SpeakerRole",
                 to="person.speakerprofile",
                 verbose_name="Speakers",
+            ),
+        ),
+        migrations.RemoveField(
+            model_name="answer",
+            name="person",
+        ),
+        migrations.RemoveField(
+            model_name="feedback",
+            name="speaker",
+        ),
+        migrations.RenameField(
+            model_name="feedback",
+            old_name="speaker_profile",
+            new_name="speaker",
+        ),
+        migrations.AlterField(
+            model_name="feedback",
+            name="speaker",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="feedback",
+                to="person.speakerprofile",
+                verbose_name="Speaker",
             ),
         ),
     ]
