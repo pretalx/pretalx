@@ -1257,3 +1257,99 @@ class TestWizardResources(TestWizard):
             resource = sub.resources.first()
             assert resource.description == "Draft slides"
             assert resource.link == "https://example.com/draft-slides"
+
+    @pytest.mark.django_db
+    def test_wizard_draft_resources_shown_on_resume(self, event, client, user):
+        submission_type = self._enable_resources(event)
+        client.force_login(user)
+
+        # Create a draft with a resource
+        _response, current_url = self.perform_init_wizard(client, event=event)
+        data = self._submission_data(
+            submission_type,
+            title="Draft with resources",
+            resources=[
+                {
+                    "description": "Draft slides",
+                    "link": "https://example.com/draft-slides",
+                    "is_public": "on",
+                }
+            ],
+            action="draft",
+        )
+        self.get_response_and_url(client, current_url, data=data)
+        with scope(event=event):
+            sub = Submission.all_objects.filter(state=SubmissionStates.DRAFT).last()
+            code = sub.code
+
+        # Resume the draft via the restart URL
+        restart_url = f"/test/submit/restart-{code}/"
+        response, current_url = self.get_response_and_url(
+            client, restart_url, method="GET"
+        )
+        assert "/info/" in current_url
+        content = response.content.decode()
+        assert "Draft slides" in content
+        assert "https://example.com/draft-slides" in content
+
+    @pytest.mark.django_db
+    def test_wizard_draft_resources_preserved_after_submit(self, event, client, user):
+        submission_type = self._enable_resources(event)
+        client.force_login(user)
+
+        # Create a draft with a resource
+        _response, current_url = self.perform_init_wizard(client, event=event)
+        data = self._submission_data(
+            submission_type,
+            title="Draft with resources",
+            resources=[
+                {
+                    "description": "Draft slides",
+                    "link": "https://example.com/draft-slides",
+                    "is_public": "on",
+                }
+            ],
+            action="draft",
+        )
+        self.get_response_and_url(client, current_url, data=data)
+        with scope(event=event):
+            sub = Submission.all_objects.filter(state=SubmissionStates.DRAFT).last()
+            code = sub.code
+            resource_pk = sub.resources.first().pk
+
+        # Resume the draft via the restart URL
+        restart_url = f"/test/submit/restart-{code}/"
+        response, current_url = self.get_response_and_url(
+            client, restart_url, method="GET"
+        )
+        assert "/info/" in current_url
+
+        # Resubmit the info step with the existing resource data
+        data = self._submission_data(
+            submission_type,
+            title="Draft with resources",
+            resources=[
+                {
+                    "description": "Draft slides",
+                    "link": "https://example.com/draft-slides",
+                    "is_public": "on",
+                    "id": str(resource_pk),
+                }
+            ],
+            **{"resource-INITIAL_FORMS": "1"},
+        )
+        response, current_url = self.get_response_and_url(
+            client, current_url, data=data
+        )
+        assert "/profile/" in current_url
+
+        response, current_url = self.perform_profile_form(
+            client, response, current_url, event=event
+        )
+        with scope(event=event):
+            sub.refresh_from_db()
+            assert sub.state == SubmissionStates.SUBMITTED
+            assert sub.resources.count() == 1
+            resource = sub.resources.first()
+            assert resource.description == "Draft slides"
+            assert resource.link == "https://example.com/draft-slides"
