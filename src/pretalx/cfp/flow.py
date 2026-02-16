@@ -18,8 +18,9 @@ from django.contrib.auth import login
 from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import UploadedFile
 from django.db.models import Q
-from django.forms import ValidationError
-from django.http import HttpResponseNotAllowed
+from django.forms import FileField, ValidationError
+from django.forms.models import modelformset_factory
+from django.http import HttpResponseNotAllowed, QueryDict
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.functional import Promise, cached_property
@@ -37,8 +38,10 @@ from pretalx.common.text.serialize import json_roundtrip
 from pretalx.person.forms import SpeakerProfileForm, UserForm
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.forms import InfoForm, QuestionsForm
+from pretalx.submission.forms.resource import ResourceForm
 from pretalx.submission.models import (
     QuestionTarget,
+    Resource,
     SubmissionInvitation,
     SubmissionStates,
     SubmissionType,
@@ -104,6 +107,7 @@ def cfp_field_labels():
         "title": _("Title"),
         "additional_speaker": _("Additional speakers"),
         "availabilities": _("Availability"),
+        "resources": _("Resources"),
     }
 
 
@@ -230,21 +234,49 @@ class FormFlowStep(TemplateFlowStep):
     label_model = None
 
     def get_form_initial(self):
-        initial_data = self.cfp_session.get("initial", {}).get(self.identifier, {})
-        previous_data = self.cfp_session.get("data", {}).get(self.identifier, {})
-        return copy.deepcopy({**initial_data, **previous_data})
+        return copy.deepcopy(
+            self.cfp_session.get("initial", {}).get(self.identifier, {})
+        )
+
+    def get_form_data(self):
+        return copy.deepcopy(self.cfp_session.get("data", {}).get(self.identifier, {}))
 
     def get_form(self, from_storage=False):
+        stored_files = self.get_files()
         if self.request.method == "GET" or from_storage:
-            return self.form_class(
-                data=self.get_form_initial() if from_storage else None,
-                initial=self.get_form_initial(),
-                files=self.get_files(),
+            data = self.get_form_data()
+            form = self.form_class(
+                data=data or None,
+                initial=self.get_form_initial() if not data else {},
+                files=stored_files,
                 **self.get_form_kwargs(),
             )
-        return self.form_class(
-            data=self.request.POST, files=self.request.FILES, **self.get_form_kwargs()
-        )
+        else:
+            # Merge stored session files so previously uploaded files
+            # survive back-navigation without requiring re-upload.
+            files = self.request.FILES.copy()
+            for key, value in (stored_files or {}).items():
+                if key not in files:
+                    files[key] = value
+            form = self.form_class(
+                data=self.request.POST, files=files, **self.get_form_kwargs()
+            )
+        self._annotate_stored_filenames(form, stored_files)
+        return form
+
+    def _annotate_stored_filenames(self, form, stored_files):
+        if not stored_files:
+            return
+        for field_name, field_obj in form.fields.items():
+            if isinstance(field_obj, FileField) and field_name in stored_files:
+                stored_name = stored_files[field_name].name
+                note = (
+                    '<span class="stored-file-indicator">'
+                    '<i class="fa fa-file"></i> '
+                    f"{stored_name}</span><br>"
+                )
+                existing = field_obj.help_text or ""
+                field_obj.help_text = f"{note} {existing}".strip()
 
     def is_completed(self, request):
         self.request = request
@@ -259,8 +291,7 @@ class FormFlowStep(TemplateFlowStep):
         result["submission_title"] = previous_data.get("info", {}).get("title")
         return result
 
-    def post(self, request):
-        self.request = request
+    def is_valid(self):
         form = self.get_form()
         if not form.is_valid():
             error_message = "\n\n".join(
@@ -269,9 +300,15 @@ class FormFlowStep(TemplateFlowStep):
                 for key, values in form.errors.items()
             )
             messages.error(self.request, error_message)
-            return self.get(request)
+            return False
         self.set_data(form.cleaned_data)
         self.set_files(form.files)
+        return True
+
+    def post(self, request):
+        self.request = request
+        if not self.is_valid():
+            return self.get(request)
         next_url = self.get_next_url(request)
         return redirect(next_url) if next_url else None
 
@@ -362,6 +399,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
     identifier = "info"
     icon = "paper-plane"
     form_class = InfoForm
+    template_name = "cfp/event/submission_info.html"
     priority = 0
     field_keys = [
         "title",
@@ -376,6 +414,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
         "content_locale",
         "additional_speaker",
         "tags",
+        "resources",
     ]
     always_required_fields = {"title", "submission_type"}
     label_model = Submission
@@ -395,10 +434,129 @@ class InfoStep(DedraftMixin, FormFlowStep):
                     obj = model.objects.filter(event=self.request.event, pk=pk).first()
                     if obj:
                         result[field] = obj
+        return result
+
+    def get_form_data(self):
+        result = super().get_form_data()
         if "additional_speaker" in result and isinstance(
             result["additional_speaker"], list
         ):
             result["additional_speaker"] = ",".join(result["additional_speaker"])
+        return result
+
+    @cached_property
+    def _resources_enabled(self):
+        return self.event.cfp.request_resources
+
+    @cached_property
+    def _resources_required(self):
+        return self.event.cfp.require_resources
+
+    def _formset_has_resources(self, formset):
+        return any(
+            not f.cleaned_data.get("DELETE") for f in formset.forms if f.cleaned_data
+        )
+
+    def _get_stored_resource_files(self):
+        stored_files = self.get_files() or {}
+        return {
+            key: value
+            for key, value in stored_files.items()
+            if key.startswith("resource-")
+        }
+
+    def get_resource_formset(self, from_storage=False):
+        if not self._resources_enabled:
+            return None
+        formset_class = modelformset_factory(
+            Resource,
+            form=ResourceForm,
+            can_delete=True,
+            extra=0,
+        )
+        if self.request.method == "POST" and not from_storage:
+            # Merge stored session files for resources that weren't re-uploaded
+            files = self.request.FILES.copy()
+            for key, value in self._get_stored_resource_files().items():
+                if key not in files:
+                    files[key] = value
+            return formset_class(
+                data=self.request.POST,
+                files=files,
+                queryset=Resource.objects.none(),
+                prefix="resource",
+            )
+        stored = self.cfp_session.get("data", {}).get("info__resources", {})
+        if stored:
+            data = QueryDict(mutable=True)
+            data.update(stored)
+            return formset_class(
+                data=data,
+                files=self.get_files(),
+                queryset=Resource.objects.none(),
+                prefix="resource",
+            )
+        return formset_class(
+            queryset=Resource.objects.none(),
+            prefix="resource",
+        )
+
+    @cached_property
+    def resource_formset(self):
+        return self.get_resource_formset()
+
+    def is_valid(self):
+        form_valid = super().is_valid()
+        if not self._resources_enabled:
+            return form_valid
+        formset = self.resource_formset
+        formset_valid = formset.is_valid()
+        self.cfp_session["data"]["info__resources"] = {
+            key: value
+            for key, value in self.request.POST.items()
+            if key.startswith("resource-")
+        }
+        resource_files = {
+            key: value
+            for key, value in self.request.FILES.items()
+            if key.startswith("resource-")
+        }
+        if resource_files:
+            self.set_files(resource_files)
+        if (
+            formset_valid
+            and self._resources_required
+            and not self._formset_has_resources(formset)
+        ):
+            messages.error(self.request, _("Please add at least one resource."))
+            formset_valid = False
+        return form_valid and formset_valid
+
+    def is_completed(self, request):
+        self.request = request
+        if not self.get_form(from_storage=True).is_valid():
+            return False
+        if self._resources_required:
+            formset = self.get_resource_formset(from_storage=True)
+            if not formset or not formset.is_valid():
+                return False
+            if not self._formset_has_resources(formset):
+                return False
+        return True
+
+    def get_context_data(self, **kwargs):
+        result = super().get_context_data(**kwargs)
+        formset = self.resource_formset
+        if formset:
+            stored_files = self._get_stored_resource_files()
+            for form in formset.forms:
+                file_key = f"{form.prefix}-resource"
+                stored = stored_files.get(file_key)
+                form.stored_filename = stored.name if stored else None
+        result["resource_formset"] = formset
+        result["resources_enabled"] = self._resources_enabled
+        if self._resources_enabled:
+            result["force_multipart"] = True
         return result
 
     def done(self, request, draft=False):
@@ -412,6 +570,19 @@ class InfoStep(DedraftMixin, FormFlowStep):
         form.save()
         submission = form.instance
         submission.speakers.add(request.user)
+
+        if self._resources_enabled:
+            formset = self.get_resource_formset(from_storage=True)
+            if formset and formset.is_valid():
+                for resource_form in formset.forms:
+                    if (
+                        resource_form.cleaned_data
+                        and not resource_form.cleaned_data.get("DELETE")
+                    ):
+                        resource = resource_form.save(commit=False)
+                        resource.submission = submission
+                        resource.save()
+
         if draft:
             messages.success(
                 self.request,

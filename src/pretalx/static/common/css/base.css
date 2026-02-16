@@ -985,7 +985,22 @@ a, .fake-link {
 .mt-4 {
   margin-top: 1.5rem !important;
 }
-pl-0 {
+.gap-0 {
+  gap: 0 !important;
+}
+.gap-1 {
+  gap: 0.25rem !important;
+}
+.gap-2 {
+  gap: 0.5rem !important;
+}
+.gap-3 {
+  gap: 1rem !important;
+}
+.gap-4 {
+  gap: 1.5rem !important;
+}
+.pl-0 {
   padding-left: 0 !important;
 }
 .pl-1 {

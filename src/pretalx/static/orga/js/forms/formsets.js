@@ -24,11 +24,13 @@
             this.opts = { ...DEFAULTS, ...options };
 
             this.formset = element;
-            this.emptyForm = this.formset.querySelector(this.opts.emptyForm);
             this.body = this.formset.querySelector(this.opts.body);
-            this.addButton = this.formset.querySelector(this.opts.add);
+            this.addButtons = Array.from(this.formset.querySelectorAll(this.opts.add));
 
-            this.addButton.addEventListener('click', () => this.addForm());
+            this.addButtons.forEach((button) => {
+                const type = button.dataset.formsetAdd || null;
+                button.addEventListener('click', () => this.addForm(type));
+            });
             this.formsetPrefix = element.dataset.formsetPrefix;
             this.formset.addEventListener('formAdded', (e) => {
                 if (e.target.matches(this.opts.form)) {
@@ -54,15 +56,23 @@
             element._formset = this;
         }
 
-        addForm() {
+        getEmptyForm(type) {
+            if (type) {
+                return this.formset.querySelector(`${this.opts.emptyForm}[data-formset-empty-form="${type}"]`);
+            }
+            return this.formset.querySelector(this.opts.emptyForm);
+        }
+
+        addForm(type) {
             if (this.hasMaxForms()) {
                 throw new Error("MAX_NUM_FORMS reached");
             }
 
+            const emptyForm = this.getEmptyForm(type);
             const newIndex = this.totalFormCount();
             this.getManagementForm('TOTAL_FORMS').value = newIndex + 1;
 
-            let newFormHtml = this.emptyForm.innerHTML
+            let newFormHtml = emptyForm.innerHTML
                 .replace(new RegExp(this.opts.emptyPrefix, 'g'), newIndex)
                 .replace(/<\\\/script>/g, '</script>');
 
@@ -247,13 +257,9 @@
         }
 
         checkMaxForms() {
-            if (this.hasMaxForms()) {
-                this.formset.classList.add(this.opts.hasMaxFormsClass);
-                this.addButton.disabled = true;
-            } else {
-                this.formset.classList.remove(this.opts.hasMaxFormsClass);
-                this.addButton.disabled = false;
-            }
+            const maxed = this.hasMaxForms();
+            this.formset.classList.toggle(this.opts.hasMaxFormsClass, maxed);
+            this.addButtons.forEach((button) => { button.disabled = maxed; });
         }
 
         static getOrCreate(element, options) {

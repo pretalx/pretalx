@@ -85,6 +85,14 @@ small.form-text {
   margin-top: 0.25rem;
   display: block;
 }
+.stored-file-indicator {
+  display: inline-block;
+  color: var(--color-success-text);
+  margin-right: 0.5rem;
+  i.fa {
+    margin-right: 0.25rem;
+  }
+}
 .invalid-feedback {
   font-size: 0.875rem;
   color: var(--color-danger);
