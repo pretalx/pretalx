@@ -375,23 +375,22 @@ class FormFlowStep(TemplateFlowStep):
 class DedraftMixin:
     dedraft_key = "instance"
 
-    def get_form_kwargs(self):
-        result = super().get_form_kwargs()
+    @cached_property
+    def dedraft_submission(self):
         with suppress(Submission.DoesNotExist, KeyError):
             code = self.cfp_session.get("code")
-            if (
-                self.request.user.is_authenticated
-                and code
-                and (
-                    instance := Submission.all_objects.get(
-                        event=self.event,
-                        code=code,
-                        state=SubmissionStates.DRAFT,
-                        speakers__in=[self.request.user],
-                    )
+            if self.request.user.is_authenticated and code:
+                return Submission.all_objects.get(
+                    event=self.event,
+                    code=code,
+                    state=SubmissionStates.DRAFT,
+                    speakers__in=[self.request.user],
                 )
-            ):
-                result[self.dedraft_key] = instance
+
+    def get_form_kwargs(self):
+        result = super().get_form_kwargs()
+        if self.dedraft_submission:
+            result[self.dedraft_key] = self.dedraft_submission
         return result
 
 
@@ -465,9 +464,11 @@ class InfoStep(DedraftMixin, FormFlowStep):
             if key.startswith("resource-")
         }
 
-    def get_resource_formset(self, from_storage=False):
+    def get_resource_formset(self, from_storage=False, queryset=None):
         if not self._resources_enabled:
             return None
+        if queryset is None and self.dedraft_submission:
+            queryset = self.dedraft_submission.resources.all()
         formset_class = modelformset_factory(
             Resource,
             form=ResourceForm,
@@ -483,7 +484,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
             return formset_class(
                 data=self.request.POST,
                 files=files,
-                queryset=Resource.objects.none(),
+                queryset=queryset,
                 prefix="resource",
             )
         stored = self.cfp_session.get("data", {}).get("info__resources", {})
@@ -493,11 +494,11 @@ class InfoStep(DedraftMixin, FormFlowStep):
             return formset_class(
                 data=data,
                 files=self.get_files(),
-                queryset=Resource.objects.none(),
+                queryset=queryset,
                 prefix="resource",
             )
         return formset_class(
-            queryset=Resource.objects.none(),
+            queryset=queryset,
             prefix="resource",
         )
 
@@ -572,16 +573,19 @@ class InfoStep(DedraftMixin, FormFlowStep):
         submission.speakers.add(request.user)
 
         if self._resources_enabled:
-            formset = self.get_resource_formset(from_storage=True)
+            formset = self.get_resource_formset(
+                from_storage=True, queryset=submission.resources.all()
+            )
             if formset and formset.is_valid():
                 for resource_form in formset.forms:
-                    if (
-                        resource_form.cleaned_data
-                        and not resource_form.cleaned_data.get("DELETE")
-                    ):
-                        resource = resource_form.save(commit=False)
-                        resource.submission = submission
-                        resource.save()
+                    if resource_form.cleaned_data:
+                        if resource_form.cleaned_data.get("DELETE"):
+                            if resource_form.instance.pk:
+                                resource_form.instance.delete()
+                        else:
+                            resource = resource_form.save(commit=False)
+                            resource.submission = submission
+                            resource.save()
 
         if draft:
             messages.success(
