@@ -3,11 +3,13 @@
 
 import pytest
 from django.http import HttpResponseNotAllowed
-from django_scopes import scope
+from django_scopes import scope, scopes_disabled
 from i18nfield.strings import LazyI18nString
 
 from pretalx.cfp.flow import BaseCfPStep, CfPFlow, i18n_string
+from pretalx.common.forms.widgets import BiographyWidget, MarkdownWidget
 from pretalx.person.forms.profile import SpeakerProfileForm
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.forms.submission import InfoForm
 
 
@@ -274,3 +276,69 @@ def test_speaker_profile_form_avatar_required_matches_cfp(
         # Widget has hide-optional class when avatar is required
         widget_class = form.fields["avatar"].widget.attrs.get("class", "")
         assert ("hide-optional" in widget_class) is expect_hide_optional
+
+
+@pytest.mark.django_db
+def test_speaker_profile_form_shows_biography_suggestions(event, other_event, speaker):
+    with scopes_disabled():
+        SpeakerProfile.objects.create(
+            user=speaker,
+            event=other_event,
+            biography="I speak at **many** conferences.",
+            name=speaker.name,
+        )
+    with scope(event=event):
+        # Clear the existing profile's biography so suggestions are offered
+        profile = speaker.get_speaker(event)
+        profile.biography = ""
+        profile.save()
+        form = SpeakerProfileForm(event=event, user=speaker)
+        assert isinstance(form.fields["biography"].widget, BiographyWidget)
+
+
+@pytest.mark.django_db
+def test_speaker_profile_form_no_suggestions_when_biography_exists(
+    event, other_event, speaker
+):
+    with scopes_disabled():
+        SpeakerProfile.objects.create(
+            user=speaker,
+            event=other_event,
+            biography="Other bio",
+            name=speaker.name,
+        )
+    with scope(event=event):
+        # Existing profile already has a biography
+        form = SpeakerProfileForm(event=event, user=speaker)
+        assert isinstance(form.fields["biography"].widget, MarkdownWidget)
+        assert not isinstance(form.fields["biography"].widget, BiographyWidget)
+
+
+@pytest.mark.django_db
+def test_speaker_profile_form_no_suggestions_without_other_profiles(event, speaker):
+    with scope(event=event):
+        profile = speaker.get_speaker(event)
+        profile.biography = ""
+        profile.save()
+        form = SpeakerProfileForm(event=event, user=speaker)
+        # No other profiles exist, so no suggestions and widget stays as MarkdownWidget
+        assert isinstance(form.fields["biography"].widget, MarkdownWidget)
+        assert not isinstance(form.fields["biography"].widget, BiographyWidget)
+
+
+@pytest.mark.django_db
+def test_speaker_profile_form_no_suggestions_for_orga(event, other_event, speaker):
+    with scopes_disabled():
+        SpeakerProfile.objects.create(
+            user=speaker,
+            event=other_event,
+            biography="I speak at **many** conferences.",
+            name=speaker.name,
+        )
+    with scope(event=event):
+        profile = speaker.get_speaker(event)
+        profile.biography = ""
+        profile.save()
+        form = SpeakerProfileForm(event=event, user=speaker, is_orga=True)
+        assert isinstance(form.fields["biography"].widget, MarkdownWidget)
+        assert not isinstance(form.fields["biography"].widget, BiographyWidget)

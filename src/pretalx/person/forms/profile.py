@@ -20,6 +20,7 @@ from pretalx.common.forms.mixins import (
 )
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
+    BiographyWidget,
     EnhancedSelect,
     EnhancedSelectMultiple,
 )
@@ -33,6 +34,7 @@ from pretalx.person.models import (
 from pretalx.schedule.models import Availability
 from pretalx.submission.models import Question
 from pretalx.submission.models.submission import SubmissionStates
+from django_scopes import scopes_disabled
 
 
 def get_email_address_error():
@@ -128,6 +130,29 @@ class SpeakerProfileForm(
                 field_data["key"] for field_data in self.field_configuration.values()
             ]
             self._reorder_fields(field_order)
+
+        if (
+            "biography" in self.fields
+            and self.user
+            and not self.is_orga
+            and not getattr(self.instance, "biography", None)
+        ):
+            with scopes_disabled():
+                other_bios = list(
+                    SpeakerProfile.objects.filter(user=self.user)
+                    .exclude(event=self.event)
+                    .exclude(biography="")
+                    .exclude(biography__isnull=True)
+                    .values_list("pk", "event__name", "biography")
+                )
+            if other_bios:
+                suggestions = [
+                    {"id": pk, "event_name": name, "biography": bio}
+                    for pk, name, bio in other_bios
+                ]
+                self.fields["biography"].widget = BiographyWidget(
+                    suggestions=suggestions
+                )
 
         if self.is_bound and not self.is_valid() and "availabilities" in self.errors:
             self.data = self.data.copy()
