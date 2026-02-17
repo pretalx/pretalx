@@ -228,17 +228,17 @@ class ProfilePictureField(FileField):
         if value is None:
             return
 
+        if isinstance(value, UploadedFile):
+            instance.set_avatar(value)
+            return
+
         old_picture = instance.profile_picture
         new_picture = None
 
         if value is False:
-            # Remove profile picture
             new_picture = None
         elif isinstance(value, ProfilePicture):
             new_picture = value
-        elif isinstance(value, UploadedFile):
-            new_picture = ProfilePicture.objects.create(user=user, avatar=value)
-            new_picture.process_image("avatar", generate_thumbnail=True)
 
         if new_picture != old_picture:
             instance.profile_picture = new_picture
@@ -247,10 +247,9 @@ class ProfilePictureField(FileField):
                 # Update old picture to bump its last modified timestamp,
                 # so we can figure out when to clean it up.
                 old_picture.save(update_fields=["updated"])
-
-        if new_picture and not user.profile_picture:
-            user.profile_picture = new_picture
-            user.save(update_fields=["profile_picture"])
+            if new_picture and not user.profile_picture:
+                user.profile_picture = new_picture
+                user.save(update_fields=["profile_picture"])
 
 
 class ColorField(RegexField):

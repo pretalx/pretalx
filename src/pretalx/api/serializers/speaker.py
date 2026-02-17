@@ -1,8 +1,6 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from pathlib import Path
-
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions
 from rest_framework.serializers import (
@@ -21,7 +19,6 @@ from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import SpeakerProfile, User
-from pretalx.person.models.picture import ProfilePicture
 from pretalx.submission.models import QuestionTarget
 
 
@@ -137,17 +134,7 @@ class SpeakerUpdateSerializer(SpeakerOrgaSerializer):
             setattr(instance.user, key, value)
             instance.user.save(update_fields=[key])
         if avatar:
-            picture = instance.profile_picture
-            if not picture:
-                picture = ProfilePicture.objects.create(user=instance.user)
-                instance.profile_picture = picture
-                instance.save(update_fields=["profile_picture"])
-            if not instance.user.profile_picture:
-                instance.user.profile_picture = picture
-                instance.user.save(update_fields=["profile_picture"])
-            picture.avatar.save(Path(avatar.name).name, avatar, save=False)
-            picture.save(update_fields=["avatar"])
-            picture.process_image("avatar", generate_thumbnail=True)
+            instance.set_avatar(avatar)
         return instance
 
     def validate_email(self, value):

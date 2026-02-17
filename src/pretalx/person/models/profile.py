@@ -9,6 +9,7 @@ from pretalx.agenda.rules import can_view_schedule, is_speaker_viewable
 from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
 from pretalx.common.urls import EventUrls
+from pretalx.person.models.picture import ProfilePictureMixin
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import (
     can_mark_speakers_arrived,
@@ -18,7 +19,7 @@ from pretalx.person.rules import (
 from pretalx.submission.rules import orga_can_change_submissions
 
 
-class SpeakerProfile(GenerateCode, PretalxModel):
+class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
     """All :class:`~pretalx.event.models.event.Event` related data concerning
     a.
 
@@ -165,16 +166,6 @@ class SpeakerProfile(GenerateCode, PretalxModel):
         return self.all_answers.filter(question__is_visible_to_reviewers=True).order_by(
             "question__position"
         )
-
-    @cached_property
-    def avatar(self):
-        if self.profile_picture_id:
-            return self.profile_picture.avatar
-
-    @cached_property
-    def avatar_url(self):
-        if self.profile_picture_id:
-            return self.profile_picture.get_avatar_url(event=self.event)
 
     def _get_instance_data(self):
         data = {}

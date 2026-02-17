@@ -27,6 +27,7 @@ from rules.contrib.models import RulesModelBase, RulesModelMixin
 from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.models import TIMEZONE_CHOICES
 from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode, LogMixin
+from pretalx.person.models.picture import ProfilePictureMixin
 from pretalx.common.urls import EventUrls, build_absolute_uri
 from pretalx.person.rules import is_administrator
 from pretalx.person.signals import delete_user as delete_user_signal
@@ -88,6 +89,7 @@ def validate_username(value):
 
 
 class User(
+    ProfilePictureMixin,
     PermissionsMixin,
     RulesModelMixin,
     GenerateCode,
