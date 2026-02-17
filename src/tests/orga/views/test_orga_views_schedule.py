@@ -365,7 +365,7 @@ def test_room_list_num_queries(
         with scope(event=event):
             other_room.delete()
 
-    with django_assert_num_queries(21):
+    with django_assert_num_queries(20):
         response = orga_client.get(event.orga_urls.room_settings)
     assert response.status_code == 200
     assert room.name in response.text

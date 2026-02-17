@@ -48,7 +48,7 @@ def test_orga_can_see_submissions(
 def test_orga_can_see_single_submission(
     orga_client, event, submission, django_assert_num_queries
 ):
-    with django_assert_num_queries(33):
+    with django_assert_num_queries(30):
         response = orga_client.get(submission.orga_urls.base, follow=True)
     assert response.status_code == 200
     assert submission.title in response.text
@@ -58,7 +58,7 @@ def test_orga_can_see_single_submission(
 def test_orga_can_see_single_submission_speakers(
     orga_client, event, submission, django_assert_num_queries
 ):
-    with django_assert_num_queries(27):
+    with django_assert_num_queries(24):
         response = orga_client.get(submission.orga_urls.speakers, follow=True)
     assert response.status_code == 200
     assert submission.title in response.text
@@ -187,7 +187,7 @@ def test_orga_can_see_single_submission_feedback(
         with scope(event=event):
             Feedback.objects.create(talk=feedback.talk, review="I also liked it!")
 
-    with django_assert_num_queries(31):
+    with django_assert_num_queries(28):
         response = orga_client.get(feedback.talk.orga_urls.feedback, follow=True)
     assert response.status_code == 200
     assert feedback.review in response.text
@@ -904,7 +904,7 @@ def test_orga_can_see_all_feedback(
         with scope(event=event):
             Feedback.objects.create(talk=feedback.talk, review="Also great!")
 
-    with django_assert_num_queries(21):
+    with django_assert_num_queries(19):
         response = orga_client.get(event.orga_urls.feedback, follow=True)
     assert response.status_code == 200
     assert feedback.review in response.text
@@ -1046,7 +1046,7 @@ def test_can_see_tags(orga_client, tag, event, django_assert_num_queries, item_c
         with scope(event=event):
             Tag.objects.create(event=event, tag="Other Tag", color="#ff0000")
 
-    with django_assert_num_queries(21):
+    with django_assert_num_queries(20):
         response = orga_client.get(event.orga_urls.tags)
     assert response.status_code == 200
     assert tag.tag in response.text
@@ -1157,7 +1157,7 @@ def test_orga_can_see_submission_comments(
                 text="Second comment", user=submission.speakers.first().user
             )
 
-    with django_assert_num_queries(29):
+    with django_assert_num_queries(23):
         response = orga_client.get(submission.orga_urls.comments, follow=True)
     assert response.status_code == 200
     assert submission_comment.text in response.text
@@ -1213,7 +1213,7 @@ def test_orga_can_view_submission_history(
                 new_data={"title": "Newer Title"},
             )
 
-    with django_assert_num_queries(31):
+    with django_assert_num_queries(28):
         response = orga_client.get(submission.orga_urls.history, follow=True)
     assert response.status_code == 200
     assert "History" in response.text or "Activity" in response.text

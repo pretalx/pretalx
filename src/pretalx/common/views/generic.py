@@ -323,11 +323,14 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
             return self.permission_denied()
         return super().dispatch(request, *args, **kwargs)
 
-    def get_table_data(self):
+    @cached_property
+    def _table_data(self):
         return self.filter_queryset(self.get_queryset())
 
+    def get_table_data(self):
+        return self._table_data
+
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
         filtered_queryset = self.get_table_data()
         if not getattr(self, "table_class", None) and (
             paginate_by := self.get_paginate_by()
@@ -337,11 +340,10 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
             context = self.get_context_data(
                 page_obj=page,
                 paginator=page.paginator,
-                queryset=queryset,
             )
         else:
             self.object_list = filtered_queryset
-            context = self.get_context_data(queryset=queryset)
+            context = self.get_context_data()
         return self.render_to_response(context)
 
     def detail(self, request, *args, **kwargs):
@@ -671,7 +673,10 @@ class OrgaTableMixin(SingleTableMixin):
         # happens. super().get_table() calls RequestConfig.configure() which
         # paginates the table, so we create the table ourselves first.
         table_class = self.get_table_class()
-        table = table_class(data=self.get_table_data(), **kwargs)
+        data = getattr(self, "object_list", None)
+        if data is None:
+            data = self.get_table_data()
+        table = table_class(data=data, **kwargs)
         page_size = table.configure(self.request)
         self._table_page_size = page_size
         RequestConfig(

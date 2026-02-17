@@ -386,23 +386,55 @@ class User(
 
         :type event: :class:`~pretalx.event.models.event.Event`
         """
-        if permissions := self.event_permission_cache.get(event.pk):
-            return permissions
+        cached = self.event_permission_cache.get(event.pk)
+        if cached and "permissions" in cached:
+            return cached["permissions"]
         if self.is_administrator:
-            return {
-                "can_create_events",
-                "can_change_teams",
-                "can_change_organiser_settings",
-                "can_change_event_settings",
-                "can_change_submissions",
-                "is_reviewer",
+            self.event_permission_cache[event.pk] = {
+                "permissions": {
+                    "can_create_events",
+                    "can_change_teams",
+                    "can_change_organiser_settings",
+                    "can_change_event_settings",
+                    "can_change_submissions",
+                    "is_reviewer",
+                },
+                "reviewer_tracks": None,
+                "reviewer_team_pks": [],
             }
+            return self.event_permission_cache[event.pk]["permissions"]
         permissions = set()
         teams = event.teams.filter(members__in=[self])
-        if teams:
-            permissions = set().union(*[team.permission_set for team in teams])
-        self.event_permission_cache[event.pk] = permissions
+        reviewer_team_pks = []
+        for team in teams:
+            permissions |= team.permission_set
+            if team.is_reviewer:
+                reviewer_team_pks.append(team.pk)
+        entry = {"permissions": permissions, "reviewer_team_pks": reviewer_team_pks}
+        if cached is not None:
+            cached.update(entry)
+        else:
+            self.event_permission_cache[event.pk] = entry
         return permissions
+
+    def get_reviewer_tracks(self, event):
+        """Returns None for unrestricted reviewer access, or a frozenset of
+        Track objects. Lazily computed on first access and cached in
+        event_permission_cache."""
+        cached = self.event_permission_cache.get(event.pk)
+        if cached and "reviewer_tracks" in cached:
+            return cached["reviewer_tracks"]
+        self.get_permissions_for_event(event)
+        cached = self.event_permission_cache[event.pk]
+        reviewer_team_pks = cached["reviewer_team_pks"]
+        if not reviewer_team_pks:
+            cached["reviewer_tracks"] = frozenset()
+            return cached["reviewer_tracks"]
+        tracks = frozenset(
+            event.tracks.filter(limit_teams__in=reviewer_team_pks).distinct()
+        )
+        cached["reviewer_tracks"] = tracks or None
+        return cached["reviewer_tracks"]
 
     def regenerate_token(self) -> Token:
         """Generates a new API access token, deleting the old one."""

@@ -100,6 +100,15 @@ class SubmissionViewMixin(PermissionRequired):
             )
         )
 
+    def _get_lightweight_submission_queryset(self):
+        """select_related only, no prefetches. Use this in sub-views that
+        don't render speakers, tags, slots or answers (FeedbackList,
+        CommentList) – the full queryset is the default because
+        SubmissionContent needs all those relations for the main edit form."""
+        return Submission.objects.filter(event=self.request.event).select_related(
+            "event", "event__cfp", "submission_type", "track", "event__organiser"
+        )
+
     def get_queryset(self):
         return self._get_submission_queryset()
 
@@ -779,7 +788,9 @@ class SubmissionList(SubmissionListMixin, EventPermissionRequired, ListView):
     @context
     @cached_property
     def pending_changes(self):
-        return self.get_queryset().filter(pending_state__isnull=False).count()
+        return self.request.event.submissions.filter(
+            pending_state__isnull=False
+        ).count()
 
 
 class FeedbackList(SubmissionViewMixin, PaginationMixin, ListView):
@@ -794,7 +805,7 @@ class FeedbackList(SubmissionViewMixin, PaginationMixin, ListView):
     @cached_property
     def submission(self):
         return get_object_or_404(
-            self._get_submission_queryset(),
+            self._get_lightweight_submission_queryset(),
             code__iexact=self.kwargs.get("code"),
         )
 
@@ -1211,6 +1222,9 @@ class CommentList(SubmissionViewMixin, FormView):
     permission_required = "submission.view_submissioncomment"
     write_permission_required = "submission.create_submissioncomment"
     form_class = SubmissionCommentForm
+
+    def get_queryset(self):
+        return self._get_lightweight_submission_queryset()
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

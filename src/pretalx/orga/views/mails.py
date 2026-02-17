@@ -96,10 +96,10 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     def show_tracks(self):
         return self.request.event.get_feature_flag("use_tracks")
 
-    @context
-    @cached_property
-    def is_filtered(self):
-        return self.get_queryset().count() != self.request.event.pending_mails
+    def get_context_data(self, **kwargs):
+        result = super().get_context_data(**kwargs)
+        result["is_filtered"] = len(result["mails"]) != self.request.event.pending_mails
+        return result
 
     def get_filter_form(self):
         return QueuedMailFilterForm(
