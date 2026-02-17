@@ -281,6 +281,16 @@ def test_reviewer_cannot_edit_speaker(
 
 
 @pytest.mark.django_db
+def test_orga_can_sort_speakers_by_question(
+    orga_client, event, submission, speaker_question, speaker_answer
+):
+    response = orga_client.get(
+        event.orga_urls.speakers + f"?sort=question_{speaker_question.pk}", follow=True
+    )
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 2))
 def test_speaker_information_list_num_queries(
     orga_client, event, information, django_assert_num_queries, item_count

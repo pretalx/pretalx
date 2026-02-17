@@ -688,7 +688,7 @@ class QuestionColumn(TemplateColumn):
 
         if hasattr(queryset.model, "user"):
             answer_subquery = Answer.objects.filter(
-                person_id=OuterRef("user_id"), question_id=self.question.id
+                speaker_id=OuterRef("pk"), question_id=self.question.id
             ).values("answer")[:1]
         else:
             answer_subquery = Answer.objects.filter(
