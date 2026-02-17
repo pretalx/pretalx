@@ -153,6 +153,7 @@ class ReviewerSubmissionFilter:
                 "event",
                 "track",
                 "track__event",
+                "track__event__cfp",
                 "submission_type__event",
                 "submission_type__event__cfp",
             )
