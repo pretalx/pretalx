@@ -568,6 +568,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
             form.instance.state = SubmissionStates.DRAFT
         elif form.instance.state == SubmissionStates.DRAFT:
             form.instance.make_submitted(person=self.request.user)
+
         form.save()
         submission = form.instance
         submission.speakers.add(request.user)
@@ -620,13 +621,12 @@ class InfoStep(DedraftMixin, FormFlowStep):
                 except SendMailException as exception:
                     LOGGER.warning(str(exception))
                     messages.warning(self.request, phrases.cfp.submission_email_fail)
-
-        access_code = getattr(request, "access_code", None)
-        if access_code != submission.access_code:
-            submission.access_code = access_code
-            submission.save()
-            access_code.redeemed += 1
-            access_code.save()
+            access_code = getattr(request, "access_code", None)
+            if access_code != submission.access_code:
+                submission.access_code = access_code
+                submission.save()
+                access_code.redeemed += 1
+                access_code.save()
 
         request.submission = submission
 
