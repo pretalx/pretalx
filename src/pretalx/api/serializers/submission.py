@@ -26,12 +26,6 @@ from pretalx.submission.models import (
 )
 
 
-def _is_active_resource(r):
-    has_resource = r.resource and str(r.resource) not in ("", "None")
-    has_link = r.link is not None and r.link != ""
-    return has_resource or has_link
-
-
 @register_serializer()
 class ResourceSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     """
@@ -277,7 +271,7 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     def get_resources(self, obj):
         public_resources = self.context.get("public_resources", True)
         # Use prefetched resources, filter in Python to avoid busting prefetch cache
-        resources = [r for r in obj.resources.all() if _is_active_resource(r)]
+        resources = [r for r in obj.resources.all() if r.url]
         if public_resources:
             resources = [r for r in resources if r.is_public]
         resources.sort(key=lambda r: r.link or "")

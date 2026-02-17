@@ -290,6 +290,18 @@ def can_edit_mail(user, obj):
     return getattr(obj, "sent", False) is None
 
 
+class QueuedMailQuerySet(models.QuerySet):
+    def prefetch_users(self, event):
+        from pretalx.person.models.user import User  # noqa: PLC0415
+
+        return self.prefetch_related(
+            models.Prefetch(
+                "to_users",
+                queryset=User.objects.with_speaker_code(event),
+            )
+        )
+
+
 class QueuedMail(PretalxModel):
     """Emails in pretalx are rarely sent directly, hence the name QueuedMail.
 
@@ -362,6 +374,8 @@ class QueuedMail(PretalxModel):
         to="submission.Submission",
         related_name="mails",
     )
+
+    objects = QueuedMailQuerySet.as_manager()
 
     class Meta:
         rules_permissions = {

@@ -257,7 +257,7 @@ def test_update_field_order_creates_step_if_missing(event):
 
 
 @pytest.mark.parametrize(
-    ("visibility", "expect_hide_optional"),
+    ("visibility", "expect_required"),
     (
         ("required", True),
         ("optional", False),
@@ -265,17 +265,13 @@ def test_update_field_order_creates_step_if_missing(event):
 )
 @pytest.mark.django_db
 def test_speaker_profile_form_avatar_required_matches_cfp(
-    event, speaker, visibility, expect_hide_optional
+    event, speaker, visibility, expect_required
 ):
     with scope(event=event):
         event.cfp.fields["avatar"] = {"visibility": visibility}
         event.cfp.save()
         form = SpeakerProfileForm(event=event, user=speaker)
-        # Field itself is never required
-        assert form.fields["avatar"].required is False
-        # Widget has hide-optional class when avatar is required
-        widget_class = form.fields["avatar"].widget.attrs.get("class", "")
-        assert ("hide-optional" in widget_class) is expect_hide_optional
+        assert form.fields["avatar"].required is expect_required
 
 
 @pytest.mark.django_db

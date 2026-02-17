@@ -102,9 +102,7 @@ class SpeakerProfileForm(
             )
             self._update_cfp_texts(field)
 
-        if not self.event.cfp.request_avatar:
-            self.fields.pop("avatar", None)
-        elif "avatar" in self.fields:
+        if "avatar" in self.fields:
             current_picture = (
                 self.instance.profile_picture
                 if self.instance and self.instance.pk
@@ -112,17 +110,8 @@ class SpeakerProfileForm(
             )
             self.fields["avatar"].user = self.user
             self.fields["avatar"].current_picture = current_picture
-            self.fields["avatar"].require_picture = self.event.cfp.require_avatar
-            self.fields["avatar"].widget.user = self.user
-            self.fields["avatar"].widget.current_picture = current_picture
-            if self.is_orga:
-                self.fields["avatar"].upload_only = True
-                self.fields["avatar"].widget.upload_only = True
-            if self.event.cfp.require_avatar:
-                self.fields["avatar"].widget.attrs["class"] = (
-                    self.fields["avatar"].widget.attrs.get("class", "")
-                    + " hide-optional"
-                ).strip()
+            self.fields["avatar"].upload_only = self.is_orga
+            self.fields["avatar"].set_widget_data()
 
         # Re-apply field ordering now that user fields have been added
         if self.field_configuration:
@@ -216,7 +205,7 @@ class SpeakerProfileForm(
             "internal_notes",
         )
         public_fields = ["name", "biography", "avatar"]
-        request_require = {"biography", "availabilities"}
+        request_require = {"avatar", "biography", "availabilities"}
 
 
 class SpeakerAvailabilityForm(forms.Form):

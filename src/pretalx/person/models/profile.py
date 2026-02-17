@@ -63,6 +63,7 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
     )
     profile_picture = models.ForeignKey(
         "person.ProfilePicture",
+        verbose_name=_("Profile picture"),
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
@@ -173,7 +174,7 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
             data = {
                 "name": self.name or (self.user.name if self.user else None),
                 "email": self.user.email if self.user else None,
-                "avatar": (
+                "profile_picture": (
                     self.profile_picture.avatar.name
                     if self.profile_picture_id and self.profile_picture.avatar
                     else None

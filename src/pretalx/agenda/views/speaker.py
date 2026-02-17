@@ -59,13 +59,9 @@ class SpeakerView(PermissionRequired, TemplateView):
     @context
     @cached_property
     def speaker(self):
-        return (
-            SpeakerProfile.objects.filter(
-                event=self.request.event, code__iexact=self.kwargs["code"]
-            )
-            .select_related("user", "event", "profile_picture")
-            .first()
-        )
+        return self.request.event.submitters.filter(
+            code__iexact=self.kwargs["code"]
+        ).first()
 
     def get_permission_object(self):
         return self.speaker
@@ -121,13 +117,9 @@ class SpeakerTalksIcalView(PermissionRequired, DetailView):
     slug_field = "code"
 
     def get_object(self, queryset=None):
-        return (
-            SpeakerProfile.objects.filter(
-                event=self.request.event, code__iexact=self.kwargs["code"]
-            )
-            .select_related("user", "event")
-            .first()
-        )
+        return self.request.event.submitters.filter(
+            code__iexact=self.kwargs["code"]
+        ).first()
 
     def get(self, request, event, *args, **kwargs):
         if not self.request.event.current_schedule:

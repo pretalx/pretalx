@@ -42,7 +42,6 @@ from pretalx.api.versions import LEGACY
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
-from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import (
     Answer,
     Resource,
@@ -268,9 +267,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             # This is just during api doc creation
             return self.queryset
 
-        speakers_qs = SpeakerProfile.objects.filter(event=self.event).order_by(
-            "speaker_roles__position"
-        )
+        speakers_qs = self.event.submitters.order_by("speaker_roles__position")
         if self.check_expanded_fields("speakers.user"):
             speakers_qs = speakers_qs.select_related("user")
         prefetches = [

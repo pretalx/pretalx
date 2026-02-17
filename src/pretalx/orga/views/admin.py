@@ -24,7 +24,10 @@ from pretalx.common.views.generic import OrgaCRUDView
 from pretalx.common.views.mixins import PermissionRequired
 from pretalx.orga.forms.admin import UpdateSettingsForm
 from pretalx.orga.tables.admin import AdminUserTable
+from django_scopes import scopes_disabled
+
 from pretalx.person.models import User
+from pretalx.submission.models import Submission
 
 
 class AdminDashboard(PermissionRequired, TemplateView):
@@ -174,8 +177,11 @@ class AdminUserView(OrgaCRUDView):
             result["teams"] = self.object.teams.all().prefetch_related(
                 "organiser", "limit_events", "organiser__events"
             )
-            result["submissions"] = self.object.submissions.all()
-            result["last_actions"] = self.object.own_actions()[:10]
+            with scopes_disabled():
+                result["submissions"] = Submission.objects.filter(
+                    speakers__user=self.object
+                )
+                result["last_actions"] = self.object.own_actions()[:10]
             result["tablist"] = {
                 "teams": _("Teams"),
                 "submissions": _("Proposals"),

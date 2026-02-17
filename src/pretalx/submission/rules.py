@@ -251,14 +251,6 @@ def annotate_assigned(queryset, event, user):
     return queryset.annotate(is_assigned=Exists(Subquery(assigned)))
 
 
-def get_reviewer_tracks(event, user):
-    user.get_permissions_for_event(event)
-    reviewer_team_pks = user.event_permission_cache[event.pk]["reviewer_team_pks"]
-    if not reviewer_team_pks:
-        return event.tracks.none()
-    return event.tracks.filter(limit_teams__in=reviewer_team_pks).distinct()
-
-
 def limit_for_reviewers(
     queryset, event, user, reviewer_tracks=None, add_assignments=False
 ):
@@ -271,7 +263,7 @@ def limit_for_reviewers(
     if add_assignments:
         queryset = annotate_assigned(queryset, event, user)
     if reviewer_tracks is None:
-        reviewer_tracks = get_reviewer_tracks(event, user)
+        reviewer_tracks = user.get_reviewer_tracks(event)
     if reviewer_tracks:
         queryset = queryset.filter(track__in=reviewer_tracks)
     return queryset

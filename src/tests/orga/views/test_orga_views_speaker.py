@@ -57,7 +57,7 @@ def test_orga_can_access_speaker_page(
     # caches results in memory. Prior tests can populate this cache, saving
     # a query and making the count flaky without this reset.
     ContentType.objects.clear_cache()
-    with django_assert_num_queries(22):
+    with django_assert_num_queries(23):
         response = orga_client.get(url, follow=True)
     assert response.status_code == 200
     assert speaker_profile.name in response.text

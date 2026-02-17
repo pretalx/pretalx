@@ -27,9 +27,7 @@ class FeedbackWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         super().__init__(*args, **kwargs)
         if self.event:
             self.fields["submission"].queryset = self.event.talks
-            self.fields["speaker"].queryset = SpeakerProfile.objects.filter(
-                event=self.event, submissions__in=self.event.talks
-            ).distinct()
+            self.fields["speaker"].queryset = self.event.speakers
 
     def validate_submission(self, value):
         if not value.does_accept_feedback:

@@ -5,10 +5,37 @@ import json
 
 import pytest
 import responses
+from django.core.cache import cache
 from django.test import override_settings
 
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.person.models import User
+
+
+@pytest.mark.django_db
+def test_admin_user_detail_shows_submissions(administrator_client, speaker, submission):
+    response = administrator_client.get(f"/orga/admin/users/{speaker.code}/")
+    assert response.status_code == 200
+    assert submission.title in response.text
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("item_count", (1, 2))
+@override_settings(
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+)
+def test_admin_user_list_num_queries(
+    administrator_client, speaker, django_assert_num_queries, item_count
+):
+    cache.clear()
+    if item_count == 2:
+        User.objects.create_user(
+            email="jane2@speaker.org", password="speakerpwd1!", name="Jane Doe"
+        )
+    with django_assert_num_queries(8):
+        response = administrator_client.get("/orga/admin/users/?q=Jane")
+    assert response.status_code == 200
+    assert speaker.name in response.text
 
 
 @pytest.mark.django_db

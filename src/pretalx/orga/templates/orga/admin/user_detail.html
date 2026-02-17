@@ -63,9 +63,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
       </tr>
     </table>
     <div class="ml-auto">
-      {% if user.profile_picture and user.profile_picture.avatar %}
+      {% if user.avatar_url %}
         <div class="float-right">
-          <a href="{{ user.profile_picture.avatar.url }}" data-lightbox>
+          <a href="{{ user.avatar_url }}" data-lightbox>
             <img loading="lazy" width="100%" src="{{ user.profile_picture.avatar|thumbnail:"default" }}" alt="{% translate "Profile picture" %}">
           </a>
         </div>

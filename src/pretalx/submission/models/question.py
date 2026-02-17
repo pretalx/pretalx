@@ -448,9 +448,7 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
             submissions = filter_talks or self.event.submissions.all()
             return max(submissions.count() - answer_count, 0)
         if self.target == QuestionTarget.SPEAKER:
-            speakers = filter_speakers or SpeakerProfile.objects.filter(
-                submissions__event_id=self.event.pk
-            )
+            speakers = filter_speakers or self.event.submitters
             return max(speakers.count() - answer_count, 0)
         return 0
 

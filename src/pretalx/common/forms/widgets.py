@@ -12,8 +12,6 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from i18nfield.forms import I18nTextarea
 from django.db.models import Count
-from django.utils.safestring import mark_safe
-from django.utils.translation import gettext_lazy as _
 from django_scopes import scopes_disabled
 
 from pretalx.common.text.phrases import phrases

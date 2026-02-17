@@ -75,7 +75,6 @@ from pretalx.submission.models import (
 from pretalx.submission.models.submission import SpeakerRole
 from pretalx.submission.rules import (
     annotate_assigned,
-    get_reviewer_tracks,
     has_reviewer_access,
     limit_for_reviewers,
     orga_can_change_submissions,
@@ -152,7 +151,7 @@ class ReviewerSubmissionFilter:
     @cached_property
     def limit_tracks(self):
         if self.is_only_reviewer:
-            return get_reviewer_tracks(self.request.event, self.request.user)
+            return self.request.user.get_reviewer_tracks(self.request.event)
 
     def get_queryset(self, for_review=False):
         queryset = (

@@ -55,9 +55,7 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
     permission_required = "person.orga_list_speakerprofile"
 
     def get_filter_form(self):
-        any_arrived = SpeakerProfile.objects.filter(
-            event=self.request.event, has_arrived=True
-        ).exists()
+        any_arrived = self.request.event.submitters.filter(has_arrived=True).exists()
         return SpeakerFilterForm(
             self.request.GET, event=self.request.event, filter_arrival=any_arrived
         )
@@ -65,7 +63,7 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
     def get_queryset(self):
         qs = (
             speakers_for_user(self.request.event, self.request.user)
-            .select_related("event", "user", "profile_picture")
+            .select_related("event", "user", "profile_picture", "user__profile_picture")
             .annotate(
                 submission_count=Count(
                     "submissions",
@@ -144,13 +142,6 @@ class SpeakerViewMixin(PermissionRequired):
     @cached_property
     def object(self):
         return self.get_object()
-
-    def get_permission_object(self):
-        return self.object
-
-    @cached_property
-    def permission_object(self):
-        return self.get_permission_object()
 
 
 class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
@@ -249,7 +240,7 @@ class SpeakerPasswordReset(SpeakerViewMixin, ActionConfirmMixin, DetailView):
     action_confirm_label = phrases.base.password_reset_heading
     action_title = phrases.base.password_reset_heading
     action_text = _(
-        "Do your really want to reset this user's password? They won't be able to log in until they set a new password."
+        "Do your really want to reset this user’s password? They won’t be able to log in until they set a new password."
     )
 
     def action_object_name(self):
