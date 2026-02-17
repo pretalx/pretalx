@@ -139,20 +139,20 @@ class ProfilePictureField(FileField):
         *args,
         user=None,
         current_picture=None,
-        require_picture=False,
         upload_only=False,
         **kwargs,
     ):
         self.user = user
         self.current_picture = current_picture
-        self.require_picture = require_picture
         self.upload_only = upload_only
-        kwargs.setdefault("required", False)
         kwargs.setdefault("label", _("Profile picture"))
         super().__init__(*args, **kwargs)
-        self.widget.user = user
-        self.widget.current_picture = current_picture
-        self.widget.upload_only = upload_only
+
+    def set_widget_data(self):
+        self.widget.user = self.user
+        self.widget.current_picture = self.current_picture
+        self.widget.upload_only = self.upload_only
+        self.widget.is_required = self.required
 
     def clean(self, value, initial=None):
         if not isinstance(value, dict):
@@ -162,7 +162,7 @@ class ProfilePictureField(FileField):
         file = value.get("file")
 
         if action == "keep":
-            if self.require_picture and not self.current_picture:
+            if self.required and not self.current_picture:
                 raise ValidationError(
                     _("Please provide a profile picture!"),
                     code="required",
@@ -171,7 +171,7 @@ class ProfilePictureField(FileField):
             return None
 
         if action == "remove":
-            if self.require_picture:
+            if self.required:
                 raise ValidationError(
                     _("Please provide a profile picture!"),
                     code="required",

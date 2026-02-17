@@ -48,7 +48,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     </div>
                 {% endif %}
 
-                {% if widget.current_picture %}
+                {% if widget.current_picture and not widget.required %}
                     <div class="pp-dialog-footer">
                         <button type="button" class="pp-remove-btn">
                             <i class="fa fa-trash"></i> {% translate "Remove picture" %}

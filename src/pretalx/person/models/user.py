@@ -235,7 +235,7 @@ class User(
         except Exception:
             from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
 
-            speaker = SpeakerProfile(event=event, user=self)
+            speaker = SpeakerProfile(event=event, user=self, name=self.name)
             if self.pk:
                 speaker.save()
 
@@ -351,6 +351,17 @@ class User(
         if self.is_administrator:
             return Event.objects.all()
 
+        if "teams" in getattr(self, "_prefetched_objects_cache", {}):
+            events = {}
+            for team in self.teams.all():
+                if team.all_events:
+                    for event in team.organiser.events.all():
+                        events[event.pk] = event
+                else:
+                    for event in team.limit_events.all():
+                        events[event.pk] = event
+            return events.values()
+
         return Event.objects.filter(
             models.Q(
                 organiser_id__in=self.teams.filter(all_events=True).values_list(
@@ -432,9 +443,7 @@ class User(
         if not reviewer_team_pks:
             cached["reviewer_tracks"] = frozenset()
             return cached["reviewer_tracks"]
-        tracks = frozenset(
-            event.tracks.filter(limit_teams__in=reviewer_team_pks).distinct()
-        )
+        tracks = event.tracks.filter(limit_teams__in=reviewer_team_pks).distinct()
         cached["reviewer_tracks"] = tracks or None
         return cached["reviewer_tracks"]
 

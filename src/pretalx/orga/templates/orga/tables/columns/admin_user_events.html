@@ -2,13 +2,18 @@
 SPDX-FileCopyrightText: 2025-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 -->
+{% load i18n %}
 
-<ul>
-  {% for event in record.get_events_with_any_permission %}
-    <li>
-      <a href="{{ event.orga_urls.base }}">
-        {{ event.name }}
-      </a>
-    </li>
-  {% endfor %}
-</ul>
+{% if record.is_administrator %}
+  {% translate "All events" }
+{% else %}
+  <ul>
+    {% for event in record.get_events_with_any_permission %}
+      <li>
+        <a href="{{ event.orga_urls.base }}">
+          {{ event.name }}
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}

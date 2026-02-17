@@ -1,11 +1,10 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from functools import cached_property
-
 import django_tables2 as tables
 from django.db.models.functions import Lower
 from django.utils.html import format_html
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import (

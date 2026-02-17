@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.contrib import messages
-from django.db.models import Prefetch
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.functional import cached_property
@@ -44,7 +43,6 @@ from pretalx.orga.forms.mails import (
 )
 from pretalx.orga.tables.mail import MailTemplateTable, OutboxMailTable, SentMailTable
 from pretalx.submission.models import Submission, SubmissionStates
-from pretalx.person.models import User
 
 
 def get_send_mail_exceptions(request):
@@ -75,11 +73,8 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
 
     def get_queryset(self):
         qs = (
-            self.request.event.queued_mails.prefetch_related(
-                Prefetch(
-                    "to_users",
-                    queryset=User.objects.with_speaker_code(self.request.event),
-                ),
+            self.request.event.queued_mails.prefetch_users(self.request.event)
+            .prefetch_related(
                 "submissions",
                 "submissions__track",
                 "submissions__event",
@@ -136,11 +131,8 @@ class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
 
     def get_queryset(self):
         qs = (
-            self.request.event.queued_mails.prefetch_related(
-                Prefetch(
-                    "to_users",
-                    queryset=User.objects.with_speaker_code(self.request.event),
-                ),
+            self.request.event.queued_mails.prefetch_users(self.request.event)
+            .prefetch_related(
                 "submissions",
                 "submissions__track",
                 "submissions__event",
@@ -338,12 +330,7 @@ class MailDetail(PermissionRequired, CreateOrUpdateView):
 
     def get_object(self, queryset=None) -> QueuedMail:
         return (
-            self.request.event.queued_mails.prefetch_related(
-                Prefetch(
-                    "to_users",
-                    queryset=User.objects.with_speaker_code(self.request.event),
-                )
-            )
+            self.request.event.queued_mails.prefetch_users(self.request.event)
             .filter(pk=self.kwargs.get("pk"))
             .first()
         )

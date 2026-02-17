@@ -50,14 +50,14 @@ def other_profile_pictures(speaker):
 
 @pytest.mark.django_db
 def test_profile_picture_field_clean_keep():
-    field = ProfilePictureField()
+    field = ProfilePictureField(required=False)
     result = field.clean({"action": "keep", "file": None})
     assert result is None
 
 
 @pytest.mark.django_db
 def test_profile_picture_field_clean_remove():
-    field = ProfilePictureField()
+    field = ProfilePictureField(required=False)
     result = field.clean({"action": "remove", "file": None})
     assert result is False
 
@@ -96,21 +96,21 @@ def test_profile_picture_field_clean_upload_invalid_type():
 
 @pytest.mark.django_db
 def test_profile_picture_field_require_prevents_remove():
-    field = ProfilePictureField(require_picture=True)
+    field = ProfilePictureField(required=True)
     with pytest.raises(ValidationError):
         field.clean({"action": "remove", "file": None})
 
 
 @pytest.mark.django_db
 def test_profile_picture_field_require_no_existing():
-    field = ProfilePictureField(require_picture=True, current_picture=None)
+    field = ProfilePictureField(required=True, current_picture=None)
     with pytest.raises(ValidationError):
         field.clean({"action": "keep", "file": None})
 
 
 @pytest.mark.django_db
 def test_profile_picture_field_require_with_existing(profile_picture):
-    field = ProfilePictureField(require_picture=True, current_picture=profile_picture)
+    field = ProfilePictureField(required=True, current_picture=profile_picture)
     result = field.clean({"action": "keep", "file": None})
     assert result is None
 

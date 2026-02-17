@@ -77,7 +77,7 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
         empty_values=[""],
         order_by=Lower("user__name"),
         template_name="orga/includes/user_name.html",
-        template_context={"user": lambda record, table: record.user},
+        template_context={"user": lambda record, table: record},
     )
     code = tables.Column(
         verbose_name=_("ID"),

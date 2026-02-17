@@ -1028,6 +1028,7 @@ class Event(PretalxModel):
 
         return (
             SpeakerProfile.objects.filter(submissions__in=self.talks)
+            .select_related("event", "user", "profile_picture")
             .order_by("id")
             .distinct()
         )
@@ -1044,7 +1045,7 @@ class Event(PretalxModel):
 
         return (
             SpeakerProfile.objects.filter(submissions__in=self.submissions.all())
-            .select_related("event", "user")
+            .select_related("event", "user", "profile_picture")
             .order_by("id")
             .distinct()
         )
