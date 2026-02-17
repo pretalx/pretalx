@@ -178,11 +178,11 @@ def has_reviewer_access(user, obj):
     if not event or not event.active_review_phase:
         return False
     if event.active_review_phase.proposal_visibility == "all":
-        return event.teams.filter(
-            Q(limit_tracks__isnull=True) | Q(limit_tracks__in=[obj.track]),
-            members__in=[user],
-            is_reviewer=True,
-        ).exists()
+        reviewer_tracks = user.get_reviewer_tracks(event)
+        if reviewer_tracks is None:
+            return True
+        track_id = getattr(obj, "track_id", None)
+        return any(t.pk == track_id for t in reviewer_tracks)
     return user in obj.assigned_reviewers.all()
 
 
@@ -252,13 +252,11 @@ def annotate_assigned(queryset, event, user):
 
 
 def get_reviewer_tracks(event, user):
-    teams = event.teams.filter(
-        members__in=[user], limit_tracks__isnull=False
-    ).prefetch_related("limit_tracks", "limit_tracks__event")
-    tracks = set()
-    for team in teams:
-        tracks.update(team.limit_tracks.filter(event=event))
-    return tracks
+    user.get_permissions_for_event(event)
+    reviewer_team_pks = user.event_permission_cache[event.pk]["reviewer_team_pks"]
+    if not reviewer_team_pks:
+        return event.tracks.none()
+    return event.tracks.filter(limit_teams__in=reviewer_team_pks).distinct()
 
 
 def limit_for_reviewers(
@@ -275,7 +273,7 @@ def limit_for_reviewers(
     if reviewer_tracks is None:
         reviewer_tracks = get_reviewer_tracks(event, user)
     if reviewer_tracks:
-        return queryset.filter(track__in=reviewer_tracks)
+        queryset = queryset.filter(track__in=reviewer_tracks)
     return queryset
 
 

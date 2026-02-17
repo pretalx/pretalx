@@ -200,7 +200,10 @@ class Team(PretalxModel):
         to="Event", verbose_name=_("Limit permissions to these events"), blank=True
     )
     limit_tracks = models.ManyToManyField(
-        to="submission.Track", verbose_name=_("Limit to tracks"), blank=True
+        to="submission.Track",
+        verbose_name=_("Limit to tracks"),
+        blank=True,
+        related_name="limit_teams",
     )
     can_create_events = models.BooleanField(
         default=False, verbose_name=_("Can create events")

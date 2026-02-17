@@ -291,7 +291,7 @@ def test_speaker_information_list_num_queries(
                 event=event, title="Second Info", text="Also important"
             )
 
-    with django_assert_num_queries(27):
+    with django_assert_num_queries(24):
         response = orga_client.get(event.orga_urls.information)
     assert response.status_code == 200
     assert information.title in response.text

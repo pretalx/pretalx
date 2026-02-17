@@ -251,7 +251,7 @@ def test_teams_list_num_queries(
                 name="Extra Team", organiser=event.organiser, is_reviewer=True
             )
 
-    with django_assert_num_queries(14):
+    with django_assert_num_queries(12):
         response = orga_client.get(event.organiser.orga_urls.teams)
     assert response.status_code == 200
     assert "Organisers" in response.text

@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="team",
             name="limit_tracks",
-            field=models.ManyToManyField(blank=True, to="submission.Track"),
+            field=models.ManyToManyField(blank=True, to="submission.Track", related_name="limit_teams"),
         ),
         migrations.AlterField(
             model_name="event",
