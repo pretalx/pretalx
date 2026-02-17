@@ -69,6 +69,7 @@
     margin: 8px;
     width: calc(100% - 16px);
     border-radius: var(--size-border-radius);
+    background-color: white;
   }
   .markdown-preview {
     border-bottom-left-radius: var(--size-border-radius);
