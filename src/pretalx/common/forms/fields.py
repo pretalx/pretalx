@@ -343,6 +343,31 @@ class AvailabilitiesField(CharField):
         if self.event and not self.initial:
             self.initial = self._serialize(self.event, self.instance)
 
+    def _get_event_context(self):
+        if not self.event:
+            return {}
+        result = {
+            "event": {
+                "timezone": self.event.timezone,
+                "date_from": str(self.event.date_from),
+                "date_to": str(self.event.date_to),
+            },
+        }
+        if self.resolution:
+            result["resolution"] = self.resolution
+        if self.instance and not isinstance(self.instance, Room):
+            room_avails = self.event.valid_availabilities.filter(room__isnull=False)
+            if room_avails:
+                merged_avails = Availability.union(room_avails)
+                result["constraints"] = [
+                    {
+                        "start": avail.start.astimezone(self.event.tz).isoformat(),
+                        "end": avail.end.astimezone(self.event.tz).isoformat(),
+                    }
+                    for avail in merged_avails
+                ]
+        return result
+
     def _serialize(self, event, instance):
         availabilities = []
         if instance and instance.pk:
@@ -352,28 +377,20 @@ class AvailabilitiesField(CharField):
             "availabilities": [
                 avail for avail in availabilities if avail["end"] > avail["start"]
             ],
-            "event": {
-                "timezone": event.timezone,
-                "date_from": str(event.date_from),
-                "date_to": str(event.date_to),
-            },
         }
-        if self.resolution:
-            result["resolution"] = self.resolution
-        if event and self.instance and not isinstance(self.instance, Room):
-            # Speakers are limited to room availabilities, if any exist
-            room_avails = event.valid_availabilities.filter(room__isnull=False)
-            if room_avails:
-                merged_avails = Availability.union(room_avails)
-                result["constraints"] = [
-                    {
-                        "start": avail.start.astimezone(event.tz).isoformat(),
-                        "end": avail.end.astimezone(event.tz).isoformat(),
-                    }
-                    for avail in merged_avails
-                ]
-
+        result.update(self._get_event_context())
         return json.dumps(result)
+
+    def prepare_value(self, value):
+        if isinstance(value, str) and self.event:
+            try:
+                data = json.loads(value)
+            except (ValueError, TypeError):
+                return value
+            if isinstance(data, dict) and "event" not in data:
+                data.update(self._get_event_context())
+                return json.dumps(data)
+        return value
 
     def _parse_availabilities_json(self, jsonavailabilities):
         try:
