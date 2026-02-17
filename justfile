@@ -213,18 +213,21 @@ python *args:
 
 # Run the test suite
 [group('tests')]
+[positional-arguments]
 test *args:
-    {{ uv_dev }} --extra=devdocs pytest {{ args }}; status=$?; git checkout -- src/pretalx/locale; exit $status
+    {{ uv_dev }} --extra=devdocs pytest "$@"; status=$?; git checkout -- src/pretalx/locale; exit $status
 
 # Run tests in parallel (requires pytest-xdist)
 [group('tests')]
+[positional-arguments]
 test-parallel n="auto" *args:
-    just test -n {{ n }} {{ args }}
+    shift; just test -n {{ n }} "$@"
 
 # Run tests with coverage report
 [group('tests')]
+[positional-arguments]
 test-coverage *args:
-    just test --cov=src --cov-report=term-missing:skip-covered --cov-config=pyproject.toml {{ args }}
+    just test --cov=src --cov-report=term-missing:skip-covered --cov-config=pyproject.toml "$@"
 
 # Show test coverage report in browser
 [group('tests')]
