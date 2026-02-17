@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.forms.renderers import TemplatesSetting
+from pretalx.common.text.phrases import phrases
 
 
 class TabularFormRenderer(TemplatesSetting):
@@ -26,3 +27,7 @@ class InlineFormRenderer(TabularFormRenderer):
 class InlineFormLabelRenderer(InlineFormRenderer):
     render_label = True
     label_class = "inline-form-label"
+
+    def render(self, template_name, context, request=None):
+        context["phrases"] = phrases
+        return super().render(template_name, context, request)
