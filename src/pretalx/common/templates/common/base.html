@@ -98,7 +98,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             <details id="user-dropdown-label" class="dropdown" aria-haspopup="menu" role="menu">
                                 {% has_perm "event.orga_access_event" request.user request.event as can_see_orga_area %}
                                 <summary>
-                                    {{ request.user.get_display_name }} <i class="fa fa-caret-down ml-1"></i>
+                                    {{ request.event.request_speaker_name|default:request.user.get_display_name }} <i class="fa fa-caret-down ml-1"></i>
                                 </summary>
                                 <div id="user-dropdown" class="dropdown-content dropdown-content-s{% if rtl %}e{% else %}w{% endif %}">
                                     <a href="{% url "cfp:event.user.submissions" event=request.event.slug %}" class="dropdown-item" role="menuitem" tabindex="-1">

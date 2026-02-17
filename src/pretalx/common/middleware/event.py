@@ -19,6 +19,7 @@ from django.utils.translation.trans_real import (
 from django_scopes import scope, scopes_disabled
 
 from pretalx.event.models import Event, Organiser
+from pretalx.person.models import SpeakerProfile
 from pretalx.schedule.models import Schedule
 
 
@@ -87,9 +88,16 @@ class EventPermissionMiddleware:
                         .order_by("-published")
                         .values("pk")[:1]
                     )
-                    queryset = queryset.annotate(
-                        _current_schedule_pk=Subquery(latest_schedule_subquery)
-                    )
+                    annotations = {
+                        "_current_schedule_pk": Subquery(latest_schedule_subquery),
+                    }
+                    if request.user.is_authenticated:
+                        annotations["request_speaker_name"] = Subquery(
+                            SpeakerProfile.objects.filter(
+                                event=OuterRef("pk"), user=request.user
+                            ).values("name")[:1]
+                        )
+                    queryset = queryset.annotate(**annotations)
                     request.event = get_object_or_404(queryset, slug__iexact=event_slug)
                 except ValueError:
                     # Happens mostly on malformed or malicious input
