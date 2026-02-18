@@ -876,7 +876,7 @@ class RegenerateDecisionMails(
     @context
     @cached_property
     def count(self):
-        return sum(len(proposal.speakers.all()) for proposal in self.get_queryset())
+        return self.get_queryset().aggregate(total=Count("speakers"))["total"] or 0
 
     def action_text(self):
         return _(
