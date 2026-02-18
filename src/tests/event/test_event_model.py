@@ -309,6 +309,22 @@ def test_event_update_review_phase_activate_next_phase(event):
 
 
 @pytest.mark.django_db
+def test_event_update_review_phase_deactivates_future_phase(event):
+    with scope(event=event):
+        event.review_phases.all().delete()
+        phase = ReviewPhase.objects.create(
+            event=event,
+            name="Future",
+            start=now() + dt.timedelta(days=30),
+            is_active=True,
+        )
+        result = event.update_review_phase()
+        assert result is None
+        phase.refresh_from_db()
+        assert not phase.is_active
+
+
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("color", "needs_dark_text"),
     (

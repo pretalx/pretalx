@@ -953,7 +953,7 @@ class Event(PretalxModel):
                 name=_("Review"),
                 start=cfp_deadline,
                 end=self.datetime_from - relativedelta(months=-3),
-                is_active=bool(cfp_deadline),
+                is_active=bool(cfp_deadline and cfp_deadline < now()),
                 can_see_other_reviews="after_review",
                 can_see_speaker_names=True,
             )
@@ -979,7 +979,11 @@ class Event(PretalxModel):
         _now = now()
         active_phase = self.active_review_phase
         if active_phase and (not active_phase.end or active_phase.end >= _now):
-            return active_phase
+            if not active_phase.start or active_phase.start <= _now:
+                return active_phase
+            # Phase hasn't started yet — deactivate it
+            active_phase.is_active = False
+            active_phase.save()
         self.reorder_review_phases()
         next_phase = (
             self.review_phases.all()

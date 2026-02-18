@@ -851,6 +851,16 @@ def test_edit_review_settings_activate_review_phase(orga_client, event):
 
 
 @pytest.mark.django_db
+def test_edit_review_settings_deactivate_review_phase(orga_client, event):
+    with scope(event=event):
+        phase = event.active_review_phase
+    response = orga_client.get(phase.urls.activate, follow=True)
+    assert response.status_code == 200
+    phase.refresh_from_db()
+    assert not phase.is_active
+
+
+@pytest.mark.django_db
 def test_organiser_can_see_event_suggestions(orga_client, event):
     response = orga_client.get("/orga/nav/typeahead/")
     assert response.status_code == 200
