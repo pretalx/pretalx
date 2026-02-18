@@ -613,7 +613,11 @@ class ReviewViewMixin:
 
     @cached_property
     def object(self):
-        return self.submission.reviews.filter(user=self.request.user).first()
+        return (
+            self.submission.reviews.select_related("user")
+            .filter(user=self.request.user)
+            .first()
+        )
 
     def get_object(self):
         return self.object

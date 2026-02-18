@@ -8,17 +8,35 @@ import pytest
 from django_scopes import scope
 
 from pretalx.person.models import SpeakerProfile
+from pretalx.submission.models import Submission
 from pretalx.submission.models.question import QuestionRequired
 
 
 @pytest.mark.parametrize("assigned", (True, False))
+@pytest.mark.parametrize("item_count", (1, 2))
 @pytest.mark.django_db
-def test_reviewer_can_add_review(review_client, review_user, submission, assigned):
+def test_reviewer_can_add_review(
+    review_client,
+    review_user,
+    submission,
+    speaker_profile,
+    django_assert_num_queries,
+    assigned,
+    item_count,
+):
     with scope(event=submission.event):
         category = submission.event.score_categories.first()
         score = category.scores.filter(value=1).first()
         if assigned:
             submission.assigned_reviewers.add(review_user)
+        if item_count == 2:
+            second = Submission.objects.create(
+                title="Second Talk",
+                event=submission.event,
+                submission_type=submission.event.cfp.default_type,
+                content_locale="en",
+            )
+            second.speakers.add(speaker_profile)
     response = review_client.post(
         submission.orga_urls.reviews,
         follow=True,
@@ -32,8 +50,11 @@ def test_reviewer_can_add_review(review_client, review_user, submission, assigne
         assert submission.reviews.count() == 1
         assert submission.reviews.first().score == 1
         assert submission.reviews.first().text == "LGTM"
-    response = review_client.get(submission.orga_urls.reviews, follow=True)
+    with django_assert_num_queries(40):
+        response = review_client.get(submission.orga_urls.reviews, follow=True)
     assert response.status_code == 200
+    if item_count == 2:
+        assert "Second Talk" in response.text
 
 
 @pytest.mark.django_db
