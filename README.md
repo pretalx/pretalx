@@ -96,7 +96,7 @@
 | src/pretalx/common/language.py                                             |       22 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/log\_display.py                                         |       86 |       10 |       38 |        6 |     87% |171, 188, 197-202, 204-206, 243, 246 |
 | src/pretalx/common/mail.py                                                 |       58 |        4 |       16 |        2 |     89% |89, 142-144 |
-| src/pretalx/common/management/commands/create\_test\_event.py              |      178 |        5 |       54 |        2 |     96% |150->exit, 155, 163-166 |
+| src/pretalx/common/management/commands/create\_test\_event.py              |      179 |        5 |       54 |        2 |     96% |150->exit, 155, 164-167 |
 | src/pretalx/common/management/commands/devserver.py                        |       16 |       16 |        4 |        0 |      0% |     10-39 |
 | src/pretalx/common/management/commands/init.py                             |       16 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/management/commands/makemessages.py                     |       49 |        6 |       18 |        3 |     84% |47-48, 56, 70-72 |
@@ -366,7 +366,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **35817** | **1837** | **5632** |  **775** | **93%** |           |
+| **TOTAL**                                                                  | **35818** | **1837** | **5632** |  **775** | **93%** |           |
 
 
 ## Setup coverage badge
