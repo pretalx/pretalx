@@ -231,7 +231,7 @@
 | src/pretalx/schedule/ical.py                                               |       34 |        2 |        4 |        0 |     95% |     24-25 |
 | src/pretalx/schedule/models/availability.py                                |       86 |        1 |       30 |        1 |     98% |55, 76->79 |
 | src/pretalx/schedule/models/room.py                                        |       47 |        3 |        4 |        2 |     90% |94, 101, 104 |
-| src/pretalx/schedule/models/schedule.py                                    |      191 |       23 |       62 |        4 |     87% |147-188, 339, 356, 383->385, 485 |
+| src/pretalx/schedule/models/schedule.py                                    |      191 |       22 |       62 |        3 |     88% |147-188, 339, 383->385, 485 |
 | src/pretalx/schedule/models/slot.py                                        |      126 |        5 |       20 |        2 |     94% |209-216, 227 |
 | src/pretalx/schedule/notifications.py                                      |       24 |        0 |        8 |        0 |    100% |           |
 | src/pretalx/schedule/phrases.py                                            |       14 |        0 |        0 |        0 |    100% |           |
@@ -354,7 +354,7 @@
 | src/tests/schedule/test\_schedule\_exporters.py                            |       28 |        0 |        0 |        0 |    100% |           |
 | src/tests/schedule/test\_schedule\_forms.py                                |      105 |        0 |       10 |        0 |    100% |           |
 | src/tests/schedule/test\_schedule\_model.py                                |      199 |        0 |        2 |        0 |    100% |           |
-| src/tests/schedule/test\_schedule\_models\_slot.py                         |       93 |        3 |        6 |        0 |     97% |   144-146 |
+| src/tests/schedule/test\_schedule\_models\_slot.py                         |       98 |        0 |        6 |        0 |    100% |           |
 | src/tests/schedule/test\_schedule\_utils.py                                |       25 |        0 |        2 |        0 |    100% |           |
 | src/tests/services/test\_documentation.py                                  |       37 |        0 |       12 |        0 |    100% |           |
 | src/tests/services/test\_models.py                                         |        8 |        0 |        0 |        0 |    100% |           |
@@ -366,7 +366,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **35852** | **1838** | **5636** |  **775** | **93%** |           |
+| **TOTAL**                                                                  | **35857** | **1834** | **5636** |  **774** | **93%** |           |
 
 
 ## Setup coverage badge
