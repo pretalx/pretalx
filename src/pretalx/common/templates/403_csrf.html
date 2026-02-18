@@ -29,3 +29,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <h2>
 {% endblock error_message %}
 {% block error_code %}403: CSRF{% endblock error_code %}
+{% block goback_links %}
+    <p class="links">
+        <a id="goback" href="#">{% translate "Take a step back" %}</a>
+    </p>
+{% endblock %}

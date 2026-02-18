@@ -26,6 +26,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <h2>{% block error_message %}{% endblock error_message %}</h2>
                 <h4 class="mt-4">HTTP {% block error_code %}{% endblock error_code %}</h4>
             {% endblock content %}
+            {% block goback_links %}
+                <p class="links">
+                    <a id="goback" href="#">{% translate "Take a step back" %}</a>
+                    &middot; <a id="reload" href="#">{% translate "Try again" %}</a>
+                </p>
+            {% endblock goback_links %}
         </div>
+        <script src="{% static "common/js/error.js" %}" defer></script>
     </body>
 </html>

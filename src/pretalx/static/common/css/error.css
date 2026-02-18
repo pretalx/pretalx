@@ -33,3 +33,10 @@ body {
   padding: 10px;
   width: 20rem;
 }
+
+.links {
+  margin-top: 1rem;
+  a#goback:hover {
+    color: white;
+  }
+}
