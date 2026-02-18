@@ -141,6 +141,28 @@ def test_can_only_see_public_submissions(
 
 
 @pytest.mark.django_db
+def test_legacy_api_submissions_with_speakers(
+    client, orga_user_token, slot, submission
+):
+    response = client.get(
+        submission.event.api_urls.submissions,
+        follow=True,
+        headers={
+            "Authorization": f"Token {orga_user_token.token}",
+            "Pretalx-Version": LEGACY,
+        },
+    )
+    content = json.loads(response.text)
+    assert response.status_code == 200, content
+    assert content["count"] >= 1
+    result = next(r for r in content["results"] if r["code"] == slot.submission.code)
+    assert isinstance(result["speakers"], list)
+    assert len(result["speakers"]) >= 1
+    assert "name" in result["speakers"][0]
+    assert "biography" in result["speakers"][0]
+
+
+@pytest.mark.django_db
 def test_can_only_see_public_submissions_if_public_schedule(
     client, slot, accepted_submission, rejected_submission, submission, answer
 ):

@@ -32,6 +32,7 @@ from pretalx.submission.rules import filter_answers_by_team_access
 
 
 class LegacySubmitterSerializer(ModelSerializer):
+    name = SerializerMethodField()
     biography = SerializerMethodField()
     avatar = SerializerMethodField()
 
@@ -40,22 +41,26 @@ class LegacySubmitterSerializer(ModelSerializer):
         super().__init__(*args, **kwargs)
 
     class Meta:
-        model = User
+        model = SpeakerProfile
         fields = ("code", "name", "biography", "avatar")
 
-    def get_biography(self, obj):
-        if self.event:
-            return getattr(
-                obj.profiles.filter(event=self.event).first(), "biography", ""
-            )
-        return ""
+    @staticmethod
+    def get_name(obj):
+        return obj.get_display_name()
 
-    def get_avatar(self, obj):
-        if self.event and self.event.cfp.request_avatar:
-            return obj.profiles.filter(event=self.event).first().avatar_url
+    @staticmethod
+    def get_biography(obj):
+        return obj.biography or ""
+
+    @staticmethod
+    def get_avatar(obj):
+        if obj.event.cfp.request_avatar:
+            return obj.avatar_url
 
 
 class LegacySubmitterOrgaSerializer(LegacySubmitterSerializer):
+    email = CharField(source="user.email")
+
     class Meta(LegacySubmitterSerializer.Meta):
         fields = (*LegacySubmitterSerializer.Meta.fields, "email")
 
