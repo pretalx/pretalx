@@ -702,9 +702,9 @@ class CfPEditorMixin:
             auto_hidden["content_locale"] = _("only one language configured")
         if not self.request.event.get_feature_flag("use_tracks"):
             auto_hidden["track"] = _("tracks are disabled")
-        elif self.request.event.tracks.count() == 0:
+        elif not self.request.event.tracks.exists():
             auto_hidden["track"] = _("no tracks exist")
-        if self.request.event.tags.filter(is_public=True).count() == 0:
+        if not self.request.event.tags.filter(is_public=True).exists():
             auto_hidden["tags"] = _("no public tags exist")
 
         return auto_hidden, auto_required

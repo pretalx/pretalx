@@ -214,7 +214,7 @@ class OutboxSend(ActionConfirmMixin, OutboxList):
             for error in errors:
                 messages.error(request, error)
             return redirect(self.request.event.orga_urls.outbox)
-        count = mails.count()
+        count = len(mails)
         for mail in mails:
             mail.send(requestor=self.request.user)
         messages.success(
