@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :bug:`orga:speaker` Clearing a previously set choice question answer on a speaker profile no longer causes a crash.
 - :bug:`orga:review` Review phases with a future start date are no longer incorrectly marked as active, and active phases can now be deactivated by clicking the active-phase button.
 - :bug:`orga:submissions` The tag filter in the submission and review lists now shows the correct submission count instead of always showing (1).
 - :bug:`orga:review` Reviewers were able to assign tags even when the review phase did not permit them to do so.

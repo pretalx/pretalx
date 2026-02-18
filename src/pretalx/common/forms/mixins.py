@@ -450,6 +450,7 @@ class QuestionFieldsMixin:
             if value == "" or value is None or value is False:
                 # Parent view handles consolidated logging
                 field.answer.delete(skip_log=True)
+                field.answer = None
             else:
                 self._save_to_answer(field, field.answer, value)
         elif value != "" and value is not None and value is not False:
