@@ -15,11 +15,13 @@ from pretalx.submission.models.question import QuestionRequired
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("query", ("", "?role=true", "?role=false", "?role=foobar"))
-def test_orga_can_access_speakers_list(orga_client, speaker, event, submission, query):
+def test_orga_can_access_speakers_list(
+    orga_client, speaker, speaker_profile, event, submission, query
+):
     response = orga_client.get(event.orga_urls.speakers + query, follow=True)
     assert response.status_code == 200
     if not query:
-        assert speaker.name in response.text
+        assert speaker_profile.get_display_name() in response.text
 
 
 @pytest.mark.django_db
@@ -30,6 +32,7 @@ def test_speaker_list_num_queries(
     submission,
     other_submission,
     speaker,
+    speaker_profile,
     other_speaker,
     django_assert_num_queries,
     item_count,
@@ -44,7 +47,7 @@ def test_speaker_list_num_queries(
     with django_assert_num_queries(24):
         response = orga_client.get(event.orga_urls.speakers)
     assert response.status_code == 200
-    assert speaker.name in response.text
+    assert speaker_profile.get_display_name() in response.text
 
 
 @pytest.mark.django_db
@@ -403,13 +406,12 @@ def test_orga_cant_export_answers_csv_without_delimiter(
 
 @pytest.mark.django_db
 def test_orga_can_export_answers_csv(
-    orga_client, speaker, event, submission, answered_choice_question
+    orga_client, speaker, speaker_profile, event, submission, answered_choice_question
 ):
     with scope(event=event):
         answered_choice_question.target = "speaker"
         answered_choice_question.save()
         answer = answered_choice_question.answers.all().first().answer_string
-        profile = speaker.get_speaker(event)
     response = orga_client.post(
         event.orga_urls.speakers + "export/",
         data={
@@ -424,19 +426,18 @@ def test_orga_can_export_answers_csv(
     assert response.status_code == 200
     assert (
         response.text
-        == f"ID,Name,Proposal IDs,{answered_choice_question.question}\r\n{profile.code},{speaker.name},{submission.code},{answer}\r\n"
+        == f"ID,Name,Proposal IDs,{answered_choice_question.question}\r\n{speaker_profile.code},{speaker_profile.get_display_name()},{submission.code},{answer}\r\n"
     )
 
 
 @pytest.mark.django_db
 def test_orga_can_export_answers_json(
-    orga_client, speaker, event, submission, answered_choice_question
+    orga_client, speaker, speaker_profile, event, submission, answered_choice_question
 ):
     with scope(event=event):
         answered_choice_question.target = "speaker"
         answered_choice_question.save()
         answer = answered_choice_question.answers.all().first().answer_string
-        profile = speaker.get_speaker(event)
     response = orga_client.post(
         event.orga_urls.speakers + "export/",
         data={
@@ -450,8 +451,8 @@ def test_orga_can_export_answers_json(
     assert response.status_code == 200
     assert json.loads(response.text) == [
         {
-            "ID": profile.code,
-            "Name": speaker.name,
+            "ID": speaker_profile.code,
+            "Name": speaker_profile.get_display_name(),
             answered_choice_question.question: answer,
             "Proposal IDs": [submission.code],
         }

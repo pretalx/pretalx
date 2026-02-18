@@ -73,15 +73,15 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
     name = SortableTemplateColumn(
         verbose_name=_("Name"),
         linkify=lambda record: record.orga_urls.base,
-        accessor=("user__name"),
+        accessor="name",
         empty_values=[""],
-        order_by=Lower("user__name"),
+        order_by=Lower("name"),
         template_name="orga/includes/user_name.html",
         template_context={"user": lambda record, table: record},
     )
     code = tables.Column(
         verbose_name=_("ID"),
-        accessor="user__code",
+        accessor="code",
     )
     email = tables.Column(
         verbose_name=_("Email"),

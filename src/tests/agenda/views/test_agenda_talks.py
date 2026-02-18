@@ -205,10 +205,9 @@ def test_event_talk_visiblity_withdrawn(
 @pytest.mark.django_db
 @pytest.mark.usefixtures("slot", "other_slot")
 def test_talk_speaker_other_submissions(
-    client, django_assert_num_queries, event, speaker, other_submission
+    client, django_assert_num_queries, event, speaker, speaker_profile, other_submission
 ):
     with scope(event=event):
-        speaker_profile = SpeakerProfile.objects.get(user=speaker, event=event)
         other_submission.speakers.add(speaker_profile)
     with django_assert_num_queries(17):
         response = client.get(other_submission.urls.public, follow=True)
@@ -216,19 +215,19 @@ def test_talk_speaker_other_submissions(
     assert response.status_code == 200
     assert response.context["speakers"]
     assert len(response.context["speakers"]) == 2, response.context["speakers"]
+    display_name = speaker_profile.get_display_name()
     speaker_response = next(
-        s for s in response.context["speakers"] if s.get_display_name() == speaker.name
+        s for s in response.context["speakers"] if s.get_display_name() == display_name
     )
     other_response = next(
-        s for s in response.context["speakers"] if s.get_display_name() != speaker.name
+        s for s in response.context["speakers"] if s.get_display_name() != display_name
     )
     assert len(speaker_response.other_submissions) == 1
     assert len(other_response.other_submissions) == 0
     with scope(event=event):
-        profile = SpeakerProfile.objects.get(user=speaker, event=event)
         assert (
             speaker_response.other_submissions[0].title
-            == profile.submissions.first().title
+            == speaker_profile.submissions.first().title
         )
 
 
@@ -239,11 +238,11 @@ def test_talk_speaker_other_submissions_only_if_visible(
     django_assert_num_queries,
     event,
     speaker,
+    speaker_profile,
     slot,
     other_submission,
 ):
     with scope(event=event):
-        speaker_profile = SpeakerProfile.objects.get(user=speaker, event=event)
         other_submission.speakers.add(speaker_profile)
         slot.submission.accept()
         slot.submission.save()
@@ -259,11 +258,12 @@ def test_talk_speaker_other_submissions_only_if_visible(
     assert response.status_code == 200
     assert response.context["speakers"]
     assert len(response.context["speakers"]) == 2, response.context["speakers"]
+    display_name = speaker_profile.get_display_name()
     speaker_response = next(
-        s for s in response.context["speakers"] if s.get_display_name() == speaker.name
+        s for s in response.context["speakers"] if s.get_display_name() == display_name
     )
     other_response = next(
-        s for s in response.context["speakers"] if s.get_display_name() != speaker.name
+        s for s in response.context["speakers"] if s.get_display_name() != display_name
     )
     assert len(speaker_response.other_submissions) == 0
     assert len(other_response.other_submissions) == 0

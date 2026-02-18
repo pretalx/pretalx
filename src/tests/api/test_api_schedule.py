@@ -718,7 +718,7 @@ def test_talk_slot_expand_parameters(client, orga_user_token, event, slot):
     with scope(event=event):
         submission_code = slot.submission.code
         room_pk = slot.room.pk
-        speaker = slot.submission.speakers.first().user.code
+        speaker = slot.submission.speakers.first().code
 
     response = client.get(url, headers=base_headers)
     assert response.status_code == 200
@@ -781,8 +781,8 @@ def test_schedule_expand_slots(client, event, slot, track):
     assert submission_content["submission_type"]["name"]["en"] == submission_type.name
     assert isinstance(submission_content["speakers"], list)
     speaker_data = submission_content["speakers"][0]
-    assert speaker_data["code"] == speaker.user.code
-    assert speaker_data["name"] == speaker.user.name
+    assert speaker_data["code"] == speaker.code
+    assert speaker_data["name"] == speaker.get_display_name()
     assert speaker_data["biography"] == speaker.biography
 
 

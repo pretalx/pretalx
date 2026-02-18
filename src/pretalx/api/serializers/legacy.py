@@ -61,8 +61,8 @@ class LegacySubmitterOrgaSerializer(LegacySubmitterSerializer):
 
 
 class LegacySpeakerSerializer(ModelSerializer):
-    code = CharField(source="user.code")
-    name = CharField(source="user.name")
+    code = CharField(read_only=True)
+    name = SerializerMethodField()
     avatar = SerializerMethodField()
     submissions = SerializerMethodField()
     answers = SerializerMethodField()
@@ -75,6 +75,10 @@ class LegacySpeakerSerializer(ModelSerializer):
             else [question for question in questions if question.isnumeric()]
         )
         super().__init__(*args, **kwargs)
+
+    @staticmethod
+    def get_name(obj):
+        return obj.get_display_name()
 
     @staticmethod
     def get_avatar(obj):

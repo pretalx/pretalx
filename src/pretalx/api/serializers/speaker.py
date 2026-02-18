@@ -24,8 +24,8 @@ from pretalx.submission.models import QuestionTarget
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
-    code = CharField(source="user.code", read_only=True)
-    name = CharField(source="user.name")
+    code = CharField(read_only=True)
+    name = CharField()
     avatar_url = URLField(read_only=True)
     answers = SerializerMethodField()
     submissions = SerializerMethodField()
@@ -34,6 +34,11 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         super().__init__(*args, **kwargs)
         if self.event and not self.event.cfp.request_avatar:
             self.fields.pop("avatar_url")
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["name"] = instance.get_display_name()
+        return data
 
     @extend_schema_field(list[str])
     def get_submissions(self, obj):

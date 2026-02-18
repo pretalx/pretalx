@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             </div>
                         </div>
                         <div class="pretalx-session-info">
-                            <div class="title">{{ speaker.user.get_display_name }}</div>
+                            <div class="title">{{ speaker.get_display_name }}</div>
                             <div class="abstract">{{ speaker.biography|default:""|rich_text_without_links }}</div>
                             <ul>
                                 {% for talk in speaker.visible_talks %}
