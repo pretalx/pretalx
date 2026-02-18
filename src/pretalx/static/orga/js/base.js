@@ -87,8 +87,13 @@ const initNavSearch = () => {
     }
 
     searchInput.addEventListener("keydown", (ev) => {
-        // Keyboard navigation: enter
-        if (ev.key === "Enter") {
+        if (ev.key === "Escape") {
+            wrapper.removeAttribute("open")
+            searchInput.value = ""
+            searchInput.blur()
+            ev.preventDefault()
+            ev.stopPropagation()
+        } else if (ev.key === "Enter") {
             const selected = searchWrapper.querySelector("li.active a")
             if (selected) {
                 location.href = selected.href
@@ -117,8 +122,8 @@ const initNavSearch = () => {
     })
 
     searchInput.addEventListener("keyup", (ev) => {
-        const first = searchWrapper.querySelector("li:not(.query-holder)")
-        const last = searchWrapper.querySelector("li:not(.query-holder):last-child")
+        const first = searchWrapper.querySelector("li:not(.search-loading)")
+        const last = searchWrapper.querySelector("li:not(.search-loading):last-child")
         const selected = searchWrapper.querySelector("li.active")
 
         // Keyboard navigation: down
@@ -133,7 +138,7 @@ const initNavSearch = () => {
         } else if (ev.key === "ArrowUp") {
             // Keyboard navigation: up
             const prev = (selected && selected.previousElementSibling) ? selected.previousElementSibling : last
-            if (!prev || prev.querySelector("input")) return
+            if (!prev || prev.classList.contains("search-loading")) return
             searchInput.classList.add("no-focus")
             if (selected) { selected.classList.remove("active") }
             prev.classList.add("active")
