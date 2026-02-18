@@ -14,6 +14,7 @@ from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
 from pretalx.submission.models import (
+    Submission,
     SubmissionInvitation,
     SubmissionStates,
     SubmitterAccessCode,
@@ -1033,7 +1034,8 @@ def test_draft_submission_allowed_with_access_code(
 
         submission.refresh_from_db()
         assert submission.state == SubmissionStates.SUBMITTED
-        assert submission.access_code.is_valid
+        submission.access_code.refresh_from_db()
+        assert submission.access_code.redeemed == 1
         assert submission.answers.all().count() == 1
 
 
@@ -1141,7 +1143,7 @@ def test_draft_with_track_access_code_exhausted(
 
 
 @pytest.mark.django_db
-def test_access_code_redeemed_on_draft_creation(event, client, access_code):
+def test_access_code_draft_and_dedraft(event, client, access_code):
     event.cfp.deadline = now() - dt.timedelta(days=1)
     event.cfp.save()
     access_code.maximum_uses = 5
@@ -1151,6 +1153,7 @@ def test_access_code_redeemed_on_draft_creation(event, client, access_code):
     with scope(event=event):
         submission_type = event.cfp.default_type.id
 
+    # Step 1: Create a draft via the wizard
     url = f"/test/submit/?access_code={access_code.code}"
     response = client.get(url, follow=True)
     assert response.status_code == 200
@@ -1185,14 +1188,64 @@ def test_access_code_redeemed_on_draft_creation(event, client, access_code):
         "action": "draft",
     }
     response = client.post(current_url, data=profile_data, follow=True)
+
+    access_code.refresh_from_db()
+    assert access_code.redeemed == 0, (
+        "Access code should NOT be redeemed when creating a draft"
+    )
+    with scope(event=event):
+        submission = Submission.all_objects.get(title="Test Draft")
+        assert submission.state == SubmissionStates.DRAFT
+        assert submission.access_code == access_code
+
+    # Step 2: Dedraft the submission (submit it for real)
+    data = {
+        "action": "dedraft",
+        "title": submission.title,
+        "submission_type": submission.submission_type.pk,
+        "content_locale": submission.content_locale,
+        "description": submission.description or "",
+        "abstract": submission.abstract or "",
+        "notes": submission.notes or "",
+        "resource-TOTAL_FORMS": 0,
+        "resource-INITIAL_FORMS": 0,
+        "resource-MIN_NUM_FORMS": 0,
+        "resource-MAX_NUM_FORMS": 1000,
+    }
+    response = client.post(submission.urls.user_base, data=data)
+    assert response.status_code == 302
+    url = response.url
+    response = client.get(url)
+    assert response.status_code == 302
+    url = response.url
+    response = client.get(url)
+    assert response.status_code == 200
+
+    for _step in "info", "profile":
+        soup = BeautifulSoup(response.render().content, "html.parser")
+        form = soup.find_all("form")[1]
+        form_data = {}
+        for input_tag in form.find_all("input"):
+            form_data[input_tag.get("name")] = input_tag.get("value", "")
+        for input_tag in form.find_all("textarea"):
+            form_data[input_tag.get("name")] = input_tag.text
+        form_data["action"] = "submit"
+        response = client.post(url, data=form_data)
+        assert response.status_code == 302
+        url = response.url
+        response = client.get(url)
+        assert response.status_code == 200
+
     access_code.refresh_from_db()
     assert access_code.redeemed == 1, (
-        "Access code should be redeemed when creating a draft"
+        "Access code should be redeemed when the draft is submitted"
     )
+    submission.refresh_from_db()
+    assert submission.state == SubmissionStates.SUBMITTED
 
 
 @pytest.mark.django_db
-def test_access_code_not_redeemed_again_on_dedraft(
+def test_access_code_redeemed_on_dedraft(
     event,
     speaker,
     speaker_client,
@@ -1202,7 +1255,7 @@ def test_access_code_not_redeemed_again_on_dedraft(
     event.cfp.deadline = now() - dt.timedelta(days=1)
     event.cfp.save()
     access_code.maximum_uses = 5
-    access_code.redeemed = 1
+    access_code.redeemed = 0
     access_code.save()
 
     with scope(event=event):
@@ -1255,7 +1308,7 @@ def test_access_code_not_redeemed_again_on_dedraft(
 
     access_code.refresh_from_db()
     assert access_code.redeemed == 1, (
-        "Access code should NOT be redeemed again when submitting a draft"
+        "Access code should be redeemed when submitting a draft"
     )
 
     submission.refresh_from_db()

@@ -588,6 +588,13 @@ class InfoStep(DedraftMixin, FormFlowStep):
                             resource.submission = submission
                             resource.save()
 
+        # Attach access code to submission even for drafts, so that
+        # dedrafting can pass the code along. Only redeem on actual submission.
+        access_code = getattr(request, "access_code", None)
+        if access_code and access_code != submission.access_code:
+            submission.access_code = access_code
+            submission.save()
+
         if draft:
             messages.success(
                 self.request,
@@ -621,10 +628,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
                 except SendMailException as exception:
                     LOGGER.warning(str(exception))
                     messages.warning(self.request, phrases.cfp.submission_email_fail)
-            access_code = getattr(request, "access_code", None)
-            if access_code != submission.access_code:
-                submission.access_code = access_code
-                submission.save()
+            if access_code:
                 access_code.redeemed += 1
                 access_code.save()
 
