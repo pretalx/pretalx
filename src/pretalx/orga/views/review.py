@@ -726,6 +726,12 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
     def tags_form(self):
         if not self.request.event.tags.all().exists():
             return
+        if not self.request.user.has_perm(
+            "submission.orga_update_submission", self.request.event
+        ):
+            phase = self.request.event.active_review_phase
+            if not phase or phase.can_tag_submissions == "never":
+                return
         return TagsForm(
             event=self.request.event,
             instance=self.submission,
