@@ -333,7 +333,7 @@ class Schedule(PretalxModel):
                 "schedule__event",
             )
             .with_sorted_speakers()
-            .prefetch_related("speakers__availabilities")
+            .prefetch_related("submission__speakers__availabilities")
         )
         if filter_updated:
             talks = talks.filter(updated__gte=filter_updated)

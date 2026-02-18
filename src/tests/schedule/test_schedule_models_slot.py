@@ -120,3 +120,27 @@ def test_slot_warning_when_speaker_overbooked(
             warnings[1]["message"]
             == "Jane the Speaker is scheduled for another session at the same time."
         )
+
+
+@pytest.mark.django_db
+def test_get_all_talk_warnings(slot, availability, room_availability):
+    with scope(event=slot.event):
+        # No warnings when everything is fine
+        assert not slot.schedule.get_all_talk_warnings()
+
+        # Make the speaker unavailable at a different time
+        speaker = slot.submission.speakers.first()
+        availability.start -= dt.timedelta(days=7)
+        availability.end -= dt.timedelta(days=7)
+        availability.person = speaker
+        availability.pk = None
+        availability.save()
+        slot.event.cfp.fields["availabilities"]["visibility"] = "required"
+        slot.event.cfp.save(update_fields=["fields"])
+
+        result = slot.schedule.get_all_talk_warnings()
+        assert slot in result
+        warnings = result[slot]
+        assert len(warnings) == 1
+        assert warnings[0]["type"] == "speaker"
+        assert speaker.get_display_name() in warnings[0]["message"]
