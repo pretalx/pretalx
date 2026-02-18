@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_487a7c524df6a456_speaker_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-18 06:58 +0000
+            created at 2026-02-18 11:05 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -384,7 +384,7 @@
     <p class="mis show_mis"><span class="n"><a id="t300" href="#t300">300</a></span><span class="t">            <span class="key">return</span> <span class="nam">self</span><span class="op">.</span><span class="nam">queryset</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t301" href="#t301">301</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t302" href="#t302">302</a></span><span class="t">        <span class="nam">queryset</span> <span class="op">=</span> <span class="nam">TalkSlot</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">schedule__event</span><span class="op">=</span><span class="nam">self</span><span class="op">.</span><span class="nam">event</span><span class="op">)</span><span class="op">.</span><span class="nam">select_related</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t303" href="#t303">303</a></span><span class="t">            <span class="str">"submission"</span><span class="op">,</span> <span class="str">"room"</span><span class="op">,</span> <span class="str">"schedule"</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t303" href="#t303">303</a></span><span class="t">            <span class="str">"submission"</span><span class="op">,</span> <span class="str">"submission__event"</span><span class="op">,</span> <span class="str">"room"</span><span class="op">,</span> <span class="str">"schedule"</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t304" href="#t304">304</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t305" href="#t305">305</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">self</span><span class="op">.</span><span class="nam">is_orga</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t306" href="#t306">306</a></span><span class="t">            <span class="nam">queryset</span> <span class="op">=</span> <span class="nam">queryset</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">is_visible</span><span class="op">=</span><span class="key">True</span><span class="op">)</span><span class="op">.</span><span class="nam">exclude</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -442,7 +442,7 @@
             <a class="nav" href="z_487a7c524df6a456_speaker_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-18 06:58 +0000
+            created at 2026-02-18 11:05 +0000
         </p>
     </div>
 </footer>

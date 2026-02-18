@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_8fef5751bc2a981e_comment_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-18 06:58 +0000
+            created at 2026-02-18 11:05 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -113,17 +113,17 @@
     <p class="run run2"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t">                <span class="nam">question__target</span><span class="op">=</span><span class="str">"speaker"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t">                <span class="nam">question__event</span><span class="op">=</span><span class="nam">self</span><span class="op">.</span><span class="nam">event</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t">                <span class="nam">question__active</span><span class="op">=</span><span class="key">True</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t">                <span class="nam">person__isnull</span><span class="op">=</span><span class="key">False</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t">                <span class="nam">speaker__isnull</span><span class="op">=</span><span class="key">False</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t">            <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">            <span class="op">.</span><span class="nam">select_related</span><span class="op">(</span><span class="str">"question"</span><span class="op">,</span> <span class="str">"person"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t">            <span class="op">.</span><span class="nam">order_by</span><span class="op">(</span><span class="str">"person__name"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">            <span class="op">.</span><span class="nam">select_related</span><span class="op">(</span><span class="str">"question"</span><span class="op">,</span> <span class="str">"speaker"</span><span class="op">,</span> <span class="str">"speaker__user"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t">            <span class="op">.</span><span class="nam">order_by</span><span class="op">(</span><span class="str">"speaker__name"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t36" href="#t36">36</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t37" href="#t37">37</a></span><span class="t">        <span class="nam">qs</span> <span class="op">=</span> <span class="nam">filter_answers_by_team_access</span><span class="op">(</span><span class="nam">qs</span><span class="op">,</span> <span class="nam">request</span><span class="op">.</span><span class="nam">user</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t38" href="#t38">38</a></span><span class="t">        <span class="nam">data</span> <span class="op">=</span> <span class="op">[</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t39" href="#t39">39</a></span><span class="t">            <span class="op">{</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t40" href="#t40">40</a></span><span class="t">                <span class="str">"code"</span><span class="op">:</span> <span class="nam">answer</span><span class="op">.</span><span class="nam">person</span><span class="op">.</span><span class="nam">code</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t41" href="#t41">41</a></span><span class="t">                <span class="str">"name"</span><span class="op">:</span> <span class="nam">answer</span><span class="op">.</span><span class="nam">person</span><span class="op">.</span><span class="nam">name</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t42" href="#t42">42</a></span><span class="t">                <span class="str">"email"</span><span class="op">:</span> <span class="nam">answer</span><span class="op">.</span><span class="nam">person</span><span class="op">.</span><span class="nam">email</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t40" href="#t40">40</a></span><span class="t">                <span class="str">"code"</span><span class="op">:</span> <span class="nam">answer</span><span class="op">.</span><span class="nam">speaker</span><span class="op">.</span><span class="nam">code</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t41" href="#t41">41</a></span><span class="t">                <span class="str">"name"</span><span class="op">:</span> <span class="nam">answer</span><span class="op">.</span><span class="nam">speaker</span><span class="op">.</span><span class="nam">get_display_name</span><span class="op">(</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t42" href="#t42">42</a></span><span class="t">                <span class="str">"email"</span><span class="op">:</span> <span class="nam">answer</span><span class="op">.</span><span class="nam">speaker</span><span class="op">.</span><span class="nam">user</span><span class="op">.</span><span class="nam">email</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t43" href="#t43">43</a></span><span class="t">                <span class="str">"question"</span><span class="op">:</span> <span class="nam">answer</span><span class="op">.</span><span class="nam">question</span><span class="op">.</span><span class="nam">question</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t44" href="#t44">44</a></span><span class="t">                <span class="str">"answer"</span><span class="op">:</span> <span class="nam">answer</span><span class="op">.</span><span class="nam">answer_string</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t45" href="#t45">45</a></span><span class="t">            <span class="op">}</span>&nbsp;</span><span class="r"></span></p>
@@ -180,7 +180,7 @@
             <a class="nav" href="z_8fef5751bc2a981e_comment_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-18 06:58 +0000
+            created at 2026-02-18 11:05 +0000
         </p>
     </div>
 </footer>
