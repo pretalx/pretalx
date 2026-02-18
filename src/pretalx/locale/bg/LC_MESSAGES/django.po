@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-02-02 10:05+0000\n"
-"PO-Revision-Date: 2026-01-20 13:42+0000\n"
+"PO-Revision-Date: 2026-02-07 14:42+0000\n"
 "Last-Translator: Vasil Kolew <vasil@ludost.net>\n"
 "Language-Team: none\n"
 "Language: bg\n"
@@ -214,10 +214,8 @@ msgid "Your favourites could only be saved locally in your browser."
 msgstr "Вашите любими могат да се съхранят само във Вашия браузър."
 
 #: pretalx/agenda/views/schedule.py:208
-#, fuzzy
-#| msgid "Skip for now"
 msgid "Jump to now"
-msgstr "Прескачане засега"
+msgstr "Отиди до текущия момент"
 
 #: pretalx/agenda/views/schedule.py:209
 #: pretalx/orga/templates/orga/cfp/question/detail.html:47
@@ -226,16 +224,12 @@ msgid "Filter"
 msgstr "Филтър"
 
 #: pretalx/agenda/views/schedule.py:210
-#, fuzzy
-#| msgid "Filter"
 msgid "Filters"
-msgstr "Филтър"
+msgstr "Филтри"
 
 #: pretalx/agenda/views/schedule.py:211
-#, fuzzy
-#| msgid "Select all"
 msgid "Clear all"
-msgstr "Избор на всички"
+msgstr "Изчисти всички"
 
 #: pretalx/agenda/views/schedule.py:212 pretalx/common/forms/forms.py:15
 #: pretalx/common/forms/widgets.py:278
@@ -270,29 +264,23 @@ msgstr "Етикети"
 
 #: pretalx/agenda/views/schedule.py:216
 msgid "Show results"
-msgstr ""
+msgstr "Покази резултат"
 
 #: pretalx/agenda/views/schedule.py:217
-#, fuzzy
-#| msgid "No proposals found matching your filters."
 msgid "No sessions match your current filters."
-msgstr "Няма предложения, които да отговарят на филтрите ви."
+msgstr "Няма сесии, които да отговарят на филтрите ви."
 
 #: pretalx/agenda/views/schedule.py:218
-#, fuzzy
-#| msgid "Media files"
 msgid "Clear filters"
-msgstr "Медийни файлове"
+msgstr "Премахни филтрите"
 
 #: pretalx/agenda/views/schedule.py:220
-#, fuzzy
-#| msgid "There was an error sending the mail. Please try again later."
 msgid "An error occurred while loading the schedule. Please try again later."
-msgstr "Грешка при изпращането на писмото. Моля, опитайте пак по-късно."
+msgstr "Грешка при зареждане на програмата. Моля, опитайте пак по-късно."
 
 #: pretalx/agenda/views/schedule.py:223
 msgid "The schedule is not yet available. Please check back later!"
-msgstr ""
+msgstr "Програмата още не е достъпна. Моля проверете по-късно!"
 
 #: pretalx/agenda/views/talk.py:148
 #, python-brace-format
@@ -1297,10 +1285,8 @@ msgid "Your passwords don’t match."
 msgstr "Паролите не съвпадат."
 
 #: pretalx/common/forms/widgets.py:185
-#, fuzzy
-#| msgid "Please select at least {min} tags."
 msgid "Please select an option."
-msgstr "Моля, изберете поне {min} тага."
+msgstr "Моля, изберете опция."
 
 #: pretalx/common/image.py:62 pretalx/common/image.py:70
 msgid ""
@@ -1360,10 +1346,8 @@ msgid "The event was deactivated."
 msgstr "Събитието беше деактивирано."
 
 #: pretalx/common/log_display.py:69
-#, fuzzy
-#| msgid "The event was deactivated."
 msgid "The event was deleted."
-msgstr "Събитието беше деактивирано."
+msgstr "Събитието беше изтрито."
 
 #: pretalx/common/log_display.py:70
 msgid "A plugin was disabled."
@@ -1378,22 +1362,16 @@ msgid "The event was modified."
 msgstr "Събитието беше променено."
 
 #: pretalx/common/log_display.py:73
-#, fuzzy
-#| msgid "A speaker invitation was accepted."
 msgid "The invitation was accepted."
-msgstr "Покана за лектор беше приета."
+msgstr "Поканата беше приета."
 
 #: pretalx/common/log_display.py:74
-#, fuzzy
-#| msgid "A speaker invitation was retracted."
 msgid "An invitation was retracted."
-msgstr "Поканата за лектор беше оттеглена."
+msgstr "Поканата беше оттеглена."
 
 #: pretalx/common/log_display.py:75
-#, fuzzy
-#| msgid "The invitation was sent!"
 msgid "An invitation was sent."
-msgstr "Поканата е изпратена!"
+msgstr "Изпратихме покана."
 
 #: pretalx/common/log_display.py:77
 msgid "The invitation to the review team was retracted."
@@ -1440,10 +1418,8 @@ msgid "A mail template was modified."
 msgstr "Шаблон за писмо беше променен."
 
 #: pretalx/common/log_display.py:89
-#, fuzzy
-#| msgid "The organiser {name} was deleted."
 msgid "The organiser was deleted."
-msgstr "Организаторът {name} беше изтрит."
+msgstr "Организаторът беше изтрит."
 
 #: pretalx/common/log_display.py:90
 msgid "A custom field was added."
@@ -1666,10 +1642,8 @@ msgid "A speaker information note was deleted."
 msgstr "Бележка с информация за лектора беше изтрита."
 
 #: pretalx/common/log_display.py:148
-#, fuzzy
-#| msgid "The API token was revoked."
 msgid "The API token was created."
-msgstr "API токенът е отменен."
+msgstr "API токенът беше създаден."
 
 #: pretalx/common/log_display.py:149
 msgid "The API token was reset."
@@ -2579,12 +2553,6 @@ msgid "Header image"
 msgstr "Заглавна картинка"
 
 #: pretalx/event/models/event.py:262
-#, fuzzy
-#| msgid ""
-#| "If you provide a header image, it will be displayed instead of your "
-#| "event’s color and/or header pattern at the top of all event pages. It "
-#| "will be center-aligned, so when the window shrinks, the center parts will "
-#| "continue to be displayed, and not stretched."
 msgid ""
 "If you provide a header image, it will be displayed instead of your event's "
 "color and/or header pattern at the top of all event pages. It will be center-"
@@ -2597,10 +2565,8 @@ msgstr ""
 "ще продължава да се вижда и няма да се разтегля."
 
 #: pretalx/event/models/event.py:271
-#, fuzzy
-#| msgid "Preview email"
 msgid "Preview image"
-msgstr "Преглед на писмо"
+msgstr "Преглед на картинка"
 
 #: pretalx/event/models/event.py:273
 msgid ""
@@ -2608,6 +2574,10 @@ msgid ""
 "social media or messaging apps. For best results, use an image at least "
 "1200x630 pixels. If not set, the logo or header image will be used instead."
 msgstr ""
+"Тази картинка ще се покаже като преглед, когато връзки към вашето събитие са "
+"споделени през социални мрежи или други. За най-добър резултат, използвайте "
+"картинка с размери 1200x630. Ако не е зададена, ще се използва картинката от "
+"заглавката или логото."
 
 #: pretalx/event/models/event.py:284
 msgid "Default language"
@@ -5437,8 +5407,6 @@ msgid "Response options"
 msgstr "Варианти за отговор"
 
 #: pretalx/orga/templates/orga/cfp/question/_form.html:95
-#, fuzzy
-#| msgid "Response options"
 msgid "Answer option"
 msgstr "Варианти за отговор"
 
@@ -7114,10 +7082,8 @@ msgstr ""
 "Потвърдете, че наистина искате да смените състоянието на това предложение."
 
 #: pretalx/orga/templates/orga/submission/state_dropdown.html:75
-#, fuzzy
-#| msgid "deleted"
 msgid "delete"
-msgstr "изтрито"
+msgstr "изтрий"
 
 #: pretalx/orga/templates/orga/submission/stats.html:26
 msgid "Proposal Statistics"
@@ -8074,10 +8040,10 @@ msgid ""
 "This session is part of the current schedule. All its schedule slots will "
 "also be deleted. You may want to set it to the \"withdrawn\" state instead."
 msgstr ""
+"Тази сесия е част от текущата програма. Всичките и слотове в програмата ще "
+"бъдат изтрити. Може би е по-добре да я маркирате като \"изтеглена\"."
 
 #: pretalx/orga/views/submission.py:297
-#, fuzzy
-#| msgid "The proposal was deleted."
 msgid "The proposal has been deleted."
 msgstr "Предложението беше изтрито."
 
@@ -9065,10 +9031,8 @@ msgstr "стандартен отговор"
 
 #: pretalx/submission/models/question.py:265
 #: pretalx/submission/models/question.py:494
-#, fuzzy
-#| msgid "Internal notes"
 msgid "Internal identifier"
-msgstr "Вътрешни бележки"
+msgstr "Вътрешен идентификатор"
 
 #: pretalx/submission/models/question.py:267
 #: pretalx/submission/models/question.py:496
@@ -9076,11 +9040,11 @@ msgid ""
 "You can enter any value here to make it easier to match the data with other "
 "sources. If you do not input one, we will generate one automatically."
 msgstr ""
+"Може да въведете всякаква стойност за да може да свързвате данните с други "
+"източници. Ако не въведете, ще генерираме такова автоматично."
 
 #: pretalx/submission/models/question.py:275
 #: pretalx/submission/models/question.py:504
-#, fuzzy
-#| msgid "The slug may only contain letters, numbers, dots and dashes."
 msgid ""
 "The identifier may only contain letters, numbers, dots, dashes, and "
 "underscores."
@@ -9172,22 +9136,16 @@ msgstr ""
 "показва линка."
 
 #: pretalx/submission/models/question.py:423
-#, fuzzy
-#| msgid ""
-#| "This schedule version was used already, please choose a different one."
 msgid "This identifier is already used for a different question."
-msgstr "Тази версия на програмата вече е ползвана. Изберете друга."
+msgstr "Този идентификатор вече е използван за друг въпрос."
 
 #: pretalx/submission/models/question.py:516
 msgid "Options"
 msgstr "Опции"
 
 #: pretalx/submission/models/question.py:541
-#, fuzzy
-#| msgid ""
-#| "This schedule version was used already, please choose a different one."
 msgid "This identifier is already used for a different option."
-msgstr "Тази версия на програмата вече е ползвана. Изберете друга."
+msgstr "Този идентификатор вече е използван за друга опция."
 
 #: pretalx/submission/models/resource.py:41
 msgid "Publicly visible resource"

@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-02-02 10:05+0000\n"
-"PO-Revision-Date: 2026-02-02 08:13+0000\n"
+"PO-Revision-Date: 2026-02-05 11:24+0000\n"
 "Last-Translator: Andres Gomez Casanova <angoca@yahoo.com>\n"
 "Language-Team: none\n"
 "Language: es\n"
@@ -228,16 +228,12 @@ msgid "Filter"
 msgstr "Filtrar"
 
 #: pretalx/agenda/views/schedule.py:210
-#, fuzzy
-#| msgid "Filter"
 msgid "Filters"
-msgstr "Filtrar"
+msgstr "Filtros"
 
 #: pretalx/agenda/views/schedule.py:211
-#, fuzzy
-#| msgid "Select all"
 msgid "Clear all"
-msgstr "Seleccionar todo"
+msgstr "Limpiar todo"
 
 #: pretalx/agenda/views/schedule.py:212 pretalx/common/forms/forms.py:15
 #: pretalx/common/forms/widgets.py:278
@@ -272,19 +268,15 @@ msgstr "Etiquetas"
 
 #: pretalx/agenda/views/schedule.py:216
 msgid "Show results"
-msgstr ""
+msgstr "Mostrar resultados"
 
 #: pretalx/agenda/views/schedule.py:217
-#, fuzzy
-#| msgid "No proposals found matching your filters."
 msgid "No sessions match your current filters."
-msgstr "No se encontraron propuestas que coincidan con tus filtros."
+msgstr "No se encontraron sesiones que coincidan con tus filtros."
 
 #: pretalx/agenda/views/schedule.py:218
-#, fuzzy
-#| msgid "Media files"
 msgid "Clear filters"
-msgstr "Archivos media"
+msgstr "Limpiar filtros"
 
 #: pretalx/agenda/views/schedule.py:220
 msgid "An error occurred while loading the schedule. Please try again later."
@@ -1373,10 +1365,8 @@ msgid "The event was deactivated."
 msgstr "El evento fue cancelado."
 
 #: pretalx/common/log_display.py:69
-#, fuzzy
-#| msgid "The event was deactivated."
 msgid "The event was deleted."
-msgstr "El evento fue cancelado."
+msgstr "El evento fue borrado."
 
 #: pretalx/common/log_display.py:70
 msgid "A plugin was disabled."
@@ -1391,22 +1381,16 @@ msgid "The event was modified."
 msgstr "El evento fue modificado."
 
 #: pretalx/common/log_display.py:73
-#, fuzzy
-#| msgid "A speaker invitation was accepted."
 msgid "The invitation was accepted."
-msgstr "Se aceptó una invitación a un ponente."
+msgstr "La invitación fue aceptada."
 
 #: pretalx/common/log_display.py:74
-#, fuzzy
-#| msgid "A speaker invitation was retracted."
 msgid "An invitation was retracted."
-msgstr "Se revocó una invitación a un ponente."
+msgstr "Una invitación fue revocada."
 
 #: pretalx/common/log_display.py:75
-#, fuzzy
-#| msgid "The invitation was sent!"
 msgid "An invitation was sent."
-msgstr "¡La invitación fue enviada!"
+msgstr "Una invitación fue enviada."
 
 #: pretalx/common/log_display.py:77
 msgid "The invitation to the review team was retracted."
@@ -1453,10 +1437,8 @@ msgid "A mail template was modified."
 msgstr "Se modificó una plantilla de correo."
 
 #: pretalx/common/log_display.py:89
-#, fuzzy
-#| msgid "The organiser {name} was deleted."
 msgid "The organiser was deleted."
-msgstr "El organizador {name} fue eliminado."
+msgstr "El organizador fue eliminado."
 
 #: pretalx/common/log_display.py:90
 msgid "A custom field was added."
@@ -2604,28 +2586,21 @@ msgid "Header image"
 msgstr "Imagen de cabecera"
 
 #: pretalx/event/models/event.py:262
-#, fuzzy
-#| msgid ""
-#| "If you provide a header image, it will be displayed instead of your "
-#| "event’s color and/or header pattern at the top of all event pages. It "
-#| "will be center-aligned, so when the window shrinks, the center parts will "
-#| "continue to be displayed, and not stretched."
 msgid ""
 "If you provide a header image, it will be displayed instead of your event's "
 "color and/or header pattern at the top of all event pages. It will be center-"
 "aligned, so when the window shrinks, the center parts will continue to be "
 "displayed, and not stretched."
 msgstr ""
-"Si proporciona una imagen de encabezado, se mostrará en lugar del color y / "
-"o patrón de encabezado de su evento en la parte superior de todas las "
-"páginas del evento. Estará alineado al centro, por lo que cuando la ventana "
-"se encoja, las partes centrales seguirán mostrándose y no estiradas."
+"Si proporcionas una imagen de cabecera, se mostrará en lugar del color y/o "
+"del patrón de cabecera de tu evento en la parte superior de todas las "
+"páginas del evento. La imagen estará alineada al centro, de modo que cuando "
+"la ventana se reduzca, se seguirán mostrando las partes centrales sin "
+"estirarse."
 
 #: pretalx/event/models/event.py:271
-#, fuzzy
-#| msgid "Preview email"
 msgid "Preview image"
-msgstr "Vista previa del correo electrónico"
+msgstr "Vista previa de imagen"
 
 #: pretalx/event/models/event.py:273
 msgid ""
@@ -2633,6 +2608,10 @@ msgid ""
 "social media or messaging apps. For best results, use an image at least "
 "1200x630 pixels. If not set, the logo or header image will be used instead."
 msgstr ""
+"Esta imagen se mostrará como vista previa cuando se compartan enlaces a tu "
+"evento en redes sociales o aplicaciones de mensajería. Para obtener mejores "
+"resultados, utiliza una imagen de al menos 1200×630 píxeles. Si no se "
+"establece, se usará el logotipo o la imagen de cabecera en su lugar."
 
 #: pretalx/event/models/event.py:284
 msgid "Default language"
@@ -8171,12 +8150,13 @@ msgid ""
 "This session is part of the current schedule. All its schedule slots will "
 "also be deleted. You may want to set it to the \"withdrawn\" state instead."
 msgstr ""
+"Esta sesión forma parte de la agenda actual. Todos sus espacios en la agenda "
+"también se eliminarán. En su lugar, quizá quieras establecerla en el estado "
+"«retirada»."
 
 #: pretalx/orga/views/submission.py:297
-#, fuzzy
-#| msgid "The proposal was deleted."
 msgid "The proposal has been deleted."
-msgstr "La propuesta fue eliminada."
+msgstr "La propuesta ha sido eliminada."
 
 #: pretalx/orga/views/submission.py:312
 msgid "The speaker has been removed from the proposal."

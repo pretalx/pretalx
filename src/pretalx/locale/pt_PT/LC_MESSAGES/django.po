@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-02-02 10:05+0000\n"
-"PO-Revision-Date: 2025-09-02 08:34+0000\n"
+"PO-Revision-Date: 2026-02-04 17:42+0000\n"
 "Last-Translator: Tiago Carreira <tiago.g.carreira+git@gmail.com>\n"
 "Language-Team: none\n"
 "Language: pt_PT\n"
@@ -218,10 +218,8 @@ msgid "Your favourites could only be saved locally in your browser."
 msgstr "Favoritas foram salvas apenas localmente no navegador."
 
 #: pretalx/agenda/views/schedule.py:208
-#, fuzzy
-#| msgid "Skip for now"
 msgid "Jump to now"
-msgstr "Ignorar por enquanto"
+msgstr "Ir para agora"
 
 #: pretalx/agenda/views/schedule.py:209
 #: pretalx/orga/templates/orga/cfp/question/detail.html:47
@@ -230,16 +228,12 @@ msgid "Filter"
 msgstr "Filtro"
 
 #: pretalx/agenda/views/schedule.py:210
-#, fuzzy
-#| msgid "Filter"
 msgid "Filters"
-msgstr "Filtro"
+msgstr "Filtros"
 
 #: pretalx/agenda/views/schedule.py:211
-#, fuzzy
-#| msgid "Select all"
 msgid "Clear all"
-msgstr "Selecionar tudo"
+msgstr "Limpar tudo"
 
 #: pretalx/agenda/views/schedule.py:212 pretalx/common/forms/forms.py:15
 #: pretalx/common/forms/widgets.py:278
@@ -261,7 +255,7 @@ msgstr "Faixas"
 
 #: pretalx/agenda/views/schedule.py:214 pretalx/common/plugins.py:18
 msgid "Languages"
-msgstr "Linguagens"
+msgstr "Idiomas"
 
 #: pretalx/agenda/views/schedule.py:215 pretalx/orga/forms/event.py:861
 #: pretalx/orga/forms/review.py:443 pretalx/orga/templates/orga/base.html:288
@@ -274,31 +268,25 @@ msgstr "Tags"
 
 #: pretalx/agenda/views/schedule.py:216
 msgid "Show results"
-msgstr ""
+msgstr "Mostrar resultados"
 
 #: pretalx/agenda/views/schedule.py:217
-#, fuzzy
-#| msgid "proposal is waiting for your review."
-#| msgid_plural "proposals are waiting for your review."
 msgid "No sessions match your current filters."
-msgstr "proposta está à espera da sua revisão."
+msgstr "Não existem sessões para os filtros aplicados."
 
 #: pretalx/agenda/views/schedule.py:218
-#, fuzzy
-#| msgid "Media files"
 msgid "Clear filters"
-msgstr "Ficheiros Multimédia"
+msgstr "Limpar filtros"
 
 #: pretalx/agenda/views/schedule.py:220
-#, fuzzy
-#| msgid "There was an error sending the mail. Please try again later."
 msgid "An error occurred while loading the schedule. Please try again later."
 msgstr ""
-"Ocorreu um erro ao enviar o e-mail. Por favor, tente novamente mais tarde."
+"Ocorreu um erro ao carregar o cronograma. Por favor, tente novamente mais "
+"tarde."
 
 #: pretalx/agenda/views/schedule.py:223
 msgid "The schedule is not yet available. Please check back later!"
-msgstr ""
+msgstr "O cronograma ainda não está disponível. Por favor, tente mais tarde!"
 
 #: pretalx/agenda/views/talk.py:148
 #, python-brace-format
@@ -329,7 +317,7 @@ msgstr "Disponibilidade"
 msgid ""
 "Your draft was saved. You can continue to edit it as long as the CfP is open."
 msgstr ""
-"O seu rascunho foi guardado. Pode continuar a editá-lo enquanto o CFP "
+"O seu rascunho foi guardado. Pode continuar a editá-lo enquanto o CfP "
 "estiver aberto."
 
 #: pretalx/cfp/flow.py:430
@@ -338,12 +326,13 @@ msgid ""
 "changes to it up to the submission deadline, and you will be notified of any "
 "changes or questions."
 msgstr ""
-"Parabéns, asua proposta foi submetida! Pode continuar a fazer alterações até "
-"ao prazo de submissão e será notificado de quaisquer alterações ou perguntas."
+"Parabéns, a sua proposta foi submetida! Pode continuar a fazer alterações "
+"até ao final do prazo de submissão, e será notificado de quaisquer "
+"alterações ou perguntas."
 
 #: pretalx/cfp/flow.py:467
 msgid "Hey, nice to meet you!"
-msgstr "Olá, prazer em conhecê-lo!"
+msgstr "Olá, prazer em conhecê-lo(a)!"
 
 #: pretalx/cfp/flow.py:472
 msgid ""
@@ -351,11 +340,11 @@ msgid ""
 "Let’s get started, this won’t take long."
 msgstr ""
 "Estamos gratos por contribuir para o nosso evento com a sua proposta. Vamos "
-"começar, isto não demorará muito."
+"começar, não será muito demorado."
 
 #: pretalx/cfp/flow.py:536
 msgid "Additional information"
-msgstr "Informações do administrador"
+msgstr "Informações adicionais"
 
 #: pretalx/cfp/flow.py:540
 msgid "Tell us more!"
@@ -372,7 +361,7 @@ msgid ""
 "There was an error when logging in. Please contact the organiser for further "
 "help."
 msgstr ""
-"Ocorreu um erro ao fazer login. Entre em contato com o organizador para "
+"Ocorreu um erro ao fazer login. Entre em contacto com o organizador para "
 "obter mais ajuda."
 
 #: pretalx/cfp/flow.py:584
@@ -382,8 +371,8 @@ msgstr "Conta"
 #: pretalx/cfp/flow.py:589
 msgid "That’s it about your proposal! We now just need a way to contact you."
 msgstr ""
-"A sua proposta encontra-se finalizada! Agora só precisamos de uma maneira de "
-"entrar em contato consigo."
+"A sua proposta está finalizada! Agora só precisamos de uma forma de entrar "
+"em contato."
 
 #: pretalx/cfp/flow.py:595
 msgid ""
@@ -391,9 +380,9 @@ msgid ""
 "gives us a way to contact you, it also gives you the possibility to edit "
 "your proposal or to view its current state."
 msgstr ""
-"Para criar a sua proposta, precisa de uma conta nesta página. Isto dá nos "
-"uma maneira de entrar em contato consigo, mas também oferece a possibilidade "
-"de editar a sua proposta ou visualizar o seu estado atual."
+"Para criar uma proposta, precisa de uma conta nesta página. Além de nos dar "
+"uma forma de entrar em contacto consigo, ainda permite editar a proposta ou "
+"consultar o seu estado atual."
 
 #: pretalx/cfp/flow.py:640
 msgid "Profile"
@@ -401,7 +390,7 @@ msgstr "Perfil"
 
 #: pretalx/cfp/flow.py:644
 msgid "Tell us something about yourself!"
-msgstr "Diga-nos algo sobre si!"
+msgstr "Conte-nos algo sobre si!"
 
 #: pretalx/cfp/flow.py:649
 msgid ""
@@ -415,6 +404,7 @@ msgstr ""
 #, python-brace-format
 msgid "You must include the “{invitation_url}” placeholder in your email."
 msgstr ""
+"É necessário incluir o campo de substituição “{invitation_url}” no email."
 
 #: pretalx/cfp/forms/submissions.py:45
 #, fuzzy
@@ -431,7 +421,7 @@ msgstr "O orador foi adicionado à proposta."
 #: pretalx/cfp/forms/submissions.py:58
 #, python-brace-format
 msgid "This would exceed the maximum of {max} speakers per proposal."
-msgstr ""
+msgstr "Isto iria exceder o máximo de {max} oradores por proposta."
 
 #: pretalx/cfp/phrases.py:11
 msgid ""
@@ -1262,7 +1252,7 @@ msgstr "Escreveu {count} palavras."
 #: pretalx/common/forms/mixins.py:169
 #, python-brace-format
 msgid "Please select exactly {count} tags."
-msgstr ""
+msgstr "Selecione exatamente {count} tags."
 
 #: pretalx/common/forms/mixins.py:173
 #, fuzzy, python-brace-format
@@ -1290,11 +1280,11 @@ msgstr "Escreveu {count} palavras."
 
 #: pretalx/common/forms/tables.py:10
 msgid "A–Z / low to high ↑"
-msgstr ""
+msgstr "A–Z / menor para maior ↑"
 
 #: pretalx/common/forms/tables.py:11
 msgid "Z–A / high to low ↓"
-msgstr ""
+msgstr "Z–A / maior para menor ↓"
 
 #: pretalx/common/forms/tables.py:17
 #, fuzzy
@@ -1310,7 +1300,7 @@ msgstr "Seleção"
 
 #: pretalx/common/forms/tables.py:37
 msgid "Sort by"
-msgstr ""
+msgstr "Ordenar por"
 
 #: pretalx/common/forms/tables.py:42 pretalx/common/forms/tables.py:53
 #, fuzzy
@@ -1320,7 +1310,7 @@ msgstr "Duração"
 
 #: pretalx/common/forms/tables.py:48
 msgid "Then by"
-msgstr ""
+msgstr "Depois por"
 
 #: pretalx/common/forms/widgets.py:28
 #, fuzzy
@@ -2132,7 +2122,7 @@ msgstr "Seu avatar"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:22
 msgid "Image for cropping"
-msgstr ""
+msgstr "Imagem para recortar"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:25
 #: pretalx/common/text/phrases.py:51
@@ -2144,7 +2134,7 @@ msgstr "Cancelar"
 
 #: pretalx/common/templates/common/widgets/avatar_crop_input.html:26
 msgid "Apply Crop"
-msgstr ""
+msgstr "Aplicar Recorte"
 
 #. Translators: Text is used to describe the main text body of an email, or of
 #. similar options like the main text of the CfP or a review. It's separate from
@@ -2161,7 +2151,7 @@ msgstr "Pré-visualização"
 
 #: pretalx/common/templates/common/widgets/toggle_choice.html:16
 msgid "Toggle value"
-msgstr ""
+msgstr "Trocar valor"
 
 #: pretalx/common/templatetags/copyable.py:16
 msgid "Copy"
@@ -2693,6 +2683,10 @@ msgid ""
 "social media or messaging apps. For best results, use an image at least "
 "1200x630 pixels. If not set, the logo or header image will be used instead."
 msgstr ""
+"Esta imagem será usada como pré-visualização quando partilhar links para o "
+"evento nas redes sociais ou em apps de mensagens. Para melhores resultados, "
+"usar uma imagem com pelo menos 1200x630 pixels. Caso não seja definida, será "
+"usado o logotipo ou a imagem do cabeçalho."
 
 #: pretalx/event/models/event.py:284
 msgid "Default language"
@@ -3616,6 +3610,9 @@ msgid ""
 "If disabled, speakers cannot edit their proposals regardless of the proposal "
 "state. This setting overrides the {review_phase_link} for speaker editing."
 msgstr ""
+"Se desabilitado, os oradores não poderão editar as suas propostas, "
+"independentemente do estado da proposta. Esta configuração sobrepõe-se a "
+"{review_phase_link} para edição do orador."
 
 #: pretalx/orga/forms/cfp.py:110
 msgid "Display deadline publicly"
@@ -3792,7 +3789,7 @@ msgstr "Texto de ajuda"
 
 #: pretalx/orga/forms/cfp.py:584
 msgid "Additional instructions shown below the field."
-msgstr ""
+msgstr "Instruções adicionais por baixo do campo."
 
 #: pretalx/orga/forms/cfp.py:588
 #, fuzzy
@@ -3823,7 +3820,7 @@ msgstr "Usos máximos"
 
 #: pretalx/orga/forms/cfp.py:612
 msgid "Maximum number of speakers per proposal (including submitter)."
-msgstr ""
+msgstr "Número máximo de oradores por proposta (incluindo quem submete)."
 
 #: pretalx/orga/forms/cfp.py:615
 #, fuzzy
@@ -3842,10 +3839,12 @@ msgid ""
 "Additional instructions shown below the field. Note: Only public tags will "
 "be shown to submitters."
 msgstr ""
+"Instruções adicionais por baixo do campo. Nota: Apenas as tags públicas "
+"serão visíveis por quem submete."
 
 #: pretalx/orga/forms/cfp.py:658
 msgid "Minimum tags cannot be greater than maximum tags."
-msgstr ""
+msgstr "O mínimo de tags não pode ser inferior ao máximo de tags."
 
 #: pretalx/orga/forms/cfp.py:665
 #, fuzzy
