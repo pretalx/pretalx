@@ -91,7 +91,7 @@
 | src/pretalx/common/forms/renderers.py                                      |       22 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/forms/tables.py                                         |       40 |        1 |       16 |        2 |     95% |61, 100->105 |
 | src/pretalx/common/forms/validators.py                                     |       50 |        0 |        4 |        0 |    100% |           |
-| src/pretalx/common/forms/widgets.py                                        |      295 |        4 |       42 |        4 |     98% |256, 410, 559, 570 |
+| src/pretalx/common/forms/widgets.py                                        |      295 |        5 |       42 |        5 |     97% |256, 289, 410, 559, 570 |
 | src/pretalx/common/image.py                                                |       98 |       29 |       36 |        7 |     63% |30-72, 95, 97, 110, 124->128, 128->exit, 149, 152, 176 |
 | src/pretalx/common/language.py                                             |       22 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/log\_display.py                                         |       86 |       10 |       38 |        6 |     87% |171, 188, 197-202, 204-206, 243, 246 |
@@ -246,7 +246,7 @@
 | src/pretalx/submission/forms/feedback.py                                   |       25 |        0 |        4 |        0 |    100% |           |
 | src/pretalx/submission/forms/question.py                                   |       67 |        0 |       30 |        2 |     98% |87->exit, 109->108 |
 | src/pretalx/submission/forms/resource.py                                   |       25 |        2 |        6 |        2 |     87% |    31, 35 |
-| src/pretalx/submission/forms/submission.py                                 |      250 |       32 |      106 |       17 |     84% |111, 154, 168, 173->exit, 178, 218, 222-223, 226, 233-240, 263->265, 397, 428, 430-436, 478-491, 493-496, 503, 517-520, 525 |
+| src/pretalx/submission/forms/submission.py                                 |      250 |       32 |      106 |       17 |     84% |111, 154, 168, 173->exit, 178, 218, 222-223, 226, 233-240, 263->265, 397, 428, 430-436, 482-495, 497-500, 507, 521-524, 529 |
 | src/pretalx/submission/forms/tag.py                                        |       21 |        0 |        4 |        0 |    100% |           |
 | src/pretalx/submission/icons.py                                            |        1 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/submission/models/access\_code.py                              |       55 |        0 |        4 |        0 |    100% |           |
@@ -342,7 +342,7 @@
 | src/tests/orga/views/test\_orga\_views\_review.py                          |      465 |        0 |        4 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_schedule.py                        |      346 |        0 |        8 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_speaker.py                         |      270 |        0 |        6 |        0 |    100% |           |
-| src/tests/orga/views/test\_orga\_views\_submission.py                      |      746 |        0 |       16 |        0 |    100% |           |
+| src/tests/orga/views/test\_orga\_views\_submission.py                      |      754 |        0 |       16 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_submission\_cards.py               |       14 |        0 |        0 |        0 |    100% |           |
 | src/tests/person/test\_auth\_token\_model.py                               |       11 |        0 |        0 |        0 |    100% |           |
 | src/tests/person/test\_information\_model.py                               |        7 |        0 |        0 |        0 |    100% |           |
@@ -366,7 +366,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **35809** | **1836** | **5632** |  **774** | **93%** |           |
+| **TOTAL**                                                                  | **35817** | **1837** | **5632** |  **775** | **93%** |           |
 
 
 ## Setup coverage badge
