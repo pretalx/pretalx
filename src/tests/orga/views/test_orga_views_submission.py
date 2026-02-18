@@ -1147,6 +1147,18 @@ def test_can_delete_used_tag(orga_client, tag, event, submission):
 
 
 @pytest.mark.django_db
+def test_tag_count_in_submission_filter(
+    orga_client, tag, event, submission, other_submission
+):
+    with scope(event=event):
+        submission.tags.add(tag)
+        other_submission.tags.add(tag)
+    response = orga_client.get(event.orga_urls.submissions, follow=True)
+    assert response.status_code == 200
+    assert f"{tag.tag} (2)" in response.text
+
+
+@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 2))
 def test_orga_can_see_submission_comments(
     orga_client, submission, submission_comment, django_assert_num_queries, item_count
