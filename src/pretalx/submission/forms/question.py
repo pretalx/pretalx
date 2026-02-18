@@ -52,7 +52,8 @@ class QuestionsForm(CfPFormMixin, QuestionFieldsMixin, forms.Form):
                 )
         if self.for_reviewers:
             self.queryset = self.queryset.filter(is_visible_to_reviewers=True)
-        for question in self.queryset.prefetch_related("options"):
+        self.queryset = self.queryset.prefetch_related("options")
+        for question in self.queryset:
             initial_object = None
             initial = question.default_answer
             if target_object := self.get_object_for_question(question):
