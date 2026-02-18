@@ -153,7 +153,7 @@
 | src/pretalx/common/views/shortlink.py                                      |       30 |        0 |       18 |        0 |    100% |           |
 | src/pretalx/event/apps.py                                                  |        4 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/event/forms.py                                                 |      162 |        7 |       34 |        5 |     94% |74-77, 130-131, 144, 239->exit, 294-295, 361->exit |
-| src/pretalx/event/models/event.py                                          |      541 |       30 |      116 |       11 |     93% |486, 491, 537, 540, 689-691, 720->734, 752, 756-767, 789-790, 798, 840-849, 982, 994->997 |
+| src/pretalx/event/models/event.py                                          |      544 |       30 |      118 |       11 |     93% |486, 491, 537, 540, 689-691, 720->734, 752, 756-767, 789-790, 798, 840-849, 983, 998->1001 |
 | src/pretalx/event/models/organiser.py                                      |      116 |        8 |       18 |        6 |     90% |47, 54, 68, 76, 257, 265, 272, 314 |
 | src/pretalx/event/rules.py                                                 |       51 |        0 |       12 |        0 |    100% |           |
 | src/pretalx/event/services.py                                              |       34 |        3 |       10 |        1 |     91% |     62-66 |
@@ -197,7 +197,7 @@
 | src/pretalx/orga/views/cards.py                                            |       16 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/orga/views/cfp.py                                              |      729 |       63 |      210 |       42 |     88% |98, 101, 112-113, 117->121, 161, 169, 193, 197, 200->194, 222, 229, 231, 233, 235-237, 267-273, 291, 301->304, 305, 309-320, 366, 375, 412->406, 414->406, 490, 556, 616-617, 700, 701->703, 705->707, 707->710, 771, 784, 832, 834, 893->895, 937-942, 961-962, 1009->1008, 1021-1022, 1051-1052, 1055, 1059, 1077, 1096, 1147, 1160, 1199-1205 |
 | src/pretalx/orga/views/dashboard.py                                        |      161 |       28 |       46 |        9 |     78% |31-43, 79, 108-114, 136-137, 156-167, 219, 236-239, 285-286, 295->307, 352-353, 362-369 |
-| src/pretalx/orga/views/event.py                                            |      431 |       28 |      112 |       25 |     90% |156-157, 205, 272, 324, 364, 366->371, 395, 400->398, 415, 423, 427, 433, 463, 467->465, 469, 479-480, 483-487, 490, 591-597, 665, 685, 708-709, 733->732, 736->738, 739, 782->787 |
+| src/pretalx/orga/views/event.py                                            |      434 |       28 |      114 |       25 |     90% |156-157, 205, 272, 324, 364, 366->371, 395, 400->398, 415, 423, 427, 433, 463, 467->465, 469, 479-480, 483-487, 490, 595-601, 669, 689, 712-713, 737->736, 740->742, 743, 786->791 |
 | src/pretalx/orga/views/mails.py                                            |      351 |       45 |       72 |       14 |     83% |57-58, 193-195, 205, 214-216, 266-272, 348-350, 384->392, 388, 414, 419-420, 447, 471, 477-522, 549-551, 566, 572, 590 |
 | src/pretalx/orga/views/organiser.py                                        |      313 |       27 |       58 |        8 |     85% |119-121, 142-143, 158-159, 294-295, 336, 383, 396, 398-414, 480-482 |
 | src/pretalx/orga/views/person.py                                           |      120 |       20 |       30 |        5 |     81% |77-86, 90-97, 99-107, 156, 165, 181-182 |
@@ -320,7 +320,7 @@
 | src/tests/conftest.py                                                      |      546 |        0 |       12 |        0 |    100% |           |
 | src/tests/dummy\_app.py                                                    |       13 |        0 |        0 |        0 |    100% |           |
 | src/tests/dummy\_signals.py                                                |       52 |        0 |        8 |        0 |    100% |           |
-| src/tests/event/test\_event\_model.py                                      |      170 |        0 |        0 |        0 |    100% |           |
+| src/tests/event/test\_event\_model.py                                      |      179 |        0 |        0 |        0 |    100% |           |
 | src/tests/event/test\_event\_services.py                                   |       59 |        0 |        0 |        0 |    100% |           |
 | src/tests/event/test\_event\_stages.py                                     |       24 |        0 |        6 |        0 |    100% |           |
 | src/tests/event/test\_event\_utils.py                                      |       11 |        0 |        0 |        0 |    100% |           |
@@ -335,7 +335,7 @@
 | src/tests/orga/views/test\_orga\_views\_admin.py                           |      104 |        0 |        2 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_cfp.py                             |      808 |        0 |       10 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_dashboard.py                       |      173 |        0 |       52 |        0 |    100% |           |
-| src/tests/orga/views/test\_orga\_views\_event.py                           |      472 |        0 |        2 |        0 |    100% |           |
+| src/tests/orga/views/test\_orga\_views\_event.py                           |      480 |        0 |        2 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_mail.py                            |      417 |        0 |       16 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_organiser.py                       |      339 |        0 |        2 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_person.py                          |       44 |        0 |        2 |        0 |    100% |           |
@@ -366,7 +366,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **35786** | **1836** | **5628** |  **774** | **93%** |           |
+| **TOTAL**                                                                  | **35809** | **1836** | **5632** |  **774** | **93%** |           |
 
 
 ## Setup coverage badge
