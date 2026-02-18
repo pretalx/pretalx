@@ -38,7 +38,7 @@ class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
         data = [
             {
                 "code": answer.speaker.code,
-                "name": answer.speaker.name,
+                "name": answer.speaker.get_display_name(),
                 "email": answer.speaker.user.email,
                 "question": answer.question.question,
                 "answer": answer.answer_string,

@@ -51,7 +51,11 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
     template_name = "orga/speaker/list.html"
     context_object_name = "speakers"
     table_class = SpeakerTable
-    default_filters = ("user__email__icontains", "user__name__icontains")
+    default_filters = (
+        "user__email__icontains",
+        "name__icontains",
+        "user__name__icontains",
+    )
     permission_required = "person.orga_list_speakerprofile"
 
     def get_filter_form(self):
@@ -104,7 +108,7 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
                 question_id=question, speaker_id=OuterRef("pk")
             )
             qs = qs.annotate(has_answer=Exists(answers)).filter(has_answer=False)
-        return qs.order_by("id").distinct().order_by(Lower("user__name"))
+        return qs.order_by("id").distinct().order_by(Lower("name"))
 
     def get_table_data(self):
         return self.get_queryset()

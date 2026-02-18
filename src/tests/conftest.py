@@ -754,7 +754,8 @@ def speaker_profile(event):
             user=user,
             event=event,
             biography="Best speaker in the world.",
-            name=user.name,
+            name="Jane the Speaker",
+            code="SPEAKER1",
         )
     return profile
 
@@ -777,7 +778,9 @@ def other_speaker(event):
             email="speaker2@example.com", password="speakerpwd1!", name="Krümelmonster"
         )
     with scope(event=event):
-        SpeakerProfile.objects.create(user=user, event=event, biography="COOKIIIIES!!")
+        SpeakerProfile.objects.create(
+            user=user, event=event, biography="COOKIIIIES!!", code="SPEAKER2"
+        )
     return user
 
 

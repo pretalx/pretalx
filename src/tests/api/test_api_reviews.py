@@ -145,7 +145,7 @@ def test_orga_can_see_expanded_reviews(
     assert len(content["results"]) == 1
     data = content["results"][0]
     assert data["submission"]["code"] == review.submission.code
-    assert data["submission"]["speakers"][0]["code"] == speaker.user.code
+    assert data["submission"]["speakers"][0]["code"] == speaker.code
     assert data["submission"]["track"]["name"]["en"] == track.name
     assert data["submission"]["submission_type"]["name"]["en"] == submission_type.name
     assert data["user"]["code"] == user.code
@@ -648,7 +648,7 @@ def test_orga_can_see_expanded_review_detail(
     assert response.status_code == 200
     assert content["id"] == review.pk
     assert content["submission"]["code"] == review.submission.code
-    assert content["submission"]["speakers"][0]["code"] == speaker.user.code
+    assert content["submission"]["speakers"][0]["code"] == speaker.code
     assert content["submission"]["track"]["name"]["en"] == track.name
     assert (
         content["submission"]["submission_type"]["name"]["en"] == submission_type.name

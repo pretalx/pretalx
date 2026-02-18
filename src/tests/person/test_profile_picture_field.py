@@ -286,7 +286,7 @@ def test_orga_edit_speaker_upload_avatar(
     response = orga_client.post(
         url,
         data={
-            "name": speaker.name,
+            "name": speaker_profile.name,
             "email": speaker.email,
             "biography": "bio",
             "avatar_action": "upload",

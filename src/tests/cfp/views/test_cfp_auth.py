@@ -11,45 +11,45 @@ from pretalx.person.forms.user import UserForm
 
 
 @pytest.mark.django_db
-def test_can_login_with_email(speaker, client, event):
+def test_can_login_with_email(speaker, speaker_profile, client, event):
     response = client.post(
         event.urls.login,
         data={"login_email": "jane@speaker.org", "login_password": "speakerpwd1!"},
         follow=True,
     )
     assert response.status_code == 200
-    assert speaker.get_display_name() in response.text
+    assert speaker_profile.get_display_name() in response.text
 
 
 @pytest.mark.django_db
-def test_cannot_login_with_incorrect_email(client, event, speaker):
+def test_cannot_login_with_incorrect_email(client, event, speaker, speaker_profile):
     response = client.post(
         event.urls.login,
         data={"login_email": "jane001@me.space", "login_password": "speakerpwd1!"},
         follow=True,
     )
     assert response.status_code == 200
-    assert speaker.get_display_name() not in response.text
+    assert speaker_profile.get_display_name() not in response.text
 
 
 @pytest.mark.django_db
-def test_cfp_logout(speaker_client, event, speaker):
+def test_cfp_logout(speaker_client, event, speaker, speaker_profile):
     response = speaker_client.get(
         event.urls.logout,
         follow=True,
     )
     assert response.status_code == 200
-    assert speaker.get_display_name() in response.text
+    assert speaker_profile.get_display_name() in response.text
     response = speaker_client.post(
         event.urls.logout,
         follow=True,
     )
     assert response.status_code == 200
-    assert speaker.get_display_name() not in response.text
+    assert speaker_profile.get_display_name() not in response.text
 
 
 @pytest.mark.django_db
-def test_can_reset_password_by_email(speaker, client, event):
+def test_can_reset_password_by_email(speaker, speaker_profile, client, event):
     response = client.post(
         event.urls.reset,
         data={
@@ -73,7 +73,7 @@ def test_can_reset_password_by_email(speaker, client, event):
         data={"login_email": speaker.email, "login_password": "mynewpassword1!"},
         follow=True,
     )
-    assert speaker.get_display_name() in response.text
+    assert speaker_profile.get_display_name() in response.text
 
 
 @pytest.mark.django_db
@@ -87,7 +87,9 @@ def test_cannot_use_incorrect_token(speaker, client, event):
 
 
 @pytest.mark.django_db
-def test_cannot_reset_password_with_incorrect_input(speaker, client, event):
+def test_cannot_reset_password_with_incorrect_input(
+    speaker, speaker_profile, client, event
+):
     response = client.post(
         event.urls.reset,
         data={
@@ -111,11 +113,13 @@ def test_cannot_reset_password_with_incorrect_input(speaker, client, event):
         data={"login_email": speaker.email, "login_password": "mynewpassword1!"},
         follow=True,
     )
-    assert speaker.get_display_name() not in response.text
+    assert speaker_profile.get_display_name() not in response.text
 
 
 @pytest.mark.django_db
-def test_cannot_reset_password_to_insecure_password(speaker, client, event):
+def test_cannot_reset_password_to_insecure_password(
+    speaker, speaker_profile, client, event
+):
     response = client.post(
         event.urls.reset,
         data={
@@ -139,7 +143,7 @@ def test_cannot_reset_password_to_insecure_password(speaker, client, event):
         data={"login_email": speaker.email, "login_password": "mynewpassword1!"},
         follow=True,
     )
-    assert speaker.get_display_name() not in response.text
+    assert speaker_profile.get_display_name() not in response.text
 
 
 @pytest.mark.django_db

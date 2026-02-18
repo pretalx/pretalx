@@ -54,8 +54,8 @@ def test_speaker_list_anonymous_public(
     assert content["count"] == 1
     assert len(content["results"]) == 1
     result = content["results"][0]
-    assert result["code"] == speaker.code
-    assert result["name"] == speaker.name
+    assert result["code"] == speaker_profile.code
+    assert result["name"] == speaker_profile.get_display_name()
     assert result["biography"] == speaker_profile.biography
     assert accepted_submission.code not in result["submissions"]
     assert rejected_submission.code not in result["submissions"]
@@ -116,7 +116,7 @@ def test_speaker_list_reviewer_nopublic_names_visible(
 
     with scope(event=event):
         speakers = {
-            sub.speakers.first().user.code
+            sub.speakers.first().code
             for sub in [accepted_submission, rejected_submission]
         }
 
@@ -138,6 +138,7 @@ def test_speaker_list_orga_nopublic(
     orga_user_token,
     event,
     speaker,
+    speaker_profile,
     other_speaker,
     accepted_submission,
     rejected_submission,
@@ -164,7 +165,7 @@ def test_speaker_list_orga_nopublic(
     assert response.status_code == 200
     content = json.loads(response.text)
     assert content["count"] == item_count
-    assert speaker.code in [r["code"] for r in content["results"]]
+    assert speaker_profile.code in [r["code"] for r in content["results"]]
     first_result = content["results"][0]
     assert "email" in first_result
     assert "has_arrived" in first_result
@@ -204,12 +205,12 @@ def test_speaker_list_orga_pagination_page_number(
 
 @pytest.mark.django_db
 def test_speaker_list_search_by_name(
-    client, event, speaker, slot, other_slot, other_speaker
+    client, event, speaker, speaker_profile, slot, other_slot, other_speaker
 ):
     with scope(event=event):
         profile = other_speaker.get_speaker(event)
         other_slot.submission.speakers.add(profile)
-    name_to_find = speaker.name
+    name_to_find = speaker_profile.get_display_name()
     response = client.get(
         event.api_urls.speakers + f"?q={name_to_find}",
         follow=True,
@@ -260,7 +261,13 @@ def test_speaker_list_search_by_email_authenticated(
 
 @pytest.mark.django_db
 def test_speaker_list_expand_submissions(
-    client, orga_user_token, event, accepted_submission, rejected_submission, speaker
+    client,
+    orga_user_token,
+    event,
+    accepted_submission,
+    rejected_submission,
+    speaker,
+    speaker_profile,
 ):
     response = client.get(
         event.api_urls.speakers + "?expand=submissions",
@@ -269,7 +276,9 @@ def test_speaker_list_expand_submissions(
     )
     assert response.status_code == 200
     content = json.loads(response.text)
-    result = next(res for res in content["results"] if res["code"] == speaker.code)
+    result = next(
+        res for res in content["results"] if res["code"] == speaker_profile.code
+    )
     assert isinstance(result["submissions"], list)
     assert len(result["submissions"]) > 0
     assert "title" in result["submissions"][0]
@@ -284,6 +293,7 @@ def test_speaker_list_expand_answers(
     accepted_submission,
     rejected_submission,
     speaker,
+    speaker_profile,
     other_speaker,
     personal_answer,
 ):
@@ -300,7 +310,9 @@ def test_speaker_list_expand_answers(
     )
     assert response.status_code == 200, response.text
     content = json.loads(response.text)
-    result = next(res for res in content["results"] if res["code"] == speaker.code)
+    result = next(
+        res for res in content["results"] if res["code"] == speaker_profile.code
+    )
     assert isinstance(result["answers"], list)
     assert len(result["answers"]) == 1
     assert "question" in result["answers"][0]
@@ -349,7 +361,7 @@ def test_speaker_list_multiple_talks_not_duplicated(client, event, slot, other_s
     content = json.loads(response.text)
 
     assert content["count"] == 1
-    assert content["results"][0]["code"] == speaker.user.code
+    assert content["results"][0]["code"] == speaker.code
     assert set(content["results"][0]["submissions"]) == {
         submission.code,
         other_submission.code,
@@ -357,10 +369,14 @@ def test_speaker_list_multiple_talks_not_duplicated(client, event, slot, other_s
 
 
 @pytest.mark.django_db
-def test_speaker_retrieve_anonymous_nopublic(client, event, speaker, slot):
+def test_speaker_retrieve_anonymous_nopublic(
+    client, event, speaker, speaker_profile, slot
+):
     event.feature_flags["show_schedule"] = False
     event.save()
-    response = client.get(event.api_urls.speakers + f"{speaker.code}/", follow=True)
+    response = client.get(
+        event.api_urls.speakers + f"{speaker_profile.code}/", follow=True
+    )
     assert response.status_code == 404
 
 
@@ -372,13 +388,11 @@ def test_speaker_retrieve_anonymous_public(
         speaker = accepted_submission.speakers.first()
         submission = slot.submission
 
-    response = client.get(
-        event.api_urls.speakers + f"{speaker.user.code}/", follow=True
-    )
+    response = client.get(event.api_urls.speakers + f"{speaker.code}/", follow=True)
     assert response.status_code == 200
     content = json.loads(response.text)
-    assert content["code"] == speaker.user.code
-    assert content["name"] == speaker.user.name
+    assert content["code"] == speaker.code
+    assert content["name"] == speaker.get_display_name()
     assert content["biography"] == speaker.biography
     assert accepted_submission.code not in content["submissions"]
     assert submission.code in content["submissions"]
@@ -387,26 +401,32 @@ def test_speaker_retrieve_anonymous_public(
 
 @pytest.mark.django_db
 def test_speaker_retrieve_orga(
-    client, orga_user_token, event, speaker, accepted_submission
+    client, orga_user_token, event, speaker, speaker_profile, accepted_submission
 ):
     response = client.get(
-        event.api_urls.speakers + f"{speaker.code}/",
+        event.api_urls.speakers + f"{speaker_profile.code}/",
         follow=True,
         headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 200
     content = json.loads(response.text)
-    assert content["code"] == speaker.code
-    assert content["name"] == speaker.name
+    assert content["code"] == speaker_profile.code
+    assert content["name"] == speaker_profile.get_display_name()
     assert "email" in content
 
 
 @pytest.mark.django_db
 def test_speaker_retrieve_expand_answers(
-    client, orga_user_token, event, personal_answer, speaker, accepted_submission
+    client,
+    orga_user_token,
+    event,
+    personal_answer,
+    speaker,
+    speaker_profile,
+    accepted_submission,
 ):
     response = client.get(
-        event.api_urls.speakers + f"{speaker.code}/?expand=answers",
+        event.api_urls.speakers + f"{speaker_profile.code}/?expand=answers",
         follow=True,
         headers={"Authorization": f"Token {orga_user_token.token}"},
     )
@@ -435,6 +455,7 @@ def test_speaker_answer_visibility(
     review_user_token,
     event,
     speaker,
+    speaker_profile,
     slot,
     personal_answer,
     is_visible_to_reviewers,
@@ -450,7 +471,7 @@ def test_speaker_answer_visibility(
 
     expand = "?expand=answers" if expand else ""
     response = client.get(
-        event.api_urls.speakers + f"{speaker.code}/{expand}",
+        event.api_urls.speakers + f"{speaker_profile.code}/{expand}",
         follow=True,
         headers={"Authorization": f"Token {token.token}"},
     )
@@ -473,7 +494,7 @@ def test_speaker_update_by_orga(
 ):
     new_bio = "An updated biography."
     response = client.patch(
-        event.api_urls.speakers + f"{speaker.code}/",
+        event.api_urls.speakers + f"{speaker_profile.code}/",
         data=json.dumps({"biography": new_bio}),
         follow=True,
         content_type="application/json",
@@ -495,10 +516,10 @@ def test_speaker_update_by_orga(
 
 @pytest.mark.django_db
 def test_speaker_update_by_orga_readonly(
-    client, orga_user_token, event, speaker, submission
+    client, orga_user_token, event, speaker, speaker_profile, submission
 ):
     response = client.patch(
-        event.api_urls.speakers + f"{speaker.code}/",
+        event.api_urls.speakers + f"{speaker_profile.code}/",
         data=json.dumps({"biography": "Readonly update attempt"}),
         follow=True,
         content_type="application/json",
@@ -509,10 +530,10 @@ def test_speaker_update_by_orga_readonly(
 
 @pytest.mark.django_db
 def test_speaker_update_by_reviewer(
-    client, review_user_token, event, speaker, submission
+    client, review_user_token, event, speaker, speaker_profile, submission
 ):
     response = client.patch(
-        event.api_urls.speakers + f"{speaker.code}/",
+        event.api_urls.speakers + f"{speaker_profile.code}/",
         data=json.dumps({"biography": "Reviewer update attempt"}),
         follow=True,
         content_type="application/json",
@@ -522,9 +543,9 @@ def test_speaker_update_by_reviewer(
 
 
 @pytest.mark.django_db
-def test_speaker_update_by_anonymous(client, event, speaker, slot):
+def test_speaker_update_by_anonymous(client, event, speaker, speaker_profile, slot):
     response = client.patch(
-        event.api_urls.speakers + f"{speaker.code}/",
+        event.api_urls.speakers + f"{speaker_profile.code}/",
         data=json.dumps({"biography": "Anonymous update attempt"}),
         follow=True,
         content_type="application/json",
@@ -539,7 +560,7 @@ def test_speaker_update_change_name_email(
     new_name = "New Speaker Name"
     new_email = "new.speaker@example.com"
     response = client.patch(
-        event.api_urls.speakers + f"{speaker.code}/",
+        event.api_urls.speakers + f"{speaker_profile.code}/",
         data=json.dumps({"name": new_name, "email": new_email}),
         follow=True,
         content_type="application/json",
@@ -551,8 +572,10 @@ def test_speaker_update_change_name_email(
     assert content["email"] == new_email
 
     with scope(event=event):
+        speaker_profile.refresh_from_db()
         speaker.refresh_from_db()
-        assert speaker.name == new_name
+        assert speaker_profile.name == new_name
+        assert speaker.name != new_name
         assert speaker.email == new_email
         assert (
             speaker_profile.logged_actions()
@@ -563,10 +586,16 @@ def test_speaker_update_change_name_email(
 
 @pytest.mark.django_db
 def test_speaker_update_by_orga_duplicate_email(
-    client, orga_user_write_token, event, speaker, other_speaker, submission
+    client,
+    orga_user_write_token,
+    event,
+    speaker,
+    speaker_profile,
+    other_speaker,
+    submission,
 ):
     response = client.patch(
-        event.api_urls.speakers + f"{speaker.code}/",
+        event.api_urls.speakers + f"{speaker_profile.code}/",
         data=json.dumps({"email": other_speaker.email}),
         follow=True,
         content_type="application/json",
@@ -586,6 +615,7 @@ def test_speaker_retrieve_answers_scoped_to_event(
     event,
     other_event,
     speaker,
+    speaker_profile,
     submission_data,
     speaker_answer,
     orga_user,
@@ -614,7 +644,7 @@ def test_speaker_retrieve_answers_scoped_to_event(
         other_orga_user_token.events.add(other_event)
 
     response1 = client.get(
-        event.api_urls.speakers + f"{speaker.code}/?expand=answers",
+        event.api_urls.speakers + f"{speaker_profile.code}/?expand=answers",
         follow=True,
         headers={"Authorization": f"Token {orga_user_token.token}"},
     )
@@ -624,7 +654,7 @@ def test_speaker_retrieve_answers_scoped_to_event(
     assert content1["answers"][0]["id"] == speaker_answer.pk
 
     response2 = client.get(
-        other_event.api_urls.speakers + f"{speaker.code}/?expand=answers",
+        other_event.api_urls.speakers + f"{other_profile.code}/?expand=answers",
         follow=True,
         headers={"Authorization": f"Token {other_orga_user_token.token}"},
     )

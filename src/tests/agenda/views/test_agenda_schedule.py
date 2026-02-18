@@ -167,6 +167,7 @@ def test_speaker_list(
     django_assert_num_queries,
     event,
     speaker,
+    speaker_profile,
     other_speaker,
     slot,
     other_slot,
@@ -179,9 +180,11 @@ def test_speaker_list(
     with django_assert_num_queries(9):
         response = client.get(event.urls.speakers, follow=True)
     assert response.status_code == 200
-    assert speaker.name in response.text
+    assert speaker_profile.get_display_name() in response.text
     if item_count == 2:
-        assert other_speaker.name in response.text
+        with scope(event=event):
+            other_profile = other_speaker.get_speaker(event)
+        assert other_profile.get_display_name() in response.text
 
 
 @pytest.mark.django_db

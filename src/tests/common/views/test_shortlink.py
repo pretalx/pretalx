@@ -31,33 +31,29 @@ def test_shortlink_submission_no_access(client, submission, event):
 
 
 @pytest.mark.django_db
-def test_shortlink_user_admin_access(client, speaker, event):
+def test_shortlink_user_admin_access(client, speaker, speaker_profile, event):
     admin_user = User.objects.create_user("admin@example.com", is_administrator=True)
     client.force_login(admin_user)
-    with scope(event=event):
-        profile = SpeakerProfile.objects.get(user=speaker, event=event)
-    response = client.get(f"/redirect/{profile.code}")
+    response = client.get(f"/redirect/{speaker_profile.code}")
     assert response.status_code == 302
     assert response.url == speaker.orga_urls.admin
 
 
 @pytest.mark.django_db
-def test_shortlink_user_orga_access_to_profile(orga_client, speaker, event):
-    with scope(event=event):
-        profile = SpeakerProfile.objects.get(user=speaker, event=event)
-        response = orga_client.get(f"/redirect/{profile.code}")
-        assert response.status_code == 302
-        assert response.url == profile.orga_urls.base
+def test_shortlink_user_orga_access_to_profile(
+    orga_client, speaker, speaker_profile, event
+):
+    response = orga_client.get(f"/redirect/{speaker_profile.code}")
+    assert response.status_code == 302
+    assert response.url == speaker_profile.orga_urls.base
 
 
 @pytest.mark.django_db
-def test_shortlink_user_self_access(client, speaker, event):
+def test_shortlink_user_self_access(client, speaker, speaker_profile, event):
     client.force_login(speaker)
-    with scope(event=event):
-        profile = SpeakerProfile.objects.get(user=speaker, event=event)
-        response = client.get(f"/redirect/{profile.code}")
-        assert response.status_code == 302
-        assert response.url == event.urls.user
+    response = client.get(f"/redirect/{speaker_profile.code}")
+    assert response.status_code == 302
+    assert response.url == event.urls.user
 
 
 @pytest.mark.django_db
@@ -108,31 +104,25 @@ def test_shortlink_empty_code(client):
 
 @pytest.mark.django_db
 def test_shortlink_multiple_profiles_latest_first(
-    orga_client, speaker, event, other_event
+    orga_client, speaker, speaker_profile, event, other_event
 ):
-    with scope(event=event):
-        profile = SpeakerProfile.objects.get(user=speaker, event=event)
     with scope(event=other_event):
         SpeakerProfile.objects.get_or_create(user=speaker, event=other_event)
 
-    response = orga_client.get(f"/redirect/{profile.code}")
+    response = orga_client.get(f"/redirect/{speaker_profile.code}")
     assert response.status_code == 302
     assert "/orga/event/" in response.url
-    assert f"/speakers/{profile.code}/" in response.url
+    assert f"/speakers/{speaker_profile.code}/" in response.url
 
 
 @pytest.mark.django_db
 def test_shortlink_user_multiple_events_no_orga_access(
-    client, speaker, event, other_event
+    client, speaker, speaker_profile, event, other_event
 ):
     client.force_login(speaker)
-    with scope(event=event):
-        profile = SpeakerProfile.objects.get(user=speaker, event=event)
     with scope(event=other_event):
-        _other_profile, _ = SpeakerProfile.objects.get_or_create(
-            user=speaker, event=other_event
-        )
+        SpeakerProfile.objects.get_or_create(user=speaker, event=other_event)
 
-    response = client.get(f"/redirect/{profile.code}")
+    response = client.get(f"/redirect/{speaker_profile.code}")
     assert response.status_code == 302
     assert response.url == event.urls.user

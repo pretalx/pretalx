@@ -37,8 +37,8 @@ from pretalx.submission.rules import (
 class SpeakerSearchFilter(filters.SearchFilter):
     def get_search_fields(self, view, request):
         if view.is_orga:
-            return ("user__name", "user__email")
-        return ("user__name",)
+            return ("name", "user__name", "user__email")
+        return ("name", "user__name")
 
 
 @extend_schema_view(
@@ -78,10 +78,10 @@ class SpeakerViewSet(
 ):
     serializer_class = SpeakerSerializer
     queryset = SpeakerProfile.objects.none()
-    lookup_field = "user__code__iexact"
-    search_fields = ("user__name", "user__email")
-    ordering_fields = ("user__code", "user__name")
-    ordering = ("user__code",)
+    lookup_field = "code__iexact"
+    search_fields = ("name", "user__name", "user__email")
+    ordering_fields = ("code", "name")
+    ordering = ("code",)
     endpoint = "speakers"
     filter_backends = (SpeakerSearchFilter, DjangoFilterBackend)
 
@@ -94,9 +94,9 @@ class SpeakerViewSet(
 
     def get_legacy_queryset(self):  # pragma: no cover
         if self.request.user.has_perm("person.orga_list_speakerprofile", self.event):
-            return self.event.submitters.order_by("user__code")
+            return self.event.submitters.order_by("code")
         if self.event.current_schedule and self.event.get_feature_flag("show_schedule"):
-            return self.event.speakers.order_by("user__code")
+            return self.event.speakers.order_by("code")
         return SpeakerProfile.objects.none()
 
     def get_serializer(self, *args, **kwargs):
@@ -162,7 +162,7 @@ class SpeakerViewSet(
                     queryset=Answer.objects.select_related("question"),
                 ),
             )
-            .order_by("user__code")
+            .order_by("code")
         )
         if fields := self.check_expanded_fields(
             "answers.question",

@@ -91,7 +91,7 @@ def test_slot_warning_when_speaker_unavailable(slot, availability, room_availabi
         assert warnings[0]["type"] == "speaker"
         assert (
             warnings[0]["message"]
-            == "Jane Speaker is not available at the scheduled time."
+            == "Jane the Speaker is not available at the scheduled time."
         )
 
 
@@ -118,5 +118,5 @@ def test_slot_warning_when_speaker_overbooked(
         assert warnings[1]["type"] == "speaker"
         assert (
             warnings[1]["message"]
-            == "Jane Speaker is scheduled for another session at the same time."
+            == "Jane the Speaker is scheduled for another session at the same time."
         )

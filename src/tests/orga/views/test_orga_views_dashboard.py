@@ -51,7 +51,15 @@ def test_dashboard_event_list(
 @pytest.mark.parametrize("query", ("", "?q=e"))
 @pytest.mark.django_db
 def test_event_dashboard(
-    orga_user, orga_client, review_user, speaker, event, test_user, slot, query
+    orga_user,
+    orga_client,
+    review_user,
+    speaker,
+    speaker_profile,
+    event,
+    test_user,
+    slot,
+    query,
 ):
     ActivityLog.objects.create(
         event=event,
@@ -237,7 +245,7 @@ def test_organiser_speakers_num_queries(
             )
         )
     assert response.status_code == 200
-    assert speaker_profile.get_display_name() in response.text
+    assert speaker_profile.user.get_display_name() in response.text
 
 
 @pytest.mark.django_db

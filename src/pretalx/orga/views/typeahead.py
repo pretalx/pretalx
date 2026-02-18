@@ -53,7 +53,7 @@ def serialize_submission(submission):
 def serialize_speaker(speaker):
     return {
         "type": "speaker",
-        "name": _n("Speaker", "Speakers", 1) + f" {speaker.user.name}",
+        "name": _n("Speaker", "Speakers", 1) + f" {speaker.get_display_name()}",
         "url": speaker.orga_urls.base,
         "event": str(speaker.event.name),
     }
@@ -130,8 +130,8 @@ def nav_typeahead(request):
 
             qs_speakers = (
                 SpeakerProfile.objects.filter(
-                    Q(user__name__icontains=query)
-                    | Q(name__iexact=query)
+                    Q(name__icontains=query)
+                    | Q(user__name__icontains=query)
                     | Q(user__email__iexact=query)
                     | Q(user__code__istartswith=query)
                     | Q(code__istartswith=query),

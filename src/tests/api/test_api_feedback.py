@@ -121,12 +121,11 @@ def test_orga_can_see_expanded_feedback_submission(
 
 @pytest.mark.django_db
 def test_orga_can_see_expanded_feedback_speaker(
-    client, orga_user_token, event, feedback, past_slot, speaker
+    client, orga_user_token, event, feedback, past_slot, speaker, speaker_profile
 ):
     with scope(event=event):
-        profile, _ = SpeakerProfile.objects.get_or_create(user=speaker, event=event)
-        past_slot.submission.speakers.add(profile)
-        feedback.speaker = profile
+        past_slot.submission.speakers.add(speaker_profile)
+        feedback.speaker = speaker_profile
         feedback.save()
 
     response = client.get(
@@ -139,8 +138,8 @@ def test_orga_can_see_expanded_feedback_speaker(
     assert response.status_code == 200
     assert len(content["results"]) == 1
     data = content["results"][0]
-    assert data["speaker"]["code"] == speaker.code
-    assert data["speaker"]["name"] == speaker.name
+    assert data["speaker"]["code"] == speaker_profile.code
+    assert data["speaker"]["name"] == speaker_profile.get_display_name()
     assert "email" not in data["speaker"]
 
 
