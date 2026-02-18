@@ -16,6 +16,7 @@ from django.db.models import (
     IntegerField,
     Max,
     OuterRef,
+    Prefetch,
     Q,
     Subquery,
     When,
@@ -601,7 +602,11 @@ class ReviewViewMixin:
     def submission(self):
         return get_object_or_404(
             self.request.event.submissions.with_sorted_speakers().prefetch_related(
-                "resources"
+                "resources",
+                Prefetch(
+                    "speakers__submissions",
+                    queryset=Submission.objects.select_related("event"),
+                ),
             ),
             code__iexact=self.kwargs["code"],
         )
@@ -643,6 +648,10 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
     def is_speaker(self):
         return is_speaker(self.request.user, self.submission)
 
+    @cached_property
+    def review_questions(self):
+        return list(self.qform.queryset)
+
     @context
     @cached_property
     def review_display(self):
@@ -652,10 +661,10 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
                 "score": review.display_score,
                 "scores": self.get_scores_for_review(review),
                 "text": review.text,
-                "user": review.user,
+                "user": self.request.user,
                 "answers": [
                     review.answers.filter(question=question).first()
-                    for question in self.qform.queryset
+                    for question in self.review_questions
                 ],
             }
 
@@ -689,6 +698,7 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
         return scores
 
     @context
+    @cached_property
     def reviews(self):
         if self.is_speaker:
             return []
@@ -700,7 +710,7 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
                 "user": review.user,
                 "answers": [
                     review.answers.filter(question=question).first()
-                    for question in self.qform.queryset
+                    for question in self.review_questions
                 ],
             }
             for review in self.submission.reviews.exclude(
