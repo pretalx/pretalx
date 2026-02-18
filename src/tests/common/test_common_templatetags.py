@@ -97,6 +97,10 @@ def test_common_templatetag_rich_text(text, richer_text, noopener):
             data-toggle="tooltip"
             data-placement="top"
             title="Copy"
+            data-success-message="Copied!"
+            data-error-message="Failed to copy"
+            role="button"
+            tabindex="0"
     >
         foo
     </span>""",
