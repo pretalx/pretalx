@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_efd802ed692eff43_schedule_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-18 18:01 +0000
+            created at 2026-02-18 18:08 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -960,7 +960,7 @@
     <p class="run"><span class="n"><a id="t876" href="#t876">876</a></span><span class="t">    <span class="op">@</span><span class="nam">context</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t877" href="#t877">877</a></span><span class="t">    <span class="op">@</span><span class="nam">cached_property</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t878" href="#t878">878</a></span><span class="t">    <span class="key">def</span> <span class="nam">count</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t879" href="#t879">879</a></span><span class="t">        <span class="key">return</span> <span class="nam">sum</span><span class="op">(</span><span class="nam">len</span><span class="op">(</span><span class="nam">proposal</span><span class="op">.</span><span class="nam">speakers</span><span class="op">.</span><span class="nam">all</span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="key">for</span> <span class="nam">proposal</span> <span class="key">in</span> <span class="nam">self</span><span class="op">.</span><span class="nam">get_queryset</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t879" href="#t879">879</a></span><span class="t">        <span class="key">return</span> <span class="nam">self</span><span class="op">.</span><span class="nam">get_queryset</span><span class="op">(</span><span class="op">)</span><span class="op">.</span><span class="nam">aggregate</span><span class="op">(</span><span class="nam">total</span><span class="op">=</span><span class="nam">Count</span><span class="op">(</span><span class="str">"speakers"</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="str">"total"</span><span class="op">]</span> <span class="key">or</span> <span class="num">0</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t880" href="#t880">880</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t881" href="#t881">881</a></span><span class="t">    <span class="key">def</span> <span class="nam">action_text</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t882" href="#t882">882</a></span><span class="t">        <span class="key">return</span> <span class="nam">_</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -1167,7 +1167,7 @@
             <a class="nav" href="z_efd802ed692eff43_schedule_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-18 18:01 +0000
+            created at 2026-02-18 18:08 +0000
         </p>
     </div>
 </footer>
