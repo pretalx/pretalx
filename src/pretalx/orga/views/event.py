@@ -500,7 +500,11 @@ class PhaseActivate(EventSettingsPermission, View):
     def dispatch(self, request, *args, **kwargs):
         super().dispatch(request, *args, **kwargs)
         phase = self.get_object()
-        phase.activate()
+        if phase.is_active:
+            phase.is_active = False
+            phase.save()
+        else:
+            phase.activate()
         return redirect(self.request.event.orga_urls.review_settings)
 
 

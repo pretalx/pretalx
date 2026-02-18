@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :bug:`orga` Review phases with a future start date are no longer incorrectly marked as active, and active phases can now be deactivated by clicking the active-phase button.
 - :feature:`cfp` When starting a submission at a new event, speakers are offered their biographies from other events as suggestions, so they don't have to re-type them.
 - :feature:`cfp` Speakers can now use different profile pictures for each event they submit proposals to, with the option to re-use profile pictures they used for other events.
 - :announcement:`cfp` We no longer support pulling in profile pictures from external sources like gravatar.
