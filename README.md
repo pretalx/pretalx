@@ -114,7 +114,7 @@
 | src/pretalx/common/models/fields.py                                        |       11 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/models/file.py                                          |       23 |        1 |        2 |        1 |     92% |        46 |
 | src/pretalx/common/models/log.py                                           |       71 |        7 |       28 |        8 |     85% |83, 89->93, 98, 101, 106, 110->125, 115->125, 118, 123-124 |
-| src/pretalx/common/models/mixins.py                                        |      205 |       27 |       84 |        6 |     84% |47, 128, 307, 324->322, 348, 351->exit, 355-358, 377-380, 383, 386, 389, 392, 396, 399-409 |
+| src/pretalx/common/models/mixins.py                                        |      206 |       27 |       84 |        6 |     84% |47, 128, 307, 324->322, 348, 351->exit, 356-359, 378-381, 384, 387, 390, 393, 397, 400-410 |
 | src/pretalx/common/models/transaction.py                                   |       12 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/plugins.py                                              |       30 |        0 |        8 |        1 |     97% |    63->69 |
 | src/pretalx/common/settings/config.py                                      |       23 |        1 |        2 |        1 |     92% |       172 |
@@ -366,7 +366,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **35884** | **1834** | **5636** |  **774** | **93%** |           |
+| **TOTAL**                                                                  | **35885** | **1834** | **5636** |  **774** | **93%** |           |
 
 
 ## Setup coverage badge
