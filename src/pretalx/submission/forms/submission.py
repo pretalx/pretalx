@@ -443,9 +443,13 @@ class SubmissionFilterForm(forms.Form):
         if not self.event.tags.all().exists():
             self.fields.pop("tags", None)
         else:
-            self.fields["tags"].queryset = event.tags.prefetch_related(
-                "submissions"
-            ).annotate(submission_count=Count("submissions", distinct=True))
+            self.fields["tags"].queryset = event.tags.annotate(
+                count=Count(
+                    "submissions",
+                    distinct=True,
+                    filter=~Q(submissions__state=SubmissionStates.DRAFT),
+                )
+            )
 
         if usable_states:
             usable_states = [
