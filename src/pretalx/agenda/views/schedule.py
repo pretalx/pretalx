@@ -198,7 +198,6 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
 def schedule_messages(request, **kwargs):
     """This view is cached for a day, as it is small and non-critical, but loaded synchronously."""
     strings = {
-        "clear_all": _("Clear all"),
         "clear_filters": _("Clear filters"),
         "favs_not_logged_in": _(
             "You're currently not logged in, so your favourited talks will only be stored locally in your browser."
