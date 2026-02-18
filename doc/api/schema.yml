@@ -309,10 +309,6 @@ paths:
         schema:
           type: integer
       - in: query
-        name: person
-        schema:
-          type: string
-      - in: query
         name: q
         schema:
           type: string
@@ -325,6 +321,10 @@ paths:
         name: review
         schema:
           type: number
+      - in: query
+        name: speaker
+        schema:
+          type: string
       - in: query
         name: submission
         schema:
@@ -404,7 +404,7 @@ paths:
     put:
       operationId: answers_update
       description: Please note that you cannot change an answer’s related objects
-        (question, submission, review, person).
+        (question, submission, review, speaker).
       summary: Update Answer
       parameters:
       - in: path
@@ -437,7 +437,7 @@ paths:
     patch:
       operationId: answers_partial_update
       description: Please note that you cannot change an answer’s related objects
-        (question, submission, review, person).
+        (question, submission, review, speaker).
       summary: Update Answer (Partial Update)
       parameters:
       - in: path
@@ -524,10 +524,6 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
-      - in: query
-        name: person
-        schema:
-          type: string
       - name: q
         required: false
         in: query
@@ -542,6 +538,10 @@ paths:
         name: review
         schema:
           type: number
+      - in: query
+        name: speaker
+        schema:
+          type: string
       - in: query
         name: submission
         schema:
@@ -1110,7 +1110,7 @@ paths:
           description: ''
     delete:
       operationId: question_options_destroy
-      description: Deleting a question option is only possible if it hasn't been used
+      description: Deleting a question option is only possible if it hasn’t been used
         in any answers yet.
       summary: Delete Question Option
       parameters:
@@ -1622,7 +1622,6 @@ paths:
         name: speaker
         schema:
           type: string
-          nullable: true
         description: Filter by speaker code (for the submission being reviewed)
       - in: query
         name: submission
@@ -1905,7 +1904,6 @@ paths:
         name: speaker
         schema:
           type: string
-          nullable: true
         description: Filter by speaker code (for the submission being reviewed)
       - in: query
         name: submission
@@ -2494,7 +2492,6 @@ paths:
         name: speaker
         schema:
           type: string
-          nullable: true
       - in: query
         name: submission
         schema:
@@ -2939,11 +2936,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedSpeakerList'
           description: ''
-  /api/events/{event}/speakers/{user__code__iexact}/:
+  /api/events/{event}/speakers/{code__iexact}/:
     get:
       operationId: speakers_retrieve
       summary: Show Speaker
       parameters:
+      - in: path
+        name: code__iexact
+        schema:
+          type: string
+        required: true
       - in: path
         name: event
         schema:
@@ -2961,11 +2963,6 @@ paths:
             - answers.question
             - submissions
         description: Select fields to <a href="https://docs.pretalx.org/api/fundamentals/#expanding-linked-resources">expand</a>.
-      - in: path
-        name: user__code__iexact
-        schema:
-          type: string
-        required: true
       tags:
       - speakers
       responses:
@@ -2980,15 +2977,15 @@ paths:
       summary: Update Speaker
       parameters:
       - in: path
+        name: code__iexact
+        schema:
+          type: string
+        required: true
+      - in: path
         name: event
         schema:
           type: string
           description: The event’s slug
-        required: true
-      - in: path
-        name: user__code__iexact
-        schema:
-          type: string
         required: true
       tags:
       - speakers
@@ -3010,15 +3007,15 @@ paths:
       summary: Update Speaker (Partial Update)
       parameters:
       - in: path
+        name: code__iexact
+        schema:
+          type: string
+        required: true
+      - in: path
         name: event
         schema:
           type: string
           description: The event’s slug
-        required: true
-      - in: path
-        name: user__code__iexact
-        schema:
-          type: string
         required: true
       tags:
       - speakers
@@ -4923,7 +4920,6 @@ components:
           readOnly: true
         person:
           type: string
-          nullable: true
           readOnly: true
         options:
           type: array
@@ -5001,8 +4997,8 @@ components:
           nullable: true
         person:
           type: string
-          nullable: true
           minLength: 1
+          nullable: true
         options:
           type: array
           items:
@@ -5300,7 +5296,6 @@ components:
           readOnly: true
         speaker:
           type: string
-          nullable: true
           readOnly: true
         rating:
           type: integer
@@ -8025,6 +8020,7 @@ components:
       - speaker.invite
       - speaker.invite.existing
       - question.reminder
+      - draft.reminder
       - schedule.new
       type: string
       description: |-
@@ -8035,6 +8031,7 @@ components:
         * `speaker.invite` - Add a speaker to a proposal (new account)
         * `speaker.invite.existing` - Add a speaker to a proposal (existing account)
         * `question.reminder` - Custom fields reminder
+        * `draft.reminder` - Draft proposal reminder
         * `schedule.new` - New schedule published
 servers:
 - url: https://pretalx.com
