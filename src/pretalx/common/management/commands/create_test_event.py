@@ -154,12 +154,13 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
                 else:
                     email = f"{email_base.split('@')[0]}{attempt}@{email_base.split('@')[1]}"
 
-                return User.objects.create_user(
-                    name=name,
-                    email=email,
-                    locale=locale,
-                    timezone=timezone,
-                )
+                with transaction.atomic():
+                    return User.objects.create_user(
+                        name=name,
+                        email=email,
+                        locale=locale,
+                        timezone=timezone,
+                    )
             except IntegrityError:
                 if attempt == max_retries - 1:
                     raise
