@@ -4,7 +4,7 @@
 from contextlib import suppress
 
 from django.contrib.contenttypes.models import ContentType
-from django.db import IntegrityError, models
+from django.db import IntegrityError, models, transaction
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -351,7 +351,8 @@ class GenerateCode:
         for attempt in range(3):
             self.assign_code()
             try:
-                return super().save(*args, **kwargs)
+                with transaction.atomic():
+                    return super().save(*args, **kwargs)
             except IntegrityError:
                 if attempt == 2:
                     raise
