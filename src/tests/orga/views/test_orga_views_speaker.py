@@ -10,6 +10,7 @@ from django_scopes import scope, scopes_disabled
 
 from pretalx.orga.signals import speaker_form
 from pretalx.person.models import SpeakerInformation, SpeakerProfile
+from pretalx.submission.models import Answer
 from pretalx.submission.models.question import QuestionRequired
 
 
@@ -169,6 +170,34 @@ def test_orga_can_edit_speaker_with_custom_field_consolidated_log(
         assert update_log.changes["name"]["new"] == "Updated Speaker Name"
         question_key = f"question-{speaker_question.pk}"
         assert update_log.changes[question_key]["new"] == "My speaker answer"
+
+
+@pytest.mark.django_db
+def test_orga_can_clear_choice_question_answer(
+    orga_client, speaker, speaker_profile, event, submission, choice_question
+):
+    with scope(event=event):
+        url = speaker_profile.orga_urls.base
+        answer = Answer.objects.create(
+            question=choice_question, speaker=speaker_profile
+        )
+        answer.options.set([choice_question.options.first()])
+        answer.save()
+        assert Answer.objects.filter(pk=answer.pk).exists()
+
+    response = orga_client.post(
+        url,
+        data={
+            "name": speaker_profile.name,
+            "biography": speaker_profile.biography,
+            "email": speaker.email,
+            f"question_{choice_question.pk}": "",
+        },
+        follow=True,
+    )
+    assert response.status_code == 200
+    with scope(event=event):
+        assert not Answer.objects.filter(pk=answer.pk).exists()
 
 
 @pytest.mark.django_db
