@@ -80,10 +80,10 @@ jobs:
           sudo apt update
           sudo apt install -y gettext
       - name: Install Python dependencies
-        run: just install --extra dev && uv pip install Faker drf_spectacular
+        run: just install --extra dev && uv pip install Faker
         if: matrix.database != 'postgres'
       - name: Install Python dependencies
-        run: just install --extra dev --extra postgres && uv pip install Faker drf_spectacular
+        run: just install --extra dev --extra postgres && uv pip install Faker
         if: matrix.database == 'postgres'
       - name: Install frontend dependencies
         run: just install-npm

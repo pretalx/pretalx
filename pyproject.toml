@@ -72,6 +72,7 @@ dev = [
   "coverage",
   "django-watchfiles",
   "djhtml",
+  "drf-spectacular",
   "freezegun",
   "jsonschema",
   "polib",
@@ -87,7 +88,7 @@ dev = [
   "urllib3",
 ]
 devdocs = [
-  "drf-spectacular~=0.29.0",
+  "drf-spectacular",
   "sphinx",
   "sphinx-autobuild",
   "sphinx-autodoc-typehints",
