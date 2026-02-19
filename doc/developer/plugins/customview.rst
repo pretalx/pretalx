@@ -111,6 +111,69 @@ regular view. It will be automatically ensured that:
 * The locale middleware has processed the request
 
 
+API views
+---------
+
+You can also expose `Django REST Framework`_ API endpoints from your plugin.
+Register your URLs with the ``api/events/<event>/p/<pluginname>/`` prefix using
+a DRF `Router <Routers_>`_::
+
+    from rest_framework import routers
+
+    from pretalx.event.models.event import SLUG_REGEX
+
+    from .api import MyViewSet
+
+    router = routers.SimpleRouter()
+    router.register(
+        f"api/events/(?P<event>{SLUG_REGEX})/p/myplugin",
+        MyViewSet,
+        basename="myplugin",
+    )
+    urlpatterns += router.urls
+
+Your view should use ``ApiPermission & PluginPermission`` as its permission
+classes. Set ``plugin_required`` to your plugin's name so that the endpoint is
+only available for events that have your plugin enabled. Access control is
+handled by ``rules_permissions`` on your model::
+
+    from rest_framework import serializers, viewsets
+    from rules.contrib.models import RulesModelBase, RulesModelMixin
+
+    from pretalx.api.permissions import ApiPermission, PluginPermission
+
+
+    class MyModel(RulesModelMixin, models.Model, metaclass=RulesModelBase):
+        class Meta:
+            rules_permissions = {
+                "list": my_list_rule,
+                "create": my_create_rule,
+                "update": my_create_rule,
+            }
+
+
+    class MySerializer(serializers.ModelSerializer):
+        class Meta:
+            model = MyModel
+            fields = ["id", "name"]
+
+
+    class MyViewSet(viewsets.ModelViewSet):
+        serializer_class = MySerializer
+        queryset = MyModel.objects.none()
+        permission_classes = [ApiPermission & PluginPermission]
+        plugin_required = "pretalx_myplugin"
+
+        def get_queryset(self):
+            return MyModel.objects.filter(event=self.request.event)
+
+Token-based API authentication (``Authorization: Token <key>``) works
+automatically — the ``ApiPermission`` class skips the fine-grained endpoint
+permission check for plugin views that don't participate in the core endpoint
+system, while still enforcing event access and object-level permissions via
+Django rules.
+
+
 .. _Django REST Framework: http://www.django-rest-framework.org/
 .. _ViewSets: http://www.django-rest-framework.org/api-guide/viewsets/
 .. _Routers: http://www.django-rest-framework.org/api-guide/routers/

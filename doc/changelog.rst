@@ -8,6 +8,7 @@ Release Notes
 
 - :bug:`orga` Plugin pages (settings, API endpoints) were accessible even when the plugin was not enabled for the event. They now correctly return a 404.
 - :feature:`dev` Plugins can now define ``settings_links`` and ``navigation_links`` in their metadata to show quick-access links on the plugin management page.
+- :bug:`api` API tokens with the ``Token`` prefix no longer receive 403 errors on plugin API endpoints.
 - :bug:`orga:speaker` Clearing a previously set choice question answer on a speaker profile no longer causes a crash.
 - :bug:`orga:review` Review phases with a future start date are no longer incorrectly marked as active, and active phases can now be deactivated by clicking the active-phase button.
 - :bug:`orga:submissions` The tag filter in the submission and review lists now shows the correct submission count instead of always showing (1).
