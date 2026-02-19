@@ -4,6 +4,7 @@
 from django.contrib import messages
 from django.db import transaction
 from django.shortcuts import redirect
+from django.urls import NoReverseMatch, reverse
 from django.utils.functional import cached_property
 from django.views.generic import TemplateView
 from django_context_decorator import context
@@ -17,10 +18,38 @@ class EventPluginsView(EventPermissionRequired, TemplateView):
     template_name = "orga/plugins.html"
     permission_required = "event.update_event"
 
+    def _resolve_links(self, plugin, attr):
+        links = getattr(plugin, attr, None) or []
+        result = []
+        for label, url_name, kwargs in links:
+            try:
+                url = reverse(
+                    url_name,
+                    kwargs={"event": self.request.event.slug, **kwargs},
+                )
+                result.append((url, str(label)))
+            except NoReverseMatch:
+                pass
+        return result
+
     @context
     @cached_property
     def grouped_plugins(self):
-        return get_all_plugins_grouped(self.request.event)
+        grouped = get_all_plugins_grouped(self.request.event)
+        active = self.request.event.plugin_list
+        for plugins in grouped.values():
+            for plugin in plugins:
+                if plugin.module in active:
+                    plugin.resolved_settings_links = self._resolve_links(
+                        plugin, "settings_links"
+                    )
+                    plugin.resolved_navigation_links = self._resolve_links(
+                        plugin, "navigation_links"
+                    )
+                else:
+                    plugin.resolved_settings_links = []
+                    plugin.resolved_navigation_links = []
+        return grouped
 
     @context
     def tablist(self):

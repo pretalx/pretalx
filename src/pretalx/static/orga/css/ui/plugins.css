@@ -19,6 +19,12 @@
   }
 }
 
+.plugin-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+}
+
 /* These rules only apply to the plugin selection in the event creation wizard */
 .form-plugins {
   display: flex;

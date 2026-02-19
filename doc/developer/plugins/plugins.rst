@@ -65,6 +65,11 @@ category           string               A category for your plugin, used to grou
                                         ``EXPORTER``, ``RECORDING``, ``LANGUAGE``, ``OTHER`` (default).
 visible            bool                 Defaults to ``True``. Setting it to ``False`` will hide the plugin
                                         from the plugin list in the event settings.
+settings_links     list of tuples       Optional list of ``(label, url_name, extra_kwargs)`` tuples.
+                                        These are shown as quick-access links on the plugin management
+                                        page for active plugins.
+navigation_links   list of tuples       Same format as ``settings_links``. Use this for links to the
+                                        plugin's main pages (as opposed to its settings).
 ================== ==================== ===========================================================
 
 .. highlight:: python
@@ -89,6 +94,21 @@ A working example would be::
 
 
     default_app_config = "pretalx_facebook.FacebookApp"
+
+If your plugin has a settings or dashboard page, you can add quick-access links
+that will be shown on the plugin management page when the plugin is active::
+
+    class PretalxPluginMeta:
+        # ... other fields ...
+        settings_links = [
+            (_("Settings"), "plugins:pretalx_facebook:settings", {}),
+        ]
+        navigation_links = [
+            (_("Dashboard"), "plugins:pretalx_facebook:dashboard", {}),
+        ]
+
+Each entry is a tuple of ``(label, url_name, extra_kwargs)``. The ``url_name``
+is resolved via Django's ``reverse()`` with the event slug added automatically.
 
 Plugin registration
 -------------------
