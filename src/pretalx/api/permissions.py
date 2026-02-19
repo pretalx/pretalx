@@ -47,10 +47,12 @@ class ApiPermission(BasePermission):
                 ):
                     return False
             endpoint = getattr(view, "endpoint", None)
-            # The log endpoint should behave like the retrieve endpoint
-            permission_action = "retrieve" if view.action == "log" else view.action
-            if not request.auth.has_endpoint_permission(endpoint, permission_action):
-                return False
+            if endpoint:
+                permission_action = "retrieve" if view.action == "log" else view.action
+                if not request.auth.has_endpoint_permission(
+                    endpoint, permission_action
+                ):
+                    return False
 
         if view.detail and not obj:
             # Early out as DRF will check permissions on detail endpoints twice,
