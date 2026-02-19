@@ -24,8 +24,7 @@ To create a new plugin, create a new python package which must be a valid
 You will need some boilerplate for every plugin to get started. To save you
 time, we created a `cookiecutter`_ template that you can use like this::
 
-   (env)$ pip install cookiecutter
-   (env)$ cookiecutter https://github.com/pretalx/pretalx-plugin-cookiecutter
+   $ uvx cookiecutter https://github.com/pretalx/pretalx-plugin-cookiecutter
 
 This will ask you some questions and then create a project folder for your plugin.
 Afterwards install your plugin into pretalx::
