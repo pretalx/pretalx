@@ -20,3 +20,7 @@ class PluginApp(AppConfig):
         description = "Helps to test plugin related things for pretalx"
         visible = True
         version = "0.0.0"
+        settings_links = [
+            ("Settings", "plugins:tests:settings", {}),
+            ("Broken", "plugins:tests:nonexistent", {}),
+        ]

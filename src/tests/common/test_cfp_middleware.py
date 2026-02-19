@@ -84,3 +84,18 @@ def test_unknown_event_on_custom_domain(event_on_foobar, client):
 def test_with_forwarded_host(event_on_foobar, client):
     r = client.get(f"/{event_on_foobar.slug}/", HTTP_X_FORWARDED_HOST="foobar")
     assert r.status_code == 200
+
+
+@pytest.mark.django_db
+def test_disabled_plugin_returns_404(event, orga_client):
+    assert "tests" not in event.plugin_list
+    r = orga_client.get(f"/orga/event/{event.slug}/settings/p/tests/")
+    assert r.status_code == 404
+
+
+@pytest.mark.django_db
+def test_enabled_plugin_returns_200(event, orga_client):
+    event.enable_plugin("tests")
+    event.save()
+    r = orga_client.get(f"/orga/event/{event.slug}/settings/p/tests/")
+    assert r.status_code == 200

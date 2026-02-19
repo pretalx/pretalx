@@ -25,4 +25,16 @@ Include context:
         {% endif %}
         {{ plugin.description|rich_text }}
     </li>
+    {% if plugin.resolved_navigation_links or plugin.resolved_settings_links %}
+        <li class="list-group-item plugin-links">
+            {% for link in plugin.resolved_navigation_links %}
+                <a href="{{ link.0 }}" class="btn btn-sm btn-outline-primary">{{ link.1 }}</a>
+            {% endfor %}
+            {% for link in plugin.resolved_settings_links %}
+                <a href="{{ link.0 }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fa fa-cog"></i> {{ link.1 }}
+                </a>
+            {% endfor %}
+        </li>
+    {% endif %}
 </ul>
