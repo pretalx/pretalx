@@ -28,7 +28,7 @@
 | src/pretalx/api/filters/schedule.py                                        |       23 |        0 |        4 |        1 |     96% |  41->exit |
 | src/pretalx/api/filters/submission.py                                      |       10 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/api/pagination.py                                              |       23 |        0 |        4 |        0 |    100% |           |
-| src/pretalx/api/permissions.py                                             |       32 |        0 |       14 |        0 |    100% |           |
+| src/pretalx/api/permissions.py                                             |       33 |        0 |       16 |        1 |     98% |    50->57 |
 | src/pretalx/api/serializers/access\_code.py                                |       19 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/api/serializers/availability.py                                |       20 |        0 |        4 |        0 |    100% |           |
 | src/pretalx/api/serializers/event.py                                       |       23 |        0 |        2 |        0 |    100% |           |
@@ -366,7 +366,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **35932** | **1834** | **5650** |  **774** | **93%** |           |
+| **TOTAL**                                                                  | **35933** | **1834** | **5652** |  **775** | **93%** |           |
 
 
 ## Setup coverage badge
