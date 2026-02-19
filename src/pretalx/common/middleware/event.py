@@ -105,6 +105,16 @@ class EventPermissionMiddleware:
         event = getattr(request, "event", None)
 
         self._select_locale(request)
+
+        if (
+            event
+            and url.namespaces
+            and url.namespaces[0] == "plugins"
+            and len(url.namespaces) > 1
+            and url.namespaces[1] not in event.plugin_list
+        ):
+            raise Http404
+
         is_exempt = (
             url.url_name in ("export", "event.css", "widget.messages")
             if "agenda" in url.namespaces
