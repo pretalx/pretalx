@@ -252,6 +252,31 @@ returning a form that contains a text field for the notes::
             prefix="review_notes",
         )
 
+Testing
+-------
+
+.. highlight:: console
+
+Plugins generated from the `cookiecutter`_ template come with a test setup
+using pytest and a ``justfile`` for common tasks. To run the tests::
+
+   $ just test
+
+This will automatically install pretalx from git if it's not already present in
+your environment. If you want to test against a local pretalx checkout, use::
+
+   $ just install-pretalx-local /path/to/pretalx
+
+.. highlight:: python
+
+The generated test suite includes basic permission checks for the plugin's
+settings page. You can add your own tests in the ``tests/`` directory. Fixtures
+for common objects are provided in ``tests/conftest.py``.
+
+Your tests can use the full pretalx test infrastructure, including
+``django_scopes`` for event scoping and ``pytest-django`` for database access.
+Mark tests that need the database with ``@pytest.mark.django_db``.
+
 Configuration
 -------------
 

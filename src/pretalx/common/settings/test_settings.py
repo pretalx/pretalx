@@ -30,7 +30,10 @@ SITE_NETLOC = urlparse(SITE_URL).netloc
 for directory in (BASE_DIR, DATA_DIR, LOG_DIR, MEDIA_ROOT, HTMLEXPORT_ROOT):
     directory.mkdir(parents=True, exist_ok=True)
 
-INSTALLED_APPS.append("tests.dummy_app.PluginApp")
+with suppress(ImportError):
+    import tests.dummy_app  # noqa: F401, E402
+
+    INSTALLED_APPS.append("tests.dummy_app.PluginApp")
 
 atexit.register(tmpdir.cleanup)
 
