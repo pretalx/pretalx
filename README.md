@@ -110,7 +110,7 @@
 | src/pretalx/common/management/commands/spectacular.py                      |        6 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/management/commands/update\_translation\_percentages.py |       31 |       31 |        6 |        0 |      0% |      4-41 |
 | src/pretalx/common/middleware/domains.py                                   |      123 |       14 |       44 |        7 |     84% |45, 79->84, 85, 98-116, 166->172, 172->188, 208-209, 233-238 |
-| src/pretalx/common/middleware/event.py                                     |      116 |       12 |       44 |        4 |     86% |102-104, 126-130, 171-179, 193->exit, 205->exit |
+| src/pretalx/common/middleware/event.py                                     |      118 |       12 |       46 |        4 |     87% |102-104, 136-140, 181-189, 203->exit, 215->exit |
 | src/pretalx/common/models/fields.py                                        |       11 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/models/file.py                                          |       23 |        1 |        2 |        1 |     92% |        46 |
 | src/pretalx/common/models/log.py                                           |       71 |        7 |       28 |        8 |     85% |83, 89->93, 98, 101, 106, 110->125, 115->125, 118, 123-124 |
@@ -201,7 +201,7 @@
 | src/pretalx/orga/views/mails.py                                            |      351 |       45 |       72 |       14 |     83% |57-58, 193-195, 205, 214-216, 266-272, 348-350, 384->392, 388, 414, 419-420, 447, 471, 477-522, 549-551, 566, 572, 590 |
 | src/pretalx/orga/views/organiser.py                                        |      313 |       27 |       58 |        8 |     85% |119-121, 142-143, 158-159, 294-295, 336, 383, 396, 398-414, 480-482 |
 | src/pretalx/orga/views/person.py                                           |      120 |       20 |       30 |        5 |     81% |77-86, 90-97, 99-107, 156, 165, 181-182 |
-| src/pretalx/orga/views/plugins.py                                          |       36 |        0 |        6 |        0 |    100% |           |
+| src/pretalx/orga/views/plugins.py                                          |       56 |        0 |       14 |        0 |    100% |           |
 | src/pretalx/orga/views/review.py                                           |      562 |       49 |      130 |       21 |     88% |92, 95-98, 100-103, 255->257, 257->263, 298->exit, 319-320, 322-328, 373->375, 380, 386-391, 407, 449-462, 473, 485-486, 496->498, 504-505, 556-557, 568-569, 580->593, 595, 743->749, 787-788, 965-966, 1027-1038, 1053, 1083-1084 |
 | src/pretalx/orga/views/schedule.py                                         |      300 |       29 |       52 |        9 |     86% |52->59, 121-122, 165-169, 318, 319->322, 331, 361, 384, 396, 406, 416-447, 465, 507, 572-579 |
 | src/pretalx/orga/views/speaker.py                                          |      186 |       11 |       20 |        5 |     91% |93-105, 107-110, 114, 216, 290, 353-354 |
@@ -297,7 +297,7 @@
 | src/tests/common/forms/test\_cfp\_forms\_validators.py                     |       13 |        0 |        2 |        0 |    100% |           |
 | src/tests/common/forms/test\_common\_form\_widgets.py                      |       82 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/test\_cfp\_log.py                                         |       43 |        0 |        0 |        0 |    100% |           |
-| src/tests/common/test\_cfp\_middleware.py                                  |       57 |        0 |        0 |        0 |    100% |           |
+| src/tests/common/test\_cfp\_middleware.py                                  |       68 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/test\_cfp\_serialize.py                                   |        5 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/test\_common\_cache.py                                    |       39 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/test\_common\_checks.py                                   |       16 |        0 |        0 |        0 |    100% |           |
@@ -318,7 +318,7 @@
 | src/tests/common/test\_update\_check.py                                    |      117 |        0 |        0 |        0 |    100% |           |
 | src/tests/common/views/test\_shortlink.py                                  |       88 |        0 |        0 |        0 |    100% |           |
 | src/tests/conftest.py                                                      |      546 |        0 |       12 |        0 |    100% |           |
-| src/tests/dummy\_app.py                                                    |       13 |        0 |        0 |        0 |    100% |           |
+| src/tests/dummy\_app.py                                                    |       14 |        0 |        0 |        0 |    100% |           |
 | src/tests/dummy\_signals.py                                                |       52 |        0 |        8 |        0 |    100% |           |
 | src/tests/event/test\_event\_model.py                                      |      179 |        0 |        0 |        0 |    100% |           |
 | src/tests/event/test\_event\_services.py                                   |       59 |        0 |        0 |        0 |    100% |           |
@@ -366,7 +366,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **35898** | **1834** | **5640** |  **774** | **93%** |           |
+| **TOTAL**                                                                  | **35932** | **1834** | **5650** |  **774** | **93%** |           |
 
 
 ## Setup coverage badge
