@@ -397,13 +397,13 @@ class SubmitterAccessCodeForm(forms.ModelForm):
             initial["code"] = SubmitterAccessCode.generate_code()
         kwargs["initial"] = initial
         super().__init__(*args, **kwargs)
-        self.fields["submission_type"].queryset = SubmissionType.objects.filter(
+        self.fields["submission_types"].queryset = SubmissionType.objects.filter(
             event=self.event
         )
         if event.get_feature_flag("use_tracks"):
-            self.fields["track"].queryset = Track.objects.filter(event=self.event)
+            self.fields["tracks"].queryset = Track.objects.filter(event=self.event)
         else:
-            self.fields.pop("track")
+            self.fields.pop("tracks")
 
     class Meta:
         model = SubmitterAccessCode
@@ -411,18 +411,18 @@ class SubmitterAccessCodeForm(forms.ModelForm):
             "code",
             "valid_until",
             "maximum_uses",
-            "track",
-            "submission_type",
+            "tracks",
+            "submission_types",
             "internal_notes",
         )
         field_classes = {
-            "track": SafeModelChoiceField,
-            "submission_type": SafeModelChoiceField,
+            "tracks": SafeModelMultipleChoiceField,
+            "submission_types": SafeModelMultipleChoiceField,
         }
         widgets = {
             "valid_until": HtmlDateTimeInput,
-            "track": EnhancedSelect,
-            "submission_type": EnhancedSelect,
+            "tracks": EnhancedSelectMultiple,
+            "submission_types": EnhancedSelectMultiple,
         }
 
 
@@ -435,23 +435,30 @@ class AccessCodeSendForm(forms.Form):
         self.access_code = instance
         subject = _("Access code for the {event} CfP").format(event=instance.event.name)
         text = (
-            str(
-                _("""Hi!
+            _("""Hi!
 
 This is an access code for the {event} CfP.""").format(event=instance.event.name)
-            )
             + " "
         )
-        if instance.track:
+        tracks = list(instance.tracks.all())
+        if tracks:
+            track_names = ", ".join(str(t.name) for t in tracks)
             text += (
-                str(
-                    _(
-                        "It will allow you to submit a proposal to the “{track}” track."
-                    ).format(track=instance.track.name)
+                _(
+                    "It will allow you to submit a proposal to the following track(s): {tracks}."
+                ).format(tracks=track_names)
+                + " "
+            )
+        submission_types = list(instance.submission_types.all())
+        if submission_types:
+            type_names = ", ".join(str(t.name) for t in submission_types)
+            text += (
+                _("It is valid for the following session type(s): {types}.").format(
+                    types=type_names
                 )
                 + " "
             )
-        else:
+        if not tracks and not submission_types:
             text += str(_("It will allow you to submit a proposal to our CfP.")) + " "
         if instance.valid_until:
             text += (
@@ -461,16 +468,6 @@ This is an access code for the {event} CfP.""").format(event=instance.event.name
                     )
                 )
                 + " "
-            )
-        if (
-            instance.maximum_uses
-            and instance.maximum_uses != 1
-            and instance.maximum_uses - instance.redeemed > 1
-        ):
-            text += str(
-                _("The code can be redeemed multiple times ({num}).").format(
-                    num=instance.redemptions_left
-                )
             )
         text += _("""
 Please follow this URL to use the code:

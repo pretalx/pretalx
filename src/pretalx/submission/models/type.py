@@ -118,6 +118,14 @@ class SubmissionType(PretalxModel):
         """
         return f"{self.id}-{slugify(self.name)}"
 
+    def delete(self, *args, **kwargs):
+        self.submitter_access_codes.annotate(
+            type_count=models.Count("submission_types")
+        ).filter(type_count=1).delete()
+        return super().delete(*args, **kwargs)
+
+    delete.alters_data = True
+
     def update_duration(self):
         """Updates the duration of all.
 

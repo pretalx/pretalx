@@ -692,8 +692,9 @@ class QuestionsStep(DedraftMixin, FormFlowStep):
         info_data = self.cfp_session.get("data", {}).get("info", {})
         result["track"] = info_data.get("track")
         access_code = getattr(self.request, "access_code", None)
-        if access_code and access_code.submission_type:
-            result["submission_type"] = access_code.submission_type
+        access_code_type = access_code.submission_types.first() if access_code else None
+        if access_code_type:
+            result["submission_type"] = access_code_type
         else:
             result["submission_type"] = info_data.get("submission_type")
         if not self.request.user.is_anonymous:

@@ -1030,9 +1030,11 @@ def test_draft_submission_allowed_with_access_code(
     with scope(event=submission.event):
         submission.state = SubmissionStates.DRAFT
         submission.track = track
-        submission.access_code = SubmitterAccessCode.objects.create(
-            event=submission.event, code="VALID123", track=submission.track
+        access_code = SubmitterAccessCode.objects.create(
+            event=submission.event, code="VALID123"
         )
+        access_code.tracks.add(submission.track)
+        submission.access_code = access_code
         submission.save()
         answer.question.active = True
         answer.question.save()
@@ -1176,10 +1178,10 @@ def test_draft_with_track_access_code_exhausted(
     with scope(event=event):
         track.requires_access_code = True
         track.save()
-        access_code.track = track
         access_code.maximum_uses = max_uses
         access_code.redeemed = 1
         access_code.save()
+        access_code.tracks.add(track)
         submission.state = "draft"
         submission.track = track
         submission.access_code = access_code

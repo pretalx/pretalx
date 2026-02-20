@@ -2,9 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import django_tables2 as tables
-from django.db.models.functions import Lower
-from django.utils.html import format_html
 from django.utils.functional import cached_property
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.tables import (
@@ -12,11 +11,9 @@ from pretalx.common.tables import (
     BooleanColumn,
     DateTimeColumn,
     PretalxTable,
-    SortableColumn,
     TemplateColumn,
     UnsortableMixin,
 )
-from pretalx.orga.utils.i18n import Translate
 from pretalx.submission.models import (
     Question,
     SubmissionType,
@@ -29,8 +26,8 @@ from pretalx.submission.rules import questions_for_user
 class SubmitterAccessCodeTable(PretalxTable):
     default_columns = (
         "code",
-        "track",
-        "submission_type",
+        "tracks",
+        "submission_types",
         "valid_until",
         "uses",
     )
@@ -38,15 +35,17 @@ class SubmitterAccessCodeTable(PretalxTable):
     code = TemplateColumn(
         template_name="orga/tables/columns/copyable.html",
     )
-    track = SortableColumn(
-        linkify=lambda record: record.track and record.track.urls.base,
-        order_by=Lower(Translate("track__name")),
+    tracks = TemplateColumn(
+        verbose_name=_("Tracks"),
+        template_name="orga/tables/columns/tracks.html",
+        orderable=False,
+        empty_values=(),
     )
-    submission_type = SortableColumn(
-        linkify=lambda record: (
-            record.submission_type and record.submission_type.urls.base
-        ),
-        order_by=Lower(Translate("submission_type__name")),
+    submission_types = TemplateColumn(
+        verbose_name=_("Session types"),
+        template_name="orga/tables/columns/submission_types.html",
+        orderable=False,
+        empty_values=(),
     )
     valid_until = DateTimeColumn()
     uses = tables.Column(
@@ -94,14 +93,14 @@ class SubmitterAccessCodeTable(PretalxTable):
         super().__init__(*args, **kwargs)
         self.exclude = list(self.exclude)
         if not self.event.get_feature_flag("use_tracks"):
-            self.exclude.append("track")
+            self.exclude.append("tracks")
 
     class Meta:
         model = SubmitterAccessCode
         fields = (
             "code",
-            "track",
-            "submission_type",
+            "tracks",
+            "submission_types",
             "valid_until",
             "uses",
             "redeemed",

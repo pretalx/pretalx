@@ -580,6 +580,7 @@ class AccessCodeView(OrderActionMixin, OrgaCRUDView):
     def get_queryset(self):
         return (
             self.request.event.submitter_access_codes.all()
+            .prefetch_related("tracks", "submission_types")
             .annotate(
                 has_submissions=Exists(
                     self.request.event.submissions.filter(access_code=OuterRef("pk"))
@@ -614,7 +615,7 @@ class AccessCodeView(OrderActionMixin, OrgaCRUDView):
             track := self.request.event.tracks.filter(pk=track).first()
         ):
             kwargs["initial"] = kwargs.get("initial", {})
-            kwargs["initial"]["track"] = track
+            kwargs["initial"]["tracks"] = [track]
         return kwargs
 
     def delete_handler(self, request, *args, **kwargs):

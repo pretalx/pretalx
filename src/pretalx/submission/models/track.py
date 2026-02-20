@@ -88,6 +88,14 @@ class Track(OrderedModel, PretalxModel):
     def get_order_queryset(event):
         return event.tracks.all()
 
+    def delete(self, *args, **kwargs):
+        self.submitter_access_codes.annotate(track_count=models.Count("tracks")).filter(
+            track_count=1
+        ).delete()
+        return super().delete(*args, **kwargs)
+
+    delete.alters_data = True
+
     @property
     def slug(self) -> str:
         """The slug makes tracks more readable in URLs.
