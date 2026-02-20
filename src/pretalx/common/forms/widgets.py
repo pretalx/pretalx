@@ -437,6 +437,7 @@ class AvailabilitiesWidget(forms.TextInput):
 
 class ProfilePictureWidget(forms.Widget):
     template_name = "common/widgets/profile_picture.html"
+    needs_multipart_form = True
 
     def __init__(self, user=None, current_picture=None, upload_only=False, attrs=None):
         super().__init__(attrs)
