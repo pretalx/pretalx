@@ -22,11 +22,14 @@ from pretalx.submission.models import SubmitterAccessCode
         parameters=[
             build_search_docs("code"),
             build_expand_docs("track", "submission_type"),
+            # TODO: when API v2 comes out, replace track with tracks and submission_type with submission_types
         ],
     ),
     retrieve=extend_schema(
         summary="Show Access Code",
-        parameters=[build_expand_docs("track", "submission_type")],
+        parameters=[
+            build_expand_docs("track", "submission_type", "tracks", "submission_types")
+        ],
     ),
     create=extend_schema(summary="Create Access Code"),
     update=extend_schema(summary="Update Access Code"),
@@ -45,10 +48,9 @@ class SubmitterAccessCodeViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
         queryset = (
             self.event.submitter_access_codes.all()
             .select_related("event")
+            .prefetch_related("tracks", "submission_types")
             .order_by("pk")
         )
-        if fields := self.check_expanded_fields("track", "submission_type"):
-            queryset = queryset.select_related(*fields)
         return queryset
 
     def perform_destroy(self, instance):

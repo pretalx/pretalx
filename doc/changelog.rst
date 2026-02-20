@@ -10,6 +10,7 @@ Release Notes
 - :feature:`dev` Plugins can now define ``settings_links`` and ``navigation_links`` in their metadata to show quick-access links on the plugin management page.
 - :bug:`api` API tokens with the ``Token`` prefix no longer receive 403 errors on plugin API endpoints.
 - :feature:`orga:cfp` Access codes can now grant access to multiple tracks and session types at once, instead of being limited to a single track and session type.
+- :feature:`api` The ``/access-codes/`` API endpoint now uses plural ``tracks`` and ``submission_types`` array fields in the development preview API (accessible via the ``Pretalx-Version: v-next`` header). API v1 continues to use singular ``track`` and ``submission_type`` fields, showing only the first entry.
 - :bug:`orga:speaker` Clearing a previously set choice question answer on a speaker profile no longer causes a crash.
 - :bug:`orga:review` Review phases with a future start date are no longer incorrectly marked as active, and active phases can now be deactivated by clicking the active-phase button.
 - :bug:`orga:submissions` The tag filter in the submission and review lists now shows the correct submission count instead of always showing (1).
