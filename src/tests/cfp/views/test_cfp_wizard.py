@@ -377,6 +377,52 @@ class TestWizard:
         self.assert_mail(submission, user)
 
     @pytest.mark.django_db
+    def test_wizard_required_avatar_upload(self, event, client, user):
+        with scope(event=event):
+            submission_type = SubmissionType.objects.filter(event=event).first().pk
+            event.cfp.fields["avatar"] = {"visibility": "required"}
+            event.cfp.save()
+
+        # 1x1 red PNG
+        avatar_file = SimpleUploadedFile(
+            "avatar.png",
+            (
+                b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
+                b"\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00"
+                b"\x00\x00\x0cIDATx\x9cc\xf8\xcf\xc0\x00\x00\x03\x01"
+                b"\x01\x00\xc9\xfe\x92\xef\x00\x00\x00\x00IEND\xaeB`\x82"
+            ),
+            content_type="image/png",
+        )
+
+        client.force_login(user)
+        response, current_url = self.perform_init_wizard(client, event=event)
+        response, current_url = self.perform_info_wizard(
+            client,
+            response,
+            current_url,
+            submission_type=submission_type,
+            next_step="profile",
+            event=event,
+        )
+        # Submit profile with avatar upload — this must succeed and not get
+        # stuck with "No file was uploaded" when is_completed() re-validates
+        # from session storage.
+        data = {
+            "name": "Jane Doe",
+            "biography": "l337 hax0r",
+            "avatar_action": "upload",
+            "avatar": avatar_file,
+        }
+        response, current_url = self.get_response_and_url(
+            client, current_url, data=data
+        )
+        assert "/me/submissions/" in current_url, (
+            f"Expected redirect to submissions list, got {current_url}"
+        )
+        self.assert_submission(event)
+
+    @pytest.mark.django_db
     def test_wizard_logged_in_user_no_questions(self, event, client, user):
         with scope(event=event):
             submission_type = SubmissionType.objects.filter(event=event).first().pk

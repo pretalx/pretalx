@@ -785,6 +785,19 @@ class ProfileStep(FormFlowStep):
     always_required_fields = {"name"}
     label_model = SpeakerProfile
 
+    def set_data(self, data):
+        super().set_data(data)
+        # The ProfilePictureWidget stores the chosen action (upload, select_N,
+        # remove, keep) in a hidden input ``avatar_action`` that lives outside
+        # cleaned_data.  Persist it so the widget can reconstruct the correct
+        # state when the form is later rebuilt from session storage.
+        if hasattr(self, "request") and self.request.method == "POST":
+            avatar_action = self.request.POST.get("avatar_action")
+            if avatar_action and avatar_action != "keep":
+                self.cfp_session["data"][self.identifier]["avatar_action"] = (
+                    avatar_action
+                )
+
     def get_form_kwargs(self):
         result = super().get_form_kwargs()
         user_data = copy.deepcopy(self.cfp_session.get("data", {}).get("user", {}))
