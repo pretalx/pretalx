@@ -731,6 +731,7 @@ class TestWizard:
             submission_type = SubmissionType.objects.filter(event=event).first()
             submission_type.requires_access_code = True
             submission_type.save()
+            access_code.submission_types.add(submission_type)
             submission_type = submission_type.pk
 
         response, current_url = self.perform_init_wizard(client, event=event)
