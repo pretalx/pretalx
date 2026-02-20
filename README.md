@@ -110,7 +110,7 @@
 | src/pretalx/common/management/commands/spectacular.py                      |        6 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/management/commands/update\_translation\_percentages.py |       31 |       31 |        6 |        0 |      0% |      4-41 |
 | src/pretalx/common/middleware/domains.py                                   |      123 |       14 |       44 |        7 |     84% |45, 79->84, 85, 98-116, 166->172, 172->188, 208-209, 233-238 |
-| src/pretalx/common/middleware/event.py                                     |      118 |       12 |       46 |        4 |     87% |102-104, 136-140, 181-189, 203->exit, 215->exit |
+| src/pretalx/common/middleware/event.py                                     |      123 |       12 |       48 |        4 |     87% |103-105, 140-144, 185-193, 207->exit, 219->exit |
 | src/pretalx/common/models/fields.py                                        |       11 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/models/file.py                                          |       23 |        1 |        2 |        1 |     92% |        46 |
 | src/pretalx/common/models/log.py                                           |       71 |        7 |       28 |        8 |     85% |83, 89->93, 98, 101, 106, 110->125, 115->125, 118, 123-124 |
@@ -366,7 +366,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **35975** | **1834** | **5658** |  **776** | **93%** |           |
+| **TOTAL**                                                                  | **35980** | **1834** | **5660** |  **776** | **93%** |           |
 
 
 ## Setup coverage badge
