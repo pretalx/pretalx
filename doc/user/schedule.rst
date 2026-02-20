@@ -292,3 +292,21 @@ appear::
 
 You can embed multiple widgets for different events on the same page – just
 include the script snippet once and then add one widget element per event.
+
+Your embedded widget could look like the following:
+
+.. raw:: html
+
+    <script type="text/javascript" src="https://pretalx.com/democon/schedule/widget/v2.en.js" async></script>
+
+    <div style="max-width: 900px; margin-left: -50px; position: relative">
+    <pretalx-schedule event-url="https://pretalx.com/democon/" locale="en" style="--pretalx-clr-primary: #3aa57c;"></pretalx-schedule>
+    </div>
+    <noscript>
+       <div class="pretalx-widget">
+            <div class="pretalx-widget-info-message">
+                JavaScript is disabled in your browser. To access our schedule without JavaScript,
+                please <a target="_blank" href="https://pretalx.com/democon/schedule/">click here</a>.
+            </div>
+        </div>
+    </noscript>

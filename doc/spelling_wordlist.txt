@@ -22,6 +22,7 @@ center
 CfP
 changelog
 checkboxes
+checkmark
 color
 config
 cron
@@ -33,6 +34,11 @@ ctrl
 datetime
 datetimes
 de
+deduplicates
+deduplication
+deliverability
+didn
+doesn
 Debian
 DemoCon
 discoverable
@@ -75,6 +81,7 @@ lossy
 macOS
 makemessages
 middleware
+misconfigured
 mixin
 mixins
 namespace
@@ -88,6 +95,7 @@ OAuth
 plugin
 plugins
 pre
+preferencing
 prepend
 prepended
 pretalx
@@ -101,7 +109,9 @@ ro
 SaaS
 scrollbar
 setuptools
+shouldn
 slugified
+sortable
 socio
 stdout
 strikethrough
@@ -121,9 +131,12 @@ transactional
 txt
 typeahead
 uncheck
+unreviewed
+unschedule
 uptime
 Venueless
 virtualenv
 Weblate
 wip
 Woltjer
+wouldn
