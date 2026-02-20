@@ -681,9 +681,9 @@ class TestWizard:
             question.tracks.add(track)
             other_track.requires_access_code = True
             other_track.save()
-            access_code.track = track
-            access_code.submission_type = event.cfp.default_type
             access_code.save()
+            access_code.tracks.add(track)
+            access_code.submission_types.add(event.cfp.default_type)
 
         response, current_url = self.perform_init_wizard(client, event=event)
         self.perform_info_wizard(  # Does not work without token

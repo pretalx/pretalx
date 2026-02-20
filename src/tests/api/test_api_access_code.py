@@ -13,21 +13,22 @@ from pretalx.api.versions import LEGACY
 @pytest.mark.django_db
 def test_access_code_serializer(submission_type, event, track):
     with scope(event=event):
-        access_code = event.submitter_access_codes.create(code="testcode", track=track)
+        access_code = event.submitter_access_codes.create(code="testcode")
+        access_code.tracks.add(track)
         data = SubmitterAccessCodeSerializer(
             access_code, context={"event": access_code.event}
         ).data
         assert set(data.keys()) == {
             "id",
             "code",
-            "track",
-            "submission_type",
+            "tracks",
+            "submission_types",
             "valid_until",
             "maximum_uses",
             "redeemed",
             "internal_notes",
         }
-        assert data["track"] == track.pk
+        assert data["tracks"] == [track.pk]
 
 
 @pytest.mark.parametrize("is_public", (True, False))
@@ -50,7 +51,7 @@ def test_orga_can_see_access_codes(
         if item_count != 1:
             event.submitter_access_codes.create(code="othercode")
 
-    with django_assert_num_queries(11):
+    with django_assert_num_queries(13):
         response = client.get(
             event.api_urls.access_codes,
             follow=True,
@@ -236,12 +237,13 @@ def test_orga_can_expand_related_fields(
 ):
     with scope(event=event):
         track = event.tracks.create(name="Test Track")
-        access_code = event.submitter_access_codes.create(
-            code="expandcode", track=track, submission_type=submission_type
-        )
+        access_code = event.submitter_access_codes.create(code="expandcode")
+        access_code.tracks.add(track)
+        access_code.submission_types.add(submission_type)
 
     response = client.get(
-        event.api_urls.access_codes + f"{access_code.pk}/?expand=track,submission_type",
+        event.api_urls.access_codes
+        + f"{access_code.pk}/?expand=tracks,submission_types",
         follow=True,
         headers={"Authorization": f"Token {orga_user_token.token}"},
     )
@@ -249,8 +251,8 @@ def test_orga_can_expand_related_fields(
 
     assert response.status_code == 200
     assert content["code"] == "expandcode"
-    assert content["track"]["name"]["en"] == "Test Track"
-    assert content["submission_type"]["name"]["en"] == submission_type.name
+    assert content["tracks"][0]["name"]["en"] == "Test Track"
+    assert content["submission_types"][0]["name"]["en"] == submission_type.name
 
 
 @pytest.mark.django_db
@@ -265,7 +267,7 @@ def test_orga_cannot_assign_track_from_other_event(
         follow=True,
         data={
             "code": "newtestcode",
-            "track": other_track.pk,
+            "tracks": [other_track.pk],
         },
         content_type="application/json",
         headers={
@@ -274,7 +276,7 @@ def test_orga_cannot_assign_track_from_other_event(
     )
 
     assert response.status_code == 400, response.text
-    assert "track" in json.loads(response.text)
+    assert "tracks" in json.loads(response.text)
 
     with scope(event=event):
         assert not event.submitter_access_codes.filter(code="newtestcode").exists()

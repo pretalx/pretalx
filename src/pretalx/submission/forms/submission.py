@@ -68,13 +68,16 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
         instance = kwargs.get("instance")
         initial = kwargs.pop("initial", {}) or {}
         if not instance or not instance.submission_type:
+            access_code_type = (
+                self.access_code.submission_types.first() if self.access_code else None
+            )
             initial["submission_type"] = (
-                getattr(self.access_code, "submission_type", None)
+                access_code_type
                 or initial.get("submission_type")
                 or self.event.cfp.default_type
             )
         if not instance and self.access_code:
-            initial["track"] = self.access_code.track
+            initial["track"] = self.access_code.tracks.first()
         if not instance or not instance.content_locale:
             initial["content_locale"] = self.event.locale
 
@@ -104,7 +107,7 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
                 return
 
             access_code = self.access_code or getattr(instance, "access_code", None)
-            if not access_code or not access_code.track:
+            if not access_code or not access_code.tracks.exists():
                 track_filter = self.event.tracks.filter(requires_access_code=False)
                 # ensure current track selection can be preserved
                 if instance and instance.track and instance.track.requires_access_code:
@@ -114,9 +117,7 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
 
                 self.fields["track"].queryset = track_filter
             else:
-                self.fields["track"].queryset = self.event.tracks.filter(
-                    pk=access_code.track.pk
-                )
+                self.fields["track"].queryset = access_code.tracks.all()
             if (
                 len(self.fields["track"].queryset) == 1
                 and self.fields["track"].required
@@ -141,10 +142,10 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
             self.fields["submission_type"].disabled = True
             return
         access_code = self.access_code or getattr(instance, "access_code", None)
-        if access_code and not access_code.submission_type:
+        if access_code and not access_code.submission_types.exists():
             pks = set(submission_types.values_list("pk", flat=True))
         elif access_code:
-            pks = {access_code.submission_type.pk}
+            pks = set(access_code.submission_types.values_list("pk", flat=True))
         else:
             queryset = submission_types.filter(requires_access_code=False)
             if not self.event.cfp.deadline or self.event.cfp.deadline >= _now:

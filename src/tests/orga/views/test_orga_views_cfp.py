@@ -1024,7 +1024,7 @@ def test_can_see_access_codes(
     if item_count == 2:
         SubmitterAccessCode.objects.create(event=event, code="OTHERCODE")
 
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(24):
         response = orga_client.get(event.cfp.urls.access_codes)
     assert response.status_code == 200
     assert access_code.code in response.text
@@ -1136,10 +1136,10 @@ def test_can_send_access_code(orga_client, access_code):
 
 @pytest.mark.django_db
 def test_can_send_special_access_code(orga_client, access_code, track):
-    access_code.track = track
     access_code.valid_until = access_code.event.datetime_from
     access_code.maximum_uses = 3
     access_code.save()
+    access_code.tracks.add(track)
     djmail.outbox = []
     response = orga_client.get(access_code.urls.send, follow=True)
     assert response.status_code == 200

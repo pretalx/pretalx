@@ -27,26 +27,22 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
         db_index=True,
         validators=[validators.RegexValidator("^[a-zA-Z0-9]+$")],
     )
-    track = models.ForeignKey(
+    tracks = models.ManyToManyField(
         to="submission.Track",
-        on_delete=models.CASCADE,
-        verbose_name=_("Track"),
+        verbose_name=_("Tracks"),
         help_text=_(
-            "You can restrict the access code to a single track, or leave it open for all tracks."
+            "You can restrict the access code to one or more tracks, or leave it open for all non-restricted tracks."
         ),
         related_name="submitter_access_codes",
-        null=True,
         blank=True,
     )
-    submission_type = models.ForeignKey(
+    submission_types = models.ManyToManyField(
         to="submission.SubmissionType",
-        on_delete=models.CASCADE,
-        verbose_name=_("Session type"),
+        verbose_name=_("Session types"),
         help_text=_(
-            "You can restrict the access code to a single session type, or leave it open for all session types."
+            "You can restrict the access code to one or more session types, or leave it open for all non-restricted session types."
         ),
         related_name="submitter_access_codes",
-        null=True,
         blank=True,
     )
     valid_until = DateTimeField(

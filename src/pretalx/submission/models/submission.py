@@ -415,13 +415,9 @@ class Submission(GenerateCode, PretalxModel):
                 if (self.access_code and self.access_code.time_valid)
                 else None
             )
-            if (self.track and self.track.requires_access_code) and (
-                not access_code or access_code.track != self.track
-            ):
+            if (self.track and self.track.requires_access_code) and not access_code:
                 return False
-            if self.submission_type.requires_access_code and (
-                not access_code or access_code.submission_type != self.submission_type
-            ):
+            if self.submission_type.requires_access_code and not access_code:
                 return False
 
             # We are not missing an access code, so we can just check if we hit the

@@ -396,8 +396,9 @@ def test_editable_with_access_code_requirement(submission, track):
         assert not submission.editable
 
         access_code = SubmitterAccessCode.objects.create(
-            event=submission.event, code="TEST123", track=submission.track
+            event=submission.event, code="TEST123"
         )
+        access_code.tracks.add(submission.track)
         submission.access_code = access_code
         submission.save()
 
@@ -424,13 +425,59 @@ def test_editable_with_access_code_for_submission_type(submission):
         access_code = SubmitterAccessCode.objects.create(
             event=submission.event,
             code="TYPE123",
-            submission_type=submission.submission_type,
         )
+        access_code.submission_types.add(submission.submission_type)
         submission.access_code = access_code
         submission.save()
 
         del submission.editable
         assert submission.editable
+
+
+@pytest.mark.django_db
+def test_deleting_sole_track_deletes_access_code(event, track):
+    with scope(event=event):
+        access_code = SubmitterAccessCode.objects.create(event=event, code="TRACK1")
+        access_code.tracks.add(track)
+        ac_pk = access_code.pk
+
+        track.delete()
+        assert not SubmitterAccessCode.objects.filter(pk=ac_pk).exists()
+
+
+@pytest.mark.django_db
+def test_deleting_one_of_multiple_tracks_keeps_access_code(event, track):
+    with scope(event=event):
+        other_track = event.tracks.create(name="Other", color="#00ff00")
+        access_code = SubmitterAccessCode.objects.create(event=event, code="TRACK2")
+        access_code.tracks.add(track, other_track)
+
+        track.delete()
+        access_code.refresh_from_db()
+        assert list(access_code.tracks.all()) == [other_track]
+
+
+@pytest.mark.django_db
+def test_deleting_sole_submission_type_deletes_access_code(event, submission_type):
+    with scope(event=event):
+        access_code = SubmitterAccessCode.objects.create(event=event, code="TYPE1")
+        access_code.submission_types.add(submission_type)
+        ac_pk = access_code.pk
+
+        submission_type.delete()
+        assert not SubmitterAccessCode.objects.filter(pk=ac_pk).exists()
+
+
+@pytest.mark.django_db
+def test_deleting_one_of_multiple_types_keeps_access_code(event, submission_type):
+    with scope(event=event):
+        other_type = event.submission_types.create(name="Other")
+        access_code = SubmitterAccessCode.objects.create(event=event, code="TYPE2")
+        access_code.submission_types.add(submission_type, other_type)
+
+        submission_type.delete()
+        access_code.refresh_from_db()
+        assert list(access_code.submission_types.all()) == [other_type]
 
 
 @pytest.mark.django_db
