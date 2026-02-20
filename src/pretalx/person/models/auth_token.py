@@ -76,6 +76,9 @@ class UserApiToken(PretalxModel):
     )
     expires = DateTimeField(null=True, blank=True, verbose_name=_("Expiry date"))
     endpoints = models.JSONField(default=dict, blank=True)
+    # Version is null until the token is first used for an API request, at which
+    # point get_api_version_from_request() sets it based on the request's
+    # pretalx-version header (or the current default version).
     version = models.CharField(
         max_length=12, null=True, blank=True, verbose_name=_("API version")
     )
