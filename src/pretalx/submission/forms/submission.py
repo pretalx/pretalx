@@ -142,10 +142,14 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
             self.fields["submission_type"].disabled = True
             return
         access_code = self.access_code or getattr(instance, "access_code", None)
-        if access_code and not access_code.submission_types.exists():
-            pks = set(submission_types.values_list("pk", flat=True))
-        elif access_code:
+        if access_code and access_code.submission_types.exists():
             pks = set(access_code.submission_types.values_list("pk", flat=True))
+        elif access_code:
+            pks = set(
+                submission_types.filter(requires_access_code=False).values_list(
+                    "pk", flat=True
+                )
+            )
         else:
             queryset = submission_types.filter(requires_access_code=False)
             if not self.event.cfp.deadline or self.event.cfp.deadline >= _now:
