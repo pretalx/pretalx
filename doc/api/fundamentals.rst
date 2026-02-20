@@ -97,6 +97,26 @@ use the API once per year for their yearly conference, and depending on the
 amount of changes we introduce, that could result in always having to upgrade
 to a new API version.
 
+Development preview
+^^^^^^^^^^^^^^^^^^^
+
+pretalx may occasionally offer a **development preview** of upcoming API changes
+before they are released as a new version. You can opt into the preview by
+sending ``Pretalx-Version: v-next`` in your request headers:
+
+.. sourcecode:: http
+   :emphasize-lines: 3
+
+   GET /api/events/ HTTP/1.1
+   Host: pretalx.com
+   Pretalx-Version: v-next
+   Authorization: Token e1l6gq2ye72thbwkacj7jbri7a7tvxe614ojv8ybureain92ocub46t5gab5966k
+
+The development preview is **unstable**: its behaviour may change between pretalx
+releases without notice. It is intended for testing and early integration work,
+not for production use. Once the changes are finalised, they will be released as
+a new numbered API version.
+
 This is what an example timeline would look like for API version deprecation:
 
 v2025.1.0

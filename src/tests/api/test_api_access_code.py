@@ -7,7 +7,7 @@ import pytest
 from django_scopes import scope
 
 from pretalx.api.serializers.access_code import SubmitterAccessCodeSerializer
-from pretalx.api.versions import LEGACY
+from pretalx.api.versions import DEV_PREVIEW, LEGACY
 
 
 @pytest.mark.django_db
@@ -245,7 +245,10 @@ def test_orga_can_expand_related_fields(
         event.api_urls.access_codes
         + f"{access_code.pk}/?expand=tracks,submission_types",
         follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
+        headers={
+            "Authorization": f"Token {orga_user_token.token}",
+            "Pretalx-Version": DEV_PREVIEW,
+        },
     )
     content = json.loads(response.text)
 
@@ -272,6 +275,7 @@ def test_orga_cannot_assign_track_from_other_event(
         content_type="application/json",
         headers={
             "Authorization": f"Token {orga_user_write_token.token}",
+            "Pretalx-Version": DEV_PREVIEW,
         },
     )
 
@@ -280,3 +284,184 @@ def test_orga_cannot_assign_track_from_other_event(
 
     with scope(event=event):
         assert not event.submitter_access_codes.filter(code="newtestcode").exists()
+
+
+@pytest.mark.django_db
+def test_v1_access_code_shows_singular_fields(
+    client, orga_user_token, event, track, submission_type
+):
+    with scope(event=event):
+        access_code = event.submitter_access_codes.create(code="testcode")
+        access_code.tracks.add(track)
+        access_code.submission_types.add(submission_type)
+
+    response = client.get(
+        event.api_urls.access_codes + f"{access_code.pk}/",
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_token.token}"},
+    )
+    content = json.loads(response.text)
+
+    assert response.status_code == 200
+    assert "track" in content
+    assert "submission_type" in content
+    assert "tracks" not in content
+    assert "submission_types" not in content
+    assert content["track"] == track.pk
+    assert content["submission_type"] == submission_type.pk
+
+    response = client.get(
+        event.api_urls.access_codes + f"{access_code.pk}/?expand=track,submission_type",
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_token.token}"},
+    )
+    content = json.loads(response.text)
+
+    assert response.status_code == 200
+    assert content["track"]["name"]["en"] == str(track.name)
+    assert content["submission_type"]["name"]["en"] == str(submission_type.name)
+
+
+@pytest.mark.django_db
+def test_v1_access_code_shows_first_entry_only(
+    client, orga_user_token, event, submission_type
+):
+    with scope(event=event):
+        track1 = event.tracks.create(name="Track 1")
+        track2 = event.tracks.create(name="Track 2")
+        sub_type2 = event.submission_types.create(name="Other Type")
+        access_code = event.submitter_access_codes.create(code="testcode")
+        access_code.tracks.add(track1, track2)
+        access_code.submission_types.add(submission_type, sub_type2)
+
+    response = client.get(
+        event.api_urls.access_codes + f"{access_code.pk}/",
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_token.token}"},
+    )
+    content = json.loads(response.text)
+
+    assert response.status_code == 200
+    assert content["track"] in (track1.pk, track2.pk)
+    assert content["submission_type"] in (submission_type.pk, sub_type2.pk)
+
+
+@pytest.mark.django_db
+def test_v1_access_code_null_when_empty(client, orga_user_token, event):
+    with scope(event=event):
+        access_code = event.submitter_access_codes.create(code="testcode")
+
+    response = client.get(
+        event.api_urls.access_codes + f"{access_code.pk}/",
+        follow=True,
+        headers={"Authorization": f"Token {orga_user_token.token}"},
+    )
+    content = json.loads(response.text)
+
+    assert response.status_code == 200
+    assert content["track"] is None
+    assert content["submission_type"] is None
+
+
+@pytest.mark.django_db
+def test_v1_can_create_access_code_with_singular_track(
+    client, orga_user_write_token, event, track, submission_type
+):
+    response = client.post(
+        event.api_urls.access_codes,
+        follow=True,
+        data={
+            "code": "newtestcode",
+            "track": track.pk,
+            "submission_type": submission_type.pk,
+        },
+        content_type="application/json",
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+        },
+    )
+    assert response.status_code == 201, response.text
+    with scope(event=event):
+        access_code = event.submitter_access_codes.get(code="newtestcode")
+        assert list(access_code.tracks.values_list("pk", flat=True)) == [track.pk]
+        assert list(access_code.submission_types.values_list("pk", flat=True)) == [
+            submission_type.pk
+        ]
+
+
+@pytest.mark.django_db
+def test_v1_can_update_access_code_track(
+    client, orga_user_write_token, event, track, submission_type
+):
+    with scope(event=event):
+        access_code = event.submitter_access_codes.create(code="testcode")
+
+    response = client.patch(
+        event.api_urls.access_codes + f"{access_code.pk}/",
+        follow=True,
+        data=json.dumps({"track": track.pk, "submission_type": submission_type.pk}),
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+            "Content-Type": "application/json",
+        },
+    )
+    assert response.status_code == 200
+    with scope(event=event):
+        access_code.refresh_from_db()
+        assert list(access_code.tracks.values_list("pk", flat=True)) == [track.pk]
+        assert list(access_code.submission_types.values_list("pk", flat=True)) == [
+            submission_type.pk
+        ]
+
+
+@pytest.mark.django_db
+def test_v1_can_clear_access_code_track(
+    client, orga_user_write_token, event, track, submission_type
+):
+    with scope(event=event):
+        access_code = event.submitter_access_codes.create(code="testcode")
+        access_code.tracks.add(track)
+        access_code.submission_types.add(submission_type)
+
+    response = client.patch(
+        event.api_urls.access_codes + f"{access_code.pk}/",
+        follow=True,
+        data=json.dumps({"track": None, "submission_type": None}),
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+            "Content-Type": "application/json",
+        },
+    )
+    assert response.status_code == 200
+    with scope(event=event):
+        access_code.refresh_from_db()
+        assert access_code.tracks.count() == 0
+        assert access_code.submission_types.count() == 0
+
+
+@pytest.mark.django_db
+def test_dev_preview_access_code_shows_plural_fields(
+    client, orga_user_token, event, track, submission_type
+):
+    with scope(event=event):
+        access_code = event.submitter_access_codes.create(code="testcode")
+        access_code.tracks.add(track)
+        access_code.submission_types.add(submission_type)
+
+    response = client.get(
+        event.api_urls.access_codes + f"{access_code.pk}/",
+        follow=True,
+        headers={
+            "Authorization": f"Token {orga_user_token.token}",
+            "Pretalx-Version": DEV_PREVIEW,
+        },
+    )
+    content = json.loads(response.text)
+
+    assert response.status_code == 200
+    assert "tracks" in content
+    assert "submission_types" in content
+    assert "track" not in content
+    assert "submission_type" not in content
+    assert content["tracks"] == [track.pk]
+    assert content["submission_types"] == [submission_type.pk]

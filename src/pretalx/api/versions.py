@@ -5,7 +5,7 @@ from rest_framework import exceptions
 
 LEGACY = "LEGACY"
 CURRENT_VERSION = "v1"
-DEV_PREVIEW = "DEV_PREVIEW"
+DEV_PREVIEW = "v-next"
 
 DEPRECATED_VERSIONS = [LEGACY]
 CURRENT_VERSIONS = [

@@ -20,6 +20,26 @@ If you want to test if your existing API client can deal with a new API version
 before upgrading your API token, you can send a ``Pretalx-Version`` header with
 your requests to temporarily change the API version you’re using.
 
+v2 (unreleased)
+----------------
+
+These changes can currently be accessed using the development preview by sending
+the ``Pretalx-Version: v-next`` header with your requests (see
+:ref:`api-versioning`).
+
+The ``/access-codes/`` endpoint fields ``track`` and ``submission_type`` have been
+renamed to ``tracks`` and ``submission_types``, and now return arrays of IDs instead
+of a single ID, as access codes can now be associated with multiple tracks and
+session types.
+
+.. warning::
+
+   If you are using API v1, the ``/access-codes/`` endpoint will continue to use the
+   old singular field names (``track``, ``submission_type``), but will only show the
+   **first** associated track or session type. If your access codes use multiple tracks
+   or session types, this data will be incomplete. Upgrade to API v2 once released to
+   see all associated tracks and session types.
+
 v1 (2025.1.0)
 -------------
 

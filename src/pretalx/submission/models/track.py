@@ -89,9 +89,12 @@ class Track(OrderedModel, PretalxModel):
         return event.tracks.all()
 
     def delete(self, *args, **kwargs):
-        self.submitter_access_codes.annotate(track_count=models.Count("tracks")).filter(
-            track_count=1
-        ).delete()
+        from pretalx.submission.models import SubmitterAccessCode  # noqa: PLC0415, circular imports
+
+        ac_ids = list(self.submitter_access_codes.values_list("pk", flat=True))
+        SubmitterAccessCode.objects.filter(pk__in=ac_ids).annotate(
+            track_count=models.Count("tracks")
+        ).filter(track_count=1).delete()
         return super().delete(*args, **kwargs)
 
     delete.alters_data = True
