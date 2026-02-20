@@ -16,6 +16,7 @@ from django.http.request import QueryDict
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
+from pretalx.cfp.flow import ProfileStep
 from pretalx.submission.forms import InfoForm
 from pretalx.submission.models import Submission, SubmissionStates, SubmissionType, Tag
 
@@ -947,6 +948,45 @@ class TestWizardDrafts:
         doc = bs4.BeautifulSoup(response.content, "html.parser")
         errors = doc.select(".alert-danger, .errorlist")
         assert len(errors) > 0, "Validation errors should be displayed"
+
+    @pytest.mark.django_db
+    def test_draft_on_profile_step_does_not_crash(self, event, client, monkeypatch):
+        with scope(event=event):
+            submission_type = SubmissionType.objects.filter(event=event).first().pk
+
+        response = client.get("/test/submit/", follow=True)
+        current_url = response.redirect_chain[-1][0]
+
+        info_data = {
+            "title": "Test Draft",
+            "content_locale": "en",
+            "description": "Description",
+            "abstract": "Abstract",
+            "notes": "Notes",
+            "slot_count": 1,
+            "submission_type": submission_type,
+        }
+        response = client.post(current_url, data=info_data, follow=True)
+        current_url = response.redirect_chain[-1][0]
+
+        user_data = {
+            "register_name": "newuser@example.com",
+            "register_email": "newuser@example.com",
+            "register_password": "testpassw0rd!",
+            "register_password_repeat": "testpassw0rd!",
+        }
+        response = client.post(current_url, data=user_data, follow=True)
+        current_url = response.redirect_chain[-1][0]
+        assert "/profile/" in current_url
+
+        monkeypatch.setattr(ProfileStep, "is_completed", lambda self, request: False)
+        profile_data = {
+            "name": "Test User",
+            "biography": "Test bio",
+            "action": "draft",
+        }
+        response = client.post(current_url, data=profile_data)
+        assert response.status_code == 200
 
     @pytest.mark.django_db
     def test_draft_saved_successfully_with_valid_data(self, event, client, user):

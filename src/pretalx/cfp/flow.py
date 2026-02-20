@@ -310,7 +310,9 @@ class FormFlowStep(TemplateFlowStep):
         if not self.is_valid():
             return self.get(request)
         next_url = self.get_next_url(request)
-        return redirect(next_url) if next_url else None
+        if next_url:
+            return redirect(next_url)
+        return self.get(request)
 
     def set_data(self, data):
         serialize_data = {}
