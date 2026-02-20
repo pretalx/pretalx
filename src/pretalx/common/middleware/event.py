@@ -5,6 +5,7 @@ import zoneinfo
 from contextlib import suppress
 from urllib.parse import quote, urljoin
 
+from django.apps import apps
 from django.conf import settings
 from django.db.models import OuterRef, Subquery
 from django.http import Http404
@@ -111,9 +112,12 @@ class EventPermissionMiddleware:
             and url.namespaces
             and url.namespaces[0] == "plugins"
             and len(url.namespaces) > 1
-            and url.namespaces[1] not in event.plugin_list
         ):
-            raise Http404
+            plugin = url.namespaces[1]
+            app = apps.get_app_config(plugin)
+            visible = getattr(app.PretalxPluginMeta, "visible", True)
+            if visible and plugin not in event.plugin_list:
+                raise Http404
 
         is_exempt = (
             url.url_name in ("export", "event.css", "widget.messages")
