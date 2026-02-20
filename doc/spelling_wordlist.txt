@@ -11,6 +11,7 @@ BaseExporter
 BaseMailTextPlaceholder
 Bcc
 boolean
+Bluesky
 booleans
 browsable
 bugfix
@@ -33,6 +34,7 @@ datetime
 datetimes
 de
 Debian
+DemoCon
 discoverable
 Django
 drag'n'drop
@@ -85,6 +87,7 @@ npm
 OAuth
 plugin
 plugins
+pre
 prepend
 prepended
 pretalx

@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :bug:`cfp` Access codes that do not specify session types no longer unlock session types that require an access code.
 - :bug:`orga` Plugin pages (settings, API endpoints) were accessible even when the plugin was not enabled for the event. They now correctly return a 404.
 - :feature:`dev` Plugins can now define ``settings_links`` and ``navigation_links`` in their metadata to show quick-access links on the plugin management page.
 - :bug:`api` API tokens with the ``Token`` prefix no longer receive 403 errors on plugin API endpoints.

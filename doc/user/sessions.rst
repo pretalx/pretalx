@@ -146,7 +146,13 @@ You can assign colours to tracks, in order to make them distinct in the public s
 
 Tracks can also be used to assign reviewer permissions, which is useful if your reviewers are domain experts in specific topics (more in the :ref:`Review Guide <user-guide-review>`).
 
+Tracks can be marked as requiring an access code, so that they are only visible
+to speakers who enter a matching code during submission. See
+:ref:`user-guide-access-codes` for details.
+
 You don’t have to use tracks at all, and you can turn them off in the CfP settings.
+
+.. _`user-guide-session-types`:
 
 Session Types
 ^^^^^^^^^^^^^
@@ -160,6 +166,10 @@ Session Types define the format and default duration of sessions. Common example
 
 Session types make scheduling easier for you, because you can just drag blocks of the correct duration onto the schedule.
 You can always override the duration of a session individually, but offering these categories can help the submitter communicate their intended format from the beginning.
+
+Session types can also have their own :ref:`deadlines <user-guide-cfp-deadlines>`
+(overriding the global CfP deadline) and can be marked as requiring an access code.
+See :ref:`user-guide-access-codes` for details.
 
 If you don’t want to use session types, just don’t create any beyond the default one that pretalx creates for you.
 If there is only a single session type, pretalx will not show the session type selection field at all.
