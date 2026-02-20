@@ -214,7 +214,7 @@
 | src/pretalx/person/forms/information.py                                    |       21 |        1 |        2 |        1 |     91% |        18 |
 | src/pretalx/person/forms/profile.py                                        |      187 |       14 |       64 |       12 |     88% |75->77, 148->exit, 169->171, 181->187, 192->195, 219->exit, 226, 242-248, 251-252, 304->exit, 322, 351, 360, 363-364 |
 | src/pretalx/person/forms/user.py                                           |      109 |       11 |       28 |        4 |     88% |104-108, 115, 118-119, 148, 160, 206 |
-| src/pretalx/person/models/auth\_token.py                                   |       73 |       11 |       20 |        0 |     82% |100, 103, 145-154 |
+| src/pretalx/person/models/auth\_token.py                                   |       73 |       11 |       20 |        0 |     82% |103, 106, 148-157 |
 | src/pretalx/person/models/information.py                                   |       33 |        0 |        2 |        1 |     97% |    20->22 |
 | src/pretalx/person/models/picture.py                                       |       57 |        2 |       20 |        4 |     92% |46->49, 78->exit, 83, 97 |
 | src/pretalx/person/models/preferences.py                                   |       41 |        5 |       18 |        3 |     83% |47-53, 91, 108->111 |
