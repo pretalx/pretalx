@@ -396,6 +396,9 @@ class Submission(GenerateCode, PretalxModel):
 
     @cached_property
     def editable(self) -> bool:
+        """
+        Checks if the speaker is currently allowed to edit the submission.
+        """
         try:
             event = self.event
         except ObjectDoesNotExist:
@@ -446,6 +449,9 @@ class Submission(GenerateCode, PretalxModel):
 
     @property
     def is_anonymised(self) -> bool:
+        """
+        Has this submission been anonymised by the organisers?
+        """
         if self.anonymised:
             return bool(self.anonymised.get("_anonymised", False))
         return False
