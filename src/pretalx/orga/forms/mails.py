@@ -308,7 +308,9 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
             (sub.code, sub.title)
             for sub in self.event.submissions.all().order_by("title")
         ]
-        self.fields["speakers"].queryset = self.event.submitters.all().order_by("name")
+        speakers_field = self.fields["speakers"]
+        speakers_field.queryset = self.event.submitters.all().order_by("name")
+        speakers_field.label_from_instance = lambda obj: obj.get_display_name()
         if len(self.event.locales) > 1:
             self.fields["subject"].help_text = _(
                 "If you provide only one language, that language will be used for all emails. If you provide multiple languages, the best fit for each speaker will be used."
