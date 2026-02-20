@@ -108,7 +108,8 @@ worker:
 [group('documentation')]
 [working-directory("doc")]
 docs-build format="html":
-    {{ uv_devdocs }} python -m sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }}
+    just clean
+    {{ uv_devdocs }} python -m sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }} -j auto -a -q
 
 # Build and deploy documentation to a target directory
 [group('documentation')]

@@ -1,6 +1,8 @@
 .. SPDX-FileCopyrightText: 2017-present Tobias Kunze
 .. SPDX-License-Identifier: CC-BY-SA-4.0
 
+:orphan:
+
 Release a pretalx version
 =========================
 

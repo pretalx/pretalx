@@ -250,3 +250,4 @@ def setup(app):
     app.add_role("release", release_role)
     # Hook in our changelog transmutation at appropriate step
     app.connect("doctree-resolved", generate_changelog)
+    return {"parallel_read_safe": True, "parallel_write_safe": True}
