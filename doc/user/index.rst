@@ -20,6 +20,7 @@ updating it in the coming months.
 
    organisers
    sessions
+   cfp
    event/widget
    markdown
    faq
