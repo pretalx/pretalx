@@ -91,6 +91,7 @@ uv.lock
 atlassian-ide-plugin.xml
 
 # generic local files
+src/local/
 local/
 data/
 *.xml
