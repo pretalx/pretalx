@@ -158,9 +158,6 @@ header #logourl img {
     box-shadow: none;
     padding: 12px 18px;
 }
-header #spacer {
-    flex-grow: 1;
-}
 #header-search {
     margin: 0 24px;
 }
@@ -183,38 +180,14 @@ header #related {
     align-items: center;
     z-index: 300;
 }
-header #related .dropdown {
-    position: relative;
-}
-header #related .dropdown .dropdown-body {
-    display: none;
-    position: absolute;
-    background-color: white;
-    border: 1px solid #ddd;
-    white-space: nowrap;
-    right: 20px;
-    padding: 16px;
-}
-header #related .dropdown .dropdown-body .dropdown-item {
-    padding: 6px;
-}
-header #related .dropdown .dropdown-body .dropdown-item a {
-    font-weight: normal;
-    color: #2c3e50;
-}
-header #related .dropdown .dropdown-body .dropdown-item a:hover {
-    color: #3aa57c;
-    border-bottom: 2px solid #3aa57c;
-}
-header #related .dropdown .dropdown-title {
+header #related > a {
     color: white;
     font-weight: bold;
     margin-right: 24px;
 }
-header #related .dropdown:hover .dropdown-body {
-    display: block;
+header #related > a:hover {
+    border-bottom: 2px solid white;
 }
-
 footer {
     color: #999;
     margin-top: 5em;

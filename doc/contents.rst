@@ -14,4 +14,4 @@ Documentation contents
    legal/index
 
    changelog
-   funding
+   support
