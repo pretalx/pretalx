@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_bf2a7c1a547883eb_test_models_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-21 21:25 +0000
+            created at 2026-02-21 22:56 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -105,11 +105,11 @@
     <p class="run"><span class="n"><a id="t21" href="#t21">21</a></span><span class="t"><span class="key">def</span> <span class="nam">test_documentation_includes_config_options</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t22" href="#t22">22</a></span><span class="t">    <span class="nam">doc_text</span> <span class="op">=</span> <span class="op">(</span><span class="nam">doc_dir</span> <span class="op">/</span> <span class="str">"administrator/configure.rst"</span><span class="op">)</span><span class="op">.</span><span class="nam">read_text</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t23" href="#t23">23</a></span><span class="t">    <span class="nam">config</span> <span class="op">=</span> <span class="nam">configparser</span><span class="op">.</span><span class="nam">RawConfigParser</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t24" href="#t24">24</a></span><span class="t">    <span class="nam">config</span> <span class="op">=</span> <span class="nam">config</span><span class="op">.</span><span class="nam">read</span><span class="op">(</span><span class="nam">here</span> <span class="op">/</span> <span class="str">"../../pretalx.example.cfg"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t24" href="#t24">24</a></span><span class="t">    <span class="nam">config</span><span class="op">.</span><span class="nam">read</span><span class="op">(</span><span class="nam">here</span> <span class="op">/</span> <span class="str">"../../pretalx.example.cfg"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t25" href="#t25">25</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t26" href="#t26">26</a></span><span class="t">    <span class="key">for</span> <span class="nam">category</span> <span class="key">in</span> <span class="nam">config</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t27" href="#t27">27</a></span><span class="t">        <span class="key">for</span> <span class="nam">key</span> <span class="key">in</span> <span class="nam">category</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t28" href="#t28">28</a></span><span class="t">            <span class="key">assert</span> <span class="nam">key</span> <span class="key">in</span> <span class="nam">doc_text</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t28" href="#t28">28</a></span><span class="t">            <span class="key">assert</span> <span class="nam">key</span> <span class="key">in</span> <span class="nam">doc_text</span><span class="op">,</span> <span class="fst">f"</span><span class="op">{</span><span class="nam">category</span><span class="op">}</span><span class="fst">:</span><span class="op">{</span><span class="nam">key</span><span class="op">}</span><span class="fst"> is missing in config docs</span><span class="fst">"</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t"><span class="op">@</span><span class="nam">pytest</span><span class="op">.</span><span class="nam">mark</span><span class="op">.</span><span class="nam">parametrize</span><span class="op">(</span><span class="str">"app"</span><span class="op">,</span> <span class="nam">settings</span><span class="op">.</span><span class="nam">LOCAL_APPS</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -149,7 +149,7 @@
             <a class="nav" href="z_bf2a7c1a547883eb_test_models_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-21 21:25 +0000
+            created at 2026-02-21 22:56 +0000
         </p>
     </div>
 </footer>
