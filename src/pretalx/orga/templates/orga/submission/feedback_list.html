@@ -6,19 +6,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% extends "orga/submission/base.html" %}
 
 {% load i18n %}
-{% load rich_text %}
+{% load render_table from django_tables2 %}
 
 {% block submission_title %}{% translate "Attendee feedback" %} :: {% endblock submission_title %}
 
 {% block submission_content %}
-    {% for entry in feedback %}
-        <div class="card mb-2">
-            <div class="card-body pb-0">{{ entry.review|rich_text }}</div>
-        </div>
-    {% empty %}
-        {{ phrases.schedule.no_feedback }}
-    {% endfor %}
-
-    {% include "orga/includes/pagination.html" %}
-
+    {% render_table table %}
 {% endblock submission_content %}
