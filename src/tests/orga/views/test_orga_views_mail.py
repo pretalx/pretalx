@@ -488,7 +488,7 @@ def test_orga_can_compose_single_mail_multiple_states_and_failing_placeholders(
         event.orga_urls.compose_mails_sessions,
         follow=True,
         data={
-            "recipients": ["submitted", "confirmed"],
+            "state": ["submitted", "confirmed"],
             "bcc": "",
             "cc": "",
             "reply_to": "",
@@ -582,7 +582,7 @@ def test_orga_can_compose_mail_for_track(orga_client, event, submission, track):
             "reply_to": "",
             "subject_0": "foo",
             "text_0": "bar",
-            "tracks": [track.pk],
+            "track": [track.pk],
         },
     )
     assert response.status_code == 200
@@ -608,7 +608,7 @@ def test_orga_can_compose_mail_for_submission_type(orga_client, event, submissio
             "reply_to": "",
             "subject_0": "foo",
             "text_0": "bar",
-            "submission_types": [submission.submission_type.pk],
+            "submission_type": [submission.submission_type.pk],
         },
     )
     assert response.status_code == 200
@@ -639,8 +639,8 @@ def test_orga_can_compose_mail_for_track_and_type_no_doubles(
             "reply_to": "",
             "subject_0": "foo",
             "text_0": "bar",
-            "tracks": [track.pk],
-            "submission_types": [submission.submission_type.pk],
+            "track": [track.pk],
+            "submission_type": [submission.submission_type.pk],
         },
     )
     assert response.status_code == 200
@@ -675,12 +675,11 @@ def test_orga_can_compose_single_mail_selected_submissions(
 
 
 @pytest.mark.django_db
-def test_orga_can_compose_single_mail_to_additional_recipients(
+def test_orga_compose_mail_without_recipients_fails(
     orga_client,
     event,
     submission,
     other_submission,
-    orga_user,
 ):
     with scope(event=event):
         assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
@@ -688,7 +687,6 @@ def test_orga_can_compose_single_mail_to_additional_recipients(
         event.orga_urls.compose_mails_sessions,
         follow=True,
         data={
-            "additional_recipients": f"foot@example.com,{orga_user.email}",
             "bcc": "",
             "cc": "",
             "reply_to": "",
@@ -697,13 +695,14 @@ def test_orga_can_compose_single_mail_to_additional_recipients(
         },
     )
     assert response.status_code == 200
+    assert "at least one filter" in response.content.decode()
+    assert len(djmail.outbox) == 0
     with scope(event=event):
-        mails = list(QueuedMail.objects.filter(sent__isnull=True))
-        assert len(mails) == 2
+        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
 
 
 @pytest.mark.django_db
-def test_orga_can_compose_mail_to_speakers_with_no_slides(
+def test_orga_can_compose_mail_to_confirmed_speakers(
     orga_client, event, orga_user, slot, confirmed_submission
 ):
     with scope(event=event):
@@ -712,7 +711,7 @@ def test_orga_can_compose_mail_to_speakers_with_no_slides(
         event.orga_urls.compose_mails_sessions,
         follow=True,
         data={
-            "recipients": "no_slides",
+            "state": ["confirmed"],
             "bcc": "",
             "cc": "",
             "reply_to": "",
@@ -728,6 +727,88 @@ def test_orga_can_compose_mail_to_speakers_with_no_slides(
         assert list(mails[-1].to_users.all()) == [
             confirmed_submission.speakers.first().user
         ]
+
+
+@pytest.mark.django_db
+def test_orga_can_compose_mail_to_specific_speakers(
+    orga_client, event, speaker, submission
+):
+    with scope(event=event):
+        profile = SpeakerProfile.objects.get(user=speaker, event=event)
+        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+    response = orga_client.post(
+        event.orga_urls.compose_mails_sessions,
+        follow=True,
+        data={
+            "speakers": [profile.pk],
+            "bcc": "",
+            "cc": "",
+            "reply_to": "",
+            "subject_0": "foo",
+            "text_0": "bar",
+        },
+    )
+    assert response.status_code == 200
+    assert len(djmail.outbox) == 0
+    with scope(event=event):
+        mails = list(QueuedMail.objects.filter(sent__isnull=True))
+        assert len(mails) == 1
+        assert list(mails[0].to_users.all()) == [speaker]
+
+
+@pytest.mark.django_db
+def test_orga_can_compose_mail_to_speakers_with_filter(
+    orga_client, event, speaker, other_speaker, submission, other_submission
+):
+    with scope(event=event):
+        other_profile = SpeakerProfile.objects.get(user=other_speaker, event=event)
+        QueuedMail.objects.filter(sent__isnull=True).delete()
+    response = orga_client.post(
+        event.orga_urls.compose_mails_sessions,
+        follow=True,
+        data={
+            "state": "submitted",
+            "speakers": [other_profile.pk],
+            "bcc": "",
+            "cc": "",
+            "reply_to": "",
+            "subject_0": "foo",
+            "text_0": "bar",
+        },
+    )
+    assert response.status_code == 200
+    with scope(event=event):
+        mails = list(QueuedMail.objects.filter(sent__isnull=True))
+        recipients = set()
+        for mail in mails:
+            recipients.update(mail.to_users.all())
+        assert speaker in recipients
+        assert other_speaker in recipients
+    assert len(djmail.outbox) == 0
+
+
+@pytest.mark.django_db
+def test_orga_can_compose_mail_for_content_locale(orga_client, event, submission):
+    event.content_locale_array = "en,de"
+    event.save()
+    with scope(event=event):
+        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+    response = orga_client.post(
+        event.orga_urls.compose_mails_sessions,
+        follow=True,
+        data={
+            "content_locale": ["en"],
+            "bcc": "",
+            "cc": "",
+            "reply_to": "",
+            "subject_0": "foo",
+            "text_0": "bar",
+        },
+    )
+    assert response.status_code == 200
+    assert len(djmail.outbox) == 0
+    with scope(event=event):
+        assert QueuedMail.objects.filter(sent__isnull=True).count() == 1
 
 
 @pytest.mark.django_db

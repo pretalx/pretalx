@@ -328,30 +328,35 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
             kwargs.remove("slot")
         return get_available_placeholders(event=self.event, kwargs=kwargs)
 
-    def get_recipients(self):
-        added_submissions = self.cleaned_data.get("submissions")
-        added_speakers = self.cleaned_data.get("speakers")
-        if (added_submissions or added_speakers) and all(
-            not self.cleaned_data.get(key)
-            for key in (
-                "state",
-                "submission_type",
-                "content_locale",
-                "track",
-                "tags",
-                "question",
+    def clean(self):
+        cleaned_data = super().clean()
+        filter_keys = (
+            "state",
+            "submission_type",
+            "content_locale",
+            "track",
+            "tags",
+            "question",
+        )
+        has_filters = any(cleaned_data.get(key) for key in filter_keys)
+        added_submissions = cleaned_data.get("submissions")
+        added_speakers = cleaned_data.get("speakers")
+
+        if not has_filters and not added_submissions and not added_speakers:
+            raise forms.ValidationError(
+                _(
+                    "Please select at least one filter or specific proposals/speakers as recipients."
+                )
             )
-        ):
-            # If no filters have been selected, but specific submissions or speakers,
-            # we will assume the users meant to send emails to only those selected,
-            # not to all proposals.
-            submissions = self.event.submissions.none()
-        else:
+
+        if has_filters:
             submissions = (
                 self.filter_queryset(self.event.submissions)
                 .select_related("track", "submission_type", "event")
                 .with_sorted_speakers()
             )
+        else:
+            submissions = self.event.submissions.none()
 
         if added_submissions:
             specific_submissions = (
@@ -381,7 +386,11 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
             )
         if added_speakers:
             result.extend({"user": user} for user in added_speakers)
-        return result
+        self._recipients = result
+        return cleaned_data
+
+    def get_recipients(self):
+        return self._recipients
 
     def clean_question(self):
         return getattr(self, "filter_question", None)
