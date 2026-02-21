@@ -21,11 +21,11 @@ command_docs = (doc_dir / "administrator/commands.rst").read_text()
 def test_documentation_includes_config_options():
     doc_text = (doc_dir / "administrator/configure.rst").read_text()
     config = configparser.RawConfigParser()
-    config = config.read(here / "../../pretalx.example.cfg")
+    config.read(here / "../../pretalx.example.cfg")
 
     for category in config:
         for key in category:
-            assert key in doc_text
+            assert key in doc_text, f"{category}:{key} is missing in config docs"
 
 
 @pytest.mark.parametrize("app", settings.LOCAL_APPS)
