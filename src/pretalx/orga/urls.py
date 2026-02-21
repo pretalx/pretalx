@@ -409,7 +409,7 @@ urlpatterns = [
                                 name="submissions.reviews",
                             ),
                             path(
-                                "reviews/delete",
+                                "reviews/<int:pk>/delete",
                                 review.ReviewSubmissionDelete.as_view(),
                                 name="submissions.reviews.submission.delete",
                             ),
