@@ -51,6 +51,7 @@ from pretalx.orga.forms.submission import (
     SubmissionForm,
     SubmissionStateChangeForm,
 )
+from pretalx.orga.tables.feedback import FeedbackTable
 from pretalx.orga.tables.submission import SubmissionTable, TagTable
 from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
@@ -792,13 +793,23 @@ class SubmissionList(SubmissionListMixin, EventPermissionRequired, ListView):
         ).count()
 
 
-class FeedbackList(SubmissionViewMixin, PaginationMixin, ListView):
+class FeedbackList(SubmissionViewMixin, OrgaTableMixin, ListView):
     template_name = "orga/submission/feedback_list.html"
     context_object_name = "feedback"
     permission_required = "submission.view_feedback_submission"
+    table_class = FeedbackTable
 
     def get_queryset(self):
-        return self.submission.feedback.all().order_by("pk")
+        return (
+            self.submission.feedback.all()
+            .select_related("talk__event", "speaker", "speaker__user")
+            .order_by("-created", "-pk")
+        )
+
+    def get_table_kwargs(self):
+        kwargs = super().get_table_kwargs()
+        kwargs["include_talk"] = False
+        return kwargs
 
     @context
     @cached_property
@@ -1177,17 +1188,18 @@ class SubmissionStats(EventPermissionRequired, TemplateView):
         return ""
 
 
-class AllFeedbacksList(EventPermissionRequired, PaginationMixin, ListView):
+class AllFeedbacksList(EventPermissionRequired, OrgaTableMixin, ListView):
     model = Feedback
     context_object_name = "feedback"
     template_name = "orga/submission/feedbacks_list.html"
     permission_required = "submission.orga_list_submission"
+    table_class = FeedbackTable
 
     def get_queryset(self):
         return (
-            Feedback.objects.order_by("-talk_id", "-pk")
-            .select_related("talk")
-            .filter(talk__event=self.request.event)
+            Feedback.objects.filter(talk__event=self.request.event)
+            .select_related("talk__event", "speaker", "speaker__user")
+            .order_by("-created", "-pk")
         )
 
 
