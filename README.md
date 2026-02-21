@@ -203,7 +203,7 @@
 | src/pretalx/orga/views/organiser.py                                        |      313 |       27 |       58 |        8 |     85% |119-121, 142-143, 158-159, 294-295, 336, 383, 396, 398-414, 480-482 |
 | src/pretalx/orga/views/person.py                                           |      120 |       20 |       30 |        5 |     81% |77-86, 90-97, 99-107, 156, 165, 181-182 |
 | src/pretalx/orga/views/plugins.py                                          |       56 |        0 |       14 |        0 |    100% |           |
-| src/pretalx/orga/views/review.py                                           |      562 |       49 |      130 |       21 |     88% |92, 95-98, 100-103, 255->257, 257->263, 298->exit, 319-320, 322-328, 373->375, 380, 386-391, 407, 449-462, 473, 485-486, 496->498, 504-505, 556-557, 568-569, 580->593, 595, 743->749, 787-788, 965-966, 1027-1038, 1053, 1083-1084 |
+| src/pretalx/orga/views/review.py                                           |      564 |       49 |      132 |       21 |     89% |92, 95-98, 100-103, 255->257, 257->263, 298->exit, 319-320, 322-328, 373->375, 380, 386-391, 407, 449-462, 473, 485-486, 496->498, 504-505, 556-557, 568-569, 580->593, 595, 744->750, 788-789, 968-969, 1030-1041, 1056, 1086-1087 |
 | src/pretalx/orga/views/schedule.py                                         |      300 |       29 |       52 |        9 |     86% |52->59, 121-122, 165-169, 318, 319->322, 331, 361, 384, 396, 406, 416-447, 465, 507, 572-579 |
 | src/pretalx/orga/views/speaker.py                                          |      186 |       11 |       20 |        5 |     91% |93-105, 107-110, 114, 216, 290, 353-354 |
 | src/pretalx/orga/views/submission.py                                       |      692 |       36 |      120 |       21 |     92% |213-217, 237-239, 242, 259-265, 354->362, 441, 449, 473, 561, 564->558, 601, 624->634, 635, 642->654, 652->654, 713, 766->exit, 768, 850-851, 884->894, 936, 987, 1014, 1276, 1280, 1284, 1291-1297, 1320-1321, 1323-1324 |
@@ -343,7 +343,7 @@
 | src/tests/orga/views/test\_orga\_views\_review.py                          |      485 |        0 |        8 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_schedule.py                        |      346 |        0 |        8 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_speaker.py                         |      283 |        0 |        6 |        0 |    100% |           |
-| src/tests/orga/views/test\_orga\_views\_submission.py                      |      754 |        0 |       16 |        0 |    100% |           |
+| src/tests/orga/views/test\_orga\_views\_submission.py                      |      773 |        0 |       16 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_submission\_cards.py               |       14 |        0 |        0 |        0 |    100% |           |
 | src/tests/person/test\_auth\_token\_model.py                               |       11 |        0 |        0 |        0 |    100% |           |
 | src/tests/person/test\_information\_model.py                               |        7 |        0 |        0 |        0 |    100% |           |
@@ -367,7 +367,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **36265** | **1835** | **5688** |  **771** | **93%** |           |
+| **TOTAL**                                                                  | **36286** | **1835** | **5690** |  **771** | **93%** |           |
 
 
 ## Setup coverage badge

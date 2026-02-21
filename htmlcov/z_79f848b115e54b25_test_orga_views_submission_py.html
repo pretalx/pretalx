@@ -55,8 +55,8 @@
             </div>
         </aside>
         <h2>
-            <span class="text">754 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">754<span class="text"> run</span></button>
+            <span class="text">773 statements &nbsp;</span>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">773<span class="text"> run</span></button>
             <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">0<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
             <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">0<span class="text"> partial</span></button>
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_79f848b115e54b25_test_orga_views_submission_cards_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-21 23:11 +0000
+            created at 2026-02-21 23:44 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -1357,6 +1357,36 @@
     <p class="pln"><span class="n"><a id="t1273" href="#t1273">1273</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1274" href="#t1274">1274</a></span><span class="t">    <span class="key">with</span> <span class="nam">scope</span><span class="op">(</span><span class="nam">event</span><span class="op">=</span><span class="nam">submission</span><span class="op">.</span><span class="nam">event</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1275" href="#t1275">1275</a></span><span class="t">        <span class="key">assert</span> <span class="key">not</span> <span class="nam">Review</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">pk</span><span class="op">=</span><span class="nam">review_pk</span><span class="op">)</span><span class="op">.</span><span class="nam">exists</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t1276" href="#t1276">1276</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t1277" href="#t1277">1277</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1278" href="#t1278">1278</a></span><span class="t"><span class="op">@</span><span class="nam">pytest</span><span class="op">.</span><span class="nam">mark</span><span class="op">.</span><span class="nam">django_db</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1279" href="#t1279">1279</a></span><span class="t"><span class="key">def</span> <span class="nam">test_reviewer_cannot_delete_other_review</span><span class="op">(</span><span class="nam">other_review_client</span><span class="op">,</span> <span class="nam">review</span><span class="op">,</span> <span class="nam">submission</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1280" href="#t1280">1280</a></span><span class="t">    <span class="key">with</span> <span class="nam">scope</span><span class="op">(</span><span class="nam">event</span><span class="op">=</span><span class="nam">submission</span><span class="op">.</span><span class="nam">event</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1281" href="#t1281">1281</a></span><span class="t">        <span class="nam">review_pk</span> <span class="op">=</span> <span class="nam">review</span><span class="op">.</span><span class="nam">pk</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t1282" href="#t1282">1282</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1283" href="#t1283">1283</a></span><span class="t">    <span class="nam">response</span> <span class="op">=</span> <span class="nam">other_review_client</span><span class="op">.</span><span class="nam">post</span><span class="op">(</span><span class="nam">review</span><span class="op">.</span><span class="nam">urls</span><span class="op">.</span><span class="nam">delete</span><span class="op">,</span> <span class="nam">follow</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1284" href="#t1284">1284</a></span><span class="t">    <span class="key">assert</span> <span class="nam">response</span><span class="op">.</span><span class="nam">status_code</span> <span class="op">==</span> <span class="num">404</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t1285" href="#t1285">1285</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1286" href="#t1286">1286</a></span><span class="t">    <span class="key">with</span> <span class="nam">scope</span><span class="op">(</span><span class="nam">event</span><span class="op">=</span><span class="nam">submission</span><span class="op">.</span><span class="nam">event</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1287" href="#t1287">1287</a></span><span class="t">        <span class="key">assert</span> <span class="nam">Review</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">pk</span><span class="op">=</span><span class="nam">review_pk</span><span class="op">)</span><span class="op">.</span><span class="nam">exists</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t1288" href="#t1288">1288</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t1289" href="#t1289">1289</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1290" href="#t1290">1290</a></span><span class="t"><span class="op">@</span><span class="nam">pytest</span><span class="op">.</span><span class="nam">mark</span><span class="op">.</span><span class="nam">django_db</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1291" href="#t1291">1291</a></span><span class="t"><span class="key">def</span> <span class="nam">test_administrator_can_delete_other_review</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t1292" href="#t1292">1292</a></span><span class="t">    <span class="nam">administrator_client</span><span class="op">,</span> <span class="nam">review</span><span class="op">,</span> <span class="nam">submission</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t1293" href="#t1293">1293</a></span><span class="t"><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1294" href="#t1294">1294</a></span><span class="t">    <span class="key">with</span> <span class="nam">scope</span><span class="op">(</span><span class="nam">event</span><span class="op">=</span><span class="nam">submission</span><span class="op">.</span><span class="nam">event</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1295" href="#t1295">1295</a></span><span class="t">        <span class="nam">review_pk</span> <span class="op">=</span> <span class="nam">review</span><span class="op">.</span><span class="nam">pk</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1296" href="#t1296">1296</a></span><span class="t">        <span class="key">assert</span> <span class="nam">Review</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">pk</span><span class="op">=</span><span class="nam">review_pk</span><span class="op">)</span><span class="op">.</span><span class="nam">exists</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t1297" href="#t1297">1297</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1298" href="#t1298">1298</a></span><span class="t">    <span class="nam">response</span> <span class="op">=</span> <span class="nam">administrator_client</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="nam">review</span><span class="op">.</span><span class="nam">urls</span><span class="op">.</span><span class="nam">delete</span><span class="op">,</span> <span class="nam">follow</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1299" href="#t1299">1299</a></span><span class="t">    <span class="key">assert</span> <span class="nam">response</span><span class="op">.</span><span class="nam">status_code</span> <span class="op">==</span> <span class="num">200</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t1300" href="#t1300">1300</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1301" href="#t1301">1301</a></span><span class="t">    <span class="nam">response</span> <span class="op">=</span> <span class="nam">administrator_client</span><span class="op">.</span><span class="nam">post</span><span class="op">(</span><span class="nam">review</span><span class="op">.</span><span class="nam">urls</span><span class="op">.</span><span class="nam">delete</span><span class="op">,</span> <span class="nam">follow</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1302" href="#t1302">1302</a></span><span class="t">    <span class="key">assert</span> <span class="nam">response</span><span class="op">.</span><span class="nam">status_code</span> <span class="op">==</span> <span class="num">200</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t1303" href="#t1303">1303</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1304" href="#t1304">1304</a></span><span class="t">    <span class="key">with</span> <span class="nam">scope</span><span class="op">(</span><span class="nam">event</span><span class="op">=</span><span class="nam">submission</span><span class="op">.</span><span class="nam">event</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1305" href="#t1305">1305</a></span><span class="t">        <span class="key">assert</span> <span class="key">not</span> <span class="nam">Review</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">pk</span><span class="op">=</span><span class="nam">review_pk</span><span class="op">)</span><span class="op">.</span><span class="nam">exists</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -1366,7 +1396,7 @@
             <a class="nav" href="z_79f848b115e54b25_test_orga_views_submission_cards_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-21 23:11 +0000
+            created at 2026-02-21 23:44 +0000
         </p>
     </div>
 </footer>
