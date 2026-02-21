@@ -57,6 +57,9 @@ SPDX-FileContributor: Raphael Michel
         {{ html_head|safe }}
     </head>
     <body data-datetimeformat="{{ js_datetime_format }}" data-dateformat="{{ js_date_format }}" data-datetimelocale="{{ js_locale }}">
+        <nav id="skip-to-main" class="sr-only" aria-label="{% translate "Skip link" %}">
+            <a href="#content">{% translate "Skip to main content" %}</a>
+        </nav>
         <nav class="navbar">
             <ul class="navbar-nav d-block">
                 <li class="nav-item">
@@ -489,7 +492,7 @@ SPDX-FileContributor: Raphael Michel
                 {% endif %}  {# if request.event #}
             </aside>{% endif %}  {# if not request.user.is_anonymous #}
             <div id="page-content">
-                <main>
+                <main id="content">
                     {% if messages %}
                         {% for message in messages %}
                             <div class="alert alert-{{ message.tags }}">

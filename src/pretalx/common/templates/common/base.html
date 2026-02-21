@@ -59,6 +59,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% block custom_header %}{% endblock custom_header %}
     </head>
     <body data-datetimeformat="{{ js_datetime_format }}" data-dateformat="{{ js_date_format }}" data-datetimelocale="{{ js_locale }}"{% if request.user.is_authenticated %} data-pretalx-logged-in="true"{% endif %}>
+        <nav id="skip-to-main" class="sr-only" aria-label="{% translate "Skip link" %}">
+            <a href="#content">{% translate "Skip to main content" %}</a>
+        </nav>
         <div id="top-bg" class="header {{ request.event.display_settings.header_pattern|default:"bg-primary" }}">
             {% if request.event and request.event.header_image %}
                 {# we’re not lazy-loading the header image, even though it can be large, because it’s a bit jarring to see it flash in 100ms after the page load #}
@@ -141,7 +144,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </div>
             </header>
             <div class="card" id="main-card">
-                <main>
+                <main id="content">
                     {% if messages %}
                         {% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}
                     {% endif %}
