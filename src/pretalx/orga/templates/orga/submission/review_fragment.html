@@ -23,11 +23,15 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <td class="review-text">
         {{ review.text|rich_text }}
     </td>
-    <td>
+    <td class="d-flex">
         {% if show_reviewer_name %}
             {% include "orga/includes/user_name.html" with user=review.user lightbox=True %}
         {% elif not read_only %}
-            <div class="btn btn-success" id="edit-review" role="button">{{ phrases.base.edit }}</div>
+            <div class="btn btn-success ml-auto" id="edit-review" role="button">{{ phrases.base.edit }}</div>
+        {% endif %}
+        {# Reviewers have their own delete path on their review form, so this button is only for admins deleting other people's reviews. #}
+        {% if request.user.is_administrator %}
+            <a href="{{ review.delete_url }}" class="btn btn-outline-danger btn-sm ml-auto">{% translate "Delete" %}</a>
         {% endif %}
     </td>
 </tr>

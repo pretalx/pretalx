@@ -199,7 +199,7 @@ class Review(PretalxModel):
 
     class urls(EventUrls):
         base = "{self.submission.orga_urls.reviews}"
-        delete = "{base}delete"
+        delete = "{base}{self.pk}/delete"
 
 
 class ReviewPhase(OrderedModel, PretalxModel):

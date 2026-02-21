@@ -712,6 +712,7 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
                 "scores": self.get_scores_for_review(review),
                 "text": review.text,
                 "user": review.user,
+                "delete_url": review.urls.delete,
                 "answers": [
                     review.answers.filter(question=question).first()
                     for question in self.review_questions
@@ -845,7 +846,7 @@ class ReviewSubmissionDelete(
 
     @cached_property
     def object(self):
-        return self.submission.reviews.filter(user=self.request.user).first()
+        return self.submission.reviews.filter(pk=self.kwargs["pk"]).first()
 
     def get_object(self):
         return self.object
@@ -854,6 +855,8 @@ class ReviewSubmissionDelete(
         return self.object
 
     def action_object_name(self):
+        if self.object and self.object.user != self.request.user:
+            return _("{name}'s review").format(name=self.object.user.get_display_name())
         return _("Your review")
 
     @property

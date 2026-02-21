@@ -1273,3 +1273,33 @@ def test_reviewer_can_delete_own_review(review_client, review, submission):
 
     with scope(event=submission.event):
         assert not Review.objects.filter(pk=review_pk).exists()
+
+
+@pytest.mark.django_db
+def test_reviewer_cannot_delete_other_review(other_review_client, review, submission):
+    with scope(event=submission.event):
+        review_pk = review.pk
+
+    response = other_review_client.post(review.urls.delete, follow=True)
+    assert response.status_code == 404
+
+    with scope(event=submission.event):
+        assert Review.objects.filter(pk=review_pk).exists()
+
+
+@pytest.mark.django_db
+def test_administrator_can_delete_other_review(
+    administrator_client, review, submission
+):
+    with scope(event=submission.event):
+        review_pk = review.pk
+        assert Review.objects.filter(pk=review_pk).exists()
+
+    response = administrator_client.get(review.urls.delete, follow=True)
+    assert response.status_code == 200
+
+    response = administrator_client.post(review.urls.delete, follow=True)
+    assert response.status_code == 200
+
+    with scope(event=submission.event):
+        assert not Review.objects.filter(pk=review_pk).exists()
