@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`orga,2185` The feedback list pages now use sortable table views with optional columns, consistent with other organiser list views.
 - :bug:`cfp` Access codes that do not specify session types no longer unlock session types that require an access code.
 - :bug:`orga` Plugin pages (settings, API endpoints) were accessible even when the plugin was not enabled for the event. They now correctly return a 404.
 - :feature:`dev` Plugins can now define ``settings_links`` and ``navigation_links`` in their metadata to show quick-access links on the plugin management page.

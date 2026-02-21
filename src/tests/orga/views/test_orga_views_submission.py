@@ -187,7 +187,7 @@ def test_orga_can_see_single_submission_feedback(
         with scope(event=event):
             Feedback.objects.create(talk=feedback.talk, review="I also liked it!")
 
-    with django_assert_num_queries(28):
+    with django_assert_num_queries(34):
         response = orga_client.get(feedback.talk.orga_urls.feedback, follow=True)
     assert response.status_code == 200
     assert feedback.review in response.text
@@ -904,7 +904,7 @@ def test_orga_can_see_all_feedback(
         with scope(event=event):
             Feedback.objects.create(talk=feedback.talk, review="Also great!")
 
-    with django_assert_num_queries(19):
+    with django_assert_num_queries(22):
         response = orga_client.get(event.orga_urls.feedback, follow=True)
     assert response.status_code == 200
     assert feedback.review in response.text
