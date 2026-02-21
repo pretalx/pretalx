@@ -453,7 +453,7 @@ def test_reviewer_can_see_dashboard(
     django_assert_num_queries,
     other_submission,
 ):
-    with django_assert_num_queries(52):
+    with django_assert_num_queries(43):
         response = review_client.get(
             submission.event.orga_urls.reviews + "?sort=" + sort
         )
@@ -476,7 +476,7 @@ def test_reviewer_with_track_limit_can_see_dashboard(
         submission.event.active_review_phase.can_tag_submissions = "use_tags"
         submission.event.active_review_phase.save()
         submission.tags.add(tag)
-    with django_assert_num_queries(39):
+    with django_assert_num_queries(37):
         response = review_client.get(submission.event.orga_urls.reviews)
     assert response.status_code == 200
     assert tag.tag in response.text

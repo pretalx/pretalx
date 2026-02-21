@@ -32,7 +32,7 @@ def test_admin_user_list_num_queries(
         User.objects.create_user(
             email="jane2@speaker.org", password="speakerpwd1!", name="Jane Doe"
         )
-    with django_assert_num_queries(8):
+    with django_assert_num_queries(6):
         response = administrator_client.get("/orga/admin/users/?q=Jane")
     assert response.status_code == 200
     assert speaker.name in response.text

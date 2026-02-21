@@ -45,7 +45,7 @@ def test_speaker_list_num_queries(
             other_profile.save()
             other_profile.delete()
 
-    with django_assert_num_queries(24):
+    with django_assert_num_queries(22):
         response = orga_client.get(event.orga_urls.speakers)
     assert response.status_code == 200
     assert speaker_profile.get_display_name() in response.text
@@ -333,7 +333,7 @@ def test_speaker_information_list_num_queries(
                 event=event, title="Second Info", text="Also important"
             )
 
-    with django_assert_num_queries(24):
+    with django_assert_num_queries(21):
         response = orga_client.get(event.orga_urls.information)
     assert response.status_code == 200
     assert information.title in response.text

@@ -19,7 +19,7 @@ def test_orga_can_view_pending_mails(
         with scope(event=event):
             other_mail.delete()
 
-    with django_assert_num_queries(27):
+    with django_assert_num_queries(26):
         response = orga_client.get(event.orga_urls.outbox)
     assert response.status_code == 200
     assert mail.subject in response.text
@@ -37,7 +37,7 @@ def test_orga_can_view_sent_mails(
             sent2 = mail_template.to_mail(speaker, event)
             sent2.send()
 
-    with django_assert_num_queries(27):
+    with django_assert_num_queries(23):
         response = orga_client.get(event.orga_urls.sent_mails)
     assert response.status_code == 200
     assert sent1.subject in response.text
@@ -288,7 +288,7 @@ def test_orga_can_view_templates(
                 reply_to="orga@orga.org",
             )
 
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(19):
         response = orga_client.get(event.orga_urls.mail_templates, follow=True)
     assert response.status_code == 200
     assert mail_template.subject in response.text

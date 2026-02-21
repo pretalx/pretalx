@@ -624,6 +624,12 @@ class OrgaTableMixin(SingleTableMixin):
     DEFAULT_PAGINATION = 50
 
     def get_paginate_by(self, queryset=None):
+        # When combined with ListView, MultipleObjectMixin.get_context_data()
+        # calls get_paginate_by() before the table is created. Return None
+        # to prevent ListView from double-paginating — the table handles it.
+        # We inject page_obj from the table’s paginator in get_context_data().
+        if self.table_class and not hasattr(self, "_table_page_size"):
+            return None
         # TODO: remove most of this method including the fallback to
         # session-based handling in 2026, data should have been migrated
         # by active use (and if not, it can’t have mattered that much)
@@ -665,6 +671,21 @@ class OrgaTableMixin(SingleTableMixin):
         kwargs["event"] = getattr(self.request, "event", None)
         kwargs["user"] = getattr(self.request, "user", None)
         return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Provide page_obj/paginator from the table's own paginator so that
+        # templates can use {{ page_obj.paginator.count }} even though we
+        # skip ListView's pagination (see get_paginate_by).
+        if (
+            (table := context.get("table"))
+            and hasattr(table, "page")
+            and table.page is not None
+        ):
+            context["page_obj"] = table.page
+            context["paginator"] = table.paginator
+            context["is_paginated"] = table.page.has_other_pages()
+        return context
 
     def get_table(self, *args, **kwargs):
         if not self.table_class:

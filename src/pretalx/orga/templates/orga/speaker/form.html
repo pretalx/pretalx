@@ -39,8 +39,8 @@ SPDX-FileContributor: Florian Mösch
     <h2 class="d-flex justify-content-between align-items-baseline">
         {% include "orga/includes/user_name.html" with user=form.instance lightbox=True %}
         <span class="ml-2">
-            ({{ submissions.count }}
-            {% blocktranslate asvar proposal_title trimmed count count=submissions.count %}
+            ({{ submissions|length }}
+            {% blocktranslate asvar proposal_title trimmed count count=submissions|length %}
                 proposal
             {% plural %}
                 proposals
