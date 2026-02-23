@@ -10,10 +10,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block extra_title %}{% translate "Download" %} :: {% endblock extra_title %}
 
-{% block scripts %}
-    <script defer src="{% static "vendored/htmx.min.js" %}"></script>
-{% endblock scripts %}
-
 {% block content %}
     <h2>{% block async_download_title %}{% translate "Download" %}{% endblock async_download_title %}</h2>
 

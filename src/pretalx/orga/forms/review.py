@@ -217,7 +217,6 @@ class ReviewAssignmentForm(forms.Form):
 
     class Media:
         js = [
-            forms.Script("vendored/htmx.min.js", defer=""),
             forms.Script("orga/js/forms/assignment.js", defer=""),
         ]
 

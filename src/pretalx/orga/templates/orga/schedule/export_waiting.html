@@ -14,10 +14,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <link rel="stylesheet" type="text/css" href="{% static "common/css/ui/export.css" %}" />
 {% endblock stylesheets %}
 
-{% block scripts %}
-    <script defer src="{% static "vendored/htmx.min.js" %}"></script>
-{% endblock scripts %}
-
 {% block schedule_content %}
     <h2>{% translate "Export schedule data" %}</h2>
 
