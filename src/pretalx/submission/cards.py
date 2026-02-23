@@ -33,14 +33,14 @@ def _text(text, max_length=None):
     if not text:
         return ""
 
-    # add an almost-invisible space &hairsp; after hyphens as word-wrap in ReportLab only works on space chars
-    text = conditional_escape(text).replace("-", "-&hairsp;")
     # Reportlab does not support unicode combination characters
-    text = unicodedata.normalize("NFC", text)
+    text = unicodedata.normalize("NFC", conditional_escape(text))
 
     if max_length and len(text) > max_length:
-        return text[: max_length - 1] + "…"
-    return text
+        text = text[: max_length - 1] + "…"
+
+    # add an almost-invisible space &hairsp; after hyphens as word-wrap in ReportLab only works on space chars
+    return text.replace("-", "-&hairsp;")
 
 
 class SubmissionCard(Flowable):
