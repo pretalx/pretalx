@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_aa5cc65f4b1bea13_event_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-23 08:26 +0000
+            created at 2026-02-23 13:33 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -93,7 +93,7 @@
     <p class="run"><span class="n"><a id="t9" href="#t9">9</a></span><span class="t"><span class="key">from</span> <span class="nam">django</span><span class="op">.</span><span class="nam">conf</span> <span class="key">import</span> <span class="nam">settings</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t10" href="#t10">10</a></span><span class="t"><span class="key">from</span> <span class="nam">django</span><span class="op">.</span><span class="nam">contrib</span> <span class="key">import</span> <span class="nam">messages</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t11" href="#t11">11</a></span><span class="t"><span class="key">from</span> <span class="nam">django</span><span class="op">.</span><span class="nam">contrib</span><span class="op">.</span><span class="nam">auth</span> <span class="key">import</span> <span class="nam">logout</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t12" href="#t12">12</a></span><span class="t"><span class="key">from</span> <span class="nam">django</span><span class="op">.</span><span class="nam">core</span><span class="op">.</span><span class="nam">exceptions</span> <span class="key">import</span> <span class="nam">PermissionDenied</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t12" href="#t12">12</a></span><span class="t"><span class="key">from</span> <span class="nam">django</span><span class="op">.</span><span class="nam">core</span><span class="op">.</span><span class="nam">exceptions</span> <span class="key">import</span> <span class="nam">PermissionDenied</span><span class="op">,</span> <span class="nam">SuspiciousOperation</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t13" href="#t13">13</a></span><span class="t"><span class="key">from</span> <span class="nam">django</span><span class="op">.</span><span class="nam">http</span> <span class="key">import</span> <span class="nam">Http404</span><span class="op">,</span> <span class="nam">HttpRequest</span><span class="op">,</span> <span class="nam">HttpResponseRedirect</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t14" href="#t14">14</a></span><span class="t"><span class="key">from</span> <span class="nam">django</span><span class="op">.</span><span class="nam">shortcuts</span> <span class="key">import</span> <span class="nam">redirect</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t15" href="#t15">15</a></span><span class="t"><span class="key">from</span> <span class="nam">django</span><span class="op">.</span><span class="nam">urls</span> <span class="key">import</span> <span class="nam">reverse</span>&nbsp;</span><span class="r"></span></p>
@@ -197,7 +197,7 @@
     <p class="pln"><span class="n"><a id="t113" href="#t113">113</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t114" href="#t114">114</a></span><span class="t">        <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t115" href="#t115">115</a></span><span class="t">            <span class="nam">data</span> <span class="op">=</span> <span class="nam">store</span><span class="op">.</span><span class="nam">load</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">        <span class="key">except</span> <span class="nam">Exception</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">        <span class="key">except</span> <span class="op">(</span><span class="nam">SuspiciousOperation</span><span class="op">,</span> <span class="nam">KeyError</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t117" href="#t117">117</a></span><span class="t">            <span class="key">raise</span> <span class="nam">PermissionDenied</span><span class="op">(</span><span class="nam">phrases</span><span class="op">.</span><span class="nam">base</span><span class="op">.</span><span class="nam">back_try_again</span><span class="op">)</span> <span class="key">from</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t118" href="#t118">118</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t119" href="#t119">119</a></span><span class="t">        <span class="nam">key</span> <span class="op">=</span> <span class="fst">f"</span><span class="fst">pretalx_event_access_</span><span class="op">{</span><span class="nam">request</span><span class="op">.</span><span class="nam">event</span><span class="op">.</span><span class="nam">pk</span><span class="op">}</span><span class="fst">"</span>&nbsp;</span><span class="r"></span></p>
@@ -206,7 +206,7 @@
     <p class="pln"><span class="n"><a id="t122" href="#t122">122</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t123" href="#t123">123</a></span><span class="t">        <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t124" href="#t124">124</a></span><span class="t">            <span class="nam">parentdata</span> <span class="op">=</span> <span class="nam">sparent</span><span class="op">.</span><span class="nam">load</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t125" href="#t125">125</a></span><span class="t">        <span class="key">except</span> <span class="nam">Exception</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t125" href="#t125">125</a></span><span class="t">        <span class="key">except</span> <span class="op">(</span><span class="nam">SuspiciousOperation</span><span class="op">,</span> <span class="nam">KeyError</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t126" href="#t126">126</a></span><span class="t">            <span class="key">raise</span> <span class="nam">PermissionDenied</span><span class="op">(</span><span class="nam">phrases</span><span class="op">.</span><span class="nam">base</span><span class="op">.</span><span class="nam">back_try_again</span><span class="op">)</span> <span class="key">from</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t127" href="#t127">127</a></span><span class="t">        <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t128" href="#t128">128</a></span><span class="t">            <span class="key">if</span> <span class="str">"event_access"</span> <span class="key">not</span> <span class="key">in</span> <span class="nam">parentdata</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -229,7 +229,7 @@
             <a class="nav" href="z_aa5cc65f4b1bea13_event_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-23 08:26 +0000
+            created at 2026-02-23 13:33 +0000
         </p>
     </div>
 </footer>

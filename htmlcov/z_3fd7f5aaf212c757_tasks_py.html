@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_bc678c3e2285c028_apps_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-23 08:26 +0000
+            created at 2026-02-23 13:33 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -112,13 +112,11 @@
     <p class="pln"><span class="n"><a id="t28" href="#t28">28</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t">    <span class="nam">cutoff</span> <span class="op">=</span> <span class="nam">now</span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="nam">dt</span><span class="op">.</span><span class="nam">timedelta</span><span class="op">(</span><span class="nam">days</span><span class="op">=</span><span class="num">30</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t">    <span class="nam">pictures</span> <span class="op">=</span> <span class="nam">ProfilePicture</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t">        <span class="nam">users__isnull</span><span class="op">=</span><span class="key">True</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t">        <span class="nam">speakers__isnull</span><span class="op">=</span><span class="key">True</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t">        <span class="nam">updated__lt</span><span class="op">=</span><span class="nam">cutoff</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t">    <span class="key">for</span> <span class="nam">picture</span> <span class="key">in</span> <span class="nam">pictures</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t36" href="#t36">36</a></span><span class="t">        <span class="com"># Object-level delete to trigger file cleanup</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t37" href="#t37">37</a></span><span class="t">        <span class="nam">picture</span><span class="op">.</span><span class="nam">delete</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t">        <span class="nam">users__isnull</span><span class="op">=</span><span class="key">True</span><span class="op">,</span> <span class="nam">speakers__isnull</span><span class="op">=</span><span class="key">True</span><span class="op">,</span> <span class="nam">updated__lt</span><span class="op">=</span><span class="nam">cutoff</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t">    <span class="key">for</span> <span class="nam">picture</span> <span class="key">in</span> <span class="nam">pictures</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">        <span class="com"># Object-level delete to trigger file cleanup</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t">        <span class="nam">picture</span><span class="op">.</span><span class="nam">delete</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -128,7 +126,7 @@
             <a class="nav" href="z_bc678c3e2285c028_apps_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-23 08:26 +0000
+            created at 2026-02-23 13:33 +0000
         </p>
     </div>
 </footer>

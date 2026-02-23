@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_4fa8c720f477d7fd_times_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-23 08:26 +0000
+            created at 2026-02-23 13:33 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -96,7 +96,7 @@
     <p class="run"><span class="n"><a id="t12" href="#t12">12</a></span><span class="t"><span class="key">def</span> <span class="nam">thumbnail</span><span class="op">(</span><span class="nam">field</span><span class="op">,</span> <span class="nam">size</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t13" href="#t13">13</a></span><span class="t">    <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t14" href="#t14">14</a></span><span class="t">        <span class="key">return</span> <span class="nam">get_thumbnail</span><span class="op">(</span><span class="nam">field</span><span class="op">,</span> <span class="nam">size</span><span class="op">)</span><span class="op">.</span><span class="nam">url</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t15" href="#t15">15</a></span><span class="t">    <span class="key">except</span> <span class="nam">Exception</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t15" href="#t15">15</a></span><span class="t">    <span class="key">except</span> <span class="op">(</span><span class="nam">OSError</span><span class="op">,</span> <span class="nam">ValueError</span><span class="op">,</span> <span class="nam">AttributeError</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t16" href="#t16">16</a></span><span class="t">        <span class="key">return</span> <span class="nam">field</span><span class="op">.</span><span class="nam">url</span> <span class="key">if</span> <span class="nam">hasattr</span><span class="op">(</span><span class="nam">field</span><span class="op">,</span> <span class="str">"url"</span><span class="op">)</span> <span class="key">else</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
@@ -107,7 +107,7 @@
             <a class="nav" href="z_4fa8c720f477d7fd_times_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-23 08:26 +0000
+            created at 2026-02-23 13:33 +0000
         </p>
     </div>
 </footer>

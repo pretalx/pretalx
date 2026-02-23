@@ -58,7 +58,7 @@
             <span class="text">13 statements &nbsp;</span>
             <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">13<span class="text"> run</span></button>
             <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">0<span class="text"> missing</span></button>
-            <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
+            <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">1<span class="text"> excluded</span></button>
             <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">0<span class="text"> partial</span></button>
         </h2>
         <p class="text">
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_4fa8c720f477d7fd_datetimerange_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-23 08:26 +0000
+            created at 2026-02-23 13:33 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -100,7 +100,7 @@
     <p class="run"><span class="n"><a id="t16" href="#t16">16</a></span><span class="t">    <span class="nam">title</span> <span class="op">=</span> <span class="nam">str</span><span class="op">(</span><span class="nam">_</span><span class="op">(</span><span class="str">"Copy"</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t17" href="#t17">17</a></span><span class="t">    <span class="nam">success_message</span> <span class="op">=</span> <span class="nam">str</span><span class="op">(</span><span class="nam">_</span><span class="op">(</span><span class="str">"Copied!"</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t">    <span class="nam">error_message</span> <span class="op">=</span> <span class="nam">str</span><span class="op">(</span><span class="nam">_</span><span class="op">(</span><span class="str">"Failed to copy"</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t19" href="#t19">19</a></span><span class="t">    <span class="key">return</span> <span class="nam">django</span><span class="op">.</span><span class="nam">utils</span><span class="op">.</span><span class="nam">safestring</span><span class="op">.</span><span class="nam">mark_safe</span><span class="op">(</span><span class="fst">f"""</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t19" href="#t19">19</a></span><span class="t">    <span class="nam">html</span> <span class="op">=</span> <span class="fst">f"""</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t20" href="#t20">20</a></span><span class="t"><span class="fst">    &lt;span data-destination="</span><span class="op">{</span><span class="nam">value</span><span class="op">}</span><span class="fst">"</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t21" href="#t21">21</a></span><span class="t"><span class="fst">            class="copyable-text"</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t22" href="#t22">22</a></span><span class="t"><span class="fst">            data-toggle="tooltip"</span>&nbsp;</span><span class="r"></span></p>
@@ -112,7 +112,8 @@
     <p class="run run2"><span class="n"><a id="t28" href="#t28">28</a></span><span class="t"><span class="fst">            tabindex="0"</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t"><span class="fst">    ></span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t"><span class="fst">        </span><span class="op">{</span><span class="nam">value</span><span class="op">}</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t"><span class="fst">    &lt;/span></span><span class="fst">"""</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t"><span class="fst">    &lt;/span></span><span class="fst">"""</span>&nbsp;</span><span class="r"></span></p>
+    <p class="exc show_exc"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t">    <span class="key">return</span> <span class="nam">django</span><span class="op">.</span><span class="nam">utils</span><span class="op">.</span><span class="nam">safestring</span><span class="op">.</span><span class="nam">mark_safe</span><span class="op">(</span><span class="nam">html</span><span class="op">)</span>  <span class="com"># noqa: S308  -- value is escaped in template</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -122,7 +123,7 @@
             <a class="nav" href="z_4fa8c720f477d7fd_datetimerange_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-23 08:26 +0000
+            created at 2026-02-23 13:33 +0000
         </p>
     </div>
 </footer>

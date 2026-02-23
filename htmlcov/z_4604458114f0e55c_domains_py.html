@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for src/pretalx/common/middleware/domains.py: 84%</title>
+    <title>Coverage for src/pretalx/common/middleware/domains.py: 83%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
     <link rel="stylesheet" href="style_cb_9ff733b0.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>src&#8201;/&#8201;pretalx&#8201;/&#8201;common&#8201;/&#8201;middleware&#8201;/&#8201;domains.py</b>:
-            <span class="pc_cov">84%</span>
+            <span class="pc_cov">83%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,10 +55,10 @@
             </div>
         </aside>
         <h2>
-            <span class="text">123 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">109<span class="text"> run</span></button>
+            <span class="text">121 statements &nbsp;</span>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">107<span class="text"> run</span></button>
             <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">14<span class="text"> missing</span></button>
-            <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">8<span class="text"> excluded</span></button>
+            <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">10<span class="text"> excluded</span></button>
             <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">7<span class="text"> partial</span></button>
         </h2>
         <p class="text">
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_4604458114f0e55c_event_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-23 08:26 +0000
+            created at 2026-02-23 13:33 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -181,7 +181,7 @@
     <p class="pln"><span class="n"><a id="t97" href="#t97">97</a></span><span class="t">        <span class="com"># non-event page, try to redirect to the most recent event instead.</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t98" href="#t98">98</a></span><span class="t">        <span class="nam">events</span> <span class="op">=</span> <span class="nam">Event</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis mis2 show_mis"><span class="n"><a id="t99" href="#t99">99</a></span><span class="t">            <span class="nam">Q</span><span class="op">(</span><span class="nam">custom_domain</span><span class="op">=</span><span class="fst">f"</span><span class="op">{</span><span class="nam">request</span><span class="op">.</span><span class="nam">scheme</span><span class="op">}</span><span class="fst">://</span><span class="op">{</span><span class="nam">domain</span><span class="op">}</span><span class="fst">"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t100" href="#t100">100</a></span><span class="t">            <span class="op">|</span> <span class="nam">Q</span><span class="op">(</span><span class="nam">custom_domain</span><span class="op">=</span><span class="fst">f"</span><span class="op">{</span><span class="nam">request</span><span class="op">.</span><span class="nam">scheme</span><span class="op">}</span><span class="fst">://</span><span class="op">{</span><span class="nam">host</span><span class="op">}</span><span class="fst">"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis mis2 show_mis"><span class="n"><a id="t100" href="#t100">100</a></span><span class="t">            <span class="op">|</span> <span class="nam">Q</span><span class="op">(</span><span class="nam">custom_domain</span><span class="op">=</span><span class="fst">f"</span><span class="op">{</span><span class="nam">request</span><span class="op">.</span><span class="nam">scheme</span><span class="op">}</span><span class="fst">://</span><span class="op">{</span><span class="nam">host</span><span class="op">}</span><span class="fst">"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis mis2 show_mis"><span class="n"><a id="t101" href="#t101">101</a></span><span class="t">        <span class="op">)</span><span class="op">.</span><span class="nam">order_by</span><span class="op">(</span><span class="str">"-date_from"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t102" href="#t102">102</a></span><span class="t">        <span class="key">if</span> <span class="nam">events</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t103" href="#t103">103</a></span><span class="t">            <span class="nam">request</span><span class="op">.</span><span class="nam">uses_custom_domain</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
@@ -206,8 +206,8 @@
     <p class="run run2"><span class="n"><a id="t122" href="#t122">122</a></span><span class="t">            <span class="key">and</span> <span class="nam">event</span><span class="op">.</span><span class="nam">custom_domain</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t123" href="#t123">123</a></span><span class="t">        <span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t124" href="#t124">124</a></span><span class="t">            <span class="com"># We need to update the CSP in order to make our fancy login form work</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t125" href="#t125">125</a></span><span class="t">            <span class="nam">response</span><span class="op">.</span><span class="nam">_csp_update</span> <span class="op">=</span> <span class="nam">getattr</span><span class="op">(</span><span class="nam">response</span><span class="op">,</span> <span class="str">"_csp_update"</span><span class="op">,</span> <span class="key">None</span><span class="op">)</span> <span class="key">or</span> <span class="op">{</span><span class="op">}</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t126" href="#t126">126</a></span><span class="t">            <span class="nam">response</span><span class="op">.</span><span class="nam">_csp_update</span><span class="op">[</span><span class="str">"form-action"</span><span class="op">]</span> <span class="op">=</span> <span class="op">[</span><span class="nam">event</span><span class="op">.</span><span class="nam">urls</span><span class="op">.</span><span class="nam">base</span><span class="op">.</span><span class="nam">full</span><span class="op">(</span><span class="op">)</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="exc show_exc"><span class="n"><a id="t125" href="#t125">125</a></span><span class="t">            <span class="nam">response</span><span class="op">.</span><span class="nam">_csp_update</span> <span class="op">=</span> <span class="nam">getattr</span><span class="op">(</span><span class="nam">response</span><span class="op">,</span> <span class="str">"_csp_update"</span><span class="op">,</span> <span class="key">None</span><span class="op">)</span> <span class="key">or</span> <span class="op">{</span><span class="op">}</span>  <span class="com"># noqa: SLF001 -- django-csp convention</span>&nbsp;</span><span class="r"></span></p>
+    <p class="exc show_exc"><span class="n"><a id="t126" href="#t126">126</a></span><span class="t">            <span class="nam">response</span><span class="op">.</span><span class="nam">_csp_update</span><span class="op">[</span><span class="str">"form-action"</span><span class="op">]</span> <span class="op">=</span> <span class="op">[</span><span class="nam">event</span><span class="op">.</span><span class="nam">urls</span><span class="op">.</span><span class="nam">base</span><span class="op">.</span><span class="nam">full</span><span class="op">(</span><span class="op">)</span><span class="op">]</span>  <span class="com"># noqa: SLF001 -- django-csp convention</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t127" href="#t127">127</a></span><span class="t">        <span class="key">return</span> <span class="nam">response</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t128" href="#t128">128</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t129" href="#t129">129</a></span><span class="t">    <span class="key">def</span> <span class="nam">__call__</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">request</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -329,7 +329,7 @@
             <a class="nav" href="z_4604458114f0e55c_event_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-23 08:26 +0000
+            created at 2026-02-23 13:33 +0000
         </p>
     </div>
 </footer>

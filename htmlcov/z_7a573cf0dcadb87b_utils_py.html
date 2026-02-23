@@ -55,10 +55,10 @@
             </div>
         </aside>
         <h2>
-            <span class="text">51 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">45<span class="text"> run</span></button>
+            <span class="text">50 statements &nbsp;</span>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">44<span class="text"> run</span></button>
             <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">6<span class="text"> missing</span></button>
-            <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
+            <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">1<span class="text"> excluded</span></button>
             <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">4<span class="text"> partial</span></button>
         </h2>
         <p class="text">
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_7a573cf0dcadb87b_widget_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-23 08:26 +0000
+            created at 2026-02-23 13:33 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -135,7 +135,7 @@
     <p class="run"><span class="n"><a id="t51" href="#t51">51</a></span><span class="t">    <span class="nam">is_organiser</span> <span class="op">=</span> <span class="nam">request</span><span class="op">.</span><span class="nam">user</span><span class="op">.</span><span class="nam">has_perm</span><span class="op">(</span><span class="str">"schedule.export_schedule"</span><span class="op">,</span> <span class="nam">request</span><span class="op">.</span><span class="nam">event</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t52" href="#t52">52</a></span><span class="t">    <span class="nam">exporter</span> <span class="op">=</span> <span class="nam">find_schedule_exporter</span><span class="op">(</span><span class="nam">request</span><span class="op">,</span> <span class="nam">exporter_name</span><span class="op">,</span> <span class="nam">public</span><span class="op">=</span><span class="key">not</span> <span class="nam">is_organiser</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t53" href="#t53">53</a></span><span class="t">    <span class="key">if</span> <span class="key">not</span> <span class="nam">exporter</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t54" href="#t54">54</a></span><span class="t">        <span class="key">return</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t54" href="#t54">54</a></span><span class="t">        <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t55" href="#t55">55</a></span><span class="t">    <span class="nam">exporter</span><span class="op">.</span><span class="nam">schedule</span> <span class="op">=</span> <span class="nam">schedule</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t56" href="#t56">56</a></span><span class="t">    <span class="nam">exporter</span><span class="op">.</span><span class="nam">is_orga</span> <span class="op">=</span> <span class="nam">is_organiser</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t57" href="#t57">57</a></span><span class="t">    <span class="nam">lang_code</span> <span class="op">=</span> <span class="nam">request</span><span class="op">.</span><span class="nam">GET</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"lang"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -145,12 +145,12 @@
     <p class="mis show_mis"><span class="n"><a id="t61" href="#t61">61</a></span><span class="t">        <span class="nam">activate</span><span class="op">(</span><span class="nam">request</span><span class="op">.</span><span class="nam">event</span><span class="op">.</span><span class="nam">locale</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t62" href="#t62">62</a></span><span class="t">    <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t63" href="#t63">63</a></span><span class="t">        <span class="nam">file_name</span><span class="op">,</span> <span class="nam">file_type</span><span class="op">,</span> <span class="nam">data</span> <span class="op">=</span> <span class="nam">exporter</span><span class="op">.</span><span class="nam">render</span><span class="op">(</span><span class="nam">request</span><span class="op">=</span><span class="nam">request</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t64" href="#t64">64</a></span><span class="t">        <span class="nam">etag</span> <span class="op">=</span> <span class="nam">hashlib</span><span class="op">.</span><span class="nam">sha1</span><span class="op">(</span><span class="nam">str</span><span class="op">(</span><span class="nam">data</span><span class="op">)</span><span class="op">.</span><span class="nam">encode</span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">.</span><span class="nam">hexdigest</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="exc show_exc"><span class="n"><a id="t64" href="#t64">64</a></span><span class="t">        <span class="nam">etag</span> <span class="op">=</span> <span class="nam">hashlib</span><span class="op">.</span><span class="nam">sha1</span><span class="op">(</span><span class="nam">str</span><span class="op">(</span><span class="nam">data</span><span class="op">)</span><span class="op">.</span><span class="nam">encode</span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">.</span><span class="nam">hexdigest</span><span class="op">(</span><span class="op">)</span>  <span class="com"># noqa: S324 -- used for etag, not vulnerable to collision attacks</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t65" href="#t65">65</a></span><span class="t">    <span class="key">except</span> <span class="nam">Exception</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t66" href="#t66">66</a></span><span class="t">        <span class="nam">logger</span><span class="op">.</span><span class="nam">exception</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis mis2 show_mis"><span class="n"><a id="t67" href="#t67">67</a></span><span class="t">            <span class="str">"Failed to use %s for %s"</span><span class="op">,</span> <span class="nam">exporter</span><span class="op">.</span><span class="nam">identifier</span><span class="op">,</span> <span class="nam">request</span><span class="op">.</span><span class="nam">event</span><span class="op">.</span><span class="nam">slug</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis mis2 show_mis"><span class="n"><a id="t68" href="#t68">68</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t69" href="#t69">69</a></span><span class="t">        <span class="key">return</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t69" href="#t69">69</a></span><span class="t">        <span class="key">return</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t70" href="#t70">70</a></span><span class="t">    <span class="key">if</span> <span class="nam">request</span><span class="op">.</span><span class="nam">headers</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"If-None-Match"</span><span class="op">)</span> <span class="op">==</span> <span class="nam">etag</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t71" href="#t71">71</a></span><span class="t">        <span class="key">return</span> <span class="nam">HttpResponseNotModified</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t72" href="#t72">72</a></span><span class="t">    <span class="nam">headers</span> <span class="op">=</span> <span class="op">{</span><span class="str">"ETag"</span><span class="op">:</span> <span class="fst">f'</span><span class="fst">"</span><span class="op">{</span><span class="nam">etag</span><span class="op">}</span><span class="fst">"</span><span class="fst">'</span><span class="op">}</span>&nbsp;</span><span class="r"></span></p>
@@ -170,7 +170,7 @@
             <a class="nav" href="z_7a573cf0dcadb87b_widget_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-23 08:26 +0000
+            created at 2026-02-23 13:33 +0000
         </p>
     </div>
 </footer>

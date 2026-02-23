@@ -55,10 +55,10 @@
             </div>
         </aside>
         <h2>
-            <span class="text">118 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">104<span class="text"> run</span></button>
+            <span class="text">116 statements &nbsp;</span>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">102<span class="text"> run</span></button>
             <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">14<span class="text"> missing</span></button>
-            <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">8<span class="text"> excluded</span></button>
+            <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">10<span class="text"> excluded</span></button>
             <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">3<span class="text"> partial</span></button>
         </h2>
         <p class="text">
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_cb03a9e3cb4eb025_tables_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-23 08:26 +0000
+            created at 2026-02-23 13:33 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -197,8 +197,8 @@
     <p class="run"><span class="n"><a id="t113" href="#t113">113</a></span><span class="t">            <span class="key">if</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_is_active</span><span class="op">(</span><span class="nam">sender</span><span class="op">,</span> <span class="nam">receiver</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t114" href="#t114">114</a></span><span class="t">                <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t115" href="#t115">115</a></span><span class="t">                    <span class="nam">response</span> <span class="op">=</span> <span class="nam">receiver</span><span class="op">(</span><span class="nam">signal</span><span class="op">=</span><span class="nam">self</span><span class="op">,</span> <span class="nam">sender</span><span class="op">=</span><span class="nam">sender</span><span class="op">,</span> <span class="op">**</span><span class="nam">named</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">                <span class="key">except</span> <span class="nam">Exception</span> <span class="key">as</span> <span class="nam">err</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t117" href="#t117">117</a></span><span class="t">                    <span class="nam">responses</span><span class="op">.</span><span class="nam">append</span><span class="op">(</span><span class="op">(</span><span class="nam">receiver</span><span class="op">,</span> <span class="nam">err</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="exc show_exc"><span class="n"><a id="t116" href="#t116">116</a></span><span class="t">                <span class="key">except</span> <span class="nam">Exception</span> <span class="key">as</span> <span class="nam">err</span><span class="op">:</span>  <span class="com"># noqa: BLE001</span>&nbsp;</span><span class="r"></span></p>
+    <p class="exc show_exc"><span class="n"><a id="t117" href="#t117">117</a></span><span class="t">                    <span class="nam">responses</span><span class="op">.</span><span class="nam">append</span><span class="op">(</span><span class="op">(</span><span class="nam">receiver</span><span class="op">,</span> <span class="nam">err</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t118" href="#t118">118</a></span><span class="t">                <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t119" href="#t119">119</a></span><span class="t">                    <span class="nam">responses</span><span class="op">.</span><span class="nam">append</span><span class="op">(</span><span class="op">(</span><span class="nam">receiver</span><span class="op">,</span> <span class="nam">response</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t120" href="#t120">120</a></span><span class="t">        <span class="key">return</span> <span class="nam">sorted</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -262,12 +262,12 @@
     <p class="run"><span class="n"><a id="t178" href="#t178">178</a></span><span class="t">            <span class="nam">cache</span><span class="op">.</span><span class="nam">set</span><span class="op">(</span><span class="nam">key_running</span><span class="op">,</span> <span class="nam">uniqid</span><span class="op">,</span> <span class="nam">timeout</span><span class="op">=</span><span class="nam">minutes_running_timeout</span> <span class="op">*</span> <span class="num">60</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t179" href="#t179">179</a></span><span class="t">            <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t180" href="#t180">180</a></span><span class="t">                <span class="nam">retval</span> <span class="op">=</span> <span class="nam">func</span><span class="op">(</span><span class="op">*</span><span class="nam">args</span><span class="op">,</span> <span class="op">**</span><span class="nam">kwargs</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t181" href="#t181">181</a></span><span class="t">            <span class="key">except</span> <span class="nam">Exception</span> <span class="key">as</span> <span class="nam">e</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t181" href="#t181">181</a></span><span class="t">            <span class="key">except</span> <span class="nam">Exception</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t182" href="#t182">182</a></span><span class="t">                <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t183" href="#t183">183</a></span><span class="t">                    <span class="nam">cache</span><span class="op">.</span><span class="nam">set</span><span class="op">(</span><span class="nam">key_result</span><span class="op">,</span> <span class="str">"error"</span><span class="op">,</span> <span class="nam">timeout</span><span class="op">=</span><span class="nam">minutes_after_error</span> <span class="op">*</span> <span class="num">60</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t184" href="#t184">184</a></span><span class="t">                <span class="key">except</span> <span class="nam">Exception</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t185" href="#t185">185</a></span><span class="t">                    <span class="nam">logger</span><span class="op">.</span><span class="nam">exception</span><span class="op">(</span><span class="str">"Could not store result"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t186" href="#t186">186</a></span><span class="t">                <span class="key">raise</span> <span class="nam">e</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t186" href="#t186">186</a></span><span class="t">                <span class="key">raise</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t187" href="#t187">187</a></span><span class="t">            <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t188" href="#t188">188</a></span><span class="t">                <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t189" href="#t189">189</a></span><span class="t">                    <span class="nam">cache</span><span class="op">.</span><span class="nam">set</span><span class="op">(</span><span class="nam">key_result</span><span class="op">,</span> <span class="str">"success"</span><span class="op">,</span> <span class="nam">timeout</span><span class="op">=</span><span class="nam">minutes_after_success</span> <span class="op">*</span> <span class="num">60</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -368,7 +368,7 @@
             <a class="nav" href="z_cb03a9e3cb4eb025_tables_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-23 08:26 +0000
+            created at 2026-02-23 13:33 +0000
         </p>
     </div>
 </footer>
