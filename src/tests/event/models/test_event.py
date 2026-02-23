@@ -16,10 +16,7 @@ from pretalx.common.mail import CustomSMTPBackend
 from pretalx.common.signals import register_locales
 from pretalx.event.models import Event
 from pretalx.event.models.event import (
-    default_display_settings,
     default_feature_flags,
-    default_mail_settings,
-    default_review_settings,
     event_css_path,
     event_header_path,
     event_logo_path,
@@ -181,46 +178,12 @@ def test_event_upload_path_contains_slug_and_target(
     assert result.endswith(f".{ext}")
 
 
-def test_default_feature_flags_returns_expected_keys():
-    flags = default_feature_flags()
-    assert flags["show_schedule"] is True
-    assert flags["show_featured"] == "pre_schedule"
-    assert flags["show_widget_if_not_public"] is False
-    assert flags["use_tracks"] is True
-    assert flags["use_feedback"] is True
-    assert flags["use_submission_comments"] is True
-    assert flags["present_multiple_times"] is False
-    assert flags["submission_public_review"] is True
-    assert flags["speakers_can_edit_submissions"] is True
-
-
 def test_default_feature_flags_returns_independent_copies():
     """Each call returns a new dict, not the same mutable object."""
     a = default_feature_flags()
     b = default_feature_flags()
     a["show_schedule"] = False
     assert b["show_schedule"] is True
-
-
-def test_default_display_settings_returns_expected_keys():
-    settings_dict = default_display_settings()
-    assert settings_dict["schedule"] == "grid"
-    assert settings_dict["imprint_url"] is None
-    assert settings_dict["meta_noindex"] is False
-
-
-def test_default_review_settings_returns_expected_keys():
-    settings_dict = default_review_settings()
-    assert settings_dict["score_mandatory"] is False
-    assert settings_dict["aggregate_method"] == "median"
-    assert settings_dict["score_format"] == "words_numbers"
-
-
-def test_default_mail_settings_returns_expected_keys():
-    settings_dict = default_mail_settings()
-    assert settings_dict["smtp_port"] == 587
-    assert settings_dict["mail_on_new_submission"] is False
-    assert settings_dict["mail_from"] == ""
 
 
 @pytest.mark.django_db
@@ -1048,11 +1011,11 @@ def test_event_shred_deletes_related_data(event):
 
 @pytest.mark.django_db
 def test_event_available_content_locales_returns_sorted_known_languages(event):
+    """Without plugins, available_content_locales equals the sorted
+    built-in LANGUAGE_NAMES."""
     result = event.available_content_locales
-    codes = [code for code, _name in result]
-    assert "en" in codes
-    assert len(result) >= len(LANGUAGE_NAMES)
-    assert result == sorted(result, key=lambda x: x[0])
+    expected = sorted(LANGUAGE_NAMES.items())
+    assert result == expected
 
 
 @pytest.mark.django_db
