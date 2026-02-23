@@ -12,6 +12,7 @@ from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.exceptions import SendMailException
+from pretalx.common.forms.fields import CountableOption
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer, TabularFormRenderer
 from pretalx.common.forms.widgets import (
@@ -22,7 +23,7 @@ from pretalx.common.forms.widgets import (
 from pretalx.common.language import language
 from pretalx.common.text.phrases import phrases
 from pretalx.mail.context import get_available_placeholders, get_invalid_placeholders
-from pretalx.mail.models import MailTemplate, QueuedMail
+from pretalx.mail.models import MailTemplate, QueuedMail, QueuedMailStates
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.submission.forms import SubmissionFilterForm
 from pretalx.submission.models import Track
@@ -460,6 +461,10 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
 
 
 class QueuedMailFilterForm(forms.Form):
+    status = forms.MultipleChoiceField(
+        required=False,
+        widget=SelectMultipleWithCount(attrs={"title": _("Status")}),
+    )
     track = forms.ModelMultipleChoiceField(
         required=False,
         queryset=Track.objects.none(),
@@ -474,13 +479,38 @@ class QueuedMailFilterForm(forms.Form):
         self.event = event
         super().__init__(*args, **kwargs)
 
+        if sent:
+            self.fields.pop("status")
+        else:
+            counts = event.queued_mails.filter(state=QueuedMailStates.DRAFT).aggregate(
+                total=Count("pk"),
+                failed=Count("pk", filter=Q(error_data__isnull=False)),
+            )
+            failed_count = counts["failed"]
+            pending_count = counts["total"] - failed_count
+            if not failed_count:
+                self.fields.pop("status")
+            else:
+                self.fields["status"].choices = [
+                    ("draft", CountableOption(_("Pending"), pending_count)),
+                    ("failed", CountableOption(_("Failed"), failed_count)),
+                ]
+
         # Only show track filter if tracks are enabled
         if not event.get_feature_flag("use_tracks"):
             self.fields.pop("track")
         else:
             mail_filter = Q(submissions__mails__event=event)
             if sent is not None:
-                mail_filter &= Q(submissions__mails__sent__isnull=not sent)
+                if sent:
+                    mail_filter &= Q(
+                        submissions__mails__state__in=[
+                            QueuedMailStates.SENT,
+                            QueuedMailStates.SENDING,
+                        ]
+                    )
+                else:
+                    mail_filter &= Q(submissions__mails__state=QueuedMailStates.DRAFT)
 
             self.fields["track"].queryset = event.tracks.annotate(
                 count=Count(
@@ -491,6 +521,9 @@ class QueuedMailFilterForm(forms.Form):
             ).order_by("-count")
 
     def filter_queryset(self, qs):
+        status = self.cleaned_data.get("status")
+        if status:
+            qs = qs.filter(computed_state__in=status)
         tracks = self.cleaned_data.get("track")
         if tracks:
             qs = qs.filter(submissions__track__in=tracks)

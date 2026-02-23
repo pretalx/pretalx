@@ -15,7 +15,7 @@ from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField
 
 from pretalx.cfp.forms.cfp import CfPFormMixin
-from pretalx.common.forms.fields import ImageField, SubmissionTypeField
+from pretalx.common.forms.fields import CountableOption, ImageField, SubmissionTypeField
 from pretalx.common.forms.mixins import RequestRequire
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
@@ -311,15 +311,6 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
             "submission_type": SubmissionTypeField,
             "track": SafeModelChoiceField,
         }
-
-
-class CountableOption:
-    def __init__(self, name, count):
-        self.name = name
-        self.count = count
-
-    def __str__(self):
-        return str(self.name)
 
 
 class SubmissionFilterForm(forms.Form):

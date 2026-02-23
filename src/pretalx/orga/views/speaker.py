@@ -28,6 +28,7 @@ from pretalx.common.views.mixins import (
     Filterable,
     PermissionRequired,
 )
+from pretalx.mail.models import QueuedMailStates
 from pretalx.orga.forms.speaker import SpeakerExportForm
 from pretalx.orga.tables.speaker import SpeakerInformationTable, SpeakerTable
 from pretalx.person.forms import (
@@ -176,7 +177,7 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
     @cached_property
     def mails(self):
         return self.object.user.mails.filter(
-            sent__isnull=False, event=self.request.event
+            state=QueuedMailStates.SENT, event=self.request.event
         ).order_by("-sent")
 
     @context

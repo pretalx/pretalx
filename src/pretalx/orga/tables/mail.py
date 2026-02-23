@@ -62,6 +62,7 @@ class MailTemplateTable(PretalxTable):
 
 
 class OutboxMailTable(PretalxTable):
+    exempt_columns = ("pk", "actions", "status_display")
     default_columns = (
         "subject",
         "to_recipients",
@@ -69,6 +70,11 @@ class OutboxMailTable(PretalxTable):
         "template_info",
     )
 
+    status_display = SortableTemplateColumn(
+        template_name="orga/tables/columns/queued_mail_status.html",
+        verbose_name=_("Status"),
+        order_by=("computed_state",),
+    )
     subject = SortableColumn(
         linkify=lambda record: record.urls.edit,
         verbose_name=_("Subject"),
@@ -98,6 +104,20 @@ class OutboxMailTable(PretalxTable):
                 "url": "urls.send",
                 "color": "success",
                 "icon": "mail-forward",
+                "condition": lambda record: not record.has_error,
+                "extra_attrs": lambda record: (
+                    f'hx-post="{record.urls.send}" hx-target="closest tr" hx-swap="delete"'
+                ),
+            },
+            "retry": {
+                "url": "urls.send",
+                "color": "danger",
+                "icon": "refresh",
+                "title": _("Retry"),
+                "condition": lambda record: record.has_error,
+                "extra_attrs": lambda record: (
+                    f'hx-post="{record.urls.send}" hx-target="closest tr" hx-swap="delete"'
+                ),
             },
             "edit": {
                 "url": "urls.edit",
@@ -108,6 +128,11 @@ class OutboxMailTable(PretalxTable):
         },
     )
 
+    def _set_columns(self, selected_columns):
+        super()._set_columns(selected_columns)
+        self.sequence.remove("status_display")
+        self.sequence.insert(0, "status_display")
+
     def render_locale(self, value):
         if not value:
             return ""
@@ -116,6 +141,7 @@ class OutboxMailTable(PretalxTable):
     class Meta:
         model = QueuedMail
         fields = (
+            "status_display",
             "subject",
             "to_recipients",
             "reply_to",
@@ -137,12 +163,18 @@ class SentMailTable(OutboxMailTable):
         "template_info",
     )
 
+    status_display = SortableTemplateColumn(
+        template_name="orga/tables/columns/sent_mail_status.html",
+        verbose_name=_("Status"),
+        order_by=("computed_state",),
+    )
     sent = DateTimeColumn()
     actions = None
 
     class Meta(OutboxMailTable.Meta):
         fields = (
             "sent",
+            "status_display",
             "subject",
             "to_recipients",
             "reply_to",

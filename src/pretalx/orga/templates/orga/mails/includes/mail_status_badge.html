@@ -1,0 +1,19 @@
+<!--
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+{% load i18n %}
+{% if mail.state == "sending" %}
+    <span class="badge bg-warning">{% translate "Sending" %}</span>
+{% elif mail.state == "sent" %}
+    <span class="badge bg-success">{% translate "Sent" %}</span>
+{% elif mail.has_error %}
+    <span class="badge bg-danger" title="{{ mail.error_data.error }}">{% translate "Failed" %}</span>
+    <br>
+    <small class="text-muted">
+        {% if mail.error_data.smtp_code %}SMTP {{ mail.error_data.smtp_code }}{% else %}{{ mail.error_data.type }}{% endif %}
+        {% if mail.error_data.error %}<br>{{ mail.error_data.error }}{% endif %}
+    </small>
+{% else %}
+    <span class="badge bg-info">{% translate "Draft" %}</span>
+{% endif %}

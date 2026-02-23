@@ -9,6 +9,23 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load render_table from django_tables2 %}
 
 {% block mail_content %}
+    {% if failed_count %}
+        <div class="alert alert-danger">
+            <div>
+                <span>
+                    {% blocktranslate trimmed count count=failed_count %}
+                        {{ count }} email failed to send.
+                    {% plural %}
+                        {{ count }} emails failed to send.
+                    {% endblocktranslate %}
+                </span>
+                <span>
+                    <a href="?status=failed" class="btn btn-sm btn-outline-danger">{% translate "Show failed" %}</a>
+                    <a href="{{ request.event.orga_urls.send_outbox }}?failed_only=1" class="btn btn-sm btn-danger">{% translate "Retry all failed" %}</a>
+                </span>
+            </div>
+        </div>
+    {% endif %}
     <h2>
         <span>
             {{ page_obj.paginator.count }}
