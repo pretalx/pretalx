@@ -35,6 +35,11 @@ with suppress(ImportError):
 
     INSTALLED_APPS.append("tests.dummy_app.PluginApp")
 
+with suppress(ImportError):
+    import tests.dummy_app_no_hooks  # noqa: F401, E402
+
+    INSTALLED_APPS.append("tests.dummy_app_no_hooks.PluginApp")
+
 atexit.register(tmpdir.cleanup)
 
 EMAIL_BACKEND = "django.core.mail.outbox"

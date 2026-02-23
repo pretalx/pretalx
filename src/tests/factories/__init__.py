@@ -1,14 +1,70 @@
-from tests.factories.event import EventFactory, OrganiserFactory
+from tests.factories.common import CachedFileFactory
+from tests.factories.event import (
+    EventExtraLinkFactory,
+    EventFactory,
+    OrganiserFactory,
+    TeamFactory,
+    TeamInviteFactory,
+)
 from tests.factories.mail import MailTemplateFactory, QueuedMailFactory
-from tests.factories.person import UserFactory
-from tests.factories.submission import ReviewFactory, SubmissionFactory
+from tests.factories.person import (
+    SpeakerFactory,
+    SpeakerInformationFactory,
+    UserApiTokenFactory,
+    UserEventPreferencesFactory,
+    UserFactory,
+)
+from tests.factories.schedule import (
+    AvailabilityFactory,
+    RoomFactory,
+    ScheduleFactory,
+    TalkSlotFactory,
+)
+from tests.factories.submission import (
+    AnswerFactory,
+    AnswerOptionFactory,
+    FeedbackFactory,
+    QuestionFactory,
+    ResourceFactory,
+    ReviewFactory,
+    ReviewPhaseFactory,
+    ReviewScoreCategoryFactory,
+    ReviewScoreFactory,
+    SubmissionFactory,
+    SubmissionTypeFactory,
+    TagFactory,
+    TrackFactory,
+)
 
 __all__ = [
+    "CachedFileFactory",
+    "AnswerFactory",
+    "AnswerOptionFactory",
+    "AvailabilityFactory",
+    "EventExtraLinkFactory",
     "EventFactory",
+    "FeedbackFactory",
     "MailTemplateFactory",
     "OrganiserFactory",
     "QueuedMailFactory",
+    "QuestionFactory",
+    "ResourceFactory",
     "ReviewFactory",
+    "ReviewPhaseFactory",
+    "ReviewScoreCategoryFactory",
+    "ReviewScoreFactory",
+    "RoomFactory",
+    "ScheduleFactory",
+    "SpeakerFactory",
+    "SpeakerInformationFactory",
     "SubmissionFactory",
+    "SubmissionTypeFactory",
+    "TagFactory",
+    "TalkSlotFactory",
+    "TeamFactory",
+    "TeamInviteFactory",
+    "TrackFactory",
+    "UserApiTokenFactory",
+    "UserEventPreferencesFactory",
     "UserFactory",
 ]

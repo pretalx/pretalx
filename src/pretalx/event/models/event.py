@@ -769,14 +769,15 @@ class Event(PretalxModel):
         self.score_categories.all().delete()
         for score_category in other_event.score_categories.all():
             scores = list(score_category.scores.all())
-            tracks = list(score_category.limit_tracks.all())
+            tracks = list(
+                score_category.limit_tracks.all().values_list("pk", flat=True)
+            )
             score_category.pk = None
             score_category.event = self
             score_category.save()
             score_category.limit_tracks.set([])
             for track in tracks:
-                if track in track_map:
-                    score_category.limit_tracks.add(track_map.get(track))
+                score_category.limit_tracks.add(track_map[track])
             for score in scores:
                 score.pk = None
                 score.category = score_category
