@@ -293,6 +293,7 @@ class SpeakerFilterForm(forms.Form):
         required=False,
         widget=EnhancedSelect,
     )
+    fulltext = forms.BooleanField(required=False, label=_("Full text search"))
     question = SafeModelChoiceField(
         queryset=Question.objects.none(), required=False, widget=forms.HiddenInput()
     )
@@ -323,6 +324,7 @@ class SpeakerFilterForm(forms.Form):
         return queryset
 
     class Media:
+        js = [forms.Script("orga/js/forms/fulltext-toggle.js", defer="")]
         css = {"all": ["orga/css/forms/search.css"]}
 
 

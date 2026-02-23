@@ -59,6 +59,16 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
     )
     permission_required = "person.orga_list_speakerprofile"
 
+    def get_default_filters(self):
+        filters = list(self.default_filters)
+        if (
+            self.filter_form
+            and self.filter_form.is_valid()
+            and self.filter_form.cleaned_data.get("fulltext")
+        ):
+            filters.append("biography__icontains")
+        return filters
+
     def get_filter_form(self):
         any_arrived = self.request.event.submitters.filter(has_arrived=True).exists()
         return SpeakerFilterForm(

@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endblocktranslate %}
     </h2>
 
-    {% include "common/includes/search_form.html" %}
+    {% include "orga/includes/speaker_filter_form.html" %}
 
     {% if filter_form.is_valid and filter_form.cleaned_data.question %}
         <p class="text-muted ml-2">

@@ -26,6 +26,25 @@ def test_orga_can_access_speakers_list(
 
 
 @pytest.mark.django_db
+def test_fulltext_search_finds_speaker_by_biography(
+    orga_client, speaker, speaker_profile, event, submission
+):
+    bio_snippet = speaker_profile.biography[:8]
+    # Without fulltext, searching by biography should not find the speaker
+    response = orga_client.get(
+        event.orga_urls.speakers + f"?q={bio_snippet}", follow=True
+    )
+    assert response.status_code == 200
+    assert speaker_profile.get_display_name() not in response.text
+    # With fulltext, it should find the speaker
+    response = orga_client.get(
+        event.orga_urls.speakers + f"?q={bio_snippet}&fulltext=on", follow=True
+    )
+    assert response.status_code == 200
+    assert speaker_profile.get_display_name() in response.text
+
+
+@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 2))
 def test_speaker_list_num_queries(
     orga_client,

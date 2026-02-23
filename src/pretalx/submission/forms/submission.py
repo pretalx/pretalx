@@ -355,6 +355,7 @@ class SubmissionFilterForm(forms.Form):
     answer = forms.CharField(required=False)
     answer__options = forms.IntegerField(required=False)
     q = forms.CharField(required=False, label=_("Search"), widget=SearchInput)
+    fulltext = forms.BooleanField(required=False, label=_("Full text search"))
 
     default_renderer = InlineFormRenderer
 
@@ -526,7 +527,16 @@ class SubmissionFilterForm(forms.Form):
 
         search = self.cleaned_data.get("q")
         if search:
-            qs = Filterable.handle_search(qs, search, self.search_fields)
+            search_fields = self.search_fields
+            if self.cleaned_data.get("fulltext"):
+                search_fields = (
+                    *search_fields,
+                    "description__icontains",
+                    "abstract__icontains",
+                    "notes__icontains",
+                    "internal_notes__icontains",
+                )
+            qs = Filterable.handle_search(qs, search, search_fields)
 
         qs = self._filter_question(
             qs,
@@ -538,5 +548,8 @@ class SubmissionFilterForm(forms.Form):
         return qs
 
     class Media:
-        js = [forms.Script("orga/js/forms/submissionfilter.js", defer="")]
+        js = [
+            forms.Script("orga/js/forms/submissionfilter.js", defer=""),
+            forms.Script("orga/js/forms/fulltext-toggle.js", defer=""),
+        ]
         css = {"all": ["orga/css/forms/search.css"]}

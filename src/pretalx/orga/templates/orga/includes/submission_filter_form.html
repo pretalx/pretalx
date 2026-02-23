@@ -7,7 +7,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 <div class="filter-group">
     <form class="search-form"{% block form_attrs %}{% endblock %} role="search">
-        {{ filter_form.q.as_field_group }}
+        <div class="d-flex flex-column form-group">
+            {{ filter_form.q.as_field_group }}
+            <div id="fulltext-toggle" class="d-none">{{ filter_form.fulltext.as_field_group }}</div>
+        </div>
         {% if show_submission_types %}{{ filter_form.submission_type.as_field_group }}{% endif %}
         <div class="d-flex flex-column form-group">
             {{ filter_form.state.as_field_group }}
