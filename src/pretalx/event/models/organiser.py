@@ -142,7 +142,9 @@ class Organiser(PretalxModel):
     def shred(self, person=None):
         """Irrevocably deletes the organiser and all related events and their
         data."""
-        from pretalx.common.models import ActivityLog  # noqa: PLC0415
+        from pretalx.common.models import (  # noqa: PLC0415 -- avoid circular import
+            ActivityLog,
+        )
 
         ActivityLog.objects.create(
             person=person,
@@ -312,7 +314,9 @@ class TeamInvite(PretalxModel):
         return build_absolute_uri("orga:invitation.view", kwargs={"code": self.token})
 
     def send(self):
-        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
+        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+            QueuedMail,
+        )
 
         invitation_link = self.invitation_url
         invitation_text = _("""Hi!

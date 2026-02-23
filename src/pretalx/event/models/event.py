@@ -470,7 +470,9 @@ class Event(PretalxModel):
 
     @cached_property
     def named_plugin_locales(self) -> list:
-        from pretalx.common.signals import register_locales  # noqa: PLC0415
+        from pretalx.common.signals import (  # noqa: PLC0415 -- avoid circular import
+            register_locales,
+        )
 
         locale_names = copy.copy(LANGUAGE_NAMES)
         locale_names.update(self.named_locales)
@@ -570,7 +572,9 @@ class Event(PretalxModel):
         )
 
     def _get_default_submission_type(self):
-        from pretalx.submission.models import SubmissionType  # noqa: PLC0415
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            SubmissionType,
+        )
 
         sub_type = SubmissionType.objects.filter(event=self).first()
         if sub_type:
@@ -578,8 +582,12 @@ class Event(PretalxModel):
         return SubmissionType.objects.create(event=self, name="Talk")
 
     def get_mail_template(self, role):
-        from pretalx.mail.default_templates import get_default_template  # noqa: PLC0415
-        from pretalx.mail.models import MailTemplate  # noqa: PLC0415
+        from pretalx.mail.default_templates import (  # noqa: PLC0415 -- avoid circular import
+            get_default_template,
+        )
+        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+            MailTemplate,
+        )
 
         try:
             return self.mail_templates.get(role=role)
@@ -591,9 +599,15 @@ class Event(PretalxModel):
             return template
 
     def build_initial_data(self):
-        from pretalx.mail.models import MailTemplateRoles  # noqa: PLC0415
-        from pretalx.schedule.models import Schedule  # noqa: PLC0415
-        from pretalx.submission.models import CfP  # noqa: PLC0415
+        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+            MailTemplateRoles,
+        )
+        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
+            Schedule,
+        )
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            CfP,
+        )
 
         if not hasattr(self, "cfp"):
             CfP.objects.create(
@@ -607,7 +621,9 @@ class Event(PretalxModel):
             self.get_mail_template(role)
 
         if not self.review_phases.all().exists():
-            from pretalx.submission.models import ReviewPhase  # noqa: PLC0415
+            from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+                ReviewPhase,
+            )
 
             cfp_deadline = self.cfp.deadline
             rp = ReviewPhase.objects.create(
@@ -629,7 +645,7 @@ class Event(PretalxModel):
                 can_change_submission_state=True,
             )
         if not self.score_categories.all().exists():
-            from pretalx.submission.models import (  # noqa: PLC0415
+            from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
                 ReviewScore,
                 ReviewScoreCategory,
             )
@@ -648,7 +664,9 @@ class Event(PretalxModel):
 
     @scopes_disabled()
     def copy_data_from(self, other_event, skip_attributes=None):
-        from pretalx.orga.signals import event_copy_data  # noqa: PLC0415
+        from pretalx.orga.signals import (  # noqa: PLC0415 -- avoid circular import
+            event_copy_data,
+        )
 
         delta = self.date_from - other_event.date_from
 
@@ -769,14 +787,15 @@ class Event(PretalxModel):
         self.score_categories.all().delete()
         for score_category in other_event.score_categories.all():
             scores = list(score_category.scores.all())
-            tracks = list(score_category.limit_tracks.all())
+            tracks = list(
+                score_category.limit_tracks.all().values_list("pk", flat=True)
+            )
             score_category.pk = None
             score_category.event = self
             score_category.save()
             score_category.limit_tracks.set([])
             for track in tracks:
-                if track in track_map:
-                    score_category.limit_tracks.add(track_map.get(track))
+                score_category.limit_tracks.add(track_map[track])
             for score in scores:
                 score.pk = None
                 score.category = score_category
@@ -814,7 +833,9 @@ class Event(PretalxModel):
 
         :class:`~pretalx.mail.models.QueuedMail` objects.
         """
-        from pretalx.mail.models import QueuedMailStates  # noqa: PLC0415
+        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+            QueuedMailStates,
+        )
 
         return self.queued_mails.filter(state=QueuedMailStates.DRAFT).count()
 
@@ -830,7 +851,9 @@ class Event(PretalxModel):
             schedule, _ = self.schedules.get_or_create(version__isnull=True)
         except MultipleObjectsReturned:
             # No idea how this happens – a race condition due to transaction weirdness?
-            from pretalx.schedule.models import TalkSlot  # noqa: PLC0415
+            from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
+                TalkSlot,
+            )
 
             schedules = list(self.schedules.filter(version__isnull=True))
             schedule = schedules[0]
@@ -856,7 +879,9 @@ class Event(PretalxModel):
         return (self.date_to - self.date_from).days + 1
 
     def get_mail_backend(self, force_custom: bool = False) -> BaseEmailBackend:
-        from pretalx.common.mail import CustomSMTPBackend  # noqa: PLC0415
+        from pretalx.common.mail import (  # noqa: PLC0415 -- avoid circular import
+            CustomSMTPBackend,
+        )
 
         if self.mail_settings["smtp_use_custom"] or force_custom:
             return CustomSMTPBackend(
@@ -892,7 +917,7 @@ class Event(PretalxModel):
 
     @cached_property
     def reviewers(self):
-        from pretalx.person.models import User  # noqa: PLC0415
+        from pretalx.person.models import User  # noqa: PLC0415 -- avoid circular import
 
         return User.objects.filter(
             teams__in=self.teams.filter(is_reviewer=True)
@@ -926,7 +951,9 @@ class Event(PretalxModel):
 
     @cached_property
     def reviews(self):
-        from pretalx.submission.models import Review  # noqa: PLC0415
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            Review,
+        )
 
         return Review.objects.filter(submission__event=self)
 
@@ -935,7 +962,9 @@ class Event(PretalxModel):
         if phase := self.review_phases.filter(is_active=True).first():
             return phase
         if not self.review_phases.all().exists():
-            from pretalx.submission.models import ReviewPhase  # noqa: PLC0415
+            from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+                ReviewPhase,
+            )
 
             cfp_deadline = self.cfp.deadline
             return ReviewPhase.objects.create(
@@ -1001,7 +1030,9 @@ class Event(PretalxModel):
         :class:`~pretalx.submission.models.submission.Submission` object in the
         current released schedule.
         """
-        from pretalx.submission.models.submission import Submission  # noqa: PLC0415
+        from pretalx.submission.models.submission import (  # noqa: PLC0415 -- avoid circular import
+            Submission,
+        )
 
         if self.current_schedule:
             return (
@@ -1018,7 +1049,9 @@ class Event(PretalxModel):
         :class:`~pretalx.person.models.profile.SpeakerProfile`) visible in the
         current released schedule.
         """
-        from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
+        from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
+            SpeakerProfile,
+        )
 
         return (
             SpeakerProfile.objects.filter(submissions__in=self.talks)
@@ -1035,7 +1068,9 @@ class Event(PretalxModel):
 
         Ignores speakers who have deleted all of their submissions.
         """
-        from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
+        from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
+            SpeakerProfile,
+        )
 
         return (
             SpeakerProfile.objects.filter(submissions__in=self.submissions.all())
@@ -1046,7 +1081,7 @@ class Event(PretalxModel):
 
     @cached_property
     def cfp_flow(self):
-        from pretalx.cfp.flow import CfPFlow  # noqa: PLC0415
+        from pretalx.cfp.flow import CfPFlow  # noqa: PLC0415 -- avoid circular import
 
         return CfPFlow(self)
 
@@ -1080,7 +1115,10 @@ class Event(PretalxModel):
     release_schedule.alters_data = True
 
     def send_orga_mail(self, text, stats=False):
-        from pretalx.mail.models import QueuedMail, QueuedMailStates  # noqa: PLC0415
+        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+            QueuedMail,
+            QueuedMailStates,
+        )
 
         context = {
             "event_dashboard": self.orga_urls.base.full(),
@@ -1120,7 +1158,7 @@ class Event(PretalxModel):
         - Talks are rescheduled
         - A schedule is released
         """
-        from pretalx.schedule.services import (  # noqa: PLC0415
+        from pretalx.schedule.services import (  # noqa: PLC0415 -- avoid circular import
             has_unreleased_schedule_changes,
         )
 
@@ -1129,10 +1167,16 @@ class Event(PretalxModel):
     @transaction.atomic
     def shred(self, person=None):
         """Irrevocably deletes an event and all related data."""
-        from pretalx.common.models import ActivityLog  # noqa: PLC0415
-        from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
-        from pretalx.schedule.models import TalkSlot  # noqa: PLC0415
-        from pretalx.submission.models import (  # noqa: PLC0415
+        from pretalx.common.models import (  # noqa: PLC0415 -- avoid circular import
+            ActivityLog,
+        )
+        from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
+            SpeakerProfile,
+        )
+        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
+            TalkSlot,
+        )
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
             Answer,
             AnswerOption,
             Feedback,

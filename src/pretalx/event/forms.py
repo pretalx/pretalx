@@ -345,10 +345,15 @@ class EventWizardPluginForm(forms.Form):
         locales=None,
         organiser=None,
         copy_from_event=None,
+        grouped_plugins=None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        self.grouped_plugins = get_all_plugins_grouped()
+        self.grouped_plugins = (
+            grouped_plugins
+            if grouped_plugins is not None
+            else get_all_plugins_grouped()
+        )
         all_plugins = []
         choices = []
         for (_category_key, category_label), plugins in self.grouped_plugins.items():
