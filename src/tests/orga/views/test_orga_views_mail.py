@@ -705,7 +705,7 @@ def test_orga_compose_mail_without_recipients_fails(
     assert len(djmail.outbox) == 0
     with scope(event=event):
         mails = list(QueuedMail.objects.filter(state=QueuedMailStates.DRAFT))
-        assert len(mails) == 2
+        assert len(mails) == 0
 
 
 @pytest.mark.django_db

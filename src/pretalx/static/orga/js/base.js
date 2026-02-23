@@ -163,6 +163,10 @@ const initNavSearch = () => {
     })
 }
 
+document.addEventListener("htmx:configRequest", (e) => {
+    e.detail.headers["X-CSRFToken"] = getCookie("pretalx_csrftoken")
+})
+
 onReady(() => {
     const element = document.querySelector("[data-toggle=sidebar]")
     const sidebar = document.querySelector("aside.sidebar")

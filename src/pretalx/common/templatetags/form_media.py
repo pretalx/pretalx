@@ -20,7 +20,6 @@ DEFAULT_FORMSET_MEDIA = forms.Media(
 DEFAULT_TABLE_MEDIA = forms.Media(
     js=[
         forms.Script("common/js/ui/dialog.js", defer=""),
-        forms.Script("vendored/htmx.min.js", defer=""),
         forms.Script("orga/js/ui/tables.js", defer=""),
     ],
     css={"all": ["common/css/ui/dialog.css", "orga/css/ui/tables.css"]},
