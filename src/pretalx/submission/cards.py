@@ -33,13 +33,17 @@ def _text(text, max_length=None):
     if not text:
         return ""
 
+    # Truncate the raw text before HTML-escaping so that we never split
+    # an HTML entity (e.g. &#x27; for an apostrophe) in the middle.
+    # See https://github.com/pretalx/pretalx/issues/1897
+    if max_length and len(text) > max_length:
+        text = text[: max_length - 1] + "…"
+
     # add an almost-invisible space &hairsp; after hyphens as word-wrap in ReportLab only works on space chars
     text = conditional_escape(text).replace("-", "-&hairsp;")
     # Reportlab does not support unicode combination characters
     text = unicodedata.normalize("NFC", text)
 
-    if max_length and len(text) > max_length:
-        return text[: max_length - 1] + "…"
     return text
 
 

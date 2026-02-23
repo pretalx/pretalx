@@ -12,6 +12,9 @@ from pretalx.submission.cards import _text
     (
         ("12345", 3, "12…"),
         ("12345", 5, "12345"),
+        # Apostrophe at truncation boundary must not split HTML entities (#1897)
+        ("x" * 140 + "'", 140, "x" * 139 + "…"),
+        ("x" * 130 + "'rest", 140, "x" * 130 + "&#x27;rest"),
     ),
 )
 def test_ellipsize(text, length, expected):
