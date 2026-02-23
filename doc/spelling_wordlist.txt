@@ -42,6 +42,7 @@ doesn
 Debian
 DemoCon
 discoverable
+docstrings
 Django
 drag'n'drop
 dropdown
@@ -92,6 +93,7 @@ nodejs
 noopener
 npm
 OAuth
+parametrized
 plugin
 plugins
 pre
@@ -134,6 +136,7 @@ uncheck
 unreviewed
 unschedule
 uptime
+vendored
 Venueless
 virtualenv
 Weblate
