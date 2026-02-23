@@ -22,7 +22,6 @@ def test_character_limit_data_attributes_added(event):
         }
         event.cfp.save()
 
-
         form = InfoForm(event=event)
 
         assert form.fields["abstract"].widget.attrs.get("data-minlength") == 10
@@ -41,7 +40,6 @@ def test_character_limit_only_for_chars_mode(event):
         }
         event.cfp.save()
 
-
         form = InfoForm(event=event)
         assert "data-minlength" not in form.fields["abstract"].widget.attrs
         assert "data-maxlength" not in form.fields["abstract"].widget.attrs
@@ -54,7 +52,6 @@ def test_question_field_data_attributes(event, question):
         question.min_length = 20
         question.max_length = 1000
         question.save()
-
 
         form = QuestionsForm(event=event)
         field_name = f"question_{question.pk}"
