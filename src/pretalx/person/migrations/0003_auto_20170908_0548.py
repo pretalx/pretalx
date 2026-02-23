@@ -7,15 +7,10 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0002_auto_20170715_0655"),
-    ]
+    dependencies = [("person", "0002_auto_20170715_0655")]
 
     operations = [
-        migrations.RemoveField(
-            model_name="user",
-            name="send_mail",
-        ),
+        migrations.RemoveField(model_name="user", name="send_mail"),
         migrations.AlterField(
             model_name="speakerprofile",
             name="biography",

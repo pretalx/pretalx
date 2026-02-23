@@ -24,17 +24,9 @@ from pretalx.submission.rules import questions_for_user
 
 
 class SubmitterAccessCodeTable(PretalxTable):
-    default_columns = (
-        "code",
-        "tracks",
-        "submission_types",
-        "valid_until",
-        "uses",
-    )
+    default_columns = ("code", "tracks", "submission_types", "valid_until", "uses")
 
-    code = TemplateColumn(
-        template_name="orga/tables/columns/copyable.html",
-    )
+    code = TemplateColumn(template_name="orga/tables/columns/copyable.html")
     tracks = TemplateColumn(
         verbose_name=_("Tracks"),
         template_name="orga/tables/columns/tracks.html",
@@ -60,7 +52,7 @@ class SubmitterAccessCodeTable(PretalxTable):
         initial_sort_descending=True,
     )
     maximum_uses = tables.Column(
-        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
+        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}}
     )
 
     def render_uses(self, record):
@@ -79,13 +71,9 @@ class SubmitterAccessCodeTable(PretalxTable):
                 ),
                 "title": _("Copy access code link"),
             },
-            "send": {
-                "title": _("Send access code as email"),
-            },
+            "send": {"title": _("Send access code as email")},
             "edit": {},
-            "delete": {
-                "condition": lambda record: not record.has_submissions,
-            },
+            "delete": {"condition": lambda record: not record.has_submissions},
         }
     )
 
@@ -110,11 +98,7 @@ class SubmitterAccessCodeTable(PretalxTable):
 
 
 class TrackTable(UnsortableMixin, PretalxTable):
-    default_columns = (
-        "name",
-        "color",
-        "proposals",
-    )
+    default_columns = ("name", "color", "proposals")
 
     name = TemplateColumn(
         linkify=lambda record: record.urls.edit,
@@ -154,22 +138,12 @@ class TrackTable(UnsortableMixin, PretalxTable):
 
     class Meta:
         model = Track
-        fields = (
-            "name",
-            "color",
-            "proposals",
-            "requires_access_code",
-            "actions",
-        )
+        fields = ("name", "color", "proposals", "requires_access_code", "actions")
         row_attrs = {"dragsort-id": lambda record: record.pk}
 
 
 class SubmissionTypeTable(PretalxTable):
-    default_columns = (
-        "name",
-        "proposals",
-        "default_duration",
-    )
+    default_columns = ("name", "proposals", "default_duration")
 
     name = TemplateColumn(
         linkify=lambda record: record.urls.edit,
@@ -187,10 +161,10 @@ class SubmissionTypeTable(PretalxTable):
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
     )
     deadline = DateTimeColumn(
-        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
+        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}}
     )
     default_duration = tables.Column(
-        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
+        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}}
     )
     requires_access_code = BooleanColumn()
     actions = ActionsColumn(

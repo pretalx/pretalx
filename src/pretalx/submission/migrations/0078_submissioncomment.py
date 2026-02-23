@@ -55,13 +55,11 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={
-                "ordering": ("created",),
-            },
+            options={"ordering": ("created",)},
             bases=(
                 pretalx.common.models.mixins.LogMixin,
                 pretalx.common.models.mixins.FileCleanupMixin,
                 models.Model,
             ),
-        ),
+        )
     ]

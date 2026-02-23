@@ -53,11 +53,7 @@ def _format_email(addr, fallback_name):
     return formataddr((parsed_name or fallback_name, parsed_email))
 
 
-DEBUG_DOMAINS = [
-    "localhost",
-    "example.org",
-    "example.com",
-]
+DEBUG_DOMAINS = ["localhost", "example.org", "example.com"]
 
 
 def _mark_mail_sent(queued_mail_id):

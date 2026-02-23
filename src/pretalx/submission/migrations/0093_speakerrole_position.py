@@ -11,9 +11,7 @@ def populate_position(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0092_delete_soft_deleted_submissions"),
-    ]
+    dependencies = [("submission", "0092_delete_soft_deleted_submissions")]
 
     operations = [
         migrations.AddField(
@@ -23,7 +21,6 @@ class Migration(migrations.Migration):
         ),
         migrations.RunPython(populate_position, migrations.RunPython.noop),
         migrations.AlterModelOptions(
-            name="speakerrole",
-            options={"ordering": ("position",)},
+            name="speakerrole", options={"ordering": ("position",)}
         ),
     ]

@@ -76,8 +76,7 @@ def test_edit_cfp_timezones(orga_client, event):
 def test_edit_cfp_flow_shows_in_frontend(orga_client, event):
     url = reverse("orga:cfp.editor.step", kwargs={"event": event.slug, "step": "info"})
     response = orga_client.post(
-        url,
-        {"title_0": "TEST CFP WOO", "text_0": "PLS SUBMIT HERE THX"},
+        url, {"title_0": "TEST CFP WOO", "text_0": "PLS SUBMIT HERE THX"}
     )
     assert response.status_code == 200, response.text
 
@@ -372,11 +371,7 @@ def test_cfp_editor_step_header_edit(orga_client, event):
     assert b"id_text" in response.content
 
     response = orga_client.post(
-        url,
-        {
-            "title_0": "Custom Title",
-            "text_0": "Custom text",
-        },
+        url, {"title_0": "Custom Title", "text_0": "Custom text"}
     )
     assert response.status_code == 200
 
@@ -860,10 +855,7 @@ def test_can_remind_multiple_questions(
 
 
 @pytest.mark.django_db
-def test_can_remind_submission_question_broken_filter(
-    orga_client,
-    event,
-):
+def test_can_remind_submission_question_broken_filter(orga_client, event):
     response = orga_client.post(
         event.cfp.urls.remind_questions, {"role": "hahaha"}, follow=True
     )
@@ -892,14 +884,10 @@ def test_can_remind_answered_submission_question(
         question.save()
         original_count = QueuedMail.objects.count()
         Answer.objects.create(
-            submission=slot.submission,
-            question=question,
-            answer="something",
+            submission=slot.submission, question=question, answer="something"
         )
         Answer.objects.create(
-            submission=other_submission,
-            question=question,
-            answer="something",
+            submission=other_submission, question=question, answer="something"
         )
     response = orga_client.post(
         event.cfp.urls.remind_questions, {"role": role}, follow=True
@@ -1223,8 +1211,7 @@ def test_cfp_editor_main_view(orga_client, event):
 @pytest.mark.django_db
 def test_cfp_editor_question_modal_nonexistent(orga_client, event):
     url = reverse(
-        "orga:cfp.editor.question",
-        kwargs={"event": event.slug, "question_id": 99999},
+        "orga:cfp.editor.question", kwargs={"event": event.slug, "question_id": 99999}
     )
     response = orga_client.get(url)
     assert response.status_code == 404
@@ -1292,9 +1279,7 @@ def test_question_file_download_creates_cached_file(
 ):
     with scope(event=event):
         answer = Answer.objects.create(
-            submission=submission,
-            question=file_question,
-            answer="doc.pdf",
+            submission=submission, question=file_question, answer="doc.pdf"
         )
         answer.answer_file.save("doc.pdf", ContentFile(b"pdf content"))
         answer.save()
@@ -1312,9 +1297,7 @@ def test_question_file_download_generates_zip(
 ):
     with scope(event=event):
         answer = Answer.objects.create(
-            submission=submission,
-            question=file_question,
-            answer="test.txt",
+            submission=submission, question=file_question, answer="test.txt"
         )
         answer.answer_file.save("test.txt", ContentFile(b"test content"))
         answer.save()
@@ -1350,17 +1333,13 @@ def test_question_file_download_duplicate_filenames(
         speaker_profile = SpeakerProfile.objects.get(user=speaker, event=event)
         other_submission.speakers.add(speaker_profile)
         answer1 = Answer.objects.create(
-            submission=submission,
-            question=file_question,
-            answer="same.txt",
+            submission=submission, question=file_question, answer="same.txt"
         )
         answer1.answer_file.save("same.txt", ContentFile(b"content 1"))
         answer1.save()
 
         answer2 = Answer.objects.create(
-            submission=other_submission,
-            question=file_question,
-            answer="same.txt",
+            submission=other_submission, question=file_question, answer="same.txt"
         )
         answer2.answer_file.save("same.txt", ContentFile(b"content 2"))
         answer2.save()
@@ -1382,9 +1361,7 @@ def test_question_file_download_speaker_question(
 ):
     with scope(event=event):
         answer = Answer.objects.create(
-            question=speaker_file_question,
-            speaker=speaker_profile,
-            answer="cv.pdf",
+            question=speaker_file_question, speaker=speaker_profile, answer="cv.pdf"
         )
         answer.answer_file.save("cv.pdf", ContentFile(b"CV content"))
         answer.save()

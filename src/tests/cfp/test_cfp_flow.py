@@ -106,11 +106,7 @@ def test_base_cfp_step_attributes():
 @pytest.mark.django_db
 def test_cfp_form_mixin_reorders_fields(event):
     with scope(event=event):
-        field_config = [
-            {"key": "abstract"},
-            {"key": "title"},
-            {"key": "description"},
-        ]
+        field_config = [{"key": "abstract"}, {"key": "title"}, {"key": "description"}]
         form_reordered = InfoForm(event=event, field_configuration=field_config)
         reordered_keys = list(form_reordered.fields.keys())
 
@@ -124,15 +120,9 @@ def test_cfp_form_mixin_reorders_fields(event):
 @pytest.mark.django_db
 def test_speaker_profile_form_reorders_fields(event, speaker):
     with scope(event=event):
-        field_config = [
-            {"key": "biography"},
-            {"key": "name"},
-            {"key": "avatar"},
-        ]
+        field_config = [{"key": "biography"}, {"key": "name"}, {"key": "avatar"}]
         form = SpeakerProfileForm(
-            event=event,
-            user=speaker,
-            field_configuration=field_config,
+            event=event, user=speaker, field_configuration=field_config
         )
         keys = list(form.fields.keys())
 
@@ -257,11 +247,7 @@ def test_update_field_order_creates_step_if_missing(event):
 
 
 @pytest.mark.parametrize(
-    ("visibility", "expect_required"),
-    (
-        ("required", True),
-        ("optional", False),
-    ),
+    ("visibility", "expect_required"), (("required", True), ("optional", False))
 )
 @pytest.mark.django_db
 def test_speaker_profile_form_avatar_required_matches_cfp(
@@ -298,10 +284,7 @@ def test_speaker_profile_form_no_suggestions_when_biography_exists(
 ):
     with scopes_disabled():
         SpeakerProfile.objects.create(
-            user=speaker,
-            event=other_event,
-            biography="Other bio",
-            name=speaker.name,
+            user=speaker, event=other_event, biography="Other bio", name=speaker.name
         )
     with scope(event=event):
         # Existing profile already has a biography

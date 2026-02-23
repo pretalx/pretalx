@@ -65,14 +65,10 @@ class UserApiToken(PretalxModel):
     name = models.CharField(max_length=190, verbose_name=_("Name"))
     token = models.CharField(default=generate_api_token, max_length=64, unique=True)
     user = models.ForeignKey(
-        to="person.User",
-        related_name="api_tokens",
-        on_delete=models.CASCADE,
+        to="person.User", related_name="api_tokens", on_delete=models.CASCADE
     )
     events = models.ManyToManyField(
-        to="event.Event",
-        related_name="+",
-        verbose_name=_("Events"),
+        to="event.Event", related_name="+", verbose_name=_("Events")
     )
     expires = DateTimeField(null=True, blank=True, verbose_name=_("Expiry date"))
     endpoints = models.JSONField(default=dict, blank=True)

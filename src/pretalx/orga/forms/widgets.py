@@ -73,10 +73,7 @@ class MultipleLanguagesWidget(CheckboxSelectMultiple):
             if not settings.LANGUAGES_INFORMATION[choice[0]].get("official")
         ]
         self.choices = (
-            (
-                "",
-                official_languages,
-            ),
+            ("", official_languages),
             (
                 (
                     _("Community translations"),

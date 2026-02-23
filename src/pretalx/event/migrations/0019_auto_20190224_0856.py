@@ -21,12 +21,10 @@ def fix_update_template(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0018_auto_20190223_1543"),
-    ]
+    dependencies = [("event", "0018_auto_20190223_1543")]
 
     operations = [
         migrations.RunPython(
             code=fix_update_template, reverse_code=migrations.RunPython.noop
-        ),
+        )
     ]

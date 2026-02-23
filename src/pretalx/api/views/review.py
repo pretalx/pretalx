@@ -37,9 +37,7 @@ from pretalx.submission.rules import get_reviewable_submissions
     ),
     retrieve=extend_schema(
         summary="Show Review",
-        parameters=[
-            build_expand_docs("user", "submission", "scores.category"),
-        ],
+        parameters=[build_expand_docs("user", "submission", "scores.category")],
     ),
     create=extend_schema(
         summary="Create Review",

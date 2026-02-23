@@ -460,10 +460,7 @@ def test_delete_used_room(orga_client, event, room, slot):
 def test_regenerate_speaker_notifications(orga_client, event, slot):
     with scope(event=event):
         queue_count = event.queued_mails.count()
-    response = orga_client.post(
-        event.orga_urls.schedule + "resend_mails",
-        follow=True,
-    )
+    response = orga_client.post(event.orga_urls.schedule + "resend_mails", follow=True)
     assert response.status_code == 200
     with scope(event=event):
         assert event.queued_mails.count() > queue_count
@@ -477,10 +474,7 @@ def test_regenerate_speaker_notifications(orga_client, event, slot):
 def test_regenerate_speaker_notifications_before_schedule(orga_client, event):
     with scope(event=event):
         queue_count = event.queued_mails.count()
-    response = orga_client.post(
-        event.orga_urls.schedule + "resend_mails",
-        follow=True,
-    )
+    response = orga_client.post(event.orga_urls.schedule + "resend_mails", follow=True)
     assert response.status_code == 200
     assert (
         "You can only regenerate mails after the first schedule was released."
@@ -494,11 +488,7 @@ def test_regenerate_speaker_notifications_before_schedule(orga_client, event):
 def test_orga_cant_export_answers_csv_empty(orga_client, speaker, event, submission):
     response = orga_client.post(
         event.orga_urls.schedule_export,
-        data={
-            "target": "rejected",
-            "title": "on",
-            "export_format": "csv",
-        },
+        data={"target": "rejected", "title": "on", "export_format": "csv"},
     )
     assert response.status_code == 200
     # HTML response instead of empty download
@@ -597,11 +587,7 @@ def test_track_limited_reviewer_cannot_access_schedule_export(
 
     response = review_client.post(
         event.orga_urls.schedule_export,
-        data={
-            "target": "submitted",
-            "title": "on",
-            "export_format": "json",
-        },
+        data={"target": "submitted", "title": "on", "export_format": "json"},
     )
     assert response.status_code == 404
 
@@ -628,10 +614,7 @@ def test_track_limited_reviewer_can_access_public_frab_json(
 
     client.force_login(review_user)
     response = client.get(
-        reverse(
-            "agenda:export.schedule.json",
-            kwargs={"event": event.slug},
-        ),
+        reverse("agenda:export.schedule.json", kwargs={"event": event.slug}),
         follow=True,
     )
 

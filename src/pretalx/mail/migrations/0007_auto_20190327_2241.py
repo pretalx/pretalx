@@ -8,9 +8,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("mail", "0006_populate_mail_users"),
-    ]
+    dependencies = [("mail", "0006_populate_mail_users")]
 
     operations = [
         migrations.AlterField(
@@ -23,5 +21,5 @@ class Migration(migrations.Migration):
                 related_name="queued_mails",
                 to="event.Event",
             ),
-        ),
+        )
     ]

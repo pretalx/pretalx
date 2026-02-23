@@ -99,7 +99,7 @@ class RemoveSpeakerSerializer(serializers.Serializer):
                 "slots.room",
                 "answers",
                 "resources",
-            ),
+            )
         ],
     ),
     create=extend_schema(
@@ -143,8 +143,7 @@ class RemoveSpeakerSerializer(serializers.Serializer):
         responses={200: SubmissionOrgaSerializer},
     ),
     remove_resource=extend_schema(
-        summary="Remove Resource from Submission",
-        responses={204: None},
+        summary="Remove Resource from Submission", responses={204: None}
     ),
     invite_speaker=extend_schema(
         summary="Invite Speaker to Submission",
@@ -152,8 +151,7 @@ class RemoveSpeakerSerializer(serializers.Serializer):
         responses={200: SubmissionOrgaSerializer},
     ),
     retract_invitation=extend_schema(
-        summary="Retract Speaker Invitation",
-        responses={204: None},
+        summary="Retract Speaker Invitation", responses={204: None}
     ),
 )
 class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet):
@@ -406,8 +404,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
                 )
 
         invitation = SubmissionInvitation.objects.create(
-            submission=submission,
-            email=email,
+            submission=submission, email=email
         )
         invitation.send(_from=request.user)
         submission.log_action(
@@ -464,9 +461,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         )
 
     @action(
-        detail=True,
-        methods=["DELETE"],
-        url_path=r"resources/(?P<resource_id>[0-9]+)",
+        detail=True, methods=["DELETE"], url_path=r"resources/(?P<resource_id>[0-9]+)"
     )
     @transaction.atomic
     def remove_resource(self, request, resource_id=None, **kwargs):
@@ -495,9 +490,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
 @extend_schema(
     summary="List favourite submissions",
     description="This endpoint is used by the schedule widget and uses session authentication.",
-    responses={
-        status.HTTP_200_OK: list[str],
-    },
+    responses={status.HTTP_200_OK: list[str]},
 )
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

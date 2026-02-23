@@ -7,13 +7,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0015_remove_event_subtitle"),
-    ]
+    dependencies = [("event", "0015_remove_event_subtitle")]
 
-    operations = [
-        migrations.RemoveField(
-            model_name="event",
-            name="permitted",
-        ),
-    ]
+    operations = [migrations.RemoveField(model_name="event", name="permitted")]

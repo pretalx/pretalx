@@ -8,9 +8,7 @@ import pretalx.common.models.fields
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("schedule", "0016_talkslot_updated"),
-    ]
+    dependencies = [("schedule", "0016_talkslot_updated")]
 
     operations = [
         migrations.AddField(

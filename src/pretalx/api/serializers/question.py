@@ -59,12 +59,7 @@ class AnswerOptionCreateSerializer(AnswerOptionSerializer):
         if request and hasattr(request, "event"):
             self.fields["question"].queryset = request.event.questions(
                 manager="all_objects"
-            ).filter(
-                variant__in=[
-                    QuestionVariant.CHOICES,
-                    QuestionVariant.MULTIPLE,
-                ]
-            )
+            ).filter(variant__in=[QuestionVariant.CHOICES, QuestionVariant.MULTIPLE])
         else:
             self.fields["question"].queryset = Question.objects.none()
 
@@ -188,16 +183,9 @@ class QuestionOrgaSerializer(QuestionSerializer):
 @register_serializer(versions=CURRENT_VERSIONS)
 class AnswerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     question = PrimaryKeyRelatedField(read_only=True)
-    submission = SlugRelatedField(
-        slug_field="code",
-        read_only=True,
-        required=False,
-    )
+    submission = SlugRelatedField(slug_field="code", read_only=True, required=False)
     person = SlugRelatedField(
-        slug_field="code",
-        read_only=True,
-        required=False,
-        source="speaker",
+        slug_field="code", read_only=True, required=False, source="speaker"
     )
     review = PrimaryKeyRelatedField(read_only=True, required=False)
     answer_file = UploadedFileField(required=False)
@@ -251,14 +239,10 @@ class AnswerCreateSerializer(AnswerSerializer):
         source="speaker",
     )
     review = PrimaryKeyRelatedField(
-        queryset=Review.objects.none(),
-        required=False,
-        allow_null=True,
+        queryset=Review.objects.none(), required=False, allow_null=True
     )
     options = PrimaryKeyRelatedField(
-        queryset=AnswerOption.objects.none(),
-        required=False,
-        many=True,
+        queryset=AnswerOption.objects.none(), required=False, many=True
     )
 
     def __init__(self, *args, **kwargs):

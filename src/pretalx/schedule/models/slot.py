@@ -176,10 +176,7 @@ class TalkSlot(PretalxModel):
         """
         from pretalx.schedule.models import Availability  # noqa: PLC0415
 
-        return Availability(
-            start=self.start,
-            end=self.real_end,
-        )
+        return Availability(start=self.start, end=self.real_end)
 
     def copy_to_schedule(self, new_schedule, save=True):
         """Create a new slot for the given.

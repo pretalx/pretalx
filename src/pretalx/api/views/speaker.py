@@ -54,9 +54,7 @@ class SpeakerSearchFilter(filters.SearchFilter):
     ),
     retrieve=extend_schema(
         summary="Show Speaker",
-        parameters=[
-            build_expand_docs("submissions", "answers", "answers.question"),
-        ],
+        parameters=[build_expand_docs("submissions", "answers", "answers.question")],
     ),
     update=extend_schema(
         summary="Update Speaker",
@@ -157,10 +155,7 @@ class SpeakerViewSet(
                 Prefetch(
                     "submissions", queryset=self.submissions_for_user.order_by("code")
                 ),
-                Prefetch(
-                    "answers",
-                    queryset=Answer.objects.select_related("question"),
-                ),
+                Prefetch("answers", queryset=Answer.objects.select_related("question")),
             )
             .order_by("code")
         )

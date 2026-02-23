@@ -140,5 +140,5 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(
             delete_soft_deleted_submissions, migrations.RunPython.noop, elidable=True
-        ),
+        )
     ]

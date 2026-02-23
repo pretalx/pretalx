@@ -9,15 +9,11 @@ import pretalx.submission.models.resource
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0068_alter_reviewscore_value"),
-    ]
+    dependencies = [("submission", "0068_alter_reviewscore_value")]
 
     operations = [
         migrations.AddField(
-            model_name="resource",
-            name="link",
-            field=models.URLField(null=True),
+            model_name="resource", name="link", field=models.URLField(null=True)
         ),
         migrations.AlterField(
             model_name="resource",

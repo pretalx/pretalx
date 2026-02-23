@@ -20,10 +20,6 @@ def rebuild_review_codes(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0023_submission_is_featured"),
-    ]
+    dependencies = [("submission", "0023_submission_is_featured")]
 
-    operations = [
-        migrations.RunPython(rebuild_review_codes, migrations.RunPython.noop),
-    ]
+    operations = [migrations.RunPython(rebuild_review_codes, migrations.RunPython.noop)]

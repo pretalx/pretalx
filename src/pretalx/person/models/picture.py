@@ -51,15 +51,10 @@ class ProfilePictureMixin:
 
 class ProfilePicture(FileCleanupMixin, TimestampedModel, models.Model):
     user = models.ForeignKey(
-        to="person.User",
-        related_name="pictures",
-        on_delete=models.CASCADE,
+        to="person.User", related_name="pictures", on_delete=models.CASCADE
     )
     avatar = models.ImageField(
-        null=True,
-        blank=True,
-        verbose_name=_("Profile picture"),
-        upload_to=picture_path,
+        null=True, blank=True, verbose_name=_("Profile picture"), upload_to=picture_path
     )
     avatar_thumbnail = models.ImageField(null=True, blank=True, upload_to="avatars/")
     avatar_thumbnail_tiny = models.ImageField(

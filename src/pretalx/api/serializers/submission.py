@@ -101,13 +101,7 @@ class TagSerializer(PretalxSerializer):
 class SubmissionTypeSerializer(PretalxSerializer):
     class Meta:
         model = SubmissionType
-        fields = (
-            "id",
-            "name",
-            "default_duration",
-            "deadline",
-            "requires_access_code",
-        )
+        fields = ("id", "name", "default_duration", "deadline", "requires_access_code")
 
     def create(self, validated_data):
         validated_data["event"] = self.event
@@ -171,8 +165,7 @@ class SubmissionInvitationSerializer(FlexFieldsSerializerMixin, PretalxSerialize
 @register_serializer(versions=CURRENT_VERSIONS)
 class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     submission_type = serializers.PrimaryKeyRelatedField(
-        queryset=SubmissionType.objects.none(),
-        required=True,
+        queryset=SubmissionType.objects.none(), required=True
     )
     track = serializers.PrimaryKeyRelatedField(
         queryset=Track.objects.none(), required=False, allow_null=True
@@ -338,10 +331,7 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 @register_serializer()
 class SubmissionOrgaSerializer(SubmissionSerializer):
     assigned_reviewers = serializers.SlugRelatedField(
-        slug_field="code",
-        queryset=User.objects.none(),
-        required=False,
-        many=True,
+        slug_field="code", queryset=User.objects.none(), required=False, many=True
     )
     created = serializers.DateTimeField(read_only=True)
     updated = serializers.DateTimeField(read_only=True)

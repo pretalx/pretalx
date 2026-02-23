@@ -61,10 +61,7 @@ class CacheTest(TestCase):
         assert self.cache.get(self.testkey) is None
 
     def test_many(self):
-        inp = {
-            "a": "foo",
-            "b": "bar",
-        }
+        inp = {"a": "foo", "b": "bar"}
         self.cache.set_many(inp)
         assert inp == self.cache.get_many(inp.keys())
 

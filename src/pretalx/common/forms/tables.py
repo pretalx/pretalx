@@ -16,22 +16,12 @@ class TablePreferencesForm(forms.Form):
     available_columns = forms.MultipleChoiceField(
         label=_("Available Columns"),
         required=False,
-        widget=forms.SelectMultiple(
-            attrs={
-                "class": "form-control",
-                "size": "10",
-            }
-        ),
+        widget=forms.SelectMultiple(attrs={"class": "form-control", "size": "10"}),
     )
     columns = forms.MultipleChoiceField(
         label=_("Selected Columns"),
         required=False,
-        widget=forms.SelectMultiple(
-            attrs={
-                "class": "form-control",
-                "size": "10",
-            }
-        ),
+        widget=forms.SelectMultiple(attrs={"class": "form-control", "size": "10"}),
     )
     sort_column_1 = forms.ChoiceField(
         label=_("Sort by"),

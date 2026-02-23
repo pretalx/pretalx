@@ -78,13 +78,7 @@ def test_hashed_path(original_name, target_name, upload_dir, expected, monkeypat
 
 
 @pytest.mark.parametrize(
-    ("filename", "expected"),
-    (
-        ("ö", "o"),
-        ("å", "a"),
-        ("ø", ""),
-        ("α", ""),
-    ),
+    ("filename", "expected"), (("ö", "o"), ("å", "a"), ("ø", ""), ("α", ""))
 )
 def test_safe_filename(filename, expected):
     assert safe_filename(filename) == expected

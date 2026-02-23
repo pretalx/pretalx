@@ -54,10 +54,7 @@ class ScheduleReleaseForm(PretalxI18nModelForm):
 
     class Meta:
         model = Schedule
-        fields = (
-            "version",
-            "comment",
-        )
+        fields = ("version", "comment")
 
 
 class ScheduleExportForm(ExportForm):
@@ -106,8 +103,7 @@ class ScheduleExportForm(ExportForm):
             ),
         )
         self.fields["speaker_names"] = forms.BooleanField(
-            required=False,
-            label=_("Speaker names"),
+            required=False, label=_("Speaker names")
         )
         self.fields["room"] = forms.BooleanField(
             required=False,
@@ -170,9 +166,7 @@ class ScheduleExportForm(ExportForm):
 
     @cached_property
     def questions(self):
-        return self.event.questions.filter(
-            target="submission",
-        ).prefetch_related(
+        return self.event.questions.filter(target="submission").prefetch_related(
             "answers", "answers__submission", "options", "answers__options"
         )
 

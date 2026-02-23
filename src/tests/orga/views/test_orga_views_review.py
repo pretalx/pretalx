@@ -41,10 +41,7 @@ def test_reviewer_can_add_review(
     response = review_client.post(
         submission.orga_urls.reviews,
         follow=True,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "LGTM",
-        },
+        data={f"score_{category.id}": score.id, "text": "LGTM"},
     )
     assert response.status_code == 200
     with scope(event=submission.event):
@@ -69,11 +66,7 @@ def test_reviewer_can_add_review_with_tags(review_client, review_user, submissio
     response = review_client.post(
         submission.orga_urls.reviews,
         follow=True,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "LGTM",
-            "tags": str(tag.id),
-        },
+        data={f"score_{category.id}": score.id, "text": "LGTM", "tags": str(tag.id)},
     )
     assert response.status_code == 200
     assert str(tag.tag) in response.text
@@ -96,11 +89,7 @@ def test_reviewer_cannot_tag_when_tagging_disabled(
     response = review_client.post(
         submission.orga_urls.reviews,
         follow=True,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "LGTM",
-            "tags": str(tag.id),
-        },
+        data={f"score_{category.id}": score.id, "text": "LGTM", "tags": str(tag.id)},
     )
     assert response.status_code == 200
     with scope(event=submission.event):
@@ -118,10 +107,7 @@ def test_reviewer_cannot_add_review_when_unassigned(review_client, submission):
     response = review_client.post(
         submission.orga_urls.reviews,
         follow=True,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "LGTM",
-        },
+        data={f"score_{category.id}": score.id, "text": "LGTM"},
     )
     assert response.status_code == 404
     with scope(event=submission.event):
@@ -141,10 +127,7 @@ def test_reviewer_can_add_review_when_assigned(review_client, review_user, submi
     response = review_client.post(
         submission.orga_urls.reviews,
         follow=True,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "LGTM",
-        },
+        data={f"score_{category.id}": score.id, "text": "LGTM"},
     )
     assert response.status_code == 200
     with scope(event=submission.event):
@@ -165,11 +148,7 @@ def test_reviewer_can_add_review_with_redirect(
     response = review_client.post(
         submission.orga_urls.reviews,
         follow=True,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "LGTM",
-            "show_next": "1",
-        },
+        data={f"score_{category.id}": score.id, "text": "LGTM", "show_next": "1"},
     )
     assert response.status_code == 200
 
@@ -182,11 +161,7 @@ def test_reviewer_can_add_review_with_redirect_finished(review_client, submissio
     response = review_client.post(
         submission.orga_urls.reviews,
         follow=True,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "LGTM",
-            "show_next": "1",
-        },
+        data={f"score_{category.id}": score.id, "text": "LGTM", "show_next": "1"},
     )
     assert response.status_code == 200
 
@@ -198,10 +173,7 @@ def test_reviewer_can_add_review_without_score(review_client, submission):
     response = review_client.post(
         submission.orga_urls.reviews,
         follow=True,
-        data={
-            f"score_{category.id}": "",
-            "text": "LGTM",
-        },
+        data={f"score_{category.id}": "", "text": "LGTM"},
     )
     assert response.status_code == 200
     with scope(event=submission.event):
@@ -223,10 +195,7 @@ def test_reviewer_cannot_add_review_without_score_when_mandatory(
     response = review_client.post(
         submission.orga_urls.reviews,
         follow=True,
-        data={
-            f"score_{category.id}": "",
-            "text": "LGTM",
-        },
+        data={f"score_{category.id}": "", "text": "LGTM"},
     )
     assert response.status_code == 200
     with scope(event=submission.event):
@@ -246,11 +215,7 @@ def test_reviewer_can_skip_review_with_required_fields(
         submission.event.save()
     response = review_client.post(
         submission.orga_urls.reviews,
-        data={
-            f"score_{category.id}": "",
-            "text": "",
-            "review_submit": action,
-        },
+        data={f"score_{category.id}": "", "text": "", "review_submit": action},
     )
     assert response.status_code == 302
     with scope(event=submission.event):
@@ -268,10 +233,7 @@ def test_reviewer_cannot_use_wrong_score(review_client, submission):
     response = review_client.post(
         submission.orga_urls.reviews,
         follow=True,
-        data={
-            f"score_{category.id}": "100",
-            "text": "LGTM",
-        },
+        data={f"score_{category.id}": "100", "text": "LGTM"},
     )
     assert response.status_code == 200
     with scope(event=submission.event):
@@ -290,10 +252,7 @@ def test_reviewer_cannot_ignore_required_question(
     response = review_client.post(
         submission.orga_urls.reviews,
         follow=True,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "LGTM",
-        },
+        data={f"score_{category.id}": score.id, "text": "LGTM"},
     )
     assert response.status_code == 200
     with scope(event=submission.event):
@@ -315,10 +274,7 @@ def test_reviewer_cannot_review_own_submission(review_user, review_client, submi
         assert submission.reviews.count() == 0
     response = review_client.post(
         submission.orga_urls.reviews,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "LGTM",
-        },
+        data={f"score_{category.id}": score.id, "text": "LGTM"},
     )
     assert response.status_code == 200, response.text
     with scope(event=submission.event):
@@ -335,10 +291,7 @@ def test_reviewer_cannot_review_accepted_submission(
         submission.accept()
     response = review_client.post(
         submission.orga_urls.reviews,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "LGTM",
-        },
+        data={f"score_{category.id}": score.id, "text": "LGTM"},
         follow=True,
     )
     assert response.status_code == 200
@@ -357,10 +310,7 @@ def test_reviewer_can_edit_review(review_client, review, review_user):
     response = review_client.post(
         review.urls.base,
         follow=True,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "My mistake.",
-        },
+        data={f"score_{category.id}": score.id, "text": "My mistake."},
     )
     assert response.status_code == 200
     with scope(event=review.event):
@@ -380,10 +330,7 @@ def test_reviewer_cannot_edit_review_after_accept(review_client, review):
     response = review_client.post(
         review.urls.base,
         follow=True,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "My mistake.",
-        },
+        data={f"score_{category.id}": score.id, "text": "My mistake."},
     )
     assert response.status_code == 200
     with scope(event=review.event):
@@ -447,12 +394,7 @@ def test_orga_can_see_review(orga_client, review):
 @pytest.mark.django_db
 @pytest.mark.parametrize("sort", ("count", "-count", "score", "-score"))
 def test_reviewer_can_see_dashboard(
-    review_client,
-    submission,
-    review,
-    sort,
-    django_assert_num_queries,
-    other_submission,
+    review_client, submission, review, sort, django_assert_num_queries, other_submission
 ):
     with django_assert_num_queries(43):
         response = review_client.get(
@@ -491,10 +433,7 @@ def test_orga_cannot_add_review(orga_client, submission):
     response = orga_client.post(
         submission.orga_urls.reviews,
         follow=True,
-        data={
-            f"score_{category.id}": score.id,
-            "text": "LGTM",
-        },
+        data={f"score_{category.id}": score.id, "text": "LGTM"},
     )
     assert response.status_code == 200
     with scope(event=submission.event):
@@ -551,10 +490,7 @@ def test_orga_can_bulk_accept_and_reject_only_failure(orga_client, accepted_subm
         count = accepted_submission.event.queued_mails.count()
     response = orga_client.post(
         accepted_submission.event.orga_urls.reviews,
-        {
-            "foo": "bar",
-            f"s-{accepted_submission.code}": "reject",
-        },
+        {"foo": "bar", f"s-{accepted_submission.code}": "reject"},
     )
     assert response.status_code == 200
     with scope(event=accepted_submission.event):
@@ -569,10 +505,7 @@ def test_orga_can_bulk_accept_and_reject_only_success(orga_client, submission):
         count = submission.event.queued_mails.count()
     response = orga_client.post(
         submission.event.orga_urls.reviews,
-        {
-            "foo": "bar",
-            f"s-{submission.code}": "reject",
-        },
+        {"foo": "bar", f"s-{submission.code}": "reject"},
     )
     assert response.status_code == 200
     with scope(event=submission.event):
@@ -591,9 +524,7 @@ def test_orga_can_assign_reviewer_to_submission(orga_client, review_user, submis
     assert response.status_code == 200
     response = orga_client.post(
         submission.event.orga_urls.reviews + "assign/?direction=submission",
-        {
-            f"submission-{submission.code}": [review_user.id],
-        },
+        {f"submission-{submission.code}": [review_user.id]},
     )
     with scope(event=submission.event):
         assert submission.assigned_reviewers.all().count() == 1
@@ -613,11 +544,7 @@ def test_orga_can_assign_reviewer_to_submission_via_import(
             assert review_user.assigned_reviews.all().count() == 1
         response = orga_client.post(
             submission.event.orga_urls.reviews + "assign/import",
-            {
-                "import_file": f,
-                "replace_assignments": 0,
-                "direction": "reviewer",
-            },
+            {"import_file": f, "replace_assignments": 0, "direction": "reviewer"},
         )
         assert response.status_code == 302
     with scope(event=submission.event):
@@ -640,11 +567,7 @@ def test_orga_can_assign_submission_to_reviewer_via_import_and_replace(
             assert review_user.assigned_reviews.all().count() == 1
         response = orga_client.post(
             submission.event.orga_urls.reviews + "assign/import",
-            {
-                "import_file": f,
-                "replace_assignments": 1,
-                "direction": "submission",
-            },
+            {"import_file": f, "replace_assignments": 1, "direction": "submission"},
         )
         assert response.status_code == 302
     with scope(event=submission.event):
@@ -663,9 +586,7 @@ def test_orga_can_assign_submission_to_reviewer(orga_client, review_user, submis
     assert response.status_code == 200
     response = orga_client.post(
         submission.event.orga_urls.reviews + "assign/?direction=reviewer",
-        {
-            f"reviewer-{review_user.code}": [submission.id],
-        },
+        {f"reviewer-{review_user.code}": [submission.id]},
     )
     with scope(event=submission.event):
         assert submission.assigned_reviewers.all().count() == 1
@@ -679,10 +600,7 @@ def test_orga_can_assign_reviewer_to_submission_htmx(
         assert submission.assigned_reviewers.all().count() == 0
     response = orga_client.post(
         submission.event.orga_urls.reviews + "assign/?direction=submission",
-        {
-            "_field": submission.code,
-            f"submission-{submission.code}": [review_user.id],
-        },
+        {"_field": submission.code, f"submission-{submission.code}": [review_user.id]},
         HTTP_HX_REQUEST="true",
     )
     assert response.status_code == 204
@@ -698,10 +616,7 @@ def test_orga_can_assign_submission_to_reviewer_htmx(
         assert submission.assigned_reviewers.all().count() == 0
     response = orga_client.post(
         submission.event.orga_urls.reviews + "assign/?direction=reviewer",
-        {
-            "_field": review_user.code,
-            f"reviewer-{review_user.code}": [submission.id],
-        },
+        {"_field": review_user.code, f"reviewer-{review_user.code}": [submission.id]},
         HTTP_HX_REQUEST="true",
     )
     assert response.status_code == 204
@@ -716,9 +631,7 @@ def test_orga_can_clear_assignment_htmx(orga_client, review_user, submission):
         assert submission.assigned_reviewers.all().count() == 1
     response = orga_client.post(
         submission.event.orga_urls.reviews + "assign/?direction=submission",
-        {
-            "_field": submission.code,
-        },
+        {"_field": submission.code},
         HTTP_HX_REQUEST="true",
     )
     assert response.status_code == 204
@@ -780,9 +693,7 @@ def test_reviewer_bulk_review_htmx_invalid_submission(review_client, submission)
         bulk_url = submission.event.orga_urls.reviews + "bulk/"
 
     response = review_client.post(
-        bulk_url,
-        data={"_submission": "INVALID"},
-        headers={"HX-Request": "true"},
+        bulk_url, data={"_submission": "INVALID"}, headers={"HX-Request": "true"}
     )
     assert response.status_code == 404
 
@@ -801,10 +712,7 @@ def test_reviewer_bulk_review_htmx_validates_required_fields(
 
     response = review_client.post(
         bulk_url,
-        data={
-            "_submission": submission.code,
-            f"{submission.code}-text": "",
-        },
+        data={"_submission": submission.code, f"{submission.code}-text": ""},
         headers={"HX-Request": "true"},
     )
     assert response.status_code == 200

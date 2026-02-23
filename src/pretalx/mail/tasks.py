@@ -19,8 +19,7 @@ def mark_stale_sending_mails_as_failed(sender, **kwargs):
 
     cutoff = now() - dt.timedelta(hours=1)
     count = QueuedMail.objects.filter(
-        state=QueuedMailStates.SENDING,
-        updated__lt=cutoff,
+        state=QueuedMailStates.SENDING, updated__lt=cutoff
     ).update(
         state=QueuedMailStates.DRAFT,
         error_data={

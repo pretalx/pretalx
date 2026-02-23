@@ -21,10 +21,6 @@ def empty_code(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0007_user_code"),
-    ]
+    dependencies = [("person", "0007_user_code")]
 
-    operations = [
-        migrations.RunPython(populate_code, empty_code),
-    ]
+    operations = [migrations.RunPython(populate_code, empty_code)]

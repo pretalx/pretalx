@@ -9,9 +9,7 @@ import pretalx.event.models.event
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0004_event_update_template"),
-    ]
+    dependencies = [("event", "0004_event_update_template")]
 
     operations = [
         migrations.AddField(
@@ -22,5 +20,5 @@ class Migration(migrations.Migration):
                 null=True,
                 upload_to=pretalx.event.models.event.event_css_path,
             ),
-        ),
+        )
     ]

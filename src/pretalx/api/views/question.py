@@ -94,10 +94,7 @@ class QuestionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewS
             ) from None
 
     @action(
-        detail=True,
-        methods=["get"],
-        permission_classes=[AllowAny],
-        url_path="icon",
+        detail=True, methods=["get"], permission_classes=[AllowAny], url_path="icon"
     )
     def icon(self, request, *args, **kwargs):
         """

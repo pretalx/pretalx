@@ -12,9 +12,7 @@ import pretalx.submission.models.submission
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0087_question_limit_teams"),
-    ]
+    dependencies = [("submission", "0087_question_limit_teams")]
 
     operations = [
         migrations.CreateModel(
@@ -46,14 +44,12 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={
-                "unique_together": {("submission", "email")},
-            },
+            options={"unique_together": {("submission", "email")}},
             bases=(
                 pretalx.common.models.mixins.LogMixin,
                 pretalx.common.models.mixins.FileCleanupMixin,
                 rules.contrib.models.RulesModelMixin,
                 models.Model,
             ),
-        ),
+        )
     ]

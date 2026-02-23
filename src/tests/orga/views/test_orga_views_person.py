@@ -8,23 +8,11 @@ from django.urls import reverse
 
 
 @pytest.mark.parametrize(
-    ("search", "orga_results"),
-    (
-        ("a", 0),
-        ("aa", 0),
-        ("aaa", 0),
-        ("Jane S", 1),
-    ),
+    ("search", "orga_results"), (("a", 0), ("aa", 0), ("aaa", 0), ("Jane S", 1))
 )
 @pytest.mark.django_db
 def test_user_typeahead(
-    orga_client,
-    event,
-    speaker,
-    submission,
-    other_orga_user,
-    search,
-    orga_results,
+    orga_client, event, speaker, submission, other_orga_user, search, orga_results
 ):
     orga_response = orga_client.get(
         reverse("orga:organiser.user_list", kwargs={"organiser": event.organiser.slug}),
@@ -46,10 +34,7 @@ def test_user_typeahead(
 def test_remove_superuser(orga_client, orga_user, follow, expected):
     orga_user.is_superuser = True
     orga_user.save()
-    response = orga_client.get(
-        reverse("orga:user.subuser"),
-        data={"next": follow},
-    )
+    response = orga_client.get(reverse("orga:user.subuser"), data={"next": follow})
 
     orga_user.refresh_from_db()
     assert response.status_code == 302

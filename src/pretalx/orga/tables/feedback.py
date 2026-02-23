@@ -5,11 +5,7 @@ import django_tables2 as tables
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.tables import (
-    DateTimeColumn,
-    PretalxTable,
-    SortableColumn,
-)
+from pretalx.common.tables import DateTimeColumn, PretalxTable, SortableColumn
 from pretalx.common.templatetags.rich_text import render_markdown
 from pretalx.submission.models import Feedback
 
@@ -21,14 +17,9 @@ class FeedbackTable(PretalxTable):
         order_by=Lower("talk__title"),
         linkify=lambda record: record.talk.orga_urls.feedback,
     )
-    review = tables.Column(
-        verbose_name=_("Feedback"),
-        orderable=False,
-    )
+    review = tables.Column(verbose_name=_("Feedback"), orderable=False)
     speaker = tables.Column(
-        verbose_name=_("Speaker"),
-        accessor="speaker__user__name",
-        orderable=False,
+        verbose_name=_("Speaker"), accessor="speaker__user__name", orderable=False
     )
     rating = tables.Column(
         verbose_name=_("Rating"),

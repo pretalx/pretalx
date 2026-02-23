@@ -25,8 +25,7 @@ from pretalx.submission.models import Feedback
         ],
     ),
     retrieve=extend_schema(
-        summary="Show Feedback",
-        parameters=[build_expand_docs("submission", "speaker")],
+        summary="Show Feedback", parameters=[build_expand_docs("submission", "speaker")]
     ),
     create=extend_schema(
         summary="Create Feedback",

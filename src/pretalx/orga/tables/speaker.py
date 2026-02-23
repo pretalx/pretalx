@@ -26,7 +26,7 @@ class SpeakerInformationTable(PretalxTable):
         order_by=Lower(Translate("title")),
     )
     resource = tables.Column(
-        linkify=lambda record: record.resource.url if record.resource else None,
+        linkify=lambda record: record.resource.url if record.resource else None
     )
     actions = ActionsColumn(
         actions={
@@ -53,13 +53,7 @@ class SpeakerInformationTable(PretalxTable):
 
     class Meta:
         model = SpeakerInformation
-        fields = (
-            "title",
-            "target_group",
-            "limit_tracks",
-            "limit_types",
-            "resource",
-        )
+        fields = ("title", "target_group", "limit_tracks", "limit_types", "resource")
 
 
 class SpeakerTable(QuestionColumnMixin, PretalxTable):
@@ -79,10 +73,7 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
         template_name="orga/includes/user_name.html",
         template_context={"user": lambda record, table: record},
     )
-    code = tables.Column(
-        verbose_name=_("ID"),
-        accessor="code",
-    )
+    code = tables.Column(verbose_name=_("ID"), accessor="code")
     email = tables.Column(
         verbose_name=_("Email"),
         accessor="user__email",
@@ -98,10 +89,7 @@ class SpeakerTable(QuestionColumnMixin, PretalxTable):
         initial_sort_descending=True,
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
     )
-    locale = tables.Column(
-        verbose_name=_("Language"),
-        accessor="user__locale",
-    )
+    locale = tables.Column(verbose_name=_("Language"), accessor="user__locale")
     has_arrived = TemplateColumn(
         verbose_name=_("Arrived"),
         template_name="orga/tables/columns/speaker_arrived.html",

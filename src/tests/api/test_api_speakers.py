@@ -20,9 +20,7 @@ def personal_answer(event, speaker_profile):
             active=True,
         )
         return Answer.objects.create(
-            answer="foo",
-            question=question,
-            speaker=speaker_profile,
+            answer="foo", question=question, speaker=speaker_profile
         )
 
 
@@ -103,12 +101,7 @@ def test_speaker_list_reviewer_public_names_hidden(
 
 @pytest.mark.django_db
 def test_speaker_list_reviewer_nopublic_names_visible(
-    client,
-    review_user_token,
-    event,
-    speaker,
-    accepted_submission,
-    rejected_submission,
+    client, review_user_token, event, speaker, accepted_submission, rejected_submission
 ):
     with scope(event=event):
         event.active_review_phase.can_see_speaker_names = True
@@ -211,10 +204,7 @@ def test_speaker_list_search_by_name(
         profile = other_speaker.get_speaker(event)
         other_slot.submission.speakers.add(profile)
     name_to_find = speaker_profile.get_display_name()
-    response = client.get(
-        event.api_urls.speakers + f"?q={name_to_find}",
-        follow=True,
-    )
+    response = client.get(event.api_urls.speakers + f"?q={name_to_find}", follow=True)
     assert response.status_code == 200
     content = json.loads(response.text)
     assert content["count"] == 1
@@ -229,10 +219,7 @@ def test_speaker_list_search_by_email_public(
         profile = other_speaker.get_speaker(event)
         other_slot.submission.speakers.add(profile)
     email_to_find = speaker.email
-    response = client.get(
-        event.api_urls.speakers + f"?q={email_to_find}",
-        follow=True,
-    )
+    response = client.get(event.api_urls.speakers + f"?q={email_to_find}", follow=True)
     assert response.status_code == 200
     content = json.loads(response.text)
     assert content["count"] == 0

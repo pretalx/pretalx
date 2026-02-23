@@ -59,9 +59,7 @@ class Command(BaseCommand):
             )
             return
         organiser, team = create_organiser_with_team(
-            name="DemoCon Org",
-            slug=f"{slug}org",
-            users=administrators,
+            name="DemoCon Org", slug=f"{slug}org", users=administrators
         )
         if end_stage == "cfp":
             event_start = now() + dt.timedelta(days=35)
@@ -156,10 +154,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
 
                 with transaction.atomic():
                     return User.objects.create_user(
-                        name=name,
-                        email=email,
-                        locale=locale,
-                        timezone=timezone,
+                        name=name, email=email, locale=locale, timezone=timezone
                     )
             except IntegrityError:
                 if attempt == max_retries - 1:
@@ -177,8 +172,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
         target_workshop_submissions = self.fake.random_int(min=13, max=20)
         total_submissions = target_talk_submissions + target_workshop_submissions
         target_speaker_count = self.fake.random_int(
-            min=int(total_submissions / 1.8),
-            max=int(total_submissions / 1.1),
+            min=int(total_submissions / 1.8), max=int(total_submissions / 1.1)
         )
         speakers = [self.build_speaker() for _ in range(target_speaker_count)]
         for _ in range(total_submissions - target_speaker_count):
@@ -268,8 +262,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
         one to review more positively, one to review more negatively."""
         reviewers = [
             self.create_user_with_retry(
-                name=self.fake.name(),
-                email_base=self.fake.user_name() + "@example.org",
+                name=self.fake.name(), email_base=self.fake.user_name() + "@example.org"
             )
             for _ in range(3)
         ]

@@ -45,6 +45,4 @@ class Migration(migrations.Migration):
         ("person", "0020_auto_20180922_0511"),
     ]
 
-    operations = [
-        migrations.RunPython(populate_to_users, depopulate_to_users),
-    ]
+    operations = [migrations.RunPython(populate_to_users, depopulate_to_users)]

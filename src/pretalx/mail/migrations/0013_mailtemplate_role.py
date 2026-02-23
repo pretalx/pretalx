@@ -41,11 +41,7 @@ class Migration(migrations.Migration):
             field=models.CharField(default=None, max_length=30, null=True),
         ),
         migrations.AlterUniqueTogether(
-            name="mailtemplate",
-            unique_together={("event", "role")},
+            name="mailtemplate", unique_together={("event", "role")}
         ),
-        migrations.RunPython(
-            populate_roles,
-            reverse_code=unset_roles,
-        ),
+        migrations.RunPython(populate_roles, reverse_code=unset_roles),
     ]

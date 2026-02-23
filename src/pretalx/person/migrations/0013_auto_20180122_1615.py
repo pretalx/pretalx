@@ -14,10 +14,8 @@ def create_administrators(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0012_user_is_administrator"),
-    ]
+    dependencies = [("person", "0012_user_is_administrator")]
 
     operations = [
-        migrations.RunPython(create_administrators, migrations.RunPython.noop),
+        migrations.RunPython(create_administrators, migrations.RunPython.noop)
     ]

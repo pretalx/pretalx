@@ -45,11 +45,7 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
         max_length=120, null=True, blank=True, verbose_name=_("Name")
     )
     code = models.CharField(max_length=16)
-    biography = MarkdownField(
-        verbose_name=_("Biography"),
-        null=True,
-        blank=True,
-    )
+    biography = MarkdownField(verbose_name=_("Biography"), null=True, blank=True)
     has_arrived = models.BooleanField(
         default=False, verbose_name=_("The speaker has arrived")
     )

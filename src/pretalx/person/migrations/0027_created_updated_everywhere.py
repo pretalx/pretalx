@@ -7,9 +7,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0026_alter_user_timezone"),
-    ]
+    dependencies = [("person", "0026_alter_user_timezone")]
 
     operations = [
         migrations.AddField(

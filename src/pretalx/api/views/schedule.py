@@ -55,7 +55,7 @@ from pretalx.schedule.models import Schedule, TalkSlot
                 "slots.submission.speakers",
                 "slots.submission.track",
                 "slots.submission.submission_type",
-            ),
+            )
         ],
     ),
 )
@@ -179,10 +179,7 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
         comment = serializer.validated_data.get("comment")
 
         schedule, _ = wip_schedule.freeze(
-            name=version_name,
-            user=request.user,
-            notify_speakers=False,
-            comment=comment,
+            name=version_name, user=request.user, notify_speakers=False, comment=comment
         )
 
         response_serializer = ScheduleSerializer(

@@ -7,9 +7,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("schedule", "0011_auto_20180205_1127"),
-    ]
+    dependencies = [("schedule", "0011_auto_20180205_1127")]
 
     operations = [
         migrations.AlterField(
@@ -17,8 +15,5 @@ class Migration(migrations.Migration):
             name="is_visible",
             field=models.BooleanField(default=False),
         ),
-        migrations.AlterUniqueTogether(
-            name="talkslot",
-            unique_together=set(),
-        ),
+        migrations.AlterUniqueTogether(name="talkslot", unique_together=set()),
     ]

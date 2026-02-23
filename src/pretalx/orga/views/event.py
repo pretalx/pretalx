@@ -278,10 +278,7 @@ class EventLive(EventSettingsPermission, TemplateView):
             event.is_public = False
             event.save()
             event.log_action(
-                "pretalx.event.deactivate",
-                person=self.request.user,
-                orga=True,
-                data={},
+                "pretalx.event.deactivate", person=self.request.user, orga=True, data={}
             )
             messages.success(request, _("This event is now hidden."))
         return redirect(event.orga_urls.base)
@@ -367,8 +364,7 @@ class EventReviewSettings(EventSettingsPermission, FormView):
         form.save()
         if self.scores_formset.has_changed():
             recalculate_all_review_scores.apply_async(
-                kwargs={"event_id": self.request.event.pk},
-                ignore_result=True,
+                kwargs={"event_id": self.request.event.pk}, ignore_result=True
             )
         return super().form_valid(form)
 
@@ -765,9 +761,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
             logdata.update(form.cleaned_data)
         with scope(event=event):
             event.log_action(
-                "pretalx.event.create",
-                person=self.request.user,
-                orga=True,
+                "pretalx.event.create", person=self.request.user, orga=True
             )
 
             copy_from_event = steps["basics"].get("copy_from_event")

@@ -127,11 +127,7 @@ def test_schedule_frab_xml_export_control_char(slot, client, django_assert_num_q
 @pytest.mark.django_db
 @pytest.mark.usefixtures("break_slot")
 def test_schedule_frab_json_export(
-    slot,
-    client,
-    django_assert_num_queries,
-    orga_user,
-    schedule_schema_json,
+    slot, client, django_assert_num_queries, orga_user, schedule_schema_json
 ):
     with django_assert_num_queries(14):
         regular_response = client.get(
@@ -233,12 +229,7 @@ def test_schedule_export_nonpublic(exporter, slot, client, django_assert_num_que
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     ("exporter", "queries"),
-    (
-        ("schedule.xml", 13),
-        ("schedule.json", 14),
-        ("schedule.xcal", 10),
-        ("feed", 10),
-    ),
+    (("schedule.xml", 13), ("schedule.json", 14), ("schedule.xcal", 10), ("feed", 10)),
 )
 def test_schedule_export_public(
     exporter, queries, slot, client, django_assert_num_queries
@@ -382,13 +373,7 @@ def test_schedule_orga_trigger_export_clears_cached_file(orga_client, event):
 @pytest.mark.parametrize("use_zip", (True, False))
 @pytest.mark.django_db
 def test_html_export_full(
-    event,
-    other_event,
-    slot,
-    confirmed_resource,
-    canceled_talk,
-    orga_client,
-    use_zip,
+    event, other_event, slot, confirmed_resource, canceled_talk, orga_client, use_zip
 ):
     from django.core.management import (  # noqa: PLC0415
         call_command,
@@ -526,8 +511,7 @@ def test_empty_speaker_csv_export(orga_client, django_assert_num_queries, event)
     with django_assert_num_queries(10):
         response = orga_client.get(
             reverse(
-                "agenda:export",
-                kwargs={"event": event.slug, "name": "speakers.csv"},
+                "agenda:export", kwargs={"event": event.slug, "name": "speakers.csv"}
             ),
             follow=True,
         )
@@ -575,17 +559,11 @@ def test_speaker_question_csv_export(slot, orga_client):
 
 
 @pytest.mark.django_db
-def test_wrong_export(
-    slot,
-    orga_client,
-):
+def test_wrong_export(slot, orga_client):
     response = orga_client.get(
         reverse(
             "agenda:export",
-            kwargs={
-                "event": slot.submission.event.slug,
-                "name": "wrong",
-            },
+            kwargs={"event": slot.submission.event.slug, "name": "wrong"},
         ),
         follow=True,
     )
@@ -615,10 +593,7 @@ def test_schedule_download_starts_async_task(mocker, orga_client, schedule):
 def test_schedule_download_htmx_polling_pending(mocker, orga_client, schedule):
     mock_result = mocker.MagicMock()
     mock_result.ready.return_value = False
-    mocker.patch(
-        "celery.result.AsyncResult",
-        return_value=mock_result,
-    )
+    mocker.patch("celery.result.AsyncResult", return_value=mock_result)
 
     response = orga_client.get(
         f"{schedule.event.orga_urls.schedule_export_download}?async_id=test-id",
@@ -643,10 +618,7 @@ def test_schedule_download_htmx_polling_success(mocker, orga_client, schedule):
     mock_result.ready.return_value = True
     mock_result.successful.return_value = True
     mock_result.result = str(cached_file.id)
-    mocker.patch(
-        "celery.result.AsyncResult",
-        return_value=mock_result,
-    )
+    mocker.patch("celery.result.AsyncResult", return_value=mock_result)
 
     response = orga_client.get(
         f"{schedule.event.orga_urls.schedule_export_download}?async_id=test-id",
@@ -664,10 +636,7 @@ def test_schedule_download_htmx_polling_failure(mocker, orga_client, schedule):
     mock_result = mocker.MagicMock()
     mock_result.ready.return_value = True
     mock_result.successful.return_value = False
-    mocker.patch(
-        "celery.result.AsyncResult",
-        return_value=mock_result,
-    )
+    mocker.patch("celery.result.AsyncResult", return_value=mock_result)
 
     response = orga_client.get(
         f"{schedule.event.orga_urls.schedule_export_download}?async_id=test-id",
@@ -683,13 +652,10 @@ def test_schedule_download_htmx_polling_failure(mocker, orga_client, schedule):
 def test_schedule_download_non_htmx_waiting(mocker, orga_client, schedule):
     mock_result = mocker.MagicMock()
     mock_result.ready.return_value = False
-    mocker.patch(
-        "celery.result.AsyncResult",
-        return_value=mock_result,
-    )
+    mocker.patch("celery.result.AsyncResult", return_value=mock_result)
 
     response = orga_client.get(
-        f"{schedule.event.orga_urls.schedule_export_download}?async_id=test-id",
+        f"{schedule.event.orga_urls.schedule_export_download}?async_id=test-id"
     )
 
     assert response.status_code == 200
@@ -702,10 +668,7 @@ def test_schedule_download_non_htmx_failure(mocker, orga_client, schedule):
     mock_result = mocker.MagicMock()
     mock_result.ready.return_value = True
     mock_result.successful.return_value = False
-    mocker.patch(
-        "celery.result.AsyncResult",
-        return_value=mock_result,
-    )
+    mocker.patch("celery.result.AsyncResult", return_value=mock_result)
 
     response = orga_client.get(
         f"{schedule.event.orga_urls.schedule_export_download}?async_id=test-id",

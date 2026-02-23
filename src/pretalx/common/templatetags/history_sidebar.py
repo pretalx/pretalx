@@ -121,7 +121,4 @@ def change_row(context, field, change, log):
     else:
         result["diff_data"] = render_diff(old_value, new_value)
 
-    return {
-        "rows": [result],
-        "field": field,
-    }
+    return {"rows": [result], "field": field}

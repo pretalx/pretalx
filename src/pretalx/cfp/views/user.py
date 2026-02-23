@@ -569,9 +569,7 @@ class SubmissionInviteRetractView(LoggedInEventPageMixin, SubmissionViewMixin, V
     def get_invitation(self):
         invitation_id = self.request.GET.get("id") or self.request.POST.get("id")
         return get_object_or_404(
-            SubmissionInvitation,
-            pk=invitation_id,
-            submission=self.submission,
+            SubmissionInvitation, pk=invitation_id, submission=self.submission
         )
 
     def post(self, request, *args, **kwargs):

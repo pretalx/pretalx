@@ -15,9 +15,7 @@ def fill_names(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0018_auto_20180812_1523"),
-    ]
+    dependencies = [("person", "0018_auto_20180812_1523")]
 
     operations = [
         migrations.RunPython(code=fill_names, reverse_code=migrations.RunPython.noop)

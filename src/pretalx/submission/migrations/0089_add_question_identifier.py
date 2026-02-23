@@ -49,11 +49,9 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterUniqueTogether(
-            name="answeroption",
-            unique_together={("question", "identifier")},
+            name="answeroption", unique_together={("question", "identifier")}
         ),
         migrations.AlterUniqueTogether(
-            name="question",
-            unique_together={("event", "identifier")},
+            name="question", unique_together={("event", "identifier")}
         ),
     ]

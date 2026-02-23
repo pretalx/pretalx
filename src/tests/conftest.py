@@ -172,10 +172,7 @@ def multilingual_event(organiser):
 def resource(submission):
     f = SimpleUploadedFile("testresource.txt", b"a resource")
     return Resource.objects.create(
-        submission=submission,
-        resource=f,
-        description="Test resource",
-        is_public=True,
+        submission=submission, resource=f, description="Test resource", is_public=True
     )
 
 
@@ -404,9 +401,7 @@ def answer(event, submission, question):
 def speaker_answer(event, submission, speaker_question):
     with scope(event=event):
         return Answer.objects.create(
-            answer="11",
-            speaker=submission.speakers.first(),
-            question=speaker_question,
+            answer="11", speaker=submission.speakers.first(), question=speaker_question
         )
 
 
@@ -569,9 +564,7 @@ def impersonal_answer(question, submission):
 def personal_answer(personal_question, submission):
     with scope(event=personal_question.event):
         return Answer.objects.create(
-            answer="True",
-            question=personal_question,
-            submission=submission,
+            answer="True", question=personal_question, submission=submission
         )
 
 
@@ -598,9 +591,7 @@ def administrator():
 def orga_user(event):
     with scopes_disabled():
         user = User.objects.create_user(
-            password="orgapassw0rd",
-            email="orgauser@orga.org",
-            name="Orga User",
+            password="orgapassw0rd", email="orgauser@orga.org", name="Orga User"
         )
         team = event.organiser.teams.filter(
             can_change_organiser_settings=True, is_reviewer=False
@@ -663,9 +654,7 @@ def other_orga_user(event):
 def review_user(organiser, event):
     with scopes_disabled():
         user = User.objects.create_user(
-            password="reviewpassw0rd",
-            email="reviewuser@orga.org",
-            name="Review User",
+            password="reviewpassw0rd", email="reviewuser@orga.org", name="Review User"
         )
         if not event.organiser:
             event.organiser = organiser
@@ -1048,15 +1037,10 @@ def past_slot(other_confirmed_submission, room, schedule, speaker):
 def break_slot(room, schedule):
     with scope(event=schedule.event):
         TalkSlot.objects.create(
-            description="Break",
-            schedule=schedule.event.wip_schedule,
-            slot_type="break",
+            description="Break", schedule=schedule.event.wip_schedule, slot_type="break"
         )
         slot = TalkSlot.objects.create(
-            description="Break",
-            schedule=schedule,
-            is_visible=True,
-            slot_type="break",
+            description="Break", schedule=schedule, is_visible=True, slot_type="break"
         )
         slots = TalkSlot.objects.filter(slot_type="break")
         slots.update(

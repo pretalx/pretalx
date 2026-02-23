@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0025_drop_unused_speakerinformation_fields"),
-    ]
+    dependencies = [("person", "0025_drop_unused_speakerinformation_fields")]
 
     operations = [
         migrations.AlterField(
             model_name="user",
             name="timezone",
             field=models.CharField(default="UTC", max_length=32),
-        ),
+        )
     ]

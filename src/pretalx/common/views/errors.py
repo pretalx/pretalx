@@ -32,11 +32,7 @@ def error_view(status_code):
         return get_callable(settings.CSRF_FAILURE_VIEW)
     if status_code == 500:
         return handle_500
-    exceptions = {
-        400: SuspiciousOperation,
-        403: PermissionDenied,
-        404: Http404,
-    }
+    exceptions = {400: SuspiciousOperation, 403: PermissionDenied, 404: Http404}
     exception = exceptions[status_code]
 
     def error_view_function(request, *args, **kwargs):

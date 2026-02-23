@@ -12,18 +12,13 @@ class RoomTable(UnsortableMixin, PretalxTable):
     default_columns = ("name",)
 
     name = tables.Column(
-        linkify=lambda record: record.urls.settings_base,
-        verbose_name=_("Name"),
+        linkify=lambda record: record.urls.settings_base, verbose_name=_("Name")
     )
     capacity = tables.Column(
-        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
+        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}}
     )
     actions = ActionsColumn(
-        actions={
-            "sort": {},
-            "edit": {"url": "urls.settings_base"},
-            "delete": {},
-        }
+        actions={"sort": {}, "edit": {"url": "urls.settings_base"}, "delete": {}}
     )
     empty_text = _("Please add at least one place in which sessions can take place.")
 
@@ -33,9 +28,5 @@ class RoomTable(UnsortableMixin, PretalxTable):
 
     class Meta:
         model = Room
-        fields = (
-            "name",
-            "capacity",
-            "guid",
-        )
+        fields = ("name", "capacity", "guid")
         row_attrs = {"dragsort-id": lambda record: record.pk}

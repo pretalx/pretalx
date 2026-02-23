@@ -9,15 +9,11 @@ import pretalx.event.models.event
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0026_team_force_hide_speaker_names"),
-    ]
+    dependencies = [("event", "0026_team_force_hide_speaker_names")]
 
     operations = [
         migrations.AddField(
-            model_name="event",
-            name="custom_domain",
-            field=models.URLField(null=True),
+            model_name="event", name="custom_domain", field=models.URLField(null=True)
         ),
         migrations.AddField(
             model_name="event",

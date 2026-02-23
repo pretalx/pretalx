@@ -551,9 +551,7 @@ def test_retrieve_slot_without_submission_orga(
 ):
     url = event.api_urls.slots + f"{break_slot.pk}/"
     response = client.get(
-        url,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
+        url, follow=True, headers={"Authorization": f"Token {orga_user_token.token}"}
     )
 
     assert response.status_code == 200

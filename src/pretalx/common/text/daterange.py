@@ -61,11 +61,7 @@ def daterange_es(date_from, date_to):
 
 def daterange(date_from, date_to):
     language = get_language()[:2]
-    lookup = {
-        "de": daterange_de,
-        "en": daterange_en,
-        "es": daterange_es,
-    }
+    lookup = {"de": daterange_de, "en": daterange_en, "es": daterange_es}
     function = lookup.get(language)
     result = function(date_from, date_to) if function else None
     return result or _("{date_from} – {date_to}").format(

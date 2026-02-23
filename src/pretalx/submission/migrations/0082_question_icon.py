@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0081_alter_tag_unique_together"),
-    ]
+    dependencies = [("submission", "0081_alter_tag_unique_together")]
 
     operations = [
         migrations.AddField(
             model_name="question",
             name="icon",
             field=models.CharField(max_length=9, null=True),
-        ),
+        )
     ]

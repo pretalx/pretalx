@@ -10,14 +10,11 @@ import pretalx.event.models.event
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0011_event_question_template"),
-    ]
+    dependencies = [("event", "0011_event_question_template")]
 
     operations = [
         migrations.AlterModelOptions(
-            name="event",
-            options={"ordering": ("date_from",)},
+            name="event", options={"ordering": ("date_from",)}
         ),
         migrations.AlterField(
             model_name="event",

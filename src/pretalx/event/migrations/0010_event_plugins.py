@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0009_event_landing_page_text"),
-    ]
+    dependencies = [("event", "0009_event_landing_page_text")]
 
     operations = [
         migrations.AddField(
             model_name="event",
             name="plugins",
             field=models.TextField(blank=True, null=True),
-        ),
+        )
     ]

@@ -243,10 +243,7 @@ def test_anon_cannot_create_feedback_for_unscheduled_submission(
 ):
     # The `submission` fixture is not in the schedule
     url = event.api_urls.feedback
-    data = {
-        "submission": submission.code,
-        "review": "Great talk!",
-    }
+    data = {"submission": submission.code, "review": "Great talk!"}
 
     response = client.post(url, data=json.dumps(data), content_type="application/json")
     # Should fail because the submission is not in event.talks
@@ -262,10 +259,7 @@ def test_anon_cannot_create_feedback_for_future_session(client, event, slot):
         slot.save()
 
     url = event.api_urls.feedback
-    data = {
-        "submission": slot.submission.code,
-        "review": "Great talk!",
-    }
+    data = {"submission": slot.submission.code, "review": "Great talk!"}
 
     response = client.post(url, data=json.dumps(data), content_type="application/json")
     content = json.loads(response.text)
@@ -281,10 +275,7 @@ def test_anon_cannot_create_feedback_for_unreleased_schedule(
 ):
     # The `unreleased_slot` fixture is in the WIP schedule, not released
     url = event.api_urls.feedback
-    data = {
-        "submission": unreleased_slot.submission.code,
-        "review": "Great talk!",
-    }
+    data = {"submission": unreleased_slot.submission.code, "review": "Great talk!"}
 
     response = client.post(url, data=json.dumps(data), content_type="application/json")
     # Should fail because the submission is not in the released schedule
@@ -300,10 +291,7 @@ def test_anon_cannot_create_feedback_when_disabled_in_settings(
         event.save()
 
     url = event.api_urls.feedback
-    data = {
-        "submission": past_slot.submission.code,
-        "review": "Great talk!",
-    }
+    data = {"submission": past_slot.submission.code, "review": "Great talk!"}
 
     response = client.post(url, data=json.dumps(data), content_type="application/json")
     assert response.status_code == 403, response.text

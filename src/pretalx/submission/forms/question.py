@@ -37,8 +37,7 @@ class QuestionsForm(CfPFormMixin, QuestionFieldsMixin, forms.Form):
             ).order_by("-target", "position")
         if skip_limited_questions:
             self.queryset = self.queryset.filter(
-                tracks__isnull=True,
-                submission_types__isnull=True,
+                tracks__isnull=True, submission_types__isnull=True
             )
         else:
             if self.track:

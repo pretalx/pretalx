@@ -27,8 +27,6 @@ def deduplicate_reviews(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0069_resource_links"),
-    ]
+    dependencies = [("submission", "0069_resource_links")]
 
     operations = [migrations.RunPython(deduplicate_reviews, migrations.RunPython.noop)]

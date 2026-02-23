@@ -17,11 +17,7 @@ urlpatterns = [
                 path("auth/", auth.EventAuth.as_view(), name="event.auth"),
                 path("reset", auth.ResetView.as_view(), name="event.reset"),
                 path("login/", auth.LoginView.as_view(), name="event.login"),
-                path(
-                    "reset/<token>",
-                    auth.RecoverView.as_view(),
-                    name="event.recover",
-                ),
+                path("reset/<token>", auth.RecoverView.as_view(), name="event.recover"),
                 path(
                     "invite/<token>",
                     auth.RecoverView.as_view(is_invite=True),
@@ -55,11 +51,7 @@ urlpatterns = [
                     user.SubmissionsListView.as_view(),
                     name="event.user.submissions",
                 ),
-                path(
-                    "me/mails/",
-                    user.MailListView.as_view(),
-                    name="event.user.mails",
-                ),
+                path("me/mails/", user.MailListView.as_view(), name="event.user.mails"),
                 path(
                     "me/submissions/<code>/",
                     include(

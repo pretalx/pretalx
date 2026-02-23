@@ -601,9 +601,7 @@ class PretalxI18nFormMixin(I18nFormMixin):
                 if type(field.widget) is I18nTextarea:
                     old = field.widget
                     field.widget = I18nMarkdownTextarea(
-                        locales=old.locales,
-                        field=old.field,
-                        attrs=dict(old.attrs),
+                        locales=old.locales, field=old.field, attrs=dict(old.attrs)
                     )
                     field.widget.enabled_locales = old.enabled_locales
                 if not field.widget.attrs.get("placeholder"):

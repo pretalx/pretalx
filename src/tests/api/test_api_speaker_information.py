@@ -63,9 +63,7 @@ def test_orga_can_see_speaker_information(
         )
         if item_count == 2:
             event.information.create(
-                title="Other Info",
-                text="Other information",
-                target_group="confirmed",
+                title="Other Info", text="Other information", target_group="confirmed"
             )
 
     with django_assert_num_queries(13):
@@ -104,8 +102,7 @@ def test_orga_can_see_single_speaker_information(client, orga_user_token, event)
 def test_no_legacy_speaker_information_api(client, orga_user_token, event):
     with scope(event=event):
         speaker_info = event.information.create(
-            title="Test Info",
-            text="This is some test information",
+            title="Test Info", text="This is some test information"
         )
     response = client.get(
         event.api_urls.speaker_information + f"{speaker_info.pk}/",
@@ -131,9 +128,7 @@ def test_orga_can_create_speaker_information(client, orga_user_write_token, even
             "foo": "bar",
         },
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 201, response.text
     with scope(event=event):
@@ -160,9 +155,7 @@ def test_orga_cannot_create_speaker_information_readonly_token(
             "target_group": "accepted",
         },
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=event):
@@ -246,9 +239,7 @@ def test_orga_can_delete_speaker_information(client, orga_user_write_token, even
     response = client.delete(
         event.api_urls.speaker_information + f"{speaker_info.pk}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 204
     with scope(event=event):
@@ -336,9 +327,7 @@ def test_orga_can_create_speaker_information_with_resource(
             "resource": file_id,
         },
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 201, response.text
 
@@ -350,9 +339,7 @@ def test_orga_can_create_speaker_information_with_resource(
         response = client.get(
             event.api_urls.speaker_information + f"{speaker_info.pk}/",
             follow=True,
-            headers={
-                "Authorization": f"Token {orga_user_write_token.token}",
-            },
+            headers={"Authorization": f"Token {orga_user_write_token.token}"},
         )
         content = json.loads(response.text)
         assert response.status_code == 200
@@ -377,9 +364,7 @@ def test_orga_cannot_assign_track_from_other_event(
             "limit_tracks": [other_track.pk],
         },
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
 
     assert response.status_code == 400, response.text

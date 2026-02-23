@@ -85,18 +85,12 @@ def reverse_populate_profile_pictures(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0034_speakerprofile_and_profilepicture"),
-    ]
+    dependencies = [("person", "0034_speakerprofile_and_profilepicture")]
 
     operations = [
+        migrations.RunPython(deduplicate_speaker_profiles, migrations.RunPython.noop),
         migrations.RunPython(
-            deduplicate_speaker_profiles,
-            migrations.RunPython.noop,
-        ),
-        migrations.RunPython(
-            populate_speaker_profile_fields,
-            migrations.RunPython.noop,
+            populate_speaker_profile_fields, migrations.RunPython.noop
         ),
         migrations.RunPython(
             populate_profile_pictures, reverse_populate_profile_pictures

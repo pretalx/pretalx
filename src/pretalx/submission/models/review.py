@@ -223,15 +223,11 @@ class ReviewPhase(OrderedModel, PretalxModel):
     is_active = models.BooleanField(default=False)
 
     can_review = models.BooleanField(
-        verbose_name=_("Reviewers can write and edit reviews"),
-        default=True,
+        verbose_name=_("Reviewers can write and edit reviews"), default=True
     )
     proposal_visibility = models.CharField(
         verbose_name=_("Reviewers may see these proposals"),
-        choices=(
-            ("all", _("All")),
-            ("assigned", _("Only assigned proposals")),
-        ),
+        choices=(("all", _("All")), ("assigned", _("Only assigned proposals"))),
         max_length=8,
         default="all",
         help_text=_(
@@ -250,16 +246,13 @@ class ReviewPhase(OrderedModel, PretalxModel):
         default="after_review",
     )
     can_see_speaker_names = models.BooleanField(
-        verbose_name=_("Reviewers can see speaker names"),
-        default=True,
+        verbose_name=_("Reviewers can see speaker names"), default=True
     )
     can_see_reviewer_names = models.BooleanField(
-        verbose_name=_("Reviewers can see the names of other reviewers"),
-        default=True,
+        verbose_name=_("Reviewers can see the names of other reviewers"), default=True
     )
     can_change_submission_state = models.BooleanField(
-        verbose_name=_("Reviewers can accept and reject proposals"),
-        default=False,
+        verbose_name=_("Reviewers can accept and reject proposals"), default=False
     )
     can_tag_submissions = models.CharField(
         verbose_name=_("Reviewers can tag proposals"),

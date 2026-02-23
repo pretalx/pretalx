@@ -8,9 +8,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("common", "0003_activitylog_is_orga_action"),
-    ]
+    dependencies = [("common", "0003_activitylog_is_orga_action")]
 
     operations = [
         migrations.AlterField(
@@ -23,5 +21,5 @@ class Migration(migrations.Migration):
                 related_name="log_entries",
                 to="event.Event",
             ),
-        ),
+        )
     ]

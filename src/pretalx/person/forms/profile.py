@@ -27,11 +27,7 @@ from pretalx.common.forms.widgets import (
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.event.models import Event
-from pretalx.person.models import (
-    SpeakerInformation,
-    SpeakerProfile,
-    User,
-)
+from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
 from pretalx.schedule.models import Availability
 from pretalx.submission.models import Question
 from pretalx.submission.models.submission import SubmissionStates
@@ -45,12 +41,7 @@ def get_email_address_error():
     )
 
 
-class SpeakerProfileForm(
-    CfPFormMixin,
-    ReadOnlyFlag,
-    RequestRequire,
-    forms.ModelForm,
-):
+class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.ModelForm):
     USER_FIELDS = ["email"]
     FIRST_TIME_EXCLUDE = ["email"]
 
@@ -200,10 +191,7 @@ class SpeakerProfileForm(
 
     class Meta:
         model = SpeakerProfile
-        fields = (
-            "biography",
-            "internal_notes",
-        )
+        fields = ("biography", "internal_notes")
         public_fields = ["name", "biography", "avatar"]
         request_require = {"avatar", "biography", "availabilities"}
 
@@ -341,9 +329,7 @@ class UserSpeakerFilterForm(forms.Form):
         widget=EnhancedSelect,
     )
     events = SafeModelMultipleChoiceField(
-        queryset=Event.objects.none(),
-        required=False,
-        widget=EnhancedSelectMultiple,
+        queryset=Event.objects.none(), required=False, widget=EnhancedSelectMultiple
     )
 
     def __init__(self, *args, events=None, **kwargs):

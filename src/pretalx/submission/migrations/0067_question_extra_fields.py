@@ -7,9 +7,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0066_submission_assignments"),
-    ]
+    dependencies = [("submission", "0066_submission_assignments")]
 
     operations = [
         migrations.AddField(

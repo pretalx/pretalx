@@ -18,36 +18,16 @@ from pretalx.common.urls import EventUrls
 
 
 def default_settings():
-    return {
-        "flow": {},
-        "count_length_in": "chars",
-        "show_deadline": True,
-    }
+    return {"flow": {}, "count_length_in": "chars", "show_deadline": True}
 
 
 _DEFAULT_FIELDS = {
     "name": {"visibility": "required"},
-    "title": {
-        "visibility": "required",
-        "min_length": None,
-        "max_length": None,
-    },
+    "title": {"visibility": "required", "min_length": None, "max_length": None},
     "submission_type": {"visibility": "required"},
-    "abstract": {
-        "visibility": "required",
-        "min_length": None,
-        "max_length": None,
-    },
-    "description": {
-        "visibility": "optional",
-        "min_length": None,
-        "max_length": None,
-    },
-    "biography": {
-        "visibility": "required",
-        "min_length": None,
-        "max_length": None,
-    },
+    "abstract": {"visibility": "required", "min_length": None, "max_length": None},
+    "description": {"visibility": "optional", "min_length": None, "max_length": None},
+    "biography": {"visibility": "required", "min_length": None, "max_length": None},
     "avatar": {"visibility": "optional"},
     "availabilities": {"visibility": "do_not_ask"},
     "notes": {"visibility": "optional"},

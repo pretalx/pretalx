@@ -9,15 +9,10 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0006_auto_20170913_1142"),
-    ]
+    dependencies = [("submission", "0006_auto_20170913_1142")]
 
     operations = [
-        migrations.RemoveField(
-            model_name="submission",
-            name="accept_feedback",
-        ),
+        migrations.RemoveField(model_name="submission", name="accept_feedback"),
         migrations.AlterField(
             model_name="cfp",
             name="deadline",
@@ -43,9 +38,7 @@ class Migration(migrations.Migration):
             field=i18nfield.fields.I18nTextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name="feedback",
-            name="review",
-            field=models.TextField(),
+            model_name="feedback", name="review", field=models.TextField()
         ),
         migrations.AlterField(
             model_name="question",
@@ -53,9 +46,7 @@ class Migration(migrations.Migration):
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name="question",
-            name="position",
-            field=models.IntegerField(default=0),
+            model_name="question", name="position", field=models.IntegerField(default=0)
         ),
         migrations.AlterField(
             model_name="question",

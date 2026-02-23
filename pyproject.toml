@@ -176,6 +176,9 @@ exclude_also = [
   "NotImplementedError",
 ]
 
+[tool.ruff.format]
+skip-magic-trailing-comma = true
+
 [tool.ruff.lint]
 extend-select = [
   "A",  # flake8-builtins

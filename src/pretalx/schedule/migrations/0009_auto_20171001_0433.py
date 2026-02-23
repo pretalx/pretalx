@@ -9,9 +9,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("schedule", "0008_auto_20170916_0421"),
-    ]
+    dependencies = [("schedule", "0008_auto_20170916_0421")]
 
     operations = [
         migrations.AlterField(

@@ -12,9 +12,7 @@ def update_question_required(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0057_question_required_freeze"),
-    ]
+    dependencies = [("submission", "0057_question_required_freeze")]
 
     operations = [
         migrations.RunPython(update_question_required, migrations.RunPython.noop)

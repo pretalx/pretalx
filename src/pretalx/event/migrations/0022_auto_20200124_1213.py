@@ -8,9 +8,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0021_auto_20190429_0750"),
-    ]
+    dependencies = [("event", "0021_auto_20190429_0750")]
 
     operations = [
         migrations.AlterField(
@@ -25,5 +23,5 @@ class Migration(migrations.Migration):
                     )
                 ],
             ),
-        ),
+        )
     ]

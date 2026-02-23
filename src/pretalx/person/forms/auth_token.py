@@ -66,9 +66,7 @@ class AuthTokenForm(forms.ModelForm):
     class Meta:
         model = UserApiToken
         fields = ["name", "events", "expires", "permission_preset"]
-        widgets = {
-            "events": EnhancedSelectMultiple,
-        }
+        widgets = {"events": EnhancedSelectMultiple}
 
     def clean(self):
         data = super().clean()

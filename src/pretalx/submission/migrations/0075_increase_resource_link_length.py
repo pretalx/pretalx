@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0074_created_updated_everywhere"),
-    ]
+    dependencies = [("submission", "0074_created_updated_everywhere")]
 
     operations = [
         migrations.AlterField(
             model_name="resource",
             name="link",
             field=models.URLField(max_length=400, null=True),
-        ),
+        )
     ]

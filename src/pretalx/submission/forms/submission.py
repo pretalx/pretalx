@@ -305,7 +305,7 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
         widgets = {
             "track": EnhancedSelect(
                 description_field="description", color_field="color"
-            ),
+            )
         }
         field_classes = {
             "submission_type": SubmissionTypeField,
@@ -331,8 +331,7 @@ class SubmissionFilterForm(forms.Form):
         widget=SelectMultipleWithCount(attrs={"title": _("Session types")}),
     )
     pending_state__isnull = forms.BooleanField(
-        required=False,
-        label=_("exclude pending"),
+        required=False, label=_("exclude pending")
     )
     content_locale = forms.MultipleChoiceField(
         required=False,

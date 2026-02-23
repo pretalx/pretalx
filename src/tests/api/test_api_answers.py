@@ -234,12 +234,7 @@ def test_fields_required_on_create(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    ("is_detail", "method"),
-    (
-        (False, "post"),
-        (True, "put"),
-        (True, "patch"),
-    ),
+    ("is_detail", "method"), ((False, "post"), (True, "put"), (True, "patch"))
 )
 def test_field_answer_may_not_be_blank(
     event, orga_user_write_token, client, answer, is_detail, method
@@ -269,12 +264,7 @@ def test_answer_validation_submission_question(
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps(
-            {
-                "question": question.pk,
-                "answer": "Test answer",
-            }
-        ),
+        data=json.dumps({"question": question.pk, "answer": "Test answer"}),
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -309,12 +299,7 @@ def test_answer_validation_reviewer_question(
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps(
-            {
-                "question": question.pk,
-                "answer": "Test answer",
-            }
-        ),
+        data=json.dumps({"question": question.pk, "answer": "Test answer"}),
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -349,12 +334,7 @@ def test_answer_validation_speaker_question(
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps(
-            {
-                "question": question.pk,
-                "answer": "Test answer",
-            }
-        ),
+        data=json.dumps({"question": question.pk, "answer": "Test answer"}),
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )

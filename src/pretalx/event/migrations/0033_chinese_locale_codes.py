@@ -34,13 +34,11 @@ def fix_locale_codes(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0032_alter_event_timezone"),
-    ]
+    dependencies = [("event", "0032_alter_event_timezone")]
 
     operations = [
         migrations.RunPython(
             fix_locale_codes,
             migrations.RunPython.noop,  # Fixing a bug, so we're not reverting
-        ),
+        )
     ]

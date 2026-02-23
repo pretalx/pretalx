@@ -23,16 +23,11 @@ class Tag(PretalxModel):
     )
 
     tag = models.CharField(verbose_name=_("Tag"), max_length=50)
-    description = I18nTextField(
-        verbose_name=_("Description"),
-        blank=True,
-    )
+    description = I18nTextField(verbose_name=_("Description"), blank=True)
     color = models.CharField(
         max_length=7,
         verbose_name=_("Colour"),
-        validators=[
-            RegexValidator("#([0-9A-Fa-f]{3}){1,2}"),
-        ],
+        validators=[RegexValidator("#([0-9A-Fa-f]{3}){1,2}")],
     )
     is_public = models.BooleanField(
         default=False,

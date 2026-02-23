@@ -210,9 +210,7 @@ class WriteMailBaseForm(MailTemplateForm):
 
 class WriteTeamsMailForm(WriteMailBaseForm):
     recipients = forms.MultipleChoiceField(
-        label=_("Recipient groups"),
-        required=False,
-        widget=EnhancedSelectMultiple,
+        label=_("Recipient groups"), required=False, widget=EnhancedSelectMultiple
     )
 
     def __init__(self, *args, **kwargs):
@@ -226,14 +224,8 @@ class WriteTeamsMailForm(WriteMailBaseForm):
         other_teams = self.event.teams.exclude(is_reviewer=True)
         if reviewer_teams and other_teams:
             self.fields["recipients"].choices = [
-                (
-                    _("Reviewers"),
-                    [(team.pk, team.name) for team in reviewer_teams],
-                ),
-                (
-                    _("Other teams"),
-                    [(team.pk, team.name) for team in other_teams],
-                ),
+                (_("Reviewers"), [(team.pk, team.name) for team in reviewer_teams]),
+                (_("Other teams"), [(team.pk, team.name) for team in other_teams]),
             ]
         else:
             self.fields["recipients"].choices = [
@@ -373,18 +365,11 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
         for submission in submissions:
             for slot in submission.current_slots or []:
                 result.extend(
-                    {
-                        "submission": submission,
-                        "slot": slot,
-                        "user": speaker,
-                    }
+                    {"submission": submission, "slot": slot, "user": speaker}
                     for speaker in submission.sorted_speakers
                 )
             result.extend(
-                {
-                    "submission": submission,
-                    "user": speaker,
-                }
+                {"submission": submission, "user": speaker}
                 for speaker in submission.sorted_speakers
             )
         if added_speakers:
@@ -462,8 +447,7 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
 
 class QueuedMailFilterForm(forms.Form):
     status = forms.MultipleChoiceField(
-        required=False,
-        widget=SelectMultipleWithCount(attrs={"title": _("Status")}),
+        required=False, widget=SelectMultipleWithCount(attrs={"title": _("Status")})
     )
     track = forms.ModelMultipleChoiceField(
         required=False,
@@ -513,11 +497,7 @@ class QueuedMailFilterForm(forms.Form):
                     mail_filter &= Q(submissions__mails__state=QueuedMailStates.DRAFT)
 
             self.fields["track"].queryset = event.tracks.annotate(
-                count=Count(
-                    "submissions__mails",
-                    distinct=True,
-                    filter=mail_filter,
-                )
+                count=Count("submissions__mails", distinct=True, filter=mail_filter)
             ).order_by("-count")
 
     def filter_queryset(self, qs):

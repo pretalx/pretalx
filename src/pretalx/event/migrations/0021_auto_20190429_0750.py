@@ -8,9 +8,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0020_event_header_image"),
-    ]
+    dependencies = [("event", "0020_event_header_image")]
 
     operations = [
         migrations.AlterField(
@@ -24,5 +22,5 @@ class Migration(migrations.Migration):
                     django.core.validators.RegexValidator("#([0-9A-Fa-f]{3}){1,2}")
                 ],
             ),
-        ),
+        )
     ]

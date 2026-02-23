@@ -8,14 +8,7 @@ from pretalx.common.forms.validators import ZXCVBNValidator
 
 
 @pytest.mark.parametrize(
-    ("score", "works"),
-    (
-        (-1, False),
-        (0, True),
-        (2, True),
-        (4, True),
-        (5, False),
-    ),
+    ("score", "works"), ((-1, False), (0, True), (2, True), (4, True), (5, False))
 )
 def test_zxcvbn_validator_init_works(score, works):
     if works:
@@ -26,11 +19,7 @@ def test_zxcvbn_validator_init_works(score, works):
 
 
 @pytest.mark.parametrize(
-    ("password", "works"),
-    (
-        ("password", False),
-        ("theMightyPassword", True),
-    ),
+    ("password", "works"), (("password", False), ("theMightyPassword", True))
 )
 def test_password_validation(password, works):
     if works:

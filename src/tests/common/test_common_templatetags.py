@@ -65,17 +65,9 @@ def test_render_markdown_plaintext(text, expected):
     ("text", "richer_text", "noopener"),
     (
         ("foo.notatld", "foo.notatld", False),
-        (
-            "foo.com",
-            "//foo.com",
-            True,
-        ),
+        ("foo.com", "//foo.com", True),
         ("foo@bar.com", "mailto:foo@bar.com", False),
-        (
-            "chaos.social",
-            "//chaos.social",
-            True,
-        ),
+        ("chaos.social", "//chaos.social", True),
     ),
 )
 def test_common_templatetag_rich_text(text, richer_text, noopener):

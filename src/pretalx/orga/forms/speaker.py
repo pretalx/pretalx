@@ -29,18 +29,14 @@ class SpeakerExportForm(ExportForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["email"] = forms.BooleanField(
-            required=False,
-            label=_("Email"),
-        )
+        self.fields["email"] = forms.BooleanField(required=False, label=_("Email"))
         self.fields["submission_ids"] = forms.BooleanField(
             required=False,
             label=_("Proposal IDs"),
             help_text=phrases.orga.proposal_id_help_text,
         )
         self.fields["submission_titles"] = forms.BooleanField(
-            required=False,
-            label=_("Proposal titles"),
+            required=False, label=_("Proposal titles")
         )
         self.fields["avatar"] = forms.BooleanField(
             required=False,

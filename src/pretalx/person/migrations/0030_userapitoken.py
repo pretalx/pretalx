@@ -53,14 +53,12 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={
-                "abstract": False,
-            },
+            options={"abstract": False},
             bases=(
                 pretalx.common.models.mixins.LogMixin,
                 pretalx.common.models.mixins.FileCleanupMixin,
                 rules.contrib.models.RulesModelMixin,
                 models.Model,
             ),
-        ),
+        )
     ]

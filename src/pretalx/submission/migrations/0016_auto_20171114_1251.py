@@ -7,9 +7,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0015_question_contains_personal_data"),
-    ]
+    dependencies = [("submission", "0015_question_contains_personal_data")]
 
     operations = [
         migrations.AddField(

@@ -8,14 +8,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0044_submission_anonymised_data"),
-    ]
+    dependencies = [("submission", "0044_submission_anonymised_data")]
 
     operations = [
         migrations.AlterField(
             model_name="question",
             name="help_text",
             field=i18nfield.fields.I18nCharField(blank=True, max_length=800, null=True),
-        ),
+        )
     ]

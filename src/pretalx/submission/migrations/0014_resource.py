@@ -10,9 +10,7 @@ import pretalx.common.models.mixins
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0013_auto_20171104_1040"),
-    ]
+    dependencies = [("submission", "0013_auto_20171104_1040")]
 
     operations = [
         migrations.CreateModel(
@@ -39,5 +37,5 @@ class Migration(migrations.Migration):
                 ),
             ],
             bases=(pretalx.common.models.mixins.LogMixin, models.Model),
-        ),
+        )
     ]

@@ -98,8 +98,6 @@ def update_custom_domain(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0061_cfp_settings"),
-    ]
+    dependencies = [("submission", "0061_cfp_settings")]
 
     operations = [migrations.RunPython(update_custom_domain, migrations.RunPython.noop)]

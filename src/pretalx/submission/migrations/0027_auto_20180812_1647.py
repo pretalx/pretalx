@@ -8,14 +8,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0026_auto_20180811_1827"),
-    ]
+    dependencies = [("submission", "0026_auto_20180811_1827")]
 
     operations = [
         migrations.AlterField(
             model_name="question",
             name="question",
             field=i18nfield.fields.I18nCharField(max_length=800),
-        ),
+        )
     ]

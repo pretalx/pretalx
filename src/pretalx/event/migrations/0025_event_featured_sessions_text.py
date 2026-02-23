@@ -8,14 +8,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0024_remove_team_review_override_votes"),
-    ]
+    dependencies = [("event", "0024_remove_team_review_override_votes")]
 
     operations = [
         migrations.AddField(
             model_name="event",
             name="featured_sessions_text",
             field=i18nfield.fields.I18nTextField(null=True),
-        ),
+        )
     ]

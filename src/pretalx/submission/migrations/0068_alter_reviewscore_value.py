@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0067_question_extra_fields"),
-    ]
+    dependencies = [("submission", "0067_question_extra_fields")]
 
     operations = [
         migrations.AlterField(
             model_name="reviewscore",
             name="value",
             field=models.DecimalField(decimal_places=2, max_digits=7),
-        ),
+        )
     ]

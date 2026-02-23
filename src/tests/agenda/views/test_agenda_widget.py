@@ -10,22 +10,12 @@ from django_scopes import scope
 )
 @pytest.mark.parametrize(
     ("show_schedule", "show_widget_if_not_public", "expected"),
-    (
-        (True, False, 200),
-        (True, True, 200),
-        (False, False, 404),
-        (False, True, 200),
-    ),
+    ((True, False, 200), (True, True, 200), (False, False, 404), (False, True, 200)),
 )
 @pytest.mark.django_db
 @pytest.mark.usefixtures("slot", "other_slot")
 def test_widget_pages(
-    event,
-    client,
-    url,
-    show_schedule,
-    show_widget_if_not_public,
-    expected,
+    event, client, url, show_schedule, show_widget_if_not_public, expected
 ):
     event.feature_flags["show_schedule"] = show_schedule
     event.feature_flags["show_widget_if_not_public"] = show_widget_if_not_public
@@ -36,11 +26,7 @@ def test_widget_pages(
 
 @pytest.mark.django_db
 @pytest.mark.usefixtures("slot", "other_slot")
-def test_widget_data(
-    client,
-    event,
-    django_assert_num_queries,
-):
+def test_widget_data(client, event, django_assert_num_queries):
     event.feature_flags["show_schedule"] = True
     event.save()
     with django_assert_num_queries(9):

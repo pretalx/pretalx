@@ -5,19 +5,13 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0098_migrate_access_code_fks_to_m2m"),
-    ]
+    dependencies = [("submission", "0098_migrate_access_code_fks_to_m2m")]
 
     operations = [
         migrations.RemoveField(
-            model_name="submitteraccesscode",
-            name="submission_type",
+            model_name="submitteraccesscode", name="submission_type"
         ),
-        migrations.RemoveField(
-            model_name="submitteraccesscode",
-            name="track",
-        ),
+        migrations.RemoveField(model_name="submitteraccesscode", name="track"),
         migrations.AlterField(
             model_name="submitteraccesscode",
             name="submission_types",

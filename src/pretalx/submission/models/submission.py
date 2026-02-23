@@ -213,9 +213,7 @@ class Submission(GenerateCode, PretalxModel):
         blank=True,
     )
     tags = models.ManyToManyField(
-        to="submission.Tag",
-        related_name="submissions",
-        verbose_name=_("Tags"),
+        to="submission.Tag", related_name="submissions", verbose_name=_("Tags")
     )
     state = models.CharField(
         max_length=SubmissionStates.get_max_length(),
@@ -231,16 +229,8 @@ class Submission(GenerateCode, PretalxModel):
         default=None,
         verbose_name=_("Pending proposal state"),
     )
-    abstract = MarkdownField(
-        null=True,
-        blank=True,
-        verbose_name=_("Abstract"),
-    )
-    description = MarkdownField(
-        null=True,
-        blank=True,
-        verbose_name=_("Description"),
-    )
+    abstract = MarkdownField(null=True, blank=True, verbose_name=_("Abstract"))
+    description = MarkdownField(null=True, blank=True, verbose_name=_("Description"))
     notes = MarkdownField(
         null=True,
         blank=True,
@@ -270,9 +260,7 @@ class Submission(GenerateCode, PretalxModel):
         validators=[MinValueValidator(1)],
     )
     content_locale = models.CharField(
-        max_length=32,
-        default=settings.LANGUAGE_CODE,
-        verbose_name=_("Language"),
+        max_length=32, default=settings.LANGUAGE_CODE, verbose_name=_("Language")
     )
     is_featured = models.BooleanField(
         default=False,
@@ -514,10 +502,7 @@ class Submission(GenerateCode, PretalxModel):
         super().save(*args, **kwargs)
         if is_creating and self.state != SubmissionStates.DRAFT:
             submission_state_change.send_robust(
-                self.event,
-                submission=self,
-                old_state=None,
-                user=None,
+                self.event, submission=self, old_state=None, user=None
             )
 
     def _get_instance_data(self):
@@ -566,10 +551,7 @@ class Submission(GenerateCode, PretalxModel):
         )
         if not is_initial:
             responses = before_submission_state_change.send_robust(
-                self.event,
-                submission=self,
-                new_state=new_state,
-                user=person,
+                self.event, submission=self, new_state=new_state, user=person
             )
             exceptions = [r[1] for r in responses if isinstance(r[1], SubmissionError)]
             if exceptions:
@@ -615,8 +597,7 @@ class Submission(GenerateCode, PretalxModel):
             return
 
         slot_count_current = TalkSlot.objects.filter(
-            submission=self,
-            schedule=self.event.wip_schedule,
+            submission=self, schedule=self.event.wip_schedule
         ).count()
         diff = slot_count_current - self.slot_count
 
@@ -625,8 +606,7 @@ class Submission(GenerateCode, PretalxModel):
             # We delete unscheduled talks first.
             talks_to_delete = (
                 TalkSlot.objects.filter(
-                    submission=self,
-                    schedule=self.event.wip_schedule,
+                    submission=self, schedule=self.event.wip_schedule
                 )
                 .order_by("start", "room", "is_visible")[:diff]
                 .values_list("id", flat=True)
@@ -635,8 +615,7 @@ class Submission(GenerateCode, PretalxModel):
         elif diff < 0:
             for __ in repeat(None, abs(diff)):
                 TalkSlot.objects.create(
-                    submission=self,
-                    schedule=self.event.wip_schedule,
+                    submission=self, schedule=self.event.wip_schedule
                 )
         TalkSlot.objects.filter(
             submission=self, schedule=self.event.wip_schedule
@@ -660,13 +639,8 @@ class Submission(GenerateCode, PretalxModel):
         template.to_mail(
             user=person,
             event=self.event,
-            context_kwargs={
-                "user": person,
-                "submission": self,
-            },
-            context={
-                "full_submission_content": self.get_content_for_mail(),
-            },
+            context_kwargs={"user": person, "submission": self},
+            context={"full_submission_content": self.get_content_for_mail()},
             skip_queue=True,
             commit=True,  # Send immediately, but save a record
             locale=self.get_email_locale(person.locale),
@@ -681,10 +655,7 @@ class Submission(GenerateCode, PretalxModel):
             ).to_mail(
                 user=self.event.email,
                 event=self.event,
-                context_kwargs={
-                    "user": person,
-                    "submission": self,
-                },
+                context_kwargs={"user": person, "submission": self},
                 context={"orga_url": self.orga_urls.base.full()},
                 skip_queue=True,
                 commit=False,  # Send immediately, don't save a record
@@ -692,10 +663,7 @@ class Submission(GenerateCode, PretalxModel):
             )
 
     def make_submitted(
-        self,
-        person=None,
-        orga: bool = False,
-        from_pending: bool = False,
+        self, person=None, orga: bool = False, from_pending: bool = False
     ):
         """Sets the submission's state to 'submitted'."""
         previous = self.state
@@ -710,12 +678,7 @@ class Submission(GenerateCode, PretalxModel):
 
     make_submitted.alters_data = True
 
-    def confirm(
-        self,
-        person=None,
-        orga: bool = False,
-        from_pending: bool = False,
-    ):
+    def confirm(self, person=None, orga: bool = False, from_pending: bool = False):
         """Sets the submission's state to 'confirmed'."""
         previous = self.state
         self._set_state(SubmissionStates.CONFIRMED, person=person)
@@ -728,12 +691,7 @@ class Submission(GenerateCode, PretalxModel):
 
     confirm.alters_data = True
 
-    def accept(
-        self,
-        person=None,
-        orga: bool = True,
-        from_pending: bool = False,
-    ):
+    def accept(self, person=None, orga: bool = True, from_pending: bool = False):
         """Sets the submission's state to 'accepted'.
 
         Creates an acceptance :class:`~pretalx.mail.models.QueuedMail`
@@ -753,12 +711,7 @@ class Submission(GenerateCode, PretalxModel):
 
     accept.alters_data = True
 
-    def reject(
-        self,
-        person=None,
-        orga: bool = True,
-        from_pending: bool = False,
-    ):
+    def reject(self, person=None, orga: bool = True, from_pending: bool = False):
         """Sets the submission's state to 'rejected' and creates a rejection.
 
         :class:`~pretalx.mail.models.QueuedMail`.
@@ -822,12 +775,7 @@ class Submission(GenerateCode, PretalxModel):
 
     send_state_mail.alters_data = True
 
-    def cancel(
-        self,
-        person=None,
-        orga: bool = True,
-        from_pending: bool = False,
-    ):
+    def cancel(self, person=None, orga: bool = True, from_pending: bool = False):
         """Sets the submission's state to 'canceled'."""
         previous = self.state
         self._set_state(SubmissionStates.CANCELED, person=person)
@@ -840,12 +788,7 @@ class Submission(GenerateCode, PretalxModel):
 
     cancel.alters_data = True
 
-    def withdraw(
-        self,
-        person=None,
-        orga: bool = False,
-        from_pending: bool = False,
-    ):
+    def withdraw(self, person=None, orga: bool = False, from_pending: bool = False):
         """Sets the submission's state to 'withdrawn'."""
         previous = self.state
         self._set_state(SubmissionStates.WITHDRAWN, person=person)
@@ -951,8 +894,7 @@ class Submission(GenerateCode, PretalxModel):
         if not self.sorted_speakers:
             return title
         return _("{title_in_quotes} by {list_of_speakers}").format(
-            title_in_quotes=title,
-            list_of_speakers=self.display_speaker_names,
+            title_in_quotes=title, list_of_speakers=self.display_speaker_names
         )
 
     @cached_property
@@ -1211,14 +1153,10 @@ class Submission(GenerateCode, PretalxModel):
 
 class SubmissionFavourite(PretalxModel):
     user = models.ForeignKey(
-        to="person.User",
-        on_delete=models.CASCADE,
-        related_name="submission_favourites",
+        to="person.User", on_delete=models.CASCADE, related_name="submission_favourites"
     )
     submission = models.ForeignKey(
-        to="submission.Submission",
-        on_delete=models.CASCADE,
-        related_name="favourites",
+        to="submission.Submission", on_delete=models.CASCADE, related_name="favourites"
     )
     objects = ScopedManager(event="submission__event")
 
@@ -1235,16 +1173,10 @@ class SubmissionInvitation(PretalxModel):
     """
 
     submission = models.ForeignKey(
-        to="submission.Submission",
-        related_name="invitations",
-        on_delete=models.CASCADE,
+        to="submission.Submission", related_name="invitations", on_delete=models.CASCADE
     )
     email = models.EmailField(verbose_name=_("Email"))
-    token = models.CharField(
-        default=generate_invite_code,
-        max_length=64,
-        unique=True,
-    )
+    token = models.CharField(default=generate_invite_code, max_length=64, unique=True)
 
     objects = ScopedManager(event="submission__event")
 

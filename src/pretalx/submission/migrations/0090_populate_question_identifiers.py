@@ -29,10 +29,6 @@ def reverse_populate(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0089_add_question_identifier"),
-    ]
+    dependencies = [("submission", "0089_add_question_identifier")]
 
-    operations = [
-        migrations.RunPython(populate_question_identifiers, reverse_populate),
-    ]
+    operations = [migrations.RunPython(populate_question_identifiers, reverse_populate)]

@@ -17,8 +17,7 @@ with scopes_disabled():
             to_field_name="code",
         )
         schedule = django_filters.ModelChoiceFilter(
-            queryset=Schedule.objects.none(),
-            field_name="schedule",
+            queryset=Schedule.objects.none(), field_name="schedule"
         )
         schedule_version = django_filters.ModelChoiceFilter(
             queryset=Schedule.objects.none(),
@@ -31,8 +30,7 @@ with scopes_disabled():
             to_field_name="code",
         )
         room = django_filters.ModelChoiceFilter(
-            queryset=Room.objects.none(),
-            field_name="room",
+            queryset=Room.objects.none(), field_name="room"
         )
 
         def __init__(self, *args, event=None, **kwargs):

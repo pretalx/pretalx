@@ -9,12 +9,10 @@ from pretalx.submission.models import Answer
 class AnswerFilterSet(django_filters.FilterSet):
     question = django_filters.NumberFilter(field_name="question_id")
     submission = django_filters.CharFilter(
-        field_name="submission__code",
-        lookup_expr="iexact",
+        field_name="submission__code", lookup_expr="iexact"
     )
     speaker = django_filters.CharFilter(
-        field_name="speaker__code",
-        lookup_expr="iexact",
+        field_name="speaker__code", lookup_expr="iexact"
     )
     review = django_filters.NumberFilter(field_name="review_id")
 

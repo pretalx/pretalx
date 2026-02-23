@@ -162,7 +162,7 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             self.add_error(
                 "end",
                 forms.ValidationError(
-                    _("The end time has to be after the start time."),
+                    _("The end time has to be after the start time.")
                 ),
             )
         if room and not start:
@@ -308,12 +308,7 @@ class AnonymiseForm(SubmissionForm):
 
     class Meta:
         model = Submission
-        fields = [
-            "title",
-            "abstract",
-            "description",
-            "notes",
-        ]
+        fields = ["title", "abstract", "description", "notes"]
         request_require = fields
 
 

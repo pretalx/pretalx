@@ -174,10 +174,7 @@ def default_activitylog_display(sender: Event, activitylog: ActivityLog, **kwarg
 
 
 def _submission_label_text(submission: Submission) -> str:
-    if submission.state in (
-        SubmissionStates.ACCEPTED,
-        SubmissionStates.CONFIRMED,
-    ):
+    if submission.state in (SubmissionStates.ACCEPTED, SubmissionStates.CONFIRMED):
         return _n("Session", "Sessions", 1)
     return _n("Proposal", "Proposals", 1)
 

@@ -22,17 +22,14 @@ class AdminUserTable(PretalxTable):
         template_name="orga/includes/user_name.html",
         context_object_name="user",
     )
-    email = SortableTemplateColumn(
-        template_name="orga/tables/columns/copyable.html",
-    )
+    email = SortableTemplateColumn(template_name="orga/tables/columns/copyable.html")
     teams = TemplateColumn(
         template_name="orga/tables/columns/admin_user_teams.html",
         verbose_name=_("Teams"),
         orderable=False,
     )
     events = TemplateColumn(
-        template_name="orga/tables/columns/admin_user_events.html",
-        orderable=False,
+        template_name="orga/tables/columns/admin_user_events.html", orderable=False
     )
     submission_count = tables.Column(
         verbose_name=_("Submissions"),

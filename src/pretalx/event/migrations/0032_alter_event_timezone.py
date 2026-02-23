@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0031_initial_content_locale"),
-    ]
+    dependencies = [("event", "0031_initial_content_locale")]
 
     operations = [
         migrations.AlterField(
             model_name="event",
             name="timezone",
             field=models.CharField(default="UTC", max_length=32),
-        ),
+        )
     ]

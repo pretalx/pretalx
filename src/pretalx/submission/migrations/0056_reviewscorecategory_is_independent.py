@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0055_unset_is_featured_flag"),
-    ]
+    dependencies = [("submission", "0055_unset_is_featured_flag")]
 
     operations = [
         migrations.AddField(
             model_name="reviewscorecategory",
             name="is_independent",
             field=models.BooleanField(default=False),
-        ),
+        )
     ]

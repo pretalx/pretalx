@@ -8,14 +8,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0059_remove_question_required"),
-    ]
+    dependencies = [("submission", "0059_remove_question_required")]
 
     operations = [
         migrations.AlterField(
             model_name="answeroption",
             name="answer",
             field=i18nfield.fields.I18nCharField(),
-        ),
+        )
     ]

@@ -9,9 +9,7 @@ import pretalx.event.models.event
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0035_created_updated_everywhere"),
-    ]
+    dependencies = [("event", "0035_created_updated_everywhere")]
 
     operations = [
         migrations.AlterField(

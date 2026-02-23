@@ -40,11 +40,7 @@ urlpatterns = [
     ),
     path("me", person.UserSettings.as_view(), name="user.view"),
     path("me/subuser", person.SubuserView.as_view(), name="user.subuser"),
-    path(
-        "invitation/<code>",
-        event.InvitationView.as_view(),
-        name="invitation.view",
-    ),
+    path("invitation/<code>", event.InvitationView.as_view(), name="invitation.view"),
     path("start/redirect", dashboard.start_redirect_view, name="start.redirect"),
     path(
         "organiser/",
@@ -75,9 +71,7 @@ urlpatterns = [
                     "api/users/", organiser.speaker_search, name="organiser.user_list"
                 ),
                 *organiser.TeamView.get_urls(
-                    url_base="teams",
-                    url_name="organiser.teams",
-                    namespace="orga",
+                    url_base="teams", url_name="organiser.teams", namespace="orga"
                 ),
                 path(
                     "teams/<int:team_pk>/members/<int:user_pk>/delete/",
@@ -133,9 +127,7 @@ urlpatterns = [
                     name="event.history.detail",
                 ),
                 path(
-                    "preferences/",
-                    person.PreferencesView.as_view(),
-                    name="preferences",
+                    "preferences/", person.PreferencesView.as_view(), name="preferences"
                 ),
                 path(
                     "cfp/",
@@ -181,9 +173,7 @@ urlpatterns = [
                     ),
                 ),
                 *cfp.QuestionView.get_urls(
-                    url_base="cfp/questions",
-                    url_name="cfp.questions",
-                    namespace="orga",
+                    url_base="cfp/questions", url_name="cfp.questions", namespace="orga"
                 ),
                 path(
                     "cfp/questions/remind/",
@@ -202,9 +192,7 @@ urlpatterns = [
                 ),
                 path("cfp/text", cfp.CfPTextDetail.as_view(), name="cfp.text.view"),
                 *cfp.SubmissionTypeView.get_urls(
-                    url_base="cfp/types",
-                    url_name="cfp.types",
-                    namespace="orga",
+                    url_base="cfp/types", url_name="cfp.types", namespace="orga"
                 ),
                 path(
                     "cfp/types/<int:pk>/default/",
@@ -212,9 +200,7 @@ urlpatterns = [
                     name="cfp.type.default",
                 ),
                 *cfp.TrackView.get_urls(
-                    url_base="cfp/tracks",
-                    url_name="cfp.tracks",
-                    namespace="orga",
+                    url_base="cfp/tracks", url_name="cfp.tracks", namespace="orga"
                 ),
                 *cfp.AccessCodeView.get_urls(
                     url_base="cfp/access-codes",
@@ -490,20 +476,14 @@ urlpatterns = [
                     ),
                 ),
                 *speaker.SpeakerInformationView.get_urls(
-                    url_base="info",
-                    url_name="speakers.information",
-                    namespace="orga",
+                    url_base="info", url_name="speakers.information", namespace="orga"
                 ),
                 path(
                     "reviews/",
                     review.ReviewDashboard.as_view(),
                     name="reviews.dashboard",
                 ),
-                path(
-                    "reviews/bulk/",
-                    review.BulkReview.as_view(),
-                    name="reviews.bulk",
-                ),
+                path("reviews/bulk/", review.BulkReview.as_view(), name="reviews.bulk"),
                 path(
                     "reviews/bulk-tag/",
                     review.BulkTagging.as_view(),
@@ -530,9 +510,7 @@ urlpatterns = [
                     name="reviews.export",
                 ),
                 path(
-                    "settings/",
-                    event.EventDetail.as_view(),
-                    name="settings.event.view",
+                    "settings/", event.EventDetail.as_view(), name="settings.event.view"
                 ),
                 path(
                     "settings/mail",
@@ -562,7 +540,7 @@ urlpatterns = [
                                 "activate",
                                 event.PhaseActivate.as_view(),
                                 name="settings.review.phase.activate",
-                            ),
+                            )
                         ]
                     ),
                 ),

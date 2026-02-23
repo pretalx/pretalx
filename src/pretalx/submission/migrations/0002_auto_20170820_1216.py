@@ -16,10 +16,8 @@ def strip_submission_codes(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0001_initial"),
-    ]
+    dependencies = [("submission", "0001_initial")]
 
     operations = [
-        migrations.RunPython(strip_submission_codes, migrations.RunPython.noop),
+        migrations.RunPython(strip_submission_codes, migrations.RunPython.noop)
     ]

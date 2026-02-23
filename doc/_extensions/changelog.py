@@ -23,21 +23,9 @@ from collections import defaultdict
 from docutils import nodes, utils
 
 ISSUE_TYPES = {
-    "bug": {
-        "color": "A04040",
-        "label": "Fixed bug",
-        "order": 1,
-    },
-    "feature": {
-        "color": "40A056",
-        "label": "Feature",
-        "order": 0,
-    },
-    "announcement": {
-        "color": "4070A0",
-        "label": "Announcement",
-        "order": 2,
-    },
+    "bug": {"color": "A04040", "label": "Fixed bug", "order": 1},
+    "feature": {"color": "40A056", "label": "Feature", "order": 0},
+    "announcement": {"color": "4070A0", "label": "Announcement", "order": 2},
 }
 
 CATEGORIES = {

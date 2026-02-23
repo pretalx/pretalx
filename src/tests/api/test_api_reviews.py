@@ -728,13 +728,7 @@ def test_reviewer_cannot_see_review_detail_for_own_talk(
 
 @pytest.mark.django_db
 def test_reviewer_can_see_review_detail_by_track(
-    client,
-    review_user_token,
-    review_user,
-    event,
-    other_review,
-    track,
-    other_track,
+    client, review_user_token, review_user, event, other_review, track, other_track
 ):
     with scope(event=event):
         event.active_review_phase.can_see_other_reviews = "always"
@@ -756,13 +750,7 @@ def test_reviewer_can_see_review_detail_by_track(
 
 @pytest.mark.django_db
 def test_reviewer_cannot_see_review_detail_outside_track(
-    client,
-    review_user_token,
-    review_user,
-    event,
-    other_review,
-    track,
-    other_track,
+    client, review_user_token, review_user, event, other_review, track, other_track
 ):
     with scope(event=event):
         event.active_review_phase.can_see_other_reviews = "always"

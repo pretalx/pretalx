@@ -16,19 +16,11 @@ from pretalx.submission.models import Submission
 
 
 def serialize_user(user):
-    return {
-        "type": "user",
-        "name": str(user),
-        "url": "/orga/me",
-    }
+    return {"type": "user", "name": str(user), "url": "/orga/me"}
 
 
 def serialize_orga(orga):
-    return {
-        "type": "organiser",
-        "name": str(orga.name),
-        "url": orga.orga_urls.base,
-    }
+    return {"type": "organiser", "name": str(orga.name), "url": orga.orga_urls.base}
 
 
 def serialize_event(event):
@@ -145,9 +137,7 @@ def nav_typeahead(request):
                         )
                     )
                 )
-                .filter(
-                    has_submission=True,
-                )
+                .filter(has_submission=True)
                 .order_by()
             )
 

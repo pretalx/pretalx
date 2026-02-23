@@ -44,7 +44,7 @@ class UserQuerySet(models.QuerySet):
                     "event"
                 ),
                 to_attr="_speakers",
-            ),
+            )
         ).distinct()
 
     def with_speaker_code(self, event):
@@ -53,9 +53,7 @@ class UserQuerySet(models.QuerySet):
         return self.annotate(
             speaker_code=Subquery(
                 SpeakerProfile.objects.filter(
-                    user_id=OuterRef("pk"),
-                    event=event,
-                    submissions__isnull=False,
+                    user_id=OuterRef("pk"), event=event, submissions__isnull=False
                 ).values("code")[:1]
             )
         )
@@ -158,9 +156,7 @@ class User(
         verbose_name=_("Preferred language"),
     )
     timezone = models.CharField(
-        choices=[(tz, tz) for tz in TIMEZONE_CHOICES],
-        max_length=32,
-        default="UTC",
+        choices=[(tz, tz) for tz in TIMEZONE_CHOICES], max_length=32, default="UTC"
     )
     profile_picture = models.ForeignKey(
         "person.ProfilePicture",
@@ -175,9 +171,7 @@ class User(
     pw_reset_time = models.DateTimeField(null=True, verbose_name="Password reset time")
 
     class Meta:
-        rules_permissions = {
-            "administrator": is_administrator,
-        }
+        rules_permissions = {"administrator": is_administrator}
 
     def __str__(self) -> str:
         """For public consumption as it is used for Select widgets, e.g. on the
@@ -516,9 +510,7 @@ the pretalx robot""")
         self.pw_reset_time = None
         self.save()
 
-        context = {
-            "name": self.name or "",
-        }
+        context = {"name": self.name or ""}
         mail_text = _("""Hi {name},
 
 Your pretalx account password was just changed.

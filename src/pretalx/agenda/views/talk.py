@@ -38,10 +38,7 @@ class TalkMixin(PermissionRequired):
 
     @cached_property
     def object(self):
-        return get_object_or_404(
-            self.get_queryset(),
-            code__iexact=self.kwargs["slug"],
-        )
+        return get_object_or_404(self.get_queryset(), code__iexact=self.kwargs["slug"])
 
     @context
     @cached_property

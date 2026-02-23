@@ -84,8 +84,7 @@ class SubmissionType(PretalxModel):
             if days == 1:
                 return _("{name} (1 day)").format(name=self.name)
             return _("{name} ({duration} days)").format(
-                name=self.name,
-                duration=pleasing_number(days),
+                name=self.name, duration=pleasing_number(days)
             )
         if self.default_duration > 90:
             hours = self.default_duration // 60

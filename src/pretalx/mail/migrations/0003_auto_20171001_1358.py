@@ -8,9 +8,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("mail", "0002_queuedmail_sent"),
-    ]
+    dependencies = [("mail", "0002_queuedmail_sent")]
 
     operations = [
         migrations.AlterField(
@@ -49,13 +47,9 @@ class Migration(migrations.Migration):
             field=models.CharField(max_length=200),
         ),
         migrations.AlterField(
-            model_name="queuedmail",
-            name="text",
-            field=models.TextField(),
+            model_name="queuedmail", name="text", field=models.TextField()
         ),
         migrations.AlterField(
-            model_name="queuedmail",
-            name="to",
-            field=models.CharField(max_length=1000),
+            model_name="queuedmail", name="to", field=models.CharField(max_length=1000)
         ),
     ]

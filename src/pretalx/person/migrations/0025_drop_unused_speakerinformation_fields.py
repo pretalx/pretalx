@@ -7,17 +7,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0024_date_migration_information_target_group"),
-    ]
+    dependencies = [("person", "0024_date_migration_information_target_group")]
 
     operations = [
         migrations.RemoveField(
-            model_name="speakerinformation",
-            name="exclude_unconfirmed",
+            model_name="speakerinformation", name="exclude_unconfirmed"
         ),
         migrations.RemoveField(
-            model_name="speakerinformation",
-            name="include_submitters",
+            model_name="speakerinformation", name="include_submitters"
         ),
     ]

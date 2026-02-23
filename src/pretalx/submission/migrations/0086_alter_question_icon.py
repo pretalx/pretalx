@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0085_resource_is_public"),
-    ]
+    dependencies = [("submission", "0085_resource_is_public")]
 
     operations = [
         migrations.AlterField(
             model_name="question",
             name="icon",
             field=models.CharField(default=None, max_length=9, null=True),
-        ),
+        )
     ]

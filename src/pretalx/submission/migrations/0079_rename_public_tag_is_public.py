@@ -7,14 +7,10 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0078_submissioncomment"),
-    ]
+    dependencies = [("submission", "0078_submissioncomment")]
 
     operations = [
         migrations.RenameField(
-            model_name="tag",
-            old_name="public",
-            new_name="is_public",
-        ),
+            model_name="tag", old_name="public", new_name="is_public"
+        )
     ]

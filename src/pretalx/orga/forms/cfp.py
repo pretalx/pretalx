@@ -73,8 +73,7 @@ class CfPSettingsForm(
         required=False,
     )
     speakers_can_edit_submissions = forms.BooleanField(
-        label=_("Allow speakers to edit their proposals and profiles"),
-        required=False,
+        label=_("Allow speakers to edit their proposals and profiles"), required=False
     )
 
     def __init__(self, *args, obj, **kwargs):
@@ -121,10 +120,7 @@ class CfPForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
         model = CfP
         fields = ["headline", "text", "opening", "deadline"]
         # These are JSON fields on cfp.settings
-        json_fields = {
-            "show_deadline": "settings",
-            "count_length_in": "settings",
-        }
+        json_fields = {"show_deadline": "settings", "count_length_in": "settings"}
 
 
 class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
@@ -384,9 +380,7 @@ class TrackForm(ReadOnlyFlag, PretalxI18nModelForm):
     class Meta:
         model = Track
         fields = ("name", "description", "color", "requires_access_code")
-        field_classes = {
-            "color": ColorField,
-        }
+        field_classes = {"color": ColorField}
 
 
 class SubmitterAccessCodeForm(forms.ModelForm):
@@ -475,10 +469,7 @@ Please follow this URL to use the code:
   {url}
 
 I’m looking forward to your proposal!
-{name}""").format(
-            url=instance.urls.cfp_url.full(),
-            name=user.get_display_name(),
-        )
+{name}""").format(url=instance.urls.cfp_url.full(), name=user.get_display_name())
         initial = kwargs.get("intial", {})
         initial["subject"] = get_prefixed_subject(instance.event, subject)
         initial["text"] = text
@@ -590,10 +581,7 @@ class CfPFieldConfigForm(PretalxI18nFormMixin, forms.Form):
     )
     visibility = forms.ChoiceField(
         label=_("Visibility"),
-        choices=[
-            ("required", _("Required")),
-            ("optional", _("Optional")),
-        ],
+        choices=[("required", _("Required")), ("optional", _("Optional"))],
         widget=forms.Select(attrs={"class": "form-control"}),
     )
     min_length = forms.IntegerField(
@@ -697,8 +685,7 @@ class ReminderFilterForm(QuestionFilterForm):
     def get_question_queryset(self):
         # We want to exclude questions with "freeze after", the deadlines of which have passed
         return Question.objects.filter(
-            event=self.event,
-            target__in=["speaker", "submission"],
+            event=self.event, target__in=["speaker", "submission"]
         ).exclude(freeze_after__lt=timezone.now())
 
     def __init__(self, *args, **kwargs):

@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0005_user_avatar"),
-    ]
+    dependencies = [("person", "0005_user_avatar")]
 
     operations = [
         migrations.AddField(
             model_name="user",
             name="get_gravatar",
             field=models.BooleanField(default=False),
-        ),
+        )
     ]

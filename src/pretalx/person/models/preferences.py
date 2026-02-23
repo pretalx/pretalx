@@ -10,19 +10,12 @@ from pretalx.common.models.mixins import TimestampedModel
 
 class UserEventPreferences(TimestampedModel, models.Model):
     user = models.ForeignKey(
-        to="User",
-        on_delete=models.CASCADE,
-        related_name="event_preferences",
+        to="User", on_delete=models.CASCADE, related_name="event_preferences"
     )
     event = models.ForeignKey(
-        to="event.Event",
-        on_delete=models.CASCADE,
-        related_name="user_preferences",
+        to="event.Event", on_delete=models.CASCADE, related_name="user_preferences"
     )
-    preferences = models.JSONField(
-        default=dict,
-        blank=True,
-    )
+    preferences = models.JSONField(default=dict, blank=True)
 
     class Meta:
         unique_together = (("user", "event"),)

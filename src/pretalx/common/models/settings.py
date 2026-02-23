@@ -67,10 +67,7 @@ hierarkey.add_default(
     ),
     LazyI18nString,
 )
-hierarkey.add_default(
-    "mail_text_new_submission",
-    LazyI18nString,
-)
+hierarkey.add_default("mail_text_new_submission", LazyI18nString)
 hierarkey.add_default(
     "mail_text_cfp_closed",
     LazyI18nString.from_gettext(

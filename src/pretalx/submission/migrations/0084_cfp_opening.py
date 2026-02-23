@@ -8,9 +8,7 @@ import pretalx.common.models.fields
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0083_submitteraccesscode_internal_notes"),
-    ]
+    dependencies = [("submission", "0083_submitteraccesscode_internal_notes")]
 
     operations = [
         migrations.AddField(

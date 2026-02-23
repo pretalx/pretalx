@@ -13,9 +13,7 @@ def set_existing_breaks(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("schedule", "0017_created_updated_everywhere"),
-    ]
+    dependencies = [("schedule", "0017_created_updated_everywhere")]
 
     operations = [
         migrations.AddField(

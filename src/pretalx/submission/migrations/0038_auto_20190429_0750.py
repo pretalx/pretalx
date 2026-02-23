@@ -8,19 +8,11 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0037_auto_20190404_2246"),
-    ]
+    dependencies = [("submission", "0037_auto_20190404_2246")]
 
     operations = [
-        migrations.RemoveField(
-            model_name="submission",
-            name="recording_source",
-        ),
-        migrations.RemoveField(
-            model_name="submission",
-            name="recording_url",
-        ),
+        migrations.RemoveField(model_name="submission", name="recording_source"),
+        migrations.RemoveField(model_name="submission", name="recording_url"),
         migrations.AlterField(
             model_name="track",
             name="color",

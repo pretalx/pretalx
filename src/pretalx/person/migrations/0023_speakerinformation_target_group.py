@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0022_filter_information_by_type_and_track"),
-    ]
+    dependencies = [("person", "0022_filter_information_by_type_and_track")]
 
     operations = [
         migrations.AddField(
             model_name="speakerinformation",
             name="target_group",
             field=models.CharField(default="accepted", max_length=11),
-        ),
+        )
     ]

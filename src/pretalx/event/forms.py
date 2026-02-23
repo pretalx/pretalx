@@ -105,9 +105,7 @@ class TeamForm(ReadOnlyFlag, PretalxI18nModelForm):
             "limit_events": EnhancedSelectMultiple,
             "limit_tracks": EnhancedSelectMultiple(color_field="color"),
         }
-        field_classes = {
-            "limit_tracks": SafeModelMultipleChoiceField,
-        }
+        field_classes = {"limit_tracks": SafeModelMultipleChoiceField}
 
 
 class TeamInviteForm(ReadOnlyFlag, forms.ModelForm):
@@ -301,10 +299,7 @@ class EventWizardTimelineForm(forms.ModelForm):
     class Meta:
         model = Event
         fields = ("date_from", "date_to")
-        widgets = {
-            "date_from": HtmlDateInput,
-            "date_to": HtmlDateInput,
-        }
+        widgets = {"date_from": HtmlDateInput, "date_to": HtmlDateInput}
 
 
 class EventWizardDisplayForm(forms.Form):

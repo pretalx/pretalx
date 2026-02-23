@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0029_event_domain"),
-    ]
+    dependencies = [("event", "0029_event_domain")]
 
     operations = [
         migrations.AddField(
             model_name="event",
             name="content_locale_array",
             field=models.TextField(default="en"),
-        ),
+        )
     ]

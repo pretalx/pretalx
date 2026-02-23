@@ -31,10 +31,7 @@ class Resource(PretalxModel):
         to="submission.Submission", related_name="resources", on_delete=models.PROTECT
     )
     resource = models.FileField(
-        verbose_name=_("File"),
-        upload_to=resource_path,
-        null=True,
-        blank=True,
+        verbose_name=_("File"), upload_to=resource_path, null=True, blank=True
     )
     link = models.URLField(max_length=400, verbose_name=_("URL"), null=True, blank=True)
     description = models.CharField(

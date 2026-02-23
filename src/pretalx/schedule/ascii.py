@@ -40,8 +40,7 @@ def talk_card(talk, col_width):
     empty_line = " " * col_width
     text_width = col_width - 4
     titlelines = textwrap.wrap(
-        talk.submission.title if talk.submission else str(talk.description),
-        text_width,
+        talk.submission.title if talk.submission else str(talk.description), text_width
     )
     height = talk.duration // 5 - 1
     yielded_lines = 0
@@ -130,11 +129,7 @@ def draw_dt_line(
     fill_char = "-" if is_tick else " "
 
     room = rooms[0]
-    start, run, end = (
-        starting_events[room],
-        running_events[room],
-        ending_events[room],
-    )
+    start, run, end = (starting_events[room], running_events[room], ending_events[room])
 
     if start or end:
         line_parts.append(
@@ -170,11 +165,7 @@ def draw_dt_line(
             line_parts.append(fill_char * col_width)
 
     room = rooms[-1]
-    start, run, end = (
-        starting_events[room],
-        running_events[room],
-        ending_events[room],
-    )
+    start, run, end = (starting_events[room], running_events[room], ending_events[room])
 
     if start or end:
         line_parts.append(get_separator(False, False, bool(start), bool(end)))
@@ -200,17 +191,11 @@ def draw_grid_for_day(day, col_width=20):
     rooms = list(talks_by_room.keys())
     lines = ["        | " + " | ".join(f"{room:<{col_width - 2}}" for room in rooms)]
     tick_times = rrule.rrule(
-        rrule.HOURLY,
-        byminute=(0, 30),
-        dtstart=global_start,
-        until=global_end,
+        rrule.HOURLY, byminute=(0, 30), dtstart=global_start, until=global_end
     )
 
     for hour in rrule.rrule(
-        rrule.HOURLY,
-        byminute=range(0, 60, 5),
-        dtstart=global_start,
-        until=global_end,
+        rrule.HOURLY, byminute=range(0, 60, 5), dtstart=global_start, until=global_end
     ):
         starting_events = {
             room: next((e for e in talks_by_room[room] if e.start == hour), None)
@@ -218,8 +203,7 @@ def draw_grid_for_day(day, col_width=20):
         }
         running_events = {
             room: next(
-                (e for e in talks_by_room[room] if e.start < hour < e.local_end),
-                None,
+                (e for e in talks_by_room[room] if e.start < hour < e.local_end), None
             )
             for room in rooms
         }

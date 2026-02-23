@@ -43,12 +43,7 @@ def test_table_preferences_reset(orga_client, event, orga_user):
     url = event.orga_urls.base + "preferences/"
     response = orga_client.post(
         url,
-        data=json.dumps(
-            {
-                "table_name": "SubmissionTable",
-                "reset": True,
-            }
-        ),
+        data=json.dumps({"table_name": "SubmissionTable", "reset": True}),
         content_type="application/json",
     )
     assert response.status_code == 200
@@ -66,9 +61,7 @@ def test_table_preferences_reset(orga_client, event, orga_user):
 def test_table_preferences_invalid_table_name(orga_client, event):
     url = event.orga_urls.base + "preferences/"
     response = orga_client.post(
-        url,
-        data=json.dumps({"columns": ["title"]}),
-        content_type="application/json",
+        url, data=json.dumps({"columns": ["title"]}), content_type="application/json"
     )
     assert response.status_code == 400
     data = response.json()
@@ -79,9 +72,7 @@ def test_table_preferences_invalid_table_name(orga_client, event):
 def test_table_preferences_invalid_json(orga_client, event):
     url = event.orga_urls.base + "preferences/"
     response = orga_client.post(
-        url,
-        data="not valid json",
-        content_type="application/json",
+        url, data="not valid json", content_type="application/json"
     )
     assert response.status_code == 400
     data = response.json()
@@ -93,12 +84,7 @@ def test_table_preferences_requires_authentication(client, event):
     url = event.orga_urls.base + "preferences/"
     response = client.post(
         url,
-        data=json.dumps(
-            {
-                "table_name": "SubmissionTable",
-                "columns": ["title"],
-            }
-        ),
+        data=json.dumps({"table_name": "SubmissionTable", "columns": ["title"]}),
         content_type="application/json",
     )
     assert response.status_code in [302, 403]
@@ -237,10 +223,7 @@ def test_table_preferences_save_ordering(orga_client, event, orga_user):
     response = orga_client.post(
         url,
         data=json.dumps(
-            {
-                "table_name": "SubmissionTable",
-                "ordering": ["-title", "code"],
-            }
+            {"table_name": "SubmissionTable", "ordering": ["-title", "code"]}
         ),
         content_type="application/json",
     )
@@ -291,12 +274,7 @@ def test_table_preferences_clear_ordering_with_empty_list(
     url = event.orga_urls.base + "preferences/"
     response = orga_client.post(
         url,
-        data=json.dumps(
-            {
-                "table_name": "SubmissionTable",
-                "ordering": [],
-            }
-        ),
+        data=json.dumps({"table_name": "SubmissionTable", "ordering": []}),
         content_type="application/json",
     )
     assert response.status_code == 200
@@ -417,10 +395,7 @@ def test_multicolumn_sorting_with_function_column(orga_client, event, orga_user)
         type_a = SubmissionType.objects.create(event=event, name="AAA Type")
         type_z = SubmissionType.objects.create(event=event, name="ZZZ Type")
         Submission.objects.create(
-            title="Alpha Talk",
-            event=event,
-            submission_type=type_a,
-            content_locale="en",
+            title="Alpha Talk", event=event, submission_type=type_a, content_locale="en"
         )
         Submission.objects.create(
             title="Beta Session",
@@ -435,16 +410,11 @@ def test_multicolumn_sorting_with_function_column(orga_client, event, orga_user)
             content_locale="en",
         )
         Submission.objects.create(
-            title="Delta Demo",
-            event=event,
-            submission_type=type_z,
-            content_locale="en",
+            title="Delta Demo", event=event, submission_type=type_z, content_locale="en"
         )
         prefs = orga_user.get_event_preferences(event)
         prefs.set(
-            "tables.SubmissionTable.ordering",
-            ["submission_type", "title"],
-            commit=True,
+            "tables.SubmissionTable.ordering", ["submission_type", "title"], commit=True
         )
 
     response = orga_client.get(event.orga_urls.submissions, follow=True)
@@ -480,10 +450,7 @@ def test_multicolumn_sorting_function_column_descending(orga_client, event, orga
         type_z = SubmissionType.objects.create(event=event, name="ZZZ Type")
 
         Submission.objects.create(
-            title="Alpha Talk",
-            event=event,
-            submission_type=type_a,
-            content_locale="en",
+            title="Alpha Talk", event=event, submission_type=type_a, content_locale="en"
         )
         Submission.objects.create(
             title="Beta Session",
@@ -518,9 +485,7 @@ def test_submission_list_with_deleted_question_column_in_ordering(
     with scope(event=event):
         prefs = orga_user.get_event_preferences(event)
         prefs.set(
-            "tables.SubmissionTable.ordering",
-            [f"question_{question_id}"],
-            commit=True,
+            "tables.SubmissionTable.ordering", [f"question_{question_id}"], commit=True
         )
         question.delete()
 
@@ -551,21 +516,11 @@ def test_submission_list_sort_by_question_column(
             submission_type=event.submission_types.first(),
             content_locale="en",
         )
-        Answer.objects.create(
-            submission=sub_a,
-            question=question,
-            answer="10",
-        )
-        Answer.objects.create(
-            submission=sub_z,
-            question=question,
-            answer="1",
-        )
+        Answer.objects.create(submission=sub_a, question=question, answer="10")
+        Answer.objects.create(submission=sub_z, question=question, answer="1")
         prefs = orga_user.get_event_preferences(event)
         prefs.set(
-            "tables.SubmissionTable.ordering",
-            [f"question_{question.id}"],
-            commit=True,
+            "tables.SubmissionTable.ordering", [f"question_{question.id}"], commit=True
         )
 
     response = orga_client.get(event.orga_urls.submissions, follow=True)
@@ -589,9 +544,7 @@ def test_submission_list_question_column_renders_answers(
             content_locale="en",
         )
         Answer.objects.create(
-            submission=sub,
-            question=question,
-            answer="42specialteststring",
+            submission=sub, question=question, answer="42specialteststring"
         )
         prefs = orga_user.get_event_preferences(event)
         prefs.set(

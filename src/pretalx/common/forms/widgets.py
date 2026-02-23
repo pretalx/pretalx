@@ -199,11 +199,7 @@ class BiographyWidget(MarkdownWidget):
             plaintext = render_markdown_plaintext(s["biography"])
             preview = plaintext[:200] + ("…" if len(plaintext) > 200 else "")
             suggestions.append(
-                {
-                    "id": profile_id,
-                    "event_name": s["event_name"],
-                    "preview": preview,
-                }
+                {"id": profile_id, "event_name": s["event_name"], "preview": preview}
             )
             biographies[profile_id] = s["biography"]
         ctx["suggestions"] = suggestions

@@ -268,7 +268,7 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
                     "The identifier may only contain letters, numbers, dots, "
                     "dashes, and underscores."
                 ),
-            ),
+            )
         ],
     )
     active = models.BooleanField(
@@ -313,21 +313,9 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
         blank=True,
         verbose_name=_("Maximum value"),
     )
-    min_date = DateField(
-        null=True,
-        blank=True,
-        verbose_name=_("Minimum value"),
-    )
-    max_date = DateField(
-        null=True,
-        blank=True,
-        verbose_name=_("Maximum value"),
-    )
-    min_datetime = DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name=_("Minimum value"),
-    )
+    min_date = DateField(null=True, blank=True, verbose_name=_("Minimum value"))
+    max_date = DateField(null=True, blank=True, verbose_name=_("Maximum value"))
+    min_datetime = DateTimeField(null=True, blank=True, verbose_name=_("Minimum value"))
     max_datetime = DateTimeField(null=True, blank=True, verbose_name=_("Maximum value"))
     is_public = models.BooleanField(
         default=False,
@@ -496,7 +484,7 @@ class AnswerOption(GenerateCode, PretalxModel):
                     "The identifier may only contain letters, numbers, dots, "
                     "dashes, and underscores."
                 ),
-            ),
+            )
         ],
     )
 

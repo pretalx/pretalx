@@ -143,12 +143,7 @@ class ProfilePictureField(FileField):
     MAX_SIZE = settings.FILE_UPLOAD_DEFAULT_LIMIT
 
     def __init__(
-        self,
-        *args,
-        user=None,
-        current_picture=None,
-        upload_only=False,
-        **kwargs,
+        self, *args, user=None, current_picture=None, upload_only=False, **kwargs
     ):
         self.user = user
         self.current_picture = current_picture
@@ -172,8 +167,7 @@ class ProfilePictureField(FileField):
         if action == "keep":
             if self.required and not self.current_picture:
                 raise ValidationError(
-                    _("Please provide a profile picture!"),
-                    code="required",
+                    _("Please provide a profile picture!"), code="required"
                 )
             self._cleaned_value = None
             return None
@@ -181,8 +175,7 @@ class ProfilePictureField(FileField):
         if action == "remove":
             if self.required:
                 raise ValidationError(
-                    _("Please provide a profile picture!"),
-                    code="required",
+                    _("Please provide a profile picture!"), code="required"
                 )
             self._cleaned_value = False
             return False
@@ -316,10 +309,7 @@ class HoneypotField(BooleanField):
 
     def validate(self, value):
         if value:
-            raise ValidationError(
-                _("Form submission failed."),
-                code="invalid",
-            )
+            raise ValidationError(_("Form submission failed."), code="invalid")
 
 
 class AvailabilitiesField(CharField):
@@ -358,7 +348,7 @@ class AvailabilitiesField(CharField):
                 "timezone": self.event.timezone,
                 "date_from": str(self.event.date_from),
                 "date_to": str(self.event.date_to),
-            },
+            }
         }
         if self.resolution:
             result["resolution"] = self.resolution
@@ -383,7 +373,7 @@ class AvailabilitiesField(CharField):
         result = {
             "availabilities": [
                 avail for avail in availabilities if avail["end"] > avail["start"]
-            ],
+            ]
         }
         result.update(self._get_event_context())
         return json.dumps(result)

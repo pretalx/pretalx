@@ -51,10 +51,7 @@ from pretalx.submission.models import ReviewPhase, ReviewScore, ReviewScoreCateg
 
 ENCRYPTED_PASSWORD_PLACEHOLDER = "*" * 24
 
-SCHEDULE_DISPLAY_CHOICES = (
-    ("grid", _("Grid")),
-    ("list", _("List")),
-)
+SCHEDULE_DISPLAY_CHOICES = (("grid", _("Grid")), ("list", _("List")))
 
 
 def make_naive(moment):
@@ -240,7 +237,7 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             self.add_error("date_from", error)
         if data.get("locale") not in data.get("locales", []):
             error = forms.ValidationError(
-                _("Your default language needs to be one of your active languages."),
+                _("Your default language needs to be one of your active languages.")
             )
             self.add_error("locale", error)
         return data
@@ -290,7 +287,7 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
         if shortened:
             # The event was shortened, de-schedule all talks outside the range
             self.instance.wip_schedule.talks.filter(
-                Q(start__date__gt=new_date_to) | Q(start__date__lt=new_date_from),
+                Q(start__date__gt=new_date_to) | Q(start__date__lt=new_date_from)
             ).update(start=None, end=None, room=None)
             Availability.objects.filter(
                 Q(end__date__gt=new_date_to) | Q(start__date__lt=new_date_from),
@@ -420,10 +417,7 @@ class MailSettingsForm(
     smtp_password = forms.CharField(
         label=_("Password"),
         required=False,
-        widget=PasswordInput(
-            attrs={"autocomplete": "new-password"},
-            render_value=True,
-        ),
+        widget=PasswordInput(attrs={"autocomplete": "new-password"}, render_value=True),
         validators=[
             RegexValidator(
                 r"^[A-Za-z0-9!\"#$%&'()*+,./:;<=>?@\^_`{}|~-]+$",
@@ -523,11 +517,7 @@ class MailSettingsForm(
 
 
 class ReviewSettingsForm(
-    ReadOnlyFlag,
-    PretalxI18nFormMixin,
-    HierarkeyMixin,
-    JsonSubfieldMixin,
-    forms.Form,
+    ReadOnlyFlag, PretalxI18nFormMixin, HierarkeyMixin, JsonSubfieldMixin, forms.Form
 ):
     use_submission_comments = forms.BooleanField(
         label=_("Enable submission comments"),
@@ -776,9 +766,7 @@ class ReviewScoreCategoryForm(PretalxI18nModelForm):
             "active",
             "limit_tracks",
         )
-        field_classes = {
-            "limit_tracks": SafeModelMultipleChoiceField,
-        }
+        field_classes = {"limit_tracks": SafeModelMultipleChoiceField}
         widgets = {"limit_tracks": EnhancedSelectMultiple(color_field="color")}
 
 
@@ -840,14 +828,10 @@ EventHeaderLinkFormset = inlineformset_factory(
 
 class EventHistoryFilterForm(forms.Form):
     object_type = forms.ChoiceField(
-        required=False,
-        label=_("Object type"),
-        widget=forms.Select(),
+        required=False, label=_("Object type"), widget=forms.Select()
     )
     action_type = forms.ChoiceField(
-        required=False,
-        label=_("Action"),
-        widget=forms.Select(),
+        required=False, label=_("Action"), widget=forms.Select()
     )
 
     default_renderer = InlineFormRenderer

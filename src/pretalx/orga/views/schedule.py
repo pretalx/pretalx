@@ -244,8 +244,7 @@ class ScheduleResendMailsView(EventPermissionRequired, View):
                 save=True
             )
             messages.success(
-                self.request,
-                phrases.orga.mails_in_outbox.format(count=len(mails)),
+                self.request, phrases.orga.mails_in_outbox.format(count=len(mails))
             )
         else:
             messages.warning(

@@ -21,11 +21,7 @@ def availabilities_field(event):
     event.date_from = dt.date(2017, 1, 1)
     event.date_to = dt.date(2017, 1, 2)
 
-    return AvailabilitiesField(
-        event=event,
-        instance=None,
-        required=False,
-    )
+    return AvailabilitiesField(event=event, instance=None, required=False)
 
 
 @pytest.mark.django_db
@@ -48,11 +44,7 @@ def test_parse_availabilities_json_fail(availabilities_field, json, error):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "json",
-    (
-        ('{"availabilities": []}'),
-        ('{"availabilities": [1]}'),
-    ),
+    "json", (('{"availabilities": []}'), ('{"availabilities": [1]}'))
 )
 def test_parse_availabilities_json_success(availabilities_field, json):
     availabilities_field._parse_availabilities_json(json)
@@ -173,11 +165,7 @@ def test_parse_datetime(availabilities_field, strdate, expected):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    ("json", "error"),
-    (
-        ("{{", "not valid json"),
-        ('{"availabilities": [1]}', "format"),
-    ),
+    ("json", "error"), (("{{", "not valid json"), ('{"availabilities": [1]}', "format"))
 )
 def test_clean_availabilities_fail(availabilities_field, json, error):
     with pytest.raises(ValidationError) as excinfo:

@@ -7,13 +7,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0058_question_required_data"),
-    ]
+    dependencies = [("submission", "0058_question_required_data")]
 
-    operations = [
-        migrations.RemoveField(
-            model_name="question",
-            name="required",
-        ),
-    ]
+    operations = [migrations.RemoveField(model_name="question", name="required")]

@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0076_submissionfavourite"),
-    ]
+    dependencies = [("submission", "0076_submissionfavourite")]
 
     operations = [
         migrations.AddField(
             model_name="answeroption",
             name="position",
             field=models.IntegerField(default=0),
-        ),
+        )
     ]

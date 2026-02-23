@@ -75,9 +75,7 @@ def test_export_question_files_no_answers(event, file_question):
 def test_export_question_files_creates_zip(event, file_question, submission):
     with scope(event=event):
         answer = Answer.objects.create(
-            submission=submission,
-            question=file_question,
-            answer="doc.pdf",
+            submission=submission, question=file_question, answer="doc.pdf"
         )
         answer.answer_file.save("doc.pdf", ContentFile(b"pdf content"))
         answer.save()
@@ -104,9 +102,7 @@ def test_export_question_files_speaker_target(
 ):
     with scope(event=event):
         answer = Answer.objects.create(
-            question=speaker_file_question,
-            speaker=speaker_profile,
-            answer="cv.pdf",
+            question=speaker_file_question, speaker=speaker_profile, answer="cv.pdf"
         )
         answer.answer_file.save("cv.pdf", ContentFile(b"CV content"))
         answer.save()

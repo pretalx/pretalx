@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("mail", "0003_auto_20171001_1358"),
-    ]
+    dependencies = [("mail", "0003_auto_20171001_1358")]
 
     operations = [
         migrations.AlterField(
             model_name="mailtemplate",
             name="reply_to",
             field=models.CharField(blank=True, max_length=200, null=True),
-        ),
+        )
     ]

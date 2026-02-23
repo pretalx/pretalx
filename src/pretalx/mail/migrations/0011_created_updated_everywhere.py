@@ -7,9 +7,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("mail", "0010_queuedmail_attachments"),
-    ]
+    dependencies = [("mail", "0010_queuedmail_attachments")]
 
     operations = [
         migrations.AddField(

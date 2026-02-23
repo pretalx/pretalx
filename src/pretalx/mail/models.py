@@ -87,9 +87,7 @@ class MailTemplate(PretalxModel):
     log_prefix = "pretalx.mail_template"
 
     event = models.ForeignKey(
-        to="event.Event",
-        on_delete=models.PROTECT,
-        related_name="mail_templates",
+        to="event.Event", on_delete=models.PROTECT, related_name="mail_templates"
     )
     role = models.CharField(
         choices=MailTemplateRoles.choices,
@@ -99,12 +97,9 @@ class MailTemplate(PretalxModel):
         editable=False,
     )
     subject = I18nCharField(
-        max_length=200,
-        verbose_name=pgettext_lazy("email subject", "Subject"),
+        max_length=200, verbose_name=pgettext_lazy("email subject", "Subject")
     )
-    text = I18nTextField(
-        verbose_name=_("Text"),
-    )
+    text = I18nTextField(verbose_name=_("Text"))
     reply_to = models.CharField(
         max_length=200,
         blank=True,
@@ -301,10 +296,7 @@ class QueuedMailQuerySet(models.QuerySet):
         from pretalx.person.models.user import User  # noqa: PLC0415
 
         return self.prefetch_related(
-            models.Prefetch(
-                "to_users",
-                queryset=User.objects.with_speaker_code(event),
-            )
+            models.Prefetch("to_users", queryset=User.objects.with_speaker_code(event))
         )
 
     def with_computed_state(self):
@@ -357,10 +349,7 @@ class QueuedMail(PretalxModel):
         null=True,
         blank=True,
     )
-    to_users = models.ManyToManyField(
-        to="person.User",
-        related_name="mails",
-    )
+    to_users = models.ManyToManyField(to="person.User", related_name="mails")
     reply_to = models.CharField(
         max_length=1000,
         null=True,
@@ -398,8 +387,7 @@ class QueuedMail(PretalxModel):
     locale = models.CharField(max_length=32, null=True, blank=True)
     attachments = models.JSONField(default=None, null=True, blank=True)
     submissions = models.ManyToManyField(
-        to="submission.Submission",
-        related_name="mails",
+        to="submission.Submission", related_name="mails"
     )
 
     objects = QueuedMailQuerySet.as_manager()
@@ -513,10 +501,7 @@ class QueuedMail(PretalxModel):
             if self.id:
                 to += [user.email for user in self.to_users.all()]
                 if has_event:
-                    queuedmail_pre_send.send_robust(
-                        sender=self.event,
-                        mail=self,
-                    )
+                    queuedmail_pre_send.send_robust(sender=self.event, mail=self)
 
             if self.sent is not None or self.state == QueuedMailStates.SENT:
                 # The pre_send signal must have handled the sending already,
@@ -570,10 +555,7 @@ class QueuedMail(PretalxModel):
                 self.mark_failed(exc)
                 return
 
-            queuedmail_post_send.send(
-                sender=self.event,
-                mail=self,
-            )
+            queuedmail_post_send.send(sender=self.event, mail=self)
         else:
             # Non-persisted mail (commit=False fire-and-forget)
             mail_send_task.apply_async(kwargs=task_kwargs, ignore_result=True)

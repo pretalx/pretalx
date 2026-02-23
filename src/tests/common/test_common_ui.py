@@ -48,15 +48,7 @@ def test_has_good_contrast_custom_threshold(color, threshold, expected):
     assert has_good_contrast(color, threshold=threshold) == expected
 
 
-@pytest.mark.parametrize(
-    "invalid_color",
-    (
-        "not-a-color",
-        "#gggggg",
-        "rgb(0,0,0)",
-        "",
-    ),
-)
+@pytest.mark.parametrize("invalid_color", ("not-a-color", "#gggggg", "rgb(0,0,0)", ""))
 def test_has_good_contrast_invalid_input_returns_true(invalid_color):
     # Invalid colors should return True (assume good contrast) to avoid
     # breaking the UI - the default pretalx color has good contrast

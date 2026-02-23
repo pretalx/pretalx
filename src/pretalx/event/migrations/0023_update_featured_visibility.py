@@ -16,17 +16,11 @@ def update_show_featured(apps, schema_editor):
         ).first()
         if old_value and old_value.value == "False":
             EventSettings.objects.create(
-                object=event,
-                key="show_featured",
-                value="never",
+                object=event, key="show_featured", value="never"
             )
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0022_auto_20200124_1213"),
-    ]
+    dependencies = [("event", "0022_auto_20200124_1213")]
 
-    operations = [
-        migrations.RunPython(update_show_featured, migrations.RunPython.noop),
-    ]
+    operations = [migrations.RunPython(update_show_featured, migrations.RunPython.noop)]

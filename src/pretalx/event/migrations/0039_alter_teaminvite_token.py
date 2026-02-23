@@ -9,9 +9,7 @@ import pretalx.event.models.organiser
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0038_eventextralink"),
-    ]
+    dependencies = [("event", "0038_eventextralink")]
 
     operations = [
         migrations.AlterField(
@@ -23,5 +21,5 @@ class Migration(migrations.Migration):
                 null=True,
                 unique=True,
             ),
-        ),
+        )
     ]

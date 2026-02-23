@@ -46,8 +46,7 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
         linkify=lambda record: record.orga_urls.base,
     )
     speakers = TemplateColumn(
-        template_name="orga/tables/columns/submission_speakers.html",
-        orderable=False,
+        template_name="orga/tables/columns/submission_speakers.html", orderable=False
     )
     speaker_count = tables.Column(
         verbose_name=_("Number of speakers"),
@@ -188,8 +187,7 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
         attrs={"td": {"class": "w-25 nowrap"}},
     )
     code = tables.Column(
-        verbose_name=_("ID"),
-        linkify=lambda record: record.orga_urls.reviews,
+        verbose_name=_("ID"), linkify=lambda record: record.orga_urls.reviews
     )
     track = SortableColumn(
         order_by=Lower(Translate("track__name")),
@@ -384,18 +382,10 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
 
 
 class TagTable(PretalxTable):
-    default_columns = (
-        "tag",
-        "color",
-        "proposals",
-    )
+    default_columns = ("tag", "color", "proposals")
 
-    tag = tables.Column(
-        linkify=lambda record: record.urls.edit,
-    )
-    color = TemplateColumn(
-        template_name="orga/tables/columns/color_square.html",
-    )
+    tag = tables.Column(linkify=lambda record: record.urls.edit)
+    color = TemplateColumn(template_name="orga/tables/columns/color_square.html")
     proposals = tables.Column(
         verbose_name=_("Proposals"),
         accessor="submission_count",
@@ -410,10 +400,4 @@ class TagTable(PretalxTable):
 
     class Meta:
         model = Tag
-        fields = (
-            "tag",
-            "color",
-            "proposals",
-            "is_public",
-            "actions",
-        )
+        fields = ("tag", "color", "proposals", "is_public", "actions")

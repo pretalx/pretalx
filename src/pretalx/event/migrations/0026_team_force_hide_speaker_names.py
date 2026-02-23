@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0025_event_featured_sessions_text"),
-    ]
+    dependencies = [("event", "0025_event_featured_sessions_text")]
 
     operations = [
         migrations.AddField(
             model_name="team",
             name="force_hide_speaker_names",
             field=models.BooleanField(default=False),
-        ),
+        )
     ]

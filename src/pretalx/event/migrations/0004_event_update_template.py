@@ -24,5 +24,5 @@ class Migration(migrations.Migration):
                 related_name="+",
                 to="mail.MailTemplate",
             ),
-        ),
+        )
     ]

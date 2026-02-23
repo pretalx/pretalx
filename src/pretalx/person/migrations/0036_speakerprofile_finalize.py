@@ -5,9 +5,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0035_speakerprofile_data"),
-    ]
+    dependencies = [("person", "0035_speakerprofile_data")]
 
     operations = [
         migrations.AlterField(
@@ -20,20 +18,8 @@ class Migration(migrations.Migration):
             name="speakerprofile",
             unique_together={("event", "code"), ("event", "user")},
         ),
-        migrations.RemoveField(
-            model_name="user",
-            name="avatar",
-        ),
-        migrations.RemoveField(
-            model_name="user",
-            name="avatar_thumbnail",
-        ),
-        migrations.RemoveField(
-            model_name="user",
-            name="avatar_thumbnail_tiny",
-        ),
-        migrations.RemoveField(
-            model_name="user",
-            name="get_gravatar",
-        ),
+        migrations.RemoveField(model_name="user", name="avatar"),
+        migrations.RemoveField(model_name="user", name="avatar_thumbnail"),
+        migrations.RemoveField(model_name="user", name="avatar_thumbnail_tiny"),
+        migrations.RemoveField(model_name="user", name="get_gravatar"),
     ]

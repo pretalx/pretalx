@@ -48,13 +48,7 @@ class FeedbackWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
     class Meta:
         model = Feedback
-        fields = [
-            "id",
-            "submission",
-            "speaker",
-            "rating",
-            "review",
-        ]
+        fields = ["id", "submission", "speaker", "rating", "review"]
 
 
 @register_serializer(versions=CURRENT_VERSIONS)

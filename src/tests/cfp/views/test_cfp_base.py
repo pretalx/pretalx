@@ -10,17 +10,13 @@ from django.http.request import QueryDict
 
 @pytest.mark.django_db
 def test_no_crash_on_incorrect_event(client, event):
-    response = client.get(
-        f"/{event.slug}typoe/",
-    )
+    response = client.get(f"/{event.slug}typoe/")
     assert response.status_code == 404
 
 
 @pytest.mark.django_db
 def test_no_crash_on_incorrect_event_for_orga(orga_client, event):
-    response = orga_client.get(
-        f"/{event.slug}typoe/",
-    )
+    response = orga_client.get(f"/{event.slug}typoe/")
     assert response.status_code == 404
 
 
@@ -31,9 +27,7 @@ def test_event_startpage_query_string_handling(client, event, access_code):
     params_dict = QueryDict(
         f"track=academic&submission_type=academic_talk&access_code={access_code.code}"
     )
-    response = client.get(
-        f"/{event.slug}/?{params_dict}",
-    )
+    response = client.get(f"/{event.slug}/?{params_dict}")
     assert response.status_code == 200
     doc = bs4.BeautifulSoup(response.rendered_content, "lxml")
     info_btns = doc.select("a.btn-info")
@@ -56,9 +50,7 @@ def test_event_cfp_query_string_handling(client, event):
     """The link to the submission form should contain the query parameters
     given in the request URL."""
     params_dict = QueryDict("track=academic&submission_type=academic_talk")
-    response = client.get(
-        f"/{event.slug}/cfp?{params_dict}",
-    )
+    response = client.get(f"/{event.slug}/cfp?{params_dict}")
     assert response.status_code == 200
     doc = bs4.BeautifulSoup(response.rendered_content, "lxml")
     info_btn = doc.select("a.btn-success")[0]
@@ -75,9 +67,7 @@ def test_event_cfp_query_string_handling(client, event):
 def test_no_crash_on_root_view(client, event, other_event):
     other_event.is_public = False
     other_event.save()
-    response = client.get(
-        "/",
-    )
+    response = client.get("/")
     content = response.text
     assert response.status_code == 200
     assert event.slug in content
@@ -88,9 +78,7 @@ def test_no_crash_on_root_view(client, event, other_event):
 def test_no_crash_on_root_view_as_organiser(orga_client, event, other_event):
     other_event.is_public = False
     other_event.save()
-    response = orga_client.get(
-        "/",
-    )
+    response = orga_client.get("/")
     content = response.text
     assert response.status_code == 200
     assert event.slug in content
@@ -99,21 +87,13 @@ def test_no_crash_on_root_view_as_organiser(orga_client, event, other_event):
 
 @pytest.mark.django_db
 def test_no_crash_on_robots_txt(client):
-    response = client.get(
-        "/robots.txt",
-    )
+    response = client.get("/robots.txt")
     assert response.status_code == 200
 
 
 @pytest.mark.parametrize(
     ("url", "expected"),
-    (
-        ("/400", 400),
-        ("/403", 403),
-        ("/403/csrf", 403),
-        ("/404", 404),
-        ("/500", 500),
-    ),
+    (("/400", 400), ("/403", 403), ("/403/csrf", 403), ("/404", 404), ("/500", 500)),
 )
 @pytest.mark.django_db
 def test_example_error_views(client, url, expected):

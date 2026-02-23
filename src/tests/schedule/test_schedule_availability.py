@@ -155,10 +155,7 @@ def test_availability_fail(method, args, expected):
 @pytest.mark.parametrize(
     ("avails", "expected"),
     (
-        (
-            [],
-            [],
-        ),
+        ([], []),
         (
             [
                 Availability(
@@ -203,7 +200,7 @@ def test_availability_fail(method, args, expected):
             [
                 Availability(
                     start=dt.datetime(2017, 1, 1, 4), end=dt.datetime(2017, 1, 1, 6)
-                ),
+                )
             ],
         ),
         (
@@ -219,7 +216,7 @@ def test_availability_fail(method, args, expected):
             [
                 Availability(
                     start=dt.datetime(2017, 1, 1, 4), end=dt.datetime(2017, 1, 1, 7)
-                ),
+                )
             ],
         ),
         (
@@ -235,7 +232,7 @@ def test_availability_fail(method, args, expected):
             [
                 Availability(
                     start=dt.datetime(2017, 1, 1, 4), end=dt.datetime(2017, 1, 1, 7)
-                ),
+                )
             ],
         ),
         (
@@ -286,10 +283,7 @@ def test_union(avails, expected):
 @pytest.mark.parametrize(
     ("availsets", "expected"),
     (
-        (
-            [],
-            [],
-        ),
+        ([], []),
         (
             [
                 [
@@ -424,7 +418,7 @@ def test_union(avails, expected):
             [
                 Availability(
                     start=dt.datetime(2017, 1, 1, 9), end=dt.datetime(2017, 1, 1, 7)
-                ),
+                )
             ],
         ),
         (
@@ -450,7 +444,7 @@ def test_union(avails, expected):
             [
                 Availability(
                     start=dt.datetime(2017, 1, 1, 2), end=dt.datetime(2017, 1, 1, 4)
-                ),
+                )
             ],
         ),
         (

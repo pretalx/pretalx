@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0032_question_is_public"),
-    ]
+    dependencies = [("submission", "0032_question_is_public")]
 
     operations = [
         migrations.AddField(
             model_name="submission",
             name="slot_count",
             field=models.PositiveIntegerField(default=1),
-        ),
+        )
     ]

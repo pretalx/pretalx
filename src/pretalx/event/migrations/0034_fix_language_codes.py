@@ -49,10 +49,7 @@ def fix_language_codes(apps, schema_editor):
     QueuedMail.objects.all().update(locale=Lower("locale"))
 
     i18nfields = {
-        Event: (
-            "landing_page_text",
-            "featured_sessions_text",
-        ),
+        Event: ("landing_page_text", "featured_sessions_text"),
         MailTemplate: ("subject", "text"),
         Room: ("name", "description", "speaker_info"),
         Schedule: ("comment",),
@@ -137,6 +134,4 @@ class Migration(migrations.Migration):
         ("mail", "0009_queuedmail_locale"),
     ]
 
-    operations = [
-        migrations.RunPython(fix_language_codes, migrations.RunPython.noop),
-    ]
+    operations = [migrations.RunPython(fix_language_codes, migrations.RunPython.noop)]

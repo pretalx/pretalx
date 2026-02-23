@@ -69,9 +69,7 @@ def update_check():
 
     try:
         response = requests.post(
-            "https://pretalx.com/.update_check/",
-            json=check_payload,
-            timeout=30,
+            "https://pretalx.com/.update_check/", json=check_payload, timeout=30
         )
     except requests.RequestException:  # pragma: no cover
         gs.settings.set("update_check_last", now())
@@ -112,7 +110,7 @@ def send_update_notification_email():
                         "Larger updates are also announced with upgrade notes on the pretalx.com blog:\n\n"
                         "  https://pretalx.com/p/news"
                         "\n\nBest regards,\nyour pretalx developers"
-                    ),
+                    )
                 )
             ).format(
                 base_url=settings.SITE_URL,

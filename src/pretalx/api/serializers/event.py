@@ -14,14 +14,7 @@ from pretalx.event.models import Event
 class EventListSerializer(ModelSerializer):
     class Meta:
         model = Event
-        fields = [
-            "name",
-            "slug",
-            "is_public",
-            "date_from",
-            "date_to",
-            "timezone",
-        ]
+        fields = ["name", "slug", "is_public", "date_from", "date_to", "timezone"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

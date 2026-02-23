@@ -17,14 +17,7 @@ def test_mail_template_serializer(mail_template):
         data = MailTemplateSerializer(
             mail_template, context={"event": mail_template.event}
         ).data
-        assert set(data.keys()) == {
-            "id",
-            "role",
-            "subject",
-            "text",
-            "reply_to",
-            "bcc",
-        }
+        assert set(data.keys()) == {"id", "role", "subject", "text", "reply_to", "bcc"}
 
 
 @pytest.mark.parametrize("is_public", (True, False))
@@ -118,9 +111,7 @@ def test_orga_can_create_mail_templates(client, orga_user_write_token, event):
             "foo": "bar",
         },
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 201, response.text
     with scope(event=event):
@@ -142,9 +133,7 @@ def test_orga_cannot_create_mail_templates_readonly_token(
         follow=True,
         data={"subject": "newtesttemplate", "text": "test body"},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=event):
@@ -260,9 +249,7 @@ def test_orga_can_delete_mail_templates(
     response = client.delete(
         event.api_urls.mail_templates + f"{mail_template.pk}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 204
     with scope(event=event):

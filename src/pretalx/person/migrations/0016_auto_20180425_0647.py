@@ -7,9 +7,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0015_speakerinformation_resource"),
-    ]
+    dependencies = [("person", "0015_speakerinformation_resource")]
 
     operations = [
         migrations.AlterField(
@@ -17,5 +15,5 @@ class Migration(migrations.Migration):
             name="name",
             field=models.CharField(default="", max_length=120),
             preserve_default=False,
-        ),
+        )
     ]

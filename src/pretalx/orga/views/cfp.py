@@ -311,10 +311,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
             return super().post(request, *args, **kwargs)
         order = order.split(",")
         for index, pk in enumerate(order):
-            option = get_object_or_404(
-                self.object.options,
-                pk=pk,
-            )
+            option = get_object_or_404(self.object.options, pk=pk)
             option.position = index
             option.save(update_fields=["position"])
         return self.get(request, *args, **kwargs)
@@ -431,9 +428,7 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
         submissions = form.get_submissions()
         people = self.request.event.submitters.filter(submissions__in=submissions)
         questions = form.cleaned_data["questions"] or form.get_question_queryset()
-        data = {
-            "url": self.request.event.urls.user_submissions.full(),
-        }
+        data = {"url": self.request.event.urls.user_submissions.full()}
         for person in people:
             missing = self.get_missing_answers(
                 questions=questions, person=person, submissions=submissions
@@ -469,8 +464,7 @@ class SubmissionTypeView(OrderActionMixin, OrgaCRUDView):
             .order_by("default_duration")
             .annotate(
                 submission_count=Count(
-                    "submissions",
-                    filter=~Q(submissions__state=SubmissionStates.DRAFT),
+                    "submissions", filter=~Q(submissions__state=SubmissionStates.DRAFT)
                 )
             )
         )
@@ -534,8 +528,7 @@ class TrackView(OrderActionMixin, OrgaCRUDView):
             self.request.event.tracks.all()
             .annotate(
                 submission_count=Count(
-                    "submissions",
-                    filter=~Q(submissions__state=SubmissionStates.DRAFT),
+                    "submissions", filter=~Q(submissions__state=SubmissionStates.DRAFT)
                 )
             )
             .order_by("position")
@@ -561,8 +554,7 @@ class TrackView(OrderActionMixin, OrgaCRUDView):
             return super().delete_handler(request, *args, **kwargs)
         except ProtectedError:
             messages.error(
-                request,
-                _("This track is in use in a proposal and cannot be deleted."),
+                request, _("This track is in use in a proposal and cannot be deleted.")
             )
             return self.delete_view(request, *args, **kwargs)
 
@@ -1130,9 +1122,7 @@ class CfPEditorField(CfPEditorMixin, EventPermissionRequired, TemplateView):
     def post(self, request, *args, **kwargs):
         cfp = request.event.cfp
         form = CfPFieldConfigForm(
-            request.POST,
-            field_key=self.field_key,
-            event=request.event,
+            request.POST, field_key=self.field_key, event=request.event
         )
 
         if not form.is_valid():

@@ -399,10 +399,7 @@ def test_orga_can_delete_template(orga_client, event, mail_template):
 
 @pytest.mark.django_db
 def test_orga_can_compose_single_mail_team(orga_client, review_user, event):
-    response = orga_client.get(
-        event.orga_urls.compose_mails_teams,
-        follow=True,
-    )
+    response = orga_client.get(event.orga_urls.compose_mails_teams, follow=True)
     assert response.status_code == 200
     djmail.outbox = []
     with scope(event=event):
@@ -456,10 +453,7 @@ def test_orga_can_compose_single_mail_team_by_pk(
 def test_orga_can_compose_single_mail(
     orga_client, speaker, event, submission, other_submission
 ):
-    response = orga_client.get(
-        event.orga_urls.compose_mails_sessions,
-        follow=True,
-    )
+    response = orga_client.get(event.orga_urls.compose_mails_sessions, follow=True)
     assert response.status_code == 200
     with scope(event=event):
         assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
@@ -598,10 +592,7 @@ def test_orga_can_compose_mail_for_track(orga_client, event, submission, track):
 
 @pytest.mark.django_db
 def test_orga_can_compose_mail_for_submission_type(orga_client, event, submission):
-    response = orga_client.get(
-        event.orga_urls.compose_mails_sessions,
-        follow=True,
-    )
+    response = orga_client.get(event.orga_urls.compose_mails_sessions, follow=True)
     assert response.status_code == 200
     with scope(event=event):
         assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
@@ -629,10 +620,7 @@ def test_orga_can_compose_mail_for_track_and_type_no_doubles(
     with scope(event=event):
         submission.track = track
         submission.save()
-    response = orga_client.get(
-        event.orga_urls.compose_mails_sessions,
-        follow=True,
-    )
+    response = orga_client.get(event.orga_urls.compose_mails_sessions, follow=True)
     assert response.status_code == 200
     with scope(event=event):
         assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
@@ -682,23 +670,14 @@ def test_orga_can_compose_single_mail_selected_submissions(
 
 @pytest.mark.django_db
 def test_orga_compose_mail_without_recipients_fails(
-    orga_client,
-    event,
-    submission,
-    other_submission,
+    orga_client, event, submission, other_submission
 ):
     with scope(event=event):
         assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
     response = orga_client.post(
         event.orga_urls.compose_mails_sessions,
         follow=True,
-        data={
-            "bcc": "",
-            "cc": "",
-            "reply_to": "",
-            "subject_0": "foo",
-            "text_0": "bar",
-        },
+        data={"bcc": "", "cc": "", "reply_to": "", "subject_0": "foo", "text_0": "bar"},
     )
     assert response.status_code == 200
     assert "at least one filter" in response.content.decode()
@@ -863,10 +842,7 @@ def test_orga_can_send_draft_reminder(orga_client, event, speaker):
         draft.speakers.add(speaker_profile)
 
     djmail.outbox = []
-    response = orga_client.post(
-        event.orga_urls.send_drafts_reminder,
-        follow=True,
-    )
+    response = orga_client.post(event.orga_urls.send_drafts_reminder, follow=True)
     assert response.status_code == 200
     assert len(djmail.outbox) == 1
     assert draft.title in djmail.outbox[0].body
@@ -877,10 +853,7 @@ def test_sending_status_bulk_endpoint(orga_client, event, mail, other_mail):
     with scope(event=event):
         mail.state = QueuedMailStates.SENDING
         mail.save()
-    url = reverse(
-        "orga:mails.sending_status",
-        kwargs={"event": event.slug},
-    )
+    url = reverse("orga:mails.sending_status", kwargs={"event": event.slug})
     response = orga_client.get(url, {"ids": f"{mail.pk},{other_mail.pk}"})
     assert response.status_code == 200
     content = response.content.decode()
@@ -891,10 +864,7 @@ def test_sending_status_bulk_endpoint(orga_client, event, mail, other_mail):
 
 @pytest.mark.django_db
 def test_sending_status_stops_polling_when_done(orga_client, event, sent_mail):
-    url = reverse(
-        "orga:mails.sending_status",
-        kwargs={"event": event.slug},
-    )
+    url = reverse("orga:mails.sending_status", kwargs={"event": event.slug})
     response = orga_client.get(url, {"ids": str(sent_mail.pk)})
     assert response.status_code == 286
     assert response.headers.get("HX-Trigger") == "updateSidebarCount"

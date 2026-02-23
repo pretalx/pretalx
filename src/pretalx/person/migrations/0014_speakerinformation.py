@@ -40,5 +40,5 @@ class Migration(migrations.Migration):
                 ),
             ],
             bases=(pretalx.common.models.mixins.LogMixin, models.Model),
-        ),
+        )
     ]

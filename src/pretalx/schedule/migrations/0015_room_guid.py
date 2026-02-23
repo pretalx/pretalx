@@ -14,12 +14,9 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name="room",
-            name="guid",
-            field=models.UUIDField(null=True),
+            model_name="room", name="guid", field=models.UUIDField(null=True)
         ),
         migrations.AlterUniqueTogether(
-            name="room",
-            unique_together={("event", "guid")},
+            name="room", unique_together={("event", "guid")}
         ),
     ]

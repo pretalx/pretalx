@@ -77,11 +77,7 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     def get_queryset(self):
         qs = (
             self.request.event.queued_mails.prefetch_users(self.request.event)
-            .prefetch_related(
-                "submissions",
-                "submissions__track",
-                "submissions__event",
-            )
+            .prefetch_related("submissions", "submissions__track", "submissions__event")
             .select_related("template")
             .filter(state=QueuedMailStates.DRAFT)
             .with_computed_state()
@@ -143,11 +139,7 @@ class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     def get_queryset(self):
         qs = (
             self.request.event.queued_mails.prefetch_users(self.request.event)
-            .prefetch_related(
-                "submissions",
-                "submissions__track",
-                "submissions__event",
-            )
+            .prefetch_related("submissions", "submissions__track", "submissions__event")
             .select_related("template")
             .filter(state__in=[QueuedMailStates.SENT, QueuedMailStates.SENDING])
             .with_computed_state()
@@ -515,8 +507,7 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
             result = form.get_recipients()
             if not result:
                 messages.error(
-                    self.request,
-                    _("There are no recipients matching this selection."),
+                    self.request, _("There are no recipients matching this selection.")
                 )
                 return self.get(self.request, *self.args, **self.kwargs)
 
@@ -568,8 +559,7 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
         else:
             self.success_url = self.request.event.orga_urls.outbox
             messages.success(
-                self.request,
-                phrases.orga.mails_in_outbox.format(count=len(result)),
+                self.request, phrases.orga.mails_in_outbox.format(count=len(result))
             )
         return super().form_valid(form)
 
@@ -638,17 +628,13 @@ class ComposeDraftReminders(EventPermissionRequired, TemplateView):
                     user=speaker.user,
                     event=request.event,
                     locale=submission.get_email_locale(speaker.user.locale),
-                    context_kwargs={
-                        "submission": submission,
-                        "user": speaker.user,
-                    },
+                    context_kwargs={"submission": submission, "user": speaker.user},
                     skip_queue=True,
                     commit=False,
                 )
                 mail_count += 1
         messages.success(
-            request,
-            _("{count} emails have been sent.").format(count=mail_count),
+            request, _("{count} emails have been sent.").format(count=mail_count)
         )
         return redirect(request.event.orga_urls.base)
 
@@ -717,8 +703,6 @@ class MailSidebarCount(EventPermissionRequired, View):
             failed_count=Count("pk", filter=Q(error_data__isnull=False)),
         )
         html = render_to_string(
-            "orga/mails/sidebar_count_fragment.html",
-            counts,
-            request=request,
+            "orga/mails/sidebar_count_fragment.html", counts, request=request
         )
         return HttpResponse(html)

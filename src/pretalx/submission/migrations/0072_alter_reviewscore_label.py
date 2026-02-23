@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0071_alter_review_unique_together"),
-    ]
+    dependencies = [("submission", "0071_alter_review_unique_together")]
 
     operations = [
         migrations.AlterField(
             model_name="reviewscore",
             name="label",
             field=models.CharField(max_length=200, null=True),
-        ),
+        )
     ]

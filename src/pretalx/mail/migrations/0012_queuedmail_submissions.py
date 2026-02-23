@@ -19,5 +19,5 @@ class Migration(migrations.Migration):
             field=models.ManyToManyField(
                 related_name="mails", to="submission.submission"
             ),
-        ),
+        )
     ]

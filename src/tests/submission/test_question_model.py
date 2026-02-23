@@ -35,9 +35,7 @@ def test_missing_answers_submission_question(submission, target, question):
             )
         elif target == "speaker":
             Answer.objects.create(
-                answer="True",
-                speaker=submission.speakers.first(),
-                question=question,
+                answer="True", speaker=submission.speakers.first(), question=question
             )
         assert question.missing_answers() == 0
 
@@ -230,11 +228,7 @@ def test_generate_unique_codes_batch(choice_question):
 
 @pytest.mark.parametrize(
     ("target", "related_attr"),
-    (
-        ("submission", "submission"),
-        ("speaker", "speaker"),
-        ("reviewer", "review"),
-    ),
+    (("submission", "submission"), ("speaker", "speaker"), ("reviewer", "review")),
 )
 @pytest.mark.django_db
 def test_answer_file_path(
@@ -277,9 +271,7 @@ def test_answer_file_deleted_on_answer_delete(event, submission):
             target=QuestionTarget.SUBMISSION,
         )
         answer = Answer.objects.create(
-            question=question,
-            submission=submission,
-            answer="",
+            question=question, submission=submission, answer=""
         )
         answer.answer_file.save("test.pdf", ContentFile(b"test content"), save=True)
         file_path = answer.answer_file.name
@@ -301,9 +293,7 @@ def test_answer_file_deleted_on_file_replace(event, submission):
             target=QuestionTarget.SUBMISSION,
         )
         answer = Answer.objects.create(
-            question=question,
-            submission=submission,
-            answer="",
+            question=question, submission=submission, answer=""
         )
         answer.answer_file.save("old_file.pdf", ContentFile(b"old content"), save=True)
         old_file_path = answer.answer_file.name

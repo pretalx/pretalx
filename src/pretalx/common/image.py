@@ -10,14 +10,8 @@ from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.utils.translation import gettext_lazy as _
 
-THUMBNAIL_SIZES = {
-    "tiny": (64, 64),
-    "default": (460, 460),
-}
-MAX_DIMENSIONS = (
-    settings.IMAGE_DEFAULT_MAX_WIDTH,
-    settings.IMAGE_DEFAULT_MAX_HEIGHT,
-)
+THUMBNAIL_SIZES = {"tiny": (64, 64), "default": (460, 460)}
+MAX_DIMENSIONS = (settings.IMAGE_DEFAULT_MAX_WIDTH, settings.IMAGE_DEFAULT_MAX_HEIGHT)
 WEBP_SETTINGS = {
     "format": "WEBP",
     "quality": 95,  # Not too much compression in case images are used in print

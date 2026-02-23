@@ -9,9 +9,7 @@ import pretalx.person.models.information
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0020_auto_20180922_0511"),
-    ]
+    dependencies = [("person", "0020_auto_20180922_0511")]
 
     operations = [
         migrations.AlterField(

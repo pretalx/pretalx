@@ -87,10 +87,7 @@ class Command(Parent):
         # We only need one file, as it's empty anyway
         # (and we don't use numbers or other fancy features.)
         subprocess.run(
-            "npm run i18n:convert2gettext",
-            check=True,
-            shell=True,
-            cwd=frontend_path,
+            "npm run i18n:convert2gettext", check=True, shell=True, cwd=frontend_path
         )
 
         # Now merge the js file with the django file in each language

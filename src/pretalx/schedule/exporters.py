@@ -187,11 +187,7 @@ class FrabJsonExporter(ScheduleData):
                     for room in self.event.rooms.all()
                 ],
                 "tracks": [
-                    {
-                        "name": str(track.name),
-                        "slug": track.slug,
-                        "color": track.color,
-                    }
+                    {"name": str(track.name), "slug": track.slug, "color": track.color}
                     for track in self.event.tracks.all()
                 ],
                 "days": [

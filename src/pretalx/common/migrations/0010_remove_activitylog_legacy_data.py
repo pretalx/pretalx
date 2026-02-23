@@ -5,13 +5,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("common", "0009_activitylog_migrate_to_jsonfield"),
-    ]
+    dependencies = [("common", "0009_activitylog_migrate_to_jsonfield")]
 
-    operations = [
-        migrations.RemoveField(
-            model_name="activitylog",
-            name="legacy_data",
-        ),
-    ]
+    operations = [migrations.RemoveField(model_name="activitylog", name="legacy_data")]

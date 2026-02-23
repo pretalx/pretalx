@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 migrations.RunSQL(
                     sql="ALTER TABLE submission_submission_speakers RENAME TO submission_speakerrole",
                     reverse_sql="ALTER TABLE submission_speakerrole RENAME TO submission_submission_speakers",
-                ),
+                )
             ],
             state_operations=[
                 migrations.CreateModel(
@@ -51,9 +51,7 @@ class Migration(migrations.Migration):
                             ),
                         ),
                     ],
-                    options={
-                        "unique_together": {("submission", "user")},
-                    },
+                    options={"unique_together": {("submission", "user")}},
                 ),
                 migrations.AlterField(
                     model_name="submission",
@@ -65,5 +63,5 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-        ),
+        )
     ]

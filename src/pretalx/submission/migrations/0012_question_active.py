@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0011_submission_invitation_token"),
-    ]
+    dependencies = [("submission", "0011_submission_invitation_token")]
 
     operations = [
         migrations.AddField(
             model_name="question",
             name="active",
             field=models.BooleanField(default=True),
-        ),
+        )
     ]

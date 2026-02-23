@@ -7,13 +7,8 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0017_auto_20180115_1743"),
-    ]
+    dependencies = [("submission", "0017_auto_20180115_1743")]
 
     operations = [
-        migrations.RemoveField(
-            model_name="submissiontype",
-            name="max_duration",
-        ),
+        migrations.RemoveField(model_name="submissiontype", name="max_duration")
     ]

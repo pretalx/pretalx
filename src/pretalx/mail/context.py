@@ -299,8 +299,7 @@ def base_placeholders(sender, **kwargs):
             ["speaker_schedule_new", "notifications"],
             ["user", "event"],
             lambda user, event: render_notifications(
-                get_current_notifications(user, event),
-                event,
+                get_current_notifications(user, event), event
             ),
             _(
                 "- Your session “Title” will take place at {time} in Room 101.\n"
@@ -314,8 +313,7 @@ def base_placeholders(sender, **kwargs):
             "speaker_schedule_full",
             ["user", "event"],
             lambda user, event: render_notifications(
-                get_full_notifications(user, event),
-                event,
+                get_full_notifications(user, event), event
             ),
             _(
                 "- Your session “Title” will take place at {time} in Room 101.\n"

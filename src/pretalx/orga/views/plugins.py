@@ -24,8 +24,7 @@ class EventPluginsView(EventPermissionRequired, TemplateView):
         for label, url_name, kwargs in links:
             try:
                 url = reverse(
-                    url_name,
-                    kwargs={"event": self.request.event.slug, **kwargs},
+                    url_name, kwargs={"event": self.request.event.slug, **kwargs}
                 )
                 result.append((url, str(label)))
             except NoReverseMatch:

@@ -17,9 +17,7 @@ class ResetForm(forms.Form):
     default_renderer = InlineFormLabelRenderer
 
     login_email = forms.EmailField(
-        max_length=60,
-        label=phrases.base.enter_email,
-        required=True,
+        max_length=60, label=phrases.base.enter_email, required=True
     )
 
     def clean(self):
@@ -38,9 +36,7 @@ class RecoverForm(forms.Form):
 
     password = NewPasswordField(label=phrases.base.new_password, required=False)
     password_repeat = NewPasswordConfirmationField(
-        label=phrases.base.password_repeat,
-        required=False,
-        confirm_with="password",
+        label=phrases.base.password_repeat, required=False, confirm_with="password"
     )
 
     def clean(self):

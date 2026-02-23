@@ -5,9 +5,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0096_speakerprofile_finalize"),
-    ]
+    dependencies = [("submission", "0096_speakerprofile_finalize")]
 
     operations = [
         migrations.AddField(

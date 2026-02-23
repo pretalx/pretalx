@@ -44,10 +44,7 @@ class QuestionColumnMixin:
             extra_columns.append(
                 (
                     column_name,
-                    QuestionColumn(
-                        verbose_name=question.question,
-                        question=question,
-                    ),
+                    QuestionColumn(verbose_name=question.question, question=question),
                 )
             )
         return extra_columns
@@ -85,8 +82,7 @@ class QuestionColumnMixin:
         filter_field = self._get_answer_filter_field()
         answers = (
             Answer.objects.filter(
-                **{filter_field: record_ids},
-                question__in=self.short_questions,
+                **{filter_field: record_ids}, question__in=self.short_questions
             )
             .select_related("question")
             .prefetch_related("options")
@@ -630,10 +626,7 @@ class BooleanColumn(tables.Column):
     TRUE_MARK = mark_safe('<i class="fa fa-check-circle text-success"></i>')
     FALSE_MARK = mark_safe('<i class="fa fa-times-circle text-danger"></i>')
     EMPTY_MARK = mark_safe('<span class="text-muted">&mdash;</span>')
-    attrs = {
-        "td": {"class": "text-center"},
-        "th": {"class": "text-center"},
-    }
+    attrs = {"td": {"class": "text-center"}, "th": {"class": "text-center"}}
 
     def render(self, value):
         if value is None:

@@ -24,5 +24,5 @@ urlpatterns = [
         rf"^orga/event/(?P<event>{SLUG_REGEX})/settings/p/tests/$",
         DummyPluginView.as_view(),
         name="settings",
-    ),
+    )
 ]

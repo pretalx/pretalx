@@ -87,8 +87,7 @@ class TestMailView(PermissionRequired, View):
             )
         except Exception as e:
             messages.error(
-                request,
-                _("Failed to send test email: {error}").format(error=str(e)),
+                request, _("Failed to send test email: {error}").format(error=str(e))
             )
 
         return redirect(reverse("orga:admin.dashboard"))
@@ -154,9 +153,7 @@ class AdminUserView(OrgaCRUDView):
             "teams__organiser",
             "teams__organiser__events",
             "teams__limit_events",
-        ).annotate(
-            submission_count=Count("profiles__submissions", distinct=True),
-        )
+        ).annotate(submission_count=Count("profiles__submissions", distinct=True))
 
     def has_permission(self, *args):
         return self.request.user.is_administrator

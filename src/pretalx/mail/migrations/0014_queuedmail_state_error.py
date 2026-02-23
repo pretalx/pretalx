@@ -11,20 +11,14 @@ def populate_state(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("mail", "0013_mailtemplate_role"),
-    ]
+    dependencies = [("mail", "0013_mailtemplate_role")]
 
     operations = [
         migrations.AddField(
             model_name="queuedmail",
             name="state",
             field=models.CharField(
-                choices=[
-                    ("draft", "Draft"),
-                    ("sending", "Sending"),
-                    ("sent", "Sent"),
-                ],
+                choices=[("draft", "Draft"), ("sending", "Sending"), ("sent", "Sent")],
                 db_index=True,
                 default="draft",
                 max_length=10,

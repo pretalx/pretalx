@@ -179,9 +179,7 @@ def test_orga_can_create_rooms(client, orga_user_write_token, event):
         follow=True,
         data={"name": "newtestroom", "capacity": 100},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 201, response.text
     with scope(event=event):
@@ -196,9 +194,7 @@ def test_orga_cannot_create_rooms_readonly_token(client, orga_user_token, event)
         follow=True,
         data={"name": "newtestroom"},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=event):
@@ -257,9 +253,7 @@ def test_orga_can_delete_rooms(client, orga_user_write_token, event, room):
     response = client.delete(
         event.api_urls.rooms + f"{room.pk}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 204
     with scope(event=room.event):
@@ -298,9 +292,7 @@ def test_orga_can_create_room_with_availabilities(client, orga_user_write_token,
             }
         ),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 201, response.text
     data = json.loads(response.text)
@@ -334,9 +326,7 @@ def test_orga_can_update_room_availabilities(client, orga_user_write_token, room
             {"availabilities": [{"start": start1.isoformat(), "end": end1.isoformat()}]}
         ),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200
 
@@ -347,9 +337,7 @@ def test_orga_can_update_room_availabilities(client, orga_user_write_token, room
             {"availabilities": [{"start": start2.isoformat(), "end": end2.isoformat()}]}
         ),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200
     data = json.loads(response.text)
@@ -379,9 +367,7 @@ def test_orga_can_remove_room_availabilities(client, orga_user_write_token, room
             {"availabilities": [{"start": start.isoformat(), "end": end.isoformat()}]}
         ),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200
 
@@ -390,9 +376,7 @@ def test_orga_can_remove_room_availabilities(client, orga_user_write_token, room
         follow=True,
         data=json.dumps({"availabilities": []}),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200
     data = json.loads(response.text)
@@ -424,9 +408,7 @@ def test_room_availability_uses_event_timezone(client, orga_user_write_token, ev
             }
         ),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
 
     assert response.status_code == 201
@@ -461,9 +443,7 @@ def test_orga_can_create_overlapping_availabilities(
             }
         ),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 201
     data = json.loads(response.text)

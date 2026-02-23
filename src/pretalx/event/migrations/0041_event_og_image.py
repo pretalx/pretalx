@@ -9,9 +9,7 @@ import pretalx.event.models.event
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0040_alter_event_settingsstore_unique_together"),
-    ]
+    dependencies = [("event", "0040_alter_event_settingsstore_unique_together")]
 
     operations = [
         migrations.AddField(

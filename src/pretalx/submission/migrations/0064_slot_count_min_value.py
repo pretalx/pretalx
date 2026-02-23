@@ -25,6 +25,4 @@ class Migration(migrations.Migration):
         ("schedule", "0001_initial"),
     ]
 
-    operations = [
-        migrations.RunPython(fix_min_value, migrations.RunPython.noop),
-    ]
+    operations = [migrations.RunPython(fix_min_value, migrations.RunPython.noop)]

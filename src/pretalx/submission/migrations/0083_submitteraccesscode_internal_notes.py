@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0082_question_icon"),
-    ]
+    dependencies = [("submission", "0082_question_icon")]
 
     operations = [
         migrations.AddField(
             model_name="submitteraccesscode",
             name="internal_notes",
             field=models.TextField(null=True),
-        ),
+        )
     ]

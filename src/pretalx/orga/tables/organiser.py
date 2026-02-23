@@ -36,10 +36,4 @@ class TeamTable(PretalxTable):
 
     class Meta:
         model = Team
-        fields = (
-            "name",
-            "member_count",
-            "all_events",
-            "is_reviewer",
-            "actions",
-        )
+        fields = ("name", "member_count", "all_events", "is_reviewer", "actions")

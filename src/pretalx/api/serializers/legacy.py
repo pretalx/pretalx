@@ -209,10 +209,7 @@ class LegacySubmissionSerializer(I18nAwareModelSerializer):
         )
         if has_slots or self.can_view_speakers:
             return self.speaker_serializer_class(
-                obj.sorted_speakers,
-                many=True,
-                context=self.context,
-                event=self.event,
+                obj.sorted_speakers, many=True, context=self.context, event=self.event
             ).data
         return []
 
@@ -342,15 +339,7 @@ class LegacyRoomSerializer(PretalxSerializer):
 
     class Meta:
         model = Room
-        fields = (
-            "id",
-            "guid",
-            "name",
-            "description",
-            "capacity",
-            "position",
-            "url",
-        )
+        fields = ("id", "guid", "name", "description", "capacity", "position", "url")
 
 
 @register_serializer(versions=[LEGACY], class_name="RoomOrgaSerializer")
@@ -398,14 +387,10 @@ class LegacyQuestionSerializer(ModelSerializer):
 @register_serializer(versions=[LEGACY], class_name="AnswerSerializer")
 class LegacyAnswerSerializer(ModelSerializer):
     submission = SlugRelatedField(
-        queryset=Submission.objects.none(),
-        slug_field="code",
-        required=False,
+        queryset=Submission.objects.none(), slug_field="code", required=False
     )
     person = SlugRelatedField(
-        queryset=User.objects.all(),
-        slug_field="code",
-        required=False,
+        queryset=User.objects.all(), slug_field="code", required=False
     )
     options = LegacyAnswerOptionSerializer(many=True, required=False)
     question = LegacyQuestionSerializer(Question.objects.none())

@@ -9,9 +9,7 @@ import pretalx.submission.models.question
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0012_question_active"),
-    ]
+    dependencies = [("submission", "0012_question_active")]
 
     operations = [
         migrations.AddField(

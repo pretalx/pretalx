@@ -888,9 +888,7 @@ def test_widget_settings(event, orga_client):
     response = orga_client.get(event.orga_urls.widget_settings, follow=True)
     response = orga_client.post(
         event.orga_urls.widget_settings,
-        {
-            "show_widget_if_not_public": "on",
-        },
+        {"show_widget_if_not_public": "on"},
         follow=True,
     )
     assert response.status_code == 200

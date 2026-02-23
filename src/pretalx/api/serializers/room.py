@@ -21,15 +21,7 @@ class RoomSerializer(AvailabilitiesMixin, PretalxSerializer):
 
     class Meta:
         model = Room
-        fields = (
-            "id",
-            "name",
-            "description",
-            "uuid",
-            "guid",
-            "capacity",
-            "position",
-        )
+        fields = ("id", "name", "description", "uuid", "guid", "capacity", "position")
 
 
 @register_serializer(versions=CURRENT_VERSIONS)

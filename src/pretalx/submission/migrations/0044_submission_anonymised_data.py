@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0043_auto_20200124_1213"),
-    ]
+    dependencies = [("submission", "0043_auto_20200124_1213")]
 
     operations = [
         migrations.AddField(
             model_name="submission",
             name="anonymised_data",
             field=models.TextField(blank=True, default="{}", null=True),
-        ),
+        )
     ]

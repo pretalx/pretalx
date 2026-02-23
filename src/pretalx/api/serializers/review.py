@@ -34,7 +34,7 @@ class ReviewScoreCategorySerializer(PretalxSerializer):
             "limit_tracks": (
                 "pretalx.api.serializers.submission.TrackSerializer",
                 {"read_only": True, "many": True},
-            ),
+            )
         }
 
 
@@ -47,7 +47,7 @@ class ReviewScoreSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             "category": (
                 "pretalx.api.serializers.review.ReviewScoreCategorySerializer",
                 {"read_only": True},
-            ),
+            )
         }
 
 
@@ -79,14 +79,7 @@ class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
     class Meta:
         model = Review
-        fields = [
-            "id",
-            "submission",
-            "text",
-            "score",
-            "scores",
-            "answers",
-        ]
+        fields = ["id", "submission", "text", "score", "scores", "answers"]
         read_only_fields = ("submission",)
         expandable_fields = {
             "submission": (

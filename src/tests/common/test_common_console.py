@@ -9,50 +9,17 @@ from pretalx.common.text.console import get_separator, print_line
 @pytest.mark.parametrize(
     ("args", "expected"),
     (
-        (
-            (False, True, True, False),
-            "┬",
-        ),
-        (
-            (True, False, False, True),
-            "┴",
-        ),
-        (
-            (False, False, True, True),
-            "┤",
-        ),
-        (
-            (True, True, False, False),
-            "├",
-        ),
-        (
-            (False, True, False, True),
-            "┼",
-        ),
-        (
-            (True, False, True, False),
-            "┼",
-        ),
-        (
-            (True, True, True, True),
-            "┼",
-        ),
-        (
-            (False, True, True, True),
-            "┼",
-        ),
-        (
-            (True, False, True, True),
-            "┼",
-        ),
-        (
-            (True, True, False, True),
-            "┼",
-        ),
-        (
-            (True, True, True, False),
-            "┼",
-        ),
+        ((False, True, True, False), "┬"),
+        ((True, False, False, True), "┴"),
+        ((False, False, True, True), "┤"),
+        ((True, True, False, False), "├"),
+        ((False, True, False, True), "┼"),
+        ((True, False, True, False), "┼"),
+        ((True, True, True, True), "┼"),
+        ((False, True, True, True), "┼"),
+        ((True, False, True, True), "┼"),
+        ((True, True, False, True), "┼"),
+        ((True, True, True, False), "┼"),
     ),
 )
 def test_get_separatro(args, expected):

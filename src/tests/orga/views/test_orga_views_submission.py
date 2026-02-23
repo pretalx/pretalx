@@ -77,8 +77,7 @@ def test_orga_can_search_submissions_by_speaker(orga_client, event, submission):
     with scopes_disabled():
         speaker_name = submission.speakers.first().get_display_name()[:5]
     response = orga_client.get(
-        event.orga_urls.submissions + f"?q={speaker_name}",
-        follow=True,
+        event.orga_urls.submissions + f"?q={speaker_name}", follow=True
     )
     assert response.status_code == 200
     assert submission.title in response.text
@@ -89,8 +88,7 @@ def test_reviewer_can_search_submissions_by_speaker(review_client, event, submis
     with scopes_disabled():
         speaker_name = submission.speakers.first().get_display_name()[:5]
     response = review_client.get(
-        event.orga_urls.submissions + f"?q={speaker_name}&state=submitted",
-        follow=True,
+        event.orga_urls.submissions + f"?q={speaker_name}&state=submitted", follow=True
     )
     assert response.status_code == 200
     assert submission.title in response.text
@@ -107,8 +105,7 @@ def test_reviewer_cannot_search_submissions_by_speaker_when_anonymised(
     with scopes_disabled():
         speaker_name = submission.speakers.first().get_display_name()[:5]
     response = review_client.get(
-        event.orga_urls.submissions + f"?q={speaker_name}",
-        follow=True,
+        event.orga_urls.submissions + f"?q={speaker_name}", follow=True
     )
     assert response.status_code == 200
     assert submission.title not in response.text
@@ -127,8 +124,7 @@ def test_reviewer_cannot_search_submissions_by_speaker_when_anonymised_on_team_l
     with scopes_disabled():
         speaker_name = submission.speakers.first().get_display_name()[:5]
     response = review_client.get(
-        event.orga_urls.submissions + f"?q={speaker_name}",
-        follow=True,
+        event.orga_urls.submissions + f"?q={speaker_name}", follow=True
     )
     assert response.status_code == 200
     assert submission.title not in response.text
@@ -145,8 +141,7 @@ def test_orga_can_miss_search_submissions(orga_client, event, submission):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "field",
-    ("description", "abstract", "notes", "internal_notes"),
+    "field", ("description", "abstract", "notes", "internal_notes")
 )
 def test_fulltext_search_finds_submission_by_field(
     orga_client, event, submission, field
@@ -386,9 +381,7 @@ def test_orga_can_add_speakers(orga_client, submission, other_orga_user, user):
     user = other_orga_user.email if user == "EMAIL" else "some_unused@mail.org"
 
     response = orga_client.post(
-        submission.orga_urls.speakers,
-        data={"email": user},
-        follow=True,
+        submission.orga_urls.speakers, data={"email": user}, follow=True
     )
     submission.refresh_from_db()
 
@@ -434,8 +427,7 @@ def test_orga_can_remove_speaker(orga_client, submission):
         assert submission.speakers.count() == 1
         speaker_pk = submission.speakers.first().pk
     response = orga_client.get(
-        submission.orga_urls.delete_speaker + "?id=" + str(speaker_pk),
-        follow=True,
+        submission.orga_urls.delete_speaker + "?id=" + str(speaker_pk), follow=True
     )
     submission.refresh_from_db()
     assert response.status_code == 200
@@ -544,8 +536,7 @@ def test_orga_can_reorder_speakers(orga_client, submission, speaker, other_speak
         role1 = SpeakerRole.objects.get(submission=submission, speaker=speaker_profile)
         role2 = SpeakerRole.objects.get(submission=submission, speaker=other_profile)
     response = orga_client.post(
-        submission.orga_urls.reorder_speakers,
-        data={"order": f"{role2.pk},{role1.pk}"},
+        submission.orga_urls.reorder_speakers, data={"order": f"{role2.pk},{role1.pk}"}
     )
     assert response.status_code == 204
     with scope(event=submission.event):
@@ -556,8 +547,7 @@ def test_orga_can_reorder_speakers(orga_client, submission, speaker, other_speak
 @pytest.mark.django_db
 def test_orga_reorder_speakers_empty_order(orga_client, submission, speaker):
     response = orga_client.post(
-        submission.orga_urls.reorder_speakers,
-        data={"order": ""},
+        submission.orga_urls.reorder_speakers, data={"order": ""}
     )
     assert response.status_code == 400
 
@@ -1215,9 +1205,7 @@ def test_orga_can_post_submission_comment(orga_client, submission):
 @pytest.mark.django_db
 def test_orga_cannot_post_empty_submission_comment(orga_client, submission):
     response = orga_client.post(
-        submission.orga_urls.comments,
-        data={"text": ""},
-        follow=True,
+        submission.orga_urls.comments, data={"text": ""}, follow=True
     )
     assert response.status_code == 200
     with scope(event=submission.event):

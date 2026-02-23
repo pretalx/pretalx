@@ -103,5 +103,5 @@ class Migration(migrations.Migration):
         migrations.RunPython(
             migrate_drf_tokens_to_userapitokens,
             reverse_code=migrate_drf_tokens_to_userapitokens_reverse,
-        ),
+        )
     ]

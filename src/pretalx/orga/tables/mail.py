@@ -19,10 +19,7 @@ from pretalx.orga.utils.i18n import Translate
 
 
 class MailTemplateTable(PretalxTable):
-    default_columns = (
-        "role",
-        "subject",
-    )
+    default_columns = ("role", "subject")
 
     role = TemplateColumn(
         linkify=lambda record: record.urls.edit,
@@ -43,32 +40,19 @@ class MailTemplateTable(PretalxTable):
                     f"{record.event.orga_urls.compose_mails_sessions}?template={record.pk}"
                 ),
             },
-            "delete": {
-                "condition": lambda record: not record.role,
-            },
+            "delete": {"condition": lambda record: not record.role},
             "edit": {},
         }
     )
 
     class Meta:
         model = MailTemplate
-        fields = (
-            "role",
-            "subject",
-            "reply_to",
-            "bcc",
-            "actions",
-        )
+        fields = ("role", "subject", "reply_to", "bcc", "actions")
 
 
 class OutboxMailTable(PretalxTable):
     exempt_columns = ("pk", "actions", "status_display")
-    default_columns = (
-        "subject",
-        "to_recipients",
-        "submissions",
-        "template_info",
-    )
+    default_columns = ("subject", "to_recipients", "submissions", "template_info")
 
     status_display = SortableTemplateColumn(
         template_name="orga/tables/columns/queued_mail_status.html",
@@ -76,8 +60,7 @@ class OutboxMailTable(PretalxTable):
         order_by=("computed_state",),
     )
     subject = SortableColumn(
-        linkify=lambda record: record.urls.edit,
-        verbose_name=_("Subject"),
+        linkify=lambda record: record.urls.edit, verbose_name=_("Subject")
     )
     to_recipients = SortableTemplateColumn(
         template_name="orga/tables/columns/queued_mail_recipients.html",
@@ -94,9 +77,7 @@ class OutboxMailTable(PretalxTable):
         verbose_name=_("Template"),
         order_by=("template__role",),
     )
-    locale = tables.Column(
-        verbose_name=_("Language"),
-    )
+    locale = tables.Column(verbose_name=_("Language"))
     actions = ActionsColumn(
         verbose_name="",
         actions={
@@ -119,12 +100,8 @@ class OutboxMailTable(PretalxTable):
                     f'hx-post="{record.urls.send}" hx-target="closest tr" hx-swap="delete"'
                 ),
             },
-            "edit": {
-                "url": "urls.edit",
-            },
-            "delete": {
-                "url": "urls.delete",
-            },
+            "edit": {"url": "urls.edit"},
+            "delete": {"url": "urls.delete"},
         },
     )
 

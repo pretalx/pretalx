@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("mail", "0008_auto_20210830_2352"),
-    ]
+    dependencies = [("mail", "0008_auto_20210830_2352")]
 
     operations = [
         migrations.AddField(
             model_name="queuedmail",
             name="locale",
             field=models.CharField(max_length=32, null=True),
-        ),
+        )
     ]

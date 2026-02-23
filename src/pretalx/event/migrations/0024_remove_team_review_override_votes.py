@@ -7,13 +7,8 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0023_update_featured_visibility"),
-    ]
+    dependencies = [("event", "0023_update_featured_visibility")]
 
     operations = [
-        migrations.RemoveField(
-            model_name="team",
-            name="review_override_votes",
-        ),
+        migrations.RemoveField(model_name="team", name="review_override_votes")
     ]

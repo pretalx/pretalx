@@ -9,9 +9,7 @@ import pretalx.submission.models.cfp
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0060_alter_answeroption_answer"),
-    ]
+    dependencies = [("submission", "0060_alter_answeroption_answer")]
 
     operations = [
         migrations.AddField(

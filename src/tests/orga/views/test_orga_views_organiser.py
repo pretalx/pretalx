@@ -311,11 +311,7 @@ class TestEventCreation:
         }
         if copy_from_event:
             data["copy_from_event"] = copy_from_event
-        return self.post(
-            step="basics",
-            data=data,
-            client=client,
-        )
+        return self.post(step="basics", data=data, client=client)
 
     def submit_timeline(self, deadline, client):
         _now = now()

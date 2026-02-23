@@ -20,10 +20,7 @@ class ExportForm(forms.Form):
         help_text=_(
             "A CSV export can be opened directly in Excel and similar applications."
         ),
-        choices=(
-            ("csv", _("CSV export")),
-            ("json", _("JSON export")),
-        ),
+        choices=(("csv", _("CSV export")), ("json", _("JSON export"))),
         widget=forms.RadioSelect,
     )
     data_delimiter = forms.ChoiceField(
@@ -32,10 +29,7 @@ class ExportForm(forms.Form):
         help_text=_(
             "How do you want to separate data within a single cell (for example, multiple speakers in one session/multiple sessions for one speaker)?"
         ),
-        choices=(
-            ("newline", _("Newline")),
-            ("comma", _("Comma")),
-        ),
+        choices=(("newline", _("Newline")), ("comma", _("Comma"))),
         widget=forms.RadioSelect,
     )
 
@@ -148,10 +142,7 @@ class ExportForm(forms.Form):
         return self.json_export(data)
 
     def csv_export(self, data):
-        delimiters = {
-            "newline": "\n",
-            "comma": ", ",
-        }
+        delimiters = {"newline": "\n", "comma": ", "}
         delimiter = delimiters[self.cleaned_data.get("data_delimiter") or "newline"]
 
         for row in data:

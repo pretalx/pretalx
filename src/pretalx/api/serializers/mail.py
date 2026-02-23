@@ -13,14 +13,7 @@ from pretalx.mail.models import MailTemplate
 class MailTemplateSerializer(PretalxSerializer):
     class Meta:
         model = MailTemplate
-        fields = (
-            "id",
-            "role",
-            "subject",
-            "text",
-            "reply_to",
-            "bcc",
-        )
+        fields = ("id", "role", "subject", "text", "reply_to", "bcc")
 
     def create(self, validated_data):
         validated_data["event"] = self.event

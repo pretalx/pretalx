@@ -9,9 +9,7 @@ import pretalx.submission.models.submission
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0019_submissiontype_deadline"),
-    ]
+    dependencies = [("submission", "0019_submissiontype_deadline")]
 
     operations = [
         migrations.AddField(
@@ -22,5 +20,5 @@ class Migration(migrations.Migration):
                 null=True,
                 upload_to=pretalx.submission.models.submission.submission_image_path,
             ),
-        ),
+        )
     ]

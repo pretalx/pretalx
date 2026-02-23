@@ -7,9 +7,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0034_fix_language_codes"),
-    ]
+    dependencies = [("event", "0034_fix_language_codes")]
 
     operations = [
         migrations.AddField(

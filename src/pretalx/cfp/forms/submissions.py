@@ -64,8 +64,7 @@ class SubmissionInvitationForm(forms.Form):
     def save(self):
         email = self.cleaned_data["speaker"]
         self.invitation, created = SubmissionInvitation.objects.get_or_create(
-            submission=self.submission,
-            email=email,
+            submission=self.submission, email=email
         )
         if not created:  # pragma: no cover
             return self.invitation
@@ -75,8 +74,6 @@ class SubmissionInvitationForm(forms.Form):
         )
 
         self.invitation.send(
-            _from=self.speaker,
-            subject=self.cleaned_data["subject"],
-            text=text,
+            _from=self.speaker, subject=self.cleaned_data["subject"], text=text
         )
         return self.invitation

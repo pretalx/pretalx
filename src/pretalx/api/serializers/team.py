@@ -15,22 +15,14 @@ from pretalx.submission.models import Track
 class TeamMemberSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     class Meta:
         model = User
-        fields = (
-            "code",
-            "name",
-            "email",
-        )
+        fields = ("code", "name", "email")
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class TeamInviteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     class Meta:
         model = TeamInvite
-        fields = (
-            "id",
-            "email",
-            "token",
-        )
+        fields = ("id", "email", "token")
 
 
 @register_serializer(versions=CURRENT_VERSIONS)

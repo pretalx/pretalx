@@ -45,9 +45,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={
-                "abstract": False,
-            },
+            options={"abstract": False},
             bases=(
                 pretalx.common.models.mixins.LogMixin,
                 pretalx.common.models.mixins.FileCleanupMixin,
@@ -55,7 +53,6 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterUniqueTogether(
-            name="submissionfavourite",
-            unique_together={("user", "submission")},
+            name="submissionfavourite", unique_together={("user", "submission")}
         ),
     ]

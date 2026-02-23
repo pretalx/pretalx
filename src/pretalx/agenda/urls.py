@@ -40,11 +40,7 @@ urlpatterns = [
         "<slug:event>/",
         include(
             [
-                path(
-                    "widgets/schedule.js",
-                    widget.widget_script,
-                    name="widget.script",
-                ),
+                path("widgets/schedule.js", widget.widget_script, name="widget.script"),
                 path("static/event.css", widget.event_css, name="event.css"),
                 path(
                     "schedule/changelog/",
@@ -91,21 +87,11 @@ urlpatterns = [
                     talk.FeedbackView.as_view(),
                     name="feedback",
                 ),
+                path("talk/<slug>.ics", talk.SingleICalView.as_view(), name="ical"),
                 path(
-                    "talk/<slug>.ics",
-                    talk.SingleICalView.as_view(),
-                    name="ical",
+                    "talk/review/<slug>", talk.TalkReviewView.as_view(), name="review"
                 ),
-                path(
-                    "talk/review/<slug>",
-                    talk.TalkReviewView.as_view(),
-                    name="review",
-                ),
-                path(
-                    "speaker/<code>/",
-                    speaker.SpeakerView.as_view(),
-                    name="speaker",
-                ),
+                path("speaker/<code>/", speaker.SpeakerView.as_view(), name="speaker"),
                 path(
                     "speaker/<code>/og-image",
                     speaker.SpeakerSocialMediaCard.as_view(),

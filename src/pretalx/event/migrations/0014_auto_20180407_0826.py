@@ -57,8 +57,7 @@ def build_organisers(apps, schema_editor):
     Organiser = apps.get_model("event", "Organiser")
     for event in Event.objects.all():
         organiser = Organiser.objects.create(
-            name=str(event.name) + " Organiser",
-            slug=event.slug + "org",
+            name=str(event.name) + " Organiser", slug=event.slug + "org"
         )
         event.organiser = organiser
         event.save()
@@ -77,10 +76,8 @@ def remove_organisers(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0013_auto_20180407_0817"),
-    ]
+    dependencies = [("event", "0013_auto_20180407_0817")]
 
     operations = [
-        migrations.RunPython(code=build_organisers, reverse_code=remove_organisers),
+        migrations.RunPython(code=build_organisers, reverse_code=remove_organisers)
     ]

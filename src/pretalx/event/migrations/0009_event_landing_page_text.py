@@ -8,14 +8,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0008_event_logo"),
-    ]
+    dependencies = [("event", "0008_event_logo")]
 
     operations = [
         migrations.AddField(
             model_name="event",
             name="landing_page_text",
             field=i18nfield.fields.I18nTextField(blank=True, null=True),
-        ),
+        )
     ]

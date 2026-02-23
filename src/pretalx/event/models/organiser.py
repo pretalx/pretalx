@@ -148,10 +148,7 @@ class Organiser(PretalxModel):
             action_type="pretalx.organiser.delete",
             content_object=self,
             is_orga_action=True,
-            data={
-                "slug": self.slug,
-                "name": str(self.name),
-            },
+            data={"slug": self.slug, "name": str(self.name)},
         )
         for event in self.events.all():
             with scope(event=event):
@@ -291,11 +288,7 @@ class TeamInvite(PretalxModel):
     team = models.ForeignKey(to=Team, related_name="invites", on_delete=models.CASCADE)
     email = models.EmailField(null=True, blank=True, verbose_name=_("Email"))
     token = models.CharField(
-        default=generate_invite_token,
-        max_length=64,
-        null=True,
-        blank=True,
-        unique=True,
+        default=generate_invite_token, max_length=64, null=True, blank=True, unique=True
     )
 
     objects = models.Manager()

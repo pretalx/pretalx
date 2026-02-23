@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0053_reviewphase_can_tag_submissions"),
-    ]
+    dependencies = [("submission", "0053_reviewphase_can_tag_submissions")]
 
     operations = [
         migrations.AddField(
             model_name="reviewscorecategory",
             name="limit_tracks",
             field=models.ManyToManyField(to="submission.Track"),
-        ),
+        )
     ]

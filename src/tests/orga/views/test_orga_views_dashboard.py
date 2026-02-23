@@ -210,8 +210,7 @@ def test_organiser_event_list_num_queries(
     with django_assert_num_queries(7):
         response = orga_client.get(
             reverse(
-                "orga:organiser.dashboard",
-                kwargs={"organiser": event.organiser.slug},
+                "orga:organiser.dashboard", kwargs={"organiser": event.organiser.slug}
             )
         )
     assert response.status_code == 200
@@ -240,8 +239,7 @@ def test_organiser_speakers_num_queries(
     with django_assert_num_queries(13):
         response = orga_client.get(
             reverse(
-                "orga:organiser.speakers",
-                kwargs={"organiser": event.organiser.slug},
+                "orga:organiser.speakers", kwargs={"organiser": event.organiser.slug}
             )
         )
     assert response.status_code == 200
@@ -266,14 +264,7 @@ def test_teams_list_num_queries(
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize(
-    ("start_diff", "end_diff"),
-    (
-        (0, 0),
-        (-3, -3),
-        (3, 3),
-    ),
-)
+@pytest.mark.parametrize(("start_diff", "end_diff"), ((0, 0), (-3, -3), (3, 3)))
 def test_event_dashboard_different_times(event, orga_client, start_diff, end_diff):
     with scope(event=event):
         today = now().date()

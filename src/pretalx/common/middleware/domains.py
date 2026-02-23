@@ -97,7 +97,7 @@ class MultiDomainMiddleware:
         # non-event page, try to redirect to the most recent event instead.
         events = Event.objects.filter(
             Q(custom_domain=f"{request.scheme}://{domain}")
-            | Q(custom_domain=f"{request.scheme}://{host}"),
+            | Q(custom_domain=f"{request.scheme}://{host}")
         ).order_by("-date_from")
         if events:
             request.uses_custom_domain = True

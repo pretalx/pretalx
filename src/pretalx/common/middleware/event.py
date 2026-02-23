@@ -90,7 +90,7 @@ class EventPermissionMiddleware:
                         .values("pk")[:1]
                     )
                     annotations = {
-                        "_current_schedule_pk": Subquery(latest_schedule_subquery),
+                        "_current_schedule_pk": Subquery(latest_schedule_subquery)
                     }
                     if request.user.is_authenticated:
                         annotations["request_speaker_name"] = Subquery(

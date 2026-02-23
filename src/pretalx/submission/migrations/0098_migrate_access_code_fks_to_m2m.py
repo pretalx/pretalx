@@ -26,9 +26,7 @@ def copy_fk_to_m2m(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("submission", "0097_submitteraccesscode_submission_types_and_more"),
+        ("submission", "0097_submitteraccesscode_submission_types_and_more")
     ]
 
-    operations = [
-        migrations.RunPython(copy_fk_to_m2m, migrations.RunPython.noop),
-    ]
+    operations = [migrations.RunPython(copy_fk_to_m2m, migrations.RunPython.noop)]

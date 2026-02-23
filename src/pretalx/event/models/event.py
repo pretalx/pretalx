@@ -229,9 +229,7 @@ class Event(PretalxModel):
         max_length=7,
         null=True,
         blank=True,
-        validators=[
-            RegexValidator("#([0-9A-Fa-f]{3}){1,2}"),
-        ],
+        validators=[RegexValidator("#([0-9A-Fa-f]{3}){1,2}")],
         verbose_name=_("Main event colour"),
         help_text=_(
             "Provide a hex value like #00ff00 if you want to style pretalx in your event’s colour scheme."
@@ -637,24 +635,13 @@ class Event(PretalxModel):
             )
 
             category = ReviewScoreCategory.objects.create(
-                event=self,
-                name=str(_("Score")),
+                event=self, name=str(_("Score"))
             )
+            ReviewScore.objects.create(category=category, value=0, label=str(_("No")))
             ReviewScore.objects.create(
-                category=category,
-                value=0,
-                label=str(_("No")),
+                category=category, value=1, label=str(_("Maybe"))
             )
-            ReviewScore.objects.create(
-                category=category,
-                value=1,
-                label=str(_("Maybe")),
-            )
-            ReviewScore.objects.create(
-                category=category,
-                value=2,
-                label=str(_("Yes")),
-            )
+            ReviewScore.objects.create(category=category, value=2, label=str(_("Yes")))
         self.save()
 
     build_initial_data.alters_data = True
@@ -890,8 +877,7 @@ class Event(PretalxModel):
     @property
     def valid_availabilities(self):
         return self.availabilities.all().filter(
-            start__lte=self.datetime_to,
-            end__gte=self.datetime_from,
+            start__lte=self.datetime_to, end__gte=self.datetime_from
         )
 
     @cached_property

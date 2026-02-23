@@ -19,9 +19,7 @@ class Command(shell.Command):  # pragma: no cover
     def add_arguments(self, parser):
         super().add_arguments(parser)
         parser.add_argument(
-            "--print-sql",
-            action="store_true",
-            help="Print all SQL queries.",
+            "--print-sql", action="store_true", help="Print all SQL queries."
         )
         parser.add_argument(
             "--unsafe-disable-scopes",

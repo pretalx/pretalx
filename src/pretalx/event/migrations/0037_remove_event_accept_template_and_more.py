@@ -13,24 +13,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name="event",
-            name="accept_template",
-        ),
-        migrations.RemoveField(
-            model_name="event",
-            name="ack_template",
-        ),
-        migrations.RemoveField(
-            model_name="event",
-            name="question_template",
-        ),
-        migrations.RemoveField(
-            model_name="event",
-            name="reject_template",
-        ),
-        migrations.RemoveField(
-            model_name="event",
-            name="update_template",
-        ),
+        migrations.RemoveField(model_name="event", name="accept_template"),
+        migrations.RemoveField(model_name="event", name="ack_template"),
+        migrations.RemoveField(model_name="event", name="question_template"),
+        migrations.RemoveField(model_name="event", name="reject_template"),
+        migrations.RemoveField(model_name="event", name="update_template"),
     ]

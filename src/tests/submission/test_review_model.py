@@ -42,19 +42,8 @@ def test_median_review_score(submission, scores, expected):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize(
-    ("score", "expected"),
-    (
-        (0, "0"),
-        (1, "1"),
-        (None, "×"),
-    ),
-)
+@pytest.mark.parametrize(("score", "expected"), ((0, "0"), (1, "1"), (None, "×")))
 def test_review_score_display(submission, score, expected, speaker):
-    r = Review.objects.create(
-        submission=submission,
-        user=speaker,
-        score=score,
-    )
+    r = Review.objects.create(submission=submission, user=speaker, score=score)
     assert submission.title in str(r)
     assert r.display_score == expected

@@ -92,11 +92,7 @@ class SubmissionViewMixin(PermissionRequired):
                 "event", "event__cfp", "submission_type", "track", "event__organiser"
             )
             .prefetch_related(
-                "speakers",
-                "tags",
-                "slots",
-                "answers",
-                "answers__question",
+                "speakers", "tags", "slots", "answers", "answers__question"
             )
         )
 
@@ -121,8 +117,7 @@ class SubmissionViewMixin(PermissionRequired):
     @cached_property
     def object(self):
         return get_object_or_404(
-            self.get_queryset(),
-            code__iexact=self.kwargs.get("code"),
+            self.get_queryset(), code__iexact=self.kwargs.get("code")
         )
 
     @context
@@ -374,9 +369,7 @@ class SubmissionInvitationRetract(
     @cached_property
     def invitation(self):
         return get_object_or_404(
-            SubmissionInvitation,
-            pk=self.request.GET.get("id"),
-            submission=self.object,
+            SubmissionInvitation, pk=self.request.GET.get("id"), submission=self.object
         )
 
     @property
@@ -464,8 +457,7 @@ class SubmissionContent(
     def object(self):
         try:
             return get_object_or_404(
-                self.get_queryset(),
-                code__iexact=self.kwargs.get("code"),
+                self.get_queryset(), code__iexact=self.kwargs.get("code")
             )
         except Http404 as not_found:
             if self.request.path.rstrip("/").endswith("/new"):
@@ -731,8 +723,7 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
         return questions_for_user(
             self.request.event, self.request.user, for_answers=True
         ).filter(
-            target=QuestionTarget.SUBMISSION,
-            variant__in=QuestionVariant.short_answers,
+            target=QuestionTarget.SUBMISSION, variant__in=QuestionVariant.short_answers
         )
 
     def get_table_kwargs(self):

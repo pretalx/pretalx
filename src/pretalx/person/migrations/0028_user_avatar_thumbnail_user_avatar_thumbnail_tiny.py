@@ -7,9 +7,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0027_created_updated_everywhere"),
-    ]
+    dependencies = [("person", "0027_created_updated_everywhere")]
 
     operations = [
         migrations.AddField(

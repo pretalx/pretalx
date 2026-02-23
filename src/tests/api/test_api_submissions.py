@@ -60,13 +60,7 @@ def test_submission_serializer(slot):
 def test_tag_serializer(tag):
     with scope(event=tag.event):
         data = TagSerializer(tag, context={"event": tag.event}).data
-        assert set(data.keys()) == {
-            "id",
-            "tag",
-            "description",
-            "color",
-            "is_public",
-        }
+        assert set(data.keys()) == {"id", "tag", "description", "color", "is_public"}
 
 
 @pytest.mark.django_db
@@ -234,12 +228,7 @@ def test_orga_can_filter_by_track(
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     ("is_visible_to_reviewers", "is_reviewer", "length"),
-    (
-        (True, True, 1),
-        (False, True, 0),
-        (True, False, 1),
-        (False, False, 1),
-    ),
+    ((True, True, 1), (False, True, 0), (True, False, 1), (False, False, 1)),
 )
 def test_answer_is_visible_to_reviewers(
     client,
@@ -348,11 +337,7 @@ def test_orga_can_see_all_talks_even_nonpublic(
 
 @pytest.mark.django_db
 def test_reviewer_cannot_see_submissions_in_anonymised_phase(
-    client,
-    orga_user_token,
-    review_user_token,
-    submission,
-    event,
+    client, orga_user_token, review_user_token, submission, event
 ):
     with scope(event=event):
         submission.event.active_review_phase.can_see_speaker_names = False
@@ -458,9 +443,7 @@ def test_orga_can_see_single_legacy_tag(client, orga_user_token, tag):
     response = client.get(
         tag.event.api_urls.tags + f"{tag.pk}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     content = json.loads(response.text)
     assert response.status_code == 200, response.text
@@ -475,9 +458,7 @@ def test_orga_can_create_tags(client, orga_user_write_token, event):
         follow=True,
         data={"tag": "newtesttag", "color": "#00ff00"},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 201
     with scope(event=event):
@@ -492,9 +473,7 @@ def test_orga_cannot_create_duplicate_tags(client, orga_user_write_token, event,
         follow=True,
         data={"tag": tag.tag, "color": "#00ff00"},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400
     with scope(event=event):
@@ -566,9 +545,7 @@ def test_orga_can_delete_tags(client, orga_user_write_token, event, tag):
     response = client.delete(
         event.api_urls.tags + f"{tag.pk}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 204
     with scope(event=tag.event):
@@ -676,9 +653,7 @@ def test_orga_can_create_tracks(client, orga_user_write_token, event):
         follow=True,
         data={"name": "newtesttrack", "color": "#334455"},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 201
     with scope(event=event):
@@ -695,9 +670,7 @@ def test_orga_cannot_create_tracks_readonly_token(client, orga_user_token, event
         follow=True,
         data={"name": "newtesttrack"},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=event):
@@ -757,9 +730,7 @@ def test_orga_can_delete_tracks(client, orga_user_write_token, event, track):
     response = client.delete(
         event.api_urls.tracks + f"{track.pk}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 204
     with scope(event=track.event):
@@ -890,9 +861,7 @@ def test_orga_can_create_submission_types(client, orga_user_write_token, event):
         follow=True,
         data={"name": "newtesttype", "default_duration": 45},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 201
     with scope(event=event):
@@ -913,9 +882,7 @@ def test_orga_cannot_create_submission_types_readonly_token(
         follow=True,
         data={"name": "newtesttype"},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=event):
@@ -983,9 +950,7 @@ def test_orga_can_delete_submission_types(
     response = client.delete(
         event.api_urls.submission_types + f"{submission_type.pk}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 204
     with scope(event=event):
@@ -1013,9 +978,7 @@ def test_orga_can_create_submission(
             "content_locale": "en",
         },
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 201, response.text
     content = json.loads(response.text)
@@ -1046,9 +1009,7 @@ def test_orga_cannot_create_submission_wrong_locale(
             "content_locale": "zz",
         },
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400, response.text
 
@@ -1069,9 +1030,7 @@ def test_orga_cannot_create_submission_readonly_token(
             "content_locale": "en",
         },
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=event):
@@ -1117,9 +1076,7 @@ def test_orga_can_delete_submission(client, orga_user_write_token, submission):
     response = client.delete(
         submission.event.api_urls.submissions + f"{submission.code}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 204
     with scope(event=submission.event):
@@ -1156,9 +1113,7 @@ def test_orga_can_accept_submission(client, orga_user_write_token, submission):
     response = client.post(
         submission.event.api_urls.submissions + f"{submission.code}/accept/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200, response.text
     with scope(event=submission.event):
@@ -1178,9 +1133,7 @@ def test_orga_cannot_accept_submission_readonly_token(
     response = client.post(
         submission.event.api_urls.submissions + f"{submission.code}/accept/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=submission.event):
@@ -1199,9 +1152,7 @@ def test_orga_can_reject_submission(client, orga_user_write_token, submission):
     response = client.post(
         submission.event.api_urls.submissions + f"{submission.code}/reject/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200
     with scope(event=submission.event):
@@ -1221,9 +1172,7 @@ def test_orga_cannot_reject_submission_readonly_token(
     response = client.post(
         submission.event.api_urls.submissions + f"{submission.code}/reject/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=submission.event):
@@ -1245,9 +1194,7 @@ def test_orga_can_confirm_submission(
         accepted_submission.event.api_urls.submissions
         + f"{accepted_submission.code}/confirm/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200
     with scope(event=accepted_submission.event):
@@ -1268,9 +1215,7 @@ def test_orga_cannot_confirm_submission_readonly_token(
         accepted_submission.event.api_urls.submissions
         + f"{accepted_submission.code}/confirm/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=accepted_submission.event):
@@ -1290,9 +1235,7 @@ def test_orga_can_cancel_submission(client, orga_user_write_token, accepted_subm
         accepted_submission.event.api_urls.submissions
         + f"{accepted_submission.code}/cancel/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200
     with scope(event=accepted_submission.event):
@@ -1313,9 +1256,7 @@ def test_orga_cannot_cancel_submission_readonly_token(
         accepted_submission.event.api_urls.submissions
         + f"{accepted_submission.code}/cancel/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=accepted_submission.event):
@@ -1337,9 +1278,7 @@ def test_orga_can_make_submitted_submission(
         rejected_submission.event.api_urls.submissions
         + f"{rejected_submission.code}/make-submitted/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200
     with scope(event=rejected_submission.event):
@@ -1360,9 +1299,7 @@ def test_orga_cannot_make_submitted_submission_readonly_token(
         rejected_submission.event.api_urls.submissions
         + f"{rejected_submission.code}/make-submitted/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=rejected_submission.event):
@@ -1387,9 +1324,7 @@ def test_orga_can_add_speaker_to_submission(
         follow=True,
         data=json.dumps({"email": speaker_profile.user.email}),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200, response.text
     with scope(event=submission.event):
@@ -1417,9 +1352,7 @@ def test_orga_cannot_add_speaker_to_submission_readonly_token(
         follow=True,
         data=json.dumps({"email": speaker.email}),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=submission.event):
@@ -1441,9 +1374,7 @@ def test_orga_can_remove_speaker_from_submission(
         follow=True,
         data=json.dumps({"user": speaker_profile.code}),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200, response.text
     with scope(event=submission.event):
@@ -1465,9 +1396,7 @@ def test_orga_cannot_remove_speaker_from_submission_readonly_token(
         follow=True,
         data=json.dumps({"user": speaker_profile.code}),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=submission.event):
@@ -1748,9 +1677,7 @@ def test_reviewer_can_see_submission_log(
 
     url = submission.event.api_urls.submissions + f"{submission.code}/log/"
     response = client.get(
-        url,
-        follow=True,
-        headers={"Authorization": f"Token {review_user_token.token}"},
+        url, follow=True, headers={"Authorization": f"Token {review_user_token.token}"}
     )
     content = json.loads(response.text)
 
@@ -1788,9 +1715,7 @@ def test_orga_can_invite_speaker(client, orga_user_write_token, submission):
         follow=True,
         data=json.dumps({"email": "newinvitee@example.com"}),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200, response.text
     content = json.loads(response.text)
@@ -1815,9 +1740,7 @@ def test_orga_cannot_invite_speaker_too_many(client, orga_user_token, submission
         follow=True,
         data=json.dumps({"email": "newinvitee@example.com"}),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=submission.event):
@@ -1833,9 +1756,7 @@ def test_orga_cannot_invite_speaker_readonly_token(client, orga_user_token, subm
         follow=True,
         data=json.dumps({"email": "newinvitee@example.com"}),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=submission.event):
@@ -1853,9 +1774,7 @@ def test_orga_cannot_invite_existing_speaker(
         follow=True,
         data=json.dumps({"email": speaker.email}),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400
     content = json.loads(response.text)
@@ -1874,9 +1793,7 @@ def test_orga_cannot_invite_already_invited(client, orga_user_write_token, submi
         follow=True,
         data=json.dumps({"email": "invited@example.com"}),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400
     content = json.loads(response.text)
@@ -1895,9 +1812,7 @@ def test_orga_can_retract_invitation(client, orga_user_write_token, submission):
         submission.event.api_urls.submissions
         + f"{submission.code}/invitations/{invitation_id}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 204
     with scope(event=submission.event):
@@ -1923,9 +1838,7 @@ def test_orga_cannot_retract_invitation_readonly_token(
         submission.event.api_urls.submissions
         + f"{submission.code}/invitations/{invitation_id}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=submission.event):
@@ -1939,9 +1852,7 @@ def test_orga_cannot_retract_nonexistent_invitation(
     response = client.delete(
         submission.event.api_urls.submissions + f"{submission.code}/invitations/99999/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 404
 
@@ -1982,9 +1893,7 @@ def test_orga_can_add_link_resource(client, orga_user_write_token, submission):
             }
         ),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200, response.text
     with scope(event=submission.event):
@@ -2028,9 +1937,7 @@ def test_orga_can_add_file_resource(client, orga_user_write_token, submission):
             }
         ),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200, response.text
     with scope(event=submission.event):
@@ -2069,9 +1976,7 @@ def test_orga_cannot_add_resource_both_link_and_file(
             }
         ),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400
     content = json.loads(response.text)
@@ -2083,15 +1988,9 @@ def test_orga_cannot_add_resource_neither(client, orga_user_write_token, submiss
     response = client.post(
         submission.event.api_urls.submissions + f"{submission.code}/resources/",
         follow=True,
-        data=json.dumps(
-            {
-                "description": "No link or file",
-            }
-        ),
+        data=json.dumps({"description": "No link or file"}),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400
     content = json.loads(response.text)
@@ -2111,9 +2010,7 @@ def test_orga_can_remove_resource(client, orga_user_write_token, submission):
         submission.event.api_urls.submissions
         + f"{submission.code}/resources/{resource_id}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 204
     with scope(event=submission.event):
@@ -2139,9 +2036,7 @@ def test_orga_can_remove_resource_with_existing_file(
         submission.event.api_urls.submissions
         + f"{submission.code}/resources/{resource_id}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 204
     with scope(event=submission.event):
@@ -2155,15 +2050,10 @@ def test_orga_cannot_add_resource_readonly_token(client, orga_user_token, submis
         submission.event.api_urls.submissions + f"{submission.code}/resources/",
         follow=True,
         data=json.dumps(
-            {
-                "link": "https://example.com/slides.pdf",
-                "description": "My slides",
-            }
+            {"link": "https://example.com/slides.pdf", "description": "My slides"}
         ),
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=submission.event):
@@ -2185,9 +2075,7 @@ def test_orga_cannot_remove_resource_readonly_token(
         submission.event.api_urls.submissions
         + f"{submission.code}/resources/{resource_id}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=submission.event):
@@ -2201,9 +2089,7 @@ def test_remove_nonexistent_resource_returns_404(
     response = client.delete(
         submission.event.api_urls.submissions + f"{submission.code}/resources/99999/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 404
 
@@ -2223,9 +2109,7 @@ def test_cannot_delete_resource_from_different_submission(
         submission.event.api_urls.submissions
         + f"{submission.code}/resources/{resource_id}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 404
     with scope(event=submission.event):

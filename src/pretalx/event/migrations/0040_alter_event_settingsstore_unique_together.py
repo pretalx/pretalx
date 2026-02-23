@@ -10,15 +10,12 @@ import pretalx.common.models.fields
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0039_alter_teaminvite_token"),
-    ]
+    dependencies = [("event", "0039_alter_teaminvite_token")]
 
     operations = [
         CleanHierarkeyDuplicates("Event_SettingsStore"),
         migrations.AlterUniqueTogether(
-            name="event_settingsstore",
-            unique_together={("object", "key")},
+            name="event_settingsstore", unique_together={("object", "key")}
         ),
         migrations.AlterField(
             model_name="event",

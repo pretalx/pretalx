@@ -100,15 +100,9 @@ def test_orga_can_create_access_codes(client, orga_user_write_token, event):
     response = client.post(
         event.api_urls.access_codes,
         follow=True,
-        data={
-            "code": "newtestaccesscode",
-            "maximum_uses": 1,
-            "foo": "bar",
-        },
+        data={"code": "newtestaccesscode", "maximum_uses": 1, "foo": "bar"},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 201, response.text
     with scope(event=event):
@@ -128,9 +122,7 @@ def test_orga_cannot_create_access_codes_readonly_token(client, orga_user_token,
         follow=True,
         data={"code": "newtestaccesscode", "maximum_uses": 1},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     with scope(event=event):
@@ -202,9 +194,7 @@ def test_orga_can_delete_access_codes(client, orga_user_write_token, event):
     response = client.delete(
         event.api_urls.access_codes + f"{access_code.pk}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 204
     with scope(event=event):
@@ -268,10 +258,7 @@ def test_orga_cannot_assign_track_from_other_event(
     response = client.post(
         event.api_urls.access_codes,
         follow=True,
-        data={
-            "code": "newtestcode",
-            "tracks": [other_track.pk],
-        },
+        data={"code": "newtestcode", "tracks": [other_track.pk]},
         content_type="application/json",
         headers={
             "Authorization": f"Token {orga_user_write_token.token}",
@@ -376,9 +363,7 @@ def test_v1_can_create_access_code_with_singular_track(
             "submission_type": submission_type.pk,
         },
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 201, response.text
     with scope(event=event):

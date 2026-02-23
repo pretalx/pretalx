@@ -22,10 +22,6 @@ def fill_created(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0039_submission_created"),
-    ]
+    dependencies = [("submission", "0039_submission_created")]
 
-    operations = [
-        migrations.RunPython(fill_created, migrations.RunPython.noop),
-    ]
+    operations = [migrations.RunPython(fill_created, migrations.RunPython.noop)]

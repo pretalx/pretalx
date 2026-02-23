@@ -118,12 +118,7 @@ def test_profile_picture_field_require_with_existing(profile_picture):
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     ("action", "expected"),
-    (
-        ("keep", False),
-        ("remove", True),
-        ("select_1", True),
-        ("upload", True),
-    ),
+    (("keep", False), ("remove", True), ("select_1", True), ("upload", True)),
 )
 def test_profile_picture_field_has_changed(action, expected):
     field = ProfilePictureField()

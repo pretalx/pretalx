@@ -44,12 +44,7 @@ class UploadView(APIView):
         request={
             "multipart/form-data": {
                 "type": "object",
-                "properties": {
-                    "file": {
-                        "type": "string",
-                        "format": "binary",
-                    }
-                },
+                "properties": {"file": {"type": "string", "format": "binary"}},
             }
         },
         responses={

@@ -17,5 +17,5 @@ class Migration(migrations.Migration):
             model_name="question",
             name="limit_teams",
             field=models.ManyToManyField(related_name="+", to="event.team"),
-        ),
+        )
     ]

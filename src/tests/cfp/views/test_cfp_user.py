@@ -54,12 +54,7 @@ def test_can_see_submission_list(
 @pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 2))
 def test_can_see_mail_list(
-    speaker_client,
-    event,
-    speaker,
-    mail_template,
-    django_assert_num_queries,
-    item_count,
+    speaker_client, event, speaker, mail_template, django_assert_num_queries, item_count
 ):
     with scope(event=event):
         mail1 = mail_template.to_mail(speaker, event)
@@ -659,10 +654,7 @@ def test_can_edit_and_update_speaker_answers(
     new_file = SimpleUploadedFile("newfile.txt", b"new_file_content")
     response = speaker_client.post(
         event.urls.user,
-        data={
-            f"question_{speaker_file_question.id}": new_file,
-            "form": "questions",
-        },
+        data={f"question_{speaker_file_question.id}": new_file, "form": "questions"},
         follow=True,
     )
     assert response.status_code == 200
@@ -1235,11 +1227,7 @@ def test_access_code_draft_and_dedraft(event, client, access_code):
     current_url = (
         response.redirect_chain[-1][0] if response.redirect_chain else current_url
     )
-    profile_data = {
-        "name": "Jane Doe",
-        "biography": "Bio",
-        "action": "draft",
-    }
+    profile_data = {"name": "Jane Doe", "biography": "Bio", "action": "draft"}
     response = client.post(current_url, data=profile_data, follow=True)
 
     access_code.refresh_from_db()
@@ -1299,11 +1287,7 @@ def test_access_code_draft_and_dedraft(event, client, access_code):
 
 @pytest.mark.django_db
 def test_access_code_redeemed_on_dedraft(
-    event,
-    speaker,
-    speaker_client,
-    access_code,
-    submission,
+    event, speaker, speaker_client, access_code, submission
 ):
     event.cfp.deadline = now() - dt.timedelta(days=1)
     event.cfp.save()

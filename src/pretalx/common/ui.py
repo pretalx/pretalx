@@ -89,10 +89,7 @@ def delete_button(label=None, color=None):
 
 def back_button(href):
     return LinkButton(
-        href=href,
-        icon=None,
-        label=phrases.base.back_button,
-        color="outline-info",
+        href=href, icon=None, label=phrases.base.back_button, color="outline-info"
     )
 
 

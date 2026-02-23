@@ -7,13 +7,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0050_migrate_review_scores"),
-    ]
+    dependencies = [("submission", "0050_migrate_review_scores")]
 
-    operations = [
-        migrations.RemoveField(
-            model_name="review",
-            name="override_vote",
-        ),
-    ]
+    operations = [migrations.RemoveField(model_name="review", name="override_vote")]

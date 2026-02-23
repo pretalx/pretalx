@@ -44,19 +44,11 @@ DATA_DIR = Path(
 LOG_DIR = Path(config.get("filesystem", "logs", fallback=DATA_DIR / "logs"))
 MEDIA_ROOT = Path(config.get("filesystem", "media", fallback=DATA_DIR / "media"))
 STATIC_ROOT = Path(
-    config.get(
-        "filesystem",
-        "static",
-        fallback=BASE_DIR / "static.dist",
-    )
+    config.get("filesystem", "static", fallback=BASE_DIR / "static.dist")
 )
 IS_HTML_EXPORT = False
 HTMLEXPORT_ROOT = Path(
-    config.get(
-        "filesystem",
-        "htmlexport",
-        fallback=DATA_DIR / "htmlexport",
-    )
+    config.get("filesystem", "htmlexport", fallback=DATA_DIR / "htmlexport")
 )
 
 for directory in (BASE_DIR, DATA_DIR, LOG_DIR, MEDIA_ROOT, HTMLEXPORT_ROOT):
@@ -94,10 +86,7 @@ LOCAL_APPS = [
     "pretalx.cfp",
     "pretalx.orga",
 ]
-FALLBACK_APPS = [
-    "django.forms",
-    "rest_framework",
-]
+FALLBACK_APPS = ["django.forms", "rest_framework"]
 INSTALLED_APPS = DJANGO_APPS + EXTERNAL_APPS + LOCAL_APPS + FALLBACK_APPS
 
 PLUGINS = []
@@ -248,17 +237,11 @@ LOGGING = {
             "filename": LOG_DIR / "pretalx.log",
             "formatter": "default",
         },
-        "null": {
-            "class": "logging.NullHandler",
-        },
+        "null": {"class": "logging.NullHandler"},
     },
     "loggers": {
         "": {"handlers": ["file", "console"], "level": loglevel, "propagate": True},
-        "rules": {
-            "handlers": ["file", "console"],
-            "level": "INFO",
-            "propagate": True,
-        },
+        "rules": {"handlers": ["file", "console"], "level": "INFO", "propagate": True},
         "django.request": {
             "handlers": ["file", "console"],
             "level": "ERROR",  # Otherwise, we log 404s at WARNING/whatever, which sucks
@@ -269,10 +252,7 @@ LOGGING = {
             "level": loglevel,
             "propagate": True,
         },
-        "django.security.DisallowedHost": {
-            "handlers": ["null"],
-            "propagate": False,
-        },
+        "django.security.DisallowedHost": {"handlers": ["null"], "propagate": False},
         "django.db.backends": {
             "handlers": ["file", "console"],
             "level": "INFO",  # Do not output all the queries
@@ -362,11 +342,7 @@ except (FileNotFoundError, json.JSONDecodeError):
     translation_percentages = {}
 
 LANGUAGES_INFORMATION = {
-    "en": {
-        "name": _("English"),
-        "natural_name": "English",
-        "official": True,
-    },
+    "en": {"name": _("English"), "natural_name": "English", "official": True},
     "de": {
         "name": _("German"),
         "natural_name": "Deutsch",
@@ -380,63 +356,27 @@ LANGUAGES_INFORMATION = {
         "public_code": "de",
         "path": "de_Formal",
     },
-    "ar": {
-        "name": _("Arabic"),
-        "natural_name": "اَلْعَرَبِيَّةُ",
-        "official": False,
-    },
-    "bg": {
-        "name": _("Bulgarian"),
-        "natural_name": "Български",
-        "official": False,
-    },
-    "cs": {
-        "name": _("Czech"),
-        "natural_name": "Čeština",
-        "official": False,
-    },
-    "el": {
-        "name": _("Greek"),
-        "natural_name": "Ελληνικά",
-        "official": False,
-    },
-    "es": {
-        "name": _("Spanish"),
-        "natural_name": "Español",
-        "official": False,
-    },
+    "ar": {"name": _("Arabic"), "natural_name": "اَلْعَرَبِيَّةُ", "official": False},
+    "bg": {"name": _("Bulgarian"), "natural_name": "Български", "official": False},
+    "cs": {"name": _("Czech"), "natural_name": "Čeština", "official": False},
+    "el": {"name": _("Greek"), "natural_name": "Ελληνικά", "official": False},
+    "es": {"name": _("Spanish"), "natural_name": "Español", "official": False},
     "fr": {
         "name": _("French"),
         "natural_name": "Français",
         "official": False,
         "path": "fr_FR",
     },
-    "it": {
-        "name": _("Italian"),
-        "natural_name": "Italiano",
-        "official": False,
-    },
+    "it": {"name": _("Italian"), "natural_name": "Italiano", "official": False},
     "ja-jp": {
         "name": _("Japanese"),
         "natural_name": "日本語",
         "official": False,
         "public_code": "jp",
     },
-    "ko": {
-        "name": _("Korean"),
-        "natural_name": "한국어",
-        "official": False,
-    },
-    "nl": {
-        "name": _("Dutch"),
-        "natural_name": "Nederlands",
-        "official": False,
-    },
-    "pl": {
-        "name": _("Polish"),
-        "natural_name": "Polski",
-        "official": False,
-    },
+    "ko": {"name": _("Korean"), "natural_name": "한국어", "official": False},
+    "nl": {"name": _("Dutch"), "natural_name": "Nederlands", "official": False},
+    "pl": {"name": _("Polish"), "natural_name": "Polski", "official": False},
     "pt-br": {
         "name": _("Brazilian Portuguese"),
         "natural_name": "Português brasileiro",
@@ -449,11 +389,7 @@ LANGUAGES_INFORMATION = {
         "official": False,
         "public_code": "pt",
     },
-    "vi": {
-        "name": _("Vietnamese"),
-        "natural_name": "người Việt",
-        "official": False,
-    },
+    "vi": {"name": _("Vietnamese"), "natural_name": "người Việt", "official": False},
     "zh-hant": {
         "name": _("Traditional Chinese (Taiwan)"),
         "natural_name": "漢語",
@@ -519,9 +455,7 @@ AUTHENTICATION_BACKENDS = DEFAULT_AUTHENTICATION_BACKENDS + EXTRA_AUTH_BACKENDS
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-        "OPTIONS": {
-            "user_attributes": {"name", "email"},
-        },
+        "OPTIONS": {"user_attributes": {"name", "email"}},
     },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
@@ -566,10 +500,7 @@ FORMS_URLFIELD_ASSUME_HTTPS = True
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [
-            DATA_DIR / "templates",
-            BASE_DIR / "templates",
-        ],
+        "DIRS": [DATA_DIR / "templates", BASE_DIR / "templates"],
         "OPTIONS": {
             "context_processors": [
                 "django.contrib.auth.context_processors.auth",
@@ -599,11 +530,9 @@ static_path = BASE_DIR / "pretalx" / "static"
 STATICFILES_DIRS = [static_path] if static_path.exists() else []
 
 STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
     },
 }
 
@@ -673,7 +602,7 @@ SPECTACULAR_SETTINGS = {
     "EXTERNAL_DOCS": {"url": "https://docs.pretalx.org/api/"},
     "DEFAULT_SCHEMA_CLASS": None,
     "PATH_CONVERTER_OVERRIDES": {
-        "slug": {"type": "string", "description": "The event’s slug"},
+        "slug": {"type": "string", "description": "The event’s slug"}
     },
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",

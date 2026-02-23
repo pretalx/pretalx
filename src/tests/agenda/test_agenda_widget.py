@@ -7,9 +7,7 @@ from django.urls import reverse
 
 @pytest.mark.django_db
 def test_event_css_no_color(event, client):
-    response = client.get(
-        reverse("agenda:event.css", kwargs={"event": event.slug}),
-    )
+    response = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
     assert response.status_code == 200
     assert response["Content-Type"] == "text/css"
     assert b"--color-primary" not in response.content
@@ -34,9 +32,7 @@ def test_event_css_with_color(event, client, color, expect_dark_text_override):
     event.primary_color = color
     event.save()
 
-    response = client.get(
-        reverse("agenda:event.css", kwargs={"event": event.slug}),
-    )
+    response = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
 
     assert response.status_code == 200
     assert response["Content-Type"] == "text/css"
@@ -54,8 +50,7 @@ def test_event_css_orga_target(event, client):
     event.save()
 
     response = client.get(
-        reverse("agenda:event.css", kwargs={"event": event.slug}),
-        {"target": "orga"},
+        reverse("agenda:event.css", kwargs={"event": event.slug}), {"target": "orga"}
     )
 
     assert response.status_code == 200
@@ -69,17 +64,13 @@ def test_event_css_etag_includes_dark_text_state(event, client):
     event.primary_color = "#000000"  # Dark - no dark text needed
     event.save()
 
-    response1 = client.get(
-        reverse("agenda:event.css", kwargs={"event": event.slug}),
-    )
+    response1 = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
     etag1 = response1.get("ETag")
 
     event.primary_color = "#ffffff"
     event.save()
 
-    response2 = client.get(
-        reverse("agenda:event.css", kwargs={"event": event.slug}),
-    )
+    response2 = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
     etag2 = response2.get("ETag")
 
     assert etag1 != etag2

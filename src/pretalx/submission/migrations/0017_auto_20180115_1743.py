@@ -19,8 +19,6 @@ def fix_speaker_answers(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0016_auto_20171114_1251"),
-    ]
+    dependencies = [("submission", "0016_auto_20171114_1251")]
 
     operations = [migrations.RunPython(fix_speaker_answers, migrations.RunPython.noop)]

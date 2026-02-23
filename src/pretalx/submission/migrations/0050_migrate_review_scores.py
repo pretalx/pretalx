@@ -59,19 +59,14 @@ def create_review_categories(apps, schema_editor):
                 scores[review.score] = score
 
             relations.append(
-                through_model(
-                    review_id=review.id,
-                    reviewscore_id=score.id,
-                )
+                through_model(review_id=review.id, reviewscore_id=score.id)
             )
 
         through_model.objects.bulk_create(relations)
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0049_review_score_categories"),
-    ]
+    dependencies = [("submission", "0049_review_score_categories")]
 
     operations = [
         migrations.RunPython(create_review_categories, migrations.RunPython.noop)

@@ -8,9 +8,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0020_submission_image"),
-    ]
+    dependencies = [("submission", "0020_submission_image")]
 
     operations = [
         migrations.AddField(
@@ -23,5 +21,5 @@ class Migration(migrations.Migration):
                 related_name="answers",
                 to="submission.Review",
             ),
-        ),
+        )
     ]

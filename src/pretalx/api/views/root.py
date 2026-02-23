@@ -37,8 +37,6 @@ class RootView(APIView):
                 "name": "pretalx",
                 "version": settings.PRETALX_VERSION,
                 "api_version": CURRENT_VERSION,
-                "urls": {
-                    "events": settings.SITE_URL + reverse("api:event-list"),
-                },
+                "urls": {"events": settings.SITE_URL + reverse("api:event-list")},
             }
         )

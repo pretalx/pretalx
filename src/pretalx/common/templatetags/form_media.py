@@ -13,7 +13,7 @@ DEFAULT_FORM_MEDIA = forms.Media(
 )
 
 DEFAULT_FORMSET_MEDIA = forms.Media(
-    js=[forms.Script("orga/js/forms/formsets.js", defer="")],
+    js=[forms.Script("orga/js/forms/formsets.js", defer="")]
 )
 
 

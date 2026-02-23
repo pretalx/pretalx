@@ -89,11 +89,7 @@ def cfp_session(request):
     session_data = request.session["cfp"]
     key = request.resolver_match.kwargs["tmpid"]
     if key not in session_data:
-        session_data[key] = {
-            "data": {},
-            "initial": {},
-            "files": {},
-        }
+        session_data[key] = {"data": {}, "initial": {}, "files": {}}
     return session_data[key]
 
 
@@ -472,10 +468,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
         if queryset is None and self.dedraft_submission:
             queryset = self.dedraft_submission.resources.all()
         formset_class = modelformset_factory(
-            Resource,
-            form=ResourceForm,
-            can_delete=True,
-            extra=0,
+            Resource, form=ResourceForm, can_delete=True, extra=0
         )
         if self.request.method == "POST" and not from_storage:
             # Merge stored session files for resources that weren't re-uploaded
@@ -494,15 +487,9 @@ class InfoStep(DedraftMixin, FormFlowStep):
             data = QueryDict(mutable=True)
             data.update(stored)
             return formset_class(
-                data=data,
-                files=self.get_files(),
-                queryset=queryset,
-                prefix="resource",
+                data=data, files=self.get_files(), queryset=queryset, prefix="resource"
             )
-        return formset_class(
-            queryset=queryset,
-            prefix="resource",
-        )
+        return formset_class(queryset=queryset, prefix="resource")
 
     @cached_property
     def resource_formset(self):
@@ -618,8 +605,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
             for email in additional_speakers:
                 try:
                     invitation = SubmissionInvitation.objects.create(
-                        submission=submission,
-                        email=email,
+                        submission=submission, email=email
                     )
                     invitation.send(_from=request.user)
                     submission.log_action(
@@ -753,7 +739,7 @@ class UserStep(FormFlowStep):
             raise ValidationError(
                 _(
                     "There was an error when logging in. Please contact the organiser for further help."
-                ),
+                )
             )
         login(
             request, request.user, backend="django.contrib.auth.backends.ModelBackend"
@@ -841,12 +827,7 @@ class ProfileStep(FormFlowStep):
         )
 
 
-DEFAULT_STEPS = (
-    InfoStep,
-    QuestionsStep,
-    UserStep,
-    ProfileStep,
-)
+DEFAULT_STEPS = (InfoStep, QuestionsStep, UserStep, ProfileStep)
 
 
 class CfPFlow:

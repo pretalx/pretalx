@@ -9,14 +9,7 @@ from pretalx.orga.templatetags.review_score import _review_score_number, review_
 
 
 @pytest.mark.parametrize(
-    ("score", "expected"),
-    (
-        (3, "3"),
-        (0, "0"),
-        (3.0, "3"),
-        (1.5, "1.5"),
-        (None, "×"),
-    ),
+    ("score", "expected"), ((3, "3"), (0, "0"), (3.0, "3"), (1.5, "1.5"), (None, "×"))
 )
 @pytest.mark.django_db
 def test_templatetag_review_score(score, expected, event):

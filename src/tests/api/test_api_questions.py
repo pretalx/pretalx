@@ -211,12 +211,7 @@ def test_organiser_cannot_create_question_readonly_token(
 def test_organiser_can_edit_question(client, event, orga_user_write_token, question):
     response = client.patch(
         event.api_urls.questions + f"{question.pk}/",
-        data=json.dumps(
-            {
-                "target": "speaker",
-                "help_text": "hellllp",
-            }
-        ),
+        data=json.dumps({"target": "speaker", "help_text": "hellllp"}),
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -277,12 +272,7 @@ def test_reviewer_cannot_create_question(client, event, review_user_token):
 def test_reviewer_cannot_edit_question(client, event, review_user_token, question):
     response = client.patch(
         event.api_urls.questions + f"{question.pk}/",
-        data=json.dumps(
-            {
-                "target": "speaker",
-                "help_text": "hellllp",
-            }
-        ),
+        data=json.dumps({"target": "speaker", "help_text": "hellllp"}),
         content_type="application/json",
         headers={"Authorization": f"Token {review_user_token.token}"},
     )
@@ -313,12 +303,7 @@ def test_field_question_required(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    ("is_detail", "method"),
-    (
-        (False, "post"),
-        (True, "put"),
-        (True, "patch"),
-    ),
+    ("is_detail", "method"), ((False, "post"), (True, "put"), (True, "patch"))
 )
 def test_field_question_required_valid_choice(
     client, event, orga_user_write_token, question, is_detail, method
@@ -341,12 +326,7 @@ def test_field_question_required_valid_choice(
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    ("is_detail", "method"),
-    (
-        (False, "post"),
-        (True, "put"),
-        (True, "patch"),
-    ),
+    ("is_detail", "method"), ((False, "post"), (True, "put"), (True, "patch"))
 )
 def test_field_contains_personal_data_valid_boolean(
     event, client, orga_user_write_token, question, is_detail, method
@@ -438,11 +418,7 @@ def test_no_legacy_question_create(event, orga_user_write_token, client):
     response = client.post(
         event.api_urls.questions,
         data=json.dumps(
-            {
-                "question": "A question",
-                "variant": "text",
-                "target": "submission",
-            }
+            {"question": "A question", "variant": "text", "target": "submission"}
         ),
         content_type="application/json",
         headers={
@@ -728,12 +704,7 @@ def test_organiser_cannot_create_option_for_wrong_question_type(
 
     response = client.post(
         event.api_urls.question_options,
-        data=json.dumps(
-            {
-                "question": question.pk,
-                "answer": {"en": "Invalid Option"},
-            }
-        ),
+        data=json.dumps({"question": question.pk, "answer": {"en": "Invalid Option"}}),
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )

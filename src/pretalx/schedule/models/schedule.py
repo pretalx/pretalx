@@ -99,11 +99,7 @@ class Schedule(PretalxModel):
         that have been scheduled and are visible in the schedule (that is, have
         been confirmed at the time of release)."""
         return (
-            self.talks.select_related(
-                "submission",
-                "submission__event",
-                "room",
-            )
+            self.talks.select_related("submission", "submission__event", "room")
             .with_sorted_speakers()
             .filter(
                 room__isnull=False,
@@ -210,12 +206,7 @@ class Schedule(PretalxModel):
             room__isnull=False, event=self.event
         ).exists()
 
-    def get_talk_warnings(
-        self,
-        talk,
-        with_speakers=True,
-        room_avails=None,
-    ) -> list:
+    def get_talk_warnings(self, talk, with_speakers=True, room_avails=None) -> list:
         """A list of warnings that apply to this slot.
 
         Warnings are dictionaries with a ``type`` (``room`` or
@@ -327,10 +318,7 @@ class Schedule(PretalxModel):
                 submission__isnull=False, start__isnull=False, room__isnull=False
             )
             .select_related(
-                "submission",
-                "room",
-                "submission__event",
-                "schedule__event",
+                "submission", "room", "submission__event", "schedule__event"
             )
             .with_sorted_speakers()
             .prefetch_related("submission__speakers__availabilities")
@@ -567,11 +555,7 @@ class Schedule(PretalxModel):
             for track in tracks
         ]
         result["rooms"] = [
-            {
-                "id": room.id,
-                "name": room.name,
-                "description": room.description,
-            }
+            {"id": room.id, "name": room.name, "description": room.description}
             for room in all_event_rooms
             if room in rooms
         ]

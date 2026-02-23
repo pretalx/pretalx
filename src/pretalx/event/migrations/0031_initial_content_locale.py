@@ -13,9 +13,7 @@ def update_content_locale_array(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0030_event_content_locale_array"),
-    ]
+    dependencies = [("event", "0030_event_content_locale_array")]
 
     operations = [
         migrations.RunPython(update_content_locale_array, migrations.RunPython.noop)

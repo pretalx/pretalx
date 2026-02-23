@@ -13,9 +13,7 @@ import pretalx.common.models.mixins
 class Migration(migrations.Migration):
     initial = True
 
-    dependencies = [
-        ("event", "0001_initial"),
-    ]
+    dependencies = [("event", "0001_initial")]
 
     operations = [
         migrations.CreateModel(

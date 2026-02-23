@@ -8,14 +8,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("schedule", "0013_auto_20191107_1748"),
-    ]
+    dependencies = [("schedule", "0013_auto_20191107_1748")]
 
     operations = [
         migrations.AddField(
             model_name="schedule",
             name="comment",
             field=i18nfield.fields.I18nTextField(blank=True, null=True),
-        ),
+        )
     ]

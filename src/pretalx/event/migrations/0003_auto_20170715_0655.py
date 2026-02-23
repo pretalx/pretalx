@@ -9,9 +9,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0002_auto_20170429_1018"),
-    ]
+    dependencies = [("event", "0002_auto_20170429_1018")]
 
     operations = [
         migrations.AlterField(

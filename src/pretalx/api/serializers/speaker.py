@@ -82,17 +82,11 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         extra_expandable_fields = {
             "answers": (
                 "pretalx.api.serializers.question.AnswerSerializer",
-                {
-                    "many": True,
-                    "read_only": True,
-                },
+                {"many": True, "read_only": True},
             ),
             "submissions": (
                 "pretalx.api.serializers.submission.SubmissionSerializer",
-                {
-                    "many": True,
-                    "read_only": True,
-                },
+                {"many": True, "read_only": True},
             ),
         }
 

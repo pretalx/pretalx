@@ -320,12 +320,7 @@ class TestWizard:
             event=event,
         )
         response, current_url = self.perform_question_wizard(
-            client,
-            response,
-            current_url,
-            answer_data,
-            next_step="user",
-            event=event,
+            client, response, current_url, answer_data, next_step="user", event=event
         )
         response, current_url = self.perform_user_wizard(
             client,
@@ -356,18 +351,10 @@ class TestWizard:
         client.force_login(user)
         response, current_url = self.perform_init_wizard(client, event=event)
         response, current_url = self.perform_info_wizard(
-            client,
-            response,
-            current_url,
-            submission_type=submission_type,
-            event=event,
+            client, response, current_url, submission_type=submission_type, event=event
         )
         response, current_url = self.perform_question_wizard(
-            client,
-            response,
-            current_url,
-            answer_data,
-            event=event,
+            client, response, current_url, answer_data, event=event
         )
         response, current_url = self.perform_profile_form(
             client, response, current_url, event=event
@@ -663,13 +650,7 @@ class TestWizard:
 
     @pytest.mark.django_db
     def test_wizard_track_access_code_and_question(
-        self,
-        event,
-        client,
-        access_code,
-        track,
-        other_track,
-        question,
+        self, event, client, access_code, track, other_track, question
     ):
         with scope(event=event):
             submission_type = SubmissionType.objects.filter(event=event).first().pk
@@ -695,17 +676,16 @@ class TestWizard:
             event=event,
             track=track,
         )
-        (
-            response,
-            current_url,
-        ) = self.perform_info_wizard(  # Works with token and right track
-            client,
-            response,
-            current_url + "?access_code=" + access_code.code,
-            submission_type=submission_type,
-            next_step="questions",
-            event=event,
-            track=track,
+        (response, current_url) = (
+            self.perform_info_wizard(  # Works with token and right track
+                client,
+                response,
+                current_url + "?access_code=" + access_code.code,
+                submission_type=submission_type,
+                next_step="questions",
+                event=event,
+                track=track,
+            )
         )
         answer_data = {f"question_{question.pk}": 42}
         response, current_url = self.perform_question_wizard(
@@ -735,16 +715,15 @@ class TestWizard:
             submission_type = submission_type.pk
 
         response, current_url = self.perform_init_wizard(client, event=event)
-        (
-            response,
-            current_url,
-        ) = self.perform_info_wizard(  # Does not work without access token
-            client,
-            response,
-            current_url,
-            submission_type=submission_type,
-            next_step="info",
-            event=event,
+        (response, current_url) = (
+            self.perform_info_wizard(  # Does not work without access token
+                client,
+                response,
+                current_url,
+                submission_type=submission_type,
+                next_step="info",
+                event=event,
+            )
         )
         response, current_url = self.perform_info_wizard(
             client,
@@ -775,13 +754,7 @@ class TestWizard:
         assert response.status_code == 404
 
     @pytest.mark.django_db
-    def test_wizard_existing_user_twice(
-        self,
-        event,
-        client,
-        user,
-        speaker_question,
-    ):
+    def test_wizard_existing_user_twice(self, event, client, user, speaker_question):
         with scope(event=event):
             assert event.submissions.count() == 0
             assert speaker_question.answers.count() == 0
@@ -799,11 +772,7 @@ class TestWizard:
                 event=event,
             )
             response, current_url = self.perform_question_wizard(
-                client,
-                response,
-                current_url,
-                answer_data,
-                event=event,
+                client, response, current_url, answer_data, event=event
             )
             response, current_url = self.perform_profile_form(
                 client, response, current_url, event=event
@@ -974,10 +943,7 @@ class TestWizardDrafts:
         response = client.post(current_url, data=user_data, follow=True)
         current_url = response.redirect_chain[-1][0]
 
-        invalid_profile_data = {
-            "action": "draft",
-            "biography": "Bio",
-        }
+        invalid_profile_data = {"action": "draft", "biography": "Bio"}
         response = client.post(current_url, data=invalid_profile_data, follow=True)
 
         final_url = (
@@ -1027,11 +993,7 @@ class TestWizardDrafts:
         assert "/profile/" in current_url
 
         monkeypatch.setattr(ProfileStep, "is_completed", lambda self, request: False)
-        profile_data = {
-            "name": "Test User",
-            "biography": "Test bio",
-            "action": "draft",
-        }
+        profile_data = {"name": "Test User", "biography": "Test bio", "action": "draft"}
         response = client.post(current_url, data=profile_data)
         assert response.status_code == 200
 
@@ -1065,10 +1027,7 @@ class TestWizardDrafts:
         assert "draft=1" in final_url
         with scope(event=event):
             assert Submission.all_objects.count() == initial_submission_count
-        user_data = {
-            "login_email": user.email,
-            "login_password": "testpassw0rd!",
-        }
+        user_data = {"login_email": user.email, "login_password": "testpassw0rd!"}
         response = client.post(final_url, data=user_data, follow=True)
 
         # After login, should redirect to /me/submissions/
@@ -1138,10 +1097,7 @@ class TestWizardResources(TestWizard):
                 },
                 True,
             ),
-            (
-                {"description": "My slides", "is_public": "on"},
-                False,
-            ),
+            ({"description": "My slides", "is_public": "on"}, False),
         ),
         ids=["link", "file_upload"],
     )
@@ -1236,10 +1192,7 @@ class TestWizardResources(TestWizard):
         response, current_url = self.perform_init_wizard(client, event=event)
 
         # Submit without resources — should stay on info step
-        data = self._submission_data(
-            submission_type,
-            title="Talk without resources",
-        )
+        data = self._submission_data(submission_type, title="Talk without resources")
         response, current_url = self.get_response_and_url(
             client, current_url, data=data
         )

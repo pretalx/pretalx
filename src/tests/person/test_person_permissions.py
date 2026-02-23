@@ -10,11 +10,7 @@ from pretalx.person.rules import can_view_information
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     ("target_group", "expected"),
-    (
-        ("submitters", True),
-        ("accepted", False),
-        ("confirmed", False),
-    ),
+    (("submitters", True), ("accepted", False), ("confirmed", False)),
 )
 def test_can_view_information(information, submission, target_group, expected):
     with scope(event=submission.event):

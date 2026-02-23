@@ -33,12 +33,7 @@ def redirect_view(request):
     if not _is_samesite_referer(request):
         u = urllib.parse.urlparse(url)
         return render(
-            request,
-            "common/redirect.html",
-            {
-                "hostname": u.hostname,
-                "url": url,
-            },
+            request, "common/redirect.html", {"hostname": u.hostname, "url": url}
         )
     return HttpResponseRedirect(url)
 

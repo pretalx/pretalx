@@ -337,10 +337,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
         ):
             page = self.paginate_queryset(filtered_queryset, paginate_by)
             self.object_list = page.object_list
-            context = self.get_context_data(
-                page_obj=page,
-                paginator=page.paginator,
-            )
+            context = self.get_context_data(page_obj=page, paginator=page.paginator)
         else:
             self.object_list = filtered_queryset
             context = self.get_context_data()

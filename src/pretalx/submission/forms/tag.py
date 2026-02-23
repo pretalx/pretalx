@@ -26,6 +26,4 @@ class TagForm(ReadOnlyFlag, PretalxI18nModelForm):
     class Meta:
         model = Tag
         fields = ("tag", "description", "color", "is_public")
-        field_classes = {
-            "color": ColorField,
-        }
+        field_classes = {"color": ColorField}

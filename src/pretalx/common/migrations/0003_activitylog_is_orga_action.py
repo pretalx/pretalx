@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("common", "0002_auto_20170429_1018"),
-    ]
+    dependencies = [("common", "0002_auto_20170429_1018")]
 
     operations = [
         migrations.AddField(
             model_name="activitylog",
             name="is_orga_action",
             field=models.BooleanField(default=False),
-        ),
+        )
     ]

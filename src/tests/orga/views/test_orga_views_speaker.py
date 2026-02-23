@@ -253,11 +253,7 @@ def test_orga_cannot_edit_speaker_without_filling_questions(
         speaker_question.save()
     response = orga_client.post(
         url,
-        data={
-            "name": "BESTSPEAKAR",
-            "biography": "bio",
-            "email": speaker.email,
-        },
+        data={"name": "BESTSPEAKAR", "biography": "bio", "email": speaker.email},
         follow=True,
     )
     assert response.status_code == 200
@@ -321,9 +317,7 @@ def test_reviewer_cannot_edit_speaker(
     with scope(event=event):
         url = speaker_profile.orga_urls.base
     response = review_client.post(
-        url,
-        data={"name": "BESTSPEAKAR", "biography": "I rule!"},
-        follow=True,
+        url, data={"name": "BESTSPEAKAR", "biography": "I rule!"}, follow=True
     )
     assert response.status_code == 200
     with scope(event=event):
@@ -420,11 +414,7 @@ def test_orga_can_delete_speaker_information(orga_client, event, information):
 def test_orga_cant_export_answers_csv_empty(orga_client, speaker, event, submission):
     response = orga_client.post(
         event.orga_urls.speakers + "export/",
-        data={
-            "target": "rejected",
-            "name": "on",
-            "export_format": "csv",
-        },
+        data={"target": "rejected", "name": "on", "export_format": "csv"},
     )
     assert response.status_code == 200
     # HTML response instead of empty download
@@ -523,11 +513,7 @@ def test_track_limited_reviewer_cannot_access_speaker_export(
 
     response = review_client.post(
         event.orga_urls.speakers + "export/",
-        data={
-            "target": "all",
-            "name": "on",
-            "export_format": "json",
-        },
+        data={"target": "all", "name": "on", "export_format": "json"},
     )
     assert response.status_code == 404
 

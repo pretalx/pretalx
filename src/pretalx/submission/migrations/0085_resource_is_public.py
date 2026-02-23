@@ -8,9 +8,7 @@ import pretalx.common.models.fields
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0084_cfp_opening"),
-    ]
+    dependencies = [("submission", "0084_cfp_opening")]
 
     operations = [
         migrations.AddField(

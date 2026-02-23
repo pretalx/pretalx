@@ -5,15 +5,11 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("common", "0008_remove_daft_logs"),
-    ]
+    dependencies = [("common", "0008_remove_daft_logs")]
 
     operations = [
         migrations.RenameField(
-            model_name="activitylog",
-            old_name="data",
-            new_name="legacy_data",
+            model_name="activitylog", old_name="data", new_name="legacy_data"
         ),
         migrations.AddField(
             model_name="activitylog",

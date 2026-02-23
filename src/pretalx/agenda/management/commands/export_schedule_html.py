@@ -184,10 +184,7 @@ def get_mediastatic_content(url):
 
 
 def export_event(event, destination):
-    with (
-        override_timezone(event.timezone),
-        fake_admin(event) as get,
-    ):
+    with override_timezone(event.timezone), fake_admin(event) as get:
         logger.info("Collecting URLs for export")
         urls = list(event_urls(event))
         assets = set()

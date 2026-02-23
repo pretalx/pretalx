@@ -24,9 +24,7 @@ class AvailabilitiesMixin:
         availabilities = []
         for avail_data in availabilities_data:
             avail = Availability(
-                event=self.event,
-                start=avail_data["start"],
-                end=avail_data["end"],
+                event=self.event, start=avail_data["start"], end=avail_data["end"]
             )
             availabilities.append(avail)
 

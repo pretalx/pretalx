@@ -15,9 +15,7 @@ from pretalx.schedule.models import Availability, Room, TalkSlot
 
 class RoomForm(ReadOnlyFlag, PretalxI18nModelForm):
     availabilities = AvailabilitiesField(
-        resolution="00:15:00",
-        label=_("Availability"),
-        required=False,
+        resolution="00:15:00", label=_("Availability"), required=False
     )
 
     def __init__(self, *args, **kwargs):
@@ -99,6 +97,4 @@ class QuickScheduleForm(forms.ModelForm):
     class Meta:
         model = TalkSlot
         fields = ("room",)
-        field_classes = {
-            "room": SafeModelChoiceField,
-        }
+        field_classes = {"room": SafeModelChoiceField}

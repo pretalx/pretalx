@@ -234,8 +234,7 @@ def test_speaker_page_other_submissions_only_if_visible(
         )
 
     url = reverse(
-        "agenda:speaker",
-        kwargs={"code": speaker_profile.code, "event": event.slug},
+        "agenda:speaker", kwargs={"code": speaker_profile.code, "event": event.slug}
     )
     with django_assert_num_queries(12):
         response = client.get(url, follow=True)
@@ -296,10 +295,7 @@ def test_schedule_page_text_table(client, django_assert_num_queries, event, slot
 
 @pytest.mark.parametrize(
     ("header", "target"),
-    (
-        ("application/json", "frab_json"),
-        ("application/xml", "frab_xml"),
-    ),
+    (("application/json", "frab_json"), ("application/xml", "frab_xml")),
 )
 @pytest.mark.django_db
 @pytest.mark.usefixtures("slot", "other_slot")

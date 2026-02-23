@@ -11,9 +11,7 @@ import pretalx.common.models.mixins
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0037_remove_event_accept_template_and_more"),
-    ]
+    dependencies = [("event", "0037_remove_event_accept_template_and_more")]
 
     operations = [
         migrations.CreateModel(
@@ -39,14 +37,12 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={
-                "abstract": False,
-            },
+            options={"abstract": False},
             bases=(
                 pretalx.common.models.mixins.OrderedModel,
                 pretalx.common.models.mixins.LogMixin,
                 pretalx.common.models.mixins.FileCleanupMixin,
                 models.Model,
             ),
-        ),
+        )
     ]

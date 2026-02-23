@@ -8,9 +8,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("schedule", "0010_auto_20171001_1358"),
-    ]
+    dependencies = [("schedule", "0010_auto_20171001_1358")]
 
     operations = [
         migrations.AlterField(
@@ -23,5 +21,5 @@ class Migration(migrations.Migration):
                 related_name="availabilities",
                 to="person.SpeakerProfile",
             ),
-        ),
+        )
     ]

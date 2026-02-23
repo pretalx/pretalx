@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0062_cfp_settings_data"),
-    ]
+    dependencies = [("submission", "0062_cfp_settings_data")]
 
     operations = [
         migrations.AddField(
             model_name="submission",
             name="pending_state",
             field=models.CharField(default=None, max_length=9, null=True),
-        ),
+        )
     ]

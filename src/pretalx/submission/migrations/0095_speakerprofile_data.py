@@ -51,8 +51,7 @@ def populate_speakerrole_speaker(apps, schema_editor):
         SpeakerRole.objects.filter(submission__event=event).update(
             speaker_id=Subquery(
                 SpeakerProfile.objects.filter(
-                    user_id=OuterRef("user_id"),
-                    event_id=event.pk,
+                    user_id=OuterRef("user_id"), event_id=event.pk
                 ).values("id")[:1]
             )
         )
@@ -64,9 +63,9 @@ def reverse_speakerrole_speaker(apps, schema_editor):
 
     SpeakerRole.objects.filter(speaker__isnull=False).update(
         user_id=Subquery(
-            SpeakerProfile.objects.filter(
-                pk=OuterRef("speaker_id"),
-            ).values("user_id")[:1]
+            SpeakerProfile.objects.filter(pk=OuterRef("speaker_id")).values("user_id")[
+                :1
+            ]
         )
     )
 
@@ -118,8 +117,7 @@ def populate_answer_speaker(apps, schema_editor):
         Answer.objects.filter(question__event=event, person__isnull=False).update(
             speaker_id=Subquery(
                 SpeakerProfile.objects.filter(
-                    user_id=OuterRef("person_id"),
-                    event_id=event.pk,
+                    user_id=OuterRef("person_id"), event_id=event.pk
                 ).values("id")[:1]
             )
         )
@@ -131,9 +129,9 @@ def reverse_answer_speaker(apps, schema_editor):
 
     Answer.objects.filter(speaker__isnull=False).update(
         person_id=Subquery(
-            SpeakerProfile.objects.filter(
-                pk=OuterRef("speaker_id"),
-            ).values("user_id")[:1]
+            SpeakerProfile.objects.filter(pk=OuterRef("speaker_id")).values("user_id")[
+                :1
+            ]
         )
     )
 
@@ -150,8 +148,7 @@ def populate_feedback_speaker(apps, schema_editor):
         .annotate(
             has_profile=Exists(
                 SpeakerProfile.objects.filter(
-                    user_id=OuterRef("speaker_id"),
-                    event_id=OuterRef("talk__event_id"),
+                    user_id=OuterRef("speaker_id"), event_id=OuterRef("talk__event_id")
                 )
             )
         )
@@ -185,8 +182,7 @@ def populate_feedback_speaker(apps, schema_editor):
         Feedback.objects.filter(talk__event=event, speaker__isnull=False).update(
             speaker_profile_id=Subquery(
                 SpeakerProfile.objects.filter(
-                    user_id=OuterRef("speaker_id"),
-                    event_id=event.pk,
+                    user_id=OuterRef("speaker_id"), event_id=event.pk
                 ).values("id")[:1]
             )
         )
@@ -198,17 +194,15 @@ def reverse_feedback_speaker(apps, schema_editor):
 
     Feedback.objects.filter(speaker_profile__isnull=False).update(
         speaker_id=Subquery(
-            SpeakerProfile.objects.filter(
-                pk=OuterRef("speaker_profile_id"),
-            ).values("user_id")[:1]
+            SpeakerProfile.objects.filter(pk=OuterRef("speaker_profile_id")).values(
+                "user_id"
+            )[:1]
         )
     )
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0094_migrate_to_speakerprofile"),
-    ]
+    dependencies = [("submission", "0094_migrate_to_speakerprofile")]
 
     operations = [
         migrations.RunPython(populate_speakerrole_speaker, reverse_speakerrole_speaker),

@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("person", "0011_speakerprofile_has_arrived"),
-    ]
+    dependencies = [("person", "0011_speakerprofile_has_arrived")]
 
     operations = [
         migrations.AddField(
             model_name="user",
             name="is_administrator",
             field=models.BooleanField(default=False),
-        ),
+        )
     ]

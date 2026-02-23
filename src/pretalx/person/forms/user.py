@@ -55,14 +55,9 @@ class UserForm(CfPFormMixin, forms.Form):
         required=False,
         widget=forms.EmailInput(attrs={"autocomplete": "email"}),
     )
-    register_password = NewPasswordField(
-        label=_("Password"),
-        required=False,
-    )
+    register_password = NewPasswordField(label=_("Password"), required=False)
     register_password_repeat = NewPasswordConfirmationField(
-        label=_("Password (again)"),
-        required=False,
-        confirm_with="register_password",
+        label=_("Password (again)"), required=False, confirm_with="register_password"
     )
 
     FIELDS_ERROR = _(

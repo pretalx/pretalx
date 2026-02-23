@@ -8,11 +8,7 @@ from pretalx.submission.cards import _text
 
 
 @pytest.mark.parametrize(
-    ("text", "length", "expected"),
-    (
-        ("12345", 3, "12…"),
-        ("12345", 5, "12345"),
-    ),
+    ("text", "length", "expected"), (("12345", 3, "12…"), ("12345", 5, "12345"))
 )
 def test_ellipsize(text, length, expected):
     assert _text(text, length) == expected

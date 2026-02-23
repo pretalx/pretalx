@@ -137,8 +137,7 @@ class ReviewDashboard(
         if self.can_see_all_reviews:
             queryset = queryset.annotate(
                 median_score=Median(
-                    "reviews__score",
-                    filter=Q(reviews__score__isnull=False),
+                    "reviews__score", filter=Q(reviews__score__isnull=False)
                 ),
                 mean_score=Avg(
                     "reviews__score", filter=Q(reviews__score__isnull=False)
@@ -222,8 +221,7 @@ class ReviewDashboard(
         queryset = questions_for_user(
             self.request.event, self.request.user, for_answers=True
         ).filter(
-            target=QuestionTarget.SUBMISSION,
-            variant__in=QuestionVariant.short_answers,
+            target=QuestionTarget.SUBMISSION, variant__in=QuestionVariant.short_answers
         )
         if not self.can_change_submissions:
             queryset = queryset.filter(is_visible_to_reviewers=True)
@@ -362,9 +360,7 @@ class BulkReview(EventPermissionRequired, TemplateView):
     @cached_property
     def filter_form(self):
         return SubmissionFilterForm(
-            data=self.request.GET,
-            event=self.request.event,
-            prefix="filter",
+            data=self.request.GET, event=self.request.event, prefix="filter"
         )
 
     @context
@@ -464,8 +460,7 @@ class BulkReview(EventPermissionRequired, TemplateView):
             categories[None].append(category)
         return {
             submission.code: self._build_form(
-                submission,
-                instance=own_reviews.get(submission.pk),
+                submission, instance=own_reviews.get(submission.pk)
             )
             for submission in self.submissions
         }
@@ -583,8 +578,7 @@ class BulkTagging(EventPermissionRequired, SubmissionListMixin, TemplateView):
         if count:
             if action == "add":
                 messages.success(
-                    request,
-                    _("Added tags to {count} proposals.").format(count=count),
+                    request, _("Added tags to {count} proposals.").format(count=count)
                 )
             else:
                 messages.success(
@@ -821,18 +815,14 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
         key = f"{self.request.event.slug}_ignored_reviews"
         ignored_submissions = self.request.session.get(key) or []
         next_submission = get_missing_reviews(
-            self.request.event,
-            self.request.user,
-            ignore=ignored_submissions,
+            self.request.event, self.request.user, ignore=ignored_submissions
         ).first()
         if not next_submission:
             ignored_submissions = (
                 [self.submission.pk] if action == "skip_for_now" else []
             )
             next_submission = get_missing_reviews(
-                self.request.event,
-                self.request.user,
-                ignore=ignored_submissions,
+                self.request.event, self.request.user, ignore=ignored_submissions
             ).first()
         self.request.session[key] = ignored_submissions
         if next_submission:
@@ -1072,10 +1062,7 @@ class ReviewExport(EventPermissionRequired, FormView):
 
     @context
     def tablist(self):
-        return {
-            "custom": _("CSV/JSON exports"),
-            "api": _("API"),
-        }
+        return {"custom": _("CSV/JSON exports"), "api": _("API")}
 
     def get_form_kwargs(self):
         result = super().get_form_kwargs()

@@ -103,9 +103,7 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
         if question and (answer or option):
             if option:
                 answers = Answer.objects.filter(
-                    speaker_id=OuterRef("pk"),
-                    question_id=question,
-                    options__pk=option,
+                    speaker_id=OuterRef("pk"), question_id=question, options__pk=option
                 )
             else:
                 answers = Answer.objects.filter(
@@ -129,8 +127,7 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
         return questions_for_user(
             self.request.event, self.request.user, for_answers=True
         ).filter(
-            target=QuestionTarget.SPEAKER,
-            variant__in=QuestionVariant.short_answers,
+            target=QuestionTarget.SPEAKER, variant__in=QuestionVariant.short_answers
         )
 
     def get_table_kwargs(self):

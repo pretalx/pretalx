@@ -167,9 +167,7 @@ def test_submission_remove_removes_submission(submission, answer):
 def test_submission_delete_cleans_up_resource_files(submission):
     f = SimpleUploadedFile("testresource.txt", b"test content")
     resource = Resource.objects.create(
-        submission=submission,
-        resource=f,
-        description="Test resource",
+        submission=submission, resource=f, description="Test resource"
     )
     file_path = resource.resource.path
     assert resource.resource.storage.exists(file_path)
@@ -425,8 +423,7 @@ def test_editable_with_access_code_for_submission_type(submission):
         assert not submission.editable
 
         access_code = SubmitterAccessCode.objects.create(
-            event=submission.event,
-            code="TYPE123",
+            event=submission.event, code="TYPE123"
         )
         access_code.submission_types.add(submission.submission_type)
         submission.access_code = access_code

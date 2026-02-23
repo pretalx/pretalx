@@ -60,9 +60,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
-            options={
-                "abstract": False,
-            },
+            options={"abstract": False},
             bases=(pretalx.common.models.mixins.FileCleanupMixin, models.Model),
         ),
         migrations.AddField(

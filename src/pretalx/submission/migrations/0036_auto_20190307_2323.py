@@ -48,10 +48,6 @@ def create_review_phases(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0035_reviewphase"),
-    ]
+    dependencies = [("submission", "0035_reviewphase")]
 
-    operations = [
-        migrations.RunPython(create_review_phases, remove_review_phases),
-    ]
+    operations = [migrations.RunPython(create_review_phases, remove_review_phases)]

@@ -380,9 +380,7 @@ def reorder_queryset(queryset, id_list):
 class OrderActionMixin:
     """Change an ordered model with a POST endpoint to a CRUDView list view."""
 
-    extra_actions = {
-        "list": {"post": "order_handler"},
-    }
+    extra_actions = {"list": {"post": "order_handler"}}
 
     def order_handler(self, request, *args, **kwargs):
         order = request.POST.get("order")

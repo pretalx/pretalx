@@ -8,9 +8,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("event", "0016_remove_event_permitted"),
-    ]
+    dependencies = [("event", "0016_remove_event_permitted")]
 
     operations = [
         migrations.AlterField(

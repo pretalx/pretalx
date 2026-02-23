@@ -108,9 +108,7 @@ def test_orga_can_create_teams(client, orga_user_write_token, organiser):
             "all_events": True,
         },
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 201, response.text
     with scopes_disabled():
@@ -137,9 +135,7 @@ def test_orga_cannot_create_team_without_events(
             "all_events": False,
         },
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400, response.text
     with scopes_disabled():
@@ -162,9 +158,7 @@ def test_orga_cannot_create_team_without_permissions(
             "all_events": True,
         },
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400, response.text
     with scopes_disabled():
@@ -179,9 +173,7 @@ def test_orga_cannot_create_teams_readonly_token(client, orga_user_token, organi
         follow=True,
         data={"name": "New API Team Fail", "can_change_submissions": True},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     assert organiser.teams.count() == team_count
@@ -265,9 +257,7 @@ def test_orga_can_delete_teams(
     response = client.delete(
         f"/api/organisers/{organiser.slug}/teams/{team_pk}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 204, response.text
     assert organiser.teams.count() == team_count - 1
@@ -280,9 +270,7 @@ def test_orga_cannot_delete_last_team(client, orga_user_write_token, organiser, 
     response = client.delete(
         f"/api/organisers/{organiser.slug}/teams/{team.pk}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400, response.text
     assert organiser.teams.count() == team_count
@@ -297,9 +285,7 @@ def test_orga_cannot_delete_teams_readonly_token(
     response = client.delete(
         f"/api/organisers/{organiser.slug}/teams/{team.pk}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     assert organiser.teams.count() == team_count
@@ -339,9 +325,7 @@ def test_orga_can_invite_member(client, orga_user_write_token, organiser, team):
         follow=True,
         data={"email": invite_email},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 201, response.text
     content = json.loads(response.text)
@@ -361,9 +345,7 @@ def test_orga_cannot_invite_existing_member(
         follow=True,
         data={"email": orga_user.email},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400, response.text
     assert "already a member" in response.text
@@ -380,9 +362,7 @@ def test_orga_cannot_invite_already_invited(
         follow=True,
         data={"email": invitation.email},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400, response.text
     assert "already been invited" in response.text
@@ -397,9 +377,7 @@ def test_orga_cannot_invite_readonly_token(client, orga_user_token, organiser, t
         follow=True,
         data={"email": "fail.invite@example.com"},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     assert team.invites.count() == invite_count
@@ -413,9 +391,7 @@ def test_orga_can_delete_invite(
     response = client.delete(
         f"/api/organisers/{organiser.slug}/teams/{team.pk}/invites/{invitation.pk}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 204
     with scopes_disabled():
@@ -436,9 +412,7 @@ def test_orga_cannot_delete_invite_readonly_token(
     response = client.delete(
         f"/api/organisers/{organiser.slug}/teams/{team.pk}/invites/{invitation.pk}/",
         follow=True,
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     assert team.invites.count() == invite_count
@@ -457,9 +431,7 @@ def test_orga_can_remove_member(
         follow=True,
         data={"user_code": orga_user.code},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 204, response.text
     with scopes_disabled():
@@ -483,9 +455,7 @@ def test_orga_cannot_remove_member_readonly_token(
         follow=True,
         data={"user_code": orga_user.code},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_token.token}"},
     )
     assert response.status_code == 403
     team.refresh_from_db()
@@ -504,9 +474,7 @@ def test_orga_cannot_remove_non_member(
         follow=True,
         data={"user_code": other_orga_user.code},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400, response.text
     assert "not a member" in response.text
@@ -523,9 +491,7 @@ def test_orga_cannot_remove_nonexistent_user(
         follow=True,
         data={"user_code": "NONEXISTENTCODE"},
         content_type="application/json",
-        headers={
-            "Authorization": f"Token {orga_user_write_token.token}",
-        },
+        headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400, response.text
     assert "not found" in response.text

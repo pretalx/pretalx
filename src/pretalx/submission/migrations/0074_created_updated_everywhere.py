@@ -7,9 +7,7 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0073_track_position"),
-    ]
+    dependencies = [("submission", "0073_track_position")]
 
     operations = [
         migrations.AddField(

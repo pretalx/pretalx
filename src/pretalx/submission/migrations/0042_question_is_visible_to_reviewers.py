@@ -7,14 +7,12 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0041_auto_20191105_0042"),
-    ]
+    dependencies = [("submission", "0041_auto_20191105_0042")]
 
     operations = [
         migrations.AddField(
             model_name="question",
             name="is_visible_to_reviewers",
             field=models.BooleanField(default=True),
-        ),
+        )
     ]

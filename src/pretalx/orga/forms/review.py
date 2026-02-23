@@ -40,15 +40,9 @@ class TagsForm(ReadOnlyFlag, forms.ModelForm):
 
     class Meta:
         model = Submission
-        fields = [
-            "tags",
-        ]
-        widgets = {
-            "tags": EnhancedSelectMultiple(color_field="color"),
-        }
-        field_classes = {
-            "tags": SafeModelMultipleChoiceField,
-        }
+        fields = ["tags"]
+        widgets = {"tags": EnhancedSelectMultiple(color_field="color")}
+        field_classes = {"tags": SafeModelMultipleChoiceField}
 
 
 class ReviewForm(ReadOnlyFlag, forms.ModelForm):
@@ -216,9 +210,7 @@ class ReviewAssignmentForm(forms.Form):
         super().__init__(*args, **kwargs)
 
     class Media:
-        js = [
-            forms.Script("orga/js/forms/assignment.js", defer=""),
-        ]
+        js = [forms.Script("orga/js/forms/assignment.js", defer="")]
 
 
 class ReviewerForProposalForm(ReviewAssignmentForm):
@@ -322,17 +314,10 @@ class ReviewExportForm(ExportForm):
         help_text=phrases.orga.proposal_id_help_text,
     )
     submission_title = forms.BooleanField(
-        required=False,
-        label=Submission._meta.get_field("title").verbose_name,
+        required=False, label=Submission._meta.get_field("title").verbose_name
     )
-    user_name = forms.BooleanField(
-        required=False,
-        label=_("Reviewer name"),
-    )
-    user_email = forms.BooleanField(
-        required=False,
-        label=_("Reviewer email"),
-    )
+    user_name = forms.BooleanField(required=False, label=_("Reviewer name"))
+    user_email = forms.BooleanField(required=False, label=_("Reviewer email"))
 
     class Meta:
         model = Review
@@ -435,10 +420,7 @@ class BulkTagForm(forms.Form):
     action = forms.ChoiceField(
         required=True,
         label=_("Action"),
-        choices=(
-            ("add", _("Add tags")),
-            ("remove", _("Remove tags")),
-        ),
+        choices=(("add", _("Add tags")), ("remove", _("Remove tags"))),
         widget=forms.RadioSelect,
         initial="add",
     )

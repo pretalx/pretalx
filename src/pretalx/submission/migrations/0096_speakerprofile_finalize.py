@@ -6,19 +6,13 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("submission", "0095_speakerprofile_data"),
-    ]
+    dependencies = [("submission", "0095_speakerprofile_data")]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name="speakerrole",
-            unique_together={("submission", "speaker")},
+            name="speakerrole", unique_together={("submission", "speaker")}
         ),
-        migrations.RemoveField(
-            model_name="speakerrole",
-            name="user",
-        ),
+        migrations.RemoveField(model_name="speakerrole", name="user"),
         migrations.AlterField(
             model_name="speakerrole",
             name="speaker",
@@ -39,18 +33,10 @@ class Migration(migrations.Migration):
                 verbose_name="Speakers",
             ),
         ),
-        migrations.RemoveField(
-            model_name="answer",
-            name="person",
-        ),
-        migrations.RemoveField(
-            model_name="feedback",
-            name="speaker",
-        ),
+        migrations.RemoveField(model_name="answer", name="person"),
+        migrations.RemoveField(model_name="feedback", name="speaker"),
         migrations.RenameField(
-            model_name="feedback",
-            old_name="speaker_profile",
-            new_name="speaker",
+            model_name="feedback", old_name="speaker_profile", new_name="speaker"
         ),
         migrations.AlterField(
             model_name="feedback",

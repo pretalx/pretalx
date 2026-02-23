@@ -17,14 +17,7 @@ from pretalx.mail.models import QueuedMail, QueuedMailStates
 from pretalx.mail.tasks import mark_stale_sending_mails_as_failed
 
 
-@pytest.mark.parametrize(
-    ("key", "value"),
-    (
-        ("1", "a"),
-        ("2", "b"),
-        ("3", "3"),
-    ),
-)
+@pytest.mark.parametrize(("key", "value"), (("1", "a"), ("2", "b"), ("3", "3")))
 def test_tolerant_dict(key, value):
     d = TolerantDict({"1": "a", "2": "b"})
     assert d[key] == value
@@ -65,9 +58,7 @@ def test_mail_template_model_to_mail_shortens_subject(mail_template):
 def test_mail_submission_present_in_context(mail_template, submission, event):
     with scope(event=event):
         mail = mail_template.to_mail(
-            "testdummy@exacmple.com",
-            None,
-            context_kwargs={"submission": submission},
+            "testdummy@exacmple.com", None, context_kwargs={"submission": submission}
         )
         mail.save()
         assert mail.submissions.all().contains(submission)
@@ -202,8 +193,7 @@ def test_smtp_auth_failure_marks_mail_failed(mail, event):
         with patch(
             "django.core.mail.backends.locmem.EmailBackend.send_messages",
             side_effect=SMTPAuthenticationError(
-                535,
-                b"5.7.8 Username and Password not accepted.",
+                535, b"5.7.8 Username and Password not accepted."
             ),
         ):
             mail.send()

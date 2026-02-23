@@ -34,16 +34,10 @@ def test_cannot_login_with_incorrect_email(client, event, speaker, speaker_profi
 
 @pytest.mark.django_db
 def test_cfp_logout(speaker_client, event, speaker, speaker_profile):
-    response = speaker_client.get(
-        event.urls.logout,
-        follow=True,
-    )
+    response = speaker_client.get(event.urls.logout, follow=True)
     assert response.status_code == 200
     assert speaker_profile.get_display_name() in response.text
-    response = speaker_client.post(
-        event.urls.logout,
-        follow=True,
-    )
+    response = speaker_client.post(event.urls.logout, follow=True)
     assert response.status_code == 200
     assert speaker_profile.get_display_name() not in response.text
 
@@ -51,11 +45,7 @@ def test_cfp_logout(speaker_client, event, speaker, speaker_profile):
 @pytest.mark.django_db
 def test_can_reset_password_by_email(speaker, speaker_profile, client, event):
     response = client.post(
-        event.urls.reset,
-        data={
-            "login_email": speaker.email,
-        },
-        follow=True,
+        event.urls.reset, data={"login_email": speaker.email}, follow=True
     )
     assert response.status_code == 200
     speaker.refresh_from_db()
@@ -91,11 +81,7 @@ def test_cannot_reset_password_with_incorrect_input(
     speaker, speaker_profile, client, event
 ):
     response = client.post(
-        event.urls.reset,
-        data={
-            "login_email": speaker.email,
-        },
-        follow=True,
+        event.urls.reset, data={"login_email": speaker.email}, follow=True
     )
     assert response.status_code == 200
     speaker.refresh_from_db()
@@ -121,11 +107,7 @@ def test_cannot_reset_password_to_insecure_password(
     speaker, speaker_profile, client, event
 ):
     response = client.post(
-        event.urls.reset,
-        data={
-            "login_email": speaker.email,
-        },
-        follow=True,
+        event.urls.reset, data={"login_email": speaker.email}, follow=True
     )
     assert response.status_code == 200
     speaker.refresh_from_db()
@@ -149,11 +131,7 @@ def test_cannot_reset_password_to_insecure_password(
 @pytest.mark.django_db
 def test_cannot_reset_password_without_account(speaker, client, event):
     response = client.post(
-        event.urls.reset,
-        data={
-            "login_email": "incorrect" + speaker.email,
-        },
-        follow=True,
+        event.urls.reset, data={"login_email": "incorrect" + speaker.email}, follow=True
     )
     assert response.status_code == 200
 

@@ -13,8 +13,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterUniqueTogether(
-            name="tag",
-            unique_together={("event", "tag")},
-        ),
+        migrations.AlterUniqueTogether(name="tag", unique_together={("event", "tag")})
     ]
