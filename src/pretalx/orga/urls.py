@@ -227,6 +227,11 @@ urlpatterns = [
                     name="cfp.access_code.send",
                 ),
                 path(
+                    "mails/sending-status",
+                    mails.MailSendingStatus.as_view(),
+                    name="mails.sending_status",
+                ),
+                path(
                     "mails/<int:pk>/",
                     include(
                         [
@@ -284,6 +289,11 @@ urlpatterns = [
                     name="mails.compose.sessions",
                 ),
                 path("mails/sent", mails.SentMail.as_view(), name="mails.sent"),
+                path(
+                    "mails/sidebar-count",
+                    mails.MailSidebarCount.as_view(),
+                    name="mails.sidebar_count",
+                ),
                 path(
                     "mails/outbox/",
                     mails.OutboxList.as_view(),

@@ -43,7 +43,7 @@ from pretalx.common.views.mixins import (
     PermissionRequired,
     reorder_queryset,
 )
-from pretalx.mail.models import MailTemplateRoles
+from pretalx.mail.models import MailTemplateRoles, QueuedMailStates
 from pretalx.orga.forms.submission import (
     AddSpeakerForm,
     AddSpeakerInlineForm,
@@ -258,7 +258,7 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
         if template := check_mail_template.get((current, self.object.state)):
             pending_emails = self.request.event.queued_mails.filter(
                 template=template,
-                sent__isnull=True,
+                state=QueuedMailStates.DRAFT,
                 to_users__in=self.object.speakers.values_list("user", flat=True),
             )
             if pending_emails.exists():

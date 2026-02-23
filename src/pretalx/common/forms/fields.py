@@ -36,6 +36,15 @@ IMAGE_EXTENSIONS = {
 }
 
 
+class CountableOption:
+    def __init__(self, name, count):
+        self.name = name
+        self.count = count
+
+    def __str__(self):
+        return str(self.name)
+
+
 class NewPasswordField(CharField):
     default_validators = [validate_password]
 

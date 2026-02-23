@@ -4,6 +4,7 @@
 from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import render_to_string
 from django.utils.functional import cached_property
 from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
@@ -31,6 +32,7 @@ from pretalx.mail.models import (
     MailTemplate,
     MailTemplateRoles,
     QueuedMail,
+    QueuedMailStates,
     get_prefixed_subject,
 )
 from pretalx.mail.signals import request_pre_send
@@ -80,7 +82,8 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
                 "submissions__event",
             )
             .select_related("template")
-            .filter(sent__isnull=True)
+            .filter(state=QueuedMailStates.DRAFT)
+            .with_computed_state()
             .order_by("-id")
         )
         qs = self.filter_queryset(qs)
@@ -93,7 +96,14 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
-        result["is_filtered"] = len(result["mails"]) != self.request.event.pending_mails
+        counts = self.request.event.queued_mails.filter(
+            state=QueuedMailStates.DRAFT
+        ).aggregate(
+            pending_count=Count("pk"),
+            failed_count=Count("pk", filter=Q(error_data__isnull=False)),
+        )
+        result["is_filtered"] = len(result["mails"]) != counts["pending_count"]
+        result["failed_count"] = counts["failed_count"]
         return result
 
     def get_filter_form(self):
@@ -138,7 +148,8 @@ class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
                 "submissions__event",
             )
             .select_related("template")
-            .filter(sent__isnull=False)
+            .filter(state__in=[QueuedMailStates.SENT, QueuedMailStates.SENDING])
+            .with_computed_state()
             .order_by("-sent")
         )
         qs = self.filter_queryset(qs)
@@ -148,6 +159,16 @@ class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     @cached_property
     def show_tracks(self):
         return self.request.event.get_feature_flag("use_tracks")
+
+    def get_context_data(self, **kwargs):
+        result = super().get_context_data(**kwargs)
+        sending_pks = list(
+            self.request.event.queued_mails.filter(
+                state=QueuedMailStates.SENDING
+            ).values_list("pk", flat=True)
+        )
+        result["sending_ids"] = ",".join(str(pk) for pk in sending_pks)
+        return result
 
 
 class OutboxSend(ActionConfirmMixin, OutboxList):
@@ -173,47 +194,57 @@ class OutboxSend(ActionConfirmMixin, OutboxList):
     def action_back_url(self):
         return self.request.event.orga_urls.outbox
 
-    def dispatch(self, request, *args, **kwargs):
-        if "pk" in self.kwargs:
-            try:
-                mail = self.request.event.queued_mails.get(pk=self.kwargs.get("pk"))
-            except QueuedMail.DoesNotExist:
-                messages.error(
-                    request,
-                    _(
-                        "This mail either does not exist or cannot be sent because it was sent already."
-                    ),
-                )
-                return redirect(self.request.event.orga_urls.outbox)
-            if mail.sent:
-                messages.error(request, _("This mail had been sent already."))
-            else:
-                errors = get_send_mail_exceptions(request)
-                if errors:
-                    for error in errors:
-                        messages.error(request, error)
-                    return redirect(self.request.event.orga_urls.outbox)
-                mail.send(requestor=self.request.user)
-                messages.success(request, _("The mail has been sent."))
-            return redirect(self.request.event.orga_urls.outbox)
-        return super().dispatch(request, *args, **kwargs)
-
     @cached_property
     def queryset(self):
         pks = self.request.GET.get("pks") or ""
         if pks:
-            return self.request.event.queued_mails.filter(sent__isnull=True).filter(
-                pk__in=pks.split(",")
-            )
-        return self.get_queryset()
+            return self.request.event.queued_mails.filter(
+                state=QueuedMailStates.DRAFT
+            ).filter(pk__in=pks.split(","))
+        qs = self.get_queryset()
+        if self.request.GET.get("failed_only"):
+            qs = qs.filter(error_data__isnull=False)
+        return qs
 
     def post(self, request, *args, **kwargs):
-        mails = self.queryset
+        if "pk" not in self.kwargs:
+            self.bulk_send(request)
+        return self.single_send(request)
+
+    def single_send(self, request):
+        try:
+            mail = self.request.event.queued_mails.get(pk=self.kwargs.get("pk"))
+        except QueuedMail.DoesNotExist:
+            messages.error(
+                request,
+                _(
+                    "This mail either does not exist or cannot be sent because it was sent already."
+                ),
+            )
+            return redirect(self.request.event.orga_urls.outbox)
+        if mail.state != QueuedMailStates.DRAFT:
+            messages.error(request, _("This mail had been sent already."))
+        else:
+            errors = get_send_mail_exceptions(request)
+            if errors:
+                for error in errors:
+                    messages.error(request, error)
+                return redirect(self.request.event.orga_urls.outbox)
+            mail.send(requestor=self.request.user)
+            if request.headers.get("HX-Request"):
+                response = HttpResponse(status=200)
+                response["HX-Trigger"] = "updateSidebarCount"
+                return response
+            messages.success(request, _("The mail has been sent."))
+        return redirect(self.request.event.orga_urls.outbox)
+
+    def bulk_send(self, request):
         errors = get_send_mail_exceptions(request)
         if errors:
             for error in errors:
                 messages.error(request, error)
             return redirect(self.request.event.orga_urls.outbox)
+        mails = self.queryset
         count = len(mails)
         for mail in mails:
             mail.send(requestor=self.request.user)
@@ -233,11 +264,11 @@ class MailDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
     @cached_property
     def queryset(self):
         mail = self.request.event.queued_mails.filter(
-            sent__isnull=True, pk=self.kwargs.get("pk")
+            state=QueuedMailStates.DRAFT, pk=self.kwargs.get("pk")
         )
         if "all" in self.request.GET and mail:
             return self.request.event.queued_mails.filter(
-                sent__isnull=True, template=mail.first().template
+                state=QueuedMailStates.DRAFT, template=mail.first().template
             )
         return mail
 
@@ -362,13 +393,16 @@ class MailDetail(PermissionRequired, CreateOrUpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.permission_action == "edit":
+            send_label = (
+                _("Save and retry") if self.object.has_error else _("Save and send")
+            )
             context["submit_buttons"] = [
                 Button(),
                 Button(
                     name="form",
                     value="send",
                     color="info",
-                    label=_("Save and send"),
+                    label=send_label,
                     icon="envelope",
                 ),
             ]
@@ -381,7 +415,7 @@ class MailDetail(PermissionRequired, CreateOrUpdateView):
                     label=_("Discard all from this template"),
                 ),
             ]
-        elif self.object.sent:
+        elif self.object.state != QueuedMailStates.DRAFT:
             if pk := self.object.template_id:
                 href = f"{self.request.event.orga_urls.compose_mails_sessions}?template={pk}"
             else:
@@ -524,7 +558,7 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
             return self.get(self.request, *self.args, **self.kwargs)
 
         result = form.save()
-        if len(result) and result[0].sent:
+        if len(result) and result[0].state != QueuedMailStates.DRAFT:
             self.success_url = self.request.event.orga_urls.sent_mails
             messages.success(
                 self.request,

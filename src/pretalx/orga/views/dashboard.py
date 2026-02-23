@@ -22,6 +22,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import EventPermissionRequired, PermissionRequired
 from pretalx.event.models import Event, Organiser
 from pretalx.event.stages import get_stages
+from pretalx.mail.models import QueuedMailStates
 from pretalx.orga.signals import dashboard_tile
 from pretalx.submission.models import Submission, SubmissionStates
 from pretalx.submission.rules import get_missing_reviews
@@ -413,7 +414,7 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
                     "priority": 60,
                 }
             )
-        count = event.queued_mails.filter(sent__isnull=False).count()
+        count = event.queued_mails.filter(state=QueuedMailStates.SENT).count()
         result["tiles"].append(
             {
                 "large": count,

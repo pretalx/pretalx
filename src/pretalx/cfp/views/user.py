@@ -25,7 +25,6 @@ from django.views.generic import (
 )
 from django_context_decorator import context
 
-from pretalx.mail.models import QueuedMailStates
 from pretalx.cfp.forms.submissions import SubmissionInvitationForm
 from pretalx.cfp.views.event import LoggedInEventPageMixin
 from pretalx.common.exceptions import SubmissionError
@@ -35,6 +34,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.common.ui import Button, LinkButton, back_button, delete_button
 from pretalx.common.views.helpers import is_form_bound
+from pretalx.mail.models import QueuedMailStates
 from pretalx.person.forms import (
     LoginInfoForm,
     SpeakerAvailabilityForm,
