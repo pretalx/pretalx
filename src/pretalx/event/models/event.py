@@ -15,6 +15,7 @@ from django.db import models, transaction
 from django.utils.functional import cached_property
 from django.utils.timezone import make_aware, now
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import override
 from django_scopes import ScopedManager, scopes_disabled
 from i18nfield.fields import I18nCharField, I18nTextField
 
@@ -36,8 +37,6 @@ from pretalx.event.rules import (
     has_any_permission,
     is_event_visible,
 )
-from django.utils.translation import override
-
 
 # Slugs need to start and end with an alphanumeric character,
 # but may contain dashes and dots in between.
@@ -632,7 +631,10 @@ class Event(PretalxModel):
                 can_change_submission_state=True,
             )
         if not self.score_categories.all().exists():
-            from pretalx.submission.models import ReviewScore, ReviewScoreCategory  # noqa: PLC0415
+            from pretalx.submission.models import (  # noqa: PLC0415
+                ReviewScore,
+                ReviewScoreCategory,
+            )
 
             category = ReviewScoreCategory.objects.create(
                 event=self,
@@ -1128,7 +1130,9 @@ class Event(PretalxModel):
         - Talks are rescheduled
         - A schedule is released
         """
-        from pretalx.schedule.services import has_unreleased_schedule_changes  # noqa: PLC0415
+        from pretalx.schedule.services import (  # noqa: PLC0415
+            has_unreleased_schedule_changes,
+        )
 
         return has_unreleased_schedule_changes(self)
 

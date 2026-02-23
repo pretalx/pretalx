@@ -12,6 +12,7 @@ from django.db.models import F
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django_scopes import scope
+
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.event.models import Event, Team
 from pretalx.person.models import User

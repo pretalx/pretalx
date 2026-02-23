@@ -13,9 +13,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management.base import CommandError
 from django.test import override_settings
 from django.urls import reverse
-from django_scopes import scope
+from django_scopes import scope, scopes_disabled
 from jsonschema import validate
-from django_scopes import scopes_disabled
 from lxml import etree
 
 from pretalx.agenda.tasks import export_schedule_html

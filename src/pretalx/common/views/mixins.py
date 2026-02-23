@@ -23,7 +23,6 @@ from django_context_decorator import context
 from formtools.wizard.forms import ManagementForm
 from rules.contrib.views import PermissionRequiredMixin
 
-
 from pretalx.common.forms import SearchForm
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.models.file import CachedFile

@@ -119,7 +119,9 @@ class SubmissionType(PretalxModel):
         return f"{self.id}-{slugify(self.name)}"
 
     def delete(self, *args, **kwargs):
-        from pretalx.submission.models import SubmitterAccessCode  # noqa: PLC0415, circular imports
+        from pretalx.submission.models import (  # noqa: PLC0415
+            SubmitterAccessCode,
+        )
 
         ac_ids = list(self.submitter_access_codes.values_list("pk", flat=True))
         SubmitterAccessCode.objects.filter(pk__in=ac_ids).annotate(

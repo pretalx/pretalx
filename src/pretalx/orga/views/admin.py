@@ -13,6 +13,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView, View
 from django_context_decorator import context
+from django_scopes import scopes_disabled
 
 from pretalx.celery_app import app
 from pretalx.common.exceptions import UserDeletionError
@@ -24,8 +25,6 @@ from pretalx.common.views.generic import OrgaCRUDView
 from pretalx.common.views.mixins import PermissionRequired
 from pretalx.orga.forms.admin import UpdateSettingsForm
 from pretalx.orga.tables.admin import AdminUserTable
-from django_scopes import scopes_disabled
-
 from pretalx.person.models import User
 from pretalx.submission.models import Submission
 

@@ -228,7 +228,9 @@ def test_submission_change_slot_count(accepted_submission):
 @pytest.mark.django_db
 def test_submission_assign_code(submission, monkeypatch):
     from pretalx.common.models import mixins as models_mixins  # noqa: PLC0415
-    from pretalx.submission.models import submission as pretalx_submission  # noqa: PLC0415
+    from pretalx.submission.models import (  # noqa: PLC0415
+        submission as pretalx_submission,
+    )
 
     called = -1
     submission_codes = [submission.code, submission.code, "abcdef"]

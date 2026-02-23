@@ -41,14 +41,13 @@ from pretalx.common.forms.widgets import (
     PasswordInput,
     TextInputWithAddon,
 )
+from pretalx.common.models import ActivityLog
 from pretalx.common.text.css import validate_css
 from pretalx.common.text.phrases import phrases
 from pretalx.event.models.event import Event, EventExtraLink
 from pretalx.orga.forms.widgets import HeaderSelect, MultipleLanguagesWidget
 from pretalx.schedule.models import Availability, Room, TalkSlot
 from pretalx.submission.models import ReviewPhase, ReviewScore, ReviewScoreCategory
-from pretalx.common.models import ActivityLog
-
 
 ENCRYPTED_PASSWORD_PLACEHOLDER = "*" * 24
 

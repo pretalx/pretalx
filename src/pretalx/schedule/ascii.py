@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import textwrap
-from itertools import repeat, pairwise
+from itertools import pairwise, repeat
 
 from dateutil import rrule
 from django.utils.translation import gettext_lazy as _

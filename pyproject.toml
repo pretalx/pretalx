@@ -186,6 +186,7 @@ extend-select = [
   "F",  # pyflakes
   "FURB",  # Refactoring
   "G",  # logging: formatting
+  "I",  # import sorting
   "INT",  # gettext
   "LOG",  # logging: logger
   "N",  # PEP8-naming

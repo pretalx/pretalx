@@ -11,7 +11,6 @@ from django.utils.dateparse import parse_datetime
 from django.utils.timezone import now
 
 from pretalx.schedule.models.slot import SlotType, TalkSlot
-
 from pretalx.schedule.signals import schedule_release
 
 

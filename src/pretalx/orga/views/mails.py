@@ -487,7 +487,9 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
 
             import bleach  # noqa: PLC0415
 
-            from pretalx.common.templatetags.rich_text import render_markdown_abslinks  # noqa: PLC0415
+            from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415
+                render_markdown_abslinks,
+            )
 
             for locale in self.request.event.locales:
                 with language(locale):

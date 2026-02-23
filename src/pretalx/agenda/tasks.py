@@ -14,7 +14,6 @@ from pretalx.celery_app import app
 from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
 
-
 LOGGER = logging.getLogger(__name__)
 
 

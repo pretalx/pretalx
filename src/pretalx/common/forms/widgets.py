@@ -7,12 +7,12 @@ from pathlib import Path
 
 from django import forms
 from django.core.files import File
+from django.db.models import Count
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
-from i18nfield.forms import I18nTextarea
-from django.db.models import Count
 from django_scopes import scopes_disabled
+from i18nfield.forms import I18nTextarea
 
 from pretalx.common.text.phrases import phrases
 

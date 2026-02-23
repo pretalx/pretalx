@@ -9,8 +9,8 @@ from pretalx.agenda.rules import can_view_schedule, is_speaker_viewable
 from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
 from pretalx.common.urls import EventUrls
-from pretalx.person.models.picture import ProfilePictureMixin
 from pretalx.orga.rules import can_view_speaker_names
+from pretalx.person.models.picture import ProfilePictureMixin
 from pretalx.person.rules import (
     can_mark_speakers_arrived,
     is_administrator,

@@ -19,12 +19,15 @@ from pretalx.common.forms.widgets import (
     HtmlDateTimeInput,
     TextInputWithAddon,
 )
+from pretalx.common.plugins import get_all_plugins_grouped
 from pretalx.common.text.phrases import phrases
 from pretalx.event.models import Event, Organiser, Team, TeamInvite
-from pretalx.orga.forms.widgets import HeaderSelect, MultipleLanguagesWidget
+from pretalx.orga.forms.widgets import (
+    HeaderSelect,
+    MultipleLanguagesWidget,
+    PluginSelectWidget,
+)
 from pretalx.submission.models import Track
-from pretalx.common.plugins import get_all_plugins_grouped
-from pretalx.orga.forms.widgets import PluginSelectWidget
 
 
 class TeamForm(ReadOnlyFlag, PretalxI18nModelForm):

@@ -4,6 +4,7 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: luto
 
+import itertools
 from pathlib import Path
 
 from csp.decorators import csp_update
@@ -73,7 +74,6 @@ from pretalx.person.forms import UserForm
 from pretalx.person.models import User
 from pretalx.submission.models import ReviewPhase, ReviewScoreCategory
 from pretalx.submission.tasks import recalculate_all_review_scores
-import itertools
 
 
 class EventSettingsPermission(EventPermissionRequired):
@@ -251,7 +251,9 @@ class EventLive(EventSettingsPermission, TemplateView):
                     if isinstance(response[1], Exception)
                 ]
                 if exceptions:
-                    from pretalx.common.templatetags.rich_text import render_markdown  # noqa: PLC0415
+                    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415
+                        render_markdown,
+                    )
 
                     messages.error(
                         request,

@@ -7,8 +7,8 @@ It runs the local frontend server, if node is installed and the setting
 is set.
 """
 
-from subprocess import Popen
 from pathlib import Path
+from subprocess import Popen
 
 from django.conf import settings
 from django.core.management.commands.runserver import Command as Parent

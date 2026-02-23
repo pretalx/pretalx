@@ -9,7 +9,7 @@ from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
 from pretalx.common.models.log import ActivityLog
-from pretalx.person.models import SpeakerProfile
+from pretalx.person.models import SpeakerProfile, User
 from pretalx.schedule.models import TalkSlot
 from pretalx.submission.models import (
     Feedback,
@@ -21,7 +21,6 @@ from pretalx.submission.models import (
 )
 from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from pretalx.submission.models.submission import SpeakerRole
-from pretalx.person.models import User
 
 
 @pytest.mark.django_db

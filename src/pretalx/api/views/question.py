@@ -26,9 +26,7 @@ from pretalx.api.serializers.question import (
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.submission.icons import PLATFORM_ICONS
 from pretalx.submission.models import Answer, AnswerOption, Question, QuestionVariant
-from pretalx.submission.rules import questions_for_user
-from pretalx.submission.rules import filter_answers_by_team_access
-
+from pretalx.submission.rules import filter_answers_by_team_access, questions_for_user
 
 OPTIONS_HELP = (
     "Please note that any update to the options field will delete the "

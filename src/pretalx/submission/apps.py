@@ -8,7 +8,9 @@ class SubmissionConfig(AppConfig):
     name = "pretalx.submission"
 
     def ready(self):
-        from . import exporters  # noqa: F401, PLC0415
-        from . import rules  # noqa: F401, PLC0415
-        from . import signals  # noqa: F401, PLC0415
+        from . import (  # noqa: F401, PLC0415
+            exporters,
+            rules,
+            signals,
+        )
         from .phrases import SubmissionPhrases  # noqa: F401, PLC0415

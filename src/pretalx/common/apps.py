@@ -10,10 +10,12 @@ class CommonConfig(AppConfig):
     name = "pretalx.common"
 
     def ready(self):
-        from . import checks  # noqa: F401, PLC0415
-        from . import log_display  # noqa: F401, PLC0415
-        from . import signals  # noqa: F401, PLC0415
-        from . import update_check  # noqa: F401, PLC0415
+        from . import (  # noqa: F401, PLC0415
+            checks,
+            log_display,
+            signals,
+            update_check,
+        )
 
 
 with suppress(ImportError):

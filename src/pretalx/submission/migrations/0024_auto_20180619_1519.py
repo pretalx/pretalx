@@ -7,7 +7,9 @@ from django.db import migrations
 
 
 def rebuild_review_codes(apps, schema_editor):
-    from pretalx.submission.models.submission import generate_invite_code  # noqa: PLC0415
+    from pretalx.submission.models.submission import (  # noqa: PLC0415
+        generate_invite_code,
+    )
 
     Submission = apps.get_model("submission", "Submission")
 

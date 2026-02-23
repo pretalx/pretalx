@@ -32,7 +32,11 @@ from pretalx.common.db import Median
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, api_buttons
-from pretalx.common.views.generic import CreateOrUpdateView, OrgaTableMixin
+from pretalx.common.views.generic import (
+    CreateOrUpdateView,
+    OrgaTableMixin,
+    get_next_url,
+)
 from pretalx.common.views.helpers import is_htmx
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
@@ -62,14 +66,13 @@ from pretalx.submission.models import (
     SubmissionStates,
 )
 from pretalx.submission.rules import (
+    filter_answers_by_team_access,
     get_missing_reviews,
     get_reviewable_submissions,
     is_speaker,
     questions_for_user,
     reviews_are_open,
 )
-from pretalx.submission.rules import filter_answers_by_team_access
-from pretalx.common.views.generic import get_next_url
 
 
 class ReviewDashboard(

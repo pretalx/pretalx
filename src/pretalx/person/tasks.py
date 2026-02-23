@@ -11,8 +11,7 @@ from django.dispatch import receiver
 from django.utils.timezone import now
 
 from pretalx.common.signals import minimum_interval, periodic_task
-from pretalx.person.models import UserApiToken
-from pretalx.person.models import ProfilePicture
+from pretalx.person.models import ProfilePicture, UserApiToken
 
 logger = logging.getLogger(__name__)
 

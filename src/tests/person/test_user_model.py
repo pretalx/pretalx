@@ -4,10 +4,9 @@
 import pytest
 from django_scopes import scope, scopes_disabled
 
-from pretalx.person.models.picture import picture_path
+from pretalx.person.models.picture import ProfilePicture, picture_path
 from pretalx.person.models.user import User
 from pretalx.submission.models.question import Answer
-from pretalx.person.models.picture import ProfilePicture
 
 
 @pytest.mark.django_db

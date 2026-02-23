@@ -27,8 +27,8 @@ from rules.contrib.models import RulesModelBase, RulesModelMixin
 from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.models import TIMEZONE_CHOICES
 from pretalx.common.models.mixins import FileCleanupMixin, GenerateCode, LogMixin
-from pretalx.person.models.picture import ProfilePictureMixin
 from pretalx.common.urls import EventUrls, build_absolute_uri
+from pretalx.person.models.picture import ProfilePictureMixin
 from pretalx.person.rules import is_administrator
 from pretalx.person.signals import delete_user as delete_user_signal
 
@@ -246,7 +246,9 @@ class User(
         if preferences := self.event_preferences_cache.get(event.pk):
             return preferences
 
-        from pretalx.person.models.preferences import UserEventPreferences  # noqa: PLC0415
+        from pretalx.person.models.preferences import (  # noqa: PLC0415
+            UserEventPreferences,
+        )
 
         preferences, _ = UserEventPreferences.objects.get_or_create(
             event=event, user=self

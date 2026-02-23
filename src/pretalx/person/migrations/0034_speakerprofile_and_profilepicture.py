@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import django.db.models.deletion
-import pretalx.common.models.mixins
-import pretalx.person.models.picture
 from django.conf import settings
 from django.db import migrations, models
+
+import pretalx.common.models.mixins
+import pretalx.person.models.picture
 
 
 class Migration(migrations.Migration):

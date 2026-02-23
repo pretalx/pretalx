@@ -6,8 +6,8 @@ from django.core import mail as djmail
 from django_scopes import scope
 
 from pretalx.mail.models import MailTemplate, MailTemplateRoles, QueuedMail
-from pretalx.submission.models import Submission, SubmissionStates
 from pretalx.person.models import SpeakerProfile
+from pretalx.submission.models import Submission, SubmissionStates
 
 
 @pytest.mark.django_db

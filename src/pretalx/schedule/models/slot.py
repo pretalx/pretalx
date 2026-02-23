@@ -37,7 +37,9 @@ class SlotType(models.TextChoices):
 
 class TalkSlotQuerySet(models.QuerySet):
     def with_sorted_speakers(self):
-        from pretalx.submission.models.submission import sorted_speakers_prefetch  # noqa: PLC0415
+        from pretalx.submission.models.submission import (  # noqa: PLC0415
+            sorted_speakers_prefetch,
+        )
 
         return self.prefetch_related(sorted_speakers_prefetch("submission__"))
 
