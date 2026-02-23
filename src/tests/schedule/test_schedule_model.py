@@ -8,7 +8,7 @@ from django.core import mail as djmail
 from django.utils.timezone import now
 from django_scopes import scope
 
-from pretalx.mail.models import QueuedMail
+from pretalx.mail.models import QueuedMail, QueuedMailStates
 from pretalx.schedule.models import Schedule, TalkSlot
 from pretalx.schedule.models.slot import SlotType
 from pretalx.submission.models import Submission
@@ -182,7 +182,9 @@ def test_is_archived(event, break_slot):
 def test_schedule_changes(event, slot, room, accepted_submission):
     with scope(event=slot.submission.event):
         djmail.outbox = []
-        QueuedMail.objects.filter(sent__isnull=True).update(sent=now())
+        QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).update(
+            sent=now(), state=QueuedMailStates.SENT
+        )
         assert slot.schedule != event.wip_schedule
         current_slot = slot.submission.slots.get(schedule=event.wip_schedule)
         current_slot.room = room
@@ -195,7 +197,7 @@ def test_schedule_changes(event, slot, room, accepted_submission):
         slot.end = None
         slot.is_visible = False
         slot.save()
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
         schedule, _ = event.wip_schedule.freeze("test")
         assert schedule.changes == {
             "count": 1,
@@ -205,7 +207,7 @@ def test_schedule_changes(event, slot, room, accepted_submission):
             "moved_talks": [],
         }
         assert len(djmail.outbox) == 0
-        mail_count = QueuedMail.objects.filter(sent__isnull=True).count()
+        mail_count = QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count()
         assert mail_count == slot.submission.speakers.count()
 
         current_slot = slot.submission.slots.get(
@@ -237,7 +239,7 @@ def test_schedule_changes(event, slot, room, accepted_submission):
             "canceled_talks": [],
             "moved_talks": [],
         }
-        mail_count = QueuedMail.objects.filter(sent__isnull=True).count()
+        mail_count = QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count()
         assert mail_count == slot.submission.speakers.count() * 2
 
         for wip_slot in event.wip_schedule.talks.filter(start__isnull=False).order_by(

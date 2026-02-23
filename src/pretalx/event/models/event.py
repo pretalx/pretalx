@@ -827,7 +827,9 @@ class Event(PretalxModel):
 
         :class:`~pretalx.mail.models.QueuedMail` objects.
         """
-        return self.queued_mails.filter(sent__isnull=True).count()
+        from pretalx.mail.models import QueuedMailStates  # noqa: PLC0415
+
+        return self.queued_mails.filter(state=QueuedMailStates.DRAFT).count()
 
     @cached_property
     def wip_schedule(self):
@@ -1092,7 +1094,7 @@ class Event(PretalxModel):
     release_schedule.alters_data = True
 
     def send_orga_mail(self, text, stats=False):
-        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
+        from pretalx.mail.models import QueuedMail, QueuedMailStates  # noqa: PLC0415
 
         context = {
             "event_dashboard": self.orga_urls.base.full(),
@@ -1110,7 +1112,9 @@ class Event(PretalxModel):
                     ).count(),
                     "review_count": self.reviews.count(),
                     "schedule_count": self.schedules.count() - 1,
-                    "mail_count": self.queued_mails.filter(sent__isnull=False).count(),
+                    "mail_count": self.queued_mails.filter(
+                        state=QueuedMailStates.SENT
+                    ).count(),
                 }
             )
         with override(self.locale):

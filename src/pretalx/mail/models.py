@@ -25,6 +25,12 @@ from pretalx.mail.signals import queuedmail_post_send, queuedmail_pre_send
 from pretalx.submission.rules import orga_can_change_submissions
 
 
+class QueuedMailStates(models.TextChoices):
+    DRAFT = "draft", _("Draft")
+    SENDING = "sending", _("Sending")
+    SENT = "sent", _("Sent")
+
+
 def get_prefixed_subject(event, subject):
     if not (prefix := event.mail_settings["subject_prefix"]):
         return subject
@@ -287,7 +293,7 @@ class MailTemplate(PretalxModel):
 
 @rules.predicate
 def can_edit_mail(user, obj):
-    return getattr(obj, "sent", False) is None
+    return getattr(obj, "state", None) == QueuedMailStates.DRAFT
 
 
 class QueuedMailQuerySet(models.QuerySet):
@@ -298,6 +304,19 @@ class QueuedMailQuerySet(models.QuerySet):
             models.Prefetch(
                 "to_users",
                 queryset=User.objects.with_speaker_code(event),
+            )
+        )
+
+    def with_computed_state(self):
+        return self.annotate(
+            computed_state=models.Case(
+                models.When(
+                    state=QueuedMailStates.DRAFT,
+                    error_data__isnull=False,
+                    then=models.Value("failed"),
+                ),
+                default=models.F("state"),
+                output_field=models.CharField(),
             )
         )
 
@@ -368,6 +387,14 @@ class QueuedMail(PretalxModel):
     )
     text = models.TextField(verbose_name=_("Text"))
     sent = models.DateTimeField(null=True, blank=True, verbose_name=_("Sent at"))
+    state = models.CharField(
+        max_length=10,
+        choices=QueuedMailStates.choices,
+        default=QueuedMailStates.DRAFT,
+        db_index=True,
+    )
+    error_data = models.JSONField(null=True, blank=True, default=None)
+    error_timestamp = models.DateTimeField(null=True, blank=True)
     locale = models.CharField(max_length=32, null=True, blank=True)
     attachments = models.JSONField(default=None, null=True, blank=True)
     submissions = models.ManyToManyField(
@@ -393,10 +420,39 @@ class QueuedMail(PretalxModel):
         send = "{base}send"
         copy = "{base}copy"
 
+    @property
+    def has_error(self):
+        return self.state == QueuedMailStates.DRAFT and self.error_data is not None
+
+    def mark_sent(self):
+        self.state = QueuedMailStates.SENT
+        self.sent = now()
+        self.error_data = None
+        self.error_timestamp = None
+        self.save(update_fields=["state", "sent", "error_data", "error_timestamp"])
+
+    mark_sent.alters_data = True
+
+    def mark_failed(self, exception):
+        from smtplib import SMTPResponseException  # noqa: PLC0415
+
+        self.state = QueuedMailStates.DRAFT
+        error_data = {"error": str(exception), "type": type(exception).__name__}
+        if isinstance(exception, SMTPResponseException):
+            smtp_message = exception.smtp_error
+            if isinstance(smtp_message, bytes):
+                smtp_message = smtp_message.decode("utf-8", errors="replace")
+            error_data["smtp_code"] = exception.smtp_code
+            error_data["error"] = smtp_message
+        self.error_data = error_data
+        self.error_timestamp = now()
+        self.save(update_fields=["state", "error_data", "error_timestamp"])
+
+    mark_failed.alters_data = True
+
     def __str__(self):
         """Help with debugging."""
-        sent = self.sent.isoformat() if self.sent else None
-        return f"OutboxMail(to={self.to}, subject={self.subject}, sent={sent})"
+        return f"QueuedMail(to={self.to}, subject={self.subject}, state={self.state})"
 
     def make_html(self):
         from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415
@@ -438,7 +494,6 @@ class QueuedMail(PretalxModel):
             return self.subject
         return get_prefixed_subject(event, self.subject)
 
-    @transaction.atomic
     def send(self, requestor=None, orga: bool = True):
         """Sends an email.
 
@@ -446,33 +501,35 @@ class QueuedMail(PretalxModel):
         :type requestor: :class:`~pretalx.person.models.user.User`
         :param orga: Was this email sent as by a privileged user?
         """
-        if self.sent:
+        if self.state in (QueuedMailStates.SENT, QueuedMailStates.SENDING):
             raise Exception(
                 _("This mail has been sent already. It cannot be sent again.")
             )
 
         has_event = getattr(self, "event", None)
-
         to = self.to.split(",") if self.to else []
-        if self.id:
-            to += [user.email for user in self.to_users.all()]
-            if has_event:
-                queuedmail_pre_send.send_robust(
-                    sender=self.event,
-                    mail=self,
-                )
 
-        if self.sent is not None:
-            # The pre_send signal must have handled the sending already,
-            # so there is nothing left for us to do.
-            return
+        with transaction.atomic():
+            if self.id:
+                to += [user.email for user in self.to_users.all()]
+                if has_event:
+                    queuedmail_pre_send.send_robust(
+                        sender=self.event,
+                        mail=self,
+                    )
 
-        from pretalx.common.mail import mail_send_task  # noqa: PLC0415
+            if self.sent is not None or self.state == QueuedMailStates.SENT:
+                # The pre_send signal must have handled the sending already,
+                # so there is nothing left for us to do.
+                self.state = QueuedMailStates.SENT
+                if self.pk:
+                    self.save(update_fields=["state"])
+                return
 
-        text = self.make_text()
-        body_html = self.make_html()
-        mail_send_task.apply_async(
-            kwargs={
+            text = self.make_text()
+            body_html = self.make_html()
+
+            task_kwargs = {
                 "to": to,
                 "subject": self.prefixed_subject,
                 "body": text,
@@ -482,25 +539,46 @@ class QueuedMail(PretalxModel):
                 "cc": (self.cc or "").split(","),
                 "bcc": (self.bcc or "").split(","),
                 "attachments": self.attachments,
-            },
-            ignore_result=True,
-        )
-        self.sent = now()
+            }
+
+            if self.pk:
+                task_kwargs["queued_mail_id"] = self.pk
+                self.state = QueuedMailStates.SENDING
+                self.error_data = None
+                self.error_timestamp = None
+                self.save(update_fields=["state", "error_data", "error_timestamp"])
+
+                self.log_action(
+                    "pretalx.mail.sent",
+                    person=requestor,
+                    orga=orga,
+                    data={
+                        "to_users": [
+                            (user.pk, user.email) for user in self.to_users.all()
+                        ]
+                    },
+                )
+
+        # Dispatch the async task outside the transaction so the worker
+        # sees committed state when it picks up the job.
+        from pretalx.common.mail import mail_send_task  # noqa: PLC0415
 
         if self.pk:
-            self.log_action(
-                "pretalx.mail.sent",
-                person=requestor,
-                orga=orga,
-                data={
-                    "to_users": [(user.pk, user.email) for user in self.to_users.all()]
-                },
-            )
-            self.save()
+            try:
+                mail_send_task.apply_async(kwargs=task_kwargs, ignore_result=True)
+            except Exception as exc:
+                self.mark_failed(exc)
+                return
+
             queuedmail_post_send.send(
                 sender=self.event,
                 mail=self,
             )
+        else:
+            # Non-persisted mail (commit=False fire-and-forget)
+            mail_send_task.apply_async(kwargs=task_kwargs, ignore_result=True)
+            self.sent = now()
+            self.state = QueuedMailStates.SENT
 
     send.alters_data = True
 
@@ -510,6 +588,9 @@ class QueuedMail(PretalxModel):
         new_mail = deepcopy(self)
         new_mail.pk = None
         new_mail.sent = None
+        new_mail.state = QueuedMailStates.DRAFT
+        new_mail.error_data = None
+        new_mail.error_timestamp = None
         new_mail.save()
         for user in self.to_users.all():
             new_mail.to_users.add(user)

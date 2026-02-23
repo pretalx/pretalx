@@ -8,6 +8,8 @@ Release Notes
 
 - :feature:`orga,2185` The feedback list pages now use sortable table views with optional columns, consistent with other organiser list views.
 - :bug:`cfp` Access codes that do not specify session types no longer unlock session types that require an access code.
+- :feature:`orga:mail` Email sending errors from custom SMTP servers are now detected and reported in the organiser interface, where the sending can be retried.
+- :feature:`dev:mail` ``QueuedMail`` now tracks its lifecycle via a ``state`` field (``draft``, ``sending``, ``sent``) instead of relying on ``sent__isnull``. Plugins filtering mails should use ``state`` instead of ``sent__isnull``. The ``queuedmail_post_send`` signal now fires after the mail has been queued for asynchronous delivery, not after it has been delivered. At that point, the mail will be in ``sending`` state and ``mail.sent`` will be ``None``. Delivery happens asynchronously via Celery, so receivers cannot know whether it will succeed or fail. Check ``mail.state`` or ``mail.has_error`` later if you need to react to delivery outcomes.
 - :bug:`orga` Plugin pages (settings, API endpoints) were accessible even when the plugin was not enabled for the event. They now correctly return a 404.
 - :feature:`dev` Plugins can now define ``settings_links`` and ``navigation_links`` in their metadata to show quick-access links on the plugin management page.
 - :bug:`api` API tokens with the ``Token`` prefix no longer receive 403 errors on plugin API endpoints.

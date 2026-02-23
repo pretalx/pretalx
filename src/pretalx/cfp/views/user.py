@@ -25,6 +25,7 @@ from django.views.generic import (
 )
 from django_context_decorator import context
 
+from pretalx.mail.models import QueuedMailStates
 from pretalx.cfp.forms.submissions import SubmissionInvitationForm
 from pretalx.cfp.views.event import LoggedInEventPageMixin
 from pretalx.common.exceptions import SubmissionError
@@ -634,4 +635,6 @@ class MailListView(LoggedInEventPageMixin, TemplateView):
 
     @context
     def mails(self):
-        return self.request.user.mails.filter(sent__isnull=False).order_by("-sent")
+        return self.request.user.mails.filter(state=QueuedMailStates.SENT).order_by(
+            "-sent"
+        )
