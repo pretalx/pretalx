@@ -73,6 +73,7 @@ dev = [
   "django-watchfiles",
   "djhtml",
   "drf-spectacular",
+  "factory_boy",
   "freezegun",
   "jsonschema",
   "polib",
@@ -146,15 +147,20 @@ filterwarnings = [
     "ignore:Cache key contains characters that will cause errors if used with memcached::django.core.cache.backends.base:"
 ]
 addopts = "-p no:doctest -p no:pastebin -p no:nose"
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "e2e: End-to-end tests",
+]
 
 [tool.coverage.run]
 branch = true
 omit = [
   "*/__init__.py",
   "*/__main__.py",
-  "*/admin.py",
   "*/celery_app.py",
   "*/legacy.py",
+  "*/legacy-tests/*",
   "*/local/*",
   "*/manage.py",
   "*/management/commands/devserver.py",

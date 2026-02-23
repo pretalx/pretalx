@@ -108,6 +108,7 @@ src/tests/locale/
 
 # django-perf-rec
 src/tests/**/*.yml
+src/legacy-tests
 
 # Screenshots
 screens/
