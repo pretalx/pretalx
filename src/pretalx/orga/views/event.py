@@ -538,7 +538,7 @@ class EventMailSettings(EventSettingsPermission, FormView):
                     _("An error occurred while contacting the SMTP server: %s")
                     % str(e),
                 )
-            else:  # pragma: no cover
+            else:
                 if form.cleaned_data.get("smtp_use_custom"):
                     messages.success(
                         self.request,

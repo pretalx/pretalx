@@ -38,7 +38,7 @@ def task_process_image(*, model: str, pk: int, field: str, generate_thumbnail: b
 
         try:
             process_image(image=image, generate_thumbnail=generate_thumbnail)
-        except (OSError, SyntaxError, ValueError):  # pragma: no cover
+        except (OSError, SyntaxError, ValueError):
             logger.exception("Could not process image %s", image.path)
 
 
@@ -71,5 +71,5 @@ def task_cleanup_file(*, model: str, pk: int, field: str, path: str):
         if real_path.exists():
             try:
                 default_storage.delete(path)
-            except OSError:  # pragma: no cover
+            except OSError:
                 logger.exception("Deleting file %s failed.", path)

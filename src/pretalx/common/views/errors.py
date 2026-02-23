@@ -14,7 +14,7 @@ from django.urls import get_callable
 def handle_500(request):
     try:
         template = loader.get_template("500.html")
-    except TemplateDoesNotExist:  # pragma: no cover
+    except TemplateDoesNotExist:
         return HttpResponseServerError(
             "Internal server error. Please contact the administrator for details.",
             content_type="text/html",

@@ -25,14 +25,14 @@ organiser_slug_env = f"{env_prefix}SLUG"
 organiser_slug_default = "conforg"
 
 
-def prompt_nonempty(prompt):  # pragma: no cover
+def prompt_nonempty(prompt):
     result = input(prompt).strip()
     while not result:
         result = input("This value is required, please enter some value to proceed: ")
     return result
 
 
-class Command(BaseCommand):  # pragma: no cover
+class Command(BaseCommand):
     help = "Initializes your pretalx instance. Only to be used once."
 
     def add_arguments(self, parser):

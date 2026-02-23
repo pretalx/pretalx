@@ -83,14 +83,14 @@ class SpeakerViewSet(
     endpoint = "speakers"
     filter_backends = (SpeakerSearchFilter, DjangoFilterBackend)
 
-    def get_legacy_serializer_class(self):  # pragma: no cover
+    def get_legacy_serializer_class(self):
         if self.request.user.has_perm("submission.orga_update_submission", self.event):
             return LegacySpeakerOrgaSerializer
         if self.request.user.has_perm("person.orga_list_speakerprofile", self.event):
             return LegacySpeakerReviewerSerializer
         return LegacySpeakerSerializer
 
-    def get_legacy_queryset(self):  # pragma: no cover
+    def get_legacy_queryset(self):
         if self.request.user.has_perm("person.orga_list_speakerprofile", self.event):
             return self.event.submitters.order_by("code")
         if self.event.current_schedule and self.event.get_feature_flag("show_schedule"):
@@ -98,7 +98,7 @@ class SpeakerViewSet(
         return SpeakerProfile.objects.none()
 
     def get_serializer(self, *args, **kwargs):
-        if self.api_version == LEGACY:  # pragma: no cover
+        if self.api_version == LEGACY:
             kwargs["questions"] = (
                 self.request.query_params.get("questions") or ""
             ).split(",")
@@ -111,7 +111,7 @@ class SpeakerViewSet(
         )
 
     def get_unversioned_serializer_class(self):
-        if self.api_version == LEGACY:  # pragma: no cover
+        if self.api_version == LEGACY:
             return self.get_legacy_serializer_class()
         if self.is_orga:
             if self.request.method not in SAFE_METHODS:
@@ -138,7 +138,7 @@ class SpeakerViewSet(
         return context
 
     def get_queryset(self):
-        if self.api_version == LEGACY:  # pragma: no cover
+        if self.api_version == LEGACY:
             queryset = self.get_legacy_queryset() or self.queryset
             return queryset.select_related(
                 "user", "event", "event__cfp", "profile_picture"

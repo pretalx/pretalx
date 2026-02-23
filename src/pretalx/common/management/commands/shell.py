@@ -15,7 +15,7 @@ from django_scopes import scope, scopes_disabled
 from pretalx.event.models import Event
 
 
-class Command(shell.Command):  # pragma: no cover
+class Command(shell.Command):
     def add_arguments(self, parser):
         super().add_arguments(parser)
         parser.add_argument(

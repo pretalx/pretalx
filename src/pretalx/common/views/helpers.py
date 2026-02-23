@@ -9,9 +9,7 @@ def is_form_bound(request, form_name, form_param="form"):
     return request.method == "POST" and request.POST.get(form_param) == form_name
 
 
-def get_static(
-    path, content_type, as_attachment=False, filename=None
-):  # pragma: no cover
+def get_static(path, content_type, as_attachment=False, filename=None):
     try:
         return FileResponse(
             staticfiles_storage.open(path),

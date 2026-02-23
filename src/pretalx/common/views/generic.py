@@ -251,7 +251,7 @@ class GenericResetView(FormView):
                 event=getattr(self.request, "event", None),
                 orga="orga" in self.request.resolver_match.namespaces,
             )
-        except SendMailException:  # pragma: no cover
+        except SendMailException:
             messages.error(self.request, phrases.base.error_sending_mail)
             return self.get(self.request, *self.args, **self.kwargs)
 

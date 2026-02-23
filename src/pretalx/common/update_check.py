@@ -48,7 +48,7 @@ def update_check():
     if not gs.settings.update_check_id:
         gs.settings.set("update_check_id", uuid.uuid4().hex)
 
-    if "runserver" in sys.argv or "devserver" in sys.argv:  # pragma: no cover
+    if "runserver" in sys.argv or "devserver" in sys.argv:
         gs.settings.set("update_check_last", now())
         gs.settings.set("update_check_result", {"error": "development"})
         return
@@ -71,7 +71,7 @@ def update_check():
         response = requests.post(
             "https://pretalx.com/.update_check/", json=check_payload, timeout=30
         )
-    except requests.RequestException:  # pragma: no cover
+    except requests.RequestException:
         gs.settings.set("update_check_last", now())
         gs.settings.set("update_check_result", {"error": "unavailable"})
         return
