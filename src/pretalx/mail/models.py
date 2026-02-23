@@ -262,7 +262,6 @@ class MailTemplate(PretalxModel):
                 "https://pretalx.example.com/democon/me/submissions/",
                 is_visible=False,
             )
-            kwargs = ["event", "user"]
         elif self.role == MailTemplateRoles.NEW_SPEAKER_INVITE:
             valid_placeholders["invitation_link"] = SimpleFunctionalMailTextPlaceholder(
                 "invitation_link",
@@ -508,8 +507,7 @@ class QueuedMail(PretalxModel):
                 # The pre_send signal must have handled the sending already,
                 # so there is nothing left for us to do.
                 self.state = QueuedMailStates.SENT
-                if self.pk:
-                    self.save(update_fields=["state"])
+                self.save(update_fields=["state", "sent"])
                 return
 
             text = self.make_text()
