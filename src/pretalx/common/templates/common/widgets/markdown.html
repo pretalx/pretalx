@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </markdown-toolbar>
   </div>
   <div class="markdown-tabpanel" id="tabpanel-markdown-{{ widget.name }}-text" aria-labelledby="tab-markdown-{{ widget.name }}-text" tabindex="0" aria-hidden="false">
-    {% include "django/forms/widgets/textarea.html" %}
+    <textarea name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>{% if widget.value %}{{ widget.value }}{% endif %}</textarea>
   </div>
   <div class="markdown-tabpanel markdown-preview" id="tabpanel-markdown-{{ widget.name }}-preview" aria-labelledby="tab-markdown-{{ widget.name }}-preview" tabindex="0" aria-hidden="true">
     <div class="preview-content"></div>
