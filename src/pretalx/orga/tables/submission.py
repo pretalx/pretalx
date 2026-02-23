@@ -296,7 +296,7 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
                     "actions",
                     TemplateColumn(
                         template_name="orga/tables/columns/review_actions.html",
-                        verbose_name=mark_safe(header_html),
+                        verbose_name=mark_safe(header_html),  # noqa: S308  -- static icon markup
                         orderable=False,
                         attrs={"td": {"class": "nowrap"}},
                     ),

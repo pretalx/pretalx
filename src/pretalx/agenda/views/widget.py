@@ -32,7 +32,7 @@ def _load_widget_js():
         file_path = Path(finders.find(WIDGET_PATH))
         with file_path.open(encoding="utf-8") as fp:
             WIDGET_JS_CONTENT = fp.read().encode()
-        WIDGET_JS_CHECKSUM = hashlib.md5(WIDGET_JS_CONTENT).hexdigest()
+        WIDGET_JS_CHECKSUM = hashlib.md5(WIDGET_JS_CONTENT).hexdigest()  # noqa: S324 -- used for cache busting, not vulnerable to collision attacks
 
 
 def widget_js_etag(request, event, **kwargs):
@@ -53,7 +53,8 @@ def is_public_and_versioned(request, event, version=None):
 
 def version_prefix(request, event, version=None):
     """On non-versioned pages, we want cache-invalidation on schedule
-    release."""
+    release.
+    """
     if not version and request.event.current_schedule:
         return request.event.current_schedule.version
     return version

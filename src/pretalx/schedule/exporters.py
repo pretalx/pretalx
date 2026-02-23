@@ -179,7 +179,6 @@ class FrabJsonExporter(ScheduleData):
                     {
                         "name": str(room.name),
                         "slug": room.slug,
-                        # TODO room url
                         "guid": room.uuid,
                         "description": str(room.description) or None,
                         "capacity": room.capacity,

@@ -5,7 +5,7 @@
 
 import logging
 
-from django.db import migrations
+from django.db import IntegrityError, migrations
 from django_scopes import scopes_disabled
 
 logger = logging.getLogger(__name__)
@@ -99,7 +99,7 @@ def _delete_soft_deleted_submissions(apps):
                         field_name,
                     )
                     related_qs.delete()
-            except Exception as e:
+            except IntegrityError as e:
                 logger.warning(
                     "Could not delete %s.%s objects: %s",
                     model._meta.label,
@@ -120,7 +120,7 @@ def _delete_soft_deleted_submissions(apps):
         )
     except Exception as e:
         error_msg = str(e)
-        logger.error(
+        logger.exception(
             "Failed to delete soft-deleted submissions: %s\n"
             "This is likely due to database tables from plugins that reference "
             "Submission but are not registered in Django. You may need to:\n"

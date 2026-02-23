@@ -178,7 +178,7 @@ def test_apply_async_failure_marks_mail_failed(mail, event):
     with scope(event=event):
         with patch(
             "pretalx.common.mail.mail_send_task.apply_async",
-            side_effect=Exception("Connection refused"),
+            side_effect=OSError("Connection refused"),
         ):
             mail.send()
         mail.refresh_from_db()

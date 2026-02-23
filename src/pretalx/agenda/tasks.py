@@ -27,14 +27,14 @@ def export_schedule_html(*, event_id, cached_file_id=None):
         )
     if not event:
         LOGGER.error("Could not find Event ID %s for export.", event_id)
-        return
+        return None
 
     with scope(event=event):
         if not event.current_schedule:
             LOGGER.error(
                 "Event %s could not be exported: it has no schedule.", event.slug
             )
-            return
+            return None
 
     cmd = ["export_schedule_html", event.slug, "--zip"]
     call_command(*cmd)
@@ -48,6 +48,6 @@ def export_schedule_html(*, event_id, cached_file_id=None):
                     cached_file.file.save(cached_file.filename, File(f))
                 zip_path.unlink(missing_ok=True)
             except FileNotFoundError:
-                LOGGER.error("Export zip not found at %s", zip_path)
-                return
+                LOGGER.exception("Export zip not found at %s", zip_path)
+                return None
             return cached_file_id

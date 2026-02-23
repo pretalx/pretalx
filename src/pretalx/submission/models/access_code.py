@@ -74,7 +74,7 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
         ),
     )
 
-    _code_length = 32
+    code_length = 32
 
     log_prefix = "pretalx.access_code"
 
@@ -131,7 +131,7 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
 
     send_invite.alters_data = True
 
-    def _get_instance_data(self):
-        result = super()._get_instance_data()
+    def get_instance_data(self):
+        result = super().get_instance_data()
         result["code"] = self.code  # Usually excluded as ID field
         return result

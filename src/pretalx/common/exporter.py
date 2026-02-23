@@ -106,13 +106,15 @@ class BaseExporter:
         """This value determines if the exporter is listed among the public
         exporters on the schedule page. It defaults to the `public` property,
         but you can override it in order to hide public exports from the
-        user-facing menu."""
+        user-facing menu.
+        """
         return self.public
 
     @property
     def cors(self) -> str:
         """If you want to let this exporter be accessed with JavaScript, set
-        cors = '*' for all accessing domains, or supply a specific domain."""
+        cors = '*' for all accessing domains, or supply a specific domain.
+        """
         return None
 
     @property
@@ -127,7 +129,8 @@ class BaseExporter:
     @property
     def icon(self) -> str:
         """Return either a fa- string or some other symbol to accompany the
-        exporter in displays."""
+        exporter in displays.
+        """
         raise NotImplementedError
 
     @property
@@ -155,7 +158,8 @@ class BaseExporter:
         """The base attribute of this class contains the relative URL where
         this exporter's data will be found, e.g. /event/schedule/export/my-
         export.ext Use ``exporter.urls.base.full()`` for the complete URL,
-        taking into account the configured event URL, or HTML export URL."""
+        taking into account the configured event URL, or HTML export URL.
+        """
 
         base = "{self.event.urls.export}{self.quoted_identifier}"
 
@@ -167,7 +171,7 @@ class BaseExporter:
         image = qrcode.make(
             self.urls.base.full(), image_factory=qrcode.image.svg.SvgPathFillImage
         )
-        return mark_safe(ElementTree.tostring(image.get_image()).decode())
+        return mark_safe(ElementTree.tostring(image.get_image()).decode())  # noqa: S308  -- generated SVG from qrcode
 
 
 class CSVExporterMixin:

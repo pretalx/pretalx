@@ -1,7 +1,8 @@
 # SPDX-FileCopyrightText: 2025-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.db import transaction
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from django_scopes import scopes_disabled
 from rest_framework import exceptions, serializers, status, viewsets
@@ -78,7 +79,7 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
             with transaction.atomic():
                 super().perform_update(serializer)
                 check_access_permissions(self.request.organiser)
-        except Exception as e:
+        except (DjangoValidationError, IntegrityError) as e:
             raise exceptions.ValidationError(str(e)) from None
 
     def perform_destroy(self, instance):
@@ -88,7 +89,7 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
                 instance.logged_actions().delete()
                 super().perform_destroy(instance)
                 check_access_permissions(organiser)
-        except Exception as e:
+        except (DjangoValidationError, IntegrityError) as e:
             raise exceptions.ValidationError(str(e)) from None
 
     @extend_schema(
@@ -184,7 +185,7 @@ class TeamViewSet(PretalxViewSetMixin, viewsets.ModelViewSet):
                         "email": user_to_remove.email,
                     },
                 )
-        except Exception as e:
+        except (DjangoValidationError, IntegrityError) as e:
             raise exceptions.ValidationError(str(e)) from None
 
         return Response(status=status.HTTP_204_NO_CONTENT)

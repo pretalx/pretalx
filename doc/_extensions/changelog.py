@@ -1,8 +1,7 @@
 # SPDX-FileCopyrightText: 2023-present Tobias Kunze
 # SPDX-License-Identifier: Apache-2.0
 
-"""
-Sphinx extension to build a useful, pretty changelog.
+"""Sphinx extension to build a useful, pretty changelog.
 
 Usage in ReST files:
     - :release:`v1 <yyyy-mm-dd>`
@@ -103,8 +102,7 @@ def _build_release_node(number, url, date=None, text=None):
     node = nodes.section(
         "", nodes.raw(rawtext="", text=header, format="html"), ids=[number]
     )
-    release_node = Release(number=number, date=date, nodelist=[node])
-    return release_node
+    return Release(number=number, date=date, nodelist=[node])
 
 
 def release_role(name, rawtext, text, lineno, inliner, *args, **kwargs):
@@ -142,10 +140,10 @@ def collect_releases(entries):
                 releases.pop()
             releases.append({"release": obj, "entries": defaultdict(list)})
             continue
-        elif not isinstance(obj, Issue):
+        if not isinstance(obj, Issue):
             msg = f"Found issue node ({obj}) which is not an Issue! Please double-check your ReST syntax!"
             msg += f"Context: {obj.parent!s}"
-            raise ValueError(msg)
+            raise TypeError(msg)
 
         releases[-1]["entries"][obj.category].append(
             {"issue": obj, "description": rest}
@@ -200,8 +198,7 @@ def construct_release_nodes(release, entries):
         issue_ul = nodes.bullet_list("", *issue_nodes)
         release["nodelist"][0].append(issue_ul)
 
-    result = nodes.paragraph("", "", *release["nodelist"])
-    return result
+    return nodes.paragraph("", "", *release["nodelist"])
 
 
 def construct_nodes(releases):

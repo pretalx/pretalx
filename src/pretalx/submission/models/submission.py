@@ -63,7 +63,7 @@ from pretalx.submission.signals import (
 
 
 def generate_invite_code(length=32):
-    return get_random_string(length=length, allowed_chars=Submission._code_charset)
+    return get_random_string(length=length, allowed_chars=Submission.code_charset)
 
 
 def submission_image_path(instance, filename):
@@ -429,7 +429,7 @@ class Submission(GenerateCode, PretalxModel):
     def anonymised(self):
         try:
             result = json.loads(self.anonymised_data)
-        except Exception:
+        except (ValueError, TypeError):
             result = None
         if not result or not isinstance(result, dict):
             return {}
@@ -505,8 +505,8 @@ class Submission(GenerateCode, PretalxModel):
                 self.event, submission=self, old_state=None, user=None
             )
 
-    def _get_instance_data(self):
-        data = super()._get_instance_data()
+    def get_instance_data(self):
+        data = super().get_instance_data()
 
         if self.pk:
             resources = list(self.resources.all()) or []
@@ -538,7 +538,7 @@ class Submission(GenerateCode, PretalxModel):
         for review in self.reviews.all():
             review.save(update_score=True)
 
-    def _set_state(self, new_state, person=None):
+    def set_state(self, new_state, person=None):
         """Set the submission's state and save."""
         if self.state == new_state:
             self.pending_state = None
@@ -667,7 +667,7 @@ class Submission(GenerateCode, PretalxModel):
     ):
         """Sets the submission's state to 'submitted'."""
         previous = self.state
-        self._set_state(SubmissionStates.SUBMITTED, person=person)
+        self.set_state(SubmissionStates.SUBMITTED, person=person)
         if previous != SubmissionStates.DRAFT:
             self.log_action(
                 "pretalx.submission.make_submitted",
@@ -681,7 +681,7 @@ class Submission(GenerateCode, PretalxModel):
     def confirm(self, person=None, orga: bool = False, from_pending: bool = False):
         """Sets the submission's state to 'confirmed'."""
         previous = self.state
-        self._set_state(SubmissionStates.CONFIRMED, person=person)
+        self.set_state(SubmissionStates.CONFIRMED, person=person)
         self.log_action(
             "pretalx.submission.confirm",
             person=person,
@@ -698,7 +698,7 @@ class Submission(GenerateCode, PretalxModel):
         unless the submission was previously confirmed.
         """
         previous = self.state
-        self._set_state(SubmissionStates.ACCEPTED, person=person)
+        self.set_state(SubmissionStates.ACCEPTED, person=person)
         self.log_action(
             "pretalx.submission.accept",
             person=person,
@@ -717,7 +717,7 @@ class Submission(GenerateCode, PretalxModel):
         :class:`~pretalx.mail.models.QueuedMail`.
         """
         previous = self.state
-        self._set_state(SubmissionStates.REJECTED, person=person)
+        self.set_state(SubmissionStates.REJECTED, person=person)
         self.log_action(
             "pretalx.submission.reject",
             person=person,
@@ -778,7 +778,7 @@ class Submission(GenerateCode, PretalxModel):
     def cancel(self, person=None, orga: bool = True, from_pending: bool = False):
         """Sets the submission's state to 'canceled'."""
         previous = self.state
-        self._set_state(SubmissionStates.CANCELED, person=person)
+        self.set_state(SubmissionStates.CANCELED, person=person)
         self.log_action(
             "pretalx.submission.cancel",
             person=person,
@@ -791,7 +791,7 @@ class Submission(GenerateCode, PretalxModel):
     def withdraw(self, person=None, orga: bool = False, from_pending: bool = False):
         """Sets the submission's state to 'withdrawn'."""
         previous = self.state
-        self._set_state(SubmissionStates.WITHDRAWN, person=person)
+        self.set_state(SubmissionStates.WITHDRAWN, person=person)
         self.log_action(
             "pretalx.submission.withdraw",
             person=person,
@@ -822,7 +822,7 @@ class Submission(GenerateCode, PretalxModel):
         # 6 charactes. Since log2(34 **6) == 30.52, that just fits in to a positive 32-bit signed integer (that
         # Engelsystem expects), if we do it correctly.
         charset = [
-            *self._code_charset,
+            *self.code_charset,
             "1",
             "2",
             "4",
@@ -1116,7 +1116,7 @@ class Submission(GenerateCode, PretalxModel):
         from pretalx.mail.models import QueuedMail  # noqa: PLC0415
 
         if not _from and (not subject or not text):
-            raise Exception("Please enter a sender for this invitation.")
+            raise ValueError("Please enter a sender for this invitation.")
 
         subject = subject or phrases.cfp.invite_subject.format(
             speaker=_from.get_display_name()
@@ -1199,7 +1199,7 @@ class SubmissionInvitation(PretalxModel):
         from pretalx.mail.models import QueuedMail  # noqa: PLC0415
 
         if not _from:
-            raise Exception("Please enter a sender for this invitation.")
+            raise ValueError("Please enter a sender for this invitation.")
 
         subject = subject or phrases.cfp.invite_subject.format(
             speaker=_from.get_display_name()

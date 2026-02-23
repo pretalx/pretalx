@@ -295,9 +295,10 @@ class PaginationMixin:
                 else:
                     size = int(self.request.GET.get("page_size"))
                 self.request.session[skey] = size
-                return size
             except ValueError:
                 return default
+            else:
+                return size
         return default
 
     def get_context_data(self, **kwargs):

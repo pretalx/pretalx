@@ -30,7 +30,7 @@ class Command(Parent):
         frontend_dir = (
             Path(__file__).parent.parent.parent.parent / "frontend/schedule-editor"
         )
-        vite_server = Popen(["npm", "start"], cwd=frontend_dir)
+        vite_server = Popen(["npm", "start"], cwd=frontend_dir)  # noqa: S607 -- npm is commonly installed in user paths
 
         try:
             super().handle(*args, **options)

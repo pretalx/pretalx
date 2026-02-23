@@ -82,15 +82,29 @@ class Command(Parent):
         locales = [locale.name for locale in locale_path.iterdir() if locale.is_dir()]
 
         subprocess.run(
-            "npm run i18n:extract", check=True, shell=True, cwd=frontend_path
+            ["npm", "run", "i18n:extract"],  # noqa: S607  -- npm is a dev dependency
+            check=True,
+            cwd=frontend_path,
         )
         # We only need one file, as it's empty anyway
         # (and we don't use numbers or other fancy features.)
         subprocess.run(
-            "npm run i18n:convert2gettext", check=True, shell=True, cwd=frontend_path
+            ["npm", "run", "i18n:convert2gettext"],  # noqa: S607  -- npm is a dev dependency
+            check=True,
+            cwd=frontend_path,
         )
 
         # Now merge the js file with the django file in each language
         for locale in locales:
-            command = f"msgcat -o locale/{locale}/LC_MESSAGES/django.po --use-first locale/{locale}/LC_MESSAGES/django.po frontend/schedule-editor/locales/en/translation.po"
-            subprocess.run(command, check=True, shell=True, cwd=base_path)
+            subprocess.run(  # noqa: S603  -- dev-only management command with controlled input
+                [  # noqa: S607  -- msgcat is a gettext utility
+                    "msgcat",
+                    "-o",
+                    f"locale/{locale}/LC_MESSAGES/django.po",
+                    "--use-first",
+                    f"locale/{locale}/LC_MESSAGES/django.po",
+                    "frontend/schedule-editor/locales/en/translation.po",
+                ],
+                check=True,
+                cwd=base_path,
+            )

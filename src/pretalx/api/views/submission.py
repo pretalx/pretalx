@@ -242,7 +242,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
     @cached_property
     def speakers_for_user(self):
         if not self.event:
-            return
+            return None
         return speakers_for_user(self.event, self.request.user)
 
     def get_serializer_context(self):
@@ -310,7 +310,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
     def reject(self, request, **kwargs):
         submission = self.get_object()
         try:
-            submission.reject(person=request.user, orga=True)
+            submission.reject(person=request.user)
         except SubmissionError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(SubmissionOrgaSerializer(submission).data)
@@ -328,7 +328,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
     def cancel(self, request, **kwargs):
         submission = self.get_object()
         try:
-            submission.cancel(person=request.user, orga=True)
+            submission.cancel(person=request.user)
         except SubmissionError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(SubmissionOrgaSerializer(submission).data)
@@ -439,14 +439,14 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
     @transaction.atomic
     def add_resource(self, request, **kwargs):
         submission = self.get_object()
-        old_data = submission._get_instance_data()
+        old_data = submission.get_instance_data()
         serializer = ResourceWriteSerializer(
             data=request.data, context=self.get_serializer_context()
         )
         serializer.is_valid(raise_exception=True)
         serializer.save(submission=submission)
-        submission._prefetched_objects_cache.pop("resources", None)
-        new_data = submission._get_instance_data()
+        submission._prefetched_objects_cache.pop("resources", None)  # noqa: SLF001 -- Django internal
+        new_data = submission.get_instance_data()
         submission.log_action(
             ".update",
             person=request.user,
@@ -473,10 +473,10 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
                 {"detail": "Resource not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
-        old_data = submission._get_instance_data()
+        old_data = submission.get_instance_data()
         resource.delete()
-        submission._prefetched_objects_cache.pop("resources", None)
-        new_data = submission._get_instance_data()
+        submission._prefetched_objects_cache.pop("resources", None)  # noqa: SLF001 -- Django internal
+        new_data = submission.get_instance_data()
         submission.log_action(
             ".update",
             person=request.user,

@@ -100,7 +100,7 @@ class UserForm(CfPFormMixin, forms.Form):
         template_name = template_name or self.template_name
         if context is None:
             context = self.get_context()
-        return mark_safe(renderer.render(template_name, context, request=self.request))
+        return mark_safe(renderer.render(template_name, context, request=self.request))  # noqa: S308  -- Django template renderer output
 
     @cached_property
     def ratelimit_key(self):

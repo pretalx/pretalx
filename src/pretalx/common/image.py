@@ -49,7 +49,7 @@ def validate_image(f):
 
         # load() is a potential DoS vector (see Django bug #18520), so we verify the size first
         if image.width * image.height > Image.MAX_IMAGE_PIXELS:
-            raise ValidationError(
+            raise ValidationError(  # noqa: TRY301  -- re-caught and re-raised intentionally
                 _(
                     "The file you uploaded has a very large number of pixels, please upload a picture with smaller dimensions."
                 )
@@ -79,7 +79,7 @@ def load_img(image):
 
     try:
         img = Image.open(image)
-    except Exception:
+    except (OSError, SyntaxError):
         return None
 
     if (img.mode == "P" and "transparency" in img.info) or img.mode.lower() in (
@@ -140,10 +140,10 @@ def create_thumbnail(image, size, processed_img=None):
         processed_img: Optional already-processed PIL Image to avoid reloading from disk
     """
     if size not in THUMBNAIL_SIZES:
-        return
+        return None
     thumbnail_field_name = get_thumbnail_field_name(image, size)
     if not image.instance._meta.get_field(thumbnail_field_name):
-        return
+        return None
 
     img = None
     if processed_img is not None:
@@ -152,7 +152,7 @@ def create_thumbnail(image, size, processed_img=None):
         with suppress(Exception):
             img = load_img(image)
     if not img:
-        return
+        return None
 
     from PIL import Image  # noqa: PLC0415
 

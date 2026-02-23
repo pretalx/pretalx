@@ -87,7 +87,8 @@ class V1SubmitterAccessCodeSerializer(PretalxSerializer):
 
     def to_representation(self, instance):
         """We cannot use flex fields here because our data structure changed,
-        so we handle expansion manually for the duration of our v1 support."""
+        so we handle expansion manually for the duration of our v1 support.
+        """
         data = super().to_representation(instance)
         request = self.context.get("request")
         track = instance.tracks.all().first()

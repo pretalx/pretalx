@@ -4,6 +4,7 @@
 from contextlib import suppress
 
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, models, transaction
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
@@ -96,7 +97,7 @@ class LogMixin:
 
         return changes
 
-    def _get_instance_data(self):
+    def get_instance_data(self):
         """Get a dictionary of field values for this instance.
 
         Used for change tracking in log_action. Excludes auto-updated
@@ -190,7 +191,7 @@ class FileCleanupMixin:
 
         try:
             pre_save_instance = self.__class__.objects.get(pk=self.pk)
-        except Exception:
+        except ObjectDoesNotExist:
             return super().save(*args, **kwargs)
 
         # Collect old file paths before save
@@ -269,22 +270,22 @@ class GenerateCode:
     read/differentiate: 1/I, O/0, 2/Z, 4/A, 5/S, 6/G.
 
     Configure via class attributes:
-    - _code_length: Length of generated code (default: 6)
-    - _code_charset: Characters to use (default: ABCDEFGHJKLMNPQRSTUVWXYZ3789)
-    - _code_property: Field name to store code (default: "code")
-    - _code_scope: Tuple of field names for scoped uniqueness (default: () for global)
+    - code_length: Length of generated code (default: 6)
+    - code_charset: Characters to use (default: ABCDEFGHJKLMNPQRSTUVWXYZ3789)
+    - code_property: Field name to store code (default: "code")
+    - code_scope: Tuple of field names for scoped uniqueness (default: () for global)
       Example: ("event",) or ("event", "question")
     """
 
-    _code_length = 6
-    _code_charset = list("ABCDEFGHJKLMNPQRSTUVWXYZ3789")
-    _code_property = "code"
-    _code_scope = ()
+    code_length = 6
+    code_charset = list("ABCDEFGHJKLMNPQRSTUVWXYZ3789")
+    code_property = "code"
+    code_scope = ()
 
     @classmethod
     def generate_code(cls, length=None):
-        length = length or cls._code_length
-        return get_random_string(length=length, allowed_chars=cls._code_charset)
+        length = length or cls.code_length
+        return get_random_string(length=length, allowed_chars=cls.code_charset)
 
     @classmethod
     def generate_unique_codes(cls, count, length=None, **scope_kwargs):
@@ -292,17 +293,17 @@ class GenerateCode:
 
         Args:
             count: Number of unique codes to generate
-            length: Code length (uses _code_length if not specified)
+            length: Code length (uses code_length if not specified)
             **scope_kwargs: Scope field values (e.g., question=question_instance)
 
         Returns:
             List of unique code strings
         """
-        length = length or cls._code_length
+        length = length or cls.code_length
 
         # Build filter for existing codes in scope
         filter_kwargs = {}
-        for field in cls._code_scope:
+        for field in cls.code_scope:
             if field not in scope_kwargs:
                 raise ValueError(f"Missing required scope field: {field}")
             filter_kwargs[field] = scope_kwargs[field]
@@ -311,7 +312,7 @@ class GenerateCode:
         with scopes_disabled():
             existing_codes = set(
                 cls.objects.filter(**filter_kwargs).values_list(
-                    cls._code_property, flat=True
+                    cls.code_property, flat=True
                 )
             )
 
@@ -328,24 +329,24 @@ class GenerateCode:
         return new_codes
 
     def assign_code(self, length=None):
-        length = length or self._code_length
+        length = length or self.code_length
         while True:
             code = self.generate_code(length=length)
-            filter_kwargs = {f"{self._code_property}__iexact": code}
-            for field in self._code_scope:
+            filter_kwargs = {f"{self.code_property}__iexact": code}
+            for field in self.code_scope:
                 filter_kwargs[field] = getattr(self, field)
             with scopes_disabled():
                 if not self.__class__.objects.filter(**filter_kwargs).exists():
-                    setattr(self, self._code_property, code)
+                    setattr(self, self.code_property, code)
                     return
 
     def save(self, *args, **kwargs):
-        if getattr(self, self._code_property, None):
+        if getattr(self, self.code_property, None):
             return super().save(*args, **kwargs)
 
         # Auto-generate code with retry loop to handle unlikely race conditions
         if "update_fields" in kwargs:
-            kwargs["update_fields"] = {self._code_property}.union(
+            kwargs["update_fields"] = {self.code_property}.union(
                 kwargs["update_fields"]
             )
         for attempt in range(3):
@@ -356,7 +357,7 @@ class GenerateCode:
             except IntegrityError:
                 if attempt == 2:
                     raise
-                setattr(self, self._code_property, None)
+                setattr(self, self.code_property, None)
 
 
 class OrderedModel:

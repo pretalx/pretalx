@@ -26,7 +26,7 @@ class MailTemplateSerializer(PretalxSerializer):
             valid_placeholders = self.instance.valid_placeholders
         try:
             fields = get_invalid_placeholders(value, valid_placeholders)
-        except Exception:
+        except ValueError:
             raise exceptions.ValidationError(
                 "Invalid email template! "
                 "Please check that you don’t have stray { or } somewhere, "

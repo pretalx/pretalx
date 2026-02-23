@@ -14,4 +14,4 @@ register = template.Library()
 
 @register.filter
 def xmlescape(text):
-    return django.utils.safestring.mark_safe(_xmlescape(text))
+    return django.utils.safestring.mark_safe(_xmlescape(text))  # noqa: S308  -- xml-escaped output

@@ -70,12 +70,11 @@ class QuestionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewS
     endpoint = "questions"
 
     def get_queryset(self):
-        queryset = (
+        return (
             questions_for_user(self.event, self.request.user)
             .select_related("event")
             .prefetch_related("options", "tracks", "submission_types")
         )
-        return queryset
 
     def get_unversioned_serializer_class(self):
         if self.request.method not in SAFE_METHODS or self.has_perm("update"):

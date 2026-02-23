@@ -20,8 +20,7 @@ class EscapeScriptNode(Node):
 
     def render(self, context):
         out = self.nodelist.render(context)
-        escaped_out = out.replace("</script>", "<\\/script>")
-        return escaped_out
+        return out.replace("</script>", "<\\/script>")
 
 
 @register.tag(EscapeScriptNode.TAG_NAME)

@@ -171,17 +171,17 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
             return
         try:
             content = options.read().decode("utf-8")
-        except Exception:
+        except (OSError, UnicodeDecodeError):
             raise forms.ValidationError(_("Could not read file.")) from None
 
         try:
             options = json.loads(content)
             if not isinstance(options, list):
-                raise Exception(_("JSON file does not contain a list."))
+                raise TypeError(_("JSON file does not contain a list."))  # noqa: TRY301  -- caught as fallback to line-split
             if not all(isinstance(opt, dict) for opt in options):
-                raise Exception(_("JSON file does not contain a list of objects."))
+                raise TypeError(_("JSON file does not contain a list of objects."))  # noqa: TRY301  -- caught as fallback to line-split
             return [LazyI18nString(data=opt) for opt in options]
-        except Exception:
+        except (ValueError, TypeError):
             options = content.split("\n")
             return [opt.strip() for opt in options if opt.strip()]
 
@@ -213,7 +213,7 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     def clean_identifier(self):
         identifier = self.cleaned_data.get("identifier")
-        Question._clean_identifier(self.event, identifier, self.instance)
+        Question.clean_identifier(self.event, identifier, self.instance)
         return identifier
 
     def save(self, *args, **kwargs):

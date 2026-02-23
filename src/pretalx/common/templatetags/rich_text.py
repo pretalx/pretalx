@@ -68,7 +68,7 @@ ALLOWED_ATTRIBUTES = {
 ALLOWED_PROTOCOLS = {"http", "https", "mailto", "tel"}
 
 ALLOWED_TLDS = sorted(  # Sorting this list makes sure that shorter substring TLDs don't win against longer TLDs, e.g. matching '.com' before '.co'
-    {suffix.rsplit(".")[-1] for suffix in PublicSuffixList()._publicsuffix},
+    {suffix.rsplit(".")[-1] for suffix in PublicSuffixList()._publicsuffix},  # noqa: SLF001 -- publicsuffix2 internal
     reverse=True,
 )
 TLD_REGEX = bleach.linkifier.build_url_re(
@@ -168,7 +168,7 @@ def render_markdown(text: str, cleaner=CLEANER) -> str:
     if not text:
         return ""
     body_md = cleaner.clean(md.reset().convert(str(text)))
-    return mark_safe(body_md)
+    return mark_safe(body_md)  # noqa: S308  -- sanitised by bleach cleaner
 
 
 def render_markdown_abslinks(text: str) -> str:

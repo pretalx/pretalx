@@ -561,7 +561,7 @@ class SubmissionContent(
             form
             for form in self._formset.extra_forms
             if form.has_changed
-            and not self._formset._should_delete_form(form)
+            and not self._formset._should_delete_form(form)  # noqa: SLF001 -- Django formset internal
             and form.is_valid()
         ]
         for form in extra_forms:
@@ -601,7 +601,7 @@ class SubmissionContent(
         old_questions_data = {}
         if not created:
             old_submission = form.instance.__class__.objects.get(pk=form.instance.pk)
-            old_submission_data = old_submission._get_instance_data() or {}
+            old_submission_data = old_submission.get_instance_data() or {}
             old_questions_data = self._questions_form.serialize_answers() or {}
 
         form.instance.event = self.request.event
@@ -632,7 +632,7 @@ class SubmissionContent(
             or self._formset.has_changed()
         ):
             if not created:
-                new_submission_data = form.instance._get_instance_data() or {}
+                new_submission_data = form.instance.get_instance_data() or {}
                 new_questions_data = self._questions_form.serialize_answers() or {}
                 form.instance.log_action(
                     ".update",
@@ -905,12 +905,6 @@ class SubmissionHistory(SubmissionViewMixin, ListView):
         return self.submission
 
     def get_queryset(self):
-        # TODO: This does not include everything regarding this submission. Missing:
-        # - scheduling changes
-        # - new comments
-        # - new feedback
-        # - emails sent to speakers (important?)
-        # - reviews written and changes
         return self.submission.logged_actions().all()
 
     def get_permission_object(self):

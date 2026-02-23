@@ -43,7 +43,7 @@ class PasswordInput(forms.PasswordInput):
 
     def render(self, name, value, attrs=None, renderer=None):
         self._prepare_attrs()
-        return mark_safe(
+        return mark_safe(  # noqa: S308  -- composed from widget render + static markup
             super().render(name, value, self.attrs)
             + self._get_toggle_markup()
             + self._get_extra_markup()

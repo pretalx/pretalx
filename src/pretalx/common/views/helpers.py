@@ -19,7 +19,7 @@ def get_static(
             as_attachment=as_attachment,
             filename=filename,
         )
-    except Exception:
+    except (OSError, ValueError):
         raise Http404 from None
 
 

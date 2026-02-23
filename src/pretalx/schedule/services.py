@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import json
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from contextlib import suppress
+from typing import NamedTuple
 
 from django.db import models, transaction
 from django.db.utils import DatabaseError
@@ -181,7 +182,11 @@ def calculate_schedule_changes(schedule) -> dict:
         result["action"] = "create"
         return result
 
-    Slot = namedtuple("Slot", ["submission", "room", "local_start"])
+    class Slot(NamedTuple):
+        submission: object
+        room: object
+        local_start: object
+
     old_slots = {
         Slot(slot.submission, slot.room, slot.local_start): slot
         for slot in schedule.previous_schedule.scheduled_talks
@@ -358,13 +363,13 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
     """Freeze a schedule as a new version."""
 
     if name in ("wip", "latest"):
-        raise Exception(f'Cannot use reserved name "{name}" for schedule version.')
+        raise ValueError(f'Cannot use reserved name "{name}" for schedule version.')
     if schedule.version:
-        raise Exception(
+        raise ValueError(
             f'Cannot freeze schedule version: already versioned as "{schedule.version}".'
         )
     if not name:
-        raise Exception("Cannot create schedule version without a version name.")
+        raise ValueError("Cannot create schedule version without a version name.")
 
     from pretalx.submission.models import SubmissionStates  # noqa: PLC0415
 
@@ -422,7 +427,7 @@ def unfreeze_schedule(schedule, user=None):
     from pretalx.schedule.models import Schedule  # noqa: PLC0415
 
     if not schedule.version:
-        raise Exception("Cannot unfreeze schedule version: not released yet.")
+        raise ValueError("Cannot unfreeze schedule version: not released yet.")
 
     submission_ids = schedule.talks.all().values_list("submission_id", flat=True)
     talks = schedule.event.wip_schedule.talks.exclude(submission_id__in=submission_ids)

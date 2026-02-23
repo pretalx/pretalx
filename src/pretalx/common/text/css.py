@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import re
+import xml.dom
 
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
@@ -147,7 +148,7 @@ def validate_css(css):
     try:
         parser = CSSParser(raiseExceptions=True, parseComments=False)
         stylesheet = parser.parseString(css)
-    except Exception as exception:
+    except xml.dom.DOMException as exception:
         raise ValidationError(str(exception).split("\n")[0]) from None
     validate_rules(stylesheet.cssRules)
     return css

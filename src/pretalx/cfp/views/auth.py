@@ -9,7 +9,7 @@ import datetime as dt
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import Http404, HttpRequest, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -113,7 +113,7 @@ class EventAuth(View):
 
         try:
             data = store.load()
-        except Exception:
+        except (SuspiciousOperation, KeyError):
             raise PermissionDenied(phrases.base.back_try_again) from None
 
         key = f"pretalx_event_access_{request.event.pk}"
@@ -122,7 +122,7 @@ class EventAuth(View):
 
         try:
             parentdata = sparent.load()
-        except Exception:
+        except (SuspiciousOperation, KeyError):
             raise PermissionDenied(phrases.base.back_try_again) from None
         else:
             if "event_access" not in parentdata:

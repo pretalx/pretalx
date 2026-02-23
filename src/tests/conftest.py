@@ -739,14 +739,13 @@ def speaker_profile(event):
             password="speakerpwd1!", name="Jane Speaker", email="jane@speaker.org"
         )
     with scope(event=event):
-        profile = SpeakerProfile.objects.create(
+        return SpeakerProfile.objects.create(
             user=user,
             event=event,
             biography="Best speaker in the world.",
             name="Jane the Speaker",
             code="SPEAKER1",
         )
-    return profile
 
 
 @pytest.fixture
@@ -1054,7 +1053,7 @@ def break_slot(room, schedule):
 @pytest.fixture
 def blocker_slot(room, event):
     with scope(event=event):
-        slot = TalkSlot.objects.create(
+        return TalkSlot.objects.create(
             description="Blocker",
             schedule=event.wip_schedule,
             slot_type="blocker",
@@ -1062,7 +1061,6 @@ def blocker_slot(room, event):
             end=event.datetime_from + dt.timedelta(minutes=180),
             room=room,
         )
-        return slot
 
 
 @pytest.fixture
@@ -1111,8 +1109,7 @@ def schedule_schema_xml():
 @pytest.fixture
 def schedule_schema_json():
     with Path("src/tests/fixtures/schedule.json").open() as js:
-        source = json.load(js)
-    return source
+        return json.load(js)
 
 
 @pytest.fixture

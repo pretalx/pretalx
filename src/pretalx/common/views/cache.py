@@ -24,7 +24,7 @@ def get_etag(response):
     content = response.content
     if isinstance(content, str):
         content = content.encode()
-    return hashlib.md5(content).hexdigest()
+    return hashlib.md5(content).hexdigest()  # noqa: S324 -- used for cache busting, not vulnerable to collision attacks
 
 
 def conditional_cache_page(

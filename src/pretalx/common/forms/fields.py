@@ -270,7 +270,8 @@ class ColorField(RegexField):
 class SubmissionTypeField(SafeModelChoiceField):
     """Only include duration in a submission type’s representation
     if the duration is not a required CfP field (in which case, showing
-    the default duration would be misleading, as it’s never used)."""
+    the default duration would be misleading, as it’s never used).
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

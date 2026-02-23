@@ -6,6 +6,7 @@ import datetime as dt
 import pytest
 from django.core import mail as djmail
 from django.utils.timezone import now
+from django_scopes import scope
 
 from pretalx.common.models.file import CachedFile
 from pretalx.common.models.log import ActivityLog
@@ -16,8 +17,9 @@ from pretalx.event.services import clean_cached_files, task_periodic_event_servi
 def test_task_periodic_cfp_closed(event):
     djmail.outbox = []
     ActivityLog.objects.create(event=event, content_object=event, action_type="test")
-    event.cfp.deadline = now() - dt.timedelta(hours=1)
-    event.cfp.save()
+    with scope(event=event):
+        event.cfp.deadline = now() - dt.timedelta(hours=1)
+        event.cfp.save()
     assert not event.settings.sent_mail_cfp_closed
     task_periodic_event_services(event.slug)
     event = event.__class__.objects.get(slug=event.slug)

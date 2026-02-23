@@ -188,7 +188,7 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             self.instance.content_locale = self.event.locale
         instance = super().save(*args, **kwargs)
         if self.is_creating:
-            instance._set_state(self.cleaned_data["state"])
+            instance.set_state(self.cleaned_data["state"])
         else:
             if "duration" in self.changed_data:
                 instance.update_duration()
@@ -275,7 +275,7 @@ class AnonymiseForm(SubmissionForm):
     def __init__(self, *args, **kwargs):
         instance = kwargs.get("instance")
         if not instance or not instance.pk:
-            raise Exception("Cannot anonymise unsaved submission.")
+            raise ValueError("Cannot anonymise unsaved submission.")
         kwargs["event"] = instance.event
         kwargs["anonymise"] = True
         super().__init__(*args, **kwargs)

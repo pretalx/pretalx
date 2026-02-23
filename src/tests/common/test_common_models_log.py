@@ -27,7 +27,7 @@ def test_log_wrong_data(submission):
 @pytest.mark.django_db
 def test_get_instance_data(submission):
     with scope(event=submission.event):
-        data = submission._get_instance_data()
+        data = submission.get_instance_data()
         assert data["title"] == submission.title
         assert data["state"] == submission.state
         assert data["submission_type"] == submission.submission_type.pk

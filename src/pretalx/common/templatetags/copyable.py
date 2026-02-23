@@ -16,7 +16,7 @@ def copyable(value):
     title = str(_("Copy"))
     success_message = str(_("Copied!"))
     error_message = str(_("Failed to copy"))
-    return django.utils.safestring.mark_safe(f"""
+    html = f"""
     <span data-destination="{value}"
             class="copyable-text"
             data-toggle="tooltip"
@@ -28,4 +28,5 @@ def copyable(value):
             tabindex="0"
     >
         {value}
-    </span>""")
+    </span>"""
+    return django.utils.safestring.mark_safe(html)  # noqa: S308  -- value is escaped in template

@@ -99,7 +99,7 @@ class SubmitWizard(EventPageMixin, View):
             step.get_next_applicable(request) or not step.is_completed(request)
         ):
             if result and (csp_change := step.get_csp_update(request)):
-                result._csp_update = csp_change
+                result._csp_update = csp_change  # noqa: SLF001 -- django-csp convention
             return result
         return self.done(request)
 

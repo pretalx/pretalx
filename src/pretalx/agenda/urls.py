@@ -13,7 +13,6 @@ def get_schedule_urls(regex_prefix, name_prefix=""):
     This is useful to generate the same export URLs for main and
     versioned schedule URLs.
     """
-
     regex_prefix = regex_prefix.rstrip("/")
 
     return [

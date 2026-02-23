@@ -552,7 +552,7 @@ if DEBUG:
     with suppress(ImportError):
         from debug_toolbar import settings as toolbar_settings  # noqa: F401
 
-        INTERNAL_IPS = ["127.0.0.1", "0.0.0.0", "::1"]
+        INTERNAL_IPS = ["127.0.0.1", "0.0.0.0", "::1"]  # noqa: S104  -- debug toolbar, only in DEBUG mode
         INSTALLED_APPS.append("debug_toolbar")
         MIDDLEWARE.append("debug_toolbar.middleware.DebugToolbarMiddleware")
         DEBUG_TOOLBAR_PATCH_SETTINGS = False
@@ -632,7 +632,7 @@ if DEBUG:
         import subprocess
 
         PRETALX_VERSION = (
-            subprocess.check_output(["git", "describe", "--always", "--tags"])
+            subprocess.check_output(["/usr/bin/git", "describe", "--always", "--tags"])
             .decode()
             .strip()
         )

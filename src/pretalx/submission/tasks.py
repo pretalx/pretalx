@@ -92,7 +92,7 @@ def export_question_files(*, question_id: int, cached_file_id: str):
                             answer.answer_file.open("rb") as src,
                         ):
                             shutil.copyfileobj(src, dest)
-                    except Exception as e:
+                    except OSError as e:
                         LOGGER.warning(
                             "Could not read file for answer %s: %s", answer.pk, e
                         )
@@ -100,8 +100,8 @@ def export_question_files(*, question_id: int, cached_file_id: str):
             with Path(tmp_zip_path).open("rb") as f:
                 cached_file.file.save(cached_file.filename, File(f))
 
-        except Exception as e:
-            LOGGER.exception("Failed to export question files: %s", e)
+        except Exception:
+            LOGGER.exception("Failed to export question files")
             return None
 
         finally:

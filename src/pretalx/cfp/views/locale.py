@@ -27,9 +27,7 @@ class LocaleSet(View):
             if hasattr(dt, "UTC"):
                 expires = dt.datetime.now(dt.UTC) + max_age
             else:
-                # TODO: drop when we stop supporting Python 3.10,
-                # which is end of life in October 2026
-                expires = dt.datetime.utcnow() + max_age
+                expires = dt.datetime.utcnow() + max_age  # noqa: DTZ003  -- fallback for Python 3.10
             resp.set_cookie(
                 settings.LANGUAGE_COOKIE_NAME,
                 locale,

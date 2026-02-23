@@ -82,9 +82,9 @@ class QuestionsForm(CfPFormMixin, QuestionFieldsMixin, forms.Form):
     def get_object_for_question(self, question):
         if question.target == QuestionTarget.SUBMISSION:
             return self.submission
-        elif question.target == QuestionTarget.SPEAKER:
+        if question.target == QuestionTarget.SPEAKER:
             return self.speaker
-        elif question.target == QuestionTarget.REVIEWER:
+        if question.target == QuestionTarget.REVIEWER:
             return self.review
 
     @cached_property

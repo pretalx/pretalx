@@ -252,8 +252,9 @@ def test_shred_used_event(
     other_event,
     track,
 ):
-    rejected_submission.track = track
-    rejected_submission.save()
+    with scope(event=rejected_submission.event):
+        rejected_submission.track = track
+        rejected_submission.save()
     assert Event.objects.count() == 2
     rejected_submission.event.organiser.shred()
     assert Event.objects.count() == 1

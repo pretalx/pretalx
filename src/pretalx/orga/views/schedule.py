@@ -165,8 +165,7 @@ class ScheduleExportDownloadView(AsyncFileDownloadMixin, EventPermissionRequired
                 cached_file = CachedFile.objects.filter(id=cached_file_id).first()
                 if cached_file and cached_file.file:
                     return self._serve_cached_file(request, cached_file)
-                else:
-                    request.event.cache.delete("schedule_export_cached_file")
+                request.event.cache.delete("schedule_export_cached_file")
         return self.handle_async_download(request)
 
 

@@ -24,7 +24,7 @@ class Phrases(metaclass=PhrasesMetaClass, app=""):
     def __getattribute__(self, attribute):
         result = super().__getattribute__(attribute)
         if isinstance(result, (list, tuple)):
-            return random.choice(result)
+            return random.choice(result)  # noqa: S311  -- cosmetic phrase variation
         return result
 
 

@@ -133,7 +133,7 @@ def test_sendtestemail_failure(mocker):
     djmail.outbox = []
     mocker.patch(
         "pretalx.common.mail.mail_send_task.apply",
-        side_effect=Exception("connection refused"),
+        side_effect=OSError("connection refused"),
     )
     call_command("sendtestemail", "test@example.com")
     assert djmail.outbox == []

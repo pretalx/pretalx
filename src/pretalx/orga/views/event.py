@@ -5,6 +5,7 @@
 # SPDX-FileContributor: luto
 
 import itertools
+import smtplib
 from pathlib import Path
 
 from csp.decorators import csp_update
@@ -159,8 +160,6 @@ class EventDetail(EventSettingsPermission, UpdateView):
         result = super().form_valid(form)
         self.footer_links_formset.save()
         self.header_links_formset.save()
-
-        # TODO log data and display
         form.instance.log_action(
             "pretalx.event.update", person=self.request.user, orga=True
         )
@@ -175,7 +174,6 @@ class EventLive(EventSettingsPermission, TemplateView):
         result = super().get_context_data(**kwargs)
         warnings = []
         suggestions = []
-        # TODO: move to signal
         if (
             not self.request.event.cfp.text
             or len(str(self.request.event.cfp.text)) < 50
@@ -196,7 +194,6 @@ class EventLive(EventSettingsPermission, TemplateView):
                     "url": self.request.event.orga_urls.settings,
                 }
             )
-        # TODO: test that mails can be sent
         if (
             self.request.event.get_feature_flag("use_tracks")
             and self.request.event.cfp.request_track
@@ -257,7 +254,7 @@ class EventLive(EventSettingsPermission, TemplateView):
 
                     messages.error(
                         request,
-                        mark_safe("\n".join(render_markdown(e) for e in exceptions)),
+                        mark_safe("\n".join(render_markdown(e) for e in exceptions)),  # noqa: S308  -- render_markdown sanitises
                     )
                 else:
                     event.is_public = True
@@ -403,7 +400,7 @@ class EventReviewSettings(EventSettingsPermission, FormView):
                 form
                 for form in self.phases_formset.extra_forms
                 if form.has_changed
-                and not self.phases_formset._should_delete_form(form)
+                and not self.phases_formset._should_delete_form(form)  # noqa: SLF001 -- Django formset internal
             ]
             for form in extra_forms:
                 form.instance.event = self.request.event
@@ -471,7 +468,7 @@ class EventReviewSettings(EventSettingsPermission, FormView):
         extra_forms = [
             form
             for form in self.scores_formset.extra_forms
-            if form.has_changed and not self.scores_formset._should_delete_form(form)
+            if form.has_changed and not self.scores_formset._should_delete_form(form)  # noqa: SLF001 -- Django formset internal
         ]
         for form in extra_forms:
             form.instance.event = self.request.event
@@ -535,7 +532,7 @@ class EventMailSettings(EventSettingsPermission, FormView):
             backend = self.request.event.get_mail_backend(force_custom=True)
             try:
                 backend.test(self.request.event.mail_settings["mail_from"])
-            except Exception as e:
+            except (OSError, smtplib.SMTPException) as e:
                 messages.warning(
                     self.request,
                     _("An error occurred while contacting the SMTP server: %s")

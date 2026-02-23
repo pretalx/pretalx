@@ -32,7 +32,7 @@ class AuthTokenForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.user = user
         self.fields["events"].queryset = user.get_events_with_any_permission()
-        self.fields["events"].help_text = mark_safe(
+        self.fields["events"].help_text = mark_safe(  # noqa: S308  -- static HTML with translated string
             '<span class="select-all-events font-text p-0 text-underline fake-link" role="button" tabindex="0">'
             + str(_("Select all events"))
             + "</span>"

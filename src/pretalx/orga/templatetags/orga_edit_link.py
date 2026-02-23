@@ -13,4 +13,4 @@ def orga_edit_link(url, target=None):
     if target:
         url = f"{url}#{target}"
     result = f'<a href="{url}" class="btn btn-xs btn-outline-info orga-edit-link ml-auto" title="{_("Edit")}"><i class="fa fa-pencil"></i></a>'
-    return mark_safe(result)
+    return mark_safe(result)  # noqa: S308  -- built from trusted URL and static markup

@@ -593,15 +593,17 @@ class TestWizard:
 
     @pytest.mark.django_db
     def test_wizard_cfp_closed_after_deadline(self, event, client, user):
-        event.cfp.deadline = now() - dt.timedelta(days=1)
-        event.cfp.save()
+        with scope(event=event):
+            event.cfp.deadline = now() - dt.timedelta(days=1)
+            event.cfp.save()
         client.force_login(user)
         self.perform_init_wizard(client, success=False, event=event)
 
     @pytest.mark.django_db
     def test_wizard_cfp_closed_before_opening(self, event, client, user):
-        event.cfp.opening = now() + dt.timedelta(days=1)
-        event.cfp.save()
+        with scope(event=event):
+            event.cfp.opening = now() + dt.timedelta(days=1)
+            event.cfp.save()
         client.force_login(user)
         self.perform_init_wizard(client, success=False, event=event)
 
@@ -609,8 +611,8 @@ class TestWizard:
     def test_wizard_cfp_closed_access_code(self, event, client, access_code):
         with scope(event=event):
             submission_type = SubmissionType.objects.filter(event=event).first().pk
-        event.cfp.deadline = now() - dt.timedelta(days=1)
-        event.cfp.save()
+            event.cfp.deadline = now() - dt.timedelta(days=1)
+            event.cfp.save()
         response, current_url = self.perform_init_wizard(
             client, event=event, access_code=access_code
         )
@@ -639,10 +641,11 @@ class TestWizard:
 
     @pytest.mark.django_db
     def test_wizard_cfp_closed_expired_access_code(self, event, client, access_code):
-        event.cfp.deadline = now() - dt.timedelta(days=1)
-        event.cfp.save()
-        access_code.valid_until = now() - dt.timedelta(hours=1)
-        access_code.save()
+        with scope(event=event):
+            event.cfp.deadline = now() - dt.timedelta(days=1)
+            event.cfp.save()
+            access_code.valid_until = now() - dt.timedelta(hours=1)
+            access_code.save()
         response, _ = self.perform_init_wizard(
             client, event=event, access_code=access_code, success=False
         )

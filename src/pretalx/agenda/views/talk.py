@@ -88,7 +88,7 @@ class TalkView(TalkMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         response = super().get(request, *args, **kwargs)
         csp_update = {"frame-src": self.recording.get("csp_header")}
-        response._csp_update = csp_update
+        response._csp_update = csp_update  # noqa: SLF001 -- django-csp convention
         return response
 
     def get_context_data(self, **kwargs):
@@ -242,7 +242,7 @@ class FeedbackView(TalkMixin, FormView):
     @cached_property
     def feedback(self):
         if not self.is_speaker:
-            return
+            return None
         return self.talk.feedback.filter(
             Q(speaker__user=self.request.user) | Q(speaker__isnull=True)
         ).select_related("speaker")

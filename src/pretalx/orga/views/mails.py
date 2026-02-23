@@ -75,7 +75,7 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
     permission_required = "mail.list_queuedmail"
 
     def get_queryset(self):
-        qs = (
+        return self.filter_queryset(
             self.request.event.queued_mails.prefetch_users(self.request.event)
             .prefetch_related("submissions", "submissions__track", "submissions__event")
             .select_related("template")
@@ -83,8 +83,6 @@ class OutboxList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
             .with_computed_state()
             .order_by("-id")
         )
-        qs = self.filter_queryset(qs)
-        return qs
 
     @context
     @cached_property
@@ -137,7 +135,7 @@ class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
         )
 
     def get_queryset(self):
-        qs = (
+        return self.filter_queryset(
             self.request.event.queued_mails.prefetch_users(self.request.event)
             .prefetch_related("submissions", "submissions__track", "submissions__event")
             .select_related("template")
@@ -145,8 +143,6 @@ class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
             .with_computed_state()
             .order_by("-sent")
         )
-        qs = self.filter_queryset(qs)
-        return qs
 
     @context
     @cached_property

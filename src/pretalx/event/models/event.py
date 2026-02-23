@@ -782,7 +782,7 @@ class Event(PretalxModel):
                 score.category = score_category
                 score.save()
 
-        for sett in other_event.settings._objects.all():
+        for sett in other_event.settings._objects.all():  # noqa: SLF001 -- hierarkey internal
             if sett.value.startswith("file://"):
                 continue
             sett.object = self

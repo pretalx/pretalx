@@ -6,6 +6,7 @@ from collections import defaultdict
 from contextlib import suppress
 
 from django import forms
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -386,7 +387,6 @@ class ReviewExportForm(ExportForm):
             queryset = queryset.filter(
                 submission__in=self.event.submissions.filter(state=target)
             ).distinct()
-        # TODO auto-adjust further to available tracks etc
         queryset = queryset.exclude(submission__speakers__user=self.user).distinct()
         return queryset.select_related("submission", "user").prefetch_related(
             "answers", "answers__question", "scores", "scores__category"
@@ -463,11 +463,12 @@ class ReviewAssignImportForm(DirectionForm):
         try:
             user = self.event.reviewers.get(Q(email__iexact=text) | Q(code=text))
             self._user_cache[text] = user
-            return user
-        except Exception:
+        except ObjectDoesNotExist:
             raise forms.ValidationError(
                 str(_("Unknown user: {}")).format(text)
             ) from None
+        else:
+            return user
 
     def _get_submission(self, text):
         if not self._submissions_cache:
@@ -476,7 +477,7 @@ class ReviewAssignImportForm(DirectionForm):
             }
         try:
             return self._submissions_cache[text.strip().upper()]
-        except Exception:
+        except KeyError:
             raise forms.ValidationError(
                 str(_("Unknown proposal: {}")).format(text)
             ) from None
@@ -485,7 +486,7 @@ class ReviewAssignImportForm(DirectionForm):
         uploaded_file = self.cleaned_data["import_file"]
         try:
             data = json.load(uploaded_file)
-        except Exception:
+        except (ValueError, UnicodeDecodeError):
             raise forms.ValidationError(self.JSON_ERROR_MESSAGE) from None
         return data
 

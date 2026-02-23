@@ -88,7 +88,7 @@ def fix_language_codes(apps, schema_editor):
     ):
         try:
             lang_data = json.loads(obj.value)
-        except Exception:
+        except (ValueError, TypeError):
             continue
         if lang_data_needs_fixing(lang_data):
             obj.value = json.dumps(fix_lang_data(lang_data))

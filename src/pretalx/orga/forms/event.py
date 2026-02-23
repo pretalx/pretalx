@@ -55,7 +55,7 @@ SCHEDULE_DISPLAY_CHOICES = (("grid", _("Grid")), ("list", _("List")))
 
 
 def make_naive(moment):
-    return dt.datetime(
+    return dt.datetime(  # noqa: DTZ001  -- intentionally naive for form display
         year=moment.year,
         month=moment.month,
         day=moment.day,
@@ -212,10 +212,11 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
                 return css
             try:
                 validate_css(css.read())
-                return css
             except IsADirectoryError:
                 self.instance.custom_css = None
                 self.instance.save(update_fields=["custom_css"])
+            else:
+                return css
         else:
             self.instance.custom_css = None
             self.instance.save(update_fields=["custom_css"])

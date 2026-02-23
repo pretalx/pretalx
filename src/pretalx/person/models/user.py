@@ -12,7 +12,7 @@ from django.contrib.auth.models import (
     BaseUserManager,
     PermissionsMixin,
 )
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction
 from django.db.models import OuterRef, Subquery
 from django.utils.crypto import get_random_string
@@ -226,7 +226,7 @@ class User(
             speaker = self.profiles.select_related("event", "profile_picture").get(
                 event=event
             )
-        except Exception:
+        except ObjectDoesNotExist:
             from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
 
             speaker = SpeakerProfile(event=event, user=self, name=self.name)
@@ -280,11 +280,11 @@ class User(
         """Delete the user by unsetting all of their information."""
         from pretalx.submission.models import Answer  # noqa: PLC0415
 
-        self.email = f"deleted_user_{random.randint(0, 999)}@localhost"
+        self.email = f"deleted_user_{random.randint(0, 999)}@localhost"  # noqa: S311  -- non-security random for unique email
         while self.__class__.objects.filter(
             email__iexact=self.email
         ).exists():  # pragma: no cover
-            self.email = f"deleted_user_{random.randint(0, 99999)}"
+            self.email = f"deleted_user_{random.randint(0, 99999)}"  # noqa: S311  -- non-security random for unique email
         self.name = "Deleted User"
         self.is_active = False
         self.is_superuser = False

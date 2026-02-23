@@ -7,7 +7,7 @@ import pytest
 from django.core import mail as djmail
 from django.urls import reverse
 from django.utils.timezone import now
-from django_scopes import scopes_disabled
+from django_scopes import scope, scopes_disabled
 
 from pretalx.event.models import Event, Organiser
 
@@ -397,8 +397,9 @@ class TestEventCreation:
     ):
         organiser.teams.all().update(can_create_events=True)
         count = Event.objects.count()
-        event.cfp.fields["title"]["min_length"] = 50
-        event.cfp.save()
+        with scope(event=event):
+            event.cfp.fields["title"]["min_length"] = 50
+            event.cfp.save()
         team_count = organiser.teams.count()
         self.submit_initial(organiser, client=orga_client)
         self.submit_basics(client=orga_client, copy_from_event=event.pk)

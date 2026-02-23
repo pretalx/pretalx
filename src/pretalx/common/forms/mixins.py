@@ -538,7 +538,8 @@ class JsonSubfieldMixin:
 
 class HierarkeyMixin:
     """This basically vendors hierarkey.forms.HierarkeyForm, but with more
-    selective saving of fields."""
+    selective saving of fields.
+    """
 
     BOOL_CHOICES = HierarkeyForm.BOOL_CHOICES
 
@@ -564,11 +565,11 @@ class HierarkeyMixin:
                     try:
                         default_storage.delete(fname.name)
                     except OSError:  # pragma: no cover
-                        logger.error("Deleting file %s failed.", fname.name)
+                        logger.exception("Deleting file %s failed.", fname.name)
 
                 # Create new file
                 newname = default_storage.save(self.get_new_filename(value.name), value)
-                value._name = newname
+                value._name = newname  # noqa: SLF001 -- Django File internal
                 self._s.set(name, value)
             elif isinstance(value, File):
                 # file is unchanged
@@ -580,7 +581,7 @@ class HierarkeyMixin:
                     try:
                         default_storage.delete(fname.name)
                     except OSError:  # pragma: no cover
-                        logger.error("Deleting file %s failed.", fname.name)
+                        logger.exception("Deleting file %s failed.", fname.name)
                 del self._s[name]
             elif value is None:
                 del self._s[name]

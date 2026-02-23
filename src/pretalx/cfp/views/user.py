@@ -104,10 +104,10 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
             request.user.log_action("pretalx.user.password.update")
         elif self.profile_form.is_bound and self.profile_form.is_valid():
             speaker = self.request.user.get_speaker(self.request.event)
-            old_data = speaker._get_instance_data()
+            old_data = speaker.get_instance_data()
             self.profile_form.save()
             if self.profile_form.has_changed():
-                new_data = self.profile_form.instance._get_instance_data()
+                new_data = self.profile_form.instance.get_instance_data()
                 speaker.log_action(
                     "pretalx.user.profile.update",
                     person=request.user,
@@ -391,7 +391,7 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
             form
             for form in self.formset.extra_forms
             if form.has_changed
-            and not self.formset._should_delete_form(form)
+            and not self.formset._should_delete_form(form)  # noqa: SLF001 -- Django formset internal
             and form.is_valid()
         ]
         for form in extra_forms:
@@ -466,7 +466,7 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
         manager = model_class.all_objects or model_class.objects
         old_submission = manager.filter(pk=form.instance.pk).first()
         if old_submission:
-            old_submission_data = old_submission._get_instance_data() or {}
+            old_submission_data = old_submission.get_instance_data() or {}
             old_questions_data = self.qform.serialize_answers() or {}
 
         form.save()
@@ -488,7 +488,7 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
                 form.instance.update_duration()
             if "track" in form.changed_data:
                 form.instance.update_review_scores()
-            new_submission_data = form.instance._get_instance_data() or {}
+            new_submission_data = form.instance.get_instance_data() or {}
             new_questions_data = self.qform.serialize_answers() or {}
             form.instance.log_action(
                 "pretalx.submission.update",

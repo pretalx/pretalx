@@ -182,7 +182,7 @@ def _submission_label_text(submission: Submission) -> str:
 @receiver(activitylog_object_link)
 def default_activitylog_object_link(sender: Event, activitylog: ActivityLog, **kwargs):
     if not activitylog.content_object:
-        return
+        return None
     url = ""
     text = ""
     link_text = ""

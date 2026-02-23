@@ -171,9 +171,9 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
     :param position: Position in the question order in this event.
     """
 
-    _code_length = 8
-    _code_property = "identifier"
-    _code_scope = ("event",)
+    code_length = 8
+    code_property = "identifier"
+    code_scope = ("event",)
 
     event = models.ForeignKey(
         to="event.Event", on_delete=models.PROTECT, related_name="questions"
@@ -394,7 +394,7 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
         return str(self.question)
 
     @staticmethod
-    def _clean_identifier(event, code, instance=None):
+    def clean_identifier(event, code, instance=None):
         if not code:
             return
         qs = Question.objects.filter(event=event, identifier__iexact=code)
@@ -440,8 +440,8 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
             return max(speakers.count() - answer_count, 0)
         return 0
 
-    def _get_instance_data(self):
-        data = super()._get_instance_data()
+    def get_instance_data(self):
+        data = super().get_instance_data()
         if self.pk and self.variant in (
             QuestionVariant.CHOICES,
             QuestionVariant.MULTIPLE,
@@ -460,9 +460,9 @@ class AnswerOption(GenerateCode, PretalxModel):
     'choice' or 'multiple_choice'.
     """
 
-    _code_length = 8
-    _code_property = "identifier"
-    _code_scope = ("question",)
+    code_length = 8
+    code_property = "identifier"
+    code_scope = ("question",)
 
     question = models.ForeignKey(
         to="submission.Question", on_delete=models.PROTECT, related_name="options"
@@ -510,7 +510,7 @@ class AnswerOption(GenerateCode, PretalxModel):
         return str(self.answer)
 
     @staticmethod
-    def _clean_identifier(question, code, instance=None):
+    def clean_identifier(question, code, instance=None):
         if not code:
             return
         qs = AnswerOption.objects.filter(question=question, identifier__iexact=code)

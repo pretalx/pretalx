@@ -124,16 +124,7 @@ def test_orga_can_see_expanded_reviews(
         category = review_score_value_positive.category
         Answer.objects.create(review=review, question=review_question, answer="text!")
 
-    params = ",".join(
-        [
-            "user",
-            "scores.category",
-            "submission.speakers",
-            "submission.track",
-            "submission.submission_type",
-            "answers",
-        ]
-    )
+    params = "user,scores.category,submission.speakers,submission.track,submission.submission_type,answers"
     response = client.get(
         f"{event.api_urls.reviews}?expand={params}",
         follow=True,
@@ -628,16 +619,7 @@ def test_orga_can_see_expanded_review_detail(
         category = review_score_value_positive.category
         Answer.objects.create(review=review, question=review_question, answer="text!")
 
-    params = ",".join(
-        [
-            "user",
-            "scores.category",
-            "submission.speakers",
-            "submission.track",
-            "submission.submission_type",
-            "answers",
-        ]
-    )
+    params = "user,scores.category,submission.speakers,submission.track,submission.submission_type,answers"
     response = client.get(
         f"{event.api_urls.reviews}{review.pk}/?expand={params}",
         follow=True,

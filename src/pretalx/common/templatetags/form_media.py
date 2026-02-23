@@ -65,7 +65,7 @@ def form_media(
                     # For all other form lists, let's assume that they are formset-like,
                     # and all require the same media files.
                     media += first_item.media
-    if always_base or media._js or media._css:
+    if always_base or media._js or media._css:  # noqa: SLF001 -- Django Media internal
         media = DEFAULT_FORM_MEDIA + media
     if table_media and context.get("table"):
         media += DEFAULT_TABLE_MEDIA

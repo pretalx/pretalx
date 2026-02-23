@@ -30,7 +30,7 @@ class PretalxViewSetMixin:
     def api_version(self):
         try:
             return get_api_version_from_request(self.request)
-        except Exception:
+        except (exceptions.APIException, AttributeError):
             raise ApiVersionException from None
 
     def get_versioned_serializer(self, name):
@@ -59,14 +59,14 @@ class PretalxViewSetMixin:
 
     def perform_update(self, serializer):
         old_data = None
-        if hasattr(serializer.instance, "_get_instance_data"):
-            old_data = serializer.instance._get_instance_data()
+        if hasattr(serializer.instance, "get_instance_data"):
+            old_data = serializer.instance.get_instance_data()
 
         super().perform_update(serializer)
 
         new_data = None
-        if hasattr(serializer.instance, "_get_instance_data"):
-            new_data = serializer.instance._get_instance_data()
+        if hasattr(serializer.instance, "get_instance_data"):
+            new_data = serializer.instance.get_instance_data()
 
         log_kwargs = {"person": self.request.user, "orga": True}
         if old_data is not None and new_data is not None:
@@ -98,7 +98,6 @@ class ActivityLogMixin:
     @action(detail=True, methods=["GET"], url_path="log")
     def log(self, request, **kwargs):
         """Return log entries for this object."""
-
         obj = self.get_object()
 
         if not hasattr(obj, "logged_actions"):

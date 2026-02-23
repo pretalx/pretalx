@@ -62,10 +62,11 @@ def test_edit_cfp(orga_client, event):
 @pytest.mark.django_db
 def test_edit_cfp_timezones(orga_client, event):
     event = Event.objects.get(slug=event.slug)
-    event.timezone = "Europe/Berlin"
-    event.save()
-    event.cfp.deadline = dt.datetime(2018, 3, 5, 17, 39, 15, tzinfo=ZoneInfo("UTC"))
-    event.cfp.save()
+    with scope(event=event):
+        event.timezone = "Europe/Berlin"
+        event.save()
+        event.cfp.deadline = dt.datetime(2018, 3, 5, 17, 39, 15, tzinfo=ZoneInfo("UTC"))
+        event.cfp.save()
     response = orga_client.get(event.cfp.urls.edit_text)
     assert response.status_code == 200
     assert "2018-03-05T18:39" in response.rendered_content
@@ -1124,9 +1125,10 @@ def test_can_send_access_code(orga_client, access_code):
 
 @pytest.mark.django_db
 def test_can_send_special_access_code(orga_client, access_code, track):
-    access_code.valid_until = access_code.event.datetime_from
-    access_code.maximum_uses = 3
-    access_code.save()
+    with scope(event=access_code.event):
+        access_code.valid_until = access_code.event.datetime_from
+        access_code.maximum_uses = 3
+        access_code.save()
     access_code.tracks.add(track)
     djmail.outbox = []
     response = orga_client.get(access_code.urls.send, follow=True)

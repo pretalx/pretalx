@@ -106,12 +106,12 @@ class PretalxAdminEmailHandler(AdminEmailHandler):
     reporter_class = PretalxExceptionReporter
 
     def format_subject(self, subject):
-        subject = super().format_subject(subject)
-        subject = subject.removeprefix(settings.EMAIL_SUBJECT_PREFIX)
-        return subject
+        return (
+            super().format_subject(subject).removeprefix(settings.EMAIL_SUBJECT_PREFIX)
+        )
 
     def emit(self, record):  # pragma: no cover
         request = getattr(record, "request", None)
         if request and request.path == "/500":
-            return
+            return None
         return super().emit(record)

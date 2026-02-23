@@ -19,7 +19,7 @@ def get_int(value):
     if value:
         try:
             return int(value)
-        except Exception:
+        except (ValueError, TypeError):
             pass
 
 

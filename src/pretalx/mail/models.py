@@ -8,6 +8,7 @@ from copy import deepcopy
 
 import rules
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.template.loader import get_template
 from django.utils.functional import cached_property
@@ -490,7 +491,7 @@ class QueuedMail(PretalxModel):
         :param orga: Was this email sent as by a privileged user?
         """
         if self.state in (QueuedMailStates.SENT, QueuedMailStates.SENDING):
-            raise Exception(
+            raise ValidationError(
                 _("This mail has been sent already. It cannot be sent again.")
             )
 
@@ -546,12 +547,14 @@ class QueuedMail(PretalxModel):
 
         # Dispatch the async task outside the transaction so the worker
         # sees committed state when it picks up the job.
+        from kombu.exceptions import OperationalError  # noqa: PLC0415
+
         from pretalx.common.mail import mail_send_task  # noqa: PLC0415
 
         if self.pk:
             try:
                 mail_send_task.apply_async(kwargs=task_kwargs, ignore_result=True)
-            except Exception as exc:
+            except (OSError, OperationalError) as exc:
                 self.mark_failed(exc)
                 return
 

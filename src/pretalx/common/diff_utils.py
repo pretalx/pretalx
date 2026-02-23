@@ -55,9 +55,9 @@ def render_diff(old_value, new_value, threshold=None):
     if not should_diff:
         result = {"is_diff": False}
         if detect_markdown(old_value):
-            result["old_html"] = mark_safe(render_markdown(old_value))
+            result["old_html"] = mark_safe(render_markdown(old_value))  # noqa: S308  -- render_markdown sanitises
         if detect_markdown(new_value):
-            result["new_html"] = mark_safe(render_markdown(new_value))
+            result["new_html"] = mark_safe(render_markdown(new_value))  # noqa: S308  -- render_markdown sanitises
         return result
 
     # Calculate word-level diff
@@ -93,6 +93,6 @@ def render_diff(old_value, new_value, threshold=None):
 
     return {
         "is_diff": True,
-        "old_html": mark_safe(old_html),
-        "new_html": mark_safe(new_html),
+        "old_html": mark_safe(old_html),  # noqa: S308  -- built from escape() and render_markdown
+        "new_html": mark_safe(new_html),  # noqa: S308  -- built from escape() and render_markdown
     }

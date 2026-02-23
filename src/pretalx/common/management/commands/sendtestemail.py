@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import smtplib
+
 from django.core.management.base import BaseCommand
 
 from pretalx.common.mail import mail_send_task
@@ -28,7 +30,7 @@ class Command(BaseCommand):
                     }
                 )
                 self.stdout.write(self.style.SUCCESS(f"Test email sent to {address}"))
-            except Exception as e:
+            except (OSError, smtplib.SMTPException) as e:
                 self.stderr.write(
                     self.style.ERROR(f"Failed to send test email to {address}: {e}")
                 )

@@ -204,7 +204,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
         extra_forms = [
             form
             for form in self.formset.extra_forms
-            if form.has_changed and not self.formset._should_delete_form(form)
+            if form.has_changed and not self.formset._should_delete_form(form)  # noqa: SLF001 -- Django formset internal
         ]
         for form in extra_forms:
             form.instance.question = obj
@@ -277,7 +277,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
             old_obj = self.request.event.questions(manager="all_objects").get(
                 pk=form.instance.pk
             )
-            old_data = old_obj._get_instance_data()
+            old_data = old_obj.get_instance_data()
 
         result = super().form_valid(form, skip_logging=True)
 
@@ -296,7 +296,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
                 person=self.request.user,
                 orga=True,
                 old_data=old_data,
-                new_data=form.instance._get_instance_data(),
+                new_data=form.instance.get_instance_data(),
             )
         elif created:
             form.instance.log_action(".create", person=self.request.user, orga=True)
@@ -668,10 +668,10 @@ def get_field_label(field_key, model):
         return label
     try:
         field = model._meta.get_field(field_key)
-        return field.verbose_name
     except FieldDoesNotExist:
-        pass
-    return field_key.replace("_", " ").title()
+        return field_key.replace("_", " ").title()
+    else:
+        return field.verbose_name
 
 
 class CfPEditorMixin:
@@ -772,7 +772,7 @@ class CfPEditorMixin:
     def _get_preview_form(self, step):
         if step.identifier == "info":
             return InfoForm(event=self.request.event, readonly=True)
-        elif step.identifier == "profile":
+        if step.identifier == "profile":
             return SpeakerProfileForm(event=self.request.event, read_only=True)
         return None
 

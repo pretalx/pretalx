@@ -29,7 +29,7 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
         warnings about missing speakers.
     """
 
-    _code_scope = ("event",)
+    code_scope = ("event",)
 
     user = models.ForeignKey(
         to="person.User",
@@ -94,7 +94,7 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
 
     class orga_urls(EventUrls):
         base = "{self.event.orga_urls.speakers}{self.code}/"
-        password_reset = "{base}reset"
+        password_reset = "{base}reset"  # noqa: S105  -- URL pattern, not a password
         toggle_arrived = "{base}toggle-arrived"
         send_mail = "{self.event.orga_urls.compose_mails_sessions}?speakers={self.code}"
 
@@ -164,7 +164,7 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
             "question__position"
         )
 
-    def _get_instance_data(self):
+    def get_instance_data(self):
         data = {}
         if self.pk:
             data = {
@@ -176,7 +176,7 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
                     else None
                 ),
             }
-        return super()._get_instance_data() | data
+        return super().get_instance_data() | data
 
     @cached_property
     def full_availability(self):

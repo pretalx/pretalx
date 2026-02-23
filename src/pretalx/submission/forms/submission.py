@@ -537,14 +537,13 @@ class SubmissionFilterForm(forms.Form):
                 )
             qs = Filterable.handle_search(qs, search, search_fields)
 
-        qs = self._filter_question(
+        return self._filter_question(
             qs,
             question=self.cleaned_data.get("question"),
             answer=self.cleaned_data.get("answer"),
             option=self.cleaned_data.get("answer__options"),
             unanswered=self.cleaned_data.get("unanswered"),
         )
-        return qs
 
     class Media:
         js = [

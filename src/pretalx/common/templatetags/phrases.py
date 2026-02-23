@@ -20,4 +20,4 @@ def phrase(phrase_name, **kwargs):
         return text
     # Due to being previously used in templates, most phrases are formatted
     # with old % formatting.
-    return mark_safe(str(text) % kwargs)
+    return mark_safe(str(text) % kwargs)  # noqa: S308  -- translated phrases with safe substitutions

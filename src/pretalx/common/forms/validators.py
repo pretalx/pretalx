@@ -14,7 +14,7 @@ class ZXCVBNValidator:
 
     def __init__(self, min_score=3, user_attributes=DEFAULT_USER_ATTRIBUTES):
         if not (0 <= min_score <= 4):
-            raise Exception("min_score must be between 0 and 4!")
+            raise ValueError("min_score must be between 0 and 4!")
         self.min_score = min_score
         self.user_attributes = user_attributes
 
@@ -42,7 +42,7 @@ class MinDateValidator(MinValueValidator):
             e.params["limit_value"] = date_format(
                 e.params["limit_value"], "SHORT_DATE_FORMAT"
             )
-            raise e
+            raise
 
 
 class MinDateTimeValidator(MinValueValidator):
@@ -54,7 +54,7 @@ class MinDateTimeValidator(MinValueValidator):
                 e.params["limit_value"].astimezone(get_current_timezone()),
                 "SHORT_DATETIME_FORMAT",
             )
-            raise e
+            raise
 
 
 class MaxDateValidator(MaxValueValidator):
@@ -65,7 +65,7 @@ class MaxDateValidator(MaxValueValidator):
             e.params["limit_value"] = date_format(
                 e.params["limit_value"], "SHORT_DATE_FORMAT"
             )
-            raise e
+            raise
 
 
 class MaxDateTimeValidator(MaxValueValidator):
@@ -77,4 +77,4 @@ class MaxDateTimeValidator(MaxValueValidator):
                 e.params["limit_value"].astimezone(get_current_timezone()),
                 "SHORT_DATETIME_FORMAT",
             )
-            raise e
+            raise

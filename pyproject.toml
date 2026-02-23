@@ -180,47 +180,45 @@ exclude_also = [
 skip-magic-trailing-comma = true
 
 [tool.ruff.lint]
-extend-select = [
-  "A",  # flake8-builtins
-  "B",  # flake8-bugbear
-  "C4",  # Use comprehensions rather than generators
-  "E",  # pycodestyle errors
-  "ERA",  # Drop commented-out code
-  "F",  # pyflakes
-  "FURB",  # Refactoring
-  "G",  # logging: formatting
-  "I",  # import sorting
-  "INT",  # gettext
-  "LOG",  # logging: logger
-  "N",  # PEP8-naming
-  "PERF",  # Performance issues
-  "PGH",  # no blanket noqa
-  "PIE",  # Mixed checks
-  "PL",  # pylint
-  "PLC0415",  # pylint: top-level imports
-  "PT",  # pytest
-  "PTH",  # use pathlib
-  "RSE",  # raising exceptions
-  "RUF",  # Ruff
-  "SIM",  # Possible simplifications
-  "T10",  # Catch debugger statements
-  "T20",  # Catch print statements
-  "TID",  # Tidy imports
-  "UP",  # pyupgrade
-  "W",  # pycodestyle warnings
-]
+select = ["ALL"]
 ignore = [
-  "E501",  # Line too long
-  "PLR",  # Refactoring: Too many branches, arguments, statements, etc
-  "RUF001",  # ambiguous characters
-  "RUF002",  # ambiguous characters
-  "RUF003",  # ambiguous characters
+  "ANN",     # We do not do annotations
+  "ARG",     # Unused method arguments are often ok
+  "C901",    # We do do complexity
+  "COM812",  # Trailing commas are formatter territory
+  "D",       # We do not enforce docstyles
+  "DJ001",   # We live in a state of sin
+  "E501",    # Long lines are formatter territory
+  "EM",      # Formatting strings is fine, actually
+  "FBT",     # Booleans are fine, actually
+  "FIX",     # TODO comments are fine, actually
+  "PLR",     # Refactoring: Too many branches, arguments, statements, etc
+  "RET502",  # Just returning is fine, actually
+  "RET503",  # Just not returning is fine, actually
   "RUF012",  # Mutable default in class attribute is just how django rolls
   "RUF100",  # Unused noqa; problematic when run in isolation
+  "TRY003",  # Error messages are fine, actually
+]
+allowed-confusables = ["–", "’", "×"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/tests/**.py" = [
+  "DTZ",     # TODO: do not use naive datetimes in tests
+  "RUF",     # Ignore ambiguous characters in tests, may be security tests
+  "S",       # Tests do not need cryptographic randomness and other security features
+  "S101",    # Ignore `assert` rules in tests
+  "SLF001",  # TODO: remove SLF001, fix private access
+  "TRY",     # Exception handling is special in tests
 ]
 
 [tool.ruff.lint.flake8-pytest-style]
 parametrize-values-type = "tuple"
+
+[tool.ruff.lint.flake8-self]
+extend-ignore-names = ["_base_manager", "_default_manager",  "_meta"]
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
 
 [tool.ruff.lint.pep8-naming]
 extend-ignore-names = [

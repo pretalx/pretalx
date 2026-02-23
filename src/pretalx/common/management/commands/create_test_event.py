@@ -57,7 +57,7 @@ class Command(BaseCommand):
                     'Please run the "init" command to create an administrator user.'
                 )
             )
-            return
+            return None
         organiser, team = create_organiser_with_team(
             name="DemoCon Org", slug=f"{slug}org", users=administrators
         )
@@ -96,7 +96,7 @@ Feel free to look around, but don\'t be alarmed if something doesn\'t quite make
                 event=event, name="Workshop", default_duration=90
             )
 
-            event.display_settings["header_pattern"] = random.choice(
+            event.display_settings["header_pattern"] = random.choice(  # noqa: S311  -- test data
                 ("plain", "pcb", "bubbles", "signal", "topo", "graph")
             )
             event.save()
@@ -176,7 +176,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
         )
         speakers = [self.build_speaker() for _ in range(target_speaker_count)]
         for _ in range(total_submissions - target_speaker_count):
-            speakers.append(random.choice(speakers))
+            speakers.append(random.choice(speakers))  # noqa: S311  -- test data
 
         max_submission_time = min(now(), self.event.cfp.deadline)
         submission_times = [
@@ -220,8 +220,8 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
             )
         ]
         for _ in range(self.fake.random_int(min=5, max=15)):
-            submission = random.choice(submissions)
-            speaker = random.choice(speakers)
+            submission = random.choice(submissions)  # noqa: S311  -- test data
+            speaker = random.choice(speakers)  # noqa: S311  -- test data
             submission.speakers.add(speaker)
 
     def build_speaker(self):
@@ -232,11 +232,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
                 user=user, event=self.event
             )
             return speaker
-        user = self.create_user_with_retry(
-            name=self.fake.name(),
-            email_base=email,
-            # TODO: generate avatar,
-        )
+        user = self.create_user_with_retry(name=self.fake.name(), email_base=email)
         return SpeakerProfile.objects.create(
             user=user, event=self.event, biography="\n\n".join(self.fake.texts(2))
         )
@@ -247,11 +243,11 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
                 event=self.event,
                 title=self.fake.catch_phrase(),
                 submission_type=submission_type,
-                track=random.choice(self.event.tracks.all()),
+                track=random.choice(self.event.tracks.all()),  # noqa: S311  -- test data
                 abstract=self.fake.bs().capitalize() + "!",
                 description=self.fake.text(),
                 content_locale="en",
-                do_not_record=random.choice([False] * 10 + [True]),
+                do_not_record=random.choice([False] * 10 + [True]),  # noqa: S311  -- test data
             )
             submission.log_action("pretalx.submission.create", person=speaker.user)
         submission.speakers.add(speaker)
@@ -259,7 +255,8 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
 
     def build_review_stage(self):
         """We will go with only three reviewers: One to review all submissions,
-        one to review more positively, one to review more negatively."""
+        one to review more positively, one to review more negatively.
+        """
         reviewers = [
             self.create_user_with_retry(
                 name=self.fake.name(), email_base=self.fake.user_name() + "@example.org"
@@ -318,7 +315,9 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
         elif positive is False:
             rating.append(0)
         return Review.objects.create(
-            submission=submission, user=reviewer, score=random.choice(rating)
+            submission=submission,
+            user=reviewer,
+            score=random.choice(rating),  # noqa: S311  -- test data
         )
 
     def build_schedule_stage(self):

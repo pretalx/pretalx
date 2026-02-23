@@ -85,7 +85,7 @@ class Availability(PretalxModel):
         """
 
         if not isinstance(other, Availability):
-            raise Exception("Please provide an Availability object")
+            raise TypeError("Please provide an Availability object")
 
         if strict:
             return (
@@ -111,9 +111,9 @@ class Availability(PretalxModel):
         given one."""
 
         if not isinstance(other, Availability):
-            raise Exception("Please provide an Availability object.")
+            raise TypeError("Please provide an Availability object.")
         if not other.overlaps(self, strict=False):
-            raise Exception("Only overlapping Availabilities can be merged.")
+            raise ValueError("Only overlapping Availabilities can be merged.")
 
         return Availability(
             start=min(self.start, other.start),
@@ -132,9 +132,9 @@ class Availability(PretalxModel):
         one and the given one."""
 
         if not isinstance(other, Availability):
-            raise Exception("Please provide an Availability object.")
+            raise TypeError("Please provide an Availability object.")
         if not other.overlaps(self, False):
-            raise Exception("Only overlapping Availabilities can be intersected.")
+            raise ValueError("Only overlapping Availabilities can be intersected.")
 
         return Availability(
             start=max(self.start, other.start),

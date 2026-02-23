@@ -20,14 +20,14 @@ def patch_out_timezone_cache(tzinfo):
     import vobject.icalendar as ical  # noqa: PLC0415
 
     try:
-        minimal_tzid_map = {"UTC": ical.__tzidMap["UTC"]}
+        minimal_tzid_map = {"UTC": ical.__tzidMap["UTC"]}  # noqa: SLF001 -- patch upstream bug
     except KeyError:
         minimal_tzid_map = {}
 
     try:
         yield
     finally:
-        ical.__tzidMap = minimal_tzid_map
+        ical.__tzidMap = minimal_tzid_map  # noqa: SLF001 -- patch upstream bug
 
 
 def get_slots_ical(event, slots, prodid_suffix=None):

@@ -65,8 +65,8 @@ class Command(BaseCommand):
             env["OUT_DIR"] = str(settings.STATIC_ROOT)
             env["BASE_URL"] = settings.STATIC_URL
             if options["npm_install"] or not (frontend_dir / "node_modules").exists():
-                subprocess.check_call(["npm", "ci"], cwd=frontend_dir)
-            subprocess.check_call(["npm", "run", "build"], cwd=frontend_dir, env=env)
+                subprocess.check_call(["npm", "ci"], cwd=frontend_dir)  # noqa: S607 -- npm is commonly installed in user paths
+            subprocess.check_call(["npm", "run", "build"], cwd=frontend_dir, env=env)  # noqa: S607 -- npm is commonly installed in user paths
 
         # This fails if we don't have db access, which is fine
         with suppress(Exception):

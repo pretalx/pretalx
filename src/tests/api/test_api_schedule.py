@@ -11,8 +11,9 @@ from pretalx.schedule.models import Schedule
 
 @pytest.fixture
 def invisible_slot(past_slot):
-    past_slot.is_visible = False
-    past_slot.save()
+    with scope(event=past_slot.schedule.event):
+        past_slot.is_visible = False
+        past_slot.save()
     return past_slot
 
 

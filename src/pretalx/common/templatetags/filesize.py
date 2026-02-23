@@ -10,7 +10,7 @@ register = template.Library()
 def filesize(size: str):
     try:
         size = int(size)
-    except Exception:
+    except (ValueError, TypeError):
         return ""
     for unit in ("", "K", "M", "G", "T", "P", "E", "Z"):  # Future proof 10/10
         if abs(size) < 1024:

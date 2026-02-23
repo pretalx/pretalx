@@ -212,7 +212,7 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
             return self.get(self.request, *self.args, **self.kwargs)
 
         old_speaker = form.instance.__class__.objects.get(pk=form.instance.pk)
-        old_data = old_speaker._get_instance_data()
+        old_data = old_speaker.get_instance_data()
         old_questions_data = self.questions_form.serialize_answers()
 
         # Save the form and show success message (skipping FormLoggingMixin's logging)
@@ -224,7 +224,7 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
             messages.success(self.request, message)
 
         if form.has_changed() or self.questions_form.has_changed():
-            new_data = form.instance._get_instance_data()
+            new_data = form.instance.get_instance_data()
             new_questions_data = self.questions_form.serialize_answers()
             form.instance.log_action(
                 "pretalx.user.profile.update",

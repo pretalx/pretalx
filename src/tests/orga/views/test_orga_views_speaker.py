@@ -266,8 +266,9 @@ def test_orga_cannot_edit_speaker_without_filling_questions(
 def test_orga_cant_assign_duplicate_address(
     orga_client, speaker, speaker_profile, event, submission, other_speaker
 ):
-    event.cfp.fields["availabilities"]["visibility"] = "do_not_ask"
-    event.cfp.save()
+    with scope(event=event):
+        event.cfp.fields["availabilities"]["visibility"] = "do_not_ask"
+        event.cfp.save()
     with scope(event=event):
         url = speaker_profile.orga_urls.base
     response = orga_client.post(

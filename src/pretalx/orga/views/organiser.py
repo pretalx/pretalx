@@ -5,8 +5,9 @@
 # SPDX-FileContributor: bithive
 
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -135,7 +136,7 @@ class TeamView(OrgaCRUDView):
                 form.instance.organiser = self.request.organiser
                 result = super().form_valid(form)
                 warnings = check_access_permissions(self.request.organiser)
-        except Exception as exc:
+        except (ValidationError, IntegrityError) as exc:
             messages.error(self.request, str(exc))
             return self.form_invalid(form)
         if warnings:
@@ -165,7 +166,7 @@ class TeamView(OrgaCRUDView):
         pk = self.object.pk
         try:
             return super().delete_handler(request, *args, **kwargs)
-        except Exception as exc:
+        except (ValidationError, IntegrityError) as exc:
             messages.error(self.request, str(exc))
         self.object.pk = pk
         return redirect(self.reverse("update", instance=self.object))
@@ -286,7 +287,7 @@ class TeamMemberDelete(TeamMemberMixin, ActionConfirmMixin, DetailView):
                 )
                 warnings = check_access_permissions(self.request.organiser)
                 messages.success(request, _("The member was removed from the team."))
-        except Exception as e:
+        except (ValidationError, IntegrityError) as e:
             messages.error(request, str(e))
             return redirect(self.action_back_url)
 
@@ -438,7 +439,7 @@ class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListV
         )
 
     def get_queryset(self):
-        qs = (
+        return self.filter_queryset(
             User.objects.all()
             .filter(profiles__event__in=self.events)
             .prefetch_related("profiles", "profiles__event")
@@ -458,8 +459,6 @@ class OrganiserSpeakerList(PermissionRequired, Filterable, OrgaTableMixin, ListV
                 ),
             )
         )
-        qs = self.filter_queryset(qs)
-        return qs
 
     def get(self, request, *args, **kwargs):
         # Eagerly evaluate the queryset while scopes_disabled is active

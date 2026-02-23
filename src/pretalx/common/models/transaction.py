@@ -25,8 +25,8 @@ def rolledback_transaction():
     try:
         with transaction.atomic():
             yield
-            raise DummyRollbackError
+            raise DummyRollbackError  # noqa: TRY301  -- intentional rollback mechanism
     except DummyRollbackError:
         pass
     else:  # pragma: no cover
-        raise Exception("Invalid state, should have rolled back.")
+        raise RuntimeError("Invalid state, should have rolled back.")

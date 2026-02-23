@@ -55,5 +55,4 @@ def get_api_version_from_request(request):
         request.auth.version = api_version
         request.auth.save()
 
-    # TODO: track use of legacy versions, send/show warning (once) to user
     return api_version

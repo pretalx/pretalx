@@ -90,7 +90,6 @@ class UserSettings(TemplateView):
             token = request.user.api_tokens.filter(pk=token_id).first()
             token.version = CURRENT_VERSION
             token.save()
-            # TODO: log versions as old/new
             request.user.log_action(
                 "pretalx.user.token.upgrade", data=token.serialize()
             )
@@ -178,5 +177,5 @@ class PreferencesView(EventPermissionRequired, View):
 
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
-        except Exception as e:
+        except (ValueError, KeyError, AttributeError) as e:
             return JsonResponse({"error": str(e)}, status=500)

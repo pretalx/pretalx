@@ -4,6 +4,7 @@
 from urllib.parse import quote
 
 import django_tables2 as tables
+from django.core.exceptions import FieldDoesNotExist
 from django.db.models import OuterRef, Subquery
 from django.db.models.lookups import Transform
 from django.template import Context, Template
@@ -17,7 +18,7 @@ from pretalx.common.forms.tables import TablePreferencesForm
 
 
 def get_icon(icon):
-    return mark_safe(f'<i class="fa fa-{icon}"></i>')
+    return mark_safe(f'<i class="fa fa-{icon}"></i>')  # noqa: S308  -- static icon markup
 
 
 class QuestionColumnMixin:
@@ -301,9 +302,10 @@ class PretalxTable(tables.Table):
             return False
         try:
             self.Meta.model._meta.get_field(field_name)
-            return True
-        except Exception:
+        except FieldDoesNotExist:
             return False
+        else:
+            return True
 
     def _merge_ordering(self, new_ordering, saved_ordering):
         """Merge new column click ordering with saved multi-column ordering.
@@ -619,12 +621,12 @@ class ActionsColumn(tables.Column):
                     url = f"{url}?next={quote(request.get_full_path())}"
                 html += f'<a href="{url}" {inner_html}</a>'
         html = f'<div class="action-column">{html}</div>'
-        return mark_safe(html)
+        return mark_safe(html)  # noqa: S308  -- built from escaped URLs and static markup
 
 
 class BooleanColumn(tables.Column):
-    TRUE_MARK = mark_safe('<i class="fa fa-check-circle text-success"></i>')
-    FALSE_MARK = mark_safe('<i class="fa fa-times-circle text-danger"></i>')
+    TRUE_MARK = mark_safe('<i class="fa fa-check-circle text-success"></i>')  # noqa: S308  -- static icon markup
+    FALSE_MARK = mark_safe('<i class="fa fa-times-circle text-danger"></i>')  # noqa: S308  -- static icon markup
     EMPTY_MARK = mark_safe('<span class="text-muted">&mdash;</span>')
     attrs = {"td": {"class": "text-center"}, "th": {"class": "text-center"}}
 

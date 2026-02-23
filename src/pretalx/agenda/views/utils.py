@@ -51,7 +51,7 @@ def get_schedule_exporter_content(request, exporter_name, schedule):
     is_organiser = request.user.has_perm("schedule.export_schedule", request.event)
     exporter = find_schedule_exporter(request, exporter_name, public=not is_organiser)
     if not exporter:
-        return
+        return None
     exporter.schedule = schedule
     exporter.is_orga = is_organiser
     lang_code = request.GET.get("lang")
@@ -61,12 +61,12 @@ def get_schedule_exporter_content(request, exporter_name, schedule):
         activate(request.event.locale)
     try:
         file_name, file_type, data = exporter.render(request=request)
-        etag = hashlib.sha1(str(data).encode()).hexdigest()
+        etag = hashlib.sha1(str(data).encode()).hexdigest()  # noqa: S324 -- used for etag, not vulnerable to collision attacks
     except Exception:
         logger.exception(
             "Failed to use %s for %s", exporter.identifier, request.event.slug
         )
-        return
+        return None
     if request.headers.get("If-None-Match") == etag:
         return HttpResponseNotModified()
     headers = {"ETag": f'"{etag}"'}

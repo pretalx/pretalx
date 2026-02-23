@@ -42,8 +42,7 @@ class UserEventPreferences(TimestampedModel, models.Model):
                     raise TypeError(
                         f"Key '{err_path}' is a leaf node; cannot assign new keys"
                     )
-                else:
-                    return None, keys[-1]
+                return None, keys[-1]
             elif create:
                 value = value.setdefault(key, {})
             else:
@@ -84,8 +83,7 @@ class UserEventPreferences(TimestampedModel, models.Model):
             raise TypeError(
                 f"Key '{path}' is a dictionary; cannot assign a non-dictionary value"
             )
-        else:
-            parent[key] = value
+        parent[key] = value
 
         if commit:
             self.save()

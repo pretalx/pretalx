@@ -38,8 +38,8 @@ def task_process_image(*, model: str, pk: int, field: str, generate_thumbnail: b
 
         try:
             process_image(image=image, generate_thumbnail=generate_thumbnail)
-        except Exception as e:  # pragma: no cover
-            logger.error("Could not process image %s: %s", image.path, e)
+        except (OSError, SyntaxError, ValueError):  # pragma: no cover
+            logger.exception("Could not process image %s", image.path)
 
 
 @app.task(name="pretalx.cleanup_file")
@@ -72,4 +72,4 @@ def task_cleanup_file(*, model: str, pk: int, field: str, path: str):
             try:
                 default_storage.delete(path)
             except OSError:  # pragma: no cover
-                logger.error("Deleting file %s failed.", path)
+                logger.exception("Deleting file %s failed.", path)

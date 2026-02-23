@@ -27,10 +27,7 @@ class Command(BaseCommand):
         event_slug = options.get("event")
         start_date = options.get("date")
 
-        if start_date:
-            start_date = dt.datetime.strptime(start_date, "%Y-%m-%d").date()
-        else:
-            start_date = now().date()
+        start_date = dt.date.fromisoformat(start_date) if start_date else now().date()
 
         event = Event.objects.get(slug=event_slug)
 

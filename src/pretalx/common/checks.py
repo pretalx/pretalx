@@ -41,7 +41,7 @@ def check_celery(app_configs, **kwargs):
         try:
             client = app.broker_connection().channel().client
             client.llen("celery")
-        except Exception as e:
+        except OSError as e:
             # Only warning, as the task runner may just still be starting up
             errors.append(
                 CheckMessage(

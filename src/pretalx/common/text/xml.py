@@ -18,5 +18,4 @@ def xmlescape(text):
     text = escape(text)  # escape ><&
     text = text.encode("ascii", "xmlcharrefreplace").decode()
     text = text.replace('"', "&quot;")
-    text = text.replace("'", "&apos;")
-    return text
+    return text.replace("'", "&apos;")

@@ -870,9 +870,9 @@ class CfPFlow:
             self.steps_dict[step.identifier] = step
         previous_step = None
         for step in steps:
-            step._previous = previous_step
+            step._previous = previous_step  # noqa: SLF001  -- building linked list within same module
             if previous_step:
-                previous_step._next = step
+                previous_step._next = step  # noqa: SLF001  -- building linked list within same module
             previous_step = step
 
     def get_config(self, data, json_compat=False):

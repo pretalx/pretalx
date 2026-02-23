@@ -48,7 +48,7 @@ class TablePreferencesForm(forms.Form):
 
     def __init__(self, *args, table=None, **kwargs):
         if not table:
-            raise Exception("No table provided to TablePreferencesForm")
+            raise ValueError("No table provided to TablePreferencesForm")
 
         super().__init__(*args, **kwargs)
 

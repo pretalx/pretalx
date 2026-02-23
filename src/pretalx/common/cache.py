@@ -77,7 +77,6 @@ class NamespacedCache:
         self._last_prefix = prefix
         key = f"{self.prefixkey}:{prefix}:{original_key}"
         if len(key) > 200:  # Hash long keys, as memcached has a length limit
-            # TODO: Use a more efficient, non-cryptographic hash algorithm
             key = hashlib.sha256(key.encode("UTF-8")).hexdigest()
         return key
 
@@ -99,7 +98,7 @@ class ObjectRelatedCache(NamespacedCache):
 
     def __init__(self, obj: Model, cache: str = "default", field: str = "pk"):
         if not isinstance(obj, Model):
-            raise Exception(f"{obj} is not a Model, cannot use ObjectRelatedCache!")
+            raise TypeError(f"{obj} is not a Model, cannot use ObjectRelatedCache!")
         super().__init__(
             prefixkey=f"{obj._meta.object_name}:{getattr(obj, field)}", cache=cache
         )

@@ -11,8 +11,9 @@ from urllib.parse import quote
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
+from django.core.exceptions import ValidationError
 from django.core.paginator import InvalidPage, Paginator
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
@@ -90,7 +91,7 @@ class FormSignalMixin:
             else:
                 try:
                     f.save()
-                except Exception:
+                except (IntegrityError, ValidationError):
                     message = _("Some changes could not be saved.")
                     if label := getattr(f, "label", None):
                         message = f"[{label}] {message}"
@@ -125,13 +126,9 @@ class FormLoggingMixin:
             return self._save_form(form)
 
         old_data = None
-        if (
-            self.object
-            and hasattr(self.object, "_get_instance_data")
-            and self.object.pk
-        ):
+        if self.object and hasattr(self.object, "get_instance_data") and self.object.pk:
             old_object = self.object.__class__.objects.get(pk=self.object.pk)
-            old_data = old_object._get_instance_data()
+            old_data = old_object.get_instance_data()
 
         result = super().form_valid(form) if _has_super else self._save_form(form)
 
@@ -141,8 +138,8 @@ class FormLoggingMixin:
 
         if form.has_changed() and hasattr(self.object, "log_action"):
             new_data = None
-            if hasattr(self.object, "_get_instance_data"):
-                new_data = self.object._get_instance_data()
+            if hasattr(self.object, "get_instance_data"):
+                new_data = self.object.get_instance_data()
 
             log_kwargs = self.get_log_kwargs()
             if old_data is not None and new_data is not None:
@@ -193,7 +190,7 @@ class GenericLoginView(FormView):
         if not self.request.user.is_anonymous:
             try:
                 return redirect(self.get_success_url())
-            except Exception:
+            except (AttributeError, NoReverseMatch):
                 return redirect(self.success_url)
         return super().dispatch(request, *args, **kwargs)
 
@@ -381,7 +378,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
 
     def get_queryset(self):
         if self.queryset is not None:
-            return self.queryset._clone()
+            return self.queryset._clone()  # noqa: SLF001 -- Django QuerySet internal
         return self.model._default_manager.all()
 
     def get_object(self):
@@ -627,7 +624,8 @@ class OrgaTableMixin(SingleTableMixin):
         # We inject page_obj from the table’s paginator in get_context_data().
         if self.table_class and not hasattr(self, "_table_page_size"):
             return None
-        # TODO: remove most of this method including the fallback to
+        # TODO(rixx): https://github.com/pretalx/pretalx/issues/2336
+        # Remove most of this method including the fallback to
         # session-based handling in 2026, data should have been migrated
         # by active use (and if not, it can’t have mattered that much)
         if not (default := getattr(self, "_table_page_size", None)):
@@ -658,9 +656,10 @@ class OrgaTableMixin(SingleTableMixin):
                     skey = "stored_page_size_" + self.request.resolver_match.url_name
                     self.request.session[skey] = size
 
-                return size
             except ValueError:
                 return default
+            else:
+                return size
         return default
 
     def get_table_kwargs(self):

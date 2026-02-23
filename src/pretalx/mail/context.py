@@ -295,7 +295,7 @@ def base_placeholders(sender, **kwargs):
             _("The addressed user’s email address"),
         ),
         *placeholder_aliases(
-            # TODO: remove alias in 2026, maybe
+            # TODO(rixx): https://github.com/pretalx/pretalx/issues/2336: remove alias in 2026, maybe
             ["speaker_schedule_new", "notifications"],
             ["user", "event"],
             lambda user, event: render_notifications(
@@ -323,4 +323,4 @@ def base_placeholders(sender, **kwargs):
         ),
     ]
 
-    return placeholders
+    return placeholders  # noqa: RET504

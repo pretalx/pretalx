@@ -228,7 +228,7 @@ def questions_for_user(event, user, for_answers=False):
 
     if queryset and for_answers:
         return filter_questions_by_team_access(queryset, user)
-    elif queryset:
+    if queryset:
         return queryset
 
     # Now we are left with anonymous users or users with very limited permissions.

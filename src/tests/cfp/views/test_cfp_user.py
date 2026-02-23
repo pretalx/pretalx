@@ -127,8 +127,9 @@ def test_cannot_confirm_submitted_submission(speaker_client, submission):
 
 @pytest.mark.django_db
 def test_can_reconfirm_submission(speaker_client, accepted_submission):
-    accepted_submission.state = SubmissionStates.CONFIRMED
-    accepted_submission.save()
+    with scope(event=accepted_submission.event):
+        accepted_submission.state = SubmissionStates.CONFIRMED
+        accepted_submission.save()
     response = speaker_client.get(accepted_submission.urls.confirm, follow=True)
     accepted_submission.refresh_from_db()
     assert response.status_code == 200
@@ -137,8 +138,9 @@ def test_can_reconfirm_submission(speaker_client, accepted_submission):
 
 @pytest.mark.django_db
 def test_cannot_confirm_rejected_submission(other_speaker_client, rejected_submission):
-    rejected_submission.state = SubmissionStates.REJECTED
-    rejected_submission.save()
+    with scope(event=rejected_submission.event):
+        rejected_submission.state = SubmissionStates.REJECTED
+        rejected_submission.save()
     response = other_speaker_client.get(rejected_submission.urls.confirm, follow=True)
     rejected_submission.refresh_from_db()
     assert response.status_code == 200
@@ -508,8 +510,9 @@ def test_can_edit_profile(speaker, event, speaker_client):
 
 @pytest.mark.django_db
 def test_must_provide_availabilities(speaker, event, speaker_client):
-    event.cfp.fields["availabilities"]["visibility"] = "required"
-    event.cfp.save()
+    with scope(event=event):
+        event.cfp.fields["availabilities"]["visibility"] = "required"
+        event.cfp.save()
     response = speaker_client.post(
         event.urls.user,
         data={
@@ -870,10 +873,11 @@ def test_speaker_can_retract_invitation(speaker_client, submission):
 @pytest.mark.django_db
 @pytest.mark.parametrize("get_availability", ("optional", "do_not_ask"))
 def test_submission_accept(speaker_client, submission, get_availability):
-    submission.event.cfp.fields["availabilities"]["visibility"] = get_availability
-    submission.event.cfp.save()
-    submission.state = SubmissionStates.ACCEPTED
-    submission.save()
+    with scope(event=submission.event):
+        submission.event.cfp.fields["availabilities"]["visibility"] = get_availability
+        submission.event.cfp.save()
+        submission.state = SubmissionStates.ACCEPTED
+        submission.save()
 
     response = speaker_client.post(submission.urls.confirm, follow=True)
     submission.refresh_from_db()
@@ -884,10 +888,11 @@ def test_submission_accept(speaker_client, submission, get_availability):
 
 @pytest.mark.django_db
 def test_submission_accept_with_missing_availability(speaker_client, submission):
-    submission.event.cfp.fields["availabilities"]["visibility"] = "required"
-    submission.event.cfp.save()
-    submission.state = SubmissionStates.ACCEPTED
-    submission.save()
+    with scope(event=submission.event):
+        submission.event.cfp.fields["availabilities"]["visibility"] = "required"
+        submission.event.cfp.save()
+        submission.state = SubmissionStates.ACCEPTED
+        submission.save()
 
     response = speaker_client.post(submission.urls.confirm, follow=True)
     submission.refresh_from_db()
@@ -898,8 +903,9 @@ def test_submission_accept_with_missing_availability(speaker_client, submission)
 
 @pytest.mark.django_db
 def test_submission_accept_nologin(client, submission):
-    submission.state = SubmissionStates.ACCEPTED
-    submission.save()
+    with scope(event=submission.event):
+        submission.state = SubmissionStates.ACCEPTED
+        submission.save()
 
     response = client.post(submission.urls.confirm, follow=True)
     submission.refresh_from_db()
@@ -912,8 +918,9 @@ def test_submission_accept_nologin(client, submission):
 
 @pytest.mark.django_db
 def test_submission_accept_wrong_code(client, submission):
-    submission.state = SubmissionStates.ACCEPTED
-    submission.save()
+    with scope(event=submission.event):
+        submission.state = SubmissionStates.ACCEPTED
+        submission.save()
 
     assert submission.code in submission.urls.confirm
     response = client.post(
@@ -928,8 +935,9 @@ def test_submission_accept_wrong_code(client, submission):
 @pytest.mark.django_db
 def test_submission_withdraw(speaker_client, submission):
     djmail.outbox = []
-    submission.state = SubmissionStates.SUBMITTED
-    submission.save()
+    with scope(event=submission.event):
+        submission.state = SubmissionStates.SUBMITTED
+        submission.save()
 
     response = speaker_client.post(submission.urls.withdraw, follow=True)
     assert response.status_code == 200
@@ -1122,10 +1130,10 @@ def test_draft_with_deadline_access_code_exhausted(
     event, access_code, submission, max_uses, exhausted
 ):
 
-    event.cfp.deadline = now() - dt.timedelta(days=1)
-    event.cfp.save()
-
     with scope(event=event):
+        event.cfp.deadline = now() - dt.timedelta(days=1)
+        event.cfp.save()
+
         submission.state = "draft"
         submission.access_code = access_code
         submission.save()
@@ -1143,10 +1151,11 @@ def test_draft_with_deadline_access_code_exhausted(
 
 @pytest.mark.django_db
 def test_draft_with_deadline_access_code_expired(event, access_code, submission):
-    event.cfp.deadline = now() - dt.timedelta(days=1)
-    event.cfp.save()
-    access_code.valid_until = now() - dt.timedelta(hours=1)
-    access_code.save()
+    with scope(event=event):
+        event.cfp.deadline = now() - dt.timedelta(days=1)
+        event.cfp.save()
+        access_code.valid_until = now() - dt.timedelta(hours=1)
+        access_code.save()
 
     with scope(event=event):
         submission.state = "draft"
@@ -1189,11 +1198,12 @@ def test_draft_with_track_access_code_exhausted(
 
 @pytest.mark.django_db
 def test_access_code_draft_and_dedraft(event, client, access_code):
-    event.cfp.deadline = now() - dt.timedelta(days=1)
-    event.cfp.save()
-    access_code.maximum_uses = 5
-    access_code.redeemed = 0
-    access_code.save()
+    with scope(event=event):
+        event.cfp.deadline = now() - dt.timedelta(days=1)
+        event.cfp.save()
+        access_code.maximum_uses = 5
+        access_code.redeemed = 0
+        access_code.save()
 
     with scope(event=event):
         submission_type = event.cfp.default_type.id
@@ -1289,11 +1299,12 @@ def test_access_code_draft_and_dedraft(event, client, access_code):
 def test_access_code_redeemed_on_dedraft(
     event, speaker, speaker_client, access_code, submission
 ):
-    event.cfp.deadline = now() - dt.timedelta(days=1)
-    event.cfp.save()
-    access_code.maximum_uses = 5
-    access_code.redeemed = 0
-    access_code.save()
+    with scope(event=event):
+        event.cfp.deadline = now() - dt.timedelta(days=1)
+        event.cfp.save()
+        access_code.maximum_uses = 5
+        access_code.redeemed = 0
+        access_code.save()
 
     with scope(event=event):
         submission.access_code = access_code

@@ -3,6 +3,7 @@
 
 import string
 
+from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models, transaction
 from django.utils.crypto import get_random_string
@@ -38,7 +39,7 @@ def check_access_permissions(organiser):
         .filter(member_count__gt=0)
     )
     if not [t for t in teams if t.can_change_teams]:
-        raise Exception(
+        raise ValidationError(
             _(
                 "There must be at least one team with the permission to change teams, as otherwise nobody can create new teams or grant permissions to existing teams."
             )
@@ -65,7 +66,7 @@ def check_access_permissions(organiser):
             models.Q(limit_events=event) | models.Q(all_events=True)
         ).distinct()
         if not event_teams:
-            raise Exception(
+            raise ValidationError(
                 str(
                     _(
                         "There must be at least one team with access to every event. Currently, nobody has access to {event_name}."

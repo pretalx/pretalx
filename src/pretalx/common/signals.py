@@ -113,7 +113,7 @@ class EventPluginSignal(django.dispatch.Signal):
             if self._is_active(sender, receiver):
                 try:
                     response = receiver(signal=self, sender=sender, **named)
-                except Exception as err:
+                except Exception as err:  # noqa: BLE001
                     responses.append((receiver, err))
                 else:
                     responses.append((receiver, response))
@@ -178,12 +178,12 @@ def minimum_interval(
             cache.set(key_running, uniqid, timeout=minutes_running_timeout * 60)
             try:
                 retval = func(*args, **kwargs)
-            except Exception as e:
+            except Exception:
                 try:
                     cache.set(key_result, "error", timeout=minutes_after_error * 60)
                 except Exception:
                     logger.exception("Could not store result")
-                raise e
+                raise
             else:
                 try:
                     cache.set(key_result, "success", timeout=minutes_after_success * 60)

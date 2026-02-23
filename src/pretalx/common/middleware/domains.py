@@ -122,8 +122,8 @@ class MultiDomainMiddleware:
             and event.custom_domain
         ):
             # We need to update the CSP in order to make our fancy login form work
-            response._csp_update = getattr(response, "_csp_update", None) or {}
-            response._csp_update["form-action"] = [event.urls.base.full()]
+            response._csp_update = getattr(response, "_csp_update", None) or {}  # noqa: SLF001 -- django-csp convention
+            response._csp_update["form-action"] = [event.urls.base.full()]  # noqa: SLF001 -- django-csp convention
         return response
 
     def __call__(self, request):

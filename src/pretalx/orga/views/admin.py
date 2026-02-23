@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2019-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import smtplib
 import sys
 
 from django.conf import settings
@@ -40,7 +41,7 @@ class AdminDashboard(PermissionRequired, TemplateView):
         try:
             client = app.broker_connection().channel().client
             return client.llen("celery")
-        except Exception as e:
+        except OSError as e:
             return str(e)
 
     @context
@@ -85,7 +86,7 @@ class TestMailView(PermissionRequired, View):
                     emails=", ".join(admin_emails)
                 ),
             )
-        except Exception as e:
+        except (OSError, smtplib.SMTPException) as e:
             messages.error(
                 request, _("Failed to send test email: {error}").format(error=str(e))
             )

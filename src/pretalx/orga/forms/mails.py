@@ -68,7 +68,7 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
         text = self.cleaned_data["subject"]
         try:
             warnings = get_invalid_placeholders(text, self.valid_placeholders)
-        except Exception:
+        except ValueError:
             raise forms.ValidationError(
                 _(
                     "Invalid email template! "
@@ -85,7 +85,7 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
         text = self.cleaned_data["text"]
         try:
             warnings = get_invalid_placeholders(text, self.valid_placeholders)
-        except Exception:
+        except ValueError:
             raise forms.ValidationError(
                 _(
                     "Invalid email template! "

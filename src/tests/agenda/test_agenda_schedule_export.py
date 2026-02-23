@@ -108,10 +108,11 @@ def test_schedule_frab_xml_export(
 
 @pytest.mark.django_db
 def test_schedule_frab_xml_export_control_char(slot, client, django_assert_num_queries):
-    slot.submission.description = "control char: \a"
-    slot.submission.save()
+    with scope(event=slot.submission.event):
+        slot.submission.description = "control char: \a"
+        slot.submission.save()
 
-    with django_assert_num_queries(12):
+    with django_assert_num_queries(11):
         response = client.get(
             reverse(
                 "agenda:export.schedule.xml",
@@ -269,8 +270,9 @@ def test_feed_view(slot, client, django_assert_num_queries, schedule):
 
 @pytest.mark.django_db
 def test_feed_view_with_control_characters(slot, client, schedule):
-    schedule.version = "Version\x0b1"
-    schedule.save()
+    with scope(event=schedule.event):
+        schedule.version = "Version\x0b1"
+        schedule.save()
     response = client.get(slot.submission.event.urls.feed)
     assert response.status_code == 200
     assert "Version1" in response.text

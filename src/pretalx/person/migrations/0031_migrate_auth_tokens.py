@@ -3,7 +3,7 @@
 
 import logging
 
-from django.db import migrations
+from django.db import IntegrityError, migrations
 from django.db.models import Q
 
 from pretalx.person.models.auth_token import READ_PERMISSIONS
@@ -47,7 +47,7 @@ def migrate_drf_tokens_to_userapitokens(apps, schema_editor):
     ]
     legacy_permissions = list(READ_PERMISSIONS)
     endpoints_data = dict.fromkeys(legacy_endpoints, legacy_permissions)
-    token_name = "Migrated legacy API token"
+    token_name = "Migrated legacy API token"  # noqa: S105  -- not a password, just a display name
 
     # We only migrate users with any teams
     delete_tokens = []
@@ -75,7 +75,7 @@ def migrate_drf_tokens_to_userapitokens(apps, schema_editor):
             )
             token_events.append(permitted_events)
             delete_tokens.append(old_token.pk)
-        except Exception as e:
+        except (ValueError, TypeError, IntegrityError) as e:
             logger.warning(
                 "Failed to migrate auth token for user %s: %s", user.email, e
             )

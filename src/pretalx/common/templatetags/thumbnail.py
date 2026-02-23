@@ -12,5 +12,5 @@ register = template.Library()
 def thumbnail(field, size):
     try:
         return get_thumbnail(field, size).url
-    except Exception:
+    except (OSError, ValueError, AttributeError):
         return field.url if hasattr(field, "url") else None

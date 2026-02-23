@@ -39,13 +39,12 @@ def speaker_with_picture(speaker_profile, event, profile_picture):
 @pytest.fixture
 def other_profile_pictures(speaker):
     with scopes_disabled():
-        pics = [
+        return [
             ProfilePicture.objects.create(
                 user=speaker, avatar=_make_image(f"pic{i}.png")
             )
             for i in range(2)
         ]
-    return pics
 
 
 @pytest.mark.django_db

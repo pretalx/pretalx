@@ -77,11 +77,12 @@ def test_featured_talk_list(
     confirmed_submission,
     other_confirmed_submission,
 ):
-    confirmed_submission.is_featured = True
-    confirmed_submission.save()
+    with scope(event=event):
+        confirmed_submission.is_featured = True
+        confirmed_submission.save()
 
-    event.feature_flags["show_featured"] = True
-    event.save()
+        event.feature_flags["show_featured"] = True
+        event.save()
 
     with django_assert_num_queries(8):
         response = client.get(event.urls.featured, follow=True)
