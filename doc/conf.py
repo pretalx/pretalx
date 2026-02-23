@@ -17,15 +17,15 @@ import django
 django.setup()
 
 project = "pretalx"
-copyright = "2017-present, Tobias Kunze. "  # noqa: A001
-copyright += 'Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target=_blank>CC BY-SA 4.0</a>'  # noqa: A001
+copyright = "2017-present, Tobias Kunze. "  # noqa: A001 -- Sphinx convention
+copyright += 'Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target=_blank>CC BY-SA 4.0</a>'  # noqa: A001 -- Sphinx convention
 author = "Tobias Kunze"
 version = ".".join(__version__.split(".")[:2])
 release = __version__
 
 HAS_PYENCHANT = False
 with suppress(ImportError):
-    import enchant  # noqa: F401
+    import enchant  # noqa: F401 -- check if spell-checker is available
 
     HAS_PYENCHANT = True
 
