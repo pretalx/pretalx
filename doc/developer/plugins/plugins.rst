@@ -142,7 +142,7 @@ your receivers available::
     class FacebookApp(AppConfig):
 
         def ready(self):
-            from . import signals  # noqa
+            from . import signals  # noqa: F401 -- register signals on startup
 
 You can optionally specify code that you want to execute when the organiser
 activates your plugin for an event in the ``installed`` method, and code to

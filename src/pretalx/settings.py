@@ -544,13 +544,15 @@ VITE_IGNORE = False  # Used to ignore `collectstatic`/`rebuild`
 
 ## EXTERNAL APP SETTINGS
 with suppress(ImportError):
-    import django_extensions  # noqa: F401
+    import django_extensions  # noqa: F401 -- check if installed
 
     INSTALLED_APPS.append("django_extensions")
 
 if DEBUG:
     with suppress(ImportError):
-        from debug_toolbar import settings as toolbar_settings  # noqa: F401
+        from debug_toolbar import (
+            settings as toolbar_settings,  # noqa: F401 -- check if installed
+        )
 
         INTERNAL_IPS = ["127.0.0.1", "0.0.0.0", "::1"]  # noqa: S104  -- debug toolbar, only in DEBUG mode
         INSTALLED_APPS.append("debug_toolbar")
@@ -618,7 +620,7 @@ REST_FLEX_FIELDS = {
 LOAD_SPECTACULAR = False
 if "spectacular" in sys.argv:
     with suppress(ImportError):
-        import drf_spectacular  # noqa: F401
+        import drf_spectacular  # noqa: F401 -- check if installed
 
         INSTALLED_APPS.append("drf_spectacular")
         REST_FRAMEWORK["DEFAULT_SCHEMA_CLASS"] = "drf_spectacular.openapi.AutoSchema"
@@ -646,7 +648,7 @@ SILENCED_SYSTEM_CHECKS = [
 ]
 
 with suppress(ImportError):
-    from .override_settings import *  # noqa: F403
+    from .override_settings import *  # noqa: F403 -- wildcard import for local overrides
 
 if "--no-pretalx-information" in sys.argv:
     sys.argv.remove("--no-pretalx-information")
