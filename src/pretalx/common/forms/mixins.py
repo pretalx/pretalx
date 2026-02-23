@@ -564,7 +564,7 @@ class HierarkeyMixin:
                 if fname:
                     try:
                         default_storage.delete(fname.name)
-                    except OSError:  # pragma: no cover
+                    except OSError:
                         logger.exception("Deleting file %s failed.", fname.name)
 
                 # Create new file
@@ -580,7 +580,7 @@ class HierarkeyMixin:
                 if fname:
                     try:
                         default_storage.delete(fname.name)
-                    except OSError:  # pragma: no cover
+                    except OSError:
                         logger.exception("Deleting file %s failed.", fname.name)
                 del self._s[name]
             elif value is None:

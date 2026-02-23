@@ -310,7 +310,7 @@ class TeamResetPassword(TeamMemberMixin, ActionConfirmMixin, TemplateView):
         try:
             user_to_reset.reset_password(event=None, user=self.request.user)
             messages.success(self.request, phrases.orga.password_reset_success)
-        except SendMailException:  # pragma: no cover
+        except SendMailException:
             messages.error(self.request, phrases.orga.password_reset_fail)
         return redirect(self.action_back_url)
 

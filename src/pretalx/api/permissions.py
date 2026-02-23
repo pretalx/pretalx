@@ -72,7 +72,7 @@ class ApiPermission(BasePermission):
         return request.user.has_perm(permission_required, permission_object)
 
 
-class PluginPermission(ApiPermission):  # pragma: no cover
+class PluginPermission(ApiPermission):
     """Use this class to restrict access to views based on active plugins.
 
     Set PluginPermission.plugin_required to the name of the plugin that is required to access the endpoint.

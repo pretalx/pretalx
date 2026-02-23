@@ -735,7 +735,7 @@ class UserStep(FormFlowStep):
             uid = form.save()
             request.user = User.objects.filter(pk=uid).first()
         # This should never happen
-        if not request.user or not request.user.is_active:  # pragma: no cover
+        if not request.user or not request.user.is_active:
             raise ValidationError(
                 _(
                     "There was an error when logging in. Please contact the organiser for further help."
@@ -860,7 +860,7 @@ class CfPFlow:
 
         steps = [step(event=event) for step in DEFAULT_STEPS]
         for __, response in cfp_steps.send_robust(self.event):
-            if isinstance(response, Exception):  # pragma: no cover
+            if isinstance(response, Exception):
                 LOGGER.warning(str(response))
                 continue
             steps.extend(step_class(event=event) for step_class in response)

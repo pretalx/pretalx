@@ -66,7 +66,7 @@ class SubmissionInvitationForm(forms.Form):
         self.invitation, created = SubmissionInvitation.objects.get_or_create(
             submission=self.submission, email=email
         )
-        if not created:  # pragma: no cover
+        if not created:
             return self.invitation
 
         text = self.cleaned_data["text"].replace(

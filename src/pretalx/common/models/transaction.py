@@ -28,5 +28,5 @@ def rolledback_transaction():
             raise DummyRollbackError  # noqa: TRY301  -- intentional rollback mechanism
     except DummyRollbackError:
         pass
-    else:  # pragma: no cover
+    else:
         raise RuntimeError("Invalid state, should have rolled back.")
