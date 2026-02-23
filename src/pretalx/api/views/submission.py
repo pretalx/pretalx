@@ -177,7 +177,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
     }
     endpoint = "submissions"
 
-    def get_legacy_queryset(self):  # pragma: no cover
+    def get_legacy_queryset(self):
         base_qs = self.event.submissions.all().order_by("code")
         if not self.request.user.has_perm(
             "submission.orga_list_submission", self.event
@@ -194,14 +194,14 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             )
         return base_qs
 
-    def get_legacy_serializer_class(self):  # pragma: no cover
+    def get_legacy_serializer_class(self):
         if self.request.user.has_perm("submission.orga_update_submission", self.event):
             return LegacySubmissionOrgaSerializer
         if self.request.user.has_perm("submission.orga_list_submission", self.event):
             return LegacySubmissionReviewerSerializer
         return LegacySubmissionSerializer
 
-    def get_legacy_serializer(self, *args, **kwargs):  # pragma: no cover
+    def get_legacy_serializer(self, *args, **kwargs):
         serializer_questions = (self.request.query_params.get("questions") or "").split(
             ","
         )
@@ -219,7 +219,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         )
 
     def get_serializer_class(self):
-        if self.api_version == LEGACY:  # pragma: no cover
+        if self.api_version == LEGACY:
             return self.get_legacy_serializer_class()
         return super().get_serializer_class()
 
@@ -235,7 +235,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         )
 
     def get_serializer(self, *args, **kwargs):
-        if self.api_version == LEGACY:  # pragma: no cover
+        if self.api_version == LEGACY:
             return self.get_legacy_serializer(*args, **kwargs)
         return super().get_serializer(*args, **kwargs)
 
@@ -259,7 +259,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         return context
 
     def get_queryset(self):
-        if self.api_version == LEGACY:  # pragma: no cover
+        if self.api_version == LEGACY:
             return self.get_legacy_queryset()
         if not self.event:
             # This is just during api doc creation
@@ -365,7 +365,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         speaker = submission.speakers.filter(
             code=serializer.validated_data["user"]
         ).first()
-        if not speaker:  # pragma: no cover
+        if not speaker:
             return Response(
                 {"detail": "Speaker not found."}, status=status.HTTP_400_BAD_REQUEST
             )

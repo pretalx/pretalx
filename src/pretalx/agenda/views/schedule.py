@@ -122,7 +122,7 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
             output_format = "table"
         try:
             result = draw_ascii_schedule(data, output_format=output_format)
-        except StopIteration:  # pragma: no cover
+        except StopIteration:
             result = draw_ascii_schedule(data, output_format="list")
         result += "\n\n  📆 powered by pretalx"
         return HttpResponse(

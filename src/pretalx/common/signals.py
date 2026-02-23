@@ -53,7 +53,7 @@ class EventPluginSignal(django.dispatch.Signal):
             app = None
             while True:
                 app = app_cache.get(searchpath)
-                if "." not in searchpath or app:  # pragma: no cover
+                if "." not in searchpath or app:
                     break
                 searchpath, _ = searchpath.rsplit(".", 1)
             return app and app.name in sender.plugin_list
@@ -106,7 +106,7 @@ class EventPluginSignal(django.dispatch.Signal):
         ):
             return []
 
-        if not app_cache:  # pragma: no cover
+        if not app_cache:
             _populate_app_cache()
 
         for receiver in self.get_live_receivers(sender):
@@ -140,10 +140,10 @@ class EventPluginSignal(django.dispatch.Signal):
         if (
             not self.receivers
             or self.sender_receivers_cache.get(sender) is NO_RECEIVERS
-        ):  # pragma: no cover
+        ):
             return response
 
-        if not app_cache:  # pragma: no cover
+        if not app_cache:
             _populate_app_cache()
 
         for receiver in self.get_live_receivers(sender):

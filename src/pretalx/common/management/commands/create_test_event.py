@@ -227,7 +227,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
     def build_speaker(self):
         email = self.fake.user_name() + "@example.org"
         user = User.objects.filter(email__iexact=email).first()
-        if user:  # pragma: no cover
+        if user:
             speaker, _ = SpeakerProfile.objects.get_or_create(
                 user=user, event=self.event
             )
@@ -351,7 +351,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
                 Faker.seed(int(seed))
 
             self.fake = Faker()
-        except ImportError:  # pragma: no cover
+        except ImportError:
             self.stdout.write(
                 self.style.ERROR('Please run "pip install Faker" to use this command.')
             )
@@ -361,7 +361,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
             from freezegun import freeze_time  # noqa: PLC0415
 
             self.freeze_time = freeze_time
-        except ImportError:  # pragma: no cover
+        except ImportError:
             self.stdout.write(
                 self.style.ERROR(
                     'Please run "pip install freezegun" to use this command.'

@@ -81,7 +81,7 @@ class ActivityLog(models.Model):
         try:
             if not self.content_object:
                 return ""
-        except AttributeError:  # pragma: no cover
+        except AttributeError:
             # Content types are terrible, terrible magic
             return ""
 
