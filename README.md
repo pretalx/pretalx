@@ -242,7 +242,7 @@
 | src/pretalx/schedule/tasks.py                                              |        7 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/schedule/utils.py                                              |       14 |        0 |        8 |        0 |    100% |           |
 | src/pretalx/submission/apps.py                                             |        4 |        0 |        0 |        0 |    100% |           |
-| src/pretalx/submission/cards.py                                            |       84 |        1 |        8 |        1 |     98% |        34 |
+| src/pretalx/submission/cards.py                                            |       83 |        1 |        8 |        1 |     98% |        34 |
 | src/pretalx/submission/exporters.py                                        |       43 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/submission/forms/comment.py                                    |       18 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/submission/forms/feedback.py                                   |       25 |        0 |        4 |        0 |    100% |           |
@@ -368,7 +368,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **36635** | **1859** | **5730** |  **775** | **93%** |           |
+| **TOTAL**                                                                  | **36634** | **1859** | **5730** |  **775** | **93%** |           |
 
 
 ## Setup coverage badge
