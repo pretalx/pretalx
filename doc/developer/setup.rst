@@ -118,25 +118,8 @@ the Python and the JavaScript development servers::
 
     $ just run devserver
 
-.. _`checksandtests`:
-
-Code checks and unit tests
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-Before you check in your code into git, always run the static linters and style checkers::
-
-    $ just fmt
-
-Once you're done with those, run the tests::
-
-    $ just test
-
-Pytest, our test framework, has a lot of useful options, like ``--lf`` to repeat only failing
-tests, ``-k something`` to run only tests called ``*something*``, and ``-x`` to stop on the
-first breaking test.
-
-.. note:: If you have more than one CPU core and want to speed up the test suite, you can run
-          ``just test-parallel`` (with an optional ``NUM`` parameter to specify the number of
-          threads, which you can leave empty for an automatic choice.)
+For information on code checks, unit tests, and style guidelines, see the
+:doc:`contributing/code` documentation.
 
 Working with mails
 ^^^^^^^^^^^^^^^^^^

@@ -4,94 +4,67 @@
 Contributing Code to pretalx
 ============================
 
-Pull Request Workflow
----------------------
+pretalx is a fairly standard Django project. This page only lists the
+project-specific conventions and details that are easy to miss or get wrong.
 
-If you want to add some change to pretalx itself or its documentation, you can
-do so by opening a Pull Request on GitHub_.
+Backend
+-------
 
-If you are not familiar with GitHub, the workflow is basically this: You
-register an account on GitHub, then you “fork” pretalx, and work on your copy
-of it until you’re done. Then, you submit your changes as a Pull Request. We’ll
-review the PR and help you make any changes required to get it merged.  Have a
-look at the `GitHub documentation`_ and other documentation on git for further
-information.
+- Run ``just fmt`` before committing to auto-format and lint your code.
+- Mark all user-facing strings for **translation**, and avoid unnecessary
+  changes to existing translations, as they require manual re-translation in
+  all languages.
+- Do not put any CSS or JS inline in HTML templates, always use separate files,
+  to make sure your changes comply with our CSP headers.
+- All user input is validated and rendered through Django's form layer. Any new
+  input handling should use forms too.
+- When building a new feature with visible user impact, add it to
+  ``doc/changelog.rst``.
 
-We have tagged some issues as small_, and they are probably a good place to
-start. If you want to tackle an issue, please leave a comment to make sure
-nobody else will work on it in the meantime.
+Frontend
+--------
 
-We recommend that you create a branch for every issue you work on. While our
-continuous integration will run all tests and style checks against your PR, it
-makes sense for you to run the test suite locally first, to work on any
-problems ahead of time – but if you can’t figure out why tests are breaking,
-don’t hesitate to submit your PR regardless. We’ll help you figure it out.
+- pretalx is written in plain JS (no jQuery, no Bootstrap) and plain CSS,
+  though we have some CSS class conventions that are similar to Bootstrap.
+- Some libraries are vendored in ``src/pretalx/static/vendored``, most notably
+  HTMX. Use HTMX for interactive UI, and use Django template partials to reduce
+  code duplication in HTMX rendering.
+- JavaScript code should be modern – arrow functions, ``const``, template
+  literals, etc.
 
-We also expect **tests** and **documentation** to be included with Pull
-Requests if appropriate – if you’re not sure where to start on those, let us
-know, and we’ll help.
+Testing
+-------
 
-Style Guide
------------
+pretalx aims for 100% test coverage. Changes should be covered by tests – if
+an existing test covers similar ground, add assertions to it instead of writing
+a new test.
 
-Following a uniform style within a project makes it more maintainable. This
-goes doubly for projects with many contributors, such as open source projects,
-so we’d like to ask you to follow these style guide notes:
+Tests are function-based using pytest fixtures. Do not use test classes.
+Use ``pytest.mark.parametrize`` when you need to check multiple outcomes of the
+same scenario. Do not write docstrings for tests.
 
-Code
-~~~~
+If you need to set up reusable data, put it as a fixture into the
+``conftest.py``, or into the test file if it won't be used elsewhere.
 
-Generally, pretalx Python code follows `PEP8`_. We run ``flake8``, ``isort``
-and ``black`` as style checkers, so those should help you if you’re not sure
-how to format something. They are configured via the ``setup.cfg`` file in the
-``src`` directory, and can be run like this::
+Run tests with::
 
-    $ uv run isort .
-    $ uv run black .
-    $ uv run flake8 .
-    $ uv run djhtml -i .
+    $ just test
 
-While we enforce no strict line length, please try to keep your lines **below
-120 characters**. Other than that, we generally subscribe to the `Django
-project style guide`_.
+You can append all the standard pytest flags, like ``--lf`` to repeat only
+failing tests, ``-k something`` to run only tests called ``*something*``, and
+``-x`` to stop on the first breaking test.
 
-For JavaScript and (S)CSS files we follow the conventions established by
-prettier_, with 2 spaces for indentation in (S)CSS files and 4 spaces in
-JavaScript files::
+.. note:: If you have more than one CPU core and want to speed up the test
+          suite, you can run ``just test-parallel`` (with an optional ``NUM``
+          parameter to specify the number of threads, which you can leave
+          empty for an automatic choice.)
 
-    $ prettier --no-semi --write path/to/file
+Testing query counts
+~~~~~~~~~~~~~~~~~~~~
 
-Changes should be covered by tests. Our tests run with pytest, so please use
-their ``assert`` statement conventions.
-
-Remember to mark all user-facing strings for **translation**, and please avoid
-unnecessary changes to existing translations, as they require manual
-re-translation in all languages.
-
-Documentation
-~~~~~~~~~~~~~
-
-Documentation is written in Sphinx-style ReStructured Text format. Please wrap
-lines at 80 characters.
-
-If you are a native speaker: We’re always grateful for any improvements in
-phrasing and clarity, particularly in our documentation.
-
-Commit messages
-~~~~~~~~~~~~~~~
-
-Please wrap all lines of your commit messages at 72 characters at most – bonus
-points if your first line is no longer than 50 characters. If your commit
-message is longer than one line, the first line should be the subject, the
-second line should be empty, and the remainder should be text.
-
-If you want to address or close issues, please do so in the commit message
-body. ``Closes #123`` or ``Refs #123`` will close the issue or show the
-reference in the issue log on GitHub.
-
-.. _GitHub: https://github.com/pretalx/pretalx
-.. _GitHub documentation: https://docs.github.com/en/pull-requests
-.. _small: https://github.com/pretalx/pretalx/issues?q=is%3Aissue+is%3Aopen+label%3Asize%3Asmall
-.. _PEP8: https://legacy.python.org/dev/peps/pep-0008/
-.. _Django project style guide: https://docs.djangoproject.com/en/stable/internals/contributing/writing-code/coding-style/
-.. _prettier: https://prettier.io/
+It's easy to introduce N+1 queries in Django accidentally. To prevent this,
+many view tests use ``django_assert_num_queries``. Any test for a view that can
+contain multiple objects of the same type – like a list view, or a view showing
+multiple related objects (e.g. multiple speakers on a session page) – should be
+parametrized with ``item_count(1, 3)``. The test then generates that number of
+items and asserts a constant number of SQL queries regardless.
