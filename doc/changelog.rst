@@ -6,6 +6,7 @@
 Release Notes
 =============
 
+- :feature:`orga,2266` The session search and speaker search can now be set to full-text mode to include all built-in text fields in the search.
 - :feature:`orga,2185` The feedback list pages now use sortable table views with optional columns, consistent with other organiser list views.
 - :bug:`cfp` Access codes that do not specify session types no longer unlock session types that require an access code.
 - :feature:`orga:mail` Email sending errors from custom SMTP servers are now detected and reported in the organiser interface, where the sending can be retried.

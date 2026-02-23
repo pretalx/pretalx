@@ -144,6 +144,29 @@ def test_orga_can_miss_search_submissions(orga_client, event, submission):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    "field",
+    ("description", "abstract", "notes", "internal_notes"),
+)
+def test_fulltext_search_finds_submission_by_field(
+    orga_client, event, submission, field
+):
+    value = getattr(submission, field)
+    # Without fulltext, searching by description/abstract/notes should not find it
+    response = orga_client.get(
+        event.orga_urls.submissions + f"?q={value[:8]}", follow=True
+    )
+    assert response.status_code == 200
+    assert submission.title not in response.text
+    # With fulltext, it should find it
+    response = orga_client.get(
+        event.orga_urls.submissions + f"?q={value[:8]}&fulltext=on", follow=True
+    )
+    assert response.status_code == 200
+    assert submission.title in response.text
+
+
+@pytest.mark.django_db
 def test_orga_can_see_submission_404(orga_client, event, submission):
     response = orga_client.get(submission.orga_urls.base + "JJ", follow=True)
     assert response.status_code == 404

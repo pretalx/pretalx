@@ -71,7 +71,15 @@
     margin-bottom: 0;
   }
 }
-#pending .form-group-inline {
+#pending .form-group-inline,
+#fulltext-toggle .form-group-inline {
   flex-direction: row;
   align-items: center;
+}
+#fulltext-toggle .form-group {
+  margin-bottom: 0;
+}
+#fulltext-toggle label {
+  display: inline-block;
+  color: #6c757d;
 }
