@@ -35,17 +35,13 @@ class UploadedFileField(serializers.Field):
                 file__isnull=False,
                 pk=data[len("file:") :],
             )
-        except (
-            ValidationError,
-            IndexError,
-            CachedFile.DoesNotExist,
-        ):  # pragma: no cover
+        except (ValidationError, IndexError, CachedFile.DoesNotExist):
             self.fail("not_found")
 
         if self.allowed_types and cf.type not in self.allowed_types:
-            self.fail("invalid_type")  # pragma: no cover
+            self.fail("invalid_type")
         if self.max_size and cf.file.size > self.max_size:
-            self.fail("size")  # pragma: no cover
+            self.fail("size")
 
         return cf.file
 
@@ -56,6 +52,6 @@ class UploadedFileField(serializers.Field):
         try:
             url = value.url
             request = self.context["request"]
-        except (AttributeError, KeyError):  # pragma: no cover
+        except (AttributeError, KeyError):
             return None
         return request.build_absolute_uri(url)

@@ -90,7 +90,7 @@ class MultiDomainMiddleware:
         if settings.DEBUG or domain in LOCAL_HOST_NAMES:
             return None
 
-        if request.path.startswith("/orga"):  # pragma: no cover
+        if request.path.startswith("/orga"):
             return redirect(urljoin(settings.SITE_URL, request.get_full_path()))
 
         # If this domain is used as custom domain, but we are trying to view a
@@ -150,7 +150,7 @@ class SessionMiddleware(BaseSessionMiddleware):
             accessed = request.session.accessed
             modified = request.session.modified
             empty = request.session.is_empty()
-        except AttributeError:  # pragma: no cover
+        except AttributeError:
             pass
         else:
             # First check if we need to delete this cookie.
@@ -172,7 +172,7 @@ class SessionMiddleware(BaseSessionMiddleware):
                 if response.status_code != 500:
                     try:
                         request.session.save()
-                    except UpdateError:  # pragma: no cover
+                    except UpdateError:
                         request.session.create()
                     response.set_cookie(
                         settings.SESSION_COOKIE_NAME,

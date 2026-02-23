@@ -150,7 +150,7 @@ def dump_content(destination, path, getter):
     if file_path.endswith("/"):
         file_path += "index.html"
     file_path = (destination / file_path.lstrip("/")).resolve()
-    if destination not in file_path.parents:  # pragma: no cover
+    if destination not in file_path.parents:
         raise CommandError("Path traversal detected, aborting.")
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -177,7 +177,7 @@ def get_mediastatic_content(url):
         path in local_path.parents
         for path in (settings.MEDIA_ROOT, settings.STATIC_ROOT)
     ):
-        raise FileNotFoundError  # pragma: no cover
+        raise FileNotFoundError
 
     with local_path.open("rb") as media_file:
         return media_file.read()

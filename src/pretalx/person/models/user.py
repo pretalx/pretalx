@@ -281,9 +281,7 @@ class User(
         from pretalx.submission.models import Answer  # noqa: PLC0415
 
         self.email = f"deleted_user_{random.randint(0, 999)}@localhost"  # noqa: S311  -- non-security random for unique email
-        while self.__class__.objects.filter(
-            email__iexact=self.email
-        ).exists():  # pragma: no cover
+        while self.__class__.objects.filter(email__iexact=self.email).exists():
             self.email = f"deleted_user_{random.randint(0, 99999)}"  # noqa: S311  -- non-security random for unique email
         self.name = "Deleted User"
         self.is_active = False

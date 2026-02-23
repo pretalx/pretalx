@@ -38,7 +38,7 @@ def test_schedule_xsd_is_up_to_date():
         "GET",
         "https://raw.githubusercontent.com/voc/schedule/master/validator/xsd/schedule.xml.xsd",
     )
-    if response.status == 429:  # pragma: no cover
+    if response.status == 429:
         # don’t fail tests on rate limits
         return
     assert response.status == 200
@@ -61,7 +61,7 @@ def test_schedule_json_schema_is_up_to_date():
         "GET",
         "https://raw.githubusercontent.com/voc/schedule/master/validator/json/schema.json",
     )
-    if response.status == 429:  # pragma: no cover
+    if response.status == 429:
         # don’t fail tests on rate limits
         return
     assert response.status == 200

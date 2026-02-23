@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 class CustomSMTPBackend(EmailBackend):
     def test(self, from_addr):
-        try:  # pragma: no cover
+        try:
             self.open()
             self.connection.ehlo_or_helo_if_needed()
             code, resp = self.connection.mail(from_addr, [])
@@ -121,7 +121,7 @@ def mail_send_task(
         backend = event.get_mail_backend()
 
         sender = settings.MAIL_FROM
-        if event.mail_settings["smtp_use_custom"]:  # pragma: no cover
+        if event.mail_settings["smtp_use_custom"]:
             sender = event.mail_settings["mail_from"] or sender
 
         reply_to = reply_to or event.mail_settings["reply_to"]

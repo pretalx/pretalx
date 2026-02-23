@@ -60,7 +60,7 @@ def request_callback_not_updatable(request):
     return 200, {"Content-Type": "text/json"}, json.dumps(resp_body)
 
 
-def request_callback_disallowed(request):  # pragma: no cover
+def request_callback_disallowed(request):
     pytest.fail("Request issued even though none should be issued.")
 
 

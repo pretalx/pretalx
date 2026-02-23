@@ -272,7 +272,7 @@ class SpeakerPasswordReset(SpeakerViewMixin, ActionConfirmMixin, DetailView):
                     orga=False,
                 )
                 messages.success(self.request, phrases.orga.password_reset_success)
-        except SendMailException:  # pragma: no cover
+        except SendMailException:
             messages.error(self.request, phrases.orga.password_reset_fail)
         return redirect(speaker.orga_urls.base)
 
