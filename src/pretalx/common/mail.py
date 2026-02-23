@@ -60,6 +60,28 @@ DEBUG_DOMAINS = [
 ]
 
 
+def _mark_mail_sent(queued_mail_id):
+    from pretalx.mail.models import QueuedMail  # noqa: PLC0415
+
+    try:
+        mail = QueuedMail.objects.get(pk=queued_mail_id)
+    except QueuedMail.DoesNotExist:
+        logger.warning("QueuedMail %s not found for marking as sent", queued_mail_id)
+        return
+    mail.mark_sent()
+
+
+def _mark_mail_failed(queued_mail_id, exception):
+    from pretalx.mail.models import QueuedMail  # noqa: PLC0415
+
+    try:
+        mail = QueuedMail.objects.get(pk=queued_mail_id)
+    except QueuedMail.DoesNotExist:
+        logger.warning("QueuedMail %s not found for marking as failed", queued_mail_id)
+        return
+    mail.mark_failed(exception)
+
+
 @app.task(bind=True, name="pretalx.common.send_mail")
 def mail_send_task(
     self,
@@ -73,6 +95,7 @@ def mail_send_task(
     bcc=None,
     headers=None,
     attachments=None,
+    queued_mail_id=None,
 ):
     if isinstance(to, str):
         to = [to]
@@ -149,17 +172,32 @@ def mail_send_task(
 
     try:
         backend.send_messages([email])
-    except SMTPResponseException as exception:  # pragma: no cover
+    except SMTPResponseException as exception:
         # Retry on external problems: Connection issues (101, 111), timeouts (421), filled-up mailboxes (422),
         # out of memory (431), network issues (442), another timeout (447), or too many mails sent (452)
         if exception.smtp_code in (101, 111, 421, 422, 431, 442, 447, 452):
-            self.retry(max_retries=5, countdown=2 ** (self.request.retries * 2))
+            try:
+                self.retry(max_retries=5, countdown=2 ** (self.request.retries * 2))
+            except self.MaxRetriesExceededError:
+                if queued_mail_id:
+                    _mark_mail_failed(queued_mail_id, exception)
+                    return
+                raise
         logger.exception("Error sending email")
+        if queued_mail_id:
+            _mark_mail_failed(queued_mail_id, exception)
+            return
         raise SendMailException(
             f"Failed to send an email to {to}: {exception}"
         ) from exception
-    except Exception as exception:  # pragma: no cover
+    except Exception as exception:
         logger.exception("Error sending email")
+        if queued_mail_id:
+            _mark_mail_failed(queued_mail_id, exception)
+            return
         raise SendMailException(
             f"Failed to send an email to {to}: {exception}"
         ) from exception
+    else:
+        if queued_mail_id:
+            _mark_mail_sent(queued_mail_id)

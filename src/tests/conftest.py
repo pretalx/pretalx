@@ -936,6 +936,7 @@ def sent_mail(mail_template, speaker, event):
     with scope(event=event):
         mail = mail_template.to_mail(speaker, event)
         mail.send()
+        mail.refresh_from_db()
         return mail
 
 
