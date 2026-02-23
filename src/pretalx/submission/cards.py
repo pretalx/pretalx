@@ -33,13 +33,17 @@ def _text(text, max_length=None):
     if not text:
         return ""
 
-    # add an almost-invisible space &hairsp; after hyphens as word-wrap in ReportLab only works on space chars
-    text = conditional_escape(text).replace("-", "-&hairsp;")
     # Reportlab does not support unicode combination characters
     text = unicodedata.normalize("NFC", text)
 
+    # Truncate before HTML-escaping to avoid splitting HTML entities (e.g.
+    # an apostrophe escaped as &#x27;) which would produce invalid XML for
+    # ReportLab's Paragraph parser.
     if max_length and len(text) > max_length:
-        return text[: max_length - 1] + "…"
+        text = text[: max_length - 1] + "…"
+
+    # add an almost-invisible space &hairsp; after hyphens as word-wrap in ReportLab only works on space chars
+    text = conditional_escape(text).replace("-", "-&hairsp;")
     return text
 
 
