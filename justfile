@@ -231,6 +231,12 @@ test-parallel n="auto" *args:
 test-coverage *args:
     just test --cov=src --cov-report=term-missing:skip-covered --cov-config=pyproject.toml "$@"
 
+# Run tests for a given app and filter the coverage report
+[group('tests')]
+[positional-arguments]
+test-app-coverage app="" *args:
+    shift; {{ uv_dev }} pytest --cov=src --cov-report=term-missing:skip-covered --cov-config=pyproject.toml src/tests/{{ app }} "$@" | ag "/{{ app }}/"
+
 # Show test coverage report in browser
 [group('tests')]
 test-coverage-report: test-coverage
