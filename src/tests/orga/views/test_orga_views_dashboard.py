@@ -138,7 +138,7 @@ def test_event_dashboard_with_talks(
     with scope(event=event):
         event.cfp.deadline = now()
         event.save()
-    expected_queries = 34
+    expected_queries = 33
     with django_assert_num_queries(expected_queries):
         response = orga_client.get(event.orga_urls.base)
     assert response.status_code == 200

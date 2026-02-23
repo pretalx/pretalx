@@ -505,7 +505,7 @@ def test_all_questions_in_list(
         with scope(event=event):
             inactive_question.delete()
 
-    with django_assert_num_queries(23):
+    with django_assert_num_queries(22):
         response = orga_client.get(event.cfp.urls.questions, follow=True)
     assert response.status_code == 200
     assert question.question in response.text
@@ -527,7 +527,7 @@ def test_submission_type_list_num_queries(
         with scope(event=event):
             submission_type.delete()
 
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(19):
         response = orga_client.get(event.cfp.urls.types)
     assert response.status_code == 200
     assert str(default_submission_type.name) in response.text
@@ -941,7 +941,7 @@ def test_can_see_tracks(
         with scope(event=event):
             Track.objects.create(event=event, name="Other Track", color="#ff0000")
 
-    with django_assert_num_queries(19):
+    with django_assert_num_queries(18):
         response = orga_client.get(event.cfp.urls.tracks)
     assert response.status_code == 200
     assert str(track.name) in response.text
@@ -1024,7 +1024,7 @@ def test_can_see_access_codes(
     if item_count == 2:
         SubmitterAccessCode.objects.create(event=event, code="OTHERCODE")
 
-    with django_assert_num_queries(21):
+    with django_assert_num_queries(20):
         response = orga_client.get(event.cfp.urls.access_codes)
     assert response.status_code == 200
     assert access_code.code in response.text

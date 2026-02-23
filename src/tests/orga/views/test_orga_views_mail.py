@@ -3,9 +3,15 @@
 
 import pytest
 from django.core import mail as djmail
+from django.urls import reverse
 from django_scopes import scope
 
-from pretalx.mail.models import MailTemplate, MailTemplateRoles, QueuedMail
+from pretalx.mail.models import (
+    MailTemplate,
+    MailTemplateRoles,
+    QueuedMail,
+    QueuedMailStates,
+)
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import Submission, SubmissionStates
 
@@ -19,7 +25,7 @@ def test_orga_can_view_pending_mails(
         with scope(event=event):
             other_mail.delete()
 
-    with django_assert_num_queries(26):
+    with django_assert_num_queries(27):
         response = orga_client.get(event.orga_urls.outbox)
     assert response.status_code == 200
     assert mail.subject in response.text
@@ -159,53 +165,53 @@ def test_orga_cannot_edit_sent_mail(orga_client, event, sent_mail):
 @pytest.mark.django_db
 def test_orga_can_send_all_mails(orga_client, event, mail, other_mail, sent_mail):
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 2
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 2
     response = orga_client.get(event.orga_urls.send_outbox, follow=True)
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 2
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 2
     response = orga_client.post(event.orga_urls.send_outbox, follow=True)
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
 
 
 @pytest.mark.django_db
 def test_orga_can_send_single_mail(orga_client, event, mail, other_mail):
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 2
-    response = orga_client.get(mail.urls.send, follow=True)
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 2
+    response = orga_client.post(mail.urls.send, follow=True)
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 1
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 1
 
 
 @pytest.mark.django_db
 def test_orga_cannot_send_single_wrong_mail(orga_client, event, mail, other_mail):
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 2
-    response = orga_client.get(
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 2
+    response = orga_client.post(
         mail.urls.send.replace(str(mail.pk), str(mail.pk + 100)), follow=True
     )
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 2
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 2
 
 
 @pytest.mark.django_db
 def test_orga_can_discard_all_mails(orga_client, event, mail, other_mail, sent_mail):
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 2
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 2
         assert QueuedMail.objects.count() == 3
     response = orga_client.get(event.orga_urls.purge_outbox, follow=True)
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 2
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 2
         assert QueuedMail.objects.count() == 3
     response = orga_client.post(event.orga_urls.purge_outbox, follow=True)
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
         assert QueuedMail.objects.count() == 1
 
 
@@ -219,7 +225,7 @@ def test_orga_can_discard_all_mails_by_template(
     response = orga_client.post(mail.urls.delete + "?all=true", follow=True)
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
         assert QueuedMail.objects.count() == 1
 
 
@@ -244,14 +250,14 @@ def test_orga_can_discard_single_mail(orga_client, event, mail, other_mail):
 @pytest.mark.django_db
 def test_orga_cannot_send_sent_mail(orga_client, event, sent_mail):
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=False).count() == 1
-    response = orga_client.get(sent_mail.urls.send, follow=True)
+        assert QueuedMail.objects.filter(state=QueuedMailStates.SENT).count() == 1
+    response = orga_client.post(sent_mail.urls.send, follow=True)
     before = sent_mail.sent
     sent_mail.refresh_from_db()
     assert sent_mail.sent == before
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=False).count() == 1
+        assert QueuedMail.objects.filter(state=QueuedMailStates.SENT).count() == 1
 
 
 @pytest.mark.django_db
@@ -288,7 +294,7 @@ def test_orga_can_view_templates(
                 reply_to="orga@orga.org",
             )
 
-    with django_assert_num_queries(19):
+    with django_assert_num_queries(18):
         response = orga_client.get(event.orga_urls.mail_templates, follow=True)
     assert response.status_code == 200
     assert mail_template.subject in response.text
@@ -400,7 +406,7 @@ def test_orga_can_compose_single_mail_team(orga_client, review_user, event):
     assert response.status_code == 200
     djmail.outbox = []
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=False).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.SENT).count() == 0
     response = orga_client.post(
         event.orga_urls.compose_mails_teams,
         follow=True,
@@ -412,7 +418,7 @@ def test_orga_can_compose_single_mail_team(orga_client, review_user, event):
     )
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=False).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.SENT).count() == 0
         assert len(djmail.outbox) == 1
         mail = djmail.outbox[0]
         assert mail.subject == f"foo {review_user.name}"
@@ -427,7 +433,7 @@ def test_orga_can_compose_single_mail_team_by_pk(
     assert team in event.teams.all()
     djmail.outbox = []
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=False).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.SENT).count() == 0
     response = orga_client.post(
         event.orga_urls.compose_mails_teams,
         follow=True,
@@ -439,7 +445,7 @@ def test_orga_can_compose_single_mail_team_by_pk(
     )
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=False).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.SENT).count() == 0
         assert len(djmail.outbox) == 2
         for user in (orga_user, review_user):
             mail = next(m for m in djmail.outbox if m.subject == f"foo {user.name}")
@@ -456,7 +462,7 @@ def test_orga_can_compose_single_mail(
     )
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
         other_submission.accept()
     response = orga_client.post(
         event.orga_urls.compose_mails_sessions,
@@ -472,7 +478,7 @@ def test_orga_can_compose_single_mail(
     )
     assert response.status_code == 200
     with scope(event=event):
-        mails = QueuedMail.objects.filter(sent__isnull=True)
+        mails = QueuedMail.objects.filter(state=QueuedMailStates.DRAFT)
         assert mails.count() == 2  # one of them is the accept mail!
         mail = next(m for m in mails if m.subject == f"foo {speaker.name}")
         assert mail.text == f"bar {submission.title}"
@@ -483,7 +489,7 @@ def test_orga_can_compose_single_mail_multiple_states_and_failing_placeholders(
     orga_client, orga_user, event, slot, other_submission
 ):
     with scope(event=event):
-        QueuedMail.objects.filter(sent__isnull=True).delete()
+        QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).delete()
     response = orga_client.post(
         event.orga_urls.compose_mails_sessions,
         follow=True,
@@ -499,10 +505,10 @@ def test_orga_can_compose_single_mail_multiple_states_and_failing_placeholders(
     assert response.status_code == 200
     with scope(event=event):
         assert (
-            QueuedMail.objects.filter(sent__isnull=True).count() == 1
+            QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 1
         )  # only one, the other fails for lack of a room name!
         assert (
-            QueuedMail.objects.filter(sent__isnull=True).first().text
+            QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).first().text
             == f"bar {slot.room.name}"
         )
 
@@ -512,7 +518,7 @@ def test_orga_can_compose_single_mail_with_specific_submission(
     orga_client, speaker, event, slot, other_submission
 ):
     with scope(event=event):
-        QueuedMail.objects.filter(sent__isnull=True).delete()
+        QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).delete()
     response = orga_client.post(
         event.orga_urls.compose_mails_sessions,
         follow=True,
@@ -528,7 +534,7 @@ def test_orga_can_compose_single_mail_with_specific_submission(
     )
     assert response.status_code == 200
     with scope(event=event):
-        mails = QueuedMail.objects.filter(sent__isnull=True)
+        mails = QueuedMail.objects.filter(state=QueuedMailStates.DRAFT)
         assert mails.count() == 2
         for title in (slot.submission.title, other_submission.title):
             mail = next(m for m in mails if m.text == f"bar {title}")
@@ -558,8 +564,8 @@ def test_orga_can_compose_single_mail_with_specific_submission_immediately(
     )
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
-        assert QueuedMail.objects.filter(sent__isnull=False).count() == 2
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.SENT).count() == 2
         assert len(djmail.outbox) == 2
         for title in (slot.submission.title, other_submission.title):
             mail = next(m for m in djmail.outbox if m.body == f"bar {title}")
@@ -572,7 +578,7 @@ def test_orga_can_compose_mail_for_track(orga_client, event, submission, track):
         submission.track = track
         submission.save()
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
     response = orga_client.post(
         event.orga_urls.compose_mails_sessions,
         follow=True,
@@ -587,7 +593,7 @@ def test_orga_can_compose_mail_for_track(orga_client, event, submission, track):
     )
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 1
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 1
 
 
 @pytest.mark.django_db
@@ -598,7 +604,7 @@ def test_orga_can_compose_mail_for_submission_type(orga_client, event, submissio
     )
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
     response = orga_client.post(
         event.orga_urls.compose_mails_sessions,
         follow=True,
@@ -613,7 +619,7 @@ def test_orga_can_compose_mail_for_submission_type(orga_client, event, submissio
     )
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 1
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 1
 
 
 @pytest.mark.django_db
@@ -629,7 +635,7 @@ def test_orga_can_compose_mail_for_track_and_type_no_doubles(
     )
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
     response = orga_client.post(
         event.orga_urls.compose_mails_sessions,
         follow=True,
@@ -645,7 +651,7 @@ def test_orga_can_compose_mail_for_track_and_type_no_doubles(
     )
     assert response.status_code == 200
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 1
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 1
 
 
 @pytest.mark.django_db
@@ -653,7 +659,7 @@ def test_orga_can_compose_single_mail_selected_submissions(
     orga_client, event, submission, other_submission
 ):
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
     response = orga_client.post(
         event.orga_urls.compose_mails_sessions,
         follow=True,
@@ -668,7 +674,7 @@ def test_orga_can_compose_single_mail_selected_submissions(
     )
     assert response.status_code == 200
     with scope(event=event):
-        mails = list(QueuedMail.objects.filter(sent__isnull=True))
+        mails = list(QueuedMail.objects.filter(state=QueuedMailStates.DRAFT))
         assert len(mails) == 1
         assert not mails[0].to
         assert list(mails[0].to_users.all()) == [other_submission.speakers.first().user]
@@ -682,7 +688,7 @@ def test_orga_compose_mail_without_recipients_fails(
     other_submission,
 ):
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 0
     response = orga_client.post(
         event.orga_urls.compose_mails_sessions,
         follow=True,
@@ -698,7 +704,8 @@ def test_orga_compose_mail_without_recipients_fails(
     assert "at least one filter" in response.content.decode()
     assert len(djmail.outbox) == 0
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 0
+        mails = list(QueuedMail.objects.filter(state=QueuedMailStates.DRAFT))
+        assert len(mails) == 2
 
 
 @pytest.mark.django_db
@@ -706,7 +713,7 @@ def test_orga_can_compose_mail_to_confirmed_speakers(
     orga_client, event, orga_user, slot, confirmed_submission
 ):
     with scope(event=event):
-        assert QueuedMail.objects.filter(sent__isnull=True).count() == 1
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 1
     response = orga_client.post(
         event.orga_urls.compose_mails_sessions,
         follow=True,
@@ -721,7 +728,7 @@ def test_orga_can_compose_mail_to_confirmed_speakers(
     )
     assert response.status_code == 200
     with scope(event=event):
-        mails = list(QueuedMail.objects.filter(sent__isnull=True))
+        mails = list(QueuedMail.objects.filter(state=QueuedMailStates.DRAFT))
         assert len(mails) == 2
         assert not mails[-1].to
         assert list(mails[-1].to_users.all()) == [
@@ -863,3 +870,73 @@ def test_orga_can_send_draft_reminder(orga_client, event, speaker):
     assert response.status_code == 200
     assert len(djmail.outbox) == 1
     assert draft.title in djmail.outbox[0].body
+
+
+@pytest.mark.django_db
+def test_sending_status_bulk_endpoint(orga_client, event, mail, other_mail):
+    with scope(event=event):
+        mail.state = QueuedMailStates.SENDING
+        mail.save()
+    url = reverse(
+        "orga:mails.sending_status",
+        kwargs={"event": event.slug},
+    )
+    response = orga_client.get(url, {"ids": f"{mail.pk},{other_mail.pk}"})
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert f"mail-status-{mail.pk}" in content
+    assert "Sending" in content
+    assert "HX-Trigger" not in response.headers
+
+
+@pytest.mark.django_db
+def test_sending_status_stops_polling_when_done(orga_client, event, sent_mail):
+    url = reverse(
+        "orga:mails.sending_status",
+        kwargs={"event": event.slug},
+    )
+    response = orga_client.get(url, {"ids": str(sent_mail.pk)})
+    assert response.status_code == 286
+    assert response.headers.get("HX-Trigger") == "updateSidebarCount"
+
+
+@pytest.mark.django_db
+def test_outbox_shows_failed_count(orga_client, event, mail):
+    with scope(event=event):
+        mail.error_data = {"error": "SMTP auth failed", "type": "Exception"}
+        mail.save()
+    response = orga_client.get(event.orga_urls.outbox)
+    assert response.status_code == 200
+    assert "failed to send" in response.content.decode()
+    assert "Retry all failed" in response.content.decode()
+    assert "Show failed" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_outbox_status_filter(orga_client, event, mail, other_mail):
+    with scope(event=event):
+        mail.error_data = {"error": "SMTP auth failed", "type": "Exception"}
+        mail.save()
+    response = orga_client.get(event.orga_urls.outbox + "?status=failed")
+    assert response.status_code == 200
+    assert mail.subject in response.text
+    response = orga_client.get(event.orga_urls.outbox + "?status=draft")
+    assert response.status_code == 200
+    assert other_mail.subject in response.text
+
+
+@pytest.mark.django_db
+def test_retry_all_failed(orga_client, event, mail, other_mail):
+    with scope(event=event):
+        mail.error_data = {"error": "SMTP auth failed", "type": "Exception"}
+        mail.save()
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 2
+    response = orga_client.post(
+        event.orga_urls.send_outbox + "?failed_only=1", follow=True
+    )
+    assert response.status_code == 200
+    with scope(event=event):
+        # Only the failed mail should have been sent, the other stays draft
+        assert QueuedMail.objects.filter(state=QueuedMailStates.DRAFT).count() == 1
+        other_mail.refresh_from_db()
+        assert other_mail.state == QueuedMailStates.DRAFT

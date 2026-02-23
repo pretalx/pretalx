@@ -918,7 +918,7 @@ def test_event_history_num_queries(
                 action_type="pretalx.submission.update",
             )
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(17):
         response = orga_client.get(event.orga_urls.history)
     assert response.status_code == 200
     assert "History" in response.text or "Activity" in response.text
