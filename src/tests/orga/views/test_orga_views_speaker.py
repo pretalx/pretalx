@@ -45,7 +45,7 @@ def test_speaker_list_num_queries(
             other_profile.save()
             other_profile.delete()
 
-    with django_assert_num_queries(22):
+    with django_assert_num_queries(21):
         response = orga_client.get(event.orga_urls.speakers)
     assert response.status_code == 200
     assert speaker_profile.get_display_name() in response.text
@@ -61,7 +61,7 @@ def test_orga_can_access_speaker_page(
     # caches results in memory. Prior tests can populate this cache, saving
     # a query and making the count flaky without this reset.
     ContentType.objects.clear_cache()
-    with django_assert_num_queries(23):
+    with django_assert_num_queries(22):
         response = orga_client.get(url, follow=True)
     assert response.status_code == 200
     assert speaker_profile.name in response.text
@@ -333,7 +333,7 @@ def test_speaker_information_list_num_queries(
                 event=event, title="Second Info", text="Also important"
             )
 
-    with django_assert_num_queries(21):
+    with django_assert_num_queries(20):
         response = orga_client.get(event.orga_urls.information)
     assert response.status_code == 200
     assert information.title in response.text

@@ -502,6 +502,10 @@ h2 .user-name-display img {
   content: ", ";
 }
 
+.sidebar-notification-wrapper {
+  margin-left: auto;
+
+}
 .sidebar-notification {
   background: var(--color-warning);
   color: var(--color-grey-lightest);
@@ -514,7 +518,6 @@ h2 .user-name-display img {
   justify-content: center;
   align-items: center;
   font-weight: bold;
-  margin-left: auto;
   padding: 5px;
   &.small {
     width: 8px;

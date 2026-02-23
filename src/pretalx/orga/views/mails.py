@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.contrib import messages
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
@@ -681,3 +682,43 @@ class MailTemplateView(OrgaCRUDView):
         if self.action == "create":
             return _("New email template")
         return _("Email templates")
+
+
+class MailSendingStatus(EventPermissionRequired, View):
+    permission_required = "mail.list_queuedmail"
+
+    def get(self, request, *args, **kwargs):
+        ids_param = request.GET.get("ids", "")
+        pks = [int(pk) for pk in ids_param.split(",") if pk.isdigit()]
+        if not pks:
+            return HttpResponse(status=286)
+        mails = list(request.event.queued_mails.filter(pk__in=pks))
+        html = render_to_string(
+            "orga/mails/includes/bulk_status_fragment.html",
+            {"mails": mails},
+            request=request,
+        )
+        still_sending = any(m.state == QueuedMailStates.SENDING for m in mails)
+        status = 200 if still_sending else 286
+        response = HttpResponse(html, status=status)
+        if not still_sending:
+            response["HX-Trigger"] = "updateSidebarCount"
+        return response
+
+
+class MailSidebarCount(EventPermissionRequired, View):
+    permission_required = "mail.list_queuedmail"
+
+    def get(self, request, *args, **kwargs):
+        counts = request.event.queued_mails.filter(
+            state=QueuedMailStates.DRAFT
+        ).aggregate(
+            pending_count=Count("pk"),
+            failed_count=Count("pk", filter=Q(error_data__isnull=False)),
+        )
+        html = render_to_string(
+            "orga/mails/sidebar_count_fragment.html",
+            counts,
+            request=request,
+        )
+        return HttpResponse(html)

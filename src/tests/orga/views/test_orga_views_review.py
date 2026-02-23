@@ -7,6 +7,7 @@ import tempfile
 import pytest
 from django_scopes import scope
 
+from pretalx.mail.models import QueuedMailStates
 from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import Submission
 from pretalx.submission.models.question import QuestionRequired
@@ -514,7 +515,7 @@ def test_orga_can_regenerate_emails(
 
     with scope(event=event):
         assert (
-            event.queued_mails.filter(sent__isnull=True).count() == 2
+            event.queued_mails.filter(state=QueuedMailStates.DRAFT).count() == 2
         )  # One for the accepted, one for the rejected, none for the submitted
 
 
