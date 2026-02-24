@@ -15,7 +15,9 @@ from tests.factories import (
     SubmissionFactory,
     TagFactory,
     TalkSlotFactory,
+    TeamFactory,
     TrackFactory,
+    UserFactory,
 )
 
 
@@ -23,6 +25,17 @@ from tests.factories import (
 def event():
     with scopes_disabled():
         return EventFactory()
+
+
+@pytest.fixture
+def user_with_event():
+    """A user with a team membership granting organiser access to an event,
+    returning (user, event)."""
+    event = EventFactory()
+    team = TeamFactory(organiser=event.organiser, all_events=True)
+    user = UserFactory()
+    team.members.add(user)
+    return user, event
 
 
 @pytest.fixture
