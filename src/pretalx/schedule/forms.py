@@ -58,11 +58,9 @@ class RoomForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
-        availabilities = self.cleaned_data.get("availabilities")
-
-        if availabilities is not None:
-            Availability.replace_for_instance(instance, availabilities)
-
+        Availability.replace_for_instance(
+            instance, self.cleaned_data.get("availabilities", [])
+        )
         return instance
 
     class Meta:

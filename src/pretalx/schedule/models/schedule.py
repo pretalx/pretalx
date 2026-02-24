@@ -125,7 +125,9 @@ class Schedule(PretalxModel):
         :class:`~pretalx.schedule.models.slot.TalkSlot` objects in this
         schedule.
         """
-        from pretalx.submission.models import Submission  # noqa: PLC0415
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            Submission,
+        )
 
         return Submission.objects.filter(
             id__in=self.scheduled_talks.values_list("submission", flat=True)
@@ -138,50 +140,6 @@ class Schedule(PretalxModel):
         if self.published:
             queryset = queryset.filter(published__lt=self.published)
         return queryset.order_by("-published").first()
-
-    def _handle_submission_move(self, submission, old_slots, new_slots):
-        new = []
-        canceled = []
-        moved = []
-        all_old_slots = [
-            slot for slot in old_slots.values() if slot.submission_id == submission.pk
-        ]
-        all_new_slots = [
-            slot for slot in new_slots.values() if slot.submission_id == submission.pk
-        ]
-        old_slots = [
-            slot
-            for slot in all_old_slots
-            if not any(slot.is_same_slot(other_slot) for other_slot in all_new_slots)
-        ]
-        new_slots = [
-            slot
-            for slot in all_new_slots
-            if not any(slot.is_same_slot(other_slot) for other_slot in all_old_slots)
-        ]
-        diff = len(old_slots) - len(new_slots)
-        if diff > 0:
-            canceled = old_slots[:diff]
-            old_slots = old_slots[diff:]
-        elif diff < 0:
-            diff = -diff
-            new = new_slots[:diff]
-            new_slots = new_slots[diff:]
-        for move in zip(old_slots, new_slots, strict=False):
-            old_slot = move[0]
-            new_slot = move[1]
-            moved.append(
-                {
-                    "submission": new_slot.submission,
-                    "old_start": old_slot.local_start,
-                    "new_start": new_slot.local_start,
-                    "old_room": old_slot.room,
-                    "new_room": new_slot.room,
-                    "new_info": str(new_slot.room.speaker_info),
-                    "new_slot": new_slot,
-                }
-            )
-        return new, canceled, moved
 
     @cached_property
     def changes(self) -> dict:
@@ -200,7 +158,9 @@ class Schedule(PretalxModel):
 
     @cached_property
     def use_room_availabilities(self):
-        from pretalx.schedule.models import Availability  # noqa: PLC0415
+        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
+            Availability,
+        )
 
         return Availability.objects.filter(
             room__isnull=False, event=self.event
@@ -213,7 +173,9 @@ class Schedule(PretalxModel):
         ``speaker``, for now) and a ``message`` fit for public display.
         This property only shows availability based warnings.
         """
-        from pretalx.schedule.models import TalkSlot  # noqa: PLC0415
+        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
+            TalkSlot,
+        )
 
         if not talk.start or not talk.submission or not talk.room:
             return []
@@ -354,7 +316,9 @@ class Schedule(PretalxModel):
         visible due to their unconfirmed status, and ``no_track`` are
         submissions without a track in a conference that uses tracks.
         """
-        from pretalx.submission.models import SubmissionStates  # noqa: PLC0415
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            SubmissionStates,
+        )
 
         talks = self.talks.filter(submission__isnull=False)
         warnings = {
@@ -382,7 +346,9 @@ class Schedule(PretalxModel):
         """
         result = {}
         if self.changes["action"] == "create":
-            from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
+            from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
+                SpeakerProfile,
+            )
 
             for speaker in SpeakerProfile.objects.filter(
                 submissions__slots__schedule=self
@@ -411,7 +377,9 @@ class Schedule(PretalxModel):
     def generate_notifications(self, save=False):
         """A list of unsaved :class:`~pretalx.mail.models.QueuedMail` objects
         to be sent on schedule release."""
-        from pretalx.mail.models import MailTemplateRoles  # noqa: PLC0415
+        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+            MailTemplateRoles,
+        )
 
         mails = []
         for speaker, data in self.speakers_concerned.items():
