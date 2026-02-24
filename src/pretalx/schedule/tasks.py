@@ -8,8 +8,8 @@ from pretalx.celery_app import app
 
 @app.task(name="pretalx.schedule.update_unreleased_schedule_changes")
 def task_update_unreleased_schedule_changes(event=None, value=None):
-    from pretalx.event.models import Event  # noqa: PLC0415
-    from pretalx.schedule.services import (  # noqa: PLC0415
+    from pretalx.event.models import Event  # noqa: PLC0415 -- avoid circular import
+    from pretalx.schedule.services import (  # noqa: PLC0415 -- avoid circular import
         update_unreleased_schedule_changes,
     )
 

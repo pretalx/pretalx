@@ -116,6 +116,8 @@ class Room(OrderedModel, PretalxModel):
 
     @cached_property
     def full_availability(self):
-        from pretalx.schedule.models import Availability  # noqa: PLC0415
+        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
+            Availability,
+        )
 
         return Availability.union(self.availabilities.all())

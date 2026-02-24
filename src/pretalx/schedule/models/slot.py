@@ -37,7 +37,7 @@ class SlotType(models.TextChoices):
 
 class TalkSlotQuerySet(models.QuerySet):
     def with_sorted_speakers(self):
-        from pretalx.submission.models.submission import (  # noqa: PLC0415
+        from pretalx.submission.models.submission import (  # noqa: PLC0415 -- avoid circular import
             sorted_speakers_prefetch,
         )
 
@@ -145,7 +145,7 @@ class TalkSlot(PretalxModel):
     def pentabarf_export_duration(self):
         duration = dt.timedelta(minutes=self.duration)
         days = duration.days
-        hours = duration.total_seconds() // 3600 - days * 24
+        hours = int(duration.total_seconds() // 3600 - days * 24)
         minutes = duration.seconds // 60 % 60
         return f"{hours:02}{minutes:02}00"
 
@@ -174,7 +174,9 @@ class TalkSlot(PretalxModel):
         :class:`~pretalx.schedule.models.availability.Availability`, useful for
         availability arithmetic.
         """
-        from pretalx.schedule.models import Availability  # noqa: PLC0415
+        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
+            Availability,
+        )
 
         return Availability(start=self.start, end=self.real_end)
 
@@ -229,9 +231,11 @@ class TalkSlot(PretalxModel):
     def uuid(self):
         """A UUID5, calculated from the submission code and the instance
         identifier."""
-        global INSTANCE_IDENTIFIER  # noqa: PLW0603
+        global INSTANCE_IDENTIFIER  # noqa: PLW0603 -- module-level cache for instance identifier
         if not INSTANCE_IDENTIFIER:
-            from pretalx.common.models.settings import GlobalSettings  # noqa: PLC0415
+            from pretalx.common.models.settings import (  # noqa: PLC0415 -- avoid circular import
+                GlobalSettings,
+            )
 
             INSTANCE_IDENTIFIER = GlobalSettings().get_instance_identifier()
         return uuid.uuid5(INSTANCE_IDENTIFIER, self.submission.code + self.id_suffix)

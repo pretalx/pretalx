@@ -83,8 +83,10 @@ def deserialize_schedule_changes(serialized: dict, event) -> dict:
         if item.get("old_room"):
             room_ids.add(item["old_room"])
 
-    from pretalx.schedule.models import Room  # noqa: PLC0415
-    from pretalx.submission.models import Submission  # noqa: PLC0415
+    from pretalx.schedule.models import Room  # noqa: PLC0415 -- avoid circular import
+    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+        Submission,
+    )
 
     submissions_by_code = {}
     if submission_codes:
@@ -213,7 +215,7 @@ def calculate_schedule_changes(schedule) -> dict:
     moved_or_new = new_slot_set - old_slot_set - {None}
 
     for entry in moved_or_missing:
-        if entry.submission in handled_submissions or not entry.submission:
+        if entry.submission in handled_submissions:
             continue
         if entry.submission not in new_submissions:
             result["canceled_talks"] += old_by_submission[entry.submission]
@@ -371,7 +373,9 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
     if not name:
         raise ValueError("Cannot create schedule version without a version name.")
 
-    from pretalx.submission.models import SubmissionStates  # noqa: PLC0415
+    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+        SubmissionStates,
+    )
 
     with transaction.atomic():
         schedule.version = name
@@ -379,7 +383,9 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
         schedule.published = now()
 
         # Create WIP schedule first, to avoid race conditions
-        from pretalx.schedule.models import Schedule  # noqa: PLC0415
+        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
+            Schedule,
+        )
 
         wip_schedule = Schedule.objects.create(event=schedule.event)
 
@@ -424,7 +430,9 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
 
 def unfreeze_schedule(schedule, user=None):
     """Resets the current WIP schedule to an older schedule version."""
-    from pretalx.schedule.models import Schedule  # noqa: PLC0415
+    from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
+        Schedule,
+    )
 
     if not schedule.version:
         raise ValueError("Cannot unfreeze schedule version: not released yet.")

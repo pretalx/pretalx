@@ -17,7 +17,7 @@ def patch_out_timezone_cache(tzinfo):
     Philippine Standard Time (+08:00). By clearing the cache, vobject is forced to
     re-register timezones every time.
     """
-    import vobject.icalendar as ical  # noqa: PLC0415
+    import vobject.icalendar as ical  # noqa: PLC0415 -- slow import
 
     try:
         minimal_tzid_map = {"UTC": ical.__tzidMap["UTC"]}  # noqa: SLF001 -- patch upstream bug
@@ -31,7 +31,7 @@ def patch_out_timezone_cache(tzinfo):
 
 
 def get_slots_ical(event, slots, prodid_suffix=None):
-    import vobject  # noqa: PLC0415
+    import vobject  # noqa: PLC0415 -- slow import
 
     cal = vobject.iCalendar()
     netloc = get_netloc(event)
@@ -58,7 +58,7 @@ def get_submission_ical(submission, slots):
 
 
 def get_slot_ical(slot):
-    import vobject  # noqa: PLC0415
+    import vobject  # noqa: PLC0415 -- slow import
 
     cal = vobject.iCalendar()
     netloc = get_netloc(slot.event)
