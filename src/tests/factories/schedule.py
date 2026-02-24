@@ -6,6 +6,7 @@ from django_scopes import scopes_disabled
 from pretalx.schedule.models import Availability, Room, Schedule
 from pretalx.schedule.models.slot import TalkSlot
 from tests.factories.event import EventFactory
+from tests.factories.submission import SubmissionFactory
 
 
 class ScheduleFactory(factory.django.DjangoModelFactory):
@@ -51,13 +52,26 @@ class TalkSlotFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = TalkSlot
 
-    schedule = factory.LazyAttribute(lambda o: o.submission.event.wip_schedule)
+    submission = factory.SubFactory(SubmissionFactory)
+    schedule = factory.LazyAttribute(
+        lambda o: (
+            scopes_disabled()(lambda: o.submission.event.wip_schedule)()
+            if o.submission
+            else None
+        )
+    )
     room = factory.SubFactory(
         RoomFactory, event=factory.SelfAttribute("..submission.event")
     )
-    start = factory.LazyAttribute(lambda o: o.submission.event.datetime_from)
+    start = factory.LazyAttribute(
+        lambda o: o.submission.event.datetime_from if o.submission else None
+    )
     end = factory.LazyAttribute(
-        lambda o: o.submission.event.datetime_from + dt.timedelta(hours=1)
+        lambda o: (
+            o.submission.event.datetime_from + dt.timedelta(hours=1)
+            if o.submission
+            else None
+        )
     )
     is_visible = True
 
