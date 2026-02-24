@@ -8,9 +8,11 @@ from pretalx.submission.models import (
     ReviewScoreCategory,
     Submission,
     SubmissionType,
+    SubmitterAccessCode,
     Tag,
     Track,
 )
+from pretalx.submission.models.comment import SubmissionComment
 from pretalx.submission.models.question import Answer, AnswerOption, Question
 from pretalx.submission.models.resource import Resource
 from pretalx.submission.models.review import ReviewPhase
@@ -188,6 +190,32 @@ class ReviewScoreFactory(factory.django.DjangoModelFactory):
 
     category = factory.SubFactory(ReviewScoreCategoryFactory)
     value = factory.Sequence(lambda n: n)
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        with scopes_disabled():
+            return super()._create(model_class, *args, **kwargs)
+
+
+class SubmitterAccessCodeFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = SubmitterAccessCode
+
+    event = factory.SubFactory(EventFactory)
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        with scopes_disabled():
+            return super()._create(model_class, *args, **kwargs)
+
+
+class SubmissionCommentFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = SubmissionComment
+
+    submission = factory.SubFactory(SubmissionFactory)
+    user = factory.SubFactory(UserFactory)
+    text = factory.Sequence(lambda n: f"Comment {n}")
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
