@@ -16,7 +16,7 @@ config_path = Path("test/sqlite.cfg")
 if config_path.exists():
     os.environ.setdefault("PRETALX_CONFIG_FILE", str(config_path))
 
-from pretalx.settings import *  # noqa: F403, E402
+from pretalx.settings import *  # noqa: F403, E402 -- wildcard import intentional; import after settings setup
 
 BASE_DIR = Path(tmpdir.name)
 DATA_DIR = BASE_DIR
@@ -31,9 +31,14 @@ for directory in (BASE_DIR, DATA_DIR, LOG_DIR, MEDIA_ROOT, HTMLEXPORT_ROOT):
     directory.mkdir(parents=True, exist_ok=True)
 
 with suppress(ImportError):
-    import tests.dummy_app  # noqa: F401, E402
+    import tests.dummy_app  # noqa: F401, E402 -- check if available; import after settings setup
 
     INSTALLED_APPS.append("tests.dummy_app.PluginApp")
+
+with suppress(ImportError):
+    import tests.dummy_app_no_hooks  # noqa: F401, E402 -- check if available; import after settings setup
+
+    INSTALLED_APPS.append("tests.dummy_app_no_hooks.PluginApp")
 
 atexit.register(tmpdir.cleanup)
 

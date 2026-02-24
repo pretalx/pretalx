@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 
 
 class ZXCVBNValidator:
-    DEFAULT_USER_ATTRIBUTES = ("first_name", "last_name", "email")
+    DEFAULT_USER_ATTRIBUTES = ("name", "email")
 
     def __init__(self, min_score=3, user_attributes=DEFAULT_USER_ATTRIBUTES):
         if not (0 <= min_score <= 4):
@@ -22,7 +22,7 @@ class ZXCVBNValidator:
         return self.validate(value)
 
     def validate(self, password, user=None):
-        from zxcvbn import zxcvbn  # noqa: PLC0415
+        from zxcvbn import zxcvbn  # noqa: PLC0415 -- slow import
 
         user_inputs = [
             getattr(user, attribute, None) for attribute in self.user_attributes

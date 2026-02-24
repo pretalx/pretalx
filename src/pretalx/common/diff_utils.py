@@ -50,7 +50,9 @@ def render_diff(old_value, new_value, threshold=None):
         and (not threshold or (len(old_str) >= threshold or len(new_str) >= threshold))
     )
 
-    from pretalx.common.templatetags.rich_text import render_markdown  # noqa: PLC0415
+    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
+        render_markdown,
+    )
 
     if not should_diff:
         result = {"is_diff": False}
@@ -81,7 +83,7 @@ def render_diff(old_value, new_value, threshold=None):
             old_html_parts.append(f"<del>{escape(cleaned)}</del>")
         elif op == diff_match_patch.DIFF_INSERT:
             new_html_parts.append(f"<ins>{escape(cleaned)}</ins>")
-        elif op == diff_match_patch.DIFF_EQUAL:
+        else:
             old_html_parts.append(escape(cleaned))
             new_html_parts.append(escape(cleaned))
 

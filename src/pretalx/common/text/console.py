@@ -44,14 +44,20 @@ def get_separator(*args):
 def start_box(size):
     try:
         logger.info("┏%s┓", "━" * size)
-    except (UnicodeDecodeError, UnicodeEncodeError):
+    except (
+        UnicodeDecodeError,
+        UnicodeEncodeError,
+    ):  # pragma: no cover -- broken terminal encoding
         logger.info("-" * (size + 2))
 
 
 def end_box(size):
     try:
         logger.info("┗%s┛", "━" * size)
-    except (UnicodeDecodeError, UnicodeEncodeError):
+    except (
+        UnicodeDecodeError,
+        UnicodeEncodeError,
+    ):  # pragma: no cover -- broken terminal encoding
         logger.info("-" * (size + 2))
 
 
@@ -70,7 +76,10 @@ def print_line(string, box=False, bold=False, color=None, size=None):
         alt_string = f"| {alt_string} |"
     try:
         logger.info(string)
-    except (UnicodeDecodeError, UnicodeEncodeError):
+    except (
+        UnicodeDecodeError,
+        UnicodeEncodeError,
+    ):  # pragma: no cover -- broken terminal encoding
         try:
             logger.info(alt_string)
         except (UnicodeDecodeError, UnicodeEncodeError):
@@ -78,7 +87,7 @@ def print_line(string, box=False, bold=False, color=None, size=None):
 
 
 def log_initial():
-    from pretalx import __version__  # noqa: PLC0415
+    from pretalx import __version__  # noqa: PLC0415 -- avoid circular import
 
     with suppress(Exception):  # geteuid is not available on all OS
         if os.geteuid() == 0:

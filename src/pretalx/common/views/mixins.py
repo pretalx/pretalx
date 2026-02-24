@@ -128,9 +128,7 @@ class PermissionRequired(PermissionRequiredMixin):
 
     @cached_property
     def permission_object(self):
-        if hasattr(self, "get_permission_object"):
-            return self.get_permission_object()
-        return self.object
+        return self.get_permission_object()
 
     @context
     @cached_property
@@ -165,12 +163,6 @@ class PermissionRequired(PermissionRequiredMixin):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if not hasattr(self, "get_permission_object"):
-            for key in ("permission_object", "object"):
-                if getattr(self, key, None):
-                    self.get_permission_object = lambda self, key=key: getattr(
-                        self, key
-                    )  # noqa: E731
 
     def has_permission(self):
         result = None
@@ -302,12 +294,7 @@ class PaginationMixin:
         return default
 
     def get_context_data(self, **kwargs):
-        from pretalx.common.views.generic import CRUDView  # noqa: PLC0415
-
-        ctx = super().get_context_data(**kwargs)
-        if isinstance(self, CRUDView) and self.permission_action != "list":
-            return ctx
-        return ctx
+        return super().get_context_data(**kwargs)
 
 
 class ActionConfirmMixin:
@@ -455,10 +442,13 @@ class AsyncFileDownloadMixin:
 
         return redirect(f"{request.path}?async_id={result.id}")
 
-    def _check_task_status(self, request, async_id):
-        from celery.result import AsyncResult  # noqa: PLC0415
+    def _get_async_result(self, async_id):
+        from celery.result import AsyncResult  # noqa: PLC0415 -- slow import
 
-        result = AsyncResult(async_id)
+        return AsyncResult(async_id)
+
+    def _check_task_status(self, request, async_id):
+        result = self._get_async_result(async_id)
         is_ready = result.ready()
         is_successful = result.successful() if is_ready else False
 

@@ -191,8 +191,12 @@ class QuestionFieldsMixin:
         css = {"all": ["common/css/forms/character-limit.css"]}
 
     def get_field(self, *, question, initial, initial_object, readonly):
-        from pretalx.common.templatetags.rich_text import rich_text  # noqa: PLC0415
-        from pretalx.submission.models import QuestionVariant  # noqa: PLC0415
+        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
+            rich_text,
+        )
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            QuestionVariant,
+        )
 
         read_only = readonly or question.read_only
         original_help_text = question.help_text
@@ -436,11 +440,14 @@ class QuestionFieldsMixin:
             if question.max_datetime:
                 field.validators.append(MaxDateTimeValidator(question.max_datetime))
             return field
-        return None
+        return None  # pragma: no cover
 
     def save_questions(self, key, value):
         """Receives a key and value from cleaned_data."""
-        from pretalx.submission.models import Answer, QuestionTarget  # noqa: PLC0415
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            Answer,
+            QuestionTarget,
+        )
 
         field = self.fields[key]
         if field.answer:

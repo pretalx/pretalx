@@ -10,8 +10,15 @@ class CommonConfig(AppConfig):
     name = "pretalx.common"
 
     def ready(self):
-        from . import checks, log_display, signals, update_check  # noqa: F401, PLC0415
+        from . import (  # noqa: F401, PLC0415 -- register signals/receivers on startup
+            checks,
+            log_display,
+            signals,
+            update_check,
+        )
 
 
 with suppress(ImportError):
-    from pretalx import celery_app as celery  # noqa: F401
+    from pretalx import (
+        celery_app as celery,  # noqa: F401 -- register celery app on startup
+    )

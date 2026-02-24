@@ -87,11 +87,8 @@ class TablePreferencesForm(forms.Form):
 
         current_ordering = table.current_ordering
         if current_ordering:
-            if len(current_ordering) >= 1:
-                self.fields["sort_column_1"].initial = current_ordering[0]["column"]
-                self.fields["sort_direction_1"].initial = current_ordering[0][
-                    "direction"
-                ]
+            self.fields["sort_column_1"].initial = current_ordering[0]["column"]
+            self.fields["sort_direction_1"].initial = current_ordering[0]["direction"]
             if len(current_ordering) >= 2:
                 self.fields["sort_column_2"].initial = current_ordering[1]["column"]
                 self.fields["sort_direction_2"].initial = current_ordering[1][

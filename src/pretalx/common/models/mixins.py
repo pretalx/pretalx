@@ -72,7 +72,9 @@ class LogMixin:
                     data[key] = "********" if data[key] else data[key]
             data = json_roundtrip(data)
 
-        from pretalx.common.models import ActivityLog  # noqa: PLC0415
+        from pretalx.common.models import (  # noqa: PLC0415 -- avoid circular import
+            ActivityLog,
+        )
 
         return ActivityLog.objects.create(
             event=getattr(self, "event", None),
@@ -120,11 +122,8 @@ class LogMixin:
                 field.name in excluded_fields
                 or field.name in SENSITIVE_KEYS
                 or "thumbnail" in field.name
-            ):
-                continue
-
-            if getattr(field, "auto_now", False) or getattr(
-                field, "auto_now_add", False
+                or getattr(field, "auto_now", False)
+                or getattr(field, "auto_now_add", False)
             ):
                 continue
 
@@ -146,7 +145,9 @@ class LogMixin:
         return data
 
     def logged_actions(self):
-        from pretalx.common.models import ActivityLog  # noqa: PLC0415
+        from pretalx.common.models import (  # noqa: PLC0415 -- avoid circular import
+            ActivityLog,
+        )
 
         return (
             ActivityLog.objects.filter(
@@ -207,7 +208,9 @@ class FileCleanupMixin:
         # Schedule cleanup after save, so the database has the new path when
         # the task runs (important for eager mode).
         for field, path in old_files.items():
-            from pretalx.common.tasks import task_cleanup_file  # noqa: PLC0415
+            from pretalx.common.tasks import (  # noqa: PLC0415 -- avoid circular import
+                task_cleanup_file,
+            )
 
             task_cleanup_file.apply_async(
                 kwargs={
@@ -232,7 +235,9 @@ class FileCleanupMixin:
         return super().delete(*args, **kwargs)
 
     def process_image(self, field, generate_thumbnail=False):
-        from pretalx.common.tasks import task_process_image  # noqa: PLC0415
+        from pretalx.common.tasks import (  # noqa: PLC0415 -- avoid circular import
+            task_process_image,
+        )
 
         task_process_image.apply_async(
             kwargs={
@@ -349,7 +354,9 @@ class GenerateCode:
             kwargs["update_fields"] = {self.code_property}.union(
                 kwargs["update_fields"]
             )
-        for attempt in range(3):
+        for attempt in range(
+            3
+        ):  # pragma: no branch -- loop always exits via return or raise
             self.assign_code()
             try:
                 with transaction.atomic():
@@ -368,30 +375,10 @@ class OrderedModel:
     """
 
     order_field = "position"
-    order_up_url = "urls.up"
-    order_down_url = "urls.down"
 
     @staticmethod
     def get_order_queryset(**kwargs):
         raise NotImplementedError
-
-    def _get_attribute(self, attribute):
-        result = self
-        for part in attribute.split("."):
-            result = getattr(result, part)
-        return result
-
-    def get_down_url(self):
-        return self._get_attribute(self.order_down_url)
-
-    def get_up_url(self):
-        return self._get_attribute(self.order_up_url)
-
-    def up(self):
-        return self._move(up=True)
-
-    def down(self):
-        return self._move(up=False)
 
     @property
     def order_queryset(self):

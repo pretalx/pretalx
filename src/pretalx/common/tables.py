@@ -27,7 +27,9 @@ class QuestionColumnMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if hasattr(self, "Meta") and hasattr(self.Meta, "model"):
-            from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
+            from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
+                SpeakerProfile,
+            )
 
             if self.Meta.model == SpeakerProfile:
                 self._question_model = "speaker"
@@ -69,11 +71,16 @@ class QuestionColumnMixin:
         return f"{model}_id__in"
 
     def _load_all_answers(self):
-        from pretalx.submission.models import Answer  # noqa: PLC0415
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            Answer,
+        )
 
         try:
             record_ids = [row.record.pk for row in self.rows]
-        except (AttributeError, TypeError):
+        except (
+            AttributeError,
+            TypeError,
+        ):  # pragma: no cover -- defensive fallback for partially-initialised tables
             record_ids = [record.pk for record in self.data]
 
         if not record_ids:
@@ -393,9 +400,8 @@ class FunctionOrderMixin:
                     continue
 
                 lookup = key
-                if getattr(lookup, "source_expressions", None):
-                    while isinstance(lookup.source_expressions[0], Transform):
-                        lookup = lookup.source_expressions[0]
+                while isinstance(lookup.source_expressions[0], Transform):
+                    lookup = lookup.source_expressions[0]
 
                 plain_field = lookup.source_expressions[0].name
                 self.order_function_lookup[plain_field] = key
@@ -679,7 +685,9 @@ class QuestionColumn(TemplateColumn):
         Used by PretalxTable._apply_ordering() for multi-column sorting.
         This method only annotates - it does NOT call order_by().
         """
-        from pretalx.submission.models import Answer  # noqa: PLC0415
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            Answer,
+        )
 
         if hasattr(queryset.model, "user"):
             answer_subquery = Answer.objects.filter(

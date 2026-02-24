@@ -14,7 +14,6 @@ from django.urls import resolve
 from django.utils import timezone, translation
 from django.utils.translation.trans_real import (
     get_supported_language_variant,
-    language_code_re,
     parse_accept_lang_header,
 )
 from django_scopes import scope, scopes_disabled
@@ -100,8 +99,7 @@ class EventPermissionMiddleware:
                         )
                     queryset = queryset.annotate(**annotations)
                     request.event = get_object_or_404(queryset, slug__iexact=event_slug)
-                except ValueError:
-                    # Happens mostly on malformed or malicious input
+                except ValueError:  # pragma: no cover -- defensive; URL regex prevents most malformed slugs
                     raise Http404 from None
         event = getattr(request, "event", None)
 
@@ -184,9 +182,6 @@ class EventPermissionMiddleware:
         for accept_lang, _ in parse_accept_lang_header(accept_value):
             if accept_lang == "*":
                 break
-
-            if not language_code_re.search(accept_lang):
-                continue
 
             validated = self._validate_language(accept_lang, supported)
             if validated:

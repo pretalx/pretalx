@@ -18,7 +18,7 @@ INSTANCE_IDENTIFIER = None
 @hierarkey.set_global()
 class GlobalSettings(GlobalSettingsBase):
     def get_instance_identifier(self):
-        global INSTANCE_IDENTIFIER  # noqa: PLW0603
+        global INSTANCE_IDENTIFIER  # noqa: PLW0603 -- module-level cache for instance identifier
 
         if INSTANCE_IDENTIFIER:
             return INSTANCE_IDENTIFIER
