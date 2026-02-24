@@ -84,8 +84,7 @@ class QuestionsForm(CfPFormMixin, QuestionFieldsMixin, forms.Form):
             return self.submission
         if question.target == QuestionTarget.SPEAKER:
             return self.speaker
-        if question.target == QuestionTarget.REVIEWER:
-            return self.review
+        return self.review
 
     @cached_property
     def speaker_fields(self):
@@ -106,12 +105,12 @@ class QuestionsForm(CfPFormMixin, QuestionFieldsMixin, forms.Form):
     def serialize_answers(self):
         data = {}
         for field in self.fields.values():
-            if question := getattr(field, "question", None):
-                data_key = f"question-{question.pk}"
-                if hasattr(field, "answer") and field.answer:
-                    data[data_key] = field.answer.answer_string
-                else:
-                    data[data_key] = None
+            question = field.question
+            data_key = f"question-{question.pk}"
+            if hasattr(field, "answer") and field.answer:
+                data[data_key] = field.answer.answer_string
+            else:
+                data[data_key] = None
         return data
 
     def save(self):
