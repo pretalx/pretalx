@@ -213,7 +213,7 @@ def calculate_schedule_changes(schedule) -> dict:
     moved_or_new = new_slot_set - old_slot_set - {None}
 
     for entry in moved_or_missing:
-        if entry.submission in handled_submissions or not entry.submission:
+        if entry.submission in handled_submissions:
             continue
         if entry.submission not in new_submissions:
             result["canceled_talks"] += old_by_submission[entry.submission]

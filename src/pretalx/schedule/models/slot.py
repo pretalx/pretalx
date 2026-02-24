@@ -145,7 +145,7 @@ class TalkSlot(PretalxModel):
     def pentabarf_export_duration(self):
         duration = dt.timedelta(minutes=self.duration)
         days = duration.days
-        hours = duration.total_seconds() // 3600 - days * 24
+        hours = int(duration.total_seconds() // 3600 - days * 24)
         minutes = duration.seconds // 60 % 60
         return f"{hours:02}{minutes:02}00"
 
