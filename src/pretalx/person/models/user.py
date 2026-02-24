@@ -35,7 +35,9 @@ from pretalx.person.signals import delete_user as delete_user_signal
 
 class UserQuerySet(models.QuerySet):
     def with_profiles(self, event):
-        from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
+        from pretalx.person.models.profile import (  # noqa: PLC0415 -- avoid circular import
+            SpeakerProfile,
+        )
 
         return self.prefetch_related(
             models.Prefetch(
@@ -48,7 +50,9 @@ class UserQuerySet(models.QuerySet):
         ).distinct()
 
     def with_speaker_code(self, event):
-        from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
+        from pretalx.person.models.profile import (  # noqa: PLC0415 -- avoid circular import
+            SpeakerProfile,
+        )
 
         return self.annotate(
             speaker_code=Subquery(
@@ -78,7 +82,9 @@ class UserManager(BaseUserManager):
 
 
 def validate_username(value):
-    from pretalx.common.templatetags.rich_text import render_markdown  # noqa: PLC0415
+    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
+        render_markdown,
+    )
 
     result = render_markdown(value)[3:-4]  # strip <p> tags
     result = html.unescape(result)  # permit single <, > etc
@@ -227,7 +233,9 @@ class User(
                 event=event
             )
         except ObjectDoesNotExist:
-            from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
+            from pretalx.person.models.profile import (  # noqa: PLC0415 -- avoid circular import
+                SpeakerProfile,
+            )
 
             speaker = SpeakerProfile(event=event, user=self, name=self.name)
             if self.pk:
@@ -240,7 +248,7 @@ class User(
         if preferences := self.event_preferences_cache.get(event.pk):
             return preferences
 
-        from pretalx.person.models.preferences import (  # noqa: PLC0415
+        from pretalx.person.models.preferences import (  # noqa: PLC0415 -- avoid circular import
             UserEventPreferences,
         )
 
@@ -266,7 +274,9 @@ class User(
     def own_actions(self):
         """Returns all log entries that were made by this user.
         To get actions concerning this user, use logged_actions()."""
-        from pretalx.common.models import ActivityLog  # noqa: PLC0415
+        from pretalx.common.models import (  # noqa: PLC0415 -- avoid circular import
+            ActivityLog,
+        )
 
         return ActivityLog.objects.filter(person=self)
 
@@ -278,7 +288,9 @@ class User(
     @transaction.atomic
     def deactivate(self):
         """Delete the user by unsetting all of their information."""
-        from pretalx.submission.models import Answer  # noqa: PLC0415
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            Answer,
+        )
 
         self.email = f"deleted_user_{random.randint(0, 999)}@localhost"  # noqa: S311  -- non-security random for unique email
         while self.__class__.objects.filter(email__iexact=self.email).exists():
@@ -309,7 +321,10 @@ class User(
     @transaction.atomic
     def shred(self):
         """Actually remove the user account."""
-        from pretalx.submission.models import Answer, Submission  # noqa: PLC0415
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            Answer,
+            Submission,
+        )
 
         with scopes_disabled():
             if (
@@ -340,7 +355,7 @@ class User(
     def get_events_with_any_permission(self):
         """Returns a queryset of events for which this user has any type of
         permission."""
-        from pretalx.event.models import Event  # noqa: PLC0415
+        from pretalx.event.models import Event  # noqa: PLC0415 -- avoid circular import
 
         if self.is_administrator:
             return Event.objects.all()
@@ -372,7 +387,7 @@ class User(
         Permissions are given as named arguments, e.g.
         ``get_events_for_permission(is_reviewer=True)``.
         """
-        from pretalx.event.models import Event  # noqa: PLC0415
+        from pretalx.event.models import Event  # noqa: PLC0415 -- avoid circular import
 
         if self.is_administrator:
             return Event.objects.all()
@@ -460,7 +475,9 @@ class User(
 
     @transaction.atomic
     def reset_password(self, event, user=None, mail_text=None, orga=False):
-        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
+        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+            QueuedMail,
+        )
 
         self.pw_reset_token = get_random_string(32)
         self.pw_reset_time = now()
@@ -501,7 +518,9 @@ the pretalx robot""")
 
     @transaction.atomic
     def change_password(self, new_password):
-        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
+        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+            QueuedMail,
+        )
 
         self.set_password(new_password)
         self.pw_reset_token = None
@@ -532,7 +551,9 @@ the pretalx team""")
 
     @transaction.atomic
     def change_email(self, new_email):
-        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
+        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+            QueuedMail,
+        )
 
         old_email = self.email
         self.email = new_email.lower().strip()

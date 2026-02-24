@@ -11,7 +11,7 @@ from pretalx.person.models.auth_token import READ_PERMISSIONS
 logger = logging.getLogger(__name__)
 
 
-def get_events_with_any_permission(Event, user):  # noqa: N803
+def get_events_with_any_permission(Event, user):  # noqa: N803 -- Django migration receives model classes as PascalCase parameters
     if user.is_administrator:
         return Event.objects.all()
 
@@ -26,10 +26,10 @@ def get_events_with_any_permission(Event, user):  # noqa: N803
 
 
 def migrate_drf_tokens_to_userapitokens(apps, schema_editor):
-    OldToken = apps.get_model("authtoken", "Token")  # noqa: N806
-    Event = apps.get_model("event", "Event")  # noqa: N806
-    User = apps.get_model("person", "User")  # noqa: N806
-    UserApiToken = apps.get_model("person", "UserApiToken")  # noqa: N806
+    OldToken = apps.get_model("authtoken", "Token")  # noqa: N806 -- Django migration convention for model classes
+    Event = apps.get_model("event", "Event")  # noqa: N806 -- Django migration convention for model classes
+    User = apps.get_model("person", "User")  # noqa: N806 -- Django migration convention for model classes
+    UserApiToken = apps.get_model("person", "UserApiToken")  # noqa: N806 -- Django migration convention for model classes
 
     # Not included: new endpoints, like tracks, teams, submission types, mail templates,
     # access codes, file uploads, speaker information, question options
@@ -86,8 +86,8 @@ def migrate_drf_tokens_to_userapitokens(apps, schema_editor):
 
 
 def migrate_drf_tokens_to_userapitokens_reverse(apps, schema_editor):
-    OldToken = apps.get_model("authtoken", "Token")  # noqa: N806
-    UserApiToken = apps.get_model("person", "UserApiToken")  # noqa: N806
+    OldToken = apps.get_model("authtoken", "Token")  # noqa: N806 -- Django migration convention for model classes
+    UserApiToken = apps.get_model("person", "UserApiToken")  # noqa: N806 -- Django migration convention for model classes
     for token in UserApiToken.objects.filter(version="LEGACY"):
         OldToken.objects.get_or_create(key=token.token, user=token.user)
     UserApiToken.objects.all().delete()
