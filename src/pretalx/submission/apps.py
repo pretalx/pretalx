@@ -8,5 +8,11 @@ class SubmissionConfig(AppConfig):
     name = "pretalx.submission"
 
     def ready(self):
-        from . import exporters, rules, signals  # noqa: F401, PLC0415
-        from .phrases import SubmissionPhrases  # noqa: F401, PLC0415
+        from . import (  # noqa: F401, PLC0415 -- register on startup
+            exporters,
+            rules,
+            signals,
+        )
+        from .phrases import (  # noqa: F401, PLC0415 -- register phrases on startup
+            SubmissionPhrases,
+        )

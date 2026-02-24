@@ -55,10 +55,8 @@ class Resource(PretalxModel):
         if self.link:
             return self.link
         with suppress(ValueError):
-            url = getattr(self.resource, "url", None)
-            if url:
-                base_url = get_base_url(self.submission.event)
-                return base_url + url
+            base_url = get_base_url(self.submission.event)
+            return base_url + self.resource.url
 
     @cached_property
     def filename(self):
