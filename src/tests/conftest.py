@@ -1,6 +1,7 @@
 import pytest
 from django_scopes import scopes_disabled
 
+from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     AnswerFactory,
     AvailabilityFactory,
@@ -108,3 +109,18 @@ def register_signal_handler(settings):
 
     for signal, handler in registered:
         signal.disconnect(handler)
+
+
+@pytest.fixture
+def talk_slot(event):
+    """An event with a WIP schedule containing one visible, confirmed talk slot."""
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+        submission.speakers.add(speaker)
+        return TalkSlotFactory(submission=submission, is_visible=True)
+
+
+@pytest.fixture
+def schedule_with_talk(talk_slot):
+    return talk_slot.schedule
