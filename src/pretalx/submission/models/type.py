@@ -89,10 +89,8 @@ class SubmissionType(PretalxModel):
         if self.default_duration > 90:
             hours = self.default_duration // 60
             minutes = self.default_duration % 60
-            if hours == 1 and minutes:
+            if hours == 1:
                 duration = _("1 hour, {minutes} minutes").format(minutes=minutes)
-            elif hours == 1:
-                duration = _("1 hour")
             elif minutes:
                 duration = _("{hours} hours, {minutes} minutes").format(
                     hours=hours, minutes=minutes
@@ -118,7 +116,9 @@ class SubmissionType(PretalxModel):
         return f"{self.id}-{slugify(self.name)}"
 
     def delete(self, *args, **kwargs):
-        from pretalx.submission.models import SubmitterAccessCode  # noqa: PLC0415
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            SubmitterAccessCode,
+        )
 
         ac_ids = list(self.submitter_access_codes.values_list("pk", flat=True))
         SubmitterAccessCode.objects.filter(pk__in=ac_ids).annotate(

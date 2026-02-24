@@ -6,7 +6,6 @@
 # SPDX-FileContributor: Raphael Michel
 # SPDX-FileContributor: luto
 
-import copy
 import datetime as dt
 import json
 import statistics
@@ -154,7 +153,9 @@ def sorted_speakers_prefetch(prefix=""):
 
     Use prefix="submission__" when prefetching from slot querysets.
     """
-    from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
+    from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
+        SpeakerProfile,
+    )
 
     lookup = f"{prefix}speakers" if prefix else "speakers"
     return Prefetch(
@@ -452,7 +453,9 @@ class Submission(GenerateCode, PretalxModel):
 
     @cached_property
     def public_answers(self):
-        from pretalx.submission.models.question import QuestionTarget  # noqa: PLC0415
+        from pretalx.submission.models.question import (  # noqa: PLC0415 -- avoid circular import
+            QuestionTarget,
+        )
 
         qs = (
             self.answers.filter(
@@ -559,13 +562,15 @@ class Submission(GenerateCode, PretalxModel):
         old_state = self.state
         self.state = new_state
         self.pending_state = None
+        update_fields = ["state", "pending_state"]
         if new_state in (
             SubmissionStates.REJECTED,
             SubmissionStates.CANCELED,
             SubmissionStates.WITHDRAWN,
         ):
             self.is_featured = False
-        self.save(update_fields=["state", "pending_state"])
+            update_fields.append("is_featured")
+        self.save(update_fields=update_fields)
         self.update_talk_slots()
         submission_state_change.send_robust(
             self.event,
@@ -583,7 +588,9 @@ class Submission(GenerateCode, PretalxModel):
         deleted, or all created, or the number of talk slots might need
         to be adjusted.
         """
-        from pretalx.schedule.models import TalkSlot  # noqa: PLC0415
+        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
+            TalkSlot,
+        )
 
         scheduling_allowed = (
             self.state in SubmissionStates.accepted_states
@@ -624,10 +631,11 @@ class Submission(GenerateCode, PretalxModel):
     update_talk_slots.alters_data = True
 
     def send_initial_mails(self, person):
-        from pretalx.mail.models import MailTemplateRoles  # noqa: PLC0415
+        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+            MailTemplateRoles,
+        )
 
         template = self.event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
-        template_text = copy.deepcopy(template.text)
         locale = self.get_email_locale(person.locale)
         with override(locale):
             if "{full_submission_content}" not in str(template.text):
@@ -645,10 +653,6 @@ class Submission(GenerateCode, PretalxModel):
             commit=True,  # Send immediately, but save a record
             locale=self.get_email_locale(person.locale),
         )
-        template.refresh_from_db()
-        if template.text != template_text:
-            template.text = template_text
-            template.save()
         if self.event.mail_settings["mail_on_new_submission"]:
             self.event.get_mail_template(
                 MailTemplateRoles.NEW_SUBMISSION_INTERNAL
@@ -756,7 +760,9 @@ class Submission(GenerateCode, PretalxModel):
         return str(dict(self.event.named_content_locales)[self.content_locale])
 
     def send_state_mail(self):
-        from pretalx.mail.models import MailTemplateRoles  # noqa: PLC0415
+        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+            MailTemplateRoles,
+        )
 
         if self.state == SubmissionStates.ACCEPTED:
             template = self.event.get_mail_template(MailTemplateRoles.SUBMISSION_ACCEPT)
@@ -974,7 +980,9 @@ class Submission(GenerateCode, PretalxModel):
         :class:`~pretalx.schedule.models.availability.Availability` objects of
         all speakers of this submission.
         """
-        from pretalx.schedule.models.availability import Availability  # noqa: PLC0415
+        from pretalx.schedule.models.availability import (  # noqa: PLC0415 -- avoid circular import
+            Availability,
+        )
 
         all_availabilities = self.event.valid_availabilities.filter(
             person__in=self.speakers.all()
@@ -1026,10 +1034,16 @@ class Submission(GenerateCode, PretalxModel):
         return result
 
     def invite_speaker(self, email, name=None, locale=None, user=None):
-        from pretalx.common.urls import build_absolute_uri  # noqa: PLC0415
-        from pretalx.mail.models import MailTemplateRoles  # noqa: PLC0415
-        from pretalx.person.models import User  # noqa: PLC0415
-        from pretalx.person.services import create_user  # noqa: PLC0415
+        from pretalx.common.urls import (  # noqa: PLC0415 -- avoid circular import
+            build_absolute_uri,
+        )
+        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+            MailTemplateRoles,
+        )
+        from pretalx.person.models import User  # noqa: PLC0415 -- avoid circular import
+        from pretalx.person.services import (  # noqa: PLC0415 -- avoid circular import
+            create_user,
+        )
 
         user_created = False
         context = {}
@@ -1069,7 +1083,9 @@ class Submission(GenerateCode, PretalxModel):
         if it exists, or a user object with optional additional information
         to be used in the new speaker object.
         """
-        from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
+        from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
+            SpeakerProfile,
+        )
 
         if not speaker:
             speaker, _ = SpeakerProfile.objects.get_or_create(
@@ -1113,7 +1129,9 @@ class Submission(GenerateCode, PretalxModel):
             )
 
     def send_invite(self, to, _from=None, subject=None, text=None):
-        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
+        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+            QueuedMail,
+        )
 
         if not _from and (not subject or not text):
             raise ValueError("Please enter a sender for this invitation.")
@@ -1196,7 +1214,9 @@ class SubmissionInvitation(PretalxModel):
         )
 
     def send(self, _from=None, subject=None, text=None):
-        from pretalx.mail.models import QueuedMail  # noqa: PLC0415
+        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+            QueuedMail,
+        )
 
         if not _from:
             raise ValueError("Please enter a sender for this invitation.")

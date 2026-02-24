@@ -59,8 +59,10 @@ def _delete_soft_deleted_submissions(apps):
         resources.delete()
 
     # Step 2: Discover and delete any other related objects (e.g., from plugins)
-    from django.apps import apps as django_apps  # noqa: PLC0415
-    from django.db.models.fields.related import ForeignKey  # noqa: PLC0415
+    from django.apps import apps as django_apps  # noqa: PLC0415 -- scoped to migration
+    from django.db.models.fields.related import (  # noqa: PLC0415 -- scoped to migration
+        ForeignKey,
+    )
 
     handled_models = {
         "schedule.TalkSlot",

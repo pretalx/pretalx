@@ -38,7 +38,7 @@ def answer_file_path(instance, filename):
         code = instance.submission.code
     elif target == QuestionTarget.SPEAKER and instance.speaker:
         code = instance.speaker.code
-    elif target == QuestionTarget.REVIEWER and instance.review:
+    else:
         code = f"r{instance.review.pk}"
 
     target_name = f"q{question_id}-{code}"
@@ -397,7 +397,7 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
     def clean_identifier(event, code, instance=None):
         if not code:
             return
-        qs = Question.objects.filter(event=event, identifier__iexact=code)
+        qs = Question.all_objects.filter(event=event, identifier__iexact=code)
         if instance and instance.pk:
             qs = qs.exclude(pk=instance.pk)
         if qs.exists():
@@ -420,8 +420,12 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
         :param filter_speakers: Apply only to these speakers (SpeakerProfile queryset).
         :param filter_talks: Apply only to these talks.
         """
-        from pretalx.person.models import SpeakerProfile  # noqa: PLC0415
-        from pretalx.submission.models import Submission  # noqa: PLC0415
+        from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
+            SpeakerProfile,
+        )
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            Submission,
+        )
 
         answers = self.answers.all()
         filter_talks = filter_talks or Submission.objects.none()
@@ -635,6 +639,6 @@ class Answer(PretalxModel):
                 content_object = self.speaker
             elif self.question.target == QuestionTarget.SUBMISSION:
                 content_object = self.submission
-            elif self.question.target == QuestionTarget.REVIEWER:
+            else:
                 content_object = self.review
         return super().log_action(*args, content_object=content_object, **kwargs)

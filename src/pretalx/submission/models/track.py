@@ -81,7 +81,9 @@ class Track(OrderedModel, PretalxModel):
         return event.tracks.all()
 
     def delete(self, *args, **kwargs):
-        from pretalx.submission.models import SubmitterAccessCode  # noqa: PLC0415
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            SubmitterAccessCode,
+        )
 
         ac_ids = list(self.submitter_access_codes.values_list("pk", flat=True))
         SubmitterAccessCode.objects.filter(pk__in=ac_ids).annotate(

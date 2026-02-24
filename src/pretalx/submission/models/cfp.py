@@ -161,14 +161,14 @@ class CfP(PretalxModel):
         """Returns True if an opening date is set
         and the current time is before that date.
         """
-        return self.opening and now() < self.opening
+        return bool(self.opening and now() < self.opening)
 
     @cached_property
     def after_deadline(self) -> bool:
         """Returns True if a (maximum) deadline is set
         and the current time is after that deadline.
         """
-        return self.deadline and self.max_deadline and self.max_deadline < now()
+        return bool(self.deadline and self.max_deadline and self.max_deadline < now())
 
     @cached_property
     def is_open(self) -> bool:

@@ -12,7 +12,7 @@ def remove_review_phases(apps, schema_editor):
 
 
 def create_review_phases(apps, schema_editor):
-    import dateutil.parser  # noqa: PLC0415
+    import dateutil.parser  # noqa: PLC0415 -- scoped to migration
 
     ReviewPhase = apps.get_model("submission", "ReviewPhase")
     Event = apps.get_model("event", "Event")
