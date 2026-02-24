@@ -123,7 +123,9 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
 
     def get_talk_slots(self, schedule=None):
         schedule = schedule or self.event.current_schedule
-        from pretalx.schedule.models import TalkSlot  # noqa: PLC0415
+        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
+            TalkSlot,
+        )
 
         if not schedule:
             return TalkSlot.objects.none()
@@ -151,7 +153,10 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
         Includes all answers the user has given either for themselves or
         for their talks for this event.
         """
-        from pretalx.submission.models import Answer, Submission  # noqa: PLC0415
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            Answer,
+            Submission,
+        )
 
         submissions = Submission.objects.filter(event=self.event, speakers=self)
         return Answer.objects.filter(
@@ -180,6 +185,8 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
 
     @cached_property
     def full_availability(self):
-        from pretalx.schedule.models import Availability  # noqa: PLC0415
+        from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
+            Availability,
+        )
 
         return Availability.union(self.availabilities.all())

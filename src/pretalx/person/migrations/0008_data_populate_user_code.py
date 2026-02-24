@@ -7,7 +7,9 @@ from django.db import migrations
 
 
 def populate_code(apps, schema_editor):
-    from pretalx.common.models.mixins import GenerateCode  # noqa: PLC0415
+    from pretalx.common.models.mixins import (  # noqa: PLC0415 -- avoid circular import
+        GenerateCode,
+    )
 
     User = apps.get_model("person", "User")
     for person in User.objects.all():

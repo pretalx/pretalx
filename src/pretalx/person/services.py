@@ -8,7 +8,7 @@ from django.utils.timezone import now
 
 
 def create_user(email, name=None, pw_reset_days=60, event=None):
-    from pretalx.person.models import User  # noqa: PLC0415
+    from pretalx.person.models import User  # noqa: PLC0415 -- avoid circular import
 
     user = User.objects.create_user(
         password=get_random_string(32),

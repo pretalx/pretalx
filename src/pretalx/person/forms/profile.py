@@ -9,16 +9,8 @@ from django_scopes import scopes_disabled
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
 
 from pretalx.cfp.forms.cfp import CfPFormMixin
-from pretalx.common.forms.fields import (
-    AvailabilitiesField,
-    ProfilePictureField,
-    SizeFileField,
-)
-from pretalx.common.forms.mixins import (
-    PretalxI18nModelForm,
-    ReadOnlyFlag,
-    RequestRequire,
-)
+from pretalx.common.forms.fields import AvailabilitiesField, ProfilePictureField
+from pretalx.common.forms.mixins import ReadOnlyFlag, RequestRequire
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
     BiographyWidget,
@@ -27,7 +19,7 @@ from pretalx.common.forms.widgets import (
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.event.models import Event
-from pretalx.person.models import SpeakerInformation, SpeakerProfile, User
+from pretalx.person.models import SpeakerProfile, User
 from pretalx.schedule.models import Availability
 from pretalx.submission.models import Question
 from pretalx.submission.models.submission import SubmissionStates
@@ -63,8 +55,7 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
             self.fields["availabilities"].event = self.event
             self.fields["availabilities"].instance = kwargs.get("instance")
             self.fields["availabilities"].set_initial_from_instance()
-            if self.fields["availabilities"].initial:
-                self.initial["availabilities"] = self.fields["availabilities"].initial
+            self.initial["availabilities"] = self.fields["availabilities"].initial
         read_only = kwargs.get("read_only", False)
         initial = kwargs.get("initial", {})
 
@@ -139,8 +130,7 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
 
         if self.is_bound and not self.is_valid() and "availabilities" in self.errors:
             self.data = self.data.copy()
-            if "availabilities" in self.initial:
-                self.data["availabilities"] = self.initial["availabilities"]
+            self.data["availabilities"] = self.initial["availabilities"]
 
     @cached_property
     def user_fields(self):
@@ -159,9 +149,7 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
 
     def clean_email(self):
         email = self.cleaned_data.get("email")
-        qs = User.objects.all()
-        if self.user:
-            qs = qs.exclude(pk=self.user.pk)
+        qs = User.objects.exclude(pk=self.user.pk)
         if qs.filter(email__iexact=email):
             raise ValidationError(get_email_address_error())
         return email
@@ -172,12 +160,11 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
             setattr(self.user, user_attribute, value)
             self.user.save(update_fields=[user_attribute])
 
-        if "name" in self.cleaned_data:
-            self.instance.name = self.cleaned_data["name"]
-            # Sync to user.name only if user has no name yet
-            if self.user and not self.user.name:
-                self.user.name = self.cleaned_data["name"]
-                self.user.save(update_fields=["name"])
+        self.instance.name = self.cleaned_data["name"]
+        # Sync to user.name only if user has no name yet
+        if self.user and not self.user.name:
+            self.user.name = self.cleaned_data["name"]
+            self.user.save(update_fields=["name"])
         self.instance.event = self.event
         self.instance.user = self.user
 
@@ -226,41 +213,6 @@ class OrgaProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ("name", "locale")
-
-
-class SpeakerInformationForm(PretalxI18nModelForm):
-    def __init__(self, *args, event=None, **kwargs):
-        self.event = event
-        super().__init__(*args, **kwargs)
-        self.fields["limit_types"].queryset = event.submission_types.all()
-        if not event.get_feature_flag("use_tracks"):
-            self.fields.pop("limit_tracks")
-        else:
-            self.fields["limit_tracks"].queryset = event.tracks.all()
-
-    def save(self, *args, **kwargs):
-        self.instance.event = self.event
-        return super().save(*args, **kwargs)
-
-    class Meta:
-        model = SpeakerInformation
-        fields = (
-            "title",
-            "text",
-            "target_group",
-            "limit_types",
-            "limit_tracks",
-            "resource",
-        )
-        field_classes = {
-            "limit_tracks": SafeModelMultipleChoiceField,
-            "limit_types": SafeModelMultipleChoiceField,
-            "resource": SizeFileField,
-        }
-        widgets = {
-            "limit_tracks": EnhancedSelectMultiple(color_field="color"),
-            "limit_types": EnhancedSelectMultiple,
-        }
 
 
 class SpeakerFilterForm(forms.Form):
