@@ -14,11 +14,12 @@ from pretalx.person.models import User
 EMAIL_ADDRESS_ERROR = _("Please choose a different email address.")
 
 
-class LoginInfoForm(forms.ModelForm):
+class LoginInfoForm(forms.Form):
     error_messages = {
         "pw_current_wrong": _("The current password you entered was not correct.")
     }
 
+    email = User._meta.get_field("email").formfield()
     old_password = forms.CharField(
         widget=PasswordInput, label=_("Password (current)"), required=True
     )
@@ -52,7 +53,7 @@ class LoginInfoForm(forms.ModelForm):
 
     def __init__(self, user, *args, **kwargs):
         self.user = user
-        kwargs["instance"] = user
+        kwargs.setdefault("initial", {}).setdefault("email", user.email)
         super().__init__(*args, **kwargs)
 
     def save(self):
@@ -61,7 +62,3 @@ class LoginInfoForm(forms.ModelForm):
         password = self.cleaned_data.get("password")
         if password:
             self.user.change_password(password)
-
-    class Meta:
-        model = User
-        fields = ("email",)

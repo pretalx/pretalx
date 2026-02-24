@@ -79,13 +79,5 @@ class AuthTokenForm(forms.ModelForm):
             for field_name in self.endpoint_fields:
                 permissions = self.cleaned_data.get(field_name)
                 endpoint = field_name.replace("endpoint_", "")
-                invalid_perms = set(permissions) - set(WRITE_PERMISSIONS)
-                if invalid_perms:
-                    self.add_error(
-                        field_name,
-                        _("Invalid permissions selected: {perms}").format(
-                            perms=", ".join(invalid_perms)
-                        ),
-                    )
                 data["endpoints"][endpoint] = list(permissions)
         return data
