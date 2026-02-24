@@ -187,7 +187,7 @@ class BiographyWidget(MarkdownWidget):
         self.suggestions = suggestions or []
 
     def get_context(self, name, value, attrs):
-        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415
+        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
             render_markdown_plaintext,
         )
 
@@ -465,7 +465,9 @@ class ProfilePictureWidget(forms.Widget):
         if self.user and not self.upload_only:
             with scopes_disabled():
                 # beware circular imports
-                from pretalx.person.models import ProfilePicture  # noqa: PLC0415
+                from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
+                    ProfilePicture,
+                )
 
                 pictures = (
                     ProfilePicture.objects.filter(user=self.user)

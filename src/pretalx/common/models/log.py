@@ -61,7 +61,9 @@ class ActivityLog(models.Model):
 
     @cached_property
     def display(self) -> str:
-        from pretalx.common.signals import activitylog_display  # noqa: PLC0415
+        from pretalx.common.signals import (  # noqa: PLC0415 -- avoid circular import
+            activitylog_display,
+        )
 
         for _receiver, response in activitylog_display.send(
             self.event, activitylog=self
@@ -76,20 +78,23 @@ class ActivityLog(models.Model):
     @cached_property
     def display_object(self) -> str:
         """Returns a link (formatted HTML) to the object in question."""
-        from pretalx.common.signals import activitylog_object_link  # noqa: PLC0415
+        from pretalx.common.signals import (  # noqa: PLC0415 -- avoid circular import
+            activitylog_object_link,
+        )
 
         try:
             if not self.content_object:
                 return ""
-        except AttributeError:
-            # Content types are terrible, terrible magic
+        except (
+            AttributeError
+        ):  # pragma: no cover — stale ContentType whose model class was removed
             return ""
 
-        responses = activitylog_object_link.send(sender=self.event, activitylog=self)
-        if responses:
-            for _receiver, response in responses:
-                if response:
-                    return response
+        for _receiver, response in activitylog_object_link.send(
+            sender=self.event, activitylog=self
+        ):
+            if response:
+                return response
         return ""
 
     @cached_property
@@ -112,14 +117,12 @@ class ActivityLog(models.Model):
                     display["label"] = question.question
             else:
                 try:
-                    if field := obj.__class__._meta.get_field(key):
-                        display["field"] = field
-                        if isinstance(field, (ManyToOneRel, ManyToManyRel)):
-                            display["label"] = (
-                                field.related_model._meta.verbose_name_plural
-                            )
-                        else:
-                            display["label"] = field.verbose_name
+                    field = obj.__class__._meta.get_field(key)
+                    display["field"] = field
+                    if isinstance(field, (ManyToOneRel, ManyToManyRel)):
+                        display["label"] = field.related_model._meta.verbose_name_plural
+                    else:
+                        display["label"] = field.verbose_name
                 except FieldDoesNotExist:
                     display["label"] = key.capitalize()
             result[key] = display

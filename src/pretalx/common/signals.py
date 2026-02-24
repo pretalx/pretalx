@@ -34,8 +34,6 @@ class EventPluginSignal(django.dispatch.Signal):
 
     def get_live_receivers(self, sender):
         receivers = self._live_receivers(sender)
-        if not receivers:
-            return []
         return receivers[0]
 
     @staticmethod
@@ -113,7 +111,7 @@ class EventPluginSignal(django.dispatch.Signal):
             if self._is_active(sender, receiver):
                 try:
                     response = receiver(signal=self, sender=sender, **named)
-                except Exception as err:  # noqa: BLE001
+                except Exception as err:  # noqa: BLE001 -- signal handlers must not propagate unexpected exceptions
                     responses.append((receiver, err))
                 else:
                     responses.append((receiver, response))
@@ -181,20 +179,20 @@ def minimum_interval(
             except Exception:
                 try:
                     cache.set(key_result, "error", timeout=minutes_after_error * 60)
-                except Exception:
+                except Exception:  # pragma: no cover — cache backend failure
                     logger.exception("Could not store result")
                 raise
             else:
                 try:
                     cache.set(key_result, "success", timeout=minutes_after_success * 60)
-                except Exception:
+                except Exception:  # pragma: no cover — cache backend failure
                     logger.exception("Could not store result")
                 return retval
             finally:
                 try:
                     if cache.get(key_running) == uniqid:
                         cache.delete(key_running)
-                except Exception:
+                except Exception:  # pragma: no cover — cache backend failure
                     logger.exception("Could not release lock")
 
         return wrapper

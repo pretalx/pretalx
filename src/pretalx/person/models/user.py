@@ -238,8 +238,7 @@ class User(
             )
 
             speaker = SpeakerProfile(event=event, user=self, name=self.name)
-            if self.pk:
-                speaker.save()
+            speaker.save()
 
         self.speaker_cache[event.pk] = speaker
         return speaker

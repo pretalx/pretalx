@@ -131,19 +131,19 @@ def validate_key(*, key, style):
 
 
 def validate_rules(rules):
-    from cssutils.css import CSSMediaRule  # noqa: PLC0415
+    from cssutils.css import CSSMediaRule  # noqa: PLC0415 -- slow import
 
     for rule in rules:
         if isinstance(rule, CSSMediaRule):
             validate_rules(rule.cssRules)
         else:
             style = rule.style
-            for key in style.keys():  # noqa: SIM118
+            for key in style.keys():  # noqa: SIM118 -- .keys() required; cssutils CSSStyleDeclaration doesn't support direct iteration
                 validate_key(key=key, style=style)
 
 
 def validate_css(css):
-    from cssutils import CSSParser  # noqa: PLC0415
+    from cssutils import CSSParser  # noqa: PLC0415 -- slow import
 
     try:
         parser = CSSParser(raiseExceptions=True, parseComments=False)

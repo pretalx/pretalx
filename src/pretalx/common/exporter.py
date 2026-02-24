@@ -164,9 +164,9 @@ class BaseExporter:
         base = "{self.event.urls.export}{self.quoted_identifier}"
 
     def get_qrcode(self):
-        import qrcode  # noqa: PLC0415
-        import qrcode.image.svg  # noqa: PLC0415
-        from defusedxml import ElementTree  # noqa: PLC0415
+        import qrcode  # noqa: PLC0415 -- slow import
+        import qrcode.image.svg  # noqa: PLC0415 -- slow import
+        from defusedxml import ElementTree  # noqa: PLC0415 -- slow import
 
         image = qrcode.make(
             self.urls.base.full(), image_factory=qrcode.image.svg.SvgPathFillImage
@@ -179,7 +179,9 @@ class CSVExporterMixin:
     content_type = "text/plain"
 
     def get_data(self, request, **kwargs):
-        from defusedcsv import csv  # noqa: PLC0415
+        from defusedcsv import (  # noqa: PLC0415 -- lazy import to reduce startup cost
+            csv,
+        )
 
         fieldnames, data = self.get_csv_data(request, **kwargs)
         output = StringIO()

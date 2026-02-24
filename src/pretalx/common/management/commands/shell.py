@@ -86,7 +86,7 @@ class Command(shell.Command):
             interface = options.get("interface")
             if interface not in ("bpython", "python"):
                 with suppress(ImportError):
-                    import IPython  # noqa: F401, PLC0415
+                    import IPython  # noqa: F401, PLC0415 -- lazy import; IPython is optional
 
                     use_ipython_style = True
 
@@ -101,16 +101,23 @@ class Command(shell.Command):
             with scope(event=event):
                 return super().handle(*args, **options)
         finally:
-            if "PYTHONSTARTUP" in os.environ:
+            if (
+                "PYTHONSTARTUP" in os.environ
+            ):  # pragma: no branch -- only untaken on tempfile creation failure
                 del os.environ["PYTHONSTARTUP"]
 
-            startup_file = Path(startup_file_name)
-            if startup_file_name and startup_file.exists():
-                startup_file.unlink()
+            if startup_file_name:
+                startup_file = Path(startup_file_name)
+                if startup_file.exists():
+                    startup_file.unlink()
 
     def ipython(self, options):
-        from IPython import start_ipython  # noqa: PLC0415
-        from traitlets.config import Config  # noqa: PLC0415
+        from IPython import (  # noqa: PLC0415 -- lazy import; optional dependency
+            start_ipython,
+        )
+        from traitlets.config import (  # noqa: PLC0415 -- lazy import; optional dependency
+            Config,
+        )
 
         config = Config()
         config.TerminalIPythonApp.display_banner = False

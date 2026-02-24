@@ -59,7 +59,7 @@ DEBUG_DOMAINS = ["localhost", "example.org", "example.com"]
 
 @scopes_disabled()
 def _mark_mail_sent(queued_mail_id):
-    from pretalx.mail.models import QueuedMail  # noqa: PLC0415
+    from pretalx.mail.models import QueuedMail  # noqa: PLC0415 -- avoid circular import
 
     try:
         mail = QueuedMail.objects.get(pk=queued_mail_id)
@@ -71,7 +71,7 @@ def _mark_mail_sent(queued_mail_id):
 
 @scopes_disabled()
 def _mark_mail_failed(queued_mail_id, exception):
-    from pretalx.mail.models import QueuedMail  # noqa: PLC0415
+    from pretalx.mail.models import QueuedMail  # noqa: PLC0415 -- avoid circular import
 
     try:
         mail = QueuedMail.objects.get(pk=queued_mail_id)
@@ -153,7 +153,7 @@ def mail_send_task(
         reply_to=reply_to,
     )
     if html is not None:
-        import css_inline  # noqa: PLC0415
+        import css_inline  # noqa: PLC0415 -- lazy import to reduce startup cost
 
         inliner = css_inline.CSSInliner(keep_style_tags=False)
         body_html = inliner.inline(html)

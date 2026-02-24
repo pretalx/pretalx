@@ -34,7 +34,7 @@ def get_language_scores():
 class Command(BaseCommand):
     help = "Update translation percentages in the JSON file based on actual translation completeness"
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # pragma: no cover -- pure file I/O
         updated_percentages = get_language_scores()
         json_path = settings.LOCALE_PATHS[0] / "translation_percentages.json"
         with json_path.open("w") as f:
