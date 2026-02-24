@@ -422,6 +422,8 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
         return self.reverse("detail", instance=self.object)
 
     def paginate_queryset(self, queryset, page_size):
+        if not queryset.ordered:
+            queryset = queryset.order_by("pk")
         paginator = Paginator(queryset, page_size)
         page_number = self.request.GET.get("page") or 1
         if page_number == "last":
@@ -562,7 +564,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
         )
 
     @classonlymethod
-    def as_view(cls, action, url_name, namespace):  # noqa: N805
+    def as_view(cls, action, url_name, namespace):  # noqa: N805 -- classmethod alternative constructor
         def view(request, *args, **kwargs):
             self = cls()
             self.action = action
@@ -584,7 +586,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
         return view
 
     @classonlymethod
-    def get_url_pattern(cls, url_base, action):  # noqa: N805
+    def get_url_pattern(cls, url_base, action):  # noqa: N805 -- classmethod alternative constructor
         if action == "list":
             return f"{url_base}/"
         if action == "create":
@@ -598,7 +600,7 @@ class CRUDView(PaginationMixin, FormLoggingMixin, Filterable, View):
             return f"{url_base}/delete/"
 
     @classonlymethod
-    def get_urls(cls, url_base, url_name, namespace=None, actions=None):  # noqa: N805
+    def get_urls(cls, url_base, url_name, namespace=None, actions=None):  # noqa: N805 -- classmethod alternative constructor
         actions = actions or CRUDHandlerMap.keys()
         if cls.detail_is_update:
             actions = [action for action in actions if action != "detail"]

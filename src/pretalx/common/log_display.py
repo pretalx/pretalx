@@ -235,9 +235,7 @@ def default_activitylog_object_link(sender: Event, activitylog: ActivityLog, **k
         url = activitylog.content_object.orga_urls.base
         text = _("Event")
         link_text = escape(activitylog.content_object.name)
-    if url:
-        if not link_text:
-            link_text = url
-        return f'{text} <a href="{url}">{link_text}</a>'
-    if text or link_text:
-        return f"{text} {link_text}"
+    link_text = link_text or url
+    url_string = f'<a href="{url}">{link_text}</a>' if url else link_text
+    if text or url_string.strip():
+        return f"{text} {url_string}".strip()

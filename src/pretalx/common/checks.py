@@ -40,7 +40,9 @@ def check_celery(app_configs, **kwargs):
     else:
         try:
             client = app.broker_connection().channel().client
-            client.llen("celery")
+            client.llen(
+                "celery"
+            )  # pragma: no cover — requires a running message broker
         except OSError as e:
             # Only warning, as the task runner may just still be starting up
             errors.append(

@@ -65,7 +65,7 @@ def update_check():
             for plugin in get_all_plugins()
         ],
     }
-    import requests  # noqa: PLC0415
+    import requests  # noqa: PLC0415 -- slow import
 
     try:
         response = requests.post(
