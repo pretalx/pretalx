@@ -234,12 +234,7 @@ class ProfilePictureField(FileField):
             return
 
         old_picture = instance.profile_picture
-        new_picture = None
-
-        if value is False:
-            new_picture = None
-        elif isinstance(value, ProfilePicture):
-            new_picture = value
+        new_picture = value if isinstance(value, ProfilePicture) else None
 
         if new_picture != old_picture:
             instance.profile_picture = new_picture
@@ -466,11 +461,8 @@ class AvailabilitiesField(CharField):
             value = json.dumps(value)
         value = super().clean(value)
         if not value:
-            if self.required:
-                raise ValidationError(
-                    self.error_messages["required_availability"],
-                    code="required_availability",
-                )
+            # When required=True, CharField.clean() already raises before we
+            # reach here, so only the not-required path is live.
             return []
 
         rawavailabilities = self._parse_availabilities_json(value)

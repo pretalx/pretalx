@@ -145,7 +145,9 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
         self, name, email_base, locale="en", timezone="Europe/Berlin", max_retries=10
     ):
         """Create a user with retry logic for handling IntegrityError on non-unique emails."""
-        for attempt in range(max_retries):
+        for attempt in range(
+            max_retries
+        ):  # pragma: no branch -- loop always exits via return or raise
             try:
                 if attempt == 0:
                     email = email_base
@@ -351,7 +353,9 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
                 Faker.seed(int(seed))
 
             self.fake = Faker()
-        except ImportError:
+        except (
+            ImportError
+        ):  # pragma: no cover -- optional dependency, always present in test env
             self.stdout.write(
                 self.style.ERROR('Please run "pip install Faker" to use this command.')
             )
@@ -361,7 +365,9 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
             from freezegun import freeze_time  # noqa: PLC0415
 
             self.freeze_time = freeze_time
-        except ImportError:
+        except (
+            ImportError
+        ):  # pragma: no cover -- optional dependency, always present in test env
             self.stdout.write(
                 self.style.ERROR(
                     'Please run "pip install freezegun" to use this command.'

@@ -81,7 +81,7 @@ def render_diff(old_value, new_value, threshold=None):
             old_html_parts.append(f"<del>{escape(cleaned)}</del>")
         elif op == diff_match_patch.DIFF_INSERT:
             new_html_parts.append(f"<ins>{escape(cleaned)}</ins>")
-        elif op == diff_match_patch.DIFF_EQUAL:
+        else:
             old_html_parts.append(escape(cleaned))
             new_html_parts.append(escape(cleaned))
 

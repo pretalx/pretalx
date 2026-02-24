@@ -31,7 +31,4 @@ class UserTokenAuthentication(TokenAuthentication):
         except model.DoesNotExist:
             raise exceptions.AuthenticationFailed("Invalid token.") from None
 
-        if not token.is_active:
-            raise exceptions.AuthenticationFailed("Token inactive or deleted.")
-
         return token.user, token

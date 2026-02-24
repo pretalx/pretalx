@@ -368,30 +368,10 @@ class OrderedModel:
     """
 
     order_field = "position"
-    order_up_url = "urls.up"
-    order_down_url = "urls.down"
 
     @staticmethod
     def get_order_queryset(**kwargs):
         raise NotImplementedError
-
-    def _get_attribute(self, attribute):
-        result = self
-        for part in attribute.split("."):
-            result = getattr(result, part)
-        return result
-
-    def get_down_url(self):
-        return self._get_attribute(self.order_down_url)
-
-    def get_up_url(self):
-        return self._get_attribute(self.order_up_url)
-
-    def up(self):
-        return self._move(up=True)
-
-    def down(self):
-        return self._move(up=False)
 
     @property
     def order_queryset(self):

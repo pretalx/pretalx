@@ -6,7 +6,7 @@ from io import BytesIO
 from pathlib import Path
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
+from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.core.files.base import ContentFile
 from django.utils.translation import gettext_lazy as _
 
@@ -106,7 +106,7 @@ def process_image(*, image, generate_thumbnail=False):
 
     img = ImageOps.exif_transpose(img)
     img_without_exif = Image.new(img.mode, img.size)
-    img_without_exif.putdata(img.getdata())
+    img_without_exif.putdata(img.get_flattened_data())
     img_without_exif.thumbnail(MAX_DIMENSIONS, resample=Image.Resampling.LANCZOS)
 
     # Overwrite the original image with the processed, converted image
@@ -142,7 +142,9 @@ def create_thumbnail(image, size, processed_img=None):
     if size not in THUMBNAIL_SIZES:
         return None
     thumbnail_field_name = get_thumbnail_field_name(image, size)
-    if not image.instance._meta.get_field(thumbnail_field_name):
+    try:
+        image.instance._meta.get_field(thumbnail_field_name)
+    except FieldDoesNotExist:
         return None
 
     img = None
@@ -166,7 +168,9 @@ def create_thumbnail(image, size, processed_img=None):
 
 def get_thumbnail(image, size):
     thumbnail_field_name = get_thumbnail_field_name(image, size)
-    if not (image.instance._meta.get_field(thumbnail_field_name)):
+    try:
+        image.instance._meta.get_field(thumbnail_field_name)
+    except FieldDoesNotExist:
         return image
 
     thumbnail_field = getattr(image.instance, thumbnail_field_name, None)

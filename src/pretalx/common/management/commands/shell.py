@@ -101,12 +101,15 @@ class Command(shell.Command):
             with scope(event=event):
                 return super().handle(*args, **options)
         finally:
-            if "PYTHONSTARTUP" in os.environ:
+            if (
+                "PYTHONSTARTUP" in os.environ
+            ):  # pragma: no branch -- only untaken on tempfile creation failure
                 del os.environ["PYTHONSTARTUP"]
 
-            startup_file = Path(startup_file_name)
-            if startup_file_name and startup_file.exists():
-                startup_file.unlink()
+            if startup_file_name:
+                startup_file = Path(startup_file_name)
+                if startup_file.exists():
+                    startup_file.unlink()
 
     def ipython(self, options):
         from IPython import start_ipython  # noqa: PLC0415

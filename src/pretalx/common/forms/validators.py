@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 
 
 class ZXCVBNValidator:
-    DEFAULT_USER_ATTRIBUTES = ("first_name", "last_name", "email")
+    DEFAULT_USER_ATTRIBUTES = ("name", "email")
 
     def __init__(self, min_score=3, user_attributes=DEFAULT_USER_ATTRIBUTES):
         if not (0 <= min_score <= 4):

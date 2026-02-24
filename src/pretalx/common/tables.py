@@ -73,7 +73,10 @@ class QuestionColumnMixin:
 
         try:
             record_ids = [row.record.pk for row in self.rows]
-        except (AttributeError, TypeError):
+        except (
+            AttributeError,
+            TypeError,
+        ):  # pragma: no cover -- defensive fallback for partially-initialised tables
             record_ids = [record.pk for record in self.data]
 
         if not record_ids:
@@ -393,9 +396,8 @@ class FunctionOrderMixin:
                     continue
 
                 lookup = key
-                if getattr(lookup, "source_expressions", None):
-                    while isinstance(lookup.source_expressions[0], Transform):
-                        lookup = lookup.source_expressions[0]
+                while isinstance(lookup.source_expressions[0], Transform):
+                    lookup = lookup.source_expressions[0]
 
                 plain_field = lookup.source_expressions[0].name
                 self.order_function_lookup[plain_field] = key

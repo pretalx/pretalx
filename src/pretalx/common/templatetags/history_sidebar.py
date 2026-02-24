@@ -89,10 +89,6 @@ def change_row(context, field, change, log):
     elif getattr(log.content_object, f"get_{field}_display", None):
         result["old"] = get_display(log.content_object, field, old_value)
         result["new"] = get_display(log.content_object, field, new_value)
-    elif getattr(field, "choices", None):
-        choices = dict(field_obj.choices)
-        result["old"] = choices.get(old_value, old_value)
-        result["new"] = choices.get(new_value, new_value)
     elif isinstance(old_value, dict) or isinstance(new_value, dict):
         if not isinstance(old_value, dict):
             old_value = {event.locale: old_value or ""}

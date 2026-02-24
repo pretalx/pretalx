@@ -230,8 +230,7 @@ class User(
             from pretalx.person.models.profile import SpeakerProfile  # noqa: PLC0415
 
             speaker = SpeakerProfile(event=event, user=self, name=self.name)
-            if self.pk:
-                speaker.save()
+            speaker.save()
 
         self.speaker_cache[event.pk] = speaker
         return speaker
