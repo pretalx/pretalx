@@ -71,9 +71,6 @@ def export_question_files(*, question_id: int, cached_file_id: str):
         try:
             with zipfile.ZipFile(tmp_zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
                 for answer in answers:
-                    if not answer.answer_file:
-                        continue
-
                     base_filename = safe_filename(Path(answer.answer_file.name).name)
                     filename = base_filename
 

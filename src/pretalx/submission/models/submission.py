@@ -6,7 +6,6 @@
 # SPDX-FileContributor: Raphael Michel
 # SPDX-FileContributor: luto
 
-import copy
 import datetime as dt
 import json
 import statistics
@@ -559,13 +558,15 @@ class Submission(GenerateCode, PretalxModel):
         old_state = self.state
         self.state = new_state
         self.pending_state = None
+        update_fields = ["state", "pending_state"]
         if new_state in (
             SubmissionStates.REJECTED,
             SubmissionStates.CANCELED,
             SubmissionStates.WITHDRAWN,
         ):
             self.is_featured = False
-        self.save(update_fields=["state", "pending_state"])
+            update_fields.append("is_featured")
+        self.save(update_fields=update_fields)
         self.update_talk_slots()
         submission_state_change.send_robust(
             self.event,
@@ -627,7 +628,6 @@ class Submission(GenerateCode, PretalxModel):
         from pretalx.mail.models import MailTemplateRoles  # noqa: PLC0415
 
         template = self.event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
-        template_text = copy.deepcopy(template.text)
         locale = self.get_email_locale(person.locale)
         with override(locale):
             if "{full_submission_content}" not in str(template.text):
@@ -645,10 +645,6 @@ class Submission(GenerateCode, PretalxModel):
             commit=True,  # Send immediately, but save a record
             locale=self.get_email_locale(person.locale),
         )
-        template.refresh_from_db()
-        if template.text != template_text:
-            template.text = template_text
-            template.save()
         if self.event.mail_settings["mail_on_new_submission"]:
             self.event.get_mail_template(
                 MailTemplateRoles.NEW_SUBMISSION_INTERNAL

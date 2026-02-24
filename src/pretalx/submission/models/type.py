@@ -89,10 +89,8 @@ class SubmissionType(PretalxModel):
         if self.default_duration > 90:
             hours = self.default_duration // 60
             minutes = self.default_duration % 60
-            if hours == 1 and minutes:
+            if hours == 1:
                 duration = _("1 hour, {minutes} minutes").format(minutes=minutes)
-            elif hours == 1:
-                duration = _("1 hour")
             elif minutes:
                 duration = _("{hours} hours, {minutes} minutes").format(
                     hours=hours, minutes=minutes
