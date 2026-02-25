@@ -29,14 +29,12 @@ def get_schedule_exporters(request, public=False):
     exporters = [
         exporter(request.event)
         for _, exporter in register_data_exporters.send_robust(request.event)
+        if not isinstance(exporter, Exception)
     ]
     return [
         exporter
         for exporter in exporters
-        if (
-            not isinstance(exporter, Exception)
-            and is_visible(exporter, request, public=public)
-        )
+        if is_visible(exporter, request, public=public)
     ]
 
 
