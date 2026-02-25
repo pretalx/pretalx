@@ -27,7 +27,7 @@ def color_etag(request, event, **kwargs):
 
 
 def _load_widget_js():
-    global WIDGET_JS_CHECKSUM, WIDGET_JS_CONTENT  # noqa: PLW0603
+    global WIDGET_JS_CHECKSUM, WIDGET_JS_CONTENT  # noqa: PLW0603 -- module-level cache for widget JS
     if WIDGET_JS_CONTENT is None:
         file_path = Path(finders.find(WIDGET_PATH))
         with file_path.open(encoding="utf-8") as fp:
