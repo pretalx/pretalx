@@ -1,4 +1,5 @@
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django_scopes import scopes_disabled
 
 from pretalx.submission.models import SubmissionStates
@@ -122,5 +123,32 @@ def talk_slot(event):
 
 
 @pytest.fixture
+def published_talk_slot(talk_slot):
+    """A talk slot in a released schedule — event.current_schedule is set,
+    so event.talks and event.speakers are populated."""
+    with scopes_disabled():
+        talk_slot.schedule.freeze("v1", notify_speakers=False)
+    return talk_slot
+
+
+@pytest.fixture
 def schedule_with_talk(talk_slot):
     return talk_slot.schedule
+
+
+@pytest.fixture
+def make_image():
+    """Returns a factory function that creates a minimal valid 1x1 PNG as a
+    SimpleUploadedFile. Useful for any test that needs a real image file
+    (e.g. avatar uploads, submission images)."""
+
+    def _make(name="test.png"):
+        data = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
+            b"\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00"
+            b"\x00\x00\x0cIDATx\x9cc\xf8\xcf\xc0\x00\x00\x03\x01"
+            b"\x01\x00\xc9\xfe\x92\xef\x00\x00\x00\x00IEND\xaeB`\x82"
+        )
+        return SimpleUploadedFile(name, data, content_type="image/png")
+
+    return _make

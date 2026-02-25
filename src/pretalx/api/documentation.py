@@ -23,7 +23,9 @@ if settings.LOAD_SPECTACULAR:
 
         SPECTACULAR_LOADED = True
 
-if not settings.LOAD_SPECTACULAR or not SPECTACULAR_LOADED:
+if (
+    not settings.LOAD_SPECTACULAR or not SPECTACULAR_LOADED
+):  # pragma: no cover -- shim fallback is only used when drf_spectacular is not installed, which is not the case in tests
     from pretalx.api.shims import (
         OpenApiExample,  # noqa: F401
         OpenApiParameter,  # noqa: F401
