@@ -1,4 +1,4 @@
-from tests.factories.common import CachedFileFactory
+from tests.factories.common import ActivityLogFactory, CachedFileFactory
 from tests.factories.event import (
     EventExtraLinkFactory,
     EventFactory,
@@ -39,6 +39,7 @@ from tests.factories.submission import (
 )
 
 __all__ = [
+    "ActivityLogFactory",
     "CachedFileFactory",
     "AnswerFactory",
     "AnswerOptionFactory",
