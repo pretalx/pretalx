@@ -19,7 +19,9 @@ LOGGER = logging.getLogger(__name__)
 
 @app.task(name="pretalx.agenda.export_schedule_html")
 def export_schedule_html(*, event_id, cached_file_id=None):
-    from django.core.management import call_command  # noqa: PLC0415
+    from django.core.management import (  # noqa: PLC0415 -- avoid circular import
+        call_command,
+    )
 
     with scopes_disabled():
         event = (
