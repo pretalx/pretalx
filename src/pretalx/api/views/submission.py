@@ -182,11 +182,6 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         if not self.request.user.has_perm(
             "submission.orga_list_submission", self.event
         ):
-            if (
-                not self.request.user.has_perm("schedule.list_schedule", self.event)
-                or not self.event.current_schedule
-            ):
-                return Submission.objects.none()
             return base_qs.filter(
                 pk__in=self.event.current_schedule.talks.filter(
                     is_visible=True

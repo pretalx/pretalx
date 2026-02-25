@@ -38,7 +38,7 @@ class UploadedFileField(serializers.Field):
         except (ValidationError, IndexError, CachedFile.DoesNotExist):
             self.fail("not_found")
 
-        if self.allowed_types and cf.type not in self.allowed_types:
+        if self.allowed_types and cf.content_type not in self.allowed_types:
             self.fail("invalid_type")
         if self.max_size and cf.file.size > self.max_size:
             self.fail("size")

@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.utils.functional import cached_property
-from rest_flex_fields import is_expanded
 from rest_framework import exceptions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -42,7 +41,7 @@ class PretalxViewSetMixin:
     def get_serializer_class(self):
         if hasattr(self, "get_unversioned_serializer_class"):
             base_class = self.get_unversioned_serializer_class()
-        elif hasattr(self, "serializer_class"):
+        else:
             base_class = self.serializer_class
         return self.get_versioned_serializer(base_class.__name__)
 
@@ -58,22 +57,16 @@ class PretalxViewSetMixin:
         serializer.instance.log_action(".create", person=self.request.user, orga=True)
 
     def perform_update(self, serializer):
-        old_data = None
-        if hasattr(serializer.instance, "get_instance_data"):
-            old_data = serializer.instance.get_instance_data()
-
+        old_data = serializer.instance.get_instance_data()
         super().perform_update(serializer)
-
-        new_data = None
-        if hasattr(serializer.instance, "get_instance_data"):
-            new_data = serializer.instance.get_instance_data()
-
-        log_kwargs = {"person": self.request.user, "orga": True}
-        if old_data is not None and new_data is not None:
-            log_kwargs["old_data"] = old_data
-            log_kwargs["new_data"] = new_data
-
-        serializer.instance.log_action(".update", **log_kwargs)
+        new_data = serializer.instance.get_instance_data()
+        serializer.instance.log_action(
+            ".update",
+            person=self.request.user,
+            orga=True,
+            old_data=old_data,
+            new_data=new_data,
+        )
 
     @cached_property
     def event(self):
@@ -86,7 +79,9 @@ class PretalxViewSetMixin:
         return self.request.user.has_perm(permission_name, obj or self.event)
 
     def check_expanded_fields(self, *args):
-        return [arg for arg in args if is_expanded(self.request, arg)]
+        expand_value = self.request.query_params.get("expand", "")
+        expand_fields = [f.strip() for f in expand_value.split(",") if f.strip()]
+        return [arg for arg in args if arg in expand_fields]
 
 
 class ActivityLogMixin:
@@ -99,19 +94,9 @@ class ActivityLogMixin:
     def log(self, request, **kwargs):
         """Return log entries for this object."""
         obj = self.get_object()
-
-        if not hasattr(obj, "logged_actions"):
-            raise exceptions.MethodNotAllowed(method="GET")
-
         logs = obj.logged_actions().select_related("person", "event")
         page = self.paginate_queryset(logs)
-        if page is not None:
-            serializer = ActivityLogSerializer(
-                page, many=True, context=self.get_serializer_context()
-            )
-            return self.get_paginated_response(serializer.data)
-
         serializer = ActivityLogSerializer(
-            logs, many=True, context=self.get_serializer_context()
+            page, many=True, context=self.get_serializer_context()
         )
-        return Response(serializer.data)
+        return self.get_paginated_response(serializer.data)

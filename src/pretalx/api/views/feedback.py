@@ -72,10 +72,7 @@ class FeedbackViewSet(
             "submission.track", "submission.submission_type"
         ):
             queryset = queryset.select_related(
-                *[
-                    field.replace("submission", "talk").replace(".", "__")
-                    for field in fields
-                ]
+                *[field.replace("submission.", "talk__", 1) for field in fields]
             )
         return queryset
 
