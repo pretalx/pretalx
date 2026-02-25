@@ -119,8 +119,8 @@ class SubmissionTypeSerializer(PretalxSerializer):
 
     def update(self, instance, validated_data):
         duration_changed = (
-            "duration" in validated_data
-            and validated_data["duration"] != instance.duration
+            "default_duration" in validated_data
+            and validated_data["default_duration"] != instance.default_duration
         )
         result = super().update(instance, validated_data)
         if duration_changed:

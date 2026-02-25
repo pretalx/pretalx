@@ -54,9 +54,9 @@ class UploadView(APIView):
         tags=["file-uploads"],
     )
     def post(self, request):
-        if "file" not in request.data:
+        file_obj = request.data.get("file")
+        if not file_obj:
             raise ValidationError("No file has been submitted.")
-        file_obj = request.data["file"]
         content_type = file_obj.content_type.split(";")[0]  # ignore e.g. "; charset=…"
         if not (allowed_extensions := self.allowed_types.get(content_type)):
             raise ValidationError("Content type is not allowed.")

@@ -65,6 +65,7 @@ class LegacySubmitterOrgaSerializer(LegacySubmitterSerializer):
         fields = (*LegacySubmitterSerializer.Meta.fields, "email")
 
 
+@register_serializer(versions=[LEGACY])
 class LegacySpeakerSerializer(ModelSerializer):
     code = CharField(read_only=True)
     name = SerializerMethodField()
@@ -115,6 +116,7 @@ class LegacySpeakerSerializer(ModelSerializer):
         fields = ("code", "name", "biography", "submissions", "avatar", "answers")
 
 
+@register_serializer(versions=[LEGACY])
 class LegacySpeakerOrgaSerializer(LegacySpeakerSerializer):
     email = CharField(source="user.email")
     availabilities = AvailabilitySerializer(
@@ -135,6 +137,7 @@ class LegacySpeakerOrgaSerializer(LegacySpeakerSerializer):
         fields = (*LegacySpeakerSerializer.Meta.fields, "email", "availabilities")
 
 
+@register_serializer(versions=[LEGACY])
 class LegacySpeakerReviewerSerializer(LegacySpeakerOrgaSerializer):
     def answers_queryset(self, obj):
         queryset = obj.reviewer_answers.all()

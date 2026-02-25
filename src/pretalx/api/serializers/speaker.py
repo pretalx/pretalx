@@ -139,7 +139,7 @@ class SpeakerUpdateSerializer(SpeakerOrgaSerializer):
     def validate_email(self, value):
         value = value.lower()
         if (
-            User.objects.exclude(pk=self.instance.pk)
+            User.objects.exclude(pk=self.instance.user_id)
             .filter(email__iexact=value)
             .exists()
         ):

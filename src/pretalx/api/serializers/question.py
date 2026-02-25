@@ -279,7 +279,7 @@ class AnswerCreateSerializer(AnswerSerializer):
         target = question.target
         submission = self.get_with_fallback(data, "submission")
         review = self.get_with_fallback(data, "review")
-        speaker = self.get_with_fallback(data, "person")
+        speaker = self.get_with_fallback(data, "speaker")
         if target == QuestionTarget.SUBMISSION and not submission:
             raise exceptions.ValidationError(
                 {"submission": "This field is required for submission questions."}
