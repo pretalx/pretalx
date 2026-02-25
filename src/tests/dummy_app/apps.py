@@ -16,6 +16,9 @@ class PluginApp(AppConfig):
         version = "0.0.0"
         category = "OTHER"
 
+    def is_available(self, event):
+        return getattr(event, "_dummy_available", True)
+
     def installed(self, event):
         installed_events.append(event.slug)
 

@@ -1,5 +1,9 @@
+from io import BytesIO
+
 import pytest
+from django.core.cache import caches
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 from django_scopes import scopes_disabled
 
 from pretalx.submission.models import SubmissionStates
@@ -21,6 +25,26 @@ from tests.factories import (
     TrackFactory,
     UserFactory,
 )
+
+
+@pytest.fixture
+def locmem_cache():
+    """Replace the DummyCache test default with a real LocMemCache so that
+    cache operations actually store and retrieve data.
+
+    Apply to individual tests or whole files via
+    ``@pytest.mark.usefixtures("locmem_cache")`` or
+    ``pytestmark = [... pytest.mark.usefixtures("locmem_cache")]``.
+    The cache is cleared before each test to guarantee isolation."""
+    locmem_settings = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "test-cache-unique",
+        }
+    }
+    with override_settings(CACHES=locmem_settings):
+        caches["default"].clear()
+        yield
 
 
 @pytest.fixture
@@ -138,17 +162,29 @@ def schedule_with_talk(talk_slot):
 
 @pytest.fixture
 def make_image():
-    """Returns a factory function that creates a minimal valid 1x1 PNG as a
+    """Returns a factory function that creates a minimal valid PNG as a
     SimpleUploadedFile. Useful for any test that needs a real image file
-    (e.g. avatar uploads, submission images)."""
+    (e.g. avatar uploads, submission images).
 
-    def _make(name="test.png"):
-        data = (
-            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
-            b"\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00"
-            b"\x00\x00\x0cIDATx\x9cc\xf8\xcf\xc0\x00\x00\x03\x01"
-            b"\x01\x00\xc9\xfe\x92\xef\x00\x00\x00\x00IEND\xaeB`\x82"
-        )
+    Call as ``make_image()`` for a 1×1 default, or
+    ``make_image("logo.png", width=10, height=10)`` for custom dimensions."""
+    from PIL import Image  # noqa: PLC0415
+
+    # Pre-built 1×1 PNG for the common case (avoids PIL overhead)
+    _1x1 = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
+        b"\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00"
+        b"\x00\x00\x0cIDATx\x9cc\xf8\xcf\xc0\x00\x00\x03\x01"
+        b"\x01\x00\xc9\xfe\x92\xef\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+
+    def _make(name="test.png", *, width=1, height=1):
+        if width == 1 and height == 1:
+            data = _1x1
+        else:
+            buf = BytesIO()
+            Image.new("RGB", (width, height), color="red").save(buf, format="PNG")
+            data = buf.getvalue()
         return SimpleUploadedFile(name, data, content_type="image/png")
 
     return _make
