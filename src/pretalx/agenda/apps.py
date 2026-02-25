@@ -10,8 +10,12 @@ class AgendaConfig(AppConfig):
     name = "pretalx.agenda"
 
     def ready(self):
-        from .phrases import AgendaPhrases  # noqa: F401, PLC0415
+        from .phrases import (  # noqa: F401, PLC0415 -- register phrases on startup
+            AgendaPhrases,
+        )
 
 
 with suppress(ImportError):
-    from pretalx import celery_app as celery  # noqa: F401
+    from pretalx import (
+        celery_app as celery,  # noqa: F401 -- register celery app on startup
+    )

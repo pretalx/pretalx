@@ -1,7 +1,25 @@
+from django.contrib.auth.models import AnonymousUser
+from django.test import RequestFactory
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
+_rf = RequestFactory()
 _api_rf = APIRequestFactory()
+
+
+def make_request(event, user=None, method="get", path="/", headers=None, **attrs):
+    """Create a Django request for view unit tests.
+
+    Sets ``event`` on the request.  ``user`` defaults to ``AnonymousUser``
+    to match Django middleware behaviour; pass a real user for authenticated
+    tests.  Any extra keyword arguments are set as request attributes
+    (e.g. ``resolver_match``)."""
+    request = getattr(_rf, method)(path, **({"headers": headers} if headers else {}))
+    request.event = event
+    request.user = user if user is not None else AnonymousUser()
+    for key, value in attrs.items():
+        setattr(request, key, value)
+    return request
 
 
 def make_api_request(event=None, user=None, auth=None, path="/", data=None, **attrs):
@@ -23,6 +41,14 @@ def make_api_request(event=None, user=None, auth=None, path="/", data=None, **at
     if user is not None:
         drf_request.user = user
     return drf_request
+
+
+def make_view(view_class, request, **kwargs):
+    """Instantiate a view with request and kwargs, without dispatching."""
+    view = view_class()
+    view.request = request
+    view.kwargs = kwargs
+    return view
 
 
 def refresh(instance, **updates):
