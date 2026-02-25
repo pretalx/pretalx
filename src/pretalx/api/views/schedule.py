@@ -170,9 +170,7 @@ class ScheduleViewSet(PretalxViewSetMixin, viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["POST"])
     def release(self, request, event):
         wip_schedule = request.event.wip_schedule
-        serializer = ScheduleReleaseSerializer(
-            data=request.data, context=self.get_serializer_context()
-        )
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         version_name = serializer.validated_data.get("version")

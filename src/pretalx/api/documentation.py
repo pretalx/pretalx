@@ -12,27 +12,27 @@ if settings.LOAD_SPECTACULAR:
     with suppress(ImportError):
         from drf_spectacular.types import OpenApiTypes
         from drf_spectacular.utils import (
-            OpenApiExample,  # noqa: F401
-            OpenApiParameter,  # noqa: F401
-            OpenApiResponse,  # noqa: F401
-            extend_schema,  # noqa: F401
-            extend_schema_field,  # noqa: F401
-            extend_schema_serializer,  # noqa: F401
-            extend_schema_view,  # noqa: F401
+            OpenApiExample,  # noqa: F401 -- re-export for shims and import times
+            OpenApiParameter,  # noqa: F401 -- re-export for shims and import times
+            OpenApiResponse,  # noqa: F401 -- re-export for shims and import times
+            extend_schema,  # noqa: F401 -- re-export for shims and import times
+            extend_schema_field,  # noqa: F401 -- re-export for shims and import times
+            extend_schema_serializer,  # noqa: F401 -- re-export for shims and import times
+            extend_schema_view,  # noqa: F401 -- re-export for shims and import times
         )
 
         SPECTACULAR_LOADED = True
 
 if not settings.LOAD_SPECTACULAR or not SPECTACULAR_LOADED:
     from pretalx.api.shims import (
-        OpenApiExample,  # noqa: F401
-        OpenApiParameter,  # noqa: F401
-        OpenApiResponse,  # noqa: F401
-        OpenApiTypes,  # noqa: F401
-        extend_schema,  # noqa: F401
-        extend_schema_field,  # noqa: F401
-        extend_schema_serializer,  # noqa: F401
-        extend_schema_view,  # noqa: F401
+        OpenApiExample,  # noqa: F401 -- re-export for shims and import times
+        OpenApiParameter,  # noqa: F401 -- re-export for shims and import times
+        OpenApiResponse,  # noqa: F401 -- re-export for shims and import times
+        OpenApiTypes,  # noqa: F401 -- re-export for shims and import times
+        extend_schema,  # noqa: F401 -- re-export for shims and import times
+        extend_schema_field,  # noqa: F401 -- re-export for shims and import times
+        extend_schema_serializer,  # noqa: F401 -- re-export for shims and import times
+        extend_schema_view,  # noqa: F401 -- re-export for shims and import times
     )
 
 

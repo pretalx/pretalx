@@ -159,14 +159,13 @@ class AnswerOptionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelV
         return self.serializer_class
 
     def perform_destroy(self, instance):
-        try:
-            with transaction.atomic():
-                instance.logged_actions().delete()
-                return super().perform_destroy(instance)
-        except ProtectedError:
+        if instance.answers.exists():
             raise exceptions.ValidationError(
                 "You cannot delete an option object that has been used in answers."
-            ) from None
+            )
+        with transaction.atomic():
+            instance.logged_actions().delete()
+            return super().perform_destroy(instance)
 
 
 @extend_schema_view(

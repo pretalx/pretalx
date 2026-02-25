@@ -79,9 +79,7 @@ class TeamSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
                 team__organiser=request.organiser
             )
         if self.instance and not isinstance(self.instance, list) and self.instance.pk:
-            self.fields["limit_events"].queryset = Track.objects.filter(
-                event__in=self.instance.events.all()
-            )
+            self.fields["limit_events"].queryset = self.instance.events.all()
             self.fields["members"].queryset = self.instance.members.all()
 
     def validate(self, data):
