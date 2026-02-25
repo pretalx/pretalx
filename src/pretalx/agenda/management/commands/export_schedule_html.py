@@ -61,8 +61,7 @@ def find_assets(html):
         if "src" in asset.attrs:
             yield asset.attrs["src"]
     for asset in soup.select("link[rel=icon], link[rel=stylesheet]"):
-        if asset.attrs["rel"][0] in ("icon", "stylesheet"):
-            yield asset.attrs["href"]
+        yield asset.attrs["href"]
     for asset in soup.select("[data-lightbox]"):
         url = (
             asset.attrs.get("data-lightbox")

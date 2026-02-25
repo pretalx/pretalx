@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import textwrap
+from collections import defaultdict
 from contextlib import suppress
 from urllib.parse import unquote
 
@@ -31,6 +32,7 @@ from pretalx.common.views.mixins import (
 )
 from pretalx.schedule.ascii import draw_ascii_schedule
 from pretalx.schedule.exporters import ScheduleData
+from pretalx.schedule.models import TalkSlot
 
 
 class EventSocialMediaCard(SocialMediaCardMixin, View):
@@ -59,14 +61,10 @@ class ScheduleMixin:
             schedule.event = self.request.event
         return schedule
 
-    @cached_property
-    def object(self):
-        return self.get_object()
-
     @context
     @cached_property
     def schedule(self):
-        return self.object
+        return self.get_object()
 
     def dispatch(self, request, *args, **kwargs):
         if version := request.GET.get("version"):
@@ -122,7 +120,7 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
             output_format = "table"
         try:
             result = draw_ascii_schedule(data, output_format=output_format)
-        except StopIteration:
+        except StopIteration:  # pragma: no cover -- grid drawing fails on degenerate data; fallback is defensive
             result = draw_ascii_schedule(data, output_format="list")
         result += "\n\n  📆 powered by pretalx"
         return HttpResponse(
@@ -140,7 +138,8 @@ class ScheduleView(PermissionRequired, ScheduleMixin, TemplateView):
     def get(self, request, **kwargs):
         accept_header = request.headers.get("Accept") or ""
 
-        if getattr(self, "is_html_export", False):
+        if getattr(self, "is_html_export", False):  # pragma: no cover
+            # set only by the export_schedule_html management command
             return super().get(request, **kwargs)
 
         # No Accept header or just "*/*" (curl's default) - return text
@@ -263,8 +262,40 @@ class ChangelogView(EventPermissionRequired, TemplateView):
 
     @context
     def schedules(self):
-        return (
+        schedules = list(
             self.request.event.schedules.all()
             .filter(version__isnull=False)
             .select_related("event")
+            .order_by("-published")
         )
+        if not schedules:
+            return schedules
+
+        # Pre-compute previous_schedule to avoid N+1 queries
+        for i, schedule in enumerate(schedules):
+            schedule.__dict__["previous_schedule"] = (
+                schedules[i + 1] if i + 1 < len(schedules) else None
+            )
+
+        # Prefetch scheduled_talks for all schedules in a single query
+        all_schedule_ids = [s.id for s in schedules]
+        all_talks = list(
+            TalkSlot.objects.filter(
+                schedule_id__in=all_schedule_ids,
+                schedule__event=self.request.event,
+                is_visible=True,
+                room__isnull=False,
+                start__isnull=False,
+                submission__isnull=False,
+            ).select_related("submission", "submission__event", "room")
+        )
+        talks_by_schedule = defaultdict(list)
+        for talk in all_talks:
+            talks_by_schedule[talk.schedule_id].append(talk)
+
+        for schedule in schedules:
+            schedule.__dict__["scheduled_talks"] = talks_by_schedule.get(
+                schedule.id, []
+            )
+
+        return schedules
