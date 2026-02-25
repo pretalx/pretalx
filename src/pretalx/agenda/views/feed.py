@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import urllib.parse
+from collections import defaultdict
 
 from django.contrib.syndication.views import Feed
 from django.http import Http404
@@ -9,6 +10,8 @@ from django.template.loader import render_to_string
 from django.utils import feedgenerator
 
 from pretalx.common.text.xml import strip_control_characters
+from pretalx.schedule.models import TalkSlot
+from pretalx.schedule.services import calculate_schedule_changes
 
 
 class ScheduleFeed(Feed):
@@ -35,7 +38,47 @@ class ScheduleFeed(Feed):
         return f"Updates to the {strip_control_characters(obj.name)} schedule."
 
     def items(self, obj):
-        return obj.schedules.filter(version__isnull=False).order_by("-published")
+        schedules = list(
+            obj.schedules.filter(version__isnull=False)
+            .select_related("event")
+            .order_by("-published")
+        )
+        if not schedules:
+            return schedules
+
+        # Pre-set previous_schedule to avoid per-item queries.
+        # Since schedules are ordered by -published, the next item is the previous version.
+        for i, schedule in enumerate(schedules):
+            schedule.__dict__["previous_schedule"] = (
+                schedules[i + 1] if i + 1 < len(schedules) else None
+            )
+
+        # Batch-load all scheduled talk slots in a single query
+        all_schedule_ids = [s.pk for s in schedules]
+        all_slots = (
+            TalkSlot.objects.filter(
+                schedule_id__in=all_schedule_ids,
+                room__isnull=False,
+                start__isnull=False,
+                is_visible=True,
+                submission__isnull=False,
+            )
+            .select_related("submission", "submission__event", "room")
+            .with_sorted_speakers()
+        )
+        slots_by_schedule = defaultdict(list)
+        for slot in all_slots:
+            slots_by_schedule[slot.schedule_id].append(slot)
+        for schedule in schedules:
+            schedule.__dict__["scheduled_talks"] = slots_by_schedule.get(
+                schedule.pk, []
+            )
+
+        # Pre-compute changes to avoid per-item queries during rendering
+        for schedule in schedules:
+            schedule.__dict__["changes"] = calculate_schedule_changes(schedule)
+
+        return schedules
 
     def item_title(self, item):
         return f"New {strip_control_characters(item.event.name)} schedule released ({strip_control_characters(item.version)})"
