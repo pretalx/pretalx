@@ -214,7 +214,7 @@
 | src/pretalx/person/forms/auth.py                                           |       43 |        2 |       10 |        2 |     92% |    41, 48 |
 | src/pretalx/person/forms/auth\_token.py                                    |       42 |       17 |       10 |        0 |     52% |59-61, 72-91 |
 | src/pretalx/person/forms/information.py                                    |       21 |        1 |        2 |        1 |     91% |        18 |
-| src/pretalx/person/forms/profile.py                                        |      189 |       14 |       64 |       12 |     88% |66->68, 139->exit, 160->162, 172->178, 183->186, 207->exit, 214, 230-236, 239-240, 293->exit, 311, 339, 348, 351-352 |
+| src/pretalx/person/forms/profile.py                                        |      191 |       14 |       66 |       12 |     88% |66->68, 142->exit, 163->165, 175->181, 186->189, 210->exit, 217, 233-239, 242-243, 296->exit, 314, 342, 351, 354-355 |
 | src/pretalx/person/forms/user.py                                           |      108 |       10 |       26 |        4 |     90% |99-102, 110, 113-114, 143, 155, 201 |
 | src/pretalx/person/models/auth\_token.py                                   |       73 |       11 |       20 |        0 |     82% |99, 102, 144-153 |
 | src/pretalx/person/models/information.py                                   |       33 |        0 |        2 |        1 |     97% |    20->22 |
@@ -368,7 +368,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **36559** | **1836** | **5654** |  **763** | **93%** |           |
+| **TOTAL**                                                                  | **36561** | **1836** | **5656** |  **763** | **93%** |           |
 
 
 ## Setup coverage badge
