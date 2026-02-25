@@ -6,6 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from django_scopes import scopes_disabled
 
+from pretalx.common.models.settings import GlobalSettings
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     AnswerFactory,
@@ -25,6 +26,14 @@ from tests.factories import (
     TrackFactory,
     UserFactory,
 )
+
+
+@pytest.fixture(autouse=True)
+def _instance_identifier():
+    """Pre-initialize the module-level INSTANCE_IDENTIFIER cache so that
+    Room.uuid does not trigger one-time GlobalSettings DB setup queries
+    that would distort query-count assertions."""
+    GlobalSettings().get_instance_identifier()
 
 
 @pytest.fixture
@@ -137,6 +146,27 @@ def register_signal_handler(settings):
 
 
 @pytest.fixture
+def organiser_user(event):
+    """A user with organiser access (all_events, can_change_submissions) to the
+    event fixture.  Use with ``client.force_login(organiser_user)`` when a test
+    needs an authenticated organiser."""
+    with scopes_disabled():
+        user = UserFactory()
+        team = TeamFactory(organiser=event.organiser, all_events=True)
+        team.members.add(user)
+    return user
+
+
+@pytest.fixture
+def speaker_user(published_talk_slot):
+    """The User behind the speaker created by the ``published_talk_slot``
+    fixture.  Use with ``client.force_login(speaker_user)`` when a test
+    needs an authenticated speaker."""
+    with scopes_disabled():
+        return published_talk_slot.submission.speakers.first().user
+
+
+@pytest.fixture
 def talk_slot(event):
     """An event with a WIP schedule containing one visible, confirmed talk slot."""
     with scopes_disabled():
@@ -153,6 +183,42 @@ def published_talk_slot(talk_slot):
     with scopes_disabled():
         talk_slot.schedule.freeze("v1", notify_speakers=False)
     return talk_slot
+
+
+@pytest.fixture
+def published_schedule(published_talk_slot):
+    """A published schedule — event.current_schedule is set.
+
+    Access the event via published_schedule.event."""
+    return published_talk_slot.schedule
+
+
+@pytest.fixture
+def public_event_with_schedule(published_talk_slot):
+    """A public event with a released schedule and show_schedule enabled.
+
+    Derives from published_talk_slot — the event has one visible, confirmed talk.
+    The returned event has event.current_schedule set."""
+    event = published_talk_slot.submission.event
+    event.is_public = True
+    event.feature_flags["show_schedule"] = True
+    event.save()
+    return event
+
+
+@pytest.fixture
+def orga_client(client, public_event_with_schedule):
+    """A logged-in client with organiser access to public_event_with_schedule,
+    returning (client, event)."""
+    event = public_event_with_schedule
+    with scopes_disabled():
+        team = TeamFactory(
+            organiser=event.organiser, all_events=True, can_change_submissions=True
+        )
+        user = UserFactory()
+        team.members.add(user)
+    client.force_login(user)
+    return client, event
 
 
 @pytest.fixture
