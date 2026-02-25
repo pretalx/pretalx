@@ -134,6 +134,9 @@ class SpeakerProfileForm(CfPFormMixin, ReadOnlyFlag, RequestRequire, forms.Model
                     suggestions=suggestions
                 )
 
+        if not self.is_orga:
+            self.fields.pop("internal_notes", None)
+
         if self.is_bound and not self.is_valid() and "availabilities" in self.errors:
             self.data = self.data.copy()
             if "availabilities" in self.initial:
