@@ -236,12 +236,14 @@ def construct_issue_nodes(issue, description):
     return description
 
 
-def construct_release_nodes(release, entries, description=None):
+def construct_release_nodes(release, entries, description=None, header_html=None):
     # Build a new section node from the release header, appending category
     # content to the copy instead of mutating the release in-place.
     section = release["nodelist"][0].deepcopy()
     if description:
         section.extend(description.deepcopy())
+    if header_html:
+        section.append(nodes.raw(rawtext="", text=header_html, format="html"))
     show_category_headers = len(entries) > 1
     for category, cat_info in sorted(CATEGORIES.items(), key=lambda c: c[1]["order"]):
         cat_issues = entries.get(category)
@@ -431,6 +433,25 @@ def generate_release_pages(app):
     if releases is None:
         return
 
+    # Resolve the release header once for the whole build.  Link placeholders
+    # are resolved relative to an arbitrary release page (all live under
+    # changelog/, so relative paths are identical).
+    header_html = ""
+    header_template = app.config.changelog_release_header or ""
+    if header_template:
+        links = app.config.changelog_release_header_links or {}
+        if links:
+            sample_pagename = release_pagename("_")
+            resolved = {
+                key: html_escape(
+                    app.builder.get_relative_uri(sample_pagename, docname), quote=True
+                )
+                for key, docname in links.items()
+            }
+            header_html = header_template.format_map(resolved)
+        else:
+            header_html = header_template
+
     for i, release_data in enumerate(releases):
         # "next" (unreleased) content lives on the main changelog page only
         if release_data["release"].number == "next":
@@ -440,12 +461,14 @@ def generate_release_pages(app):
         desc = release_data.get("description")
         if release_data["entries"]:
             paragraph_node = construct_release_nodes(
-                release, release_data["entries"], desc
+                release, release_data["entries"], desc, header_html=header_html
             )
             body = nodes_to_html([paragraph_node])
         else:
             # Empty releases are maintenance-only (dependency updates, etc.)
-            header_node = construct_release_nodes(release, {}, desc)
+            header_node = construct_release_nodes(
+                release, {}, desc, header_html=header_html
+            )
             body = nodes_to_html([header_node])
             body += '<p class="changelog-maintenance">This was a maintenance release with dependency updates and minor fixes.</p>\n'
         pagename = release_pagename(version)
@@ -546,6 +569,8 @@ def inject_changelog_sidebar(app, pagename, templatename, context, doctree):
 
 def setup(app):
     app.add_config_value("changelog_sidebar_visible_count", 10, "html")
+    app.add_config_value("changelog_release_header", "", "html")
+    app.add_config_value("changelog_release_header_links", {}, "html")
     for name in ISSUE_TYPES:
         app.add_role(name, issue_role)
     app.add_role("release", release_role)
