@@ -98,7 +98,7 @@ devdocs = [
   "sphinxcontrib-spelling",
 ]
 postgres = ["psycopg2-binary~=2.9.0"]
-redis = ["redis~=7.1.0"]
+redis = ["redis>=7.1,<7.3"]
 
 [build-system]
 build-backend = "setuptools.build_meta"
