@@ -44,26 +44,37 @@ SPDX-License-Identifier: Apache-2.0
 
   {% block extrabody %} {% endblock %}
 
-  {% include "header.html" %}
+  <header>
+    <a id="logourl" href="/" class="mobile-hide">
+      <img src="/_static/logo_white.svg" />
+    </a>
+
+    <div role="search" id="header-search">
+      <form id="rtd-search-form" action="{{ pathto('search') }}" method="get">
+        <input type="text" name="q" placeholder="Search docs" />
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+
+    <div id="related" class="mobile-hide">
+      <a href="https://pretalx.com/p/about/">Website</a>
+      <a href="https://pretalx.com/p/try/">Try pretalx</a>
+    </div>
+  </header>
+
     {# SIDE NAV, TOGGLES ON MOBILE #}
     <nav data-toggle="nav-shift" class="nav-side">
       <div class="nav-scroll">
 
         <div class="nav-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           {% block menu %}
-            {#
-              The singlehtml builder doesn't handle this toctree call when the
-              toctree is empty. Skip building this for now.
-            #}
-            {% if 'singlehtml' not in builder %}
-              {% set global_toc = toctree(maxdepth=theme_navigation_depth|int, collapse=theme_collapse_navigation, includehidden=True) %}
-            {% endif %}
+            {% set global_toc = toctree(maxdepth=theme_navigation_depth|int, collapse=theme_collapse_navigation, includehidden=True) %}
             {% if global_toc %}
             <div id="toctree">
               {{ global_toc }}
             </div>
             {% else %}
-              <!-- Local TOC -->
               <div id="toctree" class="local-toc">{{ toc }}</div>
             {% endif %}
           {% endblock %}
@@ -73,7 +84,7 @@ SPDX-License-Identifier: Apache-2.0
 
     <main data-toggle="nav-shift">
 
-      {# MOBILE NAV, TRIGGLES SIDE NAV ON TOGGLE #}
+      {# MOBILE NAV, HANDLES SIDE NAV ON TOGGLE #}
       <nav class="nav-top" role="navigation" aria-label="top navigation">
         {% block mobile_nav %}
           <i data-toggle="nav-top" class="fa fa-bars"></i>
@@ -94,16 +105,6 @@ SPDX-License-Identifier: Apache-2.0
       </div>
     </main>
 
-  <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-          URL_ROOT:'{{ url_root }}',
-          VERSION:'{{ release|e }}',
-          COLLAPSE_INDEX:false,
-          FILE_SUFFIX:'{{ '' if no_search_suffix else file_suffix }}',
-          HAS_SOURCE:  {{ has_source|lower }},
-          SOURCELINK_SUFFIX: '{{ sourcelink_suffix }}'
-      };
-  </script>
   {%- for scriptfile in script_files %}
     <script type="text/javascript" src="{{ pathto(scriptfile.filename|default(scriptfile), 1) }}"></script>
   {%- endfor %}
