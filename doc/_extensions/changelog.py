@@ -171,6 +171,7 @@ def collect_releases(entries):
                 text="Next Release",
             ),
             "entries": defaultdict(list),
+            "description": None,
         }
     ]
 
@@ -187,7 +188,17 @@ def collect_releases(entries):
         obj = entry_copy[0].pop(0)
         rest = entry_copy
         if isinstance(obj, Release):
-            releases.append({"release": obj, "entries": defaultdict(list)})
+            # Capture any text following the :release: role as a description.
+            has_description = any(
+                child.astext().strip() for child in rest.traverse(nodes.Text)
+            )
+            releases.append(
+                {
+                    "release": obj,
+                    "entries": defaultdict(list),
+                    "description": rest if has_description else None,
+                }
+            )
             continue
         if not isinstance(obj, Issue):
             msg = f"Found issue node ({obj}) which is not an Issue! Please double-check your ReST syntax!"
@@ -225,10 +236,12 @@ def construct_issue_nodes(issue, description):
     return description
 
 
-def construct_release_nodes(release, entries):
+def construct_release_nodes(release, entries, description=None):
     # Build a new section node from the release header, appending category
     # content to the copy instead of mutating the release in-place.
     section = release["nodelist"][0].deepcopy()
+    if description:
+        section.extend(description.deepcopy())
     show_category_headers = len(entries) > 1
     for category, cat_info in sorted(CATEGORIES.items(), key=lambda c: c[1]["order"]):
         cat_issues = entries.get(category)
@@ -424,12 +437,15 @@ def generate_release_pages(app):
             continue
         release = release_data["release"]
         version = release.number
+        desc = release_data.get("description")
         if release_data["entries"]:
-            paragraph_node = construct_release_nodes(release, release_data["entries"])
+            paragraph_node = construct_release_nodes(
+                release, release_data["entries"], desc
+            )
             body = nodes_to_html([paragraph_node])
         else:
             # Empty releases are maintenance-only (dependency updates, etc.)
-            header_node = construct_release_nodes(release, {})
+            header_node = construct_release_nodes(release, {}, desc)
             body = nodes_to_html([header_node])
             body += '<p class="changelog-maintenance">This was a maintenance release with dependency updates and minor fixes.</p>\n'
         pagename = release_pagename(version)
