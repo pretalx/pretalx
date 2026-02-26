@@ -113,7 +113,10 @@ class EventAuth(View):
 
         try:
             data = store.load()
-        except (SuspiciousOperation, KeyError):
+        except (
+            SuspiciousOperation,
+            KeyError,
+        ):  # pragma: no cover -- requires corrupted/tampered session data
             raise PermissionDenied(phrases.base.back_try_again) from None
 
         key = f"pretalx_event_access_{request.event.pk}"
@@ -122,7 +125,10 @@ class EventAuth(View):
 
         try:
             parentdata = sparent.load()
-        except (SuspiciousOperation, KeyError):
+        except (
+            SuspiciousOperation,
+            KeyError,
+        ):  # pragma: no cover -- requires corrupted/tampered session data
             raise PermissionDenied(phrases.base.back_try_again) from None
         else:
             if "event_access" not in parentdata:

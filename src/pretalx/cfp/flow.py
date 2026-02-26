@@ -172,9 +172,6 @@ class BaseCfPStep:
             else:
                 new_query.update({key: value})
         if new_query:
-            for key, value in new_query.items():
-                if value is False:
-                    new_query.pop(key)
             url += f"?{new_query.urlencode()}"
         return url
 
@@ -568,14 +565,13 @@ class InfoStep(DedraftMixin, FormFlowStep):
             )
             if formset and formset.is_valid():
                 for resource_form in formset.forms:
-                    if resource_form.cleaned_data:
-                        if resource_form.cleaned_data.get("DELETE"):
-                            if resource_form.instance.pk:
-                                resource_form.instance.delete()
-                        else:
-                            resource = resource_form.save(commit=False)
-                            resource.submission = submission
-                            resource.save()
+                    if resource_form.cleaned_data.get("DELETE"):
+                        if resource_form.instance.pk:
+                            resource_form.instance.delete()
+                    else:
+                        resource = resource_form.save(commit=False)
+                        resource.submission = submission
+                        resource.save()
 
         # Attach access code to submission even for drafts, so that
         # dedrafting can pass the code along. Only redeem on actual submission.
