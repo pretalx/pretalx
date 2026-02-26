@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
+set quiet
 
 _ := require("uv")
 python := "uv run python"
@@ -11,7 +12,7 @@ src_dir := "src"
 
 [private]
 default:
-    @just --list
+    just --list
 
 # Install dependencies (use --extras to include e.g. dev, devdocs, postgres, redis)
 [group('development')]
@@ -137,7 +138,7 @@ api-docs:
 
 # Check codebase for licensing compliance
 [group('linting')]
-@reuse:
+reuse:
     uvx reuse lint
 
 # Check Django templates with djhtml (check only)
@@ -171,7 +172,7 @@ fmt-check: (format "--check") check
 
 # Check for untrimmed blocktranslate tags
 [group('linting')]
-@blocktranslate-check:
+blocktranslate-check:
     ! git grep ' blocktranslate ' -- '*.html' | grep -v trimmed
 
 # Check documentation for spelling errors
@@ -179,14 +180,14 @@ fmt-check: (format "--check") check
 [working-directory("doc")]
 docs-spelling:
     {{ uv_devdocs }} python -m sphinx -b spelling -d _build/doctrees . _build/spelling
-    @! find _build -type f -name '*.spelling' | grep -q .
+    ! find _build -type f -name '*.spelling' | grep -q .
 
 # Run most CI checks
 [group('tests')]
 ci: fmt reuse blocktranslate-check docs-spelling (run "compilemessages") install-npm release-checks test-parallel && _ci-done
 
 [private]
-@_ci-done:
+_ci-done:
     echo '{{ GREEN }}All CI checks passed{{ NORMAL }}'
 
 # Open Django shell scoped to a specific event if given
@@ -205,7 +206,7 @@ python *args:
 
 # Remove Python caches, build artifacts, and coverage reports
 [group('development')]
-@clean:
+clean:
     -find . -type d -name __pycache__ -exec rm -rf {} +
     -find . -type f -name "*.pyc" -delete
     -find . -type d -name "*.egg-info" -exec rm -rf {} +
@@ -251,7 +252,7 @@ release-checks:
     uv run twine check dist/*
     unzip -l dist/pretalx*whl | grep frontend || exit 1
     unzip -l dist/pretalx*whl | grep node_modules && exit 1 || exit 0
-    @echo "{{ GREEN }}All release checks successful{{ NORMAL }}"
+    echo "{{ GREEN }}All release checks successful{{ NORMAL }}"
 
 # Release a new pretalx version
 [group('release')]
