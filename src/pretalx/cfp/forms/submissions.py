@@ -32,7 +32,7 @@ class SubmissionInvitationForm(forms.Form):
 
     def clean_text(self):
         text = self.cleaned_data["text"]
-        if not text or "{invitation_url}" not in text:
+        if "{invitation_url}" not in text:
             raise forms.ValidationError(
                 _("You must include the “{invitation_url}” placeholder in your email.")
             )
