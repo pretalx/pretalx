@@ -417,7 +417,8 @@ def generate_changelog(app, doctree, docname):
         v = latest.number
         d = latest["date"] or ""
         text = f"Latest release: {v} ({d})" if d else f"Latest release: {v}"
-        ref = nodes.reference("", text, refuri=f"{release_pagename(v)}.html")
+        href = app.builder.get_relative_uri(docname, release_pagename(v))
+        ref = nodes.reference("", text, refuri=href)
         result.append(nodes.paragraph("", "", ref))
     # Show "next" (unreleased) entries inline if they exist
     if has_next:
