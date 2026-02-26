@@ -1168,7 +1168,18 @@ redoc#redoc {
 .changelog-date { font-size: 75%; }
 .changelog-release-heading { margin-bottom: 0.3em; }
 .changelog-category-heading { margin-bottom: 0.3em; }
-.changelog-nav { margin: 1em 0; }
+.changelog-nav {
+    margin: 1em 0;
+    display: flex;
+}
+.changelog-nav-next {
+    display: block;
+    margin-right: auto;
+}
+.changelog-nav-prev {
+    display: block;
+    margin-left: auto;
+}
 .changelog-hidden { display: none; }
 
 @media screen and (max-width: 768px) {
