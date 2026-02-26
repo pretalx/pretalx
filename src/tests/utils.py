@@ -7,16 +7,28 @@ _rf = RequestFactory()
 _api_rf = APIRequestFactory()
 
 
+class SimpleSession(dict):
+    """Minimal dict-like session for unit tests.
+
+    Supports the ``modified`` flag that Django's session interface exposes,
+    without pulling in the full session machinery."""
+
+    modified = False
+
+
 def make_request(event, user=None, method="get", path="/", headers=None, **attrs):
     """Create a Django request for view unit tests.
 
     Sets ``event`` on the request.  ``user`` defaults to ``AnonymousUser``
     to match Django middleware behaviour; pass a real user for authenticated
-    tests.  Any extra keyword arguments are set as request attributes
-    (e.g. ``resolver_match``)."""
+    tests.  A minimal ``session`` dict is attached by default — pass
+    ``session=…`` in *attrs* to override.  Any extra keyword arguments are
+    set as request attributes (e.g. ``resolver_match``)."""
     request = getattr(_rf, method)(path, **({"headers": headers} if headers else {}))
     request.event = event
     request.user = user if user is not None else AnonymousUser()
+    if "session" not in attrs:
+        request.session = SimpleSession()
     for key, value in attrs.items():
         setattr(request, key, value)
     return request

@@ -63,6 +63,16 @@ def event():
 
 
 @pytest.fixture
+def submission_with_speaker():
+    """A submission with one speaker attached, returning (submission, speaker_user)."""
+    with scopes_disabled():
+        submission = SubmissionFactory()
+        speaker_profile = SpeakerFactory(event=submission.event)
+        submission.speakers.add(speaker_profile)
+    return submission, speaker_profile.user
+
+
+@pytest.fixture
 def user_with_event():
     """A user with a team membership granting organiser access to an event,
     returning (user, event)."""
