@@ -11,7 +11,7 @@ from django.core.validators import validate_email
 from django.db import transaction
 from django.forms.models import BaseModelFormSet, inlineformset_factory
 from django.http import Http404
-from django.shortcuts import get_object_or_404, redirect, reverse
+from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import override
@@ -136,11 +136,6 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
 class SubmissionViewMixin:
     permission_required = "submission.update_submission"
 
-    def has_permission(self):
-        return super().has_permission() or self.request.user.has_perm(
-            "submission.orga_list_submission", self.request.event
-        )
-
     def dispatch(self, request, *args, **kwargs):
         if not self.object.speakers.filter(user=self.request.user).exists():
             # User has permission to see permission, but not to see this particular
@@ -155,11 +150,6 @@ class SubmissionViewMixin:
             ),
             code__iexact=self.kwargs["code"],
         )
-
-    @context
-    @cached_property
-    def object(self):
-        return self.get_object()
 
     @context
     @cached_property
@@ -257,7 +247,7 @@ class SubmissionConfirmView(LoggedInEventPageMixin, SubmissionViewMixin, FormVie
         if not request.user.has_perm(
             "submission.is_speaker_submission", self.submission
         ):
-            self.template_name = "cfp/event/user_submission_confirm_error.html"
+            return render(request, "cfp/event/user_submission_confirm_error.html", {})
         return super().dispatch(request, *args, **kwargs)
 
     @cached_property
@@ -379,8 +369,6 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
 
         for form in self.formset.initial_forms:
             if form in self.formset.deleted_forms:
-                if not form.instance.pk:
-                    continue
                 form.instance.delete()
                 form.instance.pk = None
             elif form.has_changed():
@@ -464,10 +452,9 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
         old_questions_data = {}
         model_class = form.instance.__class__
         manager = model_class.all_objects or model_class.objects
-        old_submission = manager.filter(pk=form.instance.pk).first()
-        if old_submission:
-            old_submission_data = old_submission.get_instance_data() or {}
-            old_questions_data = self.qform.serialize_answers() or {}
+        old_submission = manager.get(pk=form.instance.pk)
+        old_submission_data = old_submission.get_instance_data() or {}
+        old_questions_data = self.qform.serialize_answers() or {}
 
         form.save()
         self.qform.save()
