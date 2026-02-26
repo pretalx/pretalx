@@ -93,6 +93,17 @@ if HAS_PYENCHANT:
     spelling_word_list_filename = "spelling_wordlist.txt"
     spelling_show_suggestions = False
 
+changelog_release_header = (
+    '<div class="admonition note">'
+    '<p class="admonition-title">Note</p>'
+    "<p>Users of <strong>pretalx.com</strong> are already on the latest version of pretalx "
+    "and have access to all of the listed new features and bugfixes. "
+    "Administrators of self-hosted pretalx instances can find upgrade instructions "
+    '<a href="{maintenance_url}">here</a>.</p>'
+    "</div>"
+)
+changelog_release_header_links = {"maintenance_url": "administrator/maintenance"}
+
 copybutton_prompt_text = (
     r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: |# |\(env\)\$ "
 )
