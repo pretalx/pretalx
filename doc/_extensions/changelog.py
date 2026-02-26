@@ -16,11 +16,14 @@ This Sphinx extension is heavily inspired by the `releases` Sphinx extension by 
 'bitprophet' Forcier.
 """
 
+import logging
 import re
 from collections import defaultdict
 from html import escape as html_escape
 
 from docutils import nodes, utils
+
+logger = logging.getLogger(__name__)
 
 ISSUE_TYPES = {
     "announcement": {"color": "4070A0", "label": "Announcement", "order": 2},
@@ -71,7 +74,7 @@ class Release(nodes.Element):
         return f"<release {self.number}>"
 
 
-def issues_role(name, rawtext, text, *args, **kwargs):
+def issues_role(name, rawtext, text, lineno, inliner, *args, **kwargs):
     attrs = [
         attr.strip()
         for attr in utils.unescape(text).split(",")
@@ -84,7 +87,18 @@ def issues_role(name, rawtext, text, *args, **kwargs):
     issues = [i for i in attrs if i.isdigit()]
     issue = issues[0] if issues else None
 
-    type_label_str = f'[<span style="color: #{ISSUE_TYPES[name]["color"]};">{ISSUE_TYPES[name]["label"]}</span>]'
+    for attr in attrs:
+        if attr not in CATEGORIES and not attr.isdigit():
+            logger.warning(
+                "Unrecognized changelog attribute %r (line %d). Known categories: %s",
+                attr,
+                lineno,
+                ", ".join(sorted(CATEGORIES)),
+            )
+
+    type_label_str = (
+        f'[<span class="changelog-label-{name}">{ISSUE_TYPES[name]["label"]}</span>]'
+    )
     type_label = [nodes.raw(text=type_label_str, format="html")]
 
     nodelist = [*type_label, nodes.inline(text=" ")]
@@ -92,14 +106,14 @@ def issues_role(name, rawtext, text, *args, **kwargs):
     return [node], []
 
 
-year_arg_re = re.compile(r"^(.+?)\s*(?<!\x00)<(.*?)>$", re.DOTALL)
+release_arg_re = re.compile(r"^(.+?)\s*(?<!\x00)<(.*?)>$", re.DOTALL)
 
 
 def _build_release_node(number, url, date=None, text=None):
     text = text or number
-    datespan = f' <span style="font-size: 75%;">{date}</span>' if date else ""
+    datespan = f' <span class="changelog-date">{date}</span>' if date else ""
     link = f'<a class="reference external" href="{url}">{text}</a>'
-    header = f'<h2 style="margin-bottom: 0.3em;">{link}{datespan}</h2>'
+    header = f'<h2 class="changelog-release-heading">{link}{datespan}</h2>'
     node = nodes.section(
         "", nodes.raw(rawtext="", text=header, format="html"), ids=[number]
     )
@@ -107,7 +121,7 @@ def _build_release_node(number, url, date=None, text=None):
 
 
 def release_role(name, rawtext, text, lineno, inliner, *args, **kwargs):
-    match = year_arg_re.match(text)
+    match = release_arg_re.match(text)
     if not match:
         msg = inliner.reporter.error("Must specify release date!")
         return [inliner.problematic(rawtext, rawtext, msg)], [msg]
@@ -133,8 +147,15 @@ def collect_releases(entries):
         # Issue object is always found in obj (LI) index 0 (first, often only
         # P) and is the 1st item within that (index 0 again).
         # Preserve all other contents of 'obj'.
-        obj = entry[0].pop(0)
-        rest = entry
+        # WARNING: Always use docutils .deepcopy(), NEVER copy.deepcopy() or
+        # stdlib deepcopy on docutils nodes!  stdlib deepcopy follows parent
+        # references and recursively copies the entire connected doctree,
+        # causing the build to hang indefinitely on large changelogs.
+        # We deepcopy here so we don't mutate the original doctree — it may
+        # be traversed again (e.g. for release sub-pages).
+        entry_copy = entry.deepcopy()
+        obj = entry_copy[0].pop(0)
+        rest = entry_copy
         if isinstance(obj, Release):
             # If the last release was empty, remove it
             if not releases[-1]["entries"]:
@@ -187,7 +208,7 @@ def construct_release_nodes(release, entries):
             release["nodelist"][0].append(
                 nodes.raw(
                     rawtext="",
-                    text=f'<h4 style="margin-bottom: 0.3em;">{cat_info["label"]}</h4>',
+                    text=f'<h4 class="changelog-category-heading">{cat_info["label"]}</h4>',
                     format="html",
                 )
             )
@@ -253,7 +274,7 @@ def nodes_to_html(node_list):
 
 def build_release_nav(releases, current_index):
     """Build navigation HTML for a release sub-page."""
-    parts = ['<nav style="margin: 1em 0;">']
+    parts = ['<nav class="changelog-nav">']
     parts.append('<a href="../changelog.html">&larr; Back to Release Notes</a>')
     newer = None
     older = None
@@ -326,7 +347,7 @@ def generate_release_pages(app):
     except FileNotFoundError:
         return
     for bl in doctree.traverse(nodes.bullet_list):
-        releases = collect_releases(bl.deepcopy().children)
+        releases = collect_releases(bl.children)
         break
     else:
         return
@@ -337,8 +358,8 @@ def generate_release_pages(app):
         # "next" (unreleased) content lives on the main changelog page only
         if release_data["release"].number == "next":
             continue
-        # Use docutils .deepcopy() instead of copy.deepcopy() — the latter
-        # follows parent references and copies the entire connected doctree.
+        # WARNING: Always use docutils .deepcopy(), NEVER copy.deepcopy()!
+        # stdlib deepcopy follows parent references and hangs indefinitely.
         release = release_data["release"].deepcopy()
         entries = release_data["entries"]
         version = release.number
@@ -381,13 +402,11 @@ def inject_changelog_sidebar(app, pagename, templatename, context, doctree):
     for idx, version in enumerate(versions):
         current = " current" if idx == current_idx else ""
         extra_cls = ""
-        style = ""
         if collapse and idx >= visible_count:
             extra_cls = " changelog-hidden"
-            style = ' style="display:none"'
         href = pathto(f"changelog/{version}")
         items.append(
-            f'<li class="toctree-l2{current}{extra_cls}"{style}>'
+            f'<li class="toctree-l2{current}{extra_cls}">'
             f'<a class="reference internal" href="{href}">{version}</a></li>'
         )
     if collapse and len(versions) > visible_count:
@@ -396,7 +415,7 @@ def inject_changelog_sidebar(app, pagename, templatename, context, doctree):
             visible_count,
             '<li class="toctree-l2" id="changelog-show-all">'
             f'<a href="#" onclick="'
-            f"document.querySelectorAll('.changelog-hidden').forEach(e=>e.style.display='');"
+            f"document.querySelectorAll('.changelog-hidden').forEach(e=>e.classList.remove('changelog-hidden'));"
             f"document.getElementById('changelog-show-all').remove();"
             f'return false"'
             f'">&hellip; {remaining} older releases</a></li>',
@@ -433,4 +452,4 @@ def setup(app):
     app.connect("doctree-resolved", generate_changelog)
     app.connect("html-collect-pages", generate_release_pages)
     app.connect("html-page-context", inject_changelog_sidebar)
-    return {"parallel_read_safe": True, "parallel_write_safe": True}
+    return {"version": "1.0", "parallel_read_safe": True, "parallel_write_safe": True}

@@ -118,6 +118,7 @@ h1, h2, h3, h4, legend, .btn, button {
 
 html {
     height: 100%;
+    --header-height: 70px;
 }
 body {
     font-family: var(--font-family-text);
@@ -142,7 +143,7 @@ main {
 }
 
 header {
-    height: 70px;
+    height: var(--header-height);
     background-color: #3aa57c;
     width: 100%;
     position: fixed;
@@ -162,7 +163,7 @@ header #logourl img {
     margin: 0 24px;
 }
 #header-search form {
-    height: 70px;
+    height: var(--header-height);
     margin-left: auto;
     margin-right: auto;
     display: flex;
@@ -221,7 +222,7 @@ footer a.fa {
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
-    height: 100%
+    height: calc(100vh - (var(--header-height)))
 }
 .nav-top {
     display: none;
@@ -1158,6 +1159,17 @@ redoc#redoc {
         font-family: var(--font-family-code);
     }
 }
+
+/* Changelog styles */
+
+.changelog-label-feature { color: #40A056; }
+.changelog-label-bug { color: #A04040; }
+.changelog-label-announcement { color: #4070A0; }
+.changelog-date { font-size: 75%; }
+.changelog-release-heading { margin-bottom: 0.3em; }
+.changelog-category-heading { margin-bottom: 0.3em; }
+.changelog-nav { margin: 1em 0; }
+.changelog-hidden { display: none; }
 
 @media screen and (max-width: 768px) {
     .tablet-hide {
