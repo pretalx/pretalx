@@ -20,6 +20,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version-file: ".github/workflows/python-version.txt"
+      - name: Enable caching
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - uses: extractions/setup-just@v3
+      - name: Install Dependencies
+        run: just install --extra devdocs
+      - name: Docs build without warnings
+        run: just docs-build dirhtml -W
+
   spelling:
     name: Spellcheck
     runs-on: ubuntu-latest
@@ -61,7 +79,7 @@ jobs:
 
   linkcheck:
     name: Linkcheck
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
