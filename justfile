@@ -108,9 +108,9 @@ worker:
 # Build documentation (use `just docs-build dirhtml` for production)
 [group('documentation')]
 [working-directory("doc")]
-docs-build format="html":
+docs-build format="html" *args:
     just clean
-    {{ uv_devdocs }} python -m sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }} -j auto -a -q
+    {{ uv_devdocs }} python -m sphinx -b {{ format }} -d _build/doctrees . _build/{{ format }} -j auto -a -q {{ args }}
 
 # Build and deploy documentation to a target directory
 [group('documentation')]
@@ -129,7 +129,7 @@ docs-linkcheck:
 [working-directory("doc")]
 docs-serve *args="--port 8001":
     rm -rf _build/html
-    {{ uv_devdocs }} sphinx-autobuild . _build/html {{ args }}
+    {{ uv_devdocs }} sphinx-autobuild . _build/html -q {{ args }}
 
 # Update the API documentation
 [group('documentation')]
