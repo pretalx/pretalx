@@ -22,10 +22,9 @@ from tests.factories import (
     SubmissionFactory,
     TagFactory,
     TalkSlotFactory,
-    TeamFactory,
     TrackFactory,
-    UserFactory,
 )
+from tests.utils import make_orga_user
 
 
 @pytest.fixture(autouse=True)
@@ -77,9 +76,7 @@ def user_with_event():
     """A user with a team membership granting organiser access to an event,
     returning (user, event)."""
     event = EventFactory()
-    team = TeamFactory(organiser=event.organiser, all_events=True)
-    user = UserFactory()
-    team.members.add(user)
+    user = make_orga_user(event)
     return user, event
 
 
@@ -157,23 +154,12 @@ def register_signal_handler(settings):
 
 @pytest.fixture
 def organiser_user(event):
-    """A user with organiser access (all_events, can_change_submissions) to the
-    event fixture.  Use with ``client.force_login(organiser_user)`` when a test
-    needs an authenticated organiser."""
-    with scopes_disabled():
-        user = UserFactory()
-        team = TeamFactory(organiser=event.organiser, all_events=True)
-        team.members.add(user)
-    return user
+    """A user with organiser access (all_events) to the event fixture.
 
-
-@pytest.fixture
-def speaker_user(published_talk_slot):
-    """The User behind the speaker created by the ``published_talk_slot``
-    fixture.  Use with ``client.force_login(speaker_user)`` when a test
-    needs an authenticated speaker."""
+    Use with ``client.force_login(organiser_user)`` when a test needs an
+    authenticated organiser."""
     with scopes_disabled():
-        return published_talk_slot.submission.speakers.first().user
+        return make_orga_user(event)
 
 
 @pytest.fixture
@@ -222,11 +208,7 @@ def orga_client(client, public_event_with_schedule):
     returning (client, event)."""
     event = public_event_with_schedule
     with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, all_events=True, can_change_submissions=True
-        )
-        user = UserFactory()
-        team.members.add(user)
+        user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
     return client, event
 
