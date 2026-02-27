@@ -451,7 +451,7 @@ class SubmissionContent(
     template_name = "orga/submission/content.html"
     permission_required = "submission.orga_list_submission"
     extra_forms_signal = "pretalx.orga.signals.submission_form"
-    messages = {"update": _("The proposal has been updated!")}
+    messages = {"edit": _("The proposal has been updated!")}
 
     @cached_property
     def object(self):
@@ -561,8 +561,6 @@ class SubmissionContent(
 
         for form in self._formset.initial_forms:
             if form in self._formset.deleted_forms:
-                if not form.instance.pk:
-                    continue
                 form.instance.delete()
                 form.instance.pk = None
             elif form.has_changed():
@@ -643,16 +641,15 @@ class SubmissionContent(
             or self._questions_form.has_changed()
             or (self._formset and self._formset.has_changed())
         ):
-            if not created:
-                new_submission_data = form.instance.get_instance_data() or {}
-                new_questions_data = self._questions_form.serialize_answers() or {}
-                form.instance.log_action(
-                    ".update",
-                    person=self.request.user,
-                    orga=True,
-                    old_data=json_roundtrip(old_submission_data | old_questions_data),
-                    new_data=json_roundtrip(new_submission_data | new_questions_data),
-                )
+            new_submission_data = form.instance.get_instance_data() or {}
+            new_questions_data = self._questions_form.serialize_answers() or {}
+            form.instance.log_action(
+                ".update",
+                person=self.request.user,
+                orga=True,
+                old_data=json_roundtrip(old_submission_data | old_questions_data),
+                new_data=json_roundtrip(new_submission_data | new_questions_data),
+            )
         elif created:
             form.instance.log_action(".create", person=self.request.user, orga=True)
         if stay_on_page:

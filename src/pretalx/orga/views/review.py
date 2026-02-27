@@ -296,8 +296,8 @@ class ReviewDashboard(
 
     def get_pending(self, request):
         form = SubmissionStateChangeForm(request.POST)
-        if form.is_valid():
-            return form.cleaned_data.get("pending")
+        form.is_valid()
+        return form.cleaned_data.get("pending")
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):

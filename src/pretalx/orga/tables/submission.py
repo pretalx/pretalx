@@ -337,7 +337,10 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
     def _load_all_scores(self):
         try:
             submission_ids = [row.record.pk for row in self.rows]
-        except (AttributeError, TypeError):
+        except (
+            AttributeError,
+            TypeError,
+        ):  # pragma: no cover -- defensive fallback for partially-initialised tables
             submission_ids = [submission.pk for submission in self.data]
 
         if not submission_ids:

@@ -234,9 +234,11 @@ class QuestionTable(UnsortableMixin, PretalxTable):
     def _accessible_question_ids(self):
         # Pre-compute accessible question IDs to avoid per-question DB queries
         if self.event and self.user:
-            accessible = questions_for_user(self.event, self.user, for_answers=True)
-            if accessible is not None:
-                return set(accessible.values_list("id", flat=True))
+            return set(
+                questions_for_user(self.event, self.user, for_answers=True).values_list(
+                    "id", flat=True
+                )
+            )
         return set()
 
     def render_question(self, record, value):

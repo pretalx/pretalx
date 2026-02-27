@@ -98,9 +98,9 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
             warnings = ", ".join("{" + warning + "}" for warning in warnings)
             raise forms.ValidationError(str(_("Unknown placeholder!")) + " " + warnings)
 
-        from bs4 import BeautifulSoup  # noqa: PLC0415
+        from bs4 import BeautifulSoup  # noqa: PLC0415 -- slow import
 
-        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415
+        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
             render_markdown_abslinks,
         )
 
