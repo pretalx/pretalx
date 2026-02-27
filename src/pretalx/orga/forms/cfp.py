@@ -248,7 +248,7 @@ class QuestionForm(ReadOnlyFlag, PretalxI18nModelForm):
             if str(option) not in existing_options:
                 new_option_data.append((option, index + 1))
             else:
-                existing_option = existing_options[option]
+                existing_option = existing_options[str(option)]
                 if existing_option.position != index + 1:
                     existing_option.position = index + 1
                     changed_options.append(existing_option)
@@ -345,7 +345,7 @@ class SubmissionTypeForm(ReadOnlyFlag, PretalxI18nModelForm):
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
-        if instance.pk and "duration" in self.changed_data:
+        if instance.pk and "default_duration" in self.changed_data:
             instance.update_duration()
         return instance
 
@@ -470,7 +470,7 @@ Please follow this URL to use the code:
 
 I’m looking forward to your proposal!
 {name}""").format(url=instance.urls.cfp_url.full(), name=user.get_display_name())
-        initial = kwargs.get("intial", {})
+        initial = kwargs.get("initial", {})
         initial["subject"] = get_prefixed_subject(instance.event, subject)
         initial["text"] = text
         kwargs["initial"] = initial
@@ -512,7 +512,7 @@ class QuestionFilterForm(forms.Form):
         )
         if not event.get_feature_flag("use_tracks"):
             self.fields.pop("track", None)
-        elif "track" in self.fields:
+        else:  # "track" is in self.fields because use_tracks is enabled
             self.fields["track"].queryset = event.tracks.all()
 
     def get_submissions(self):

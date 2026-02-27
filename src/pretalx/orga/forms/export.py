@@ -105,7 +105,7 @@ class ExportForm(forms.Form):
                 object_data["ID"] = code
             prepare_method = getattr(self, "_prepare_object_data", None)
             if prepare_method:
-                obj = prepare_method(obj)  # noqa: PLW2901
+                obj = prepare_method(obj)  # noqa: PLW2901 -- intentional reassignment of loop variable
             for field in fields:
                 object_data[str(self.fields[field].label)] = self.get_object_attribute(
                     obj, field
@@ -151,7 +151,9 @@ class ExportForm(forms.Form):
                     row[key] = delimiter.join(value)
 
         output = StringIO()
-        from defusedcsv import csv  # noqa: PLC0415
+        from defusedcsv import (  # noqa: PLC0415 -- lazy import to reduce startup cost
+            csv,
+        )
 
         writer = csv.DictWriter(output, fieldnames=data[0].keys())
         writer.writeheader()

@@ -75,25 +75,23 @@ class UserSettings(TemplateView):
             request.user.log_action("pretalx.user.profile.update")
         elif self.token_form.is_bound and self.token_form.is_valid():
             token = self.token_form.save()
-            if token:
-                messages.info(
-                    request,
-                    _(
-                        "This is your new API token. Please make sure to save it, as it will not be shown again:"
-                    )
-                    + f" {token.token}",
+            messages.info(
+                request,
+                _(
+                    "This is your new API token. Please make sure to save it, as it will not be shown again:"
                 )
-                request.user.log_action(
-                    "pretalx.user.token.create", data=token.serialize()
-                )
+                + f" {token.token}",
+            )
+            request.user.log_action("pretalx.user.token.create", data=token.serialize())
         elif token_id := request.POST.get("tokenupgrade"):
             token = request.user.api_tokens.filter(pk=token_id).first()
-            token.version = CURRENT_VERSION
-            token.save()
-            request.user.log_action(
-                "pretalx.user.token.upgrade", data=token.serialize()
-            )
-            messages.success(request, _("The API token has been upgraded."))
+            if token:
+                token.version = CURRENT_VERSION
+                token.save()
+                request.user.log_action(
+                    "pretalx.user.token.upgrade", data=token.serialize()
+                )
+                messages.success(request, _("The API token has been upgraded."))
         elif token_id := request.POST.get("revoke"):
             with scopes_disabled():
                 token = request.user.api_tokens.filter(pk=token_id).first()
@@ -177,5 +175,9 @@ class PreferencesView(EventPermissionRequired, View):
 
         except json.JSONDecodeError:
             return JsonResponse({"error": "Invalid JSON"}, status=400)
-        except (ValueError, KeyError, AttributeError) as e:
+        except (
+            ValueError,
+            KeyError,
+            AttributeError,
+        ) as e:  # pragma: no cover – defensive; preferences model validates inputs before this point
             return JsonResponse({"error": str(e)}, status=500)

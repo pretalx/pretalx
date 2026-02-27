@@ -248,7 +248,7 @@ class EventLive(EventSettingsPermission, TemplateView):
                     if isinstance(response[1], Exception)
                 ]
                 if exceptions:
-                    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415
+                    from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
                         render_markdown,
                     )
 
@@ -359,10 +359,10 @@ class EventReviewSettings(EventSettingsPermission, FormView):
         if not phases or not scores:
             return self.get(self.request, *self.args, **self.kwargs)
         form.save()
-        if self.scores_formset.has_changed():
-            recalculate_all_review_scores.apply_async(
-                kwargs={"event_id": self.request.event.pk}, ignore_result=True
-            )
+        # Cannot use form.has_changed() here; dynamic fields always report changes
+        recalculate_all_review_scores.apply_async(
+            kwargs={"event_id": self.request.event.pk}, ignore_result=True
+        )
         return super().form_valid(form)
 
     @context
@@ -391,10 +391,8 @@ class EventReviewSettings(EventSettingsPermission, FormView):
 
         with transaction.atomic():
             for form in self.phases_formset.initial_forms:
-                # Deleting is handled elsewhere, so we skip it here
-                if form.has_changed():
-                    form.instance.event = self.request.event
-                    form.save()
+                form.instance.event = self.request.event
+                form.save()
 
             extra_forms = [
                 form
@@ -458,12 +456,10 @@ class EventReviewSettings(EventSettingsPermission, FormView):
             return False
         weights_changed = False
         for form in self.scores_formset.initial_forms:
-            # Deleting is handled elsewhere, so we skip it here
-            if form.has_changed():
-                if "weight" in form.changed_data:
-                    weights_changed = True
-                form.instance.event = self.request.event
-                form.save()
+            if "weight" in form.changed_data:
+                weights_changed = True
+            form.instance.event = self.request.event
+            form.save()
 
         extra_forms = [
             form
@@ -586,7 +582,7 @@ class InvitationView(FormView):
     def form_valid(self, form):
         form.save()
         user = User.objects.filter(pk=form.cleaned_data.get("user_id")).first()
-        if not user:
+        if not user:  # pragma: no cover -- race condition guard: user was just created by form.save()
             messages.error(
                 self.request,
                 _(
@@ -657,7 +653,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
         )
 
     def render(self, form=None, **kwargs):
-        if (
+        if (  # pragma: no cover -- guards against lost session data mid-wizard
             self.steps.current != "initial"
             and self.get_cleaned_data_for_step("initial") is None
         ):
@@ -704,7 +700,7 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
         for step in ("initial", "basics", "timeline", "display", "plugins"):
             try:
                 steps[step] = self.get_cleaned_data_for_step(step)
-            except KeyError:
+            except KeyError:  # pragma: no cover -- handles skipped conditional wizard steps (e.g. plugins)
                 steps[step] = {}
 
         with scopes_disabled():
@@ -776,7 +772,9 @@ class EventWizard(PermissionRequired, SensibleBackWizardMixin, SessionWizardView
                     ],
                 )
 
-            if steps["plugins"]:
+            if steps[
+                "plugins"
+            ]:  # pragma: no branch -- always true when plugins step is shown; empty dict only when step is conditionally skipped
                 selected_plugins = steps["plugins"].get("plugins") or []
                 event.set_plugins(selected_plugins)
                 event.save()

@@ -76,6 +76,7 @@ def nav_typeahead(request):
             | Q(organiser__name__icontains=query)
             | Q(organiser__slug__icontains=query)
         )
+        .select_related("organiser")
         .order_by("-date_from")
     )
 
@@ -115,10 +116,14 @@ def nav_typeahead(request):
         # users may be restricted from seeing speaker names by review settings, or
         # limited to seeing submissions in specific tracks.
         if full_events:
-            qs_submissions = Submission.objects.filter(
-                Q(title__icontains=query) | Q(code__istartswith=query),
-                event__in=full_events,
-            ).order_by()
+            qs_submissions = (
+                Submission.objects.filter(
+                    Q(title__icontains=query) | Q(code__istartswith=query),
+                    event__in=full_events,
+                )
+                .select_related("event")
+                .order_by()
+            )
 
             qs_speakers = (
                 SpeakerProfile.objects.filter(
@@ -138,6 +143,7 @@ def nav_typeahead(request):
                     )
                 )
                 .filter(has_submission=True)
+                .select_related("event")
                 .order_by()
             )
 
@@ -163,9 +169,7 @@ def nav_typeahead(request):
         ]
         + [
             serialize_event(e)
-            for e in qs_events.select_related("organiser")[
-                offset : offset + (pagesize if query else 5)
-            ]
+            for e in qs_events[offset : offset + (pagesize if query else 5)]
         ]
         + [
             serialize_submission(e)

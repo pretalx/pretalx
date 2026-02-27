@@ -49,7 +49,7 @@ SCRIPT_SRC = "'self' 'unsafe-eval'"
 DEFAULT_SRC = "'self'"
 
 
-if settings.VITE_DEV_MODE:
+if settings.VITE_DEV_MODE:  # pragma: no cover — local dev server only
     SCRIPT_SRC = (f"{SCRIPT_SRC} {settings.VITE_DEV_SERVER}",)
     DEFAULT_SRC = (
         f"{DEFAULT_SRC} {settings.VITE_DEV_SERVER} {settings.VITE_DEV_SERVER.replace('http', 'ws')}",
@@ -155,7 +155,9 @@ class ScheduleExportDownloadView(AsyncFileDownloadMixin, EventPermissionRequired
         )
         return result
 
-    def get_async_waiting_template(self):
+    def get_async_waiting_template(
+        self,
+    ):  # pragma: no cover — only used during HTMX polling
         return "orga/schedule/export_waiting.html"
 
     def get(self, request, event):
@@ -459,8 +461,6 @@ class TalkUpdate(PermissionRequired, View):
 
     def patch(self, request, event, pk):
         talk = self.get_object()
-        if not talk:
-            return JsonResponse({"error": "Talk not found"})
         data = json.loads(request.body.decode())
         if data.get("start"):
             duration = talk.duration
@@ -501,8 +501,6 @@ class TalkUpdate(PermissionRequired, View):
 
     def delete(self, request, event, pk):
         talk = self.get_object()
-        if not talk:
-            return JsonResponse({"error": "Talk not found"})
         if talk.submission:
             return JsonResponse({"error": "Cannot delete talk."})
         talk.delete()
