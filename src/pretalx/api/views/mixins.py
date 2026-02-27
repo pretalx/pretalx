@@ -4,7 +4,6 @@
 from django.utils.functional import cached_property
 from rest_framework import exceptions
 from rest_framework.decorators import action
-from rest_framework.response import Response
 
 from pretalx.api.documentation import extend_schema
 from pretalx.api.serializers.log import ActivityLogSerializer
