@@ -3,6 +3,8 @@ from django.test import RequestFactory
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
+from tests.factories import TeamFactory, UserFactory
+
 _rf = RequestFactory()
 _api_rf = APIRequestFactory()
 
@@ -61,6 +63,28 @@ def make_view(view_class, request, **kwargs):
     view.request = request
     view.kwargs = kwargs
     return view
+
+
+def make_orga_user(event=None, *, teams=None, **team_kwargs):
+    """Create a user with organiser access.
+
+    When *teams* is given the user is added to each existing team and no new
+    team is created (``event`` and ``**team_kwargs`` are ignored).
+
+    Otherwise a new team is created on ``event.organiser`` with
+    ``all_events=True`` by default.  Pass keyword arguments to override or
+    extend TeamFactory fields, e.g.
+    ``make_orga_user(event, can_change_submissions=True)``.
+    """
+    user = UserFactory()
+    if teams is not None:
+        for team in teams:
+            team.members.add(user)
+    else:
+        team_kwargs.setdefault("all_events", True)
+        team = TeamFactory(organiser=event.organiser, **team_kwargs)
+        team.members.add(user)
+    return user
 
 
 def refresh(instance, **updates):
