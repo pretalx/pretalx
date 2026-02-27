@@ -39,8 +39,10 @@ class ScheduleReleaseForm(PretalxI18nModelForm):
             self.fields["comment"].initial = phrases.schedule.first_schedule
         else:
             self.fields["comment"].initial = _("We released a new schedule version!")
-        if not self.fields["version"].initial:
-            self.fields["version"].initial = guess_schedule_version(self.event)
+        version_initial = self.fields["version"].initial or self.initial.get("version")
+        if not version_initial:
+            version_initial = guess_schedule_version(self.event)
+        self.fields["version"].initial = version_initial
 
     def clean_version(self):
         version = self.cleaned_data.get("version")

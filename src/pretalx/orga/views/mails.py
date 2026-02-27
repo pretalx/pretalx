@@ -507,9 +507,9 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
                 )
                 return self.get(self.request, *self.args, **self.kwargs)
 
-            import bleach  # noqa: PLC0415
+            import bleach  # noqa: PLC0415 -- slow import
 
-            from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415
+            from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
                 render_markdown_abslinks,
             )
 

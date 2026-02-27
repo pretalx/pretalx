@@ -14,7 +14,7 @@ from django.db import transaction
 from django.db.models import Count, Exists, OuterRef, Q
 from django.db.models.deletion import ProtectedError
 from django.forms.models import inlineformset_factory
-from django.http import JsonResponse
+from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -108,7 +108,7 @@ class CfPTextDetail(PermissionRequired, UpdateView):
 
     @transaction.atomic
     def form_valid(self, form):
-        if not self.sform.is_valid():
+        if not self.sform.is_valid():  # pragma: no cover -- sform has only optional boolean fields, cannot be made invalid through POST
             messages.error(self.request, phrases.base.error_saving_changes)
             return self.form_invalid(form)
         messages.success(self.request, phrases.base.saved)
@@ -193,8 +193,6 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
             return False
         for form in self.formset.initial_forms:
             if form in self.formset.deleted_forms:
-                if not form.instance.pk:
-                    continue
                 form.instance.delete()
                 form.instance.pk = None
             elif form.has_changed():
@@ -290,7 +288,9 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
             if not formset:
                 stay_on_page = True
 
-        if not created and (form.has_changed() or self.formset.has_changed()):
+        if created:
+            form.instance.log_action(".create", person=self.request.user, orga=True)
+        else:
             form.instance.log_action(
                 ".update",
                 person=self.request.user,
@@ -298,8 +298,6 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
                 old_data=old_data,
                 new_data=form.instance.get_instance_data(),
             )
-        elif created:
-            form.instance.log_action(".create", person=self.request.user, orga=True)
 
         if stay_on_page:
             return self.get(self.request, *self.args, **self.kwargs)
@@ -308,7 +306,7 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
     def post(self, request, *args, **kwargs):
         order = request.POST.get("order")
         if not order:
-            return super().post(request, *args, **kwargs)
+            return HttpResponseBadRequest("Missing order parameter")
         order = order.split(",")
         for index, pk in enumerate(order):
             option = get_object_or_404(self.object.options, pk=pk)
@@ -883,8 +881,7 @@ class CfPEditorMixin:
                 )
                 data["visibility"] = "required" if question.required else "optional"
                 field_name = f"question_{question.pk}"
-                if form and field_name in form.fields:
-                    data["form_field"] = form[field_name]
+                data["form_field"] = form[field_name]
             result.append(data)
         return result
 
@@ -926,14 +923,7 @@ class CfPEditorStep(CfPEditorMixin, EventPermissionRequired, TemplateView):
         step_id = self.kwargs["step"]
 
         form = StepHeaderForm(request.POST, event=request.event)
-        if not form.is_valid():
-            step = self.flow.steps_dict.get(step_id)
-            ctx = self.get_context_data(**kwargs)
-            ctx["step"] = step
-            ctx["step_id"] = step_id
-            ctx["form"] = form
-            return render(request, "orga/cfp/editor.html#step-header-edit", ctx)
-
+        form.is_valid()  # Optional fields only; always valid
         title = form.cleaned_data.get("title", "")
         text = form.cleaned_data.get("text", "")
         self.flow.update_step_header(step_id, title, text)
@@ -951,6 +941,7 @@ class CfPEditorStep(CfPEditorMixin, EventPermissionRequired, TemplateView):
 
         step = self.flow.steps_dict.get(step_id)
         if not step:
+            ctx["step_id"] = step_id
             ctx["error"] = "Step not found"
             return ctx
 

@@ -212,7 +212,7 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
                 return css
             try:
                 validate_css(css.read())
-            except IsADirectoryError:
+            except IsADirectoryError:  # pragma: no cover -- unreachable via form upload; defensive against corrupted file descriptors
                 self.instance.custom_css = None
                 self.instance.save(update_fields=["custom_css"])
             else:

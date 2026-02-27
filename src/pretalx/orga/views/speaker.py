@@ -220,8 +220,7 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
         self.object = form.instance
         self.questions_form.save()
 
-        if message := self.messages.get(self.permission_action):
-            messages.success(self.request, message)
+        messages.success(self.request, phrases.base.saved)
 
         if form.has_changed() or self.questions_form.has_changed():
             new_data = form.instance.get_instance_data()

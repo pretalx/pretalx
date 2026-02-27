@@ -32,7 +32,7 @@ class TeamTable(PretalxTable):
             "delete": {"url": "orga_urls.delete"},
         }
     )
-    empty_text = _("Please add at least one place in which sessions can take place.")
+    empty_text = _("You have not created any teams yet.")
 
     class Meta:
         model = Team
