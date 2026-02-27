@@ -7,6 +7,7 @@ import sys
 from django.conf import settings
 from django.contrib import messages
 from django.core import cache
+from django.core.mail import EmailMessage, get_connection
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -18,7 +19,6 @@ from django_scopes import scopes_disabled
 
 from pretalx.celery_app import app
 from pretalx.common.exceptions import UserDeletionError
-from pretalx.common.mail import mail_send_task
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.phrases import phrases
 from pretalx.common.update_check import check_result_table, update_check
@@ -40,7 +40,7 @@ class AdminDashboard(PermissionRequired, TemplateView):
             return None
         try:
             client = app.broker_connection().channel().client
-            return client.llen("celery")
+            return client.llen("celery")  # pragma: no cover — requires live broker
         except OSError as e:
             return str(e)
 
@@ -70,16 +70,17 @@ class TestMailView(PermissionRequired, View):
         admin_emails = list(settings.ADMINS)
 
         try:
-            mail_send_task.apply(
-                kwargs={
-                    "to": admin_emails,
-                    "subject": _("pretalx test email"),
-                    "body": _(
+            backend = get_connection(fail_silently=False)
+            email = EmailMessage(
+                subject=str(_("pretalx test email")),
+                body=str(
+                    _(
                         "This is a test email from pretalx to verify your system email configuration is working correctly."
-                    ),
-                    "html": None,
-                }
+                    )
+                ),
+                to=admin_emails,
             )
+            backend.send_messages([email])
             messages.success(
                 request,
                 _("Test email sent successfully to: {emails}").format(
@@ -191,14 +192,13 @@ class AdminUserView(OrgaCRUDView):
             return instance.name
         return _("Users")
 
-    def delete(self, request, *args, **kwargs):
-        user = self.get_object()
-        try:
-            user.shred()
-        except UserDeletionError:
-            user.deactivate()
-        messages.success(request, _("The user has been deleted."))
-        return redirect(self.get_success_url())
+    def perform_delete(self):
+        with scopes_disabled():
+            try:
+                self.object.shred()
+            except UserDeletionError:
+                self.object.deactivate()
+        messages.success(self.request, _("The user has been deleted."))
 
 
 def healthcheck(request):

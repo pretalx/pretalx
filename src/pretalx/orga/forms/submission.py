@@ -65,7 +65,7 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             self.fields["submission_type"].queryset = self.event.submission_types.all()
         if not self.event.tags.all().exists():
             self.fields.pop("tags", None)
-        elif "tags" in self.fields:
+        else:
             self.fields["tags"].queryset = self.event.tags.all()
             self.fields["tags"].required = False
 

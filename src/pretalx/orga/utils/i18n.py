@@ -166,36 +166,37 @@ def get_moment_locale(locale=None):
 class Translate(Transform):
     name = "translate"
 
+    _BASE_TEMPLATES = {
+        "postgresql": (
+            "CASE "
+            "WHEN %(expressions)s IS JSON OBJECT THEN "
+            "COALESCE("
+            "NULLIF(%(expressions)s::json->>'{locale}', ''), "
+            "%(expressions)s::json->>'en',"
+            "(SELECT value FROM json_each_text(%(expressions)s::json) LIMIT 1)"
+            ")"
+            "ELSE %(expressions)s::text "
+            "END"
+        ),
+        "sqlite": (
+            "CASE "
+            "WHEN json_valid(%(expressions)s) THEN "
+            "COALESCE("
+            "NULLIF(json_extract(%(expressions)s, '$.{locale}'), ''), "
+            "json_extract(%(expressions)s, '$.en'), "
+            "(SELECT value FROM json_each(%(expressions)s) WHERE json_each.type != 'object' LIMIT 1)"
+            ")"
+            "ELSE %(expressions)s "
+            "END"
+        ),
+    }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if connection.vendor == "postgresql":
-            self.base_template = (
-                "CASE "
-                "WHEN %(expressions)s IS JSON OBJECT THEN "
-                "COALESCE("
-                "NULLIF(%(expressions)s::json->>'{locale}', ''), "
-                "%(expressions)s::json->>'en',"
-                "(SELECT value FROM json_each_text(%(expressions)s::json) LIMIT 1)"
-                ")"
-                "ELSE %(expressions)s::text "
-                "END"
-            )
-        elif connection.vendor == "sqlite":
-            self.base_template = (
-                "CASE "
-                "WHEN json_valid(%(expressions)s) THEN "
-                "COALESCE("
-                "NULLIF(json_extract(%(expressions)s, '$.{locale}'), ''), "
-                "json_extract(%(expressions)s, '$.en'), "
-                "(SELECT value FROM json_each(%(expressions)s) WHERE json_each.type != 'object' LIMIT 1)"
-                ")"
-                "ELSE %(expressions)s "
-                "END"
-            )
-        else:
-            raise NotImplementedError(
-                f"Translate not supported for {connection.vendor}"
-            )
+        vendor = connection.vendor
+        if vendor not in self._BASE_TEMPLATES:
+            raise NotImplementedError(f"Translate not supported for {vendor}")
+        self.base_template = self._BASE_TEMPLATES[vendor]
 
     @property
     def template(self):

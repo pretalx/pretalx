@@ -288,7 +288,11 @@ class ProposalForReviewerForm(ReviewAssignmentForm):
         submissions = set()
         for track in track_limit:
             submissions.update(self.submissions_by_track[track])
-        return sorted(submissions, key=lambda submission: (submission[1] or "").lower())
+        result = sorted(
+            submissions, key=lambda submission: (submission[1] or "").lower()
+        )
+        self._submission_choices_by_track[cache_key] = result
+        return result
 
     def save(self, *args, **kwargs):
         for reviewer in self.reviewers:
