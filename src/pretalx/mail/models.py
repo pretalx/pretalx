@@ -180,7 +180,7 @@ class MailTemplate(PretalxModel):
             remove any logging and traces.
         :param commit: Set ``False`` to return an unsaved object.
         """
-        from pretalx.person.models import User  # noqa: PLC0415
+        from pretalx.person.models import User  # noqa: PLC0415 -- avoid circular import
 
         if isinstance(user, str):
             address = user
@@ -297,7 +297,9 @@ def can_edit_mail(user, obj):
 
 class QueuedMailQuerySet(models.QuerySet):
     def prefetch_users(self, event):
-        from pretalx.person.models.user import User  # noqa: PLC0415
+        from pretalx.person.models.user import (  # noqa: PLC0415 -- avoid circular import
+            User,
+        )
 
         return self.prefetch_related(
             models.Prefetch("to_users", queryset=User.objects.with_speaker_code(event))
@@ -430,7 +432,9 @@ class QueuedMail(PretalxModel):
     mark_sent.alters_data = True
 
     def mark_failed(self, exception):
-        from smtplib import SMTPResponseException  # noqa: PLC0415
+        from smtplib import (  # noqa: PLC0415 -- lazy import; only needed for error handling
+            SMTPResponseException,
+        )
 
         self.state = QueuedMailStates.DRAFT
         error_data = {"error": str(exception), "type": type(exception).__name__}
@@ -451,7 +455,7 @@ class QueuedMail(PretalxModel):
         return f"QueuedMail(to={self.to}, subject={self.subject}, state={self.state})"
 
     def make_html(self):
-        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415
+        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
             render_markdown_abslinks,
         )
 
@@ -554,9 +558,13 @@ class QueuedMail(PretalxModel):
 
         # Dispatch the async task outside the transaction so the worker
         # sees committed state when it picks up the job.
-        from kombu.exceptions import OperationalError  # noqa: PLC0415
+        from kombu.exceptions import (  # noqa: PLC0415 -- lazy import; only needed for error handling
+            OperationalError,
+        )
 
-        from pretalx.common.mail import mail_send_task  # noqa: PLC0415
+        from pretalx.common.mail import (  # noqa: PLC0415 -- avoid circular import
+            mail_send_task,
+        )
 
         if self.pk:
             try:
