@@ -16,7 +16,10 @@ logger = logging.getLogger(__name__)
 @receiver(signal=periodic_task)
 @minimum_interval(minutes_after_success=15)
 def mark_stale_sending_mails_as_failed(sender, **kwargs):
-    from pretalx.mail.models import QueuedMail, QueuedMailStates  # noqa: PLC0415
+    from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+        QueuedMail,
+        QueuedMailStates,
+    )
 
     with scopes_disabled():
         cutoff = now() - dt.timedelta(hours=1)
