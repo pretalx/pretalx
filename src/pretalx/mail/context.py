@@ -323,4 +323,4 @@ def base_placeholders(sender, **kwargs):
         ),
     ]
 
-    return placeholders  # noqa: RET504
+    return placeholders  # noqa: RET504 -- explicit return aids debugger breakpoints

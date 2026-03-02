@@ -143,7 +143,9 @@ The {event_name} organisers""")
 
 
 def get_default_template(role):
-    from pretalx.mail.models import MailTemplateRoles  # noqa: PLC0415
+    from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
+        MailTemplateRoles,
+    )
 
     template_mapping = {
         MailTemplateRoles.SUBMISSION_ACCEPT: (GENERIC_SUBJECT, ACCEPT_TEXT),
