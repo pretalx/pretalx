@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.urls import reverse
 from django_scopes import scopes_disabled
@@ -12,11 +14,11 @@ from tests.factories import (
     TalkSlotFactory,
     TrackFactory,
 )
+from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("show_schedule", "show_widget_if_not_public", "expected"),
     ((True, False, 200), (True, True, 200), (False, False, 404), (False, True, 200)),
@@ -45,7 +47,6 @@ def test_widget_data_visibility(
     assert response.status_code == expected
 
 
-@pytest.mark.django_db
 def test_widget_data_returns_schedule_json(client, public_event_with_schedule):
     """Widget data returns JSON schedule data with CORS headers."""
     event = public_event_with_schedule
@@ -59,7 +60,6 @@ def test_widget_data_returns_schedule_json(client, public_event_with_schedule):
     assert len(data["talks"]) == 1
 
 
-@pytest.mark.django_db
 def test_widget_data_options_returns_cors_headers(client, public_event_with_schedule):
     """OPTIONS request returns CORS headers without content."""
     event = public_event_with_schedule
@@ -71,7 +71,6 @@ def test_widget_data_options_returns_cors_headers(client, public_event_with_sche
     assert response["Access-Control-Allow-Headers"] == "authorization,content-type"
 
 
-@pytest.mark.django_db
 def test_widget_data_versioned(client, public_event_with_schedule):
     """Versioned schedule data returns the requested version, not the current one."""
     event = public_event_with_schedule
@@ -92,7 +91,6 @@ def test_widget_data_versioned(client, public_event_with_schedule):
     assert data["version"] == "v1"
 
 
-@pytest.mark.django_db
 def test_widget_data_bogus_version_falls_back_to_current(
     client, public_event_with_schedule
 ):
@@ -106,7 +104,6 @@ def test_widget_data_bogus_version_falls_back_to_current(
     assert len(data["talks"]) == 1
 
 
-@pytest.mark.django_db
 def test_widget_data_wip_anonymous_denied(client, public_event_with_schedule):
     """Anonymous users cannot access the WIP schedule."""
     event = public_event_with_schedule
@@ -116,10 +113,12 @@ def test_widget_data_wip_anonymous_denied(client, public_event_with_schedule):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
-def test_widget_data_wip_orga_allowed(orga_client):
+def test_widget_data_wip_orga_allowed(client, public_event_with_schedule):
     """Organisers can access the WIP schedule."""
-    client, event = orga_client
+    event = public_event_with_schedule
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
 
     response = client.get(f"{event.urls.schedule_widget_data}?v=wip")
 
@@ -127,7 +126,6 @@ def test_widget_data_wip_orga_allowed(orga_client):
     assert "talks" in response.json()
 
 
-@pytest.mark.django_db
 def test_widget_data_no_schedule_returns_404(client, event):
     """Returns 404 when no schedule exists (even with permissions)."""
     event.is_public = True
@@ -140,7 +138,6 @@ def test_widget_data_no_schedule_returns_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("show_schedule", "show_widget_if_not_public", "expected"),
     ((True, False, 200), (True, True, 200), (False, False, 404), (False, True, 200)),
@@ -169,7 +166,6 @@ def test_widget_script_visibility(
     assert response.status_code == expected
 
 
-@pytest.mark.django_db
 def test_widget_script_returns_javascript(client, public_event_with_schedule):
     """Widget script serves JavaScript content."""
     event = public_event_with_schedule
@@ -181,7 +177,6 @@ def test_widget_script_returns_javascript(client, public_event_with_schedule):
     assert len(response.content) > 0
 
 
-@pytest.mark.django_db
 def test_event_css_no_color(client, event):
     """Event CSS without primary color returns minimal CSS."""
     response = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
@@ -193,7 +188,6 @@ def test_event_css_no_color(client, event):
     assert content == ":root {  }"
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("color", "expect_dark_text"),
     (
@@ -224,7 +218,6 @@ def test_event_css_with_color(client, event, color, expect_dark_text):
         assert "--color-text-on-primary" not in content
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("color", "expect_dark_text"),
     (("#3aa57c", False), ("#ffffff", True)),
@@ -248,7 +241,6 @@ def test_event_css_orga_target(client, event, color, expect_dark_text):
         assert "--color-text-on-primary-event" not in content
 
 
-@pytest.mark.django_db
 def test_event_css_etag_changes_with_color(client, event):
     """ETag changes when the color changes, reflecting the dark text state."""
     event.primary_color = "#000000"
@@ -266,7 +258,6 @@ def test_event_css_etag_changes_with_color(client, event):
     assert etag1 != etag2
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_widget_data_query_count(client, item_count, django_assert_num_queries):
     """Query count for widget data is constant regardless of talk count.

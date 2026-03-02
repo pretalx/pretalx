@@ -1,5 +1,6 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.api.serializers.access_code import (
     SubmitterAccessCodeSerializer,
@@ -12,10 +13,9 @@ from tests.factories import (
     TrackFactory,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_submitter_access_code_serializer_data():
     access_code = SubmitterAccessCodeFactory()
     track = TrackFactory(event=access_code.event)
@@ -23,10 +23,9 @@ def test_submitter_access_code_serializer_data():
     access_code.tracks.add(track)
     access_code.submission_types.add(sub_type)
 
-    with scopes_disabled():
-        data = SubmitterAccessCodeSerializer(
-            access_code, context={"event": access_code.event}
-        ).data
+    data = SubmitterAccessCodeSerializer(
+        access_code, context={"event": access_code.event}
+    ).data
     assert data == {
         "id": access_code.pk,
         "code": access_code.code,
@@ -39,7 +38,6 @@ def test_submitter_access_code_serializer_data():
     }
 
 
-@pytest.mark.django_db
 def test_submitter_access_code_serializer_scopes_querysets_to_event(rf):
     """__init__ restricts track and submission_type querysets to the request event."""
     event = EventFactory()
@@ -52,42 +50,35 @@ def test_submitter_access_code_serializer_scopes_querysets_to_event(rf):
     request = rf.get("/")
     request.event = event
     request.query_params = request.GET
-    with scopes_disabled():
-        serializer = SubmitterAccessCodeSerializer(context={"request": request})
-        track_qs = serializer.fields["tracks"].child_relation.queryset
-        type_qs = serializer.fields["submission_types"].child_relation.queryset
-        assert set(track_qs) == set(event.tracks.all())
-        assert set(type_qs) == set(event.submission_types.all())
+    serializer = SubmitterAccessCodeSerializer(context={"request": request})
+    track_qs = serializer.fields["tracks"].child_relation.queryset
+    type_qs = serializer.fields["submission_types"].child_relation.queryset
+    assert set(track_qs) == set(event.tracks.all())
+    assert set(type_qs) == set(event.submission_types.all())
 
 
-@pytest.mark.django_db
 def test_submitter_access_code_serializer_no_scoping_without_request():
     """Without a request in context, querysets remain at their defaults."""
-    with scopes_disabled():
-        serializer = SubmitterAccessCodeSerializer()
-        assert serializer.fields["tracks"].child_relation.queryset.count() == 0
+    serializer = SubmitterAccessCodeSerializer()
+    assert serializer.fields["tracks"].child_relation.queryset.count() == 0
 
 
-@pytest.mark.django_db
 def test_submitter_access_code_serializer_create_sets_event(rf):
     event = EventFactory()
     request = rf.get("/")
     request.event = event
     request.query_params = request.GET
-    with scopes_disabled():
-        serializer = SubmitterAccessCodeSerializer(context={"request": request})
-        instance = serializer.create({"code": "testcreatecode"})
+    serializer = SubmitterAccessCodeSerializer(context={"request": request})
+    instance = serializer.create({"code": "testcreatecode"})
 
     assert instance.pk is not None
     assert instance.event == event
     assert instance.code == "testcreatecode"
 
 
-@pytest.mark.django_db
 def test_v1_access_code_serializer_fields():
     access_code = SubmitterAccessCodeFactory()
-    with scopes_disabled():
-        data = V1SubmitterAccessCodeSerializer(access_code).data
+    data = V1SubmitterAccessCodeSerializer(access_code).data
     assert set(data.keys()) == {
         "id",
         "code",
@@ -100,7 +91,6 @@ def test_v1_access_code_serializer_fields():
     }
 
 
-@pytest.mark.django_db
 def test_v1_access_code_serializer_scopes_querysets_to_event(rf):
     """__init__ restricts track and submission_type querysets to the request event."""
     event = EventFactory()
@@ -112,27 +102,23 @@ def test_v1_access_code_serializer_scopes_querysets_to_event(rf):
 
     request = rf.get("/")
     request.event = event
-    with scopes_disabled():
-        serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
-        track_qs = serializer.fields["track"].queryset
-        type_qs = serializer.fields["submission_type"].queryset
-        assert set(track_qs) == set(event.tracks.all())
-        assert set(type_qs) == set(event.submission_types.all())
+    serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
+    track_qs = serializer.fields["track"].queryset
+    type_qs = serializer.fields["submission_type"].queryset
+    assert set(track_qs) == set(event.tracks.all())
+    assert set(type_qs) == set(event.submission_types.all())
 
 
-@pytest.mark.django_db
 def test_v1_access_code_serializer_to_representation_no_track_or_type():
     """Access code without tracks or submission_types serializes as null."""
     access_code = SubmitterAccessCodeFactory()
 
-    with scopes_disabled():
-        data = V1SubmitterAccessCodeSerializer(access_code).data
+    data = V1SubmitterAccessCodeSerializer(access_code).data
 
     assert data["track"] is None
     assert data["submission_type"] is None
 
 
-@pytest.mark.django_db
 def test_v1_access_code_serializer_to_representation_with_track_not_expanded(rf):
     """Track is serialized as PK when not expanded."""
     access_code = SubmitterAccessCodeFactory()
@@ -142,15 +128,13 @@ def test_v1_access_code_serializer_to_representation_with_track_not_expanded(rf)
     request = rf.get("/")
     request.event = access_code.event
     request.query_params = request.GET
-    with scopes_disabled():
-        data = V1SubmitterAccessCodeSerializer(
-            access_code, context={"request": request}
-        ).data
+    data = V1SubmitterAccessCodeSerializer(
+        access_code, context={"request": request}
+    ).data
 
     assert data["track"] == track.pk
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("field_name", "m2m_attr", "factory"),
     (
@@ -169,17 +153,15 @@ def test_v1_access_code_serializer_to_representation_expanded(
     request = rf.get("/", {"expand": field_name})
     request.event = access_code.event
     request.query_params = request.GET
-    with scopes_disabled():
-        data = V1SubmitterAccessCodeSerializer(
-            access_code, context={"request": request}
-        ).data
+    data = V1SubmitterAccessCodeSerializer(
+        access_code, context={"request": request}
+    ).data
 
     assert isinstance(data[field_name], dict)
     assert data[field_name]["id"] == related.pk
     assert data[field_name]["name"]["en"] == str(related.name)
 
 
-@pytest.mark.django_db
 def test_v1_access_code_serializer_to_representation_shows_first_only():
     """V1 backward compat: only the first track/submission_type is returned."""
     access_code = SubmitterAccessCodeFactory()
@@ -187,13 +169,11 @@ def test_v1_access_code_serializer_to_representation_shows_first_only():
     track2 = TrackFactory(event=access_code.event)
     access_code.tracks.add(track1, track2)
 
-    with scopes_disabled():
-        data = V1SubmitterAccessCodeSerializer(access_code).data
+    data = V1SubmitterAccessCodeSerializer(access_code).data
 
     assert data["track"] in (track1.pk, track2.pk)
 
 
-@pytest.mark.django_db
 def test_v1_access_code_serializer_create_with_track_and_type(rf):
     """Create sets M2M relations for track and submission_type."""
     event = EventFactory()
@@ -202,30 +182,26 @@ def test_v1_access_code_serializer_create_with_track_and_type(rf):
     request = rf.get("/")
     request.event = event
 
-    with scopes_disabled():
-        serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
-        instance = serializer.create(
-            {"code": "v1create", "track": track, "submission_type": sub_type}
-        )
-        assert list(instance.tracks.all()) == [track]
-        assert list(instance.submission_types.all()) == [sub_type]
+    serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
+    instance = serializer.create(
+        {"code": "v1create", "track": track, "submission_type": sub_type}
+    )
+    assert list(instance.tracks.all()) == [track]
+    assert list(instance.submission_types.all()) == [sub_type]
 
 
-@pytest.mark.django_db
 def test_v1_access_code_serializer_create_without_track_or_type(rf):
     """Create without track/type leaves M2M relations empty."""
     event = EventFactory()
     request = rf.get("/")
     request.event = event
 
-    with scopes_disabled():
-        serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
-        instance = serializer.create({"code": "v1notype"})
-        assert instance.tracks.count() == 0
-        assert instance.submission_types.count() == 0
+    serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
+    instance = serializer.create({"code": "v1notype"})
+    assert instance.tracks.count() == 0
+    assert instance.submission_types.count() == 0
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("field_name", "m2m_attr", "factory"),
     (
@@ -242,14 +218,12 @@ def test_v1_access_code_serializer_update_sets_relation(
     request = rf.get("/")
     request.event = access_code.event
 
-    with scopes_disabled():
-        serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
-        serializer.initial_data = {field_name: related.pk}
-        updated = serializer.update(access_code, {field_name: related})
-        assert list(getattr(updated, m2m_attr).all()) == [related]
+    serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
+    serializer.initial_data = {field_name: related.pk}
+    updated = serializer.update(access_code, {field_name: related})
+    assert list(getattr(updated, m2m_attr).all()) == [related]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("field_name", "m2m_attr", "factory"),
     (
@@ -267,14 +241,12 @@ def test_v1_access_code_serializer_update_clears_relation_when_null_in_initial_d
 
     request = rf.get("/")
     request.event = access_code.event
-    with scopes_disabled():
-        serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
-        serializer.initial_data = {field_name: None}
-        updated = serializer.update(access_code, {})
-        assert getattr(updated, m2m_attr).count() == 0
+    serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
+    serializer.initial_data = {field_name: None}
+    updated = serializer.update(access_code, {})
+    assert getattr(updated, m2m_attr).count() == 0
 
 
-@pytest.mark.django_db
 def test_v1_access_code_serializer_update_keeps_track_when_not_in_data(rf):
     """Track M2M is unchanged when track is not in the update data."""
     access_code = SubmitterAccessCodeFactory()
@@ -283,8 +255,7 @@ def test_v1_access_code_serializer_update_keeps_track_when_not_in_data(rf):
 
     request = rf.get("/")
     request.event = access_code.event
-    with scopes_disabled():
-        serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
-        serializer.initial_data = {}
-        updated = serializer.update(access_code, {})
-        assert list(updated.tracks.all()) == [track]
+    serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
+    serializer.initial_data = {}
+    updated = serializer.update(access_code, {})
+    assert list(updated.tracks.all()) == [track]

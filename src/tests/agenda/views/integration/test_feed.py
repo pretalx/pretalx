@@ -1,12 +1,13 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django_scopes import scope
 
 from pretalx.common.text.xml import strip_control_characters
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_schedule_feed_renders_atom(client, public_event_with_schedule):
     """The feed renders valid Atom XML with schedule releases."""
     event = public_event_with_schedule
@@ -20,7 +21,6 @@ def test_schedule_feed_renders_atom(client, public_event_with_schedule):
     assert "v1" in content
 
 
-@pytest.mark.django_db
 def test_schedule_feed_404_without_permission(client, event, published_talk_slot):
     """The feed returns 404 when the schedule is not publicly visible."""
     response = client.get(event.urls.feed)
@@ -28,7 +28,6 @@ def test_schedule_feed_404_without_permission(client, event, published_talk_slot
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_schedule_feed_contains_all_released_versions(
     client, public_event_with_schedule
 ):
@@ -45,7 +44,6 @@ def test_schedule_feed_contains_all_released_versions(
     assert "v2" in content
 
 
-@pytest.mark.django_db
 def test_schedule_feed_excludes_wip_schedule(client, public_event_with_schedule):
     """The feed does not include the WIP (unpublished) schedule."""
     response = client.get(public_event_with_schedule.urls.feed)
@@ -55,7 +53,6 @@ def test_schedule_feed_excludes_wip_schedule(client, public_event_with_schedule)
     assert content.count("<entry>") == 1
 
 
-@pytest.mark.django_db
 def test_schedule_feed_item_links_contain_changelog(client, public_event_with_schedule):
     """Each feed entry links to the changelog with a version anchor."""
     response = client.get(public_event_with_schedule.urls.feed)
@@ -65,7 +62,6 @@ def test_schedule_feed_item_links_contain_changelog(client, public_event_with_sc
     assert "#v1" in content
 
 
-@pytest.mark.django_db
 def test_schedule_feed_strips_control_characters(client, public_event_with_schedule):
     """Control characters in schedule versions are stripped from the feed output."""
     event = public_event_with_schedule
@@ -80,7 +76,6 @@ def test_schedule_feed_strips_control_characters(client, public_event_with_sched
     assert "\x0b" not in content
 
 
-@pytest.mark.django_db
 def test_schedule_feed_accessible_to_organizer(
     client, event, published_talk_slot, organiser_user
 ):
@@ -93,7 +88,6 @@ def test_schedule_feed_accessible_to_organizer(
     assert response["Content-Type"].startswith("application/atom+xml")
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_schedule_feed_query_count(
     client, public_event_with_schedule, item_count, django_assert_num_queries

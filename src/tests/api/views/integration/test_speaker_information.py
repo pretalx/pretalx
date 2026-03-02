@@ -1,4 +1,5 @@
-import json
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
 from django.core.files.base import ContentFile
@@ -6,15 +7,15 @@ from django_scopes import scopes_disabled
 
 from pretalx.api.versions import LEGACY
 from tests.factories import (
+    EventFactory,
     SpeakerInformationFactory,
     SubmissionTypeFactory,
     TrackFactory,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("is_public", (True, False))
 def test_speaker_information_list_requires_auth(client, event, is_public):
     """Speaker information list returns 401 for unauthenticated requests,
@@ -27,10 +28,9 @@ def test_speaker_information_list_requires_auth(client, event, is_public):
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_speaker_information_list_query_count(
-    client, event, orga_token, item_count, django_assert_num_queries
+    client, event, orga_read_token, item_count, django_assert_num_queries
 ):
     """Query count for speaker information list is constant regardless of item count."""
     with scopes_disabled():
@@ -41,7 +41,7 @@ def test_speaker_information_list_query_count(
         response = client.get(
             event.api_urls.speaker_information,
             follow=True,
-            headers={"Authorization": f"Token {orga_token.token}"},
+            headers={"Authorization": f"Token {orga_read_token.token}"},
         )
 
     assert response.status_code == 200
@@ -49,8 +49,9 @@ def test_speaker_information_list_query_count(
     assert data["count"] == item_count
 
 
-@pytest.mark.django_db
-def test_speaker_information_detail_accessible_with_token(client, event, orga_token):
+def test_speaker_information_detail_accessible_with_token(
+    client, event, orga_read_token
+):
     """Authenticated orga can retrieve a single speaker information entry."""
     with scopes_disabled():
         info = SpeakerInformationFactory(
@@ -60,7 +61,7 @@ def test_speaker_information_detail_accessible_with_token(client, event, orga_to
     response = client.get(
         event.api_urls.speaker_information + f"{info.pk}/",
         follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -69,8 +70,7 @@ def test_speaker_information_detail_accessible_with_token(client, event, orga_to
     assert data["text"]["en"] == "Details here"
 
 
-@pytest.mark.django_db
-def test_speaker_information_legacy_api_not_supported(client, event, orga_token):
+def test_speaker_information_legacy_api_not_supported(client, event, orga_read_token):
     """Requesting speaker information with legacy API version returns 400."""
     with scopes_disabled():
         info = SpeakerInformationFactory(event=event)
@@ -79,7 +79,7 @@ def test_speaker_information_legacy_api_not_supported(client, event, orga_token)
         event.api_urls.speaker_information + f"{info.pk}/",
         follow=True,
         headers={
-            "Authorization": f"Token {orga_token.token}",
+            "Authorization": f"Token {orga_read_token.token}",
             "Pretalx-Version": LEGACY,
         },
     )
@@ -88,7 +88,6 @@ def test_speaker_information_legacy_api_not_supported(client, event, orga_token)
     assert "API version not supported." in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_speaker_information_create_with_write_token(client, event, orga_write_token):
     """POST with a write token creates speaker information and logs the action."""
     response = client.post(
@@ -115,8 +114,9 @@ def test_speaker_information_create_with_write_token(client, event, orga_write_t
         )
 
 
-@pytest.mark.django_db
-def test_speaker_information_create_rejected_with_read_token(client, event, orga_token):
+def test_speaker_information_create_rejected_with_read_token(
+    client, event, orga_read_token
+):
     """POST with a read-only token returns 403 and creates nothing."""
     response = client.post(
         event.api_urls.speaker_information,
@@ -127,7 +127,7 @@ def test_speaker_information_create_rejected_with_read_token(client, event, orga
             "target_group": "accepted",
         },
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 403
@@ -135,7 +135,6 @@ def test_speaker_information_create_rejected_with_read_token(client, event, orga
         assert not event.information.filter(title="Forbidden Info").exists()
 
 
-@pytest.mark.django_db
 def test_speaker_information_update_with_write_token(client, event, orga_write_token):
     """PATCH with a write token updates speaker information and logs the action."""
     with scopes_disabled():
@@ -144,7 +143,7 @@ def test_speaker_information_update_with_write_token(client, event, orga_write_t
     response = client.patch(
         event.api_urls.speaker_information + f"{info.pk}/",
         follow=True,
-        data=json.dumps({"title": "Updated Title"}),
+        data={"title": "Updated Title"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -160,8 +159,9 @@ def test_speaker_information_update_with_write_token(client, event, orga_write_t
         )
 
 
-@pytest.mark.django_db
-def test_speaker_information_update_rejected_with_read_token(client, event, orga_token):
+def test_speaker_information_update_rejected_with_read_token(
+    client, event, orga_read_token
+):
     """PATCH with a read-only token returns 403 and changes nothing."""
     with scopes_disabled():
         info = SpeakerInformationFactory(event=event, title="Unchanged")
@@ -169,9 +169,9 @@ def test_speaker_information_update_rejected_with_read_token(client, event, orga
     response = client.patch(
         event.api_urls.speaker_information + f"{info.pk}/",
         follow=True,
-        data=json.dumps({"title": "Changed"}),
+        data={"title": "Changed"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 403
@@ -180,7 +180,6 @@ def test_speaker_information_update_rejected_with_read_token(client, event, orga
         assert info.title == "Unchanged"
 
 
-@pytest.mark.django_db
 def test_speaker_information_delete_with_write_token(client, event, orga_write_token):
     """DELETE with a write token removes the speaker information and logs the action."""
     with scopes_disabled():
@@ -203,8 +202,9 @@ def test_speaker_information_delete_with_write_token(client, event, orga_write_t
         )
 
 
-@pytest.mark.django_db
-def test_speaker_information_delete_rejected_with_read_token(client, event, orga_token):
+def test_speaker_information_delete_rejected_with_read_token(
+    client, event, orga_read_token
+):
     """DELETE with a read-only token returns 403 and keeps the entry."""
     with scopes_disabled():
         info = SpeakerInformationFactory(event=event)
@@ -212,7 +212,7 @@ def test_speaker_information_delete_rejected_with_read_token(client, event, orga
     response = client.delete(
         event.api_urls.speaker_information + f"{info.pk}/",
         follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 403
@@ -220,8 +220,7 @@ def test_speaker_information_delete_rejected_with_read_token(client, event, orga
         assert event.information.filter(pk=info.pk).exists()
 
 
-@pytest.mark.django_db
-def test_speaker_information_expand_related_fields(client, event, orga_token):
+def test_speaker_information_expand_related_fields(client, event, orga_read_token):
     """The ?expand= parameter inlines related track and type objects."""
     with scopes_disabled():
         track = TrackFactory(event=event)
@@ -234,7 +233,7 @@ def test_speaker_information_expand_related_fields(client, event, orga_token):
         event.api_urls.speaker_information
         + f"{info.pk}/?expand=limit_tracks,limit_types",
         follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -244,7 +243,6 @@ def test_speaker_information_expand_related_fields(client, event, orga_token):
     assert data["limit_types"][0]["name"]["en"] == sub_type.name
 
 
-@pytest.mark.django_db
 def test_speaker_information_create_with_resource(client, event, orga_write_token):
     """POST with a file upload attaches the resource to the speaker information."""
     upload_response = client.post(
@@ -279,13 +277,12 @@ def test_speaker_information_create_with_resource(client, event, orga_write_toke
         assert info.resource.name.endswith(".pdf")
 
 
-@pytest.mark.django_db
 def test_speaker_information_cross_event_track_rejected(
-    client, event, orga_write_token, other_event
+    client, event, orga_write_token
 ):
     """Assigning a track from a different event returns 400."""
     with scopes_disabled():
-        other_track = TrackFactory(event=other_event)
+        other_track = TrackFactory(event=EventFactory())
 
     response = client.post(
         event.api_urls.speaker_information,

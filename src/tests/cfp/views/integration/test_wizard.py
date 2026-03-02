@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import json
 from urllib.parse import urlparse
@@ -9,13 +11,13 @@ from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
 from pretalx.submission.models import Submission, SubmissionStates, SubmissionType
+from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from tests.cfp.views.conftest import get_response_and_url, info_data, start_wizard
-from tests.factories import TagFactory
+from tests.factories import QuestionFactory, TagFactory, TrackFactory
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_submit_start_redirects_to_info_step(client, cfp_event):
     """GET /submit/ generates a tmpid and redirects to the info step."""
     response, url = start_wizard(client, cfp_event)
@@ -24,7 +26,6 @@ def test_submit_start_redirects_to_info_step(client, cfp_event):
     assert "/info/" in url
 
 
-@pytest.mark.django_db
 def test_submit_start_preserves_query_params(client, cfp_event, cfp_track):
     """GET /submit/?track=X preserves query parameters through the redirect."""
     with scopes_disabled():
@@ -41,7 +42,6 @@ def test_submit_start_preserves_query_params(client, cfp_event, cfp_track):
     assert q["submission_type"] == f"{sub_type.pk}-slug"
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("cfp_attrs"),
     ({"deadline": "past"}, {"deadline": None, "opening": "future"}),
@@ -66,7 +66,6 @@ def test_wizard_cfp_closed_redirects(client, cfp_event, cfp_user, cfp_attrs):
     assert "/info/" not in url
 
 
-@pytest.mark.django_db
 def test_wizard_access_code_bypasses_closed_cfp(client, cfp_event, cfp_access_code):
     """A valid access code allows submission even when CfP deadline has passed."""
     with scopes_disabled():
@@ -78,7 +77,6 @@ def test_wizard_access_code_bypasses_closed_cfp(client, cfp_event, cfp_access_co
     assert "/info/" in url
 
 
-@pytest.mark.django_db
 def test_wizard_expired_access_code_rejected(client, cfp_event, cfp_access_code):
     """An expired access code does not bypass the closed CfP."""
     with scopes_disabled():
@@ -92,7 +90,6 @@ def test_wizard_expired_access_code_rejected(client, cfp_event, cfp_access_code)
     assert "/info/" not in url
 
 
-@pytest.mark.django_db
 def test_wizard_missing_step_returns_404(client, cfp_event):
     """Requesting a non-existent step identifier returns 404."""
     _, info_url = start_wizard(client, cfp_event)
@@ -102,7 +99,6 @@ def test_wizard_missing_step_returns_404(client, cfp_event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_wizard_info_step_get_renders_form(client, cfp_event):
     """GET on the info step renders the submission form."""
     _, info_url = start_wizard(client, cfp_event)
@@ -113,7 +109,6 @@ def test_wizard_info_step_get_renders_form(client, cfp_event):
     assert "form" in response.context
 
 
-@pytest.mark.django_db
 def test_wizard_info_step_post_valid_advances(client, cfp_event, cfp_user):
     """Posting valid data on the info step advances to the next step."""
     client.force_login(cfp_user)
@@ -126,7 +121,6 @@ def test_wizard_info_step_post_valid_advances(client, cfp_event, cfp_user):
     assert "/info/" not in url
 
 
-@pytest.mark.django_db
 def test_wizard_info_step_post_invalid_stays(client, cfp_event, cfp_user):
     """Posting invalid data (missing title) keeps user on info step."""
     client.force_login(cfp_user)
@@ -138,11 +132,17 @@ def test_wizard_info_step_post_invalid_stays(client, cfp_event, cfp_user):
     assert "/info/" in url
 
 
-@pytest.mark.django_db
-def test_wizard_questions_step_shown_when_questions_exist(
-    client, cfp_event, cfp_user, submission_question
-):
+def test_wizard_questions_step_shown_when_questions_exist(client, cfp_event, cfp_user):
     """Questions step is shown when the event has submission questions."""
+    with scopes_disabled():
+        QuestionFactory(
+            event=cfp_event,
+            question="How much do you like green, on a scale from 1-10?",
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+            position=1,
+        )
     client.force_login(cfp_user)
     _, info_url = start_wizard(client, cfp_event)
 
@@ -152,7 +152,6 @@ def test_wizard_questions_step_shown_when_questions_exist(
     assert "/questions/" in url
 
 
-@pytest.mark.django_db
 def test_wizard_questions_step_skipped_without_questions(client, cfp_event, cfp_user):
     """Questions step is skipped when no questions exist."""
     client.force_login(cfp_user)
@@ -165,11 +164,17 @@ def test_wizard_questions_step_skipped_without_questions(client, cfp_event, cfp_
     assert "/profile/" in url
 
 
-@pytest.mark.django_db
-def test_wizard_review_questions_not_shown(
-    client, cfp_event, cfp_user, review_question
-):
+def test_wizard_review_questions_not_shown(client, cfp_event, cfp_user):
     """Reviewer-only questions do not cause the questions step to appear."""
+    with scopes_disabled():
+        QuestionFactory(
+            event=cfp_event,
+            question="Reviewer only question",
+            variant=QuestionVariant.STRING,
+            target="reviewer",
+            question_required=QuestionRequired.REQUIRED,
+            position=4,
+        )
     client.force_login(cfp_user)
     _, info_url = start_wizard(client, cfp_event)
 
@@ -180,7 +185,6 @@ def test_wizard_review_questions_not_shown(
     assert "/profile/" in url
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("logged_in", "expected_step"),
     ((False, "user"), (True, "profile")),
@@ -200,7 +204,6 @@ def test_wizard_user_step_visibility(
     assert f"/{expected_step}/" in url
 
 
-@pytest.mark.django_db
 def test_wizard_logged_in_user_creates_submission(client, cfp_event, cfp_user):
     """A logged-in user can complete the wizard, creating a submission and sending confirmation."""
     djmail.outbox = []
@@ -233,11 +236,17 @@ def test_wizard_logged_in_user_creates_submission(client, cfp_event, cfp_user):
     assert cfp_user.email in djmail.outbox[0].to
 
 
-@pytest.mark.django_db
-def test_wizard_with_questions_saves_answers(
-    client, cfp_event, cfp_user, submission_question
-):
+def test_wizard_with_questions_saves_answers(client, cfp_event, cfp_user):
     """Wizard saves question answers when questions step is present."""
+    with scopes_disabled():
+        submission_question = QuestionFactory(
+            event=cfp_event,
+            question="How much do you like green, on a scale from 1-10?",
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+            position=1,
+        )
     client.force_login(cfp_user)
     _, info_url = start_wizard(client, cfp_event)
 
@@ -260,7 +269,6 @@ def test_wizard_with_questions_saves_answers(
         assert answer.answer == "42"
 
 
-@pytest.mark.django_db
 def test_wizard_new_user_registration_creates_submission(client, cfp_event):
     """An anonymous user can register and complete a submission."""
     djmail.outbox = []
@@ -291,7 +299,6 @@ def test_wizard_new_user_registration_creates_submission(client, cfp_event):
         assert speaker.name == "New Speaker"
 
 
-@pytest.mark.django_db
 def test_wizard_existing_user_login_creates_submission(client, cfp_event, cfp_user):
     """An anonymous user who logs in via the wizard completes the submission."""
     _, info_url = start_wizard(client, cfp_event)
@@ -313,10 +320,10 @@ def test_wizard_existing_user_login_creates_submission(client, cfp_event, cfp_us
         assert sub.speakers.filter(user=cfp_user).exists()
 
 
-@pytest.mark.django_db
-def test_wizard_with_required_track(client, cfp_event, cfp_track, cfp_other_track):
+def test_wizard_with_required_track(client, cfp_event, cfp_track):
     """When tracks are required, the submission is saved with the chosen track."""
     with scopes_disabled():
+        TrackFactory(event=cfp_event, name="Second Track")
         cfp_event.cfp.fields["track"]["visibility"] = "required"
         cfp_event.cfp.save()
 
@@ -338,7 +345,6 @@ def test_wizard_with_required_track(client, cfp_event, cfp_track, cfp_other_trac
         assert sub.track == cfp_track
 
 
-@pytest.mark.django_db
 def test_wizard_with_tags(client, cfp_event, cfp_user):
     """Optional tags are saved when provided in the info step."""
     with scopes_disabled():
@@ -360,7 +366,6 @@ def test_wizard_with_tags(client, cfp_event, cfp_user):
         assert set(sub.tags.all()) == {tag1, tag2}
 
 
-@pytest.mark.django_db
 def test_wizard_additional_speakers_send_invitations(client, cfp_event, cfp_user):
     """Additional speaker emails trigger invitation emails."""
     djmail.outbox = []
@@ -381,7 +386,6 @@ def test_wizard_additional_speakers_send_invitations(client, cfp_event, cfp_user
     assert "speaker3@example.com" in all_recipients
 
 
-@pytest.mark.django_db
 def test_wizard_additional_speaker_mail_fail_no_crash(client, cfp_event, cfp_user):
     """When custom SMTP is configured and fails, submission still succeeds."""
     with scopes_disabled():
@@ -402,12 +406,12 @@ def test_wizard_additional_speaker_mail_fail_no_crash(client, cfp_event, cfp_use
     assert len(djmail.outbox) == 0
 
 
-@pytest.mark.django_db
 def test_wizard_track_access_code_required(
-    client, cfp_event, cfp_access_code, cfp_track, cfp_other_track
+    client, cfp_event, cfp_access_code, cfp_track
 ):
     """Track requiring access code: submission fails without code, succeeds with it."""
     with scopes_disabled():
+        cfp_other_track = TrackFactory(event=cfp_event, name="Second Track")
         cfp_event.cfp.fields["track"]["visibility"] = "required"
         cfp_event.cfp.fields["abstract"]["visibility"] = "do_not_ask"
         cfp_event.cfp.save()
@@ -432,7 +436,6 @@ def test_wizard_track_access_code_required(
     assert "/info/" not in url
 
 
-@pytest.mark.django_db
 def test_wizard_submission_type_access_code(client, cfp_event, cfp_access_code):
     """Submission type requiring access code: fails without code, succeeds with it."""
     with scopes_disabled():
@@ -455,7 +458,6 @@ def test_wizard_submission_type_access_code(client, cfp_event, cfp_access_code):
     assert "/info/" not in url
 
 
-@pytest.mark.django_db
 def test_wizard_mail_on_new_submission_sends_orga_email(client, cfp_event, cfp_user):
     """When mail_on_new_submission is enabled, both user and orga get emails."""
     with scopes_disabled():
@@ -472,12 +474,17 @@ def test_wizard_mail_on_new_submission_sends_orga_email(client, cfp_event, cfp_u
     assert len(djmail.outbox) == 2
 
 
-@pytest.mark.django_db
-def test_wizard_submit_twice_no_duplicate_speaker_answers(
-    client, cfp_event, cfp_user, speaker_question
-):
+def test_wizard_submit_twice_no_duplicate_speaker_answers(client, cfp_event, cfp_user):
     """Submitting twice with the same speaker question does not duplicate answers."""
     with scopes_disabled():
+        speaker_question = QuestionFactory(
+            event=cfp_event,
+            question="What is your favourite color?",
+            variant=QuestionVariant.STRING,
+            target="speaker",
+            question_required=QuestionRequired.OPTIONAL,
+            position=3,
+        )
         sub_type = SubmissionType.objects.filter(event=cfp_event).first().pk
         answer_data = {f"question_{speaker_question.pk}": "green"}
 
@@ -495,7 +502,6 @@ def test_wizard_submit_twice_no_duplicate_speaker_answers(
         assert speaker_question.answers.count() == 1
 
 
-@pytest.mark.django_db
 def test_wizard_required_avatar_upload(client, cfp_event, cfp_user, make_image):
     """When avatar is required, uploading an avatar completes the wizard."""
     with scopes_disabled():
@@ -520,7 +526,6 @@ def test_wizard_required_avatar_upload(client, cfp_event, cfp_user, make_image):
         assert Submission.objects.count() == 1
 
 
-@pytest.mark.django_db
 def test_wizard_with_required_availabilities(client, cfp_event):
     """Submitting with required availabilities creates a valid submission."""
     with scopes_disabled():
@@ -563,7 +568,6 @@ def test_wizard_with_required_availabilities(client, cfp_event):
         assert Submission.objects.count() == 1
 
 
-@pytest.mark.django_db
 def test_submit_restart_loads_draft(client, cfp_event, cfp_user):
     """SubmitRestartView stores the draft code in session and redirects to info."""
     client.force_login(cfp_user)
@@ -587,7 +591,6 @@ def test_submit_restart_loads_draft(client, cfp_event, cfp_user):
     assert "Draft Talk" in content
 
 
-@pytest.mark.django_db
 def test_wizard_draft_save_with_valid_data(client, cfp_event, cfp_user):
     """Saving a draft with valid data creates a DRAFT submission."""
     client.force_login(cfp_user)
@@ -603,7 +606,6 @@ def test_wizard_draft_save_with_valid_data(client, cfp_event, cfp_user):
         assert draft.title == "My Draft"
 
 
-@pytest.mark.django_db
 def test_wizard_draft_invalid_data_stays_on_step(client, cfp_event, cfp_user):
     """Saving a draft with invalid data (missing title) stays on the info step."""
     client.force_login(cfp_user)
@@ -617,7 +619,6 @@ def test_wizard_draft_invalid_data_stays_on_step(client, cfp_event, cfp_user):
         assert Submission.all_objects.filter(state=SubmissionStates.DRAFT).count() == 0
 
 
-@pytest.mark.django_db
 def test_wizard_draft_anonymous_redirects_to_user_step(client, cfp_event):
     """An anonymous user saving a draft is redirected to the user step with draft=1."""
     _, info_url = start_wizard(client, cfp_event)
@@ -629,7 +630,6 @@ def test_wizard_draft_anonymous_redirects_to_user_step(client, cfp_event):
     assert "draft=1" in url
 
 
-@pytest.mark.django_db
 def test_wizard_draft_anonymous_login_saves_draft(client, cfp_event, cfp_user):
     """Anonymous user: draft on info → login on user step → draft saved."""
     _, info_url = start_wizard(client, cfp_event)
@@ -649,7 +649,6 @@ def test_wizard_draft_anonymous_login_saves_draft(client, cfp_event, cfp_user):
         assert draft.title == "Anon Draft"
 
 
-@pytest.mark.django_db
 def test_wizard_draft_invalid_profile_stays_on_step(client, cfp_event, cfp_user):
     """Saving a draft with invalid profile data (missing name) stays on profile step."""
     client.force_login(cfp_user)
@@ -667,7 +666,6 @@ def test_wizard_draft_invalid_profile_stays_on_step(client, cfp_event, cfp_user)
         assert Submission.all_objects.filter(state=SubmissionStates.DRAFT).count() == 0
 
 
-@pytest.mark.django_db
 def test_wizard_with_resource_link(client, cfp_event, cfp_user):
     """Resources with links are saved on the submission."""
     with scopes_disabled():
@@ -700,7 +698,6 @@ def test_wizard_with_resource_link(client, cfp_event, cfp_user):
         assert resource.is_public is True
 
 
-@pytest.mark.django_db
 def test_wizard_with_resources_optional_none_provided(client, cfp_event, cfp_user):
     """When resources are optional, submitting without resources succeeds."""
     with scopes_disabled():
@@ -719,7 +716,6 @@ def test_wizard_with_resources_optional_none_provided(client, cfp_event, cfp_use
         assert sub.resources.count() == 0
 
 
-@pytest.mark.django_db
 def test_wizard_with_resources_required_blocks_without(client, cfp_event, cfp_user):
     """When resources are required, submitting without blocks at info step."""
     with scopes_disabled():
@@ -747,7 +743,6 @@ def test_wizard_with_resources_required_blocks_without(client, cfp_event, cfp_us
     assert "/profile/" in url
 
 
-@pytest.mark.django_db
 def test_wizard_resource_link_preserved_on_back_navigation(client, cfp_event, cfp_user):
     """Navigating back to the info step preserves resource data."""
     with scopes_disabled():
@@ -776,7 +771,6 @@ def test_wizard_resource_link_preserved_on_back_navigation(client, cfp_event, cf
     assert "https://example.com/slides.pdf" in content
 
 
-@pytest.mark.django_db
 def test_wizard_draft_with_resources(client, cfp_event, cfp_user):
     """Saving a draft preserves resource data."""
     with scopes_disabled():
@@ -806,7 +800,6 @@ def test_wizard_draft_with_resources(client, cfp_event, cfp_user):
         assert resource.link == "https://example.com/draft-slides"
 
 
-@pytest.mark.django_db
 def test_wizard_draft_resources_shown_on_resume(client, cfp_event, cfp_user):
     """Resuming a draft shows its existing resources."""
     with scopes_disabled():

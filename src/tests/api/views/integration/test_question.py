@@ -1,4 +1,5 @@
-import json
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
 from django_scopes import scopes_disabled
@@ -6,37 +7,68 @@ from django_scopes import scopes_disabled
 from pretalx.api.versions import LEGACY
 from pretalx.submission.icons import PLATFORM_ICONS
 from pretalx.submission.models import Answer, AnswerOption, QuestionVariant
+from pretalx.submission.models.question import QuestionRequired
 from tests.factories import (
     AnswerFactory,
     AnswerOptionFactory,
+    EventFactory,
     QuestionFactory,
+    ReviewFactory,
     SubmissionTypeFactory,
     TrackFactory,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
+@pytest.fixture
+def question(event):
+    """A basic number question targeting submissions."""
+    return QuestionFactory(
+        event=event,
+        variant=QuestionVariant.NUMBER,
+        target="submission",
+        question_required=QuestionRequired.OPTIONAL,
+    )
+
+
+@pytest.fixture
+def speaker_profile(submission):
+    """The speaker profile on the submission fixture."""
+    with scopes_disabled():
+        return submission.speakers.first()
+
+
+@pytest.fixture
+def answer(submission, question):
+    """An answer to the question fixture, attached to the submission."""
+    return AnswerFactory(question=question, submission=submission, answer="42")
+
+
 @pytest.mark.parametrize("is_public", (True, False))
-def test_questionviewset_list_anonymous_sees_only_public(client, question, is_public):
+def test_questionviewset_list_anonymous_sees_only_public(client, event, is_public):
     """Anonymous users only see public questions; non-public ones are hidden."""
     with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
         question.is_public = is_public
         question.save()
-        question.event.is_public = True
-        question.event.save()
+        event.is_public = True
+        event.save()
         # Release a schedule so the anonymous user has list_question permission
-        question.event.release_schedule("v1")
+        event.release_schedule("v1")
 
-    response = client.get(question.event.api_urls.questions, follow=True)
+    response = client.get(event.api_urls.questions, follow=True)
 
     assert response.status_code == 200
     content = response.json()
     assert bool(len(content["results"])) is is_public
 
 
-@pytest.mark.django_db
 def test_questionviewset_list_anonymous_private_event_returns_401(client, event):
     """Anonymous users get 401 on a private event."""
     event.is_public = False
@@ -47,17 +79,22 @@ def test_questionviewset_list_anonymous_private_event_returns_401(client, event)
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
-def test_questionviewset_list_public_questions_lack_orga_fields(client, question):
+def test_questionviewset_list_public_questions_lack_orga_fields(client, event):
     """Public questions served to anonymous users do not contain orga-only fields."""
     with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
         question.is_public = True
         question.save()
-        question.event.is_public = True
-        question.event.save()
-        question.event.release_schedule("v1")
+        event.is_public = True
+        event.save()
+        event.release_schedule("v1")
 
-    response = client.get(question.event.api_urls.questions, follow=True)
+    response = client.get(event.api_urls.questions, follow=True)
 
     assert response.status_code == 200
     content = response.json()
@@ -66,11 +103,18 @@ def test_questionviewset_list_public_questions_lack_orga_fields(client, question
     assert "contains_personal_data" not in content["results"][0]
 
 
-@pytest.mark.django_db
-def test_questionviewset_list_organiser_sees_all(client, orga_read_token, question):
+def test_questionviewset_list_organiser_sees_all(client, event, orga_read_token):
     """Organiser with a read token sees all questions regardless of visibility."""
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+
     response = client.get(
-        question.event.api_urls.questions,
+        event.api_urls.questions,
         follow=True,
         headers={"Authorization": f"Token {orga_read_token.token}"},
     )
@@ -81,18 +125,23 @@ def test_questionviewset_list_organiser_sees_all(client, orga_read_token, questi
     assert content["results"][0]["id"] == question.id
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("is_visible", (True, False))
 def test_questionviewset_list_reviewer_visibility(
-    client, review_token, question, is_visible
+    client, event, review_token, is_visible
 ):
     """Reviewers only see questions marked visible to reviewers."""
     with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
         question.is_visible_to_reviewers = is_visible
         question.save()
 
     response = client.get(
-        question.event.api_urls.questions,
+        event.api_urls.questions,
         follow=True,
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -102,7 +151,6 @@ def test_questionviewset_list_reviewer_visibility(
     assert bool(len(content["results"])) is is_visible
 
 
-@pytest.mark.django_db
 def test_questionviewset_create_organiser(client, event, orga_write_token):
     """Organiser with a write token can create a question."""
     with scopes_disabled():
@@ -110,14 +158,12 @@ def test_questionviewset_create_organiser(client, event, orga_write_token):
 
     response = client.post(
         event.api_urls.questions,
-        data=json.dumps(
-            {
-                "question": "A question",
-                "variant": "text",
-                "target": "submission",
-                "help_text": "hellllp",
-            }
-        ),
+        data={
+            "question": "A question",
+            "variant": "text",
+            "target": "submission",
+            "help_text": "hellllp",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -133,19 +179,16 @@ def test_questionviewset_create_organiser(client, event, orga_write_token):
         assert q.logged_actions().filter(action_type="pretalx.question.create").exists()
 
 
-@pytest.mark.django_db
 def test_questionviewset_create_with_options(client, event, orga_write_token):
     """Organiser can create a choice question with inline options."""
     response = client.post(
         event.api_urls.questions,
-        data=json.dumps(
-            {
-                "question": "A choice question",
-                "variant": "choices",
-                "target": "submission",
-                "options": [{"answer": "Option 1"}, {"answer": "Option 2"}],
-            }
-        ),
+        data={
+            "question": "A choice question",
+            "variant": "choices",
+            "target": "submission",
+            "options": [{"answer": "Option 1"}, {"answer": "Option 2"}],
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -160,19 +203,16 @@ def test_questionviewset_create_with_options(client, event, orga_write_token):
         assert "Option 2" in option_answers
 
 
-@pytest.mark.django_db
 def test_questionviewset_create_with_custom_identifier(client, event, orga_write_token):
     """Organiser can create a question with a custom identifier."""
     response = client.post(
         event.api_urls.questions,
-        data=json.dumps(
-            {
-                "question": "A question with identifier",
-                "variant": "text",
-                "target": "submission",
-                "identifier": "MY-CUSTOM-ID",
-            }
-        ),
+        data={
+            "question": "A question with identifier",
+            "variant": "text",
+            "target": "submission",
+            "identifier": "MY-CUSTOM-ID",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -181,20 +221,17 @@ def test_questionviewset_create_with_custom_identifier(client, event, orga_write
     assert response.json()["identifier"] == "MY-CUSTOM-ID"
 
 
-@pytest.mark.django_db
 def test_questionviewset_create_without_identifier_auto_generates(
     client, event, orga_write_token
 ):
     """Question without explicit identifier gets an auto-generated 8-char one."""
     response = client.post(
         event.api_urls.questions,
-        data=json.dumps(
-            {
-                "question": "A question without identifier",
-                "variant": "text",
-                "target": "submission",
-            }
-        ),
+        data={
+            "question": "A question without identifier",
+            "variant": "text",
+            "target": "submission",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -205,7 +242,6 @@ def test_questionviewset_create_without_identifier_auto_generates(
     assert len(identifier) == 8
 
 
-@pytest.mark.django_db
 def test_questionviewset_create_read_only_token_returns_403(
     client, event, orga_read_token
 ):
@@ -215,9 +251,7 @@ def test_questionviewset_create_read_only_token_returns_403(
 
     response = client.post(
         event.api_urls.questions,
-        data=json.dumps(
-            {"question": "A question", "variant": "text", "target": "submission"}
-        ),
+        data={"question": "A question", "variant": "text", "target": "submission"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_read_token.token}"},
     )
@@ -227,7 +261,6 @@ def test_questionviewset_create_read_only_token_returns_403(
         assert event.questions(manager="all_objects").count() == count
 
 
-@pytest.mark.django_db
 def test_questionviewset_create_reviewer_returns_403(client, event, review_token):
     """Reviewers cannot create questions."""
     with scopes_disabled():
@@ -235,9 +268,7 @@ def test_questionviewset_create_reviewer_returns_403(client, event, review_token
 
     response = client.post(
         event.api_urls.questions,
-        data=json.dumps(
-            {"question": "A question", "variant": "text", "target": "submission"}
-        ),
+        data={"question": "A question", "variant": "text", "target": "submission"},
         content_type="application/json",
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -247,19 +278,15 @@ def test_questionviewset_create_reviewer_returns_403(client, event, review_token
         assert event.questions(manager="all_objects").count() == count
 
 
-@pytest.mark.django_db
-def test_questionviewset_create_other_event_returns_403(
-    client, other_event, orga_read_token
-):
+def test_questionviewset_create_other_event_returns_403(client, orga_read_token):
     """Organiser cannot create questions on an event they don't have access to."""
+    other_event = EventFactory()
     with scopes_disabled():
         count = other_event.questions(manager="all_objects").count()
 
     response = client.post(
         other_event.api_urls.questions,
-        data=json.dumps(
-            {"question": "A question", "variant": "text", "target": "submission"}
-        ),
+        data={"question": "A question", "variant": "text", "target": "submission"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_read_token.token}"},
     )
@@ -269,12 +296,19 @@ def test_questionviewset_create_other_event_returns_403(
         assert other_event.questions(manager="all_objects").count() == count
 
 
-@pytest.mark.django_db
-def test_questionviewset_edit_organiser(client, event, orga_write_token, question):
+def test_questionviewset_edit_organiser(client, event, orga_write_token):
     """Organiser with write token can edit a question."""
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+
     response = client.patch(
         event.api_urls.questions + f"{question.pk}/",
-        data=json.dumps({"target": "speaker", "help_text": "hellllp"}),
+        data={"target": "speaker", "help_text": "hellllp"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -286,14 +320,19 @@ def test_questionviewset_edit_organiser(client, event, orga_write_token, questio
         assert question.help_text == "hellllp"
 
 
-@pytest.mark.django_db
-def test_questionviewset_edit_reviewer_returns_403(
-    client, event, review_token, question
-):
+def test_questionviewset_edit_reviewer_returns_403(client, event, review_token):
     """Reviewers cannot edit questions."""
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+
     response = client.patch(
         event.api_urls.questions + f"{question.pk}/",
-        data=json.dumps({"target": "speaker", "help_text": "hellllp"}),
+        data={"target": "speaker", "help_text": "hellllp"},
         content_type="application/json",
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -305,7 +344,6 @@ def test_questionviewset_edit_reviewer_returns_403(
         assert question.help_text != "hellllp"
 
 
-@pytest.mark.django_db
 def test_questionviewset_edit_options(client, event, orga_write_token, choice_question):
     """Editing question options replaces existing options entirely."""
     with scopes_disabled():
@@ -313,9 +351,7 @@ def test_questionviewset_edit_options(client, event, orga_write_token, choice_qu
 
     response = client.patch(
         event.api_urls.questions + f"{choice_question.pk}/",
-        data=json.dumps(
-            {"options": [{"answer": "Updated Option 1"}, {"answer": "New Option"}]}
-        ),
+        data={"options": [{"answer": "Updated Option 1"}, {"answer": "New Option"}]},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -329,7 +365,6 @@ def test_questionviewset_edit_options(client, event, orga_write_token, choice_qu
         assert "Original Option 1" not in new_options
 
 
-@pytest.mark.django_db
 def test_questionviewset_delete_organiser(client, event, orga_write_token):
     """Organiser with write token can delete a question without answers."""
     with scopes_disabled():
@@ -351,7 +386,6 @@ def test_questionviewset_delete_organiser(client, event, orga_write_token):
         )
 
 
-@pytest.mark.django_db
 def test_questionviewset_delete_read_only_token_returns_403(
     client, event, orga_read_token
 ):
@@ -370,11 +404,18 @@ def test_questionviewset_delete_read_only_token_returns_403(
         assert event.questions(manager="all_objects").filter(pk=pk).exists()
 
 
-@pytest.mark.django_db
 def test_questionviewset_delete_with_answers_returns_400(
-    client, event, orga_write_token, answer
+    client, event, orga_write_token, submission
 ):
     """Questions with answers cannot be deleted — returns 400."""
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+        answer = AnswerFactory(question=question, submission=submission, answer="42")
     pk = answer.question.pk
 
     response = client.delete(
@@ -389,7 +430,6 @@ def test_questionviewset_delete_with_answers_returns_400(
         assert event.questions(manager="all_objects").filter(pk=pk).exists()
 
 
-@pytest.mark.django_db
 def test_questionviewset_filter_by_target(client, event, orga_read_token):
     """?target=speaker filters to only speaker-targeted questions."""
     with scopes_disabled():
@@ -407,7 +447,6 @@ def test_questionviewset_filter_by_target(client, event, orga_read_token):
     assert content["results"][0]["target"] == "speaker"
 
 
-@pytest.mark.django_db
 def test_questionviewset_filter_by_variant(client, event, orga_read_token):
     """?variant=boolean filters to only boolean-variant questions."""
     with scopes_disabled():
@@ -425,7 +464,6 @@ def test_questionviewset_filter_by_variant(client, event, orga_read_token):
     assert content["results"][0]["variant"] == "boolean"
 
 
-@pytest.mark.django_db
 def test_questionviewset_search(client, event, orga_read_token):
     """?q= searches question text."""
     with scopes_disabled():
@@ -453,7 +491,6 @@ def test_questionviewset_search(client, event, orga_read_token):
     assert content["results"][0]["question"]["en"] == "Special question"
 
 
-@pytest.mark.django_db
 def test_questionviewset_expand_options_tracks_submission_types(
     client, event, orga_read_token, choice_question
 ):
@@ -480,7 +517,6 @@ def test_questionviewset_expand_options_tracks_submission_types(
     assert content["submission_types"][0]["name"]["en"] == sub_type.name
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_questionviewset_list_query_count(
     client, event, orga_read_token, django_assert_num_queries, item_count
@@ -501,19 +537,26 @@ def test_questionviewset_list_query_count(
     assert content["count"] == item_count
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(("is_detail", "method"), ((False, "post"), (True, "put")))
 def test_questionviewset_question_field_required(
-    client, event, orga_write_token, question, is_detail, method
+    client, event, orga_write_token, is_detail, method
 ):
     """The 'question' field is required on create and full update."""
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+
     url = event.api_urls.questions
     if is_detail:
         url += f"{question.pk}/"
 
     response = getattr(client, method)(
         url,
-        data=json.dumps({}),
+        data={},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -522,21 +565,28 @@ def test_questionviewset_question_field_required(
     assert response.data.get("question")[0] == "This field is required."
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("is_detail", "method"), ((False, "post"), (True, "put"), (True, "patch"))
 )
 def test_questionviewset_question_required_valid_choice(
-    client, event, orga_write_token, question, is_detail, method
+    client, event, orga_write_token, is_detail, method
 ):
     """question_required must be a valid choice value."""
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+
     url = event.api_urls.questions
     if is_detail:
         url += f"{question.pk}/"
 
     response = getattr(client, method)(
         url,
-        data=json.dumps({"question_required": "invalid_choice"}),
+        data={"question_required": "invalid_choice"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -548,21 +598,28 @@ def test_questionviewset_question_required_valid_choice(
     )
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("is_detail", "method"), ((False, "post"), (True, "put"), (True, "patch"))
 )
 def test_questionviewset_contains_personal_data_valid_boolean(
-    client, event, orga_write_token, question, is_detail, method
+    client, event, orga_write_token, is_detail, method
 ):
     """contains_personal_data must be a valid boolean."""
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+
     url = event.api_urls.questions
     if is_detail:
         url += f"{question.pk}/"
 
     response = getattr(client, method)(
         url,
-        data=json.dumps({"contains_personal_data": "not_a_boolean"}),
+        data={"contains_personal_data": "not_a_boolean"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -571,24 +628,22 @@ def test_questionviewset_contains_personal_data_valid_boolean(
     assert response.data.get("contains_personal_data")[0] == "Must be a valid boolean."
 
 
-@pytest.mark.django_db
 def test_questionviewset_create_with_track_from_other_event_returns_400(
-    client, event, orga_write_token, other_event
+    client, event, orga_write_token
 ):
     """Cannot create a question with a track from a different event."""
+    other_event = EventFactory()
     with scopes_disabled():
         other_track = TrackFactory(event=other_event)
 
     response = client.post(
         event.api_urls.questions,
-        data=json.dumps(
-            {
-                "question": "Question with invalid track",
-                "variant": "text",
-                "target": "submission",
-                "tracks": [other_track.pk],
-            }
-        ),
+        data={
+            "question": "Question with invalid track",
+            "variant": "text",
+            "target": "submission",
+            "tracks": [other_track.pk],
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -599,16 +654,13 @@ def test_questionviewset_create_with_track_from_other_event_returns_400(
         assert not event.questions(manager="all_objects").exists()
 
 
-@pytest.mark.django_db
 def test_questionviewset_create_legacy_version_returns_400(
     client, event, orga_write_token
 ):
     """Creating questions via the legacy API version returns 400."""
     response = client.post(
         event.api_urls.questions,
-        data=json.dumps(
-            {"question": "A question", "variant": "text", "target": "submission"}
-        ),
+        data={"question": "A question", "variant": "text", "target": "submission"},
         content_type="application/json",
         headers={
             "Authorization": f"Token {orga_write_token.token}",
@@ -620,7 +672,6 @@ def test_questionviewset_create_legacy_version_returns_400(
     assert "API version not supported." in response.text
 
 
-@pytest.mark.django_db
 def test_questionviewset_icon_returns_svg(client, event, orga_read_token):
     """The icon endpoint returns an SVG when the question has a valid icon."""
     with scopes_disabled():
@@ -642,11 +693,16 @@ def test_questionviewset_icon_returns_svg(client, event, orga_read_token):
     assert "<svg" in response.content.decode()
 
 
-@pytest.mark.django_db
-def test_questionviewset_icon_returns_404_without_icon(
-    client, event, orga_read_token, question
-):
+def test_questionviewset_icon_returns_404_without_icon(client, event, orga_read_token):
     """The icon endpoint returns 404 when the question has no icon."""
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+
     response = client.get(
         event.api_urls.questions + f"{question.pk}/icon/",
         headers={"Authorization": f"Token {orga_read_token.token}"},
@@ -655,7 +711,6 @@ def test_questionviewset_icon_returns_404_without_icon(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_answeroptionviewset_list_organiser(
     client, event, orga_read_token, choice_question
 ):
@@ -674,7 +729,6 @@ def test_answeroptionviewset_list_organiser(
     assert content["count"] == option_count
 
 
-@pytest.mark.django_db
 def test_answeroptionviewset_filter_by_question(
     client, event, orga_read_token, choice_question
 ):
@@ -697,7 +751,6 @@ def test_answeroptionviewset_filter_by_question(
     assert all(opt["question"] == choice_question.pk for opt in content["results"])
 
 
-@pytest.mark.django_db
 def test_answeroptionviewset_retrieve(client, event, orga_read_token, choice_question):
     """Organiser can retrieve a single answer option."""
     with scopes_disabled():
@@ -714,7 +767,6 @@ def test_answeroptionviewset_retrieve(client, event, orga_read_token, choice_que
     assert content["answer"]["en"] == option.answer
 
 
-@pytest.mark.django_db
 def test_answeroptionviewset_create(client, event, orga_write_token, choice_question):
     """Organiser with write token can create an answer option."""
     with scopes_disabled():
@@ -722,13 +774,11 @@ def test_answeroptionviewset_create(client, event, orga_write_token, choice_ques
 
     response = client.post(
         event.api_urls.question_options,
-        data=json.dumps(
-            {
-                "question": choice_question.pk,
-                "answer": {"en": "New API Option"},
-                "position": initial_count + 1,
-            }
-        ),
+        data={
+            "question": choice_question.pk,
+            "answer": {"en": "New API Option"},
+            "position": initial_count + 1,
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -741,20 +791,17 @@ def test_answeroptionviewset_create(client, event, orga_write_token, choice_ques
         assert choice_question.options.count() == initial_count + 1
 
 
-@pytest.mark.django_db
 def test_answeroptionviewset_create_with_identifier(
     client, event, orga_write_token, choice_question
 ):
     """Options can be created with a custom identifier."""
     response = client.post(
         event.api_urls.question_options,
-        data=json.dumps(
-            {
-                "question": choice_question.pk,
-                "answer": {"en": "Option with ID"},
-                "identifier": "OPT-CUSTOM",
-            }
-        ),
+        data={
+            "question": choice_question.pk,
+            "answer": {"en": "Option with ID"},
+            "identifier": "OPT-CUSTOM",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -763,14 +810,13 @@ def test_answeroptionviewset_create_with_identifier(
     assert response.json()["identifier"] == "OPT-CUSTOM"
 
 
-@pytest.mark.django_db
 def test_answeroptionviewset_create_wrong_question_type_returns_400(
     client, event, orga_write_token, question
 ):
     """Cannot create options for non-choice questions (e.g. number)."""
     response = client.post(
         event.api_urls.question_options,
-        data=json.dumps({"question": question.pk, "answer": {"en": "Invalid Option"}}),
+        data={"question": question.pk, "answer": {"en": "Invalid Option"}},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -780,7 +826,6 @@ def test_answeroptionviewset_create_wrong_question_type_returns_400(
     assert "Invalid pk" in str(response.data["question"])
 
 
-@pytest.mark.django_db
 def test_answeroptionviewset_update(client, event, orga_write_token, choice_question):
     """Organiser can update an answer option."""
     with scopes_disabled():
@@ -788,7 +833,7 @@ def test_answeroptionviewset_update(client, event, orga_write_token, choice_ques
 
     response = client.patch(
         event.api_urls.question_options + f"{option.pk}/",
-        data=json.dumps({"answer": {"en": "Updated via API"}}),
+        data={"answer": {"en": "Updated via API"}},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -800,7 +845,6 @@ def test_answeroptionviewset_update(client, event, orga_write_token, choice_ques
         assert str(option.answer) == "Updated via API"
 
 
-@pytest.mark.django_db
 def test_answeroptionviewset_delete(client, event, orga_write_token, choice_question):
     """Organiser can delete an unused answer option."""
     with scopes_disabled():
@@ -819,7 +863,6 @@ def test_answeroptionviewset_delete(client, event, orga_write_token, choice_ques
         assert not choice_question.options.filter(pk=option_id).exists()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("is_visible", (True, False))
 def test_answeroptionviewset_reviewer_visibility(
     client, event, review_token, choice_question, is_visible
@@ -839,7 +882,6 @@ def test_answeroptionviewset_reviewer_visibility(
     assert bool(len(content["results"])) is is_visible
 
 
-@pytest.mark.django_db
 def test_answeroptionviewset_anonymous_private_event_returns_401(
     client, event, choice_question
 ):
@@ -852,7 +894,6 @@ def test_answeroptionviewset_anonymous_private_event_returns_401(
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
 def test_answeroptionviewset_anonymous_nonpublic_question_empty(
     client, event, choice_question
 ):
@@ -870,7 +911,6 @@ def test_answeroptionviewset_anonymous_nonpublic_question_empty(
     assert response.json()["count"] == 0
 
 
-@pytest.mark.django_db
 def test_answeroptionviewset_anonymous_public_question(client, event, choice_question):
     """Anonymous users can see options for public questions."""
     with scopes_disabled():
@@ -887,7 +927,6 @@ def test_answeroptionviewset_anonymous_public_question(client, event, choice_que
     assert response.json()["count"] == count
 
 
-@pytest.mark.django_db
 def test_answeroptionviewset_expand_question(
     client, event, orga_read_token, choice_question
 ):
@@ -907,7 +946,6 @@ def test_answeroptionviewset_expand_question(
     assert content["results"][0]["question"]["id"] == choice_question.pk
 
 
-@pytest.mark.django_db
 def test_answeroptionviewset_expand_question_tracks(
     client, event, orga_read_token, choice_question
 ):
@@ -929,7 +967,6 @@ def test_answeroptionviewset_expand_question_tracks(
     assert question_data["tracks"][0]["name"]["en"] == track.name
 
 
-@pytest.mark.django_db
 def test_answerviewset_list_anonymous_returns_401(client, event, answer):
     """Anonymous users cannot access answers."""
     response = client.get(event.api_urls.answers, follow=True)
@@ -937,7 +974,6 @@ def test_answerviewset_list_anonymous_returns_401(client, event, answer):
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_answerviewset_list_organiser(
     client, orga_read_token, answer, django_assert_num_queries, item_count
@@ -963,14 +999,13 @@ def test_answerviewset_list_organiser(
     assert len(content["results"]) == item_count
 
 
-@pytest.mark.django_db
 def test_answerviewset_list_expand_options(
     client, event, orga_read_token, choice_question, submission
 ):
     """Expanding options on answers inlines the option objects."""
     with scopes_disabled():
         option = choice_question.options.first()
-        answer = Answer.objects.create(
+        answer = AnswerFactory(
             question=choice_question, submission=submission, answer=str(option.answer)
         )
         answer.options.add(option)
@@ -988,7 +1023,6 @@ def test_answerviewset_list_expand_options(
     assert "answer" in answer_data["options"][0]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("is_visible", (True, False))
 def test_answerviewset_list_reviewer_returns_403(
     client, review_token, answer, is_visible
@@ -1007,7 +1041,6 @@ def test_answerviewset_list_reviewer_returns_403(
     assert response.status_code == 403
 
 
-@pytest.mark.django_db
 def test_answerviewset_create_organiser(
     client, event, orga_write_token, question, submission, speaker_profile
 ):
@@ -1017,14 +1050,12 @@ def test_answerviewset_create_organiser(
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps(
-            {
-                "question": question.id,
-                "submission": submission.code,
-                "person": speaker_profile.code,
-                "answer": "Tralalalala",
-            }
-        ),
+        data={
+            "question": question.id,
+            "submission": submission.code,
+            "person": speaker_profile.code,
+            "answer": "Tralalalala",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1036,7 +1067,6 @@ def test_answerviewset_create_organiser(
         assert new_answer.answer == "Tralalalala"
 
 
-@pytest.mark.django_db
 def test_answerviewset_create_reviewer_returns_403(
     client, event, review_token, question, submission, speaker_profile
 ):
@@ -1046,14 +1076,12 @@ def test_answerviewset_create_reviewer_returns_403(
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps(
-            {
-                "question": question.id,
-                "submission": submission.code,
-                "person": speaker_profile.code,
-                "answer": "Tralalalala",
-            }
-        ),
+        data={
+            "question": question.id,
+            "submission": submission.code,
+            "person": speaker_profile.code,
+            "answer": "Tralalalala",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -1063,12 +1091,11 @@ def test_answerviewset_create_reviewer_returns_403(
         assert Answer.objects.filter(question__event=event).count() == count
 
 
-@pytest.mark.django_db
 def test_answerviewset_edit_organiser(client, event, orga_write_token, answer):
     """Organiser can edit an answer."""
     response = client.patch(
         event.api_urls.answers + f"{answer.pk}/",
-        data=json.dumps({"answer": "ohno.png"}),
+        data={"answer": "ohno.png"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1079,12 +1106,11 @@ def test_answerviewset_edit_organiser(client, event, orga_write_token, answer):
         assert answer.answer == "ohno.png"
 
 
-@pytest.mark.django_db
 def test_answerviewset_edit_reviewer_returns_403(client, event, review_token, answer):
     """Reviewers cannot edit answers."""
     response = client.patch(
         event.api_urls.answers + f"{answer.pk}/",
-        data=json.dumps({"answer": "ohno.png"}),
+        data={"answer": "ohno.png"},
         content_type="application/json",
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -1095,7 +1121,6 @@ def test_answerviewset_edit_reviewer_returns_403(client, event, review_token, an
         assert answer.answer != "ohno.png"
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("required_field", ("answer", "question"))
 def test_answerviewset_create_required_fields(
     client, event, orga_write_token, required_field
@@ -1103,7 +1128,7 @@ def test_answerviewset_create_required_fields(
     """Both 'answer' and 'question' are required on answer creation."""
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps({}),
+        data={},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1112,7 +1137,6 @@ def test_answerviewset_create_required_fields(
     assert response.data.get(required_field)[0] == "This field is required."
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("is_detail", "method"), ((False, "post"), (True, "put"), (True, "patch"))
 )
@@ -1126,7 +1150,7 @@ def test_answerviewset_blank_answer_returns_400(
 
     response = getattr(client, method)(
         url,
-        data=json.dumps({"answer": ""}),
+        data={"answer": ""},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1135,23 +1159,27 @@ def test_answerviewset_blank_answer_returns_400(
     assert response.data.get("answer")[0] == "This field may not be blank."
 
 
-@pytest.mark.django_db
 def test_answerviewset_create_duplicate_updates_existing(
-    client, event, orga_write_token, answer
+    client, event, orga_write_token, submission
 ):
     """Creating an answer for the same question+submission updates the existing one."""
     with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+        answer = AnswerFactory(question=question, submission=submission, answer="42")
         count = Answer.objects.filter(question__event=event).count()
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps(
-            {
-                "question": answer.question_id,
-                "submission": answer.submission.code,
-                "answer": "Updated answer",
-            }
-        ),
+        data={
+            "question": answer.question_id,
+            "submission": answer.submission.code,
+            "answer": "Updated answer",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1163,23 +1191,27 @@ def test_answerviewset_create_duplicate_updates_existing(
         assert answer.answer == "Updated answer"
 
 
-@pytest.mark.django_db
 def test_answerviewset_create_duplicate_same_value_skips_log(
-    client, event, orga_write_token, answer
+    client, event, orga_write_token, submission
 ):
     """Creating a duplicate answer with the same value does not log an update."""
     with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+        answer = AnswerFactory(question=question, submission=submission, answer="42")
         log_count_before = answer.submission.logged_actions().count()
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps(
-            {
-                "question": answer.question_id,
-                "submission": answer.submission.code,
-                "answer": answer.answer,
-            }
-        ),
+        data={
+            "question": answer.question_id,
+            "submission": answer.submission.code,
+            "answer": answer.answer,
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1192,7 +1224,6 @@ def test_answerviewset_create_duplicate_same_value_skips_log(
         assert log_count_after == log_count_before
 
 
-@pytest.mark.django_db
 def test_answeroptionviewset_delete_used_option_returns_400(
     client, event, orga_write_token, choice_question
 ):
@@ -1212,23 +1243,26 @@ def test_answeroptionviewset_delete_used_option_returns_400(
         assert AnswerOption.objects.filter(pk=option.pk).exists()
 
 
-@pytest.mark.django_db
 def test_answerviewset_create_logs_to_submission(
-    client, event, orga_write_token, submission, question
+    client, event, orga_write_token, submission
 ):
     """Creating an answer logs the change to the parent submission."""
     with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
         initial_log_count = submission.logged_actions().count()
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps(
-            {
-                "question": question.pk,
-                "submission": submission.code,
-                "answer": "Test answer",
-            }
-        ),
+        data={
+            "question": question.pk,
+            "submission": submission.code,
+            "answer": "Test answer",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1242,21 +1276,25 @@ def test_answerviewset_create_logs_to_submission(
         assert log.data["changes"][f"question-{question.pk}"]["new"] == "Test answer"
 
 
-@pytest.mark.django_db
-def test_answerviewset_update_logs_change(client, event, orga_write_token, answer):
+def test_answerviewset_update_logs_change(client, event, orga_write_token, submission):
     """Updating an answer via create logs both old and new values."""
     with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+        answer = AnswerFactory(question=question, submission=submission, answer="42")
         old_answer = answer.answer
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps(
-            {
-                "question": answer.question_id,
-                "submission": answer.submission.code,
-                "answer": "Updated answer",
-            }
-        ),
+        data={
+            "question": answer.question_id,
+            "submission": answer.submission.code,
+            "answer": "Updated answer",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1270,7 +1308,6 @@ def test_answerviewset_update_logs_change(client, event, orga_write_token, answe
         assert log.data["changes"][key]["new"] == "Updated answer"
 
 
-@pytest.mark.django_db
 def test_answerviewset_validation_submission_question_needs_submission(
     client, event, orga_write_token, submission
 ):
@@ -1280,7 +1317,7 @@ def test_answerviewset_validation_submission_question_needs_submission(
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps({"question": q.pk, "answer": "Test answer"}),
+        data={"question": q.pk, "answer": "Test answer"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1290,14 +1327,12 @@ def test_answerviewset_validation_submission_question_needs_submission(
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps(
-            {
-                "question": q.pk,
-                "answer": "Test answer",
-                "submission": submission.code,
-                "review": 1,
-            }
-        ),
+        data={
+            "question": q.pk,
+            "answer": "Test answer",
+            "submission": submission.code,
+            "review": 1,
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1306,17 +1341,19 @@ def test_answerviewset_validation_submission_question_needs_submission(
     assert "review" in response.data
 
 
-@pytest.mark.django_db
 def test_answerviewset_validation_reviewer_question_needs_review(
-    client, event, orga_write_token, review
+    client, event, orga_write_token, submission, review_user
 ):
     """Reviewer-targeted question requires a review and rejects submission."""
     with scopes_disabled():
+        review = ReviewFactory(
+            submission=submission, user=review_user, text="Looks great!"
+        )
         q = QuestionFactory(event=event, variant="text", target="reviewer")
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps({"question": q.pk, "answer": "Test answer"}),
+        data={"question": q.pk, "answer": "Test answer"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1326,14 +1363,12 @@ def test_answerviewset_validation_reviewer_question_needs_review(
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps(
-            {
-                "question": q.pk,
-                "answer": "Test answer",
-                "review": review.pk,
-                "submission": "abc123",
-            }
-        ),
+        data={
+            "question": q.pk,
+            "answer": "Test answer",
+            "review": review.pk,
+            "submission": "abc123",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1342,17 +1377,17 @@ def test_answerviewset_validation_reviewer_question_needs_review(
     assert "submission" in response.data
 
 
-@pytest.mark.django_db
 def test_answerviewset_validation_speaker_question_needs_person(
-    client, event, orga_write_token, speaker_profile
+    client, event, orga_write_token, submission
 ):
     """Speaker-targeted question requires a person and rejects submission."""
     with scopes_disabled():
+        speaker_profile = submission.speakers.first()
         q = QuestionFactory(event=event, variant="text", target="speaker")
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps({"question": q.pk, "answer": "Test answer"}),
+        data={"question": q.pk, "answer": "Test answer"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1362,14 +1397,12 @@ def test_answerviewset_validation_speaker_question_needs_person(
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps(
-            {
-                "question": q.pk,
-                "answer": "Test answer",
-                "person": speaker_profile.code,
-                "submission": "abc123",
-            }
-        ),
+        data={
+            "question": q.pk,
+            "answer": "Test answer",
+            "person": speaker_profile.code,
+            "submission": "abc123",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1379,33 +1412,33 @@ def test_answerviewset_validation_speaker_question_needs_person(
 
 
 @pytest.mark.parametrize("target", ("submission", "reviewer", "speaker"))
-@pytest.mark.django_db
 def test_answerviewset_create_superfluous_fields_returns_400(
-    client,
-    event,
-    orga_write_token,
-    question,
-    submission,
-    speaker_profile,
-    review,
-    target,
+    client, event, orga_write_token, submission, review_user, target
 ):
     """Providing all three related fields (submission, person, review) is always rejected."""
     with scopes_disabled():
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+        )
+        speaker_profile = submission.speakers.first()
+        review = ReviewFactory(
+            submission=submission, user=review_user, text="Looks great!"
+        )
         question.target = target
         question.save()
 
     response = client.post(
         event.api_urls.answers,
-        data=json.dumps(
-            {
-                "question": question.id,
-                "submission": submission.code,
-                "person": speaker_profile.code,
-                "review": review.pk,
-                "answer": "Tralalalala",
-            }
-        ),
+        data={
+            "question": question.id,
+            "submission": submission.code,
+            "person": speaker_profile.code,
+            "review": review.pk,
+            "answer": "Tralalalala",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
@@ -9,17 +11,13 @@ from pretalx.common.exceptions import SubmissionError
 from pretalx.common.models.log import ActivityLog
 from pretalx.mail.models import QueuedMailStates
 from pretalx.schedule.models import TalkSlot
-from pretalx.submission.models import (
-    Answer,
-    Submission,
-    SubmissionInvitation,
-    SubmissionStates,
-)
+from pretalx.submission.models import Submission, SubmissionInvitation, SubmissionStates
 from pretalx.submission.models.comment import SubmissionComment
 from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from pretalx.submission.models.submission import SpeakerRole
 from pretalx.submission.signals import before_submission_state_change
 from tests.factories import (
+    AnswerFactory,
     FeedbackFactory,
     QuestionFactory,
     ResourceFactory,
@@ -27,16 +25,16 @@ from tests.factories import (
     SpeakerFactory,
     SubmissionCommentFactory,
     SubmissionFactory,
+    SubmissionInvitationFactory,
     TagFactory,
     TalkSlotFactory,
     TrackFactory,
 )
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_submission_list_query_count(
     client, event, item_count, django_assert_num_queries
@@ -59,7 +57,6 @@ def test_submission_list_query_count(
     assert all(sub.title in content for sub in submissions)
 
 
-@pytest.mark.django_db
 def test_submission_list_anonymous_redirects(client, event):
     response = client.get(event.orga_urls.submissions)
 
@@ -67,7 +64,6 @@ def test_submission_list_anonymous_redirects(client, event):
     assert "/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_submission_list_shows_submission_titles(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -80,7 +76,6 @@ def test_submission_list_shows_submission_titles(client, event):
     assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_list_search_by_title(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -95,7 +90,6 @@ def test_submission_list_search_by_title(client, event):
     assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_list_search_by_speaker(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -113,7 +107,6 @@ def test_submission_list_search_by_speaker(client, event):
     assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_list_search_miss(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -128,7 +121,6 @@ def test_submission_list_search_miss(client, event):
     assert submission.title not in response.content.decode()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     "field", ("description", "abstract", "notes", "internal_notes")
 )
@@ -156,7 +148,6 @@ def test_submission_list_fulltext_search_finds_by_field(client, event, field):
     assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_list_reviewer_can_search_by_speaker(client, event):
     """Reviewers can search by speaker when the review phase allows seeing names."""
     with scopes_disabled():
@@ -175,7 +166,6 @@ def test_submission_list_reviewer_can_search_by_speaker(client, event):
     assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_list_reviewer_cannot_search_by_speaker_when_anonymised(
     client, event
 ):
@@ -198,7 +188,6 @@ def test_submission_list_reviewer_cannot_search_by_speaker_when_anonymised(
     assert submission.title not in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_list_reviewer_cannot_search_by_speaker_when_team_hides_names(
     client, event
 ):
@@ -221,7 +210,6 @@ def test_submission_list_reviewer_cannot_search_by_speaker_when_team_hides_names
     assert submission.title not in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_content_accessible_for_orga(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -234,7 +222,6 @@ def test_submission_content_accessible_for_orga(client, event):
     assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_content_404_for_invalid_code(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -246,7 +233,6 @@ def test_submission_content_404_for_invalid_code(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_submission_content_reviewer_can_see(client, event):
     with scopes_disabled():
         reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
@@ -259,13 +245,12 @@ def test_submission_content_reviewer_can_see(client, event):
     assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_content_reviewer_sees_question_answer(client, event):
     with scopes_disabled():
         reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
         submission = SubmissionFactory(event=event)
         question = QuestionFactory(event=event, target="submission")
-        Answer.objects.create(question=question, submission=submission, answer="42")
+        AnswerFactory(question=question, submission=submission, answer="42")
     client.force_login(reviewer)
     event.feature_flags["use_tracks"] = True
     event.save()
@@ -276,7 +261,6 @@ def test_submission_content_reviewer_sees_question_answer(client, event):
     assert question.question in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_content_reviewer_hidden_question(client, event):
     with scopes_disabled():
         reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
@@ -284,7 +268,7 @@ def test_submission_content_reviewer_hidden_question(client, event):
         question = QuestionFactory(
             event=event, target="submission", is_visible_to_reviewers=False
         )
-        Answer.objects.create(question=question, submission=submission, answer="42")
+        AnswerFactory(question=question, submission=submission, answer="42")
     client.force_login(reviewer)
     event.feature_flags["use_tracks"] = True
     event.save()
@@ -295,7 +279,6 @@ def test_submission_content_reviewer_hidden_question(client, event):
     assert question.question not in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_accept_get_does_not_change_state(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -310,7 +293,6 @@ def test_submission_accept_get_does_not_change_state(client, event):
     assert submission.state == SubmissionStates.SUBMITTED
 
 
-@pytest.mark.django_db
 def test_submission_accept_post_changes_state_and_queues_mail(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -328,7 +310,6 @@ def test_submission_accept_post_changes_state_and_queues_mail(client, event):
         assert event.queued_mails.count() == 1
 
 
-@pytest.mark.django_db
 def test_submission_accept_redirects_to_next(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -345,7 +326,6 @@ def test_submission_accept_redirects_to_next(client, event):
     assert response.url == event.orga_urls.submissions
 
 
-@pytest.mark.django_db
 def test_submission_accept_already_accepted_is_noop(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -363,7 +343,6 @@ def test_submission_accept_already_accepted_is_noop(client, event):
     assert submission.state == SubmissionStates.ACCEPTED
 
 
-@pytest.mark.django_db
 def test_submission_reject_get_does_not_change_state(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -378,7 +357,6 @@ def test_submission_reject_get_does_not_change_state(client, event):
     assert submission.state == SubmissionStates.SUBMITTED
 
 
-@pytest.mark.django_db
 def test_submission_reject_post_changes_state_and_queues_mail(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -397,7 +375,6 @@ def test_submission_reject_post_changes_state_and_queues_mail(client, event):
         assert event.queued_mails.count() == 1
 
 
-@pytest.mark.django_db
 def test_submission_confirm_get_does_not_change_state(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -415,7 +392,6 @@ def test_submission_confirm_get_does_not_change_state(client, event):
     assert submission.state == SubmissionStates.ACCEPTED
 
 
-@pytest.mark.django_db
 def test_submission_confirm_post_changes_state(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -433,7 +409,6 @@ def test_submission_confirm_post_changes_state(client, event):
     assert submission.state == SubmissionStates.CONFIRMED
 
 
-@pytest.mark.django_db
 def test_submission_delete_get_does_not_delete(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -447,7 +422,6 @@ def test_submission_delete_get_does_not_delete(client, event):
         assert Submission.objects.filter(event=event).count() == 1
 
 
-@pytest.mark.django_db
 def test_submission_delete_post_deletes(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -463,7 +437,6 @@ def test_submission_delete_post_deletes(client, event):
         assert not Submission.all_objects.filter(code=code).exists()
 
 
-@pytest.mark.django_db
 def test_submission_delete_scheduled_shows_warning(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -485,7 +458,6 @@ def test_submission_delete_scheduled_shows_warning(client, event):
         assert TalkSlot.objects.filter(submission_id=submission_pk).count() == 0
 
 
-@pytest.mark.django_db
 def test_submission_delete_reviewer_gets_404(client, event):
     with scopes_disabled():
         reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
@@ -501,7 +473,6 @@ def test_submission_delete_reviewer_gets_404(client, event):
         assert Submission.objects.filter(event=event).count() == 1
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("known_speaker", (True, False))
 def test_submission_create(client, event, known_speaker):
     with scopes_disabled():
@@ -539,7 +510,6 @@ def test_submission_create(client, event, known_speaker):
         assert sub.mails.count() == 1
 
 
-@pytest.mark.django_db
 def test_submission_edit_updates_fields_and_logs(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -578,7 +548,6 @@ def test_submission_edit_updates_fields_and_logs(client, event):
         assert update_log.data["changes"]["title"]["new"] == "Updated Title"
 
 
-@pytest.mark.django_db
 def test_submission_edit_with_question_consolidated_log(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -625,7 +594,6 @@ def test_submission_edit_with_question_consolidated_log(client, event):
         assert update_log.changes[question_key]["new"] == "50"
 
 
-@pytest.mark.django_db
 def test_submission_edit_wrong_answer_does_not_save(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -663,7 +631,6 @@ def test_submission_edit_wrong_answer_does_not_save(client, event):
         assert submission.title != "new title"
 
 
-@pytest.mark.django_db
 def test_submission_edit_slot_count(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -700,7 +667,6 @@ def test_submission_edit_slot_count(client, event):
         assert submission.slots.count() == 2
 
 
-@pytest.mark.django_db
 def test_submission_edit_duration(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -741,7 +707,6 @@ def test_submission_edit_duration(client, event):
         assert (slot.local_end - slot.local_start).seconds / 60 == 123
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     "question_type", (QuestionVariant.DATE, QuestionVariant.DATETIME)
 )
@@ -801,7 +766,6 @@ def test_submission_edit_datetime_answer_validation(
         assert (submission.title == "new title") is success
 
 
-@pytest.mark.django_db
 def test_submission_edit_resources_add_and_remove(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -855,7 +819,6 @@ def test_submission_edit_resources_add_and_remove(client, event):
         assert not submission.resources.filter(pk=resource_two.pk).exists()
 
 
-@pytest.mark.django_db
 def test_submission_edit_wrong_resources_not_added(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -903,7 +866,6 @@ def test_submission_edit_wrong_resources_not_added(client, event):
         assert submission.resources.filter(pk=resource_two.pk).exists()
 
 
-@pytest.mark.django_db
 def test_submission_speakers_accessible(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -917,7 +879,6 @@ def test_submission_speakers_accessible(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("known_speaker", (True, False))
 def test_submission_speakers_add(client, event, known_speaker):
     with scopes_disabled():
@@ -938,7 +899,6 @@ def test_submission_speakers_add(client, event, known_speaker):
         assert submission.speakers.count() == 2
 
 
-@pytest.mark.django_db
 def test_submission_speakers_add_invalid_email(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -958,7 +918,6 @@ def test_submission_speakers_add_invalid_email(client, event):
         assert submission.speakers.count() == 1
 
 
-@pytest.mark.django_db
 def test_submission_speakers_readd_existing(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -979,7 +938,6 @@ def test_submission_speakers_readd_existing(client, event):
         assert submission.speakers.count() == 1
 
 
-@pytest.mark.django_db
 def test_submission_speakers_remove(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -998,7 +956,6 @@ def test_submission_speakers_remove(client, event):
         assert submission.speakers.count() == 0
 
 
-@pytest.mark.django_db
 def test_submission_speakers_remove_wrong_speaker(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1020,7 +977,6 @@ def test_submission_speakers_remove_wrong_speaker(client, event):
     assert "not part of this proposal" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_speakers_reorder(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1043,7 +999,6 @@ def test_submission_speakers_reorder(client, event):
         assert ordered == [speaker2, speaker1]
 
 
-@pytest.mark.django_db
 def test_submission_speakers_reorder_empty_returns_400(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1057,7 +1012,6 @@ def test_submission_speakers_reorder_empty_returns_400(client, event):
     assert response.status_code == 400
 
 
-@pytest.mark.django_db
 def test_submission_toggle_featured(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1073,7 +1027,6 @@ def test_submission_toggle_featured(client, event):
         assert submission.is_featured is True
 
 
-@pytest.mark.django_db
 def test_submission_anonymise_accessible(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1085,7 +1038,6 @@ def test_submission_anonymise_accessible(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_submission_anonymise_reviewer_gets_404(client, event):
     with scopes_disabled():
         reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
@@ -1097,7 +1049,6 @@ def test_submission_anonymise_reviewer_gets_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_submission_anonymise_saves_and_redirects(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1122,7 +1073,6 @@ def test_submission_anonymise_saves_and_redirects(client, event):
     }
 
 
-@pytest.mark.django_db
 def test_submission_anonymise_next_redirects_to_next_unanonymised(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1139,7 +1089,6 @@ def test_submission_anonymise_next_redirects_to_next_unanonymised(client, event)
     assert response.url == other.orga_urls.anonymise
 
 
-@pytest.mark.django_db
 def test_submission_anonymise_hides_data_for_reviewer(client, event):
     """Reviewers see anonymised data instead of real data."""
     with scopes_disabled():
@@ -1161,7 +1110,6 @@ def test_submission_anonymise_hides_data_for_reviewer(client, event):
     assert "CENSORED" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_anonymise_orga_sees_original_data(client, event):
     """Orga users see original data on the detail page, not anonymised data."""
     with scopes_disabled():
@@ -1176,7 +1124,6 @@ def test_submission_anonymise_orga_sees_original_data(client, event):
     assert "CENSORED" not in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_feed_accessible(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1189,7 +1136,6 @@ def test_submission_feed_accessible(client, event):
     assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_feed_unauthorized_hides_data(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=False)
@@ -1201,7 +1147,6 @@ def test_submission_feed_unauthorized_hides_data(client, event):
     assert submission.title not in response.content.decode()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("use_tracks", (True, False))
 def test_submission_statistics(client, event, use_tracks):
     with scopes_disabled():
@@ -1225,7 +1170,6 @@ def test_submission_statistics(client, event, use_tracks):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_submission_feedback_list_query_count(
     client, event, item_count, django_assert_num_queries
@@ -1246,7 +1190,6 @@ def test_submission_feedback_list_query_count(
     assert "Great talk!" in response.content.decode()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_all_feedbacks_list_query_count(
     client, event, item_count, django_assert_num_queries
@@ -1268,7 +1211,6 @@ def test_all_feedbacks_list_query_count(
     assert all(sub.title in content for sub in submissions)
 
 
-@pytest.mark.django_db
 def test_submission_apply_pending_bulk_get(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1288,7 +1230,6 @@ def test_submission_apply_pending_bulk_get(client, event):
         assert submission.pending_state == SubmissionStates.ACCEPTED
 
 
-@pytest.mark.django_db
 def test_submission_apply_pending_bulk_post(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1311,7 +1252,6 @@ def test_submission_apply_pending_bulk_post(client, event):
         assert event.queued_mails.count() == 1
 
 
-@pytest.mark.django_db
 def test_submission_apply_pending_single(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1334,7 +1274,6 @@ def test_submission_apply_pending_single(client, event):
         assert event.queued_mails.count() == 1
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_tag_list_query_count(client, event, item_count, django_assert_num_queries):
     with scopes_disabled():
@@ -1350,7 +1289,6 @@ def test_tag_list_query_count(client, event, item_count, django_assert_num_queri
     assert all(str(tag.tag) in content for tag in tags)
 
 
-@pytest.mark.django_db
 def test_tag_create_and_no_duplicates(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1375,7 +1313,6 @@ def test_tag_create_and_no_duplicates(client, event):
         assert event.tags.count() == 1
 
 
-@pytest.mark.django_db
 def test_tag_view(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1388,7 +1325,6 @@ def test_tag_view(client, event):
     assert str(tag.tag) in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_tag_edit_logs_action(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1407,7 +1343,6 @@ def test_tag_edit_logs_action(client, event):
     assert str(tag.tag) == "Renamed"
 
 
-@pytest.mark.django_db
 def test_tag_edit_unchanged_no_log(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1424,7 +1359,6 @@ def test_tag_edit_unchanged_no_log(client, event):
         assert tag.logged_actions().count() == initial_log_count
 
 
-@pytest.mark.django_db
 def test_tag_edit_invalid_color_rejected(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1442,7 +1376,6 @@ def test_tag_edit_invalid_color_rejected(client, event):
     assert str(tag.tag) == original_name
 
 
-@pytest.mark.django_db
 def test_tag_delete(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1460,7 +1393,6 @@ def test_tag_delete(client, event):
         assert event.tags.count() == 0
 
 
-@pytest.mark.django_db
 def test_tag_delete_used_tag_cascades(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1478,7 +1410,6 @@ def test_tag_delete_used_tag_cascades(client, event):
         assert submission.tags.count() == 0
 
 
-@pytest.mark.django_db
 def test_tag_count_in_submission_filter(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1495,7 +1426,6 @@ def test_tag_count_in_submission_filter(client, event):
     assert f"{tag.tag} (2)" in response.content.decode()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_submission_comments_query_count(
     client, event, item_count, django_assert_num_queries
@@ -1519,7 +1449,6 @@ def test_submission_comments_query_count(
     assert all(comment.text in content for comment in comments)
 
 
-@pytest.mark.django_db
 def test_submission_comment_post(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1541,7 +1470,6 @@ def test_submission_comment_post(client, event):
         assert comment.text == "Here is a new comment!"
 
 
-@pytest.mark.django_db
 def test_submission_comment_empty_not_created(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1559,7 +1487,6 @@ def test_submission_comment_empty_not_created(client, event):
         assert submission.comments.count() == 0
 
 
-@pytest.mark.django_db
 def test_submission_comment_delete(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1579,7 +1506,6 @@ def test_submission_comment_delete(client, event):
         assert not SubmissionComment.objects.filter(pk=comment_pk).exists()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_submission_history_query_count(
     client, event, item_count, django_assert_num_queries
@@ -1604,14 +1530,13 @@ def test_submission_history_query_count(
     assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_invitation_retract(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(event=event)
         speaker = SpeakerFactory(event=event)
         submission.speakers.add(speaker)
-        invitation = SubmissionInvitation.objects.create(
+        invitation = SubmissionInvitationFactory(
             submission=submission, email="todelete@example.com"
         )
         invitation_id = invitation.pk
@@ -1636,7 +1561,6 @@ def test_submission_invitation_retract(client, event):
         )
 
 
-@pytest.mark.django_db
 def test_submission_state_change_pending_sets_pending_state(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1656,7 +1580,6 @@ def test_submission_state_change_pending_sets_pending_state(client, event):
         assert submission.pending_state == SubmissionStates.ACCEPTED
 
 
-@pytest.mark.django_db
 def test_submission_anonymise_already_anonymised_updates(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1678,7 +1601,6 @@ def test_submission_anonymise_already_anonymised_updates(client, event):
     assert submission.anonymised["description"] == "NEW CENSORED!"
 
 
-@pytest.mark.django_db
 def test_submission_speakers_add_without_email_stays_on_page(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1696,7 +1618,6 @@ def test_submission_speakers_add_without_email_stays_on_page(client, event):
         assert submission.speakers.count() == 1
 
 
-@pytest.mark.django_db
 def test_submission_create_with_invalid_speaker_form(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1727,7 +1648,6 @@ def test_submission_create_with_invalid_speaker_form(client, event):
         assert event.submissions.count() == 0
 
 
-@pytest.mark.django_db
 def test_submission_content_query_count(client, event, django_assert_num_queries):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1741,7 +1661,6 @@ def test_submission_content_query_count(client, event, django_assert_num_queries
     assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_speakers_query_count(client, event, django_assert_num_queries):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -1757,7 +1676,6 @@ def test_submission_speakers_query_count(client, event, django_assert_num_querie
     assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_state_change_pending_rejected(client, event):
     """Pending rejection does NOT create talk slots (only accepted states do)."""
     with scopes_disabled():
@@ -1779,7 +1697,6 @@ def test_submission_state_change_pending_rejected(client, event):
         assert submission.slots.count() == 0
 
 
-@pytest.mark.django_db
 def test_submission_state_change_warns_about_outdated_emails(client, event):
     """When rejecting an accepted submission, warn if draft acceptance emails exist."""
     with scopes_disabled():
@@ -1800,7 +1717,6 @@ def test_submission_state_change_warns_about_outdated_emails(client, event):
         assert submission.state == SubmissionStates.REJECTED
 
 
-@pytest.mark.django_db
 def test_submission_state_change_no_pending_email_warning(client, event):
     """No email warning when rejecting an accepted submission if draft emails were already sent."""
     with scopes_disabled():
@@ -1820,7 +1736,6 @@ def test_submission_state_change_no_pending_email_warning(client, event):
     assert not any("outdated" in m for m in msgs)
 
 
-@pytest.mark.django_db
 def test_submission_speakers_reorder_noop(client, event):
     """Reordering speakers to the same order does not create a log entry."""
     with scopes_disabled():
@@ -1844,7 +1759,6 @@ def test_submission_speakers_reorder_noop(client, event):
         assert submission.logged_actions().count() == initial_log_count
 
 
-@pytest.mark.django_db
 def test_submission_apply_pending_bulk_empty(client, event):
     """Bulk apply with no pending submissions shows no submit button."""
     with scopes_disabled():
@@ -1859,7 +1773,6 @@ def test_submission_apply_pending_bulk_empty(client, event):
     assert "Do it" not in content
 
 
-@pytest.mark.django_db
 def test_submission_create_without_speaker_email(client, event):
     """Creating a submission without a speaker email still creates the submission."""
     with scopes_disabled():
@@ -1894,7 +1807,6 @@ def test_submission_create_without_speaker_email(client, event):
         assert sub.speakers.count() == 0
 
 
-@pytest.mark.django_db
 def test_submission_edit_no_changes_no_log(client, event):
     """Editing a submission without changing anything produces no update log."""
     with scopes_disabled():
@@ -1936,7 +1848,6 @@ def test_submission_edit_no_changes_no_log(client, event):
         )
 
 
-@pytest.mark.django_db
 def test_submission_edit_shows_success_message(client, event):
     """Editing a submission shows a success message."""
     with scopes_disabled():
@@ -1967,7 +1878,6 @@ def test_submission_edit_shows_success_message(client, event):
     assert any("updated" in m.lower() for m in msgs)
 
 
-@pytest.mark.django_db
 def test_submission_edit_unchanged_resource_not_resaved(client, event):
     """Existing resources that haven't changed are not re-saved."""
     with scopes_disabled():
@@ -2005,7 +1915,6 @@ def test_submission_edit_unchanged_resource_not_resaved(client, event):
         assert resource.description == "A resource"
 
 
-@pytest.mark.django_db
 def test_submission_list_invalid_filter_still_shows_submissions(client, event):
     """An invalid filter form value is ignored and all submissions are shown."""
     with scopes_disabled():
@@ -2021,7 +1930,6 @@ def test_submission_list_invalid_filter_still_shows_submissions(client, event):
     assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_statistics_talk_timeline_with_multiple_dates(client, event):
     """talk_timeline_data returns data when accepted talks have creation logs on different dates."""
     with scopes_disabled():
@@ -2041,7 +1949,6 @@ def test_submission_statistics_talk_timeline_with_multiple_dates(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_submission_state_change_handles_submission_error(
     client, event, register_signal_handler
 ):
@@ -2065,7 +1972,6 @@ def test_submission_state_change_handles_submission_error(
         assert submission.state == SubmissionStates.SUBMITTED
 
 
-@pytest.mark.django_db
 def test_submission_apply_pending_single_handles_submission_error(
     client, event, register_signal_handler
 ):
@@ -2092,7 +1998,6 @@ def test_submission_apply_pending_single_handles_submission_error(
         assert submission.pending_state == SubmissionStates.ACCEPTED
 
 
-@pytest.mark.django_db
 def test_submission_apply_pending_bulk_handles_submission_error(
     client, event, register_signal_handler
 ):

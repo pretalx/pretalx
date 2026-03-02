@@ -1,5 +1,6 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.orga.views.typeahead import (
     serialize_admin_user,
@@ -50,8 +51,7 @@ def test_serialize_event(event):
 
 @pytest.mark.django_db
 def test_serialize_submission():
-    with scopes_disabled():
-        submission = SubmissionFactory()
+    submission = SubmissionFactory()
 
     result = serialize_submission(submission)
 
@@ -65,9 +65,8 @@ def test_serialize_submission():
 
 @pytest.mark.django_db
 def test_serialize_speaker():
-    with scopes_disabled():
-        event = EventFactory()
-        speaker = SpeakerFactory(event=event)
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
 
     result = serialize_speaker(speaker)
 

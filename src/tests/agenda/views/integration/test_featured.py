@@ -1,13 +1,14 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django_scopes import scope, scopes_disabled
 
 from pretalx.submission.models import SubmissionStates
 from tests.factories import SubmissionFactory
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("show_featured", "expected_status"),
     (("always", 200), ("never", 404), ("pre_schedule", 200)),
@@ -30,7 +31,6 @@ def test_featured_view_visibility_by_setting(
     assert response.status_code == expected_status
 
 
-@pytest.mark.django_db
 def test_featured_view_shows_featured_talks(client, event):
     """Featured page displays featured submissions and excludes non-featured ones."""
     with scopes_disabled():
@@ -52,7 +52,6 @@ def test_featured_view_shows_featured_talks(client, event):
     assert not_featured.title not in content
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("show_featured", "expected_status"),
     (("always", 200), ("never", 302), ("pre_schedule", 302)),
@@ -75,7 +74,6 @@ def test_featured_view_redirects_to_schedule_when_released(
         assert response.url == event.urls.schedule
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     "show_featured", ("always", "pre_schedule"), ids=["always", "pre_schedule"]
 )
@@ -94,7 +92,6 @@ def test_featured_view_visible_when_schedule_hidden(client, event, show_featured
     assert "featured" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_sneakpeek_redirect_to_featured(client, event):
     """The old /sneak/ URL permanently redirects to /featured/."""
     url = str(event.urls.featured).replace("featured", "sneak")
@@ -105,7 +102,6 @@ def test_sneakpeek_redirect_to_featured(client, event):
     assert response.url == event.urls.featured
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_featured_view_query_count(
     client, event, item_count, django_assert_num_queries

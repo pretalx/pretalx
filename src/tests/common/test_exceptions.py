@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import logging
 import sys
 
@@ -240,7 +242,7 @@ def test_admin_email_handler_emit_skips_500_path():
 
 
 @override_settings(
-    ADMINS=[("Admin", "admin@example.com")], DEBUG=False, SITE_URL="https://example.com"
+    ADMINS=["admin@example.com"], DEBUG=False, SITE_URL="https://example.com"
 )
 def test_admin_email_handler_emit_sends_for_non_500():
     djmail.outbox = []

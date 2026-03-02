@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django_scopes import scopes_disabled
 
@@ -12,7 +14,7 @@ from tests.factories import (
 )
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 @pytest.fixture
@@ -60,14 +62,12 @@ def _team_url(organiser, team_pk=None, suffix=""):
     return base + suffix
 
 
-@pytest.mark.django_db
 def test_team_list_requires_authentication(client, event, team):
     response = client.get(_team_url(event.organiser), follow=True)
 
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
 def test_team_list_returns_organiser_teams(client, orga_read_token, event, team):
     response = client.get(
         _team_url(event.organiser),
@@ -81,7 +81,6 @@ def test_team_list_returns_organiser_teams(client, orga_read_token, event, team)
     assert data["results"][0]["name"] == team.name
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_team_list_query_count(
     client,
@@ -113,7 +112,6 @@ def test_team_list_query_count(
     assert data["count"] == item_count + 1
 
 
-@pytest.mark.django_db
 def test_team_list_denied_for_reviewer_only(client, event, team):
     """A reviewer-only user without can_change_teams gets 403."""
     reviewer = make_orga_user(
@@ -135,7 +133,6 @@ def test_team_list_denied_for_reviewer_only(client, event, team):
     assert response.status_code == 403
 
 
-@pytest.mark.django_db
 def test_team_detail_returns_team_data(client, orga_read_token, event, team):
     response = client.get(
         _team_url(event.organiser, team.pk),
@@ -150,7 +147,6 @@ def test_team_detail_returns_team_data(client, orga_read_token, event, team):
     assert data["all_events"] is True
 
 
-@pytest.mark.django_db
 def test_team_detail_excludes_other_organiser_teams(client, orga_read_token, event):
     other_team = TeamFactory(
         organiser=OrganiserFactory(),
@@ -168,7 +164,6 @@ def test_team_detail_excludes_other_organiser_teams(client, orga_read_token, eve
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_team_detail_expand_related_fields(
     client, orga_read_token, event, team, orga_user
 ):
@@ -195,7 +190,6 @@ def test_team_detail_expand_related_fields(
     assert data["limit_tracks"][0]["name"]["en"] == track.name
 
 
-@pytest.mark.django_db
 def test_team_create_with_write_token(client, orga_write_token, event):
     organiser = event.organiser
     team_count = organiser.teams.count()
@@ -224,7 +218,6 @@ def test_team_create_with_write_token(client, orga_write_token, event):
         assert new_team.organiser == organiser
 
 
-@pytest.mark.django_db
 def test_team_create_rejected_without_events(client, orga_write_token, event):
     organiser = event.organiser
     team_count = organiser.teams.count()
@@ -247,7 +240,6 @@ def test_team_create_rejected_without_events(client, orga_write_token, event):
         assert organiser.teams.count() == team_count
 
 
-@pytest.mark.django_db
 def test_team_create_rejected_without_permissions(client, orga_write_token, event):
     organiser = event.organiser
     team_count = organiser.teams.count()
@@ -270,7 +262,6 @@ def test_team_create_rejected_without_permissions(client, orga_write_token, even
         assert organiser.teams.count() == team_count
 
 
-@pytest.mark.django_db
 def test_team_create_rejected_with_read_token(client, orga_read_token, event):
     organiser = event.organiser
     team_count = organiser.teams.count()
@@ -287,7 +278,6 @@ def test_team_create_rejected_with_read_token(client, orga_read_token, event):
     assert organiser.teams.count() == team_count
 
 
-@pytest.mark.django_db
 def test_team_update_with_write_token(client, orga_write_token, event, team):
     response = client.patch(
         _team_url(event.organiser, team.pk),
@@ -303,7 +293,6 @@ def test_team_update_with_write_token(client, orga_write_token, event, team):
     assert team.is_reviewer is True
 
 
-@pytest.mark.django_db
 def test_team_update_rejected_removing_last_permission(
     client, orga_write_token, event, team
 ):
@@ -327,7 +316,6 @@ def test_team_update_rejected_removing_last_permission(
     assert team.can_change_submissions is True
 
 
-@pytest.mark.django_db
 def test_team_update_rejected_when_removing_last_can_change_teams(
     client, orga_write_token, event, team
 ):
@@ -345,7 +333,6 @@ def test_team_update_rejected_when_removing_last_can_change_teams(
     assert team.can_change_teams is True
 
 
-@pytest.mark.django_db
 def test_team_update_rejected_with_read_token(client, orga_read_token, event, team):
     original_name = team.name
 
@@ -362,7 +349,6 @@ def test_team_update_rejected_with_read_token(client, orga_read_token, event, te
     assert team.name == original_name
 
 
-@pytest.mark.django_db
 def test_team_delete_with_write_token(client, orga_write_token, event, team, orga_user):
     """Requires another team to cover access before deletion succeeds."""
     organiser = event.organiser
@@ -388,7 +374,6 @@ def test_team_delete_with_write_token(client, orga_write_token, event, team, org
     assert not organiser.teams.filter(pk=team_pk).exists()
 
 
-@pytest.mark.django_db
 def test_team_delete_rejected_when_last_team_with_can_change_teams(
     client, orga_write_token, event, team
 ):
@@ -406,7 +391,6 @@ def test_team_delete_rejected_when_last_team_with_can_change_teams(
     assert organiser.teams.filter(pk=team.pk).exists()
 
 
-@pytest.mark.django_db
 def test_team_delete_rejected_with_read_token(client, orga_read_token, event, team):
     organiser = event.organiser
     team_count = organiser.teams.count()
@@ -421,7 +405,6 @@ def test_team_delete_rejected_with_read_token(client, orga_read_token, event, te
     assert organiser.teams.count() == team_count
 
 
-@pytest.mark.django_db
 def test_team_invite_creates_invite(client, orga_write_token, event, team):
     invite_email = "new.invite@example.com"
     invite_count = team.invites.count()
@@ -444,7 +427,6 @@ def test_team_invite_creates_invite(client, orga_write_token, event, team):
     assert team.members.count() == member_count
 
 
-@pytest.mark.django_db
 def test_team_invite_rejected_for_existing_member(
     client, orga_write_token, event, team, orga_user
 ):
@@ -463,7 +445,6 @@ def test_team_invite_rejected_for_existing_member(
     assert team.invites.count() == invite_count
 
 
-@pytest.mark.django_db
 def test_team_invite_rejected_for_already_invited_email(
     client, orga_write_token, event, team
 ):
@@ -483,7 +464,6 @@ def test_team_invite_rejected_for_already_invited_email(
     assert team.invites.count() == invite_count
 
 
-@pytest.mark.django_db
 def test_team_invite_rejected_with_read_token(client, orga_read_token, event, team):
     invite_count = team.invites.count()
 
@@ -499,7 +479,6 @@ def test_team_invite_rejected_with_read_token(client, orga_read_token, event, te
     assert team.invites.count() == invite_count
 
 
-@pytest.mark.django_db
 def test_team_delete_invite_removes_invite_and_logs(
     client, orga_write_token, event, team
 ):
@@ -523,7 +502,6 @@ def test_team_delete_invite_removes_invite_and_logs(
         )
 
 
-@pytest.mark.django_db
 def test_team_delete_invite_returns_404_for_wrong_invite(
     client, orga_write_token, event, team
 ):
@@ -536,7 +514,6 @@ def test_team_delete_invite_returns_404_for_wrong_invite(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_team_delete_invite_rejected_with_read_token(
     client, orga_read_token, event, team
 ):
@@ -553,7 +530,6 @@ def test_team_delete_invite_rejected_with_read_token(
     assert team.invites.count() == invite_count
 
 
-@pytest.mark.django_db
 def test_team_remove_member_removes_and_logs(
     client, orga_write_token, event, team, orga_user
 ):
@@ -580,7 +556,6 @@ def test_team_remove_member_removes_and_logs(
         )
 
 
-@pytest.mark.django_db
 def test_team_remove_member_rejected_for_non_member(
     client, orga_write_token, event, team
 ):
@@ -600,7 +575,6 @@ def test_team_remove_member_rejected_for_non_member(
     assert team.members.count() == member_count
 
 
-@pytest.mark.django_db
 def test_team_remove_member_rejected_for_nonexistent_user(
     client, orga_write_token, event, team
 ):
@@ -619,7 +593,6 @@ def test_team_remove_member_rejected_for_nonexistent_user(
     assert team.members.count() == member_count
 
 
-@pytest.mark.django_db
 def test_team_remove_member_rejected_when_would_leave_no_can_change_teams(
     client, orga_write_token, event, team, orga_user
 ):
@@ -640,7 +613,6 @@ def test_team_remove_member_rejected_when_would_leave_no_can_change_teams(
     assert team.members.count() == member_count
 
 
-@pytest.mark.django_db
 def test_team_remove_member_rejected_with_read_token(
     client, orga_read_token, event, team, orga_user
 ):
@@ -659,7 +631,6 @@ def test_team_remove_member_rejected_with_read_token(
     assert team.members.count() == member_count
 
 
-@pytest.mark.django_db
 def test_team_list_search_filters_by_name(client, orga_write_token, event, team):
     """The ?q= parameter filters teams by name."""
     with scopes_disabled():

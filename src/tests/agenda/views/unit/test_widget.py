@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django_scopes import scope
 
@@ -11,10 +13,9 @@ from pretalx.agenda.views.widget import (
 from tests.factories import EventFactory
 from tests.utils import make_request
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_color_etag_no_color(event):
     """Returns 'none' when event has no primary color."""
     request = make_request(event)
@@ -33,7 +34,6 @@ def test_color_etag_no_color(event):
     ),
     ids=["dark_no_dark_text", "green_needs_dark_text", "light_needs_dark_text"],
 )
-@pytest.mark.django_db
 def test_color_etag_with_color(color, expected):
     """Returns color and dark-text flag based on contrast with white."""
     event = EventFactory(primary_color=color)
@@ -44,7 +44,6 @@ def test_color_etag_with_color(color, expected):
     assert result == expected
 
 
-@pytest.mark.django_db
 def test_widget_js_etag_returns_checksum(event, django_assert_num_queries):
     """Returns an MD5 checksum of the widget JS file content."""
     widget_module.WIDGET_JS_CHECKSUM = None
@@ -59,7 +58,6 @@ def test_widget_js_etag_returns_checksum(event, django_assert_num_queries):
     assert len(result) == 32  # MD5 hex digest length
 
 
-@pytest.mark.django_db
 def test_widget_js_etag_stable_across_calls(event):
     """Repeated calls return the same checksum."""
     widget_module.WIDGET_JS_CHECKSUM = None
@@ -72,7 +70,6 @@ def test_widget_js_etag_stable_across_calls(event):
     assert first == second
 
 
-@pytest.mark.django_db
 def test_is_public_and_versioned_wip_returns_false(event):
     """WIP version is never cached."""
     request = make_request(event)
@@ -82,7 +79,6 @@ def test_is_public_and_versioned_wip_returns_false(event):
     assert result is False
 
 
-@pytest.mark.django_db
 def test_is_public_and_versioned_no_version_visible_schedule(
     event, django_assert_num_queries
 ):
@@ -100,7 +96,6 @@ def test_is_public_and_versioned_no_version_visible_schedule(
     assert result is True
 
 
-@pytest.mark.django_db
 def test_is_public_and_versioned_not_visible(event):
     """Returns False when schedule is not publicly visible."""
     request = make_request(event)
@@ -111,7 +106,6 @@ def test_is_public_and_versioned_not_visible(event):
     assert result is False
 
 
-@pytest.mark.django_db
 def test_is_public_and_versioned_widget_always_visible(event):
     """Returns True when show_widget_if_not_public is set, even without public schedule."""
     event.feature_flags["show_widget_if_not_public"] = True
@@ -124,7 +118,6 @@ def test_is_public_and_versioned_widget_always_visible(event):
     assert result is True
 
 
-@pytest.mark.django_db
 def test_is_public_and_versioned_with_version(event):
     """Versioned (non-wip) requests delegate to is_widget_visible."""
     event.is_public = True
@@ -140,7 +133,6 @@ def test_is_public_and_versioned_with_version(event):
     assert result is True
 
 
-@pytest.mark.django_db
 def test_version_prefix_returns_current_schedule_version(
     event, django_assert_num_queries
 ):
@@ -157,7 +149,6 @@ def test_version_prefix_returns_current_schedule_version(
     assert result == "v1"
 
 
-@pytest.mark.django_db
 def test_version_prefix_returns_explicit_version(event, django_assert_num_queries):
     """Explicit version is returned as-is."""
     request = make_request(event)
@@ -168,7 +159,6 @@ def test_version_prefix_returns_explicit_version(event, django_assert_num_querie
     assert result == "v2"
 
 
-@pytest.mark.django_db
 def test_version_prefix_no_schedule_returns_none(event, django_assert_num_queries):
     """Returns None when no version specified and no current schedule."""
     request = make_request(event)

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import logging
 from io import StringIO
 from unittest.mock import patch
@@ -8,27 +10,23 @@ from django.db import connection
 
 from pretalx.common.management.commands.shell import Command
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_shell_handle_no_event_or_scopes_exits():
     with pytest.raises(SystemExit):
         call_command("shell", command="pass")
 
 
-@pytest.mark.django_db
 def test_shell_handle_event_not_found_exits():
     with pytest.raises(SystemExit):
         call_command("shell", event="nonexistent-slug-xyz", command="pass")
 
 
-@pytest.mark.django_db
 def test_shell_handle_unsafe_disable_scopes_runs_command():
     call_command("shell", unsafe_disable_scopes=True, command="pass")
 
 
-@pytest.mark.django_db
 def test_shell_handle_print_sql_enables_debug_cursor(event):
     original = connection.force_debug_cursor
     try:
@@ -41,7 +39,6 @@ def test_shell_handle_print_sql_enables_debug_cursor(event):
         connection.force_debug_cursor = original
 
 
-@pytest.mark.django_db
 def test_shell_handle_print_sql_adds_handler_when_logger_has_none(event):
     logger = logging.getLogger("django.db.backends")
     original_handlers = list(logger.handlers)
@@ -58,7 +55,6 @@ def test_shell_handle_print_sql_adds_handler_when_logger_has_none(event):
         logger.handlers = original_handlers
 
 
-@pytest.mark.django_db
 def test_shell_handle_no_startup_skips_event_info(event):
     out = StringIO()
 
@@ -74,7 +70,7 @@ def test_shell_handle_no_startup_skips_event_info(event):
     assert repr(event) not in out.getvalue()
 
 
-@pytest.mark.django_db
+@pytest.mark.slow
 @pytest.mark.parametrize(
     ("extra_kwargs", "expected_prefix"),
     (({}, "In [0]: event"), ({"interface": "python"}, ">>> event")),
@@ -84,7 +80,8 @@ def test_shell_handle_with_event_prints_event_info(
     event, extra_kwargs, expected_prefix
 ):
     """IPython-style info is printed by default (IPython is installed in the
-    test env); forcing 'python' interface uses plain Python-style instead."""
+    test env); forcing 'python' interface uses plain Python-style instead.
+    Marked slow due to IPython startup overhead."""
     out = StringIO()
 
     call_command(

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
@@ -8,7 +10,7 @@ from django.utils.timezone import now
 from tests.factories import UserFactory
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 @pytest.fixture
@@ -16,7 +18,6 @@ def user_with_password():
     return UserFactory(password="testpassword!")
 
 
-@pytest.mark.django_db
 def test_login_view_successful_login(client, user_with_password):
     """Successful orga login redirects to the event list."""
     response = client.post(
@@ -29,7 +30,6 @@ def test_login_view_successful_login(client, user_with_password):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_login_view_redirects_authenticated_user(client, user_with_password):
     """Already-authenticated user is redirected away from login page."""
     client.force_login(user_with_password)
@@ -39,7 +39,6 @@ def test_login_view_redirects_authenticated_user(client, user_with_password):
     assert response.status_code == 302
 
 
-@pytest.mark.django_db
 def test_login_view_preserves_next_param(client, event):
     """Login preserves ?next= parameter and redirects there after login."""
     user = make_orga_user(event)
@@ -59,7 +58,6 @@ def test_login_view_preserves_next_param(client, event):
     assert response.redirect_chain[-1][0] == next_url
 
 
-@pytest.mark.django_db
 def test_login_view_event_specific_redirects_to_event(client, event):
     """Login on an event-specific orga login page redirects to that event."""
     user = make_orga_user(event)
@@ -75,7 +73,6 @@ def test_login_view_event_specific_redirects_to_event(client, event):
     assert response.url == f"/orga/event/{event.slug}/"
 
 
-@pytest.mark.django_db
 def test_logout_view_post_logs_out(client, user_with_password):
     """POST to logout clears the session."""
     client.force_login(user_with_password)
@@ -88,7 +85,6 @@ def test_logout_view_post_logs_out(client, user_with_password):
     assert login_response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_logout_view_get_does_not_log_out(client, user_with_password):
     """GET to logout does NOT clear the session — only POST does."""
     client.force_login(user_with_password)
@@ -101,7 +97,6 @@ def test_logout_view_get_does_not_log_out(client, user_with_password):
     assert login_response.status_code == 302
 
 
-@pytest.mark.django_db
 def test_reset_view_sends_email(client, user_with_password):
     """Posting a valid email triggers a password reset email."""
     djmail.outbox = []
@@ -116,7 +111,6 @@ def test_reset_view_sends_email(client, user_with_password):
     assert len(djmail.outbox) == 1
 
 
-@pytest.mark.django_db
 def test_reset_view_blocks_repeated_reset_within_24h(client, user_with_password):
     """A second reset within 24 hours does not send a new email."""
     user_with_password.pw_reset_token = "existingtoken"
@@ -134,7 +128,6 @@ def test_reset_view_blocks_repeated_reset_within_24h(client, user_with_password)
     assert user_with_password.pw_reset_token == "existingtoken"
 
 
-@pytest.mark.django_db
 def test_reset_view_nonexistent_email_shows_success(client):
     """Posting a non-existent email still redirects (no info leak)."""
     djmail.outbox = []
@@ -147,7 +140,6 @@ def test_reset_view_nonexistent_email_shows_success(client):
     assert len(djmail.outbox) == 0
 
 
-@pytest.mark.django_db
 def test_recover_view_sets_new_password(client, user_with_password):
     """Posting valid matching passwords resets the password."""
     user_with_password.pw_reset_token = "validtoken123"
@@ -166,7 +158,6 @@ def test_recover_view_sets_new_password(client, user_with_password):
     assert user_with_password.check_password("mynewpassword1!")
 
 
-@pytest.mark.django_db
 def test_recover_view_invalid_token_redirects_to_reset(client):
     """An invalid token redirects to the reset page."""
     response = client.post(
@@ -178,7 +169,6 @@ def test_recover_view_invalid_token_redirects_to_reset(client):
     assert response.url == reverse("orga:auth.reset")
 
 
-@pytest.mark.django_db
 def test_recover_view_expired_token_redirects_to_reset(client, user_with_password):
     """An expired token (older than 24h) redirects to the reset page."""
     user_with_password.pw_reset_token = "expiredtoken"
@@ -196,7 +186,6 @@ def test_recover_view_expired_token_redirects_to_reset(client, user_with_passwor
     (("mynewpassword1!", "differentpassword1!"), ("password", "password")),
     ids=["mismatched", "insecure"],
 )
-@pytest.mark.django_db
 def test_recover_view_invalid_password_keeps_token(
     client, user_with_password, password, password_repeat
 ):
@@ -215,7 +204,6 @@ def test_recover_view_invalid_password_keeps_token(
     assert user_with_password.pw_reset_token == "validtoken123"
 
 
-@pytest.mark.django_db
 def test_reset_view_event_specific_redirects_to_event_login(client, event):
     """Event-specific reset redirects to the event login page."""
     url = reverse("orga:event.auth.reset", kwargs={"event": event.slug})

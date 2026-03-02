@@ -1,9 +1,10 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import uuid
 from pathlib import Path
 
 import pytest
 from django.core.files.base import ContentFile
-from django_scopes import scopes_disabled
 
 from pretalx.common.models.file import CachedFile, cachedfile_name
 from tests.factories import CachedFileFactory
@@ -65,5 +66,4 @@ def test_cachedfile_post_delete_without_file():
 
     cached_file.delete()
 
-    with scopes_disabled():
-        assert not CachedFile.objects.filter(pk=cached_file.pk).exists()
+    assert not CachedFile.objects.filter(pk=cached_file.pk).exists()

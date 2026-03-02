@@ -1,10 +1,12 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.core import mail as djmail
 from django.urls import reverse
 
 from tests.factories import UserFactory
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.django_db]
 
 
 @pytest.fixture
@@ -12,7 +14,6 @@ def user_with_password():
     return UserFactory(password="testpassword!")
 
 
-@pytest.mark.django_db
 def test_full_password_reset_flow(client, user_with_password):
     """End-to-end: request reset, use token, login with new password."""
     djmail.outbox = []

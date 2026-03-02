@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
@@ -7,10 +9,9 @@ from django_scopes import scope, scopes_disabled
 from pretalx.submission.models import SubmissionStates
 from tests.factories import SpeakerFactory, SubmissionFactory, TalkSlotFactory
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     "accept_header",
     (
@@ -38,7 +39,6 @@ def test_schedule_view_returns_html(client, public_event_with_schedule, accept_h
     assert "<pretalx-schedule" in response.content.decode()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     "accept_kwargs",
     (
@@ -56,7 +56,6 @@ def test_schedule_view_returns_text(client, public_event_with_schedule, accept_k
     assert str(public_event_with_schedule.name) in response.content.decode()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("accept_header", "expected_url_attr"),
     (
@@ -79,7 +78,6 @@ def test_schedule_view_redirects_for_export_accept_types(
     assert response.url == expected_url
 
 
-@pytest.mark.django_db
 def test_schedule_view_404_without_permission(client, event):
     """The schedule view returns 404 when the event is not public."""
     response = client.get(event.urls.schedule, HTTP_ACCEPT="text/html")
@@ -87,7 +85,6 @@ def test_schedule_view_404_without_permission(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_schedule_view_404_without_published_schedule(client, event):
     """The schedule view returns 404 when no schedule has been released
     and featured is disabled."""
@@ -101,7 +98,6 @@ def test_schedule_view_404_without_published_schedule(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_schedule_view_redirects_to_featured_when_not_released(client, event):
     """When schedule is not visible but featured is, redirect to featured page."""
     with scopes_disabled():
@@ -119,7 +115,6 @@ def test_schedule_view_redirects_to_featured_when_not_released(client, event):
     assert response.url == event.urls.featured
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("featured", "expected_status"),
     (
@@ -148,7 +143,6 @@ def test_schedule_view_disabled_schedule_with_featured_flags(
         assert response.url == event.urls.featured
 
 
-@pytest.mark.django_db
 def test_schedule_view_version_query_param_redirects(
     client, public_event_with_schedule
 ):
@@ -162,7 +156,6 @@ def test_schedule_view_version_query_param_redirects(
     assert "v/v1" in response.url
 
 
-@pytest.mark.django_db
 def test_schedule_view_versioned_url(client, public_event_with_schedule):
     """Accessing a versioned schedule URL returns the correct schedule."""
     event = public_event_with_schedule
@@ -177,7 +170,6 @@ def test_schedule_view_versioned_url(client, public_event_with_schedule):
     assert "<pretalx-schedule" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_schedule_view_text_format_list(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -191,7 +183,6 @@ def test_schedule_view_text_format_list(
     assert published_talk_slot.submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_schedule_view_text_format_invalid_falls_back_to_table(
     client, public_event_with_schedule
 ):
@@ -205,7 +196,6 @@ def test_schedule_view_text_format_invalid_falls_back_to_table(
     assert str(public_event_with_schedule.name) in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_schedule_nojs_view_renders_with_talk_data(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -221,7 +211,6 @@ def test_schedule_nojs_view_renders_with_talk_data(
     assert published_talk_slot.submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_schedule_view_talk_url_renders(client, public_event_with_schedule):
     """The /talk/ URL renders the schedule view."""
     response = client.get(
@@ -232,7 +221,6 @@ def test_schedule_view_talk_url_renders(client, public_event_with_schedule):
     assert "<pretalx-schedule" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_changelog_view_renders(client, public_event_with_schedule):
     """The changelog view renders with published schedule data."""
     event = public_event_with_schedule
@@ -247,7 +235,6 @@ def test_changelog_view_renders(client, public_event_with_schedule):
     assert schedule.version in content
 
 
-@pytest.mark.django_db
 def test_changelog_view_404_without_permission(client, event):
     """The changelog returns 404 when schedule is not visible."""
     response = client.get(event.urls.changelog, HTTP_ACCEPT="text/html")
@@ -255,7 +242,6 @@ def test_changelog_view_404_without_permission(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_changelog_view_empty_when_no_versions(client, organiser_user, event):
     """The changelog renders with an empty schedule list for an organiser
     when no schedule versions have been released."""
@@ -267,7 +253,6 @@ def test_changelog_view_empty_when_no_versions(client, organiser_user, event):
     assert "agenda/changelog.html" in [t.name for t in response.templates]
 
 
-@pytest.mark.django_db
 def test_schedule_messages_returns_json(client, event):
     """The schedule messages endpoint returns JSON with all expected keys."""
     response = client.get(f"/{event.slug}/schedule/widget/messages.json")
@@ -298,7 +283,6 @@ def test_schedule_messages_returns_json(client, event):
     assert all(isinstance(v, str) and v for v in data.values())
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("url_suffix", "content_type"),
     (
@@ -319,7 +303,6 @@ def test_exporter_view_returns_export(
     assert content_type in response["Content-Type"]
 
 
-@pytest.mark.django_db
 def test_exporter_view_404_for_unknown_exporter(client, public_event_with_schedule):
     """ExporterView returns 404 for an unknown exporter name."""
     response = client.get(
@@ -329,7 +312,6 @@ def test_exporter_view_404_for_unknown_exporter(client, public_event_with_schedu
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_exporter_view_404_without_permission(client, event):
     """ExporterView returns 404 when user lacks schedule permission."""
     response = client.get(f"/{event.slug}/schedule.xml")
@@ -337,7 +319,6 @@ def test_exporter_view_404_without_permission(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     "url_suffix", (pytest.param("", id="js"), pytest.param("nojs", id="nojs"))
 )
@@ -375,7 +356,6 @@ def _create_published_schedule(event, item_count):
     event.save()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_schedule_view_text_query_count(
     client, event, item_count, django_assert_num_queries
@@ -390,7 +370,6 @@ def test_schedule_view_text_query_count(
     assert "text/plain" in response["Content-Type"]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_schedule_view_html_query_count(
     client, event, item_count, django_assert_num_queries
@@ -405,7 +384,6 @@ def test_schedule_view_html_query_count(
     assert "text/html" in response["Content-Type"]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_schedule_nojs_view_query_count(
     client, event, item_count, django_assert_num_queries
@@ -420,7 +398,6 @@ def test_schedule_nojs_view_query_count(
     assert "agenda/schedule_nojs.html" in [t.name for t in response.templates]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_changelog_view_query_count(
     client, event, item_count, django_assert_num_queries
@@ -450,7 +427,6 @@ def test_changelog_view_query_count(
     assert "agenda/changelog.html" in [t.name for t in response.templates]
 
 
-@pytest.mark.django_db
 def test_schedule_nojs_view_versioned_url_shows_old_content(
     client, public_event_with_schedule
 ):
@@ -478,7 +454,6 @@ def test_schedule_nojs_view_versioned_url_shows_old_content(
     assert title in response.content.decode()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("og_image", "logo", "header_image", "expected_status", "expected_content"),
     (

@@ -1,12 +1,13 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.conf import settings
 
 from pretalx.api.versions import CURRENT_VERSION
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_root_returns_api_metadata(client):
     """GET /api/ returns pretalx name, version, api_version, and events URL."""
     response = client.get("/api/")

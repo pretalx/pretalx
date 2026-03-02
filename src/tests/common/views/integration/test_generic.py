@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 """Integration tests for pretalx.common.views.generic.
 
 Uses TagView (OrgaCRUDView subclass) to exercise the full request/response
@@ -11,7 +13,7 @@ from pretalx.submission.models import Tag
 from tests.factories import TagFactory
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 def _tag_list_url(event):
@@ -37,7 +39,6 @@ def orga_user_and_event(event):
     return user, event
 
 
-@pytest.mark.django_db
 def test_crud_dispatch_redirects_anonymous_to_login(client, event):
     response = client.get(_tag_list_url(event))
 
@@ -45,7 +46,6 @@ def test_crud_dispatch_redirects_anonymous_to_login(client, event):
     assert "/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_crud_dispatch_resolves_object_for_update(client, orga_user_and_event):
     user, event = orga_user_and_event
     with scopes_disabled():
@@ -58,7 +58,6 @@ def test_crud_dispatch_resolves_object_for_update(client, orga_user_and_event):
     assert response.context["form"].instance == tag
 
 
-@pytest.mark.django_db
 def test_crud_dispatch_returns_404_for_missing_object(client, orga_user_and_event):
     user, event = orga_user_and_event
     client.force_login(user)
@@ -68,7 +67,6 @@ def test_crud_dispatch_returns_404_for_missing_object(client, orga_user_and_even
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_crud_list_query_count(
     client, orga_user_and_event, item_count, django_assert_num_queries
@@ -86,7 +84,6 @@ def test_crud_list_query_count(
     assert all(tag.tag in content for tag in tags)
 
 
-@pytest.mark.django_db
 def test_crud_list_includes_table_in_context(client, orga_user_and_event):
     user, event = orga_user_and_event
     with scopes_disabled():
@@ -100,7 +97,6 @@ def test_crud_list_includes_table_in_context(client, orga_user_and_event):
     assert "Django" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_crud_list_pagination(client, orga_user_and_event):
     user, event = orga_user_and_event
     with scopes_disabled():
@@ -114,7 +110,6 @@ def test_crud_list_pagination(client, orga_user_and_event):
     assert response.context["is_paginated"]
 
 
-@pytest.mark.django_db
 def test_crud_list_invalid_page_size_falls_back(client, orga_user_and_event):
     """Non-integer page_size is ignored and the default page size is used."""
     user, event = orga_user_and_event
@@ -128,7 +123,6 @@ def test_crud_list_invalid_page_size_falls_back(client, orga_user_and_event):
     assert "fallback" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_crud_list_page_last(client, orga_user_and_event):
     """page=last is accepted without error (table-backed views delegate
     pagination to django-tables2 which ignores the param gracefully)."""
@@ -144,7 +138,6 @@ def test_crud_list_page_last(client, orga_user_and_event):
     assert response.context["is_paginated"]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("action", "url_fn"),
     (
@@ -166,7 +159,6 @@ def test_crud_form_view_returns_form_in_context(
     assert "form" in response.context
 
 
-@pytest.mark.django_db
 def test_crud_create_via_post(client, orga_user_and_event):
     user, event = orga_user_and_event
     client.force_login(user)
@@ -182,7 +174,6 @@ def test_crud_create_via_post(client, orga_user_and_event):
         assert tag.event == event
 
 
-@pytest.mark.django_db
 def test_crud_update_via_post(client, orga_user_and_event):
     user, event = orga_user_and_event
     with scopes_disabled():
@@ -201,7 +192,6 @@ def test_crud_update_via_post(client, orga_user_and_event):
     assert tag.tag == "NewName"
 
 
-@pytest.mark.django_db
 def test_crud_form_handler_invalid_data_rerenders(client, orga_user_and_event):
     user, event = orga_user_and_event
     client.force_login(user)
@@ -212,7 +202,6 @@ def test_crud_form_handler_invalid_data_rerenders(client, orga_user_and_event):
     assert response.context["form"].errors
 
 
-@pytest.mark.django_db
 def test_crud_form_handler_with_next_url_redirects(client, orga_user_and_event):
     user, event = orga_user_and_event
     client.force_login(user)
@@ -227,7 +216,6 @@ def test_crud_form_handler_with_next_url_redirects(client, orga_user_and_event):
     assert response.url == next_url
 
 
-@pytest.mark.django_db
 def test_crud_delete_confirmation_page(client, orga_user_and_event):
     user, event = orga_user_and_event
     with scopes_disabled():
@@ -241,7 +229,6 @@ def test_crud_delete_confirmation_page(client, orga_user_and_event):
     assert "submit_buttons_extra" in response.context
 
 
-@pytest.mark.django_db
 def test_crud_delete_handler_removes_and_redirects(client, orga_user_and_event):
     user, event = orga_user_and_event
     with scopes_disabled():
@@ -257,7 +244,6 @@ def test_crud_delete_handler_removes_and_redirects(client, orga_user_and_event):
         assert not Tag.objects.filter(pk=tag_pk).exists()
 
 
-@pytest.mark.django_db
 def test_crud_htmx_table_request(client, orga_user_and_event):
     user, event = orga_user_and_event
     client.force_login(user)
@@ -271,7 +257,6 @@ def test_crud_htmx_table_request(client, orga_user_and_event):
     assert response["HX-Push-Url"] == url
 
 
-@pytest.mark.django_db
 def test_crud_page_size_stored_in_preferences(client, orga_user_and_event):
     user, event = orga_user_and_event
     with scopes_disabled():
@@ -285,7 +270,6 @@ def test_crud_page_size_stored_in_preferences(client, orga_user_and_event):
     assert response.context["is_paginated"]
 
 
-@pytest.mark.django_db
 def test_crud_create_logs_action(client, orga_user_and_event):
     user, event = orga_user_and_event
     client.force_login(user)
@@ -301,7 +285,6 @@ def test_crud_create_logs_action(client, orga_user_and_event):
         assert tag.logged_actions().exists()
 
 
-@pytest.mark.django_db
 def test_crud_update_logs_with_changes(client, orga_user_and_event):
     user, event = orga_user_and_event
     with scopes_disabled():
@@ -320,7 +303,6 @@ def test_crud_update_logs_with_changes(client, orga_user_and_event):
     assert log.json_data.get("changes")
 
 
-@pytest.mark.django_db
 def test_crud_update_without_changes_does_not_log(client, orga_user_and_event):
     """Submitting the form with no changes should not create a log entry."""
     user, event = orga_user_and_event
@@ -339,7 +321,6 @@ def test_crud_update_without_changes_does_not_log(client, orga_user_and_event):
         assert tag.logged_actions().count() == initial_log_count
 
 
-@pytest.mark.django_db
 def test_crud_update_context_includes_generic_data(client, orga_user_and_event):
     user, event = orga_user_and_event
     with scopes_disabled():
@@ -355,7 +336,6 @@ def test_crud_update_context_includes_generic_data(client, orga_user_and_event):
     assert "submit_buttons" in ctx
 
 
-@pytest.mark.django_db
 def test_crud_list_context_includes_create_url(client, orga_user_and_event):
     user, event = orga_user_and_event
     client.force_login(user)

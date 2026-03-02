@@ -141,16 +141,19 @@ DJANGO_SETTINGS_MODULE = "pretalx.common.settings.test_settings"
 testpaths = "src/tests"
 pythonpath = "src"
 filterwarnings = [
-    # We can ignore this one, as it's just about trying to parse the XML output while exporting the schedule
-    "ignore:It looks like you're parsing an XML document using an HTML parser.::pretalx.agenda.management.commands.export_schedule:",
-    # This warning *should* get suppressed via our own settings anyway …
-    "ignore:Cache key contains characters that will cause errors if used with memcached::django.core.cache.backends.base:"
+    # Turn all unfiltered warnings into errors (processed last due to insertion order)
+    "error",
+    # 2026-03: drf-spectacular 0.29.0 uses _UnionGenericAlias, deprecated in Python 3.17
+    "ignore:._UnionGenericAlias.:DeprecationWarning",
+    # Unclosed FieldFile handles during GC — per-test markers can't cover session/worker cleanup
+    "ignore::pytest.PytestUnraisableExceptionWarning",
 ]
 addopts = "-p no:doctest -p no:pastebin -p no:nose"
 markers = [
     "unit: Unit tests",
     "integration: Integration tests",
     "e2e: End-to-end tests",
+    "slow: Tests that are inherently slow (network timeouts, heavy DB setup). Skip with -m 'not slow'",
 ]
 
 [tool.coverage.run]

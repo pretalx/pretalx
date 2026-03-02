@@ -1,5 +1,7 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from django_scopes import scope, scopes_disabled
+from django_scopes import scope
 
 from pretalx.agenda.rules import (
     event_uses_feedback,
@@ -23,8 +25,8 @@ pytestmark = pytest.mark.unit
     ((True, True, True), (True, False, False), (False, True, False)),
     ids=["all_conditions_met", "schedule_hidden", "not_public"],
 )
-def test_is_agenda_visible(is_public, show_schedule, expected, published_schedule):
-    event = published_schedule.event
+def test_is_agenda_visible(is_public, show_schedule, expected, published_talk_slot):
+    event = published_talk_slot.submission.event
     event.is_public = is_public
     event.feature_flags["show_schedule"] = show_schedule
     event.save()
@@ -66,28 +68,26 @@ def test_is_agenda_visible_with_none_event():
     ids=["visible_slot", "invisible_slot"],
 )
 def test_is_submission_visible_via_schedule_slot_visibility(
-    is_visible, expected, published_schedule
+    is_visible, expected, published_talk_slot
 ):
     """Submission visibility depends on whether its slot is visible."""
-    event = published_schedule.event
+    schedule = published_talk_slot.schedule
+    event = schedule.event
     event.is_public = True
     event.feature_flags["show_schedule"] = True
     event.save()
 
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    with scopes_disabled():
-        TalkSlotFactory(
-            submission=submission, schedule=published_schedule, is_visible=is_visible
-        )
+    TalkSlotFactory(submission=submission, schedule=schedule, is_visible=is_visible)
 
     with scope(event=event):
         assert is_submission_visible_via_schedule(None, submission) is expected
 
 
 @pytest.mark.django_db
-def test_is_submission_visible_via_schedule_no_slot(published_schedule):
+def test_is_submission_visible_via_schedule_no_slot(published_talk_slot):
     """Submission without a slot in the current schedule is not visible."""
-    event = published_schedule.event
+    event = published_talk_slot.submission.event
     event.is_public = True
     event.feature_flags["show_schedule"] = True
     event.save()
@@ -130,18 +130,16 @@ def test_is_submission_visible_via_featured_none_submission():
 
 
 @pytest.mark.django_db
-def test_is_agenda_submission_visible_via_schedule(published_schedule):
+def test_is_agenda_submission_visible_via_schedule(published_talk_slot):
     """Submission visible through schedule path."""
-    event = published_schedule.event
+    schedule = published_talk_slot.schedule
+    event = schedule.event
     event.is_public = True
     event.feature_flags["show_schedule"] = True
     event.save()
 
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    with scopes_disabled():
-        TalkSlotFactory(
-            submission=submission, schedule=published_schedule, is_visible=True
-        )
+    TalkSlotFactory(submission=submission, schedule=schedule, is_visible=True)
 
     with scope(event=event):
         assert is_agenda_submission_visible(None, submission) is True
@@ -194,8 +192,7 @@ def test_is_agenda_submission_visible_unwraps_slot(event):
 def test_is_viewable_speaker_true(published_talk_slot):
     """Speaker with a slot in the released schedule is viewable."""
     event = published_talk_slot.submission.event
-    with scopes_disabled():
-        speaker = published_talk_slot.submission.speakers.first()
+    speaker = published_talk_slot.submission.speakers.first()
 
     with scope(event=event):
         assert is_viewable_speaker(None, speaker) is True
@@ -224,9 +221,9 @@ def test_is_widget_always_visible(flag_value, expected, event):
 
 
 @pytest.mark.django_db
-def test_is_widget_visible_via_agenda(published_schedule):
+def test_is_widget_visible_via_agenda(published_talk_slot):
     """Widget is visible when the agenda itself is visible."""
-    event = published_schedule.event
+    event = published_talk_slot.submission.event
     event.is_public = True
     event.feature_flags["show_schedule"] = True
     event.feature_flags["show_widget_if_not_public"] = False

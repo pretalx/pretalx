@@ -1,6 +1,7 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.utils import translation
-from django_scopes import scopes_disabled
 from i18nfield.fields import I18nCharField, I18nTextField
 from i18nfield.strings import LazyI18nString
 
@@ -80,8 +81,7 @@ def test_pretalx_serializer_get_with_fallback_from_data():
 
 @pytest.mark.django_db
 def test_pretalx_serializer_get_with_fallback_from_instance():
-    with scopes_disabled():
-        question = QuestionFactory(target=QuestionTarget.SPEAKER)
+    question = QuestionFactory(target=QuestionTarget.SPEAKER)
 
     serializer = QuestionSerializer()
     serializer.instance = question
@@ -104,16 +104,15 @@ def test_pretalx_serializer_get_with_fallback_returns_none_without_instance():
 def test_pretalx_serializer_get_extra_flex_field_with_nested_omit():
     """When expanding with nested omit (e.g. ?expand=slots&omit=slots.submission),
     the nested omit config is forwarded to the child serializer."""
-    with scopes_disabled():
-        submission = SubmissionFactory()
-        slot = TalkSlotFactory(submission=submission, is_visible=True)
-        request = make_api_request(
-            event=submission.event, data={"expand": "slots", "omit": "slots.submission"}
-        )
-        serializer = SubmissionSerializer(
-            submission, context={"request": request, "schedule": slot.schedule}
-        )
-        data = serializer.data
+    submission = SubmissionFactory()
+    slot = TalkSlotFactory(submission=submission, is_visible=True)
+    request = make_api_request(
+        event=submission.event, data={"expand": "slots", "omit": "slots.submission"}
+    )
+    serializer = SubmissionSerializer(
+        submission, context={"request": request, "schedule": slot.schedule}
+    )
+    data = serializer.data
 
     assert len(data["slots"]) == 1
     assert data["slots"][0]["id"] == slot.pk

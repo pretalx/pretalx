@@ -72,6 +72,9 @@ with suppress(ValueError):
     INSTALLED_APPS.remove("debug_toolbar.apps.DebugToolbarConfig")
     MIDDLEWARE.remove("debug_toolbar.middleware.DebugToolbarMiddleware")
 
+# HTML minification is unnecessary overhead in tests
+MIDDLEWARE.remove("django_minify_html.middleware.MinifyHtmlMiddleware")
+
 
 # Don't run migrations
 class DisableMigrations:

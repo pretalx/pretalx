@@ -1,7 +1,8 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.db import models as db_models
 from django.test import RequestFactory
-from django_scopes import scopes_disabled
 
 from pretalx.common.tables import BooleanColumn
 from pretalx.common.templatetags.history_sidebar import (
@@ -57,8 +58,7 @@ def test_resolve_foreign_key_missing_pk():
 @pytest.mark.django_db
 def test_get_display_returns_choice_label():
     """get_display returns the human-readable label for a choices field."""
-    with scopes_disabled():
-        submission = SubmissionFactory(state=SubmissionStates.SUBMITTED)
+    submission = SubmissionFactory(state=SubmissionStates.SUBMITTED)
     result = get_display(submission, "state", SubmissionStates.ACCEPTED)
     assert result == "accepted"
     assert submission.state == SubmissionStates.SUBMITTED
@@ -66,16 +66,14 @@ def test_get_display_returns_choice_label():
 
 @pytest.mark.django_db
 def test_history_sidebar_returns_entries(event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        log = ActivityLogFactory(event=event, content_object=submission)
+    submission = SubmissionFactory(event=event)
+    log = ActivityLogFactory(event=event, content_object=submission)
 
     rf = RequestFactory()
     request = rf.get("/")
     context = {"request": request}
 
-    with scopes_disabled():
-        result = history_sidebar(context, submission)
+    result = history_sidebar(context, submission)
 
     assert len(result["entries"]) == 1
     assert result["entries"][0] == log
@@ -89,16 +87,14 @@ def test_history_sidebar_returns_entries(event):
 
 @pytest.mark.django_db
 def test_history_sidebar_respects_limit(event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        for _ in range(3):
-            ActivityLogFactory(event=event, content_object=submission)
+    submission = SubmissionFactory(event=event)
+    for _ in range(3):
+        ActivityLogFactory(event=event, content_object=submission)
 
     rf = RequestFactory()
     context = {"request": rf.get("/")}
 
-    with scopes_disabled():
-        result = history_sidebar(context, submission, limit=2)
+    result = history_sidebar(context, submission, limit=2)
 
     assert len(result["entries"]) == 2
     assert result["show_more_link"] is True
@@ -106,15 +102,13 @@ def test_history_sidebar_respects_limit(event):
 
 @pytest.mark.django_db
 def test_history_sidebar_no_limit(event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        ActivityLogFactory(event=event, content_object=submission)
+    submission = SubmissionFactory(event=event)
+    ActivityLogFactory(event=event, content_object=submission)
 
     rf = RequestFactory()
     context = {"request": rf.get("/")}
 
-    with scopes_disabled():
-        result = history_sidebar(context, submission, limit=0)
+    result = history_sidebar(context, submission, limit=0)
 
     assert len(result["entries"]) == 1
     assert result["show_more_link"] is False
@@ -123,9 +117,8 @@ def test_history_sidebar_no_limit(event):
 @pytest.mark.django_db
 def test_change_row_simple_text_change(event):
     """Simple text change produces a diff result."""
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        log = ActivityLogFactory(event=event, content_object=submission)
+    submission = SubmissionFactory(event=event)
+    log = ActivityLogFactory(event=event, content_object=submission)
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -153,9 +146,8 @@ def test_change_row_simple_text_change(event):
 @pytest.mark.django_db
 def test_change_row_boolean_field(event):
     """BooleanField values are rendered as check/cross icons."""
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        log = ActivityLogFactory(event=event, content_object=submission)
+    submission = SubmissionFactory(event=event)
+    log = ActivityLogFactory(event=event, content_object=submission)
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -180,9 +172,8 @@ def test_change_row_boolean_field(event):
 @pytest.mark.django_db
 def test_change_row_fk_field(event):
     """ForeignKey values are resolved to their string representation."""
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        log = ActivityLogFactory(event=event, content_object=submission)
+    submission = SubmissionFactory(event=event)
+    log = ActivityLogFactory(event=event, content_object=submission)
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -207,9 +198,8 @@ def test_change_row_fk_field(event):
 @pytest.mark.django_db
 def test_change_row_dict_values(event):
     """Dict values (i18n) produce one row per language."""
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        log = ActivityLogFactory(event=event, content_object=submission)
+    submission = SubmissionFactory(event=event)
+    log = ActivityLogFactory(event=event, content_object=submission)
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -235,9 +225,8 @@ def test_change_row_dict_values(event):
 @pytest.mark.django_db
 def test_change_row_choices_field(event):
     """Field with get_{field}_display resolves choice values."""
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        log = ActivityLogFactory(event=event, content_object=submission)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    log = ActivityLogFactory(event=event, content_object=submission)
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -261,9 +250,8 @@ def test_change_row_choices_field(event):
 @pytest.mark.django_db
 def test_change_row_label_from_field_verbose_name(event):
     """When no label and no question but field_obj exists, use its verbose_name."""
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        log = ActivityLogFactory(event=event, content_object=submission)
+    submission = SubmissionFactory(event=event)
+    log = ActivityLogFactory(event=event, content_object=submission)
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -279,9 +267,8 @@ def test_change_row_label_from_field_verbose_name(event):
 @pytest.mark.django_db
 def test_change_row_dict_with_string_old(event):
     """When new is dict but old is string, old is wrapped in a single-locale dict."""
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        log = ActivityLogFactory(event=event, content_object=submission)
+    submission = SubmissionFactory(event=event)
+    log = ActivityLogFactory(event=event, content_object=submission)
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -304,9 +291,8 @@ def test_change_row_dict_with_string_old(event):
 @pytest.mark.django_db
 def test_change_row_dict_with_string_new(event):
     """When old is dict but new is string, new is wrapped in a single-locale dict."""
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        log = ActivityLogFactory(event=event, content_object=submission)
+    submission = SubmissionFactory(event=event)
+    log = ActivityLogFactory(event=event, content_object=submission)
 
     rf = RequestFactory()
     request = rf.get("/")
@@ -329,9 +315,8 @@ def test_change_row_dict_with_string_new(event):
 @pytest.mark.django_db
 def test_change_row_label_falls_back_to_field_name(event):
     """When no label and no question, the field name is used as label."""
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        log = ActivityLogFactory(event=event, content_object=submission)
+    submission = SubmissionFactory(event=event)
+    log = ActivityLogFactory(event=event, content_object=submission)
 
     rf = RequestFactory()
     request = rf.get("/")

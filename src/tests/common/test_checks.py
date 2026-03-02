@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.core.checks import ERROR, INFO, WARNING
 from django.test import override_settings
@@ -60,6 +62,7 @@ def test_check_celery_no_result_backend_errors():
     assert errors[0].level == ERROR
 
 
+@pytest.mark.slow
 @override_settings(
     CELERY_TASK_ALWAYS_EAGER=False, CELERY_RESULT_BACKEND="redis://localhost:6379/0"
 )
@@ -73,6 +76,7 @@ def test_check_celery_broker_connection_failure():
     assert errors[0].level == WARNING
 
 
+@pytest.mark.filterwarnings("ignore:Overriding setting DATABASES:UserWarning")
 @override_settings(DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3"}})
 def test_check_sqlite_in_production_warns():
     errors = check_sqlite_in_production(app_configs=None)
@@ -82,6 +86,7 @@ def test_check_sqlite_in_production_warns():
     assert errors[0].level == INFO
 
 
+@pytest.mark.filterwarnings("ignore:Overriding setting DATABASES:UserWarning")
 @override_settings(DATABASES={"default": {"ENGINE": "django.db.backends.postgresql"}})
 def test_check_sqlite_in_production_ok_for_postgresql():
     assert check_sqlite_in_production(app_configs=None) == []
@@ -96,7 +101,7 @@ def test_check_admin_email_no_admins_informs():
     assert errors[0].level == INFO
 
 
-@override_settings(ADMINS=[("Admin", "admin@example.com")])
+@override_settings(ADMINS=["admin@example.com"])
 def test_check_admin_email_configured_ok():
     assert check_admin_email(app_configs=None) == []
 

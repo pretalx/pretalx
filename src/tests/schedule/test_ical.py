@@ -1,8 +1,10 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 from zoneinfo import ZoneInfo
 
 import pytest
 import vobject.icalendar as ical_module
-from django_scopes import scope, scopes_disabled
+from django_scopes import scope
 
 from pretalx.schedule.ical import (
     get_slot_ical,
@@ -82,8 +84,7 @@ def test_get_slots_ical_empty_slots(event):
 @pytest.mark.django_db
 def test_get_slot_ical(event, talk_slot):
     """get_slot_ical returns a calendar with the slot's submission code in the prodid."""
-    with scopes_disabled():
-        cal = get_slot_ical(talk_slot)
+    cal = get_slot_ical(talk_slot)
 
     result = cal.serialize()
     assert "BEGIN:VCALENDAR" in result
@@ -94,9 +95,8 @@ def test_get_slot_ical(event, talk_slot):
 
 @pytest.mark.django_db
 def test_get_speaker_ical(event, talk_slot):
-    with scopes_disabled():
-        speaker = talk_slot.submission.speakers.first()
-        cal = get_speaker_ical(event, speaker)
+    speaker = talk_slot.submission.speakers.first()
+    cal = get_speaker_ical(event, speaker)
 
     prodid = list(cal.contents["prodid"])[0].value
     assert f"speaker//{speaker.code}" in prodid

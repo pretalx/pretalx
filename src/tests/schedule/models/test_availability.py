@@ -1,7 +1,8 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.schedule.models import Availability
 from tests.factories import AvailabilityFactory, RoomFactory, SpeakerFactory
@@ -486,9 +487,8 @@ def test_availability_replace_for_instance_replaces_all(event):
     new_end = event.datetime_to - dt.timedelta(hours=1)
     new_avails = [Availability(event=event, room=room, start=new_start, end=new_end)]
 
-    with scopes_disabled():
-        Availability.replace_for_instance(room, new_avails)
-        result = list(room.availabilities.all())
+    Availability.replace_for_instance(room, new_avails)
+    result = list(room.availabilities.all())
 
     assert len(result) == 1
     assert result[0].start == new_start
@@ -510,8 +510,7 @@ def test_availability_replace_for_instance_with_person(event):
         )
     ]
 
-    with scopes_disabled():
-        Availability.replace_for_instance(speaker, new_avails)
-        result = list(speaker.availabilities.all())
+    Availability.replace_for_instance(speaker, new_avails)
+    result = list(speaker.availabilities.all())
 
     assert len(result) == 1

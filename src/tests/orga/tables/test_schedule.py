@@ -1,8 +1,7 @@
-# SPDX-FileCopyrightText: 2025-present Tobias Kunze
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.orga.tables.schedule import RoomTable
 from pretalx.schedule.models import Room
@@ -13,8 +12,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture
 def event():
-    with scopes_disabled():
-        return EventFactory()
+    return EventFactory()
 
 
 def test_room_table_meta_model():
@@ -35,8 +33,7 @@ def test_room_table_has_empty_text():
 
 @pytest.mark.django_db
 def test_room_table_sets_dragsort_url(event):
-    with scopes_disabled():
-        room = RoomFactory(event=event)
+    room = RoomFactory(event=event)
     table = RoomTable([room], event=event, user=UserFactory.build())
 
     assert table.attrs["dragsort-url"] == event.orga_urls.room_settings
@@ -45,8 +42,7 @@ def test_room_table_sets_dragsort_url(event):
 @pytest.mark.django_db
 def test_room_table_is_unsortable(event):
     """RoomTable uses UnsortableMixin, so orderable should be False."""
-    with scopes_disabled():
-        room = RoomFactory(event=event)
+    room = RoomFactory(event=event)
     table = RoomTable([room], event=event, user=UserFactory.build())
 
     assert table.orderable is False
@@ -54,8 +50,7 @@ def test_room_table_is_unsortable(event):
 
 @pytest.mark.django_db
 def test_room_table_row_attrs_include_dragsort_id(event):
-    with scopes_disabled():
-        room = RoomFactory(event=event)
+    room = RoomFactory(event=event)
     table = RoomTable([room], event=event, user=UserFactory.build())
 
     dragsort_id_func = table.Meta.row_attrs["dragsort-id"]

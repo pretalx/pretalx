@@ -1,9 +1,12 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import factory
 from django_scopes import scopes_disabled
 
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.person.models.auth_token import UserApiToken
 from pretalx.person.models.information import SpeakerInformation
+from pretalx.person.models.picture import ProfilePicture
 from pretalx.person.models.preferences import UserEventPreferences
 from tests.factories.event import EventFactory
 
@@ -70,3 +73,10 @@ class UserEventPreferencesFactory(factory.django.DjangoModelFactory):
     def _create(cls, model_class, *args, **kwargs):
         with scopes_disabled():
             return super()._create(model_class, *args, **kwargs)
+
+
+class ProfilePictureFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = ProfilePicture
+
+    user = factory.SubFactory(UserFactory)

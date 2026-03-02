@@ -1,16 +1,55 @@
-import json
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+
+from decimal import Decimal
 
 import pytest
 from django_scopes import scopes_disabled
 
 from pretalx.person.models import SpeakerProfile
-from pretalx.submission.models import Answer, Review
-from tests.factories import ReviewFactory, SubmissionFactory, TrackFactory
+from pretalx.submission.models import QuestionVariant, Review
+from pretalx.submission.models.question import QuestionRequired
+from tests.factories import (
+    AnswerFactory,
+    QuestionFactory,
+    ReviewFactory,
+    ReviewScoreCategoryFactory,
+    ReviewScoreFactory,
+    SubmissionFactory,
+    TeamFactory,
+    TrackFactory,
+    UserFactory,
+)
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
+@pytest.fixture
+def review(submission, review_user):
+    return ReviewFactory(submission=submission, user=review_user, text="Looks great!")
+
+
+@pytest.fixture
+def other_review_user(event):
+    with scopes_disabled():
+        user = UserFactory()
+        team = TeamFactory(
+            organiser=event.organiser,
+            all_events=True,
+            is_reviewer=True,
+            can_change_submissions=False,
+        )
+        team.members.add(user)
+    return user
+
+
+@pytest.fixture
+def other_review(other_submission, other_review_user):
+    return ReviewFactory(
+        submission=other_submission, user=other_review_user, text="Looks horrible!"
+    )
+
+
 def test_reviewviewset_list_anonymous_returns_401(client, event, review):
     """Anonymous users cannot access the review list."""
     response = client.get(event.api_urls.reviews, follow=True)
@@ -18,7 +57,6 @@ def test_reviewviewset_list_anonymous_returns_401(client, event, review):
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
 def test_reviewviewset_list_organiser(client, orga_read_token, event, review):
     """Organiser can list reviews."""
     response = client.get(
@@ -32,7 +70,6 @@ def test_reviewviewset_list_organiser(client, orga_read_token, event, review):
     assert len(content["results"]) == 1
 
 
-@pytest.mark.django_db
 def test_reviewviewset_list_organiser_without_active_phase(
     client, orga_read_token, event, review
 ):
@@ -52,7 +89,6 @@ def test_reviewviewset_list_organiser_without_active_phase(
     assert len(content["results"]) == 1
 
 
-@pytest.mark.django_db
 def test_reviewviewset_list_reviewer_without_active_phase_returns_403(
     client, review_token, event, review
 ):
@@ -69,7 +105,6 @@ def test_reviewviewset_list_reviewer_without_active_phase_returns_403(
     assert response.status_code == 403
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_reviewviewset_list_reviewer_query_count(
     client,
@@ -102,7 +137,6 @@ def test_reviewviewset_list_reviewer_query_count(
     assert review.pk in [r["id"] for r in content["results"]]
 
 
-@pytest.mark.django_db
 def test_reviewviewset_list_reviewer_by_track(
     client, review_token, review_user, event, review, other_review, track, talk_slot
 ):
@@ -129,7 +163,6 @@ def test_reviewviewset_list_reviewer_by_track(
     assert len(content["results"]) == 1
 
 
-@pytest.mark.django_db
 def test_reviewviewset_list_reviewer_cannot_see_own_submission(
     client, review_token, review_user, event, review, other_review
 ):
@@ -151,7 +184,6 @@ def test_reviewviewset_list_reviewer_cannot_see_own_submission(
     assert len(content["results"]) == 1
 
 
-@pytest.mark.django_db
 def test_reviewviewset_list_filter_by_submission(
     client, review_token, event, review, other_review
 ):
@@ -171,18 +203,21 @@ def test_reviewviewset_list_filter_by_submission(
     assert len(content["results"]) == 1
 
 
-@pytest.mark.django_db
-def test_reviewviewset_list_expanded(
-    client,
-    orga_read_token,
-    event,
-    review,
-    track,
-    review_score_positive,
-    review_question,
-):
+def test_reviewviewset_list_expanded(client, orga_read_token, event, review, track):
     """Organiser can expand submission, user, scores.category, answers in list view."""
     with scopes_disabled():
+        review_score_category = ReviewScoreCategoryFactory(
+            event=event, name="Impact", weight=1
+        )
+        review_score_positive = ReviewScoreFactory(
+            category=review_score_category, value=Decimal("2.0"), label="Good"
+        )
+        review_question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.STRING,
+            target="reviewer",
+            question_required=QuestionRequired.REQUIRED,
+        )
         review.submission.track = track
         review.scores.add(review_score_positive)
         review.submission.save()
@@ -190,7 +225,7 @@ def test_reviewviewset_list_expanded(
         submission_type = review.submission.submission_type
         user = review.user
         category = review_score_positive.category
-        Answer.objects.create(review=review, question=review_question, answer="text!")
+        AnswerFactory(review=review, question=review_question, answer="text!")
 
     params = "user,scores.category,submission.speakers,submission.track,submission.submission_type,answers"
     response = client.get(
@@ -212,7 +247,6 @@ def test_reviewviewset_list_expanded(
     assert data["answers"][0]["answer"] == "text!"
 
 
-@pytest.mark.django_db
 def test_reviewviewset_detail_anonymous_returns_404(client, event, review):
     """Anonymous users get 404 on review detail (not 401 — object-level)."""
     response = client.get(event.api_urls.reviews + f"{review.pk}/", follow=True)
@@ -220,7 +254,6 @@ def test_reviewviewset_detail_anonymous_returns_404(client, event, review):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_reviewviewset_detail_organiser(client, orga_read_token, event, review):
     """Organiser can see review detail."""
     response = client.get(
@@ -236,24 +269,29 @@ def test_reviewviewset_detail_organiser(client, orga_read_token, event, review):
     assert content["user"] == review.user.code
 
 
-@pytest.mark.django_db
 def test_reviewviewset_detail_organiser_expanded(
-    client,
-    orga_read_token,
-    event,
-    review,
-    track,
-    review_score_positive,
-    review_question,
+    client, orga_read_token, event, review, track
 ):
     """Organiser can see expanded review detail with all related objects."""
     with scopes_disabled():
+        review_score_category = ReviewScoreCategoryFactory(
+            event=event, name="Impact", weight=1
+        )
+        review_score_positive = ReviewScoreFactory(
+            category=review_score_category, value=Decimal("2.0"), label="Good"
+        )
+        review_question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.STRING,
+            target="reviewer",
+            question_required=QuestionRequired.REQUIRED,
+        )
         review.submission.track = track
         review.scores.add(review_score_positive)
         review.submission.save()
         speaker = review.submission.speakers.all().first()
         category = review_score_positive.category
-        Answer.objects.create(review=review, question=review_question, answer="text!")
+        AnswerFactory(review=review, question=review_question, answer="text!")
 
     params = "user,scores.category,submission.speakers,submission.track,submission.submission_type,answers"
     response = client.get(
@@ -273,7 +311,6 @@ def test_reviewviewset_detail_organiser_expanded(
     assert content["answers"][0]["answer"] == "text!"
 
 
-@pytest.mark.django_db
 def test_reviewviewset_detail_reviewer_own(client, review_token, event, review):
     """Reviewer can see their own review detail."""
     response = client.get(
@@ -289,7 +326,6 @@ def test_reviewviewset_detail_reviewer_own(client, review_token, event, review):
     assert content["user"] == review.user.code
 
 
-@pytest.mark.django_db
 def test_reviewviewset_detail_reviewer_other_when_allowed(
     client, review_token, event, other_review
 ):
@@ -309,7 +345,6 @@ def test_reviewviewset_detail_reviewer_other_when_allowed(
     assert content["id"] == other_review.pk
 
 
-@pytest.mark.django_db
 def test_reviewviewset_detail_reviewer_other_when_not_allowed(
     client, review_token, event, other_review
 ):
@@ -327,7 +362,6 @@ def test_reviewviewset_detail_reviewer_other_when_not_allowed(
     assert response.status_code == 403
 
 
-@pytest.mark.django_db
 def test_reviewviewset_detail_reviewer_own_submission_returns_404(
     client, review_token, review_user, event, other_review
 ):
@@ -347,7 +381,6 @@ def test_reviewviewset_detail_reviewer_own_submission_returns_404(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_reviewviewset_detail_reviewer_by_track(
     client, review_token, review_user, event, other_review, track
 ):
@@ -370,7 +403,6 @@ def test_reviewviewset_detail_reviewer_by_track(
     assert content["id"] == other_review.pk
 
 
-@pytest.mark.django_db
 def test_reviewviewset_detail_reviewer_outside_track_returns_404(
     client, review_token, review_user, event, other_review, track
 ):
@@ -392,7 +424,6 @@ def test_reviewviewset_detail_reviewer_outside_track_returns_404(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_reviewviewset_create_reviewer(client, review_token, event, submission):
     """Reviewer can create a review for a submission."""
     with scopes_disabled():
@@ -400,9 +431,7 @@ def test_reviewviewset_create_reviewer(client, review_token, event, submission):
 
     response = client.post(
         event.api_urls.reviews,
-        data=json.dumps(
-            {"submission": submission.code, "text": "This is a new review."}
-        ),
+        data={"submission": submission.code, "text": "This is a new review."},
         content_type="application/json",
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -414,25 +443,25 @@ def test_reviewviewset_create_reviewer(client, review_token, event, submission):
         assert new_review.score is None
 
 
-@pytest.mark.django_db
 def test_reviewviewset_create_reviewer_with_scores(
-    client,
-    review_token,
-    event,
-    submission,
-    review_score_category,
-    review_score_positive,
+    client, review_token, event, submission
 ):
     """Reviewer can create a review with score values."""
+    with scopes_disabled():
+        review_score_category = ReviewScoreCategoryFactory(
+            event=event, name="Impact", weight=1
+        )
+        review_score_positive = ReviewScoreFactory(
+            category=review_score_category, value=Decimal("2.0"), label="Good"
+        )
+
     response = client.post(
         event.api_urls.reviews,
-        data=json.dumps(
-            {
-                "submission": submission.code,
-                "text": "Review with scores.",
-                "scores": [review_score_positive.pk],
-            }
-        ),
+        data={
+            "submission": submission.code,
+            "text": "Review with scores.",
+            "scores": [review_score_positive.pk],
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -448,16 +477,13 @@ def test_reviewviewset_create_reviewer_with_scores(
         )
 
 
-@pytest.mark.django_db
 def test_reviewviewset_create_duplicate_returns_400(
     client, review_token, event, review
 ):
     """A reviewer cannot submit two reviews for the same submission."""
     response = client.post(
         event.api_urls.reviews,
-        data=json.dumps(
-            {"submission": review.submission.code, "text": "Duplicate review."}
-        ),
+        data={"submission": review.submission.code, "text": "Duplicate review."},
         content_type="application/json",
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -467,7 +493,6 @@ def test_reviewviewset_create_duplicate_returns_400(
     assert "You have already reviewed this submission." in content["submission"]
 
 
-@pytest.mark.django_db
 def test_reviewviewset_create_own_submission_returns_400(
     client, review_token, review_user, event, submission
 ):
@@ -478,9 +503,7 @@ def test_reviewviewset_create_own_submission_returns_400(
 
     response = client.post(
         event.api_urls.reviews,
-        data=json.dumps(
-            {"submission": submission.code, "text": "Review for my own talk."}
-        ),
+        data={"submission": submission.code, "text": "Review for my own talk."},
         content_type="application/json",
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -489,7 +512,6 @@ def test_reviewviewset_create_own_submission_returns_400(
     assert response.json()["submission"]
 
 
-@pytest.mark.django_db
 def test_reviewviewset_create_phase_disallows_returns_403(
     client, review_token, event, submission
 ):
@@ -501,9 +523,7 @@ def test_reviewviewset_create_phase_disallows_returns_403(
 
     response = client.post(
         event.api_urls.reviews,
-        data=json.dumps(
-            {"submission": submission.code, "text": "Review when phase closed."}
-        ),
+        data={"submission": submission.code, "text": "Review when phase closed."},
         content_type="application/json",
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -511,26 +531,24 @@ def test_reviewviewset_create_phase_disallows_returns_403(
     assert response.status_code == 403, response.text
 
 
-@pytest.mark.django_db
 def test_reviewviewset_create_anonymous_returns_401(client, event, submission):
     """Anonymous users cannot create reviews."""
     response = client.post(
         event.api_urls.reviews,
-        data=json.dumps({"submission": submission.code, "text": "Anonymous review."}),
+        data={"submission": submission.code, "text": "Anonymous review."},
         content_type="application/json",
     )
 
     assert response.status_code == 401, response.text
 
 
-@pytest.mark.django_db
 def test_reviewviewset_update_own_text(client, review_token, event, review):
     """Reviewer can update the text of their own review."""
     new_text = "This is an updated review text."
 
     response = client.patch(
         event.api_urls.reviews + f"{review.pk}/",
-        data=json.dumps({"text": new_text}),
+        data={"text": new_text},
         content_type="application/json",
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -541,25 +559,25 @@ def test_reviewviewset_update_own_text(client, review_token, event, review):
         assert review.text == new_text
 
 
-@pytest.mark.django_db
-def test_reviewviewset_update_own_scores(
-    client,
-    review_token,
-    event,
-    review,
-    review_score_category,
-    review_score_positive,
-    review_score_negative,
-):
+def test_reviewviewset_update_own_scores(client, review_token, event, review):
     """Reviewer can update their review's scores, replacing old ones."""
     with scopes_disabled():
+        review_score_category = ReviewScoreCategoryFactory(
+            event=event, name="Impact", weight=1
+        )
+        review_score_positive = ReviewScoreFactory(
+            category=review_score_category, value=Decimal("2.0"), label="Good"
+        )
+        review_score_negative = ReviewScoreFactory(
+            category=review_score_category, value=Decimal("-1.0"), label="Bad"
+        )
         review.scores.add(review_score_negative)
         review.save()
         initial_score = review.score
 
     response = client.patch(
         event.api_urls.reviews + f"{review.pk}/",
-        data=json.dumps({"scores": [review_score_positive.pk]}),
+        data={"scores": [review_score_positive.pk]},
         content_type="application/json",
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -575,27 +593,27 @@ def test_reviewviewset_update_own_scores(
         )
 
 
-@pytest.mark.django_db
 def test_reviewviewset_update_multiple_scores_same_category_returns_400(
-    client,
-    review_token,
-    event,
-    review,
-    review_score_category,
-    review_score_positive,
-    review_score_negative,
+    client, review_token, event, review
 ):
     """Cannot add multiple score values from the same category."""
     with scopes_disabled():
+        review_score_category = ReviewScoreCategoryFactory(
+            event=event, name="Impact", weight=1
+        )
+        review_score_positive = ReviewScoreFactory(
+            category=review_score_category, value=Decimal("2.0"), label="Good"
+        )
+        review_score_negative = ReviewScoreFactory(
+            category=review_score_category, value=Decimal("-1.0"), label="Bad"
+        )
         review.scores.add(review_score_negative)
         review.save()
         initial_score = review.score
 
     response = client.patch(
         event.api_urls.reviews + f"{review.pk}/",
-        data=json.dumps(
-            {"scores": [review_score_positive.pk, review_score_negative.pk]}
-        ),
+        data={"scores": [review_score_positive.pk, review_score_negative.pk]},
         content_type="application/json",
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -608,14 +626,13 @@ def test_reviewviewset_update_multiple_scores_same_category_returns_400(
         assert review.score == initial_score
 
 
-@pytest.mark.django_db
 def test_reviewviewset_update_other_review_returns_403(
     client, review_token, event, other_review
 ):
     """Reviewer cannot update another reviewer's review."""
     response = client.patch(
         event.api_urls.reviews + f"{other_review.pk}/",
-        data=json.dumps({"text": "Trying to update someone else's review."}),
+        data={"text": "Trying to update someone else's review."},
         content_type="application/json",
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -623,7 +640,6 @@ def test_reviewviewset_update_other_review_returns_403(
     assert response.status_code == 403, response.text
 
 
-@pytest.mark.django_db
 def test_reviewviewset_update_phase_disallows_returns_403(
     client, review_token, event, review
 ):
@@ -635,7 +651,7 @@ def test_reviewviewset_update_phase_disallows_returns_403(
 
     response = client.patch(
         event.api_urls.reviews + f"{review.pk}/",
-        data=json.dumps({"text": "Update when phase closed."}),
+        data={"text": "Update when phase closed."},
         content_type="application/json",
         headers={"Authorization": f"Token {review_token.token}"},
     )
@@ -643,19 +659,17 @@ def test_reviewviewset_update_phase_disallows_returns_403(
     assert response.status_code == 403, response.text
 
 
-@pytest.mark.django_db
 def test_reviewviewset_update_anonymous_returns_404(client, event, review):
     """Anonymous users get 404 when trying to update a review."""
     response = client.patch(
         event.api_urls.reviews + f"{review.pk}/",
-        data=json.dumps({"text": "Anonymous update."}),
+        data={"text": "Anonymous update."},
         content_type="application/json",
     )
 
     assert response.status_code == 404, response.text
 
 
-@pytest.mark.django_db
 def test_reviewviewset_delete_own(client, review_token, event, review):
     """Reviewer can delete their own review."""
     review_pk = review.pk
@@ -670,7 +684,6 @@ def test_reviewviewset_delete_own(client, review_token, event, review):
         assert not Review.objects.filter(pk=review_pk).exists()
 
 
-@pytest.mark.django_db
 def test_reviewviewset_delete_other_returns_403(
     client, review_token, event, other_review
 ):
@@ -685,7 +698,6 @@ def test_reviewviewset_delete_other_returns_403(
         assert Review.objects.filter(pk=other_review.pk).exists()
 
 
-@pytest.mark.django_db
 def test_reviewviewset_delete_phase_disallows_returns_403(
     client, review_token, event, review
 ):
@@ -705,7 +717,6 @@ def test_reviewviewset_delete_phase_disallows_returns_403(
         assert Review.objects.filter(pk=review.pk).exists()
 
 
-@pytest.mark.django_db
 def test_reviewviewset_delete_anonymous_returns_404(client, event, review):
     """Anonymous users get 404 when trying to delete a review."""
     response = client.delete(event.api_urls.reviews + f"{review.pk}/")

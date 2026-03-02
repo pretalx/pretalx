@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
@@ -16,7 +18,7 @@ from tests.factories import (
     TalkSlotFactory,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 @pytest.fixture
@@ -63,7 +65,6 @@ def feedback_submission(event):
     return submission
 
 
-@pytest.mark.django_db
 def test_talk_view_default_rendering(
     client, django_assert_num_queries, published_event_with_talk
 ):
@@ -93,7 +94,6 @@ def test_talk_view_default_rendering(
     assert "<iframe" not in content
 
 
-@pytest.mark.django_db
 def test_talk_view_404_for_nonpublic_event(client, django_assert_num_queries, event):
     """Talk page returns 404 when event is not public."""
     with scopes_disabled():
@@ -111,7 +111,6 @@ def test_talk_view_404_for_nonpublic_event(client, django_assert_num_queries, ev
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_talk_view_404_for_other_events_submission(
     client, django_assert_num_queries, event
 ):
@@ -128,7 +127,6 @@ def test_talk_view_404_for_other_events_submission(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_talk_view_404_for_unreleased_submission(
     client, django_assert_num_queries, event
 ):
@@ -147,7 +145,6 @@ def test_talk_view_404_for_unreleased_submission(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_talk_view_orga_can_see_unreleased(
     client, django_assert_num_queries, event, organiser_user
 ):
@@ -173,7 +170,6 @@ def test_talk_view_orga_can_see_unreleased(
         assert str(slot.room.name) not in content
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     "state",
     (
@@ -209,7 +205,6 @@ def test_talk_view_visibility_by_state_returns_404(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_talk_view_shows_edit_button_for_speaker(
     client, django_assert_num_queries, published_event_with_talk
 ):
@@ -226,7 +221,6 @@ def test_talk_view_shows_edit_button_for_speaker(
     assert "fa-edit" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_talk_view_shows_do_not_record_indicator(
     client, django_assert_num_queries, published_event_with_talk
 ):
@@ -243,7 +237,6 @@ def test_talk_view_shows_do_not_record_indicator(
     assert "fa-video" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_talk_view_feedback_link_shown_for_past_talk(
     client, django_assert_num_queries, feedback_submission
 ):
@@ -255,7 +248,6 @@ def test_talk_view_feedback_link_shown_for_past_talk(
     assert "fa-comments" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_talk_view_recording_iframe_with_plugin(
     client,
     django_assert_num_queries,
@@ -283,7 +275,6 @@ def test_talk_view_recording_iframe_with_plugin(
     assert response._csp_update == {"frame-src": "cdn.test"}
 
 
-@pytest.mark.django_db
 def test_talk_view_shows_public_resources_only(
     client, django_assert_num_queries, event
 ):
@@ -318,7 +309,6 @@ def test_talk_view_shows_public_resources_only(
     assert private_resource.link not in content
 
 
-@pytest.mark.django_db
 def test_talk_view_speaker_other_submissions(
     client, django_assert_num_queries, published_event_with_talk, second_talk
 ):
@@ -340,7 +330,6 @@ def test_talk_view_speaker_other_submissions(
     assert speaker_data.other_submissions[0].pk == second_talk.pk
 
 
-@pytest.mark.django_db
 def test_talk_view_context_without_schedule_permission(
     client, django_assert_num_queries, event, organiser_user
 ):
@@ -365,7 +354,6 @@ def test_talk_view_context_without_schedule_permission(
     assert speakers[0].pk == speaker.pk
 
 
-@pytest.mark.django_db
 def test_talk_view_speaker_other_submissions_excludes_invisible_slots(
     client, django_assert_num_queries, event
 ):
@@ -395,7 +383,6 @@ def test_talk_view_speaker_other_submissions_excludes_invisible_slots(
     assert len(speakers[0].other_submissions) == 0
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_talk_view_speaker_query_count(
     client, django_assert_num_queries, event, item_count
@@ -421,7 +408,6 @@ def test_talk_view_speaker_query_count(
             assert speaker.get_display_name() in content
 
 
-@pytest.mark.django_db
 def test_talk_social_media_card_404_without_image(
     client, django_assert_num_queries, published_event_with_talk
 ):
@@ -434,7 +420,6 @@ def test_talk_social_media_card_404_without_image(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("enabled", "expected_status", "expected_queries"),
     ((True, 200, 16), (False, 404, 5)),
@@ -460,7 +445,6 @@ def test_talk_review_view_by_feature_flag(
         assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_single_ical_view_returns_calendar(
     client, django_assert_num_queries, published_event_with_talk
 ):
@@ -479,7 +463,6 @@ def test_single_ical_view_returns_calendar(
     assert submission.event.slug in disposition
 
 
-@pytest.mark.django_db
 def test_feedback_view_accessible_for_past_talk(
     client, django_assert_num_queries, feedback_submission
 ):
@@ -491,7 +474,6 @@ def test_feedback_view_accessible_for_past_talk(
     assert "review" in response.context["form"].fields
 
 
-@pytest.mark.django_db
 def test_feedback_view_submit_creates_feedback(
     client, django_assert_num_queries, feedback_submission
 ):
@@ -509,7 +491,6 @@ def test_feedback_view_submit_creates_feedback(
         assert feedback.speaker == feedback_submission.speakers.first()
 
 
-@pytest.mark.django_db
 def test_feedback_view_submit_multiple_speakers_no_auto_assign(
     client, django_assert_num_queries, feedback_submission
 ):
@@ -531,7 +512,6 @@ def test_feedback_view_submit_multiple_speakers_no_auto_assign(
         assert feedback.speaker is None
 
 
-@pytest.mark.django_db
 def test_feedback_view_rejects_post_before_talk_starts(
     client, django_assert_num_queries, event
 ):
@@ -561,7 +541,6 @@ def test_feedback_view_rejects_post_before_talk_starts(
         assert submission.feedback.count() == 0
 
 
-@pytest.mark.django_db
 def test_feedback_view_honeypot_rejects_spam(
     client, django_assert_num_queries, feedback_submission
 ):
@@ -578,7 +557,6 @@ def test_feedback_view_honeypot_rejects_spam(
         assert feedback_submission.feedback.count() == 0
 
 
-@pytest.mark.django_db
 def test_feedback_view_speaker_sees_feedback(
     client, django_assert_num_queries, feedback_submission
 ):
@@ -595,7 +573,6 @@ def test_feedback_view_speaker_sees_feedback(
     assert "Loved it!" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_feedback_view_redirects_to_talk_after_submit(
     client, django_assert_num_queries, feedback_submission
 ):
@@ -609,7 +586,6 @@ def test_feedback_view_redirects_to_talk_after_submit(
     assert response.url == feedback_submission.urls.public
 
 
-@pytest.mark.django_db
 def test_feedback_view_accessible_before_talk_starts(
     client, django_assert_num_queries, event
 ):

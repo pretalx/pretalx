@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.conf import settings
 from django.core.files.storage import Storage
@@ -14,10 +16,9 @@ from tests.factories import (
     TalkSlotFactory,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_speaker_list_shows_speaker_names(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -31,7 +32,6 @@ def test_speaker_list_shows_speaker_names(
     assert speaker.get_display_name() in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_speaker_list_not_visible_without_schedule(client, event):
     """Speaker list returns 404 when no schedule is released."""
     event.is_public = True
@@ -43,7 +43,6 @@ def test_speaker_list_not_visible_without_schedule(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_speaker_list_not_visible_when_not_public(client, published_talk_slot):
     """Speaker list returns 404 when event is not public."""
     event = published_talk_slot.submission.event
@@ -55,7 +54,6 @@ def test_speaker_list_not_visible_when_not_public(client, published_talk_slot):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("role", "expected_status"),
     (("anonymous", 404), ("speaker", 404), ("organiser", 200)),
@@ -81,7 +79,6 @@ def test_speaker_list_access_by_role(
     assert response.status_code == expected_status
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_speaker_list_query_count(client, event, item_count, django_assert_num_queries):
     """Query count is constant regardless of the number of speakers."""
@@ -108,7 +105,6 @@ def test_speaker_list_query_count(client, event, item_count, django_assert_num_q
             assert speaker.get_display_name() in content
 
 
-@pytest.mark.django_db
 def test_speaker_list_search_filters_by_name(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -133,7 +129,6 @@ def test_speaker_list_search_filters_by_name(
     assert "Otherperson" not in content
 
 
-@pytest.mark.django_db
 def test_speaker_page_shows_biography_and_talks(
     client, public_event_with_schedule, published_talk_slot, django_assert_num_queries
 ):
@@ -154,7 +149,6 @@ def test_speaker_page_shows_biography_and_talks(
     assert published_talk_slot.submission.title in content
 
 
-@pytest.mark.django_db
 def test_speaker_page_answer_visibility(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -196,7 +190,6 @@ def test_speaker_page_answer_visibility(
     assert "My secret answer" not in content
 
 
-@pytest.mark.django_db
 def test_speaker_page_404_for_unknown_speaker(client, public_event_with_schedule):
     """Speaker page returns 404 for a non-existent speaker code."""
     url = reverse(
@@ -208,7 +201,6 @@ def test_speaker_page_404_for_unknown_speaker(client, public_event_with_schedule
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_speaker_page_404_for_speaker_not_in_schedule(
     client, public_event_with_schedule
 ):
@@ -227,7 +219,6 @@ def test_speaker_page_404_for_speaker_not_in_schedule(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_speaker_page_hides_invisible_submissions(
     client, public_event_with_schedule, published_talk_slot, django_assert_num_queries
 ):
@@ -255,7 +246,6 @@ def test_speaker_page_hides_invisible_submissions(
     assert invisible_sub.title not in content
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_speaker_page_query_count(client, event, item_count, django_assert_num_queries):
     """Query count for the speaker detail page is constant regardless of talk count."""
@@ -282,7 +272,6 @@ def test_speaker_page_query_count(client, event, item_count, django_assert_num_q
             assert sub.title in content
 
 
-@pytest.mark.django_db
 def test_speaker_redirect_to_public_page(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -301,7 +290,6 @@ def test_speaker_redirect_to_public_page(
     assert response.headers["location"].endswith(target_url)
 
 
-@pytest.mark.django_db
 def test_speaker_redirect_404_for_unpublished_speaker(client, event):
     """Speaker redirect returns 404 when the speaker isn't in a released schedule."""
     event.is_public = True
@@ -319,7 +307,6 @@ def test_speaker_redirect_404_for_unpublished_speaker(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_speaker_social_media_card_404_when_no_images(
     client, public_event_with_schedule, published_talk_slot, django_assert_num_queries
 ):
@@ -337,7 +324,6 @@ def test_speaker_social_media_card_404_when_no_images(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_speaker_talks_ical_returns_calendar(
     client, public_event_with_schedule, published_talk_slot, django_assert_num_queries
 ):
@@ -369,7 +355,6 @@ def test_speaker_talks_ical_returns_calendar(
     assert f'filename="{expected_filename}"' in response["Content-Disposition"]
 
 
-@pytest.mark.django_db
 def test_speaker_talks_ical_404_without_current_schedule(client, event, organiser_user):
     """Speaker talks iCal returns 404 for orga user when no schedule is released."""
     with scopes_disabled():
@@ -386,7 +371,6 @@ def test_speaker_talks_ical_404_without_current_schedule(client, event, organise
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_speaker_talks_ical_suspicious_name_falls_back_to_code(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -411,7 +395,6 @@ def test_speaker_talks_ical_suspicious_name_falls_back_to_code(
     assert safe_code in response["Content-Disposition"]
 
 
-@pytest.mark.django_db
 @pytest.mark.usefixtures("locmem_cache")
 @pytest.mark.parametrize(
     "primary_color", ("#ff0000", None), ids=["custom_color", "default_color"]

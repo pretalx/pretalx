@@ -1,8 +1,10 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
 from django.utils.timezone import now
-from django_scopes import scope, scopes_disabled
+from django_scopes import scope
 
 from pretalx.event.stages import (
     STAGE_ORDER,
@@ -95,8 +97,7 @@ def test_is_in_review_with_submitted_proposals(event):
     with scope(event=event):
         event.cfp.deadline = now() - dt.timedelta(days=1)
         event.cfp.save()
-    with scopes_disabled():
-        SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
 
     with scope(event=event):
         assert _is_in_review(event) is True
@@ -121,8 +122,7 @@ def test_is_in_review_false_when_cfp_still_open(event):
     with scope(event=event):
         event.cfp.deadline = now() + dt.timedelta(days=1)
         event.cfp.save()
-    with scopes_disabled():
-        SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
 
     with scope(event=event):
         assert _is_in_review(event) is False
@@ -219,10 +219,9 @@ def test_in_stage_returns_correct_stage(
     with scope(event=event):
         event.cfp.deadline = _now + dt.timedelta(days=deadline_delta)
         event.cfp.save()
-    with scopes_disabled():
-        event = refresh(event)
-        if has_submissions:
-            SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    event = refresh(event)
+    if has_submissions:
+        SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
 
     with scope(event=event):
         for stage in STAGE_ORDER:
@@ -312,11 +311,10 @@ def test_get_stages_links_without_url_are_preserved(event):
 @pytest.mark.django_db
 def test_get_stages_does_not_mutate_original():
     """get_stages() deep-copies STAGES, so the module-level dict is not modified."""
-    with scopes_disabled():
-        event = EventFactory(
-            date_from=(now() + dt.timedelta(days=5)).date(),
-            date_to=(now() + dt.timedelta(days=7)).date(),
-        )
+    event = EventFactory(
+        date_from=(now() + dt.timedelta(days=5)).date(),
+        date_to=(now() + dt.timedelta(days=7)).date(),
+    )
 
     with scope(event=event):
         stages = get_stages(event)

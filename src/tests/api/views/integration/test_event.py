@@ -1,13 +1,14 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django_scopes import scopes_disabled
 
 from pretalx.person.models.auth_token import ENDPOINTS, WRITE_PERMISSIONS
 from tests.factories import EventFactory, TeamFactory, UserApiTokenFactory, UserFactory
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_event_list_shows_public_events(client):
     """Anonymous users can see public events in the event list."""
     with scopes_disabled():
@@ -21,7 +22,6 @@ def test_event_list_shows_public_events(client):
     assert public_event.slug in slugs
 
 
-@pytest.mark.django_db
 def test_event_list_hides_non_public_from_anonymous(client):
     """Anonymous users do not see non-public events."""
     with scopes_disabled():
@@ -37,7 +37,6 @@ def test_event_list_hides_non_public_from_anonymous(client):
     assert slugs[0] == public_event.slug
 
 
-@pytest.mark.django_db
 def test_event_list_shows_private_events_to_orga(client):
     """Authenticated organisers see both public and their private events."""
     with scopes_disabled():
@@ -62,7 +61,6 @@ def test_event_list_shows_private_events_to_orga(client):
     assert private_event.slug in slugs
 
 
-@pytest.mark.django_db
 def test_event_list_serializer_fields(client):
     """Event list returns the expected subset of fields."""
     with scopes_disabled():
@@ -76,7 +74,6 @@ def test_event_list_serializer_fields(client):
     assert set(event_data.keys()) == expected_keys
 
 
-@pytest.mark.django_db
 def test_event_detail_accessible_for_public_event(client):
     """Anonymous users can view a public event's details."""
     with scopes_disabled():
@@ -92,7 +89,6 @@ def test_event_detail_accessible_for_public_event(client):
     assert "locales" in data
 
 
-@pytest.mark.django_db
 def test_event_detail_returns_404_for_non_public_anonymous(client):
     """Anonymous users get 404 for a non-public event."""
     with scopes_disabled():
@@ -103,7 +99,6 @@ def test_event_detail_returns_404_for_non_public_anonymous(client):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_event_detail_accessible_for_orga(client):
     """Authenticated organiser can view a non-public event's details."""
     with scopes_disabled():
@@ -126,7 +121,6 @@ def test_event_detail_accessible_for_orga(client):
     assert response.json()["slug"] == event.slug
 
 
-@pytest.mark.django_db
 def test_event_detail_fields(client):
     """Event detail includes additional fields compared to the list view."""
     with scopes_disabled():
@@ -147,7 +141,6 @@ def test_event_detail_fields(client):
     assert detail_only_fields.issubset(data.keys())
 
 
-@pytest.mark.django_db
 def test_event_list_filter_by_is_public(client):
     """The is_public filter parameter controls which events are returned."""
     with scopes_disabled():
@@ -163,7 +156,6 @@ def test_event_list_filter_by_is_public(client):
     assert len(data) == 2
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_event_list_query_count(client, item_count, django_assert_num_queries):
     """Query count for anonymous event list is constant regardless of item count."""
@@ -177,7 +169,6 @@ def test_event_list_query_count(client, item_count, django_assert_num_queries):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_event_list_orga_query_count(client, item_count, django_assert_num_queries):
     """Query count for authenticated orga event list is constant regardless of item count."""

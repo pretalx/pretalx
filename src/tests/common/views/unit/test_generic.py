@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 from types import SimpleNamespace
 
@@ -12,7 +14,6 @@ from django.shortcuts import redirect
 from django.test import RequestFactory
 from django.urls import NoReverseMatch
 from django.utils.timezone import now
-from django_scopes import scopes_disabled
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.forms.mixins import PretalxI18nModelForm
@@ -387,8 +388,7 @@ def test_form_logging_mixin_form_valid_logs_action_with_old_and_new_data(event):
     user = UserFactory()
     logged = []
 
-    with scopes_disabled():
-        tag = TagFactory(event=event, tag="Original", color="#aabbcc")
+    tag = TagFactory(event=event, tag="Original", color="#aabbcc")
 
     tag.log_action = lambda action, **kw: logged.append((action, kw))
     mixin = _make_form_logging_mixin(event, user, action="update", obj=tag)
@@ -398,8 +398,7 @@ def test_form_logging_mixin_form_valid_logs_action_with_old_and_new_data(event):
         tag.save()
 
     form = SimpleNamespace(save=save, instance=tag, has_changed=lambda: True)
-    with scopes_disabled():
-        mixin.form_valid(form)
+    mixin.form_valid(form)
 
     assert len(logged) == 1
     action, kwargs = logged[0]
@@ -733,19 +732,17 @@ def test_crud_view_list_with_pagination(event):
     view = _make_crud_view(event, user=user, action="list")
     view.get_generic_permission_object = lambda: event
     view.filter_fields = []
-    with scopes_disabled():
-        view.get_queryset = lambda: Tag.objects.filter(event=event)
-        view.get_paginate_by = lambda: 10
-        view.render_to_response = lambda ctx: ctx
-        context = view.list(view.request)
+    view.get_queryset = lambda: Tag.objects.filter(event=event)
+    view.get_paginate_by = lambda: 10
+    view.render_to_response = lambda ctx: ctx
+    context = view.list(view.request)
     assert "page_obj" in context
     assert "paginator" in context
 
 
 def test_crud_view_detail_returns_context_with_instance(event):
     user = make_orga_user(event)
-    with scopes_disabled():
-        tag = TagFactory(event=event)
+    tag = TagFactory(event=event)
     view = _make_crud_view(event, user=user, action="detail", obj=tag)
     view.get_generic_permission_object = lambda: event
     view.render_to_response = lambda ctx: ctx
@@ -757,11 +754,10 @@ def test_crud_view_get_table_data_returns_filtered_queryset(event):
     user = make_orga_user(event)
     view = _make_crud_view(event, user=user, action="list")
 
-    with scopes_disabled():
-        tag = TagFactory(event=event)
-        view.filter_fields = []
-        view.get_queryset = lambda: Tag.objects.filter(event=event)
-        data = list(view.get_table_data())
+    tag = TagFactory(event=event)
+    view.filter_fields = []
+    view.get_queryset = lambda: Tag.objects.filter(event=event)
+    data = list(view.get_table_data())
     assert tag in data
 
 
@@ -772,12 +768,11 @@ def test_crud_view_get_table_data_returns_filtered_queryset(event):
 )
 def test_crud_view_get_queryset(event, queryset_attr):
     view = _make_crud_view(event, action="list")
-    with scopes_disabled():
-        if queryset_attr == "explicit":
-            view.queryset = Tag.objects.filter(event=event)
-        else:
-            view.queryset = None
-        qs = view.get_queryset()
+    if queryset_attr == "explicit":
+        view.queryset = Tag.objects.filter(event=event)
+    else:
+        view.queryset = None
+    qs = view.get_queryset()
     assert qs.model is Tag
 
 
@@ -851,8 +846,7 @@ def test_crud_view_reverse_without_namespace(event):
 
 
 def test_crud_view_get_generic_title_returns_str_of_instance(event):
-    with scopes_disabled():
-        tag = TagFactory(event=event, tag="Python")
+    tag = TagFactory(event=event, tag="Python")
     view = _make_crud_view(event, action="update")
     assert view.get_generic_title(instance=tag) == "Python"
 
@@ -863,8 +857,7 @@ def test_crud_view_get_generic_title_returns_model_name_without_instance(event):
 
 
 def test_crud_view_get_permission_object_returns_self_object(event):
-    with scopes_disabled():
-        tag = TagFactory(event=event)
+    tag = TagFactory(event=event)
     view = _make_crud_view(event, action="update", obj=tag)
     assert view.get_permission_object() is tag
 
@@ -883,8 +876,7 @@ def test_crud_view_get_form_kwargs_includes_locales_for_i18n_form(event):
 
 def test_crud_view_get_context_data_for_object(event):
     user = make_orga_user(event)
-    with scopes_disabled():
-        tag = TagFactory(event=event)
+    tag = TagFactory(event=event)
 
     view = _make_crud_view(event, user=user, action="update", obj=tag)
     view.get_generic_permission_object = lambda: event
@@ -919,8 +911,7 @@ def test_crud_view_get_context_data_without_create_permission(event):
 
 def test_crud_view_get_context_data_shows_history_for_detail(event):
     user = make_orga_user(event)
-    with scopes_disabled():
-        tag = TagFactory(event=event)
+    tag = TagFactory(event=event)
 
     view = _make_crud_view(event, user=user, action="detail", obj=tag)
     view.get_generic_permission_object = lambda: event
@@ -931,8 +922,7 @@ def test_crud_view_get_context_data_shows_history_for_detail(event):
 def test_crud_view_get_context_data_skips_context_object_name_when_empty(event):
     """When context_object_name is empty string, name assignment is skipped."""
     user = make_orga_user(event)
-    with scopes_disabled():
-        tag = TagFactory(event=event)
+    tag = TagFactory(event=event)
 
     view = _make_crud_view(event, user=user, action="update")
     view.object = tag
@@ -959,8 +949,7 @@ def test_crud_view_get_context_data_skips_list_name_when_empty(event):
 def test_crud_view_perform_delete_no_message(event):
     """When no message matches the action, no message is shown."""
     user = make_orga_user(event)
-    with scopes_disabled():
-        tag = TagFactory(event=event)
+    tag = TagFactory(event=event)
 
     view = _make_crud_view(event, user=user, action="delete", obj=tag)
     view.messages = {}
@@ -974,8 +963,7 @@ def test_crud_view_perform_delete_no_message(event):
 
 def test_crud_view_get_reverse_kwargs_with_instance(event):
     view = _make_crud_view(event, action="update")
-    with scopes_disabled():
-        tag = TagFactory(event=event)
+    tag = TagFactory(event=event)
     kwargs = view.get_reverse_kwargs("update", instance=tag)
     assert kwargs == {"pk": tag.pk}
 

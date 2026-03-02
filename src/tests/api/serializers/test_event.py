@@ -1,13 +1,14 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.contrib.auth.models import AnonymousUser
 
 from pretalx.api.serializers.event import EventListSerializer, EventSerializer
 from tests.factories import EventFactory, UserFactory
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_event_list_serializer_data():
     event = EventFactory()
     data = EventListSerializer(event).data
@@ -21,7 +22,6 @@ def test_event_list_serializer_data():
     }
 
 
-@pytest.mark.django_db
 def test_event_serializer_data():
     event = EventFactory()
     data = EventSerializer(event).data
@@ -44,7 +44,6 @@ def test_event_serializer_data():
     }
 
 
-@pytest.mark.django_db
 def test_event_list_serializer_clears_timezone_choices_no_request():
     """Without a request in context, timezone choices are cleared for smaller API docs."""
     event = EventFactory()
@@ -52,7 +51,6 @@ def test_event_list_serializer_clears_timezone_choices_no_request():
     assert not serializer.fields["timezone"].choices
 
 
-@pytest.mark.django_db
 def test_event_list_serializer_clears_timezone_choices_unauthenticated(rf):
     """Unauthenticated users get empty timezone choices."""
     event = EventFactory()
@@ -62,7 +60,6 @@ def test_event_list_serializer_clears_timezone_choices_unauthenticated(rf):
     assert not serializer.fields["timezone"].choices
 
 
-@pytest.mark.django_db
 def test_event_list_serializer_keeps_timezone_choices_authenticated(rf):
     """Authenticated users keep the full timezone choice list."""
     event = EventFactory()

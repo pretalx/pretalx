@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
@@ -7,12 +9,7 @@ from django_scopes import scopes_disabled
 
 from pretalx.common.exceptions import SubmissionError
 from pretalx.mail.models import QueuedMailStates
-from pretalx.submission.models import (
-    Submission,
-    SubmissionInvitation,
-    SubmissionStates,
-    Tag,
-)
+from pretalx.submission.models import Submission, SubmissionInvitation, SubmissionStates
 from pretalx.submission.signals import before_submission_state_change
 from tests.factories import (
     QuestionFactory,
@@ -22,14 +19,16 @@ from tests.factories import (
     SpeakerFactory,
     SpeakerInformationFactory,
     SubmissionFactory,
+    SubmissionInvitationFactory,
     SubmitterAccessCodeFactory,
+    TagFactory,
     TalkSlotFactory,
     TeamFactory,
     TrackFactory,
     UserFactory,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 @pytest.fixture
@@ -74,7 +73,6 @@ def _edit_form_data(submission, **overrides):
     return data
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_submissions_list_view_shows_submissions(
     client, event, item_count, django_assert_num_queries
@@ -100,7 +98,6 @@ def test_submissions_list_view_shows_submissions(
         assert sub.title in content
 
 
-@pytest.mark.django_db
 def test_submissions_list_view_does_not_show_other_users_submissions(
     client, speaker_client, speaker_and_submission, event
 ):
@@ -119,7 +116,6 @@ def test_submissions_list_view_does_not_show_other_users_submissions(
     assert other_sub.title not in content
 
 
-@pytest.mark.django_db
 def test_submissions_list_view_shows_drafts(client, event):
     """Submission list shows draft submissions separately."""
     event.is_public = True
@@ -136,7 +132,6 @@ def test_submissions_list_view_shows_drafts(client, event):
     assert draft.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submissions_list_view_shows_speaker_information(client, event):
     """Submission list shows speaker information items visible to the user."""
     event.is_public = True
@@ -154,7 +149,6 @@ def test_submissions_list_view_shows_speaker_information(client, event):
     assert str(info.title) in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submissions_list_view_requires_login(client, event):
     """Submission list redirects to login for anonymous users."""
     event.is_public = True
@@ -165,7 +159,6 @@ def test_submissions_list_view_requires_login(client, event):
     assert "login" in response.redirect_chain[-1][0]
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_shows_submission(speaker_client, speaker_and_submission):
     """Edit view displays the submission title and form fields."""
     _, submission, _ = speaker_and_submission
@@ -176,7 +169,6 @@ def test_submissions_edit_view_shows_submission(speaker_client, speaker_and_subm
     assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_can_edit_title(speaker_client, speaker_and_submission):
     """Speaker can change the submission title via the edit form."""
     _, submission, _ = speaker_and_submission
@@ -189,7 +181,6 @@ def test_submissions_edit_view_can_edit_title(speaker_client, speaker_and_submis
     assert submission.title == "A Completely New Title"
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_logs_changes(speaker_client, speaker_and_submission):
     """Editing a submission creates a single consolidated log entry including
     both field changes and question answer changes."""
@@ -224,7 +215,6 @@ def test_submissions_edit_view_logs_changes(speaker_client, speaker_and_submissi
         assert update_log.changes[question_key]["new"] == "50"
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_with_resources(speaker_client, speaker_and_submission):
     """Speaker can add, update, and delete resources via the edit form."""
     _, submission, _ = speaker_and_submission
@@ -263,7 +253,6 @@ def test_submissions_edit_view_with_resources(speaker_client, speaker_and_submis
         assert new_resource.resource.read() == b"new_file_content"
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_orga_redirected_to_orga_page(
     client, speaker_and_submission, event
 ):
@@ -281,7 +270,6 @@ def test_submissions_edit_view_orga_redirected_to_orga_page(
     assert response.url == submission.orga_urls.base
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_other_user_gets_404(client, speaker_and_submission):
     """A user who is not a speaker on the submission gets 404."""
     _, submission, _ = speaker_and_submission
@@ -293,7 +281,6 @@ def test_submissions_edit_view_other_user_gets_404(client, speaker_and_submissio
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_cannot_edit_rejected_submission(client, event):
     """Rejected submissions cannot be edited by the speaker."""
     with scopes_disabled():
@@ -312,7 +299,6 @@ def test_submissions_edit_view_cannot_edit_rejected_submission(client, event):
     assert submission.title == original_title
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_cannot_edit_when_feature_disabled(client, event):
     """Accepted submissions cannot be edited when speakers_can_edit_submissions is off."""
     with scopes_disabled():
@@ -333,7 +319,6 @@ def test_submissions_edit_view_cannot_edit_when_feature_disabled(client, event):
     assert submission.title == original_title
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_draft_still_editable_when_feature_disabled(
     client, event
 ):
@@ -357,7 +342,6 @@ def test_submissions_edit_view_draft_still_editable_when_feature_disabled(
     assert submission.title == "Changed Draft Title"
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_can_edit_submission_type(client, event):
     """Speaker can change the submission type."""
     event.feature_flags["speakers_can_edit_submissions"] = True
@@ -381,7 +365,6 @@ def test_submissions_edit_view_can_edit_submission_type(client, event):
         assert submission.submission_type == new_type
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_cannot_edit_submission_type_after_acceptance(
     client, event
 ):
@@ -404,7 +387,6 @@ def test_submissions_edit_view_cannot_edit_submission_type_after_acceptance(
         assert submission.submission_type != new_type
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_can_edit_slot_count(client, event):
     """Speaker can change slot_count when present_multiple_times is enabled."""
     event.feature_flags["present_multiple_times"] = True
@@ -428,15 +410,14 @@ def test_submissions_edit_view_can_edit_slot_count(client, event):
         assert submission.slot_count == 13
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_tags_shown_when_public(client, event):
     """Edit view shows public tags and hides private tags."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
-        Tag.objects.create(tag="public-tag", event=event, is_public=True)
-        Tag.objects.create(tag="private-tag", event=event, is_public=False)
+        TagFactory(tag="public-tag", event=event, is_public=True)
+        TagFactory(tag="private-tag", event=event, is_public=False)
         event.cfp.fields["tags"] = {"visibility": "optional"}
         event.cfp.save()
     client.force_login(speaker.user)
@@ -449,7 +430,6 @@ def test_submissions_edit_view_tags_shown_when_public(client, event):
     assert "private-tag" not in content
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_private_tags_preserved_on_save(client, event):
     """Private tags assigned by organisers are preserved when speaker edits."""
     event.feature_flags["speakers_can_edit_submissions"] = True
@@ -460,10 +440,8 @@ def test_submissions_edit_view_private_tags_preserved_on_save(client, event):
             event=event, state=SubmissionStates.SUBMITTED, abstract="Test abstract"
         )
         submission.speakers.add(speaker)
-        public_tag = Tag.objects.create(tag="public-tag", event=event, is_public=True)
-        private_tag = Tag.objects.create(
-            tag="private-tag", event=event, is_public=False
-        )
+        public_tag = TagFactory(tag="public-tag", event=event, is_public=True)
+        private_tag = TagFactory(tag="private-tag", event=event, is_public=False)
         submission.tags.add(public_tag, private_tag)
         event.cfp.fields["tags"] = {"visibility": "optional"}
         event.cfp.save()
@@ -480,15 +458,14 @@ def test_submissions_edit_view_private_tags_preserved_on_save(client, event):
         assert private_tag in submission.tags.all()
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_tags_validation_min(client, event):
     """Form rejects too few tags when minimum is configured."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
-        tag1 = Tag.objects.create(tag="tag1", event=event, is_public=True)
-        Tag.objects.create(tag="tag2", event=event, is_public=True)
+        tag1 = TagFactory(tag="tag1", event=event, is_public=True)
+        TagFactory(tag="tag2", event=event, is_public=True)
         event.cfp.fields["tags"] = {"visibility": "required", "min": 2, "max": None}
         event.cfp.save()
     client.force_login(speaker.user)
@@ -501,16 +478,15 @@ def test_submissions_edit_view_tags_validation_min(client, event):
     assert "at least 2 tags" in response.content.decode().lower()
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_tags_validation_max(client, event):
     """Form rejects too many tags when maximum is configured."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
-        tag1 = Tag.objects.create(tag="tag1", event=event, is_public=True)
-        tag2 = Tag.objects.create(tag="tag2", event=event, is_public=True)
-        tag3 = Tag.objects.create(tag="tag3", event=event, is_public=True)
+        tag1 = TagFactory(tag="tag1", event=event, is_public=True)
+        tag2 = TagFactory(tag="tag2", event=event, is_public=True)
+        tag3 = TagFactory(tag="tag3", event=event, is_public=True)
         event.cfp.fields["tags"] = {"visibility": "optional", "min": None, "max": 2}
         event.cfp.save()
     client.force_login(speaker.user)
@@ -523,7 +499,6 @@ def test_submissions_edit_view_tags_validation_max(client, event):
     assert "at most 2 tags" in response.content.decode().lower()
 
 
-@pytest.mark.django_db
 def test_submissions_withdraw_view_get_shows_form(
     speaker_client, speaker_and_submission
 ):
@@ -535,7 +510,6 @@ def test_submissions_withdraw_view_get_shows_form(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_submissions_withdraw_view_withdraws_submitted(
     speaker_client, speaker_and_submission
 ):
@@ -551,7 +525,6 @@ def test_submissions_withdraw_view_withdraws_submitted(
     assert len(djmail.outbox) == 0
 
 
-@pytest.mark.django_db
 def test_submissions_withdraw_view_sends_orga_email_for_accepted(client, event):
     """Withdrawing an accepted submission sends an organiser notification email."""
     event.is_public = True
@@ -573,7 +546,6 @@ def test_submissions_withdraw_view_sends_orga_email_for_accepted(client, event):
     assert len(djmail.outbox) == 1
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     "transition", ("confirmed", "rejected"), ids=("confirmed", "rejected")
 )
@@ -602,7 +574,6 @@ def test_submissions_withdraw_view_cannot_withdraw_non_withdrawable(
         assert submission.state != SubmissionStates.WITHDRAWN
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("availability_visibility", ("optional", "do_not_ask"))
 def test_submission_confirm_view_confirms_accepted(
     client, event, availability_visibility
@@ -626,7 +597,6 @@ def test_submission_confirm_view_confirms_accepted(
     assert submission.state == SubmissionStates.CONFIRMED
 
 
-@pytest.mark.django_db
 def test_submission_confirm_view_get_shows_form(client, event):
     """GET on confirm view shows confirmation form for accepted submission."""
     event.is_public = True
@@ -645,7 +615,6 @@ def test_submission_confirm_view_get_shows_form(client, event):
     assert submission.state == SubmissionStates.ACCEPTED
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("transition", "expected_state"),
     ((None, SubmissionStates.SUBMITTED), ("reject", SubmissionStates.REJECTED)),
@@ -672,7 +641,6 @@ def test_submission_confirm_view_cannot_confirm_non_accepted(
     assert submission.state == expected_state
 
 
-@pytest.mark.django_db
 def test_submission_confirm_view_reconfirm_already_confirmed(client, event):
     """Confirming an already-confirmed submission remains confirmed."""
     event.is_public = True
@@ -692,7 +660,6 @@ def test_submission_confirm_view_reconfirm_already_confirmed(client, event):
     assert submission.state == SubmissionStates.CONFIRMED
 
 
-@pytest.mark.django_db
 def test_submission_confirm_view_missing_availability_prevents_confirm(client, event):
     """Required availabilities block confirmation when not provided."""
     event.is_public = True
@@ -713,7 +680,6 @@ def test_submission_confirm_view_missing_availability_prevents_confirm(client, e
     assert submission.state == SubmissionStates.ACCEPTED
 
 
-@pytest.mark.django_db
 def test_submission_confirm_view_redirects_anonymous_to_login(client, event):
     """Anonymous user is redirected to login page."""
     event.is_public = True
@@ -731,7 +697,6 @@ def test_submission_confirm_view_redirects_anonymous_to_login(client, event):
     assert submission.state == SubmissionStates.ACCEPTED
 
 
-@pytest.mark.django_db
 def test_submission_confirm_view_non_speaker_sees_error_template(client, event):
     """Non-speaker user sees an error template instead of being redirected."""
     event.is_public = True
@@ -752,7 +717,6 @@ def test_submission_confirm_view_non_speaker_sees_error_template(client, event):
     ]
 
 
-@pytest.mark.django_db
 def test_submission_confirm_view_wrong_code_returns_404(client, event):
     """Confirm view with wrong submission code returns 404."""
     with scopes_disabled():
@@ -769,7 +733,6 @@ def test_submission_confirm_view_wrong_code_returns_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_submission_draft_discard_view_discards_draft(client, event):
     """POST on discard view deletes a draft submission."""
     event.is_public = True
@@ -791,7 +754,6 @@ def test_submission_draft_discard_view_discards_draft(client, event):
         assert not Submission.all_objects.filter(pk=sub_pk).exists()
 
 
-@pytest.mark.django_db
 def test_submission_draft_discard_view_404_for_non_draft(
     speaker_client, speaker_and_submission
 ):
@@ -808,7 +770,6 @@ def test_submission_draft_discard_view_404_for_non_draft(
         assert Submission.objects.filter(pk=submission.pk).exists()
 
 
-@pytest.mark.django_db
 def test_profile_view_edit_profile(client, event):
     """Speaker can edit their profile name and biography."""
     event.is_public = True
@@ -834,7 +795,6 @@ def test_profile_view_edit_profile(client, event):
         assert speaker.name == "Lady Imperator"
 
 
-@pytest.mark.django_db
 def test_profile_view_edit_profile_unchanged_on_second_save(client, event):
     """Saving the same profile data twice preserves the data correctly."""
     event.is_public = True
@@ -857,7 +817,6 @@ def test_profile_view_edit_profile_unchanged_on_second_save(client, event):
         assert speaker.biography == "Ruling since forever."
 
 
-@pytest.mark.django_db
 def test_profile_view_edit_login_info(client, event):
     """Speaker can change their email via the login form."""
     event.is_public = True
@@ -883,7 +842,6 @@ def test_profile_view_edit_login_info(client, event):
     assert speaker.user.email == "new_email@speaker.org"
 
 
-@pytest.mark.django_db
 def test_profile_view_edit_login_info_wrong_password(client, event):
     """Login info update fails with wrong old password."""
     event.is_public = True
@@ -910,7 +868,6 @@ def test_profile_view_edit_login_info_wrong_password(client, event):
     assert speaker.user.email == original_email
 
 
-@pytest.mark.django_db
 def test_profile_view_edit_speaker_questions(client, event):
     """Speaker can answer speaker-targeted questions via the questions form."""
     event.is_public = True
@@ -937,7 +894,6 @@ def test_profile_view_edit_speaker_questions(client, event):
         assert answer.answer == "My answer"
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     "availability_data",
     ({}, {"availabilities": '{"availabilities": []}'}),
@@ -970,7 +926,6 @@ def test_profile_view_must_provide_availabilities(client, event, availability_da
         assert speaker.biography != "Ruling since forever."
 
 
-@pytest.mark.django_db
 def test_delete_account_view_requires_confirmation(client, event):
     """POST without 'really' checkbox redirects without deleting."""
     event.is_public = True
@@ -987,7 +942,6 @@ def test_delete_account_view_requires_confirmation(client, event):
         assert speaker.user.name != "Deleted User"
 
 
-@pytest.mark.django_db
 def test_delete_account_view_deletes_account(client, event):
     """POST with 'really' checkbox deactivates the account and shreds data."""
     event.is_public = True
@@ -1007,7 +961,6 @@ def test_delete_account_view_deletes_account(client, event):
         assert speaker.biography == ""
 
 
-@pytest.mark.django_db
 def test_submission_invite_view_sends_invitation(
     speaker_client, speaker_and_submission
 ):
@@ -1037,7 +990,6 @@ def test_submission_invite_view_sends_invitation(
         )
 
 
-@pytest.mark.django_db
 def test_submission_invite_view_rejects_without_url_placeholder(
     speaker_client, speaker_and_submission
 ):
@@ -1057,7 +1009,6 @@ def test_submission_invite_view_rejects_without_url_placeholder(
     assert len(djmail.outbox) == 0
 
 
-@pytest.mark.django_db
 def test_submission_invite_view_rejects_existing_speaker(
     speaker_client, speaker_and_submission
 ):
@@ -1077,16 +1028,13 @@ def test_submission_invite_view_rejects_existing_speaker(
     assert len(djmail.outbox) == 0
 
 
-@pytest.mark.django_db
 def test_submission_invite_view_rejects_duplicate_invitation(
     speaker_client, speaker_and_submission
 ):
     """Cannot send a duplicate invitation to the same email."""
     _, submission, _ = speaker_and_submission
     with scopes_disabled():
-        SubmissionInvitation.objects.create(
-            email="other@example.org", submission=submission
-        )
+        SubmissionInvitationFactory(email="other@example.org", submission=submission)
     djmail.outbox = []
 
     data = {
@@ -1101,7 +1049,6 @@ def test_submission_invite_view_rejects_duplicate_invitation(
     assert len(djmail.outbox) == 0
 
 
-@pytest.mark.django_db
 def test_submission_invite_view_respects_max_speakers_limit(client, event):
     """Cannot invite when max_speakers limit would be exceeded."""
     event.is_public = True
@@ -1128,7 +1075,6 @@ def test_submission_invite_view_respects_max_speakers_limit(client, event):
     assert len(djmail.outbox) == 0
 
 
-@pytest.mark.django_db
 def test_submission_invite_view_get_prefills_email_from_query(
     speaker_client, speaker_and_submission
 ):
@@ -1143,14 +1089,13 @@ def test_submission_invite_view_get_prefills_email_from_query(
     assert "prefilled@example.com" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submission_invite_retract_view_deletes_invitation(
     speaker_client, speaker_and_submission
 ):
     """Speaker can retract a pending invitation."""
     _, submission, _ = speaker_and_submission
     with scopes_disabled():
-        invitation = SubmissionInvitation.objects.create(
+        invitation = SubmissionInvitationFactory(
             submission=submission, email="todelete@example.com"
         )
         invitation_id = invitation.pk
@@ -1169,7 +1114,6 @@ def test_submission_invite_retract_view_deletes_invitation(
         )
 
 
-@pytest.mark.django_db
 def test_submission_invite_accept_view_adds_speaker(client, event):
     """Accepting an invitation adds the user as a speaker and deletes the invitation."""
     event.is_public = True
@@ -1179,7 +1123,7 @@ def test_submission_invite_accept_view_adds_speaker(client, event):
         speaker = SpeakerFactory(event=event)
         submission.speakers.add(speaker)
         user = UserFactory()
-        invitation = SubmissionInvitation.objects.create(
+        invitation = SubmissionInvitationFactory(
             submission=submission, email=user.email
         )
         invitation_pk = invitation.pk
@@ -1200,13 +1144,12 @@ def test_submission_invite_accept_view_adds_speaker(client, event):
         )
 
 
-@pytest.mark.django_db
 def test_submission_invite_accept_view_wrong_token_returns_404(client, event):
     """Invalid invitation token returns 404."""
     with scopes_disabled():
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         user = UserFactory()
-        invitation = SubmissionInvitation.objects.create(
+        invitation = SubmissionInvitationFactory(
             submission=submission, email=user.email
         )
     client.force_login(user)
@@ -1218,7 +1161,6 @@ def test_submission_invite_accept_view_wrong_token_returns_404(client, event):
         assert not submission.speakers.filter(user=user).exists()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_mail_list_view_shows_sent_mails(
     client, event, item_count, django_assert_num_queries
@@ -1244,7 +1186,6 @@ def test_mail_list_view_shows_sent_mails(
         assert mail.subject in content
 
 
-@pytest.mark.django_db
 def test_mail_list_view_hides_unsent_mails(client, event):
     """Mail list does not show draft or pending mails."""
     event.is_public = True
@@ -1265,7 +1206,6 @@ def test_mail_list_view_hides_unsent_mails(client, event):
     assert draft_mail.subject not in content
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_dedraft_redirects_to_wizard(client, event):
     """Dedraft action redirects to the CfP wizard restart URL."""
     event.is_public = True
@@ -1286,7 +1226,6 @@ def test_submissions_edit_view_dedraft_redirects_to_wizard(client, event):
     assert f"submit/restart-{submission.code}" in response.url
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_dedraft_prevented_when_access_code_required(
     client, event
 ):
@@ -1311,7 +1250,6 @@ def test_submissions_edit_view_dedraft_prevented_when_access_code_required(
     assert submission.state == SubmissionStates.DRAFT
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_dedraft_with_access_code_includes_code_in_url(
     client, event
 ):
@@ -1338,7 +1276,6 @@ def test_submissions_edit_view_dedraft_with_access_code_includes_code_in_url(
     assert f"access_code={access_code.code}" in response.url
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_cannot_edit_confirmed_slot_count(client, event):
     """Confirmed submissions cannot have their slot_count changed."""
     with scopes_disabled():
@@ -1361,7 +1298,6 @@ def test_submissions_edit_view_cannot_edit_confirmed_slot_count(client, event):
         assert submission.slot_count != 13
 
 
-@pytest.mark.django_db
 def test_profile_view_edit_speaker_answers_multiple_types(client, event):
     """Speaker can answer boolean, string, and file questions, and update existing answers."""
     event.is_public = True
@@ -1423,7 +1359,6 @@ def test_profile_view_edit_speaker_answers_multiple_types(client, event):
         )
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_can_save_with_tags(client, event):
     """Speaker can successfully assign public tags to their submission."""
     event.feature_flags["speakers_can_edit_submissions"] = True
@@ -1434,8 +1369,8 @@ def test_submissions_edit_view_can_save_with_tags(client, event):
             event=event, state=SubmissionStates.SUBMITTED, abstract="Test abstract"
         )
         submission.speakers.add(speaker)
-        public_tag = Tag.objects.create(tag="public-tag", event=event, is_public=True)
-        Tag.objects.create(tag="private-tag", event=event, is_public=False)
+        public_tag = TagFactory(tag="public-tag", event=event, is_public=True)
+        TagFactory(tag="private-tag", event=event, is_public=False)
         event.cfp.fields["tags"] = {"visibility": "optional"}
         event.cfp.save()
     client.force_login(speaker.user)
@@ -1450,14 +1385,13 @@ def test_submissions_edit_view_can_save_with_tags(client, event):
         assert public_tag in submission.tags.all()
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_tags_hidden_when_no_public_tags(client, event):
     """Tags field is hidden when only private (non-public) tags exist."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
-        Tag.objects.create(tag="private-tag", event=event, is_public=False)
+        TagFactory(tag="private-tag", event=event, is_public=False)
         event.cfp.fields["tags"] = {"visibility": "optional"}
         event.cfp.save()
     client.force_login(speaker.user)
@@ -1468,14 +1402,13 @@ def test_submissions_edit_view_tags_hidden_when_no_public_tags(client, event):
     assert "private-tag" not in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_tags_hidden_when_do_not_ask(client, event):
     """Tags are not shown when visibility is set to do_not_ask."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
-        Tag.objects.create(tag="public-tag", event=event, is_public=True)
+        TagFactory(tag="public-tag", event=event, is_public=True)
         event.cfp.fields["tags"] = {"visibility": "do_not_ask"}
         event.cfp.save()
     client.force_login(speaker.user)
@@ -1486,7 +1419,6 @@ def test_submissions_edit_view_tags_hidden_when_do_not_ask(client, event):
     assert "public-tag" not in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_tags_valid_count_saves(client, event):
     """Tags within valid min/max range save successfully."""
     event.feature_flags["speakers_can_edit_submissions"] = True
@@ -1497,8 +1429,8 @@ def test_submissions_edit_view_tags_valid_count_saves(client, event):
             event=event, state=SubmissionStates.SUBMITTED, abstract="Test abstract"
         )
         submission.speakers.add(speaker)
-        tag1 = Tag.objects.create(tag="tag1", event=event, is_public=True)
-        tag2 = Tag.objects.create(tag="tag2", event=event, is_public=True)
+        tag1 = TagFactory(tag="tag1", event=event, is_public=True)
+        tag2 = TagFactory(tag="tag2", event=event, is_public=True)
         event.cfp.fields["tags"] = {"visibility": "optional", "min": 1, "max": 2}
         event.cfp.save()
     client.force_login(speaker.user)
@@ -1514,14 +1446,13 @@ def test_submissions_edit_view_tags_valid_count_saves(client, event):
         assert set(submission.tags.all()) == {tag1, tag2}
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_tags_required_but_none_submitted(client, event):
     """Required tags field rejects empty submission."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
-        Tag.objects.create(tag="tag1", event=event, is_public=True)
+        TagFactory(tag="tag1", event=event, is_public=True)
         event.cfp.fields["tags"] = {"visibility": "required", "min": None, "max": None}
         event.cfp.save()
     client.force_login(speaker.user)
@@ -1534,16 +1465,15 @@ def test_submissions_edit_view_tags_required_but_none_submitted(client, event):
     assert "this field is required" in response.content.decode().lower()
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_tags_exact_count_validation(client, event):
     """When min == max, validation message says 'exactly N tags'."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
-        tag1 = Tag.objects.create(tag="tag1", event=event, is_public=True)
-        Tag.objects.create(tag="tag2", event=event, is_public=True)
-        Tag.objects.create(tag="tag3", event=event, is_public=True)
+        tag1 = TagFactory(tag="tag1", event=event, is_public=True)
+        TagFactory(tag="tag2", event=event, is_public=True)
+        TagFactory(tag="tag3", event=event, is_public=True)
         event.cfp.fields["tags"] = {"visibility": "optional", "min": 2, "max": 2}
         event.cfp.save()
     client.force_login(speaker.user)
@@ -1556,7 +1486,6 @@ def test_submissions_edit_view_tags_exact_count_validation(client, event):
     assert "exactly 2 tags" in response.content.decode().lower()
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_dedraft_prevented_when_submission_type_requires_access_code(
     client, event
 ):
@@ -1578,7 +1507,6 @@ def test_submissions_edit_view_dedraft_prevented_when_submission_type_requires_a
     assert submission.state == SubmissionStates.DRAFT
 
 
-@pytest.mark.django_db
 def test_profile_view_edit_speaker_questions_unchanged_skips_log(client, event):
     """Saving questions form with unchanged answers still succeeds but creates no log."""
     event.is_public = True
@@ -1606,7 +1534,6 @@ def test_profile_view_edit_speaker_questions_unchanged_skips_log(client, event):
         assert speaker.logged_actions().count() == log_count
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_reviewer_redirected_to_orga_page(client, event):
     """A reviewer (with orga_list but not view_submission) is redirected to the orga page."""
     with scopes_disabled():
@@ -1629,7 +1556,6 @@ def test_submissions_edit_view_reviewer_redirected_to_orga_page(client, event):
     assert response.url == submission.orga_urls.base
 
 
-@pytest.mark.django_db
 def test_submissions_withdraw_view_handles_submission_error(
     client, event, register_signal_handler
 ):
@@ -1654,7 +1580,6 @@ def test_submissions_withdraw_view_handles_submission_error(
         assert submission.state == SubmissionStates.SUBMITTED
 
 
-@pytest.mark.django_db
 def test_submission_confirm_view_handles_submission_error(
     client, event, register_signal_handler
 ):
@@ -1680,7 +1605,6 @@ def test_submission_confirm_view_handles_submission_error(
         assert submission.state == SubmissionStates.ACCEPTED
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_invalid_formset_shows_form_again(client, event):
     """Invalid resource formset data re-renders the form without saving."""
     event.is_public = True
@@ -1711,7 +1635,6 @@ def test_submissions_edit_view_invalid_formset_shows_form_again(client, event):
         assert submission.resources.count() == 0
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_unchanged_resource_preserved(
     speaker_client, speaker_and_submission
 ):
@@ -1738,7 +1661,6 @@ def test_submissions_edit_view_unchanged_resource_preserved(
         assert resource.description == "My resource"
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_uneditable_submission_shows_error(
     speaker_client, speaker_and_submission
 ):
@@ -1759,7 +1681,6 @@ def test_submissions_edit_view_uneditable_submission_shows_error(
         assert submission.title == original_title
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_duration_change_updates_slot(
     speaker_client, speaker_and_submission
 ):
@@ -1783,7 +1704,6 @@ def test_submissions_edit_view_duration_change_updates_slot(
         assert slot.end == slot.start + dt.timedelta(minutes=45)
 
 
-@pytest.mark.django_db
 def test_submissions_edit_view_track_change_updates_review_scores(
     speaker_client, speaker_and_submission
 ):
@@ -1811,7 +1731,6 @@ def test_submissions_edit_view_track_change_updates_review_scores(
         assert review.score is None
 
 
-@pytest.mark.django_db
 def test_submission_invite_view_get_warns_on_invalid_email_query_param(
     speaker_client, speaker_and_submission
 ):
@@ -1826,7 +1745,6 @@ def test_submission_invite_view_get_warns_on_invalid_email_query_param(
     assert "valid email" in response.content.decode().lower()
 
 
-@pytest.mark.django_db
 def test_submission_invite_accept_view_rejects_when_speakers_disabled(client, event):
     """Cannot accept invitation when additional speakers are disabled."""
     event.is_public = True
@@ -1835,7 +1753,7 @@ def test_submission_invite_accept_view_rejects_when_speakers_disabled(client, ev
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         speaker = SpeakerFactory(event=event)
         submission.speakers.add(speaker)
-        invitation = SubmissionInvitation.objects.create(
+        invitation = SubmissionInvitationFactory(
             submission=submission, email="other@example.com"
         )
         event.cfp.fields["additional_speaker"] = {"visibility": "do_not_ask"}

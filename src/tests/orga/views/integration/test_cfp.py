@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 from io import BytesIO
 from zipfile import ZipFile
@@ -14,8 +16,9 @@ from pretalx.common.models.file import CachedFile
 from pretalx.event.models import Event
 from pretalx.mail.models import QueuedMail
 from pretalx.submission.models import Question, QuestionTarget
-from pretalx.submission.models.question import Answer, QuestionRequired, QuestionVariant
+from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from tests.factories import (
+    AnswerFactory,
     AnswerOptionFactory,
     QuestionFactory,
     SpeakerFactory,
@@ -27,7 +30,7 @@ from tests.factories import (
 )
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 @pytest.fixture
@@ -76,7 +79,7 @@ def answered_choice_question(event, choice_question):
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event)
         submission.speakers.add(speaker)
-        a = Answer.objects.create(
+        a = AnswerFactory(
             submission=submission, question=choice_question, speaker=speaker
         )
         a.options.set([choice_question.options.first()])
@@ -154,7 +157,6 @@ def remind_submissions(event):
     return confirmed_sub, speaker1, submitted_sub, speaker2
 
 
-@pytest.mark.django_db
 def test_cfp_text_get_accessible(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -165,7 +167,6 @@ def test_cfp_text_get_accessible(client, event):
     assert b"deadline" in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_text_anonymous_redirects(client, event):
     response = client.get(event.cfp.urls.edit_text)
 
@@ -173,7 +174,6 @@ def test_cfp_text_anonymous_redirects(client, event):
     assert "/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_cfp_text_unauthorized_gets_404(client, event):
     user = UserFactory()
     client.force_login(user)
@@ -183,7 +183,6 @@ def test_cfp_text_unauthorized_gets_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_cfp_text_post_updates_cfp(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -215,7 +214,6 @@ def test_cfp_text_post_updates_cfp(client, event):
     assert str(event.cfp.headline) == "new headline"
 
 
-@pytest.mark.django_db
 def test_cfp_text_timezone_display(client, event):
     """CfP deadline is displayed in the event's timezone."""
     with scope(event=event):
@@ -234,7 +232,6 @@ def test_cfp_text_timezone_display(client, event):
     assert "2018-03-05T17:39" not in content
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_question_list_query_count(
     client, event, django_assert_num_queries, item_count
@@ -253,7 +250,6 @@ def test_question_list_query_count(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_question_list_includes_inactive(client, event, question, inactive_question):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -268,7 +264,6 @@ def test_question_list_includes_inactive(client, event, question, inactive_quest
     assert str(inactive_question.question) in content
 
 
-@pytest.mark.django_db
 def test_question_list_anonymous_redirects(client, event):
     response = client.get(event.cfp.urls.questions)
 
@@ -276,7 +271,6 @@ def test_question_list_anonymous_redirects(client, event):
     assert "/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_question_list_unauthorized_gets_404(client, event):
     user = UserFactory()
     client.force_login(user)
@@ -286,7 +280,6 @@ def test_question_list_unauthorized_gets_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("role", ("accepted", ""))
 def test_question_detail_accessible_with_role_filter(client, event, question, role):
     """Legacy coverage: the question detail view renders with role filter params."""
@@ -302,7 +295,6 @@ def test_question_detail_accessible_with_role_filter(client, event, question, ro
     assert str(question.question) in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_question_create_simple(client, event):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -330,7 +322,6 @@ def test_question_create_simple(client, event):
         assert q.variant == "string"
 
 
-@pytest.mark.django_db
 def test_question_create_with_freeze_after(client, event):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -356,7 +347,6 @@ def test_question_create_with_freeze_after(client, event):
         assert event.questions.count() == 1
 
 
-@pytest.mark.django_db
 def test_question_create_after_deadline(client, event):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -386,7 +376,6 @@ def test_question_create_after_deadline(client, event):
         )
 
 
-@pytest.mark.django_db
 def test_question_create_after_deadline_missing_deadline_fails(client, event):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -410,7 +399,6 @@ def test_question_create_after_deadline_missing_deadline_fails(client, event):
         assert event.questions.count() == 0
 
 
-@pytest.mark.django_db
 def test_question_create_choice(client, event):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -446,7 +434,6 @@ def test_question_create_choice(client, event):
         assert q.options.count() == 2
 
 
-@pytest.mark.django_db
 def test_question_edit_choice_options(client, event, choice_question):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -488,7 +475,6 @@ def test_question_edit_choice_options(client, event, choice_question):
         assert str(choice_question.options.first().answer) == "African"
 
 
-@pytest.mark.django_db
 def test_question_delete(client, event, question):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -508,7 +494,6 @@ def test_question_delete(client, event, question):
         assert Question.all_objects.filter(event=event).count() == 0
 
 
-@pytest.mark.django_db
 def test_question_delete_inactive(client, event, inactive_question):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -522,7 +507,6 @@ def test_question_delete_inactive(client, event, inactive_question):
         assert Question.all_objects.filter(event=event).count() == 0
 
 
-@pytest.mark.django_db
 def test_question_delete_choice(client, event, choice_question):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -536,7 +520,6 @@ def test_question_delete_choice(client, event, choice_question):
         assert Question.all_objects.filter(event=event).count() == 0
 
 
-@pytest.mark.django_db
 def test_question_delete_answered_deactivates_instead(
     client, event, answered_choice_question
 ):
@@ -556,7 +539,6 @@ def test_question_delete_answered_deactivates_instead(
         assert q.options.count() == 3
 
 
-@pytest.mark.django_db
 def test_question_toggle_deactivate(client, event, question):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -572,7 +554,6 @@ def test_question_toggle_deactivate(client, event, question):
         assert not q.active
 
 
-@pytest.mark.django_db
 def test_question_toggle_activate(client, event, inactive_question):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -589,7 +570,6 @@ def test_question_toggle_activate(client, event, inactive_question):
 @pytest.mark.parametrize(
     ("role", "count"), (("accepted", 1), ("confirmed", 1), ("", 2))
 )
-@pytest.mark.django_db
 def test_question_remind_submission_question(
     client, event, question, remind_submissions, role, count
 ):
@@ -610,7 +590,6 @@ def test_question_remind_submission_question(
 @pytest.mark.parametrize(
     ("role", "count"), (("accepted", 1), ("confirmed", 1), ("", 2))
 )
-@pytest.mark.django_db
 def test_question_remind_speaker_question(
     client, event, speaker_question, remind_submissions, role, count
 ):
@@ -631,7 +610,6 @@ def test_question_remind_speaker_question(
 @pytest.mark.parametrize(
     ("role", "count"), (("accepted", 1), ("confirmed", 1), ("", 2))
 )
-@pytest.mark.django_db
 def test_question_remind_multiple_questions(
     client, event, question, speaker_question, remind_submissions, role, count
 ):
@@ -653,19 +631,14 @@ def test_question_remind_multiple_questions(
 @pytest.mark.parametrize(
     ("role", "count"), (("accepted", 0), ("confirmed", 0), ("", 0))
 )
-@pytest.mark.django_db
 def test_question_remind_answered_does_not_send(
     client, event, question, remind_submissions, role, count
 ):
     """No reminder sent when questions are already answered."""
     confirmed_sub, _, submitted_sub, _ = remind_submissions
     with scopes_disabled():
-        Answer.objects.create(
-            submission=confirmed_sub, question=question, answer="something"
-        )
-        Answer.objects.create(
-            submission=submitted_sub, question=question, answer="something"
-        )
+        AnswerFactory(submission=confirmed_sub, question=question, answer="something")
+        AnswerFactory(submission=submitted_sub, question=question, answer="something")
         original_count = QueuedMail.objects.count()
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -678,7 +651,6 @@ def test_question_remind_answered_does_not_send(
         assert QueuedMail.objects.count() == original_count + count
 
 
-@pytest.mark.django_db
 def test_question_remind_invalid_role(client, event):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -694,7 +666,6 @@ def test_question_remind_invalid_role(client, event):
     assert "Could not send mails" in content
 
 
-@pytest.mark.django_db
 def test_question_file_download_non_file_redirects(client, event, question):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -708,7 +679,6 @@ def test_question_file_download_non_file_redirects(client, event, question):
     assert "does not support file downloads" in content
 
 
-@pytest.mark.django_db
 def test_question_file_download_anonymous_redirects(client, event, file_question):
     response = client.get(file_question.urls.download)
 
@@ -716,13 +686,12 @@ def test_question_file_download_anonymous_redirects(client, event, file_question
     assert "/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_question_file_download_creates_cached_file(client, event, file_question):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event)
         submission.speakers.add(speaker)
-        answer = Answer.objects.create(
+        answer = AnswerFactory(
             submission=submission, question=file_question, answer="doc.pdf"
         )
         answer.answer_file.save("doc.pdf", ContentFile(b"pdf content"))
@@ -739,13 +708,12 @@ def test_question_file_download_creates_cached_file(client, event, file_question
     assert CachedFile.objects.count() == initial_count + 1
 
 
-@pytest.mark.django_db
 def test_question_file_download_generates_zip(client, event, file_question):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event)
         submission.speakers.add(speaker)
-        answer = Answer.objects.create(
+        answer = AnswerFactory(
             submission=submission, question=file_question, answer="test.txt"
         )
         answer.answer_file.save("test.txt", ContentFile(b"test content"))
@@ -767,7 +735,6 @@ def test_question_file_download_generates_zip(client, event, file_question):
         assert zf.read(names[0]) == b"test content"
 
 
-@pytest.mark.django_db
 def test_question_file_download_duplicate_filenames(client, event):
     with scopes_disabled():
         file_question = QuestionFactory(
@@ -781,14 +748,10 @@ def test_question_file_download_duplicate_filenames(client, event):
         sub1.speakers.add(speaker)
         sub2 = SubmissionFactory(event=event)
         sub2.speakers.add(speaker)
-        a1 = Answer.objects.create(
-            submission=sub1, question=file_question, answer="same.txt"
-        )
+        a1 = AnswerFactory(submission=sub1, question=file_question, answer="same.txt")
         a1.answer_file.save("same.txt", ContentFile(b"content 1"))
         a1.save()
-        a2 = Answer.objects.create(
-            submission=sub2, question=file_question, answer="same.txt"
-        )
+        a2 = AnswerFactory(submission=sub2, question=file_question, answer="same.txt")
         a2.answer_file.save("same.txt", ContentFile(b"content 2"))
         a2.save()
     user = make_orga_user(
@@ -807,11 +770,10 @@ def test_question_file_download_duplicate_filenames(client, event):
         assert contents == {b"content 1", b"content 2"}
 
 
-@pytest.mark.django_db
 def test_question_file_download_speaker_question(client, event, speaker_file_question):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
-        answer = Answer.objects.create(
+        answer = AnswerFactory(
             question=speaker_file_question, speaker=speaker, answer="cv.pdf"
         )
         answer.answer_file.save("cv.pdf", ContentFile(b"CV content"))
@@ -833,7 +795,6 @@ def test_question_file_download_speaker_question(client, event, speaker_file_que
         assert zf.read(names[0]) == b"CV content"
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_submission_type_list_query_count(
     client, event, django_assert_num_queries, item_count
@@ -852,7 +813,6 @@ def test_submission_type_list_query_count(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_submission_type_list_anonymous_redirects(client, event):
     response = client.get(event.cfp.urls.types)
 
@@ -860,7 +820,6 @@ def test_submission_type_list_anonymous_redirects(client, event):
     assert "/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_submission_type_list_unauthorized_gets_404(client, event):
     user = UserFactory()
     client.force_login(user)
@@ -870,7 +829,6 @@ def test_submission_type_list_unauthorized_gets_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_submission_type_make_default(client, event, submission_type):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -887,7 +845,6 @@ def test_submission_type_make_default(client, event, submission_type):
         assert event.cfp.default_type == submission_type
 
 
-@pytest.mark.django_db
 def test_submission_type_edit(client, event, submission_type):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -910,7 +867,6 @@ def test_submission_type_edit(client, event, submission_type):
     assert str(submission_type.name) == "New Type!"
 
 
-@pytest.mark.django_db
 def test_submission_type_edit_without_change_no_log(client, event, submission_type):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -933,7 +889,6 @@ def test_submission_type_edit_without_change_no_log(client, event, submission_ty
         assert submission_type.logged_actions().count() == count
 
 
-@pytest.mark.django_db
 def test_submission_type_delete(client, event, submission_type):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -954,7 +909,6 @@ def test_submission_type_delete(client, event, submission_type):
         assert event.submission_types.count() == 1
 
 
-@pytest.mark.django_db
 def test_submission_type_delete_used_fails(client, event, submission_type):
     """Cannot delete a submission type that has submissions."""
     with scopes_disabled():
@@ -971,7 +925,6 @@ def test_submission_type_delete_used_fails(client, event, submission_type):
         assert event.submission_types.count() == 2
 
 
-@pytest.mark.django_db
 def test_submission_type_delete_last_fails(client, event):
     """Cannot delete the last remaining submission type."""
     user = make_orga_user(
@@ -989,7 +942,6 @@ def test_submission_type_delete_last_fails(client, event):
         assert event.submission_types.count() == 1
 
 
-@pytest.mark.django_db
 def test_submission_type_delete_default_fails(client, event, submission_type):
     """Cannot delete the default submission type."""
     user = make_orga_user(
@@ -1006,7 +958,6 @@ def test_submission_type_delete_default_fails(client, event, submission_type):
         assert event.submission_types.count() == 2
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_track_list_query_count(client, event, django_assert_num_queries, item_count):
     user = make_orga_user(
@@ -1023,7 +974,6 @@ def test_track_list_query_count(client, event, django_assert_num_queries, item_c
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_track_list_anonymous_redirects(client, event):
     response = client.get(event.cfp.urls.tracks)
 
@@ -1031,7 +981,6 @@ def test_track_list_anonymous_redirects(client, event):
     assert "/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_track_list_unauthorized_gets_404(client, event):
     user = UserFactory()
     client.force_login(user)
@@ -1041,7 +990,6 @@ def test_track_list_unauthorized_gets_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_track_detail_accessible(client, event, track):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1054,7 +1002,6 @@ def test_track_detail_accessible(client, event, track):
     assert str(track.name) in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_track_edit(client, event, track):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1074,7 +1021,6 @@ def test_track_edit(client, event, track):
     assert str(track.name) == "Renamed"
 
 
-@pytest.mark.django_db
 def test_track_edit_without_change_no_log(client, event, track):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1091,7 +1037,6 @@ def test_track_edit_without_change_no_log(client, event, track):
         assert track.logged_actions().count() == count
 
 
-@pytest.mark.django_db
 def test_track_edit_invalid_color_rejected(client, event, track):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1104,7 +1049,6 @@ def test_track_edit_invalid_color_rejected(client, event, track):
     assert str(track.name) != "Name"
 
 
-@pytest.mark.django_db
 def test_track_delete(client, event, track):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1123,7 +1067,6 @@ def test_track_delete(client, event, track):
         assert event.tracks.count() == 0
 
 
-@pytest.mark.django_db
 def test_track_delete_used_fails(client, event, track):
     """Cannot delete a track that has submissions."""
     with scopes_disabled():
@@ -1140,7 +1083,6 @@ def test_track_delete_used_fails(client, event, track):
         assert event.tracks.count() == 1
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_access_code_list_query_count(
     client, event, django_assert_num_queries, item_count
@@ -1159,7 +1101,6 @@ def test_access_code_list_query_count(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_access_code_list_anonymous_redirects(client, event):
     response = client.get(event.cfp.urls.access_codes)
 
@@ -1167,7 +1108,6 @@ def test_access_code_list_anonymous_redirects(client, event):
     assert "/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_access_code_list_unauthorized_gets_404(client, event):
     user = UserFactory()
     client.force_login(user)
@@ -1177,7 +1117,6 @@ def test_access_code_list_unauthorized_gets_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_access_code_detail_accessible(client, event, access_code):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1190,7 +1129,6 @@ def test_access_code_detail_accessible(client, event, access_code):
     assert access_code.code in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_access_code_create(client, event):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1209,7 +1147,6 @@ def test_access_code_create(client, event):
         assert event.submitter_access_codes.get(code="LOLCODE")
 
 
-@pytest.mark.django_db
 def test_access_code_create_forbidden_characters_rejected(client, event):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1222,7 +1159,6 @@ def test_access_code_create_forbidden_characters_rejected(client, event):
         assert event.submitter_access_codes.all().count() == 0
 
 
-@pytest.mark.django_db
 def test_access_code_edit(client, event, access_code):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1240,7 +1176,6 @@ def test_access_code_edit(client, event, access_code):
     assert access_code.code == "LOLCODE"
 
 
-@pytest.mark.django_db
 def test_access_code_edit_without_change_no_log(client, event, access_code):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1259,7 +1194,6 @@ def test_access_code_edit_without_change_no_log(client, event, access_code):
         assert access_code.logged_actions().count() == count
 
 
-@pytest.mark.django_db
 def test_access_code_delete(client, event, access_code):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1278,7 +1212,6 @@ def test_access_code_delete(client, event, access_code):
         assert event.submitter_access_codes.count() == 0
 
 
-@pytest.mark.django_db
 def test_access_code_delete_used_fails(client, event, access_code):
     """Cannot delete an access code used by a submission."""
     with scopes_disabled():
@@ -1295,7 +1228,6 @@ def test_access_code_delete_used_fails(client, event, access_code):
         assert event.submitter_access_codes.count() == 1
 
 
-@pytest.mark.django_db
 def test_access_code_send(client, event, access_code):
     user = make_orga_user(
         event, can_change_event_settings=True, can_change_submissions=True
@@ -1320,7 +1252,6 @@ def test_access_code_send(client, event, access_code):
     assert mail.subject == "test"
 
 
-@pytest.mark.django_db
 def test_access_code_send_with_restrictions(client, event, access_code, track):
     """Sending an access code with validity/usage restrictions works."""
     with scopes_disabled():
@@ -1338,7 +1269,6 @@ def test_access_code_send_with_restrictions(client, event, access_code, track):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_cfp_editor_main_view(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1349,7 +1279,6 @@ def test_cfp_editor_main_view(client, event):
     assert b"submission-steps" in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_editor_anonymous_redirects(client, event):
     response = client.get(event.cfp.urls.editor)
 
@@ -1357,7 +1286,6 @@ def test_cfp_editor_anonymous_redirects(client, event):
     assert "/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_cfp_editor_unauthorized_gets_404(client, event):
     user = UserFactory()
     client.force_login(user)
@@ -1367,7 +1295,6 @@ def test_cfp_editor_unauthorized_gets_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("step", ("info", "questions", "user", "profile"))
 def test_cfp_editor_step_view(client, event, step):
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1379,7 +1306,6 @@ def test_cfp_editor_step_view(client, event, step):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_cfp_editor_step_invalid(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1393,7 +1319,6 @@ def test_cfp_editor_step_invalid(client, event):
     assert b"Step not found" in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_editor_add_field(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1413,7 +1338,6 @@ def test_cfp_editor_add_field(client, event):
         assert event.cfp.fields["duration"]["visibility"] == "optional"
 
 
-@pytest.mark.django_db
 def test_cfp_editor_remove_field(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1433,7 +1357,6 @@ def test_cfp_editor_remove_field(client, event):
         assert event.cfp.fields["duration"]["visibility"] == "do_not_ask"
 
 
-@pytest.mark.django_db
 def test_cfp_editor_toggle_missing_field_returns_400(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1448,7 +1371,6 @@ def test_cfp_editor_toggle_missing_field_returns_400(client, event):
     assert b"No field provided" in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_editor_toggle_invalid_action_returns_400(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1463,7 +1385,6 @@ def test_cfp_editor_toggle_invalid_action_returns_400(client, event):
     assert b"Invalid action" in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_editor_profile_name_field_always_included(client, event):
     """The name field should always be included in the profile step."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1483,13 +1404,12 @@ def test_cfp_editor_profile_name_field_always_included(client, event):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "dragsort-id=name" in content
-    name_pos = content.find("dragsort-id=name")
-    biography_pos = content.find("dragsort-id=biography")
+    assert 'dragsort-id="name"' in content
+    name_pos = content.find('dragsort-id="name"')
+    biography_pos = content.find('dragsort-id="biography"')
     assert name_pos < biography_pos
 
 
-@pytest.mark.django_db
 def test_cfp_editor_add_question(client, event):
     with scopes_disabled():
         question = QuestionFactory(
@@ -1510,7 +1430,6 @@ def test_cfp_editor_add_question(client, event):
         assert question.active is True
 
 
-@pytest.mark.django_db
 def test_cfp_editor_remove_question(client, event):
     with scopes_disabled():
         question = QuestionFactory(
@@ -1531,7 +1450,6 @@ def test_cfp_editor_remove_question(client, event):
         assert question.active is False
 
 
-@pytest.mark.django_db
 def test_cfp_editor_reorder_fields(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1551,7 +1469,6 @@ def test_cfp_editor_reorder_fields(client, event):
         assert field_keys[:3] == ["abstract", "title", "description"]
 
 
-@pytest.mark.django_db
 def test_cfp_editor_reorder_no_order_returns_400(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1565,7 +1482,6 @@ def test_cfp_editor_reorder_no_order_returns_400(client, event):
     assert b"No order provided" in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_editor_reorder_questions(client, event):
     with scopes_disabled():
         q1 = QuestionFactory(
@@ -1591,7 +1507,6 @@ def test_cfp_editor_reorder_questions(client, event):
         assert q1.position == 1
 
 
-@pytest.mark.django_db
 def test_cfp_editor_reorder_invalid_question_id(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1606,7 +1521,6 @@ def test_cfp_editor_reorder_invalid_question_id(client, event):
     assert b"success" in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_editor_field_modal_get(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1620,7 +1534,6 @@ def test_cfp_editor_field_modal_get(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_cfp_editor_field_modal_post(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1641,7 +1554,6 @@ def test_cfp_editor_field_modal_post(client, event):
         assert event.cfp.fields["abstract"]["max_length"] == 500
 
 
-@pytest.mark.django_db
 def test_cfp_editor_field_modal_invalid_field_returns_404(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1655,7 +1567,6 @@ def test_cfp_editor_field_modal_invalid_field_returns_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_cfp_editor_field_modal_multilingual(client, event):
     """Field modal shows label inputs for multilingual events."""
     with scopes_disabled():
@@ -1674,7 +1585,6 @@ def test_cfp_editor_field_modal_multilingual(client, event):
     assert b"label" in response.content.lower()
 
 
-@pytest.mark.django_db
 def test_cfp_editor_tags_field_modal(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1695,7 +1605,6 @@ def test_cfp_editor_tags_field_modal(client, event):
         assert event.cfp.fields["tags"]["max"] == 5
 
 
-@pytest.mark.django_db
 def test_cfp_editor_tags_field_modal_min_greater_than_max(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1714,7 +1623,6 @@ def test_cfp_editor_tags_field_modal_min_greater_than_max(client, event):
         assert reloaded_event.cfp.fields["tags"].get("min") != 5
 
 
-@pytest.mark.django_db
 def test_cfp_editor_question_modal(client, event):
     with scopes_disabled():
         question = QuestionFactory(event=event, question="Test Question")
@@ -1731,7 +1639,6 @@ def test_cfp_editor_question_modal(client, event):
     assert b"Test Question" in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_editor_question_modal_nonexistent_returns_404(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1744,7 +1651,6 @@ def test_cfp_editor_question_modal_nonexistent_returns_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_cfp_editor_step_header_edit(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1766,7 +1672,6 @@ def test_cfp_editor_step_header_edit(client, event):
         assert text.get("en") == "Custom text"
 
 
-@pytest.mark.django_db
 def test_cfp_editor_step_header_clear_custom(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1784,7 +1689,6 @@ def test_cfp_editor_step_header_clear_custom(client, event):
         assert not any(title.values()) or title.get("en") == ""
 
 
-@pytest.mark.django_db
 def test_cfp_editor_tags_auto_hidden_without_public_tags(client, event):
     with scopes_disabled():
         event.cfp.fields["tags"] = {"visibility": "optional"}
@@ -1800,7 +1704,6 @@ def test_cfp_editor_tags_auto_hidden_without_public_tags(client, event):
     assert b"no public tags exist" in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_editor_track_auto_hidden_without_tracks(client, event):
     with scopes_disabled():
         event.feature_flags["use_tracks"] = True
@@ -1819,7 +1722,6 @@ def test_cfp_editor_track_auto_hidden_without_tracks(client, event):
     assert b"no tracks exist" in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_editor_track_auto_hidden_when_disabled(client, event):
     with scopes_disabled():
         event.feature_flags["use_tracks"] = False
@@ -1837,7 +1739,6 @@ def test_cfp_editor_track_auto_hidden_when_disabled(client, event):
     assert b"tracks are disabled" in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_editor_reset(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1855,7 +1756,6 @@ def test_cfp_editor_reset(client, event):
         assert not flow_config.get("steps")
 
 
-@pytest.mark.django_db
 def test_cfp_text_post_without_changes_no_log(client, event):
     """Submitting the CfP text form twice with the same data only logs once."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1878,7 +1778,6 @@ def test_cfp_text_post_without_changes_no_log(client, event):
         assert event.cfp.logged_actions().count() == log_count
 
 
-@pytest.mark.django_db
 def test_question_update_with_next_url_redirects(client, event, question):
     """When a next URL parameter is present, the redirect goes there."""
     user = make_orga_user(
@@ -1902,7 +1801,6 @@ def test_question_update_with_next_url_redirects(client, event, question):
     assert response.url == event.cfp.urls.questions
 
 
-@pytest.mark.django_db
 def test_question_edit_choice_options_reorder(client, event, choice_question):
     """Reordering answer options via the order POST parameter updates positions."""
     user = make_orga_user(
@@ -1929,7 +1827,6 @@ def test_question_edit_choice_options_reorder(client, event, choice_question):
     assert options[1].position == 2
 
 
-@pytest.mark.django_db
 def test_question_edit_choice_with_options_and_file_conflict(
     client, event, choice_question
 ):
@@ -1966,7 +1863,6 @@ def test_question_edit_choice_with_options_and_file_conflict(
     assert "cannot change the options and upload" in content
 
 
-@pytest.mark.django_db
 def test_question_edit_choice_with_invalid_formset_stays_on_page(
     client, event, choice_question
 ):
@@ -1998,7 +1894,6 @@ def test_question_edit_choice_with_invalid_formset_stays_on_page(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_question_edit_choice_unchanged_option_in_formset(
     client, event, choice_question
 ):
@@ -2038,7 +1933,6 @@ def test_question_edit_choice_unchanged_option_in_formset(
         assert choice_question.options.count() == 3
 
 
-@pytest.mark.django_db
 def test_cfp_editor_step_header_edit_invalid_step(client, event):
     """Getting the step header edit form for a non-existent step returns 200
     without crashing, even though the error is not visible in the step-header-edit template."""
@@ -2054,7 +1948,6 @@ def test_cfp_editor_step_header_edit_invalid_step(client, event):
     assert response.context["error"] == "Step not found"
 
 
-@pytest.mark.django_db
 def test_cfp_editor_reorder_question_nonexistent_id(client, event):
     """Reordering with a valid integer question ID that doesn't exist is ignored."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -2070,7 +1963,6 @@ def test_cfp_editor_reorder_question_nonexistent_id(client, event):
     assert b"success" in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_editor_reorder_question_with_non_question_keys(client, event):
     """Non-question keys mixed into a question step reorder are safely skipped."""
     with scopes_disabled():
@@ -2092,7 +1984,6 @@ def test_cfp_editor_reorder_question_with_non_question_keys(client, event):
         assert q.position == 1
 
 
-@pytest.mark.django_db
 def test_cfp_editor_toggle_nonexistent_question_returns_404(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -2107,7 +1998,6 @@ def test_cfp_editor_toggle_nonexistent_question_returns_404(client, event):
     assert b"Question not found" in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_editor_toggle_invalid_field_key_returns_400(client, event):
     """Toggling a field key that isn't a question and isn't in default_fields returns 400."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -2123,7 +2013,6 @@ def test_cfp_editor_toggle_invalid_field_key_returns_400(client, event):
     assert b"Invalid field key" in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_editor_toggle_field_not_in_cfp_fields_initializes(client, event):
     """Toggling a valid field that isn't yet in cfp.fields initializes it."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -2145,7 +2034,6 @@ def test_cfp_editor_toggle_field_not_in_cfp_fields_initializes(client, event):
         assert event.cfp.fields["resources"]["visibility"] == "optional"
 
 
-@pytest.mark.django_db
 def test_cfp_editor_field_modal_post_field_not_in_cfp_fields(client, event):
     """Posting field config for a field not yet in cfp.fields initializes it."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -2170,7 +2058,6 @@ def test_cfp_editor_field_modal_post_field_not_in_cfp_fields(client, event):
         assert event.cfp.fields["description"]["min_length"] == 10
 
 
-@pytest.mark.django_db
 def test_cfp_editor_additional_speaker_field_max(client, event):
     """The additional_speaker field has a max field that limits speaker count."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -2188,7 +2075,6 @@ def test_cfp_editor_additional_speaker_field_max(client, event):
         assert event.cfp.fields["additional_speaker"]["max"] == 5
 
 
-@pytest.mark.django_db
 def test_cfp_editor_field_modal_with_custom_label(client, event):
     """Setting a custom label via the flow editor and then viewing the step
     applies the label to the preview form field."""
@@ -2221,7 +2107,6 @@ def test_cfp_editor_field_modal_with_custom_label(client, event):
     assert "Custom Abstract Label" in content
 
 
-@pytest.mark.django_db
 def test_question_detail_with_all_base_search_url_filters(
     client, event, question, track, submission_type
 ):
@@ -2240,7 +2125,6 @@ def test_question_detail_with_all_base_search_url_filters(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_question_update_without_view_permission_redirects_to_list(client, event):
     """A user with edit but not view permission is redirected to the list after saving."""
     user = make_orga_user(
@@ -2269,7 +2153,6 @@ def test_question_update_without_view_permission_redirects_to_list(client, event
     assert response.url == list_url
 
 
-@pytest.mark.django_db
 def test_question_detail_post_without_order_returns_400(client, event, question):
     """POSTing to the question detail URL without an order param returns 400."""
     user = make_orga_user(

@@ -1,7 +1,8 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 from unittest.mock import Mock
 
 import pytest
-from django_scopes import scopes_disabled
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 
@@ -77,13 +78,11 @@ def test_get_story_creates_card_per_submission():
 @pytest.mark.django_db
 def test_build_cards_returns_pdf(event, abstract, notes):
     """Exercises SubmissionCard.draw with and without abstract/notes branches."""
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event, abstract=abstract, notes=notes)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
+    submission = SubmissionFactory(event=event, abstract=abstract, notes=notes)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
 
-    with scopes_disabled():
-        response = build_cards([submission], event)
+    response = build_cards([submission], event)
 
     assert response["Content-Type"] == "application/pdf"
     assert response["Content-Disposition"].startswith("attachment;")

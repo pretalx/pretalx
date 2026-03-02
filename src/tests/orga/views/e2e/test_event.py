@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 from io import BytesIO
 
@@ -5,11 +7,12 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
+from PIL import Image
 
 from pretalx.event.models import Event
 from tests.factories import OrganiserFactory, QuestionFactory, TrackFactory, UserFactory
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.django_db]
 
 WIZARD_URL = "/orga/event/new/"
 
@@ -75,7 +78,6 @@ def _full_wizard(client, organiser, slug="newevent", deadline=False, **display_k
     _submit_plugins(client)
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("deadline", (True, False))
 def test_event_wizard_creates_event(client, deadline):
     with scopes_disabled():
@@ -103,7 +105,6 @@ def test_event_wizard_creates_event(client, deadline):
     assert event.display_settings["header_pattern"] == "topo"
 
 
-@pytest.mark.django_db
 def test_event_wizard_creates_new_team_for_limited_access(client):
     """When the user doesn't have all_events + full permissions, a new team is created."""
     with scopes_disabled():
@@ -125,7 +126,6 @@ def test_event_wizard_creates_new_team_for_limited_access(client):
     assert organiser.teams.count() == initial_team_count + 1
 
 
-@pytest.mark.django_db
 def test_event_wizard_no_new_team_when_all_events(client):
     """When user's team has all_events + full settings + submissions, no new team."""
     with scopes_disabled():
@@ -147,7 +147,6 @@ def test_event_wizard_no_new_team_when_all_events(client):
     assert organiser.teams.count() == initial_team_count
 
 
-@pytest.mark.django_db
 def test_event_wizard_duplicate_slug_rejected(client, event):
     with scopes_disabled():
         user = UserFactory()
@@ -167,7 +166,6 @@ def test_event_wizard_duplicate_slug_rejected(client, event):
     assert Event.objects.count() == count
 
 
-@pytest.mark.django_db
 def test_event_wizard_with_copy(client, event):
     """Wizard with copy_from_event copies questions, tracks, and CfP settings."""
     with scopes_disabled():
@@ -199,7 +197,6 @@ def test_event_wizard_with_copy(client, event):
         assert new_event.cfp.fields["title"]["min_length"] == 50
 
 
-@pytest.mark.django_db
 def test_event_wizard_with_plugins(client):
     with scopes_disabled():
         organiser = OrganiserFactory()
@@ -224,7 +221,6 @@ def test_event_wizard_with_plugins(client):
     assert "tests.dummy_app" in event.plugin_list
 
 
-@pytest.mark.django_db
 def test_event_wizard_with_primary_color(client):
     with scopes_disabled():
         organiser = OrganiserFactory()
@@ -244,7 +240,6 @@ def test_event_wizard_with_primary_color(client):
     assert Event.objects.filter(slug="colorevent", primary_color="#00ff00").exists()
 
 
-@pytest.mark.django_db
 def test_event_wizard_with_deadline_sets_cfp_deadline(client):
     with scopes_disabled():
         organiser = OrganiserFactory()
@@ -266,7 +261,6 @@ def test_event_wizard_with_deadline_sets_cfp_deadline(client):
         assert event.cfp.deadline is not None
 
 
-@pytest.mark.django_db
 def test_event_wizard_copy_prefills_display(client, event):
     """Copying from an event with display settings prefills them."""
     event.primary_color = "#ff0000"
@@ -295,7 +289,6 @@ def test_event_wizard_copy_prefills_display(client, event):
     assert new_event.display_settings["header_pattern"] == "topo"
 
 
-@pytest.mark.django_db
 def test_event_wizard_past_date_shows_warning(client):
     """Creating an event with dates in the past shows a warning."""
     with scopes_disabled():
@@ -324,7 +317,6 @@ def test_event_wizard_past_date_shows_warning(client):
     assert not Event.objects.filter(slug="pastevent").exists()
 
 
-@pytest.mark.django_db
 def test_event_wizard_without_header_pattern(client):
     """Wizard without header_pattern still creates the event successfully."""
     with scopes_disabled():
@@ -346,7 +338,6 @@ def test_event_wizard_without_header_pattern(client):
     assert event.display_settings.get("header_pattern", "") != "topo"
 
 
-@pytest.mark.django_db
 def test_event_wizard_with_logo(client):
     """Wizard with a logo file triggers image processing."""
     with scopes_disabled():
@@ -365,8 +356,6 @@ def test_event_wizard_with_logo(client):
     _submit_initial(client, organiser)
     _submit_basics(client, slug="logoevent")
     _submit_timeline(client)
-
-    from PIL import Image  # noqa: PLC0415
 
     buf = BytesIO()
     Image.new("RGB", (10, 10), color="red").save(buf, format="PNG")
@@ -387,7 +376,6 @@ def test_event_wizard_with_logo(client):
     assert event.logo
 
 
-@pytest.mark.django_db
 def test_event_wizard_wrong_order_restarts(client):
     """Submitting basics before initial redirects back to initial."""
     with scopes_disabled():

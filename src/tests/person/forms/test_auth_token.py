@@ -1,5 +1,6 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.person.forms import AuthTokenForm
 from pretalx.person.models.auth_token import (
@@ -9,7 +10,7 @@ from pretalx.person.models.auth_token import (
 )
 from tests.factories import EventFactory
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def _build_form_data(event, preset="read", name="My Token"):
@@ -26,7 +27,6 @@ def _build_form_data(event, preset="read", name="My Token"):
     return data
 
 
-@pytest.mark.django_db
 def test_auth_token_form_init_events_queryset_limited_to_user_events(user_with_event):
     """The events field only contains events the user has permission for."""
     user, event = user_with_event
@@ -37,7 +37,6 @@ def test_auth_token_form_init_events_queryset_limited_to_user_events(user_with_e
     assert list(form.fields["events"].queryset) == [event]
 
 
-@pytest.mark.django_db
 def test_auth_token_form_init_creates_endpoint_fields(user_with_event):
     """Form init creates a checkbox field for each endpoint, defaulting to read."""
     user, _ = user_with_event
@@ -51,7 +50,6 @@ def test_auth_token_form_init_creates_endpoint_fields(user_with_event):
         assert form.fields[field_name].initial == READ_PERMISSIONS
 
 
-@pytest.mark.django_db
 def test_auth_token_form_get_endpoint_fields_returns_bound_fields(user_with_event):
     """get_endpoint_fields() returns (name, BoundField) pairs for templates."""
     user, _ = user_with_event
@@ -65,7 +63,6 @@ def test_auth_token_form_get_endpoint_fields_returns_bound_fields(user_with_even
         assert bound_field.name == field_name
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("preset", "expected_permissions"),
     (("read", READ_PERMISSIONS), ("write", WRITE_PERMISSIONS)),
@@ -84,7 +81,6 @@ def test_auth_token_form_clean_preset_sets_permissions(
         assert form.cleaned_data["endpoints"][endpoint] == expected_permissions
 
 
-@pytest.mark.django_db
 def test_auth_token_form_clean_custom_preset_uses_per_endpoint_selections(
     user_with_event,
 ):
@@ -101,7 +97,6 @@ def test_auth_token_form_clean_custom_preset_uses_per_endpoint_selections(
     assert form.cleaned_data["endpoints"]["events"] == ["list"]
 
 
-@pytest.mark.django_db
 def test_auth_token_form_save_sets_user_and_endpoints(user_with_event):
     """save() sets the user and endpoints on the token instance."""
     user, event = user_with_event
@@ -110,8 +105,7 @@ def test_auth_token_form_save_sets_user_and_endpoints(user_with_event):
     form = AuthTokenForm(data=data, user=user)
     assert form.is_valid(), form.errors
 
-    with scopes_disabled():
-        token = form.save()
+    token = form.save()
 
     assert token.user == user
     assert token.name == "My Token"
@@ -119,7 +113,6 @@ def test_auth_token_form_save_sets_user_and_endpoints(user_with_event):
     assert token.pk is not None
 
 
-@pytest.mark.django_db
 def test_auth_token_form_save_associates_events(user_with_event):
     """save() associates selected events with the token."""
     user, event = user_with_event
@@ -128,7 +121,6 @@ def test_auth_token_form_save_associates_events(user_with_event):
     form = AuthTokenForm(data=data, user=user)
     assert form.is_valid(), form.errors
 
-    with scopes_disabled():
-        token = form.save()
+    token = form.save()
 
     assert list(token.events.all()) == [event]

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django_scopes import scopes_disabled
 
@@ -5,11 +7,10 @@ from pretalx.submission.models import SubmissionStates
 from tests.factories import SpeakerFactory, SubmissionFactory
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
-@pytest.mark.django_db
 def test_submission_cards_query_count(
     client, event, item_count, django_assert_num_queries
 ):
@@ -28,7 +29,6 @@ def test_submission_cards_query_count(
     assert response["Content-Type"] == "application/pdf"
 
 
-@pytest.mark.django_db
 def test_submission_cards_with_null_abstract_and_notes(client, event):
     """Cards render even when submissions have no abstract or notes."""
     with scopes_disabled():
@@ -46,7 +46,6 @@ def test_submission_cards_with_null_abstract_and_notes(client, event):
     assert response["Content-Type"] == "application/pdf"
 
 
-@pytest.mark.django_db
 def test_submission_cards_empty_queryset_redirects(client, event):
     """When no submissions match, user is redirected to submissions list."""
     with scopes_disabled():
@@ -59,7 +58,6 @@ def test_submission_cards_empty_queryset_redirects(client, event):
     assert response.url == event.orga_urls.submissions
 
 
-@pytest.mark.django_db
 def test_submission_cards_anonymous_redirects_to_login(client, event):
     """Anonymous user is redirected to login."""
     response = client.get(event.orga_urls.submission_cards)
@@ -68,7 +66,6 @@ def test_submission_cards_anonymous_redirects_to_login(client, event):
     assert "/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_submission_cards_user_without_permission_gets_404(client, event):
     """User without submission permissions cannot access cards."""
     with scopes_disabled():

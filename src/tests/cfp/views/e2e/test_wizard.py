@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
@@ -7,10 +9,16 @@ from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
 from pretalx.submission.models import Submission, SubmissionStates, SubmissionType
+from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from tests.cfp.views.conftest import get_response_and_url, info_data, start_wizard
-from tests.factories import TagFactory
+from tests.factories import (
+    AnswerOptionFactory,
+    QuestionFactory,
+    TagFactory,
+    TrackFactory,
+)
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.django_db]
 
 
 def _post_info(
@@ -98,8 +106,24 @@ def _assert_speaker(
     return profile.user
 
 
-@pytest.mark.django_db
-def test_e2e_new_user_submission_with_questions(cfp_event, client, submission_question):
+@pytest.fixture
+def multiple_choice_question(cfp_event):
+    """A speaker-targeted multiple choice question with three options."""
+    with scopes_disabled():
+        question = QuestionFactory(
+            event=cfp_event,
+            question="Which colors other than green do you like?",
+            variant=QuestionVariant.MULTIPLE,
+            target="speaker",
+            question_required=QuestionRequired.OPTIONAL,
+            position=10,
+        )
+        for answer in ("yellow", "blue", "black"):
+            AnswerOptionFactory(question=question, answer=answer)
+    return question
+
+
+def test_e2e_new_user_submission_with_questions(cfp_event, client):
     """Complete submission flow: new user registers, answers questions, fills profile.
 
     Verifies:
@@ -110,6 +134,14 @@ def test_e2e_new_user_submission_with_questions(cfp_event, client, submission_qu
     """
     djmail.outbox = []
     with scopes_disabled():
+        submission_question = QuestionFactory(
+            event=cfp_event,
+            question="How much do you like green, on a scale from 1-10?",
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+            position=1,
+        )
         sub_type = SubmissionType.objects.filter(event=cfp_event).first()
         sub_type.deadline = cfp_event.cfp.deadline
         sub_type.save()
@@ -141,7 +173,6 @@ def test_e2e_new_user_submission_with_questions(cfp_event, client, submission_qu
     assert sub.state == SubmissionStates.SUBMITTED
 
 
-@pytest.mark.django_db
 def test_e2e_new_user_with_mail_on_new_submission(cfp_event, client):
     """New user submission with mail_on_new_submission sends 2 emails (user + orga)."""
     djmail.outbox = []
@@ -157,22 +188,38 @@ def test_e2e_new_user_with_mail_on_new_submission(cfp_event, client):
     assert len(djmail.outbox) == 2
 
 
-@pytest.mark.django_db
 def test_e2e_existing_user_login_with_questions(
-    cfp_event,
-    client,
-    cfp_user,
-    submission_question,
-    speaker_question,
-    choice_question,
-    multiple_choice_question,
-    file_question,
+    cfp_event, client, cfp_user, choice_question, multiple_choice_question
 ):
     """Existing user logs in and submits with various question types.
 
     Tests choice, multiple choice, file, and speaker questions.
     """
     with scopes_disabled():
+        submission_question = QuestionFactory(
+            event=cfp_event,
+            question="How much do you like green, on a scale from 1-10?",
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+            position=1,
+        )
+        speaker_question = QuestionFactory(
+            event=cfp_event,
+            question="What is your favourite color?",
+            variant=QuestionVariant.STRING,
+            target="speaker",
+            question_required=QuestionRequired.OPTIONAL,
+            position=3,
+        )
+        file_question = QuestionFactory(
+            event=cfp_event,
+            question="Please submit your paper.",
+            variant=QuestionVariant.FILE,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+            position=7,
+        )
         sub_type = SubmissionType.objects.filter(event=cfp_event).first().pk
         answer_data = {
             f"question_{submission_question.pk}": "42",
@@ -209,12 +256,18 @@ def test_e2e_existing_user_login_with_questions(
         assert speaker_answer.submission is None
 
 
-@pytest.mark.django_db
-def test_e2e_logged_in_user_skips_user_step(
-    cfp_event, client, cfp_user, submission_question
-):
+def test_e2e_logged_in_user_skips_user_step(cfp_event, client, cfp_user):
     """A logged-in user skips the user step and goes directly to questions/profile."""
     djmail.outbox = []
+    with scopes_disabled():
+        submission_question = QuestionFactory(
+            event=cfp_event,
+            question="How much do you like green, on a scale from 1-10?",
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+            position=1,
+        )
     client.force_login(cfp_user)
 
     _, info_url = start_wizard(client, cfp_event)
@@ -233,7 +286,6 @@ def test_e2e_logged_in_user_skips_user_step(
     assert len(djmail.outbox) == 1
 
 
-@pytest.mark.django_db
 def test_e2e_logged_in_user_no_questions(cfp_event, client, cfp_user):
     """When no questions exist, logged-in user goes info → profile → done."""
     client.force_login(cfp_user)
@@ -249,12 +301,20 @@ def test_e2e_logged_in_user_no_questions(cfp_event, client, cfp_user):
     _assert_speaker(sub, email=cfp_user.email)
 
 
-@pytest.mark.django_db
 def test_e2e_tracks_with_access_code_and_questions(
-    cfp_event, client, cfp_access_code, cfp_track, cfp_other_track, submission_question
+    cfp_event, client, cfp_access_code, cfp_track
 ):
     """Track requiring access code: no code fails, code succeeds with track-specific questions."""
     with scopes_disabled():
+        submission_question = QuestionFactory(
+            event=cfp_event,
+            question="How much do you like green, on a scale from 1-10?",
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+            position=1,
+        )
+        cfp_other_track = TrackFactory(event=cfp_event, name="Second Track")
         sub_type = SubmissionType.objects.filter(event=cfp_event).first().pk
         cfp_event.cfp.fields["track"]["visibility"] = "required"
         cfp_event.cfp.fields["abstract"]["visibility"] = "do_not_ask"
@@ -293,7 +353,6 @@ def test_e2e_tracks_with_access_code_and_questions(
     )
 
 
-@pytest.mark.django_db
 def test_e2e_access_code_bypasses_deadline(cfp_event, client, cfp_access_code):
     """With CfP closed, access code allows full submission flow."""
     with scopes_disabled():
@@ -313,7 +372,6 @@ def test_e2e_access_code_bypasses_deadline(cfp_event, client, cfp_access_code):
         assert sub.access_code == cfp_access_code
 
 
-@pytest.mark.django_db
 def test_e2e_additional_speakers_send_invitations(cfp_event, client, cfp_user):
     """Additional speakers receive invitation emails alongside the confirmation."""
     djmail.outbox = []
@@ -335,7 +393,6 @@ def test_e2e_additional_speakers_send_invitations(cfp_event, client, cfp_user):
     assert "speaker3@example.com" in all_recipients
 
 
-@pytest.mark.django_db
 def test_e2e_draft_save_and_resume(cfp_event, client, cfp_user):
     """Save as draft, then resume and complete the submission.
 
@@ -380,7 +437,6 @@ def test_e2e_draft_save_and_resume(cfp_event, client, cfp_user):
         assert draft.state == SubmissionStates.SUBMITTED
 
 
-@pytest.mark.django_db
 def test_e2e_draft_invalid_info_stays_on_step(cfp_event, client, cfp_user):
     """Draft save with invalid info data stays on info step without creating a draft."""
     client.force_login(cfp_user)
@@ -394,7 +450,6 @@ def test_e2e_draft_invalid_info_stays_on_step(cfp_event, client, cfp_user):
         assert Submission.all_objects.filter(state=SubmissionStates.DRAFT).count() == 0
 
 
-@pytest.mark.django_db
 def test_e2e_draft_anonymous_login_then_save(cfp_event, client, cfp_user):
     """Anonymous user: draft on info → redirected to user step → login → draft saved."""
     _, info_url = start_wizard(client, cfp_event)
@@ -412,7 +467,6 @@ def test_e2e_draft_anonymous_login_then_save(cfp_event, client, cfp_user):
         assert draft.title == "Anonymous Draft"
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("resource_data", "expect_link"),
     (
@@ -468,7 +522,6 @@ def test_e2e_wizard_with_resource(
             assert not resource.link
 
 
-@pytest.mark.django_db
 def test_e2e_wizard_resource_deleted_unsaved_form_ignored(cfp_event, client, cfp_user):
     """A resource form marked for deletion that was never saved is silently ignored."""
     with scopes_disabled():
@@ -506,7 +559,6 @@ def test_e2e_wizard_resource_deleted_unsaved_form_ignored(cfp_event, client, cfp
         assert resource.link == "https://example.com/real"
 
 
-@pytest.mark.django_db
 def test_e2e_draft_with_resources_then_resume_and_submit(cfp_event, client, cfp_user):
     """Save draft with resources, resume, and complete – resources preserved."""
     with scopes_disabled():
@@ -566,7 +618,6 @@ def test_e2e_draft_with_resources_then_resume_and_submit(cfp_event, client, cfp_
         assert resource.link == "https://example.com/draft-slides"
 
 
-@pytest.mark.django_db
 def test_e2e_submission_type_access_code(cfp_event, client, cfp_access_code):
     """Full flow with submission type requiring access code."""
     with scopes_disabled():
@@ -593,7 +644,6 @@ def test_e2e_submission_type_access_code(cfp_event, client, cfp_access_code):
     _assert_submission(cfp_event)
 
 
-@pytest.mark.django_db
 def test_e2e_wizard_with_tags(cfp_event, client):
     """Full wizard flow with public tags – private tags excluded."""
     with scopes_disabled():
@@ -613,7 +663,6 @@ def test_e2e_wizard_with_tags(cfp_event, client):
     _assert_speaker(sub)
 
 
-@pytest.mark.django_db
 def test_e2e_broken_template_no_email(cfp_event, client, cfp_user):
     """When the submission confirmation template has invalid variables, no email is sent
     but the submission still succeeds."""

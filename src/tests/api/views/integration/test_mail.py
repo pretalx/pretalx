@@ -1,14 +1,14 @@
-import json
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
 from django_scopes import scopes_disabled
 
 from tests.factories import MailTemplateFactory
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("is_public", (True, False))
 def test_mail_template_list_requires_auth(client, event, is_public):
     """Unauthenticated mail template list returns 401 regardless of event visibility."""
@@ -20,7 +20,6 @@ def test_mail_template_list_requires_auth(client, event, is_public):
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
 def test_mail_template_list_with_orga_read_token(client, event, orga_read_token):
     """Organiser with read token can list mail templates."""
     response = client.get(
@@ -38,7 +37,6 @@ def test_mail_template_list_with_orga_read_token(client, event, orga_read_token)
     assert "text" in result
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_mail_template_list_query_count(
     client, event, orga_read_token, item_count, django_assert_num_queries
@@ -58,7 +56,6 @@ def test_mail_template_list_query_count(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_mail_template_detail_with_orga_read_token(client, event, orga_read_token):
     """Organiser can retrieve a single mail template."""
     with scopes_disabled():
@@ -77,7 +74,6 @@ def test_mail_template_detail_with_orga_read_token(client, event, orga_read_toke
     assert isinstance(data["text"], dict)
 
 
-@pytest.mark.django_db
 def test_mail_template_detail_locale_override(client, event, orga_read_token):
     """The ?lang= parameter makes i18n fields return plain strings."""
     with scopes_disabled():
@@ -95,15 +91,12 @@ def test_mail_template_detail_locale_override(client, event, orga_read_token):
     assert isinstance(data["text"], str)
 
 
-@pytest.mark.django_db
 def test_mail_template_create_with_write_token(client, event, orga_write_token):
     """POST with a write token creates a new mail template."""
     response = client.post(
         event.api_urls.mail_templates,
         follow=True,
-        data=json.dumps(
-            {"subject": {"en": "Test Subject"}, "text": {"en": "Hello {event_name}"}}
-        ),
+        data={"subject": {"en": "Test Subject"}, "text": {"en": "Hello {event_name}"}},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -121,7 +114,6 @@ def test_mail_template_create_with_write_token(client, event, orga_write_token):
         )
 
 
-@pytest.mark.django_db
 def test_mail_template_create_rejected_with_read_token(client, event, orga_read_token):
     """POST with a read-only token returns 403."""
     with scopes_disabled():
@@ -130,7 +122,7 @@ def test_mail_template_create_rejected_with_read_token(client, event, orga_read_
     response = client.post(
         event.api_urls.mail_templates,
         follow=True,
-        data=json.dumps({"subject": {"en": "Forbidden"}, "text": {"en": "No"}}),
+        data={"subject": {"en": "Forbidden"}, "text": {"en": "No"}},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_read_token.token}"},
     )
@@ -140,7 +132,6 @@ def test_mail_template_create_rejected_with_read_token(client, event, orga_read_
         assert event.mail_templates.count() == initial_count
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("field", "value"),
     (
@@ -160,7 +151,7 @@ def test_mail_template_create_validates_placeholders(
     response = client.post(
         event.api_urls.mail_templates,
         follow=True,
-        data=json.dumps(data),
+        data=data,
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -168,7 +159,6 @@ def test_mail_template_create_validates_placeholders(
     assert response.status_code == 400
 
 
-@pytest.mark.django_db
 def test_mail_template_update_with_write_token(client, event, orga_write_token):
     """PATCH with a write token updates the mail template."""
     with scopes_disabled():
@@ -177,7 +167,7 @@ def test_mail_template_update_with_write_token(client, event, orga_write_token):
     response = client.patch(
         event.api_urls.mail_templates + f"{template.pk}/",
         follow=True,
-        data=json.dumps({"subject": {"en": "Updated Subject"}}),
+        data={"subject": {"en": "Updated Subject"}},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -193,7 +183,6 @@ def test_mail_template_update_with_write_token(client, event, orga_write_token):
         )
 
 
-@pytest.mark.django_db
 def test_mail_template_update_rejected_with_read_token(client, event, orga_read_token):
     """PATCH with a read-only token returns 403."""
     with scopes_disabled():
@@ -203,7 +192,7 @@ def test_mail_template_update_rejected_with_read_token(client, event, orga_read_
     response = client.patch(
         event.api_urls.mail_templates + f"{template.pk}/",
         follow=True,
-        data=json.dumps({"subject": {"en": "Changed"}}),
+        data={"subject": {"en": "Changed"}},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_read_token.token}"},
     )
@@ -214,7 +203,6 @@ def test_mail_template_update_rejected_with_read_token(client, event, orga_read_
         assert str(template.subject) == original_subject
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("field", "value"),
     (
@@ -234,7 +222,7 @@ def test_mail_template_update_validates_placeholders(
     response = client.patch(
         event.api_urls.mail_templates + f"{template.pk}/",
         follow=True,
-        data=json.dumps({field: {"en": value}}),
+        data={field: {"en": value}},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -245,7 +233,6 @@ def test_mail_template_update_validates_placeholders(
         assert str(getattr(template, field)) != value
 
 
-@pytest.mark.django_db
 def test_mail_template_delete_with_write_token(client, event, orga_write_token):
     """DELETE with a write token removes the mail template."""
     with scopes_disabled():
@@ -263,7 +250,6 @@ def test_mail_template_delete_with_write_token(client, event, orga_write_token):
         assert not event.mail_templates.filter(pk=template_pk).exists()
 
 
-@pytest.mark.django_db
 def test_mail_template_delete_rejected_with_read_token(client, event, orga_read_token):
     """DELETE with a read-only token returns 403."""
     with scopes_disabled():
@@ -280,7 +266,6 @@ def test_mail_template_delete_rejected_with_read_token(client, event, orga_read_
         assert event.mail_templates.filter(pk=template.pk).exists()
 
 
-@pytest.mark.django_db
 def test_mail_template_log_endpoint(client, event, orga_read_token, orga_user):
     """The /log/ sub-endpoint returns logged actions for a mail template."""
     with scopes_disabled():
@@ -301,7 +286,6 @@ def test_mail_template_log_endpoint(client, event, orga_read_token, orga_user):
     assert data["results"][0]["action_type"] == "pretalx.mail_template.update"
 
 
-@pytest.mark.django_db
 def test_mail_template_list_rejects_legacy_version(client, event, orga_read_token):
     """GET with Pretalx-Version: LEGACY returns 400."""
     response = client.get(
@@ -317,19 +301,16 @@ def test_mail_template_list_rejects_legacy_version(client, event, orga_read_toke
     assert "not supported" in response.json()["detail"].lower()
 
 
-@pytest.mark.django_db
 def test_mail_template_create_ignores_role_field(client, event, orga_write_token):
     """POST with a role field is silently ignored because role is not editable."""
     response = client.post(
         event.api_urls.mail_templates,
         follow=True,
-        data=json.dumps(
-            {
-                "subject": {"en": "With Role"},
-                "text": {"en": "Body text"},
-                "role": "submission.state.accepted",
-            }
-        ),
+        data={
+            "subject": {"en": "With Role"},
+            "text": {"en": "Body text"},
+            "role": "submission.state.accepted",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -340,7 +321,6 @@ def test_mail_template_create_ignores_role_field(client, event, orga_write_token
         assert not template.role
 
 
-@pytest.mark.django_db
 def test_mail_template_update_ignores_role_field(client, event, orga_write_token):
     """PATCH with a role field is silently ignored because role is not editable."""
     with scopes_disabled():
@@ -349,7 +329,7 @@ def test_mail_template_update_ignores_role_field(client, event, orga_write_token
     response = client.patch(
         event.api_urls.mail_templates + f"{template.pk}/",
         follow=True,
-        data=json.dumps({"role": "submission.state.rejected"}),
+        data={"role": "submission.state.rejected"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -360,7 +340,6 @@ def test_mail_template_update_ignores_role_field(client, event, orga_write_token
         assert template.role == "submission.state.accepted"
 
 
-@pytest.mark.django_db
 def test_mail_template_delete_creates_log_entry(client, event, orga_write_token):
     """DELETE with a write token creates a logged action for the deletion."""
     with scopes_disabled():

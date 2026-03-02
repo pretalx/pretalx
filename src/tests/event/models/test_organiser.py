@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import string
 
 import pytest
@@ -6,10 +8,9 @@ from django.core import mail as djmail
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.urls import reverse
-from django_scopes import scopes_disabled
 
 from pretalx.common.models import ActivityLog
-from pretalx.event.models import Event, Organiser, Team, TeamInvite
+from pretalx.event.models import Event, Organiser, Team
 from pretalx.event.models.organiser import (
     check_access_permissions,
     generate_invite_token,
@@ -23,7 +24,7 @@ from tests.factories import (
     UserFactory,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def test_generate_invite_token_character_set():
@@ -37,7 +38,6 @@ def test_generate_invite_token_returns_unique_values():
     assert len(tokens) == 10
 
 
-@pytest.mark.django_db
 def test_check_access_permissions_raises_when_no_team_can_change_teams():
     """Must have at least one team with can_change_teams and members."""
     organiser = OrganiserFactory()
@@ -58,7 +58,6 @@ def test_check_access_permissions_raises_when_no_team_can_change_teams():
         ("can_change_organiser_settings", "no_can_change_organiser_settings"),
     ),
 )
-@pytest.mark.django_db
 def test_check_access_permissions_warns_when_organiser_level_permission_missing(
     missing_perm, expected_code
 ):
@@ -80,7 +79,6 @@ def test_check_access_permissions_warns_when_organiser_level_permission_missing(
     assert codes == [expected_code]
 
 
-@pytest.mark.django_db
 def test_check_access_permissions_raises_when_event_has_no_team_access():
     """Every event must be covered by at least one team with members."""
     organiser = OrganiserFactory()
@@ -99,7 +97,6 @@ def test_check_access_permissions_raises_when_event_has_no_team_access():
         check_access_permissions(organiser)
 
 
-@pytest.mark.django_db
 def test_check_access_permissions_warns_when_event_team_lacks_change_settings():
     organiser = OrganiserFactory()
     user = UserFactory()
@@ -120,7 +117,6 @@ def test_check_access_permissions_warns_when_event_team_lacks_change_settings():
     assert codes == ["no_can_change_event_settings"]
 
 
-@pytest.mark.django_db
 def test_check_access_permissions_no_warnings_when_all_permissions_present():
     organiser = OrganiserFactory()
     user = UserFactory()
@@ -140,7 +136,6 @@ def test_check_access_permissions_no_warnings_when_all_permissions_present():
     assert warnings == []
 
 
-@pytest.mark.django_db
 def test_check_access_permissions_ignores_teams_without_members():
     """Teams without members don't count for permission checks."""
     organiser = OrganiserFactory()
@@ -150,7 +145,6 @@ def test_check_access_permissions_ignores_teams_without_members():
         check_access_permissions(organiser)
 
 
-@pytest.mark.django_db
 def test_check_access_permissions_event_covered_by_limit_events():
     """An event is covered if a team has it in limit_events (not just all_events)."""
     organiser = OrganiserFactory()
@@ -172,13 +166,11 @@ def test_check_access_permissions_event_covered_by_limit_events():
     assert warnings == []
 
 
-@pytest.mark.django_db
 def test_organiser_str_returns_name():
     organiser = OrganiserFactory(name="My Org")
     assert str(organiser) == "My Org"
 
 
-@pytest.mark.django_db
 def test_organiser_slug_uniqueness():
     OrganiserFactory(slug="unique-org")
     with pytest.raises(IntegrityError):
@@ -188,7 +180,6 @@ def test_organiser_slug_uniqueness():
 @pytest.mark.parametrize(
     "slug", ("my-org", "org123", "a1b2"), ids=("dashes", "numbers", "mixed")
 )
-@pytest.mark.django_db
 def test_organiser_slug_accepts_valid_formats(slug):
     organiser = Organiser(name="Test", slug=slug)
     organiser.clean_fields()
@@ -199,14 +190,12 @@ def test_organiser_slug_accepts_valid_formats(slug):
     ("-start", "end-", "no spaces", "special!char"),
     ids=("dash_start", "dash_end", "spaces", "special"),
 )
-@pytest.mark.django_db
 def test_organiser_slug_rejects_invalid_formats(slug):
     organiser = Organiser(name="Test", slug=slug)
     with pytest.raises(ValidationError):
         organiser.clean_fields()
 
 
-@pytest.mark.django_db
 def test_organiser_organiser_property_returns_self():
     organiser = OrganiserFactory()
     assert organiser.organiser is organiser
@@ -223,13 +212,11 @@ def test_organiser_organiser_property_returns_self():
         ("user_search", "/orga/organiser/myorg/api/users/"),
     ),
 )
-@pytest.mark.django_db
 def test_organiser_orga_urls(url_attr, expected):
     organiser = OrganiserFactory(slug="myorg")
     assert getattr(organiser.orga_urls, url_attr) == expected
 
 
-@pytest.mark.django_db
 def test_organiser_shred_deletes_organiser():
     organiser = OrganiserFactory()
     pk = organiser.pk
@@ -237,42 +224,35 @@ def test_organiser_shred_deletes_organiser():
     assert not Organiser.objects.filter(pk=pk).exists()
 
 
-@pytest.mark.django_db
 def test_organiser_shred_deletes_related_events():
     organiser = OrganiserFactory()
     event = EventFactory(organiser=organiser)
     event_pk = event.pk
 
-    with scopes_disabled():
-        organiser.shred()
+    organiser.shred()
 
     assert not Event.objects.filter(pk=event_pk).exists()
 
 
-@pytest.mark.django_db
 def test_organiser_shred_logs_activity():
     organiser = OrganiserFactory()
     slug = organiser.slug
     user = UserFactory()
 
-    with scopes_disabled():
-        organiser.shred(person=user)
+    organiser.shred(person=user)
 
-    with scopes_disabled():
-        log = ActivityLog.objects.filter(action_type="pretalx.organiser.delete").first()
+    log = ActivityLog.objects.filter(action_type="pretalx.organiser.delete").first()
     assert log is not None
     assert log.person == user
     assert log.data["slug"] == slug
 
 
-@pytest.mark.django_db
 def test_team_str():
     organiser = OrganiserFactory(name="Org")
     team = TeamFactory(organiser=organiser, name="Admins")
     assert str(team) == "Admins on Org"
 
 
-@pytest.mark.django_db
 def test_team_permission_set_includes_active_permissions():
     team = TeamFactory(
         can_create_events=True,
@@ -289,7 +269,6 @@ def test_team_permission_set_includes_active_permissions():
     }
 
 
-@pytest.mark.django_db
 def test_team_permission_set_empty_when_no_permissions():
     team = TeamFactory(
         can_create_events=False,
@@ -303,7 +282,6 @@ def test_team_permission_set_empty_when_no_permissions():
     assert team.permission_set == set()
 
 
-@pytest.mark.django_db
 def test_team_permission_set_display_returns_verbose_names():
     team = TeamFactory(
         can_create_events=True,
@@ -320,18 +298,15 @@ def test_team_permission_set_display_returns_verbose_names():
     assert verbose in display
 
 
-@pytest.mark.django_db
 def test_team_events_returns_all_organiser_events_when_all_events():
     organiser = OrganiserFactory()
     event1 = EventFactory(organiser=organiser)
     event2 = EventFactory(organiser=organiser)
     team = TeamFactory(organiser=organiser, all_events=True)
 
-    with scopes_disabled():
-        assert set(team.events) == {event1, event2}
+    assert set(team.events) == {event1, event2}
 
 
-@pytest.mark.django_db
 def test_team_events_returns_limited_events_when_not_all_events():
     organiser = OrganiserFactory()
     event1 = EventFactory(organiser=organiser)
@@ -339,11 +314,9 @@ def test_team_events_returns_limited_events_when_not_all_events():
     team = TeamFactory(organiser=organiser, all_events=False)
     team.limit_events.add(event1)
 
-    with scopes_disabled():
-        assert list(team.events) == [event1]
+    assert list(team.events) == [event1]
 
 
-@pytest.mark.django_db
 def test_team_remove_member_removes_from_m2m():
     team = TeamFactory()
     user = UserFactory()
@@ -354,7 +327,6 @@ def test_team_remove_member_removes_from_m2m():
     assert list(team.members.all()) == []
 
 
-@pytest.mark.django_db
 def test_team_remove_member_updates_api_tokens():
     """When a member is removed, their API tokens scoped to this team's
     events should have their events updated."""
@@ -370,14 +342,12 @@ def test_team_remove_member_updates_api_tokens():
     team.remove_member(user)
 
     token.refresh_from_db()
-    with scopes_disabled():
-        assert list(token.events.all()) == []
+    assert list(token.events.all()) == []
 
 
 @pytest.mark.parametrize(
     ("url_attr", "suffix"), (("base", "/"), ("delete", "/delete/"))
 )
-@pytest.mark.django_db
 def test_team_orga_urls(url_attr, suffix):
     organiser = OrganiserFactory(slug="myorg")
     team = TeamFactory(organiser=organiser)
@@ -385,14 +355,12 @@ def test_team_orga_urls(url_attr, suffix):
     assert getattr(team.orga_urls, url_attr) == expected
 
 
-@pytest.mark.django_db
 def test_team_invite_str():
     invite = TeamInviteFactory(email="test@example.com")
     result = str(invite)
     assert "test@example.com" in result
 
 
-@pytest.mark.django_db
 def test_team_invite_organiser_returns_team_organiser():
     organiser = OrganiserFactory()
     team = TeamFactory(organiser=organiser)
@@ -401,23 +369,20 @@ def test_team_invite_organiser_returns_team_organiser():
     assert invite.organiser == organiser
 
 
-@pytest.mark.django_db
 def test_team_invite_token_is_auto_generated():
     invite = TeamInviteFactory()
     assert invite.token is not None
     assert len(invite.token) == 32
 
 
-@pytest.mark.django_db
 def test_team_invite_token_unique():
     invite1 = TeamInviteFactory()
     with pytest.raises(IntegrityError):
-        TeamInvite.objects.create(
+        TeamInviteFactory(
             team=invite1.team, email="other@example.com", token=invite1.token
         )
 
 
-@pytest.mark.django_db
 def test_team_invite_invitation_url():
     invite = TeamInviteFactory()
 
@@ -427,7 +392,6 @@ def test_team_invite_invitation_url():
     assert invite.invitation_url == expected
 
 
-@pytest.mark.django_db
 def test_team_invite_send_delivers_email():
     djmail.outbox = []
     invite = TeamInviteFactory(email="speaker@example.com")

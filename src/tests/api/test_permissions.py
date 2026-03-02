@@ -1,7 +1,9 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 from types import SimpleNamespace
 
 import pytest
-from django_scopes import scope, scopes_disabled
+from django_scopes import scope
 
 from pretalx.api.permissions import ApiPermission, PluginPermission
 from pretalx.event.models import Event
@@ -15,7 +17,7 @@ from tests.factories import (
 )
 from tests.utils import make_api_request
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 def make_view(action="list", detail=False, endpoint=None, permission_map=None):
@@ -58,7 +60,6 @@ def test_api_permission_get_permission_object_returns_obj_when_provided():
     assert result is obj
 
 
-@pytest.mark.django_db
 def test_api_permission_get_permission_object_returns_event_when_no_obj():
     event = EventFactory()
     request = make_api_request(event=event)
@@ -68,7 +69,6 @@ def test_api_permission_get_permission_object_returns_event_when_no_obj():
     assert result == event
 
 
-@pytest.mark.django_db
 def test_api_permission_get_permission_object_returns_organiser_as_fallback():
     organiser = OrganiserFactory()
     request = make_api_request(organiser=organiser)
@@ -78,7 +78,6 @@ def test_api_permission_get_permission_object_returns_organiser_as_fallback():
     assert result == organiser
 
 
-@pytest.mark.django_db
 def test_api_permission_grants_with_team_permission(orga_user):
     """has_permission checks user.has_perm on the permission object."""
     view = make_view(permission_map={"list": "event.view_event"})
@@ -87,7 +86,6 @@ def test_api_permission_grants_with_team_permission(orga_user):
     assert ApiPermission().has_permission(request, view) is True
 
 
-@pytest.mark.django_db
 def test_api_permission_denies_anonymous_user():
     event = EventFactory()
     view = make_view(action="update", permission_map={"update": "event.update_event"})
@@ -96,7 +94,6 @@ def test_api_permission_denies_anonymous_user():
     assert ApiPermission().has_permission(request, view) is False
 
 
-@pytest.mark.django_db
 def test_api_permission_detail_without_obj_returns_true_early():
     """On detail endpoints, DRF calls has_permission without an obj first;
     the permission should return True to let DRF proceed to has_object_permission."""
@@ -106,7 +103,6 @@ def test_api_permission_detail_without_obj_returns_true_early():
     assert ApiPermission()._has_permission(view, None, request) is True
 
 
-@pytest.mark.django_db
 def test_api_permission_has_object_permission_grants_admin_on_event(orga_user):
     user = UserFactory(is_administrator=True)
     view = make_view(
@@ -117,7 +113,6 @@ def test_api_permission_has_object_permission_grants_admin_on_event(orga_user):
     assert ApiPermission().has_object_permission(request, view, orga_user.event) is True
 
 
-@pytest.mark.django_db
 def test_api_permission_without_event_uses_organiser():
     organiser = OrganiserFactory()
     user = UserFactory(is_administrator=True)
@@ -127,7 +122,6 @@ def test_api_permission_without_event_uses_organiser():
     assert ApiPermission().has_permission(request, view) is True
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("action", "expected"),
     (("retrieve", True), ("custom_action", False)),
@@ -146,7 +140,6 @@ def test_api_permission_model_get_perm_fallback(action, expected):
     assert ApiPermission().has_permission(request, view) is expected
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     "use_token",
     (
@@ -174,7 +167,6 @@ def test_api_permission_log_action_treated_as_retrieve(orga_user, use_token):
     assert ApiPermission().has_permission(request, view) is True
 
 
-@pytest.mark.django_db
 def test_api_permission_with_token_denies_when_event_not_in_token():
     event = EventFactory()
     other_event = EventFactory()
@@ -188,7 +180,6 @@ def test_api_permission_with_token_denies_when_event_not_in_token():
     assert ApiPermission().has_permission(request, view) is False
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("token_endpoints", "expected"),
     (
@@ -212,7 +203,6 @@ def test_api_permission_with_token_endpoint_check(orga_user, token_endpoints, ex
     assert ApiPermission().has_permission(request, view) is expected
 
 
-@pytest.mark.django_db
 def test_api_permission_with_token_no_event_skips_event_checks():
     """When auth token is present but request has no event, the event-specific
     checks (event in token, reviewer check) are skipped entirely."""
@@ -230,7 +220,6 @@ def test_api_permission_with_token_no_event_skips_event_checks():
     assert ApiPermission().has_permission(request, view) is True
 
 
-@pytest.mark.django_db
 def test_api_permission_with_token_no_endpoint_skips_endpoint_check(orga_user):
     """When auth token is present and event matches but view has no endpoint,
     the endpoint permission check is skipped."""
@@ -243,7 +232,6 @@ def test_api_permission_with_token_no_endpoint_skips_endpoint_check(orga_user):
     assert ApiPermission().has_permission(request, view) is True
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("phase_kwargs", "expected"),
     (
@@ -266,10 +254,9 @@ def test_api_permission_reviewer_only_with_review_phase(phase_kwargs, expected):
         can_change_submissions=False,
     )
     team.members.add(user)
-    with scopes_disabled():
-        event.review_phases.update(is_active=False)
-        if phase_kwargs is not None:
-            ReviewPhaseFactory(event=event, is_active=True, **phase_kwargs)
+    event.review_phases.update(is_active=False)
+    if phase_kwargs is not None:
+        ReviewPhaseFactory(event=event, is_active=True, **phase_kwargs)
     token = UserApiTokenFactory(user=user)
     token.events.add(event)
     token.endpoints = {
@@ -284,7 +271,6 @@ def test_api_permission_reviewer_only_with_review_phase(phase_kwargs, expected):
         assert ApiPermission().has_permission(request, view) is expected
 
 
-@pytest.mark.django_db
 def test_plugin_permission_denies_when_no_event():
     view = SimpleNamespace(plugin_required="pretalx_test_plugin")
     request = make_api_request(user=UserFactory())
@@ -292,7 +278,6 @@ def test_plugin_permission_denies_when_no_event():
     assert PluginPermission().has_permission(request, view) is False
 
 
-@pytest.mark.django_db
 def test_plugin_permission_allows_when_no_plugin_required():
     event = EventFactory()
     view = SimpleNamespace(plugin_required=None)
@@ -301,7 +286,6 @@ def test_plugin_permission_allows_when_no_plugin_required():
     assert PluginPermission().has_permission(request, view) is True
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("plugins", "expected"),
     (("pretalx_test_plugin", True), ("some_other_plugin", False)),
@@ -318,7 +302,6 @@ def test_plugin_permission_has_permission_with_plugin(plugins, expected):
     assert PluginPermission().has_permission(request, view) is expected
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("plugins", "expected"),
     (("pretalx_test_plugin", True), ("", False)),

@@ -1,9 +1,11 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
 from django.db.utils import IntegrityError
 from django.utils.timezone import now as tz_now
-from django_scopes import scope, scopes_disabled
+from django_scopes import scope
 
 from pretalx.schedule.models import Schedule
 from pretalx.schedule.models.slot import SlotType
@@ -19,7 +21,7 @@ from tests.factories import (
     TrackFactory,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 @pytest.mark.parametrize(
@@ -27,7 +29,6 @@ pytestmark = pytest.mark.unit
     ((None, "version=None"), ("v1", "version=v1")),
     ids=["no_version", "with_version"],
 )
-@pytest.mark.django_db
 def test_schedule_str(version, expected_suffix):
     schedule = ScheduleFactory(version=version)
     assert str(schedule) == f"Schedule(event={schedule.event.slug}, {expected_suffix})"
@@ -38,7 +39,6 @@ def test_schedule_str(version, expected_suffix):
     ((None, "wip"), ("v2", "v2")),
     ids=["none_returns_wip", "returns_version"],
 )
-@pytest.mark.django_db
 def test_schedule_version_with_fallback(version, expected):
     schedule = ScheduleFactory(version=version)
     assert schedule.version_with_fallback == expected
@@ -49,19 +49,16 @@ def test_schedule_version_with_fallback(version, expected):
     ((None, "wip"), ("v1", "v1"), ("version 1", "version%201")),
     ids=["wip", "plain", "encoded"],
 )
-@pytest.mark.django_db
 def test_schedule_url_version(version, expected):
     schedule = ScheduleFactory(version=version)
     assert schedule.url_version == expected
 
 
-@pytest.mark.django_db
 def test_schedule_is_archived_no_version(event):
     with scope(event=event):
         assert not event.wip_schedule.is_archived
 
 
-@pytest.mark.django_db
 def test_schedule_is_archived_current(event):
     with scope(event=event):
         event.release_schedule(name="v1")
@@ -69,7 +66,6 @@ def test_schedule_is_archived_current(event):
         assert not v1.is_archived
 
 
-@pytest.mark.django_db
 def test_schedule_is_archived_old(event):
     with scope(event=event):
         event.release_schedule(name="v1")
@@ -78,7 +74,6 @@ def test_schedule_is_archived_old(event):
         assert v1.is_archived
 
 
-@pytest.mark.django_db
 def test_schedule_scheduled_talks_filters_visible(event):
     """scheduled_talks only returns visible slots with room, start, and submission."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -108,7 +103,6 @@ def test_schedule_scheduled_talks_filters_visible(event):
     assert result == [slot]
 
 
-@pytest.mark.django_db
 def test_schedule_scheduled_talks_excludes_no_room(event):
     submission = SubmissionFactory(event=event)
     with scope(event=event):
@@ -121,7 +115,6 @@ def test_schedule_scheduled_talks_excludes_no_room(event):
         assert list(schedule.scheduled_talks) == []
 
 
-@pytest.mark.django_db
 def test_schedule_scheduled_talks_excludes_no_start(event):
     submission = SubmissionFactory(event=event)
     room = RoomFactory(event=event)
@@ -140,7 +133,6 @@ def test_schedule_scheduled_talks_excludes_no_start(event):
         assert list(schedule.scheduled_talks) == []
 
 
-@pytest.mark.django_db
 def test_schedule_breaks(event):
     room = RoomFactory(event=event)
     with scope(event=event):
@@ -163,7 +155,6 @@ def test_schedule_breaks(event):
     assert result == [break_slot]
 
 
-@pytest.mark.django_db
 def test_schedule_blockers(event):
     room = RoomFactory(event=event)
     with scope(event=event):
@@ -186,7 +177,6 @@ def test_schedule_blockers(event):
     assert result == [blocker]
 
 
-@pytest.mark.django_db
 def test_schedule_slots_returns_submissions(event):
     """The slots property returns Submission objects, not TalkSlot objects."""
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -202,20 +192,17 @@ def test_schedule_slots_returns_submissions(event):
         is_visible=True,
     )
 
-    with scopes_disabled():
-        result = list(schedule.slots)
+    result = list(schedule.slots)
 
     assert result == [submission]
 
 
-@pytest.mark.django_db
 def test_schedule_previous_schedule_none(event):
     with scope(event=event):
         schedule = event.wip_schedule
         assert schedule.previous_schedule is None
 
 
-@pytest.mark.django_db
 def test_schedule_previous_schedule_returns_last_published(event):
     with scope(event=event):
         event.release_schedule(name="v1")
@@ -225,7 +212,6 @@ def test_schedule_previous_schedule_returns_last_published(event):
         assert v2.previous_schedule == v1
 
 
-@pytest.mark.django_db
 def test_schedule_previous_schedule_wip_returns_latest_published(event):
     with scope(event=event):
         event.release_schedule(name="v1")
@@ -234,13 +220,11 @@ def test_schedule_previous_schedule_wip_returns_latest_published(event):
         assert wip.previous_schedule == v1
 
 
-@pytest.mark.django_db
 def test_schedule_use_room_availabilities_false(event):
     with scope(event=event):
         assert event.wip_schedule.use_room_availabilities is False
 
 
-@pytest.mark.django_db
 def test_schedule_use_room_availabilities_true(event):
     room = RoomFactory(event=event)
     AvailabilityFactory(event=event, room=room)
@@ -248,7 +232,6 @@ def test_schedule_use_room_availabilities_true(event):
         assert event.wip_schedule.use_room_availabilities is True
 
 
-@pytest.mark.django_db
 def test_schedule_get_talk_warnings_empty_for_unscheduled(event):
     """No warnings for a slot without start, submission, or room."""
     with scope(event=event):
@@ -260,7 +243,6 @@ def test_schedule_get_talk_warnings_empty_for_unscheduled(event):
     assert schedule.get_talk_warnings(slot) == []
 
 
-@pytest.mark.django_db
 def test_schedule_get_talk_warnings_room_overlap(event):
     """Overlapping slots in the same room produce a room_overlap warning."""
     room = RoomFactory(event=event)
@@ -284,7 +266,6 @@ def test_schedule_get_talk_warnings_room_overlap(event):
     assert warnings[0]["type"] == "room_overlap"
 
 
-@pytest.mark.django_db
 def test_schedule_get_talk_warnings_room_availability(event):
     """A slot in a room outside the room's availability raises a room warning."""
     room = RoomFactory(event=event)
@@ -313,7 +294,6 @@ def test_schedule_get_talk_warnings_room_availability(event):
     assert warnings[0]["type"] == "room"
 
 
-@pytest.mark.django_db
 def test_schedule_get_talk_warnings_speaker_overlap(event):
     """A speaker scheduled for two overlapping slots produces a speaker warning."""
     room1 = RoomFactory(event=event)
@@ -321,9 +301,8 @@ def test_schedule_get_talk_warnings_speaker_overlap(event):
     speaker = SpeakerFactory(event=event)
     submission1 = SubmissionFactory(event=event)
     submission2 = SubmissionFactory(event=event)
-    with scopes_disabled():
-        submission1.speakers.add(speaker)
-        submission2.speakers.add(speaker)
+    submission1.speakers.add(speaker)
+    submission2.speakers.add(speaker)
     start = event.datetime_from
     end = start + dt.timedelta(hours=1)
     with scope(event=event):
@@ -343,7 +322,6 @@ def test_schedule_get_talk_warnings_speaker_overlap(event):
     assert speaker_warnings[0]["speaker"]["code"] == speaker.code
 
 
-@pytest.mark.django_db
 def test_schedule_get_talk_warnings_speaker_availability(event):
     """A speaker unavailable at the slot time produces a speaker warning."""
     room = RoomFactory(event=event)
@@ -355,8 +333,7 @@ def test_schedule_get_talk_warnings_speaker_availability(event):
         end=event.datetime_from + dt.timedelta(hours=1),
     )
     submission = SubmissionFactory(event=event)
-    with scopes_disabled():
-        submission.speakers.add(speaker)
+    submission.speakers.add(speaker)
     late_start = event.datetime_from + dt.timedelta(hours=10)
     with scope(event=event):
         schedule = event.wip_schedule
@@ -376,7 +353,6 @@ def test_schedule_get_talk_warnings_speaker_availability(event):
     assert speaker_warnings[0]["speaker"]["code"] == speaker.code
 
 
-@pytest.mark.django_db
 def test_schedule_get_talk_warnings_no_speaker_avail_when_disabled(event):
     """with_speakers=False skips speaker availability checks."""
     room = RoomFactory(event=event)
@@ -388,8 +364,7 @@ def test_schedule_get_talk_warnings_no_speaker_avail_when_disabled(event):
         end=event.datetime_from + dt.timedelta(hours=1),
     )
     submission = SubmissionFactory(event=event)
-    with scopes_disabled():
-        submission.speakers.add(speaker)
+    submission.speakers.add(speaker)
     late_start = event.datetime_from + dt.timedelta(hours=10)
     with scope(event=event):
         schedule = event.wip_schedule
@@ -412,7 +387,6 @@ def test_schedule_get_talk_warnings_no_speaker_avail_when_disabled(event):
     assert speaker_avail_warnings == []
 
 
-@pytest.mark.django_db
 def test_schedule_get_all_talk_warnings(event):
     room = RoomFactory(event=event)
     submission1 = SubmissionFactory(event=event)
@@ -436,7 +410,6 @@ def test_schedule_get_all_talk_warnings(event):
         assert any(w["type"] == "room_overlap" for w in warnings)
 
 
-@pytest.mark.django_db
 def test_schedule_get_all_talk_warnings_filter_updated(event):
     """filter_updated excludes talks not updated since the given time."""
     room = RoomFactory(event=event)
@@ -459,7 +432,6 @@ def test_schedule_get_all_talk_warnings_filter_updated(event):
     assert result == {}
 
 
-@pytest.mark.django_db
 def test_schedule_warnings_unscheduled_count(event):
     submission = SubmissionFactory(event=event)
     with scope(event=event):
@@ -474,7 +446,6 @@ def test_schedule_warnings_unscheduled_count(event):
     assert result["unscheduled"] == 1
 
 
-@pytest.mark.django_db
 def test_schedule_warnings_unconfirmed_count(event):
     submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
     room = RoomFactory(event=event)
@@ -494,7 +465,6 @@ def test_schedule_warnings_unconfirmed_count(event):
     assert result["unconfirmed"] == 1
 
 
-@pytest.mark.django_db
 def test_schedule_warnings_no_track_when_tracks_enabled(event):
     event.feature_flags = {**event.feature_flags, "use_tracks": True}
     event.save()
@@ -510,7 +480,6 @@ def test_schedule_warnings_no_track_when_tracks_enabled(event):
     assert result["no_track"].count() == 1
 
 
-@pytest.mark.django_db
 def test_schedule_warnings_no_track_empty_when_tracks_disabled(event):
     event.feature_flags = {**event.feature_flags, "use_tracks": False}
     event.save()
@@ -525,7 +494,6 @@ def test_schedule_warnings_no_track_empty_when_tracks_disabled(event):
     assert result["no_track"] == []
 
 
-@pytest.mark.django_db
 def test_schedule_changes_create_on_first_release(event):
     """First release has action 'create'."""
     with scope(event=event):
@@ -536,7 +504,6 @@ def test_schedule_changes_create_on_first_release(event):
         assert v1.changes["action"] == "create"
 
 
-@pytest.mark.django_db
 def test_schedule_changes_update_with_new_talk(event):
     """Adding a new talk between releases shows it in new_talks."""
     room = RoomFactory(event=event)
@@ -558,7 +525,6 @@ def test_schedule_changes_update_with_new_talk(event):
         assert v2.changes["new_talks"][0].submission == submission
 
 
-@pytest.mark.django_db
 def test_schedule_changes_canceled_talk(event):
     """Removing a scheduled talk between releases shows it in canceled_talks."""
     room = RoomFactory(event=event)
@@ -585,7 +551,6 @@ def test_schedule_changes_canceled_talk(event):
         assert len(v2.changes["canceled_talks"]) == 1
 
 
-@pytest.mark.django_db
 def test_schedule_changes_moved_talk(event):
     """Moving a talk to a different time between releases shows it in moved_talks."""
     room = RoomFactory(event=event)
@@ -611,14 +576,12 @@ def test_schedule_changes_moved_talk(event):
         assert v2.changes["moved_talks"][0]["submission"] == submission
 
 
-@pytest.mark.django_db
 def test_schedule_speakers_concerned_create(event):
     """On first release, speakers_concerned lists speakers with their new talks."""
     room = RoomFactory(event=event)
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    with scopes_disabled():
-        submission.speakers.add(speaker)
+    submission.speakers.add(speaker)
     with scope(event=event):
         event.wip_schedule.talks.create(
             submission=submission,
@@ -635,14 +598,12 @@ def test_schedule_speakers_concerned_create(event):
         assert v1.speakers_concerned[speaker]["create"].count() == 1
 
 
-@pytest.mark.django_db
 def test_schedule_speakers_concerned_update(event):
     """On subsequent releases, speakers with moved talks appear in update."""
     room = RoomFactory(event=event)
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    with scopes_disabled():
-        submission.speakers.add(speaker)
+    submission.speakers.add(speaker)
     with scope(event=event):
         event.wip_schedule.talks.create(
             submission=submission,
@@ -664,14 +625,12 @@ def test_schedule_speakers_concerned_update(event):
         assert len(v2.speakers_concerned[matched_speaker[0]]["update"]) == 1
 
 
-@pytest.mark.django_db
 def test_schedule_speakers_concerned_empty_when_only_cancellations(event):
     """When the only changes are cancellations, speakers_concerned is empty."""
     room = RoomFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     speaker = SpeakerFactory(event=event)
-    with scopes_disabled():
-        submission.speakers.add(speaker)
+    submission.speakers.add(speaker)
     with scope(event=event):
         event.wip_schedule.talks.create(
             submission=submission,
@@ -693,13 +652,11 @@ def test_schedule_speakers_concerned_empty_when_only_cancellations(event):
         assert v2.speakers_concerned == {}
 
 
-@pytest.mark.django_db
 def test_schedule_speakers_concerned_create_excludes_unscheduled(event):
     """On first release, speakers with unscheduled slots are not in speakers_concerned."""
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    with scopes_disabled():
-        submission.speakers.add(speaker)
+    submission.speakers.add(speaker)
     with scope(event=event):
         event.wip_schedule.talks.create(
             submission=submission, room=None, start=None, is_visible=True
@@ -710,14 +667,12 @@ def test_schedule_speakers_concerned_create_excludes_unscheduled(event):
         assert speaker not in v1.speakers_concerned
 
 
-@pytest.mark.django_db
 def test_schedule_speakers_concerned_new_talk_in_update(event):
     """speakers_concerned includes speakers for new talks added in an update release."""
     room = RoomFactory(event=event)
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    with scopes_disabled():
-        submission.speakers.add(speaker)
+    submission.speakers.add(speaker)
     with scope(event=event):
         event.release_schedule(name="v1")
         event.wip_schedule.talks.create(
@@ -735,7 +690,6 @@ def test_schedule_speakers_concerned_new_talk_in_update(event):
         assert len(v2.speakers_concerned[matched_speaker[0]]["create"]) == 1
 
 
-@pytest.mark.django_db
 def test_schedule_get_talk_warnings_room_avail_contains(event):
     """No room warning when the slot falls within provided room_avails."""
     room = RoomFactory(event=event)
@@ -762,7 +716,6 @@ def test_schedule_get_talk_warnings_room_avail_contains(event):
     assert room_warnings == []
 
 
-@pytest.mark.django_db
 def test_schedule_get_talk_warnings_room_avails_none(event):
     """When room_avails is not passed, it fetches them from the room."""
     room = RoomFactory(event=event)
@@ -793,13 +746,11 @@ def test_schedule_get_talk_warnings_room_avails_none(event):
     assert warnings[0]["type"] == "room"
 
 
-@pytest.mark.django_db
 def test_schedule_generate_notifications(event):
     room = RoomFactory(event=event)
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    with scopes_disabled():
-        submission.speakers.add(speaker)
+    submission.speakers.add(speaker)
     with scope(event=event):
         event.wip_schedule.talks.create(
             submission=submission,
@@ -817,7 +768,6 @@ def test_schedule_generate_notifications(event):
     assert len(mails) == 1
 
 
-@pytest.mark.django_db
 def test_schedule_generate_notifications_no_speakers(event):
     with scope(event=event):
         event.release_schedule(name="v1")
@@ -827,7 +777,6 @@ def test_schedule_generate_notifications_no_speakers(event):
     assert mails == []
 
 
-@pytest.mark.django_db
 def test_schedule_freeze_returns_old_and_new(event):
     """freeze() returns the frozen schedule and a new WIP schedule."""
     room = RoomFactory(event=event)
@@ -848,7 +797,6 @@ def test_schedule_freeze_returns_old_and_new(event):
 
 
 @pytest.mark.parametrize("version", ("wip", "latest", ""))
-@pytest.mark.django_db
 def test_schedule_freeze_rejects_reserved_names(event, version):
     with (
         scope(event=event),
@@ -857,7 +805,6 @@ def test_schedule_freeze_rejects_reserved_names(event, version):
         event.wip_schedule.freeze(version, notify_speakers=False)
 
 
-@pytest.mark.django_db
 def test_schedule_freeze_rejects_already_versioned(event):
     with scope(event=event):
         old, _ = event.wip_schedule.freeze("v1", notify_speakers=False)
@@ -865,7 +812,6 @@ def test_schedule_freeze_rejects_already_versioned(event):
             old.freeze("v2", notify_speakers=False)
 
 
-@pytest.mark.django_db
 def test_schedule_freeze_rejects_duplicate_version(event):
     with scope(event=event):
         event.wip_schedule.freeze("v1", notify_speakers=False)
@@ -873,7 +819,6 @@ def test_schedule_freeze_rejects_duplicate_version(event):
             event.wip_schedule.freeze("v1", notify_speakers=False)
 
 
-@pytest.mark.django_db
 def test_schedule_freeze_copies_talks(event):
     """freeze() copies all talks to the new WIP schedule."""
     room = RoomFactory(event=event)
@@ -893,7 +838,6 @@ def test_schedule_freeze_copies_talks(event):
         assert new.talks.first().submission == submission
 
 
-@pytest.mark.django_db
 def test_schedule_freeze_removes_blockers_from_released(event):
     """Blockers are removed from the released schedule but kept in new WIP."""
     room = RoomFactory(event=event)
@@ -910,14 +854,12 @@ def test_schedule_freeze_removes_blockers_from_released(event):
         assert new.blockers.count() == 1
 
 
-@pytest.mark.django_db
 def test_schedule_freeze_invalidates_wip_cache(event):
     with scope(event=event):
         event.wip_schedule.freeze("v1", notify_speakers=False)
         assert event.wip_schedule.version is None
 
 
-@pytest.mark.django_db
 def test_schedule_unfreeze_restores_talks(event):
     room = RoomFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -934,13 +876,11 @@ def test_schedule_unfreeze_restores_talks(event):
         assert event.wip_schedule.talks.count() == 1
 
 
-@pytest.mark.django_db
 def test_schedule_unfreeze_unreleased_raises(event):
     with scope(event=event), pytest.raises(ValueError, match="not released yet"):
         event.wip_schedule.unfreeze()
 
 
-@pytest.mark.django_db
 def test_schedule_build_data_basic(event):
     room = RoomFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -968,7 +908,6 @@ def test_schedule_build_data_basic(event):
     assert data["rooms"][0]["id"] == room.id
 
 
-@pytest.mark.django_db
 def test_schedule_build_data_excludes_invisible_by_default(event):
     room = RoomFactory(event=event)
     submission = SubmissionFactory(event=event)
@@ -989,7 +928,6 @@ def test_schedule_build_data_excludes_invisible_by_default(event):
     assert len(data["talks"]) == 0
 
 
-@pytest.mark.django_db
 def test_schedule_build_data_all_talks_includes_invisible(event):
     room = RoomFactory(event=event)
     submission = SubmissionFactory(event=event)
@@ -1016,7 +954,6 @@ def test_schedule_build_data_all_talks_includes_invisible(event):
     ((False, 0), (True, 1)),
     ids=["excluded_by_default", "included_when_requested"],
 )
-@pytest.mark.django_db
 def test_schedule_build_data_blockers(event, include_blockers, expected_count):
     room = RoomFactory(event=event)
     with scope(event=event):
@@ -1037,7 +974,6 @@ def test_schedule_build_data_blockers(event, include_blockers, expected_count):
     assert len(data["talks"]) == expected_count
 
 
-@pytest.mark.django_db
 def test_schedule_build_data_break_slot(event):
     """Break slots (no submission) are included with their slot_type."""
     room = RoomFactory(event=event)
@@ -1062,7 +998,6 @@ def test_schedule_build_data_break_slot(event):
     assert "code" not in data["talks"][0]
 
 
-@pytest.mark.django_db
 def test_schedule_build_data_includes_tracks(event):
     track = TrackFactory(event=event)
     room = RoomFactory(event=event)
@@ -1086,13 +1021,11 @@ def test_schedule_build_data_includes_tracks(event):
     assert data["tracks"][0]["color"] == track.color
 
 
-@pytest.mark.django_db
 def test_schedule_build_data_includes_speakers(event):
     room = RoomFactory(event=event)
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    with scopes_disabled():
-        submission.speakers.add(speaker)
+    submission.speakers.add(speaker)
     with scope(event=event):
         schedule = event.wip_schedule
     TalkSlotFactory(
@@ -1111,7 +1044,6 @@ def test_schedule_build_data_includes_speakers(event):
     assert data["speakers"][0]["code"] == speaker.code
 
 
-@pytest.mark.django_db
 def test_schedule_build_data_all_rooms(event):
     """all_rooms=True includes rooms even without scheduled talks."""
     room1 = RoomFactory(event=event)
@@ -1125,7 +1057,6 @@ def test_schedule_build_data_all_rooms(event):
     assert room2.id in room_ids
 
 
-@pytest.mark.django_db
 def test_schedule_build_data_filter_updated(event):
     """filter_updated limits talks to those updated after the given time."""
     room = RoomFactory(event=event)
@@ -1148,7 +1079,6 @@ def test_schedule_build_data_filter_updated(event):
     assert len(data["talks"]) == 0
 
 
-@pytest.mark.django_db
 def test_schedule_unique_event_version():
     event = EventFactory()
     ScheduleFactory(event=event, version="v1")

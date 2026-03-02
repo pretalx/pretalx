@@ -1,8 +1,9 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import re
 
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.schedule.ascii import (
     draw_ascii_schedule,
@@ -28,8 +29,7 @@ START = dt.datetime(2024, 1, 15, 10, 0, tzinfo=dt.UTC)
 
 @pytest.fixture(autouse=True)
 def _disable_scopes():
-    with scopes_disabled():
-        yield
+    return
 
 
 ANSI_RE = re.compile(r"\033\[[0-9;]*m")
@@ -54,31 +54,28 @@ def _talk(
         start = START
     end = start + dt.timedelta(minutes=duration)
 
-    with scopes_disabled():
-        event = EventFactory()
-        room = RoomFactory(event=event, name=room_name)
+    event = EventFactory()
+    room = RoomFactory(event=event, name=room_name)
 
-        submission = None
-        if has_submission:
-            submission = SubmissionFactory(
-                event=event, title=title, content_locale=locale
-            )
-            if speakers:
-                user = UserFactory(name=speakers)
-                speaker = SpeakerFactory(event=event, user=user)
-                submission.speakers.add(speaker)
+    submission = None
+    if has_submission:
+        submission = SubmissionFactory(event=event, title=title, content_locale=locale)
+        if speakers:
+            user = UserFactory(name=speakers)
+            speaker = SpeakerFactory(event=event, user=user)
+            submission.speakers.add(speaker)
 
-        slot_kwargs = {
-            "submission": submission,
-            "room": room,
-            "start": start,
-            "end": end,
-            "description": description,
-        }
-        if not has_submission:
-            slot_kwargs["schedule"] = event.wip_schedule
+    slot_kwargs = {
+        "submission": submission,
+        "room": room,
+        "start": start,
+        "end": end,
+        "description": description,
+    }
+    if not has_submission:
+        slot_kwargs["schedule"] = event.wip_schedule
 
-        return TalkSlotFactory(**slot_kwargs)
+    return TalkSlotFactory(**slot_kwargs)
 
 
 def test_draw_schedule_list_empty_data():

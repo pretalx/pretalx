@@ -1,14 +1,19 @@
-import json
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 from datetime import timedelta
 
 import pytest
 from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
-from pretalx.schedule.models import TalkSlot
-from tests.factories import FeedbackFactory, SpeakerFactory, SubmissionFactory
+from tests.factories import (
+    FeedbackFactory,
+    SpeakerFactory,
+    SubmissionFactory,
+    TalkSlotFactory,
+)
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 @pytest.fixture
@@ -27,7 +32,6 @@ def past_slot(published_talk_slot):
     return published_talk_slot
 
 
-@pytest.mark.django_db
 def test_feedback_list_requires_auth(client, event):
     """Unauthenticated feedback list returns 401."""
     response = client.get(event.api_urls.feedback, follow=True)
@@ -35,7 +39,6 @@ def test_feedback_list_requires_auth(client, event):
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
 def test_feedback_list_with_orga_read_token(client, event, orga_read_token):
     """Organiser with read token can list feedback."""
     with scopes_disabled():
@@ -54,7 +57,6 @@ def test_feedback_list_with_orga_read_token(client, event, orga_read_token):
     assert data["results"][0]["review"] == feedback.review
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_feedback_list_query_count(
     client, event, orga_read_token, item_count, django_assert_num_queries
@@ -76,7 +78,6 @@ def test_feedback_list_query_count(
     assert response.json()["count"] == item_count
 
 
-@pytest.mark.django_db
 def test_feedback_detail_anonymous_returns_404(client, event):
     """Anonymous feedback detail returns 404 because the queryset is empty for anonymous."""
     with scopes_disabled():
@@ -87,7 +88,6 @@ def test_feedback_detail_anonymous_returns_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_feedback_detail_with_orga_read_token(client, event, orga_read_token):
     """Organiser can retrieve a single feedback entry."""
     with scopes_disabled():
@@ -106,7 +106,6 @@ def test_feedback_detail_with_orga_read_token(client, event, orga_read_token):
     assert data["review"] == "Excellent!"
 
 
-@pytest.mark.django_db
 def test_feedback_filter_by_submission(client, event, orga_read_token):
     """Feedback can be filtered by submission code."""
     with scopes_disabled():
@@ -127,7 +126,6 @@ def test_feedback_filter_by_submission(client, event, orga_read_token):
     assert data["results"][0]["id"] == feedback1.pk
 
 
-@pytest.mark.django_db
 def test_feedback_filter_by_unscheduled_submission(client, event, orga_read_token):
     """Filtering by a valid but unscheduled submission returns empty results."""
     with scopes_disabled():
@@ -145,7 +143,6 @@ def test_feedback_filter_by_unscheduled_submission(client, event, orga_read_toke
     assert response.json()["count"] == 0
 
 
-@pytest.mark.django_db
 def test_feedback_create_anonymous(client, past_slot):
     """Anonymous users can create feedback for a past session."""
     submission = past_slot.submission
@@ -154,9 +151,7 @@ def test_feedback_create_anonymous(client, past_slot):
     response = client.post(
         event.api_urls.feedback,
         follow=True,
-        data=json.dumps(
-            {"submission": submission.code, "rating": 5, "review": "Amazing talk!"}
-        ),
+        data={"submission": submission.code, "rating": 5, "review": "Amazing talk!"},
         content_type="application/json",
     )
 
@@ -168,7 +163,6 @@ def test_feedback_create_anonymous(client, past_slot):
         assert submission.feedback.count() == 1
 
 
-@pytest.mark.django_db
 def test_feedback_create_with_speaker(client, past_slot):
     """Feedback can be directed at a specific speaker of the submission."""
     submission = past_slot.submission
@@ -179,14 +173,12 @@ def test_feedback_create_with_speaker(client, past_slot):
     response = client.post(
         event.api_urls.feedback,
         follow=True,
-        data=json.dumps(
-            {
-                "submission": submission.code,
-                "speaker": speaker.code,
-                "rating": 4,
-                "review": "Great speaker!",
-            }
-        ),
+        data={
+            "submission": submission.code,
+            "speaker": speaker.code,
+            "rating": 4,
+            "review": "Great speaker!",
+        },
         content_type="application/json",
     )
 
@@ -195,7 +187,6 @@ def test_feedback_create_with_speaker(client, past_slot):
     assert data["speaker"] == speaker.code
 
 
-@pytest.mark.django_db
 def test_feedback_create_rejects_unrelated_speaker(client, past_slot):
     """Creating feedback with a speaker not on the submission returns 400."""
     submission = past_slot.submission
@@ -206,21 +197,18 @@ def test_feedback_create_rejects_unrelated_speaker(client, past_slot):
     response = client.post(
         event.api_urls.feedback,
         follow=True,
-        data=json.dumps(
-            {
-                "submission": submission.code,
-                "speaker": other_speaker.code,
-                "rating": 3,
-                "review": "Wrong speaker",
-            }
-        ),
+        data={
+            "submission": submission.code,
+            "speaker": other_speaker.code,
+            "rating": 3,
+            "review": "Wrong speaker",
+        },
         content_type="application/json",
     )
 
     assert response.status_code == 400
 
 
-@pytest.mark.django_db
 def test_feedback_create_rejects_future_session(client, published_talk_slot):
     """Feedback cannot be created for a session that hasn't happened yet."""
     event = published_talk_slot.submission.event
@@ -237,20 +225,17 @@ def test_feedback_create_rejects_future_session(client, published_talk_slot):
     response = client.post(
         event.api_urls.feedback,
         follow=True,
-        data=json.dumps(
-            {
-                "submission": published_talk_slot.submission.code,
-                "rating": 5,
-                "review": "Time traveler feedback",
-            }
-        ),
+        data={
+            "submission": published_talk_slot.submission.code,
+            "rating": 5,
+            "review": "Time traveler feedback",
+        },
         content_type="application/json",
     )
 
     assert response.status_code == 400
 
 
-@pytest.mark.django_db
 def test_feedback_create_rejects_unscheduled_submission(client, event):
     """Feedback cannot be created for a submission without a scheduled slot."""
     event.feature_flags["use_feedback"] = True
@@ -261,16 +246,13 @@ def test_feedback_create_rejects_unscheduled_submission(client, event):
     response = client.post(
         event.api_urls.feedback,
         follow=True,
-        data=json.dumps(
-            {"submission": submission.code, "rating": 5, "review": "Not scheduled"}
-        ),
+        data={"submission": submission.code, "rating": 5, "review": "Not scheduled"},
         content_type="application/json",
     )
 
     assert response.status_code == 400
 
 
-@pytest.mark.django_db
 def test_feedback_create_denied_when_feature_disabled(client, published_talk_slot):
     """Feedback creation returns 403 when the use_feedback feature flag is off."""
     event = published_talk_slot.submission.event
@@ -280,20 +262,17 @@ def test_feedback_create_denied_when_feature_disabled(client, published_talk_slo
     response = client.post(
         event.api_urls.feedback,
         follow=True,
-        data=json.dumps(
-            {
-                "submission": published_talk_slot.submission.code,
-                "rating": 5,
-                "review": "Feature off",
-            }
-        ),
+        data={
+            "submission": published_talk_slot.submission.code,
+            "rating": 5,
+            "review": "Feature off",
+        },
         content_type="application/json",
     )
 
     assert response.status_code == 403
 
 
-@pytest.mark.django_db
 def test_feedback_delete_anonymous_returns_404(client, event):
     """Anonymous feedback deletion returns 404 because the queryset is empty."""
     with scopes_disabled():
@@ -306,7 +285,6 @@ def test_feedback_delete_anonymous_returns_404(client, event):
         assert feedback.talk.feedback.filter(pk=feedback.pk).exists()
 
 
-@pytest.mark.django_db
 def test_feedback_delete_with_write_token(client, event, orga_write_token):
     """Organiser with write token can delete feedback."""
     with scopes_disabled():
@@ -324,7 +302,6 @@ def test_feedback_delete_with_write_token(client, event, orga_write_token):
         assert not event.submissions.first().feedback.filter(pk=feedback_pk).exists()
 
 
-@pytest.mark.django_db
 def test_feedback_delete_rejected_with_read_token(client, event, orga_read_token):
     """Organiser with read-only token cannot delete feedback."""
     with scopes_disabled():
@@ -341,7 +318,6 @@ def test_feedback_delete_rejected_with_read_token(client, event, orga_read_token
         assert feedback.talk.feedback.filter(pk=feedback.pk).exists()
 
 
-@pytest.mark.django_db
 def test_feedback_create_without_rating(client, past_slot):
     """Feedback can be created with just a review and no rating."""
     submission = past_slot.submission
@@ -350,9 +326,7 @@ def test_feedback_create_without_rating(client, past_slot):
     response = client.post(
         event.api_urls.feedback,
         follow=True,
-        data=json.dumps(
-            {"submission": submission.code, "review": "Just a comment, no rating."}
-        ),
+        data={"submission": submission.code, "review": "Just a comment, no rating."},
         content_type="application/json",
     )
 
@@ -360,7 +334,6 @@ def test_feedback_create_without_rating(client, past_slot):
     assert response.json()["rating"] is None
 
 
-@pytest.mark.django_db
 def test_feedback_detail_expand_submission(client, event, orga_read_token):
     """?expand=submission returns the full submission object."""
     with scopes_disabled():
@@ -380,7 +353,6 @@ def test_feedback_detail_expand_submission(client, event, orga_read_token):
     assert "state" in data["submission"]
 
 
-@pytest.mark.django_db
 def test_feedback_list_expand_submission_type(client, event, orga_read_token):
     """?expand=submission.submission_type triggers select_related optimisation."""
     with scopes_disabled():
@@ -396,7 +368,6 @@ def test_feedback_list_expand_submission_type(client, event, orga_read_token):
     assert response.json()["count"] == 1
 
 
-@pytest.mark.django_db
 def test_feedback_detail_expand_speaker(client, event, orga_read_token):
     """?expand=speaker returns the speaker object with code and name but no email."""
     with scopes_disabled():
@@ -419,7 +390,6 @@ def test_feedback_detail_expand_speaker(client, event, orga_read_token):
     assert "email" not in data["speaker"]
 
 
-@pytest.mark.django_db
 def test_feedback_filter_by_invalid_submission_code(client, event, orga_read_token):
     """Filtering by a nonexistent submission code returns 400."""
     response = client.get(
@@ -431,7 +401,6 @@ def test_feedback_filter_by_invalid_submission_code(client, event, orga_read_tok
     assert response.status_code == 400
 
 
-@pytest.mark.django_db
 def test_feedback_create_rejects_unreleased_schedule(client, published_talk_slot):
     """Feedback cannot be created for a submission only in an unreleased schedule."""
     event = published_talk_slot.submission.event
@@ -441,7 +410,7 @@ def test_feedback_create_rejects_unreleased_schedule(client, published_talk_slot
         # Create a new WIP schedule with a slot in the past, but don't release it
         wip_schedule = event.wip_schedule
         new_submission = SubmissionFactory(event=event)
-        TalkSlot.objects.create(
+        TalkSlotFactory(
             submission=new_submission,
             room=published_talk_slot.submission.slots.first().room,
             schedule=wip_schedule,
@@ -453,13 +422,11 @@ def test_feedback_create_rejects_unreleased_schedule(client, published_talk_slot
     response = client.post(
         event.api_urls.feedback,
         follow=True,
-        data=json.dumps(
-            {
-                "submission": new_submission.code,
-                "rating": 5,
-                "review": "Unreleased schedule",
-            }
-        ),
+        data={
+            "submission": new_submission.code,
+            "rating": 5,
+            "review": "Unreleased schedule",
+        },
         content_type="application/json",
     )
 

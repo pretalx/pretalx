@@ -1,5 +1,6 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.api.serializers.submission import (
     SubmissionOrgaSerializer,
@@ -145,9 +146,8 @@ def test_submissionviewset_speakers_for_user_returns_profiles(
     request = make_api_request(event=event, user=organiser_user)
     view = make_view(SubmissionViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.speakers_for_user)
-        expected_speaker = submission.speakers.first()
+    result = list(view.speakers_for_user)
+    expected_speaker = submission.speakers.first()
 
     assert len(result) == 1
     assert result[0] == expected_speaker
@@ -169,8 +169,7 @@ def test_submissionviewset_speakers_for_user_empty_for_anonymous(event):
     request = make_api_request(event=event)
     view = make_view(SubmissionViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.speakers_for_user)
+    result = list(view.speakers_for_user)
 
     assert result == []
 
@@ -218,8 +217,7 @@ def test_submissionviewset_get_serializer_context_includes_expected_keys(
     view = make_view(SubmissionViewSet, request)
     view.format_kwarg = None
 
-    with scopes_disabled():
-        context = view.get_serializer_context()
+    context = view.get_serializer_context()
 
     assert {
         "questions",
@@ -238,8 +236,7 @@ def test_submissionviewset_get_serializer_context_without_event():
     view = make_view(SubmissionViewSet, request)
     view.format_kwarg = None
 
-    with scopes_disabled():
-        context = view.get_serializer_context()
+    context = view.get_serializer_context()
 
     assert "questions" not in context
     assert "speakers" not in context
@@ -255,8 +252,7 @@ def test_submissionviewset_get_serializer_context_public_resources_true_for_non_
     view = make_view(SubmissionViewSet, request)
     view.format_kwarg = None
 
-    with scopes_disabled():
-        context = view.get_serializer_context()
+    context = view.get_serializer_context()
 
     assert context["public_resources"] is True
 
@@ -270,8 +266,7 @@ def test_submissionviewset_get_serializer_context_public_resources_false_for_org
     view = make_view(SubmissionViewSet, request)
     view.format_kwarg = None
 
-    with scopes_disabled():
-        context = view.get_serializer_context()
+    context = view.get_serializer_context()
 
     assert context["public_resources"] is False
 
@@ -284,8 +279,7 @@ def test_submissionviewset_get_serializer_context_schedule_is_current(event):
     view = make_view(SubmissionViewSet, request)
     view.format_kwarg = None
 
-    with scopes_disabled():
-        context = view.get_serializer_context()
+    context = view.get_serializer_context()
 
     assert context["schedule"] == event.current_schedule
 
@@ -297,8 +291,7 @@ def test_submissionviewset_get_queryset_empty_without_event():
     request = make_api_request(user=user)
     view = make_view(SubmissionViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert result == []
 
@@ -309,8 +302,7 @@ def test_submissionviewset_get_queryset_empty_for_anonymous(event, submission):
     request = make_api_request(event=event)
     view = make_view(SubmissionViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert result == []
 
@@ -320,16 +312,14 @@ def test_submissionviewset_get_queryset_orga_sees_all_submissions(
     event, organiser_user, submission
 ):
     """Organiser sees all submissions on the event."""
-    with scopes_disabled():
-        other_sub = SubmissionFactory(event=event)
-        other_speaker = SpeakerFactory(event=event)
-        other_sub.speakers.add(other_speaker)
+    other_sub = SubmissionFactory(event=event)
+    other_speaker = SpeakerFactory(event=event)
+    other_sub.speakers.add(other_speaker)
 
     request = make_api_request(event=event, user=organiser_user)
     view = make_view(SubmissionViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert set(result) == {submission, other_sub}
 
@@ -343,8 +333,7 @@ def test_submissionviewset_get_queryset_unprivileged_user_no_schedule(
     request = make_api_request(event=event, user=user)
     view = make_view(SubmissionViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert result == []
 
@@ -354,16 +343,14 @@ def test_submissionviewset_get_queryset_ordered_by_code(
     event, organiser_user, submission
 ):
     """Queryset is ordered by submission code."""
-    with scopes_disabled():
-        sub2 = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        sub2.speakers.add(speaker)
+    sub2 = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    sub2.speakers.add(speaker)
 
     request = make_api_request(event=event, user=organiser_user)
     view = make_view(SubmissionViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert set(result) == {submission, sub2}
     codes = [s.code for s in result]
@@ -397,28 +384,27 @@ def test_submissionviewset_permission_map(action_name, expected_perm):
 
 
 @pytest.mark.django_db
-def test_tagviewset_get_queryset_returns_event_tags(event, tag):
+def test_tagviewset_get_queryset_returns_event_tags(event):
     """TagViewSet.get_queryset returns all tags for the event."""
+    tag = TagFactory(event=event)
     request = make_api_request(event=event)
     view = make_view(TagViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert result == [tag]
 
 
 @pytest.mark.django_db
-def test_tagviewset_get_queryset_excludes_other_event_tags(event, tag):
+def test_tagviewset_get_queryset_excludes_other_event_tags(event):
     """TagViewSet.get_queryset does not include tags from other events."""
-    with scopes_disabled():
-        TagFactory()  # creates a tag on a different event
+    tag = TagFactory(event=event)
+    TagFactory()  # creates a tag on a different event
 
     request = make_api_request(event=event)
     view = make_view(TagViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert result == [tag]
 
@@ -429,8 +415,7 @@ def test_tagviewset_get_queryset_empty_when_no_tags(event):
     request = make_api_request(event=event)
     view = make_view(TagViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert result == []
 
@@ -438,16 +423,14 @@ def test_tagviewset_get_queryset_empty_when_no_tags(event):
 @pytest.mark.django_db
 def test_tagviewset_get_queryset_ordered_by_pk(event):
     """TagViewSet.get_queryset returns tags ordered by pk."""
-    with scopes_disabled():
-        TagFactory(event=event)
-        TagFactory(event=event)
-        TagFactory(event=event)
+    TagFactory(event=event)
+    TagFactory(event=event)
+    TagFactory(event=event)
 
     request = make_api_request(event=event)
     view = make_view(TagViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     pks = [t.pk for t in result]
     assert pks == sorted(pks)
@@ -460,9 +443,8 @@ def test_submissiontypeviewset_get_queryset_returns_event_types(event):
     request = make_api_request(event=event)
     view = make_view(SubmissionTypeViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
-        default_type = event.cfp.default_type
+    result = list(view.get_queryset())
+    default_type = event.cfp.default_type
 
     assert result == [default_type]
 
@@ -470,15 +452,13 @@ def test_submissiontypeviewset_get_queryset_returns_event_types(event):
 @pytest.mark.django_db
 def test_submissiontypeviewset_get_queryset_includes_custom_type(event):
     """SubmissionTypeViewSet.get_queryset includes custom submission types."""
-    with scopes_disabled():
-        default_type = event.cfp.default_type
-        custom_type = SubmissionTypeFactory(event=event, name="Workshop")
+    default_type = event.cfp.default_type
+    custom_type = SubmissionTypeFactory(event=event, name="Workshop")
 
     request = make_api_request(event=event)
     view = make_view(SubmissionTypeViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert set(result) == {default_type, custom_type}
 
@@ -486,15 +466,13 @@ def test_submissiontypeviewset_get_queryset_includes_custom_type(event):
 @pytest.mark.django_db
 def test_submissiontypeviewset_get_queryset_excludes_other_event_types(event):
     """SubmissionTypeViewSet.get_queryset does not include types from other events."""
-    with scopes_disabled():
-        default_type = event.cfp.default_type
-        SubmissionTypeFactory()  # creates on a different event
+    default_type = event.cfp.default_type
+    SubmissionTypeFactory()  # creates on a different event
 
     request = make_api_request(event=event)
     view = make_view(SubmissionTypeViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert result == [default_type]
 
@@ -505,8 +483,7 @@ def test_trackviewset_get_queryset_returns_event_tracks(event, track):
     request = make_api_request(event=event)
     view = make_view(TrackViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert result == [track]
 
@@ -514,14 +491,12 @@ def test_trackviewset_get_queryset_returns_event_tracks(event, track):
 @pytest.mark.django_db
 def test_trackviewset_get_queryset_excludes_other_event_tracks(event, track):
     """TrackViewSet.get_queryset does not include tracks from other events."""
-    with scopes_disabled():
-        TrackFactory()  # creates on a different event
+    TrackFactory()  # creates on a different event
 
     request = make_api_request(event=event)
     view = make_view(TrackViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert result == [track]
 
@@ -532,8 +507,7 @@ def test_trackviewset_get_queryset_empty_when_no_tracks(event):
     request = make_api_request(event=event)
     view = make_view(TrackViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert result == []
 
@@ -541,15 +515,13 @@ def test_trackviewset_get_queryset_empty_when_no_tracks(event):
 @pytest.mark.django_db
 def test_trackviewset_get_queryset_multiple_tracks(event):
     """TrackViewSet.get_queryset returns all tracks when multiple exist."""
-    with scopes_disabled():
-        track1 = TrackFactory(event=event)
-        track2 = TrackFactory(event=event)
+    track1 = TrackFactory(event=event)
+    track2 = TrackFactory(event=event)
 
     request = make_api_request(event=event)
     view = make_view(TrackViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert set(result) == {track1, track2}
 
@@ -559,19 +531,17 @@ def test_submissionviewset_get_queryset_reviewer_excludes_own_submissions(
     event, review_user, submission
 ):
     """Reviewer does not see submissions where they are a speaker."""
-    with scopes_disabled():
-        speaker_profile = SpeakerFactory(event=event, user=review_user)
-        submission.speakers.add(speaker_profile)
-        # Create another submission the reviewer should see
-        other_sub = SubmissionFactory(event=event)
-        other_speaker = SpeakerFactory(event=event)
-        other_sub.speakers.add(other_speaker)
+    speaker_profile = SpeakerFactory(event=event, user=review_user)
+    submission.speakers.add(speaker_profile)
+    # Create another submission the reviewer should see
+    other_sub = SubmissionFactory(event=event)
+    other_speaker = SpeakerFactory(event=event)
+    other_sub.speakers.add(other_speaker)
 
     request = make_api_request(event=event, user=review_user)
     view = make_view(SubmissionViewSet, request)
 
-    with scopes_disabled():
-        result = list(view.get_queryset())
+    result = list(view.get_queryset())
 
     assert result == [other_sub]
 
@@ -584,10 +554,9 @@ def test_submissionviewset_get_queryset_orga_includes_prefetches(
     request = make_api_request(event=event, user=organiser_user)
     view = make_view(SubmissionViewSet, request)
 
-    with scopes_disabled():
-        qs = view.get_queryset()
-        # Force evaluation to trigger prefetches
-        result = list(qs)
+    qs = view.get_queryset()
+    # Force evaluation to trigger prefetches
+    result = list(qs)
 
     assert len(result) == 1
     # Verify the queryset has the expected prefetches by checking the lookups
@@ -611,8 +580,7 @@ def test_submissionviewset_get_queryset_non_orga_omits_orga_prefetches(
     request = make_api_request(event=event, user=user)
     view = make_view(SubmissionViewSet, request)
 
-    with scopes_disabled():
-        qs = view.get_queryset()
+    qs = view.get_queryset()
 
     prefetch_names = [
         p.prefetch_through if hasattr(p, "prefetch_through") else p

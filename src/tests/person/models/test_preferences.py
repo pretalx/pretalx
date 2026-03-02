@@ -1,12 +1,13 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.db.utils import IntegrityError
 
 from tests.factories import UserEventPreferencesFactory
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_preferences_str(event):
     prefs = UserEventPreferencesFactory(event=event)
     assert str(prefs) == f"Preferences for {prefs.user} and {prefs.event}"
@@ -33,7 +34,6 @@ def test_preferences_str(event):
         "intermediate_leaf_node",
     ],
 )
-@pytest.mark.django_db
 def test_preferences_get(preferences, path, expected):
     prefs = UserEventPreferencesFactory(preferences=preferences)
     assert prefs.get(path) == expected
@@ -66,14 +66,12 @@ def test_preferences_get(preferences, path, expected):
         "leaf_to_dict",
     ],
 )
-@pytest.mark.django_db
 def test_preferences_set(initial, path, value, expected_at_path):
     prefs = UserEventPreferencesFactory(preferences=initial)
     prefs.set(path, value)
     assert prefs.get(path) == expected_at_path
 
 
-@pytest.mark.django_db
 def test_preferences_set_raises_on_overwrite_dict_with_non_dict():
     """Cannot overwrite a branch node with a scalar value."""
     prefs = UserEventPreferencesFactory(preferences={"tables": {"SubmissionTable": {}}})
@@ -81,7 +79,6 @@ def test_preferences_set_raises_on_overwrite_dict_with_non_dict():
         prefs.set("tables", "flat_value")
 
 
-@pytest.mark.django_db
 def test_preferences_set_raises_on_intermediate_leaf():
     """Cannot create keys under an existing leaf node."""
     prefs = UserEventPreferencesFactory(preferences={"tables": "flat_value"})
@@ -89,7 +86,6 @@ def test_preferences_set_raises_on_intermediate_leaf():
         prefs.set("tables.SubmissionTable.columns", ["title"])
 
 
-@pytest.mark.django_db
 def test_preferences_set_with_commit(event):
     prefs = UserEventPreferencesFactory(event=event, preferences={})
     prefs.set("color", "green", commit=True)
@@ -98,7 +94,6 @@ def test_preferences_set_with_commit(event):
     assert prefs.preferences["color"] == "green"
 
 
-@pytest.mark.django_db
 def test_preferences_set_without_commit_does_not_persist(event):
     prefs = UserEventPreferencesFactory(event=event, preferences={})
     prefs.set("color", "green", commit=False)
@@ -128,14 +123,12 @@ def test_preferences_set_without_commit_does_not_persist(event):
         "missing_nested_key_silent",
     ],
 )
-@pytest.mark.django_db
 def test_preferences_clear(initial, path, expected_remaining):
     prefs = UserEventPreferencesFactory(preferences=initial)
     prefs.clear(path)
     assert prefs.preferences == expected_remaining
 
 
-@pytest.mark.django_db
 def test_preferences_clear_with_commit(event):
     prefs = UserEventPreferencesFactory(event=event, preferences={"color": "blue"})
     prefs.clear("color", commit=True)
@@ -144,7 +137,6 @@ def test_preferences_clear_with_commit(event):
     assert "color" not in prefs.preferences
 
 
-@pytest.mark.django_db
 def test_preferences_clear_without_commit_does_not_persist(event):
     prefs = UserEventPreferencesFactory(event=event, preferences={"color": "blue"})
     prefs.clear("color", commit=False)
@@ -153,7 +145,6 @@ def test_preferences_clear_without_commit_does_not_persist(event):
     assert prefs.preferences["color"] == "blue"
 
 
-@pytest.mark.django_db
 def test_preferences_unique_constraint():
     """Only one preference per user/event pair."""
     prefs = UserEventPreferencesFactory()

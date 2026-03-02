@@ -1,13 +1,14 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.conf import settings
 from django.urls import reverse
 
 from tests.factories import UserFactory
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_locale_set_redirects_and_sets_cookie(client, event):
     """GET locale/set with valid locale redirects and sets language cookie."""
     url = reverse("cfp:locale.set", kwargs={"event": event.slug})
@@ -18,7 +19,6 @@ def test_locale_set_redirects_and_sets_cookie(client, event):
     assert response.cookies[settings.LANGUAGE_COOKIE_NAME].value == "de"
 
 
-@pytest.mark.django_db
 def test_locale_set_invalid_locale_no_cookie(client, event):
     """GET locale/set with invalid locale redirects but doesn't set cookie."""
     url = reverse("cfp:locale.set", kwargs={"event": event.slug})
@@ -29,7 +29,6 @@ def test_locale_set_invalid_locale_no_cookie(client, event):
     assert settings.LANGUAGE_COOKIE_NAME not in response.cookies
 
 
-@pytest.mark.django_db
 def test_locale_set_persists_for_authenticated_user(client, event):
     """Authenticated user's locale is saved to the database."""
     user = UserFactory(locale="en")
@@ -42,7 +41,6 @@ def test_locale_set_persists_for_authenticated_user(client, event):
     assert user.locale == "de"
 
 
-@pytest.mark.django_db
 def test_locale_set_with_next_param(client, event):
     """Locale set with a next parameter redirects to that URL."""
     url = reverse("cfp:locale.set", kwargs={"event": event.slug})
@@ -53,7 +51,6 @@ def test_locale_set_with_next_param(client, event):
     assert f"/{event.slug}/cfp" in response.url
 
 
-@pytest.mark.django_db
 def test_locale_set_global_endpoint(client):
     """The global locale/set endpoint (outside event context) also works."""
     response = client.get("/locale/set?locale=de")

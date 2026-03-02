@@ -1,4 +1,5 @@
-import re
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 from types import SimpleNamespace
 
 import pytest
@@ -8,10 +9,8 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.http import HttpResponse, StreamingHttpResponse
 from django.test import override_settings
-from django_scopes import scopes_disabled
 
 from pretalx.agenda.management.commands.export_schedule_html import (
-    URL_REGEX,
     delete_directory,
     dump_content,
     event_exporter_urls,
@@ -29,9 +28,10 @@ from pretalx.agenda.management.commands.export_schedule_html import (
     get_path,
     schedule_version_urls,
 )
-from pretalx.submission.models import Resource, SubmissionStates
+from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     EventFactory,
+    ResourceFactory,
     ScheduleFactory,
     SpeakerFactory,
     SubmissionFactory,
@@ -150,20 +150,6 @@ def test_find_assets_ignores_script_without_src():
 )
 def test_find_urls_extracts_css_url_references(css, expected):
     assert set(find_urls(css)) == expected
-
-
-@pytest.mark.parametrize(
-    ("css_url", "expected"),
-    (
-        ('url("/static/img.png")', "/static/img.png"),
-        ("url(/static/img.png)", "/static/img.png"),
-    ),
-    ids=["quoted", "unquoted"],
-)
-def test_url_regex_matches_css_url_pattern(css_url, expected):
-    match = re.search(URL_REGEX, css_url)
-
-    assert match.group(1) == expected
 
 
 @pytest.mark.parametrize(
@@ -360,8 +346,7 @@ def test_event_urls_includes_all_url_categories():
     """event_urls yields base URLs, schedule URLs, talk/speaker/exporter URLs, etc."""
     event = EventFactory()
 
-    with scopes_disabled():
-        result = list(event_urls(event))
+    result = list(event_urls(event))
 
     assert event.urls.base in result
     assert event.urls.schedule in result
@@ -380,8 +365,7 @@ def test_schedule_version_urls_yields_urls_for_versioned_schedules():
     event = EventFactory()
     schedule = ScheduleFactory(event=event, version="v1")
 
-    with scopes_disabled():
-        result = list(schedule_version_urls(event))
+    result = list(schedule_version_urls(event))
 
     assert schedule.urls.public in result
     assert schedule.urls.widget_data in result
@@ -393,8 +377,7 @@ def test_schedule_version_urls_excludes_unversioned_schedules():
     """The WIP schedule (version=None) is not included."""
     event = EventFactory()
 
-    with scopes_disabled():
-        result = list(schedule_version_urls(event))
+    result = list(schedule_version_urls(event))
 
     assert result == []
 
@@ -451,28 +434,30 @@ def test_fake_admin_getter_returns_response_content():
 def test_export_event_creates_output_files(tmp_path):
     event = EventFactory()
 
-    with scopes_disabled():
-        export_event(event, tmp_path)
+    export_event(event, tmp_path)
 
     assert (tmp_path / event.slug / "schedule" / "index.html").exists()
 
 
+@pytest.mark.slow
 @pytest.mark.django_db
+@pytest.mark.filterwarnings(
+    "ignore:It looks like you're using an HTML parser to parse an XML document"
+)
 def test_export_event_handles_media_urls(tmp_path):
     """export_event skips find_assets for media/static URLs and resolves
     CSS url() references (e.g. font files referenced from base.css)."""
     call_command("collectstatic", "--no-input", verbosity=0)
     event = EventFactory()
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submission.speakers.add(speaker)
-        resource = Resource.objects.create(submission=submission, is_public=True)
-        resource.resource.save("test.pdf", SimpleUploadedFile("test.pdf", b"pdf data"))
-        slot = TalkSlotFactory(submission=submission, is_visible=True)
-        slot.schedule.freeze("v1", notify_speakers=False)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    resource = ResourceFactory(submission=submission, is_public=True)
+    resource.resource.save("test.pdf", SimpleUploadedFile("test.pdf", b"pdf data"))
+    slot = TalkSlotFactory(submission=submission, is_visible=True)
+    slot.schedule.freeze("v1", notify_speakers=False)
 
-        export_event(event, tmp_path)
+    export_event(event, tmp_path)
 
     assert (tmp_path / event.slug / "schedule" / "index.html").exists()
     resource_path = tmp_path / resource.resource.url.lstrip("/")

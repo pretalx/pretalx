@@ -1,5 +1,6 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.orga.views.cards import SubmissionCards
 from pretalx.submission.cards import _text
@@ -32,17 +33,15 @@ def test_text_inserts_hair_space_after_hyphens():
 @pytest.mark.django_db
 def test_submission_cards_get_queryset_filters_states(event):
     """get_queryset only returns accepted, confirmed, and submitted submissions."""
-    with scopes_disabled():
-        accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-        confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        SubmissionFactory(event=event, state=SubmissionStates.REJECTED)
-        SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN)
+    accepted = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    confirmed = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    SubmissionFactory(event=event, state=SubmissionStates.REJECTED)
+    SubmissionFactory(event=event, state=SubmissionStates.WITHDRAWN)
 
     request = make_request(event)
     view = make_view(SubmissionCards, request)
 
-    with scopes_disabled():
-        result = set(view.get_queryset())
+    result = set(view.get_queryset())
 
     assert result == {accepted, confirmed, submitted}

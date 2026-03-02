@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025-present Tobias Kunze
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
@@ -26,7 +26,7 @@ from tests.factories import (
 )
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 @pytest.fixture
@@ -77,7 +77,6 @@ def other_submission(event):
     return sub
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("url_name", ("orga:mails.outbox.list", "orga:mails.sent"))
 def test_anonymous_user_cannot_access_mail_views(client, event, url_name):
     url = reverse(url_name, kwargs={"event": event.slug})
@@ -88,7 +87,6 @@ def test_anonymous_user_cannot_access_mail_views(client, event, url_name):
     assert "/login" in response.url
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("url_name", ("orga:mails.outbox.list", "orga:mails.sent"))
 def test_non_orga_user_cannot_access_mail_views(client, event, url_name):
     user = UserFactory()
@@ -100,7 +98,6 @@ def test_non_orga_user_cannot_access_mail_views(client, event, url_name):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_outbox_list_view(
     client, event, mail_template, item_count, django_assert_num_queries
@@ -121,7 +118,6 @@ def test_outbox_list_view(
     assert all(m.subject in content for m in mails)
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_sent_mail_list_view(
     client, event, mail_template, item_count, django_assert_num_queries
@@ -145,7 +141,6 @@ def test_sent_mail_list_view(
     assert all(m.subject in content for m in sent_mails)
 
 
-@pytest.mark.django_db
 def test_mail_detail_view_pending(client, event, draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -156,7 +151,6 @@ def test_mail_detail_view_pending(client, event, draft_mail):
     assert draft_mail.subject in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_mail_detail_view_sent(client, event, sent_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -167,7 +161,6 @@ def test_mail_detail_view_sent(client, event, sent_mail):
     assert sent_mail.subject in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_mail_detail_edit_updates_recipient(client, event, draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -196,7 +189,6 @@ def test_mail_detail_edit_updates_recipient(client, event, draft_mail):
         assert draft_mail.logged_actions().count() == log_count + 1
 
 
-@pytest.mark.django_db
 def test_mail_detail_edit_unchanged_no_log(client, event, draft_mail):
     """Submitting without changes should not create a log entry."""
     user = make_orga_user(event, can_change_submissions=True)
@@ -222,7 +214,6 @@ def test_mail_detail_edit_unchanged_no_log(client, event, draft_mail):
         assert draft_mail.logged_actions().count() == log_count
 
 
-@pytest.mark.django_db
 def test_mail_detail_edit_and_send(client, event, draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -252,7 +243,6 @@ def test_mail_detail_edit_and_send(client, event, draft_mail):
     assert sent.bcc == ["bcc1@example.com", "bcc2@example.com"]
 
 
-@pytest.mark.django_db
 def test_mail_detail_cannot_edit_sent_mail(client, event, sent_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -276,7 +266,6 @@ def test_mail_detail_cannot_edit_sent_mail(client, event, sent_mail):
     assert sent_mail.subject != "HACKED"
 
 
-@pytest.mark.django_db
 def test_send_single_mail(client, event, draft_mail, second_draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -296,7 +285,6 @@ def test_send_single_mail(client, event, draft_mail, second_draft_mail):
         )
 
 
-@pytest.mark.django_db
 def test_send_nonexistent_mail_shows_error(client, event, draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -315,7 +303,6 @@ def test_send_nonexistent_mail_shows_error(client, event, draft_mail):
         )
 
 
-@pytest.mark.django_db
 def test_cannot_send_already_sent_mail(client, event, sent_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -333,7 +320,6 @@ def test_cannot_send_already_sent_mail(client, event, sent_mail):
         )
 
 
-@pytest.mark.django_db
 def test_send_all_mails(client, event, draft_mail, second_draft_mail, sent_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -360,7 +346,6 @@ def test_send_all_mails(client, event, draft_mail, second_draft_mail, sent_mail)
         )
 
 
-@pytest.mark.django_db
 def test_retry_all_failed_mails(client, event, draft_mail, second_draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -380,7 +365,6 @@ def test_retry_all_failed_mails(client, event, draft_mail, second_draft_mail):
         assert second_draft_mail.state == QueuedMailStates.DRAFT
 
 
-@pytest.mark.django_db
 def test_delete_single_mail(client, event, draft_mail, second_draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -394,7 +378,6 @@ def test_delete_single_mail(client, event, draft_mail, second_draft_mail):
         assert QueuedMail.objects.filter(event=event).count() == 1
 
 
-@pytest.mark.django_db
 def test_delete_confirm_page(client, event, draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -406,7 +389,6 @@ def test_delete_confirm_page(client, event, draft_mail):
         assert QueuedMail.objects.filter(event=event).count() == 1
 
 
-@pytest.mark.django_db
 def test_delete_all_by_template(
     client, event, draft_mail, second_draft_mail, sent_mail
 ):
@@ -424,7 +406,6 @@ def test_delete_all_by_template(
         assert QueuedMail.objects.filter(event=event).count() == 1
 
 
-@pytest.mark.django_db
 def test_cannot_discard_sent_mail(client, event, sent_mail):
     """GET on a sent mail's delete URL still shows the page but the queryset is empty."""
     user = make_orga_user(event, can_change_submissions=True)
@@ -439,7 +420,6 @@ def test_cannot_discard_sent_mail(client, event, sent_mail):
         assert QueuedMail.objects.filter(event=event).count() == 1
 
 
-@pytest.mark.django_db
 def test_purge_outbox(client, event, draft_mail, second_draft_mail, sent_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -468,7 +448,6 @@ def test_purge_outbox(client, event, draft_mail, second_draft_mail, sent_mail):
         assert QueuedMail.objects.filter(event=event).count() == 1
 
 
-@pytest.mark.django_db
 def test_copy_sent_mail_to_draft(client, event, sent_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -486,7 +465,6 @@ def test_copy_sent_mail_to_draft(client, event, sent_mail):
         assert new_mail.subject == sent_mail.subject
 
 
-@pytest.mark.django_db
 def test_mail_preview(client, event, draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -502,7 +480,6 @@ def test_mail_preview(client, event, draft_mail):
     assert str(draft_mail.text) in content
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_template_list_view(
     client, event, mail_template, item_count, django_assert_num_queries
@@ -520,7 +497,6 @@ def test_template_list_view(
     assert str(mail_template.subject) in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_create_template(client, event):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -539,7 +515,6 @@ def test_create_template(client, event):
         assert MailTemplate.objects.get(event=event, subject__contains="[test] subject")
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("variant", ("custom", "fixed", "update"))
 def test_edit_template(client, event, mail_template, variant):
     user = make_orga_user(event, can_change_submissions=True)
@@ -567,7 +542,6 @@ def test_edit_template(client, event, mail_template, variant):
         )
 
 
-@pytest.mark.django_db
 def test_edit_template_unchanged_no_log(client, event, mail_template):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -589,7 +563,6 @@ def test_edit_template_unchanged_no_log(client, event, mail_template):
         assert mail_template.logged_actions().count() == log_count
 
 
-@pytest.mark.django_db
 def test_cannot_add_invalid_placeholder_to_template(client, event):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -612,7 +585,6 @@ def test_cannot_add_invalid_placeholder_to_template(client, event):
     assert "{wrong_placeholder}" not in str(template.text)
 
 
-@pytest.mark.django_db
 def test_delete_template(client, event, mail_template):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -629,7 +601,6 @@ def test_delete_template(client, event, mail_template):
         assert MailTemplate.objects.filter(event=event).count() == before - 1
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_get(client, event, submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -639,7 +610,6 @@ def test_compose_session_mail_get(client, event, submission):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_by_state(client, event, submission, other_submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -672,7 +642,6 @@ def test_compose_session_mail_by_state(client, event, submission, other_submissi
         assert mails[0].text == f"about {submission.title}"
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_selected_submissions(
     client, event, submission, other_submission
 ):
@@ -701,7 +670,6 @@ def test_compose_session_mail_selected_submissions(
         assert list(mails[0].to_users.all()) == [other_submission.speakers.first().user]
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_state_plus_specific_submission(
     client, event, published_talk_slot, other_submission
 ):
@@ -739,7 +707,6 @@ def test_compose_session_mail_state_plus_specific_submission(
         assert f"bar {other_submission.title}" in mail_texts
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_immediate_send(
     client, event, submission, other_submission
 ):
@@ -776,7 +743,6 @@ def test_compose_session_mail_immediate_send(
     assert len(djmail.outbox) == 2
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_no_recipients_fails(client, event, submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -796,7 +762,6 @@ def test_compose_session_mail_no_recipients_fails(client, event, submission):
         )
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_preview_no_recipients(client, event, submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -819,7 +784,6 @@ def test_compose_session_mail_preview_no_recipients(client, event, submission):
     assert "no recipients" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_by_track(client, event, submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -849,7 +813,6 @@ def test_compose_session_mail_by_track(client, event, submission):
         )
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_by_submission_type(client, event, submission):
     """The submission_type filter only appears when the event has multiple types."""
     user = make_orga_user(event, can_change_submissions=True)
@@ -879,7 +842,6 @@ def test_compose_session_mail_by_submission_type(client, event, submission):
         )
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_track_and_type_no_duplicates(client, event, submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -911,7 +873,6 @@ def test_compose_session_mail_track_and_type_no_duplicates(client, event, submis
         )
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_to_specific_speakers(client, event, submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -938,7 +899,6 @@ def test_compose_session_mail_to_specific_speakers(client, event, submission):
         assert list(mails[0].to_users.all()) == [speaker.user]
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_by_content_locale(client, event, submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -963,7 +923,6 @@ def test_compose_session_mail_by_content_locale(client, event, submission):
         assert QueuedMail.objects.filter(event=event, sent__isnull=True).count() == 1
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_multiple_states_failing_placeholders(
     client, event, published_talk_slot
 ):
@@ -1000,7 +959,6 @@ def test_compose_session_mail_multiple_states_failing_placeholders(
         assert mails[0].text == f"bar {published_talk_slot.room.name}"
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_to_confirmed_speakers(client, event):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1031,7 +989,6 @@ def test_compose_session_mail_to_confirmed_speakers(client, event):
         assert list(mails[0].to_users.all()) == [speaker.user]
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_speakers_with_state_filter(
     client, event, submission, other_submission
 ):
@@ -1067,7 +1024,6 @@ def test_compose_session_mail_speakers_with_state_filter(
         assert other_speaker.user in recipients
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_from_template(client, event, submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1082,7 +1038,6 @@ def test_compose_session_mail_from_template(client, event, submission):
     assert str(template.subject) in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_from_wrong_template(client, event, submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1098,7 +1053,6 @@ def test_compose_session_mail_from_wrong_template(client, event, submission):
     assert str(template.subject) not in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_compose_teams_mail_get(client, event):
     user = make_orga_user(event, can_change_submissions=True, can_change_teams=True)
     client.force_login(user)
@@ -1108,7 +1062,6 @@ def test_compose_teams_mail_get(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_compose_teams_mail_sends_directly(client, event):
     user = make_orga_user(event, can_change_submissions=True, can_change_teams=True)
     client.force_login(user)
@@ -1136,7 +1089,6 @@ def test_compose_teams_mail_sends_directly(client, event):
     assert djmail.outbox[0].body == f"hello {reviewer.name}"
 
 
-@pytest.mark.django_db
 def test_compose_teams_mail_multiple_teams(client, event):
     user = make_orga_user(event, can_change_submissions=True, can_change_teams=True)
     client.force_login(user)
@@ -1170,7 +1122,6 @@ def test_compose_teams_mail_multiple_teams(client, event):
         assert sent.body == f"mail {u.email}"
 
 
-@pytest.mark.django_db
 def test_compose_mail_choice_get(client, event):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1181,7 +1132,6 @@ def test_compose_mail_choice_get(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_draft_reminders_get(client, event):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1191,7 +1141,6 @@ def test_draft_reminders_get(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_send_draft_reminders(client, event):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1208,7 +1157,6 @@ def test_send_draft_reminders(client, event):
     assert draft.title in djmail.outbox[0].body
 
 
-@pytest.mark.django_db
 def test_sending_status_while_sending(client, event, draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1224,7 +1172,6 @@ def test_sending_status_while_sending(client, event, draft_mail):
     assert "HX-Trigger" not in response.headers
 
 
-@pytest.mark.django_db
 def test_sending_status_stops_when_done(client, event, sent_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1236,7 +1183,6 @@ def test_sending_status_stops_when_done(client, event, sent_mail):
     assert response.headers.get("HX-Trigger") == "updateSidebarCount"
 
 
-@pytest.mark.django_db
 def test_sending_status_empty_ids(client, event):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1247,7 +1193,6 @@ def test_sending_status_empty_ids(client, event):
     assert response.status_code == 286
 
 
-@pytest.mark.django_db
 def test_sidebar_count(client, event, draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1261,7 +1206,6 @@ def test_sidebar_count(client, event, draft_mail):
     assert ">1<" in content
 
 
-@pytest.mark.django_db
 def test_outbox_shows_failed_count(client, event, draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1278,7 +1222,6 @@ def test_outbox_shows_failed_count(client, event, draft_mail):
     assert "Show failed" in content
 
 
-@pytest.mark.django_db
 def test_outbox_status_filter(client, event, draft_mail, second_draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1295,7 +1238,6 @@ def test_outbox_status_filter(client, event, draft_mail, second_draft_mail):
     assert second_draft_mail.subject in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_send_single_mail_htmx_response(client, event, draft_mail):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1308,7 +1250,6 @@ def test_send_single_mail_htmx_response(client, event, draft_mail):
     assert draft_mail.state == QueuedMailStates.SENT
 
 
-@pytest.mark.django_db
 def test_send_single_mail_blocked_by_exception(
     client, event, draft_mail, register_signal_handler
 ):
@@ -1326,7 +1267,6 @@ def test_send_single_mail_blocked_by_exception(
     assert draft_mail.state == QueuedMailStates.DRAFT
 
 
-@pytest.mark.django_db
 def test_bulk_send_blocked_by_exception(
     client, event, draft_mail, register_signal_handler
 ):
@@ -1344,7 +1284,6 @@ def test_bulk_send_blocked_by_exception(
     assert draft_mail.state == QueuedMailStates.DRAFT
 
 
-@pytest.mark.django_db
 def test_delete_post_sent_mail_shows_error(client, event, sent_mail):
     """POSTing delete on a sent mail shows an error, mail remains."""
     user = make_orga_user(event, can_change_submissions=True)
@@ -1357,7 +1296,6 @@ def test_delete_post_sent_mail_shows_error(client, event, sent_mail):
         assert QueuedMail.objects.filter(event=event).count() == 1
 
 
-@pytest.mark.django_db
 def test_mail_detail_send_blocked_by_exception(
     client, event, draft_mail, register_signal_handler
 ):
@@ -1388,7 +1326,6 @@ def test_mail_detail_send_blocked_by_exception(
     assert "Blocked" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_mail_detail_sent_without_template_shows_copy_button(client, event, sent_mail):
     """A sent mail without a template shows a 'Copy to draft' button."""
     user = make_orga_user(event, can_change_submissions=True)
@@ -1403,7 +1340,6 @@ def test_mail_detail_sent_without_template_shows_copy_button(client, event, sent
     assert "Copy to draft" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_compose_session_mail_preview(client, event, submission):
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
@@ -1431,7 +1367,6 @@ def test_compose_session_mail_preview(client, event, submission):
         )
 
 
-@pytest.mark.django_db
 def test_compose_teams_mail_blocked_by_exception(
     client, event, register_signal_handler
 ):

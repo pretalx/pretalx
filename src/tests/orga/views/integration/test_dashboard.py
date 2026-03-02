@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
@@ -5,9 +7,9 @@ from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
-from pretalx.common.models.log import ActivityLog
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
+    ActivityLogFactory,
     EventFactory,
     OrganiserFactory,
     ReviewFactory,
@@ -19,10 +21,9 @@ from tests.factories import (
 )
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_start_redirect_view_anonymous_redirects_to_login(client):
     response = client.get(reverse("orga:start.redirect"))
 
@@ -30,7 +31,6 @@ def test_start_redirect_view_anonymous_redirects_to_login(client):
     assert "/orga/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_start_redirect_view_single_orga_event_redirects_to_event(client, event):
     """User with exactly one orga event and no speaker events goes to that event."""
     user = make_orga_user(event)
@@ -42,7 +42,6 @@ def test_start_redirect_view_single_orga_event_redirects_to_event(client, event)
     assert response.url == event.orga_urls.base
 
 
-@pytest.mark.django_db
 def test_start_redirect_view_single_speaker_event_redirects_to_submissions(
     client, event
 ):
@@ -59,7 +58,6 @@ def test_start_redirect_view_single_speaker_event_redirects_to_submissions(
     assert response.url == event.urls.user_submissions
 
 
-@pytest.mark.django_db
 def test_start_redirect_view_multiple_events_redirects_to_list(client, event):
     """User with multiple events goes to the event list."""
     with scopes_disabled():
@@ -73,7 +71,6 @@ def test_start_redirect_view_multiple_events_redirects_to_list(client, event):
     assert response.url == reverse("orga:event.list")
 
 
-@pytest.mark.django_db
 def test_start_redirect_view_both_roles_redirects_to_list(client, event):
     """User who is both orga and speaker goes to the event list."""
     with scopes_disabled():
@@ -89,7 +86,6 @@ def test_start_redirect_view_both_roles_redirects_to_list(client, event):
     assert response.url == reverse("orga:event.list")
 
 
-@pytest.mark.django_db
 def test_event_list_view_orga_user_sees_own_event(client, event):
     """Organiser sees their events on the event list page."""
     user = make_orga_user(event)
@@ -102,7 +98,6 @@ def test_event_list_view_orga_user_sees_own_event(client, event):
     assert event.name in content
 
 
-@pytest.mark.django_db
 def test_event_list_view_orga_user_does_not_see_other_events(client, event):
     """Organiser does not see events they have no access to."""
     with scopes_disabled():
@@ -117,7 +112,6 @@ def test_event_list_view_orga_user_does_not_see_other_events(client, event):
     assert str(other_event.name) not in content
 
 
-@pytest.mark.django_db
 def test_event_list_view_anonymous_redirects_to_login(client):
     response = client.get(reverse("orga:event.list"))
 
@@ -125,7 +119,6 @@ def test_event_list_view_anonymous_redirects_to_login(client):
     assert "/orga/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_event_list_view_admin_sees_all_events(client):
     """Administrators see all events."""
     with scopes_disabled():
@@ -142,7 +135,6 @@ def test_event_list_view_admin_sees_all_events(client):
     assert str(event2.name) in content
 
 
-@pytest.mark.django_db
 def test_event_list_view_separates_current_and_past_events(client, event):
     """Current events (date_to >= today) and past events are in separate lists."""
     with scopes_disabled():
@@ -161,7 +153,6 @@ def test_event_list_view_separates_current_and_past_events(client, event):
     assert list(response.context["past_orga_events"]) == [past_event]
 
 
-@pytest.mark.django_db
 def test_event_list_view_shows_speaker_events(client, event):
     """The event list shows events where the user is a speaker."""
     user = make_orga_user(event)
@@ -178,7 +169,6 @@ def test_event_list_view_shows_speaker_events(client, event):
     assert list(response.context["speaker_events"]) == [speaker_event]
 
 
-@pytest.mark.django_db
 def test_event_list_view_search_filters_events(client, event):
     """?q= parameter filters events by name/slug."""
     user = make_orga_user(event)
@@ -191,7 +181,6 @@ def test_event_list_view_search_filters_events(client, event):
     assert str(event.name) in content
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_event_list_view_query_count(
     client, event, item_count, django_assert_num_queries
@@ -208,7 +197,6 @@ def test_event_list_view_query_count(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_organiser_list_view_admin_sees_all_organisers(client):
     """Administrators see all organisers."""
     with scopes_disabled():
@@ -225,7 +213,6 @@ def test_organiser_list_view_admin_sees_all_organisers(client):
     assert str(org2.name) in content
 
 
-@pytest.mark.django_db
 def test_organiser_list_view_orga_user_sees_own_organiser(client, event):
     """Orga user with organiser settings permission sees their organiser."""
     user = make_orga_user(event, can_change_organiser_settings=True)
@@ -238,7 +225,6 @@ def test_organiser_list_view_orga_user_sees_own_organiser(client, event):
     assert str(event.organiser.name) in content
 
 
-@pytest.mark.django_db
 def test_organiser_list_view_orga_user_without_settings_perm_gets_404(client, event):
     """Orga user without can_change_organiser_settings gets 404."""
     user = make_orga_user(event, can_change_organiser_settings=False)
@@ -249,7 +235,6 @@ def test_organiser_list_view_orga_user_without_settings_perm_gets_404(client, ev
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_organiser_list_view_anonymous_redirects_to_login(client):
     response = client.get(reverse("orga:organiser.list"))
 
@@ -257,7 +242,6 @@ def test_organiser_list_view_anonymous_redirects_to_login(client):
     assert "/orga/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_organiser_list_view_search_filters(client):
     """?q= parameter filters organisers by slug/name."""
     with scopes_disabled():
@@ -273,7 +257,6 @@ def test_organiser_list_view_search_filters(client):
     assert [o.slug for o in context_orgs] == [org1.slug]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_organiser_list_view_query_count(client, item_count, django_assert_num_queries):
     with scopes_disabled():
@@ -288,7 +271,6 @@ def test_organiser_list_view_query_count(client, item_count, django_assert_num_q
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_organiser_event_list_view_shows_organiser_events(client, event):
     """Organiser dashboard shows events under that organiser."""
     user = make_orga_user(event)
@@ -303,7 +285,6 @@ def test_organiser_event_list_view_shows_organiser_events(client, event):
     assert str(event.name) in content
 
 
-@pytest.mark.django_db
 def test_organiser_event_list_view_does_not_show_other_organiser_events(client, event):
     """Organiser dashboard does not include events from other organisers."""
     with scopes_disabled():
@@ -320,7 +301,6 @@ def test_organiser_event_list_view_does_not_show_other_organiser_events(client, 
     assert str(other_event.name) not in content
 
 
-@pytest.mark.django_db
 def test_organiser_event_list_view_unauthorized_user_gets_404(client, event):
     """User without organiser access gets 404."""
     user = UserFactory()
@@ -333,7 +313,6 @@ def test_organiser_event_list_view_unauthorized_user_gets_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_organiser_event_list_view_anonymous_redirects(client, event):
     response = client.get(
         reverse("orga:organiser.dashboard", kwargs={"organiser": event.organiser.slug})
@@ -342,7 +321,6 @@ def test_organiser_event_list_view_anonymous_redirects(client, event):
     assert response.status_code == 302
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_organiser_event_list_view_query_count(
     client, event, item_count, django_assert_num_queries
@@ -365,7 +343,6 @@ def test_organiser_event_list_view_query_count(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_orga_user_sees_dashboard(client, event):
     """Organiser can access the event dashboard."""
     user = make_orga_user(event)
@@ -378,14 +355,12 @@ def test_event_dashboard_view_orga_user_sees_dashboard(client, event):
     assert "tiles" in response.context
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_anonymous_redirects(client, event):
     response = client.get(event.orga_urls.base)
 
     assert response.status_code == 302
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_non_orga_user_gets_404(client, event):
     """User without any event permission gets 404."""
     user = UserFactory()
@@ -396,7 +371,6 @@ def test_event_dashboard_view_non_orga_user_gets_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_tiles_sorted_by_priority(client, event):
     """Dashboard tiles are sorted by priority."""
     user = make_orga_user(event)
@@ -409,7 +383,6 @@ def test_event_dashboard_view_tiles_sorted_by_priority(client, event):
     assert priorities == sorted(priorities)
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_shows_timeline(client, event):
     """Dashboard includes a timeline with event stages."""
     user = make_orga_user(event)
@@ -421,7 +394,6 @@ def test_event_dashboard_view_shows_timeline(client, event):
     assert len(response.context["timeline"]) > 0
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_with_submissions(client, event):
     """Dashboard shows proposal count when there are submissions."""
     with scopes_disabled():
@@ -438,7 +410,6 @@ def test_event_dashboard_view_with_submissions(client, event):
     assert proposal_tiles[0]["large"] == 1
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_with_accepted_submissions(client, event):
     """Dashboard shows session count when there are accepted submissions."""
     with scopes_disabled():
@@ -454,7 +425,6 @@ def test_event_dashboard_view_with_accepted_submissions(client, event):
     assert len(session_tiles) == 1
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_with_published_schedule(client, published_talk_slot):
     """Dashboard shows the current schedule version when a schedule is published."""
     event = published_talk_slot.submission.event
@@ -470,7 +440,6 @@ def test_event_dashboard_view_with_published_schedule(client, published_talk_slo
     assert schedule_tiles[0]["large"] == "v1"
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_with_pending_state_submissions(client, event):
     """Dashboard shows pending state changes tile."""
     with scopes_disabled():
@@ -489,7 +458,6 @@ def test_event_dashboard_view_with_pending_state_submissions(client, event):
     assert pending_tiles[0]["large"] == 1
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_with_speakers(client, event):
     """Dashboard shows speaker count when there are accepted talks with speakers."""
     with scopes_disabled():
@@ -510,7 +478,6 @@ def test_event_dashboard_view_with_speakers(client, event):
     assert speaker_tiles[0]["large"] == 1
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     "day_offset",
     (
@@ -536,7 +503,6 @@ def test_event_dashboard_view_different_event_dates(client, day_offset):
     assert "tiles" in response.context
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_future_event_shows_days_until(client):
     """Future event shows 'days until event start' tile."""
     today = now().date()
@@ -558,7 +524,6 @@ def test_event_dashboard_view_future_event_shows_days_until(client):
     assert countdown_tiles[0]["large"] == 10
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_past_event_shows_days_since(client):
     """Past event shows 'days since event end' tile."""
     today = now().date()
@@ -577,7 +542,6 @@ def test_event_dashboard_view_past_event_shows_days_since(client):
     assert len(since_tiles) == 1
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_multi_day_running_event_shows_day_number(client):
     """Multi-day running event shows 'Day N of M days' tile."""
     today = now().date()
@@ -599,7 +563,6 @@ def test_event_dashboard_view_multi_day_running_event_shows_day_number(client):
     assert len(day_tiles) == 1
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_single_day_running_event_no_day_tile(client):
     """A single-day event running today does not show a 'Day N of M' tile."""
     today = now().date()
@@ -619,7 +582,6 @@ def test_event_dashboard_view_single_day_running_event_no_day_tile(client):
     assert len(day_tiles) == 0
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_shows_sent_email_count(client, event):
     """Dashboard always shows a sent email count tile."""
     user = make_orga_user(event)
@@ -633,13 +595,12 @@ def test_event_dashboard_view_shows_sent_email_count(client, event):
     assert email_tiles[0]["large"] == 0
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_shows_history(client, event):
     """Dashboard shows recent activity log entries."""
     with scopes_disabled():
         submission = SubmissionFactory(event=event)
         user = make_orga_user(event)
-        ActivityLog.objects.create(
+        ActivityLogFactory(
             event=event,
             person=user,
             content_object=submission,
@@ -654,7 +615,6 @@ def test_event_dashboard_view_shows_history(client, event):
     assert len(history) == 1
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_reviewer_only_access(client, event):
     """A reviewer-only user can access the event dashboard."""
     with scopes_disabled():
@@ -668,7 +628,6 @@ def test_event_dashboard_view_reviewer_only_access(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_reviewer_does_not_see_speaker_names(client, event):
     """A reviewer without settings access does not see speaker names on the dashboard.
 
@@ -678,7 +637,7 @@ def test_event_dashboard_view_reviewer_does_not_see_speaker_names(client, event)
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
-        ActivityLog.objects.create(
+        ActivityLogFactory(
             event=event,
             person=speaker.user,
             content_object=submission,
@@ -695,7 +654,6 @@ def test_event_dashboard_view_reviewer_does_not_see_speaker_names(client, event)
     assert speaker.user.name not in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_with_reviews(client, event):
     """Dashboard shows review count tile when reviews exist."""
     with scopes_disabled():
@@ -712,7 +670,6 @@ def test_event_dashboard_view_with_reviews(client, event):
     assert review_tiles[0]["large"] == 1
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_go_to_target_cfp_before_review_done(client, event):
     """go_to_target is 'cfp' when review phase is not done."""
     user = make_orga_user(event)
@@ -723,7 +680,6 @@ def test_event_dashboard_view_go_to_target_cfp_before_review_done(client, event)
     assert response.context["go_to_target"] == "cfp"
 
 
-@pytest.mark.django_db
 def test_event_dashboard_view_query_count(client, event, django_assert_num_queries):
     """Guard against query regressions on the event dashboard with realistic data."""
     with scopes_disabled():

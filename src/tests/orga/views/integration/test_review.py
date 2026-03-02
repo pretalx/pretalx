@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025-present Tobias Kunze
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import json
@@ -23,7 +23,7 @@ from tests.factories import (
 )
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 def _make_reviewer(event, **extra_kwargs):
@@ -43,7 +43,6 @@ def _get_category_and_score(event, value=1):
     return category, score
 
 
-@pytest.mark.django_db
 def test_review_dashboard_requires_login(client, event):
     response = client.get(event.orga_urls.reviews)
 
@@ -51,7 +50,6 @@ def test_review_dashboard_requires_login(client, event):
     assert "/login" in response.url
 
 
-@pytest.mark.django_db
 def test_review_dashboard_denied_for_unprivileged_user(client, event):
     user = UserFactory()
     client.force_login(user)
@@ -61,7 +59,6 @@ def test_review_dashboard_denied_for_unprivileged_user(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_review_dashboard_query_count(
     client, event, item_count, django_assert_num_queries
@@ -85,7 +82,6 @@ def test_review_dashboard_query_count(
     assert all(sub.title in content for sub in submissions)
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("sort", ("count", "-count", "score", "-score"))
 def test_review_dashboard_sort_query_count(
     client, event, sort, django_assert_num_queries
@@ -105,7 +101,6 @@ def test_review_dashboard_sort_query_count(
     assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_review_dashboard_with_track_limit_query_count(
     client, event, item_count, django_assert_num_queries
@@ -136,7 +131,6 @@ def test_review_dashboard_with_track_limit_query_count(
     assert tag.tag in response.content.decode()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("assigned", (True, False))
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_review_submission_post_creates_review(
@@ -175,7 +169,6 @@ def test_review_submission_post_creates_review(
     assert "LGTM" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_review_submission_post_with_tags(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -205,7 +198,6 @@ def test_review_submission_post_with_tags(client, event):
         assert submission.tags.first() == tag
 
 
-@pytest.mark.django_db
 def test_review_submission_post_tagging_disabled(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -230,7 +222,6 @@ def test_review_submission_post_tagging_disabled(client, event):
         assert submission.tags.count() == 0
 
 
-@pytest.mark.django_db
 def test_review_submission_denied_when_unassigned_and_visibility_restricted(
     client, event
 ):
@@ -258,7 +249,6 @@ def test_review_submission_denied_when_unassigned_and_visibility_restricted(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_review_submission_allowed_when_assigned_and_visibility_restricted(
     client, event
 ):
@@ -290,7 +280,6 @@ def test_review_submission_allowed_when_assigned_and_visibility_restricted(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_review_submission_post_with_redirect_to_next(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -318,7 +307,6 @@ def test_review_submission_post_with_redirect_to_next(client, event):
         assert submission.reviews.count() == 1
 
 
-@pytest.mark.django_db
 def test_review_submission_post_with_redirect_finished(client, event):
     """When all submissions are reviewed, save_and_next redirects to the dashboard."""
     with scopes_disabled():
@@ -344,7 +332,6 @@ def test_review_submission_post_with_redirect_finished(client, event):
         assert submission.reviews.count() == 1
 
 
-@pytest.mark.django_db
 def test_review_submission_post_without_score(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -371,7 +358,6 @@ def test_review_submission_post_without_score(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_review_submission_post_without_score_when_mandatory(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -394,7 +380,6 @@ def test_review_submission_post_without_score_when_mandatory(client, event):
         assert submission.reviews.count() == 0
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("action", ("skip_for_now", "abstain"))
 def test_review_submission_skip_with_required_fields(client, event, action):
     with scopes_disabled():
@@ -423,7 +408,6 @@ def test_review_submission_skip_with_required_fields(client, event, action):
             assert submission.reviews.count() == 0
 
 
-@pytest.mark.django_db
 def test_review_submission_post_wrong_score_rejected(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -444,7 +428,6 @@ def test_review_submission_post_wrong_score_rejected(client, event):
         assert submission.reviews.count() == 0
 
 
-@pytest.mark.django_db
 def test_review_submission_post_required_question_not_answered(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -474,7 +457,6 @@ def test_review_submission_post_required_question_not_answered(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_review_submission_speaker_cannot_review_own(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -498,7 +480,6 @@ def test_review_submission_speaker_cannot_review_own(client, event):
         assert submission.reviews.count() == 0
 
 
-@pytest.mark.django_db
 def test_review_submission_cannot_review_accepted(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -520,7 +501,6 @@ def test_review_submission_cannot_review_accepted(client, event):
         assert submission.reviews.count() == 0
 
 
-@pytest.mark.django_db
 def test_review_submission_edit_existing_review(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -548,7 +528,6 @@ def test_review_submission_edit_existing_review(client, event):
     assert review.text == "My mistake."
 
 
-@pytest.mark.django_db
 def test_review_submission_cannot_edit_after_accept(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -576,7 +555,6 @@ def test_review_submission_cannot_edit_after_accept(client, event):
     assert review.text != "My mistake."
 
 
-@pytest.mark.django_db
 def test_review_submission_cannot_see_other_review_before_own(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -615,7 +593,6 @@ def test_review_submission_cannot_see_other_review_before_own(client, event):
     assert "My mistake" in content
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("accepted", (False, True))
 def test_review_submission_can_see_own_review(client, event, accepted):
     with scopes_disabled():
@@ -636,7 +613,6 @@ def test_review_submission_can_see_own_review(client, event, accepted):
     assert review.text in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_review_submission_orga_can_see_review(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
@@ -652,7 +628,6 @@ def test_review_submission_orga_can_see_review(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_review_submission_orga_cannot_add_review(client, event):
     """Organisers without reviewer role cannot create reviews."""
     with scopes_disabled():
@@ -674,7 +649,6 @@ def test_review_submission_orga_cannot_add_review(client, event):
         assert submission.reviews.count() == 0
 
 
-@pytest.mark.django_db
 def test_review_dashboard_post_bulk_accept_and_reject(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
@@ -711,7 +685,6 @@ def test_review_dashboard_post_bulk_accept_and_reject(client, event):
         assert accepted.state == SubmissionStates.ACCEPTED
 
 
-@pytest.mark.django_db
 def test_review_dashboard_post_bulk_only_failure(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
@@ -732,7 +705,6 @@ def test_review_dashboard_post_bulk_only_failure(client, event):
         assert accepted.state == SubmissionStates.ACCEPTED
 
 
-@pytest.mark.django_db
 def test_review_dashboard_post_bulk_only_success(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
@@ -753,7 +725,6 @@ def test_review_dashboard_post_bulk_only_success(client, event):
         assert submission.state == SubmissionStates.REJECTED
 
 
-@pytest.mark.django_db
 def test_regenerate_decision_mails_get(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
@@ -764,7 +735,6 @@ def test_regenerate_decision_mails_get(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_regenerate_decision_mails_post(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
@@ -785,7 +755,6 @@ def test_regenerate_decision_mails_post(client, event):
         assert event.queued_mails.filter(state=QueuedMailStates.DRAFT).count() == 2
 
 
-@pytest.mark.django_db
 def test_review_assignment_get_submission_direction(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
@@ -798,7 +767,6 @@ def test_review_assignment_get_submission_direction(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_review_assignment_post_reviewer_to_submission(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
@@ -817,7 +785,6 @@ def test_review_assignment_post_reviewer_to_submission(client, event):
         assert submission.assigned_reviewers.all().count() == 1
 
 
-@pytest.mark.django_db
 def test_review_assignment_post_submission_to_reviewer(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
@@ -838,7 +805,6 @@ def test_review_assignment_post_submission_to_reviewer(client, event):
         assert submission.assigned_reviewers.all().count() == 1
 
 
-@pytest.mark.django_db
 def test_review_assignment_via_import_reviewer_direction(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
@@ -866,7 +832,6 @@ def test_review_assignment_via_import_reviewer_direction(client, event):
         assert reviewer.assigned_reviews.all().count() == 2
 
 
-@pytest.mark.django_db
 def test_review_assignment_via_import_submission_direction_replace(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
@@ -894,7 +859,6 @@ def test_review_assignment_via_import_submission_direction_replace(client, event
         assert reviewer.assigned_reviews.all().count() == 1
 
 
-@pytest.mark.django_db
 def test_review_assignment_htmx_reviewer_to_submission(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
@@ -914,7 +878,6 @@ def test_review_assignment_htmx_reviewer_to_submission(client, event):
         assert submission.assigned_reviewers.all().count() == 1
 
 
-@pytest.mark.django_db
 def test_review_assignment_htmx_submission_to_reviewer(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
@@ -934,7 +897,6 @@ def test_review_assignment_htmx_submission_to_reviewer(client, event):
         assert submission.assigned_reviewers.all().count() == 1
 
 
-@pytest.mark.django_db
 def test_review_assignment_htmx_clear(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
@@ -955,7 +917,6 @@ def test_review_assignment_htmx_clear(client, event):
         assert submission.assigned_reviewers.all().count() == 0
 
 
-@pytest.mark.django_db
 def test_review_export_get(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
@@ -969,7 +930,6 @@ def test_review_export_get(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_review_export_post_json(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
@@ -997,7 +957,6 @@ def test_review_export_post_json(client, event):
     assert review.text in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_bulk_review_htmx_post_creates_review(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1027,7 +986,6 @@ def test_bulk_review_htmx_post_creates_review(client, event):
         assert review.user == reviewer
 
 
-@pytest.mark.django_db
 def test_bulk_review_htmx_invalid_submission(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1041,7 +999,6 @@ def test_bulk_review_htmx_invalid_submission(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_bulk_review_htmx_validates_required_fields(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1068,7 +1025,6 @@ def test_bulk_review_htmx_validates_required_fields(client, event):
         assert submission.reviews.count() == 0
 
 
-@pytest.mark.django_db
 def test_bulk_review_without_htmx(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1095,7 +1051,6 @@ def test_bulk_review_without_htmx(client, event):
         assert submission.reviews.first().text == "Non-HTMX review"
 
 
-@pytest.mark.django_db
 def test_bulk_review_update_existing(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1139,7 +1094,6 @@ def test_bulk_review_update_existing(client, event):
         assert review.score == new_score.value
 
 
-@pytest.mark.django_db
 def test_bulk_tag_add_and_remove(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
@@ -1192,7 +1146,6 @@ def test_bulk_tag_add_and_remove(client, event):
         assert other_submission.tags.first() == tag2
 
 
-@pytest.mark.django_db
 def test_bulk_tag_no_submissions_selected(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
@@ -1208,7 +1161,6 @@ def test_bulk_tag_no_submissions_selected(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_bulk_tag_denied_for_reviewer(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1219,7 +1171,6 @@ def test_bulk_tag_denied_for_reviewer(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_review_delete_post(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1238,7 +1189,6 @@ def test_review_delete_post(client, event):
         assert submission.reviews.count() == 0
 
 
-@pytest.mark.django_db
 def test_review_delete_get_shows_confirmation(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1253,7 +1203,6 @@ def test_review_delete_get_shows_confirmation(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_review_dashboard_post_bulk_accept_with_pending(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
@@ -1286,7 +1235,6 @@ def test_review_dashboard_post_bulk_accept_with_pending(client, event):
         assert other_submission.pending_state == SubmissionStates.REJECTED
 
 
-@pytest.mark.django_db
 def test_review_dashboard_post_bulk_no_permission(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1303,7 +1251,6 @@ def test_review_dashboard_post_bulk_no_permission(client, event):
         assert submission.state == SubmissionStates.SUBMITTED
 
 
-@pytest.mark.django_db
 def test_review_dashboard_with_tags_filter(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1319,7 +1266,6 @@ def test_review_dashboard_with_tags_filter(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_bulk_review_get(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1335,7 +1281,6 @@ def test_bulk_review_get(client, event):
     assert submission.title in content
 
 
-@pytest.mark.django_db
 def test_bulk_review_non_htmx_invalid_submission(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1348,7 +1293,6 @@ def test_bulk_review_non_htmx_invalid_submission(client, event):
     assert response.url == bulk_url
 
 
-@pytest.mark.django_db
 def test_bulk_review_non_htmx_invalid_form(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1373,7 +1317,6 @@ def test_bulk_review_non_htmx_invalid_form(client, event):
         assert submission.reviews.count() == 0
 
 
-@pytest.mark.django_db
 def test_bulk_tag_invalid_form(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
@@ -1388,7 +1331,6 @@ def test_bulk_tag_invalid_form(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_bulk_tag_with_next_url(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
@@ -1408,7 +1350,6 @@ def test_bulk_tag_with_next_url(client, event):
         assert tag in submission.tags.all()
 
 
-@pytest.mark.django_db
 def test_review_submission_post_with_invalid_tags(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1432,7 +1373,6 @@ def test_review_submission_post_with_invalid_tags(client, event):
         assert submission.reviews.count() == 0
 
 
-@pytest.mark.django_db
 def test_review_assignment_htmx_form_invalid(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
@@ -1449,7 +1389,6 @@ def test_review_assignment_htmx_form_invalid(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_review_export_post_no_data(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
@@ -1463,7 +1402,6 @@ def test_review_export_post_no_data(client, event):
     assert response.url == event.orga_urls.reviews + "export/"
 
 
-@pytest.mark.django_db
 def test_bulk_review_get_with_track_categories(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1482,7 +1420,6 @@ def test_bulk_review_get_with_track_categories(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_review_dashboard_with_tracks_and_types(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1501,7 +1438,6 @@ def test_review_dashboard_with_tracks_and_types(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_review_assignment_non_htmx_form_invalid(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_event_settings=True)
@@ -1517,7 +1453,6 @@ def test_review_assignment_non_htmx_form_invalid(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_bulk_tag_remove_with_submissions(client, event):
     with scopes_disabled():
         orga_user = make_orga_user(event, can_change_submissions=True)
@@ -1537,7 +1472,6 @@ def test_bulk_tag_remove_with_submissions(client, event):
         assert submission.tags.count() == 0
 
 
-@pytest.mark.django_db
 def test_review_dashboard_filter_range_zero_min(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1551,7 +1485,6 @@ def test_review_dashboard_filter_range_zero_min(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_bulk_review_htmx_resubmit_unchanged(client, event):
     """Bulk review POST with unchanged data still returns saved state."""
     with scopes_disabled():
@@ -1589,7 +1522,6 @@ def test_bulk_review_htmx_resubmit_unchanged(client, event):
         assert submission.reviews.count() == 1
 
 
-@pytest.mark.django_db
 def test_bulk_review_non_htmx_unchanged(client, event):
     """Bulk review non-HTMX POST with unchanged data redirects with success."""
     with scopes_disabled():
@@ -1624,7 +1556,6 @@ def test_bulk_review_non_htmx_unchanged(client, event):
     assert response.url == bulk_url
 
 
-@pytest.mark.django_db
 def test_bulk_tag_nonexistent_submission_codes(client, event):
     """When selected submission codes don't match any submissions, count stays 0."""
     with scopes_disabled():
@@ -1641,7 +1572,6 @@ def test_bulk_tag_nonexistent_submission_codes(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_bulk_review_get_with_filter(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1655,7 +1585,6 @@ def test_bulk_review_get_with_filter(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_bulk_review_get_with_invalid_filter(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)
@@ -1669,7 +1598,6 @@ def test_bulk_review_get_with_invalid_filter(client, event):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_review_submission_skip_for_now_session(client, event):
     with scopes_disabled():
         reviewer = _make_reviewer(event)

@@ -1,5 +1,6 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from django_scopes import scopes_disabled
 from rest_framework.permissions import AllowAny
 
 from pretalx.api.permissions import ApiPermission
@@ -55,14 +56,12 @@ def test_feedback_viewset_get_unversioned_serializer_class_list():
 @pytest.mark.django_db
 def test_feedback_viewset_get_queryset_anonymous_returns_empty():
     """get_queryset returns an empty queryset for anonymous users."""
-    with scopes_disabled():
-        feedback = FeedbackFactory()
+    feedback = FeedbackFactory()
     request = make_api_request(event=feedback.talk.event)
     view = make_view(FeedbackViewSet, request)
     view.action = "list"
 
-    with scopes_disabled():
-        qs = list(view.get_queryset())
+    qs = list(view.get_queryset())
 
     assert qs == []
 
@@ -70,17 +69,15 @@ def test_feedback_viewset_get_queryset_anonymous_returns_empty():
 @pytest.mark.django_db
 def test_feedback_viewset_get_queryset_authenticated_returns_event_feedback():
     """get_queryset returns feedback for the event when user is authenticated."""
-    with scopes_disabled():
-        feedback = FeedbackFactory()
-        event = feedback.talk.event
-        other_feedback = FeedbackFactory()
-        user = make_orga_user(event, can_change_submissions=True)
+    feedback = FeedbackFactory()
+    event = feedback.talk.event
+    other_feedback = FeedbackFactory()
+    user = make_orga_user(event, can_change_submissions=True)
     request = make_api_request(event=event, user=user)
     view = make_view(FeedbackViewSet, request)
     view.action = "list"
 
-    with scopes_disabled():
-        qs = list(view.get_queryset())
+    qs = list(view.get_queryset())
 
     assert qs == [feedback]
     assert other_feedback not in qs
