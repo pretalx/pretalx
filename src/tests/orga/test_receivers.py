@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
 from pretalx.orga.receivers import (
@@ -7,7 +9,7 @@ from pretalx.orga.receivers import (
 from tests.factories import EventFactory
 from tests.utils import make_request
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 _SESSION_PAGE_HANDLERS = pytest.mark.parametrize(
     ("handler", "settings_key"),
@@ -20,11 +22,8 @@ _SESSION_PAGE_HANDLERS = pytest.mark.parametrize(
 
 
 @_SESSION_PAGE_HANDLERS
-@pytest.mark.django_db
 def test_add_html_session_page_returns_rich_text_when_set(handler, settings_key):
-    event = EventFactory()
-    event.display_settings["texts"] = {settings_key: "**Hello**"}
-    event.save()
+    event = EventFactory(display_settings={"texts": {settings_key: "**Hello**"}})
     request = make_request(event)
 
     result = handler(sender=event, request=request, submission=None)
@@ -33,7 +32,6 @@ def test_add_html_session_page_returns_rich_text_when_set(handler, settings_key)
 
 
 @_SESSION_PAGE_HANDLERS
-@pytest.mark.django_db
 def test_add_html_session_page_returns_empty_when_unset(handler, settings_key):
     event = EventFactory()
     request = make_request(event)
@@ -44,11 +42,8 @@ def test_add_html_session_page_returns_empty_when_unset(handler, settings_key):
 
 
 @_SESSION_PAGE_HANDLERS
-@pytest.mark.django_db
 def test_add_html_session_page_returns_empty_for_empty_string(handler, settings_key):
-    event = EventFactory()
-    event.display_settings["texts"] = {settings_key: ""}
-    event.save()
+    event = EventFactory(display_settings={"texts": {settings_key: ""}})
     request = make_request(event)
 
     result = handler(sender=event, request=request, submission=None)

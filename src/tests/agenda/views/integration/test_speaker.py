@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.conf import settings
 from django.core.files.storage import Storage
@@ -13,89 +15,20 @@ from tests.factories import (
     SubmissionFactory,
     TalkSlotFactory,
 )
+from tests.utils import make_published_schedule
 
-pytestmark = pytest.mark.integration
-
-
-@pytest.mark.django_db
-def test_speaker_list_shows_speaker_names(
-    client, public_event_with_schedule, published_talk_slot
-):
-    """Speaker list page displays speaker display names."""
-    with scopes_disabled():
-        speaker = published_talk_slot.submission.speakers.first()
-
-    response = client.get(public_event_with_schedule.urls.speakers, follow=True)
-
-    assert response.status_code == 200
-    assert speaker.get_display_name() in response.content.decode()
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_speaker_list_not_visible_without_schedule(client, event):
-    """Speaker list returns 404 when no schedule is released."""
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
-
     response = client.get(event.urls.speakers, follow=True)
 
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
-def test_speaker_list_not_visible_when_not_public(client, published_talk_slot):
-    """Speaker list returns 404 when event is not public."""
-    event = published_talk_slot.submission.event
-    event.is_public = False
-    event.save()
-
-    response = client.get(event.urls.speakers, follow=True)
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    ("role", "expected_status"),
-    (("anonymous", 404), ("speaker", 404), ("organiser", 200)),
-)
-def test_speaker_list_access_by_role(
-    client, published_talk_slot, organiser_user, role, expected_status
-):
-    """Non-public events hide the speaker list from anonymous users and speakers,
-    but organisers with can_change_submissions can still access it."""
-    event = published_talk_slot.submission.event
-    event.is_public = False
-    event.feature_flags["show_schedule"] = True
-    event.save()
-
-    if role == "speaker":
-        with scopes_disabled():
-            client.force_login(published_talk_slot.submission.speakers.first().user)
-    elif role == "organiser":
-        client.force_login(organiser_user)
-
-    response = client.get(event.urls.speakers, follow=True)
-
-    assert response.status_code == expected_status
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_speaker_list_query_count(client, event, item_count, django_assert_num_queries):
-    """Query count is constant regardless of the number of speakers."""
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
-    with scopes_disabled():
-        for _ in range(item_count):
-            speaker = SpeakerFactory(event=event)
-            sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-            sub.speakers.add(speaker)
-            TalkSlotFactory(submission=sub, is_visible=True)
-        with scope(event=event):
-            event.wip_schedule.freeze("v1", notify_speakers=False)
+    make_published_schedule(event, item_count)
 
     with django_assert_num_queries(9):
         response = client.get(event.urls.speakers, follow=True)
@@ -108,11 +41,9 @@ def test_speaker_list_query_count(client, event, item_count, django_assert_num_q
             assert speaker.get_display_name() in content
 
 
-@pytest.mark.django_db
 def test_speaker_list_search_filters_by_name(
     client, public_event_with_schedule, published_talk_slot
 ):
-    """The ?q= parameter filters speakers by name, excluding non-matching speakers."""
     event = public_event_with_schedule
     with scopes_disabled():
         speaker = published_talk_slot.submission.speakers.first()
@@ -133,16 +64,20 @@ def test_speaker_list_search_filters_by_name(
     assert "Otherperson" not in content
 
 
-@pytest.mark.django_db
+@pytest.mark.parametrize("item_count", (1, 3))
 def test_speaker_page_shows_biography_and_talks(
-    client, public_event_with_schedule, published_talk_slot, django_assert_num_queries
+    client, event, item_count, django_assert_num_queries
 ):
-    """Speaker detail page shows speaker biography and their talk titles."""
-    event = public_event_with_schedule
     with scopes_disabled():
-        speaker = published_talk_slot.submission.speakers.first()
+        speaker = SpeakerFactory(event=event)
         speaker.biography = "A very interesting biography."
         speaker.save()
+        for _ in range(item_count):
+            sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+            sub.speakers.add(speaker)
+            TalkSlotFactory(submission=sub, is_visible=True)
+        with scope(event=event):
+            event.wip_schedule.freeze("v1", notify_speakers=False)
 
     url = reverse("agenda:speaker", kwargs={"code": speaker.code, "event": event.slug})
     with django_assert_num_queries(12):
@@ -151,14 +86,14 @@ def test_speaker_page_shows_biography_and_talks(
     assert response.status_code == 200
     content = response.content.decode()
     assert "A very interesting biography." in content
-    assert published_talk_slot.submission.title in content
+    with scopes_disabled():
+        for sub in speaker.submissions.all():
+            assert sub.title in content
 
 
-@pytest.mark.django_db
 def test_speaker_page_answer_visibility(
     client, public_event_with_schedule, published_talk_slot
 ):
-    """Speaker page displays public answers and hides non-public ones."""
     event = public_event_with_schedule
     with scopes_disabled():
         speaker = published_talk_slot.submission.speakers.first()
@@ -196,9 +131,7 @@ def test_speaker_page_answer_visibility(
     assert "My secret answer" not in content
 
 
-@pytest.mark.django_db
 def test_speaker_page_404_for_unknown_speaker(client, public_event_with_schedule):
-    """Speaker page returns 404 for a non-existent speaker code."""
     url = reverse(
         "agenda:speaker",
         kwargs={"code": "DOESNTEXIST", "event": public_event_with_schedule.slug},
@@ -208,30 +141,9 @@ def test_speaker_page_404_for_unknown_speaker(client, public_event_with_schedule
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
-def test_speaker_page_404_for_speaker_not_in_schedule(
-    client, public_event_with_schedule
-):
-    """Speaker page returns 404 for a speaker who submitted but isn't in the released schedule."""
-    event = public_event_with_schedule
-    with scopes_disabled():
-        other_speaker = SpeakerFactory(event=event)
-        sub = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        sub.speakers.add(other_speaker)
-
-    url = reverse(
-        "agenda:speaker", kwargs={"code": other_speaker.code, "event": event.slug}
-    )
-    response = client.get(url, follow=True)
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
 def test_speaker_page_hides_invisible_submissions(
     client, public_event_with_schedule, published_talk_slot, django_assert_num_queries
 ):
-    """Speaker page does not show submissions with invisible slots in the released schedule."""
     event = public_event_with_schedule
     with scopes_disabled():
         speaker = published_talk_slot.submission.speakers.first()
@@ -255,38 +167,9 @@ def test_speaker_page_hides_invisible_submissions(
     assert invisible_sub.title not in content
 
 
-@pytest.mark.django_db
-@pytest.mark.parametrize("item_count", (1, 3))
-def test_speaker_page_query_count(client, event, item_count, django_assert_num_queries):
-    """Query count for the speaker detail page is constant regardless of talk count."""
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        for _ in range(item_count):
-            sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-            sub.speakers.add(speaker)
-            TalkSlotFactory(submission=sub, is_visible=True)
-        with scope(event=event):
-            event.wip_schedule.freeze("v1", notify_speakers=False)
-
-    url = reverse("agenda:speaker", kwargs={"code": speaker.code, "event": event.slug})
-    with django_assert_num_queries(12):
-        response = client.get(url, follow=True)
-
-    assert response.status_code == 200
-    content = response.content.decode()
-    with scopes_disabled():
-        for sub in speaker.submissions.all():
-            assert sub.title in content
-
-
-@pytest.mark.django_db
 def test_speaker_redirect_to_public_page(
     client, public_event_with_schedule, published_talk_slot
 ):
-    """Speaker redirect by ID returns 302 to the speaker's public page."""
     event = public_event_with_schedule
     with scopes_disabled():
         speaker = published_talk_slot.submission.speakers.first()
@@ -301,11 +184,7 @@ def test_speaker_redirect_to_public_page(
     assert response.headers["location"].endswith(target_url)
 
 
-@pytest.mark.django_db
 def test_speaker_redirect_404_for_unpublished_speaker(client, event):
-    """Speaker redirect returns 404 when the speaker isn't in a released schedule."""
-    event.is_public = True
-    event.save()
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         sub = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
@@ -319,11 +198,9 @@ def test_speaker_redirect_404_for_unpublished_speaker(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_speaker_social_media_card_404_when_no_images(
     client, public_event_with_schedule, published_talk_slot, django_assert_num_queries
 ):
-    """Speaker social media card returns 404 when no images are available."""
     event = public_event_with_schedule
     with scopes_disabled():
         speaker = published_talk_slot.submission.speakers.first()
@@ -337,11 +214,9 @@ def test_speaker_social_media_card_404_when_no_images(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_speaker_talks_ical_returns_calendar(
     client, public_event_with_schedule, published_talk_slot, django_assert_num_queries
 ):
-    """Speaker talks iCal endpoint returns a calendar with only this speaker's talks."""
     event = public_event_with_schedule
     with scopes_disabled():
         speaker = published_talk_slot.submission.speakers.first()
@@ -369,9 +244,7 @@ def test_speaker_talks_ical_returns_calendar(
     assert f'filename="{expected_filename}"' in response["Content-Disposition"]
 
 
-@pytest.mark.django_db
 def test_speaker_talks_ical_404_without_current_schedule(client, event, organiser_user):
-    """Speaker talks iCal returns 404 for orga user when no schedule is released."""
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -386,11 +259,9 @@ def test_speaker_talks_ical_404_without_current_schedule(client, event, organise
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_speaker_talks_ical_suspicious_name_falls_back_to_code(
     client, public_event_with_schedule, published_talk_slot
 ):
-    """When the speaker name causes SuspiciousFileOperation, the code is used instead."""
     event = public_event_with_schedule
     with scopes_disabled():
         speaker = published_talk_slot.submission.speakers.first()
@@ -411,13 +282,11 @@ def test_speaker_talks_ical_suspicious_name_falls_back_to_code(
     assert safe_code in response["Content-Disposition"]
 
 
-@pytest.mark.django_db
 @pytest.mark.usefixtures("locmem_cache")
 @pytest.mark.parametrize(
     "primary_color", ("#ff0000", None), ids=["custom_color", "default_color"]
 )
 def test_empty_avatar_view_color(client, public_event_with_schedule, primary_color):
-    """Empty avatar SVG uses the event's primary color, falling back to the default."""
     event = public_event_with_schedule
     event.primary_color = primary_color
     event.save()

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.test import RequestFactory
 
@@ -36,8 +38,6 @@ def test_page_number_pagination_is_limit_offset(params, expected):
 def test_page_number_pagination_paginate_queryset(
     params, expect_limit_offset, settings
 ):
-    """Delegates to LimitOffsetPagination when limit+offset are present,
-    otherwise uses standard page-number pagination."""
     settings.MAX_PAGINATION_LIMIT = 100
     request = make_api_request(data=params)
     paginator = PageNumberPagination()
@@ -55,7 +55,6 @@ def test_page_number_pagination_paginate_queryset(
     ids=["limit_offset", "page_number"],
 )
 def test_page_number_pagination_get_paginated_response(params, settings):
-    """Both pagination modes include count, next, and previous in the response."""
     settings.MAX_PAGINATION_LIMIT = 100
     request = make_api_request(data=params)
     paginator = PageNumberPagination()
@@ -69,7 +68,6 @@ def test_page_number_pagination_get_paginated_response(params, settings):
 
 
 def test_page_number_pagination_limit_offset_paginator_is_cached():
-    """The limit_offset_paginator property returns the same instance on repeated access."""
     paginator = PageNumberPagination()
     first = paginator.limit_offset_paginator
     second = paginator.limit_offset_paginator

@@ -1,8 +1,9 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import re
 
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.schedule.ascii import (
     draw_ascii_schedule,
@@ -28,8 +29,7 @@ START = dt.datetime(2024, 1, 15, 10, 0, tzinfo=dt.UTC)
 
 @pytest.fixture(autouse=True)
 def _disable_scopes():
-    with scopes_disabled():
-        yield
+    return
 
 
 ANSI_RE = re.compile(r"\033\[[0-9;]*m")
@@ -54,31 +54,28 @@ def _talk(
         start = START
     end = start + dt.timedelta(minutes=duration)
 
-    with scopes_disabled():
-        event = EventFactory()
-        room = RoomFactory(event=event, name=room_name)
+    event = EventFactory()
+    room = RoomFactory(event=event, name=room_name)
 
-        submission = None
-        if has_submission:
-            submission = SubmissionFactory(
-                event=event, title=title, content_locale=locale
-            )
-            if speakers:
-                user = UserFactory(name=speakers)
-                speaker = SpeakerFactory(event=event, user=user)
-                submission.speakers.add(speaker)
+    submission = None
+    if has_submission:
+        submission = SubmissionFactory(event=event, title=title, content_locale=locale)
+        if speakers:
+            user = UserFactory(name=speakers)
+            speaker = SpeakerFactory(event=event, user=user)
+            submission.speakers.add(speaker)
 
-        slot_kwargs = {
-            "submission": submission,
-            "room": room,
-            "start": start,
-            "end": end,
-            "description": description,
-        }
-        if not has_submission:
-            slot_kwargs["schedule"] = event.wip_schedule
+    slot_kwargs = {
+        "submission": submission,
+        "room": room,
+        "start": start,
+        "end": end,
+        "description": description,
+    }
+    if not has_submission:
+        slot_kwargs["schedule"] = event.wip_schedule
 
-        return TalkSlotFactory(**slot_kwargs)
+    return TalkSlotFactory(**slot_kwargs)
 
 
 def test_draw_schedule_list_empty_data():
@@ -115,7 +112,6 @@ def test_draw_schedule_list_talk_without_submission():
 
 
 def test_draw_schedule_list_talk_without_speakers():
-    """Talks with no speakers show a 'No speakers' fallback."""
     talk = _talk(speakers="")
     data = [{"start": START, "rooms": [{"name": "Room 1", "talks": [talk]}]}]
 
@@ -202,7 +198,6 @@ def test_talk_card_without_submission_shows_description():
 
 
 def test_talk_card_long_title_truncated():
-    """A title too long for available lines gets truncated with ellipsis."""
     long_title = "This is a very long title that definitely exceeds the column width"
     talk = _talk(title=long_title, duration=15)  # height=2, max_title_lines=1
     lines = list(talk_card(talk, col_width=20))
@@ -219,7 +214,6 @@ def test_talk_card_long_speaker_name_truncated():
 
 
 def test_talk_card_empty_speaker_still_shows_locale():
-    """A talk with submission but empty speaker name still shows locale."""
     talk = _talk(speakers="", duration=30)
     lines = list(talk_card(talk, col_width=20))
     text = _strip_ansi("\n".join(lines))
@@ -427,7 +421,6 @@ def test_draw_ascii_schedule_renders_talk(output_format):
     ids=["first_room_short", "last_room_short"],
 )
 def test_draw_grid_for_day_room_empty_at_end(short_room, long_room):
-    """When one room's talk ends before the grid ends, empty lines are drawn."""
     short = _talk(title="Short", room_name=short_room, duration=15)
     long_ = _talk(title="Long", room_name=long_room, duration=30)
     day = {

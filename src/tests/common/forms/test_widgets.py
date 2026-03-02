@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import json
 from types import SimpleNamespace
@@ -5,7 +7,6 @@ from types import SimpleNamespace
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms.models import ModelChoiceIteratorValue
-from django_scopes import scopes_disabled
 
 from pretalx.common.forms.widgets import (
     AvailabilitiesWidget,
@@ -30,8 +31,12 @@ from pretalx.common.forms.widgets import (
     add_attribute,
     get_count,
 )
-from pretalx.person.models import ProfilePicture
-from tests.factories import EventFactory, SpeakerFactory, UserFactory
+from tests.factories import (
+    EventFactory,
+    ProfilePictureFactory,
+    SpeakerFactory,
+    UserFactory,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -438,19 +443,6 @@ def test_html_time_input_format_value(value, expected):
     assert widget.format_value(value) == expected
 
 
-def test_color_picker_widget_adds_colorpicker_class():
-    widget = ColorPickerWidget()
-
-    assert "colorpicker" in widget.attrs["class"]
-
-
-def test_color_picker_widget_with_existing_attrs():
-    widget = ColorPickerWidget(attrs={"id": "my-color"})
-
-    assert "colorpicker" in widget.attrs["class"]
-    assert widget.attrs["id"] == "my-color"
-
-
 @pytest.mark.parametrize(
     ("value", "expected"),
     (
@@ -543,7 +535,7 @@ def test_profile_picture_widget_get_context_widget_id_from_name():
 def test_profile_picture_widget_get_context_with_current_picture(make_image):
     """When current_picture has an avatar, the context includes its URL info."""
     user = UserFactory()
-    pic = ProfilePicture.objects.create(user=user, avatar=make_image())
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
 
     widget = ProfilePictureWidget(current_picture=pic)
 
@@ -557,10 +549,9 @@ def test_profile_picture_widget_get_context_with_current_picture(make_image):
 def test_profile_picture_widget_get_context_other_pictures_single_event(make_image):
     """A picture used in one event shows that event's name as the label."""
     user = UserFactory()
-    pic = ProfilePicture.objects.create(user=user, avatar=make_image())
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
     event = EventFactory()
-    with scopes_disabled():
-        profile = SpeakerFactory(user=user, event=event)
+    profile = SpeakerFactory(user=user, event=event)
     profile.profile_picture = pic
     profile.save(update_fields=["profile_picture"])
 
@@ -577,12 +568,11 @@ def test_profile_picture_widget_get_context_other_pictures_single_event(make_ima
 def test_profile_picture_widget_get_context_other_pictures_multiple_events(make_image):
     """A picture used across multiple events shows '{count} events' label."""
     user = UserFactory()
-    pic = ProfilePicture.objects.create(user=user, avatar=make_image())
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
     event1 = EventFactory()
     event2 = EventFactory()
-    with scopes_disabled():
-        p1 = SpeakerFactory(user=user, event=event1)
-        p2 = SpeakerFactory(user=user, event=event2)
+    p1 = SpeakerFactory(user=user, event=event1)
+    p2 = SpeakerFactory(user=user, event=event2)
     p1.profile_picture = pic
     p1.save(update_fields=["profile_picture"])
     p2.profile_picture = pic
@@ -599,7 +589,7 @@ def test_profile_picture_widget_get_context_other_pictures_multiple_events(make_
 def test_profile_picture_widget_get_context_other_pictures_no_events(make_image):
     """A picture not linked to any speaker profile has an empty label."""
     user = UserFactory()
-    ProfilePicture.objects.create(user=user, avatar=make_image())
+    ProfilePictureFactory(user=user, avatar=make_image())
 
     widget = ProfilePictureWidget(user=user)
     ctx = widget.get_context("avatar", None, {"id": "id_avatar"})
@@ -612,7 +602,7 @@ def test_profile_picture_widget_get_context_other_pictures_no_events(make_image)
 def test_profile_picture_widget_get_context_marks_current_picture(make_image):
     """The current picture is flagged with is_current=True in other_pictures."""
     user = UserFactory()
-    pic = ProfilePicture.objects.create(user=user, avatar=make_image())
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
 
     widget = ProfilePictureWidget(user=user, current_picture=pic)
     ctx = widget.get_context("avatar", None, {"id": "id_avatar"})

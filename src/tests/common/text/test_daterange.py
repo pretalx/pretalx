@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 from datetime import date
 
 import pytest
@@ -32,8 +34,6 @@ def test_daterange_locale_formatting(locale, date_from, date_to, expected):
 
 @pytest.mark.parametrize("locale", ("de", "en", "es"))
 def test_daterange_different_years_uses_fallback(locale):
-    """When dates span different years, locale-specific formatters return
-    empty string and the generic fallback is used."""
     date_from = date(2003, 2, 1)
     date_to = date(2005, 4, 3)
 
@@ -46,7 +46,6 @@ def test_daterange_different_years_uses_fallback(locale):
 
 
 def test_daterange_unknown_locale_uses_fallback():
-    """Locales without a dedicated formatter fall back to the generic format."""
     date_from = date(2024, 6, 10)
     date_to = date(2024, 6, 12)
 

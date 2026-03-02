@@ -1,7 +1,8 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from django_scopes import scope, scopes_disabled
+from django_scopes import scope
 
-from pretalx.common.models.log import ActivityLog
 from pretalx.orga.views.event import (
     EventDelete,
     EventDetail,
@@ -16,6 +17,7 @@ from pretalx.orga.views.event import (
     condition_plugins,
 )
 from tests.factories import (
+    ActivityLogFactory,
     EventFactory,
     QuestionFactory,
     SubmissionFactory,
@@ -27,51 +29,43 @@ from tests.factories import (
 )
 from tests.utils import make_orga_user, make_request, make_view
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_event_detail_object_prefetches_extra_links(event, django_assert_num_queries):
     user = make_orga_user(event)
     request = make_request(event, user=user)
     view = make_view(EventDetail, request)
 
-    with scopes_disabled():
-        obj = view.object
+    obj = view.object
 
     assert obj.pk == event.pk
     with django_assert_num_queries(0):
         list(obj.extra_links.all())
 
 
-@pytest.mark.django_db
 def test_event_detail_get_object_returns_cached_object(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
     view = make_view(EventDetail, request)
 
-    with scopes_disabled():
-        assert view.get_object() is view.object
+    assert view.get_object() is view.object
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("is_admin", (True, False))
-def test_event_detail_get_form_kwargs_is_administrator(event, is_admin):
-    user = make_orga_user(event)
-    if is_admin:
-        user.is_administrator = True
-        user.save()
+def test_event_detail_get_form_kwargs_is_administrator(is_admin):
+    event = EventFactory()
+    user = UserFactory(is_administrator=is_admin)
+    TeamFactory(organiser=event.organiser, all_events=True).members.add(user)
     request = make_request(event, user=user)
     view = make_view(EventDetail, request)
-    with scopes_disabled():
-        view.object  # noqa: B018 -- force cached_property
+    view.object  # noqa: B018 -- force cached_property
 
     kwargs = view.get_form_kwargs()
 
     assert kwargs["is_administrator"] is is_admin
 
 
-@pytest.mark.django_db
 def test_event_detail_tablist(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -82,35 +76,29 @@ def test_event_detail_tablist(event):
     assert set(tabs.keys()) == {"general", "localisation", "display", "texts"}
 
 
-@pytest.mark.django_db
 def test_event_detail_get_success_url(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
     view = make_view(EventDetail, request)
-    with scopes_disabled():
-        view.object  # noqa: B018
+    view.object  # noqa: B018 -- force cached_property
 
     assert view.get_success_url() == event.orga_urls.settings
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("is_admin", (True, False))
-def test_event_detail_context_delete_link_requires_admin(event, is_admin):
-    user = make_orga_user(event)
-    if is_admin:
-        user.is_administrator = True
-        user.save()
+def test_event_detail_context_delete_link_requires_admin(is_admin):
+    event = EventFactory()
+    user = UserFactory(is_administrator=is_admin)
+    TeamFactory(organiser=event.organiser, all_events=True).members.add(user)
     request = make_request(event, user=user)
     view = make_view(EventDetail, request)
-    with scopes_disabled():
-        view.object  # noqa: B018
-        context = view.get_context_data()
+    view.object  # noqa: B018 -- force cached_property
+    context = view.get_context_data()
 
     assert ("submit_buttons_extra" in context) is is_admin
     assert "submit_buttons" in context
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("formset_attr", "expected_prefix"),
     (
@@ -122,152 +110,127 @@ def test_event_detail_links_formset(event, formset_attr, expected_prefix):
     user = make_orga_user(event)
     request = make_request(event, user=user)
     view = make_view(EventDetail, request)
-    with scopes_disabled():
-        view.object  # noqa: B018
-        formset = getattr(view, formset_attr)
+    view.object  # noqa: B018 -- force cached_property
+    formset = getattr(view, formset_attr)
 
     assert formset.prefix == expected_prefix
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("is_public", "expected_value"), ((False, "activate"), (True, "deactivate"))
 )
-def test_event_live_context_submit_button_value(event, is_public, expected_value):
-    event.is_public = is_public
-    event.save()
+def test_event_live_context_submit_button_value(is_public, expected_value):
+    event = EventFactory(is_public=is_public)
     user = make_orga_user(event)
     request = make_request(event, user=user)
     view = make_view(EventLive, request)
 
-    with scopes_disabled():
-        context = view.get_context_data()
+    context = view.get_context_data()
 
     buttons = context["submit_buttons"]
     assert len(buttons) == 1
     assert buttons[0].value == expected_value
 
 
-@pytest.mark.django_db
-def test_event_live_context_warnings_for_short_cfp_text(event):
-    with scopes_disabled():
-        event.cfp.text = "Short"
-        event.cfp.save()
+def test_event_live_context_warnings_for_short_cfp_text():
+    event = EventFactory(cfp__text="Short")
     user = make_orga_user(event)
     request = make_request(event, user=user)
     view = make_view(EventLive, request)
 
-    with scopes_disabled():
-        context = view.get_context_data()
+    context = view.get_context_data()
 
     assert len(context["warnings"]) >= 1
     warning_texts = [w["text"] for w in context["warnings"]]
     assert any("CfP" in str(t) for t in warning_texts)
 
 
-@pytest.mark.django_db
-def test_event_live_context_warnings_for_short_landing_page(event):
-    event.landing_page_text = "Short"
-    event.save()
+def test_event_live_context_warnings_for_short_landing_page():
+    event = EventFactory(landing_page_text="Short")
     user = make_orga_user(event)
     request = make_request(event, user=user)
     view = make_view(EventLive, request)
 
-    with scopes_disabled():
-        context = view.get_context_data()
+    context = view.get_context_data()
 
     warning_texts = [str(w["text"]) for w in context["warnings"]]
     assert any("landing page" in t for t in warning_texts)
 
 
-@pytest.mark.django_db
 def test_event_live_context_suggestion_single_submission_type(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
     view = make_view(EventLive, request)
 
-    with scopes_disabled():
-        assert event.submission_types.count() == 1
-        context = view.get_context_data()
+    assert event.submission_types.count() == 1
+    context = view.get_context_data()
 
     suggestion_texts = [str(s["text"]) for s in context["suggestions"]]
     assert any("session type" in t for t in suggestion_texts)
 
 
-@pytest.mark.django_db
 def test_event_live_context_suggestion_no_questions(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
     view = make_view(EventLive, request)
 
-    with scopes_disabled():
-        context = view.get_context_data()
+    context = view.get_context_data()
 
     suggestion_texts = [str(s["text"]) for s in context["suggestions"]]
     assert any("custom field" in t for t in suggestion_texts)
 
 
-@pytest.mark.django_db
 def test_event_history_get_queryset(event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        user = UserFactory()
-        ActivityLog.objects.create(
-            event=event,
-            person=user,
-            content_object=submission,
-            action_type="pretalx.submission.create",
-        )
+    submission = SubmissionFactory(event=event)
+    user = UserFactory()
+    ActivityLogFactory(
+        event=event,
+        person=user,
+        content_object=submission,
+        action_type="pretalx.submission.create",
+    )
     request = make_request(event, user=user)
     view = make_view(EventHistory, request)
 
-    with scopes_disabled():
-        qs = view.get_queryset()
+    qs = view.get_queryset()
 
     assert qs.count() == 1
     assert qs.first().event == event
 
 
-@pytest.mark.django_db
 def test_event_history_get_queryset_excludes_other_events(event):
-    with scopes_disabled():
-        other_event = EventFactory()
-        user = UserFactory()
-        ActivityLog.objects.create(
-            event=other_event,
-            person=user,
-            content_object=other_event,
-            action_type="pretalx.event.update",
-        )
+    other_event = EventFactory()
+    user = UserFactory()
+    ActivityLogFactory(
+        event=other_event,
+        person=user,
+        content_object=other_event,
+        action_type="pretalx.event.update",
+    )
     request = make_request(event, user=user)
     view = make_view(EventHistory, request)
 
-    with scopes_disabled():
-        qs = view.get_queryset()
+    qs = view.get_queryset()
 
     assert qs.count() == 0
 
 
-@pytest.mark.django_db
 def test_event_history_detail_get_queryset_scoped_to_event(event):
-    with scopes_disabled():
-        user = UserFactory()
-        log = ActivityLog.objects.create(
-            event=event,
-            person=user,
-            content_object=event,
-            action_type="pretalx.event.update",
-        )
+    user = UserFactory()
+    log = ActivityLogFactory(
+        event=event,
+        person=user,
+        content_object=event,
+        action_type="pretalx.event.update",
+    )
     request = make_request(event, user=user)
     view = make_view(EventHistoryDetail, request, pk=log.pk)
 
-    with scopes_disabled():
-        qs = view.get_queryset()
+    qs = view.get_queryset()
 
     assert list(qs) == [log]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("htmx_headers", "expected"), ((None, False), ({"HX-Request": "true"}, True))
 )
@@ -281,7 +244,6 @@ def test_event_history_detail_is_htmx(event, htmx_headers, expected):
     assert view.is_htmx is expected
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("htmx_headers", "expected_template"),
     (
@@ -301,27 +263,23 @@ def test_event_history_detail_get_template_names(
     assert view.get_template_names() == [expected_template]
 
 
-@pytest.mark.django_db
 def test_event_history_detail_context_includes_htmx_flag(event):
-    with scopes_disabled():
-        user = UserFactory()
-        log = ActivityLog.objects.create(
-            event=event,
-            person=user,
-            content_object=event,
-            action_type="pretalx.event.update",
-        )
+    user = UserFactory()
+    log = ActivityLogFactory(
+        event=event,
+        person=user,
+        content_object=event,
+        action_type="pretalx.event.update",
+    )
     request = make_request(event, user=user)
     view = make_view(EventHistoryDetail, request, pk=log.pk)
     view.object = log
 
-    with scopes_disabled():
-        context = view.get_context_data()
+    context = view.get_context_data()
 
     assert context["is_htmx_request"] is False
 
 
-@pytest.mark.django_db
 def test_event_review_settings_tablist(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -332,7 +290,6 @@ def test_event_review_settings_tablist(event):
     assert set(tabs.keys()) == {"general", "scores", "phases"}
 
 
-@pytest.mark.django_db
 def test_event_review_settings_get_success_url(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -341,7 +298,6 @@ def test_event_review_settings_get_success_url(event):
     assert view.get_success_url() == event.orga_urls.review_settings
 
 
-@pytest.mark.django_db
 def test_event_review_settings_get_form_kwargs(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -354,7 +310,6 @@ def test_event_review_settings_get_form_kwargs(event):
     assert kwargs["locales"] == event.locales
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("formset_attr", "expected_prefix"),
     (("phases_formset", "phase"), ("scores_formset", "scores")),
@@ -364,13 +319,11 @@ def test_event_review_settings_formset(event, formset_attr, expected_prefix):
     request = make_request(event, user=user)
     view = make_view(EventReviewSettings, request)
 
-    with scopes_disabled():
-        formset = getattr(view, formset_attr)
+    formset = getattr(view, formset_attr)
 
     assert formset.prefix == expected_prefix
 
 
-@pytest.mark.django_db
 def test_phase_activate_get_object(event):
     with scope(event=event):
         phase = event.active_review_phase
@@ -378,13 +331,11 @@ def test_phase_activate_get_object(event):
     request = make_request(event, user=user)
     view = make_view(PhaseActivate, request, pk=phase.pk)
 
-    with scopes_disabled():
-        obj = view.get_object()
+    obj = view.get_object()
 
     assert obj == phase
 
 
-@pytest.mark.django_db
 def test_event_mail_settings_get_success_url(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -393,7 +344,6 @@ def test_event_mail_settings_get_success_url(event):
     assert view.get_success_url() == event.orga_urls.mail_settings
 
 
-@pytest.mark.django_db
 def test_event_mail_settings_get_form_kwargs(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -405,7 +355,6 @@ def test_event_mail_settings_get_form_kwargs(event):
     assert kwargs["locales"] == event.locales
 
 
-@pytest.mark.django_db
 def test_event_mail_settings_submit_buttons(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -417,25 +366,20 @@ def test_event_mail_settings_submit_buttons(event):
     assert buttons[0].name == "test"
 
 
-@pytest.mark.django_db
 def test_invitation_view_invitation_property(event):
-    with scopes_disabled():
-        team = TeamFactory(organiser=event.organiser, all_events=True)
-        invite = TeamInviteFactory(team=team, email="test@example.com")
+    team = TeamFactory(organiser=event.organiser, all_events=True)
+    invite = TeamInviteFactory(team=team, email="test@example.com")
     request = make_request(event)
     view = make_view(InvitationView, request, code=invite.token)
 
-    with scopes_disabled():
-        result = view.invitation
+    result = view.invitation
 
     assert result == invite
 
 
-@pytest.mark.django_db
 def test_invitation_view_get_form_kwargs(event):
-    with scopes_disabled():
-        team = TeamFactory(organiser=event.organiser, all_events=True)
-        invite = TeamInviteFactory(team=team)
+    team = TeamFactory(organiser=event.organiser, all_events=True)
+    invite = TeamInviteFactory(team=team)
     request = make_request(event)
     view = make_view(InvitationView, request, code=invite.token)
 
@@ -445,7 +389,6 @@ def test_invitation_view_get_form_kwargs(event):
     assert "password_reset_link" in kwargs
 
 
-@pytest.mark.django_db
 def test_event_delete_get_object(event):
     user = UserFactory(is_administrator=True)
     request = make_request(event, user=user)
@@ -454,7 +397,6 @@ def test_event_delete_get_object(event):
     assert view.get_object() == event
 
 
-@pytest.mark.django_db
 def test_event_delete_action_object_name(event):
     user = UserFactory(is_administrator=True)
     request = make_request(event, user=user)
@@ -465,7 +407,6 @@ def test_event_delete_action_object_name(event):
     assert str(event.name) in name
 
 
-@pytest.mark.django_db
 def test_event_delete_action_back_url(event):
     user = UserFactory(is_administrator=True)
     request = make_request(event, user=user)
@@ -474,7 +415,6 @@ def test_event_delete_action_back_url(event):
     assert view.action_back_url == event.orga_urls.settings
 
 
-@pytest.mark.django_db
 def test_widget_settings_get_success_url(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -483,7 +423,6 @@ def test_widget_settings_get_success_url(event):
     assert view.get_success_url() == event.orga_urls.widget_settings
 
 
-@pytest.mark.django_db
 def test_widget_settings_get_form_kwargs(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -494,27 +433,23 @@ def test_widget_settings_get_form_kwargs(event):
     assert kwargs["obj"] == event
 
 
-@pytest.mark.django_db
 def test_widget_settings_context_includes_extra_form(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
     view = make_view(WidgetSettings, request)
     view.object = event
 
-    with scopes_disabled():
-        context = view.get_context_data()
+    context = view.get_context_data()
 
     assert "extra_form" in context
     assert "generate_submit" in context
 
 
-@pytest.mark.django_db
 def test_condition_plugins_returns_bool():
     result = condition_plugins(None)
     assert isinstance(result, bool)
 
 
-@pytest.mark.django_db
 def test_event_settings_permission_object(event):
     user = make_orga_user(event)
     request = make_request(event, user=user)
@@ -523,75 +458,60 @@ def test_event_settings_permission_object(event):
     assert view.permission_object == event
 
 
-@pytest.mark.django_db
-def test_event_live_context_no_warning_when_cfp_text_sufficient(event):
+def test_event_live_context_no_warning_when_cfp_text_sufficient():
     """When cfp.text is >= 50 chars, no CfP warning is shown."""
-    with scopes_disabled():
-        event.cfp.text = "A" * 60
-        event.cfp.save()
-    event.landing_page_text = "B" * 60
-    event.save()
+    event = EventFactory(cfp__text="A" * 60, landing_page_text="B" * 60)
     user = make_orga_user(event)
     request = make_request(event, user=user)
     view = make_view(EventLive, request)
 
-    with scopes_disabled():
-        context = view.get_context_data()
+    context = view.get_context_data()
 
     warning_texts = [str(w["text"]) for w in context["warnings"]]
     assert not any("CfP" in t for t in warning_texts)
     assert not any("landing page" in t for t in warning_texts)
 
 
-@pytest.mark.django_db
-def test_event_live_context_suggestion_tracks_use_tracks_enabled(event):
+def test_event_live_context_suggestion_tracks_use_tracks_enabled():
     """When use_tracks and request_track are enabled but fewer than 2 tracks exist,
     a suggestion to add tracks is shown."""
-    with scopes_disabled():
-        event.feature_flags["use_tracks"] = True
-        event.save()
-        event.cfp.fields["track"]["visibility"] = "optional"
-        event.cfp.save()
-        TrackFactory(event=event)
+    event = EventFactory(
+        feature_flags={"use_tracks": True},
+        cfp__fields={"track": {"visibility": "optional"}},
+    )
+    TrackFactory(event=event)
     user = make_orga_user(event)
     request = make_request(event, user=user)
     view = make_view(EventLive, request)
 
-    with scopes_disabled():
-        context = view.get_context_data()
+    context = view.get_context_data()
 
     suggestion_texts = [str(s["text"]) for s in context["suggestions"]]
     assert any("track" in t.lower() for t in suggestion_texts)
 
 
-@pytest.mark.django_db
 def test_event_live_context_no_suggestion_multiple_submission_types(event):
     """When more than one submission type exists, no 'only one session type' suggestion."""
-    with scopes_disabled():
-        SubmissionTypeFactory(event=event)
+    SubmissionTypeFactory(event=event)
     user = make_orga_user(event)
     request = make_request(event, user=user)
     view = make_view(EventLive, request)
 
-    with scopes_disabled():
-        assert event.submission_types.count() > 1
-        context = view.get_context_data()
+    assert event.submission_types.count() > 1
+    context = view.get_context_data()
 
     suggestion_texts = [str(s["text"]) for s in context["suggestions"]]
     assert not any("session type" in t for t in suggestion_texts)
 
 
-@pytest.mark.django_db
 def test_event_live_context_no_suggestion_when_questions_exist(event):
     """When custom questions exist, no 'no custom fields' suggestion."""
-    with scopes_disabled():
-        QuestionFactory(event=event)
+    QuestionFactory(event=event)
     user = make_orga_user(event)
     request = make_request(event, user=user)
     view = make_view(EventLive, request)
 
-    with scopes_disabled():
-        context = view.get_context_data()
+    context = view.get_context_data()
 
     suggestion_texts = [str(s["text"]) for s in context["suggestions"]]
     assert not any("custom field" in t for t in suggestion_texts)

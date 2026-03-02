@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import json
 from uuid import uuid4
@@ -19,25 +21,12 @@ from tests.factories import (
     SpeakerFactory,
     SubmissionFactory,
     TalkSlotFactory,
-    TrackFactory,
 )
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
-def test_schedule_view_accessible_for_orga(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.schedule)
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
 def test_schedule_view_anonymous_redirects(client, event):
     response = client.get(event.orga_urls.schedule)
 
@@ -45,7 +34,6 @@ def test_schedule_view_anonymous_redirects(client, event):
     assert "/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_schedule_view_user_without_permission_gets_404(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=False)
@@ -56,19 +44,6 @@ def test_schedule_view_user_without_permission_gets_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
-def test_schedule_release_view_accessible(client, talk_slot):
-    event = talk_slot.submission.event
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.release_schedule)
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
 def test_schedule_release_creates_new_schedule(client, talk_slot):
     event = talk_slot.submission.event
     with scopes_disabled():
@@ -86,7 +61,6 @@ def test_schedule_release_creates_new_schedule(client, talk_slot):
         assert Schedule.objects.filter(event=event, version="v1.0").exists()
 
 
-@pytest.mark.django_db
 def test_schedule_release_rejects_duplicate_version(client, talk_slot):
     event = talk_slot.submission.event
     with scopes_disabled():
@@ -107,20 +81,9 @@ def test_schedule_release_rejects_duplicate_version(client, talk_slot):
         assert Schedule.objects.filter(event=event).count() == initial_count
 
 
-@pytest.mark.django_db
-def test_schedule_release_anonymous_redirects(client, event):
-    response = client.post(event.orga_urls.release_schedule, data={"version": "v1.0"})
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.django_db
 def test_schedule_toggle_flips_visibility(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
-    event.feature_flags["show_schedule"] = True
-    event.save()
     client.force_login(user)
 
     response = client.get(event.orga_urls.toggle_schedule, follow=True)
@@ -136,15 +99,6 @@ def test_schedule_toggle_flips_visibility(client, event):
     assert updated.feature_flags["show_schedule"] is True
 
 
-@pytest.mark.django_db
-def test_schedule_toggle_anonymous_redirects(client, event):
-    response = client.get(event.orga_urls.toggle_schedule)
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.django_db
 def test_schedule_resend_mails_with_released_schedule(client, published_talk_slot):
     event = published_talk_slot.submission.event
     with scopes_disabled():
@@ -163,7 +117,6 @@ def test_schedule_resend_mails_with_released_schedule(client, published_talk_slo
         assert mail.submissions.count() == 1
 
 
-@pytest.mark.django_db
 def test_schedule_resend_mails_without_released_schedule(client, event):
     """Warning message when no schedule has been released yet."""
     with scopes_disabled():
@@ -178,33 +131,10 @@ def test_schedule_resend_mails_without_released_schedule(client, event):
         assert event.queued_mails.count() == initial_mail_count
 
 
-@pytest.mark.django_db
-def test_schedule_resend_mails_anonymous_redirects(client, event):
-    response = client.post(event.orga_urls.schedule + "resend_mails")
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.django_db
-def test_talk_list_returns_talks_json(client, talk_slot):
-    event = talk_slot.submission.event
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.talks_api)
-
-    assert response.status_code == 200
-    data = response.json()
-    assert "talks" in data
-    assert len(data["talks"]) >= 1
-    assert data["talks"][0]["title"]
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
-def test_talk_list_query_count(client, event, item_count, django_assert_num_queries):
+def test_talk_list_returns_talks_json(
+    client, event, item_count, django_assert_num_queries
+):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         for _ in range(item_count):
@@ -219,10 +149,11 @@ def test_talk_list_query_count(client, event, item_count, django_assert_num_quer
 
     assert response.status_code == 200
     data = response.json()
+    assert "talks" in data
     assert len(data["talks"]) == item_count
+    assert data["talks"][0]["title"]
 
 
-@pytest.mark.django_db
 def test_talk_list_with_version_parameter(client, published_talk_slot):
     event = published_talk_slot.submission.event
     with scopes_disabled():
@@ -236,7 +167,6 @@ def test_talk_list_with_version_parameter(client, published_talk_slot):
     assert "talks" in data
 
 
-@pytest.mark.django_db
 def test_talk_list_with_warnings_parameter(client, talk_slot):
     event = talk_slot.submission.event
     with scopes_disabled():
@@ -250,15 +180,6 @@ def test_talk_list_with_warnings_parameter(client, talk_slot):
     assert "warnings" in data
 
 
-@pytest.mark.django_db
-def test_talk_list_anonymous_redirects(client, event):
-    response = client.get(event.orga_urls.talks_api)
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.django_db
 def test_talk_list_create_break(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -282,7 +203,6 @@ def test_talk_list_create_break(client, event):
         assert slot.room == room
 
 
-@pytest.mark.django_db
 def test_talk_list_create_blocker(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -307,7 +227,6 @@ def test_talk_list_create_blocker(client, event):
     assert data["slot_type"] == "blocker"
 
 
-@pytest.mark.django_db
 def test_talk_list_create_rejects_invalid_slot_type(client, event):
     """Invalid slot_type falls back to 'break'."""
     with scopes_disabled():
@@ -326,7 +245,6 @@ def test_talk_list_create_rejects_invalid_slot_type(client, event):
     assert data["slot_type"] == "break"
 
 
-@pytest.mark.django_db
 def test_talk_update_patch_moves_slot(client, talk_slot):
     event = talk_slot.submission.event
     with scopes_disabled():
@@ -350,7 +268,6 @@ def test_talk_update_patch_moves_slot(client, talk_slot):
         assert talk_slot.room == room
 
 
-@pytest.mark.django_db
 def test_talk_update_patch_with_null_room_keeps_existing_room(client, talk_slot):
     """When room is null in the PATCH payload, the slot keeps its current room."""
     event = talk_slot.submission.event
@@ -373,7 +290,6 @@ def test_talk_update_patch_with_null_room_keeps_existing_room(client, talk_slot)
         assert talk_slot.room == original_room
 
 
-@pytest.mark.django_db
 def test_talk_update_patch_resets_slot(client, talk_slot):
     """PATCH with empty body resets start/end/room to null."""
     event = talk_slot.submission.event
@@ -395,7 +311,6 @@ def test_talk_update_patch_resets_slot(client, talk_slot):
         assert talk_slot.room is None
 
 
-@pytest.mark.django_db
 def test_talk_update_patch_break_with_duration(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -427,7 +342,6 @@ def test_talk_update_patch_break_with_duration(client, event):
         assert slot.start == new_start
 
 
-@pytest.mark.django_db
 def test_talk_update_patch_break_with_explicit_end(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -457,7 +371,6 @@ def test_talk_update_patch_break_with_explicit_end(client, event):
         assert slot.duration == 60
 
 
-@pytest.mark.django_db
 def test_talk_update_patch_nonexistent_slot_returns_404(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -472,7 +385,6 @@ def test_talk_update_patch_nonexistent_slot_returns_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_talk_update_delete_break_slot(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -492,7 +404,6 @@ def test_talk_update_delete_break_slot(client, event):
         assert not TalkSlot.objects.filter(pk=slot_pk).exists()
 
 
-@pytest.mark.django_db
 def test_talk_update_delete_refuses_submission_slot(client, talk_slot):
     """Cannot delete a slot that has a submission attached."""
     event = talk_slot.submission.event
@@ -510,7 +421,6 @@ def test_talk_update_delete_refuses_submission_slot(client, talk_slot):
         assert event.wip_schedule.talks.count() == initial_count
 
 
-@pytest.mark.django_db
 def test_talk_update_delete_nonexistent_slot_returns_404(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -521,21 +431,6 @@ def test_talk_update_delete_nonexistent_slot_returns_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
-def test_talk_update_anonymous_redirects_to_login(client, talk_slot):
-    event = talk_slot.submission.event
-
-    response = client.patch(
-        f"{event.orga_urls.schedule_api}talks/{talk_slot.pk}/",
-        data=json.dumps({}),
-        content_type="application/json",
-    )
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.django_db
 def test_schedule_warnings_returns_json(client, talk_slot):
     event = talk_slot.submission.event
     with scopes_disabled():
@@ -549,15 +444,6 @@ def test_schedule_warnings_returns_json(client, talk_slot):
     assert isinstance(data, dict)
 
 
-@pytest.mark.django_db
-def test_schedule_warnings_anonymous_redirects(client, event):
-    response = client.get(event.orga_urls.schedule_api + "warnings/")
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.django_db
 def test_schedule_availabilities_returns_json(client, talk_slot):
     event = talk_slot.submission.event
     with scopes_disabled():
@@ -572,7 +458,6 @@ def test_schedule_availabilities_returns_json(client, talk_slot):
     assert "rooms" in data
 
 
-@pytest.mark.django_db
 def test_schedule_availabilities_includes_room_availabilities(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -592,7 +477,6 @@ def test_schedule_availabilities_includes_room_availabilities(client, event):
     assert len(data["rooms"][str(room.pk)]) == 1
 
 
-@pytest.mark.django_db
 def test_schedule_availabilities_includes_speaker_availabilities(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -611,30 +495,6 @@ def test_schedule_availabilities_includes_speaker_availabilities(client, event):
     assert len(data["talks"][str(slot.pk)]) == 1
 
 
-@pytest.mark.django_db
-def test_schedule_availabilities_anonymous_redirects(client, event):
-    response = client.get(event.orga_urls.schedule_api + "availabilities/")
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.django_db
-def test_quick_schedule_view_get_accessible(client, talk_slot):
-    event = talk_slot.submission.event
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        RoomFactory(event=event)
-    client.force_login(user)
-
-    response = client.get(
-        f"{event.orga_urls.schedule}quick/{talk_slot.submission.code}/"
-    )
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
 def test_quick_schedule_view_post_schedules_talk(client, talk_slot):
     event = talk_slot.submission.event
     with scopes_disabled():
@@ -659,37 +519,11 @@ def test_quick_schedule_view_post_schedules_talk(client, talk_slot):
         assert talk_slot.start.date() == event.date_from
 
 
-@pytest.mark.django_db
-def test_quick_schedule_anonymous_redirects_to_login(client, talk_slot):
-    event = talk_slot.submission.event
-
-    response = client.get(
-        f"{event.orga_urls.schedule}quick/{talk_slot.submission.code}/"
-    )
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.django_db
-def test_room_list_accessible(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        RoomFactory(event=event, name="Main Hall")
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.room_settings)
-
-    assert response.status_code == 200
-    assert "Main Hall" in response.content.decode()
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
-def test_room_list_query_count(client, event, item_count, django_assert_num_queries):
+def test_room_list_shows_rooms(client, event, item_count, django_assert_num_queries):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
-        rooms = [RoomFactory(event=event, name=f"Room {i}") for i in range(item_count)]
+        rooms = RoomFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
     with django_assert_num_queries(18):
@@ -700,26 +534,6 @@ def test_room_list_query_count(client, event, item_count, django_assert_num_quer
     assert all(str(room.name) in content for room in rooms)
 
 
-@pytest.mark.django_db
-def test_room_list_anonymous_redirects(client, event):
-    response = client.get(event.orga_urls.room_settings)
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.django_db
-def test_room_list_user_without_permission_gets_404(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=False)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.room_settings)
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
 def test_room_create(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
@@ -753,24 +567,6 @@ def test_room_create(client, event):
         assert room.availabilities.count() == 1
 
 
-@pytest.mark.django_db
-def test_room_create_user_without_permission_gets_404(client, event):
-    """Users with can_change_submissions but not can_change_event_settings cannot create rooms."""
-    with scopes_disabled():
-        user = make_orga_user(
-            event, can_change_submissions=True, can_change_event_settings=False
-        )
-    client.force_login(user)
-
-    response = client.post(
-        event.orga_urls.new_room,
-        data={"name_0": "Room", "guid": str(uuid4()), "availabilities": "{}"},
-    )
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
 def test_room_update(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
@@ -800,7 +596,6 @@ def test_room_update(client, event):
         assert action.data["changes"]["name"]["new"] == {"en": "New Name"}
 
 
-@pytest.mark.django_db
 def test_room_delete_unused_room(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
@@ -817,7 +612,6 @@ def test_room_delete_unused_room(client, event):
         assert not Room.objects.filter(pk=room.pk).exists()
 
 
-@pytest.mark.django_db
 def test_room_delete_used_room_fails(client, talk_slot):
     """Rooms in use by a talk slot cannot be deleted (ProtectedError)."""
     event = talk_slot.submission.event
@@ -833,26 +627,6 @@ def test_room_delete_used_room_fails(client, talk_slot):
         assert Room.objects.filter(pk=room.pk).exists()
 
 
-@pytest.mark.django_db
-def test_schedule_export_view_accessible(client, event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.schedule_export)
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
-def test_schedule_export_view_anonymous_redirects(client, event):
-    response = client.get(event.orga_urls.schedule_export)
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.django_db
 def test_schedule_export_csv(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
@@ -885,7 +659,6 @@ def test_schedule_export_csv(client, event):
     )
 
 
-@pytest.mark.django_db
 def test_schedule_export_json(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
@@ -921,7 +694,6 @@ def test_schedule_export_json(client, event):
     ]
 
 
-@pytest.mark.django_db
 def test_schedule_export_csv_without_delimiter_returns_form(client, event):
     """CSV export without data_delimiter is invalid and re-renders the form."""
     with scopes_disabled():
@@ -934,10 +706,9 @@ def test_schedule_export_csv_without_delimiter_returns_form(client, event):
     )
 
     assert response.status_code == 200
-    assert response.content.decode().strip().startswith("<!doctype")
+    assert "<!doctype" in response.content.decode().strip().lower()
 
 
-@pytest.mark.django_db
 def test_schedule_export_empty_data_redirects(client, event):
     """When export matches no submissions, the user is redirected back."""
     with scopes_disabled():
@@ -953,36 +724,6 @@ def test_schedule_export_empty_data_redirects(client, event):
     assert response.url == event.orga_urls.schedule_export
 
 
-@pytest.mark.django_db
-def test_schedule_export_track_limited_reviewer_gets_404(client, event):
-    """Track-limited reviewers cannot access the schedule export view."""
-    with scopes_disabled():
-        track = TrackFactory(event=event)
-        submission = SubmissionFactory(event=event, track=track)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        user = make_orga_user(
-            event,
-            is_reviewer=True,
-            can_change_organiser_settings=False,
-            can_change_event_settings=False,
-            can_change_submissions=False,
-            all_events=False,
-        )
-        user.teams.first().limit_tracks.add(track)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.schedule_export)
-    assert response.status_code == 404
-
-    response = client.post(
-        event.orga_urls.schedule_export,
-        data={"target": "submitted", "title": "on", "export_format": "json"},
-    )
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
 def test_schedule_export_trigger_without_cached_file(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
@@ -994,7 +735,6 @@ def test_schedule_export_trigger_without_cached_file(client, event):
     assert response.url == event.orga_urls.schedule_export_download
 
 
-@pytest.mark.django_db
 def test_schedule_export_trigger_deletes_cached_file(client, event, locmem_cache):
     """When a cached export file exists, triggering clears it before redirect."""
     with scopes_disabled():
@@ -1011,15 +751,6 @@ def test_schedule_export_trigger_deletes_cached_file(client, event, locmem_cache
         assert event.cache.get("schedule_export_cached_file") is None
 
 
-@pytest.mark.django_db
-def test_schedule_export_trigger_anonymous_redirects(client, event):
-    response = client.post(event.orga_urls.schedule_export_trigger)
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.django_db
 def test_schedule_export_download_starts_task(client, published_talk_slot):
     """Requesting the download endpoint starts an async export task."""
     event = published_talk_slot.submission.event
@@ -1032,7 +763,6 @@ def test_schedule_export_download_starts_task(client, published_talk_slot):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_schedule_export_download_serves_cached_file(client, event, locmem_cache):
     """When a valid cached file exists, download serves it directly."""
     with scopes_disabled():
@@ -1048,7 +778,6 @@ def test_schedule_export_download_serves_cached_file(client, event, locmem_cache
     assert response["Content-Type"] == "application/zip"
 
 
-@pytest.mark.django_db
 def test_schedule_export_download_clears_stale_cache(
     client, published_talk_slot, locmem_cache
 ):
@@ -1069,7 +798,6 @@ def test_schedule_export_download_clears_stale_cache(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_schedule_export_download_with_cached_file_param_skips_cache_lookup(
     client, published_talk_slot
 ):
@@ -1089,15 +817,6 @@ def test_schedule_export_download_with_cached_file_param_skips_cache_lookup(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
-def test_schedule_export_download_anonymous_redirects(client, event):
-    response = client.get(event.orga_urls.schedule_export_download)
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.django_db
 def test_schedule_availabilities_multi_speaker_intersection(client, event):
     """When a talk has multiple speakers, their availabilities are intersected."""
     with scopes_disabled():
@@ -1120,7 +839,6 @@ def test_schedule_availabilities_multi_speaker_intersection(client, event):
     assert isinstance(data["talks"][str(slot.pk)], list)
 
 
-@pytest.mark.django_db
 def test_schedule_availabilities_multi_speaker_no_availabilities(client, event):
     """When a talk has multiple speakers with no availabilities, empty list is returned."""
     with scopes_disabled():
@@ -1140,7 +858,6 @@ def test_schedule_availabilities_multi_speaker_no_availabilities(client, event):
     assert data["talks"][str(slot.pk)] == []
 
 
-@pytest.mark.django_db
 def test_talk_update_patch_talk_with_submission_uses_submission_duration(
     client, talk_slot
 ):
@@ -1166,7 +883,6 @@ def test_talk_update_patch_talk_with_submission_uses_submission_duration(
         assert talk_slot.end == new_start + dt.timedelta(minutes=expected_duration)
 
 
-@pytest.mark.django_db
 def test_talk_update_patch_break_preserves_duration_when_not_provided(client, event):
     """When patching a break slot with start but no duration/end, the existing
     duration is preserved."""

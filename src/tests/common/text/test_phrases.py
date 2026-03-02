@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
 from pretalx.common.text.phrases import BasePhrases, PhraseBook, Phrases, _phrase_book
@@ -27,7 +29,6 @@ def test_phrases_metaclass_registers_in_phrase_book():
 
 
 def test_phrases_returns_scalar_attribute_directly():
-    """Scalar (non-list/tuple) attributes are returned as-is."""
     base = BasePhrases()
 
     result = base.save
@@ -37,7 +38,6 @@ def test_phrases_returns_scalar_attribute_directly():
 
 @pytest.mark.parametrize("attr", ("not_found_long", "permission_denied_long"))
 def test_phrases_returns_random_choice_from_collection(attr):
-    """List and tuple attributes return a random element, not the collection."""
     base = BasePhrases()
 
     result = getattr(base, attr)
@@ -46,7 +46,6 @@ def test_phrases_returns_random_choice_from_collection(attr):
 
 
 def test_custom_phrases_class_registered():
-    """Creating a new Phrases subclass registers it in the phrase book."""
 
     class TestPhrases(Phrases, app="test_custom"):
         greeting = "Hello"

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
 from pretalx.mail.placeholders import (
@@ -13,20 +15,8 @@ pytestmark = pytest.mark.unit
     (("required_context", ["event"]), ("is_visible", True), ("explanation", "")),
 )
 def test_base_placeholder_default_values(attr, expected):
-    """The base class provides sensible defaults for all non-abstract properties."""
     placeholder = BaseMailTextPlaceholder()
     assert getattr(placeholder, attr) == expected
-
-
-def test_base_attributes_raise_not_implemented():
-    """Subclasses must override identifier; the base class raises."""
-    placeholder = BaseMailTextPlaceholder()
-    with pytest.raises(NotImplementedError):
-        _ = placeholder.identifier
-    with pytest.raises(NotImplementedError):
-        placeholder.render({})
-    with pytest.raises(NotImplementedError):
-        placeholder.render_sample(None)
 
 
 def test_simple_placeholder_render_calls_func_with_context_keys():

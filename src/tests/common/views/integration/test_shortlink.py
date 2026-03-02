@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django_scopes import scopes_disabled
 
@@ -30,10 +32,6 @@ def test_shortlink_view_submission_orga(client, event):
 def test_shortlink_view_submission_public(client, published_talk_slot):
     """Users with public view permission see the public submission URL."""
     submission = published_talk_slot.submission
-    event = submission.event
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
     user = UserFactory()
     client.force_login(user)
 
@@ -117,9 +115,6 @@ def test_shortlink_view_speaker_admin(client, event):
 
 def test_shortlink_view_speaker_public(client, event):
     """Public users can follow a speaker code to the public speaker page."""
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
     with scopes_disabled():
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
@@ -166,8 +161,6 @@ def test_shortlink_view_speaker_public_skips_private_event(client):
     with scopes_disabled():
         private_event = EventFactory(is_public=False)
         public_event = EventFactory(is_public=True)
-        public_event.feature_flags["show_schedule"] = True
-        public_event.save()
 
         user_obj = UserFactory()
         public_speaker = SpeakerFactory(event=public_event, user=user_obj)

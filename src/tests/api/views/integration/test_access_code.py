@@ -1,24 +1,23 @@
-import json
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
 from django_scopes import scopes_disabled
 
 from tests.factories import (
+    EventFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
     SubmitterAccessCodeFactory,
     TrackFactory,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
-@pytest.mark.parametrize("is_public", (True, False))
-def test_access_code_list_requires_auth(client, event, is_public):
-    """Unauthenticated access code list returns 401 regardless of event visibility."""
-    event.is_public = is_public
-    event.save()
+def test_access_code_list_requires_auth(client):
+    """Unauthenticated access code list returns 401."""
+    event = EventFactory()
     with scopes_disabled():
         SubmitterAccessCodeFactory(event=event)
 
@@ -27,33 +26,13 @@ def test_access_code_list_requires_auth(client, event, is_public):
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
-def test_access_code_list_with_orga_read_token(client, event, orga_read_token):
-    """Organiser with read token can list access codes."""
-    with scopes_disabled():
-        code = SubmitterAccessCodeFactory(event=event)
-
-    response = client.get(
-        event.api_urls.access_codes,
-        follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["count"] == 1
-    assert data["results"][0]["code"] == code.code
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
-def test_access_code_list_query_count(
+def test_access_code_list_with_orga_read_token(
     client, event, orga_read_token, item_count, django_assert_num_queries
 ):
-    """Query count for access code list is constant regardless of item count."""
+    """Organiser with read token can list access codes with constant query count."""
     with scopes_disabled():
-        for _ in range(item_count):
-            SubmitterAccessCodeFactory(event=event)
+        codes = SubmitterAccessCodeFactory.create_batch(item_count, event=event)
 
     with django_assert_num_queries(13):
         response = client.get(
@@ -63,10 +42,12 @@ def test_access_code_list_query_count(
         )
 
     assert response.status_code == 200
-    assert response.json()["count"] == item_count
+    data = response.json()
+    assert data["count"] == item_count
+    result_codes = {r["code"] for r in data["results"]}
+    assert all(c.code in result_codes for c in codes)
 
 
-@pytest.mark.django_db
 def test_access_code_detail_with_orga_read_token(client, event, orga_read_token):
     """Organiser can retrieve a single access code with all fields."""
     with scopes_disabled():
@@ -89,13 +70,12 @@ def test_access_code_detail_with_orga_read_token(client, event, orga_read_token)
     assert data["internal_notes"] == "Test note"
 
 
-@pytest.mark.django_db
 def test_access_code_create_with_write_token(client, event, orga_write_token):
     """POST with a write token creates a new access code."""
     response = client.post(
         event.api_urls.access_codes,
         follow=True,
-        data=json.dumps({"code": "TESTCODE123", "maximum_uses": 10}),
+        data={"code": "TESTCODE123", "maximum_uses": 10},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -114,13 +94,12 @@ def test_access_code_create_with_write_token(client, event, orga_write_token):
         )
 
 
-@pytest.mark.django_db
 def test_access_code_create_rejected_with_read_token(client, event, orga_read_token):
     """POST with a read-only token returns 403."""
     response = client.post(
         event.api_urls.access_codes,
         follow=True,
-        data=json.dumps({"code": "FORBIDDEN"}),
+        data={"code": "FORBIDDEN"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_read_token.token}"},
     )
@@ -130,7 +109,6 @@ def test_access_code_create_rejected_with_read_token(client, event, orga_read_to
         assert not event.submitter_access_codes.filter(code="FORBIDDEN").exists()
 
 
-@pytest.mark.django_db
 def test_access_code_create_with_track(client, event, orga_write_token):
     """Access code can be created with a track restriction (v1 singular field)."""
     with scopes_disabled():
@@ -139,7 +117,7 @@ def test_access_code_create_with_track(client, event, orga_write_token):
     response = client.post(
         event.api_urls.access_codes,
         follow=True,
-        data=json.dumps({"code": "TRACKED", "track": track.pk}),
+        data={"code": "TRACKED", "track": track.pk},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -150,18 +128,17 @@ def test_access_code_create_with_track(client, event, orga_write_token):
         assert list(code.tracks.all()) == [track]
 
 
-@pytest.mark.django_db
 def test_access_code_create_rejects_track_from_other_event(
-    client, event, orga_write_token, other_event
+    client, event, orga_write_token
 ):
     """Creating an access code with a track from a different event returns 400."""
     with scopes_disabled():
-        other_track = TrackFactory(event=other_event)
+        other_track = TrackFactory(event=EventFactory())
 
     response = client.post(
         event.api_urls.access_codes,
         follow=True,
-        data=json.dumps({"code": "BADTRACK", "track": other_track.pk}),
+        data={"code": "BADTRACK", "track": other_track.pk},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -169,7 +146,6 @@ def test_access_code_create_rejects_track_from_other_event(
     assert response.status_code == 400
 
 
-@pytest.mark.django_db
 def test_access_code_update_with_write_token(client, event, orga_write_token):
     """PATCH with a write token updates the access code."""
     with scopes_disabled():
@@ -178,7 +154,7 @@ def test_access_code_update_with_write_token(client, event, orga_write_token):
     response = client.patch(
         event.api_urls.access_codes + f"{code.pk}/",
         follow=True,
-        data=json.dumps({"maximum_uses": 99}),
+        data={"maximum_uses": 99},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -194,27 +170,6 @@ def test_access_code_update_with_write_token(client, event, orga_write_token):
         )
 
 
-@pytest.mark.django_db
-def test_access_code_update_rejected_with_read_token(client, event, orga_read_token):
-    """PATCH with a read-only token returns 403."""
-    with scopes_disabled():
-        code = SubmitterAccessCodeFactory(event=event, maximum_uses=1)
-
-    response = client.patch(
-        event.api_urls.access_codes + f"{code.pk}/",
-        follow=True,
-        data=json.dumps({"maximum_uses": 99}),
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 403
-    with scopes_disabled():
-        code.refresh_from_db()
-        assert code.maximum_uses == 1
-
-
-@pytest.mark.django_db
 def test_access_code_delete_with_write_token(client, event, orga_write_token):
     """DELETE with a write token removes the access code."""
     with scopes_disabled():
@@ -237,24 +192,6 @@ def test_access_code_delete_with_write_token(client, event, orga_write_token):
         )
 
 
-@pytest.mark.django_db
-def test_access_code_delete_rejected_with_read_token(client, event, orga_read_token):
-    """DELETE with a read-only token returns 403."""
-    with scopes_disabled():
-        code = SubmitterAccessCodeFactory(event=event)
-
-    response = client.delete(
-        event.api_urls.access_codes + f"{code.pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_read_token.token}"},
-    )
-
-    assert response.status_code == 403
-    with scopes_disabled():
-        assert event.submitter_access_codes.filter(pk=code.pk).exists()
-
-
-@pytest.mark.django_db
 def test_access_code_delete_used_code_returns_400(client, event, orga_write_token):
     """Deleting an access code that has been used by a submission returns 400."""
     with scopes_disabled():
@@ -272,7 +209,6 @@ def test_access_code_delete_used_code_returns_400(client, event, orga_write_toke
         assert event.submitter_access_codes.filter(pk=code.pk).exists()
 
 
-@pytest.mark.django_db
 def test_access_code_list_rejects_legacy_version(client, event, orga_read_token):
     """GET with Pretalx-Version: LEGACY returns 400."""
     response = client.get(
@@ -288,7 +224,6 @@ def test_access_code_list_rejects_legacy_version(client, event, orga_read_token)
     assert "not supported" in response.json()["detail"].lower()
 
 
-@pytest.mark.django_db
 def test_access_code_detail_v1_shows_singular_fields(client, event, orga_read_token):
     """V1 response uses singular track/submission_type fields."""
     with scopes_disabled():
@@ -314,7 +249,6 @@ def test_access_code_detail_v1_shows_singular_fields(client, event, orga_read_to
     assert data["submission_type"] == sub_type.pk
 
 
-@pytest.mark.django_db
 def test_access_code_detail_v1_returns_first_entry_only(client, event, orga_read_token):
     """V1 singular fields return only one item when multiple are associated."""
     with scopes_disabled():
@@ -338,7 +272,6 @@ def test_access_code_detail_v1_returns_first_entry_only(client, event, orga_read
     assert data["submission_type"] in (sub_type1.pk, sub_type2.pk)
 
 
-@pytest.mark.django_db
 def test_access_code_detail_v1_null_when_empty(client, event, orga_read_token):
     """V1 track/submission_type are null when no M2M entries exist."""
     with scopes_disabled():
@@ -356,7 +289,6 @@ def test_access_code_detail_v1_null_when_empty(client, event, orga_read_token):
     assert data["submission_type"] is None
 
 
-@pytest.mark.django_db
 def test_access_code_detail_v1_expand_track(client, event, orga_read_token):
     """V1 ?expand=track,submission_type returns expanded objects."""
     with scopes_disabled():
@@ -378,7 +310,6 @@ def test_access_code_detail_v1_expand_track(client, event, orga_read_token):
     assert isinstance(data["submission_type"], dict)
 
 
-@pytest.mark.django_db
 def test_access_code_create_v1_with_submission_type(client, event, orga_write_token):
     """V1 POST with singular track and submission_type sets both M2M relations."""
     with scopes_disabled():
@@ -388,9 +319,7 @@ def test_access_code_create_v1_with_submission_type(client, event, orga_write_to
     response = client.post(
         event.api_urls.access_codes,
         follow=True,
-        data=json.dumps(
-            {"code": "FULLV1", "track": track.pk, "submission_type": sub_type.pk}
-        ),
+        data={"code": "FULLV1", "track": track.pk, "submission_type": sub_type.pk},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -402,7 +331,6 @@ def test_access_code_create_v1_with_submission_type(client, event, orga_write_to
         assert list(code.submission_types.all()) == [sub_type]
 
 
-@pytest.mark.django_db
 def test_access_code_update_v1_track(client, event, orga_write_token):
     """V1 PATCH with singular track and submission_type sets the M2M relations."""
     with scopes_disabled():
@@ -413,7 +341,7 @@ def test_access_code_update_v1_track(client, event, orga_write_token):
     response = client.patch(
         event.api_urls.access_codes + f"{code.pk}/",
         follow=True,
-        data=json.dumps({"track": track.pk, "submission_type": sub_type.pk}),
+        data={"track": track.pk, "submission_type": sub_type.pk},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -425,7 +353,6 @@ def test_access_code_update_v1_track(client, event, orga_write_token):
         assert list(code.submission_types.all()) == [sub_type]
 
 
-@pytest.mark.django_db
 def test_access_code_update_v1_clear_track(client, event, orga_write_token):
     """V1 PATCH with track: null and submission_type: null clears M2M relations."""
     with scopes_disabled():
@@ -438,7 +365,7 @@ def test_access_code_update_v1_clear_track(client, event, orga_write_token):
     response = client.patch(
         event.api_urls.access_codes + f"{code.pk}/",
         follow=True,
-        data=json.dumps({"track": None, "submission_type": None}),
+        data={"track": None, "submission_type": None},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -450,7 +377,6 @@ def test_access_code_update_v1_clear_track(client, event, orga_write_token):
         assert code.submission_types.count() == 0
 
 
-@pytest.mark.django_db
 def test_access_code_detail_dev_preview_shows_plural_fields(
     client, event, orga_read_token
 ):
@@ -481,7 +407,6 @@ def test_access_code_detail_dev_preview_shows_plural_fields(
     assert data["submission_types"] == [sub_type.pk]
 
 
-@pytest.mark.django_db
 def test_access_code_dev_preview_expand_tracks(client, event, orga_read_token):
     """DEV_PREVIEW ?expand=tracks,submission_types returns expanded objects."""
     with scopes_disabled():

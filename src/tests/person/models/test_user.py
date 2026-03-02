@@ -1,22 +1,23 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import uuid
 
 import pytest
 from django.core import mail as djmail
 from django.core.exceptions import ValidationError
-from django_scopes import scopes_disabled
 from rest_framework.authtoken.models import Token
 
 from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.models import ActivityLog
 from pretalx.common.urls import build_absolute_uri
 from pretalx.person.models import User
-from pretalx.person.models.picture import ProfilePicture
 from pretalx.person.models.user import validate_username
 from pretalx.person.signals import delete_user as delete_user_signal
 from pretalx.submission.models import Answer
 from tests.factories import (
     AnswerFactory,
     EventFactory,
+    ProfilePictureFactory,
     QuestionFactory,
     SpeakerFactory,
     SubmissionFactory,
@@ -25,7 +26,7 @@ from tests.factories import (
     UserFactory,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 @pytest.mark.parametrize(
@@ -64,7 +65,6 @@ def test_user_init_caches():
     ),
     ids=["lowercases", "strips_whitespace"],
 )
-@pytest.mark.django_db
 def test_user_save_normalizes_email(input_email, expected):
     user = UserFactory(email=input_email)
     user.refresh_from_db()
@@ -102,7 +102,6 @@ def test_validate_username_rejects_markup(username):
         validate_username(username)
 
 
-@pytest.mark.django_db
 def test_user_manager_create_user():
     user = User.objects.create_user(
         email="new@example.com", name="New User", password="secret123!"
@@ -112,14 +111,12 @@ def test_user_manager_create_user():
     assert user.check_password("secret123!")
 
 
-@pytest.mark.django_db
 def test_user_manager_create_user_no_password():
     user = User.objects.create_user(email="nopass@example.com", name="No Pass")
     assert user.pk is not None
     assert not user.has_usable_password()
 
 
-@pytest.mark.django_db
 def test_user_manager_create_superuser():
     user = User.objects.create_superuser(
         email="admin@example.com", name="Admin", password="admin123!"
@@ -129,7 +126,6 @@ def test_user_manager_create_superuser():
     assert user.is_superuser is False
 
 
-@pytest.mark.django_db
 def test_user_has_perm_caches_result(event):
     user = UserFactory()
     user.is_administrator = True
@@ -139,7 +135,6 @@ def test_user_has_perm_caches_result(event):
     assert ("person.administrator", event) in user.permission_cache
 
 
-@pytest.mark.django_db
 def test_user_has_perm_returns_cached():
     user = UserFactory()
     event = EventFactory()
@@ -148,7 +143,6 @@ def test_user_has_perm_returns_cached():
     assert user.has_perm("fake.perm", event) is True
 
 
-@pytest.mark.django_db
 def test_user_has_perm_no_pk():
     """has_perm bypasses cache when obj has no pk."""
     user = UserFactory()
@@ -160,46 +154,38 @@ def test_user_has_perm_no_pk():
     assert result is False
 
 
-@pytest.mark.django_db
 def test_user_get_speaker_creates_profile(event):
     user = UserFactory()
 
-    with scopes_disabled():
-        speaker = user.get_speaker(event)
+    speaker = user.get_speaker(event)
 
     assert speaker.event == event
     assert speaker.user == user
     assert speaker.pk is not None
 
 
-@pytest.mark.django_db
 def test_user_get_speaker_returns_existing(event):
     speaker = SpeakerFactory(event=event)
 
-    with scopes_disabled():
-        result = speaker.user.get_speaker(event)
+    result = speaker.user.get_speaker(event)
 
     assert result.pk == speaker.pk
 
 
-@pytest.mark.django_db
 def test_user_get_speaker_uses_cache(event):
     user = UserFactory()
 
-    with scopes_disabled():
-        speaker = user.get_speaker(event)
-        cached = user.get_speaker(event)
+    speaker = user.get_speaker(event)
+    cached = user.get_speaker(event)
 
     assert speaker is cached
 
 
-@pytest.mark.django_db
 def test_user_get_speaker_prefetched(event, django_assert_num_queries):
     """get_speaker uses _speakers attr when available from prefetch."""
     speaker = SpeakerFactory(event=event)
 
-    with scopes_disabled():
-        users = list(User.objects.with_profiles(event).filter(pk=speaker.user.pk))
+    users = list(User.objects.with_profiles(event).filter(pk=speaker.user.pk))
     user = users[0]
 
     with django_assert_num_queries(0):
@@ -208,25 +194,21 @@ def test_user_get_speaker_prefetched(event, django_assert_num_queries):
     assert result.pk == speaker.pk
 
 
-@pytest.mark.django_db
 def test_user_get_event_preferences_creates(event):
     user = UserFactory()
 
-    with scopes_disabled():
-        prefs = user.get_event_preferences(event)
+    prefs = user.get_event_preferences(event)
 
     assert prefs.event == event
     assert prefs.user == user
     assert prefs.pk is not None
 
 
-@pytest.mark.django_db
 def test_user_get_event_preferences_caches(event):
     user = UserFactory()
 
-    with scopes_disabled():
-        prefs1 = user.get_event_preferences(event)
-        prefs2 = user.get_event_preferences(event)
+    prefs1 = user.get_event_preferences(event)
+    prefs2 = user.get_event_preferences(event)
 
     assert prefs1 is prefs2
 
@@ -236,7 +218,6 @@ def test_user_get_event_preferences_caches(event):
     (("de", ["en", "de"], "de"), ("fr", ["en", "de"], "en")),
     ids=["locale_in_event", "locale_not_in_event"],
 )
-@pytest.mark.django_db
 def test_user_get_locale_for_event(user_locale, event_locales, expected):
     user = User(locale=user_locale)
     event = EventFactory()
@@ -245,30 +226,25 @@ def test_user_get_locale_for_event(user_locale, event_locales, expected):
     assert user.get_locale_for_event(event) == expected
 
 
-@pytest.mark.django_db
 def test_user_log_action_defaults_to_self():
     user = UserFactory()
     log = user.log_action("pretalx.user.test")
     assert log.person == user
 
 
-@pytest.mark.django_db
 def test_user_own_actions_filters_by_person():
     user = UserFactory()
     user.log_action("pretalx.user.test_action")
 
-    with scopes_disabled():
-        actions = user.own_actions()
-        assert actions.count() == 1
-        assert actions.first().person == user
+    actions = user.own_actions()
+    assert actions.count() == 1
+    assert actions.first().person == user
 
 
-@pytest.mark.django_db
 def test_user_deactivate_clears_personal_data():
     user = UserFactory(name="Real Name", email="real@example.com")
 
-    with scopes_disabled():
-        user.deactivate()
+    user.deactivate()
     user.refresh_from_db()
 
     assert user.name == "Deleted User"
@@ -283,25 +259,19 @@ def test_user_deactivate_clears_personal_data():
     assert "deleted_user_" in user.email
 
 
-@pytest.mark.django_db
 def test_user_deactivate_clears_biography():
-    speaker = SpeakerFactory()
+    speaker = SpeakerFactory(biography="My bio")
 
-    with scopes_disabled():
-        speaker.biography = "My bio"
-        speaker.save()
-        speaker.user.deactivate()
-        speaker.refresh_from_db()
+    speaker.user.deactivate()
+    speaker.refresh_from_db()
 
     assert speaker.biography == ""
 
 
-@pytest.mark.django_db
 def test_user_deactivate_deletes_personal_answers():
     speaker = SpeakerFactory()
     submission = SubmissionFactory(event=speaker.event)
-    with scopes_disabled():
-        submission.speakers.add(speaker)
+    submission.speakers.add(speaker)
 
     personal_q = QuestionFactory(
         event=speaker.event, target="submission", contains_personal_data=True
@@ -314,27 +284,23 @@ def test_user_deactivate_deletes_personal_answers():
         question=impersonal_q, submission=submission, speaker=None
     )
 
-    with scopes_disabled():
-        speaker.user.deactivate()
+    speaker.user.deactivate()
 
-        remaining = list(Answer.objects.all())
+    remaining = list(Answer.objects.all())
     assert remaining == [impersonal]
 
 
-@pytest.mark.django_db
 def test_user_deactivate_removes_from_teams():
     user = UserFactory()
     team = TeamFactory()
     team.members.add(user)
     assert team.members.count() == 1
 
-    with scopes_disabled():
-        user.deactivate()
+    user.deactivate()
 
     assert team.members.count() == 0
 
 
-@pytest.mark.django_db
 def test_user_deactivate_sends_signal():
     user = UserFactory()
     received = []
@@ -344,15 +310,13 @@ def test_user_deactivate_sends_signal():
 
     delete_user_signal.connect(handler)
     try:
-        with scopes_disabled():
-            user.deactivate()
+        user.deactivate()
     finally:
         delete_user_signal.disconnect(handler)
 
     assert received == [user]
 
 
-@pytest.mark.django_db
 def test_user_shred_deletes_user():
     user = UserFactory()
     pk = user.pk
@@ -360,18 +324,15 @@ def test_user_shred_deletes_user():
     assert not User.objects.filter(pk=pk).exists()
 
 
-@pytest.mark.django_db
 def test_user_shred_raises_with_submissions():
     speaker = SpeakerFactory()
     submission = SubmissionFactory(event=speaker.event)
-    with scopes_disabled():
-        submission.speakers.add(speaker)
+    submission.speakers.add(speaker)
 
     with pytest.raises(UserDeletionError):
         speaker.user.shred()
 
 
-@pytest.mark.django_db
 def test_user_shred_raises_with_teams():
     user = UserFactory()
     team = TeamFactory()
@@ -381,7 +342,6 @@ def test_user_shred_raises_with_teams():
         user.shred()
 
 
-@pytest.mark.django_db
 def test_user_shred_raises_with_answers():
     """Users with answers (as speaker or submission speaker) cannot be shredded."""
     speaker = SpeakerFactory()
@@ -392,7 +352,6 @@ def test_user_shred_raises_with_answers():
         speaker.user.shred()
 
 
-@pytest.mark.django_db
 def test_user_shred_sends_signal():
     user = UserFactory()
     received = []
@@ -409,38 +368,31 @@ def test_user_shred_sends_signal():
     assert received == [user]
 
 
-@pytest.mark.django_db
 def test_user_shred_cleans_own_actions():
     """Shredding nullifies person references in the shredded user's own actions."""
     user = UserFactory()
     other_user = UserFactory()
     other_user.log_action("pretalx.user.test", person=user)
 
-    with scopes_disabled():
-        action_pk = ActivityLog.objects.filter(person=user).first().pk
+    action_pk = ActivityLog.objects.filter(person=user).first().pk
 
     user.shred()
 
-    with scopes_disabled():
-        action = ActivityLog.objects.get(pk=action_pk)
+    action = ActivityLog.objects.get(pk=action_pk)
     assert action.person is None
 
 
-@pytest.mark.django_db
 def test_user_shred_deletes_logged_actions():
     user = UserFactory()
     user.log_action("pretalx.user.test")
 
-    with scopes_disabled():
-        assert user.logged_actions().count() == 1
+    assert user.logged_actions().count() == 1
 
     user.shred()
 
-    with scopes_disabled():
-        assert not ActivityLog.objects.filter(object_id=user.pk).exists()
+    assert not ActivityLog.objects.filter(object_id=user.pk).exists()
 
 
-@pytest.mark.django_db
 def test_user_regenerate_token():
     user = UserFactory()
 
@@ -450,7 +402,6 @@ def test_user_regenerate_token():
     assert token.user == user
 
 
-@pytest.mark.django_db
 def test_user_regenerate_token_replaces_old():
     user = UserFactory()
     old_token = user.regenerate_token()
@@ -469,7 +420,6 @@ def test_user_regenerate_token_replaces_old():
     ),
     ids=["cfp_with_event", "orga_with_event", "without_event"],
 )
-@pytest.mark.django_db
 def test_user_get_password_reset_url(use_event, orga, expected_urlname, event):
     user = UserFactory(pw_reset_token="abc123")
 
@@ -482,7 +432,6 @@ def test_user_get_password_reset_url(use_event, orga, expected_urlname, event):
     assert url == build_absolute_uri(expected_urlname, kwargs=expected_kwargs)
 
 
-@pytest.mark.django_db
 def test_user_reset_password(event):
     user = UserFactory()
     assert user.pw_reset_token is None
@@ -495,14 +444,10 @@ def test_user_reset_password(event):
     assert user.pw_reset_time is not None
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == [user.email]
-    with scopes_disabled():
-        actions = list(
-            user.own_actions().filter(action_type="pretalx.user.password.reset")
-        )
+    actions = list(user.own_actions().filter(action_type="pretalx.user.password.reset"))
     assert len(actions) == 1
 
 
-@pytest.mark.django_db
 def test_user_reset_password_custom_text(event):
     user = UserFactory()
     djmail.outbox = []
@@ -514,7 +459,6 @@ def test_user_reset_password_custom_text(event):
     assert djmail.outbox[0].body == f"Custom {user.name} {expected_url}"
 
 
-@pytest.mark.django_db
 def test_user_change_password():
     user = UserFactory()
     djmail.outbox = []
@@ -527,14 +471,12 @@ def test_user_change_password():
     assert user.pw_reset_time is None
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == [user.email]
-    with scopes_disabled():
-        actions = list(
-            user.own_actions().filter(action_type="pretalx.user.password.changed")
-        )
+    actions = list(
+        user.own_actions().filter(action_type="pretalx.user.password.changed")
+    )
     assert len(actions) == 1
 
 
-@pytest.mark.django_db
 def test_user_change_email():
     user = UserFactory(email="old@example.com")
     djmail.outbox = []
@@ -545,17 +487,13 @@ def test_user_change_email():
     assert user.email == "new@example.com"
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == ["old@example.com"]
-    with scopes_disabled():
-        action = (
-            user.own_actions().filter(action_type="pretalx.user.email.update").first()
-        )
+    action = user.own_actions().filter(action_type="pretalx.user.email.update").first()
     assert action.data == {
         "old_email": "old@example.com",
         "new_email": "new@example.com",
     }
 
 
-@pytest.mark.django_db
 def test_user_get_permissions_for_event_administrator(event):
     user = UserFactory()
     user.is_administrator = True
@@ -573,7 +511,6 @@ def test_user_get_permissions_for_event_administrator(event):
     assert permissions == expected
 
 
-@pytest.mark.django_db
 def test_user_get_permissions_for_event_team_member(event):
     user = UserFactory()
     team = TeamFactory(
@@ -589,14 +526,12 @@ def test_user_get_permissions_for_event_team_member(event):
     assert permissions == {"can_change_submissions", "is_reviewer"}
 
 
-@pytest.mark.django_db
 def test_user_get_permissions_for_event_no_team(event):
     user = UserFactory()
     permissions = user.get_permissions_for_event(event)
     assert permissions == set()
 
 
-@pytest.mark.django_db
 def test_user_get_permissions_for_event_caches(event):
     user = UserFactory()
     user.is_administrator = True
@@ -607,7 +542,6 @@ def test_user_get_permissions_for_event_caches(event):
     assert "permissions" in cached
 
 
-@pytest.mark.django_db
 def test_user_get_permissions_for_event_updates_existing_cache(event):
     """When there's already partial cache data, get_permissions_for_event
     updates the existing dict rather than replacing it."""
@@ -623,7 +557,6 @@ def test_user_get_permissions_for_event_updates_existing_cache(event):
     assert "permissions" in cached
 
 
-@pytest.mark.django_db
 def test_user_get_events_with_any_permission_administrator():
     user = UserFactory()
     user.is_administrator = True
@@ -634,7 +567,6 @@ def test_user_get_events_with_any_permission_administrator():
     assert events == [event]
 
 
-@pytest.mark.django_db
 def test_user_get_events_with_any_permission_team_all_events():
     user = UserFactory()
     event = EventFactory()
@@ -646,7 +578,6 @@ def test_user_get_events_with_any_permission_team_all_events():
     assert events == [event]
 
 
-@pytest.mark.django_db
 def test_user_get_events_with_any_permission_team_limited():
     user = UserFactory()
     event = EventFactory()
@@ -660,7 +591,6 @@ def test_user_get_events_with_any_permission_team_limited():
     assert events == [event]
 
 
-@pytest.mark.django_db
 def test_user_get_events_with_any_permission_no_teams():
     user = UserFactory()
     EventFactory()
@@ -670,7 +600,6 @@ def test_user_get_events_with_any_permission_no_teams():
     assert events == []
 
 
-@pytest.mark.django_db
 def test_user_get_events_with_any_permission_prefetched_teams(
     django_assert_num_queries,
 ):
@@ -691,7 +620,6 @@ def test_user_get_events_with_any_permission_prefetched_teams(
     assert events == [event]
 
 
-@pytest.mark.django_db
 def test_user_get_events_with_any_permission_prefetched_limited(
     django_assert_num_queries,
 ):
@@ -714,7 +642,6 @@ def test_user_get_events_with_any_permission_prefetched_limited(
     assert events == [event]
 
 
-@pytest.mark.django_db
 def test_user_get_events_for_permission_filters_by_permission():
     user = UserFactory()
     event = EventFactory()
@@ -733,7 +660,6 @@ def test_user_get_events_for_permission_filters_by_permission():
     assert without_perm == []
 
 
-@pytest.mark.django_db
 def test_user_get_events_for_permission_administrator():
     user = UserFactory()
     user.is_administrator = True
@@ -744,7 +670,6 @@ def test_user_get_events_for_permission_administrator():
     assert events == [event]
 
 
-@pytest.mark.django_db
 def test_user_get_events_for_permission_limited_events():
     user = UserFactory()
     event = EventFactory()
@@ -759,7 +684,6 @@ def test_user_get_events_for_permission_limited_events():
     assert events == [event]
 
 
-@pytest.mark.django_db
 def test_user_get_reviewer_tracks_no_reviewer():
     user = UserFactory()
     event = EventFactory()
@@ -769,20 +693,17 @@ def test_user_get_reviewer_tracks_no_reviewer():
     assert tracks == frozenset()
 
 
-@pytest.mark.django_db
 def test_user_get_reviewer_tracks_unrestricted():
     user = UserFactory()
     event = EventFactory()
     team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
     team.members.add(user)
 
-    with scopes_disabled():
-        tracks = user.get_reviewer_tracks(event)
+    tracks = user.get_reviewer_tracks(event)
 
     assert tracks is None
 
 
-@pytest.mark.django_db
 def test_user_get_reviewer_tracks_restricted():
     user = UserFactory()
     event = EventFactory()
@@ -791,33 +712,28 @@ def test_user_get_reviewer_tracks_restricted():
     team.members.add(user)
     track.limit_teams.add(team)
 
-    with scopes_disabled():
-        tracks = user.get_reviewer_tracks(event)
+    tracks = user.get_reviewer_tracks(event)
 
     assert set(tracks) == {track}
 
 
-@pytest.mark.django_db
 def test_user_get_reviewer_tracks_caches(event):
     user = UserFactory()
     team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
     team.members.add(user)
 
-    with scopes_disabled():
-        user.get_reviewer_tracks(event)
+    user.get_reviewer_tracks(event)
     cached = user.event_permission_cache[event.pk]
 
     assert "reviewer_tracks" in cached
 
 
-@pytest.mark.django_db
 def test_user_queryset_with_profiles_prefetches_speakers(
     event, django_assert_num_queries
 ):
     speaker = SpeakerFactory(event=event)
 
-    with scopes_disabled():
-        users = list(User.objects.with_profiles(event).filter(pk=speaker.user.pk))
+    users = list(User.objects.with_profiles(event).filter(pk=speaker.user.pk))
 
     assert len(users) == 1
     with django_assert_num_queries(0):
@@ -825,31 +741,26 @@ def test_user_queryset_with_profiles_prefetches_speakers(
     assert speakers[0].pk == speaker.pk
 
 
-@pytest.mark.django_db
 def test_user_queryset_with_speaker_code_annotates_code(event):
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event)
-    with scopes_disabled():
-        submission.speakers.add(speaker)
+    submission.speakers.add(speaker)
 
-        users = list(User.objects.with_speaker_code(event).filter(pk=speaker.user.pk))
+    users = list(User.objects.with_speaker_code(event).filter(pk=speaker.user.pk))
 
     assert len(users) == 1
     assert users[0].speaker_code == speaker.code
 
 
-@pytest.mark.django_db
 def test_user_queryset_with_speaker_code_no_submissions(event):
     speaker = SpeakerFactory(event=event)
 
-    with scopes_disabled():
-        users = list(User.objects.with_speaker_code(event).filter(pk=speaker.user.pk))
+    users = list(User.objects.with_speaker_code(event).filter(pk=speaker.user.pk))
 
     assert len(users) == 1
     assert users[0].speaker_code is None
 
 
-@pytest.mark.django_db
 def test_user_code_auto_generated():
     user1 = UserFactory()
     user2 = UserFactory()
@@ -857,7 +768,6 @@ def test_user_code_auto_generated():
     assert user1.code != user2.code
 
 
-@pytest.mark.django_db
 def test_user_get_speaker_prefetched_wrong_event():
     """When _speakers has a profile for a different event, get_speaker falls
     through to the database query."""
@@ -866,17 +776,14 @@ def test_user_get_speaker_prefetched_wrong_event():
     speaker1 = SpeakerFactory(event=event1)
     SpeakerFactory(event=event2, user=speaker1.user)
 
-    with scopes_disabled():
-        users = list(User.objects.with_profiles(event1).filter(pk=speaker1.user.pk))
+    users = list(User.objects.with_profiles(event1).filter(pk=speaker1.user.pk))
     user = users[0]
 
-    with scopes_disabled():
-        result = user.get_speaker(event2)
+    result = user.get_speaker(event2)
 
     assert result.event == event2
 
 
-@pytest.mark.django_db
 def test_user_get_permissions_for_event_returns_from_cache(event):
     user = UserFactory()
     expected = {"can_change_submissions"}
@@ -887,7 +794,6 @@ def test_user_get_permissions_for_event_returns_from_cache(event):
     assert result is expected
 
 
-@pytest.mark.django_db
 def test_user_get_reviewer_tracks_returns_from_cache(event):
     user = UserFactory()
     cached_tracks = frozenset()
@@ -898,10 +804,9 @@ def test_user_get_reviewer_tracks_returns_from_cache(event):
     assert result is cached_tracks
 
 
-@pytest.mark.django_db
 def test_user_delete_files_deletes_pictures():
     user = UserFactory()
-    ProfilePicture.objects.create(user=user)
+    ProfilePictureFactory(user=user)
     assert user.pictures.count() == 1
 
     user._delete_files()
@@ -909,7 +814,6 @@ def test_user_delete_files_deletes_pictures():
     assert user.pictures.count() == 0
 
 
-@pytest.mark.django_db
 def test_user_get_permissions_for_event_tracks_reviewer_team_pks(event):
     user = UserFactory()
     team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
@@ -921,7 +825,6 @@ def test_user_get_permissions_for_event_tracks_reviewer_team_pks(event):
     assert cached["reviewer_team_pks"] == [team.pk]
 
 
-@pytest.mark.django_db
 def test_user_get_permissions_for_event_non_reviewer_team(event):
     """A team without is_reviewer does not add to reviewer_team_pks."""
     user = UserFactory()

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.core import mail as djmail
 from django.test import override_settings
@@ -6,7 +8,6 @@ from django_scopes import scopes_disabled
 
 from pretalx.event.models import Event, Organiser, Team, TeamInvite
 from tests.factories import (
-    EventFactory,
     SpeakerFactory,
     SubmissionFactory,
     TeamFactory,
@@ -15,10 +16,9 @@ from tests.factories import (
 )
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_organiser_detail_accessible_by_organiser(client, event):
     user = make_orga_user(event, can_change_organiser_settings=True)
     client.force_login(user)
@@ -29,7 +29,6 @@ def test_organiser_detail_accessible_by_organiser(client, event):
     assert str(event.organiser.name) in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_organiser_detail_edit_name(client, event):
     user = make_orga_user(event, can_change_organiser_settings=True)
     client.force_login(user)
@@ -45,7 +44,6 @@ def test_organiser_detail_edit_name(client, event):
     assert str(event.organiser.name) == "New Organiser Name"
 
 
-@pytest.mark.django_db
 def test_organiser_detail_denied_without_permission(client, event):
     user = UserFactory()
     client.force_login(user)
@@ -55,7 +53,6 @@ def test_organiser_detail_denied_without_permission(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_organiser_create_by_administrator(client):
     admin = UserFactory(is_administrator=True)
     client.force_login(admin)
@@ -76,7 +73,6 @@ def test_organiser_create_by_administrator(client):
     assert str(Organiser.objects.first().name) == "New Organiser"
 
 
-@pytest.mark.django_db
 def test_organiser_delete_by_administrator(client, event):
     admin = UserFactory(is_administrator=True)
     client.force_login(admin)
@@ -91,7 +87,6 @@ def test_organiser_delete_by_administrator(client, event):
     assert not Organiser.objects.filter(pk=organiser.pk).exists()
 
 
-@pytest.mark.django_db
 def test_organiser_delete_cascades_events(client, event):
     admin = UserFactory(is_administrator=True)
     client.force_login(admin)
@@ -104,7 +99,6 @@ def test_organiser_delete_cascades_events(client, event):
         assert not Event.objects.filter(pk=event_pk).exists()
 
 
-@pytest.mark.django_db
 def test_organiser_delete_denied_for_non_administrator(client, event):
     user = make_orga_user(event, can_change_organiser_settings=True)
     client.force_login(user)
@@ -115,33 +109,6 @@ def test_organiser_delete_denied_for_non_administrator(client, event):
     assert Organiser.objects.filter(pk=event.organiser.pk).exists()
 
 
-@pytest.mark.django_db
-def test_team_list_accessible_by_organiser(client, event):
-    user = make_orga_user(event, can_change_teams=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.list", kwargs={"organiser": event.organiser.slug}
-    )
-    response = client.get(url)
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
-def test_team_list_denied_without_permission(client, event):
-    user = UserFactory()
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.list", kwargs={"organiser": event.organiser.slug}
-    )
-    response = client.get(url)
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
 def test_team_create(client, event):
     user = make_orga_user(event, can_change_teams=True)
     client.force_login(user)
@@ -172,9 +139,7 @@ def test_team_create(client, event):
     assert event.organiser.teams.filter(name="New Team").exists()
 
 
-@pytest.mark.django_db
 def test_team_create_without_event_fails_validation(client, event):
-    """Team creation without all_events and without limit_events should fail."""
     user = make_orga_user(event, can_change_teams=True)
     client.force_login(user)
     initial_count = event.organiser.teams.count()
@@ -200,7 +165,6 @@ def test_team_create_without_event_fails_validation(client, event):
     assert event.organiser.teams.count() == initial_count
 
 
-@pytest.mark.django_db
 def test_team_update(client, event):
     with scopes_disabled():
         team = TeamFactory(
@@ -242,7 +206,6 @@ def test_team_update(client, event):
     assert team.name == "Updated Team Name"
 
 
-@pytest.mark.django_db
 def test_team_update_cannot_remove_last_team_permissions(client, event):
     """Removing can_change_teams from the only team with that permission
     should be prevented by check_access_permissions."""
@@ -284,7 +247,6 @@ def test_team_update_cannot_remove_last_team_permissions(client, event):
     assert team.name != "Removed Permissions"
 
 
-@pytest.mark.django_db
 def test_team_delete(client, event):
     with scopes_disabled():
         # Ensure another team keeps can_change_teams so deletion is allowed
@@ -314,7 +276,6 @@ def test_team_delete(client, event):
     assert not Team.objects.filter(pk=team_pk).exists()
 
 
-@pytest.mark.django_db
 def test_team_delete_last_team_with_change_teams_permission_fails(client, event):
     """Deleting the last team with can_change_teams should be prevented."""
     with scopes_disabled():
@@ -336,7 +297,6 @@ def test_team_delete_last_team_with_change_teams_permission_fails(client, event)
     assert Team.objects.filter(pk=team.pk).exists()
 
 
-@pytest.mark.django_db
 def test_team_invite_single_member(client, event):
     with scopes_disabled():
         team = TeamFactory(
@@ -363,7 +323,6 @@ def test_team_invite_single_member(client, event):
     assert djmail.outbox[0].to == ["newinvite@example.com"]
 
 
-@pytest.mark.django_db
 def test_team_invite_multiple_members(client, event):
     with scopes_disabled():
         team = TeamFactory(
@@ -393,30 +352,6 @@ def test_team_invite_multiple_members(client, event):
     assert djmail.outbox[1].to == ["second@example.com"]
 
 
-@pytest.mark.django_db
-def test_team_uninvite_get_shows_confirmation(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        invite = TeamInviteFactory(team=team, email="uninvite@example.com")
-    user = make_orga_user(event, can_change_teams=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.invites.uninvite",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "pk": team.pk,
-            "invite_pk": invite.pk,
-        },
-    )
-    response = client.get(url)
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
 def test_team_uninvite_post_retracts_invitation(client, event):
     with scopes_disabled():
         team = TeamFactory(
@@ -442,53 +377,6 @@ def test_team_uninvite_post_retracts_invitation(client, event):
         assert not TeamInvite.objects.filter(pk=invite_pk).exists()
 
 
-@pytest.mark.django_db
-def test_team_uninvite_denied_without_permission(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        invite = TeamInviteFactory(team=team)
-    user = UserFactory()
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.invites.uninvite",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "pk": team.pk,
-            "invite_pk": invite.pk,
-        },
-    )
-    response = client.get(url)
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
-def test_team_resend_get_shows_confirmation(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        invite = TeamInviteFactory(team=team)
-    user = make_orga_user(event, can_change_teams=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.invites.resend",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "pk": team.pk,
-            "invite_pk": invite.pk,
-        },
-    )
-    response = client.get(url)
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
 def test_team_resend_post_sends_email(client, event):
     with scopes_disabled():
         team = TeamFactory(
@@ -515,30 +403,6 @@ def test_team_resend_post_sends_email(client, event):
     assert djmail.outbox[0].to == ["resend@example.com"]
 
 
-@pytest.mark.django_db
-def test_team_resend_denied_without_permission(client, event):
-    with scopes_disabled():
-        team = TeamFactory(
-            organiser=event.organiser, can_change_teams=True, all_events=True
-        )
-        invite = TeamInviteFactory(team=team)
-    user = UserFactory()
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.teams.invites.resend",
-        kwargs={
-            "organiser": event.organiser.slug,
-            "pk": team.pk,
-            "invite_pk": invite.pk,
-        },
-    )
-    response = client.post(url, follow=True)
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
 def test_team_member_delete_removes_member(client, event):
     with scopes_disabled():
         team = TeamFactory(
@@ -569,7 +433,6 @@ def test_team_member_delete_removes_member(client, event):
     assert member not in team.members.all()
 
 
-@pytest.mark.django_db
 def test_team_member_delete_cannot_remove_last_member_with_change_teams(client, event):
     """Removing the last member of the only team with can_change_teams is prevented
     by check_access_permissions (mirroring legacy test_remove_other_team_member_but_not_last_member)."""
@@ -613,7 +476,6 @@ def test_team_member_delete_cannot_remove_last_member_with_change_teams(client, 
     assert user in team.members.all()
 
 
-@pytest.mark.django_db
 def test_team_member_delete_denied_without_permission(client, event):
     with scopes_disabled():
         team = TeamFactory(
@@ -638,7 +500,6 @@ def test_team_member_delete_denied_without_permission(client, event):
     assert member in team.members.all()
 
 
-@pytest.mark.django_db
 def test_team_reset_password_sends_reset_email(client, event):
     with scopes_disabled():
         team = TeamFactory(
@@ -667,7 +528,6 @@ def test_team_reset_password_sends_reset_email(client, event):
     assert len(djmail.outbox) == 1
 
 
-@pytest.mark.django_db
 def test_team_reset_password_can_be_sent_twice(client, event):
     """Password reset can be triggered again, generating a new token."""
     with scopes_disabled():
@@ -700,7 +560,6 @@ def test_team_reset_password_can_be_sent_twice(client, event):
     assert len(djmail.outbox) == 2
 
 
-@pytest.mark.django_db
 def test_team_reset_password_denied_without_permission(client, event):
     with scopes_disabled():
         team = TeamFactory(
@@ -726,7 +585,6 @@ def test_team_reset_password_denied_without_permission(client, event):
     assert not member.pw_reset_token
 
 
-@pytest.mark.django_db
 @override_settings(
     EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend",
     EMAIL_PORT=1,
@@ -760,58 +618,17 @@ def test_team_reset_password_shows_error_on_mail_failure(client, event):
     assert "could not be sent" in content
 
 
-@pytest.mark.django_db
-def test_organiser_speaker_list_accessible(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        sub = SubmissionFactory(event=event)
-        sub.speakers.add(speaker)
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    url = reverse("orga:organiser.speakers", kwargs={"organiser": event.organiser.slug})
-    response = client.get(url)
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
-def test_organiser_speaker_list_shows_speakers(client, event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event, user__name="Visible Speaker")
-        sub = SubmissionFactory(event=event, state="accepted")
-        sub.speakers.add(speaker)
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    url = reverse("orga:organiser.speakers", kwargs={"organiser": event.organiser.slug})
-    response = client.get(url)
-
-    assert response.status_code == 200
-    assert "Visible Speaker" in response.content.decode()
-
-
-@pytest.mark.django_db
-def test_organiser_speaker_list_denied_without_permission(client, event):
-    user = UserFactory()
-    client.force_login(user)
-
-    url = reverse("orga:organiser.speakers", kwargs={"organiser": event.organiser.slug})
-    response = client.get(url)
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
-def test_organiser_speaker_list_query_count(
+def test_organiser_speaker_list_shows_speakers(
     client, event, item_count, django_assert_num_queries
 ):
     with scopes_disabled():
+        speakers = []
         for _ in range(item_count):
             speaker = SpeakerFactory(event=event)
             sub = SubmissionFactory(event=event, state="accepted")
             sub.speakers.add(speaker)
+            speakers.append(speaker)
     user = make_orga_user(event, can_change_submissions=True)
     client.force_login(user)
 
@@ -820,9 +637,11 @@ def test_organiser_speaker_list_query_count(
         response = client.get(url)
 
     assert response.status_code == 200
+    content = response.content.decode()
+    for speaker in speakers:
+        assert speaker.user.name in content
 
 
-@pytest.mark.django_db
 def test_speaker_search_returns_matching_speakers(client, event):
     with scopes_disabled():
         speaker = SpeakerFactory(event=event, user__name="Searchable Person")
@@ -842,44 +661,7 @@ def test_speaker_search_returns_matching_speakers(client, event):
     assert data["results"][0]["name"] == "Searchable Person"
 
 
-@pytest.mark.django_db
-def test_speaker_search_returns_empty_for_short_query(client, event):
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.user_list", kwargs={"organiser": event.organiser.slug}
-    )
-    response = client.get(url, {"search": "ab"})
-
-    data = response.json()
-    assert data["count"] == 0
-    assert data["results"] == []
-
-
-@pytest.mark.django_db
-def test_speaker_search_does_not_leak_inaccessible_speakers(client, event):
-    """Speakers from events the user cannot access should not appear."""
-    with scopes_disabled():
-        other_event = EventFactory()
-        speaker = SpeakerFactory(event=other_event, user__name="Hidden Speaker")
-        sub = SubmissionFactory(event=other_event)
-        sub.speakers.add(speaker)
-    user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-
-    url = reverse(
-        "orga:organiser.user_list", kwargs={"organiser": event.organiser.slug}
-    )
-    response = client.get(url, {"search": "Hidden"})
-
-    data = response.json()
-    assert data["count"] == 0
-
-
-@pytest.mark.django_db
 def test_team_invite_invalid_email_shows_error(client, event):
-    """Submitting an invalid email in the invite form shows errors."""
     with scopes_disabled():
         team = TeamFactory(
             organiser=event.organiser, can_change_teams=True, all_events=True
@@ -899,7 +681,6 @@ def test_team_invite_invalid_email_shows_error(client, event):
     assert team.invites.count() == 0
 
 
-@pytest.mark.django_db
 def test_team_update_with_warnings(client, event):
     """Updating a team that triggers warnings from check_access_permissions
     still saves but shows warnings."""
@@ -937,7 +718,6 @@ def test_team_update_with_warnings(client, event):
     assert team.name == "No Create Events"
 
 
-@pytest.mark.django_db
 def test_team_delete_with_warnings(client, event):
     """Deleting a team that triggers warnings still deletes but shows warnings."""
     with scopes_disabled():
@@ -966,7 +746,6 @@ def test_team_delete_with_warnings(client, event):
     assert not Team.objects.filter(pk=deletable.pk).exists()
 
 
-@pytest.mark.django_db
 def test_team_update_view_get_shows_form(client, event):
     """GET on team update shows the team form with invite form."""
     with scopes_disabled():

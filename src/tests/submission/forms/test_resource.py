@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django import forms as django_forms
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -36,7 +38,6 @@ def test_resource_form_invalid_without_link_and_file():
 
 
 def test_resource_form_invalid_with_both_link_and_file():
-    """Providing both a link and a file upload is not allowed."""
     form = ResourceForm(
         data={
             "description": "Both provided",

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025-present Tobias Kunze
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
@@ -117,7 +117,6 @@ def test_button_custom_values():
 
 
 def test_button_icon_none_disables_icon():
-    """Passing icon=None explicitly should suppress the icon entirely."""
     btn = Button(icon=None)
     assert btn.icon is None
 

@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025-present Tobias Kunze
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from datetime import UTC, datetime
@@ -11,7 +11,6 @@ from django.db.models.functions import Lower
 from django.template import Context
 from django.test import RequestFactory
 from django.utils.safestring import SafeString
-from django_scopes import scopes_disabled
 from django_tables2.utils import OrderByTuple
 
 from pretalx.common.tables import (
@@ -281,10 +280,9 @@ def test_pretalx_table_is_model_field_without_meta_model():
 )
 @pytest.mark.django_db
 def test_pretalx_table_apply_ordering_by_model_field(event, ordering, expected_titles):
-    with scopes_disabled():
-        SubmissionFactory(event=event, title="Alpha")
-        SubmissionFactory(event=event, title="Bravo")
-        qs = Submission.objects.filter(event=event)
+    SubmissionFactory(event=event, title="Alpha")
+    SubmissionFactory(event=event, title="Bravo")
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
 
@@ -296,8 +294,7 @@ def test_pretalx_table_apply_ordering_by_model_field(event, ordering, expected_t
 
 @pytest.mark.django_db
 def test_pretalx_table_apply_ordering_empty_returns_queryset(event):
-    with scopes_disabled():
-        qs = Submission.objects.filter(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
 
@@ -308,8 +305,7 @@ def test_pretalx_table_apply_ordering_empty_returns_queryset(event):
 
 @pytest.mark.django_db
 def test_pretalx_table_apply_ordering_skips_unknown_columns(event):
-    with scopes_disabled():
-        qs = Submission.objects.filter(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
 
@@ -320,10 +316,9 @@ def test_pretalx_table_apply_ordering_skips_unknown_columns(event):
 
 @pytest.mark.django_db
 def test_pretalx_table_apply_ordering_with_function_order_column(event):
-    with scopes_disabled():
-        SubmissionFactory(event=event, title="Bravo")
-        SubmissionFactory(event=event, title="alpha")
-        qs = Submission.objects.filter(event=event)
+    SubmissionFactory(event=event, title="Bravo")
+    SubmissionFactory(event=event, title="alpha")
+    qs = Submission.objects.filter(event=event)
 
     table = SortableTestTable(qs, event=event)
 
@@ -344,10 +339,9 @@ def test_pretalx_table_apply_ordering_with_bound_column_order_by(event):
             model = Submission
             fields = ("code",)
 
-    with scopes_disabled():
-        s1 = SubmissionFactory(event=event)
-        s2 = SubmissionFactory(event=event)
-        qs = Submission.objects.filter(event=event)
+    s1 = SubmissionFactory(event=event)
+    s2 = SubmissionFactory(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = AccessorTable(qs, event=event)
     ordered = table._apply_ordering(qs, ["code"])
@@ -402,8 +396,7 @@ def test_pretalx_table_configuration_form_returned_when_default_columns():
 
 @pytest.mark.django_db
 def test_pretalx_table_configure_with_anonymous_user(event):
-    with scopes_disabled():
-        qs = Submission.objects.filter(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
     request = RequestFactory().get("/")
@@ -417,12 +410,11 @@ def test_pretalx_table_configure_with_anonymous_user(event):
 @pytest.mark.django_db
 def test_pretalx_table_configure_applies_saved_columns(event):
     user = UserFactory()
-    with scopes_disabled():
-        prefs = user.get_event_preferences(event)
-        prefs.set(
-            "tables.SimpleTableWithHidden.columns", ["title", "internal"], commit=True
-        )
-        qs = Submission.objects.filter(event=event)
+    prefs = user.get_event_preferences(event)
+    prefs.set(
+        "tables.SimpleTableWithHidden.columns", ["title", "internal"], commit=True
+    )
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTableWithHidden(qs, event=event)
     request = RequestFactory().get("/")
@@ -437,10 +429,9 @@ def test_pretalx_table_configure_applies_saved_columns(event):
 @pytest.mark.django_db
 def test_pretalx_table_configure_applies_ordering_from_query(event):
     user = UserFactory()
-    with scopes_disabled():
-        SubmissionFactory(event=event, title="Bravo")
-        SubmissionFactory(event=event, title="Alpha")
-        qs = Submission.objects.filter(event=event)
+    SubmissionFactory(event=event, title="Bravo")
+    SubmissionFactory(event=event, title="Alpha")
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
     request = RequestFactory().get("/?sort=title")
@@ -458,8 +449,7 @@ def test_pretalx_table_configure_applies_ordering_from_query(event):
 @pytest.mark.django_db
 def test_pretalx_table_configure_saves_ordering_to_preferences(event):
     user = UserFactory()
-    with scopes_disabled():
-        qs = Submission.objects.filter(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
     request = RequestFactory().get("/?sort=title")
@@ -469,21 +459,19 @@ def test_pretalx_table_configure_saves_ordering_to_preferences(event):
 
     table.configure(request)
 
-    with scopes_disabled():
-        prefs = user.get_event_preferences(event)
-        saved = prefs.get("tables.SimpleTable.ordering")
+    prefs = user.get_event_preferences(event)
+    saved = prefs.get("tables.SimpleTable.ordering")
     assert saved == ["title"]
 
 
 @pytest.mark.django_db
 def test_pretalx_table_configure_uses_saved_ordering_when_no_query(event):
     user = UserFactory()
-    with scopes_disabled():
-        prefs = user.get_event_preferences(event)
-        prefs.set("tables.SimpleTable.ordering", ["-title"], commit=True)
-        SubmissionFactory(event=event, title="Alpha")
-        SubmissionFactory(event=event, title="Bravo")
-        qs = Submission.objects.filter(event=event)
+    prefs = user.get_event_preferences(event)
+    prefs.set("tables.SimpleTable.ordering", ["-title"], commit=True)
+    SubmissionFactory(event=event, title="Alpha")
+    SubmissionFactory(event=event, title="Bravo")
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
     request = RequestFactory().get("/")
@@ -498,10 +486,9 @@ def test_pretalx_table_configure_uses_saved_ordering_when_no_query(event):
 @pytest.mark.django_db
 def test_pretalx_table_configure_returns_page_size(event):
     user = UserFactory()
-    with scopes_disabled():
-        prefs = user.get_event_preferences(event)
-        prefs.set("tables.SimpleTable.page_size", 25, commit=True)
-        qs = Submission.objects.filter(event=event)
+    prefs = user.get_event_preferences(event)
+    prefs.set("tables.SimpleTable.page_size", 25, commit=True)
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
     request = RequestFactory().get("/")
@@ -516,8 +503,7 @@ def test_pretalx_table_configure_returns_page_size(event):
 def test_pretalx_table_configure_falls_back_to_meta_fields(event):
     """When no preferences or default_columns, uses Meta.fields."""
     user = UserFactory()
-    with scopes_disabled():
-        qs = Submission.objects.filter(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
     request = RequestFactory().get("/")
@@ -533,8 +519,7 @@ def test_pretalx_table_configure_falls_back_to_meta_fields(event):
 def test_pretalx_table_order_by_setter_after_ordering_applied_updates_display_only(
     event,
 ):
-    with scopes_disabled():
-        qs = Submission.objects.filter(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
     table._ordering_applied = True
@@ -548,8 +533,7 @@ def test_pretalx_table_order_by_setter_after_ordering_applied_updates_display_on
 
 @pytest.mark.django_db
 def test_pretalx_table_order_by_setter_before_ordering_applied_uses_parent(event):
-    with scopes_disabled():
-        qs = Submission.objects.filter(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
 
@@ -590,10 +574,9 @@ def test_sortable_column_with_string_order_by():
 )
 @pytest.mark.django_db
 def test_sortable_column_order(event, is_descending, expected_titles):
-    with scopes_disabled():
-        SubmissionFactory(event=event, title="bravo")
-        SubmissionFactory(event=event, title="Alpha")
-        qs = Submission.objects.filter(event=event)
+    SubmissionFactory(event=event, title="bravo")
+    SubmissionFactory(event=event, title="Alpha")
+    qs = Submission.objects.filter(event=event)
 
     col = SortableColumn(order_by=Lower("title"))
     ordered_qs, modified = col.order(qs, is_descending=is_descending)
@@ -605,8 +588,7 @@ def test_sortable_column_order(event, is_descending, expected_titles):
 
 @pytest.mark.django_db
 def test_function_order_mixin_no_lookup_returns_unmodified(event):
-    with scopes_disabled():
-        qs = Submission.objects.filter(event=event)
+    qs = Submission.objects.filter(event=event)
 
     col = SortableColumn(order_by="title")
     result_qs, modified = col.order(qs, is_descending=False)
@@ -616,8 +598,7 @@ def test_function_order_mixin_no_lookup_returns_unmodified(event):
 
 @pytest.mark.django_db
 def test_function_order_mixin_apply_function_ordering_returns_annotated_qs(event):
-    with scopes_disabled():
-        qs = Submission.objects.filter(event=event)
+    qs = Submission.objects.filter(event=event)
 
     col = SortableColumn(order_by=Lower("title"))
     result_qs, order_keys = col.apply_function_ordering(qs, descending=False)
@@ -642,9 +623,8 @@ def test_template_column_renders_template_code(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        sub = SubmissionFactory(event=event, title="My Talk")
-        qs = Submission.objects.filter(pk=sub.pk)
+    sub = SubmissionFactory(event=event, title="My Talk")
+    qs = Submission.objects.filter(pk=sub.pk)
 
     table = TplTable(qs, event=event)
     request = RequestFactory().get("/")
@@ -666,9 +646,8 @@ def test_template_column_returns_placeholder_for_empty(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        SubmissionFactory(event=event)
-        qs = Submission.objects.filter(event=event)
+    SubmissionFactory(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = TplTable(qs, event=event)
     request = RequestFactory().get("/")
@@ -691,9 +670,8 @@ def test_template_column_custom_context_object_name(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        sub = SubmissionFactory(event=event, title="Custom Context")
-        qs = Submission.objects.filter(pk=sub.pk)
+    sub = SubmissionFactory(event=event, title="Custom Context")
+    qs = Submission.objects.filter(pk=sub.pk)
 
     table = TplTable(qs, event=event)
     request = RequestFactory().get("/")
@@ -719,9 +697,8 @@ def test_template_column_callable_template_context(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        sub = SubmissionFactory(event=event)
-        qs = Submission.objects.filter(pk=sub.pk)
+    sub = SubmissionFactory(event=event)
+    qs = Submission.objects.filter(pk=sub.pk)
 
     table = TplTable(qs, event=event)
     request = RequestFactory().get("/")
@@ -744,9 +721,8 @@ def test_template_column_static_template_context(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        SubmissionFactory(event=event)
-        qs = Submission.objects.filter(event=event)
+    SubmissionFactory(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = TplTable(qs, event=event)
     request = RequestFactory().get("/")
@@ -769,9 +745,8 @@ def test_template_column_value_returns_empty_for_placeholder(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        SubmissionFactory(event=event)
-        qs = Submission.objects.filter(event=event)
+    SubmissionFactory(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = TplTable(qs, event=event)
     request = RequestFactory().get("/")
@@ -792,9 +767,8 @@ def test_template_column_value_returns_rendered_content(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        SubmissionFactory(event=event, title="Rendered Value")
-        qs = Submission.objects.filter(event=event)
+    SubmissionFactory(event=event, title="Rendered Value")
+    qs = Submission.objects.filter(event=event)
 
     table = TplTable(qs, event=event)
     request = RequestFactory().get("/")
@@ -817,9 +791,8 @@ def test_template_column_with_template_name(event):
             fields = ()
             sequence = ("answer_col",)
 
-    with scopes_disabled():
-        sub = SubmissionFactory(event=event)
-        qs = Submission.objects.filter(pk=sub.pk)
+    sub = SubmissionFactory(event=event)
+    qs = Submission.objects.filter(pk=sub.pk)
 
     table = TplTable(qs, event=event)
     request = RequestFactory().get("/")
@@ -1170,9 +1143,8 @@ def test_question_column_mixin_get_question_columns(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        q1 = QuestionFactory(event=event, question="Favorite color")
-        q2 = QuestionFactory(event=event, question="T-shirt size")
+    q1 = QuestionFactory(event=event, question="Favorite color")
+    q2 = QuestionFactory(event=event, question="T-shirt size")
 
     table = TestTable([])
     table.short_questions = [q1, q2]
@@ -1209,18 +1181,16 @@ def test_question_column_mixin_get_answer_for_question(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        question = QuestionFactory(event=event)
-        submission = SubmissionFactory(event=event)
-        answer = AnswerFactory(question=question, submission=submission, answer="42")
-        qs = Submission.objects.filter(pk=submission.pk)
+    question = QuestionFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    answer = AnswerFactory(question=question, submission=submission, answer="42")
+    qs = Submission.objects.filter(pk=submission.pk)
 
     table = TestTable(qs)
     table.short_questions = [question]
     table._question_model = "submission"
 
-    with scopes_disabled():
-        result = table.get_answer_for_question(submission, question.id)
+    result = table.get_answer_for_question(submission, question.id)
 
     assert result.pk == answer.pk
     assert result.answer == "42"
@@ -1254,23 +1224,21 @@ def test_question_column_mixin_answer_cache_is_loaded_once(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        question = QuestionFactory(event=event)
-        sub1 = SubmissionFactory(event=event)
-        sub2 = SubmissionFactory(event=event)
-        a1 = AnswerFactory(question=question, submission=sub1, answer="First")
-        a2 = AnswerFactory(question=question, submission=sub2, answer="Second")
-        qs = Submission.objects.filter(pk__in=[sub1.pk, sub2.pk])
+    question = QuestionFactory(event=event)
+    sub1 = SubmissionFactory(event=event)
+    sub2 = SubmissionFactory(event=event)
+    a1 = AnswerFactory(question=question, submission=sub1, answer="First")
+    a2 = AnswerFactory(question=question, submission=sub2, answer="Second")
+    qs = Submission.objects.filter(pk__in=[sub1.pk, sub2.pk])
 
     table = TestTable(qs)
     table.short_questions = [question]
     table._question_model = "submission"
 
-    with scopes_disabled():
-        # First access loads cache
-        result1 = table.get_answer_for_question(sub1, question.id)
-        # Second access uses cache
-        result2 = table.get_answer_for_question(sub2, question.id)
+    # First access loads cache
+    result1 = table.get_answer_for_question(sub1, question.id)
+    # Second access uses cache
+    result2 = table.get_answer_for_question(sub2, question.id)
 
     assert result1.pk == a1.pk
     assert result2.pk == a2.pk
@@ -1287,20 +1255,18 @@ def test_question_column_mixin_speaker_answer(event):
             model = SpeakerProfile
             fields = ("name",)
 
-    with scopes_disabled():
-        question = QuestionFactory(event=event, target="speaker")
-        speaker = SpeakerFactory(event=event)
-        answer = AnswerFactory(
-            question=question, submission=None, speaker=speaker, answer="Yes"
-        )
-        qs = SpeakerProfile.objects.filter(pk=speaker.pk)
+    question = QuestionFactory(event=event, target="speaker")
+    speaker = SpeakerFactory(event=event)
+    answer = AnswerFactory(
+        question=question, submission=None, speaker=speaker, answer="Yes"
+    )
+    qs = SpeakerProfile.objects.filter(pk=speaker.pk)
 
     table = SpeakerTestTable(qs)
     table.short_questions = [question]
     table._question_model = "speaker"
 
-    with scopes_disabled():
-        result = table.get_answer_for_question(speaker, question.id)
+    result = table.get_answer_for_question(speaker, question.id)
 
     assert result.pk == answer.pk
 
@@ -1314,23 +1280,20 @@ def test_question_column_mixin_load_answers_empty_records(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        question = QuestionFactory(event=event)
+    question = QuestionFactory(event=event)
 
     table = TestTable([])
     table.short_questions = [question]
     table._question_model = "submission"
 
-    with scopes_disabled():
-        table._load_all_answers()
+    table._load_all_answers()
 
     assert table._answers_cache == {}
 
 
 @pytest.mark.django_db
 def test_question_column_stores_question(event):
-    with scopes_disabled():
-        question = QuestionFactory(event=event)
+    question = QuestionFactory(event=event)
 
     col = QuestionColumn(question=question)
 
@@ -1340,8 +1303,7 @@ def test_question_column_stores_question(event):
 
 @pytest.mark.django_db
 def test_question_column_sets_answer_css_class(event):
-    with scopes_disabled():
-        question = QuestionFactory(event=event)
+    question = QuestionFactory(event=event)
 
     col = QuestionColumn(question=question)
 
@@ -1353,17 +1315,15 @@ def test_question_column_sets_answer_css_class(event):
 )
 @pytest.mark.django_db
 def test_question_column_order(event, is_descending):
-    with scopes_disabled():
-        question = QuestionFactory(event=event, target="submission")
-        sub1 = SubmissionFactory(event=event)
-        sub2 = SubmissionFactory(event=event)
-        AnswerFactory(question=question, submission=sub1, answer="Alpha")
-        AnswerFactory(question=question, submission=sub2, answer="Bravo")
-        qs = Submission.objects.filter(pk__in=[sub1.pk, sub2.pk])
+    question = QuestionFactory(event=event, target="submission")
+    sub1 = SubmissionFactory(event=event)
+    sub2 = SubmissionFactory(event=event)
+    AnswerFactory(question=question, submission=sub1, answer="Alpha")
+    AnswerFactory(question=question, submission=sub2, answer="Bravo")
+    qs = Submission.objects.filter(pk__in=[sub1.pk, sub2.pk])
 
     col = QuestionColumn(question=question)
-    with scopes_disabled():
-        ordered_qs, modified = col.order(qs, is_descending=is_descending)
+    ordered_qs, modified = col.order(qs, is_descending=is_descending)
 
     assert modified is True
     pks = list(ordered_qs.values_list("pk", flat=True))
@@ -1374,17 +1334,13 @@ def test_question_column_order(event, is_descending):
 @pytest.mark.django_db
 def test_question_column_apply_custom_ordering_for_speaker(event):
 
-    with scopes_disabled():
-        question = QuestionFactory(event=event, target="speaker")
-        speaker = SpeakerFactory(event=event)
-        AnswerFactory(
-            question=question, submission=None, speaker=speaker, answer="Test"
-        )
-        qs = SpeakerProfile.objects.filter(pk=speaker.pk)
+    question = QuestionFactory(event=event, target="speaker")
+    speaker = SpeakerFactory(event=event)
+    AnswerFactory(question=question, submission=None, speaker=speaker, answer="Test")
+    qs = SpeakerProfile.objects.filter(pk=speaker.pk)
 
     col = QuestionColumn(question=question)
-    with scopes_disabled():
-        result_qs, order_keys = col.apply_custom_ordering(qs, is_descending=False)
+    result_qs, order_keys = col.apply_custom_ordering(qs, is_descending=False)
 
     assert len(order_keys) == 1
     assert f"_question_{question.id}_answer" in order_keys[0]
@@ -1399,11 +1355,10 @@ def test_question_column_render_with_answer(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        question = QuestionFactory(event=event, variant="string")
-        submission = SubmissionFactory(event=event)
-        AnswerFactory(question=question, submission=submission, answer="Hello world")
-        qs = Submission.objects.filter(pk=submission.pk)
+    question = QuestionFactory(event=event, variant="string")
+    submission = SubmissionFactory(event=event)
+    AnswerFactory(question=question, submission=submission, answer="Hello world")
+    qs = Submission.objects.filter(pk=submission.pk)
 
     table = TestTable(qs)
     table.short_questions = [question]
@@ -1416,14 +1371,13 @@ def test_question_column_render_with_answer(event):
     bound_col = SimpleNamespace(default="", column=col)
     bound_row = SimpleNamespace(row_counter=0)
 
-    with scopes_disabled():
-        result = col.render(
-            record=submission,
-            table=table,
-            value="",
-            bound_column=bound_col,
-            bound_row=bound_row,
-        )
+    result = col.render(
+        record=submission,
+        table=table,
+        value="",
+        bound_column=bound_col,
+        bound_row=bound_row,
+    )
 
     assert "Hello world" in str(result)
 
@@ -1437,10 +1391,9 @@ def test_question_column_render_placeholder_without_answer(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        question = QuestionFactory(event=event)
-        submission = SubmissionFactory(event=event)
-        qs = Submission.objects.filter(pk=submission.pk)
+    question = QuestionFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    qs = Submission.objects.filter(pk=submission.pk)
 
     table = TestTable(qs)
     table.short_questions = [question]
@@ -1448,14 +1401,13 @@ def test_question_column_render_placeholder_without_answer(event):
 
     col = QuestionColumn(question=question)
 
-    with scopes_disabled():
-        result = col.render(
-            record=submission,
-            table=table,
-            value="",
-            bound_column=SimpleNamespace(default=""),
-            bound_row=SimpleNamespace(row_counter=0),
-        )
+    result = col.render(
+        record=submission,
+        table=table,
+        value="",
+        bound_column=SimpleNamespace(default=""),
+        bound_row=SimpleNamespace(row_counter=0),
+    )
 
     assert "&mdash;" in str(result)
 
@@ -1466,8 +1418,7 @@ def test_pretalx_table_order_by_setter_preserves_secondary_sort_from_different_c
 ):
     """When _ordering_applied and a single new sort is set, preserve
     the secondary sort if it's on a different column."""
-    with scopes_disabled():
-        qs = Submission.objects.filter(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
     table._ordering_applied = True
@@ -1492,13 +1443,12 @@ def test_pretalx_table_apply_ordering_with_question_column(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        question = QuestionFactory(event=event, target="submission")
-        sub1 = SubmissionFactory(event=event)
-        sub2 = SubmissionFactory(event=event)
-        AnswerFactory(question=question, submission=sub1, answer="Alpha")
-        AnswerFactory(question=question, submission=sub2, answer="Bravo")
-        qs = Submission.objects.filter(pk__in=[sub1.pk, sub2.pk])
+    question = QuestionFactory(event=event, target="submission")
+    sub1 = SubmissionFactory(event=event)
+    sub2 = SubmissionFactory(event=event)
+    AnswerFactory(question=question, submission=sub1, answer="Alpha")
+    AnswerFactory(question=question, submission=sub2, answer="Bravo")
+    qs = Submission.objects.filter(pk__in=[sub1.pk, sub2.pk])
 
     table = QTable(
         qs,
@@ -1511,8 +1461,7 @@ def test_pretalx_table_apply_ordering_with_question_column(event):
         ],
     )
 
-    with scopes_disabled():
-        ordered = table._apply_ordering(qs, [f"question_{question.id}"])
+    ordered = table._apply_ordering(qs, [f"question_{question.id}"])
 
     pks = list(ordered.values_list("pk", flat=True))
     assert pks == [sub1.pk, sub2.pk]
@@ -1530,10 +1479,9 @@ def test_pretalx_table_apply_ordering_accessor_with_negated_default(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        SubmissionFactory(event=event, title="Alpha")
-        SubmissionFactory(event=event, title="Bravo")
-        qs = Submission.objects.filter(event=event)
+    SubmissionFactory(event=event, title="Alpha")
+    SubmissionFactory(event=event, title="Bravo")
+    qs = Submission.objects.filter(event=event)
 
     table = NegatedAccessorTable(qs, event=event)
 
@@ -1569,11 +1517,10 @@ def test_question_column_render_creates_context_when_missing(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        question = QuestionFactory(event=event, variant="string")
-        submission = SubmissionFactory(event=event)
-        AnswerFactory(question=question, submission=submission, answer="Context test")
-        qs = Submission.objects.filter(pk=submission.pk)
+    question = QuestionFactory(event=event, variant="string")
+    submission = SubmissionFactory(event=event)
+    AnswerFactory(question=question, submission=submission, answer="Context test")
+    qs = Submission.objects.filter(pk=submission.pk)
 
     table = TestTable(qs)
     table.short_questions = [question]
@@ -1588,14 +1535,13 @@ def test_question_column_render_creates_context_when_missing(event):
     bound_col = SimpleNamespace(default="", column=col)
     bound_row = SimpleNamespace(row_counter=0)
 
-    with scopes_disabled():
-        result = col.render(
-            record=submission,
-            table=table,
-            value="",
-            bound_column=bound_col,
-            bound_row=bound_row,
-        )
+    result = col.render(
+        record=submission,
+        table=table,
+        value="",
+        bound_column=bound_col,
+        bound_row=bound_row,
+    )
 
     assert "Context test" in str(result)
     assert isinstance(table.context, Context)
@@ -1614,10 +1560,9 @@ def test_pretalx_table_apply_ordering_model_field_fallback(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        SubmissionFactory(event=event, title="Bravo")
-        SubmissionFactory(event=event, title="Alpha")
-        qs = Submission.objects.filter(event=event)
+    SubmissionFactory(event=event, title="Bravo")
+    SubmissionFactory(event=event, title="Alpha")
+    qs = Submission.objects.filter(event=event)
 
     table = EmptyOrderByTable(qs, event=event)
 
@@ -1630,8 +1575,7 @@ def test_pretalx_table_apply_ordering_model_field_fallback(event):
 @pytest.mark.django_db
 def test_pretalx_table_order_by_setter_skips_invalid_column_name(event):
     """When _ordering_applied and a non-existent column is set, it is dropped."""
-    with scopes_disabled():
-        qs = Submission.objects.filter(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
     table._ordering_applied = True
@@ -1646,8 +1590,7 @@ def test_pretalx_table_order_by_setter_skips_invalid_column_name(event):
 def test_pretalx_table_order_by_setter_with_multiple_valid_columns(event):
     """When _ordering_applied and multiple valid columns are set,
     the secondary-sort preservation logic is skipped."""
-    with scopes_disabled():
-        qs = Submission.objects.filter(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
     table._ordering_applied = True
@@ -1670,9 +1613,8 @@ def test_pretalx_table_apply_ordering_skips_non_model_non_orderable_column(event
             model = Submission
             fields = ("title", "computed")
 
-    with scopes_disabled():
-        SubmissionFactory(event=event, title="Alpha")
-        qs = Submission.objects.filter(event=event)
+    SubmissionFactory(event=event, title="Alpha")
+    qs = Submission.objects.filter(event=event)
 
     table = ComputedColumnTable(qs, event=event)
 
@@ -1686,8 +1628,7 @@ def test_pretalx_table_apply_ordering_skips_non_model_non_orderable_column(event
 def test_pretalx_table_configure_ignores_invalid_query_ordering(event):
     """When query ordering contains only invalid columns, it is not saved."""
     user = UserFactory()
-    with scopes_disabled():
-        qs = Submission.objects.filter(event=event)
+    qs = Submission.objects.filter(event=event)
 
     table = SimpleTable(qs, event=event)
     request = RequestFactory().get("/?sort=nonexistent")
@@ -1698,16 +1639,14 @@ def test_pretalx_table_configure_ignores_invalid_query_ordering(event):
     table.configure(request)
 
     assert table._ordering_applied is False
-    with scopes_disabled():
-        prefs = user.get_event_preferences(event)
-        saved = prefs.get("tables.SimpleTable.ordering")
+    prefs = user.get_event_preferences(event)
+    saved = prefs.get("tables.SimpleTable.ordering")
     assert saved is None
 
 
 @pytest.mark.django_db
 def test_question_column_preserves_existing_td_attrs(event):
-    with scopes_disabled():
-        question = QuestionFactory(event=event)
+    question = QuestionFactory(event=event)
 
     col = QuestionColumn(question=question, attrs={"td": {"class": "custom"}})
 
@@ -1725,11 +1664,10 @@ def test_question_column_render_reuses_existing_context(event):
             model = Submission
             fields = ("title",)
 
-    with scopes_disabled():
-        question = QuestionFactory(event=event, variant="string")
-        submission = SubmissionFactory(event=event)
-        AnswerFactory(question=question, submission=submission, answer="Reuse ctx")
-        qs = Submission.objects.filter(pk=submission.pk)
+    question = QuestionFactory(event=event, variant="string")
+    submission = SubmissionFactory(event=event)
+    AnswerFactory(question=question, submission=submission, answer="Reuse ctx")
+    qs = Submission.objects.filter(pk=submission.pk)
 
     table = TestTable(qs)
     table.short_questions = [question]
@@ -1743,14 +1681,13 @@ def test_question_column_render_reuses_existing_context(event):
     bound_col = SimpleNamespace(default="", column=col)
     bound_row = SimpleNamespace(row_counter=0)
 
-    with scopes_disabled():
-        result = col.render(
-            record=submission,
-            table=table,
-            value="",
-            bound_column=bound_col,
-            bound_row=bound_row,
-        )
+    result = col.render(
+        record=submission,
+        table=table,
+        value="",
+        bound_column=bound_col,
+        bound_row=bound_row,
+    )
 
     assert "Reuse ctx" in str(result)
     assert table.context["existing_key"] == "preserved"

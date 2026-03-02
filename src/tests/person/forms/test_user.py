@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.core.cache import cache
@@ -400,7 +402,6 @@ def test_user_form_save_strips_registration_fields(rf):
 
 @pytest.mark.django_db
 def test_user_form_save_sets_locale_and_timezone(rf):
-    """save() sets the user's locale and timezone from the current context."""
     form = UserForm(
         data={
             "register_name": "New User",

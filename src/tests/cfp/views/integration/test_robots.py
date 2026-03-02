@@ -1,9 +1,10 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 @pytest.mark.usefixtures("locmem_cache")
 def test_robots_txt_content(client, django_assert_num_queries):
     """GET /robots.txt returns complete robots directives with zero DB queries."""

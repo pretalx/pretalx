@@ -1,7 +1,8 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory
-from django_scopes import scopes_disabled
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -31,10 +32,7 @@ class _FileFieldWrapperSizeOnly(serializers.Serializer):
 def test_uploaded_file_field_to_internal_value_returns_file():
     api_token = UserApiTokenFactory()
     uploaded = SimpleUploadedFile("test.txt", b"file content")
-    with scopes_disabled():
-        cf = CachedFileFactory(
-            session_key=f"api-upload-{api_token.token}", file=uploaded
-        )
+    cf = CachedFileFactory(session_key=f"api-upload-{api_token.token}", file=uploaded)
     request = rf.get("/")
     request.auth = api_token
     wrapper = _FileFieldWrapper(context={"request": request})
@@ -58,11 +56,9 @@ def test_uploaded_file_field_to_internal_value_not_found_wrong_id():
 
 @pytest.mark.django_db
 def test_uploaded_file_field_to_internal_value_not_found_wrong_session():
-    """A CachedFile with a different session key is not returned."""
     api_token = UserApiTokenFactory()
     uploaded = SimpleUploadedFile("test.txt", b"content")
-    with scopes_disabled():
-        cf = CachedFileFactory(session_key="api-upload-other-token", file=uploaded)
+    cf = CachedFileFactory(session_key="api-upload-other-token", file=uploaded)
     request = rf.get("/")
     request.auth = api_token
     wrapper = _FileFieldWrapper(context={"request": request})
@@ -78,12 +74,11 @@ def test_uploaded_file_field_to_internal_value_rejects_wrong_type():
     uploaded = SimpleUploadedFile(
         "test.pdf", b"pdf content", content_type="application/pdf"
     )
-    with scopes_disabled():
-        cf = CachedFileFactory(
-            session_key=f"api-upload-{api_token.token}",
-            file=uploaded,
-            content_type="application/pdf",
-        )
+    cf = CachedFileFactory(
+        session_key=f"api-upload-{api_token.token}",
+        file=uploaded,
+        content_type="application/pdf",
+    )
     request = rf.get("/")
     request.auth = api_token
     wrapper = _FileFieldWrapperTypeOnly(context={"request": request})
@@ -97,10 +92,7 @@ def test_uploaded_file_field_to_internal_value_rejects_wrong_type():
 def test_uploaded_file_field_to_internal_value_rejects_oversized():
     api_token = UserApiTokenFactory()
     uploaded = SimpleUploadedFile("big.txt", b"x" * 200)
-    with scopes_disabled():
-        cf = CachedFileFactory(
-            session_key=f"api-upload-{api_token.token}", file=uploaded
-        )
+    cf = CachedFileFactory(session_key=f"api-upload-{api_token.token}", file=uploaded)
     request = rf.get("/")
     request.auth = api_token
     wrapper = _FileFieldWrapperSizeOnly(context={"request": request})
@@ -120,7 +112,6 @@ def test_uploaded_file_field_to_representation_returns_none_for_falsy():
 
 
 def test_uploaded_file_field_to_representation_returns_none_without_url():
-    """An object without a .url attribute results in None."""
     request = rf.get("/")
     wrapper = _FileFieldWrapper(context={"request": request})
     field = wrapper.fields["file"]
@@ -131,8 +122,7 @@ def test_uploaded_file_field_to_representation_returns_none_without_url():
 @pytest.mark.django_db
 def test_uploaded_file_field_to_representation_returns_none_without_request():
     uploaded = SimpleUploadedFile("test.txt", b"content")
-    with scopes_disabled():
-        cf = CachedFileFactory(file=uploaded)
+    cf = CachedFileFactory(file=uploaded)
     wrapper = _FileFieldWrapper(context={})
     field = wrapper.fields["file"]
 
@@ -142,8 +132,7 @@ def test_uploaded_file_field_to_representation_returns_none_without_request():
 @pytest.mark.django_db
 def test_uploaded_file_field_to_representation_returns_absolute_uri():
     uploaded = SimpleUploadedFile("test.txt", b"content")
-    with scopes_disabled():
-        cf = CachedFileFactory(file=uploaded)
+    cf = CachedFileFactory(file=uploaded)
     request = rf.get("/api/test/")
     wrapper = _FileFieldWrapper(context={"request": request})
     field = wrapper.fields["file"]

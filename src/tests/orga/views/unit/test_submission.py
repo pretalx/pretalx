@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import json
 
@@ -5,7 +7,6 @@ import pytest
 from django.http import Http404
 from django.urls import ResolverMatch
 from django.utils.timezone import now as tz_now
-from django_scopes import scopes_disabled
 
 from pretalx.orga.views.submission import (
     AllFeedbacksList,
@@ -26,111 +27,93 @@ from pretalx.orga.views.submission import (
 )
 from pretalx.submission.models import QuestionTarget, QuestionVariant, SubmissionStates
 from tests.factories import (
+    EventFactory,
     FeedbackFactory,
     QuestionFactory,
     SpeakerFactory,
     SubmissionCommentFactory,
     SubmissionFactory,
+    SubmissionTypeFactory,
     TagFactory,
     TalkSlotFactory,
     TrackFactory,
 )
 from tests.utils import make_orga_user, make_request, make_view
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_submission_view_mixin_get_submission_queryset(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStateChange, request, code=submission.code)
 
-    with scopes_disabled():
-        qs = list(view._get_submission_queryset())
+    qs = list(view._get_submission_queryset())
 
     assert qs == [submission]
 
 
-@pytest.mark.django_db
 def test_submission_view_mixin_get_lightweight_submission_queryset(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStateChange, request, code=submission.code)
 
-    with scopes_disabled():
-        qs = list(view._get_lightweight_submission_queryset())
+    qs = list(view._get_lightweight_submission_queryset())
 
     assert qs == [submission]
 
 
-@pytest.mark.django_db
 def test_submission_view_mixin_object_resolves_by_code(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStateChange, request, code=submission.code)
 
-    with scopes_disabled():
-        assert view.object == submission
+    assert view.object == submission
 
 
-@pytest.mark.django_db
 def test_submission_view_mixin_has_anonymised_review(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStateChange, request, code=submission.code)
 
-    with scopes_disabled():
-        assert view.has_anonymised_review is False
+    assert view.has_anonymised_review is False
 
 
-@pytest.mark.django_db
 def test_submission_view_mixin_has_anonymised_review_with_anon_phase(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        phase = event.review_phases.first()
-        phase.can_see_speaker_names = False
-        phase.save()
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    phase = event.review_phases.first()
+    phase.can_see_speaker_names = False
+    phase.save()
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStateChange, request, code=submission.code)
 
-    with scopes_disabled():
-        assert view.has_anonymised_review is True
+    assert view.has_anonymised_review is True
 
 
-@pytest.mark.django_db
 def test_submission_view_mixin_is_publicly_visible_false(event):
     """Non-public events have non-visible submissions."""
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStateChange, request, code=submission.code)
 
-    with scopes_disabled():
-        assert view.is_publicly_visible is False
+    assert view.is_publicly_visible is False
 
 
-@pytest.mark.django_db
 def test_submission_state_change_action(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
 
     request = make_request(
         event,
@@ -144,11 +127,9 @@ def test_submission_state_change_action(event):
     assert view._action == "accept"
 
 
-@pytest.mark.django_db
 def test_submission_state_change_target(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
 
     request = make_request(
         event,
@@ -163,12 +144,10 @@ def test_submission_state_change_target(event):
     assert view.target() == SubmissionStates.REJECTED
 
 
-@pytest.mark.django_db
 def test_submission_state_change_next_url(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        next_url = event.orga_urls.submissions
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    next_url = event.orga_urls.submissions
 
     request = make_request(
         event,
@@ -183,12 +162,10 @@ def test_submission_state_change_next_url(event):
     assert view.next_url == next_url
 
 
-@pytest.mark.django_db
 def test_submission_state_change_get_success_url_with_next(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        next_url = event.orga_urls.submissions
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    next_url = event.orga_urls.submissions
 
     request = make_request(
         event,
@@ -203,11 +180,9 @@ def test_submission_state_change_get_success_url_with_next(event):
     assert view.get_success_url() == next_url
 
 
-@pytest.mark.django_db
 def test_submission_state_change_get_success_url_default(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
 
     request = make_request(
         event,
@@ -221,96 +196,79 @@ def test_submission_state_change_get_success_url_default(event):
     assert view.get_success_url() == event.orga_urls.submissions
 
 
-@pytest.mark.django_db
 def test_submission_delete_action_text_without_slots(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionDelete, request, code=submission.code)
 
-    with scopes_disabled():
-        text = view.action_text
+    text = view.action_text
 
     assert "schedule" not in str(text).lower()
 
 
-@pytest.mark.django_db
 def test_submission_delete_action_text_with_slots(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        slot = TalkSlotFactory(submission=submission, is_visible=True)
-        slot.schedule.freeze("v1", notify_speakers=False)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    slot = TalkSlotFactory(submission=submission, is_visible=True)
+    slot.schedule.freeze("v1", notify_speakers=False)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionDelete, request, code=submission.code)
 
-    with scopes_disabled():
-        text = str(view.action_text)
+    text = str(view.action_text)
 
     assert "schedule" in text.lower()
 
 
-@pytest.mark.django_db
 def test_submission_delete_action_back_url(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
     request.GET = {}
     view = make_view(SubmissionDelete, request, code=submission.code)
 
-    with scopes_disabled():
-        assert view.action_back_url == submission.orga_urls.base
+    assert view.action_back_url == submission.orga_urls.base
 
 
-@pytest.mark.django_db
 def test_submission_speakers_speakers_property(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionSpeakers, request, code=submission.code)
 
-    with scopes_disabled():
-        speakers = view.speakers
+    speakers = view.speakers
 
     assert len(speakers) == 1
     assert speakers[0]["speaker"] == speaker
 
 
-@pytest.mark.django_db
 def test_submission_speakers_invitations_property(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionSpeakers, request, code=submission.code)
 
-    with scopes_disabled():
-        invitations = list(view.invitations)
+    invitations = list(view.invitations)
 
     assert invitations == []
 
 
-@pytest.mark.django_db
 def test_submission_speakers_get_form_kwargs_includes_event(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionSpeakers, request, code=submission.code)
@@ -323,50 +281,39 @@ def test_submission_speakers_get_form_kwargs_includes_event(event):
     assert kwargs["event"] == event
 
 
-@pytest.mark.django_db
 def test_submission_speakers_get_success_url(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionSpeakers, request, code=submission.code)
 
-    with scopes_disabled():
-        assert view.get_success_url() == submission.orga_urls.speakers
+    assert view.get_success_url() == submission.orga_urls.speakers
 
 
-@pytest.mark.django_db
 def test_submission_content_object_returns_none_for_new(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
+    user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user, path="/orga/event/test/submissions/new/")
     view = make_view(SubmissionContent, request)
 
-    with scopes_disabled():
-        assert view.object is None
+    assert view.object is None
 
 
-@pytest.mark.django_db
 def test_submission_content_object_returns_submission(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionContent, request, code=submission.code)
 
-    with scopes_disabled():
-        assert view.object == submission
+    assert view.object == submission
 
 
-@pytest.mark.django_db
 def test_submission_content_get_permission_required_for_create(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
+    user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user, path="/orga/event/test/submissions/new/")
     view = make_view(SubmissionContent, request)
@@ -375,11 +322,9 @@ def test_submission_content_get_permission_required_for_create(event):
     assert view.get_permission_required() == ["submission.create_submission"]
 
 
-@pytest.mark.django_db
 def test_submission_content_get_permission_required_for_update(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionContent, request, code=submission.code)
@@ -388,36 +333,28 @@ def test_submission_content_get_permission_required_for_update(event):
     assert view.get_permission_required() == ["submission.orga_list_submission"]
 
 
-@pytest.mark.django_db
 def test_submission_content_can_edit_true_for_orga(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionContent, request, code=submission.code)
 
-    with scopes_disabled():
-        assert view.can_edit is True
+    assert view.can_edit is True
 
 
-@pytest.mark.django_db
 def test_submission_content_can_edit_false_for_reviewer(event):
-    with scopes_disabled():
-        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-        submission = SubmissionFactory(event=event)
+    reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
+    submission = SubmissionFactory(event=event)
 
     request = make_request(event, user=reviewer)
     view = make_view(SubmissionContent, request, code=submission.code)
 
-    with scopes_disabled():
-        assert view.can_edit is False
+    assert view.can_edit is False
 
 
-@pytest.mark.django_db
 def test_submission_list_mixin_get_default_filters_orga(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
+    user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user)
     request.GET = {}
@@ -431,21 +368,18 @@ def test_submission_list_mixin_get_default_filters_orga(event):
     assert "speakers__name__icontains" in filters
 
 
-@pytest.mark.django_db
 def test_submission_list_mixin_get_default_filters_reviewer_no_speaker_search(event):
     """Reviewers without speaker list permission don't get speaker search fields."""
-    with scopes_disabled():
-        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-        phase = event.review_phases.first()
-        phase.can_see_speaker_names = False
-        phase.save()
+    reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
+    phase = event.review_phases.first()
+    phase.can_see_speaker_names = False
+    phase.save()
 
     request = make_request(event, user=reviewer)
     request.GET = {}
     view = make_view(SubmissionList, request)
 
-    with scopes_disabled():
-        filters = view.get_default_filters()
+    filters = view.get_default_filters()
 
     assert "code__icontains" in filters
     assert "title__icontains" in filters
@@ -453,146 +387,117 @@ def test_submission_list_mixin_get_default_filters_reviewer_no_speaker_search(ev
     assert "speakers__name__icontains" not in filters
 
 
-@pytest.mark.django_db
 def test_submission_list_pending_changes_count(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        SubmissionFactory(event=event, pending_state=SubmissionStates.ACCEPTED)
+    user = make_orga_user(event, can_change_submissions=True)
+    SubmissionFactory(event=event, pending_state=SubmissionStates.ACCEPTED)
 
     request = make_request(event, user=user)
     request.GET = {}
     view = make_view(SubmissionList, request)
 
-    with scopes_disabled():
-        assert view.pending_changes == 1
+    assert view.pending_changes == 1
 
 
-@pytest.mark.django_db
-def test_submission_list_show_tracks_false_when_disabled(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        event.feature_flags["use_tracks"] = False
-        event.save()
+def test_submission_list_show_tracks_false_when_disabled():
+    event = EventFactory(feature_flags={"use_tracks": False})
+    user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user)
     request.GET = {}
     view = make_view(SubmissionList, request)
 
-    with scopes_disabled():
-        assert not view.show_tracks
+    assert not view.show_tracks
 
 
-@pytest.mark.django_db
-def test_submission_list_show_tracks_true_when_multiple(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        event.feature_flags["use_tracks"] = True
-        event.save()
-        TrackFactory(event=event)
-        TrackFactory(event=event)
+def test_submission_list_show_tracks_true_when_multiple():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    user = make_orga_user(event, can_change_submissions=True)
+    TrackFactory(event=event)
+    TrackFactory(event=event)
 
     request = make_request(event, user=user)
     request.GET = {}
     view = make_view(SubmissionList, request)
 
-    with scopes_disabled():
-        assert view.show_tracks is True
+    assert view.show_tracks is True
 
 
-@pytest.mark.django_db
 def test_submission_list_show_submission_types(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
+    user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user)
     request.GET = {}
     view = make_view(SubmissionList, request)
 
-    with scopes_disabled():
-        assert view.show_submission_types is False
+    assert view.show_submission_types is False
 
 
-@pytest.mark.django_db
 def test_submission_list_short_questions(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        short_q = QuestionFactory(
-            event=event,
-            target=QuestionTarget.SUBMISSION,
-            variant=QuestionVariant.STRING,
-        )
-        QuestionFactory(
-            event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.TEXT
-        )
-        QuestionFactory(
-            event=event, target=QuestionTarget.SPEAKER, variant=QuestionVariant.STRING
-        )
+    user = make_orga_user(event, can_change_submissions=True)
+    short_q = QuestionFactory(
+        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.STRING
+    )
+    QuestionFactory(
+        event=event, target=QuestionTarget.SUBMISSION, variant=QuestionVariant.TEXT
+    )
+    QuestionFactory(
+        event=event, target=QuestionTarget.SPEAKER, variant=QuestionVariant.STRING
+    )
 
     request = make_request(event, user=user)
     request.GET = {}
     view = make_view(SubmissionList, request)
 
-    with scopes_disabled():
-        result = list(view.short_questions)
+    result = list(view.short_questions)
 
     assert result == [short_q]
 
 
-@pytest.mark.django_db
 def test_feedback_list_queryset(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        feedback = FeedbackFactory(talk=submission)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    feedback = FeedbackFactory(talk=submission)
 
     request = make_request(event, user=user)
     view = make_view(FeedbackList, request, code=submission.code)
 
-    with scopes_disabled():
-        qs = list(view.get_queryset())
+    qs = list(view.get_queryset())
 
     assert qs == [feedback]
 
 
-@pytest.mark.django_db
 def test_feedback_list_table_kwargs_excludes_talk(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
 
     request = make_request(event, user=user)
     request.GET = {}
     view = make_view(FeedbackList, request, code=submission.code)
 
-    with scopes_disabled():
-        kwargs = view.get_table_kwargs()
+    kwargs = view.get_table_kwargs()
 
     assert kwargs["include_talk"] is False
 
 
-@pytest.mark.django_db
 def test_all_feedbacks_list_queryset(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        feedback = FeedbackFactory(talk=submission)
-        other_submission = SubmissionFactory()
-        FeedbackFactory(talk=other_submission)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    feedback = FeedbackFactory(talk=submission)
+    other_submission = SubmissionFactory()
+    FeedbackFactory(talk=other_submission)
 
     request = make_request(event, user=user)
     view = make_view(AllFeedbacksList, request)
 
-    with scopes_disabled():
-        qs = list(view.get_queryset())
+    qs = list(view.get_queryset())
 
     assert qs == [feedback]
 
 
-@pytest.mark.django_db
 def test_submission_feed_title(event):
     view = SubmissionFeed()
 
@@ -601,7 +506,6 @@ def test_submission_feed_title(event):
     assert str(event.name) in str(title)
 
 
-@pytest.mark.django_db
 def test_submission_feed_link(event):
     view = SubmissionFeed()
 
@@ -610,24 +514,19 @@ def test_submission_feed_link(event):
     assert link == event.orga_urls.submissions.full()
 
 
-@pytest.mark.django_db
 def test_submission_feed_items(event):
-    with scopes_disabled():
-        sub1 = SubmissionFactory(event=event)
-        sub2 = SubmissionFactory(event=event)
+    sub1 = SubmissionFactory(event=event)
+    sub2 = SubmissionFactory(event=event)
 
     view = SubmissionFeed()
 
-    with scopes_disabled():
-        items = list(view.items(event))
+    items = list(view.items(event))
 
     assert set(items) == {sub1, sub2}
 
 
-@pytest.mark.django_db
 def test_submission_feed_item_title(event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
+    submission = SubmissionFactory(event=event)
 
     view = SubmissionFeed()
 
@@ -637,10 +536,8 @@ def test_submission_feed_item_title(event):
     assert str(event.name) in title
 
 
-@pytest.mark.django_db
 def test_submission_feed_item_link(event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
+    submission = SubmissionFactory(event=event)
 
     view = SubmissionFeed()
 
@@ -649,180 +546,142 @@ def test_submission_feed_item_link(event):
     assert link == submission.orga_urls.base.full()
 
 
-@pytest.mark.django_db
 def test_submission_feed_item_pubdate(event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
+    submission = SubmissionFactory(event=event)
 
     view = SubmissionFeed()
 
     assert view.item_pubdate(submission) == submission.created
 
 
-@pytest.mark.django_db
 def test_submission_stats_show_submission_types_single(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
+    user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
-    with scopes_disabled():
-        assert view.show_submission_types() is False
+    assert view.show_submission_types() is False
 
 
-@pytest.mark.django_db
-def test_submission_stats_show_tracks_false_when_disabled(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        event.feature_flags["use_tracks"] = False
-        event.save()
+def test_submission_stats_show_tracks_false_when_disabled():
+    event = EventFactory(feature_flags={"use_tracks": False})
+    user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
-    with scopes_disabled():
-        assert view.show_tracks is False
+    assert view.show_tracks is False
 
 
-@pytest.mark.django_db
-def test_submission_stats_show_tracks_true_with_multiple(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        event.feature_flags["use_tracks"] = True
-        event.save()
-        TrackFactory(event=event)
-        TrackFactory(event=event)
+def test_submission_stats_show_tracks_true_with_multiple():
+    event = EventFactory(feature_flags={"use_tracks": True})
+    user = make_orga_user(event, can_change_submissions=True)
+    TrackFactory(event=event)
+    TrackFactory(event=event)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
-    with scopes_disabled():
-        assert view.show_tracks is True
+    assert view.show_tracks is True
 
 
-@pytest.mark.django_db
 def test_submission_stats_submission_state_data(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-        SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    user = make_orga_user(event, can_change_submissions=True)
+    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
-    with scopes_disabled():
-        data = json.loads(view.submission_state_data)
+    data = json.loads(view.submission_state_data)
 
     assert len(data) == 2
     labels = {item["label"] for item in data}
     assert len(labels) == 2
 
 
-@pytest.mark.django_db
 def test_submission_stats_submission_type_data(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
-    with scopes_disabled():
-        data = json.loads(view.submission_type_data())
+    data = json.loads(view.submission_type_data())
 
     assert len(data) == 1
     assert data[0]["value"] == 1
 
 
-@pytest.mark.django_db
-def test_submission_stats_submission_track_data_empty_when_disabled(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        event.feature_flags["use_tracks"] = False
-        event.save()
+def test_submission_stats_submission_track_data_empty_when_disabled():
+    event = EventFactory(feature_flags={"use_tracks": False})
+    user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
-    with scopes_disabled():
-        assert view.submission_track_data() == ""
+    assert view.submission_track_data() == ""
 
 
-@pytest.mark.django_db
 def test_submission_stats_talk_state_data(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-        SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    user = make_orga_user(event, can_change_submissions=True)
+    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
-    with scopes_disabled():
-        data = json.loads(view.talk_state_data())
+    data = json.loads(view.talk_state_data())
 
     assert len(data) == 1
     assert data[0]["value"] == 1
 
 
-@pytest.mark.django_db
 def test_submission_stats_talk_type_data(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    user = make_orga_user(event, can_change_submissions=True)
+    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
-    with scopes_disabled():
-        data = json.loads(view.talk_type_data())
+    data = json.loads(view.talk_type_data())
 
     assert len(data) == 1
     assert data[0]["value"] == 1
 
 
-@pytest.mark.django_db
-def test_submission_stats_talk_track_data_empty_when_disabled(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        event.feature_flags["use_tracks"] = False
-        event.save()
-        SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+def test_submission_stats_talk_track_data_empty_when_disabled():
+    event = EventFactory(feature_flags={"use_tracks": False})
+    user = make_orga_user(event, can_change_submissions=True)
+    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
-    with scopes_disabled():
-        assert view.talk_track_data() == ""
+    assert view.talk_track_data() == ""
 
 
-@pytest.mark.django_db
 def test_tag_view_get_queryset(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        tag = TagFactory(event=event)
-        TagFactory()
+    user = make_orga_user(event, can_change_submissions=True)
+    tag = TagFactory(event=event)
+    TagFactory()
 
     request = make_request(event, user=user)
     view = make_view(TagView, request)
 
-    with scopes_disabled():
-        qs = list(view.get_queryset())
+    qs = list(view.get_queryset())
 
     assert len(qs) == 1
     assert qs[0] == tag
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("action", "has_instance", "expected_substring"),
     (("create", False, "New tag"), ("list", False, "Tags")),
 )
 def test_tag_view_get_generic_title(event, action, has_instance, expected_substring):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        tag = TagFactory(event=event) if has_instance else None
+    user = make_orga_user(event, can_change_submissions=True)
+    tag = TagFactory(event=event) if has_instance else None
 
     request = make_request(event, user=user)
     view = make_view(TagView, request)
@@ -833,11 +692,9 @@ def test_tag_view_get_generic_title(event, action, has_instance, expected_substr
     assert expected_substring in title
 
 
-@pytest.mark.django_db
 def test_tag_view_get_generic_title_with_instance(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        tag = TagFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    tag = TagFactory(event=event)
 
     request = make_request(event, user=user)
     view = make_view(TagView, request)
@@ -848,13 +705,11 @@ def test_tag_view_get_generic_title_with_instance(event):
     assert str(tag.tag) in title
 
 
-@pytest.mark.django_db
 def test_comment_list_get_form_kwargs(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
 
     request = make_request(event, user=user)
     view = make_view(CommentList, request, code=submission.code)
@@ -862,150 +717,123 @@ def test_comment_list_get_form_kwargs(event):
     view.prefix = None
     view.initial = {}
 
-    with scopes_disabled():
-        kwargs = view.get_form_kwargs()
+    kwargs = view.get_form_kwargs()
 
     assert kwargs["submission"] == submission
     assert kwargs["user"] == user
 
 
-@pytest.mark.django_db
 def test_comment_list_comments_property(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        comment = SubmissionCommentFactory(submission=submission, user=user)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    comment = SubmissionCommentFactory(submission=submission, user=user)
 
     request = make_request(event, user=user)
     view = make_view(CommentList, request, code=submission.code)
 
-    with scopes_disabled():
-        comments = list(view.comments)
+    comments = list(view.comments)
 
     assert comments == [comment]
 
 
-@pytest.mark.django_db
 def test_comment_delete_object(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        comment = SubmissionCommentFactory(submission=submission, user=user)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    comment = SubmissionCommentFactory(submission=submission, user=user)
 
     request = make_request(event, user=user)
     view = make_view(CommentDelete, request, code=submission.code, pk=comment.pk)
 
-    with scopes_disabled():
-        assert view.object == comment
+    assert view.object == comment
 
 
-@pytest.mark.django_db
 def test_comment_delete_action_back_url(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        comment = SubmissionCommentFactory(submission=submission, user=user)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    comment = SubmissionCommentFactory(submission=submission, user=user)
 
     request = make_request(event, user=user)
     view = make_view(CommentDelete, request, code=submission.code, pk=comment.pk)
 
-    with scopes_disabled():
-        assert view.action_back_url == submission.orga_urls.comments
+    assert view.action_back_url == submission.orga_urls.comments
 
 
-@pytest.mark.django_db
 def test_comment_delete_action_object_name(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        speaker = SpeakerFactory(event=event)
-        submission.speakers.add(speaker)
-        comment = SubmissionCommentFactory(submission=submission, user=user)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission.speakers.add(speaker)
+    comment = SubmissionCommentFactory(submission=submission, user=user)
 
     request = make_request(event, user=user)
     view = make_view(CommentDelete, request, code=submission.code, pk=comment.pk)
 
-    with scopes_disabled():
-        name = str(view.action_object_name)
+    name = str(view.action_object_name)
 
     assert submission.title in name
 
 
-@pytest.mark.django_db
 def test_submission_history_queryset(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        submission.log_action("pretalx.submission.update", person=user, orga=True)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    submission.log_action("pretalx.submission.update", person=user, orga=True)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionHistory, request, code=submission.code)
 
-    with scopes_disabled():
-        qs = list(view.get_queryset())
+    qs = list(view.get_queryset())
 
     assert len(qs) == 1
 
 
-@pytest.mark.django_db
 def test_anonymise_next_unanonymised(event):
     """next_unanonymised returns an unanonymised submission from the event."""
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        submission = SubmissionFactory(event=event)
-        other = SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    submission = SubmissionFactory(event=event)
+    other = SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
     view = make_view(Anonymise, request, code=submission.code)
 
-    with scopes_disabled():
-        result = view.next_unanonymised
+    result = view.next_unanonymised
 
     assert result in (submission, other)
 
 
-@pytest.mark.django_db
 def test_apply_pending_bulk_submissions(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        sub1 = SubmissionFactory(event=event, pending_state=SubmissionStates.ACCEPTED)
-        SubmissionFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    sub1 = SubmissionFactory(event=event, pending_state=SubmissionStates.ACCEPTED)
+    SubmissionFactory(event=event)
 
     request = make_request(event, user=user)
     request.GET = {}
     view = make_view(ApplyPendingBulk, request)
 
-    with scopes_disabled():
-        subs = list(view.submissions)
+    subs = list(view.submissions)
 
     assert subs == [sub1]
 
 
-@pytest.mark.django_db
 def test_apply_pending_bulk_submission_count(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        SubmissionFactory(event=event, pending_state=SubmissionStates.ACCEPTED)
-        SubmissionFactory(event=event, pending_state=SubmissionStates.REJECTED)
+    user = make_orga_user(event, can_change_submissions=True)
+    SubmissionFactory(event=event, pending_state=SubmissionStates.ACCEPTED)
+    SubmissionFactory(event=event, pending_state=SubmissionStates.REJECTED)
 
     request = make_request(event, user=user)
     request.GET = {}
     view = make_view(ApplyPendingBulk, request)
 
-    with scopes_disabled():
-        assert view.submission_count == 2
+    assert view.submission_count == 2
 
 
-@pytest.mark.django_db
 def test_reviewer_submission_filter_is_only_reviewer(event):
-    with scopes_disabled():
-        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
+    reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
 
     request = make_request(event, user=reviewer)
     view = make_view(SubmissionSpeakers, request, code="FAKE")
@@ -1015,10 +843,8 @@ def test_reviewer_submission_filter_is_only_reviewer(event):
     assert view.is_only_reviewer is True
 
 
-@pytest.mark.django_db
 def test_reviewer_submission_filter_is_only_reviewer_false_for_orga(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
+    user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionSpeakers, request, code="FAKE")
@@ -1026,90 +852,84 @@ def test_reviewer_submission_filter_is_only_reviewer_false_for_orga(event):
     assert view.is_only_reviewer is False
 
 
-@pytest.mark.django_db
 def test_submission_stats_submission_timeline_data_empty_with_no_submissions(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
+    user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
-    with scopes_disabled():
-        assert view.submission_timeline_data() == ""
-        assert view.total_submission_timeline_data() == ""
+    assert view.submission_timeline_data() == ""
+    assert view.total_submission_timeline_data() == ""
 
 
-@pytest.mark.django_db
 def test_submission_stats_submission_timeline_data_empty_with_single_date(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        sub = SubmissionFactory(event=event)
-        sub.log_action("pretalx.submission.create")
+    user = make_orga_user(event, can_change_submissions=True)
+    sub = SubmissionFactory(event=event)
+    sub.log_action("pretalx.submission.create")
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
-    with scopes_disabled():
-        assert view.raw_submission_timeline_data is None
-        assert view.submission_timeline_data() == ""
-        assert view.total_submission_timeline_data() == ""
+    assert view.raw_submission_timeline_data is None
+    assert view.submission_timeline_data() == ""
+    assert view.total_submission_timeline_data() == ""
 
 
-@pytest.mark.django_db
 def test_submission_stats_talk_timeline_data_empty(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
+    user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
-    with scopes_disabled():
-        assert view.talk_timeline_data() == ""
+    assert view.talk_timeline_data() == ""
 
 
-@pytest.mark.django_db
-def test_submission_stats_timeline_annotations_with_cfp_deadline(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        event.cfp.deadline = tz_now() + dt.timedelta(days=7)
-        event.cfp.save()
+def test_submission_stats_timeline_annotations_with_cfp_deadline():
+    event = EventFactory(cfp__deadline=tz_now() + dt.timedelta(days=7))
+    user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionStats, request)
 
-    with scopes_disabled():
-        data = json.loads(view.timeline_annotations())
+    data = json.loads(view.timeline_annotations())
 
     assert len(data["deadlines"]) == 1
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(("track_count", "expected"), ((1, False), (2, True)))
-def test_submission_list_show_tracks_with_limit_tracks(event, track_count, expected):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-        event.feature_flags["use_tracks"] = True
-        event.save()
-        tracks = [TrackFactory(event=event) for _ in range(track_count)]
-        team = user.teams.first()
-        team.limit_tracks.add(*tracks)
+def test_submission_list_show_tracks_with_limit_tracks(track_count, expected):
+    event = EventFactory(feature_flags={"use_tracks": True})
+    user = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
+    tracks = [TrackFactory(event=event) for _ in range(track_count)]
+    team = user.teams.first()
+    team.limit_tracks.add(*tracks)
 
     request = make_request(event, user=user)
     view = make_view(SubmissionList, request)
 
-    with scopes_disabled():
-        assert view.show_tracks is expected
+    assert view.show_tracks is expected
 
 
-@pytest.mark.django_db
 def test_submission_content_object_returns_not_found_for_invalid_code(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
+    user = make_orga_user(event, can_change_submissions=True)
 
     request = make_request(event, user=user, path="/invalid/")
     view = make_view(SubmissionContent, request, code="ZZZZZ")
 
-    with scopes_disabled():
-        result = view.object
+    result = view.object
 
     assert isinstance(result, Http404)
+
+
+def test_submission_list_get_table_kwargs_with_multiple_types(event):
+    """When multiple submission types exist, 'submission_type' is not excluded."""
+    user = make_orga_user(event, can_change_submissions=True)
+    SubmissionTypeFactory(event=event)
+    request = make_request(event, user=user)
+    request.GET = {}
+    view = make_view(SubmissionList, request)
+    view.object_list = []
+
+    kwargs = view.get_table_kwargs()
+
+    assert "submission_type" not in kwargs["exclude"]

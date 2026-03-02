@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from rest_framework.exceptions import APIException
 
@@ -16,8 +18,6 @@ pytestmark = pytest.mark.unit
 
 
 def test_register_serializer_with_string_version():
-    """When versions is a string, it is wrapped in a list."""
-
     @register_serializer(versions="v1", class_name="_TestStringVersion")
     class _TestSerializer:
         pass
@@ -26,8 +26,6 @@ def test_register_serializer_with_string_version():
 
 
 def test_register_serializer_with_default_versions():
-    """When versions is None, all SUPPORTED_VERSIONS are registered."""
-
     @register_serializer(class_name="_TestDefaultVersions")
     class _TestSerializer:
         pass
@@ -61,7 +59,6 @@ def test_get_serializer_by_version_raises_for_missing():
 
 @pytest.mark.django_db
 def test_get_api_version_from_request_uses_header():
-    """The pretalx-version header takes precedence."""
     request = make_api_request()
     request._request.META["HTTP_PRETALX_VERSION"] = CURRENT_VERSION
 
@@ -72,7 +69,6 @@ def test_get_api_version_from_request_uses_header():
 
 @pytest.mark.django_db
 def test_get_api_version_from_request_uses_token_version():
-    """When no header is present, the token's version is used."""
     token = UserApiTokenFactory(version="v1")
     request = make_api_request(auth=token)
 
@@ -83,7 +79,6 @@ def test_get_api_version_from_request_uses_token_version():
 
 @pytest.mark.django_db
 def test_get_api_version_from_request_defaults_to_current():
-    """When neither header nor token version is set, CURRENT_VERSION is used."""
     request = make_api_request()
 
     result = get_api_version_from_request(request)

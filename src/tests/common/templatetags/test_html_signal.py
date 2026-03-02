@@ -1,19 +1,19 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
 from pretalx.cfp.signals import html_head
 from pretalx.common.templatetags.html_signal import html_signal
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_html_signal_no_receivers(event):
     """Signal with no active receivers returns empty string."""
     result = html_signal("pretalx.cfp.signals.html_head", sender=event, request=None)
     assert result == ""
 
 
-@pytest.mark.django_db
 def test_html_signal_with_receiver(event, register_signal_handler):
     def handler(signal, sender, **kwargs):
         return "<div>test</div>"
@@ -23,7 +23,6 @@ def test_html_signal_with_receiver(event, register_signal_handler):
     assert "<div>test</div>" in result
 
 
-@pytest.mark.django_db
 def test_html_signal_concatenates_responses(event, register_signal_handler):
     def handler1(signal, sender, **kwargs):
         return "<span>one</span>"
@@ -38,7 +37,6 @@ def test_html_signal_concatenates_responses(event, register_signal_handler):
     assert "<span>two</span>" in result
 
 
-@pytest.mark.django_db
 def test_html_signal_skips_none_responses(event, register_signal_handler):
     def handler(signal, sender, **kwargs):
         return None

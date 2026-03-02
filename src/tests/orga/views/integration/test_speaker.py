@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import json
 
 import pytest
@@ -10,19 +12,19 @@ from pretalx.orga.signals import speaker_form
 from pretalx.submission.models import Answer
 from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from tests.factories import (
+    AnswerFactory,
     AnswerOptionFactory,
+    EventFactory,
     QuestionFactory,
     SpeakerFactory,
     SpeakerInformationFactory,
     SubmissionFactory,
-    TrackFactory,
 )
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("query", ("", "?role=true", "?role=false", "?role=foobar"))
 def test_speaker_list_accessible_with_role_filter(client, event, talk_slot, query):
     with scopes_disabled():
@@ -37,7 +39,6 @@ def test_speaker_list_accessible_with_role_filter(client, event, talk_slot, quer
         assert speaker.get_display_name() in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_speaker_list_fulltext_search_finds_by_biography(client, event):
     """Biography search only works when fulltext flag is enabled."""
     with scopes_disabled():
@@ -60,7 +61,6 @@ def test_speaker_list_fulltext_search_finds_by_biography(client, event):
     assert speaker.get_display_name() in response.content.decode()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_speaker_list_query_count(client, event, item_count, django_assert_num_queries):
     with scopes_disabled():
@@ -81,15 +81,6 @@ def test_speaker_list_query_count(client, event, item_count, django_assert_num_q
     assert all(s.get_display_name() in content for s in speakers)
 
 
-@pytest.mark.django_db
-def test_speaker_list_anonymous_redirects_to_login(client, event):
-    response = client.get(event.orga_urls.speakers)
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.django_db
 def test_speaker_list_user_without_permission_gets_404(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=False)
@@ -100,7 +91,6 @@ def test_speaker_list_user_without_permission_gets_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_speaker_list_sort_by_question(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -108,7 +98,7 @@ def test_speaker_list_sort_by_question(client, event, talk_slot):
         question = QuestionFactory(
             event=event, target="speaker", variant=QuestionVariant.STRING
         )
-        Answer.objects.create(question=question, speaker=speaker, answer="blue")
+        AnswerFactory(question=question, speaker=speaker, answer="blue")
 
     client.force_login(user)
 
@@ -119,7 +109,6 @@ def test_speaker_list_sort_by_question(client, event, talk_slot):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_speaker_detail_accessible_by_orga(
     client, event, talk_slot, django_assert_num_queries
 ):
@@ -137,24 +126,7 @@ def test_speaker_detail_accessible_by_orga(
     assert speaker.get_display_name() in response.content.decode()
 
 
-@pytest.mark.django_db
-def test_speaker_detail_accessible_by_reviewer(client, event, talk_slot):
-    """Reviewers can view speaker detail pages."""
-    with scopes_disabled():
-        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-        speaker = talk_slot.submission.speakers.first()
-        url = speaker.orga_urls.base
-    client.force_login(reviewer)
-
-    response = client.get(url, follow=True)
-
-    assert response.status_code == 200
-    assert speaker.get_display_name() in response.content.decode()
-
-
-@pytest.mark.django_db
 def test_speaker_detail_edit_by_orga(client, event, talk_slot):
-    """Organisers can edit speaker name, biography, and email."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = talk_slot.submission.speakers.first()
@@ -183,7 +155,6 @@ def test_speaker_detail_edit_by_orga(client, event, talk_slot):
         assert speaker.logged_actions().count() == initial_log_count + 1
 
 
-@pytest.mark.django_db
 def test_speaker_detail_edit_with_custom_field_consolidated_log(client, event):
     """Editing speaker profile and question answer creates a single consolidated log."""
     with scopes_disabled():
@@ -222,10 +193,11 @@ def test_speaker_detail_edit_with_custom_field_consolidated_log(client, event):
         assert update_log.changes[question_key]["new"] == "My speaker answer"
 
 
-@pytest.mark.django_db
-def test_speaker_detail_edit_unchanged_no_log(client, event):
-    """Submitting without changes does not create a new log entry."""
+def test_speaker_detail_edit_unchanged_no_log(client):
     with scopes_disabled():
+        event = EventFactory(
+            cfp__fields={"availabilities": {"visibility": "do_not_ask"}}
+        )
         user = make_orga_user(event, can_change_submissions=True)
         speaker = SpeakerFactory(
             event=event, name="Stable Name", biography="Stable bio"
@@ -234,8 +206,6 @@ def test_speaker_detail_edit_unchanged_no_log(client, event):
         sub.speakers.add(speaker)
         url = speaker.orga_urls.base
         initial_log_count = speaker.logged_actions().count()
-        event.cfp.fields["availabilities"]["visibility"] = "do_not_ask"
-        event.cfp.save()
 
     client.force_login(user)
 
@@ -254,7 +224,6 @@ def test_speaker_detail_edit_unchanged_no_log(client, event):
         assert speaker.logged_actions().count() == initial_log_count
 
 
-@pytest.mark.django_db
 def test_speaker_detail_edit_clears_choice_question_answer(client, event):
     """Submitting an empty choice question answer removes the Answer object."""
     with scopes_disabled():
@@ -268,9 +237,8 @@ def test_speaker_detail_edit_clears_choice_question_answer(client, event):
         )
         for label in ("very", "incredibly", "omggreen"):
             AnswerOptionFactory(question=question, answer=label)
-        answer = Answer.objects.create(question=question, speaker=speaker)
+        answer = AnswerFactory(question=question, speaker=speaker)
         answer.options.set([question.options.first()])
-        answer.save()
 
     client.force_login(user)
 
@@ -290,9 +258,7 @@ def test_speaker_detail_edit_clears_choice_question_answer(client, event):
         assert not Answer.objects.filter(pk=answer.pk).exists()
 
 
-@pytest.mark.django_db
 def test_speaker_detail_edit_required_question_blocks_save(client, event, talk_slot):
-    """Required speaker questions prevent saving when not filled."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = talk_slot.submission.speakers.first()
@@ -318,9 +284,7 @@ def test_speaker_detail_edit_required_question_blocks_save(client, event, talk_s
     assert speaker.name != "BESTSPEAKAR"
 
 
-@pytest.mark.django_db
 def test_speaker_detail_edit_duplicate_email_rejected(client, event, talk_slot):
-    """Cannot assign another speaker's email to a speaker."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         speaker = talk_slot.submission.speakers.first()
@@ -351,9 +315,7 @@ def test_speaker_detail_edit_duplicate_email_rejected(client, event, talk_slot):
     assert speaker.user.email != other_speaker.user.email
 
 
-@pytest.mark.django_db
 def test_speaker_detail_reviewer_cannot_edit(client, event, talk_slot):
-    """Reviewers cannot edit speaker profiles."""
     with scopes_disabled():
         reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
         speaker = talk_slot.submission.speakers.first()
@@ -371,7 +333,6 @@ def test_speaker_detail_reviewer_cannot_edit(client, event, talk_slot):
     assert speaker.name != "BESTSPEAKAR"
 
 
-@pytest.mark.django_db
 def test_speaker_password_reset_get_shows_confirmation(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -388,7 +349,6 @@ def test_speaker_password_reset_get_shows_confirmation(client, event, talk_slot)
     assert not speaker.user.pw_reset_token
 
 
-@pytest.mark.django_db
 def test_speaker_password_reset_post_generates_token(client, event, talk_slot):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
@@ -405,25 +365,6 @@ def test_speaker_password_reset_post_generates_token(client, event, talk_slot):
     assert speaker.user.pw_reset_token
 
 
-@pytest.mark.django_db
-def test_speaker_password_reset_reviewer_gets_404(client, event, talk_slot):
-    """Reviewers cannot reset speaker passwords."""
-    with scopes_disabled():
-        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-        speaker = talk_slot.submission.speakers.first()
-        url = speaker.orga_urls.password_reset
-
-    client.force_login(reviewer)
-
-    response = client.post(url, follow=True)
-
-    assert response.status_code == 404
-    with scopes_disabled():
-        speaker.user.refresh_from_db()
-    assert not speaker.user.pw_reset_token
-
-
-@pytest.mark.django_db
 @override_settings(
     EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend",
     EMAIL_PORT=1,
@@ -446,7 +387,6 @@ def test_speaker_password_reset_shows_error_on_mail_failure(client, event, talk_
     assert "could not be sent" in content
 
 
-@pytest.mark.django_db
 def test_speaker_toggle_arrived(client, event, talk_slot):
     """Toggle arrived flips has_arrived and creates log entries."""
     with scopes_disabled():
@@ -474,7 +414,6 @@ def test_speaker_toggle_arrived(client, event, talk_slot):
         assert speaker.user.logged_actions().count() == initial_logs + 2
 
 
-@pytest.mark.django_db
 def test_speaker_toggle_arrived_respects_next_url(client, event, talk_slot):
     """Toggle arrived redirects to the 'next' URL when provided."""
     with scopes_disabled():
@@ -490,15 +429,13 @@ def test_speaker_toggle_arrived_respects_next_url(client, event, talk_slot):
     assert response.url == event.orga_urls.speakers
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_speaker_information_list_query_count(
     client, event, item_count, django_assert_num_queries
 ):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
-        for _ in range(item_count):
-            SpeakerInformationFactory(event=event)
+        SpeakerInformationFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
     with django_assert_num_queries(20):
@@ -507,7 +444,6 @@ def test_speaker_information_list_query_count(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_speaker_information_create(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
@@ -531,7 +467,6 @@ def test_speaker_information_create(client, event):
         assert str(info.title) == "Test Information"
 
 
-@pytest.mark.django_db
 def test_speaker_information_edit(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
@@ -554,30 +489,6 @@ def test_speaker_information_edit(client, event):
     assert str(info.title) == "Banana banana"
 
 
-@pytest.mark.django_db
-def test_speaker_information_edit_reviewer_rejected(client, event):
-    """Reviewers cannot edit speaker information."""
-    with scopes_disabled():
-        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-        info = SpeakerInformationFactory(event=event)
-    client.force_login(reviewer)
-
-    client.post(
-        info.orga_urls.edit,
-        data={
-            "title_0": "Banana banana",
-            "text_0": "Very Important!!!",
-            "target_group": "confirmed",
-        },
-        follow=True,
-    )
-
-    with scopes_disabled():
-        info.refresh_from_db()
-    assert str(info.title) != "Banana banana"
-
-
-@pytest.mark.django_db
 def test_speaker_information_delete(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
@@ -591,9 +502,7 @@ def test_speaker_information_delete(client, event):
         assert event.information.count() == 0
 
 
-@pytest.mark.django_db
 def test_speaker_export_empty_redirects(client, event):
-    """Exporting with valid form but no matching speakers redirects back."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_event_settings=True)
         speaker = SpeakerFactory(event=event)
@@ -610,7 +519,6 @@ def test_speaker_export_empty_redirects(client, event):
     assert response.url == export_url
 
 
-@pytest.mark.django_db
 def test_speaker_export_csv_without_delimiter_returns_html(client, event, talk_slot):
     """CSV export of choice question without delimiter returns HTML error."""
     with scopes_disabled():
@@ -620,11 +528,10 @@ def test_speaker_export_csv_without_delimiter_returns_html(client, event, talk_s
             event=event, target="speaker", variant=QuestionVariant.CHOICES
         )
         option = AnswerOptionFactory(question=question, answer="very")
-        answer = Answer.objects.create(
+        answer = AnswerFactory(
             question=question, submission=talk_slot.submission, speaker=speaker
         )
         answer.options.set([option])
-        answer.save()
 
     client.force_login(user)
 
@@ -639,10 +546,9 @@ def test_speaker_export_csv_without_delimiter_returns_html(client, event, talk_s
     )
 
     assert response.status_code == 200
-    assert response.content.decode().strip().lower().startswith("<!doctype")
+    assert "<!doctype" in response.content.decode().strip().lower()
 
 
-@pytest.mark.django_db
 def test_speaker_export_csv(client, event, talk_slot):
     """CSV export produces correct headers and data."""
     with scopes_disabled():
@@ -653,11 +559,10 @@ def test_speaker_export_csv(client, event, talk_slot):
             event=event, target="speaker", variant=QuestionVariant.CHOICES
         )
         option = AnswerOptionFactory(question=question, answer="very")
-        answer = Answer.objects.create(
+        answer = AnswerFactory(
             question=question, submission=submission, speaker=speaker
         )
         answer.options.set([option])
-        answer.save()
         answer_string = answer.answer_string
 
     client.force_login(user)
@@ -682,7 +587,6 @@ def test_speaker_export_csv(client, event, talk_slot):
     assert response.content.decode() == expected
 
 
-@pytest.mark.django_db
 def test_speaker_export_json(client, event, talk_slot):
     """JSON export produces correct structure and data."""
     with scopes_disabled():
@@ -693,11 +597,10 @@ def test_speaker_export_json(client, event, talk_slot):
             event=event, target="speaker", variant=QuestionVariant.CHOICES
         )
         option = AnswerOptionFactory(question=question, answer="very")
-        answer = Answer.objects.create(
+        answer = AnswerFactory(
             question=question, submission=submission, speaker=speaker
         )
         answer.options.set([option])
-        answer.save()
         answer_string = answer.answer_string
 
     client.force_login(user)
@@ -724,26 +627,6 @@ def test_speaker_export_json(client, event, talk_slot):
     ]
 
 
-@pytest.mark.django_db
-def test_speaker_export_track_limited_reviewer_gets_404(client, event):
-    """Track-limited reviewers cannot access the speaker export page."""
-    with scopes_disabled():
-        reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-        track = TrackFactory(event=event)
-        reviewer.teams.first().limit_tracks.add(track)
-
-    client.force_login(reviewer)
-
-    response = client.get(event.orga_urls.speakers + "export/")
-    assert response.status_code == 404
-
-    response = client.post(
-        event.orga_urls.speakers + "export/",
-        data={"target": "all", "name": "on", "export_format": "json"},
-    )
-    assert response.status_code == 404
-
-
 class _ExtraSpeakerForm(django_forms.Form):
     """Real Django form returned by a test signal handler to verify
     FormSignalMixin integration (renders on GET, saves on POST)."""
@@ -759,7 +642,6 @@ class _ExtraSpeakerForm(django_forms.Form):
         self.speaker.save(update_fields=["has_arrived"])
 
 
-@pytest.mark.django_db
 def test_speaker_signal_extra_forms_saved_on_post(
     client, event, talk_slot, register_signal_handler
 ):

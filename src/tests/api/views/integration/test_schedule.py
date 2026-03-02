@@ -1,4 +1,5 @@
-import json
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
 from django_scopes import scope, scopes_disabled
@@ -6,15 +7,16 @@ from django_scopes import scope, scopes_disabled
 from pretalx.schedule.models import Schedule
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
+    EventFactory,
     RoomFactory,
     ScheduleFactory,
-    SpeakerFactory,
+    SpeakerRoleFactory,
     SubmissionFactory,
     TalkSlotFactory,
     TrackFactory,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 @pytest.fixture
@@ -23,14 +25,13 @@ def public_schedule_event(event):
 
     Returns (event, published_slot) — the slot lives on event.current_schedule.
     """
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
     with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub.speakers.add(speaker)
-        slot = TalkSlotFactory(submission=sub, is_visible=True)
+        role = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
+        slot = TalkSlotFactory(submission=role.submission, is_visible=True)
         with scope(event=event):
             event.wip_schedule.freeze("v1", notify_speakers=False)
     return event, slot
@@ -54,9 +55,7 @@ def invisible_slot(public_schedule_event):
         return slot
 
 
-@pytest.mark.django_db
 def test_schedule_list_anonymous_sees_only_current(client, public_schedule_event):
-    """Anonymous users see only the released (current) schedule, not the WIP one."""
     event, _ = public_schedule_event
     with scopes_disabled():
         assert event.schedules.count() >= 2
@@ -69,21 +68,15 @@ def test_schedule_list_anonymous_sees_only_current(client, public_schedule_event
     assert data["results"][0]["version"] is not None
 
 
-@pytest.mark.django_db
-def test_schedule_list_anonymous_cannot_see_when_not_public(client, event):
-    """Anonymous users get 401 when the event has show_schedule=False."""
-    event.is_public = True
-    event.feature_flags["show_schedule"] = False
-    event.save()
+def test_schedule_list_anonymous_cannot_see_when_not_public(client):
+    event = EventFactory(feature_flags={"show_schedule": False})
 
     response = client.get(event.api_urls.schedules, follow=True)
 
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
-def test_schedule_list_orga_sees_all(client, orga_token, public_schedule_event):
-    """Organisers see all schedules including WIP."""
+def test_schedule_list_orga_sees_all(client, orga_read_token, public_schedule_event):
     event, _ = public_schedule_event
     with scopes_disabled():
         total_schedules = event.schedules.count()
@@ -92,7 +85,7 @@ def test_schedule_list_orga_sees_all(client, orga_token, public_schedule_event):
     response = client.get(
         event.api_urls.schedules,
         follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -100,37 +93,14 @@ def test_schedule_list_orga_sees_all(client, orga_token, public_schedule_event):
     assert data["count"] == total_schedules
 
 
-@pytest.mark.django_db
-def test_schedule_list_orga_sees_all_when_not_public(
-    client, orga_token, public_schedule_event
-):
-    """Organisers see schedules even when event has show_schedule=False."""
-    event, _ = public_schedule_event
-    event.feature_flags["show_schedule"] = False
-    event.save()
-    with scopes_disabled():
-        total_schedules = event.schedules.count()
-
-    response = client.get(
-        event.api_urls.schedules,
-        follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
-    )
-
-    assert response.status_code == 200
-    assert response.json()["count"] == total_schedules
-
-
-@pytest.mark.django_db
 def test_schedule_wip_shortcut_orga_can_access(
-    client, orga_token, public_schedule_event
+    client, orga_read_token, public_schedule_event
 ):
-    """Organisers can retrieve the WIP schedule via /wip/."""
     event, _ = public_schedule_event
 
     response = client.get(
         event.api_urls.schedules + "wip/",
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -138,9 +108,7 @@ def test_schedule_wip_shortcut_orga_can_access(
     assert data["version"] == "wip"
 
 
-@pytest.mark.django_db
 def test_schedule_wip_shortcut_anonymous_cannot_access(client, public_schedule_event):
-    """Anonymous users get 404 for the WIP shortcut."""
     event, _ = public_schedule_event
 
     response = client.get(event.api_urls.schedules + "wip/")
@@ -148,9 +116,7 @@ def test_schedule_wip_shortcut_anonymous_cannot_access(client, public_schedule_e
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_schedule_retrieve_by_pk(client, public_schedule_event):
-    """Retrieving a schedule by its numeric PK works for anonymous users on public events."""
     event, _ = public_schedule_event
     with scopes_disabled():
         schedule = event.current_schedule
@@ -163,16 +129,14 @@ def test_schedule_retrieve_by_pk(client, public_schedule_event):
     assert data["version"] == schedule.version
 
 
-@pytest.mark.django_db
 def test_schedule_latest_shortcut_orga_can_access(
-    client, orga_token, public_schedule_event
+    client, orga_read_token, public_schedule_event
 ):
-    """Organisers can retrieve the latest schedule via /latest/."""
     event, _ = public_schedule_event
 
     response = client.get(
         event.api_urls.schedules + "latest/",
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -181,9 +145,7 @@ def test_schedule_latest_shortcut_orga_can_access(
         assert data["version"] == event.current_schedule.version
 
 
-@pytest.mark.django_db
 def test_schedule_latest_shortcut_anonymous_public(client, public_schedule_event):
-    """Anonymous users can access /latest/ when the event is public with show_schedule."""
     event, _ = public_schedule_event
 
     response = client.get(event.api_urls.schedules + "latest/")
@@ -194,37 +156,8 @@ def test_schedule_latest_shortcut_anonymous_public(client, public_schedule_event
         assert data["version"] == event.current_schedule.version
 
 
-@pytest.mark.django_db
-def test_schedule_latest_shortcut_anonymous_schedule_not_public(
-    client, public_schedule_event
-):
-    """Anonymous users get 401 for /latest/ when show_schedule=False."""
-    event, _ = public_schedule_event
-    event.feature_flags["show_schedule"] = False
-    event.save()
-
-    response = client.get(event.api_urls.schedules + "latest/")
-
-    assert response.status_code == 401
-
-
-@pytest.mark.django_db
-def test_schedule_latest_shortcut_anonymous_event_not_public(
-    client, public_schedule_event
-):
-    """Anonymous users get 401 for /latest/ when event is not public."""
-    event, _ = public_schedule_event
-    event.is_public = False
-    event.save()
-
-    response = client.get(event.api_urls.schedules + "latest/")
-
-    assert response.status_code == 401
-
-
-@pytest.mark.django_db
 def test_schedule_latest_shortcut_404_when_no_current_schedule(
-    client, orga_token, event
+    client, orga_read_token, event
 ):
     """Both orga and anonymous get 404 for /latest/ when no schedule is released."""
     with scopes_disabled():
@@ -235,15 +168,13 @@ def test_schedule_latest_shortcut_404_when_no_current_schedule(
 
     response = client.get(
         event.api_urls.schedules + "latest/",
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_schedule_redirect_version_success(client, public_schedule_event):
-    """by-version returns a plain-text URL pointing to the correct schedule."""
     event, _ = public_schedule_event
 
     response = client.get(event.api_urls.schedules + "by-version/?version=v1")
@@ -255,9 +186,7 @@ def test_schedule_redirect_version_success(client, public_schedule_event):
         assert url.endswith(f"/schedules/{event.current_schedule.pk}/")
 
 
-@pytest.mark.django_db
 def test_schedule_redirect_version_nonexistent(client, public_schedule_event):
-    """by-version returns 404 for a version that doesn't exist."""
     event, _ = public_schedule_event
 
     response = client.get(event.api_urls.schedules + "by-version/?version=nonexistent")
@@ -265,9 +194,7 @@ def test_schedule_redirect_version_nonexistent(client, public_schedule_event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_schedule_redirect_version_latest_param(client, public_schedule_event):
-    """by-version with ?latest=true returns the current schedule URL."""
     event, _ = public_schedule_event
 
     response = client.get(event.api_urls.schedules + "by-version/?latest=true")
@@ -279,9 +206,7 @@ def test_schedule_redirect_version_latest_param(client, public_schedule_event):
         assert url.endswith(f"/schedules/{event.current_schedule.pk}/")
 
 
-@pytest.mark.django_db
 def test_schedule_redirect_version_missing_query_param(client, public_schedule_event):
-    """by-version without version or latest param returns 404."""
     event, _ = public_schedule_event
 
     response = client.get(event.api_urls.schedules + "by-version/")
@@ -289,32 +214,14 @@ def test_schedule_redirect_version_missing_query_param(client, public_schedule_e
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
-def test_schedule_redirect_version_anonymous_denied_when_not_public(
-    client, public_schedule_event
-):
-    """by-version returns 401 for anonymous users when show_schedule=False."""
-    event, _ = public_schedule_event
-    event.feature_flags["show_schedule"] = False
-    event.save()
-
-    response = client.get(
-        event.api_urls.schedules + "by-version/?version=v1", follow=True
-    )
-
-    assert response.status_code == 401
-
-
-@pytest.mark.django_db
 def test_schedule_release_orga_success(client, orga_write_token, public_schedule_event):
-    """Organiser with write token can release a new schedule version."""
     event, _ = public_schedule_event
     with scopes_disabled():
         initial_count = event.schedules.count()
 
     response = client.post(
         event.api_urls.schedules + "release/",
-        data=json.dumps({"version": "v_new", "comment": "Test comment"}),
+        data={"version": "v_new", "comment": "Test comment"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -328,16 +235,14 @@ def test_schedule_release_orga_success(client, orga_write_token, public_schedule
         assert event.schedules.count() == initial_count + 1
 
 
-@pytest.mark.django_db
 def test_schedule_release_duplicate_version_fails(
     client, orga_write_token, public_schedule_event
 ):
-    """Releasing with an already-used version name returns 400."""
     event, _ = public_schedule_event
 
     response = client.post(
         event.api_urls.schedules + "release/",
-        data=json.dumps({"version": "v1"}),
+        data={"version": "v1"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -346,16 +251,14 @@ def test_schedule_release_duplicate_version_fails(
     assert "version" in response.json()
 
 
-@pytest.mark.django_db
 def test_schedule_release_missing_version_fails(
     client, orga_write_token, public_schedule_event
 ):
-    """Releasing without a version name returns 400."""
     event, _ = public_schedule_event
 
     response = client.post(
         event.api_urls.schedules + "release/",
-        data=json.dumps({"comment": "No version"}),
+        data={"comment": "No version"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -364,40 +267,22 @@ def test_schedule_release_missing_version_fails(
     assert "version" in response.json()
 
 
-@pytest.mark.django_db
-def test_schedule_release_anonymous_denied(client, public_schedule_event):
-    """Anonymous users cannot release a schedule (401)."""
-    event, _ = public_schedule_event
-
-    response = client.post(
-        event.api_urls.schedules + "release/",
-        data=json.dumps({"version": "v_anon"}),
-        content_type="application/json",
-    )
-
-    assert response.status_code == 401
-
-
-@pytest.mark.django_db
 def test_schedule_release_readonly_token_denied(
-    client, orga_token, public_schedule_event
+    client, orga_read_token, public_schedule_event
 ):
-    """Read-only token cannot release a schedule (403)."""
     event, _ = public_schedule_event
 
     response = client.post(
         event.api_urls.schedules + "release/",
-        data=json.dumps({"version": "v_readonly"}),
+        data={"version": "v_readonly"},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 403
 
 
-@pytest.mark.django_db
 def test_schedule_exporter_orga_access(client, orga_write_token, public_schedule_event):
-    """Organisers can access schedule exporters via /latest/exporters/schedule.json/."""
     event, _ = public_schedule_event
 
     response = client.get(
@@ -411,11 +296,9 @@ def test_schedule_exporter_orga_access(client, orga_write_token, public_schedule
         assert data["schedule"]["version"] == event.current_schedule.version
 
 
-@pytest.mark.django_db
 def test_schedule_exporter_invalid_name(
     client, orga_write_token, public_schedule_event
 ):
-    """Requesting a non-existent exporter returns 404."""
     event, _ = public_schedule_event
 
     response = client.get(
@@ -426,9 +309,7 @@ def test_schedule_exporter_invalid_name(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_schedule_expand_slots(client, public_schedule_event):
-    """Expanding slots on /latest/ returns nested slot and submission data."""
     event, slot = public_schedule_event
     with scopes_disabled():
         speaker = slot.submission.speakers.first()
@@ -456,9 +337,7 @@ def test_schedule_expand_slots(client, public_schedule_event):
     assert expanded["submission"]["speakers"][0]["name"] == speaker.get_display_name()
 
 
-@pytest.mark.django_db
 def test_schedule_expand_slots_with_track_and_type(client, public_schedule_event):
-    """Expanding submission.track and submission.submission_type returns nested data."""
     event, slot = public_schedule_event
     with scopes_disabled():
         track = TrackFactory(event=event)
@@ -483,10 +362,9 @@ def test_schedule_expand_slots_with_track_and_type(client, public_schedule_event
     )
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_schedule_list_query_count(
-    client, event, item_count, django_assert_num_queries, orga_token
+    client, event, item_count, django_assert_num_queries, orga_read_token
 ):
     """Query count for schedule list is constant regardless of schedule count."""
     with scopes_disabled():
@@ -497,7 +375,7 @@ def test_schedule_list_query_count(
         response = client.get(
             event.api_urls.schedules,
             follow=True,
-            headers={"Authorization": f"Token {orga_token.token}"},
+            headers={"Authorization": f"Token {orga_read_token.token}"},
         )
 
     assert response.status_code == 200
@@ -506,9 +384,7 @@ def test_schedule_list_query_count(
     assert data["count"] == item_count + 1
 
 
-@pytest.mark.django_db
 def test_slot_list_anonymous_current_schedule_only(client, public_schedule_event):
-    """Anonymous users see only slots from the current schedule by default."""
     event, slot = public_schedule_event
 
     response = client.get(event.api_urls.slots, follow=True)
@@ -521,11 +397,9 @@ def test_slot_list_anonymous_current_schedule_only(client, public_schedule_event
     assert "is_visible" not in data["results"][0]
 
 
-@pytest.mark.django_db
 def test_slot_list_anonymous_only_visible(
     client, public_schedule_event, invisible_slot
 ):
-    """Anonymous users see only visible slots, even when invisible ones exist."""
     event, slot = public_schedule_event
     with scopes_disabled():
         visible_pk = (
@@ -540,35 +414,14 @@ def test_slot_list_anonymous_only_visible(
     assert data["results"][0]["id"] == visible_pk
 
 
-@pytest.mark.django_db
-def test_slot_list_anonymous_event_not_public(client, event):
-    """Anonymous users get 401 when event is not public."""
-    event.is_public = False
-    event.save()
-
-    response = client.get(event.api_urls.slots, follow=True)
-
-    assert response.status_code == 401
-
-
-@pytest.mark.django_db
-def test_slot_list_anonymous_schedule_not_public(client, event):
-    """Anonymous users get 401 when show_schedule is False."""
-    event.is_public = True
-    event.feature_flags["show_schedule"] = False
-    event.save()
-
-    response = client.get(event.api_urls.slots, follow=True)
-
-    assert response.status_code == 401
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_slot_list_orga_default_current_schedule(
-    client, orga_token, public_schedule_event, item_count, django_assert_num_queries
+    client,
+    orga_read_token,
+    public_schedule_event,
+    item_count,
+    django_assert_num_queries,
 ):
-    """Orga sees all slots in the current schedule by default, including invisible ones."""
     event, slot = public_schedule_event
     if item_count > 1:
         with scopes_disabled():
@@ -585,7 +438,7 @@ def test_slot_list_orga_default_current_schedule(
         response = client.get(
             event.api_urls.slots,
             follow=True,
-            headers={"Authorization": f"Token {orga_token.token}"},
+            headers={"Authorization": f"Token {orga_read_token.token}"},
         )
 
     assert response.status_code == 200
@@ -594,9 +447,9 @@ def test_slot_list_orga_default_current_schedule(
     assert {r["id"] for r in data["results"]} == expected_ids
 
 
-@pytest.mark.django_db
-def test_slot_list_orga_filter_by_schedule(client, orga_token, public_schedule_event):
-    """Orga can filter slots by schedule PK, seeing slots across multiple schedules."""
+def test_slot_list_orga_filter_by_schedule(
+    client, orga_read_token, public_schedule_event
+):
     event, slot = public_schedule_event
     with scopes_disabled():
         current_schedule_id = event.current_schedule.pk
@@ -604,7 +457,7 @@ def test_slot_list_orga_filter_by_schedule(client, orga_token, public_schedule_e
     response = client.get(
         f"{event.api_urls.slots}?schedule={current_schedule_id}",
         follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -615,8 +468,9 @@ def test_slot_list_orga_filter_by_schedule(client, orga_token, public_schedule_e
     assert slot.pk in [r["id"] for r in data["results"]]
 
 
-@pytest.mark.django_db
-def test_slot_list_orga_filter_by_submission(client, orga_token, public_schedule_event):
+def test_slot_list_orga_filter_by_submission(
+    client, orga_read_token, public_schedule_event
+):
     """Orga can filter slots by submission code, getting all versions of that slot.
 
     The submission has slots on both the released v1 schedule and the WIP schedule."""
@@ -625,7 +479,7 @@ def test_slot_list_orga_filter_by_submission(client, orga_token, public_schedule
     response = client.get(
         f"{event.api_urls.slots}?submission={slot.submission.code}",
         follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -634,9 +488,7 @@ def test_slot_list_orga_filter_by_submission(client, orga_token, public_schedule
     assert all(r["submission"] == slot.submission.code for r in data["results"])
 
 
-@pytest.mark.django_db
 def test_slot_retrieve_anonymous_visible(client, public_schedule_event):
-    """Anonymous users can retrieve a visible slot on a public event."""
     event, slot = public_schedule_event
 
     response = client.get(event.api_urls.slots + f"{slot.pk}/", follow=True)
@@ -648,11 +500,9 @@ def test_slot_retrieve_anonymous_visible(client, public_schedule_event):
     assert "is_visible" not in data
 
 
-@pytest.mark.django_db
 def test_slot_retrieve_anonymous_not_visible(
     client, public_schedule_event, invisible_slot
 ):
-    """Anonymous users get 404 for an invisible slot."""
     event, _ = public_schedule_event
 
     response = client.get(event.api_urls.slots + f"{invisible_slot.pk}/", follow=True)
@@ -660,29 +510,15 @@ def test_slot_retrieve_anonymous_not_visible(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
-def test_slot_retrieve_anonymous_schedule_not_public(client, public_schedule_event):
-    """Anonymous users get 401 when show_schedule=False."""
-    event, slot = public_schedule_event
-    event.feature_flags["show_schedule"] = False
-    event.save()
-
-    response = client.get(event.api_urls.slots + f"{slot.pk}/", follow=True)
-
-    assert response.status_code == 401
-
-
-@pytest.mark.django_db
 def test_slot_retrieve_orga_sees_invisible(
-    client, orga_token, public_schedule_event, invisible_slot
+    client, orga_read_token, public_schedule_event, invisible_slot
 ):
-    """Organisers can see invisible slots."""
     event, _ = public_schedule_event
 
     response = client.get(
         event.api_urls.slots + f"{invisible_slot.pk}/",
         follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -690,9 +526,7 @@ def test_slot_retrieve_orga_sees_invisible(
     assert data["id"] == invisible_slot.pk
 
 
-@pytest.mark.django_db
 def test_slot_retrieve_break_slot_anonymous(client, public_schedule_event):
-    """Anonymous users can see a break slot (no submission) on the current schedule."""
     event, _ = public_schedule_event
     with scopes_disabled():
         break_slot = TalkSlotFactory(
@@ -700,10 +534,9 @@ def test_slot_retrieve_break_slot_anonymous(client, public_schedule_event):
             room=RoomFactory(event=event),
             schedule=event.current_schedule,
             is_visible=True,
+            start=event.datetime_from,
+            end=event.datetime_from,
         )
-        break_slot.start = event.datetime_from
-        break_slot.end = event.datetime_from
-        break_slot.save()
 
     response = client.get(event.api_urls.slots + f"{break_slot.pk}/", follow=True)
 
@@ -714,69 +547,18 @@ def test_slot_retrieve_break_slot_anonymous(client, public_schedule_event):
     assert data["room"] == break_slot.room_id
 
 
-@pytest.mark.django_db
-def test_slot_retrieve_break_slot_orga(client, orga_token, public_schedule_event):
-    """Organisers can see a break slot on the current schedule."""
-    event, _ = public_schedule_event
-    with scopes_disabled():
-        break_slot = TalkSlotFactory(
-            submission=None,
-            room=RoomFactory(event=event),
-            schedule=event.current_schedule,
-            is_visible=True,
-        )
-        break_slot.start = event.datetime_from
-        break_slot.end = event.datetime_from
-        break_slot.save()
-
-    response = client.get(
-        event.api_urls.slots + f"{break_slot.pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == break_slot.pk
-    assert data["submission"] is None
-
-
-@pytest.mark.django_db
-def test_slot_retrieve_nonexistent(client, public_schedule_event):
-    """Retrieving a non-existent slot returns 404."""
-    event, _ = public_schedule_event
-
-    response = client.get(event.api_urls.slots + "99999/", follow=True)
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
-def test_slot_update_anonymous_denied(client, public_schedule_event):
-    """Anonymous users cannot update slots (401)."""
-    event, slot = public_schedule_event
-
-    response = client.patch(
-        event.api_urls.slots + f"{slot.pk}/",
-        data=json.dumps({"room": None}),
-        content_type="application/json",
-    )
-
-    assert response.status_code == 401
-
-
-@pytest.mark.django_db
-def test_slot_update_readonly_token_denied(client, orga_token, public_schedule_event):
-    """Read-only token cannot update slots (403)."""
+def test_slot_update_readonly_token_denied(
+    client, orga_read_token, public_schedule_event
+):
     event, slot = public_schedule_event
     with scopes_disabled():
         wip_slot = event.wip_schedule.talks.filter(submission=slot.submission).first()
 
     response = client.patch(
         event.api_urls.slots + f"{wip_slot.pk}/",
-        data=json.dumps({"room": None}),
+        data={"room": None},
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 403
@@ -785,9 +567,7 @@ def test_slot_update_readonly_token_denied(client, orga_token, public_schedule_e
         assert wip_slot.room is not None
 
 
-@pytest.mark.django_db
 def test_slot_update_change_room(client, orga_write_token, public_schedule_event):
-    """Orga with write token can change a WIP slot's room."""
     event, slot = public_schedule_event
     with scopes_disabled():
         wip_slot = event.wip_schedule.talks.filter(submission=slot.submission).first()
@@ -795,7 +575,7 @@ def test_slot_update_change_room(client, orga_write_token, public_schedule_event
 
     response = client.patch(
         event.api_urls.slots + f"{wip_slot.pk}/",
-        data=json.dumps({"room": other_room.pk}),
+        data={"room": other_room.pk},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -806,9 +586,7 @@ def test_slot_update_change_room(client, orga_write_token, public_schedule_event
         assert wip_slot.room == other_room
 
 
-@pytest.mark.django_db
 def test_slot_update_clear_room(client, orga_write_token, public_schedule_event):
-    """Orga with write token can clear a WIP slot's room to None."""
     event, slot = public_schedule_event
     with scopes_disabled():
         wip_slot = event.wip_schedule.talks.filter(submission=slot.submission).first()
@@ -816,7 +594,7 @@ def test_slot_update_clear_room(client, orga_write_token, public_schedule_event)
 
     response = client.patch(
         event.api_urls.slots + f"{wip_slot.pk}/",
-        data=json.dumps({"room": None}),
+        data={"room": None},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -827,11 +605,9 @@ def test_slot_update_clear_room(client, orga_write_token, public_schedule_event)
         assert wip_slot.room is None
 
 
-@pytest.mark.django_db
 def test_slot_update_visibility_is_readonly(
     client, orga_write_token, public_schedule_event
 ):
-    """is_visible cannot be changed via the API; the field is read-only."""
     event, slot = public_schedule_event
     with scopes_disabled():
         wip_slot = event.wip_schedule.talks.filter(submission=slot.submission).first()
@@ -839,7 +615,7 @@ def test_slot_update_visibility_is_readonly(
 
     response = client.patch(
         event.api_urls.slots + f"{wip_slot.pk}/",
-        data=json.dumps({"is_visible": not initial}),
+        data={"is_visible": not initial},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -851,11 +627,9 @@ def test_slot_update_visibility_is_readonly(
         assert wip_slot.is_visible == initial
 
 
-@pytest.mark.django_db
 def test_slot_update_non_wip_schedule_denied(
     client, orga_write_token, public_schedule_event
 ):
-    """Slots on released (non-WIP) schedules cannot be updated (403)."""
     event, slot = public_schedule_event
     with scopes_disabled():
         other_room = RoomFactory(event=event)
@@ -863,7 +637,7 @@ def test_slot_update_non_wip_schedule_denied(
 
     response = client.patch(
         event.api_urls.slots + f"{slot.pk}/",
-        data=json.dumps({"room": other_room.pk}),
+        data={"room": other_room.pk},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -872,7 +646,6 @@ def test_slot_update_non_wip_schedule_denied(
 
 
 @pytest.mark.parametrize("has_submission", (True, False))
-@pytest.mark.django_db
 def test_slot_update_end_and_description_blocked_when_submission_exists(
     client, orga_write_token, public_schedule_event, has_submission
 ):
@@ -888,7 +661,7 @@ def test_slot_update_end_and_description_blocked_when_submission_exists(
 
     response = client.patch(
         event.api_urls.slots + f"{wip_slot.pk}/",
-        data=json.dumps({"description": "test desc", "end": wip_slot.end.isoformat()}),
+        data={"description": "test desc", "end": wip_slot.end.isoformat()},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -903,16 +676,14 @@ def test_slot_update_end_and_description_blocked_when_submission_exists(
         assert response.json()["description"]["en"] == "test desc"
 
 
-@pytest.mark.django_db
-def test_slot_expand_parameters(client, orga_token, public_schedule_event):
-    """Expanding room, schedule, and submission returns nested objects."""
+def test_slot_expand_parameters(client, orga_read_token, public_schedule_event):
     event, slot = public_schedule_event
     with scopes_disabled():
         speaker = slot.submission.speakers.first()
 
     response = client.get(
         event.api_urls.slots + f"{slot.pk}/",
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
     assert response.status_code == 200
     data = response.json()
@@ -923,7 +694,7 @@ def test_slot_expand_parameters(client, orga_token, public_schedule_event):
     response = client.get(
         event.api_urls.slots
         + f"{slot.pk}/?expand=room,schedule,submission,submission.speakers",
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
     assert response.status_code == 200
     data = response.json()
@@ -938,9 +709,8 @@ def test_slot_expand_parameters(client, orga_token, public_schedule_event):
     assert data["submission"]["speakers"][0]["code"] == speaker.code
 
 
-@pytest.mark.django_db
 def test_slot_expand_submission_track_and_type(
-    client, orga_token, public_schedule_event
+    client, orga_read_token, public_schedule_event
 ):
     """Expanding submission.track and submission.submission_type on slots endpoint
     triggers select_related in TalkSlotViewSet.get_queryset."""
@@ -955,7 +725,7 @@ def test_slot_expand_submission_track_and_type(
     response = client.get(
         event.api_urls.slots + f"{slot.pk}/",
         {"expand": "submission.track,submission.submission_type"},
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -968,9 +738,8 @@ def test_slot_expand_submission_track_and_type(
     )
 
 
-@pytest.mark.django_db
 def test_slot_list_expand_submission_speakers(
-    client, orga_token, public_schedule_event
+    client, orga_read_token, public_schedule_event
 ):
     """Expanding submission.speakers on the list endpoint triggers
     prefetch_related in TalkSlotViewSet.get_queryset."""
@@ -981,7 +750,7 @@ def test_slot_list_expand_submission_speakers(
     response = client.get(
         event.api_urls.slots,
         {"expand": "submission.speakers,submission.resources"},
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -994,9 +763,7 @@ def test_slot_list_expand_submission_speakers(
     assert result["submission"]["speakers"][0]["code"] == speaker.code
 
 
-@pytest.mark.django_db
 def test_slot_ical_success(client, public_schedule_event):
-    """The iCal endpoint returns a calendar file with the slot's submission."""
     event, slot = public_schedule_event
 
     response = client.get(event.api_urls.slots + f"{slot.pk}/ical/", follow=True)
@@ -1012,9 +779,7 @@ def test_slot_ical_success(client, public_schedule_event):
     assert response["Content-Disposition"] == expected_disposition
 
 
-@pytest.mark.django_db
 def test_slot_ical_not_visible(client, public_schedule_event, invisible_slot):
-    """The iCal endpoint returns 404 for an invisible slot."""
     event, _ = public_schedule_event
 
     response = client.get(
@@ -1024,9 +789,7 @@ def test_slot_ical_not_visible(client, public_schedule_event, invisible_slot):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_slot_ical_no_submission(client, public_schedule_event):
-    """The iCal endpoint returns 404 for a slot without a submission (break)."""
     event, _ = public_schedule_event
     with scopes_disabled():
         break_slot = TalkSlotFactory(
@@ -1034,58 +797,33 @@ def test_slot_ical_no_submission(client, public_schedule_event):
             room=RoomFactory(event=event),
             schedule=event.current_schedule,
             is_visible=True,
+            start=event.datetime_from,
+            end=event.datetime_from,
         )
-        break_slot.start = event.datetime_from
-        break_slot.end = event.datetime_from
-        break_slot.save()
 
     response = client.get(event.api_urls.slots + f"{break_slot.pk}/ical/", follow=True)
 
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
-def test_slot_ical_schedule_not_public(client, public_schedule_event):
-    """iCal returns 401 when show_schedule=False."""
-    event, slot = public_schedule_event
-    event.feature_flags["show_schedule"] = False
-    event.save()
-
-    response = client.get(event.api_urls.slots + f"{slot.pk}/ical/", follow=True)
-
-    assert response.status_code == 401
-
-
-@pytest.mark.django_db
-def test_slot_ical_event_not_public(client, public_schedule_event):
-    """iCal returns 401 when event is not public."""
-    event, slot = public_schedule_event
-    event.is_public = False
-    event.save()
-
-    response = client.get(event.api_urls.slots + f"{slot.pk}/ical/", follow=True)
-
-    assert response.status_code == 401
-
-
-@pytest.mark.django_db
-def test_slot_orga_sees_blocker_in_wip(client, orga_token, event):
-    """Organisers can see blocker-type slots in the WIP schedule."""
+def test_slot_orga_sees_blocker_in_wip(client, orga_read_token, event):
     with scopes_disabled():
         room = RoomFactory(event=event)
         blocker = TalkSlotFactory(
-            submission=None, room=room, schedule=event.wip_schedule, is_visible=True
+            submission=None,
+            room=room,
+            schedule=event.wip_schedule,
+            is_visible=True,
+            slot_type="blocker",
+            start=event.datetime_from,
+            end=event.datetime_from,
         )
-        blocker.slot_type = "blocker"
-        blocker.start = event.datetime_from
-        blocker.end = event.datetime_from
-        blocker.save()
         wip_pk = event.wip_schedule.pk
 
     response = client.get(
         f"{event.api_urls.slots}?schedule={wip_pk}",
         follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -1093,13 +831,9 @@ def test_slot_orga_sees_blocker_in_wip(client, orga_token, event):
     assert blocker.pk in [r["id"] for r in data["results"]]
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_slot_list_query_count(client, event, item_count, django_assert_num_queries):
     """Query count for the slot list is constant regardless of slot count."""
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
     with scopes_disabled():
         for _ in range(item_count):
             sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)

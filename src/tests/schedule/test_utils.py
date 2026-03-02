@@ -1,11 +1,11 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from django.utils.timezone import now
-from django_scopes import scopes_disabled
 
 from pretalx.schedule.utils import guess_schedule_version
 from tests.factories import EventFactory, ScheduleFactory
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 @pytest.mark.parametrize(
@@ -22,10 +22,8 @@ pytestmark = pytest.mark.unit
         ("1.something", ""),
     ),
 )
-@pytest.mark.django_db
 def test_guess_schedule_version(previous_version, expected):
-    with scopes_disabled():
-        event = EventFactory()
-        if previous_version:
-            ScheduleFactory(event=event, version=previous_version, published=now())
-        assert guess_schedule_version(event) == expected
+    event = EventFactory()
+    if previous_version:
+        ScheduleFactory(event=event, version=previous_version)
+    assert guess_schedule_version(event) == expected

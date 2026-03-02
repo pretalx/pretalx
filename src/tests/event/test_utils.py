@@ -1,13 +1,14 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
 from pretalx.event.models import Organiser, Team
 from pretalx.event.utils import create_organiser_with_team
 from tests.factories import UserFactory
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_create_organiser_with_team_creates_organiser_and_team():
     user = UserFactory()
 
@@ -21,7 +22,6 @@ def test_create_organiser_with_team_creates_organiser_and_team():
     assert Team.objects.filter(pk=team.pk).exists()
 
 
-@pytest.mark.django_db
 def test_create_organiser_with_team_sets_team_permissions():
     user = UserFactory()
 
@@ -32,7 +32,6 @@ def test_create_organiser_with_team_sets_team_permissions():
     assert team.can_change_organiser_settings is True
 
 
-@pytest.mark.django_db
 def test_create_organiser_with_team_links_team_to_organiser():
     user = UserFactory()
 
@@ -41,7 +40,6 @@ def test_create_organiser_with_team_links_team_to_organiser():
     assert team.organiser == organiser
 
 
-@pytest.mark.django_db
 def test_create_organiser_with_team_names_team_after_organiser():
     user = UserFactory()
 
@@ -50,7 +48,6 @@ def test_create_organiser_with_team_names_team_after_organiser():
     assert team.name == "Team MyOrg"
 
 
-@pytest.mark.django_db
 def test_create_organiser_with_team_adds_members():
     user1 = UserFactory()
     user2 = UserFactory()
@@ -60,9 +57,7 @@ def test_create_organiser_with_team_adds_members():
     assert set(team.members.all()) == {user1, user2}
 
 
-@pytest.mark.django_db
 def test_create_organiser_with_team_user_can_access_team():
-    """The created team appears in the user's teams relation."""
     user = UserFactory()
 
     organiser, _ = create_organiser_with_team(name="Org", slug="org", users=[user])

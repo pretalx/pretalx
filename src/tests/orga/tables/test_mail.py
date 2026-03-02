@@ -1,8 +1,7 @@
-# SPDX-FileCopyrightText: 2025-present Tobias Kunze
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.orga.tables.mail import MailTemplateTable, OutboxMailTable, SentMailTable
 from tests.factories import EventFactory, QueuedMailFactory, UserFactory
@@ -12,8 +11,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture
 def event():
-    with scopes_disabled():
-        return EventFactory()
+    return EventFactory()
 
 
 def test_mail_template_table_default_columns():
@@ -31,8 +29,7 @@ def test_outbox_mail_table_default_columns():
 
 @pytest.mark.django_db
 def test_outbox_mail_table_set_columns_moves_status_display_first(event):
-    with scopes_disabled():
-        mail = QueuedMailFactory(event=event)
+    mail = QueuedMailFactory(event=event)
     table = OutboxMailTable([mail], event=event, user=UserFactory.build())
 
     table._set_columns(["subject", "to_recipients", "status_display"])
@@ -46,8 +43,7 @@ def test_outbox_mail_table_set_columns_moves_status_display_first(event):
     (("en", "English"), ("xx-unknown", "xx-unknown"), ("", ""), (None, "")),
 )
 def test_outbox_mail_table_render_locale(event, locale_value, expected):
-    with scopes_disabled():
-        mail = QueuedMailFactory(event=event)
+    mail = QueuedMailFactory(event=event)
     table = OutboxMailTable([mail], event=event, user=UserFactory.build())
 
     assert table.render_locale(locale_value) == expected

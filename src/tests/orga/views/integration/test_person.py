@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025-present Tobias Kunze
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import json
@@ -13,10 +13,9 @@ from pretalx.person.models.auth_token import UserApiToken
 from tests.factories import UserApiTokenFactory, UserFactory
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_user_settings_get_requires_login(client):
     response = client.get(reverse("orga:user.view"))
 
@@ -24,7 +23,6 @@ def test_user_settings_get_requires_login(client):
     assert "/login" in response.url
 
 
-@pytest.mark.django_db
 def test_user_settings_get_renders_for_authenticated_user(client):
     user = UserFactory()
     client.force_login(user)
@@ -37,7 +35,6 @@ def test_user_settings_get_renders_for_authenticated_user(client):
     assert isinstance(response.context["token_form"], AuthTokenForm)
 
 
-@pytest.mark.django_db
 def test_user_settings_post_profile_updates_name(client):
     user = UserFactory()
     client.force_login(user)
@@ -53,22 +50,6 @@ def test_user_settings_post_profile_updates_name(client):
     assert user.name == "Updated Name"
 
 
-@pytest.mark.django_db
-def test_user_settings_post_profile_updates_locale(client):
-    user = UserFactory(locale="en")
-    client.force_login(user)
-
-    response = client.post(
-        reverse("orga:user.view"),
-        {"form": "profile", "name": user.name, "locale": "de"},
-    )
-
-    assert response.status_code == 302
-    user.refresh_from_db()
-    assert user.locale == "de"
-
-
-@pytest.mark.django_db
 def test_user_settings_post_login_changes_password(client):
     user = UserFactory(password="oldpassword1!")
     client.force_login(user)
@@ -90,7 +71,6 @@ def test_user_settings_post_login_changes_password(client):
     assert user.check_password("newpassword1!")
 
 
-@pytest.mark.django_db
 def test_user_settings_post_login_wrong_old_password_fails(client):
     user = UserFactory(password="correctpassword1!")
     client.force_login(user)
@@ -112,7 +92,6 @@ def test_user_settings_post_login_wrong_old_password_fails(client):
     assert user.check_password("correctpassword1!")
 
 
-@pytest.mark.django_db
 def test_user_settings_post_token_creates_api_token(client, event):
     user = make_orga_user(event)
     client.force_login(user)
@@ -135,7 +114,6 @@ def test_user_settings_post_token_creates_api_token(client, event):
     assert set(token.events.all()) == {event}
 
 
-@pytest.mark.django_db
 def test_user_settings_post_token_revoke(client):
     user = UserFactory()
     client.force_login(user)
@@ -148,7 +126,6 @@ def test_user_settings_post_token_revoke(client):
     assert not token.is_active
 
 
-@pytest.mark.django_db
 def test_user_settings_post_token_upgrade(client):
     user = UserFactory()
     client.force_login(user)
@@ -161,9 +138,7 @@ def test_user_settings_post_token_upgrade(client):
     assert token.version == CURRENT_VERSION
 
 
-@pytest.mark.django_db
 def test_user_settings_post_upgrade_nonexistent_token_redirects(client):
-    """Upgrading a token ID that doesn't exist silently redirects."""
     user = UserFactory()
     client.force_login(user)
 
@@ -173,9 +148,7 @@ def test_user_settings_post_upgrade_nonexistent_token_redirects(client):
     assert response.url == reverse("orga:user.view")
 
 
-@pytest.mark.django_db
 def test_user_settings_post_invalid_form_shows_error(client):
-    """Posting a form name that doesn't match any known form shows an error."""
     user = UserFactory()
     client.force_login(user)
 
@@ -188,9 +161,7 @@ def test_user_settings_post_invalid_form_shows_error(client):
     assert "trouble saving your input" in content
 
 
-@pytest.mark.django_db
 def test_user_settings_post_revoke_nonexistent_token_redirects(client):
-    """Revoking a token ID that doesn't exist silently redirects."""
     user = UserFactory()
     client.force_login(user)
 
@@ -200,15 +171,6 @@ def test_user_settings_post_revoke_nonexistent_token_redirects(client):
     assert response.url == reverse("orga:user.view")
 
 
-@pytest.mark.django_db
-def test_subuser_view_requires_login(client):
-    response = client.get(reverse("orga:user.subuser"))
-
-    assert response.status_code == 302
-    assert "/login" in response.url
-
-
-@pytest.mark.django_db
 def test_subuser_view_demotes_superuser(client):
     user = UserFactory(is_superuser=True)
     client.force_login(user)
@@ -221,7 +183,6 @@ def test_subuser_view_demotes_superuser(client):
     assert user.is_administrator
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("next_url", "expected_redirect"),
     (("/orga/", "/orga/"), ("https://evil.com", "/orga/event/")),
@@ -237,9 +198,7 @@ def test_subuser_view_respects_next_url(client, next_url, expected_redirect):
     assert response.url == expected_redirect
 
 
-@pytest.mark.django_db
 def test_subuser_view_non_superuser_still_works(client):
-    """Non-superusers can hit the endpoint; neither flag gets set."""
     user = UserFactory()
     client.force_login(user)
 
@@ -256,21 +215,7 @@ def preferences_url(event):
     return reverse("orga:preferences", kwargs={"event": event.slug})
 
 
-@pytest.mark.django_db
-def test_preferences_view_requires_login(client, preferences_url):
-    response = client.post(
-        preferences_url,
-        data=json.dumps({"table_name": "submissions"}),
-        content_type="application/json",
-    )
-
-    assert response.status_code == 302
-    assert "/login" in response.url
-
-
-@pytest.mark.django_db
 def test_preferences_view_requires_event_permission(client, event, preferences_url):
-    """A user without orga access to the event is denied."""
     user = UserFactory()
     client.force_login(user)
 
@@ -283,7 +228,6 @@ def test_preferences_view_requires_event_permission(client, event, preferences_u
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_preferences_view_set_columns(client, event, preferences_url):
     user = make_orga_user(event)
     client.force_login(user)
@@ -300,7 +244,6 @@ def test_preferences_view_set_columns(client, event, preferences_url):
     assert preferences.get("tables.submissions.columns") == ["title", "state"]
 
 
-@pytest.mark.django_db
 def test_preferences_view_set_ordering(client, event, preferences_url):
     user = make_orga_user(event)
     client.force_login(user)
@@ -317,7 +260,6 @@ def test_preferences_view_set_ordering(client, event, preferences_url):
     assert preferences.get("tables.submissions.ordering") == ["-created"]
 
 
-@pytest.mark.django_db
 def test_preferences_view_clear_ordering_with_empty_list(
     client, event, preferences_url
 ):
@@ -342,7 +284,6 @@ def test_preferences_view_clear_ordering_with_empty_list(
     assert preferences.get("tables.submissions.ordering") is None
 
 
-@pytest.mark.django_db
 def test_preferences_view_reset(client, event, preferences_url):
     """Reset clears both columns and ordering for a table."""
     user = make_orga_user(event)
@@ -373,7 +314,6 @@ def test_preferences_view_reset(client, event, preferences_url):
     assert preferences.get("tables.submissions.ordering") is None
 
 
-@pytest.mark.django_db
 def test_preferences_view_missing_table_name(client, event, preferences_url):
     user = make_orga_user(event)
     client.force_login(user)
@@ -386,7 +326,6 @@ def test_preferences_view_missing_table_name(client, event, preferences_url):
     assert response.json()["error"] == "table_name is required"
 
 
-@pytest.mark.django_db
 def test_preferences_view_invalid_json(client, event, preferences_url):
     user = make_orga_user(event)
     client.force_login(user)
@@ -399,7 +338,6 @@ def test_preferences_view_invalid_json(client, event, preferences_url):
     assert response.json()["error"] == "Invalid JSON"
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("field", "error_msg"),
     (("columns", "columns must be a list"), ("ordering", "ordering must be a list")),

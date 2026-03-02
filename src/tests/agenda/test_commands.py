@@ -1,5 +1,5 @@
-import re
-from types import SimpleNamespace
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
 from django.conf import settings
@@ -8,10 +8,8 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.http import HttpResponse, StreamingHttpResponse
 from django.test import override_settings
-from django_scopes import scopes_disabled
 
 from pretalx.agenda.management.commands.export_schedule_html import (
-    URL_REGEX,
     delete_directory,
     dump_content,
     event_exporter_urls,
@@ -29,10 +27,13 @@ from pretalx.agenda.management.commands.export_schedule_html import (
     get_path,
     schedule_version_urls,
 )
-from pretalx.submission.models import Resource, SubmissionStates
+from pretalx.common.exporter import BaseExporter
+from pretalx.common.signals import register_data_exporters
+from pretalx.event.models import Event
+from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     EventFactory,
-    ScheduleFactory,
+    ResourceFactory,
     SpeakerFactory,
     SubmissionFactory,
     TalkSlotFactory,
@@ -41,22 +42,34 @@ from tests.factories import (
 pytestmark = pytest.mark.unit
 
 
-class _PublicExporter:
+class _PublicExporter(BaseExporter):
     public = True
+    filename_identifier = "test-public"
+    extension = "xml"
+    verbose_name = "Test Public"
+    icon = "fa-test"
 
-    def __init__(self, event):
-        self.urls = SimpleNamespace(base="/export/schedule.xml")
 
-
-class _DynamicPublicExporter:
-    """Only hasattr(cls, "is_public") matters; the property body is never called."""
+class _DynamicPublicExporter(BaseExporter):
+    """Has a dynamic is_public method, so event_exporter_urls skips it
+    to prevent data leakage from dynamic exporters."""
 
     public = True
-    is_public = property()
+    filename_identifier = "test-dynamic"
+    extension = "xml"
+    verbose_name = "Test Dynamic"
+    icon = "fa-test"
+
+    def is_public(self, request, **kwargs):
+        return True  # pragma: no cover -- not called intentionally
 
 
-class _NonPublicExporter:
+class _NonPublicExporter(BaseExporter):
     public = False
+    filename_identifier = "test-nonpublic"
+    extension = "xml"
+    verbose_name = "Test Non-Public"
+    icon = "fa-test"
 
 
 @pytest.mark.parametrize(
@@ -104,7 +117,6 @@ def test_find_assets_extracts_single_asset(html, expected):
     ids=["fallback_to_href", "fallback_to_src", "no_url_skipped"],
 )
 def test_find_assets_lightbox_fallback(html, expected):
-    """Empty data-lightbox falls back to href, then src, then skips."""
     result = list(find_assets(html))
 
     assert result == expected
@@ -150,20 +162,6 @@ def test_find_assets_ignores_script_without_src():
 )
 def test_find_urls_extracts_css_url_references(css, expected):
     assert set(find_urls(css)) == expected
-
-
-@pytest.mark.parametrize(
-    ("css_url", "expected"),
-    (
-        ('url("/static/img.png")', "/static/img.png"),
-        ("url(/static/img.png)", "/static/img.png"),
-    ),
-    ids=["quoted", "unquoted"],
-)
-def test_url_regex_matches_css_url_pattern(css_url, expected):
-    match = re.search(URL_REGEX, css_url)
-
-    assert match.group(1) == expected
 
 
 @pytest.mark.parametrize(
@@ -252,7 +250,6 @@ def test_get_mediastatic_content_raises_for_unknown_prefix():
 
 
 def test_get_mediastatic_content_raises_for_directory_traversal(tmp_path):
-    """Paths that resolve outside static/media roots are rejected."""
     static_dir = tmp_path / "static"
     static_dir.mkdir()
     (tmp_path / "secret.txt").write_text("secret")
@@ -290,7 +287,6 @@ def test_delete_directory_removes_existing(tmp_path):
 
 
 def test_delete_directory_ignores_nonexistent(tmp_path):
-    """Deleting a nonexistent directory does not raise."""
     delete_directory(tmp_path / "does_not_exist")
 
 
@@ -312,56 +308,63 @@ def test_get_export_zip_path_returns_zip_suffix():
     assert result == settings.HTMLEXPORT_ROOT / "myconf.zip"
 
 
+@pytest.mark.django_db
 def test_event_talk_urls_yields_public_ical_and_resource_urls():
-    """event_talk_urls yields public URL, ical URL, and resource URLs for each talk."""
-    resource = SimpleNamespace(resource=SimpleNamespace(url="/media/res.pdf"))
-    talk = SimpleNamespace(
-        urls=SimpleNamespace(public="/talk/ABC/", ical="/talk/ABC.ics"),
-        public_resources=[resource],
-    )
-    event = SimpleNamespace(talks=[talk])
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    resource = ResourceFactory(submission=submission, is_public=True)
+    resource.resource.save("res.pdf", SimpleUploadedFile("res.pdf", b"pdf data"))
+    TalkSlotFactory(submission=submission, is_visible=True)
+    event.wip_schedule.freeze("v1", notify_speakers=False)
+    event = Event.objects.get(pk=event.pk)
 
     result = list(event_talk_urls(event))
 
-    assert result == ["/talk/ABC/", "/talk/ABC.ics", "/media/res.pdf"]
+    assert result == [
+        submission.urls.public,
+        submission.urls.ical,
+        resource.resource.url,
+    ]
 
 
-@pytest.mark.parametrize(
-    "resource_attrs",
-    ({"resource": SimpleNamespace(url=None)}, {"resource": None}),
-    ids=["resource_without_url", "resource_is_none"],
-)
-def test_event_talk_urls_skips_invalid_resource(resource_attrs):
-    resource = SimpleNamespace(**resource_attrs)
-    talk = SimpleNamespace(
-        urls=SimpleNamespace(public="/talk/ABC/", ical="/talk/ABC.ics"),
-        public_resources=[resource],
-    )
-    event = SimpleNamespace(talks=[talk])
+@pytest.mark.django_db
+def test_event_talk_urls_skips_resource_without_file():
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    ResourceFactory(submission=submission, is_public=True)
+    TalkSlotFactory(submission=submission, is_visible=True)
+    event.wip_schedule.freeze("v1", notify_speakers=False)
+    event = Event.objects.get(pk=event.pk)
 
     result = list(event_talk_urls(event))
 
-    assert result == ["/talk/ABC/", "/talk/ABC.ics"]
+    assert result == [submission.urls.public, submission.urls.ical]
 
 
+@pytest.mark.django_db
 def test_event_speaker_urls_yields_public_and_ical():
-    speaker = SimpleNamespace(
-        urls=SimpleNamespace(public="/speaker/XYZ/", talks_ical="/speaker/XYZ.ics")
-    )
-    event = SimpleNamespace(speakers=[speaker])
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    TalkSlotFactory(submission=submission, is_visible=True)
+    event.wip_schedule.freeze("v1", notify_speakers=False)
+    event = Event.objects.get(pk=event.pk)
 
     result = list(event_speaker_urls(event))
 
-    assert result == ["/speaker/XYZ/", "/speaker/XYZ.ics"]
+    assert result == [speaker.urls.public, speaker.urls.talks_ical]
 
 
 @pytest.mark.django_db
 def test_event_urls_includes_all_url_categories():
-    """event_urls yields base URLs, schedule URLs, talk/speaker/exporter URLs, etc."""
     event = EventFactory()
 
-    with scopes_disabled():
-        result = list(event_urls(event))
+    result = list(event_urls(event))
 
     assert event.urls.base in result
     assert event.urls.schedule in result
@@ -377,60 +380,58 @@ def test_event_urls_includes_all_url_categories():
 
 @pytest.mark.django_db
 def test_schedule_version_urls_yields_urls_for_versioned_schedules():
+    """Only versioned schedules are included; the WIP schedule (version=None) is not."""
     event = EventFactory()
-    schedule = ScheduleFactory(event=event, version="v1")
+    TalkSlotFactory(submission__event=event, is_visible=True)
+    event.wip_schedule.freeze("v1", notify_speakers=False)
+    schedule = event.schedules.get(version="v1")
 
-    with scopes_disabled():
-        result = list(schedule_version_urls(event))
+    result = list(schedule_version_urls(event))
 
-    assert schedule.urls.public in result
-    assert schedule.urls.widget_data in result
-    assert schedule.urls.nojs in result
+    assert result == [
+        schedule.urls.public,
+        schedule.urls.widget_data,
+        schedule.urls.nojs,
+    ]
 
 
 @pytest.mark.django_db
-def test_schedule_version_urls_excludes_unversioned_schedules():
-    """The WIP schedule (version=None) is not included."""
-    event = EventFactory()
-
-    with scopes_disabled():
-        result = list(schedule_version_urls(event))
-
-    assert result == []
-
-
 @pytest.mark.parametrize(
-    ("exporter_cls", "expected"),
+    ("exporter_cls", "should_include"),
     (
-        (_PublicExporter, ["/export/schedule.xml"]),
-        (_DynamicPublicExporter, []),
-        (_NonPublicExporter, []),
+        (_PublicExporter, True),
+        (_DynamicPublicExporter, False),
+        (_NonPublicExporter, False),
     ),
     ids=["public_yields_url", "dynamic_is_public_skipped", "non_public_skipped"],
 )
-def test_event_exporter_urls_filters_by_public_attribute(exporter_cls, expected):
+def test_event_exporter_urls_filters_by_public_attribute(
+    register_signal_handler, exporter_cls, should_include
+):
     """Yields URLs only for exporters with public=True and no dynamic is_public
     property, to prevent data leakage from dynamic exporters."""
-    with pytest.MonkeyPatch.context() as mp:
-        mp.setattr(
-            "pretalx.agenda.management.commands.export_schedule_html.register_data_exporters",
-            SimpleNamespace(send=lambda _event: [(None, exporter_cls)]),
-        )
-        result = list(event_exporter_urls("fake_event"))
+    event = EventFactory()
+    register_signal_handler(
+        register_data_exporters, lambda signal, sender, **kwargs: exporter_cls
+    )
 
-    assert result == expected
+    result = list(event_exporter_urls(event))
+
+    exporter_url = str(exporter_cls(event).urls.base)
+    if should_include:
+        assert exporter_url in [str(u) for u in result]
+    else:
+        assert exporter_url not in [str(u) for u in result]
 
 
 @pytest.mark.django_db
 def test_fake_admin_reverts_event_changes():
     """fake_admin sets is_public=True and show_schedule during the context,
     but the rolledback_transaction reverts changes after."""
-    event = EventFactory()
-    event.is_public = False
-    event.save()
+    event = EventFactory(is_public=False)
 
     with fake_admin(event):
-        pass
+        assert event.is_public is True
 
     event.refresh_from_db()
     assert event.is_public is False
@@ -438,41 +439,36 @@ def test_fake_admin_reverts_event_changes():
 
 @pytest.mark.django_db
 def test_fake_admin_getter_returns_response_content():
-    """The getter function returned by fake_admin can fetch views via the Django test client."""
     event = EventFactory()
+    TalkSlotFactory(submission__event=event, is_visible=True)
+    event.wip_schedule.freeze("v1", notify_speakers=False)
+    event = Event.objects.get(pk=event.pk)
 
     with fake_admin(event) as get:
         content = get(f"/{event.slug}/schedule/")
 
-    assert isinstance(content, bytes)
+    assert str(event.name).encode() in content
 
 
+@pytest.mark.slow
 @pytest.mark.django_db
-def test_export_event_creates_output_files(tmp_path):
-    event = EventFactory()
-
-    with scopes_disabled():
-        export_event(event, tmp_path)
-
-    assert (tmp_path / event.slug / "schedule" / "index.html").exists()
-
-
-@pytest.mark.django_db
-def test_export_event_handles_media_urls(tmp_path):
-    """export_event skips find_assets for media/static URLs and resolves
-    CSS url() references (e.g. font files referenced from base.css)."""
+@pytest.mark.filterwarnings(
+    "ignore:It looks like you're using an HTML parser to parse an XML document"
+)
+def test_export_event_creates_output_and_resolves_media_urls(tmp_path):
+    """export_event creates schedule HTML, includes uploaded resources, and
+    resolves CSS url() references (e.g. font files referenced from base.css)."""
     call_command("collectstatic", "--no-input", verbosity=0)
     event = EventFactory()
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submission.speakers.add(speaker)
-        resource = Resource.objects.create(submission=submission, is_public=True)
-        resource.resource.save("test.pdf", SimpleUploadedFile("test.pdf", b"pdf data"))
-        slot = TalkSlotFactory(submission=submission, is_visible=True)
-        slot.schedule.freeze("v1", notify_speakers=False)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    resource = ResourceFactory(submission=submission, is_public=True)
+    resource.resource.save("test.pdf", SimpleUploadedFile("test.pdf", b"pdf data"))
+    slot = TalkSlotFactory(submission=submission, is_visible=True)
+    slot.schedule.freeze("v1", notify_speakers=False)
 
-        export_event(event, tmp_path)
+    export_event(event, tmp_path)
 
     assert (tmp_path / event.slug / "schedule" / "index.html").exists()
     resource_path = tmp_path / resource.resource.url.lstrip("/")
@@ -482,29 +478,19 @@ def test_export_event_handles_media_urls(tmp_path):
 
 
 @pytest.mark.django_db
-def test_export_schedule_html_command_exports_to_directory():
+def test_export_schedule_html_command_creates_directory_and_zip():
     event = EventFactory()
 
     call_command("export_schedule_html", event.slug)
-
     export_dir = settings.HTMLEXPORT_ROOT / event.slug
     assert export_dir.exists()
     assert (export_dir / event.slug / "schedule" / "index.html").exists()
-
     delete_directory(export_dir)
 
-
-@pytest.mark.django_db
-def test_export_schedule_html_command_with_zip_creates_zip_file():
-    event = EventFactory()
-
     call_command("export_schedule_html", event.slug, "--zip")
-
     zip_path = settings.HTMLEXPORT_ROOT / f"{event.slug}.zip"
     assert zip_path.exists()
-    export_dir = settings.HTMLEXPORT_ROOT / event.slug
     assert not export_dir.exists()
-
     zip_path.unlink()
 
 

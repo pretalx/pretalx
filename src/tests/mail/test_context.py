@@ -1,5 +1,6 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from django.utils.timezone import now
 from django_scopes import scope
 from i18nfield.strings import LazyI18nString
 
@@ -37,12 +38,10 @@ pytestmark = pytest.mark.unit
     ),
 )
 def test_get_used_placeholders_from_string(text, expected):
-    """Extracts placeholder names from Python format strings."""
     assert get_used_placeholders(text) == expected
 
 
 def test_get_used_placeholders_from_none():
-    """None input returns an empty set."""
     assert get_used_placeholders(None) == set()
 
 
@@ -69,7 +68,6 @@ def test_get_used_placeholders_from_lazy_i18n_string():
 
 
 def test_get_used_placeholders_unsupported_type_returns_empty():
-    """Unsupported types (e.g. int, list) return an empty set."""
     assert get_used_placeholders(42) == set()
     assert get_used_placeholders(["{name}"]) == set()
 
@@ -84,7 +82,6 @@ def test_get_used_placeholders_unsupported_type_returns_empty():
     ),
 )
 def test_get_invalid_placeholders(text, valid, expected):
-    """Returns the set of placeholders in text that are not in the valid list."""
     assert get_invalid_placeholders(text, valid) == expected
 
 
@@ -99,7 +96,6 @@ def test_placeholder_aliases_first_is_visible_rest_hidden():
 
 
 def test_placeholder_aliases_identifiers_match():
-    """Each placeholder has the correct identifier."""
     identifiers = ["event_name", "event"]
     result = placeholder_aliases(
         identifiers,
@@ -112,7 +108,6 @@ def test_placeholder_aliases_identifiers_match():
 
 
 def test_placeholder_aliases_render_uses_same_func():
-    """All aliases render using the same underlying function."""
     result = placeholder_aliases(
         ["a", "b"], ["event"], lambda event: f"rendered-{event}", "sample"
     )
@@ -123,7 +118,6 @@ def test_placeholder_aliases_render_uses_same_func():
 
 @pytest.mark.django_db
 def test_get_all_reviews_with_texts(event):
-    """Reviews with text are joined by a separator."""
     submission = SubmissionFactory(event=event)
     with scope(event=event):
         ReviewFactory(submission=submission, text="Great talk")
@@ -136,7 +130,6 @@ def test_get_all_reviews_with_texts(event):
 
 @pytest.mark.django_db
 def test_get_all_reviews_no_reviews(event):
-    """Returns empty string when submission has no reviews."""
     submission = SubmissionFactory(event=event)
     with scope(event=event):
         assert get_all_reviews(submission) == ""
@@ -158,7 +151,6 @@ def test_get_all_reviews_skips_unusable_text(event, unusable_text):
 
 @pytest.mark.django_db
 def test_get_all_reviews_all_empty_returns_empty(event):
-    """Returns empty string when all reviews have empty/whitespace text."""
     submission = SubmissionFactory(event=event)
     with scope(event=event):
         ReviewFactory(submission=submission, text="  ")
@@ -169,7 +161,6 @@ def test_get_all_reviews_all_empty_returns_empty(event):
 
 @pytest.mark.django_db
 def test_get_all_reviews_strips_text(event):
-    """Review texts are stripped of leading/trailing whitespace."""
     submission = SubmissionFactory(event=event)
     with scope(event=event):
         ReviewFactory(submission=submission, text="  trimmed  ")
@@ -190,7 +181,6 @@ def test_get_mail_context_includes_event_placeholders(event):
 
 @pytest.mark.django_db
 def test_get_mail_context_includes_user_placeholders(event):
-    """When called with event and user, user-level placeholders are included."""
     user = UserFactory(name="Jane Doe", email="jane@example.org")
 
     with scope(event=event):
@@ -212,7 +202,6 @@ def test_get_mail_context_excludes_placeholders_without_required_context(event):
 
 @pytest.mark.django_db
 def test_get_mail_context_includes_submission_placeholders(event):
-    """Submission-level placeholders are included when a submission is passed."""
     submission = SubmissionFactory(event=event, title="My Great Talk")
 
     with scope(event=event):
@@ -228,7 +217,7 @@ def test_get_mail_context_auto_adds_slot_from_submission(event):
     get_mail_context automatically adds slot-dependent placeholders
     without requiring an explicit slot kwarg."""
     submission = SubmissionFactory(event=event)
-    schedule = ScheduleFactory(event=event, version="v1", published=now())
+    schedule = ScheduleFactory(event=event, version="v1")
     room = RoomFactory(event=event, name="Room 101")
     TalkSlotFactory(submission=submission, schedule=schedule, room=room)
 
@@ -240,7 +229,6 @@ def test_get_mail_context_auto_adds_slot_from_submission(event):
 
 @pytest.mark.django_db
 def test_get_mail_context_no_slot_omits_slot_placeholders(event):
-    """When a submission has no slot, slot-dependent placeholders are omitted."""
     submission = SubmissionFactory(event=event)
 
     with scope(event=event):
@@ -254,7 +242,7 @@ def test_get_mail_context_slot_without_start_omits_slot_placeholders(event):
     """When a submission's slot has no start time, slot-dependent
     placeholders are not auto-added."""
     submission = SubmissionFactory(event=event)
-    schedule = ScheduleFactory(event=event, version="v1", published=now())
+    schedule = ScheduleFactory(event=event, version="v1")
     room = RoomFactory(event=event, name="Room 101")
     TalkSlotFactory(
         submission=submission, schedule=schedule, room=room, start=None, end=None
@@ -271,7 +259,7 @@ def test_get_mail_context_slot_without_room_omits_slot_placeholders(event):
     """When a submission's slot has no room, slot-dependent
     placeholders are not auto-added."""
     submission = SubmissionFactory(event=event)
-    schedule = ScheduleFactory(event=event, version="v1", published=now())
+    schedule = ScheduleFactory(event=event, version="v1")
     TalkSlotFactory(submission=submission, schedule=schedule, room=None)
 
     with scope(event=event):
@@ -301,7 +289,6 @@ def test_get_available_placeholders_returns_placeholder_objects(event):
 def test_get_available_placeholders_filters_by_context(
     event, kwargs, expected_present, expected_absent
 ):
-    """Placeholders are included only when their required context keys are present."""
     placeholders = get_available_placeholders(event, kwargs)
 
     for key in expected_present:
@@ -361,7 +348,6 @@ def test_base_placeholders_contains_expected_identifiers(event):
 
 @pytest.mark.django_db
 def test_base_placeholders_event_name_renders_correctly(event):
-    """The event_name placeholder renders to the event's name."""
     result = base_placeholders(sender=event)
     event_name_placeholder = next(p for p in result if p.identifier == "event_name")
 
@@ -371,7 +357,6 @@ def test_base_placeholders_event_name_renders_correctly(event):
 
 @pytest.mark.django_db
 def test_base_placeholders_aliases_share_render_output(event):
-    """Aliases like event_name/event render the same value."""
     result = base_placeholders(sender=event)
     by_id = {p.identifier: p for p in result}
 

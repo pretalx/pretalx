@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django import forms
 
@@ -115,7 +117,6 @@ def test_cfp_form_mixin_update_cfp_texts_does_not_set_label_when_missing():
 
 
 def test_cfp_form_mixin_update_cfp_texts_skips_missing_field():
-    """_update_cfp_texts returns early when field_name is not in self.fields."""
     config = [{"key": "title"}]
     form = _TestForm(field_configuration=config)
 
@@ -124,7 +125,6 @@ def test_cfp_form_mixin_update_cfp_texts_skips_missing_field():
 
 
 def test_cfp_form_mixin_update_cfp_texts_skips_when_no_field_configuration():
-    """_update_cfp_texts returns early when field_configuration is falsy."""
     form = _TestForm()
     form._update_cfp_texts("title")
 

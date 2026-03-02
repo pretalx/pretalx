@@ -1,5 +1,6 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.api.views.team import (
     TeamInviteCreateSerializer,
@@ -14,34 +15,29 @@ pytestmark = pytest.mark.unit
 
 @pytest.mark.django_db
 def test_team_viewset_get_queryset_returns_organiser_teams():
-    with scopes_disabled():
-        organiser = OrganiserFactory()
-        team = TeamFactory(organiser=organiser, all_events=True)
-        TeamFactory()  # different organiser's team
+    organiser = OrganiserFactory()
+    team = TeamFactory(organiser=organiser, all_events=True)
+    TeamFactory()  # different organiser's team
 
     request = make_api_request(organiser=organiser)
     view = make_view(TeamViewSet, request)
     view.action = "list"
 
-    with scopes_disabled():
-        qs = list(view.get_queryset())
+    qs = list(view.get_queryset())
 
     assert qs == [team]
 
 
 @pytest.mark.django_db
 def test_team_viewset_get_queryset_prefetches_related(django_assert_num_queries):
-    """get_queryset prefetches members, invites, limit_events, and limit_tracks."""
-    with scopes_disabled():
-        organiser = OrganiserFactory()
-        TeamFactory(organiser=organiser, all_events=True)
+    organiser = OrganiserFactory()
+    TeamFactory(organiser=organiser, all_events=True)
 
     request = make_api_request(organiser=organiser)
     view = make_view(TeamViewSet, request)
     view.action = "list"
 
-    with scopes_disabled():
-        teams = list(view.get_queryset())
+    teams = list(view.get_queryset())
 
     with django_assert_num_queries(0):
         list(teams[0].members.all())

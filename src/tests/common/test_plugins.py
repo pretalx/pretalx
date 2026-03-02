@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.test import override_settings
 
@@ -37,7 +39,6 @@ def test_get_all_plugins_sets_highlighted_true_when_in_settings():
 
 @pytest.mark.parametrize("available", (True, False))
 def test_get_all_plugins_filters_by_event_availability(available):
-    """Plugins are included or excluded based on is_available() for the event."""
 
     class FakeEvent:
         _dummy_available = available
@@ -76,7 +77,6 @@ def test_plugin_sort_key_ordering(first_attrs, second_attrs):
 
 
 def test_plugin_sort_key_strips_pretalx_prefix():
-    """Sorting ignores 'pretalx ' prefix so 'pretalx Foo' sorts as 'foo'."""
     with_prefix = type("Plugin", (), {"highlighted": False, "name": "pretalx Foo"})()
     without_prefix = type("Plugin", (), {"highlighted": False, "name": "Foo"})()
 
@@ -112,7 +112,6 @@ def test_get_all_plugins_grouped_includes_dummy_plugin():
 
 
 def test_get_all_plugins_grouped_filters_hidden_plugins():
-    """Plugins whose name starts with '.' are filtered out by default."""
     result = get_all_plugins_grouped(filter_visible=True)
     all_plugins = [p for plugins in result.values() for p in plugins]
     for plugin in all_plugins:
@@ -120,7 +119,6 @@ def test_get_all_plugins_grouped_filters_hidden_plugins():
 
 
 def test_get_all_plugins_grouped_no_filter():
-    """With filter_visible=False, all plugins are included."""
     result_filtered = get_all_plugins_grouped(filter_visible=True)
     result_unfiltered = get_all_plugins_grouped(filter_visible=False)
 

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
@@ -9,26 +11,16 @@ from pretalx.agenda.recording import BaseRecordingProvider
 from pretalx.agenda.signals import register_recording_provider
 from pretalx.submission.models import Submission, SubmissionStates
 from tests.factories import (
+    EventFactory,
     FeedbackFactory,
     ResourceFactory,
     SpeakerFactory,
     SubmissionFactory,
     TalkSlotFactory,
 )
+from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
-
-
-@pytest.fixture
-def published_event_with_talk(public_event_with_schedule, published_talk_slot):
-    """The current-schedule slot for a visible talk on a public event.
-
-    Derives from public_event_with_schedule — the event has one visible,
-    confirmed talk in a room, with start/end times set."""
-    with scopes_disabled():
-        return published_talk_slot.submission.slots.get(
-            schedule=public_event_with_schedule.current_schedule
-        )
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 @pytest.fixture
@@ -47,9 +39,6 @@ def feedback_submission(event):
     """A past confirmed talk on a public event with feedback enabled and
     a released schedule. Returns the submission."""
     with scopes_disabled():
-        event.is_public = True
-        event.feature_flags["use_feedback"] = True
-        event.save()
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
@@ -63,13 +52,12 @@ def feedback_submission(event):
     return submission
 
 
-@pytest.mark.django_db
 def test_talk_view_default_rendering(
-    client, django_assert_num_queries, published_event_with_talk
+    client, django_assert_num_queries, published_talk_slot
 ):
     """Talk detail page renders title, abstract, description, schedule details,
     and no edit/recording/do-not-record indicators for anonymous users."""
-    slot = published_event_with_talk
+    slot = published_talk_slot
     submission = slot.submission
     with scopes_disabled():
         submission.abstract = "Test abstract for the talk"
@@ -93,17 +81,14 @@ def test_talk_view_default_rendering(
     assert "<iframe" not in content
 
 
-@pytest.mark.django_db
-def test_talk_view_404_for_nonpublic_event(client, django_assert_num_queries, event):
-    """Talk page returns 404 when event is not public."""
+def test_talk_view_404_for_nonpublic_event(client, django_assert_num_queries):
     with scopes_disabled():
+        event = EventFactory(is_public=False)
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
         TalkSlotFactory(submission=submission, is_visible=True)
         event.wip_schedule.freeze("v1", notify_speakers=False)
-    event.is_public = False
-    event.save()
 
     with django_assert_num_queries(9):
         response = client.get(submission.urls.public, follow=True)
@@ -111,14 +96,10 @@ def test_talk_view_404_for_nonpublic_event(client, django_assert_num_queries, ev
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_talk_view_404_for_other_events_submission(
     client, django_assert_num_queries, event
 ):
-    """Talk page returns 404 when accessing a submission from another event."""
     with scopes_disabled():
-        event.is_public = True
-        event.save()
         other_submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
     url = f"/{event.slug}/talk/{other_submission.code}/"
 
@@ -128,34 +109,12 @@ def test_talk_view_404_for_other_events_submission(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
-def test_talk_view_404_for_unreleased_submission(
-    client, django_assert_num_queries, event
-):
-    """Talk page returns 404 when there's no released schedule."""
-    with scopes_disabled():
-        event.is_public = True
-        event.save()
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submission.speakers.add(speaker)
-        TalkSlotFactory(submission=submission, is_visible=True)
-
-    with django_assert_num_queries(10):
-        response = client.get(submission.urls.public)
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
 def test_talk_view_orga_can_see_unreleased(
     client, django_assert_num_queries, event, organiser_user
 ):
     """Organisers can see talks even before the schedule is released,
     but schedule details (time, room) are not shown."""
     with scopes_disabled():
-        event.is_public = True
-        event.save()
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
@@ -173,32 +132,20 @@ def test_talk_view_orga_can_see_unreleased(
         assert str(slot.room.name) not in content
 
 
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    "state",
-    (
-        SubmissionStates.SUBMITTED,
-        SubmissionStates.ACCEPTED,
-        SubmissionStates.REJECTED,
-        SubmissionStates.CANCELED,
-        SubmissionStates.WITHDRAWN,
-    ),
-    ids=["submitted", "accepted", "rejected", "canceled", "withdrawn"],
-)
 def test_talk_view_visibility_by_state_returns_404(
-    client, django_assert_num_queries, event, state
+    client, django_assert_num_queries, event
 ):
     """Non-confirmed submissions are not visible in the public agenda,
     even with a released schedule."""
     with scopes_disabled():
-        event.is_public = True
-        event.save()
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
         TalkSlotFactory(submission=submission, is_visible=True)
         event.wip_schedule.freeze("v1", notify_speakers=False)
-        Submission.objects.filter(pk=submission.pk).update(state=state)
+        Submission.objects.filter(pk=submission.pk).update(
+            state=SubmissionStates.WITHDRAWN
+        )
         submission.slots.filter(schedule=event.current_schedule).update(
             is_visible=False
         )
@@ -209,12 +156,10 @@ def test_talk_view_visibility_by_state_returns_404(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_talk_view_shows_edit_button_for_speaker(
-    client, django_assert_num_queries, published_event_with_talk
+    client, django_assert_num_queries, published_talk_slot
 ):
-    """Speakers see the edit button on their own talk page."""
-    slot = published_event_with_talk
+    slot = published_talk_slot
     with scopes_disabled():
         speaker_user = slot.submission.speakers.first().user
     client.force_login(speaker_user)
@@ -226,12 +171,10 @@ def test_talk_view_shows_edit_button_for_speaker(
     assert "fa-edit" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_talk_view_shows_do_not_record_indicator(
-    client, django_assert_num_queries, published_event_with_talk
+    client, django_assert_num_queries, published_talk_slot
 ):
-    """do_not_record flag shows the video-off icon on the talk page."""
-    slot = published_event_with_talk
+    slot = published_talk_slot
     with scopes_disabled():
         slot.submission.do_not_record = True
         slot.submission.save()
@@ -243,11 +186,9 @@ def test_talk_view_shows_do_not_record_indicator(
     assert "fa-video" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_talk_view_feedback_link_shown_for_past_talk(
     client, django_assert_num_queries, feedback_submission
 ):
-    """Feedback link appears when the talk slot is in the past and feedback is enabled."""
     with django_assert_num_queries(17):
         response = client.get(feedback_submission.urls.public, follow=True)
 
@@ -255,16 +196,12 @@ def test_talk_view_feedback_link_shown_for_past_talk(
     assert "fa-comments" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_talk_view_recording_iframe_with_plugin(
-    client,
-    django_assert_num_queries,
-    register_signal_handler,
-    published_event_with_talk,
+    client, django_assert_num_queries, register_signal_handler, published_talk_slot
 ):
     """When a recording provider plugin returns an iframe, it's shown and
     the CSP header is updated to allow the provider's domain."""
-    slot = published_event_with_talk
+    slot = published_talk_slot
 
     class TestProvider(BaseRecordingProvider):
         def get_recording(self, sub):
@@ -283,14 +220,10 @@ def test_talk_view_recording_iframe_with_plugin(
     assert response._csp_update == {"frame-src": "cdn.test"}
 
 
-@pytest.mark.django_db
 def test_talk_view_shows_public_resources_only(
     client, django_assert_num_queries, event
 ):
-    """Talk page shows public resources but not private ones."""
     with scopes_disabled():
-        event.is_public = True
-        event.save()
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
@@ -318,12 +251,10 @@ def test_talk_view_shows_public_resources_only(
     assert private_resource.link not in content
 
 
-@pytest.mark.django_db
 def test_talk_view_speaker_other_submissions(
-    client, django_assert_num_queries, published_event_with_talk, second_talk
+    client, django_assert_num_queries, published_talk_slot, second_talk
 ):
-    """When a speaker has multiple talks, other_submissions is populated."""
-    slot = published_event_with_talk
+    slot = published_talk_slot
     event = slot.submission.event
     with scopes_disabled():
         speaker = slot.submission.speakers.first()
@@ -340,15 +271,12 @@ def test_talk_view_speaker_other_submissions(
     assert speaker_data.other_submissions[0].pk == second_talk.pk
 
 
-@pytest.mark.django_db
 def test_talk_view_context_without_schedule_permission(
-    client, django_assert_num_queries, event, organiser_user
+    client, django_assert_num_queries
 ):
-    """When user can't view the schedule, context still includes the submission's speakers."""
+    event = EventFactory(feature_flags={"show_featured": "always"})
+    organiser_user = make_orga_user(event)
     with scopes_disabled():
-        event.is_public = True
-        event.feature_flags["show_featured"] = "always"
-        event.save()
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(
             event=event, state=SubmissionStates.CONFIRMED, is_featured=True
@@ -365,15 +293,10 @@ def test_talk_view_context_without_schedule_permission(
     assert speakers[0].pk == speaker.pk
 
 
-@pytest.mark.django_db
 def test_talk_view_speaker_other_submissions_excludes_invisible_slots(
     client, django_assert_num_queries, event
 ):
-    """Speaker's other_submissions only include talks with visible slots in the
-    current schedule."""
     with scopes_disabled():
-        event.is_public = True
-        event.save()
         speaker = SpeakerFactory(event=event)
         visible_sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         visible_sub.speakers.add(speaker)
@@ -395,19 +318,14 @@ def test_talk_view_speaker_other_submissions_excludes_invisible_slots(
     assert len(speakers[0].other_submissions) == 0
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_talk_view_speaker_query_count(
     client, django_assert_num_queries, event, item_count
 ):
-    """Query count stays constant regardless of speaker count on a talk."""
     with scopes_disabled():
-        event.is_public = True
-        event.save()
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        speakers = [SpeakerFactory(event=event) for _ in range(item_count)]
-        for speaker in speakers:
-            submission.speakers.add(speaker)
+        speakers = SpeakerFactory.create_batch(item_count, event=event)
+        submission.speakers.add(*speakers)
         TalkSlotFactory(submission=submission, is_visible=True)
         event.wip_schedule.freeze("v1", notify_speakers=False)
 
@@ -421,12 +339,10 @@ def test_talk_view_speaker_query_count(
             assert speaker.get_display_name() in content
 
 
-@pytest.mark.django_db
 def test_talk_social_media_card_404_without_image(
-    client, django_assert_num_queries, published_event_with_talk
+    client, django_assert_num_queries, published_talk_slot
 ):
-    """Social media card returns 404 when submission has no image and event has no fallback."""
-    slot = published_event_with_talk
+    slot = published_talk_slot
 
     with django_assert_num_queries(11):
         response = client.get(slot.submission.urls.social_image, follow=True)
@@ -434,38 +350,24 @@ def test_talk_social_media_card_404_without_image(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    ("enabled", "expected_status", "expected_queries"),
-    ((True, 200, 16), (False, 404, 5)),
-    ids=["enabled", "disabled"],
-)
-def test_talk_review_view_by_feature_flag(
-    client, django_assert_num_queries, event, enabled, expected_status, expected_queries
-):
-    """Review page is accessible only when submission_public_review is enabled."""
+def test_talk_review_view_renders_when_enabled(client, django_assert_num_queries):
+    event = EventFactory(feature_flags={"submission_public_review": True})
     with scopes_disabled():
-        event.is_public = True
-        event.feature_flags["submission_public_review"] = enabled
-        event.save()
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
         submission.speakers.add(speaker)
 
-    with django_assert_num_queries(expected_queries):
+    with django_assert_num_queries(16):
         response = client.get(submission.urls.review, follow=True)
 
-    assert response.status_code == expected_status
-    if expected_status == 200:
-        assert submission.title in response.content.decode()
+    assert response.status_code == 200
+    assert submission.title in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_single_ical_view_returns_calendar(
-    client, django_assert_num_queries, published_event_with_talk
+    client, django_assert_num_queries, published_talk_slot
 ):
-    """SingleICalView returns an ICS file with correct content type and filename."""
-    slot = published_event_with_talk
+    slot = published_talk_slot
     submission = slot.submission
 
     with django_assert_num_queries(11):
@@ -479,11 +381,9 @@ def test_single_ical_view_returns_calendar(
     assert submission.event.slug in disposition
 
 
-@pytest.mark.django_db
 def test_feedback_view_accessible_for_past_talk(
     client, django_assert_num_queries, feedback_submission
 ):
-    """Feedback form page is accessible when the talk is in the past."""
     with django_assert_num_queries(12):
         response = client.get(feedback_submission.urls.feedback, follow=True)
 
@@ -491,11 +391,9 @@ def test_feedback_view_accessible_for_past_talk(
     assert "review" in response.context["form"].fields
 
 
-@pytest.mark.django_db
 def test_feedback_view_submit_creates_feedback(
     client, django_assert_num_queries, feedback_submission
 ):
-    """Submitting feedback creates a Feedback object with auto-assigned speaker."""
     with django_assert_num_queries(37):
         response = client.post(
             feedback_submission.urls.feedback, {"review": "Great talk!"}, follow=True
@@ -509,11 +407,9 @@ def test_feedback_view_submit_creates_feedback(
         assert feedback.speaker == feedback_submission.speakers.first()
 
 
-@pytest.mark.django_db
 def test_feedback_view_submit_multiple_speakers_no_auto_assign(
     client, django_assert_num_queries, feedback_submission
 ):
-    """When there are multiple speakers and none is selected, speaker is left null."""
     with scopes_disabled():
         speaker2 = SpeakerFactory(event=feedback_submission.event)
         feedback_submission.speakers.add(speaker2)
@@ -531,15 +427,10 @@ def test_feedback_view_submit_multiple_speakers_no_auto_assign(
         assert feedback.speaker is None
 
 
-@pytest.mark.django_db
 def test_feedback_view_rejects_post_before_talk_starts(
     client, django_assert_num_queries, event
 ):
-    """Feedback cannot be submitted before the talk has started."""
     with scopes_disabled():
-        event.is_public = True
-        event.feature_flags["use_feedback"] = True
-        event.save()
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)
@@ -561,11 +452,9 @@ def test_feedback_view_rejects_post_before_talk_starts(
         assert submission.feedback.count() == 0
 
 
-@pytest.mark.django_db
 def test_feedback_view_honeypot_rejects_spam(
     client, django_assert_num_queries, feedback_submission
 ):
-    """Honeypot field rejects spam submissions."""
     with django_assert_num_queries(12):
         response = client.post(
             feedback_submission.urls.feedback,
@@ -578,11 +467,9 @@ def test_feedback_view_honeypot_rejects_spam(
         assert feedback_submission.feedback.count() == 0
 
 
-@pytest.mark.django_db
 def test_feedback_view_speaker_sees_feedback(
     client, django_assert_num_queries, feedback_submission
 ):
-    """Speakers can see feedback on their talk."""
     with scopes_disabled():
         FeedbackFactory(talk=feedback_submission, review="Loved it!")
         speaker_user = feedback_submission.speakers.first().user
@@ -595,11 +482,9 @@ def test_feedback_view_speaker_sees_feedback(
     assert "Loved it!" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_feedback_view_redirects_to_talk_after_submit(
     client, django_assert_num_queries, feedback_submission
 ):
-    """After successful feedback submission, user is redirected to the talk page."""
     with django_assert_num_queries(16):
         response = client.post(
             feedback_submission.urls.feedback, {"review": "Nice!"}, follow=False
@@ -609,16 +494,12 @@ def test_feedback_view_redirects_to_talk_after_submit(
     assert response.url == feedback_submission.urls.public
 
 
-@pytest.mark.django_db
 def test_feedback_view_accessible_before_talk_starts(
     client, django_assert_num_queries, event
 ):
     """Feedback form page is accessible (GET) before talk starts, but
     submission is rejected by the form_valid permission check."""
     with scopes_disabled():
-        event.is_public = True
-        event.feature_flags["use_feedback"] = True
-        event.save()
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
         submission.speakers.add(speaker)

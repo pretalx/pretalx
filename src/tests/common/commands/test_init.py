@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import os
 from io import StringIO
 from unittest.mock import patch
@@ -66,7 +68,6 @@ def test_init_handle_interactive_propagates_keyboard_interrupt():
 
 @pytest.mark.django_db
 def test_init_handle_noinput_missing_env_var_exits():
-    """Non-interactive mode exits when required env vars are missing."""
     env_overrides = {
         "DJANGO_SUPERUSER_EMAIL": "",
         "DJANGO_SUPERUSER_PASSWORD": "",

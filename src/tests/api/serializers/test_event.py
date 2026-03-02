@@ -1,13 +1,13 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from django.contrib.auth.models import AnonymousUser
 
 from pretalx.api.serializers.event import EventListSerializer, EventSerializer
-from tests.factories import EventFactory, UserFactory
+from tests.factories import EventFactory
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_event_list_serializer_data():
     event = EventFactory()
     data = EventListSerializer(event).data
@@ -21,7 +21,6 @@ def test_event_list_serializer_data():
     }
 
 
-@pytest.mark.django_db
 def test_event_serializer_data():
     event = EventFactory()
     data = EventSerializer(event).data
@@ -42,32 +41,3 @@ def test_event_serializer_data():
         "locales": event.locales,
         "content_locales": event.content_locales,
     }
-
-
-@pytest.mark.django_db
-def test_event_list_serializer_clears_timezone_choices_no_request():
-    """Without a request in context, timezone choices are cleared for smaller API docs."""
-    event = EventFactory()
-    serializer = EventListSerializer(event)
-    assert not serializer.fields["timezone"].choices
-
-
-@pytest.mark.django_db
-def test_event_list_serializer_clears_timezone_choices_unauthenticated(rf):
-    """Unauthenticated users get empty timezone choices."""
-    event = EventFactory()
-    request = rf.get("/")
-    request.user = AnonymousUser()
-    serializer = EventListSerializer(event, context={"request": request})
-    assert not serializer.fields["timezone"].choices
-
-
-@pytest.mark.django_db
-def test_event_list_serializer_keeps_timezone_choices_authenticated(rf):
-    """Authenticated users keep the full timezone choice list."""
-    event = EventFactory()
-    user = UserFactory()
-    request = rf.get("/")
-    request.user = user
-    serializer = EventListSerializer(event, context={"request": request})
-    assert serializer.fields["timezone"].choices

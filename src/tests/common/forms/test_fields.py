@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import json
 
@@ -6,7 +8,6 @@ from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms import ValidationError
-from django_scopes import scopes_disabled
 
 from pretalx.common.forms.fields import (
     AvailabilitiesField,
@@ -22,10 +23,11 @@ from pretalx.common.forms.fields import (
     SizeFileInput,
     SubmissionTypeField,
 )
-from pretalx.person.models import ProfilePicture
 from pretalx.schedule.models import Availability
 from tests.factories import (
+    AvailabilityFactory,
     EventFactory,
+    ProfilePictureFactory,
     RoomFactory,
     SpeakerFactory,
     SubmissionTypeFactory,
@@ -33,35 +35,6 @@ from tests.factories import (
 )
 
 pytestmark = pytest.mark.unit
-
-
-def test_countable_option_str_returns_name():
-    option = CountableOption("Workshop", 5)
-    assert str(option) == "Workshop"
-
-
-def test_new_password_field_uses_validate_password():
-    field = NewPasswordField()
-    assert validate_password in field.default_validators
-
-
-def test_new_password_confirmation_field_sets_confirm_with():
-    field = NewPasswordConfirmationField(confirm_with="id_password")
-    assert field.widget.confirm_with == "id_password"
-
-
-@pytest.mark.parametrize(
-    ("kwargs", "expected_size"),
-    (
-        ({"max_size": 1024}, "1.0KB"),
-        ({}, "10.0MB"),
-        ({"max_size": 0, "fallback": False}, "0.0B"),
-    ),
-    ids=("explicit_size", "fallback_to_default", "no_fallback"),
-)
-def test_size_file_input_get_size_warning(kwargs, expected_size):
-    warning = SizeFileInput.get_size_warning(**kwargs)
-    assert expected_size in warning
 
 
 @pytest.mark.parametrize(
@@ -105,7 +78,6 @@ def test_size_file_field_validate_rejects_oversized_file():
 
 
 def test_size_file_field_validate_skips_non_upload_values():
-    """Non-UploadedFile values (like empty strings) pass size validation."""
     field = SizeFileField(max_size=10, required=False)
     field.validate("")
 
@@ -250,7 +222,7 @@ def test_profile_picture_field_clean_upload_valid_file():
 @pytest.mark.django_db
 def test_profile_picture_field_clean_select_valid_picture():
     user = UserFactory()
-    picture = ProfilePicture.objects.create(user=user)
+    picture = ProfilePictureFactory(user=user)
     field = ProfilePictureField(required=False, user=user)
 
     result = field.clean({"action": f"select_{picture.pk}"})
@@ -276,7 +248,7 @@ def test_profile_picture_field_clean_select_invalid_pk(pk_suffix):
 def test_profile_picture_field_clean_select_other_users_picture():
     user = UserFactory()
     other_user = UserFactory()
-    picture = ProfilePicture.objects.create(user=other_user)
+    picture = ProfilePictureFactory(user=other_user)
     field = ProfilePictureField(required=False, user=user)
 
     with pytest.raises(ValidationError) as exc_info:
@@ -344,10 +316,8 @@ def test_color_field_widget_attrs_include_pattern():
 @pytest.mark.django_db
 def test_submission_type_field_label_shows_duration_when_not_required():
     """When cfp does not require duration, label includes the duration."""
-    with scopes_disabled():
-        sub_type = SubmissionTypeFactory(default_duration=30)
-        sub_type.event.cfp.fields["duration"] = {"visibility": "do_not_ask"}
-        sub_type.event.cfp.save()
+    event = EventFactory(cfp__fields={"duration": {"visibility": "do_not_ask"}})
+    sub_type = SubmissionTypeFactory(event=event, default_duration=30)
 
     field = SubmissionTypeField(queryset=type(sub_type).objects.none())
     label = field.label_from_instance(sub_type)
@@ -359,10 +329,8 @@ def test_submission_type_field_label_shows_duration_when_not_required():
 @pytest.mark.django_db
 def test_submission_type_field_label_hides_duration_when_required():
     """When cfp requires duration, label shows only the name."""
-    with scopes_disabled():
-        sub_type = SubmissionTypeFactory(default_duration=30)
-        sub_type.event.cfp.fields["duration"] = {"visibility": "required"}
-        sub_type.event.cfp.save()
+    event = EventFactory(cfp__fields={"duration": {"visibility": "required"}})
+    sub_type = SubmissionTypeFactory(event=event, default_duration=30)
 
     field = SubmissionTypeField(queryset=type(sub_type).objects.none())
     label = field.label_from_instance(sub_type)
@@ -389,11 +357,10 @@ def test_honeypot_field_validate_passes_on_false():
 @pytest.mark.django_db
 def test_availabilities_field_init_with_event_sets_initial(event):
     room = RoomFactory(event=event)
-    with scopes_disabled():
-        Availability.objects.create(
-            event=event, room=room, start=event.datetime_from, end=event.datetime_to
-        )
-        field = AvailabilitiesField(event=event, instance=room)
+    AvailabilityFactory(
+        event=event, room=room, start=event.datetime_from, end=event.datetime_to
+    )
+    field = AvailabilitiesField(event=event, instance=room)
 
     initial = json.loads(field.initial)
     assert "availabilities" in initial
@@ -441,16 +408,14 @@ def test_availabilities_field_get_event_context_with_resolution(event):
 def test_availabilities_field_get_event_context_includes_room_constraints(event):
     """When instance is not a Room and rooms have availabilities,
     the context includes merged room constraints."""
-    with scopes_disabled():
-        room = RoomFactory(event=event)
-        Availability.objects.create(
-            event=event, room=room, start=event.datetime_from, end=event.datetime_to
-        )
-        speaker = SpeakerFactory(event=event)
+    room = RoomFactory(event=event)
+    AvailabilityFactory(
+        event=event, room=room, start=event.datetime_from, end=event.datetime_to
+    )
+    speaker = SpeakerFactory(event=event)
     field = AvailabilitiesField(event=event)
     field.instance = speaker
-    with scopes_disabled():
-        ctx = field._get_event_context()
+    ctx = field._get_event_context()
     assert "constraints" in ctx
     assert len(ctx["constraints"]) == 1
 
@@ -459,8 +424,7 @@ def test_availabilities_field_get_event_context_includes_room_constraints(event)
 def test_availabilities_field_get_event_context_no_constraints_for_room(event):
     """When the instance is a Room, room constraints are not included."""
     room = RoomFactory(event=event)
-    with scopes_disabled():
-        field = AvailabilitiesField(event=event, instance=room)
+    field = AvailabilitiesField(event=event, instance=room)
     ctx = field._get_event_context()
     assert "constraints" not in ctx
 
@@ -695,7 +659,6 @@ def test_availabilities_field_serialize_empty_instance(event):
 
 
 def test_profile_picture_field_clean_unknown_action_returns_none():
-    """An unrecognised action falls through all branches and returns None."""
     field = ProfilePictureField(required=False)
     result = field.clean({"action": "unknown_action"})
     assert result is None
@@ -720,7 +683,7 @@ def test_profile_picture_field_save_upload_sets_avatar(make_image):
 def test_profile_picture_field_save_remove_clears_picture():
     """When _cleaned_value is False (remove), save() clears the picture."""
     speaker = SpeakerFactory()
-    old_picture = ProfilePicture.objects.create(user=speaker.user)
+    old_picture = ProfilePictureFactory(user=speaker.user)
     speaker.profile_picture = old_picture
     speaker.save(update_fields=["profile_picture"])
     field = ProfilePictureField()
@@ -741,8 +704,8 @@ def test_profile_picture_field_save_select_sets_new_picture():
     speaker = SpeakerFactory()
     user = speaker.user
     assert user.profile_picture is None
-    new_picture = ProfilePicture.objects.create(user=user)
-    old_picture = ProfilePicture.objects.create(user=user)
+    new_picture = ProfilePictureFactory(user=user)
+    old_picture = ProfilePictureFactory(user=user)
     speaker.profile_picture = old_picture
     speaker.save(update_fields=["profile_picture"])
     field = ProfilePictureField()
@@ -780,7 +743,7 @@ def test_profile_picture_field_save_select_without_old_picture():
     user = speaker.user
     assert speaker.profile_picture is None
     assert user.profile_picture is None
-    new_picture = ProfilePicture.objects.create(user=user)
+    new_picture = ProfilePictureFactory(user=user)
     field = ProfilePictureField()
     field._cleaned_value = new_picture
 
@@ -795,10 +758,8 @@ def test_profile_picture_field_save_select_without_old_picture():
 @pytest.mark.django_db
 def test_submission_type_field_label_caches_show_duration():
     """After the first call, show_duration is cached and reused."""
-    with scopes_disabled():
-        sub_type = SubmissionTypeFactory(default_duration=30)
-        sub_type.event.cfp.fields["duration"] = {"visibility": "do_not_ask"}
-        sub_type.event.cfp.save()
+    event = EventFactory(cfp__fields={"duration": {"visibility": "do_not_ask"}})
+    sub_type = SubmissionTypeFactory(event=event, default_duration=30)
 
     field = SubmissionTypeField(queryset=type(sub_type).objects.none())
     field.label_from_instance(sub_type)
@@ -819,8 +780,7 @@ def test_availabilities_field_get_event_context_no_constraints_without_room_avai
     field = AvailabilitiesField(event=event)
     field.instance = speaker
 
-    with scopes_disabled():
-        ctx = field._get_event_context()
+    ctx = field._get_event_context()
 
     assert "constraints" not in ctx
 

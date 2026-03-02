@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.core.cache import cache
 
@@ -46,7 +48,6 @@ def test_populate_app_cache_fills_cache():
 
 @pytest.mark.django_db
 def test_event_plugin_signal_is_active_core_module(settings):
-    """Receivers from core modules are always active regardless of event plugins."""
     settings.CORE_MODULES = ["mycore.module"]
     _populate_app_cache()
     receiver = _make_receiver("mycore.module.submodule")
@@ -62,7 +63,6 @@ def test_event_plugin_signal_is_active_core_module(settings):
 )
 @pytest.mark.django_db
 def test_event_plugin_signal_is_active_non_core_receiver(plugins, expected, settings):
-    """Non-core receivers are active only when their app is in the event's plugin list."""
     settings.CORE_MODULES = []
     _populate_app_cache()
     receiver = _make_receiver("tests.dummy_app.views")
@@ -72,7 +72,6 @@ def test_event_plugin_signal_is_active_non_core_receiver(plugins, expected, sett
 
 
 def test_event_plugin_signal_is_active_no_sender(settings):
-    """With sender=None, non-core receivers are inactive."""
     settings.CORE_MODULES = []
     receiver = _make_receiver("tests.dummy_app.views")
 
@@ -123,7 +122,6 @@ def test_event_plugin_signal_no_receivers(method_name, kwargs, expected):
 )
 @pytest.mark.django_db
 def test_event_plugin_signal_skips_inactive_receivers(method_name, kwargs, settings):
-    """Receivers not belonging to active plugins are not called."""
     signal = EventPluginSignal()
     settings.CORE_MODULES = []
     _populate_app_cache()
@@ -154,7 +152,6 @@ def test_event_plugin_signal_send_calls_active_receivers(register_signal_handler
 
 @pytest.mark.django_db
 def test_event_plugin_signal_send_populates_app_cache(register_signal_handler):
-    """send() populates app_cache on demand if it's empty."""
     signal = EventPluginSignal()
     event = EventFactory()
 
@@ -171,7 +168,6 @@ def test_event_plugin_signal_send_populates_app_cache(register_signal_handler):
 
 @pytest.mark.django_db
 def test_event_plugin_signal_send_responses_sorted(register_signal_handler):
-    """Responses are sorted by (module, name)."""
     signal = EventPluginSignal()
     event = EventFactory()
 
@@ -191,7 +187,6 @@ def test_event_plugin_signal_send_responses_sorted(register_signal_handler):
 
 @pytest.mark.django_db
 def test_event_plugin_signal_send_robust_populates_app_cache(register_signal_handler):
-    """send_robust() populates app_cache on demand if it's empty."""
     signal = EventPluginSignal()
     event = EventFactory()
 
@@ -246,7 +241,6 @@ def test_event_plugin_signal_send_robust_returns_successful_and_failed(
 
 @pytest.mark.django_db
 def test_event_plugin_signal_send_chained_populates_app_cache(register_signal_handler):
-    """send_chained() populates app_cache on demand if it's empty."""
     signal = EventPluginSignal()
     event = EventFactory()
 
@@ -318,7 +312,6 @@ def test_minimum_interval_blocks_second_call():
 
 
 def test_minimum_interval_blocks_during_running():
-    """While a task is 'running', duplicate calls are blocked."""
     calls = []
 
     @minimum_interval(minutes_after_success=10, minutes_running_timeout=30)
@@ -337,7 +330,6 @@ def test_minimum_interval_blocks_during_running():
 
 
 def test_minimum_interval_caches_error_result():
-    """After a failure, the task is blocked for minutes_after_error."""
     calls = []
 
     @minimum_interval(minutes_after_success=10, minutes_after_error=5)
@@ -355,8 +347,6 @@ def test_minimum_interval_caches_error_result():
 
 
 def test_minimum_interval_releases_lock_after_success():
-    """The running lock is released after a successful run,
-    and the result cache blocks subsequent calls."""
 
     @minimum_interval(minutes_after_success=10, minutes_running_timeout=30)
     def task():
@@ -371,7 +361,6 @@ def test_minimum_interval_releases_lock_after_success():
 
 
 def test_minimum_interval_releases_lock_after_error():
-    """The running lock is released even after a failed run."""
 
     @minimum_interval(minutes_after_success=10, minutes_running_timeout=30)
     def task():

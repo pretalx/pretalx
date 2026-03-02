@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025-present Tobias Kunze
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from io import BytesIO
@@ -16,7 +16,6 @@ from django.test import RequestFactory
 from django.utils.module_loading import import_string
 from django.views.generic import ListView
 from django.views.generic.edit import FormMixin
-from django_scopes import scopes_disabled
 
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.views.mixins import (
@@ -74,132 +73,116 @@ def test_filterable_get_default_filters():
 
 def test_filterable_handle_search_multiple_filters_ors(event):
     """handle_search with more than one filter field ORs them together."""
-    with scopes_disabled():
-        sub_title = SubmissionFactory(event=event, title="submitted", state="accepted")
-        sub_state = SubmissionFactory(
-            event=event, title="Other Talk", state="submitted"
-        )
-        SubmissionFactory(event=event, title="Unrelated", state="accepted")
+    sub_title = SubmissionFactory(event=event, title="submitted", state="accepted")
+    sub_state = SubmissionFactory(event=event, title="Other Talk", state="submitted")
+    SubmissionFactory(event=event, title="Unrelated", state="accepted")
 
-        result = Filterable.handle_search(
-            event.submissions.all(),
-            "submitted",
-            ["title__icontains", "state__icontains"],
-        )
-        assert set(result) == {sub_title, sub_state}
+    result = Filterable.handle_search(
+        event.submissions.all(), "submitted", ["title__icontains", "state__icontains"]
+    )
+    assert set(result) == {sub_title, sub_state}
 
 
 def test_filterable_handle_search_single_filter(event):
     """handle_search with exactly one filter field applies it directly."""
-    with scopes_disabled():
-        sub = SubmissionFactory(event=event, title="Finding Nemo")
-        SubmissionFactory(event=event, title="The Matrix")
+    sub = SubmissionFactory(event=event, title="Finding Nemo")
+    SubmissionFactory(event=event, title="The Matrix")
 
-        result = Filterable.handle_search(
-            event.submissions.all(), "Finding", ["title__icontains"]
-        )
-        assert list(result) == [sub]
+    result = Filterable.handle_search(
+        event.submissions.all(), "Finding", ["title__icontains"]
+    )
+    assert list(result) == [sub]
 
 
 def test_filterable_handle_search_no_filters(event):
     """handle_search with no filter fields returns the queryset unchanged."""
-    with scopes_disabled():
-        sub = SubmissionFactory(event=event)
+    sub = SubmissionFactory(event=event)
 
-        result = Filterable.handle_search(event.submissions.all(), "anything", [])
-        assert list(result) == [sub]
+    result = Filterable.handle_search(event.submissions.all(), "anything", [])
+    assert list(result) == [sub]
 
 
 def test_filterable_handle_filter_basic(event):
     """_handle_filter applies simple key=value filters from GET params."""
-    with scopes_disabled():
-        sub1 = SubmissionFactory(event=event, state="submitted")
-        SubmissionFactory(event=event, state="accepted")
+    sub1 = SubmissionFactory(event=event, state="submitted")
+    SubmissionFactory(event=event, state="accepted")
 
-        request = make_request(event)
-        request.GET = _qd(state="submitted")
-        f = ConcreteFilterable(request)
-        result = f._handle_filter(event.submissions.all())
-        assert list(result) == [sub1]
+    request = make_request(event)
+    request.GET = _qd(state="submitted")
+    f = ConcreteFilterable(request)
+    result = f._handle_filter(event.submissions.all())
+    assert list(result) == [sub1]
 
 
 def test_filterable_handle_filter_or_lookup(event):
     """_handle_filter supports value__key OR lookups via __ in values."""
-    with scopes_disabled():
-        sub1 = SubmissionFactory(event=event, state="submitted")
-        sub2 = SubmissionFactory(event=event, state="accepted")
-        SubmissionFactory(event=event, state="rejected")
+    sub1 = SubmissionFactory(event=event, state="submitted")
+    sub2 = SubmissionFactory(event=event, state="accepted")
+    SubmissionFactory(event=event, state="rejected")
 
-        qd = QueryDict(mutable=True)
-        qd.setlist("filter", ["state__submitted", "state__accepted"])
-        request = make_request(event)
-        request.GET = qd
-        f = ConcreteFilterable(request, filter_fields=["state"])
-        result = f._handle_filter(event.submissions.all())
-        assert set(result) == {sub1, sub2}
+    qd = QueryDict(mutable=True)
+    qd.setlist("filter", ["state__submitted", "state__accepted"])
+    request = make_request(event)
+    request.GET = qd
+    f = ConcreteFilterable(request, filter_fields=["state"])
+    result = f._handle_filter(event.submissions.all())
+    assert set(result) == {sub1, sub2}
 
 
 def test_filterable_handle_filter_isnull(event):
     """_handle_filter handles __isnull lookups as boolean, not list."""
-    with scopes_disabled():
-        sub_with_track = SubmissionFactory(event=event)
-        track = Track.objects.create(event=event, name="Test Track", color="#000000")
-        sub_with_track.track = track
-        sub_with_track.save()
-        sub_without_track = SubmissionFactory(event=event)
+    track = TrackFactory(event=event, name="Test Track", color="#000000")
+    SubmissionFactory(event=event, track=track)  # must exist for filter test
+    sub_without_track = SubmissionFactory(event=event)
 
-        request = make_request(event)
-        request.GET = _qd(track__isnull="on")
-        f = ConcreteFilterable(request, filter_fields=["track__isnull"])
-        result = f._handle_filter(event.submissions.all())
-        assert list(result) == [sub_without_track]
+    request = make_request(event)
+    request.GET = _qd(track__isnull="on")
+    f = ConcreteFilterable(request, filter_fields=["track__isnull"])
+    result = f._handle_filter(event.submissions.all())
+    assert list(result) == [sub_without_track]
 
 
 def test_filterable_handle_filter_ignores_empty_values(event):
     """_handle_filter skips empty values in filter fields."""
-    with scopes_disabled():
-        sub = SubmissionFactory(event=event, state="submitted")
+    sub = SubmissionFactory(event=event, state="submitted")
 
-        request = make_request(event)
-        request.GET = _qd(state="")
-        f = ConcreteFilterable(request)
-        result = f._handle_filter(event.submissions.all())
-        assert list(result) == [sub]
+    request = make_request(event)
+    request.GET = _qd(state="")
+    f = ConcreteFilterable(request)
+    result = f._handle_filter(event.submissions.all())
+    assert list(result) == [sub]
 
 
 def test_filterable_handle_filter_ignores_non_filter_fields(event):
     """_handle_filter ignores GET params not in filter_fields."""
-    with scopes_disabled():
-        sub = SubmissionFactory(event=event, state="submitted")
+    sub = SubmissionFactory(event=event, state="submitted")
 
-        request = make_request(event)
-        request.GET = _qd(title="test")
-        f = ConcreteFilterable(request, filter_fields=["state"])
-        result = f._handle_filter(event.submissions.all())
-        assert list(result) == [sub]
+    request = make_request(event)
+    request.GET = _qd(title="test")
+    f = ConcreteFilterable(request, filter_fields=["state"])
+    result = f._handle_filter(event.submissions.all())
+    assert list(result) == [sub]
 
 
 def test_filterable_filter_queryset_with_search(event):
     """filter_queryset applies text search when 'q' is in GET params."""
-    with scopes_disabled():
-        sub1 = SubmissionFactory(event=event, title="Finding Nemo")
-        SubmissionFactory(event=event, title="The Matrix")
+    sub1 = SubmissionFactory(event=event, title="Finding Nemo")
+    SubmissionFactory(event=event, title="The Matrix")
 
-        request = make_request(event)
-        request.GET = _qd(q="Finding Nemo")
-        f = ConcreteFilterable(
-            request, filter_fields=[], default_filters=["title__icontains"]
-        )
-        result = f.filter_queryset(event.submissions.all())
-        assert list(result) == [sub1]
+    request = make_request(event)
+    request.GET = _qd(q="Finding Nemo")
+    f = ConcreteFilterable(
+        request, filter_fields=[], default_filters=["title__icontains"]
+    )
+    result = f.filter_queryset(event.submissions.all())
+    assert list(result) == [sub1]
 
 
 def test_filterable_filter_queryset_with_filter_fields_and_search(event):
     """filter_queryset applies both _handle_filter and search together."""
-    with scopes_disabled():
-        sub1 = SubmissionFactory(event=event, title="Finding Nemo", state="submitted")
-        SubmissionFactory(event=event, title="Finding Dory", state="accepted")
-        SubmissionFactory(event=event, title="The Matrix", state="submitted")
+    sub1 = SubmissionFactory(event=event, title="Finding Nemo", state="submitted")
+    SubmissionFactory(event=event, title="Finding Dory", state="accepted")
+    SubmissionFactory(event=event, title="The Matrix", state="submitted")
 
     request = make_request(event)
     qd = QueryDict(mutable=True)
@@ -215,35 +198,33 @@ def test_filterable_filter_queryset_with_filter_fields_and_search(event):
     f = FilterableNoForm(
         request, filter_fields=["state"], default_filters=["title__icontains"]
     )
-    with scopes_disabled():
-        result = f.filter_queryset(event.submissions.all())
-        assert list(result) == [sub1]
+    result = f.filter_queryset(event.submissions.all())
+    assert list(result) == [sub1]
 
 
 def test_filterable_filter_queryset_with_filter_form(event):
     """filter_queryset calls filter_form.filter_queryset when the form
     is valid and has that method."""
-    with scopes_disabled():
-        SubmissionFactory(event=event)
+    SubmissionFactory(event=event)
 
-        request = make_request(event)
-        request.GET = _qd()
+    request = make_request(event)
+    request.GET = _qd()
 
-        class FakeFilterForm:
-            def is_valid(self):
-                return True
+    class FakeFilterForm:
+        def is_valid(self):
+            return True
 
-            def filter_queryset(self, qs):
-                return qs.none()
+        def filter_queryset(self, qs):
+            return qs.none()
 
-        class FilterableWithForm(ConcreteFilterable):
-            @property
-            def filter_form(self):
-                return FakeFilterForm()
+    class FilterableWithForm(ConcreteFilterable):
+        @property
+        def filter_form(self):
+            return FakeFilterForm()
 
-        f = FilterableWithForm(request, filter_fields=[])
-        result = f.filter_queryset(event.submissions.all())
-        assert list(result) == []
+    f = FilterableWithForm(request, filter_fields=[])
+    result = f.filter_queryset(event.submissions.all())
+    assert list(result) == []
 
 
 def test_filterable_search_form_with_q():
@@ -300,16 +281,14 @@ def test_filterable_filter_form_from_filter_fields(event):
 def test_filterable_filter_form_fk_queryset_filtered_by_event(event):
     """filter_form auto-generated from filter_fields filters FK querysets
     by event, excluding tracks from other events."""
-    with scopes_disabled():
-        TrackFactory(event=event, name="Mine")
-        other_event = EventFactory()
-        TrackFactory(event=other_event, name="Theirs")
+    TrackFactory(event=event, name="Mine")
+    other_event = EventFactory()
+    TrackFactory(event=other_event, name="Theirs")
 
     request = make_request(event)
     f = ConcreteFilterable(request, filter_fields=["track"])
     f.model = Submission
-    with scopes_disabled():
-        form = f.filter_form
+    form = f.filter_form
     assert form is not None
     assert form.fields["track"].required is False
     tracks = list(form.fields["track"].queryset)
@@ -915,83 +894,73 @@ def test_action_confirm_get_context_data(event):
 
 def test_reorder_queryset_updates_positions(event):
     """reorder_queryset updates position fields based on the given ID order."""
-    with scopes_disabled():
-        t1 = Track.objects.create(
-            event=event, name="First", position=0, color="#111111"
-        )
-        t2 = Track.objects.create(
-            event=event, name="Second", position=1, color="#222222"
-        )
-        t3 = Track.objects.create(
-            event=event, name="Third", position=2, color="#333333"
-        )
+    t1 = TrackFactory(event=event, name="First", position=0, color="#111111")
+    t2 = TrackFactory(event=event, name="Second", position=1, color="#222222")
+    t3 = TrackFactory(event=event, name="Third", position=2, color="#333333")
 
-        reorder_queryset(
-            Track.objects.filter(event=event), [str(t3.pk), str(t1.pk), str(t2.pk)]
-        )
+    reorder_queryset(
+        Track.objects.filter(event=event), [str(t3.pk), str(t1.pk), str(t2.pk)]
+    )
 
-        t1.refresh_from_db()
-        t2.refresh_from_db()
-        t3.refresh_from_db()
-        assert t3.position == 0
-        assert t1.position == 1
-        assert t2.position == 2
+    t1.refresh_from_db()
+    t2.refresh_from_db()
+    t3.refresh_from_db()
+    assert t3.position == 0
+    assert t1.position == 1
+    assert t2.position == 2
 
 
 def test_reorder_queryset_raises_404_for_unknown_pk(event):
     """reorder_queryset raises Http404 when a PK is not in the queryset."""
-    with scopes_disabled():
-        Track.objects.create(event=event, name="First", position=0, color="#111111")
-        with pytest.raises(Http404):
-            reorder_queryset(Track.objects.filter(event=event), ["99999"])
+    TrackFactory(event=event, name="First", position=0, color="#111111")
+    with pytest.raises(Http404):
+        reorder_queryset(Track.objects.filter(event=event), ["99999"])
 
 
 def test_order_action_mixin_order_handler(event):
     """order_handler calls reorder_queryset with the posted order."""
-    with scopes_disabled():
-        t1 = Track.objects.create(event=event, name="A", position=0, color="#111111")
-        t2 = Track.objects.create(event=event, name="B", position=1, color="#222222")
+    t1 = TrackFactory(event=event, name="A", position=0, color="#111111")
+    t2 = TrackFactory(event=event, name="B", position=1, color="#222222")
 
-        class ConcreteOrderView(OrderActionMixin):
-            def __init__(self, request, _event):
-                self.request = request
-                self._event = _event
+    class ConcreteOrderView(OrderActionMixin):
+        def __init__(self, request, _event):
+            self.request = request
+            self._event = _event
 
-            def get_queryset(self):
-                return Track.objects.filter(event=self._event)
+        def get_queryset(self):
+            return Track.objects.filter(event=self._event)
 
-            def list(self, request, *args, **kwargs):
-                return "list_response"
+        def list(self, request, *args, **kwargs):
+            return "list_response"
 
-        request = make_request(event, method="post", path="/order/")
-        request.POST = {"order": f"{t2.pk},{t1.pk}"}
-        view = ConcreteOrderView(request, event)
-        result = view.order_handler(request)
-        assert result == "list_response"
+    request = make_request(event, method="post", path="/order/")
+    request.POST = {"order": f"{t2.pk},{t1.pk}"}
+    view = ConcreteOrderView(request, event)
+    result = view.order_handler(request)
+    assert result == "list_response"
 
-        t1.refresh_from_db()
-        t2.refresh_from_db()
-        assert t2.position == 0
-        assert t1.position == 1
+    t1.refresh_from_db()
+    t2.refresh_from_db()
+    assert t2.position == 0
+    assert t1.position == 1
 
 
 def test_order_action_mixin_order_handler_empty_order(event):
     """order_handler does nothing when order is empty."""
-    with scopes_disabled():
-        Track.objects.create(event=event, name="A", position=0, color="#111111")
+    TrackFactory(event=event, name="A", position=0, color="#111111")
 
-        class ConcreteOrderView(OrderActionMixin):
-            def __init__(self, request, _event):
-                self.request = request
-                self._event = _event
+    class ConcreteOrderView(OrderActionMixin):
+        def __init__(self, request, _event):
+            self.request = request
+            self._event = _event
 
-            def list(self, request, *args, **kwargs):
-                return "ok"
+        def list(self, request, *args, **kwargs):
+            return "ok"
 
-        request = make_request(event, method="post", path="/order/")
-        request.POST = {"order": ""}
-        view = ConcreteOrderView(request, event)
-        assert view.order_handler(request) == "ok"
+    request = make_request(event, method="post", path="/order/")
+    request.POST = {"order": ""}
+    view = ConcreteOrderView(request, event)
+    assert view.order_handler(request) == "ok"
 
 
 def _add_messages(request):
@@ -1063,9 +1032,8 @@ def test_async_download_get_async_result_returns_celery_result(event):
 def test_async_download_handle_cached_file_serves_file(event):
     """handle_async_download serves the file when cached_file param points
     to a file with content."""
-    with scopes_disabled():
-        cf = CachedFileFactory()
-        cf.file.save("test.zip", ContentFile(b"zipdata"))
+    cf = CachedFileFactory()
+    cf.file.save("test.zip", ContentFile(b"zipdata"))
 
     request = make_request(event, path="/export/")
     request.GET = {"cached_file": str(cf.id)}
@@ -1076,8 +1044,7 @@ def test_async_download_handle_cached_file_serves_file(event):
 
 def test_async_download_handle_cached_file_missing_redirects(event):
     """handle_async_download redirects to error URL when cached_file has no file."""
-    with scopes_disabled():
-        cf = CachedFileFactory()
+    cf = CachedFileFactory()
 
     request = make_request(event, path="/export/")
     request.GET = {"cached_file": str(cf.id)}
@@ -1131,9 +1098,8 @@ def test_async_download_start_task_non_eager_redirects(event, settings):
 
 def test_async_download_check_task_ready_success_htmx(event):
     """_check_task_status returns success template for ready+successful HTMX request."""
-    with scopes_disabled():
-        cf = CachedFileFactory()
-        cf.file.save("export.zip", ContentFile(b"zipdata"))
+    cf = CachedFileFactory()
+    cf.file.save("export.zip", ContentFile(b"zipdata"))
 
     request = make_request(event, path="/export/", headers={"HX-Request": "true"})
     view = ConcreteAsyncDownload(request)
@@ -1166,9 +1132,8 @@ def test_async_download_check_task_pending_htmx(event):
 
 def test_async_download_check_task_ready_success_non_htmx(event):
     """_check_task_status serves the file directly for non-HTMX ready+success."""
-    with scopes_disabled():
-        cf = CachedFileFactory()
-        cf.file.save("export.zip", ContentFile(b"zipdata"))
+    cf = CachedFileFactory()
+    cf.file.save("export.zip", ContentFile(b"zipdata"))
 
     request = make_request(event, path="/export/")
     view = ConcreteAsyncDownload(request)
@@ -1201,10 +1166,9 @@ def test_async_download_check_task_pending_non_htmx(event):
 def test_async_download_serve_cached_file_missing_file(event):
     """_serve_cached_file redirects to error URL when the file is missing
     from storage."""
-    with scopes_disabled():
-        cf = CachedFileFactory()
-        cf.file.name = "nonexistent/path.zip"
-        cf.save()
+    cf = CachedFileFactory()
+    cf.file.name = "nonexistent/path.zip"
+    cf.save()
 
     request = make_request(event, path="/export/")
     view = ConcreteAsyncDownload(request)

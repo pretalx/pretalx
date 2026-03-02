@@ -1,11 +1,12 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import json
 
 import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.urls import ResolverMatch
-from django.utils.timezone import now
-from django_scopes import scope, scopes_disabled
+from django_scopes import scope
 
 from pretalx.schedule.exporters import (
     FavedICalExporter,
@@ -24,26 +25,23 @@ from tests.factories import (
     UserFactory,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_schedule_data_metadata_without_schedule(event):
     sd = ScheduleData(event=event, schedule=None)
 
     assert sd.metadata == []
 
 
-@pytest.mark.django_db
 def test_schedule_data_data_without_schedule(event):
     sd = ScheduleData(event=event, schedule=None)
 
     assert sd.data == []
 
 
-@pytest.mark.django_db
-def test_schedule_data_metadata_with_schedule(event, schedule_with_talk):
-    sd = ScheduleData(event=event, schedule=schedule_with_talk)
+def test_schedule_data_metadata_with_schedule(event, talk_slot):
+    sd = ScheduleData(event=event, schedule=talk_slot.schedule)
 
     metadata = sd.metadata
 
@@ -51,9 +49,8 @@ def test_schedule_data_metadata_with_schedule(event, schedule_with_talk):
     assert "base_url" in metadata
 
 
-@pytest.mark.django_db
-def test_schedule_data_data_returns_day_entries(event, schedule_with_talk):
-    sd = ScheduleData(event=event, schedule=schedule_with_talk)
+def test_schedule_data_data_returns_day_entries(event, talk_slot):
+    sd = ScheduleData(event=event, schedule=talk_slot.schedule)
 
     with scope(event=event):
         data = list(sd.data)
@@ -66,9 +63,8 @@ def test_schedule_data_data_returns_day_entries(event, schedule_with_talk):
     assert "rooms" in day
 
 
-@pytest.mark.django_db
-def test_schedule_data_data_includes_visible_talks(event, schedule_with_talk):
-    sd = ScheduleData(event=event, schedule=schedule_with_talk)
+def test_schedule_data_data_includes_visible_talks(event, talk_slot):
+    sd = ScheduleData(event=event, schedule=talk_slot.schedule)
 
     with scope(event=event):
         data = list(sd.data)
@@ -80,7 +76,6 @@ def test_schedule_data_data_includes_visible_talks(event, schedule_with_talk):
     assert room["talks"][0].submission is not None
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("with_accepted", "expected_count"),
     ((False, 0), (True, 1)),
@@ -89,10 +84,8 @@ def test_schedule_data_data_includes_visible_talks(event, schedule_with_talk):
 def test_schedule_data_data_invisible_talk_visibility(
     event, with_accepted, expected_count
 ):
-    """Non-visible talks are excluded unless with_accepted=True."""
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-        slot = TalkSlotFactory(submission=submission, is_visible=False)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+    slot = TalkSlotFactory(submission=submission, is_visible=False)
 
     sd = ScheduleData(event=event, schedule=slot.schedule, with_accepted=with_accepted)
 
@@ -103,17 +96,15 @@ def test_schedule_data_data_invisible_talk_visibility(
     assert len(rooms_with_talks) == expected_count
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     "slot_overrides",
     ({"start": None, "end": None}, {"room": None}),
     ids=["without_start", "without_room"],
 )
 def test_schedule_data_data_skips_incomplete_talk(event, slot_overrides):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        TalkSlotFactory(submission=submission, is_visible=True, **slot_overrides)
-        schedule = event.wip_schedule
+    submission = SubmissionFactory(event=event)
+    TalkSlotFactory(submission=submission, is_visible=True, **slot_overrides)
+    schedule = event.wip_schedule
 
     sd = ScheduleData(event=event, schedule=schedule, with_accepted=True)
 
@@ -124,16 +115,14 @@ def test_schedule_data_data_skips_incomplete_talk(event, slot_overrides):
     assert rooms_with_talks == []
 
 
-@pytest.mark.django_db
 def test_schedule_data_data_rooms_sorted_by_position(event):
-    with scopes_disabled():
-        room_b = RoomFactory(event=event, name="Room B", position=2)
-        room_a = RoomFactory(event=event, name="Room A", position=1)
-        sub1 = SubmissionFactory(event=event)
-        sub2 = SubmissionFactory(event=event)
-        TalkSlotFactory(submission=sub1, room=room_b, is_visible=True)
-        TalkSlotFactory(submission=sub2, room=room_a, is_visible=True)
-        schedule = event.wip_schedule
+    room_b = RoomFactory(event=event, name="Room B", position=2)
+    room_a = RoomFactory(event=event, name="Room A", position=1)
+    sub1 = SubmissionFactory(event=event)
+    sub2 = SubmissionFactory(event=event)
+    TalkSlotFactory(submission=sub1, room=room_b, is_visible=True)
+    TalkSlotFactory(submission=sub2, room=room_a, is_visible=True)
+    schedule = event.wip_schedule
 
     sd = ScheduleData(event=event, schedule=schedule, with_accepted=True)
 
@@ -145,19 +134,17 @@ def test_schedule_data_data_rooms_sorted_by_position(event):
     assert room_names == ["Room A", "Room B"]
 
 
-@pytest.mark.django_db
 def test_schedule_data_data_late_night_talk_assigned_to_previous_day(event):
     """A talk starting before 3am is assigned to the previous day."""
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        late_start = event.datetime_from + dt.timedelta(days=1, hours=2)
-        TalkSlotFactory(
-            submission=submission,
-            is_visible=True,
-            start=late_start,
-            end=late_start + dt.timedelta(hours=1),
-        )
-        schedule = event.wip_schedule
+    submission = SubmissionFactory(event=event)
+    late_start = event.datetime_from + dt.timedelta(days=1, hours=2)
+    TalkSlotFactory(
+        submission=submission,
+        is_visible=True,
+        start=late_start,
+        end=late_start + dt.timedelta(hours=1),
+    )
+    schedule = event.wip_schedule
 
     sd = ScheduleData(event=event, schedule=schedule, with_accepted=True)
 
@@ -172,11 +159,8 @@ def test_schedule_data_data_late_night_talk_assigned_to_previous_day(event):
     assert day2_rooms == []
 
 
-@pytest.mark.django_db
-def test_schedule_data_tracks_first_start_and_last_end(
-    event, talk_slot, schedule_with_talk
-):
-    sd = ScheduleData(event=event, schedule=schedule_with_talk)
+def test_schedule_data_tracks_first_start_and_last_end(event, talk_slot):
+    sd = ScheduleData(event=event, schedule=talk_slot.schedule)
 
     with scope(event=event):
         data = list(sd.data)
@@ -187,9 +171,8 @@ def test_schedule_data_tracks_first_start_and_last_end(
     assert day["last_end"] == talk_slot.local_end
 
 
-@pytest.mark.django_db
-def test_frab_xml_exporter_get_data(event, schedule_with_talk):
-    exporter = FrabXmlExporter(event, schedule=schedule_with_talk)
+def test_frab_xml_exporter_get_data(event, talk_slot):
+    exporter = FrabXmlExporter(event, schedule=talk_slot.schedule)
 
     with scope(event=event):
         result = exporter.get_data()
@@ -199,9 +182,8 @@ def test_frab_xml_exporter_get_data(event, schedule_with_talk):
     assert f"<acronym>{event.slug}</acronym>" in result
 
 
-@pytest.mark.django_db
-def test_frab_xcal_exporter_get_data(event, schedule_with_talk):
-    exporter = FrabXCalExporter(event, schedule=schedule_with_talk)
+def test_frab_xcal_exporter_get_data(event, talk_slot):
+    exporter = FrabXCalExporter(event, schedule=talk_slot.schedule)
 
     with scope(event=event):
         result = exporter.get_data()
@@ -210,7 +192,6 @@ def test_frab_xcal_exporter_get_data(event, schedule_with_talk):
     assert "vevent" in result.lower()
 
 
-@pytest.mark.django_db
 def test_frab_json_exporter_class_attributes(event):
     exporter = FrabJsonExporter(event)
     assert exporter.verbose_name == "JSON (frab compatible)"
@@ -222,9 +203,8 @@ def test_frab_json_exporter_class_attributes(event):
     assert exporter.identifier == "schedule.json"
 
 
-@pytest.mark.django_db
-def test_frab_json_exporter_get_data_returns_valid_json(event, schedule_with_talk):
-    exporter = FrabJsonExporter(event, schedule=schedule_with_talk)
+def test_frab_json_exporter_get_data_returns_valid_json(event, talk_slot):
+    exporter = FrabJsonExporter(event, schedule=talk_slot.schedule)
 
     with scope(event=event):
         result = exporter.get_data()
@@ -236,9 +216,8 @@ def test_frab_json_exporter_get_data_returns_valid_json(event, schedule_with_tal
     assert "schedule" in parsed
 
 
-@pytest.mark.django_db
-def test_frab_json_exporter_get_data_conference_structure(event, schedule_with_talk):
-    exporter = FrabJsonExporter(event, schedule=schedule_with_talk)
+def test_frab_json_exporter_get_data_conference_structure(event, talk_slot):
+    exporter = FrabJsonExporter(event, schedule=talk_slot.schedule)
 
     with scope(event=event):
         result = json.loads(exporter.get_data())
@@ -254,9 +233,8 @@ def test_frab_json_exporter_get_data_conference_structure(event, schedule_with_t
     assert "tracks" in conference
 
 
-@pytest.mark.django_db
-def test_frab_json_exporter_get_data_includes_talk(event, schedule_with_talk):
-    exporter = FrabJsonExporter(event, schedule=schedule_with_talk)
+def test_frab_json_exporter_get_data_includes_talk(event, talk_slot):
+    exporter = FrabJsonExporter(event, schedule=talk_slot.schedule)
 
     with scope(event=event):
         result = json.loads(exporter.get_data())
@@ -277,7 +255,6 @@ def test_frab_json_exporter_get_data_includes_talk(event, schedule_with_talk):
     assert "room" in talk
 
 
-@pytest.mark.django_db
 def test_ical_exporter_class_attributes(event):
     exporter = ICalExporter(event)
     assert str(exporter.verbose_name) == "iCal (full event)"
@@ -291,9 +268,8 @@ def test_ical_exporter_class_attributes(event):
     assert exporter.identifier == "schedule.ics"
 
 
-@pytest.mark.django_db
-def test_ical_exporter_get_data(event, schedule_with_talk):
-    exporter = ICalExporter(event, schedule=schedule_with_talk)
+def test_ical_exporter_get_data(event, talk_slot):
+    exporter = ICalExporter(event, schedule=talk_slot.schedule)
 
     with scope(event=event):
         result = exporter.get_data()
@@ -303,7 +279,6 @@ def test_ical_exporter_get_data(event, schedule_with_talk):
     assert "END:VCALENDAR" in result
 
 
-@pytest.mark.django_db
 def test_faved_ical_exporter_class_attributes(event):
     exporter = FavedICalExporter(event)
     assert str(exporter.verbose_name) == "iCal (your starred sessions)"
@@ -316,7 +291,6 @@ def test_faved_ical_exporter_class_attributes(event):
     assert exporter.identifier == "faved.ics"
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("namespaces", "user_type", "expected"),
     (
@@ -346,7 +320,6 @@ def test_faved_ical_exporter_is_public(rf, event, namespaces, user_type, expecte
     assert exporter.is_public(request) is expected
 
 
-@pytest.mark.django_db
 def test_faved_ical_exporter_get_data_unauthenticated(rf, event):
     exporter = FavedICalExporter(event)
     request = rf.get("/")
@@ -355,20 +328,17 @@ def test_faved_ical_exporter_get_data_unauthenticated(rf, event):
     assert exporter.get_data(request=request) is None
 
 
-@pytest.mark.django_db
 def test_schedule_data_data_out_of_bounds_talk_skipped(event):
-    """Talks whose date falls outside the event date range are skipped."""
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        # Schedule a talk a week before the event
-        out_of_range_start = event.datetime_from - dt.timedelta(days=7)
-        TalkSlotFactory(
-            submission=submission,
-            is_visible=True,
-            start=out_of_range_start,
-            end=out_of_range_start + dt.timedelta(hours=1),
-        )
-        schedule = event.wip_schedule
+    submission = SubmissionFactory(event=event)
+    # Schedule a talk a week before the event
+    out_of_range_start = event.datetime_from - dt.timedelta(days=7)
+    TalkSlotFactory(
+        submission=submission,
+        is_visible=True,
+        start=out_of_range_start,
+        end=out_of_range_start + dt.timedelta(hours=1),
+    )
+    schedule = event.wip_schedule
 
     sd = ScheduleData(event=event, schedule=schedule, with_accepted=True)
 
@@ -379,30 +349,27 @@ def test_schedule_data_data_out_of_bounds_talk_skipped(event):
     assert rooms_with_talks == []
 
 
-@pytest.mark.django_db
 def test_schedule_data_data_multiple_talks_same_room(event):
-    """Multiple talks in the same room are grouped together."""
-    with scopes_disabled():
-        room = RoomFactory(event=event)
-        sub1 = SubmissionFactory(event=event)
-        sub2 = SubmissionFactory(event=event)
-        start1 = event.datetime_from
-        start2 = event.datetime_from + dt.timedelta(hours=2)
-        TalkSlotFactory(
-            submission=sub1,
-            room=room,
-            is_visible=True,
-            start=start1,
-            end=start1 + dt.timedelta(hours=1),
-        )
-        TalkSlotFactory(
-            submission=sub2,
-            room=room,
-            is_visible=True,
-            start=start2,
-            end=start2 + dt.timedelta(hours=1),
-        )
-        schedule = event.wip_schedule
+    room = RoomFactory(event=event)
+    sub1 = SubmissionFactory(event=event)
+    sub2 = SubmissionFactory(event=event)
+    start1 = event.datetime_from
+    start2 = event.datetime_from + dt.timedelta(hours=2)
+    TalkSlotFactory(
+        submission=sub1,
+        room=room,
+        is_visible=True,
+        start=start1,
+        end=start1 + dt.timedelta(hours=1),
+    )
+    TalkSlotFactory(
+        submission=sub2,
+        room=room,
+        is_visible=True,
+        start=start2,
+        end=start2 + dt.timedelta(hours=1),
+    )
+    schedule = event.wip_schedule
 
     sd = ScheduleData(event=event, schedule=schedule, with_accepted=True)
 
@@ -415,16 +382,9 @@ def test_schedule_data_data_multiple_talks_same_room(event):
     assert len(room_data["talks"]) == 2
 
 
-@pytest.mark.django_db
-def test_faved_ical_exporter_get_data_authenticated(rf, event, schedule_with_talk):
-    """get_data returns ical content for an authenticated user with a published schedule."""
-    with scopes_disabled():
-        user = UserFactory()
-        schedule = schedule_with_talk
-        schedule.version = "v1"
-        schedule.published = now()
-        schedule.save()
-        event.current_schedule = schedule
+def test_faved_ical_exporter_get_data_authenticated(rf, published_talk_slot):
+    event = published_talk_slot.submission.event
+    user = UserFactory()
 
     exporter = FavedICalExporter(event)
     request = rf.get("/")

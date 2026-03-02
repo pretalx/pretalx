@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django_scopes import scopes_disabled
 
@@ -11,10 +13,9 @@ from tests.factories import (
 )
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_unauthenticated_returns_empty(client):
     """Anonymous users are redirected by the login_required middleware."""
     response = client.get("/orga/nav/typeahead/")
@@ -22,7 +23,6 @@ def test_nav_typeahead_unauthenticated_returns_empty(client):
     assert response.status_code == 302
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_organiser_sees_user_orga_and_event(
     client, event, organiser_user
 ):
@@ -43,7 +43,6 @@ def test_nav_typeahead_organiser_sees_user_orga_and_event(
     assert results[2]["name"] == str(event.name)
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_no_permissions_only_sees_self(client, event):
     """A user without any team membership only sees themselves."""
     user = UserFactory()
@@ -57,7 +56,6 @@ def test_nav_typeahead_no_permissions_only_sees_self(client, event):
     assert results[0]["type"] == "user"
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_query_filters_events_by_name(client, event, organiser_user):
     """Searching by event slug filters to matching events only."""
     with scopes_disabled():
@@ -72,7 +70,6 @@ def test_nav_typeahead_query_filters_events_by_name(client, event, organiser_use
     assert event_results[0]["name"] == str(event.name)
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_query_filters_by_organiser_name(client, event, organiser_user):
     """Searching by organiser name returns matching organisers."""
     client.force_login(organiser_user)
@@ -86,7 +83,6 @@ def test_nav_typeahead_query_filters_by_organiser_name(client, event, organiser_
     assert orga_results[0]["name"] == orga_name
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_query_matching_user_shows_user(client, event, organiser_user):
     """When query matches the current user's name, the user entry is shown."""
     client.force_login(organiser_user)
@@ -100,7 +96,6 @@ def test_nav_typeahead_query_matching_user_shows_user(client, event, organiser_u
     assert user_results[0]["name"] == str(organiser_user)
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_query_not_matching_user_hides_user(
     client, event, organiser_user
 ):
@@ -113,7 +108,6 @@ def test_nav_typeahead_query_not_matching_user_hides_user(
     assert not any(r["type"] == "user" for r in results)
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_short_query_excludes_submissions(client, event):
     """Queries shorter than 3 characters do not search submissions."""
     with scopes_disabled():
@@ -127,7 +121,6 @@ def test_nav_typeahead_short_query_excludes_submissions(client, event):
     assert not any(r["type"] == "submission" for r in results)
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_query_searches_submissions(client, event):
     """Queries of 3+ characters search submissions for users with can_change_submissions."""
     with scopes_disabled():
@@ -143,7 +136,6 @@ def test_nav_typeahead_query_searches_submissions(client, event):
     assert submission.title in submission_results[0]["name"]
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_query_searches_speakers(client, event):
     """Queries of 3+ characters search speakers with submissions."""
     with scopes_disabled():
@@ -161,7 +153,6 @@ def test_nav_typeahead_query_searches_speakers(client, event):
     assert "Guido van Rossum" in speaker_results[0]["name"]
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_speaker_without_submission_excluded(client, event):
     """Speaker profiles without submissions are not returned."""
     with scopes_disabled():
@@ -175,13 +166,12 @@ def test_nav_typeahead_speaker_without_submission_excluded(client, event):
     assert not any(r["type"] == "speaker" for r in results)
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_admin_user_sees_admin_results(client, event):
     """Administrators see user.admin results in typeahead."""
     with scopes_disabled():
-        admin = make_orga_user(event)
-        admin.is_administrator = True
-        admin.save()
+        admin = UserFactory(is_administrator=True)
+        team = TeamFactory(organiser=event.organiser, all_events=True)
+        team.members.add(admin)
         target_user = UserFactory(name="Findable Admin Target")
     client.force_login(admin)
 
@@ -193,7 +183,6 @@ def test_nav_typeahead_admin_user_sees_admin_results(client, event):
     assert admin_results[0]["email"] == target_user.email
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_non_admin_no_admin_results(client, event, organiser_user):
     """Non-administrators do not see user.admin results."""
     UserFactory(name="Some Admin Target")
@@ -205,7 +194,6 @@ def test_nav_typeahead_non_admin_no_admin_results(client, event, organiser_user)
     assert not any(r["type"] == "user.admin" for r in results)
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_organiser_param_pins_organiser(client, event, organiser_user):
     """The organiser query param pins the matching organiser after the user entry."""
     client.force_login(organiser_user)
@@ -218,12 +206,11 @@ def test_nav_typeahead_organiser_param_pins_organiser(client, event, organiser_u
     assert results[1]["name"] == str(event.organiser.name)
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_pagination_more_flag(client, event):
     """The pagination.more flag indicates when there are more results."""
     with scopes_disabled():
         user = make_orga_user(event)
-        for i in range(25):
+        for i in range(21):
             EventFactory(organiser=event.organiser, slug=f"evt{i:03d}")
     client.force_login(user)
 
@@ -233,12 +220,11 @@ def test_nav_typeahead_pagination_more_flag(client, event):
     assert data["pagination"]["more"] is True
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_page_param(client, event):
     """The page parameter offsets results so pages don't overlap."""
     with scopes_disabled():
         user = make_orga_user(event)
-        for i in range(25):
+        for i in range(21):
             EventFactory(organiser=event.organiser, slug=f"pg{i:03d}")
     client.force_login(user)
 
@@ -252,7 +238,6 @@ def test_nav_typeahead_page_param(client, event):
     assert names_p1.isdisjoint(names_p2)
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_invalid_page_defaults_to_one(client, event, organiser_user):
     """An invalid page parameter defaults to page 1, returning the same results."""
     client.force_login(organiser_user)
@@ -263,7 +248,6 @@ def test_nav_typeahead_invalid_page_defaults_to_one(client, event, organiser_use
     assert response_invalid.json() == response_default.json()
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_submissions_not_searched_without_permission(client, event):
     """Users without can_change_submissions don't get submission results even with query >= 3."""
     with scopes_disabled():
@@ -277,7 +261,6 @@ def test_nav_typeahead_submissions_not_searched_without_permission(client, event
     assert not any(r["type"] == "submission" for r in results)
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_query_with_organiser_and_matching_user(client, event):
     """When query matches the user name AND an organiser param is given,
     the organiser filter includes Q(pk=organiser) to keep it in results."""
@@ -298,7 +281,6 @@ def test_nav_typeahead_query_with_organiser_and_matching_user(client, event):
     assert orga_results[0]["name"] == str(event.organiser.name)
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_organiser_not_in_initial_slice_still_pinned(client):
     """When the organiser param refers to an organiser not in the initial
     top-5 slice (no query), it is still inserted at position 1."""
@@ -328,7 +310,6 @@ def test_nav_typeahead_organiser_not_in_initial_slice_still_pinned(client):
     assert results[1]["name"] == str(target_orga.name)
 
 
-@pytest.mark.django_db
 def test_nav_typeahead_submission_by_code(client, event):
     """Submissions can be found by their code prefix."""
     with scopes_disabled():
@@ -345,15 +326,13 @@ def test_nav_typeahead_submission_by_code(client, event):
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
-@pytest.mark.django_db
 def test_nav_typeahead_query_count_no_query(
     client, event, item_count, django_assert_num_queries
 ):
     """Query count is constant regardless of the number of events."""
     with scopes_disabled():
         user = make_orga_user(event)
-        for _ in range(item_count - 1):
-            EventFactory(organiser=event.organiser)
+        EventFactory.create_batch(item_count - 1, organiser=event.organiser)
     client.force_login(user)
 
     with django_assert_num_queries(6):
@@ -366,7 +345,6 @@ def test_nav_typeahead_query_count_no_query(
 
 
 @pytest.mark.parametrize("item_count", (1, 3))
-@pytest.mark.django_db
 def test_nav_typeahead_query_count_with_submissions(
     client, event, item_count, django_assert_num_queries
 ):

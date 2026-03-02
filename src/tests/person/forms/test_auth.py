@@ -1,13 +1,14 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.core import mail as djmail
 
 from pretalx.person.forms import LoginInfoForm
 from tests.factories import UserFactory
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_login_info_form_init_sets_initial_email():
     user = UserFactory(email="test@example.com")
 
@@ -17,7 +18,6 @@ def test_login_info_form_init_sets_initial_email():
     assert form.initial["email"] == "test@example.com"
 
 
-@pytest.mark.django_db
 def test_login_info_form_clean_old_password_accepts_correct_password():
     user = UserFactory(password="correcthorse")
     data = {
@@ -32,7 +32,6 @@ def test_login_info_form_clean_old_password_accepts_correct_password():
     assert form.is_valid(), form.errors
 
 
-@pytest.mark.django_db
 def test_login_info_form_clean_old_password_rejects_wrong_password():
     user = UserFactory(password="correcthorse")
     data = {
@@ -49,7 +48,6 @@ def test_login_info_form_clean_old_password_rejects_wrong_password():
     assert form.errors.as_data()["old_password"][0].code == "pw_current_wrong"
 
 
-@pytest.mark.django_db
 def test_login_info_form_clean_email_accepts_unique_email():
     user = UserFactory()
     data = {
@@ -65,7 +63,6 @@ def test_login_info_form_clean_email_accepts_unique_email():
     assert form.cleaned_data["email"] == "unique@example.com"
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("existing_email", "submitted_email"),
     (
@@ -94,7 +91,6 @@ def test_login_info_form_clean_email_rejects_duplicate_email(
     assert "email" in form.errors
 
 
-@pytest.mark.django_db
 def test_login_info_form_clean_email_allows_own_email():
     """A user can keep their own email address."""
     user = UserFactory(email="mine@example.com")
@@ -110,7 +106,6 @@ def test_login_info_form_clean_email_allows_own_email():
     assert form.is_valid(), form.errors
 
 
-@pytest.mark.django_db
 def test_login_info_form_clean_rejects_mismatched_passwords():
     user = UserFactory()
     data = {
@@ -126,7 +121,6 @@ def test_login_info_form_clean_rejects_mismatched_passwords():
     assert "password_repeat" in form.errors
 
 
-@pytest.mark.django_db
 def test_login_info_form_clean_accepts_matching_passwords():
     user = UserFactory()
     new_pw = "NewStr0ngP@ss!"
@@ -142,7 +136,6 @@ def test_login_info_form_clean_accepts_matching_passwords():
     assert form.is_valid(), form.errors
 
 
-@pytest.mark.django_db
 def test_login_info_form_save_changes_email():
     djmail.outbox = []
     user = UserFactory(email="old@example.com")
@@ -165,7 +158,6 @@ def test_login_info_form_save_changes_email():
     assert "new@example.com" in djmail.outbox[0].body
 
 
-@pytest.mark.django_db
 def test_login_info_form_save_changes_password():
     djmail.outbox = []
     user = UserFactory()
@@ -188,7 +180,6 @@ def test_login_info_form_save_changes_password():
     assert "password" in djmail.outbox[0].subject.lower()
 
 
-@pytest.mark.django_db
 def test_login_info_form_save_no_changes_when_only_old_password():
     """save() does not change email or password when neither is modified."""
     djmail.outbox = []

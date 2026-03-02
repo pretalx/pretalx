@@ -1,13 +1,14 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 from unittest.mock import patch
 
 import pytest
 from django.core import mail as djmail
 from django.core.management import call_command
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_sendtestemail_sends_email(settings):
     djmail.outbox = []
 
@@ -22,7 +23,6 @@ def test_sendtestemail_sends_email(settings):
     )
 
 
-@pytest.mark.django_db
 def test_sendtestemail_sends_to_multiple_addresses():
     djmail.outbox = []
 
@@ -33,9 +33,7 @@ def test_sendtestemail_sends_to_multiple_addresses():
     assert djmail.outbox[1].to == ["b@example.com"]
 
 
-@pytest.mark.django_db
 def test_sendtestemail_handles_smtp_error_gracefully():
-    """When sending fails, the command writes an error message but does not crash."""
     djmail.outbox = []
 
     # Mocking mail_send_task.apply: need to simulate SMTP failure,

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import zoneinfo
 
@@ -7,7 +9,7 @@ from django.core import mail as djmail
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.utils.timezone import now as tz_now
-from django_scopes import scope, scopes_disabled
+from django_scopes import scope
 
 from pretalx.cfp.flow import CfPFlow
 from pretalx.common.cache import ObjectRelatedCache
@@ -62,7 +64,7 @@ from tests.factories import (
 )
 from tests.utils import refresh
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
 @pytest.mark.parametrize(
@@ -90,7 +92,6 @@ pytestmark = pytest.mark.unit
     ),
 )
 def test_validate_event_slug_permitted_rejects_reserved_slugs(slug):
-    """Each reserved slug raises a ValidationError with code 'invalid'."""
     with pytest.raises(ValidationError) as exc_info:
         validate_event_slug_permitted(slug)
     assert exc_info.value.code == "invalid"
@@ -111,9 +112,7 @@ def test_validate_event_slug_permitted_accepts_valid_slug():
     ("a", "ab", "a-b", "test123", "123test"),
     ids=("single", "two_chars", "dash", "alpha_num", "num_alpha"),
 )
-@pytest.mark.django_db
 def test_event_slug_regex_accepts_valid_formats(slug):
-    """The slug field regex validator accepts alphanumeric slugs with dashes/dots."""
     event = Event(
         name="Test",
         slug=slug,
@@ -129,7 +128,6 @@ def test_event_slug_regex_accepts_valid_formats(slug):
     ("-start", "end-", ".start", "end.", "no spaces", "special!char"),
     ids=("dash_start", "dash_end", "dot_start", "dot_end", "spaces", "special"),
 )
-@pytest.mark.django_db
 def test_event_slug_regex_rejects_invalid_formats(slug):
     event = Event(
         name="Test",
@@ -142,10 +140,9 @@ def test_event_slug_regex_rejects_invalid_formats(slug):
         event.clean_fields(exclude=["organiser"])
 
 
-@pytest.mark.django_db
 def test_event_slug_uniqueness():
     EventFactory(slug="unique-slug")
-    with pytest.raises(IntegrityError), scopes_disabled():
+    with pytest.raises(IntegrityError):
         Event.objects.create(
             name="Duplicate",
             slug="unique-slug",
@@ -168,7 +165,6 @@ def test_event_slug_uniqueness():
 def test_event_upload_path_contains_slug_and_target(
     path_func, filename, expected_dir, expected_target
 ):
-    """Upload path functions return paths under {slug}/{dir}/ with the correct target name."""
     instance = type("FakeEvent", (), {"slug": "myconf"})()
     result = path_func(instance, filename)
 
@@ -186,7 +182,6 @@ def test_default_feature_flags_returns_independent_copies():
     assert b["show_schedule"] is True
 
 
-@pytest.mark.django_db
 def test_event_str_returns_name(event):
     assert str(event) == str(event.name)
 
@@ -195,7 +190,6 @@ def test_event_str_returns_name(event):
     ("locale_array", "expected"),
     (("en", ["en"]), ("en,de", ["en", "de"]), ("en,de,fr", ["en", "de", "fr"])),
 )
-@pytest.mark.django_db
 def test_event_locales_parses_locale_array(locale_array, expected):
     event = EventFactory(locale_array=locale_array)
     assert event.locales == expected
@@ -204,7 +198,6 @@ def test_event_locales_parses_locale_array(locale_array, expected):
 @pytest.mark.parametrize(
     ("content_locale_array", "expected"), (("en", ["en"]), ("en,de", ["en", "de"]))
 )
-@pytest.mark.django_db
 def test_event_content_locales_parses_content_locale_array(
     content_locale_array, expected
 ):
@@ -215,13 +208,11 @@ def test_event_content_locales_parses_content_locale_array(
 @pytest.mark.parametrize(
     ("content_locale_array", "expected"), (("en", False), ("en,de", True))
 )
-@pytest.mark.django_db
 def test_event_is_multilingual(content_locale_array, expected):
     event = EventFactory(content_locale_array=content_locale_array)
     assert event.is_multilingual is expected
 
 
-@pytest.mark.django_db
 def test_event_named_locales_returns_code_and_name():
     event = EventFactory(locale_array="en")
 
@@ -229,33 +220,28 @@ def test_event_named_locales_returns_code_and_name():
 
 
 @pytest.mark.parametrize("plugins", (None, ""))
-@pytest.mark.django_db
 def test_event_plugin_list_empty_when_no_plugins(event, plugins):
     event.plugins = plugins
     assert event.plugin_list == []
 
 
-@pytest.mark.django_db
 def test_event_plugin_list_splits_comma_separated(event):
     event.plugins = "plugin_a,plugin_b"
     assert event.plugin_list == ["plugin_a", "plugin_b"]
 
 
-@pytest.mark.django_db
 def test_event_enable_plugin_adds_to_list(event):
     event.plugins = ""
     event.enable_plugin("tests.dummy_app")
     assert event.plugin_list == ["tests.dummy_app"]
 
 
-@pytest.mark.django_db
 def test_event_enable_plugin_twice_is_idempotent(event):
     event.enable_plugin("tests.dummy_app")
     event.enable_plugin("tests.dummy_app")
     assert event.plugin_list.count("tests.dummy_app") == 1
 
 
-@pytest.mark.django_db
 def test_event_disable_plugin_removes_from_list(event):
     event.plugins = ""
     event.enable_plugin("tests.dummy_app")
@@ -265,7 +251,6 @@ def test_event_disable_plugin_removes_from_list(event):
     assert event.plugin_list == []
 
 
-@pytest.mark.django_db
 def test_event_disable_plugin_not_present_is_noop(event):
     event.plugins = ""
     event.disable_plugin("nonexistent")
@@ -277,7 +262,6 @@ def test_event_disable_plugin_not_present_is_noop(event):
     (("#ff0000", "#ff0000"), (None, settings.DEFAULT_EVENT_PRIMARY_COLOR)),
     ids=("custom_color", "default_when_unset"),
 )
-@pytest.mark.django_db
 def test_event_visible_primary_color(event, color, expected):
     event.primary_color = color
     assert event.visible_primary_color == expected
@@ -299,14 +283,12 @@ def test_event_visible_primary_color(event, color, expected):
         ("", False),
     ),
 )
-@pytest.mark.django_db
 def test_event_primary_color_needs_dark_text(event, color, needs_dark_text):
     """Dark colors don't need dark text; light colors do; None returns False."""
     event.primary_color = color
     assert event.primary_color_needs_dark_text is needs_dark_text
 
 
-@pytest.mark.django_db
 def test_event_get_default_submission_type_returns_existing(event):
     with scope(event=event):
         existing_type = event.submission_types.first()
@@ -316,7 +298,6 @@ def test_event_get_default_submission_type_returns_existing(event):
         assert result.event == event
 
 
-@pytest.mark.django_db
 def test_event_get_default_submission_type_creates_when_none(event):
     with scope(event=event):
         # Delete the CfP first to remove the FK constraint, then all types
@@ -331,7 +312,6 @@ def test_event_get_default_submission_type_creates_when_none(event):
         assert result.pk is not None
 
 
-@pytest.mark.django_db
 def test_event_get_mail_template_returns_existing(event):
     with scope(event=event):
         existing = event.mail_templates.get(role="submission.state.accepted")
@@ -340,7 +320,6 @@ def test_event_get_mail_template_returns_existing(event):
         assert template.event == event
 
 
-@pytest.mark.django_db
 def test_event_get_mail_template_creates_when_missing(event):
     with scope(event=event):
         event.mail_templates.filter(role="submission.state.accepted").delete()
@@ -351,32 +330,27 @@ def test_event_get_mail_template_creates_when_missing(event):
         assert template.pk is not None
 
 
-@pytest.mark.django_db
 def test_event_build_initial_data_creates_cfp(event):
     with scope(event=event):
         assert event.cfp.event == event
         assert event.cfp.default_type.event == event
 
 
-@pytest.mark.django_db
 def test_event_build_initial_data_creates_wip_schedule(event):
     with scope(event=event):
         assert event.schedules.filter(version__isnull=True).exists()
 
 
-@pytest.mark.django_db
 def test_event_build_initial_data_creates_mail_templates(event):
     with scope(event=event):
         assert event.mail_templates.count() == len(MailTemplateRoles.choices)
 
 
-@pytest.mark.django_db
 def test_event_build_initial_data_creates_review_phases(event):
     with scope(event=event):
         assert event.review_phases.count() == 2
 
 
-@pytest.mark.django_db
 def test_event_build_initial_data_creates_score_categories(event):
     """build_initial_data creates one score category with three scores (No/Maybe/Yes)."""
     with scope(event=event):
@@ -385,7 +359,6 @@ def test_event_build_initial_data_creates_score_categories(event):
         assert category.scores.count() == 3
 
 
-@pytest.mark.django_db
 def test_event_build_initial_data_is_idempotent(event):
     with scope(event=event):
         template_count = event.mail_templates.count()
@@ -397,7 +370,6 @@ def test_event_build_initial_data_is_idempotent(event):
         assert event.schedules.count() == schedule_count
 
 
-@pytest.mark.django_db
 def test_event_build_initial_data_recreates_after_deletion(event):
     with scope(event=event):
         event.cfp.delete()
@@ -409,7 +381,6 @@ def test_event_build_initial_data_recreates_after_deletion(event):
         assert event.mail_templates.count() == len(MailTemplateRoles.choices)
 
 
-@pytest.mark.django_db
 def test_event_save_calls_build_initial_data_on_create():
     event = EventFactory()
     with scope(event=event):
@@ -418,22 +389,20 @@ def test_event_save_calls_build_initial_data_on_create():
         assert event.mail_templates.count() == len(MailTemplateRoles.choices)
 
 
-@pytest.mark.django_db
 def test_event_save_skip_initial_data_flag():
-    with scopes_disabled():
-        organiser = OrganiserFactory()
-        event = Event(
-            name="Skip Init",
-            slug="skip-init",
-            organiser=organiser,
-            email="test@example.com",
-            date_from=dt.date.today(),
-            date_to=dt.date.today(),
-        )
-        event.save(skip_initial_data=True)
+    organiser = OrganiserFactory()
+    event = Event(
+        name="Skip Init",
+        slug="skip-init",
+        organiser=organiser,
+        email="test@example.com",
+        date_from=dt.date.today(),
+        date_to=dt.date.today(),
+    )
+    event.save(skip_initial_data=True)
 
-        assert not event.mail_templates.exists()
-        assert not event.schedules.exists()
+    assert not event.mail_templates.exists()
+    assert not event.schedules.exists()
 
 
 @pytest.mark.parametrize(
@@ -441,7 +410,6 @@ def test_event_save_skip_initial_data_flag():
     ((2, 1, 2), (0, 1, 0)),
     ids=("counts_only_drafts", "zero_when_no_drafts"),
 )
-@pytest.mark.django_db
 def test_event_pending_mails_counts_drafts(event, draft_count, sent_count, expected):
     for _ in range(draft_count):
         QueuedMailFactory(event=event, state=QueuedMailStates.DRAFT)
@@ -451,7 +419,6 @@ def test_event_pending_mails_counts_drafts(event, draft_count, sent_count, expec
     assert event.pending_mails == expected
 
 
-@pytest.mark.django_db
 def test_event_wip_schedule_returns_unreleased(event):
     with scope(event=event):
         wip = event.wip_schedule
@@ -459,7 +426,6 @@ def test_event_wip_schedule_returns_unreleased(event):
         assert wip.event == event
 
 
-@pytest.mark.django_db
 def test_event_wip_schedule_creates_if_missing(event):
     with scope(event=event):
         event.schedules.filter(version__isnull=True).delete()
@@ -471,16 +437,14 @@ def test_event_wip_schedule_creates_if_missing(event):
         assert wip.event == event
 
 
-@pytest.mark.django_db
 def test_event_current_schedule_none_when_no_published(event):
     with scope(event=event):
         assert event.current_schedule is None
 
 
-@pytest.mark.django_db
 def test_event_current_schedule_returns_latest_published(event):
     with scope(event=event):
-        schedule = ScheduleFactory(event=event, version="v1", published=tz_now())
+        schedule = ScheduleFactory(event=event, version="v1")
 
     event = refresh(event)
     with scope(event=event):
@@ -496,14 +460,12 @@ def test_event_current_schedule_returns_latest_published(event):
     ),
     ids=("single_day", "three_days", "six_days"),
 )
-@pytest.mark.django_db
 def test_event_duration_days(date_from, date_to, expected_duration):
     """duration returns the number of event days (inclusive)."""
     event = EventFactory(date_from=date_from, date_to=date_to)
     assert event.duration == expected_duration
 
 
-@pytest.mark.django_db
 def test_event_get_mail_backend_default(event):
     """get_mail_backend returns the default Django mail backend when
     smtp_use_custom is falsy."""
@@ -512,7 +474,6 @@ def test_event_get_mail_backend_default(event):
     assert not isinstance(backend, CustomSMTPBackend)
 
 
-@pytest.mark.django_db
 def test_event_get_mail_backend_custom(event):
     event.mail_settings["smtp_use_custom"] = True
     event.mail_settings["smtp_host"] = "mail.example.com"
@@ -527,10 +488,7 @@ def test_event_get_mail_backend_custom(event):
     assert isinstance(backend, CustomSMTPBackend)
 
 
-@pytest.mark.django_db
 def test_event_get_mail_backend_force_custom(event):
-    """get_mail_backend with force_custom=True returns a CustomSMTPBackend
-    even when smtp_use_custom is falsy."""
     event.mail_settings["smtp_use_custom"] = ""
     event.mail_settings["smtp_host"] = "mail.example.com"
 
@@ -539,20 +497,17 @@ def test_event_get_mail_backend_force_custom(event):
     assert isinstance(backend, CustomSMTPBackend)
 
 
-@pytest.mark.django_db
 def test_event_property_returns_self(event):
     """The event property returns the event itself, for polymorphic
     compatibility with models that have an event FK."""
     assert event.event is event
 
 
-@pytest.mark.django_db
 def test_event_tz_returns_zoneinfo():
     event = EventFactory(timezone="Europe/Berlin")
     assert event.tz == zoneinfo.ZoneInfo("Europe/Berlin")
 
 
-@pytest.mark.django_db
 def test_event_datetime_from_is_midnight_in_event_tz():
     event = EventFactory(
         date_from=dt.date(2025, 7, 1),
@@ -571,7 +526,6 @@ def test_event_datetime_from_is_midnight_in_event_tz():
     assert result == dt.datetime(2025, 7, 1, 0, 0, 0, tzinfo=tz)
 
 
-@pytest.mark.django_db
 def test_event_datetime_to_is_end_of_day_in_event_tz():
     event = EventFactory(
         date_from=dt.date(2025, 7, 1),
@@ -587,14 +541,12 @@ def test_event_datetime_to_is_end_of_day_in_event_tz():
     assert result == dt.datetime(2025, 7, 3, 23, 59, 59, tzinfo=tz)
 
 
-@pytest.mark.django_db
 def test_event_teams_includes_all_events_teams(event):
     team = TeamFactory(organiser=event.organiser, all_events=True)
 
     assert list(event.teams) == [team]
 
 
-@pytest.mark.django_db
 def test_event_teams_includes_limited_teams(event):
     team = TeamFactory(organiser=event.organiser, all_events=False)
     team.limit_events.add(event)
@@ -602,14 +554,12 @@ def test_event_teams_includes_limited_teams(event):
     assert list(event.teams) == [team]
 
 
-@pytest.mark.django_db
 def test_event_teams_excludes_other_organiser_teams(event):
     TeamFactory()
 
     assert list(event.teams) == []
 
 
-@pytest.mark.django_db
 def test_event_teams_excludes_limited_teams_without_this_event(event):
     team = TeamFactory(organiser=event.organiser, all_events=False)
     other_event = EventFactory(organiser=event.organiser)
@@ -618,7 +568,6 @@ def test_event_teams_excludes_limited_teams_without_this_event(event):
     assert list(event.teams) == []
 
 
-@pytest.mark.django_db
 def test_event_reviewers_returns_reviewer_team_members(event):
     user = UserFactory()
     team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=True)
@@ -627,7 +576,6 @@ def test_event_reviewers_returns_reviewer_team_members(event):
     assert list(event.reviewers) == [user]
 
 
-@pytest.mark.django_db
 def test_event_reviewers_excludes_non_reviewer_teams(event):
     user = UserFactory()
     team = TeamFactory(organiser=event.organiser, all_events=True, is_reviewer=False)
@@ -636,16 +584,13 @@ def test_event_reviewers_excludes_non_reviewer_teams(event):
     assert list(event.reviewers) == []
 
 
-@pytest.mark.django_db
 def test_event_reviews_queryset_filters_by_event(event):
     review = ReviewFactory(submission__event=event)
     ReviewFactory()
 
-    with scopes_disabled():
-        assert list(event.reviews) == [review]
+    assert list(event.reviews) == [review]
 
 
-@pytest.mark.django_db
 def test_event_active_review_phase_returns_active_phase(event):
     with scope(event=event):
         phase = event.active_review_phase
@@ -653,7 +598,6 @@ def test_event_active_review_phase_returns_active_phase(event):
         assert phase.event == event
 
 
-@pytest.mark.django_db
 def test_event_active_review_phase_creates_when_none_exist(event):
     with scope(event=event):
         event.review_phases.all().delete()
@@ -666,7 +610,6 @@ def test_event_active_review_phase_creates_when_none_exist(event):
         assert phase.pk is not None
 
 
-@pytest.mark.django_db
 def test_event_update_review_phase_keeps_current_when_valid(event):
     with scope(event=event):
         event.review_phases.all().delete()
@@ -685,7 +628,6 @@ def test_event_update_review_phase_keeps_current_when_valid(event):
         assert result == phase
 
 
-@pytest.mark.django_db
 def test_event_update_review_phase_deactivates_expired(event):
     """update_review_phase deactivates an expired phase and returns None
     when no successor is available."""
@@ -708,7 +650,6 @@ def test_event_update_review_phase_deactivates_expired(event):
         assert not phase.is_active
 
 
-@pytest.mark.django_db
 def test_event_update_review_phase_activates_next(event):
     with scope(event=event):
         event.review_phases.all().delete()
@@ -736,7 +677,6 @@ def test_event_update_review_phase_activates_next(event):
         assert next_phase.is_active
 
 
-@pytest.mark.django_db
 def test_event_update_review_phase_deactivates_future_phase(event):
     with scope(event=event):
         event.review_phases.all().delete()
@@ -756,7 +696,6 @@ def test_event_update_review_phase_deactivates_future_phase(event):
         assert not future_phase.is_active
 
 
-@pytest.mark.django_db
 def test_event_reorder_review_phases_sorts_by_start(event):
     """reorder_review_phases assigns positions by start date, with
     null-start phases coming first."""
@@ -787,13 +726,11 @@ def test_event_reorder_review_phases_sorts_by_start(event):
 
 
 @pytest.mark.parametrize("attr", ("talks", "speakers"))
-@pytest.mark.django_db
 def test_event_talks_and_speakers_empty_without_published_schedule(event, attr):
     with scope(event=event):
         assert list(getattr(event, attr)) == []
 
 
-@pytest.mark.django_db
 def test_event_submitters_returns_speakers_with_submissions(event):
     """submitters returns SpeakerProfiles of users who have submitted,
     excluding profiles without submissions."""
@@ -815,7 +752,6 @@ def test_event_submitters_returns_speakers_with_submissions(event):
     ),
     ids=("single_day", "multi_day"),
 )
-@pytest.mark.django_db
 def test_event_get_date_range_display_formats_date_range(date_from, date_to, expected):
     event = EventFactory(date_from=date_from, date_to=date_to)
 
@@ -832,7 +768,6 @@ def test_event_get_date_range_display_formats_date_range(date_from, date_to, exp
     ),
     ids=("overridden_false", "overridden_true", "default_true", "unknown_false"),
 )
-@pytest.mark.django_db
 def test_event_get_feature_flag(event, feature, flags, expected):
     """get_feature_flag returns the flag value from feature_flags, falling
     back to defaults for missing keys and False for unknown features."""
@@ -844,12 +779,10 @@ def test_event_get_feature_flag(event, feature, flags, expected):
     ("url_attr", "expected_pattern"),
     (("urls", "/{slug}/"), ("orga_urls", "/orga/event/{slug}/")),
 )
-@pytest.mark.django_db
 def test_event_urls_base(event, url_attr, expected_pattern):
     assert getattr(event, url_attr).base == expected_pattern.format(slug=event.slug)
 
 
-@pytest.mark.django_db
 def test_event_urls_custom_domain(event):
     """When a custom domain is set, public-facing URLs use the custom
     domain, but orga URLs still use the default site URL."""
@@ -860,7 +793,6 @@ def test_event_urls_custom_domain(event):
     assert custom not in event.orga_urls.cfp.full()
 
 
-@pytest.mark.django_db
 def test_event_urls_uses_site_url_without_custom_domain(event):
     event.custom_domain = None
 
@@ -868,7 +800,6 @@ def test_event_urls_uses_site_url_without_custom_domain(event):
     assert settings.SITE_URL in full_url
 
 
-@pytest.mark.django_db
 def test_event_valid_availabilities_filters_by_event_dates():
     event = EventFactory(date_from=dt.date(2025, 7, 1), date_to=dt.date(2025, 7, 3))
     valid = AvailabilityFactory(event=event)
@@ -884,132 +815,108 @@ def test_event_valid_availabilities_filters_by_event_dates():
     assert avails == [valid]
 
 
-@pytest.mark.django_db
 def test_event_cache_returns_object_related_cache(event):
     assert isinstance(event.cache, ObjectRelatedCache)
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_copies_attributes(event):
-    with scopes_disabled():
-        other_event = EventFactory(
-            organiser=event.organiser,
-            primary_color="#ff0000",
-            locale="de",
-            locale_array="de,en",
-        )
-        other_event.feature_flags = {"testing": True}
-        other_event.save(skip_initial_data=True)
+    other_event = EventFactory(
+        organiser=event.organiser,
+        primary_color="#ff0000",
+        locale="de",
+        locale_array="de,en",
+        feature_flags={"testing": True},
+    )
 
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     assert event.primary_color == "#ff0000"
     assert event.locale == "de"
-    assert event.feature_flags == {"testing": True}
+    assert event.feature_flags == other_event.feature_flags
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_does_not_copy_custom_domain(event):
     """copy_data_from does not copy custom_domain, preserving the
     target event's domain configuration."""
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser)
-        other_event.custom_domain = "https://custom.example.org"
-        other_event.save(skip_initial_data=True)
+    other_event = EventFactory(
+        organiser=event.organiser, custom_domain="https://custom.example.org"
+    )
 
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     assert event.custom_domain is None
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_respects_skip_attributes(event):
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser, primary_color="#ff0000")
-        other_event.feature_flags = {"testing": True}
-        other_event.save(skip_initial_data=True)
+    other_event = EventFactory(
+        organiser=event.organiser,
+        primary_color="#ff0000",
+        feature_flags={"testing": True},
+    )
 
-        original_flags = event.feature_flags.copy()
-        event.copy_data_from(other_event, skip_attributes=["feature_flags"])
+    original_flags = event.feature_flags.copy()
+    event.copy_data_from(other_event, skip_attributes=["feature_flags"])
 
     assert event.feature_flags == original_flags
     assert event.primary_color == "#ff0000"
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_copies_submission_types(event):
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser)
-        SubmissionTypeFactory(event=other_event, name="Workshop")
+    other_event = EventFactory(organiser=event.organiser)
+    SubmissionTypeFactory(event=other_event, name="Workshop")
 
     with scope(event=other_event):
         source_type_count = other_event.submission_types.count()
 
-    with scopes_disabled():
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     with scope(event=event):
         assert event.submission_types.count() == source_type_count
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_copies_tracks(event):
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser)
-        TrackFactory(event=other_event, name="Security")
+    other_event = EventFactory(organiser=event.organiser)
+    TrackFactory(event=other_event, name="Security")
 
-    with scopes_disabled():
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     with scope(event=event):
         track_names = [str(t.name) for t in event.tracks.all()]
         assert track_names == ["Security"]
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_copies_mail_templates(event):
     """copy_data_from clones non-auto-created mail templates from the
     source event and recreates role-based templates via build_initial_data."""
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser)
-        MailTemplateFactory(
-            event=other_event,
-            subject="Custom Template",
-            is_auto_created=False,
-            role=None,
-        )
+    other_event = EventFactory(organiser=event.organiser)
+    MailTemplateFactory(
+        event=other_event, subject="Custom Template", is_auto_created=False, role=None
+    )
 
-    with scopes_disabled():
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     with scope(event=event):
         subjects = [str(t.subject) for t in event.mail_templates.all()]
         assert "Custom Template" in subjects
 
 
-@pytest.mark.django_db
 def test_event_shred_deletes_event(event):
     pk = event.pk
-    with scopes_disabled():
-        event.shred()
+    event.shred()
     assert not Event.objects.filter(pk=pk).exists()
 
 
-@pytest.mark.django_db
 def test_event_shred_deletes_related_data(event):
     with scope(event=event):
         sub = SubmissionFactory(event=event)
         template_pks = list(event.mail_templates.values_list("pk", flat=True))
 
-    with scopes_disabled():
-        event.shred()
+    event.shred()
 
-    with scopes_disabled():
-        assert not Submission.all_objects.filter(pk=sub.pk).exists()
-        assert not MailTemplate.objects.filter(pk__in=template_pks).exists()
+    assert not Submission.all_objects.filter(pk=sub.pk).exists()
+    assert not MailTemplate.objects.filter(pk__in=template_pks).exists()
 
 
-@pytest.mark.django_db
 def test_event_available_content_locales_returns_sorted_known_languages(event):
     """Without plugins, available_content_locales equals the sorted
     built-in LANGUAGE_NAMES."""
@@ -1018,7 +925,6 @@ def test_event_available_content_locales_returns_sorted_known_languages(event):
     assert result == expected
 
 
-@pytest.mark.django_db
 def test_event_named_content_locales_maps_active_locales():
     event = EventFactory(content_locale_array="en")
 
@@ -1030,7 +936,6 @@ def test_event_named_content_locales_maps_active_locales():
     (([("xx", "Custom Language")], "xx", "Custom Language"), (["en"], "en", "English")),
     ids=("tuple_locale", "string_locale"),
 )
-@pytest.mark.django_db
 def test_event_named_plugin_locales(
     event, register_signal_handler, locale_input, expected_code, expected_name
 ):
@@ -1047,21 +952,18 @@ def test_event_named_plugin_locales(
     assert result[expected_code] == expected_name
 
 
-@pytest.mark.django_db
 def test_event_plugin_locales_returns_sorted_keys(event):
     result = event.plugin_locales
     assert isinstance(result, list)
     assert result == sorted(result)
 
 
-@pytest.mark.django_db
 def test_event_set_plugins_calls_installed_hook(event):
     installed_events.clear()
     event.set_plugins(["tests.dummy_app"])
     assert installed_events == [event.slug]
 
 
-@pytest.mark.django_db
 def test_event_set_plugins_calls_uninstalled_hook(event):
     uninstalled_events.clear()
     event.plugins = "tests.dummy_app"
@@ -1069,7 +971,6 @@ def test_event_set_plugins_calls_uninstalled_hook(event):
     assert uninstalled_events == [event.slug]
 
 
-@pytest.mark.django_db
 def test_event_set_plugins_skips_missing_installed_hook(event):
     """Enabling a plugin whose app has no installed() method doesn't error."""
     event.set_plugins(["tests.dummy_app_no_hooks"])
@@ -1077,7 +978,6 @@ def test_event_set_plugins_skips_missing_installed_hook(event):
     assert event.plugin_list == ["tests.dummy_app_no_hooks"]
 
 
-@pytest.mark.django_db
 def test_event_set_plugins_skips_missing_uninstalled_hook(event):
     """Disabling a plugin whose app has no uninstalled() method doesn't error."""
     event.plugins = "tests.dummy_app_no_hooks"
@@ -1087,18 +987,13 @@ def test_event_set_plugins_skips_missing_uninstalled_hook(event):
     assert event.plugin_list == []
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_copies_extra_links(event):
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser)
-        EventExtraLinkFactory(
-            event=other_event,
-            label="Blog",
-            url="https://blog.example.com",
-            role="footer",
-        )
+    other_event = EventFactory(organiser=event.organiser)
+    EventExtraLinkFactory(
+        event=other_event, label="Blog", url="https://blog.example.com", role="footer"
+    )
 
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     with scope(event=event):
         links = list(event.extra_links.all())
@@ -1107,21 +1002,19 @@ def test_event_copy_data_from_copies_extra_links(event):
         assert links[0].url == "https://blog.example.com"
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_copies_rooms_and_availabilities(event):
     """copy_data_from clones rooms and their availabilities, shifting
     availability times by the date delta between events."""
-    with scopes_disabled():
-        other_event = EventFactory(
-            organiser=event.organiser,
-            date_from=dt.date(2025, 1, 1),
-            date_to=dt.date(2025, 1, 3),
-        )
-        room = RoomFactory(event=other_event, name="Main Hall")
-        avail = AvailabilityFactory(event=other_event, room=room)
-        event.rooms.all().delete()
+    other_event = EventFactory(
+        organiser=event.organiser,
+        date_from=dt.date(2025, 1, 1),
+        date_to=dt.date(2025, 1, 3),
+    )
+    room = RoomFactory(event=other_event, name="Main Hall")
+    avail = AvailabilityFactory(event=other_event, room=room)
+    event.rooms.all().delete()
 
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     delta = event.date_from - other_event.date_from
     with scope(event=event):
@@ -1134,16 +1027,14 @@ def test_event_copy_data_from_copies_rooms_and_availabilities(event):
         assert copied_avail.end == avail.end + delta
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_skips_rooms_when_target_has_rooms(event):
     """copy_data_from does not copy rooms when the target event already
     has rooms, to avoid duplicating manually configured rooms."""
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser)
-        RoomFactory(event=other_event, name="Source Room")
-        RoomFactory(event=event, name="Existing Room")
+    other_event = EventFactory(organiser=event.organiser)
+    RoomFactory(event=other_event, name="Source Room")
+    RoomFactory(event=event, name="Existing Room")
 
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     with scope(event=event):
         room_names = [str(r.name) for r in event.rooms.all()]
@@ -1151,24 +1042,22 @@ def test_event_copy_data_from_skips_rooms_when_target_has_rooms(event):
         assert "Source Room" not in room_names
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_copies_questions_with_options_and_tracks(event):
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser)
-        track = TrackFactory(event=other_event, name="DevTrack")
-        sub_type = SubmissionTypeFactory(event=other_event, name="Lightning")
-        question = QuestionFactory(
-            event=other_event,
-            question="What is your experience level?",
-            variant="choices",
-            target="submission",
-        )
-        AnswerOptionFactory(question=question, answer="Beginner")
-        AnswerOptionFactory(question=question, answer="Expert")
-        question.tracks.add(track)
-        question.submission_types.add(sub_type)
+    other_event = EventFactory(organiser=event.organiser)
+    track = TrackFactory(event=other_event, name="DevTrack")
+    sub_type = SubmissionTypeFactory(event=other_event, name="Lightning")
+    question = QuestionFactory(
+        event=other_event,
+        question="What is your experience level?",
+        variant="choices",
+        target="submission",
+    )
+    AnswerOptionFactory(question=question, answer="Beginner")
+    AnswerOptionFactory(question=question, answer="Expert")
+    question.tracks.add(track)
+    question.submission_types.add(sub_type)
 
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     with scope(event=event):
         questions = list(event.questions.all())
@@ -1180,21 +1069,19 @@ def test_event_copy_data_from_copies_questions_with_options_and_tracks(event):
         assert copied_q.submission_types.count() == 1
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_does_not_copy_question_answers(event):
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser)
-        question = QuestionFactory(
-            event=other_event,
-            question="Dietary needs?",
-            variant="choices",
-            target="speaker",
-        )
-        AnswerOptionFactory(question=question, answer="Vegan")
-        sub = SubmissionFactory(event=other_event)
-        AnswerFactory(question=question, answer="Vegan", submission=sub)
+    other_event = EventFactory(organiser=event.organiser)
+    question = QuestionFactory(
+        event=other_event,
+        question="Dietary needs?",
+        variant="choices",
+        target="speaker",
+    )
+    AnswerOptionFactory(question=question, answer="Vegan")
+    sub = SubmissionFactory(event=other_event)
+    AnswerFactory(question=question, answer="Vegan", submission=sub)
 
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     with scope(event=event):
         copied_q = event.questions.first()
@@ -1203,19 +1090,17 @@ def test_event_copy_data_from_does_not_copy_question_answers(event):
         assert Answer.objects.filter(question=copied_q).count() == 0
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_copies_speaker_information(event):
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser)
-        track = TrackFactory(event=other_event, name="InfoTrack")
-        sub_type = SubmissionTypeFactory(event=other_event, name="Workshop")
-        info = SpeakerInformationFactory(
-            event=other_event, title="Travel Info", text="We cover travel costs."
-        )
-        info.limit_tracks.add(track)
-        info.limit_types.add(sub_type)
+    other_event = EventFactory(organiser=event.organiser)
+    track = TrackFactory(event=other_event, name="InfoTrack")
+    sub_type = SubmissionTypeFactory(event=other_event, name="Workshop")
+    info = SpeakerInformationFactory(
+        event=other_event, title="Travel Info", text="We cover travel costs."
+    )
+    info.limit_tracks.add(track)
+    info.limit_types.add(sub_type)
 
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     with scope(event=event):
         infos = list(event.information.all())
@@ -1226,36 +1111,31 @@ def test_event_copy_data_from_copies_speaker_information(event):
         assert copied_info.limit_types.count() == 1
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_copies_user_preferences(event):
     user = UserFactory()
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser)
-        UserEventPreferencesFactory(
-            user=user, event=other_event, preferences={"theme": "dark"}
-        )
+    other_event = EventFactory(organiser=event.organiser)
+    UserEventPreferencesFactory(
+        user=user, event=other_event, preferences={"theme": "dark"}
+    )
 
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
-    with scopes_disabled():
-        prefs = UserEventPreferences.objects.filter(event=event, user=user).first()
-        assert prefs is not None
-        assert prefs.preferences == {"theme": "dark"}
+    prefs = UserEventPreferences.objects.filter(event=event, user=user).first()
+    assert prefs is not None
+    assert prefs.preferences == {"theme": "dark"}
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_copies_score_categories_with_tracks(event):
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser)
-        track = TrackFactory(event=other_event, name="ScoreTrack")
-        # Clear existing categories on source (from build_initial_data)
-        other_event.score_categories.all().delete()
-        category = ReviewScoreCategoryFactory(event=other_event, name="Quality")
-        category.limit_tracks.add(track)
-        ReviewScoreFactory(category=category, value=0, label="Bad")
-        ReviewScoreFactory(category=category, value=1, label="Good")
+    other_event = EventFactory(organiser=event.organiser)
+    track = TrackFactory(event=other_event, name="ScoreTrack")
+    # Clear existing categories on source (from build_initial_data)
+    other_event.score_categories.all().delete()
+    category = ReviewScoreCategoryFactory(event=other_event, name="Quality")
+    category.limit_tracks.add(track)
+    ReviewScoreFactory(category=category, value=0, label="Bad")
+    ReviewScoreFactory(category=category, value=1, label="Good")
 
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     with scope(event=event):
         categories = list(event.score_categories.all())
@@ -1266,7 +1146,6 @@ def test_event_copy_data_from_copies_score_categories_with_tracks(event):
         assert quality_cat.limit_tracks.count() == 1
 
 
-@pytest.mark.django_db
 def test_event_wip_schedule_handles_multiple_unreleased(event):
     """When multiple unversioned schedules exist (race condition), wip_schedule
     keeps the first and deletes the duplicates."""
@@ -1284,13 +1163,12 @@ def test_event_wip_schedule_handles_multiple_unreleased(event):
         assert event.schedules.filter(version__isnull=True).count() == 1
 
 
-@pytest.mark.django_db
 def test_event_current_schedule_uses_prefetched_pk(event):
     """When _current_schedule_pk is set (by middleware), current_schedule
     uses it to fetch the schedule directly."""
 
     with scope(event=event):
-        schedule = ScheduleFactory(event=event, version="v1", published=tz_now())
+        schedule = ScheduleFactory(event=event, version="v1")
 
     event = refresh(event)
     event._current_schedule_pk = schedule.pk
@@ -1298,20 +1176,16 @@ def test_event_current_schedule_uses_prefetched_pk(event):
         assert event.current_schedule == schedule
 
 
-@pytest.mark.django_db
 def test_event_talks_returns_submissions_in_published_schedule(event):
     with scope(event=event):
-        sub = SubmissionFactory(event=event)
+        sub = SubmissionFactory(event=event, state="confirmed")
         speaker = SpeakerFactory(event=event)
         sub.speakers.add(speaker)
-        sub.state = "confirmed"
-        sub.save()
 
         room = RoomFactory(event=event, name="Room A")
         TalkSlotFactory(submission=sub, room=room)
 
-    with scopes_disabled():
-        event.wip_schedule.freeze(name="v1")
+    event.wip_schedule.freeze(name="v1")
 
     event = refresh(event)
     with scope(event=event):
@@ -1319,20 +1193,17 @@ def test_event_talks_returns_submissions_in_published_schedule(event):
         assert talks == [sub]
 
 
-@pytest.mark.django_db
 def test_event_cfp_flow_returns_cfp_flow_instance(event):
     with scope(event=event):
         flow = event.cfp_flow
         assert isinstance(flow, CfPFlow)
 
 
-@pytest.mark.django_db
 def test_event_release_schedule_freezes_wip_schedule(event):
     with scope(event=event):
         initial_published = event.schedules.filter(published__isnull=False).count()
 
-    with scopes_disabled():
-        event.release_schedule(name="v1")
+    event.release_schedule(name="v1")
 
     with scope(event=event):
         assert (
@@ -1343,9 +1214,7 @@ def test_event_release_schedule_freezes_wip_schedule(event):
         assert released.published is not None
 
 
-@pytest.mark.django_db
 def test_event_send_orga_mail_delivers_email(event):
-    """send_orga_mail formats placeholders and sends to the event's email."""
     djmail.outbox = []
     text = "Dashboard: {event_dashboard}, Submissions: {submission_count}"
 
@@ -1359,13 +1228,11 @@ def test_event_send_orga_mail_delivers_email(event):
     assert sent.body == (f"Dashboard: {event.orga_urls.base.full()}, Submissions: 0")
 
 
-@pytest.mark.django_db
 def test_event_send_orga_mail_with_stats(event):
 
     with scope(event=event):
         wip = event.wip_schedule
-    with scopes_disabled():
-        wip.freeze(name="v1")
+    wip.freeze(name="v1")
 
     event = refresh(event)
     djmail.outbox = []
@@ -1385,13 +1252,11 @@ def test_event_send_orga_mail_with_stats(event):
     assert sent.body == "Talks: 0, Reviews: 0, Schedules: 1, Mails: 0, Submissions: 0"
 
 
-@pytest.mark.django_db
 def test_event_has_unreleased_schedule_changes_false_initially(event):
     with scope(event=event):
         assert event.has_unreleased_schedule_changes is False
 
 
-@pytest.mark.django_db
 def test_event_update_review_phase_returns_none_when_no_active_and_no_eligible(event):
     with scope(event=event):
         event.review_phases.all().delete()
@@ -1412,18 +1277,15 @@ def test_event_update_review_phase_returns_none_when_no_active_and_no_eligible(e
         assert not future_phase.is_active
 
 
-@pytest.mark.django_db
 def test_event_meta_ordering():
     later = EventFactory(date_from=dt.date(2025, 6, 1), date_to=dt.date(2025, 6, 2))
     earlier = EventFactory(date_from=dt.date(2025, 1, 1), date_to=dt.date(2025, 1, 2))
 
-    with scopes_disabled():
-        events = list(Event.objects.filter(pk__in=[earlier.pk, later.pk]))
+    events = list(Event.objects.filter(pk__in=[earlier.pk, later.pk]))
 
     assert events == [earlier, later]
 
 
-@pytest.mark.django_db
 def test_event_shred_deletes_all_related_data(populated_event):
     """shred() deletes the event and all related data including submissions,
     speakers, rooms, slots, questions, answers, reviews, feedback, resources,
@@ -1431,61 +1293,51 @@ def test_event_shred_deletes_all_related_data(populated_event):
     event = populated_event
     pk = event.pk
 
-    with scopes_disabled():
-        event.shred()
+    event.shred()
 
-    with scopes_disabled():
-        assert not Event.objects.filter(pk=pk).exists()
-        assert not Submission.all_objects.filter(event_id=pk).exists()
-        assert not TalkSlot.objects.filter(schedule__event_id=pk).exists()
-        assert not Feedback.objects.filter(talk__event_id=pk).exists()
-        assert not Resource.objects.filter(submission__event_id=pk).exists()
-        assert not Answer.objects.filter(question__event_id=pk).exists()
-        assert not Question.all_objects.filter(event_id=pk).exists()
-        assert not Tag.objects.filter(event_id=pk).exists()
-        assert not SpeakerInformation.objects.filter(event_id=pk).exists()
-        assert not MailTemplate.objects.filter(event_id=pk).exists()
-        assert not Schedule.objects.filter(event_id=pk).exists()
+    assert not Event.objects.filter(pk=pk).exists()
+    assert not Submission.all_objects.filter(event_id=pk).exists()
+    assert not TalkSlot.objects.filter(schedule__event_id=pk).exists()
+    assert not Feedback.objects.filter(talk__event_id=pk).exists()
+    assert not Resource.objects.filter(submission__event_id=pk).exists()
+    assert not Answer.objects.filter(question__event_id=pk).exists()
+    assert not Question.all_objects.filter(event_id=pk).exists()
+    assert not Tag.objects.filter(event_id=pk).exists()
+    assert not SpeakerInformation.objects.filter(event_id=pk).exists()
+    assert not MailTemplate.objects.filter(event_id=pk).exists()
+    assert not Schedule.objects.filter(event_id=pk).exists()
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_copies_hierarkey_settings(event):
     """copy_data_from copies hierarkey settings from the source event,
     excluding file-based settings."""
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser)
-        other_event.settings.custom_value = "test123"
+    other_event = EventFactory(organiser=event.organiser)
+    other_event.settings.custom_value = "test123"
 
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     assert event.settings.custom_value == "test123"
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_copies_cfp_deadline(event):
-    with scopes_disabled():
-        other_event = EventFactory(organiser=event.organiser)
-        deadline = tz_now() + dt.timedelta(days=30)
-        other_event.cfp.deadline = deadline
-        other_event.cfp.save()
+    deadline = tz_now() + dt.timedelta(days=30)
+    other_event = EventFactory(organiser=event.organiser, cfp__deadline=deadline)
 
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     with scope(event=event):
         assert event.cfp.deadline == deadline
 
 
-@pytest.mark.django_db
 def test_event_copy_data_from_copies_review_phases_with_date_shift(event):
     """copy_data_from copies review phases from the source event, shifting
     start/end dates by the delta between event date_from values and
     deactivating all phases."""
-    with scopes_disabled():
-        other_event = EventFactory(
-            organiser=event.organiser,
-            date_from=dt.date(2025, 1, 1),
-            date_to=dt.date(2025, 1, 3),
-        )
+    other_event = EventFactory(
+        organiser=event.organiser,
+        date_from=dt.date(2025, 1, 1),
+        date_to=dt.date(2025, 1, 3),
+    )
 
     delta = event.date_from - other_event.date_from
     with scope(event=other_event):
@@ -1501,8 +1353,7 @@ def test_event_copy_data_from_copies_review_phases_with_date_shift(event):
             position=0,
         )
 
-    with scopes_disabled():
-        event.copy_data_from(other_event)
+    event.copy_data_from(other_event)
 
     with scope(event=event):
         phases = list(event.review_phases.all())
@@ -1514,20 +1365,15 @@ def test_event_copy_data_from_copies_review_phases_with_date_shift(event):
         assert phase.end == phase_end + delta
 
 
-@pytest.mark.django_db
 def test_event_talks_deduplicates_shared_speakers(event):
     """When a speaker has multiple slots in the published schedule,
     event.talks and event.speakers contain no duplicates."""
     with scope(event=event):
         speaker = SpeakerFactory(event=event)
-        sub1 = SubmissionFactory(event=event)
-        sub2 = SubmissionFactory(event=event)
+        sub1 = SubmissionFactory(event=event, state="confirmed")
+        sub2 = SubmissionFactory(event=event, state="confirmed")
         sub1.speakers.add(speaker)
         sub2.speakers.add(speaker)
-        sub1.state = "confirmed"
-        sub1.save()
-        sub2.state = "confirmed"
-        sub2.save()
 
         room = RoomFactory(event=event)
         TalkSlotFactory(submission=sub1, room=room)
@@ -1538,8 +1384,7 @@ def test_event_talks_deduplicates_shared_speakers(event):
             end=event.datetime_from + dt.timedelta(hours=3),
         )
 
-    with scopes_disabled():
-        event.wip_schedule.freeze(name="v1")
+    event.wip_schedule.freeze(name="v1")
 
     event = refresh(event)
     with scope(event=event):

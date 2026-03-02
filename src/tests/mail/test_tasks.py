@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
@@ -7,10 +9,9 @@ from pretalx.mail.models import QueuedMail, QueuedMailStates
 from pretalx.mail.tasks import mark_stale_sending_mails_as_failed
 from tests.factories import QueuedMailFactory
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_stale_sending_mail_marked_as_failed(event):
     """Mails stuck in SENDING state for over an hour are marked as failed
     with a timeout error."""
@@ -26,9 +27,7 @@ def test_stale_sending_mail_marked_as_failed(event):
     assert mail.error_data["type"] == "TimeoutError"
 
 
-@pytest.mark.django_db
 def test_recent_sending_mail_not_marked_as_failed(event):
-    """Mails that entered SENDING state recently are left alone."""
     mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENDING)
 
     mark_stale_sending_mails_as_failed(None)
