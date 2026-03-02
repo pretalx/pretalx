@@ -1,0 +1,43 @@
+import pytest
+from django.core import signing
+
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
+
+
+def _sign(url):
+    return signing.Signer(salt="safe-redirect").sign(url)
+
+
+def test_redirect_view_samesite_redirects(client):
+    """Same-site referer leads to an immediate redirect."""
+    url = "https://example.com/target"
+    response = client.get(
+        "/redirect/",
+        {"url": _sign(url)},
+        headers={"referer": "http://testserver/origin/"},
+    )
+
+    assert response.status_code == 302
+    assert response.url == url
+
+
+def test_redirect_view_crosssite_shows_confirmation(client):
+    """Cross-site (or missing) referer renders a confirmation page."""
+    url = "https://example.com/target"
+    response = client.get("/redirect/", {"url": _sign(url)})
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "example.com" in content
+
+
+def test_redirect_view_bad_signature_returns_400(client):
+    response = client.get("/redirect/", {"url": "tampered-value"})
+
+    assert response.status_code == 400
+
+
+def test_redirect_view_missing_url_returns_400(client):
+    response = client.get("/redirect/")
+
+    assert response.status_code == 400
