@@ -64,6 +64,11 @@ class TalkMixin(PermissionRequired):
 class TalkView(TalkMixin, TemplateView):
     template_name = "agenda/talk.html"
 
+    @context
+    @cached_property
+    def show_fav_button(self):
+        return self.request.user.has_perm("schedule.list_schedule", self.request.event)
+
     @cached_property
     def recording(self):
         for __, response in register_recording_provider.send_robust(self.request.event):
@@ -164,6 +169,11 @@ class TalkView(TalkMixin, TemplateView):
 
 class TalkReviewView(TalkView):
     template_name = "agenda/talk.html"
+
+    @context
+    @cached_property
+    def show_fav_button(self):
+        return False
 
     def has_permission(self):
         return self.request.event.get_feature_flag("submission_public_review")

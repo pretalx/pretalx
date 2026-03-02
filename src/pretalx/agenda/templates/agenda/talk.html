@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endblock alternate_link %}
 
 {% block agenda_custom_header %}
-    <script defer src="{% static "agenda/js/favourite.js" %}"></script>
+    {% if show_fav_button %}<script defer src="{% static "agenda/js/favourite.js" %}"></script>{% endif %}
     <script defer src="{% static "common/js/ui/datetime-local.js" %}"></script>
 {% endblock agenda_custom_header %}
 
@@ -44,10 +44,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <div class="heading-with-buttons">
                 <span>
                     {{ submission.title }}
-                    <button class="btn btn-xs btn-link d-none" id="fav-button">
-                        <i class="fa fa-star-o d-none" title="{% translate "Favourite this session" %}"></i>
-                        <i class="fa fa-star d-none" title="{% translate "Remove this session from your favourites" %}"></i>
-                    </button>
+                    {% if show_fav_button %}
+                        <button class="btn btn-xs btn-link d-none" id="fav-button">
+                            <i class="fa fa-star-o d-none" title="{% translate "Favourite this session" %}"></i>
+                            <i class="fa fa-star d-none" title="{% translate "Remove this session from your favourites" %}"></i>
+                        </button>
+                    {% endif %}
                 </span>
                 <div class="buttons d-flex justify-content-end" id="talk-buttons">
                     {% if submission.state == "confirmed" and request.event.current_schedule %}
