@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import json
 import logging
 
@@ -10,7 +12,6 @@ pytestmark = pytest.mark.unit
 
 
 def test_api_exception_handler_api_exception(caplog):
-    """API exceptions are logged at debug level and produce a DRF Response."""
     exc = exceptions.NotFound("Not found.")
 
     with caplog.at_level(logging.DEBUG, logger="pretalx.api.exceptions"):
@@ -24,7 +25,6 @@ def test_api_exception_handler_api_exception(caplog):
 
 
 def test_api_exception_handler_non_api_exception(caplog):
-    """Non-API exceptions return None and are not logged, matching DRF convention."""
     exc = ValueError("something broke")
 
     with caplog.at_level(logging.DEBUG, logger="pretalx.api.exceptions"):

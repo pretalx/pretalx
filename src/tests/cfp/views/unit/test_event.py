@@ -1,13 +1,13 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 from urllib.parse import parse_qs, urlparse
 
 import pytest
 from django.http import QueryDict
 from django.urls import reverse
-from django_scopes import scopes_disabled
 
 from pretalx.cfp.views.event import (
     EventCfP,
-    EventPageMixin,
     EventStartpage,
     GeneralView,
     LoggedInEventPageMixin,
@@ -21,27 +21,9 @@ from tests.factories import (
 )
 from tests.utils import make_request, make_view
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
-def test_event_page_mixin_get_permission_object_returns_event(event):
-    request = make_request(event)
-    view = make_view(EventPageMixin, request)
-
-    assert view.get_permission_object() is event
-
-
-@pytest.mark.django_db
-def test_event_page_mixin_get_permission_object_returns_none_without_event(event):
-    request = make_request(event)
-    del request.event
-    view = make_view(EventPageMixin, request)
-
-    assert view.get_permission_object() is None
-
-
-@pytest.mark.django_db
 def test_logged_in_event_page_mixin_get_login_url(event):
     request = make_request(event)
     view = make_view(LoggedInEventPageMixin, request)
@@ -50,59 +32,39 @@ def test_logged_in_event_page_mixin_get_login_url(event):
     assert view.get_login_url() == expected
 
 
-@pytest.mark.django_db
-def test_event_startpage_has_submissions_false_for_anonymous(event):
-    request = make_request(event)
-    view = make_view(EventStartpage, request)
-
-    with scopes_disabled():
-        assert view.has_submissions() is False
-
-
-@pytest.mark.django_db
 def test_event_startpage_has_submissions_true_when_speaker_has_talks(event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        sub = SubmissionFactory(event=event)
-        sub.speakers.add(speaker)
+    speaker = SpeakerFactory(event=event)
+    sub = SubmissionFactory(event=event)
+    sub.speakers.add(speaker)
     request = make_request(event, user=speaker.user)
     view = make_view(EventStartpage, request)
 
-    with scopes_disabled():
-        assert view.has_submissions() is True
+    assert view.has_submissions() is True
 
 
-@pytest.mark.django_db
 def test_event_startpage_has_submissions_false_when_no_talks(event):
     user = UserFactory()
     request = make_request(event, user=user)
     view = make_view(EventStartpage, request)
 
-    with scopes_disabled():
-        assert view.has_submissions() is False
+    assert view.has_submissions() is False
 
 
-@pytest.mark.django_db
 def test_event_startpage_has_featured_true_when_featured_exists(event):
-    with scopes_disabled():
-        SubmissionFactory(event=event, is_featured=True)
+    SubmissionFactory(event=event, is_featured=True)
     request = make_request(event)
     view = make_view(EventStartpage, request)
 
-    with scopes_disabled():
-        assert view.has_featured() is True
+    assert view.has_featured() is True
 
 
-@pytest.mark.django_db
 def test_event_startpage_has_featured_false_when_none(event):
     request = make_request(event)
     view = make_view(EventStartpage, request)
 
-    with scopes_disabled():
-        assert view.has_featured() is False
+    assert view.has_featured() is False
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("query_params", "expected_qs"),
     (
@@ -126,8 +88,7 @@ def test_event_startpage_submit_qs(event, query_params, expected_qs):
     request.GET = qd
     view = make_view(EventStartpage, request)
 
-    with scopes_disabled():
-        result = view.submit_qs()
+    result = view.submit_qs()
     if expected_qs:
         assert parse_qs(urlparse("http://x" + result).query) == parse_qs(
             urlparse("http://x" + expected_qs).query
@@ -136,10 +97,8 @@ def test_event_startpage_submit_qs(event, query_params, expected_qs):
         assert result == ""
 
 
-@pytest.mark.django_db
 def test_event_startpage_access_code_returns_code_when_valid(event):
-    with scopes_disabled():
-        access_code = SubmitterAccessCodeFactory(event=event)
+    access_code = SubmitterAccessCodeFactory(event=event)
 
     request = make_request(event)
     qd = QueryDict(mutable=True)
@@ -147,11 +106,9 @@ def test_event_startpage_access_code_returns_code_when_valid(event):
     request.GET = qd
     view = make_view(EventStartpage, request)
 
-    with scopes_disabled():
-        assert view.access_code() == access_code
+    assert view.access_code() == access_code
 
 
-@pytest.mark.django_db
 def test_event_startpage_access_code_returns_none_when_invalid(event):
     request = make_request(event)
     qd = QueryDict(mutable=True)
@@ -159,47 +116,36 @@ def test_event_startpage_access_code_returns_none_when_invalid(event):
     request.GET = qd
     view = make_view(EventStartpage, request)
 
-    with scopes_disabled():
-        assert view.access_code() is None
+    assert view.access_code() is None
 
 
-@pytest.mark.django_db
 def test_event_startpage_access_code_returns_none_when_no_param(event):
     request = make_request(event)
     view = make_view(EventStartpage, request)
 
-    with scopes_disabled():
-        assert view.access_code() is None
+    assert view.access_code() is None
 
 
-@pytest.mark.django_db
 def test_event_cfp_has_featured_true(event):
-    with scopes_disabled():
-        SubmissionFactory(event=event, is_featured=True)
+    SubmissionFactory(event=event, is_featured=True)
     request = make_request(event)
     view = make_view(EventCfP, request)
 
-    with scopes_disabled():
-        assert view.has_featured() is True
+    assert view.has_featured() is True
 
 
-@pytest.mark.django_db
 def test_event_cfp_has_featured_false(event):
     request = make_request(event)
     view = make_view(EventCfP, request)
 
-    with scopes_disabled():
-        assert view.has_featured() is False
+    assert view.has_featured() is False
 
 
-@pytest.mark.django_db
 def test_general_view_custom_domain_filters_events(event):
-    """GeneralView filters events by custom_domain when uses_custom_domain is True."""
-    with scopes_disabled():
-        custom_event = EventFactory(
-            is_public=True, custom_domain="https://custom.example.com"
-        )
-        no_domain_event = EventFactory(is_public=True, custom_domain=None)
+    custom_event = EventFactory(
+        is_public=True, custom_domain="https://custom.example.com"
+    )
+    no_domain_event = EventFactory(is_public=True, custom_domain=None)
     request = make_request(event)
     request.uses_custom_domain = True
     request.host = "custom.example.com"

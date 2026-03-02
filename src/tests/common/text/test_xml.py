@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
 from pretalx.common.text.xml import strip_control_characters, xmlescape
@@ -43,7 +45,6 @@ def test_xmlescape(text, expected):
 
 
 def test_xmlescape_combined():
-    """All escaping steps work together on a single input."""
     result = xmlescape("<b class=\"x\">'ñ'\x01</b>")
 
     assert result == "&lt;b class=&quot;x&quot;&gt;&apos;&#241;&apos;&lt;/b&gt;"

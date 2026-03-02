@@ -1,11 +1,13 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.submission.models import SubmitterAccessCode
 from pretalx.submission.models.type import SubmissionType, pleasing_number
 from tests.factories import (
+    EventFactory,
     SubmissionFactory,
     SubmissionTypeFactory,
     SubmitterAccessCodeFactory,
@@ -63,59 +65,56 @@ def test_submission_type_slug():
 
 
 @pytest.mark.django_db
-def test_submission_type_delete_removes_single_type_access_codes(event):
-    """Deleting a type removes access codes that only reference that type."""
+def test_submission_type_delete_removes_single_type_access_codes():
+    event = EventFactory()
     st = SubmissionTypeFactory(event=event)
     access_code = SubmitterAccessCodeFactory(event=event)
     access_code.submission_types.add(st)
 
-    with scopes_disabled():
-        st.delete()
-        assert not SubmitterAccessCode.objects.filter(pk=access_code.pk).exists()
+    st.delete()
+    assert not SubmitterAccessCode.objects.filter(pk=access_code.pk).exists()
 
 
 @pytest.mark.django_db
-def test_submission_type_delete_keeps_multi_type_access_codes(event):
-    """Deleting a type preserves access codes that also reference other types."""
+def test_submission_type_delete_keeps_multi_type_access_codes():
+    event = EventFactory()
     st1 = SubmissionTypeFactory(event=event)
     st2 = SubmissionTypeFactory(event=event)
     access_code = SubmitterAccessCodeFactory(event=event)
     access_code.submission_types.add(st1, st2)
 
-    with scopes_disabled():
-        st1.delete()
-        assert SubmitterAccessCode.objects.filter(pk=access_code.pk).exists()
+    st1.delete()
+    assert SubmitterAccessCode.objects.filter(pk=access_code.pk).exists()
 
 
 @pytest.mark.django_db
-def test_submission_type_update_duration_updates_slots(event):
+def test_submission_type_update_duration_updates_slots():
     """update_duration propagates the new default to slots of submissions
     that don't override their duration."""
-    with scopes_disabled():
-        st = event.cfp.default_type
-        submission = SubmissionFactory(event=event, duration=None)
-        slot = TalkSlotFactory(submission=submission)
+    event = EventFactory()
+    st = event.cfp.default_type
+    submission = SubmissionFactory(event=event, duration=None)
+    slot = TalkSlotFactory(submission=submission)
 
-        st.default_duration += 15
-        st.save()
-        st.update_duration()
+    st.default_duration += 15
+    st.save()
+    st.update_duration()
 
-        slot.refresh_from_db()
+    slot.refresh_from_db()
     assert slot.end == slot.start + dt.timedelta(minutes=st.default_duration)
 
 
 @pytest.mark.django_db
-def test_submission_type_update_duration_skips_custom_duration(event):
-    """update_duration does not touch submissions with an explicit duration override."""
-    with scopes_disabled():
-        st = event.cfp.default_type
-        submission = SubmissionFactory(event=event, duration=45)
-        slot = TalkSlotFactory(submission=submission)
-        original_end = slot.end
+def test_submission_type_update_duration_skips_custom_duration():
+    event = EventFactory()
+    st = event.cfp.default_type
+    submission = SubmissionFactory(event=event, duration=45)
+    slot = TalkSlotFactory(submission=submission)
+    original_end = slot.end
 
-        st.default_duration += 15
-        st.save()
-        st.update_duration()
+    st.default_duration += 15
+    st.save()
+    st.update_duration()
 
-        slot.refresh_from_db()
+    slot.refresh_from_db()
     assert slot.end == original_end

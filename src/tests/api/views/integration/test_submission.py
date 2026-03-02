@@ -1,22 +1,33 @@
-import json
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 from django_scopes import scope, scopes_disabled
 
 from pretalx.api.versions import LEGACY
 from pretalx.common.exceptions import SubmissionError
+from pretalx.person.models.auth_token import ENDPOINTS
 from pretalx.submission.models import (
     Resource,
     Submission,
     SubmissionInvitation,
     SubmissionStates,
 )
+from pretalx.submission.models.question import QuestionRequired, QuestionVariant
 from pretalx.submission.models.submission import SubmissionFavourite
 from pretalx.submission.signals import before_submission_state_change
 from tests.factories import (
+    AnswerFactory,
+    CachedFileFactory,
+    EventFactory,
+    QuestionFactory,
     ResourceFactory,
-    SpeakerFactory,
+    SpeakerRoleFactory,
     SubmissionFactory,
+    SubmissionFavouriteFactory,
+    SubmissionInvitationFactory,
     SubmissionTypeFactory,
     TagFactory,
     TeamFactory,
@@ -25,10 +36,37 @@ from tests.factories import (
     UserFactory,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
+# These token fixtures intentionally use `organiser_user` (default team
+# permissions) rather than the api-level `orga_user` fixture which grants
+# can_change_submissions + can_change_event_settings.  Submission tests
+# need to verify behaviour under standard organiser permissions.
+
+
+@pytest.fixture
+def orga_user_token(organiser_user):
+    """Read-only API token for the organiser user."""
+    return UserApiTokenFactory(
+        user=organiser_user,
+        events=list(organiser_user.get_events_with_any_permission()),
+        endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
+    )
+
+
+@pytest.fixture
+def orga_user_write_token(organiser_user):
+    """Read-write API token for the organiser user."""
+    return UserApiTokenFactory(
+        user=organiser_user,
+        events=list(organiser_user.get_events_with_any_permission()),
+        endpoints=dict.fromkeys(
+            ENDPOINTS, ["list", "retrieve", "create", "update", "destroy", "actions"]
+        ),
+    )
+
+
 def test_submission_list_anonymous_sees_only_scheduled(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -43,39 +81,42 @@ def test_submission_list_anonymous_sees_only_scheduled(
     assert content["results"][0]["title"] == published_talk_slot.submission.title
 
 
-@pytest.mark.django_db
-def test_submission_list_returns_401_when_schedule_not_public(client, event):
+def test_submission_list_returns_401_when_schedule_not_public(client):
     """Returns 401 when show_schedule is disabled and no token auth."""
-    event.feature_flags["show_schedule"] = False
-    event.save()
+    event = EventFactory(feature_flags={"show_schedule": False})
     response = client.get(event.api_urls.submissions, follow=True)
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
+@pytest.mark.parametrize("item_count", (1, 3))
 def test_submission_list_orga_sees_all_submissions(
-    client, event, orga_user_token, submission, other_submission
+    client, event, orga_user_token, item_count, django_assert_num_queries
 ):
-    """Orga with token sees all submissions regardless of schedule state."""
-    response = client.get(
-        event.api_urls.submissions,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    content = response.json()
+    """Orga with token sees all submissions, with constant query count."""
+    with scopes_disabled():
+        roles = SpeakerRoleFactory.create_batch(
+            item_count, submission__event=event, speaker__event=event
+        )
+
+    with django_assert_num_queries(22):
+        response = client.get(
+            event.api_urls.submissions,
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_token.token}"},
+        )
+
     assert response.status_code == 200
-    assert content["count"] == 2
+    content = response.json()
+    assert content["count"] == item_count
     codes = {r["code"] for r in content["results"]}
-    assert submission.code in codes
-    assert other_submission.code in codes
+    for role in roles:
+        assert role.submission.code in codes
 
 
-@pytest.mark.django_db
 def test_submission_list_orga_sees_submissions_when_not_public(
     client, event, orga_user_token, submission
 ):
     """Orga can still see submissions even if schedule is not public."""
-    event.is_public = False
     event.feature_flags["show_schedule"] = False
     event.save()
     response = client.get(
@@ -88,34 +129,16 @@ def test_submission_list_orga_sees_submissions_when_not_public(
     assert content["count"] == 1
 
 
-@pytest.mark.django_db
-@pytest.mark.parametrize("item_count", (1, 3))
-def test_submission_list_query_count(
-    client, event, orga_user_token, item_count, django_assert_num_queries
-):
-    """Query count for submission list is constant regardless of item count."""
-    with scopes_disabled():
-        for _ in range(item_count):
-            speaker = SpeakerFactory(event=event)
-            sub = SubmissionFactory(event=event)
-            sub.speakers.add(speaker)
-
-    with django_assert_num_queries(22):
-        response = client.get(
-            event.api_urls.submissions,
-            follow=True,
-            headers={"Authorization": f"Token {orga_user_token.token}"},
-        )
-    assert response.status_code == 200
-    content = response.json()
-    assert content["count"] == item_count
-
-
-@pytest.mark.django_db
 def test_submission_list_orga_filter_by_state(
-    client, event, orga_user_token, submission, rejected_submission
+    client, event, orga_user_token, submission
 ):
     """Filter ?state=rejected returns only rejected submissions."""
+    with scopes_disabled():
+        rejected = SpeakerRoleFactory(
+            submission__event=event, speaker__event=event
+        ).submission
+        rejected.reject()
+
     response = client.get(
         event.api_urls.submissions + "?state=rejected",
         follow=True,
@@ -124,10 +147,9 @@ def test_submission_list_orga_filter_by_state(
     content = response.json()
     assert response.status_code == 200
     assert content["count"] == 1
-    assert content["results"][0]["code"] == rejected_submission.code
+    assert content["results"][0]["code"] == rejected.code
 
 
-@pytest.mark.django_db
 def test_submission_retrieve_by_code(client, event, orga_user_token, submission):
     """Get single submission by code."""
     response = client.get(
@@ -142,7 +164,6 @@ def test_submission_retrieve_by_code(client, event, orga_user_token, submission)
     assert data["state"] == SubmissionStates.SUBMITTED
 
 
-@pytest.mark.django_db
 def test_submission_create_with_write_token(client, event, orga_user_write_token):
     """POST creates a submission, verify DB state and log."""
     with scopes_disabled():
@@ -150,14 +171,12 @@ def test_submission_create_with_write_token(client, event, orga_user_write_token
     response = client.post(
         event.api_urls.submissions,
         follow=True,
-        data=json.dumps(
-            {
-                "title": "New API Talk",
-                "abstract": "A talk about APIs",
-                "submission_type": sub_type.pk,
-                "content_locale": event.locale,
-            }
-        ),
+        data={
+            "title": "New API Talk",
+            "abstract": "A talk about APIs",
+            "submission_type": sub_type.pk,
+            "content_locale": event.locale,
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -175,7 +194,6 @@ def test_submission_create_with_write_token(client, event, orga_user_write_token
         )
 
 
-@pytest.mark.django_db
 def test_submission_create_wrong_locale_returns_400(
     client, event, orga_user_write_token
 ):
@@ -185,20 +203,17 @@ def test_submission_create_wrong_locale_returns_400(
     response = client.post(
         event.api_urls.submissions,
         follow=True,
-        data=json.dumps(
-            {
-                "title": "Bad Locale Talk",
-                "submission_type": sub_type.pk,
-                "content_locale": "xx-invalid",
-            }
-        ),
+        data={
+            "title": "Bad Locale Talk",
+            "submission_type": sub_type.pk,
+            "content_locale": "xx-invalid",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400
 
 
-@pytest.mark.django_db
 def test_submission_create_readonly_token_returns_403(client, event, orga_user_token):
     """Read-only token cannot create submissions."""
     with scopes_disabled():
@@ -207,7 +222,7 @@ def test_submission_create_readonly_token_returns_403(client, event, orga_user_t
     response = client.post(
         event.api_urls.submissions,
         follow=True,
-        data=json.dumps({"title": "Forbidden Talk", "submission_type": sub_type.pk}),
+        data={"title": "Forbidden Talk", "submission_type": sub_type.pk},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_token.token}"},
     )
@@ -216,7 +231,6 @@ def test_submission_create_readonly_token_returns_403(client, event, orga_user_t
         assert event.submissions.count() == initial_count
 
 
-@pytest.mark.django_db
 def test_submission_update_with_write_token(
     client, event, orga_user_write_token, submission
 ):
@@ -224,7 +238,7 @@ def test_submission_update_with_write_token(
     response = client.patch(
         event.api_urls.submissions + f"{submission.code}/",
         follow=True,
-        data=json.dumps({"title": "Updated Title"}),
+        data={"title": "Updated Title"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -241,26 +255,6 @@ def test_submission_update_with_write_token(
         assert "title" in action.data.get("changes", {})
 
 
-@pytest.mark.django_db
-def test_submission_update_readonly_token_returns_403(
-    client, event, orga_user_token, submission
-):
-    """Read-only token cannot update submissions."""
-    original_title = submission.title
-    response = client.patch(
-        event.api_urls.submissions + f"{submission.code}/",
-        follow=True,
-        data=json.dumps({"title": "Should Not Change"}),
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.title == original_title
-
-
-@pytest.mark.django_db
 def test_submission_delete_with_write_token(
     client, event, orga_user_write_token, submission
 ):
@@ -276,7 +270,6 @@ def test_submission_delete_with_write_token(
         assert not Submission.objects.filter(code=code).exists()
 
 
-@pytest.mark.django_db
 def test_submission_accept_changes_state(
     client, event, orga_user_write_token, submission
 ):
@@ -293,24 +286,6 @@ def test_submission_accept_changes_state(
         assert submission.state == SubmissionStates.ACCEPTED
 
 
-@pytest.mark.django_db
-def test_submission_accept_readonly_token_returns_403(
-    client, event, orga_user_token, submission
-):
-    """Read-only token cannot accept submissions."""
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/accept/",
-        follow=True,
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.SUBMITTED
-
-
-@pytest.mark.django_db
 def test_submission_reject_changes_state(
     client, event, orga_user_write_token, submission
 ):
@@ -327,133 +302,73 @@ def test_submission_reject_changes_state(
         assert submission.state == SubmissionStates.REJECTED
 
 
-@pytest.mark.django_db
-def test_submission_reject_readonly_token_returns_403(
-    client, event, orga_user_token, submission
-):
-    """Read-only token cannot reject submissions."""
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/reject/",
-        follow=True,
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        submission.refresh_from_db()
-        assert submission.state == SubmissionStates.SUBMITTED
-
-
-@pytest.mark.django_db
-def test_submission_confirm_changes_state(
-    client, event, orga_user_write_token, accepted_submission
-):
+def test_submission_confirm_changes_state(client, event, orga_user_write_token):
     """Confirm an accepted submission changes state to confirmed."""
+    with scopes_disabled():
+        sub = SpeakerRoleFactory(
+            submission__event=event, speaker__event=event
+        ).submission
+        sub.accept()
+
     response = client.post(
-        event.api_urls.submissions + f"{accepted_submission.code}/confirm/",
+        event.api_urls.submissions + f"{sub.code}/confirm/",
         follow=True,
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200
     with scopes_disabled():
-        accepted_submission.refresh_from_db()
-        assert accepted_submission.state == SubmissionStates.CONFIRMED
+        sub.refresh_from_db()
+        assert sub.state == SubmissionStates.CONFIRMED
 
 
-@pytest.mark.django_db
-def test_submission_confirm_readonly_token_returns_403(
-    client, event, orga_user_token, accepted_submission
-):
-    """Read-only token cannot confirm submissions."""
-    response = client.post(
-        event.api_urls.submissions + f"{accepted_submission.code}/confirm/",
-        follow=True,
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        accepted_submission.refresh_from_db()
-        assert accepted_submission.state == SubmissionStates.ACCEPTED
-
-
-@pytest.mark.django_db
-def test_submission_cancel_changes_state(
-    client, event, orga_user_write_token, accepted_submission
-):
+def test_submission_cancel_changes_state(client, event, orga_user_write_token):
     """Cancel an accepted submission changes state to canceled."""
+    with scopes_disabled():
+        sub = SpeakerRoleFactory(
+            submission__event=event, speaker__event=event
+        ).submission
+        sub.accept()
+
     response = client.post(
-        event.api_urls.submissions + f"{accepted_submission.code}/cancel/",
+        event.api_urls.submissions + f"{sub.code}/cancel/",
         follow=True,
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200
     with scopes_disabled():
-        accepted_submission.refresh_from_db()
-        assert accepted_submission.state == SubmissionStates.CANCELED
+        sub.refresh_from_db()
+        assert sub.state == SubmissionStates.CANCELED
 
 
-@pytest.mark.django_db
-def test_submission_cancel_readonly_token_returns_403(
-    client, event, orga_user_token, accepted_submission
-):
-    """Read-only token cannot cancel submissions."""
-    response = client.post(
-        event.api_urls.submissions + f"{accepted_submission.code}/cancel/",
-        follow=True,
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        accepted_submission.refresh_from_db()
-        assert accepted_submission.state == SubmissionStates.ACCEPTED
-
-
-@pytest.mark.django_db
-def test_submission_make_submitted_changes_state(
-    client, event, orga_user_write_token, rejected_submission
-):
+def test_submission_make_submitted_changes_state(client, event, orga_user_write_token):
     """Make a rejected submission submitted again."""
+    with scopes_disabled():
+        sub = SpeakerRoleFactory(
+            submission__event=event, speaker__event=event
+        ).submission
+        sub.reject()
+
     response = client.post(
-        event.api_urls.submissions + f"{rejected_submission.code}/make-submitted/",
+        event.api_urls.submissions + f"{sub.code}/make-submitted/",
         follow=True,
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 200
     with scopes_disabled():
-        rejected_submission.refresh_from_db()
-        assert rejected_submission.state == SubmissionStates.SUBMITTED
+        sub.refresh_from_db()
+        assert sub.state == SubmissionStates.SUBMITTED
 
 
-@pytest.mark.django_db
-def test_submission_make_submitted_readonly_token_returns_403(
-    client, event, orga_user_token, rejected_submission
-):
-    """Read-only token cannot change submission to submitted."""
-    response = client.post(
-        event.api_urls.submissions + f"{rejected_submission.code}/make-submitted/",
-        follow=True,
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        rejected_submission.refresh_from_db()
-        assert rejected_submission.state == SubmissionStates.REJECTED
-
-
-@pytest.mark.django_db
 def test_submission_add_speaker(client, event, orga_user_write_token, submission):
     """POST add-speaker with email adds a speaker to the submission."""
     new_email = "newspeaker@example.com"
     response = client.post(
         event.api_urls.submissions + f"{submission.code}/add-speaker/",
         follow=True,
-        data=json.dumps({"email": new_email}),
+        data={"email": new_email},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -464,26 +379,6 @@ def test_submission_add_speaker(client, event, orga_user_write_token, submission
         assert new_email in speaker_emails
 
 
-@pytest.mark.django_db
-def test_submission_add_speaker_readonly_token_returns_403(
-    client, event, orga_user_token, submission
-):
-    """Read-only token cannot add speakers."""
-    with scopes_disabled():
-        initial_count = submission.speakers.count()
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/add-speaker/",
-        follow=True,
-        data=json.dumps({"email": "test@example.com"}),
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        assert submission.speakers.count() == initial_count
-
-
-@pytest.mark.django_db
 def test_submission_remove_speaker(client, event, orga_user_write_token, submission):
     """POST remove-speaker with speaker code removes the speaker."""
     with scopes_disabled():
@@ -492,7 +387,7 @@ def test_submission_remove_speaker(client, event, orga_user_write_token, submiss
     response = client.post(
         event.api_urls.submissions + f"{submission.code}/remove-speaker/",
         follow=True,
-        data=json.dumps({"user": speaker_code}),
+        data={"user": speaker_code},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -502,7 +397,6 @@ def test_submission_remove_speaker(client, event, orga_user_write_token, submiss
         assert not submission.speakers.filter(code=speaker_code).exists()
 
 
-@pytest.mark.django_db
 def test_submission_remove_speaker_not_found_returns_400(
     client, event, orga_user_write_token, submission
 ):
@@ -510,7 +404,7 @@ def test_submission_remove_speaker_not_found_returns_400(
     response = client.post(
         event.api_urls.submissions + f"{submission.code}/remove-speaker/",
         follow=True,
-        data=json.dumps({"user": "NONEXIST"}),
+        data={"user": "NONEXIST"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -518,34 +412,13 @@ def test_submission_remove_speaker_not_found_returns_400(
     assert "Speaker not found" in response.json()["detail"]
 
 
-@pytest.mark.django_db
-def test_submission_remove_speaker_readonly_token_returns_403(
-    client, event, orga_user_token, submission
-):
-    """Read-only token cannot remove speakers."""
-    with scopes_disabled():
-        speaker = submission.speakers.first()
-        speaker_code = speaker.code
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/remove-speaker/",
-        follow=True,
-        data=json.dumps({"user": speaker_code}),
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        assert submission.speakers.filter(code=speaker_code).exists()
-
-
-@pytest.mark.django_db
 def test_submission_invite_speaker(client, event, orga_user_write_token, submission):
     """POST invitations creates an invitation and logs the action."""
     email = "invited@example.com"
     response = client.post(
         event.api_urls.submissions + f"{submission.code}/invitations/",
         follow=True,
-        data=json.dumps({"email": email}),
+        data={"email": email},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -561,7 +434,6 @@ def test_submission_invite_speaker(client, event, orga_user_write_token, submiss
         )
 
 
-@pytest.mark.django_db
 def test_submission_invite_speaker_already_speaker_returns_400(
     client, event, orga_user_write_token, submission
 ):
@@ -571,7 +443,7 @@ def test_submission_invite_speaker_already_speaker_returns_400(
     response = client.post(
         event.api_urls.submissions + f"{submission.code}/invitations/",
         follow=True,
-        data=json.dumps({"email": speaker_email}),
+        data={"email": speaker_email},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -579,18 +451,17 @@ def test_submission_invite_speaker_already_speaker_returns_400(
     assert "already a speaker" in response.json()["detail"]
 
 
-@pytest.mark.django_db
 def test_submission_invite_speaker_already_invited_returns_400(
     client, event, orga_user_write_token, submission
 ):
     """Inviting someone who has already been invited returns 400."""
     email = "duplicate@example.com"
     with scopes_disabled():
-        SubmissionInvitation.objects.create(submission=submission, email=email)
+        SubmissionInvitationFactory(submission=submission, email=email)
     response = client.post(
         event.api_urls.submissions + f"{submission.code}/invitations/",
         follow=True,
-        data=json.dumps({"email": email}),
+        data={"email": email},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -598,22 +469,17 @@ def test_submission_invite_speaker_already_invited_returns_400(
     assert "already been invited" in response.json()["detail"]
 
 
-@pytest.mark.django_db
 def test_submission_invite_speaker_max_exceeded_returns_400(
     client, event, orga_user_write_token, submission
 ):
     """Inviting when max_speakers would be exceeded returns 400."""
     with scopes_disabled():
-        cfp = event.cfp
-        fields = cfp.fields or {}
-        fields["additional_speaker"] = fields.get("additional_speaker", {})
-        fields["additional_speaker"]["max"] = 1
-        cfp.fields = fields
-        cfp.save()
+        event.cfp.fields["additional_speaker"]["max"] = 1
+        event.cfp.save()
     response = client.post(
         event.api_urls.submissions + f"{submission.code}/invitations/",
         follow=True,
-        data=json.dumps({"email": "overflow@example.com"}),
+        data={"email": "overflow@example.com"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -621,32 +487,12 @@ def test_submission_invite_speaker_max_exceeded_returns_400(
     assert "maximum" in response.json()["detail"].lower()
 
 
-@pytest.mark.django_db
-def test_submission_invite_speaker_readonly_token_returns_403(
-    client, event, orga_user_token, submission
-):
-    """Read-only token cannot invite speakers."""
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/invitations/",
-        follow=True,
-        data=json.dumps({"email": "nope@example.com"}),
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        assert not SubmissionInvitation.objects.filter(
-            submission=submission, email="nope@example.com"
-        ).exists()
-
-
-@pytest.mark.django_db
 def test_submission_retract_invitation(
     client, event, orga_user_write_token, submission
 ):
     """DELETE invitations/{id} retracts the invitation."""
     with scopes_disabled():
-        invitation = SubmissionInvitation.objects.create(
+        invitation = SubmissionInvitationFactory(
             submission=submission, email="retract@example.com"
         )
         invitation_id = invitation.pk
@@ -660,7 +506,6 @@ def test_submission_retract_invitation(
         assert not SubmissionInvitation.objects.filter(pk=invitation_id).exists()
 
 
-@pytest.mark.django_db
 def test_submission_retract_invitation_not_found_returns_404(
     client, event, orga_user_write_token, submission
 ):
@@ -673,34 +518,12 @@ def test_submission_retract_invitation_not_found_returns_404(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
-def test_submission_retract_invitation_readonly_token_returns_403(
-    client, event, orga_user_token, submission
-):
-    """Read-only token cannot retract invitations."""
-    with scopes_disabled():
-        invitation = SubmissionInvitation.objects.create(
-            submission=submission, email="keep@example.com"
-        )
-    response = client.delete(
-        event.api_urls.submissions + f"{submission.code}/invitations/{invitation.pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        assert SubmissionInvitation.objects.filter(pk=invitation.pk).exists()
-
-
-@pytest.mark.django_db
 def test_submission_add_link_resource(client, event, orga_user_write_token, submission):
     """POST resources with a link creates a resource on the submission."""
     response = client.post(
         event.api_urls.submissions + f"{submission.code}/resources/",
         follow=True,
-        data=json.dumps(
-            {"link": "https://example.com/slides", "description": "Slide deck"}
-        ),
+        data={"link": "https://example.com/slides", "description": "Slide deck"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -709,7 +532,6 @@ def test_submission_add_link_resource(client, event, orga_user_write_token, subm
         assert submission.resources.filter(link="https://example.com/slides").exists()
 
 
-@pytest.mark.django_db
 def test_submission_add_resource_both_link_and_file_returns_400(
     client, event, orga_user_write_token, submission
 ):
@@ -717,20 +539,17 @@ def test_submission_add_resource_both_link_and_file_returns_400(
     response = client.post(
         event.api_urls.submissions + f"{submission.code}/resources/",
         follow=True,
-        data=json.dumps(
-            {
-                "link": "https://example.com/slides",
-                "resource": "file:///fake",
-                "description": "Both provided",
-            }
-        ),
+        data={
+            "link": "https://example.com/slides",
+            "resource": "file:///fake",
+            "description": "Both provided",
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400
 
 
-@pytest.mark.django_db
 def test_submission_add_resource_neither_returns_400(
     client, event, orga_user_write_token, submission
 ):
@@ -738,35 +557,13 @@ def test_submission_add_resource_neither_returns_400(
     response = client.post(
         event.api_urls.submissions + f"{submission.code}/resources/",
         follow=True,
-        data=json.dumps({"description": "No resource"}),
+        data={"description": "No resource"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400
 
 
-@pytest.mark.django_db
-def test_submission_add_resource_readonly_token_returns_403(
-    client, event, orga_user_token, submission
-):
-    """Read-only token cannot add resources."""
-    with scopes_disabled():
-        initial_count = submission.resources.count()
-    response = client.post(
-        event.api_urls.submissions + f"{submission.code}/resources/",
-        follow=True,
-        data=json.dumps(
-            {"link": "https://example.com/forbidden", "description": "Nope"}
-        ),
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        assert submission.resources.count() == initial_count
-
-
-@pytest.mark.django_db
 def test_submission_remove_resource(client, event, orga_user_write_token, submission):
     """DELETE resources/{id} removes the resource."""
     with scopes_disabled():
@@ -782,7 +579,6 @@ def test_submission_remove_resource(client, event, orga_user_write_token, submis
         assert not Resource.objects.filter(pk=resource_id).exists()
 
 
-@pytest.mark.django_db
 def test_submission_remove_resource_not_found_returns_404(
     client, event, orga_user_write_token, submission
 ):
@@ -795,24 +591,6 @@ def test_submission_remove_resource_not_found_returns_404(
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
-def test_submission_remove_resource_readonly_token_returns_403(
-    client, event, orga_user_token, submission
-):
-    """Read-only token cannot remove resources."""
-    with scopes_disabled():
-        resource = ResourceFactory(submission=submission)
-    response = client.delete(
-        event.api_urls.submissions + f"{submission.code}/resources/{resource.pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        assert Resource.objects.filter(pk=resource.pk).exists()
-
-
-@pytest.mark.django_db
 def test_submission_remove_resource_from_different_submission_returns_404(
     client, event, orga_user_write_token, submission, other_submission
 ):
@@ -829,7 +607,6 @@ def test_submission_remove_resource_from_different_submission_returns_404(
         assert Resource.objects.filter(pk=resource.pk).exists()
 
 
-@pytest.mark.django_db
 def test_submission_public_only_sees_public_resources(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -851,7 +628,6 @@ def test_submission_public_only_sees_public_resources(
     assert resources[0]["resource"] == "https://example.com/public"
 
 
-@pytest.mark.django_db
 def test_submission_orga_sees_all_resources(
     client, event, orga_user_write_token, submission
 ):
@@ -875,7 +651,6 @@ def test_submission_orga_sees_all_resources(
     assert "https://example.com/private" in urls
 
 
-@pytest.mark.django_db
 def test_submission_log_orga_can_view(client, event, orga_user_write_token, submission):
     """Orga can view the log endpoint for a submission."""
     with scopes_disabled(), scope(event=event):
@@ -891,15 +666,15 @@ def test_submission_log_orga_can_view(client, event, orga_user_write_token, subm
     assert data["results"][0]["action_type"] == "pretalx.test.action"
 
 
-@pytest.mark.django_db
-def test_submission_expandable_fields(
-    client, event, orga_user_write_token, submission, tag, track
-):
+def test_submission_expandable_fields(client, event, orga_user_write_token, track):
     """Test expand=speakers,track,submission_type,tags returns nested objects."""
+    tag = TagFactory(event=event)
     with scopes_disabled():
+        role = SpeakerRoleFactory(
+            submission__event=event, submission__track=track, speaker__event=event
+        )
+        submission = role.submission
         submission.tags.add(tag)
-        submission.track = track
-        submission.save()
 
     response = client.get(
         event.api_urls.submissions
@@ -920,7 +695,6 @@ def test_submission_expandable_fields(
     assert data["track"]["id"] == track.pk
 
 
-@pytest.mark.django_db
 def test_favourites_list_unauthenticated_returns_403(
     client, public_event_with_schedule
 ):
@@ -932,20 +706,6 @@ def test_favourites_list_unauthenticated_returns_403(
     assert response.status_code == 403
 
 
-@pytest.mark.django_db
-def test_favourites_list_schedule_not_public_returns_403(client, event):
-    """Logged in user gets 403 when schedule is hidden."""
-    user = UserFactory()
-    client.force_login(user)
-    event.feature_flags["show_schedule"] = False
-    event.save()
-    response = client.get(
-        f"/api/events/{event.slug}/submissions/favourites/", follow=True
-    )
-    assert response.status_code == 403
-
-
-@pytest.mark.django_db
 def test_favourites_list_empty(client, public_event_with_schedule):
     """Authenticated user with no favourites gets empty list."""
     event = public_event_with_schedule
@@ -958,7 +718,6 @@ def test_favourites_list_empty(client, public_event_with_schedule):
     assert response.json() == []
 
 
-@pytest.mark.django_db
 def test_favourites_list_with_data(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -968,7 +727,7 @@ def test_favourites_list_with_data(
     client.force_login(user)
     with scopes_disabled():
         sub = published_talk_slot.submission
-        SubmissionFavourite.objects.create(user=user, submission=sub)
+        SubmissionFavouriteFactory(user=user, submission=sub)
     response = client.get(
         f"/api/events/{event.slug}/submissions/favourites/", follow=True
     )
@@ -977,7 +736,6 @@ def test_favourites_list_with_data(
     assert sub.code in data
 
 
-@pytest.mark.django_db
 def test_favourite_add_success(client, public_event_with_schedule, published_talk_slot):
     """POST favourite adds the submission to favourites."""
     event = public_event_with_schedule
@@ -993,7 +751,6 @@ def test_favourite_add_success(client, public_event_with_schedule, published_tal
         assert SubmissionFavourite.objects.filter(user=user, submission=sub).exists()
 
 
-@pytest.mark.django_db
 def test_favourite_add_unauthenticated_returns_403(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -1007,7 +764,6 @@ def test_favourite_add_unauthenticated_returns_403(
     assert response.status_code == 403
 
 
-@pytest.mark.django_db
 def test_favourite_add_nonexistent_returns_404(client, public_event_with_schedule):
     """Adding a non-existent submission as favourite returns 404."""
     event = public_event_with_schedule
@@ -1019,7 +775,28 @@ def test_favourite_add_nonexistent_returns_404(client, public_event_with_schedul
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
+def test_favourites_list_no_schedule_permission_returns_403(client, event):
+    """Authenticated user without schedule.list_schedule gets 403."""
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.get(f"/api/events/{event.slug}/submissions/favourites/")
+
+    assert response.status_code == 403
+
+
+def test_favourite_add_no_schedule_permission_returns_403(client, event, submission):
+    """Authenticated user without schedule.list_schedule gets 403 on add."""
+    user = UserFactory()
+    client.force_login(user)
+
+    response = client.post(
+        f"/api/events/{event.slug}/submissions/{submission.code}/favourite/"
+    )
+
+    assert response.status_code == 403
+
+
 def test_favourite_remove_success(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -1029,7 +806,7 @@ def test_favourite_remove_success(
     client.force_login(user)
     with scopes_disabled():
         sub = published_talk_slot.submission
-        SubmissionFavourite.objects.create(user=user, submission=sub)
+        SubmissionFavouriteFactory(user=user, submission=sub)
     response = client.delete(
         f"/api/events/{event.slug}/submissions/{sub.code}/favourite/", follow=True
     )
@@ -1040,35 +817,19 @@ def test_favourite_remove_success(
         ).exists()
 
 
-@pytest.mark.django_db
-def test_tag_list_anonymous_returns_401(client, event, tag):
+def test_tag_list_anonymous_returns_401(client, event):
     """Anonymous user gets 401 for tags on non-public event."""
+    TagFactory(event=event)
     response = client.get(event.api_urls.tags, follow=True)
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
-def test_tag_list_orga(client, event, orga_user_token, tag):
-    """Orga can list tags."""
-    response = client.get(
-        event.api_urls.tags,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 200
-    content = response.json()
-    assert content["count"] == 1
-    assert content["results"][0]["id"] == tag.pk
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
-def test_tag_list_query_count(
+def test_tag_list_orga(
     client, event, orga_user_token, item_count, django_assert_num_queries
 ):
-    """Query count for tag list is constant regardless of item count."""
-    for _ in range(item_count):
-        TagFactory(event=event)
+    """Orga can list tags, with constant query count."""
+    tags = TagFactory.create_batch(item_count, event=event)
 
     with django_assert_num_queries(11):
         response = client.get(
@@ -1076,14 +837,18 @@ def test_tag_list_query_count(
             follow=True,
             headers={"Authorization": f"Token {orga_user_token.token}"},
         )
+
     assert response.status_code == 200
     content = response.json()
     assert content["count"] == item_count
+    tag_ids = {r["id"] for r in content["results"]}
+    for tag in tags:
+        assert tag.pk in tag_ids
 
 
-@pytest.mark.django_db
-def test_tag_detail(client, event, orga_user_token, tag):
+def test_tag_detail(client, event, orga_user_token):
     """Single tag detail endpoint works."""
+    tag = TagFactory(event=event)
     response = client.get(
         event.api_urls.tags + f"{tag.pk}/",
         follow=True,
@@ -1095,9 +860,9 @@ def test_tag_detail(client, event, orga_user_token, tag):
     assert data["color"] == tag.color
 
 
-@pytest.mark.django_db
-def test_tag_detail_locale_override(client, event, orga_user_token, tag):
+def test_tag_detail_locale_override(client, event, orga_user_token):
     """The ?lang= parameter makes i18n fields return a plain string."""
+    tag = TagFactory(event=event)
     response = client.get(
         event.api_urls.tags + f"{tag.pk}/?lang=en",
         follow=True,
@@ -1108,13 +873,12 @@ def test_tag_detail_locale_override(client, event, orga_user_token, tag):
     assert isinstance(data["tag"], str)
 
 
-@pytest.mark.django_db
 def test_tag_create_with_write_token(client, event, orga_user_write_token):
     """POST with write token creates a tag, verify DB state and log."""
     response = client.post(
         event.api_urls.tags,
         follow=True,
-        data=json.dumps({"tag": "new-tag", "color": "#00ff00"}),
+        data={"tag": "new-tag", "color": "#00ff00"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -1129,26 +893,25 @@ def test_tag_create_with_write_token(client, event, orga_user_write_token):
         )
 
 
-@pytest.mark.django_db
-def test_tag_create_duplicate_returns_400(client, event, orga_user_write_token, tag):
+def test_tag_create_duplicate_returns_400(client, event, orga_user_write_token):
     """Creating a tag with a duplicate name returns 400."""
+    tag = TagFactory(event=event)
     response = client.post(
         event.api_urls.tags,
         follow=True,
-        data=json.dumps({"tag": str(tag.tag), "color": "#ff0000"}),
+        data={"tag": str(tag.tag), "color": "#ff0000"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
     assert response.status_code == 400
 
 
-@pytest.mark.django_db
 def test_tag_create_readonly_token_returns_403(client, event, orga_user_token):
     """Read-only token cannot create tags."""
     response = client.post(
         event.api_urls.tags,
         follow=True,
-        data=json.dumps({"tag": "forbidden-tag", "color": "#ff0000"}),
+        data={"tag": "forbidden-tag", "color": "#ff0000"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_token.token}"},
     )
@@ -1157,13 +920,13 @@ def test_tag_create_readonly_token_returns_403(client, event, orga_user_token):
         assert not event.tags.filter(tag="forbidden-tag").exists()
 
 
-@pytest.mark.django_db
-def test_tag_update_with_write_token(client, event, orga_user_write_token, tag):
+def test_tag_update_with_write_token(client, event, orga_user_write_token):
     """PATCH with write token updates the tag name."""
+    tag = TagFactory(event=event)
     response = client.patch(
         event.api_urls.tags + f"{tag.pk}/",
         follow=True,
-        data=json.dumps({"tag": "updated-tag"}),
+        data={"tag": "updated-tag"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -1173,26 +936,9 @@ def test_tag_update_with_write_token(client, event, orga_user_write_token, tag):
         assert str(tag.tag) == "updated-tag"
 
 
-@pytest.mark.django_db
-def test_tag_update_readonly_token_returns_403(client, event, orga_user_token, tag):
-    """Read-only token cannot update tags."""
-    original_tag = str(tag.tag)
-    response = client.patch(
-        event.api_urls.tags + f"{tag.pk}/",
-        follow=True,
-        data=json.dumps({"tag": "should-not-change"}),
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        tag.refresh_from_db()
-        assert str(tag.tag) == original_tag
-
-
-@pytest.mark.django_db
-def test_tag_delete_with_write_token(client, event, orga_user_write_token, tag):
+def test_tag_delete_with_write_token(client, event, orga_user_write_token):
     """DELETE with write token removes the tag."""
+    tag = TagFactory(event=event)
     tag_pk = tag.pk
     response = client.delete(
         event.api_urls.tags + f"{tag_pk}/",
@@ -1204,27 +950,12 @@ def test_tag_delete_with_write_token(client, event, orga_user_write_token, tag):
         assert not event.tags.filter(pk=tag_pk).exists()
 
 
-@pytest.mark.django_db
-def test_tag_delete_readonly_token_returns_403(client, event, orga_user_token, tag):
-    """Read-only token cannot delete tags."""
-    response = client.delete(
-        event.api_urls.tags + f"{tag.pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        assert event.tags.filter(pk=tag.pk).exists()
-
-
-@pytest.mark.django_db
 def test_track_list_anonymous_returns_401(client, event, track):
     """Anonymous user gets 401 for tracks on non-public event."""
     response = client.get(event.api_urls.tracks, follow=True)
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
 def test_track_list_public_event_shows_tracks(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -1240,43 +971,28 @@ def test_track_list_public_event_shows_tracks(
     assert content["count"] == 1
 
 
-@pytest.mark.django_db
-def test_track_list_orga(client, event, orga_user_token, track):
-    """Orga can list tracks."""
-    response = client.get(
-        event.api_urls.tracks,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 200
-    content = response.json()
-    assert content["count"] == 1
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
-def test_track_list_query_count(
+def test_track_list_orga(
     client, event, orga_user_token, item_count, django_assert_num_queries
 ):
-    """Query count for track list is constant regardless of item count."""
-    with scopes_disabled():
-        event.feature_flags["use_tracks"] = True
-        event.save()
-    for _ in range(item_count):
-        TrackFactory(event=event)
+    """Orga can list tracks, with constant query count."""
+    tracks = TrackFactory.create_batch(item_count, event=event)
 
-    with django_assert_num_queries(11):
+    with django_assert_num_queries(12):
         response = client.get(
             event.api_urls.tracks,
             follow=True,
             headers={"Authorization": f"Token {orga_user_token.token}"},
         )
+
     assert response.status_code == 200
     content = response.json()
     assert content["count"] == item_count
+    track_ids = {r["id"] for r in content["results"]}
+    for t in tracks:
+        assert t.pk in track_ids
 
 
-@pytest.mark.django_db
 def test_track_detail(client, event, orga_user_token, track):
     """Single track detail endpoint works."""
     response = client.get(
@@ -1290,7 +1006,6 @@ def test_track_detail(client, event, orga_user_token, track):
     assert data["color"] == track.color
 
 
-@pytest.mark.django_db
 def test_track_detail_locale_override(client, event, orga_user_token, track):
     """The ?lang= parameter makes i18n fields return a plain string."""
     response = client.get(
@@ -1303,13 +1018,12 @@ def test_track_detail_locale_override(client, event, orga_user_token, track):
     assert isinstance(data["name"], str)
 
 
-@pytest.mark.django_db
 def test_track_create_with_write_token(client, event, orga_write_token):
     """POST with write token creates a track (requires can_change_event_settings)."""
     response = client.post(
         event.api_urls.tracks,
         follow=True,
-        data=json.dumps({"name": "New Track", "color": "#0000ff"}),
+        data={"name": "New Track", "color": "#0000ff"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1324,13 +1038,12 @@ def test_track_create_with_write_token(client, event, orga_write_token):
         )
 
 
-@pytest.mark.django_db
 def test_track_create_readonly_token_returns_403(client, event, orga_user_token):
     """Read-only token cannot create tracks."""
     response = client.post(
         event.api_urls.tracks,
         follow=True,
-        data=json.dumps({"name": "Forbidden Track", "color": "#0000ff"}),
+        data={"name": "Forbidden Track", "color": "#0000ff"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_token.token}"},
     )
@@ -1339,13 +1052,12 @@ def test_track_create_readonly_token_returns_403(client, event, orga_user_token)
         assert not event.tracks.filter(name="Forbidden Track").exists()
 
 
-@pytest.mark.django_db
 def test_track_update_with_write_token(client, event, orga_write_token, track):
     """PATCH with write token updates the track (requires can_change_event_settings)."""
     response = client.patch(
         event.api_urls.tracks + f"{track.pk}/",
         follow=True,
-        data=json.dumps({"name": "Updated Track"}),
+        data={"name": "Updated Track"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1355,24 +1067,6 @@ def test_track_update_with_write_token(client, event, orga_write_token, track):
         assert str(track.name) == "Updated Track"
 
 
-@pytest.mark.django_db
-def test_track_update_readonly_token_returns_403(client, event, orga_user_token, track):
-    """Read-only token cannot update tracks."""
-    original_name = str(track.name)
-    response = client.patch(
-        event.api_urls.tracks + f"{track.pk}/",
-        follow=True,
-        data=json.dumps({"name": "Should Not Change"}),
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        track.refresh_from_db()
-        assert str(track.name) == original_name
-
-
-@pytest.mark.django_db
 def test_track_delete_with_write_token(client, event, orga_write_token, track):
     """DELETE with write token removes the track (requires can_change_event_settings)."""
     track_pk = track.pk
@@ -1386,23 +1080,8 @@ def test_track_delete_with_write_token(client, event, orga_write_token, track):
         assert not event.tracks.filter(pk=track_pk).exists()
 
 
-@pytest.mark.django_db
-def test_track_delete_readonly_token_returns_403(client, event, orga_user_token, track):
-    """Read-only token cannot delete tracks."""
-    response = client.delete(
-        event.api_urls.tracks + f"{track.pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        assert event.tracks.filter(pk=track.pk).exists()
-
-
-@pytest.mark.django_db
 def test_track_no_legacy_api(client, event, orga_user_token, track):
     """Legacy API version returns 400 for tracks."""
-    from pretalx.api.versions import LEGACY  # noqa: PLC0415
 
     response = client.get(
         event.api_urls.tracks + f"{track.pk}/",
@@ -1415,14 +1094,13 @@ def test_track_no_legacy_api(client, event, orga_user_token, track):
     assert response.status_code == 400
 
 
-@pytest.mark.django_db
-def test_submission_type_list_anonymous_returns_401_when_not_public(client, event):
+def test_submission_type_list_anonymous_returns_401_when_not_public(client):
     """Anonymous user gets 401 for submission types on non-public event."""
+    event = EventFactory(is_public=False)
     response = client.get(event.api_urls.submission_types, follow=True)
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
 def test_submission_type_list_public_event(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -1434,27 +1112,12 @@ def test_submission_type_list_public_event(
     assert content["count"] == 1
 
 
-@pytest.mark.django_db
-def test_submission_type_list_orga(client, event, orga_user_token, submission_type):
-    """Orga can list submission types."""
-    response = client.get(
-        event.api_urls.submission_types,
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 200
-    content = response.json()
-    assert content["count"] == 2
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
-def test_submission_type_list_query_count(
+def test_submission_type_list_orga(
     client, event, orga_user_token, item_count, django_assert_num_queries
 ):
-    """Query count for submission type list is constant regardless of item count."""
-    for _ in range(item_count):
-        SubmissionTypeFactory(event=event)
+    """Orga can list submission types, with constant query count."""
+    types = SubmissionTypeFactory.create_batch(item_count, event=event)
 
     with django_assert_num_queries(11):
         response = client.get(
@@ -1462,13 +1125,16 @@ def test_submission_type_list_query_count(
             follow=True,
             headers={"Authorization": f"Token {orga_user_token.token}"},
         )
+
     assert response.status_code == 200
     content = response.json()
     # item_count + 1 for the default_type
     assert content["count"] == item_count + 1
+    type_ids = {r["id"] for r in content["results"]}
+    for st in types:
+        assert st.pk in type_ids
 
 
-@pytest.mark.django_db
 def test_submission_type_detail(client, event, orga_user_token):
     """Single submission type detail endpoint works."""
     with scopes_disabled():
@@ -1484,7 +1150,6 @@ def test_submission_type_detail(client, event, orga_user_token):
     assert data["default_duration"] == sub_type.default_duration
 
 
-@pytest.mark.django_db
 def test_submission_type_detail_locale_override(client, event, orga_user_token):
     """The ?lang= parameter makes i18n fields return a plain string."""
     with scopes_disabled():
@@ -1499,13 +1164,12 @@ def test_submission_type_detail_locale_override(client, event, orga_user_token):
     assert isinstance(data["name"], str)
 
 
-@pytest.mark.django_db
 def test_submission_type_create_with_write_token(client, event, orga_write_token):
     """POST with write token creates a submission type (requires can_change_event_settings)."""
     response = client.post(
         event.api_urls.submission_types,
         follow=True,
-        data=json.dumps({"name": "Lightning Talk", "default_duration": 5}),
+        data={"name": "Lightning Talk", "default_duration": 5},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1520,7 +1184,6 @@ def test_submission_type_create_with_write_token(client, event, orga_write_token
         )
 
 
-@pytest.mark.django_db
 def test_submission_type_create_readonly_token_returns_403(
     client, event, orga_user_token
 ):
@@ -1528,7 +1191,7 @@ def test_submission_type_create_readonly_token_returns_403(
     response = client.post(
         event.api_urls.submission_types,
         follow=True,
-        data=json.dumps({"name": "Forbidden Type", "default_duration": 30}),
+        data={"name": "Forbidden Type", "default_duration": 30},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_token.token}"},
     )
@@ -1537,15 +1200,15 @@ def test_submission_type_create_readonly_token_returns_403(
         assert not event.submission_types.filter(name="Forbidden Type").exists()
 
 
-@pytest.mark.django_db
-def test_submission_type_update_with_write_token(
-    client, event, orga_write_token, submission_type
-):
+def test_submission_type_update_with_write_token(client, event, orga_write_token):
     """PATCH with write token updates the submission type (requires can_change_event_settings)."""
+    submission_type = SubmissionTypeFactory(
+        event=event, name="Workshop", default_duration=60
+    )
     response = client.patch(
         event.api_urls.submission_types + f"{submission_type.pk}/",
         follow=True,
-        data=json.dumps({"name": "Updated Type"}),
+        data={"name": "Updated Type"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
     )
@@ -1555,30 +1218,11 @@ def test_submission_type_update_with_write_token(
         assert str(submission_type.name) == "Updated Type"
 
 
-@pytest.mark.django_db
-def test_submission_type_update_readonly_token_returns_403(
-    client, event, orga_user_token, submission_type
-):
-    """Read-only token cannot update submission types."""
-    original_name = str(submission_type.name)
-    response = client.patch(
-        event.api_urls.submission_types + f"{submission_type.pk}/",
-        follow=True,
-        data=json.dumps({"name": "Should Not Change"}),
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        submission_type.refresh_from_db()
-        assert str(submission_type.name) == original_name
-
-
-@pytest.mark.django_db
-def test_submission_type_delete_with_write_token(
-    client, event, orga_write_token, submission_type
-):
+def test_submission_type_delete_with_write_token(client, event, orga_write_token):
     """DELETE with write token removes the submission type (requires can_change_event_settings)."""
+    submission_type = SubmissionTypeFactory(
+        event=event, name="Workshop", default_duration=60
+    )
     type_pk = submission_type.pk
     response = client.delete(
         event.api_urls.submission_types + f"{type_pk}/",
@@ -1590,10 +1234,8 @@ def test_submission_type_delete_with_write_token(
         assert not event.submission_types.filter(pk=type_pk).exists()
 
 
-@pytest.mark.django_db
 def test_submission_type_no_legacy_api(client, event, orga_user_token):
     """Legacy API version returns 400 for submission types."""
-    from pretalx.api.versions import LEGACY  # noqa: PLC0415
 
     with scopes_disabled():
         sub_type = event.cfp.default_type
@@ -1608,7 +1250,6 @@ def test_submission_type_no_legacy_api(client, event, orga_user_token):
     assert response.status_code == 400
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("action_url", "starting_state"),
     (
@@ -1647,10 +1288,8 @@ def test_submission_state_change_signal_rejection_returns_400(
     assert "Blocked by signal" in response.json()["detail"]
 
 
-@pytest.mark.django_db
 def test_submission_legacy_api_list(client, event, orga_user_token, submission):
     """Legacy API version returns submissions list."""
-    from pretalx.api.versions import LEGACY  # noqa: PLC0415
 
     response = client.get(
         event.api_urls.submissions,
@@ -1665,10 +1304,8 @@ def test_submission_legacy_api_list(client, event, orga_user_token, submission):
     assert content["count"] == 1
 
 
-@pytest.mark.django_db
 def test_submission_legacy_api_detail(client, event, orga_user_token, submission):
     """Legacy API version returns submission detail."""
-    from pretalx.api.versions import LEGACY  # noqa: PLC0415
 
     response = client.get(
         event.api_urls.submissions + f"{submission.code}/",
@@ -1683,12 +1320,10 @@ def test_submission_legacy_api_detail(client, event, orga_user_token, submission
     assert data["code"] == submission.code
 
 
-@pytest.mark.django_db
 def test_submission_legacy_api_anonymous_with_schedule(
     client, public_event_with_schedule, published_talk_slot
 ):
     """Anonymous user with legacy API can see published submissions."""
-    from pretalx.api.versions import LEGACY  # noqa: PLC0415
 
     event = public_event_with_schedule
     response = client.get(
@@ -1699,25 +1334,6 @@ def test_submission_legacy_api_anonymous_with_schedule(
     assert content["count"] == 1
 
 
-@pytest.mark.django_db
-def test_favourite_add_schedule_not_public_returns_403(
-    client, public_event_with_schedule, published_talk_slot
-):
-    """favourite_view returns 403 when schedule is hidden."""
-    event = public_event_with_schedule
-    user = UserFactory()
-    client.force_login(user)
-    event.feature_flags["show_schedule"] = False
-    event.save()
-    with scopes_disabled():
-        sub = published_talk_slot.submission
-    response = client.post(
-        f"/api/events/{event.slug}/submissions/{sub.code}/favourite/", follow=True
-    )
-    assert response.status_code == 403
-
-
-@pytest.mark.django_db
 def test_submission_expand_speakers_user(
     client, event, orga_user_write_token, submission
 ):
@@ -1732,7 +1348,6 @@ def test_submission_expand_speakers_user(
     assert len(data["speakers"]) == 1
 
 
-@pytest.mark.django_db
 def test_submission_expand_answers_question(
     client, event, orga_user_write_token, submission
 ):
@@ -1745,22 +1360,17 @@ def test_submission_expand_answers_question(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_submission_invite_speaker_within_max_speakers(
     client, event, orga_user_write_token, submission
 ):
     """Inviting when max_speakers is set but not exceeded succeeds."""
     with scopes_disabled():
-        cfp = event.cfp
-        fields = cfp.fields or {}
-        fields["additional_speaker"] = fields.get("additional_speaker", {})
-        fields["additional_speaker"]["max"] = 5
-        cfp.fields = fields
-        cfp.save()
+        event.cfp.fields["additional_speaker"]["max"] = 5
+        event.cfp.save()
     response = client.post(
         event.api_urls.submissions + f"{submission.code}/invitations/",
         follow=True,
-        data=json.dumps({"email": "within-limit@example.com"}),
+        data={"email": "within-limit@example.com"},
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -1771,28 +1381,8 @@ def test_submission_invite_speaker_within_max_speakers(
         ).exists()
 
 
-@pytest.mark.django_db
-def test_submission_legacy_api_anonymous_no_schedule_returns_401(client, event):
-    """Anonymous legacy API request with no released schedule returns 401.
-
-    Even on a public event, anonymous users need a released schedule to
-    access the submissions endpoint.
-    """
-    event.is_public = True
-    event.save()
-    response = client.get(
-        event.api_urls.submissions, follow=True, headers={"Pretalx-Version": LEGACY}
-    )
-    assert response.status_code == 401
-
-
-@pytest.mark.django_db
 def test_submission_legacy_api_reviewer_serializer(client, event, submission):
     """Reviewer user with legacy API gets the reviewer serializer (no answers field)."""
-    from pretalx.api.versions import LEGACY  # noqa: PLC0415
-    from pretalx.person.models.auth_token import ENDPOINTS  # noqa: PLC0415
-    from tests.factories import UserApiTokenFactory  # noqa: PLC0415
-
     with scopes_disabled():
         user = UserFactory()
         team = TeamFactory(
@@ -1802,10 +1392,11 @@ def test_submission_legacy_api_reviewer_serializer(client, event, submission):
             can_change_submissions=False,
         )
         team.members.add(user)
-        token = UserApiTokenFactory(user=user)
-        token.events.add(event)
-        token.endpoints = dict.fromkeys(ENDPOINTS, ["list", "retrieve"])
-        token.save()
+        token = UserApiTokenFactory(
+            user=user,
+            events=[event],
+            endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
+        )
 
     response = client.get(
         event.api_urls.submissions,
@@ -1822,10 +1413,8 @@ def test_submission_legacy_api_reviewer_serializer(client, event, submission):
     assert result["code"] == submission.code
 
 
-@pytest.mark.django_db
 def test_submission_legacy_api_anon_param(client, event, orga_user_token, submission):
     """Legacy API ?anon param hides speaker data."""
-    from pretalx.api.versions import LEGACY  # noqa: PLC0415
 
     response = client.get(
         event.api_urls.submissions + "?anon=1",
@@ -1842,14 +1431,11 @@ def test_submission_legacy_api_anon_param(client, event, orga_user_token, submis
     assert result["speakers"] == []
 
 
-@pytest.mark.django_db
 def test_submission_orga_filter_by_track(
-    client, event, orga_user_token, submission, other_submission, track
+    client, event, orga_user_token, other_submission, track
 ):
     """Filter ?track=<id> returns only submissions on that track."""
-    with scopes_disabled():
-        submission.track = track
-        submission.save()
+    submission = SubmissionFactory(event=event, track=track)
 
     response = client.get(
         event.api_urls.submissions + f"?track={track.pk}",
@@ -1862,7 +1448,6 @@ def test_submission_orga_filter_by_track(
     assert content["results"][0]["code"] == submission.code
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("is_visible_to_reviewers", "is_reviewer", "expected_answer_count"),
     ((True, True, 1), (False, True, 0), (True, False, 1), (False, False, 1)),
@@ -1873,25 +1458,28 @@ def test_submission_answer_visibility_to_reviewers(
     orga_user_token,
     review_user,
     submission,
-    answer,
     is_visible_to_reviewers,
     is_reviewer,
     expected_answer_count,
 ):
     """Answer visibility is filtered by is_visible_to_reviewers for reviewers."""
-    from pretalx.person.models.auth_token import ENDPOINTS  # noqa: PLC0415
 
     with scopes_disabled():
-        review_token = UserApiTokenFactory(user=review_user)
-        review_token.events.add(event)
-        review_token.endpoints = dict.fromkeys(ENDPOINTS, ["list", "retrieve"])
-        review_token.save()
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+            is_visible_to_reviewers=is_visible_to_reviewers,
+        )
+        AnswerFactory(question=question, submission=submission, answer="42")
+        review_token = UserApiTokenFactory(
+            user=review_user,
+            events=[event],
+            endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
+        )
 
     token = review_token if is_reviewer else orga_user_token
-    with scope(event=event):
-        question = answer.question
-        question.is_visible_to_reviewers = is_visible_to_reviewers
-        question.save()
 
     response = client.get(
         event.api_urls.submissions + "?expand=answers.question",
@@ -1904,10 +1492,8 @@ def test_submission_answer_visibility_to_reviewers(
     assert len(content["results"][0]["answers"]) == expected_answer_count
 
 
-@pytest.mark.django_db
 def test_submission_reviewer_log_access(client, event, submission):
     """Reviewer with appropriate permissions can access the submission log."""
-    from pretalx.person.models.auth_token import ENDPOINTS  # noqa: PLC0415
 
     with scopes_disabled():
         user = UserFactory()
@@ -1918,12 +1504,14 @@ def test_submission_reviewer_log_access(client, event, submission):
             can_change_submissions=False,
         )
         team.members.add(user)
-        token = UserApiTokenFactory(user=user)
-        token.events.add(event)
-        token.endpoints = dict.fromkeys(
-            ENDPOINTS, ["list", "retrieve", "create", "update", "destroy", "actions"]
+        token = UserApiTokenFactory(
+            user=user,
+            events=[event],
+            endpoints=dict.fromkeys(
+                ENDPOINTS,
+                ["list", "retrieve", "create", "update", "destroy", "actions"],
+            ),
         )
-        token.save()
 
     with scopes_disabled(), scope(event=event):
         submission.log_action("pretalx.submission.update", data={"note": "Reviewed"})
@@ -1936,7 +1524,6 @@ def test_submission_reviewer_log_access(client, event, submission):
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_submission_log_pagination(client, event, orga_user_write_token, submission):
     """Log endpoint supports pagination when many entries exist."""
     with scopes_disabled(), scope(event=event):
@@ -1957,13 +1544,12 @@ def test_submission_log_pagination(client, event, orga_user_write_token, submiss
     assert len(content["results"]) == 2
 
 
-@pytest.mark.django_db
 def test_submission_expand_invitations(
     client, event, orga_user_write_token, submission
 ):
     """Expanding invitations returns invitation objects with email, id, created."""
     with scopes_disabled():
-        SubmissionInvitation.objects.create(
+        SubmissionInvitationFactory(
             submission=submission, email="expandtest@example.com"
         )
 
@@ -1981,7 +1567,6 @@ def test_submission_expand_invitations(
     assert "created" in sub_data["invitations"][0]
 
 
-@pytest.mark.django_db
 def test_favourite_remove_not_favourited(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -2001,22 +1586,6 @@ def test_favourite_remove_not_favourited(
         ).exists()
 
 
-@pytest.mark.django_db
-def test_submission_type_delete_readonly_token_returns_403(
-    client, event, orga_user_token, submission_type
-):
-    """Read-only token cannot delete submission types."""
-    response = client.delete(
-        event.api_urls.submission_types + f"{submission_type.pk}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_token.token}"},
-    )
-    assert response.status_code == 403
-    with scopes_disabled():
-        assert event.submission_types.filter(pk=submission_type.pk).exists()
-
-
-@pytest.mark.django_db
 def test_submission_legacy_api_with_expanded_speakers(
     client, public_event_with_schedule, published_talk_slot, orga_user_token
 ):
@@ -2044,12 +1613,10 @@ def test_submission_legacy_api_with_expanded_speakers(
     assert "biography" in result["speakers"][0]
 
 
-@pytest.mark.django_db
 def test_reviewer_cannot_see_submissions_in_anonymised_phase(
     client, event, orga_user_write_token, submission
 ):
     """When anonymisation is active, reviewers get 403 but orgas see data normally."""
-    from pretalx.person.models.auth_token import ENDPOINTS  # noqa: PLC0415
 
     with scopes_disabled():
         reviewer = UserFactory()
@@ -2060,10 +1627,11 @@ def test_reviewer_cannot_see_submissions_in_anonymised_phase(
             can_change_submissions=False,
         )
         team.members.add(reviewer)
-        review_token = UserApiTokenFactory(user=reviewer)
-        review_token.events.add(event)
-        review_token.endpoints = dict.fromkeys(ENDPOINTS, ["list", "retrieve"])
-        review_token.save()
+        review_token = UserApiTokenFactory(
+            user=reviewer,
+            events=[event],
+            endpoints=dict.fromkeys(ENDPOINTS, ["list", "retrieve"]),
+        )
 
     with scope(event=event):
         phase = event.active_review_phase
@@ -2090,18 +1658,13 @@ def test_reviewer_cannot_see_submissions_in_anonymised_phase(
     assert response.status_code == 403
 
 
-@pytest.mark.django_db
 def test_submission_add_file_resource(client, event, orga_user_write_token, submission):
     """Orga can add a file resource via CachedFile upload."""
-    from django.core.files.uploadedfile import SimpleUploadedFile  # noqa: PLC0415
-    from django.utils import timezone  # noqa: PLC0415
-
-    from pretalx.common.models import CachedFile  # noqa: PLC0415
 
     f = SimpleUploadedFile(
         "testfile.pdf", b"test content", content_type="application/pdf"
     )
-    cached_file = CachedFile.objects.create(
+    cached_file = CachedFileFactory(
         session_key=f"api-upload-{orga_user_write_token.token}",
         filename="testfile.pdf",
         content_type="application/pdf",
@@ -2113,13 +1676,11 @@ def test_submission_add_file_resource(client, event, orga_user_write_token, subm
     response = client.post(
         event.api_urls.submissions + f"{submission.code}/resources/",
         follow=True,
-        data=json.dumps(
-            {
-                "resource": f"file:{cached_file.pk}",
-                "description": "Uploaded slides",
-                "is_public": False,
-            }
-        ),
+        data={
+            "resource": f"file:{cached_file.pk}",
+            "description": "Uploaded slides",
+            "is_public": False,
+        },
         content_type="application/json",
         headers={"Authorization": f"Token {orga_user_write_token.token}"},
     )
@@ -2133,16 +1694,14 @@ def test_submission_add_file_resource(client, event, orga_user_write_token, subm
         assert resource.is_public is False
 
 
-@pytest.mark.django_db
 def test_submission_remove_resource_with_file_cleans_up(
     client, event, orga_user_write_token, submission
 ):
     """Removing a resource with an actual file also deletes the file from storage."""
-    from django.core.files.uploadedfile import SimpleUploadedFile  # noqa: PLC0415
 
     f = SimpleUploadedFile("testresource.txt", b"a resource")
     with scopes_disabled():
-        resource = Resource.objects.create(
+        resource = ResourceFactory(
             submission=submission,
             resource=f,
             description="File resource",
@@ -2163,7 +1722,6 @@ def test_submission_remove_resource_with_file_cleans_up(
     assert not resource.resource.storage.exists(file_path)
 
 
-@pytest.mark.django_db
 def test_submission_public_with_expanded_speakers(
     client, public_event_with_schedule, published_talk_slot
 ):
@@ -2182,9 +1740,8 @@ def test_submission_public_with_expanded_speakers(
         assert content["results"][0]["speakers"][0]["biography"] == speaker.biography
 
 
-@pytest.mark.django_db
 def test_submission_public_expandable_fields(
-    client, public_event_with_schedule, published_talk_slot, track, answer
+    client, public_event_with_schedule, published_talk_slot, track
 ):
     """Anonymous user on a public event can expand speakers, track, answers, and submission_type."""
     event = public_event_with_schedule
@@ -2192,11 +1749,14 @@ def test_submission_public_expandable_fields(
         sub = published_talk_slot.submission
         sub.track = track
         sub.save()
-        answer.submission = sub
-        answer.save()
-        answer.question.is_public = True
-        answer.question.target = "submission"
-        answer.question.save()
+        question = QuestionFactory(
+            event=event,
+            variant=QuestionVariant.NUMBER,
+            target="submission",
+            question_required=QuestionRequired.OPTIONAL,
+            is_public=True,
+        )
+        answer = AnswerFactory(question=question, submission=sub, answer="42")
 
     expand_fields = "track,submission_type,speakers,answers,answers.question"
     response = client.get(

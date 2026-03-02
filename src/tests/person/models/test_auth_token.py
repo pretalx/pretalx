@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
@@ -24,7 +26,6 @@ def test_generate_api_token_format():
 
 
 def test_generate_api_token_unique():
-    """Successive calls produce different tokens."""
     assert generate_api_token() != generate_api_token()
 
 
@@ -103,10 +104,8 @@ def test_user_api_token_serialize():
 
 @pytest.mark.django_db
 def test_user_api_token_serialize_with_expiry():
-    token = UserApiTokenFactory()
     expiry = tz_now()
-    token.expires = expiry
-    token.save()
+    token = UserApiTokenFactory(expires=expiry)
 
     result = token.serialize()
 
@@ -206,7 +205,6 @@ def test_user_api_token_update_events_expires_when_all_removed():
 
 @pytest.mark.django_db
 def test_user_api_token_update_events_noop_when_all_accessible():
-    """No changes when all events are still accessible."""
     user = UserFactory()
     event = EventFactory()
     team = TeamFactory(organiser=event.organiser, all_events=True)

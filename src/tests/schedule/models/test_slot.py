@@ -1,9 +1,10 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 import uuid
 
 import pytest
 import vobject
-from django_scopes import scopes_disabled
 
 from pretalx.schedule.models.slot import TalkSlot
 from tests.factories import (
@@ -13,10 +14,9 @@ from tests.factories import (
     TalkSlotFactory,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_talkslot_str():
     slot = TalkSlotFactory()
 
@@ -29,7 +29,6 @@ def test_talkslot_str():
     )
 
 
-@pytest.mark.django_db
 def test_talkslot_str_without_submission():
     schedule = ScheduleFactory()
     slot = TalkSlotFactory(submission=None, schedule=schedule, room=None)
@@ -43,14 +42,12 @@ def test_talkslot_str_without_submission():
     )
 
 
-@pytest.mark.django_db
 def test_talkslot_event_from_submission():
     slot = TalkSlotFactory()
 
     assert slot.event == slot.submission.event
 
 
-@pytest.mark.django_db
 def test_talkslot_event_from_schedule_when_no_submission():
     schedule = ScheduleFactory()
     slot = TalkSlotFactory(submission=None, schedule=schedule, room=None)
@@ -58,7 +55,6 @@ def test_talkslot_event_from_schedule_when_no_submission():
     assert slot.event == schedule.event
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("has_start", "has_end", "has_submission", "expected"),
     (
@@ -91,7 +87,6 @@ def test_talkslot_duration(has_start, has_end, has_submission, expected):
         assert result is None
 
 
-@pytest.mark.django_db
 def test_talkslot_export_duration():
     now = dt.datetime(2024, 1, 1, 10, 0, tzinfo=dt.UTC)
     slot = TalkSlot(start=now, end=now + dt.timedelta(hours=1, minutes=30))
@@ -99,7 +94,6 @@ def test_talkslot_export_duration():
     assert slot.export_duration == "01:30"
 
 
-@pytest.mark.django_db
 def test_talkslot_pentabarf_export_duration():
     now = dt.datetime(2024, 1, 1, 10, 0, tzinfo=dt.UTC)
     slot = TalkSlot(start=now, end=now + dt.timedelta(hours=2, minutes=15))
@@ -107,7 +101,6 @@ def test_talkslot_pentabarf_export_duration():
     assert slot.pentabarf_export_duration == "021500"
 
 
-@pytest.mark.django_db
 def test_talkslot_local_start():
     slot = TalkSlotFactory()
 
@@ -116,7 +109,6 @@ def test_talkslot_local_start():
     assert result == slot.start.astimezone(slot.event.tz)
 
 
-@pytest.mark.django_db
 def test_talkslot_local_start_none_when_no_start():
     schedule = ScheduleFactory()
     slot = TalkSlot(start=None, schedule=schedule)
@@ -124,14 +116,12 @@ def test_talkslot_local_start_none_when_no_start():
     assert slot.local_start is None
 
 
-@pytest.mark.django_db
 def test_talkslot_real_end_from_end():
     slot = TalkSlotFactory()
 
     assert slot.real_end == slot.end
 
 
-@pytest.mark.django_db
 def test_talkslot_real_end_computed_when_no_end():
     slot = TalkSlotFactory()
     start = slot.start
@@ -142,7 +132,6 @@ def test_talkslot_real_end_computed_when_no_end():
     assert result == start + dt.timedelta(minutes=slot.duration)
 
 
-@pytest.mark.django_db
 def test_talkslot_real_end_none_when_no_start_or_end():
     schedule = ScheduleFactory()
     slot = TalkSlot(start=None, end=None, schedule=schedule)
@@ -150,7 +139,6 @@ def test_talkslot_real_end_none_when_no_start_or_end():
     assert slot.real_end is None
 
 
-@pytest.mark.django_db
 def test_talkslot_local_end():
     slot = TalkSlotFactory()
 
@@ -159,7 +147,6 @@ def test_talkslot_local_end():
     assert result == slot.real_end.astimezone(slot.event.tz)
 
 
-@pytest.mark.django_db
 def test_talkslot_local_end_none_when_no_real_end():
     schedule = ScheduleFactory()
     slot = TalkSlot(start=None, end=None, schedule=schedule)
@@ -167,7 +154,6 @@ def test_talkslot_local_end_none_when_no_real_end():
     assert slot.local_end is None
 
 
-@pytest.mark.django_db
 def test_talkslot_as_availability():
     slot = TalkSlotFactory()
 
@@ -177,13 +163,11 @@ def test_talkslot_as_availability():
     assert avail.end == slot.real_end
 
 
-@pytest.mark.django_db
 def test_talkslot_copy_to_schedule():
     slot = TalkSlotFactory()
     new_schedule = ScheduleFactory(event=slot.schedule.event)
 
-    with scopes_disabled():
-        new_slot = slot.copy_to_schedule(new_schedule)
+    new_slot = slot.copy_to_schedule(new_schedule)
 
     assert new_slot.pk is not None
     assert new_slot.pk != slot.pk
@@ -195,7 +179,6 @@ def test_talkslot_copy_to_schedule():
     assert new_slot.is_visible == slot.is_visible
 
 
-@pytest.mark.django_db
 def test_talkslot_copy_to_schedule_without_save():
     slot = TalkSlotFactory()
     new_schedule = ScheduleFactory(event=slot.schedule.event)
@@ -207,7 +190,6 @@ def test_talkslot_copy_to_schedule_without_save():
     assert new_slot.submission == slot.submission
 
 
-@pytest.mark.django_db
 def test_talkslot_is_same_slot_true():
     room = RoomFactory()
     start = dt.datetime(2024, 1, 1, 10, 0, tzinfo=dt.UTC)
@@ -217,7 +199,6 @@ def test_talkslot_is_same_slot_true():
     assert slot_a.is_same_slot(slot_b) is True
 
 
-@pytest.mark.django_db
 def test_talkslot_is_same_slot_different_room():
     room_a = RoomFactory()
     room_b = RoomFactory(event=room_a.event)
@@ -237,44 +218,36 @@ def test_talkslot_is_same_slot_different_start():
     assert slot_a.is_same_slot(slot_b) is False
 
 
-@pytest.mark.django_db
 def test_talkslot_id_suffix_empty_when_feature_disabled():
     slot = TalkSlotFactory()
 
     assert slot.id_suffix == ""
 
 
-@pytest.mark.django_db
 def test_talkslot_id_suffix_empty_when_single_slot():
     """Even with feature enabled, a single slot gets no suffix."""
-    slot = TalkSlotFactory()
-    slot.submission.event.feature_flags = {"present_multiple_times": True}
-    slot.submission.event.save(update_fields=["feature_flags"])
+    slot = TalkSlotFactory(
+        submission__event__feature_flags={"present_multiple_times": True}
+    )
 
-    with scopes_disabled():
-        assert slot.id_suffix == ""
+    assert slot.id_suffix == ""
 
 
-@pytest.mark.django_db
 def test_talkslot_id_suffix_with_multiple_slots():
-    """When a submission has multiple slots, each gets a numeric suffix."""
-    slot1 = TalkSlotFactory()
-    event = slot1.submission.event
-    event.feature_flags = {"present_multiple_times": True}
-    event.save(update_fields=["feature_flags"])
+    slot1 = TalkSlotFactory(
+        submission__event__feature_flags={"present_multiple_times": True}
+    )
 
-    with scopes_disabled():
-        slot2 = TalkSlotFactory(
-            submission=slot1.submission,
-            schedule=slot1.schedule,
-            start=slot1.start + dt.timedelta(hours=2),
-            end=slot1.end + dt.timedelta(hours=2),
-        )
-        assert slot1.id_suffix == "-0"
-        assert slot2.id_suffix == "-1"
+    slot2 = TalkSlotFactory(
+        submission=slot1.submission,
+        schedule=slot1.schedule,
+        start=slot1.start + dt.timedelta(hours=2),
+        end=slot1.end + dt.timedelta(hours=2),
+    )
+    assert slot1.id_suffix == "-0"
+    assert slot2.id_suffix == "-1"
 
 
-@pytest.mark.django_db
 def test_talkslot_frab_slug_basic():
     submission = SubmissionFactory(title="my talk")
     slot = TalkSlotFactory(submission=submission)
@@ -284,7 +257,6 @@ def test_talkslot_frab_slug_basic():
     assert result == f"{slot.event.slug}-{submission.pk}-my-talk"
 
 
-@pytest.mark.django_db
 def test_talkslot_frab_slug_normalizes_unicode():
     submission = SubmissionFactory(title="Über Café")
     slot = TalkSlotFactory(submission=submission)
@@ -294,9 +266,7 @@ def test_talkslot_frab_slug_normalizes_unicode():
     assert result == f"{slot.event.slug}-{submission.pk}-uber-cafe"
 
 
-@pytest.mark.django_db
 def test_talkslot_frab_slug_empty_title_after_normalization():
-    """If the title reduces to empty after normalization, slug still works."""
     submission = SubmissionFactory(title="日本語")
     slot = TalkSlotFactory(submission=submission)
 
@@ -305,7 +275,6 @@ def test_talkslot_frab_slug_empty_title_after_normalization():
     assert result == f"{slot.event.slug}-{submission.pk}"
 
 
-@pytest.mark.django_db
 def test_talkslot_uuid_is_uuid5():
     slot = TalkSlotFactory()
 
@@ -315,7 +284,6 @@ def test_talkslot_uuid_is_uuid5():
     assert result.version == 5
 
 
-@pytest.mark.django_db
 def test_talkslot_uuid_is_stable():
     slot = TalkSlotFactory()
 
@@ -326,9 +294,7 @@ def test_talkslot_uuid_is_stable():
     assert uuid1 == uuid2
 
 
-@pytest.mark.django_db
 def test_talkslot_build_ical_returns_none_when_incomplete():
-    """build_ical returns None when start, local_end, room, or submission is missing."""
     slot = TalkSlot(start=None, end=None, room=None, submission=None)
 
     result = slot.build_ical(None)
@@ -336,13 +302,11 @@ def test_talkslot_build_ical_returns_none_when_incomplete():
     assert result is None
 
 
-@pytest.mark.django_db
 def test_talkslot_build_ical_creates_vevent():
     slot = TalkSlotFactory()
 
-    with scopes_disabled():
-        cal = vobject.iCalendar()
-        slot.build_ical(cal)
+    cal = vobject.iCalendar()
+    slot.build_ical(cal)
 
     vevent = cal.vevent
     assert (
@@ -354,12 +318,10 @@ def test_talkslot_build_ical_creates_vevent():
     assert vevent.dtend.value == slot.local_end
 
 
-@pytest.mark.django_db
 def test_talkslot_full_ical():
     slot = TalkSlotFactory()
 
-    with scopes_disabled():
-        cal = slot.full_ical()
+    cal = slot.full_ical()
 
     assert cal is not None
     vevent = cal.vevent
@@ -369,7 +331,6 @@ def test_talkslot_full_ical():
     )
 
 
-@pytest.mark.django_db
 def test_talkslot_ordering_by_start():
     submission = SubmissionFactory()
     event = submission.event
@@ -382,7 +343,6 @@ def test_talkslot_ordering_by_start():
         submission=submission, start=early, end=early + dt.timedelta(hours=1)
     )
 
-    with scopes_disabled():
-        slots = list(event.wip_schedule.talks.all())
+    slots = list(event.wip_schedule.talks.all())
 
     assert slots == [slot_early, slot_late]

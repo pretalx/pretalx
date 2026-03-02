@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+from unittest.mock import patch
+
 import pytest
 from django.conf import settings
 from django.utils import translation
@@ -8,6 +12,7 @@ from pretalx.orga.utils.i18n import (
     get_moment_locale,
     has_i18n_content,
 )
+from pretalx.submission.models import Submission
 
 pytestmark = pytest.mark.unit
 
@@ -94,8 +99,6 @@ def test_translate_base_template_postgresql_injects_locale(locale):
 
 def _make_translate_lhs():
     """Build a valid lhs expression for the Translate transform using a real model field."""
-    from pretalx.submission.models import Submission  # noqa: PLC0415
-
     field = Submission._meta.get_field("title")
     return field.get_col(Submission._meta.db_table)
 
@@ -114,8 +117,6 @@ def test_translate_transform_template_injects_current_locale():
 
 @pytest.mark.django_db
 def test_translate_transform_unsupported_vendor_raises():
-    from unittest.mock import patch  # noqa: PLC0415
-
     lhs = _make_translate_lhs()
     with patch("pretalx.orga.utils.i18n.connection") as mock_conn:
         mock_conn.vendor = "mysql"

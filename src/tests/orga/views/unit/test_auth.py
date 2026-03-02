@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.urls import reverse
 
@@ -5,10 +7,9 @@ from pretalx.orga.views.auth import LoginView, RecoverView, ResetView
 from tests.factories import EventFactory, UserFactory
 from tests.utils import make_request, make_view
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_login_view_event_returns_request_event(event):
     request = make_request(event)
     view = make_view(LoginView, request)
@@ -16,9 +17,7 @@ def test_login_view_event_returns_request_event(event):
     assert view.event == event
 
 
-@pytest.mark.django_db
 def test_login_view_event_returns_none_without_event():
-    """When request has no event attribute, event property returns None."""
     event = EventFactory()
     request = make_request(event)
     del request.event
@@ -27,7 +26,6 @@ def test_login_view_event_returns_none_without_event():
     assert view.event is None
 
 
-@pytest.mark.django_db
 def test_login_view_success_url_with_event(event):
     request = make_request(event)
     view = make_view(LoginView, request)
@@ -35,9 +33,7 @@ def test_login_view_success_url_with_event(event):
     assert view.success_url == event.orga_urls.base
 
 
-@pytest.mark.django_db
 def test_login_view_success_url_without_event():
-    """Without event, success_url falls back to the event list."""
     event = EventFactory()
     request = make_request(event)
     del request.event
@@ -46,7 +42,6 @@ def test_login_view_success_url_without_event():
     assert view.success_url == reverse("orga:event.list")
 
 
-@pytest.mark.django_db
 def test_login_view_get_form_kwargs_hides_register(event):
     request = make_request(event)
     view = make_view(LoginView, request)
@@ -57,7 +52,6 @@ def test_login_view_get_form_kwargs_hides_register(event):
     assert kwargs["hide_register"] is True
 
 
-@pytest.mark.django_db
 def test_login_view_get_password_reset_link_with_event(event):
     request = make_request(event)
     view = make_view(LoginView, request)
@@ -66,7 +60,6 @@ def test_login_view_get_password_reset_link_with_event(event):
     assert view.get_password_reset_link() == expected
 
 
-@pytest.mark.django_db
 def test_login_view_get_password_reset_link_without_event():
     event = EventFactory()
     request = make_request(event)
@@ -76,7 +69,6 @@ def test_login_view_get_password_reset_link_without_event():
     assert view.get_password_reset_link() == reverse("orga:auth.reset")
 
 
-@pytest.mark.django_db
 def test_reset_view_get_success_url_with_event(event):
     request = make_request(event)
     view = make_view(ResetView, request)
@@ -85,7 +77,6 @@ def test_reset_view_get_success_url_with_event(event):
     assert view.get_success_url() == expected
 
 
-@pytest.mark.django_db
 def test_reset_view_get_success_url_without_event():
     event = EventFactory()
     request = make_request(event)
@@ -95,7 +86,6 @@ def test_reset_view_get_success_url_without_event():
     assert view.get_success_url() == reverse("orga:login")
 
 
-@pytest.mark.django_db
 def test_recover_view_get_success_url():
     event = EventFactory()
     request = make_request(event)
@@ -104,7 +94,6 @@ def test_recover_view_get_success_url():
     assert view.get_success_url() == reverse("orga:login")
 
 
-@pytest.mark.django_db
 def test_recover_view_get_user_finds_valid_token():
     user = UserFactory()
     user.reset_password(event=None, orga=True)

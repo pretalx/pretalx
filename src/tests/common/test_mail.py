@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 from smtplib import SMTPResponseException, SMTPSenderRefused
 from unittest.mock import MagicMock, patch
 
@@ -17,7 +19,7 @@ from pretalx.common.mail import (
 )
 from pretalx.event.models import Event
 from pretalx.mail.models import QueuedMailStates
-from tests.factories import QueuedMailFactory
+from tests.factories import EventFactory, QueuedMailFactory
 
 pytestmark = pytest.mark.unit
 
@@ -85,8 +87,8 @@ def test_mark_mail_failed_nonexistent_does_not_raise():
     MAIL_FROM="orga@orga.org",
 )
 def test_mail_send_task_with_event(event):
-    """When sender equals MAIL_FROM and no custom reply_to is set,
-    reply_to falls back to the event's email address."""
+    """reply_to falls back to the event's email when sender equals
+    MAIL_FROM and no custom reply_to is set."""
     djmail.outbox = []
 
     mail_send_task("recipient@test.org", "Subject", "Body", None, event=event.pk)
@@ -111,12 +113,8 @@ def test_mail_send_task_with_event(event):
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     MAIL_FROM="orga@orga.org",
 )
-def test_mail_send_task_event_custom_reply_to(
-    event, reply_to_setting, expected_reply_to
-):
-    """Bare email gets wrapped with event name; explicit display name is preserved."""
-    event.mail_settings["reply_to"] = reply_to_setting
-    event.save()
+def test_mail_send_task_event_custom_reply_to(reply_to_setting, expected_reply_to):
+    event = EventFactory(mail_settings={"reply_to": reply_to_setting})
     djmail.outbox = []
 
     mail_send_task("recipient@test.org", "S", "B", None, event=event.pk)
@@ -131,11 +129,8 @@ def test_mail_send_task_event_custom_reply_to(
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     MAIL_FROM="orga@orga.org",
 )
-def test_mail_send_task_caller_reply_to_overrides_event(event):
-    """When the caller passes an explicit reply_to, it takes
-    precedence over the event's mail settings."""
-    event.mail_settings["reply_to"] = "event-reply@test.org"
-    event.save()
+def test_mail_send_task_caller_reply_to_overrides_event():
+    event = EventFactory(mail_settings={"reply_to": "event-reply@test.org"})
     djmail.outbox = []
 
     mail_send_task(
@@ -175,8 +170,6 @@ def test_mail_send_task_reply_to_comma_separated_string(event):
 @pytest.mark.django_db
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 def test_mail_send_task_without_event(mail_from, expected_from):
-    """Without an event, bare MAIL_FROM gets 'pretalx' as display name;
-    an explicit display name is preserved. No reply_to is set."""
     djmail.outbox = []
 
     with override_settings(MAIL_FROM=mail_from):
@@ -238,8 +231,6 @@ def test_mail_send_task_strips_control_chars_from_subject(event, subject):
     DEBUG=False, EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend"
 )
 def test_mail_send_task_filters_debug_domains_in_production(address):
-    """In production (DEBUG=False, non-locmem backend), emails to
-    debug domains are silently dropped."""
     assert mail_send_task(address, "S", "B", None) is None
 
 
@@ -259,7 +250,6 @@ def test_mail_send_task_allows_debug_domains_in_debug_mode():
 @pytest.mark.django_db
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 def test_mail_send_task_allows_debug_domains_with_locmem_backend():
-    """The locmem backend is explicitly exempted from debug domain filtering."""
     djmail.outbox = []
 
     mail_send_task("user@example.com", "S", "B", None)
@@ -398,7 +388,6 @@ def test_custom_smtp_backend_test_rejected(mail_response, rcpt_response):
 
 
 def test_custom_smtp_backend_test_closes_on_error():
-    """Connection is always cleaned up, even when the handshake fails."""
     backend = CustomSMTPBackend(host="localhost", port=25)
     mock_conn = MagicMock()
     mock_conn.mail.return_value = (550, b"Rejected")
@@ -423,14 +412,10 @@ def test_custom_smtp_backend_test_closes_on_error():
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     MAIL_FROM="orga@orga.org",
 )
-def test_mail_send_task_event_custom_smtp_sender(
-    event, custom_mail_from, expected_email_addr
-):
-    """When smtp_use_custom is enabled, the event's mail_from overrides
-    the global MAIL_FROM. Empty mail_from falls back to MAIL_FROM."""
-    event.mail_settings["smtp_use_custom"] = True
-    event.mail_settings["mail_from"] = custom_mail_from
-    event.save()
+def test_mail_send_task_event_custom_smtp_sender(custom_mail_from, expected_email_addr):
+    event = EventFactory(
+        mail_settings={"smtp_use_custom": True, "mail_from": custom_mail_from}
+    )
     djmail.outbox = []
 
     # Mocking get_mail_backend: smtp_use_custom creates a CustomSMTPBackend
@@ -490,8 +475,6 @@ def test_mail_send_task_send_error_with_queued_mail_marks_failed(
 
 @override_settings(MAIL_FROM="orga@orga.org")
 def test_mail_send_task_retryable_smtp_error_without_queued_mail_raises():
-    """Retryable SMTP codes trigger celery retries. When retries are exhausted
-    and there is no queued mail to update, the error propagates."""
     # Mocking get_connection: need to simulate SMTP failure (system boundary).
     mock_backend = MagicMock()
     mock_backend.send_messages.side_effect = SMTPResponseException(
@@ -516,7 +499,6 @@ def test_mail_send_task_retryable_smtp_error_without_queued_mail_raises():
 @pytest.mark.django_db
 @override_settings(MAIL_FROM="orga@orga.org")
 def test_mail_send_task_retryable_smtp_error_with_queued_mail_marks_failed(event):
-    """When retries are exhausted and a queued mail exists, it is marked failed."""
     mail = QueuedMailFactory(event=event, state=QueuedMailStates.SENDING)
 
     # Mocking get_connection: need to simulate SMTP failure (system boundary).

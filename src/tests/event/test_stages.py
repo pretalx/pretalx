@@ -1,8 +1,10 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
 from django.utils.timezone import now
-from django_scopes import scope, scopes_disabled
+from django_scopes import scope
 
 from pretalx.event.stages import (
     STAGE_ORDER,
@@ -19,164 +21,172 @@ from pretalx.event.stages import (
 )
 from pretalx.submission.models import SubmissionStates
 from tests.factories import EventFactory, SubmissionFactory
-from tests.utils import refresh
 
 pytestmark = pytest.mark.unit
 
 
-def _update_event(event, *, is_public=None, from_delta, to_delta):
-    """Build kwargs from deltas and delegate to refresh()."""
+def _make_event(*, is_public=True, from_delta, to_delta, cfp_deadline=None):
+    """Create an event via factory with delta-based dates."""
     _now = now()
-    updates = {
+    kwargs = {
+        "is_public": is_public,
         "date_from": (_now + dt.timedelta(days=from_delta)).date(),
         "date_to": (_now + dt.timedelta(days=to_delta)).date(),
     }
-    if is_public is not None:
-        updates["is_public"] = is_public
-    return refresh(event, **updates)
+    if cfp_deadline is not None:
+        kwargs["cfp__deadline"] = cfp_deadline
+    return EventFactory(**kwargs)
 
 
 @pytest.mark.django_db
-def test_is_in_preparation_when_not_public_and_before_start(event):
-    """An unpublished event before its start date is in preparation."""
-    event = _update_event(event, is_public=False, from_delta=5, to_delta=7)
+def test_is_in_preparation_when_not_public_and_before_start():
+    event = _make_event(is_public=False, from_delta=5, to_delta=7)
 
     assert _is_in_preparation(event) is True
 
 
 @pytest.mark.django_db
-def test_is_in_preparation_false_when_public(event):
-    """A public event is never in preparation, even if before its start date."""
-    event = _update_event(event, is_public=True, from_delta=5, to_delta=7)
+def test_is_in_preparation_false_when_public():
+    event = _make_event(is_public=True, from_delta=5, to_delta=7)
 
     assert _is_in_preparation(event) is False
 
 
 @pytest.mark.django_db
-def test_is_in_preparation_false_when_past_start(event):
-    """An event past its start date is not in preparation, even when unpublished."""
-    event = _update_event(event, is_public=False, from_delta=-1, to_delta=1)
+def test_is_in_preparation_false_when_past_start():
+    event = _make_event(is_public=False, from_delta=-1, to_delta=1)
 
     assert _is_in_preparation(event) is False
 
 
 @pytest.mark.django_db
-def test_is_cfp_open_when_public_and_deadline_not_passed(event):
-    event = _update_event(event, is_public=True, from_delta=5, to_delta=7)
+def test_is_cfp_open_when_public_and_deadline_not_passed():
+    event = _make_event(
+        is_public=True,
+        from_delta=5,
+        to_delta=7,
+        cfp_deadline=now() + dt.timedelta(days=3),
+    )
     with scope(event=event):
-        event.cfp.deadline = now() + dt.timedelta(days=3)
-        event.cfp.save()
         assert _is_cfp_open(event) is True
 
 
 @pytest.mark.django_db
-def test_is_cfp_open_false_when_in_preparation(event):
-    """If the event is still in preparation, CfP is not considered open."""
-    event = _update_event(event, is_public=False, from_delta=5, to_delta=7)
+def test_is_cfp_open_false_when_in_preparation():
+    event = _make_event(
+        is_public=False,
+        from_delta=5,
+        to_delta=7,
+        cfp_deadline=now() + dt.timedelta(days=3),
+    )
     with scope(event=event):
-        event.cfp.deadline = now() + dt.timedelta(days=3)
-        event.cfp.save()
         assert _is_cfp_open(event) is False
 
 
 @pytest.mark.django_db
-def test_is_cfp_open_false_when_deadline_passed(event):
-    event = _update_event(event, is_public=True, from_delta=5, to_delta=7)
+def test_is_cfp_open_false_when_deadline_passed():
+    event = _make_event(
+        is_public=True,
+        from_delta=5,
+        to_delta=7,
+        cfp_deadline=now() - dt.timedelta(days=1),
+    )
     with scope(event=event):
-        event.cfp.deadline = now() - dt.timedelta(days=1)
-        event.cfp.save()
         assert _is_cfp_open(event) is False
 
 
 @pytest.mark.django_db
-def test_is_in_review_with_submitted_proposals(event):
-    """Review stage: CfP closed, submitted proposals exist, event hasn't started."""
-    event = _update_event(event, is_public=True, from_delta=5, to_delta=7)
-    with scope(event=event):
-        event.cfp.deadline = now() - dt.timedelta(days=1)
-        event.cfp.save()
-    with scopes_disabled():
-        SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+def test_is_in_review_with_submitted_proposals():
+    event = _make_event(
+        is_public=True,
+        from_delta=5,
+        to_delta=7,
+        cfp_deadline=now() - dt.timedelta(days=1),
+    )
+    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
 
     with scope(event=event):
         assert _is_in_review(event) is True
 
 
 @pytest.mark.django_db
-def test_is_in_review_false_without_submitted_proposals(event):
-    """Without submitted proposals, the event is not in review."""
-    event = _update_event(event, is_public=True, from_delta=5, to_delta=7)
-    with scope(event=event):
-        event.cfp.deadline = now() - dt.timedelta(days=1)
-        event.cfp.save()
+def test_is_in_review_false_without_submitted_proposals():
+    event = _make_event(
+        is_public=True,
+        from_delta=5,
+        to_delta=7,
+        cfp_deadline=now() - dt.timedelta(days=1),
+    )
 
     with scope(event=event):
         assert _is_in_review(event) is False
 
 
 @pytest.mark.django_db
-def test_is_in_review_false_when_cfp_still_open(event):
-    """While CfP is open, the event is not in review even with submissions."""
-    event = _update_event(event, is_public=True, from_delta=5, to_delta=7)
-    with scope(event=event):
-        event.cfp.deadline = now() + dt.timedelta(days=1)
-        event.cfp.save()
-    with scopes_disabled():
-        SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+def test_is_in_review_false_when_cfp_still_open():
+    event = _make_event(
+        is_public=True,
+        from_delta=5,
+        to_delta=7,
+        cfp_deadline=now() + dt.timedelta(days=1),
+    )
+    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
 
     with scope(event=event):
         assert _is_in_review(event) is False
 
 
 @pytest.mark.django_db
-def test_is_running_during_event_dates(event):
-    event = _update_event(event, from_delta=-1, to_delta=1)
+def test_is_running_during_event_dates():
+    event = _make_event(from_delta=-1, to_delta=1)
 
     assert _is_running(event) is True
 
 
 @pytest.mark.django_db
-def test_is_running_false_before_event(event):
-    event = _update_event(event, from_delta=1, to_delta=3)
+def test_is_running_false_before_event():
+    event = _make_event(from_delta=1, to_delta=3)
 
     assert _is_running(event) is False
 
 
 @pytest.mark.django_db
-def test_is_running_on_boundary_day(event):
+def test_is_running_on_boundary_day():
     """The event start day and end day both count as 'running'."""
-    event = _update_event(event, from_delta=0, to_delta=0)
+    event = _make_event(from_delta=0, to_delta=0)
 
     assert _is_running(event) is True
 
 
 @pytest.mark.django_db
-def test_is_in_wrapup_after_event_ends(event):
-    event = _update_event(event, from_delta=-3, to_delta=-1)
+def test_is_in_wrapup_after_event_ends():
+    event = _make_event(from_delta=-3, to_delta=-1)
 
     assert _is_in_wrapup(event) is True
 
 
 @pytest.mark.django_db
-def test_is_in_wrapup_false_during_event(event):
-    event = _update_event(event, from_delta=-1, to_delta=1)
+def test_is_in_wrapup_false_during_event():
+    event = _make_event(from_delta=-1, to_delta=1)
 
     assert _is_in_wrapup(event) is False
 
 
 @pytest.mark.django_db
-def test_is_in_scheduling_stage_after_review_before_event(event):
-    """Scheduling stage: no submitted proposals, CfP closed, event not yet started."""
-    event = _update_event(event, is_public=True, from_delta=5, to_delta=7)
+def test_is_in_scheduling_stage_after_review_before_event():
+    event = _make_event(
+        is_public=True,
+        from_delta=5,
+        to_delta=7,
+        cfp_deadline=now() - dt.timedelta(days=1),
+    )
     with scope(event=event):
-        event.cfp.deadline = now() - dt.timedelta(days=1)
-        event.cfp.save()
         assert _is_in_scheduling_stage(event) is True
 
 
 @pytest.mark.django_db
-def test_is_in_scheduling_stage_false_when_running(event):
-    event = _update_event(event, is_public=True, from_delta=-1, to_delta=1)
+def test_is_in_scheduling_stage_false_when_running():
+    event = _make_event(is_public=True, from_delta=-1, to_delta=1)
 
     with scope(event=event):
         assert _is_in_scheduling_stage(event) is False
@@ -208,21 +218,17 @@ def test_is_in_scheduling_stage_false_when_running(event):
     ),
 )
 def test_in_stage_returns_correct_stage(
-    event, target, is_public, from_delta, to_delta, deadline_delta, has_submissions
+    target, is_public, from_delta, to_delta, deadline_delta, has_submissions
 ):
-    """Each parametrized combination of dates/settings maps to exactly one stage."""
     _now = now()
-    event.is_public = is_public
-    event.date_from = (_now + dt.timedelta(days=from_delta)).date()
-    event.date_to = (_now + dt.timedelta(days=to_delta)).date()
-    event.save()
-    with scope(event=event):
-        event.cfp.deadline = _now + dt.timedelta(days=deadline_delta)
-        event.cfp.save()
-    with scopes_disabled():
-        event = refresh(event)
-        if has_submissions:
-            SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    event = _make_event(
+        is_public=is_public,
+        from_delta=from_delta,
+        to_delta=to_delta,
+        cfp_deadline=_now + dt.timedelta(days=deadline_delta),
+    )
+    if has_submissions:
+        SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
 
     with scope(event=event):
         for stage in STAGE_ORDER:
@@ -267,14 +273,15 @@ def test_build_event_url_resolves_attribute_chain(attrs, expected):
 
 
 @pytest.mark.django_db
-def test_get_stages_marks_current_stage(event):
-    """The active stage gets phase='current', earlier stages 'done',
-    later stages 'todo'."""
-    event = _update_event(event, is_public=True, from_delta=5, to_delta=7)
-    with scope(event=event):
-        event.cfp.deadline = now() + dt.timedelta(days=3)
-        event.cfp.save()
+def test_get_stages_marks_current_stage():
+    event = _make_event(
+        is_public=True,
+        from_delta=5,
+        to_delta=7,
+        cfp_deadline=now() + dt.timedelta(days=3),
+    )
 
+    with scope(event=event):
         stages = get_stages(event)
 
     assert stages["CFP_OPEN"]["phase"] == "current"
@@ -284,9 +291,8 @@ def test_get_stages_marks_current_stage(event):
 
 
 @pytest.mark.django_db
-def test_get_stages_resolves_link_urls(event):
-    """All PREPARATION links have url keys that get resolved to strings."""
-    event = _update_event(event, is_public=False, from_delta=5, to_delta=7)
+def test_get_stages_resolves_link_urls():
+    event = _make_event(is_public=False, from_delta=5, to_delta=7)
 
     with scope(event=event):
         stages = get_stages(event)
@@ -298,9 +304,8 @@ def test_get_stages_resolves_link_urls(event):
 
 
 @pytest.mark.django_db
-def test_get_stages_links_without_url_are_preserved(event):
-    """Links without a url key (informational items) are kept as-is."""
-    event = _update_event(event, is_public=True, from_delta=-1, to_delta=1)
+def test_get_stages_links_without_url_are_preserved():
+    event = _make_event(is_public=True, from_delta=-1, to_delta=1)
 
     with scope(event=event):
         stages = get_stages(event)
@@ -311,12 +316,7 @@ def test_get_stages_links_without_url_are_preserved(event):
 
 @pytest.mark.django_db
 def test_get_stages_does_not_mutate_original():
-    """get_stages() deep-copies STAGES, so the module-level dict is not modified."""
-    with scopes_disabled():
-        event = EventFactory(
-            date_from=(now() + dt.timedelta(days=5)).date(),
-            date_to=(now() + dt.timedelta(days=7)).date(),
-        )
+    event = _make_event(from_delta=5, to_delta=7)
 
     with scope(event=event):
         stages = get_stages(event)

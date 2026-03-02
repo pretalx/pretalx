@@ -1,6 +1,9 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import factory
+from django.utils import timezone
 from django_scopes import scopes_disabled
 
 from pretalx.schedule.models import Availability, Room, Schedule
@@ -14,6 +17,7 @@ class ScheduleFactory(factory.django.DjangoModelFactory):
         model = Schedule
 
     event = factory.SubFactory(EventFactory)
+    published = factory.LazyFunction(timezone.now)
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):

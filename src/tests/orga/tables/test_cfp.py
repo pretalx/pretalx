@@ -1,9 +1,8 @@
-# SPDX-FileCopyrightText: 2025-present Tobias Kunze
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
 from django.utils.html import format_html
-from django_scopes import scopes_disabled
 
 from pretalx.orga.tables.cfp import (
     QuestionTable,
@@ -25,8 +24,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture
 def event():
-    with scopes_disabled():
-        return EventFactory()
+    return EventFactory()
 
 
 @pytest.mark.django_db
@@ -37,10 +35,9 @@ def event():
 def test_submitter_access_code_table_render_uses(
     event, maximum_uses, redeemed, expected
 ):
-    with scopes_disabled():
-        code = SubmitterAccessCodeFactory(
-            event=event, maximum_uses=maximum_uses, redeemed=redeemed
-        )
+    code = SubmitterAccessCodeFactory(
+        event=event, maximum_uses=maximum_uses, redeemed=redeemed
+    )
     table = SubmitterAccessCodeTable([code], event=event, user=UserFactory.build())
 
     assert table.render_uses(code) == expected
@@ -49,33 +46,28 @@ def test_submitter_access_code_table_render_uses(
 @pytest.mark.django_db
 @pytest.mark.parametrize(("maximum_uses", "expected"), ((7, 7), (None, "∞")))
 def test_submitter_access_code_table_render_maximum_uses(event, maximum_uses, expected):
-    with scopes_disabled():
-        code = SubmitterAccessCodeFactory(event=event, maximum_uses=maximum_uses)
+    code = SubmitterAccessCodeFactory(event=event, maximum_uses=maximum_uses)
     table = SubmitterAccessCodeTable([code], event=event, user=UserFactory.build())
 
     assert table.render_maximum_uses(code) == expected
 
 
 @pytest.mark.django_db
-def test_submitter_access_code_table_excludes_tracks_when_feature_disabled(event):
+def test_submitter_access_code_table_excludes_tracks_when_feature_disabled():
     """When use_tracks feature flag is off, the tracks column is excluded."""
-    event.feature_flags["use_tracks"] = False
-    event.save()
+    event = EventFactory(feature_flags={"use_tracks": False})
 
-    with scopes_disabled():
-        code = SubmitterAccessCodeFactory(event=event)
+    code = SubmitterAccessCodeFactory(event=event)
     table = SubmitterAccessCodeTable([code], event=event, user=UserFactory.build())
 
     assert "tracks" in table.exclude
 
 
 @pytest.mark.django_db
-def test_submitter_access_code_table_includes_tracks_when_feature_enabled(event):
-    event.feature_flags["use_tracks"] = True
-    event.save()
+def test_submitter_access_code_table_includes_tracks_when_feature_enabled():
+    event = EventFactory(feature_flags={"use_tracks": True})
 
-    with scopes_disabled():
-        code = SubmitterAccessCodeFactory(event=event)
+    code = SubmitterAccessCodeFactory(event=event)
     table = SubmitterAccessCodeTable([code], event=event, user=UserFactory.build())
 
     assert "tracks" not in table.exclude
@@ -93,8 +85,7 @@ def test_submitter_access_code_table_default_columns():
 
 @pytest.mark.django_db
 def test_track_table_sets_dragsort_url(event):
-    with scopes_disabled():
-        track = TrackFactory(event=event)
+    track = TrackFactory(event=event)
     table = TrackTable([track], event=event, user=UserFactory.build())
 
     assert table.attrs["dragsort-url"] == event.cfp.urls.tracks
@@ -103,8 +94,7 @@ def test_track_table_sets_dragsort_url(event):
 @pytest.mark.django_db
 def test_track_table_is_unsortable(event):
     """UnsortableMixin forces orderable=False without the caller passing it."""
-    with scopes_disabled():
-        track = TrackFactory(event=event)
+    track = TrackFactory(event=event)
     table = TrackTable([track], event=event, user=UserFactory.build())
 
     assert table.orderable is False
@@ -112,8 +102,7 @@ def test_track_table_is_unsortable(event):
 
 @pytest.mark.django_db
 def test_track_table_row_attrs_include_dragsort_id(event):
-    with scopes_disabled():
-        track = TrackFactory(event=event)
+    track = TrackFactory(event=event)
 
     dragsort_id_func = TrackTable.Meta.row_attrs["dragsort-id"]
     assert dragsort_id_func(track) == track.pk
@@ -133,8 +122,7 @@ def test_submission_type_table_default_columns():
 
 @pytest.mark.django_db
 def test_question_table_sets_dragsort_url(event):
-    with scopes_disabled():
-        question = QuestionFactory(event=event)
+    question = QuestionFactory(event=event)
     table = QuestionTable([question], event=event, user=UserFactory.build())
 
     assert table.attrs["dragsort-url"] == event.cfp.urls.questions
@@ -143,8 +131,7 @@ def test_question_table_sets_dragsort_url(event):
 @pytest.mark.django_db
 def test_question_table_is_unsortable(event):
     """UnsortableMixin forces orderable=False without the caller passing it."""
-    with scopes_disabled():
-        question = QuestionFactory(event=event)
+    question = QuestionFactory(event=event)
     table = QuestionTable([question], event=event, user=UserFactory.build())
 
     assert table.orderable is False
@@ -152,8 +139,7 @@ def test_question_table_is_unsortable(event):
 
 @pytest.mark.django_db
 def test_question_table_row_attrs_include_dragsort_id(event):
-    with scopes_disabled():
-        question = QuestionFactory(event=event)
+    question = QuestionFactory(event=event)
 
     dragsort_id_func = QuestionTable.Meta.row_attrs["dragsort-id"]
     assert dragsort_id_func(question) == question.pk
@@ -175,14 +161,13 @@ def test_question_table_render_question_links_to_base_when_user_has_answer_acces
     event,
 ):
     """When user has answer access to a question, render_question links to urls.base."""
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        question = QuestionFactory(event=event)
-        request = make_request(event, user=user)
-        table = QuestionTable([question], event=event, user=user)
-        table.request = request
+    user = make_orga_user(event, can_change_submissions=True)
+    question = QuestionFactory(event=event)
+    request = make_request(event, user=user)
+    table = QuestionTable([question], event=event, user=user)
+    table.request = request
 
-        result = table.render_question(question, str(question.question))
+    result = table.render_question(question, str(question.question))
 
     expected = format_html(
         '<a href="{}">{}</a>', question.urls.base, str(question.question)
@@ -193,14 +178,13 @@ def test_question_table_render_question_links_to_base_when_user_has_answer_acces
 @pytest.mark.django_db
 def test_question_table_render_question_links_to_edit_when_no_answer_access(event):
     """When user lacks answer access, render_question links to urls.edit."""
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=False, all_events=False)
-        question = QuestionFactory(event=event)
-        request = make_request(event, user=user)
-        table = QuestionTable([question], event=event, user=user)
-        table.request = request
+    user = make_orga_user(event, can_change_submissions=False, all_events=False)
+    question = QuestionFactory(event=event)
+    request = make_request(event, user=user)
+    table = QuestionTable([question], event=event, user=user)
+    table.request = request
 
-        result = table.render_question(question, str(question.question))
+    result = table.render_question(question, str(question.question))
 
     expected = format_html(
         '<a href="{}">{}</a>', question.urls.edit, str(question.question)
@@ -211,8 +195,7 @@ def test_question_table_render_question_links_to_edit_when_no_answer_access(even
 @pytest.mark.django_db
 def test_question_table_render_question_returns_plain_value_without_request(event):
     """When no request is set, render_question returns the plain value."""
-    with scopes_disabled():
-        question = QuestionFactory(event=event)
+    question = QuestionFactory(event=event)
     table = QuestionTable([question], event=event, user=None)
 
     result = table.render_question(question, "My question text")
@@ -222,8 +205,7 @@ def test_question_table_render_question_returns_plain_value_without_request(even
 
 @pytest.mark.django_db
 def test_question_table_accessible_question_ids_empty_without_user(event):
-    with scopes_disabled():
-        question = QuestionFactory(event=event)
+    question = QuestionFactory(event=event)
     table = QuestionTable([question], event=event, user=None)
 
     assert table._accessible_question_ids == set()
@@ -231,12 +213,11 @@ def test_question_table_accessible_question_ids_empty_without_user(event):
 
 @pytest.mark.django_db
 def test_question_table_accessible_question_ids_populated_for_orga_user(event):
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-        q1 = QuestionFactory(event=event)
-        q2 = QuestionFactory(event=event)
-        table = QuestionTable([q1, q2], event=event, user=user)
+    user = make_orga_user(event, can_change_submissions=True)
+    q1 = QuestionFactory(event=event)
+    q2 = QuestionFactory(event=event)
+    table = QuestionTable([q1, q2], event=event, user=user)
 
-        accessible_ids = table._accessible_question_ids
+    accessible_ids = table._accessible_question_ids
 
     assert accessible_ids == {q1.pk, q2.pk}

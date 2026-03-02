@@ -1,9 +1,21 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import datetime as dt
+
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory
+from django_scopes import scope, scopes_disabled
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
-from tests.factories import TeamFactory, UserFactory
+from pretalx.submission.models import SubmissionStates
+from tests.factories import (
+    SpeakerFactory,
+    SubmissionFactory,
+    TalkSlotFactory,
+    TeamFactory,
+    UserFactory,
+)
 
 _rf = RequestFactory()
 _api_rf = APIRequestFactory()
@@ -87,18 +99,32 @@ def make_orga_user(event=None, *, teams=None, **team_kwargs):
     return user
 
 
-def refresh(instance, **updates):
-    """Return a fresh instance from the database, clearing cached_property values.
+def make_published_schedule(event, item_count, *, version="v1"):
+    """Create *item_count* confirmed talks (each with a speaker and visible
+    slot) and freeze the WIP schedule.
 
-    Optionally applies field updates and saves before re-fetching.
+    Returns the list of created submissions.  Useful for query-count tests
+    where you need a released schedule with a controlled number of talks."""
+    submissions = []
+    with scopes_disabled():
+        for i in range(item_count):
+            submission = SubmissionFactory(
+                event=event, state=SubmissionStates.CONFIRMED
+            )
+            speaker = SpeakerFactory(event=event)
+            submission.speakers.add(speaker)
+            TalkSlotFactory(
+                submission=submission,
+                is_visible=True,
+                start=event.datetime_from + dt.timedelta(hours=i),
+                end=event.datetime_from + dt.timedelta(hours=i + 1),
+            )
+            submissions.append(submission)
+    with scope(event=event):
+        event.wip_schedule.freeze(version, notify_speakers=False)
+    return submissions
 
-    Usage::
 
-        event = refresh(event)  # just re-fetch
-        event = refresh(event, is_public=True, date_from=tomorrow)  # update + re-fetch
-    """
-    if updates:
-        for attr, value in updates.items():
-            setattr(instance, attr, value)
-        instance.save()
+def refresh(instance):
+    """Return a fresh instance from the database, clearing cached_property values."""
     return type(instance).objects.get(pk=instance.pk)

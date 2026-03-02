@@ -1,8 +1,7 @@
-# SPDX-FileCopyrightText: 2025-present Tobias Kunze
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.orga.tables.speaker import (
     SpeakerInformationTable,
@@ -23,8 +22,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture
 def event():
-    with scopes_disabled():
-        return EventFactory()
+    return EventFactory()
 
 
 def test_speaker_information_table_meta_model():
@@ -49,11 +47,9 @@ def test_speaker_information_table_meta_fields():
     ),
 )
 @pytest.mark.django_db
-def test_speaker_information_table_default_columns(event, use_tracks, expected):
-    event.feature_flags["use_tracks"] = use_tracks
-    event.save()
-    with scopes_disabled():
-        info = SpeakerInformationFactory(event=event)
+def test_speaker_information_table_default_columns(use_tracks, expected):
+    event = EventFactory(feature_flags={"use_tracks": use_tracks})
+    info = SpeakerInformationFactory(event=event)
     table = SpeakerInformationTable([info], event=event, user=UserFactory.build())
 
     assert table.default_columns == expected
@@ -61,11 +57,9 @@ def test_speaker_information_table_default_columns(event, use_tracks, expected):
 
 @pytest.mark.parametrize("use_tracks", (True, False))
 @pytest.mark.django_db
-def test_speaker_information_table_limit_tracks_excluded_by_feature(event, use_tracks):
-    event.feature_flags["use_tracks"] = use_tracks
-    event.save()
-    with scopes_disabled():
-        info = SpeakerInformationFactory(event=event)
+def test_speaker_information_table_limit_tracks_excluded_by_feature(use_tracks):
+    event = EventFactory(feature_flags={"use_tracks": use_tracks})
+    info = SpeakerInformationFactory(event=event)
     table = SpeakerInformationTable([info], event=event, user=UserFactory.build())
 
     assert ("limit_tracks" in table.exclude) != use_tracks
@@ -73,8 +67,7 @@ def test_speaker_information_table_limit_tracks_excluded_by_feature(event, use_t
 
 @pytest.mark.django_db
 def test_speaker_information_table_render_resource(event):
-    with scopes_disabled():
-        info = SpeakerInformationFactory(event=event)
+    info = SpeakerInformationFactory(event=event)
     table = SpeakerInformationTable([info], event=event, user=UserFactory.build())
 
     result = table.render_resource(info)
@@ -109,8 +102,7 @@ def test_speaker_table_default_columns():
 
 @pytest.mark.django_db
 def test_speaker_table_stores_has_arrived_permission(event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
+    speaker = SpeakerFactory(event=event)
     table = SpeakerTable(
         [speaker], event=event, user=UserFactory.build(), has_arrived_permission=True
     )
@@ -120,8 +112,7 @@ def test_speaker_table_stores_has_arrived_permission(event):
 
 @pytest.mark.django_db
 def test_speaker_table_has_arrived_permission_defaults_false(event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
+    speaker = SpeakerFactory(event=event)
     table = SpeakerTable([speaker], event=event, user=UserFactory.build())
 
     assert table.has_arrived_permission is False
@@ -129,10 +120,9 @@ def test_speaker_table_has_arrived_permission_defaults_false(event):
 
 @pytest.mark.django_db
 def test_speaker_table_stores_short_questions(event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        q1 = QuestionFactory(event=event, target="speaker")
-        q2 = QuestionFactory(event=event, target="speaker")
+    speaker = SpeakerFactory(event=event)
+    q1 = QuestionFactory(event=event, target="speaker")
+    q2 = QuestionFactory(event=event, target="speaker")
     table = SpeakerTable(
         [speaker], event=event, user=UserFactory.build(), short_questions=[q1, q2]
     )
@@ -142,8 +132,7 @@ def test_speaker_table_stores_short_questions(event):
 
 @pytest.mark.django_db
 def test_speaker_table_short_questions_defaults_empty(event):
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
+    speaker = SpeakerFactory(event=event)
     table = SpeakerTable([speaker], event=event, user=UserFactory.build())
 
     assert table.short_questions == []
@@ -173,8 +162,7 @@ def test_speaker_orga_table_nulled_columns():
 @pytest.mark.django_db
 def test_speaker_orga_table_paginated_rows_is_cached(event):
     """paginated_rows is a cached_property so repeated access returns the same object."""
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
+    speaker = SpeakerFactory(event=event)
     table = SpeakerOrgaTable([speaker], event=event, user=UserFactory.build())
 
     first = table.paginated_rows

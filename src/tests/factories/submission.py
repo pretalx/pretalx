@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import factory
 from django_scopes import scopes_disabled
 
@@ -7,6 +9,7 @@ from pretalx.submission.models import (
     ReviewScore,
     ReviewScoreCategory,
     Submission,
+    SubmissionInvitation,
     SubmissionType,
     SubmitterAccessCode,
     Tag,
@@ -16,8 +19,9 @@ from pretalx.submission.models.comment import SubmissionComment
 from pretalx.submission.models.question import Answer, AnswerOption, Question
 from pretalx.submission.models.resource import Resource
 from pretalx.submission.models.review import ReviewPhase
+from pretalx.submission.models.submission import SpeakerRole, SubmissionFavourite
 from tests.factories.event import EventFactory
-from tests.factories.person import UserFactory
+from tests.factories.person import SpeakerFactory, UserFactory
 
 
 class SubmissionTypeFactory(factory.django.DjangoModelFactory):
@@ -216,6 +220,46 @@ class SubmissionCommentFactory(factory.django.DjangoModelFactory):
     submission = factory.SubFactory(SubmissionFactory)
     user = factory.SubFactory(UserFactory)
     text = factory.Sequence(lambda n: f"Comment {n}")
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        with scopes_disabled():
+            return super()._create(model_class, *args, **kwargs)
+
+
+class SpeakerRoleFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = SpeakerRole
+
+    submission = factory.SubFactory(SubmissionFactory)
+    speaker = factory.SubFactory(SpeakerFactory)
+    position = 0
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        with scopes_disabled():
+            return super()._create(model_class, *args, **kwargs)
+
+
+class SubmissionFavouriteFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = SubmissionFavourite
+
+    user = factory.SubFactory(UserFactory)
+    submission = factory.SubFactory(SubmissionFactory)
+
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        with scopes_disabled():
+            return super()._create(model_class, *args, **kwargs)
+
+
+class SubmissionInvitationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = SubmissionInvitation
+
+    submission = factory.SubFactory(SubmissionFactory)
+    email = factory.Sequence(lambda n: f"invited{n}@example.com")
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):

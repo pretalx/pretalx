@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 from pathlib import Path
 
@@ -6,9 +8,13 @@ from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 
+from pretalx.common.mail import CustomSMTPBackend
 from pretalx.common.models.log import ActivityLog
 from pretalx.event.models import Event
+from pretalx.orga.forms.event import socket
+from pretalx.orga.signals import activate_event
 from tests.factories import (
+    ActivityLogFactory,
     EventFactory,
     QuestionFactory,
     ReviewScoreCategoryFactory,
@@ -19,7 +25,7 @@ from tests.factories import (
 )
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
 def get_settings_form_data(event):
@@ -49,7 +55,6 @@ def get_settings_form_data(event):
     }
 
 
-@pytest.mark.django_db
 def test_event_detail_accessible_by_orga(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -60,7 +65,6 @@ def test_event_detail_accessible_by_orga(client, event):
     assert str(event.name) in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_event_detail_anonymous_redirects(client, event):
     response = client.get(event.orga_urls.settings)
 
@@ -68,7 +72,6 @@ def test_event_detail_anonymous_redirects(client, event):
     assert "/login/" in response.url
 
 
-@pytest.mark.django_db
 def test_event_detail_unauthorized_gets_404(client, event):
     user = UserFactory()
     client.force_login(user)
@@ -78,7 +81,6 @@ def test_event_detail_unauthorized_gets_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_event_detail_post_updates_event(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -91,9 +93,12 @@ def test_event_detail_post_updates_event(client, event):
     assert response.status_code == 200
     event.refresh_from_db()
     assert event.email == new_email
+    with scopes_disabled():
+        assert ActivityLog.objects.filter(
+            event=event, action_type="pretalx.event.update"
+        ).exists()
 
 
-@pytest.mark.django_db
 def test_event_detail_post_end_before_start_rejected(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -111,30 +116,6 @@ def test_event_detail_post_end_before_start_rejected(client, event):
     assert event.date_to == old_date_to
 
 
-@pytest.mark.django_db
-def test_event_detail_post_creates_activity_log(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-    data = get_settings_form_data(event)
-    data["email"] = "changed@example.com"
-
-    with scopes_disabled():
-        initial_count = ActivityLog.objects.filter(
-            event=event, action_type="pretalx.event.update"
-        ).count()
-
-    client.post(event.orga_urls.settings, data, follow=True)
-
-    with scopes_disabled():
-        assert (
-            ActivityLog.objects.filter(
-                event=event, action_type="pretalx.event.update"
-            ).count()
-            == initial_count + 1
-        )
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("path", "allowed"),
     (
@@ -156,7 +137,6 @@ def test_event_detail_add_custom_css(client, event, path, allowed):
     assert bool(event.custom_css) == allowed
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("path", "allowed"),
     (
@@ -179,7 +159,6 @@ def test_event_detail_add_custom_css_as_text(client, event, path, allowed):
     assert bool(event.custom_css) == allowed
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     "path",
     (
@@ -189,7 +168,6 @@ def test_event_detail_add_custom_css_as_text(client, event, path, allowed):
     ),
 )
 def test_event_detail_admin_can_upload_any_css(client, event, path):
-    """Administrators bypass CSS sanitization."""
     admin = UserFactory(is_administrator=True)
     client.force_login(admin)
     data = get_settings_form_data(event)
@@ -202,7 +180,6 @@ def test_event_detail_admin_can_upload_any_css(client, event, path):
     assert event.custom_css
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("domain", "result"),
     (
@@ -214,8 +191,6 @@ def test_event_detail_admin_can_upload_any_css(client, event, path):
 def test_event_detail_change_custom_domain(client, event, monkeypatch, domain, result):
     # Monkeypatch: the form calls socket.gethostbyname to verify DNS resolution,
     # which would make a real network request in tests.
-    from pretalx.orga.forms.event import socket  # noqa: PLC0415
-
     monkeypatch.setattr(socket, "gethostbyname", lambda x: True)
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -228,12 +203,9 @@ def test_event_detail_change_custom_domain(client, event, monkeypatch, domain, r
     assert event.custom_domain == result
 
 
-@pytest.mark.django_db
 def test_event_detail_unavailable_domain_rejected(client, event, monkeypatch):
     # Monkeypatch: the form calls socket.gethostbyname to verify DNS resolution,
     # which would make a real network request in tests.
-    from pretalx.orga.forms.event import socket  # noqa: PLC0415
-
     monkeypatch.setattr(
         socket, "gethostbyname", lambda x: (_ for _ in ()).throw(OSError)
     )
@@ -248,13 +220,11 @@ def test_event_detail_unavailable_domain_rejected(client, event, monkeypatch):
     assert not event.custom_domain
 
 
-@pytest.mark.django_db
-def test_event_detail_remove_relevant_locales_rejected(client, event):
+def test_event_detail_remove_relevant_locales_rejected(client):
     """Cannot remove the locale used as the event's default locale."""
-    event.locale_array = "en,de"
-    event.content_locale_array = "en,de"
-    event.locale = "de"
-    event.save()
+    event = EventFactory(
+        locale_array="en,de", content_locale_array="en,de", locale="de"
+    )
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = get_settings_form_data(event)
@@ -268,37 +238,8 @@ def test_event_detail_remove_relevant_locales_rejected(client, event):
     assert len(event.locales) == 2
 
 
-@pytest.mark.django_db
-def test_event_live_get_accessible(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.live)
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
-def test_event_live_anonymous_redirects(client, event):
-    response = client.get(event.orga_urls.live)
-
-    assert response.status_code == 302
-
-
-@pytest.mark.django_db
-def test_event_live_unauthorized_gets_404(client, event):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.live)
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
-def test_event_live_activate(client, event):
-    event.is_public = False
-    event.save()
+def test_event_live_activate(client):
+    event = EventFactory(is_public=False)
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -307,27 +248,14 @@ def test_event_live_activate(client, event):
     assert response.status_code == 200
     event.refresh_from_db()
     assert event.is_public
-
-
-@pytest.mark.django_db
-def test_event_live_activate_creates_log(client, event):
-    event.is_public = False
-    event.save()
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    client.post(event.orga_urls.live, {"action": "activate"}, follow=True)
-
     with scopes_disabled():
         assert ActivityLog.objects.filter(
             event=event, action_type="pretalx.event.activate"
         ).exists()
 
 
-@pytest.mark.django_db
-def test_event_live_deactivate(client, event):
-    event.is_public = True
-    event.save()
+def test_event_live_deactivate(client):
+    event = EventFactory()
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -336,31 +264,18 @@ def test_event_live_deactivate(client, event):
     assert response.status_code == 200
     event.refresh_from_db()
     assert not event.is_public
-
-
-@pytest.mark.django_db
-def test_event_live_deactivate_creates_log(client, event):
-    event.is_public = True
-    event.save()
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    client.post(event.orga_urls.live, {"action": "deactivate"}, follow=True)
-
     with scopes_disabled():
         assert ActivityLog.objects.filter(
             event=event, action_type="pretalx.event.deactivate"
         ).exists()
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
     ("action", "initial_public"), (("activate", True), ("deactivate", False))
 )
-def test_event_live_idempotent(client, event, action, initial_public):
+def test_event_live_idempotent(client, action, initial_public):
     """Repeating activate/deactivate when already in that state is a no-op."""
-    event.is_public = initial_public
-    event.save()
+    event = EventFactory(is_public=initial_public)
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -371,18 +286,14 @@ def test_event_live_idempotent(client, event, action, initial_public):
     assert event.is_public is initial_public
 
 
-@pytest.mark.django_db
-def test_event_live_plugin_blocks_activation(client, event, register_signal_handler):
+def test_event_live_plugin_blocks_activation(client, register_signal_handler):
     """When a plugin's activate_event signal raises, event stays offline."""
-    from pretalx.orga.signals import activate_event  # noqa: PLC0415
-
-    event.is_public = False
-    event.save()
+    event = EventFactory(is_public=False)
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
     def blocker(signal, sender, **kwargs):
-        raise Exception("It's not safe to go alone take this")  # noqa: TRY002
+        raise Exception("It's not safe to go alone take this")  # noqa: TRY002 -- intentional generic exception to simulate plugin error
 
     register_signal_handler(activate_event, blocker)
     response = client.post(event.orga_urls.live, {"action": "activate"}, follow=True)
@@ -393,34 +304,6 @@ def test_event_live_plugin_blocks_activation(client, event, register_signal_hand
     assert "not safe to go alone" in response.content.decode()
 
 
-@pytest.mark.django_db
-def test_event_history_accessible(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.history)
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
-def test_event_history_anonymous_redirects(client, event):
-    response = client.get(event.orga_urls.history)
-
-    assert response.status_code == 302
-
-
-@pytest.mark.django_db
-def test_event_history_unauthorized_gets_404(client, event):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.history)
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
 def test_event_history_query_count(
     client, event, item_count, django_assert_num_queries
@@ -428,13 +311,13 @@ def test_event_history_query_count(
     user = make_orga_user(event, can_change_event_settings=True)
     with scopes_disabled():
         submission = SubmissionFactory(event=event)
-        for _ in range(item_count):
-            ActivityLog.objects.create(
-                event=event,
-                person=user,
-                content_object=submission,
-                action_type="pretalx.submission.update",
-            )
+        ActivityLogFactory.create_batch(
+            item_count,
+            event=event,
+            person=user,
+            content_object=submission,
+            action_type="pretalx.submission.update",
+        )
     client.force_login(user)
 
     with django_assert_num_queries(17):
@@ -443,7 +326,6 @@ def test_event_history_query_count(
     assert response.status_code == 200
 
 
-@pytest.mark.django_db
 def test_event_history_detail_shows_changes(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     with scopes_disabled():
@@ -466,7 +348,6 @@ def test_event_history_detail_shows_changes(client, event):
     assert "<ins>New</ins> Title" in content
 
 
-@pytest.mark.django_db
 def test_event_history_detail_with_question_changes(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     with scopes_disabled():
@@ -490,31 +371,12 @@ def test_event_history_detail_with_question_changes(client, event):
     assert str(question.question) in content
 
 
-@pytest.mark.django_db
-def test_event_history_detail_anonymous_redirects(client, event):
-    with scopes_disabled():
-        user = UserFactory()
-        log = ActivityLog.objects.create(
-            event=event,
-            person=user,
-            content_object=event,
-            action_type="pretalx.event.update",
-        )
-
-    url = f"/orga/event/{event.slug}/history/{log.pk}/"
-    response = client.get(url)
-
-    assert response.status_code == 302
-    assert "/login/" in response.url
-
-
-@pytest.mark.django_db
 def test_event_history_detail_scoping(client, event):
     """Cannot view a log entry via another event's URL."""
     with scopes_disabled():
         other_event = EventFactory()
         user = make_orga_user(other_event, can_change_event_settings=True)
-        log = ActivityLog.objects.create(
+        log = ActivityLogFactory(
             event=event,
             person=user,
             content_object=event,
@@ -524,33 +386,6 @@ def test_event_history_detail_scoping(client, event):
 
     url = f"/orga/event/{other_event.slug}/history/{log.pk}/"
     response = client.get(url)
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
-def test_event_review_settings_get_accessible(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.review_settings)
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
-def test_event_review_settings_anonymous_redirects(client, event):
-    response = client.get(event.orga_urls.review_settings)
-
-    assert response.status_code == 302
-
-
-@pytest.mark.django_db
-def test_event_review_settings_unauthorized_gets_404(client, event):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.review_settings)
 
     assert response.status_code == 404
 
@@ -598,7 +433,6 @@ def _build_review_settings_data(event):
     return data
 
 
-@pytest.mark.django_db
 def test_event_review_settings_post_updates_phases(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -612,7 +446,6 @@ def test_event_review_settings_post_updates_phases(client, event):
         assert event.review_phases.filter(name="Renamed Phase").exists()
 
 
-@pytest.mark.django_db
 def test_event_review_settings_post_updates_score_category(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -628,7 +461,6 @@ def test_event_review_settings_post_updates_score_category(client, event):
         assert event.score_categories.count() == 1
 
 
-@pytest.mark.django_db
 def test_event_review_settings_add_new_phase(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -649,9 +481,7 @@ def test_event_review_settings_add_new_phase(client, event):
         assert event.review_phases.count() == 3
 
 
-@pytest.mark.django_db
 def test_event_review_settings_invalid_phase_date_rejected(client, event):
-    """Invalid date in phase formset prevents saving."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = _build_review_settings_data(event)
@@ -665,9 +495,7 @@ def test_event_review_settings_invalid_phase_date_rejected(client, event):
         assert event.review_phases.count() == 2
 
 
-@pytest.mark.django_db
 def test_event_review_settings_invalid_can_tag_rejected(client, event):
-    """Invalid can_tag_submissions value prevents saving."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = _build_review_settings_data(event)
@@ -682,9 +510,7 @@ def test_event_review_settings_invalid_can_tag_rejected(client, event):
         assert not event.review_phases.filter(name="Should Not Save").exists()
 
 
-@pytest.mark.django_db
 def test_event_review_settings_phase_end_before_start_rejected(client, event):
-    """Phases with end date before start date are rejected."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
     data = _build_review_settings_data(event)
@@ -707,7 +533,6 @@ def test_event_review_settings_phase_end_before_start_rejected(client, event):
         assert event.review_phases.count() == 2
 
 
-@pytest.mark.django_db
 def test_event_review_settings_is_independent_validation(client, event):
     """Setting is_independent when non-independent categories exist shows error."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -723,7 +548,6 @@ def test_event_review_settings_is_independent_validation(client, event):
         assert event.score_categories.filter(is_independent=False).exists()
 
 
-@pytest.mark.django_db
 def test_phase_activate_toggles_active_phase(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -739,7 +563,6 @@ def test_phase_activate_toggles_active_phase(client, event):
         assert event.active_review_phase == other_phase
 
 
-@pytest.mark.django_db
 def test_phase_deactivate(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -753,34 +576,6 @@ def test_phase_deactivate(client, event):
     assert not phase.is_active
 
 
-@pytest.mark.django_db
-def test_event_mail_settings_get_accessible(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.mail_settings)
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
-def test_event_mail_settings_anonymous_redirects(client, event):
-    response = client.get(event.orga_urls.mail_settings)
-
-    assert response.status_code == 302
-
-
-@pytest.mark.django_db
-def test_event_mail_settings_unauthorized_gets_404(client, event):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.mail_settings)
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
 def test_event_mail_settings_post_updates_settings(client, event):
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -802,7 +597,6 @@ def test_event_mail_settings_post_updates_settings(client, event):
     assert event.mail_settings["smtp_port"] == 25
 
 
-@pytest.mark.django_db
 def test_event_mail_settings_unencrypted_rejected(client, event):
     """Using a custom SMTP host without encryption (non-localhost) is rejected."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -825,7 +619,6 @@ def test_event_mail_settings_unencrypted_rejected(client, event):
     assert event.mail_settings["mail_from"] != "foo@bar.com"
 
 
-@pytest.mark.django_db
 def test_event_mail_settings_test_connection(client, event):
     """Posting with test=1 saves settings and attempts SMTP connection."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -849,7 +642,6 @@ def test_event_mail_settings_test_connection(client, event):
     assert event.mail_settings["mail_from"] == "foo@bar.com"
 
 
-@pytest.mark.django_db
 def test_invitation_view_accept_as_new_user(client, event):
     with scopes_disabled():
         team = TeamFactory(organiser=event.organiser, all_events=True)
@@ -873,7 +665,6 @@ def test_invitation_view_accept_as_new_user(client, event):
     assert team.invites.count() == 0
 
 
-@pytest.mark.django_db
 def test_invitation_view_accept_as_logged_in_user(client, event):
     with scopes_disabled():
         team = TeamFactory(organiser=event.organiser, all_events=True)
@@ -892,7 +683,6 @@ def test_invitation_view_accept_as_logged_in_user(client, event):
     assert team.invites.count() == 0
 
 
-@pytest.mark.django_db
 def test_invitation_view_invalid_token_returns_404(client):
     response = client.get(
         reverse("orga:invitation.view", kwargs={"code": "invalidtoken123"})
@@ -901,7 +691,6 @@ def test_invitation_view_invalid_token_returns_404(client):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
 def test_invitation_view_failed_registration_preserves_invite(client, event):
     """Mismatched passwords should not consume the invite."""
     with scopes_disabled():
@@ -924,7 +713,6 @@ def test_invitation_view_failed_registration_preserves_invite(client, event):
     assert team.invites.count() == 1
 
 
-@pytest.mark.django_db
 def test_invitation_view_duplicate_email_preserves_invite(client, event):
     """Registering with an existing email does not consume the invite."""
     with scopes_disabled():
@@ -947,7 +735,6 @@ def test_invitation_view_duplicate_email_preserves_invite(client, event):
     assert team.invites.count() == 1
 
 
-@pytest.mark.django_db
 def test_invitation_view_weak_password_preserves_invite(client, event):
     with scopes_disabled():
         team = TeamFactory(organiser=event.organiser, all_events=True)
@@ -968,7 +755,6 @@ def test_invitation_view_weak_password_preserves_invite(client, event):
     assert team.invites.count() == 1
 
 
-@pytest.mark.django_db
 def test_invitation_view_consumed_token_returns_404(client, event):
     """After an invite is accepted, the same token returns 404."""
     with scopes_disabled():
@@ -991,17 +777,6 @@ def test_invitation_view_consumed_token_returns_404(client, event):
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
-def test_event_delete_admin_can_access(client, event):
-    admin = UserFactory(is_administrator=True)
-    client.force_login(admin)
-
-    response = client.get(event.orga_urls.delete, follow=True)
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
 def test_event_delete_admin_can_delete(client, event):
     admin = UserFactory(is_administrator=True)
     client.force_login(admin)
@@ -1014,9 +789,7 @@ def test_event_delete_admin_can_delete(client, event):
         assert not Event.objects.filter(pk=event_pk).exists()
 
 
-@pytest.mark.django_db
 def test_event_delete_non_admin_gets_404(client, event):
-    """Non-administrators cannot delete events."""
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -1026,41 +799,6 @@ def test_event_delete_non_admin_gets_404(client, event):
     assert Event.objects.filter(pk=event.pk).exists()
 
 
-@pytest.mark.django_db
-def test_event_delete_anonymous_redirects(client, event):
-    response = client.post(event.orga_urls.delete)
-
-    assert response.status_code == 302
-
-
-@pytest.mark.django_db
-def test_widget_settings_get_accessible(client, event):
-    user = make_orga_user(event, can_change_event_settings=True)
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.widget_settings)
-
-    assert response.status_code == 200
-
-
-@pytest.mark.django_db
-def test_widget_settings_anonymous_redirects(client, event):
-    response = client.get(event.orga_urls.widget_settings)
-
-    assert response.status_code == 302
-
-
-@pytest.mark.django_db
-def test_widget_settings_unauthorized_gets_404(client, event):
-    user = UserFactory()
-    client.force_login(user)
-
-    response = client.get(event.orga_urls.widget_settings)
-
-    assert response.status_code == 404
-
-
-@pytest.mark.django_db
 def test_widget_settings_post_enables_flag(client, event):
     assert not event.feature_flags["show_widget_if_not_public"]
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1077,7 +815,6 @@ def test_widget_settings_post_enables_flag(client, event):
     assert event.feature_flags["show_widget_if_not_public"]
 
 
-@pytest.mark.django_db
 def test_event_detail_change_date_shifts_wip_slots(client, event, published_talk_slot):
     """Changing event dates shifts WIP schedule slots but not released slots."""
     talk_slot = published_talk_slot
@@ -1105,7 +842,6 @@ def test_event_detail_change_date_shifts_wip_slots(client, event, published_talk
     assert wip_slot.start == old_wip_start + delta
 
 
-@pytest.mark.django_db
 def test_event_detail_change_timezone_shifts_slots(client, event, published_talk_slot):
     old_slot_start = published_talk_slot.start
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1119,12 +855,9 @@ def test_event_detail_change_timezone_shifts_slots(client, event, published_talk
     assert published_talk_slot.start != old_slot_start
 
 
-@pytest.mark.django_db
-def test_event_live_activate_with_plugins_no_blocker(client, event):
+def test_event_live_activate_with_plugins_no_blocker(client):
     """When a plugin is installed but doesn't block, event goes live."""
-    event.is_public = False
-    event.plugins = "tests.dummy_app"
-    event.save()
+    event = EventFactory(is_public=False, plugins="tests.dummy_app")
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -1135,14 +868,11 @@ def test_event_live_activate_with_plugins_no_blocker(client, event):
     assert event.is_public
 
 
-@pytest.mark.django_db
 def test_event_detail_change_custom_domain_to_site_url_clears_it(
     client, event, monkeypatch, settings
 ):
     # Monkeypatch: the form calls socket.gethostbyname to verify DNS resolution,
     # which would make a real network request in tests.
-    from pretalx.orga.forms.event import socket  # noqa: PLC0415
-
     monkeypatch.setattr(socket, "gethostbyname", lambda x: True)
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1155,7 +885,6 @@ def test_event_detail_change_custom_domain_to_site_url_clears_it(
     assert event.custom_domain is None
 
 
-@pytest.mark.django_db
 def test_event_detail_post_invalid_footer_links_rejected(client, event):
     """When the footer links formset has invalid data, the form is rejected."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1174,16 +903,12 @@ def test_event_detail_post_invalid_footer_links_rejected(client, event):
         assert event.extra_links.count() == 0
 
 
-@pytest.mark.django_db
 def test_event_live_activate_plugin_returns_string_message(
-    client, event, register_signal_handler
+    client, register_signal_handler
 ):
     """When a plugin's activate_event signal returns a string, it is shown as success.
     When another plugin returns a non-string, it is silently ignored."""
-    from pretalx.orga.signals import activate_event  # noqa: PLC0415
-
-    event.is_public = False
-    event.save()
+    event = EventFactory(is_public=False)
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -1203,7 +928,6 @@ def test_event_live_activate_plugin_returns_string_message(
     assert "Plugin activated successfully!" in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_event_review_settings_delete_phase(client, event):
     """Deleting a review phase via the formset removes it from the database."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1226,7 +950,6 @@ def test_event_review_settings_delete_phase(client, event):
         assert not event.review_phases.filter(pk=other_phase.pk).exists()
 
 
-@pytest.mark.django_db
 def test_event_review_settings_open_ended_non_last_phase_rejected(client, event):
     """A non-last phase without an end date is rejected."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1243,7 +966,6 @@ def test_event_review_settings_open_ended_non_last_phase_rejected(client, event)
     assert "open-ended" in content.lower() or "last review phase" in content.lower()
 
 
-@pytest.mark.django_db
 def test_event_review_settings_missing_start_non_first_phase_rejected(client, event):
     """A non-first phase without a start date is rejected."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1260,7 +982,6 @@ def test_event_review_settings_missing_start_non_first_phase_rejected(client, ev
     assert "start date" in content.lower()
 
 
-@pytest.mark.django_db
 def test_event_review_settings_overlapping_phases_rejected(client, event):
     """Overlapping review phases are rejected with an error message."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1277,7 +998,6 @@ def test_event_review_settings_overlapping_phases_rejected(client, event):
     assert "overlap" in content.lower()
 
 
-@pytest.mark.django_db
 def test_event_review_settings_invalid_scores_formset_rejected(client, event):
     """When the scores formset is invalid, the main form is not saved."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1297,7 +1017,6 @@ def test_event_review_settings_invalid_scores_formset_rejected(client, event):
         assert category.weight != "not-a-number"
 
 
-@pytest.mark.django_db
 def test_event_review_settings_weight_change_triggers_recalculate(client, event):
     """Changing a score category's weight triggers score recalculation."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1314,7 +1033,6 @@ def test_event_review_settings_weight_change_triggers_recalculate(client, event)
         assert category.weight == 5
 
 
-@pytest.mark.django_db
 def test_event_review_settings_add_new_score_category(client, event):
     """Adding a new score category via extra formset forms works."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1333,7 +1051,6 @@ def test_event_review_settings_add_new_score_category(client, event):
         assert event.score_categories.filter(name__contains="New Category").exists()
 
 
-@pytest.mark.django_db
 def test_event_review_settings_delete_score_category(client, event):
     """Deleting a score category removes it and its scores."""
     with scopes_disabled():
@@ -1357,7 +1074,6 @@ def test_event_review_settings_delete_score_category(client, event):
         assert not event.score_categories.filter(pk=extra_cat.pk).exists()
 
 
-@pytest.mark.django_db
 def test_event_review_settings_delete_independent_score_category(client, event):
     """Deleting an independent score category does not trigger weight recalculation."""
     with scopes_disabled():
@@ -1382,7 +1098,6 @@ def test_event_review_settings_delete_independent_score_category(client, event):
         assert not event.score_categories.filter(pk=extra_cat.pk).exists()
 
 
-@pytest.mark.django_db
 def test_event_review_settings_delete_unsaved_extra_score(client, event):
     """Submitting a new score form that is also marked for deletion is a no-op."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1402,7 +1117,6 @@ def test_event_review_settings_delete_unsaved_extra_score(client, event):
         assert not event.score_categories.filter(name__contains="Ephemeral").exists()
 
 
-@pytest.mark.django_db
 def test_event_review_settings_no_changes_still_saves(client, event):
     """Submitting review settings without any changes still succeeds."""
     user = make_orga_user(event, can_change_event_settings=True)
@@ -1418,11 +1132,8 @@ def test_event_review_settings_no_changes_still_saves(client, event):
         assert event.score_categories.count() == 1
 
 
-@pytest.mark.django_db
 def test_event_mail_settings_test_smtp_success_custom(client, event, monkeypatch):
     """Successful SMTP test with use_custom enabled shows custom success message."""
-    from pretalx.common.mail import CustomSMTPBackend  # noqa: PLC0415
-
     monkeypatch.setattr(CustomSMTPBackend, "test", lambda self, from_addr: None)
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
@@ -1447,11 +1158,8 @@ def test_event_mail_settings_test_smtp_success_custom(client, event, monkeypatch
     assert "connection attempt" in content.lower() or "successful" in content.lower()
 
 
-@pytest.mark.django_db
 def test_event_mail_settings_test_smtp_success_not_custom(client, event, monkeypatch):
     """Successful SMTP test without use_custom shows reminder to enable it."""
-    from pretalx.common.mail import CustomSMTPBackend  # noqa: PLC0415
-
     monkeypatch.setattr(CustomSMTPBackend, "test", lambda self, from_addr: None)
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)

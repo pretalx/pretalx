@@ -1,10 +1,11 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import warnings
 
 import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory, override_settings
 from django.urls import resolve
-from django_scopes import scopes_disabled
 
 from pretalx.cfp.signals import footer_link, html_head
 from pretalx.common.context_processors import (
@@ -16,8 +17,7 @@ from pretalx.common.context_processors import (
 )
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.common.text.phrases import phrases
-from pretalx.event.models.event import EventExtraLink
-from tests.factories import EventFactory, UserFactory
+from tests.factories import EventExtraLinkFactory, EventFactory, UserFactory
 
 pytestmark = pytest.mark.unit
 
@@ -59,7 +59,6 @@ def test_add_events_returns_url_info_for_orga_namespace():
 
 
 def test_add_events_returns_empty_strings_on_unresolvable_path():
-    """When the path doesn't resolve, url_name and url_namespace are empty."""
     request = rf.get("/orga/this-path-does-not-exist-at-all/")
     request.resolver_match = resolve("/orga/login/")
     request.user = UserFactory.build()
@@ -166,7 +165,6 @@ def test_system_information_no_debug_omits_development_mode():
 
 
 def test_system_information_signal_handler_returning_list(register_signal_handler):
-    """When a footer_link signal handler returns a list, its items are added."""
     links = [{"label": "Link1", "url": "/1"}, {"label": "Link2", "url": "/2"}]
 
     def handler(signal, sender, **kwargs):
@@ -207,21 +205,19 @@ def test_system_information_signal_handler_returning_dict_warns(
 
 @pytest.mark.django_db
 def test_system_information_includes_extra_links_with_event_and_scope():
-    with scopes_disabled():
-        event = EventFactory()
-        EventExtraLink.objects.create(
-            event=event, label="Footer", url="https://footer.example.com", role="footer"
-        )
-        EventExtraLink.objects.create(
-            event=event, label="Header", url="https://header.example.com", role="header"
-        )
+    event = EventFactory()
+    EventExtraLinkFactory(
+        event=event, label="Footer", url="https://footer.example.com", role="footer"
+    )
+    EventExtraLinkFactory(
+        event=event, label="Header", url="https://header.example.com", role="header"
+    )
 
     request = rf.get("/some/page/")
     request.user = AnonymousUser()
     request.event = event
 
-    with scopes_disabled():
-        result = system_information(request)
+    result = system_information(request)
 
     assert result["footer_links"] == [
         {"label": "Footer", "url": "https://footer.example.com"}
@@ -240,15 +236,13 @@ def test_system_information_html_head_signal_with_event(register_signal_handler)
 
     register_signal_handler(html_head, handler)
 
-    with scopes_disabled():
-        event = EventFactory()
+    event = EventFactory()
 
     request = rf.get("/some/page/")
     request.user = AnonymousUser()
     request.event = event
 
-    with scopes_disabled():
-        result = system_information(request)
+    result = system_information(request)
 
     assert result["html_head"] == "<style>body{}</style>"
 

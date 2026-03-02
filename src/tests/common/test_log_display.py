@@ -1,6 +1,7 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from django.utils.html import escape
-from django_scopes import scopes_disabled
 
 from pretalx.common.log_display import (
     LOG_ALIASES,
@@ -48,7 +49,6 @@ def test_default_activitylog_display_template_with_valid_data():
 
 
 def test_default_activitylog_display_template_with_missing_data():
-    """When template data is incomplete, falls through to LOG_NAMES."""
     log = ActivityLog(action_type="pretalx.event.delete", data={"name": "Test Event"})
 
     result = default_activitylog_display(sender=None, activitylog=log)
@@ -57,7 +57,6 @@ def test_default_activitylog_display_template_with_missing_data():
 
 
 def test_default_activitylog_display_template_with_non_dict_data():
-    """When data is not a dict, falls through to LOG_NAMES."""
     log = ActivityLog(action_type="pretalx.event.delete", data=None)
 
     result = default_activitylog_display(sender=None, activitylog=log)
@@ -116,8 +115,7 @@ def test_default_activitylog_object_link_no_content_object_returns_none():
     ((SubmissionStates.ACCEPTED, "Session"), (SubmissionStates.SUBMITTED, "Proposal")),
 )
 def test_default_activitylog_object_link_submission(state, expected_label):
-    with scopes_disabled():
-        submission = SubmissionFactory(state=state)
+    submission = SubmissionFactory(state=state)
     log = ActivityLog(content_object=submission)
 
     result = default_activitylog_object_link(sender=submission.event, activitylog=log)
@@ -130,8 +128,7 @@ def test_default_activitylog_object_link_submission(state, expected_label):
 
 @pytest.mark.django_db
 def test_default_activitylog_object_link_submission_comment():
-    with scopes_disabled():
-        comment = SubmissionCommentFactory()
+    comment = SubmissionCommentFactory()
     log = ActivityLog(content_object=comment)
 
     result = default_activitylog_object_link(
@@ -146,8 +143,7 @@ def test_default_activitylog_object_link_submission_comment():
 
 @pytest.mark.django_db
 def test_default_activitylog_object_link_review():
-    with scopes_disabled():
-        review = ReviewFactory()
+    review = ReviewFactory()
     log = ActivityLog(content_object=review)
 
     result = default_activitylog_object_link(
@@ -162,8 +158,7 @@ def test_default_activitylog_object_link_review():
 
 @pytest.mark.django_db
 def test_default_activitylog_object_link_question():
-    with scopes_disabled():
-        question = QuestionFactory()
+    question = QuestionFactory()
     log = ActivityLog(content_object=question)
 
     result = default_activitylog_object_link(sender=question.event, activitylog=log)
@@ -175,8 +170,7 @@ def test_default_activitylog_object_link_question():
 
 @pytest.mark.django_db
 def test_default_activitylog_object_link_answer_option():
-    with scopes_disabled():
-        option = AnswerOptionFactory()
+    option = AnswerOptionFactory()
     log = ActivityLog(content_object=option)
 
     result = default_activitylog_object_link(
@@ -191,8 +185,7 @@ def test_default_activitylog_object_link_answer_option():
 
 @pytest.mark.django_db
 def test_default_activitylog_object_link_answer_with_submission():
-    with scopes_disabled():
-        answer = AnswerFactory()
+    answer = AnswerFactory()
     log = ActivityLog(content_object=answer)
 
     result = default_activitylog_object_link(
@@ -207,8 +200,7 @@ def test_default_activitylog_object_link_answer_with_submission():
 
 @pytest.mark.django_db
 def test_default_activitylog_object_link_answer_without_submission():
-    with scopes_disabled():
-        answer = AnswerFactory(submission=None)
+    answer = AnswerFactory(submission=None)
     log = ActivityLog(content_object=answer)
 
     result = default_activitylog_object_link(
@@ -223,8 +215,7 @@ def test_default_activitylog_object_link_answer_without_submission():
 
 @pytest.mark.django_db
 def test_default_activitylog_object_link_cfp():
-    with scopes_disabled():
-        event = EventFactory()
+    event = EventFactory()
     cfp = event.cfp
     log = ActivityLog(content_object=cfp)
 
@@ -235,8 +226,7 @@ def test_default_activitylog_object_link_cfp():
 
 @pytest.mark.django_db
 def test_default_activitylog_object_link_mail_template():
-    with scopes_disabled():
-        template = MailTemplateFactory()
+    template = MailTemplateFactory()
     log = ActivityLog(content_object=template)
 
     result = default_activitylog_object_link(sender=template.event, activitylog=log)
@@ -248,8 +238,7 @@ def test_default_activitylog_object_link_mail_template():
 
 @pytest.mark.django_db
 def test_default_activitylog_object_link_queued_mail():
-    with scopes_disabled():
-        mail = QueuedMailFactory()
+    mail = QueuedMailFactory()
     log = ActivityLog(content_object=mail)
 
     result = default_activitylog_object_link(sender=mail.event, activitylog=log)
@@ -259,8 +248,7 @@ def test_default_activitylog_object_link_queued_mail():
 
 @pytest.mark.django_db
 def test_default_activitylog_object_link_speaker_profile():
-    with scopes_disabled():
-        speaker = SpeakerFactory()
+    speaker = SpeakerFactory()
     log = ActivityLog(content_object=speaker)
 
     result = default_activitylog_object_link(sender=speaker.event, activitylog=log)
@@ -273,8 +261,7 @@ def test_default_activitylog_object_link_speaker_profile():
 
 @pytest.mark.django_db
 def test_default_activitylog_object_link_event():
-    with scopes_disabled():
-        event = EventFactory()
+    event = EventFactory()
     log = ActivityLog(content_object=event)
 
     result = default_activitylog_object_link(sender=event, activitylog=log)
@@ -288,8 +275,7 @@ def test_default_activitylog_object_link_event():
 def test_default_activitylog_object_link_unhandled_type_returns_none():
     """A content_object whose type is not in the isinstance chain
     (e.g. Track) should result in None."""
-    with scopes_disabled():
-        track = TrackFactory()
+    track = TrackFactory()
     log = ActivityLog(content_object=track)
 
     result = default_activitylog_object_link(sender=track.event, activitylog=log)

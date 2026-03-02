@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
 from pretalx.common.diff_utils import detect_markdown, render_diff
@@ -80,7 +82,6 @@ def test_render_diff_non_string_values_skip_diff():
     (("**bold**", None, "old_html"), (None, "**bold**", "new_html")),
 )
 def test_render_diff_no_diff_renders_markdown_value(old, new, expected_key):
-    """When diff is skipped but a value is markdown, its html is rendered."""
     result = render_diff(old, new)
 
     assert result["is_diff"] is False
@@ -88,7 +89,6 @@ def test_render_diff_no_diff_renders_markdown_value(old, new, expected_key):
 
 
 def test_render_diff_no_diff_omits_html_for_plain_text():
-    """When diff is skipped and values are plain text, no html keys are added."""
     result = render_diff(None, "plain text")
 
     assert result["is_diff"] is False
@@ -96,7 +96,6 @@ def test_render_diff_no_diff_omits_html_for_plain_text():
 
 
 def test_render_diff_markdown_content_renders_as_html():
-    """When both values contain markdown, the diff output includes rendered markup."""
     result = render_diff("- old item", "- new item")
 
     assert result["is_diff"] is True
@@ -113,7 +112,6 @@ def test_render_diff_multiline_shows_added_line():
 
 
 def test_render_diff_markdown_list_addition():
-    """Adding a second markdown list item produces both items in new_html."""
     old = "- [test](https://pretalx.com/)"
     new = "- [test](https://pretalx.com/)\n- second item"
 

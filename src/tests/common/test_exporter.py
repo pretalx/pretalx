@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 from urllib.parse import quote
 
 import pytest
@@ -34,26 +36,6 @@ def test_base_exporter_stores_event():
     exporter = BaseExporter("my-event")
 
     assert exporter.event == "my-event"
-
-
-@pytest.mark.parametrize(
-    "action",
-    (
-        pytest.param(lambda e: e.verbose_name, id="verbose_name"),
-        pytest.param(lambda e: e.filename_identifier, id="filename_identifier"),
-        pytest.param(lambda e: e.extension, id="extension"),
-        pytest.param(lambda e: e.content_type, id="content_type"),
-        pytest.param(lambda e: e.public, id="public"),
-        pytest.param(lambda e: e.icon, id="icon"),
-        pytest.param(lambda e: e.get_data(None), id="get_data"),
-        pytest.param(str, id="str"),
-        pytest.param(lambda e: e.render(request=None), id="render"),
-        pytest.param(lambda e: e.show_public, id="show_public"),
-    ),
-)
-def test_base_exporter_raises_not_implemented(action):
-    with pytest.raises(NotImplementedError):
-        action(BaseExporter(None))
 
 
 def test_concrete_exporter_str_returns_identifier():

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import warnings
 from io import BytesIO
 from pathlib import Path
@@ -18,8 +20,7 @@ from pretalx.common.image import (
     process_image,
     validate_image,
 )
-from pretalx.person.models.picture import ProfilePicture
-from tests.factories import EventFactory, UserFactory
+from tests.factories import EventFactory, ProfilePictureFactory, UserFactory
 
 pytestmark = pytest.mark.unit
 
@@ -67,7 +68,6 @@ def test_validate_image_rejects_invalid_data(data):
 
 
 def test_validate_image_decompression_bomb(make_image, monkeypatch):
-    """A decompression bomb should raise a ValidationError, not crash."""
     monkeypatch.setattr(PIL.Image, "MAX_IMAGE_PIXELS", 5)
 
     with pytest.raises(ValidationError):
@@ -86,7 +86,6 @@ def test_validate_image_exceeds_max_pixels(make_image, monkeypatch):
 
 
 def test_validate_image_with_temporary_file_path(make_image):
-    """When a file has a temporary_file_path attribute, it is used directly."""
     upload = TemporaryUploadedFile(
         name="test.png", content_type="image/png", size=0, charset=None
     )
@@ -145,7 +144,7 @@ def test_load_img_returns_none_for_invalid_data(data):
 @pytest.mark.django_db
 def test_get_thumbnail_field_name(make_image, size):
     user = UserFactory()
-    pic = ProfilePicture.objects.create(user=user, avatar=make_image())
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
 
     expected = "avatar_thumbnail" if size == "default" else f"avatar_thumbnail_{size}"
     assert get_thumbnail_field_name(pic.avatar, size) == expected
@@ -154,7 +153,7 @@ def test_get_thumbnail_field_name(make_image, size):
 @pytest.mark.django_db
 def test_process_image_converts_to_webp(make_image):
     user = UserFactory()
-    pic = ProfilePicture.objects.create(user=user, avatar=make_image())
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
     original_path = Path(pic.avatar.path)
 
     process_image(image=pic.avatar)
@@ -167,7 +166,7 @@ def test_process_image_converts_to_webp(make_image):
 @pytest.mark.django_db
 def test_process_image_with_thumbnails(make_image):
     user = UserFactory()
-    pic = ProfilePicture.objects.create(user=user, avatar=make_image())
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
 
     process_image(image=pic.avatar, generate_thumbnail=True)
 
@@ -180,7 +179,7 @@ def test_process_image_with_thumbnails(make_image):
 @pytest.mark.django_db
 def test_process_image_returns_none_for_invalid_image():
     user = UserFactory()
-    pic = ProfilePicture.objects.create(
+    pic = ProfilePictureFactory(
         user=user, avatar=SimpleUploadedFile("bad.png", b"not-an-image")
     )
 
@@ -192,7 +191,7 @@ def test_process_image_returns_none_for_invalid_image():
 @pytest.mark.django_db
 def test_create_thumbnail_invalid_size(make_image):
     user = UserFactory()
-    pic = ProfilePicture.objects.create(user=user, avatar=make_image())
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
 
     result = create_thumbnail(pic.avatar, "nonexistent_size")
 
@@ -203,7 +202,7 @@ def test_create_thumbnail_invalid_size(make_image):
 @pytest.mark.django_db
 def test_create_thumbnail_from_disk(make_image, size):
     user = UserFactory()
-    pic = ProfilePicture.objects.create(user=user, avatar=make_image())
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
 
     result = create_thumbnail(pic.avatar, size)
 
@@ -216,7 +215,7 @@ def test_create_thumbnail_from_disk(make_image, size):
 def test_create_thumbnail_with_processed_img(make_image, size):
     """Passing a processed_img avoids reloading from disk."""
     user = UserFactory()
-    pic = ProfilePicture.objects.create(user=user, avatar=make_image())
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
     processed = Image.new("RGB", (100, 100), color="green")
 
     result = create_thumbnail(pic.avatar, size, processed_img=processed)
@@ -228,7 +227,7 @@ def test_create_thumbnail_with_processed_img(make_image, size):
 @pytest.mark.django_db
 def test_get_thumbnail_creates_missing(make_image):
     user = UserFactory()
-    pic = ProfilePicture.objects.create(user=user, avatar=make_image())
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
 
     result = get_thumbnail(pic.avatar, "default")
 
@@ -239,7 +238,7 @@ def test_get_thumbnail_creates_missing(make_image):
 @pytest.mark.django_db
 def test_get_thumbnail_returns_existing(make_image):
     user = UserFactory()
-    pic = ProfilePicture.objects.create(
+    pic = ProfilePictureFactory(
         user=user, avatar=make_image(), avatar_thumbnail=make_image("thumb.png")
     )
 
@@ -282,7 +281,7 @@ def test_process_image_webp_input_skips_unlink(make_image):
     """When the original file already has a .webp extension, process_image
     should not attempt to unlink it (save_path == path)."""
     user = UserFactory()
-    pic = ProfilePicture.objects.create(user=user, avatar=make_image("test.webp"))
+    pic = ProfilePictureFactory(user=user, avatar=make_image("test.webp"))
 
     process_image(image=pic.avatar)
 
@@ -296,7 +295,7 @@ def test_create_thumbnail_returns_none_for_invalid_image_on_disk():
     create_thumbnail returns None (the thumbnail field exists but the
     image cannot be loaded)."""
     user = UserFactory()
-    pic = ProfilePicture.objects.create(
+    pic = ProfilePictureFactory(
         user=user, avatar=SimpleUploadedFile("bad.png", b"not-an-image")
     )
 

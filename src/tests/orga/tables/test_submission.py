@@ -1,8 +1,7 @@
-# SPDX-FileCopyrightText: 2025-present Tobias Kunze
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.orga.tables.submission import ReviewTable, SubmissionTable, TagTable
 from pretalx.submission.models import Submission, Tag
@@ -21,8 +20,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture
 def event():
-    with scopes_disabled():
-        return EventFactory()
+    return EventFactory()
 
 
 def test_submission_table_meta_model():
@@ -62,11 +60,9 @@ def test_submission_table_exempt_columns():
     ),
 )
 @pytest.mark.django_db
-def test_submission_table_default_columns(event, use_tracks, expected):
-    event.feature_flags["use_tracks"] = use_tracks
-    event.save()
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
+def test_submission_table_default_columns(use_tracks, expected):
+    event = EventFactory(feature_flags={"use_tracks": use_tracks})
+    submission = SubmissionFactory(event=event)
     table = SubmissionTable(
         [submission], event=event, user=UserFactory.build(), can_view_speakers=True
     )
@@ -77,8 +73,7 @@ def test_submission_table_default_columns(event, use_tracks, expected):
 @pytest.mark.parametrize("can_view_speakers", (True, False))
 @pytest.mark.django_db
 def test_submission_table_speakers_excluded_by_permission(event, can_view_speakers):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
+    submission = SubmissionFactory(event=event)
     table = SubmissionTable(
         [submission],
         event=event,
@@ -92,8 +87,7 @@ def test_submission_table_speakers_excluded_by_permission(event, can_view_speake
 @pytest.mark.parametrize("has_update_permission", (True, False))
 @pytest.mark.django_db
 def test_submission_table_actions_excluded_by_permission(event, has_update_permission):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
+    submission = SubmissionFactory(event=event)
     table = SubmissionTable(
         [submission],
         event=event,
@@ -107,8 +101,7 @@ def test_submission_table_actions_excluded_by_permission(event, has_update_permi
 
 @pytest.mark.django_db
 def test_submission_table_render_content_locale(event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event, content_locale="en")
+    submission = SubmissionFactory(event=event, content_locale="en")
     table = SubmissionTable(
         [submission], event=event, user=UserFactory.build(), can_view_speakers=True
     )
@@ -120,8 +113,7 @@ def test_submission_table_render_content_locale(event):
 
 @pytest.mark.django_db
 def test_submission_table_set_columns_keeps_indicator_first(event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
+    submission = SubmissionFactory(event=event)
     table = SubmissionTable(
         [submission], event=event, user=UserFactory.build(), can_view_speakers=True
     )
@@ -133,9 +125,8 @@ def test_submission_table_set_columns_keeps_indicator_first(event):
 
 @pytest.mark.django_db
 def test_submission_table_stores_short_questions(event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
-        question = QuestionFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    question = QuestionFactory(event=event)
     table = SubmissionTable(
         [submission], event=event, user=UserFactory.build(), short_questions=[question]
     )
@@ -145,8 +136,7 @@ def test_submission_table_stores_short_questions(event):
 
 @pytest.mark.django_db
 def test_submission_table_short_questions_defaults_empty(event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
+    submission = SubmissionFactory(event=event)
     table = SubmissionTable([submission], event=event, user=UserFactory.build())
 
     assert table.short_questions == []
@@ -158,8 +148,7 @@ def test_review_table_meta_model():
 
 @pytest.mark.django_db
 def test_review_table_meta_row_attrs_class(event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
+    submission = SubmissionFactory(event=event)
     class_func = ReviewTable.Meta.row_attrs["class"]
 
     assert class_func(submission) == submission.state
@@ -188,8 +177,7 @@ def test_review_table_render_user_score(event):
 
 @pytest.mark.django_db
 def test_review_table_render_content_locale(event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event, content_locale="en")
+    submission = SubmissionFactory(event=event, content_locale="en")
     table = ReviewTable([], event=event, user=UserFactory.build())
 
     result = table.render_content_locale(submission)
@@ -248,10 +236,9 @@ def test_review_table_speakers_excluded_by_permission(event, can_view_speakers):
 
 
 @pytest.mark.django_db
-def test_review_table_default_columns_minimal(event):
+def test_review_table_default_columns_minimal():
     """With no special permissions and no tracks, only review_count, title, and state show."""
-    event.feature_flags["use_tracks"] = False
-    event.save()
+    event = EventFactory(feature_flags={"use_tracks": False})
     table = ReviewTable(
         [],
         event=event,
@@ -308,9 +295,8 @@ def test_review_table_default_columns_with_speakers(event):
 
 @pytest.mark.parametrize("use_tracks", (True, False))
 @pytest.mark.django_db
-def test_review_table_default_columns_tracks(event, use_tracks):
-    event.feature_flags["use_tracks"] = use_tracks
-    event.save()
+def test_review_table_default_columns_tracks(use_tracks):
+    event = EventFactory(feature_flags={"use_tracks": use_tracks})
     table = ReviewTable([], event=event, user=UserFactory.build())
 
     assert ("track" in table.default_columns) == use_tracks
@@ -318,8 +304,7 @@ def test_review_table_default_columns_tracks(event, use_tracks):
 
 @pytest.mark.django_db
 def test_review_table_default_columns_with_independent_categories(event):
-    with scopes_disabled():
-        cat = ReviewScoreCategoryFactory(event=event)
+    cat = ReviewScoreCategoryFactory(event=event)
     table = ReviewTable(
         [],
         event=event,
@@ -334,8 +319,7 @@ def test_review_table_default_columns_with_independent_categories(event):
 
 @pytest.mark.django_db
 def test_review_table_adds_independent_score_columns(event):
-    with scopes_disabled():
-        cat = ReviewScoreCategoryFactory(event=event)
+    cat = ReviewScoreCategoryFactory(event=event)
     table = ReviewTable(
         [], event=event, user=UserFactory.build(), independent_categories=[cat]
     )
@@ -368,8 +352,7 @@ def test_review_table_no_actions_column_when_cannot_accept(event):
 
 @pytest.mark.django_db
 def test_review_table_get_independent_score_returns_none_without_categories(event):
-    with scopes_disabled():
-        submission = SubmissionFactory(event=event)
+    submission = SubmissionFactory(event=event)
     table = ReviewTable([], event=event, user=UserFactory.build())
 
     assert table.get_independent_score(submission, 999) is None
@@ -378,24 +361,23 @@ def test_review_table_get_independent_score_returns_none_without_categories(even
 @pytest.mark.django_db
 def test_review_table_get_independent_score_with_reviews(event):
     """Scores are aggregated as mean when user can see all reviews."""
-    with scopes_disabled():
-        cat = ReviewScoreCategoryFactory(event=event)
-        submission = SubmissionFactory(event=event)
-        review1 = ReviewFactory(submission=submission)
-        review2 = ReviewFactory(submission=submission)
-        score1 = ReviewScoreFactory(category=cat, value=3)
-        score2 = ReviewScoreFactory(category=cat, value=5)
-        review1.scores.add(score1)
-        review2.scores.add(score2)
+    cat = ReviewScoreCategoryFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    review1 = ReviewFactory(submission=submission)
+    review2 = ReviewFactory(submission=submission)
+    score1 = ReviewScoreFactory(category=cat, value=3)
+    score2 = ReviewScoreFactory(category=cat, value=5)
+    review1.scores.add(score1)
+    review2.scores.add(score2)
 
-        table = ReviewTable(
-            [submission],
-            event=event,
-            user=UserFactory.build(),
-            can_see_all_reviews=True,
-            independent_categories=[cat],
-        )
-        score = table.get_independent_score(submission, cat.pk)
+    table = ReviewTable(
+        [submission],
+        event=event,
+        user=UserFactory.build(),
+        can_see_all_reviews=True,
+        independent_categories=[cat],
+    )
+    score = table.get_independent_score(submission, cat.pk)
 
     assert score == 4.0
 
@@ -403,27 +385,26 @@ def test_review_table_get_independent_score_with_reviews(event):
 @pytest.mark.django_db
 def test_review_table_get_independent_score_user_only(event):
     """When can_see_all_reviews is False, only the request user's scores are shown."""
-    with scopes_disabled():
-        cat = ReviewScoreCategoryFactory(event=event)
-        submission = SubmissionFactory(event=event)
-        user = UserFactory()
-        other_user = UserFactory()
-        review_mine = ReviewFactory(submission=submission, user=user)
-        review_other = ReviewFactory(submission=submission, user=other_user)
-        score_mine = ReviewScoreFactory(category=cat, value=7)
-        score_other = ReviewScoreFactory(category=cat, value=2)
-        review_mine.scores.add(score_mine)
-        review_other.scores.add(score_other)
+    cat = ReviewScoreCategoryFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    user = UserFactory()
+    other_user = UserFactory()
+    review_mine = ReviewFactory(submission=submission, user=user)
+    review_other = ReviewFactory(submission=submission, user=other_user)
+    score_mine = ReviewScoreFactory(category=cat, value=7)
+    score_other = ReviewScoreFactory(category=cat, value=2)
+    review_mine.scores.add(score_mine)
+    review_other.scores.add(score_other)
 
-        table = ReviewTable(
-            [submission],
-            event=event,
-            user=UserFactory.build(),
-            can_see_all_reviews=False,
-            independent_categories=[cat],
-            request_user=user,
-        )
-        score = table.get_independent_score(submission, cat.pk)
+    table = ReviewTable(
+        [submission],
+        event=event,
+        user=UserFactory.build(),
+        can_see_all_reviews=False,
+        independent_categories=[cat],
+        request_user=user,
+    )
+    score = table.get_independent_score(submission, cat.pk)
 
     assert score == 7
 
@@ -431,12 +412,11 @@ def test_review_table_get_independent_score_user_only(event):
 @pytest.mark.django_db
 def test_review_table_load_all_scores_empty_data(event):
     """_load_all_scores handles empty table data gracefully."""
-    with scopes_disabled():
-        cat = ReviewScoreCategoryFactory(event=event)
-        table = ReviewTable(
-            [], event=event, user=UserFactory.build(), independent_categories=[cat]
-        )
-        table._load_all_scores()
+    cat = ReviewScoreCategoryFactory(event=event)
+    table = ReviewTable(
+        [], event=event, user=UserFactory.build(), independent_categories=[cat]
+    )
+    table._load_all_scores()
 
     assert table._scores_cache == {}
 
@@ -444,9 +424,8 @@ def test_review_table_load_all_scores_empty_data(event):
 @pytest.mark.django_db
 def test_review_table_get_independent_score_uses_cached_scores(event):
     """When _scores_cache already exists, get_independent_score uses it without reloading."""
-    with scopes_disabled():
-        cat = ReviewScoreCategoryFactory(event=event)
-        submission = SubmissionFactory(event=event)
+    cat = ReviewScoreCategoryFactory(event=event)
+    submission = SubmissionFactory(event=event)
 
     table = ReviewTable(
         [submission],
@@ -464,23 +443,22 @@ def test_review_table_get_independent_score_uses_cached_scores(event):
 @pytest.mark.django_db
 def test_review_table_load_all_scores_ignores_non_independent_categories(event):
     """Scores for categories not in independent_categories are not included."""
-    with scopes_disabled():
-        cat = ReviewScoreCategoryFactory(event=event)
-        other_cat = ReviewScoreCategoryFactory(event=event)
-        submission = SubmissionFactory(event=event)
-        review = ReviewFactory(submission=submission)
-        score_independent = ReviewScoreFactory(category=cat, value=5)
-        score_other = ReviewScoreFactory(category=other_cat, value=3)
-        review.scores.add(score_independent, score_other)
+    cat = ReviewScoreCategoryFactory(event=event)
+    other_cat = ReviewScoreCategoryFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    review = ReviewFactory(submission=submission)
+    score_independent = ReviewScoreFactory(category=cat, value=5)
+    score_other = ReviewScoreFactory(category=other_cat, value=3)
+    review.scores.add(score_independent, score_other)
 
-        table = ReviewTable(
-            [submission],
-            event=event,
-            user=UserFactory.build(),
-            can_see_all_reviews=True,
-            independent_categories=[cat],
-        )
-        table._load_all_scores()
+    table = ReviewTable(
+        [submission],
+        event=event,
+        user=UserFactory.build(),
+        can_see_all_reviews=True,
+        independent_categories=[cat],
+    )
+    table._load_all_scores()
 
     assert submission.pk in table._scores_cache
     assert cat.pk in table._scores_cache[submission.pk]

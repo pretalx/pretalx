@@ -1,7 +1,8 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 
 import pytest
-from django_scopes import scopes_disabled
 
 from pretalx.schedule.models import Availability
 from tests.factories import AvailabilityFactory, RoomFactory, SpeakerFactory
@@ -349,7 +350,6 @@ def test_availability_union_unsorted_input():
 
 
 def test_availability_union_complex():
-    """Multiple overlapping groups merge correctly."""
     avails = [
         _avail(10, 12),
         _avail(12, 14),
@@ -410,7 +410,6 @@ def test_availability_intersection_partial_overlap():
 
 
 def test_availability_intersection_split_by_gaps():
-    """A continuous range intersected with a gapped set produces two ranges."""
     a = [_avail(2, 7)]
     b = [_avail(0, 3), _avail(6, 8)]
 
@@ -461,7 +460,6 @@ def test_availability_intersection_overlapping_within_set():
 
 
 def test_availability_intersection_multiple_ranges():
-    """Complex multi-range intersection across two sets."""
     a = [_avail(2, 7), _avail(10, 12), _avail(14, 19)]
     b = [_avail(0, 3), _avail(6, 8), _avail(13, 15)]
 
@@ -478,7 +476,6 @@ def test_availability_intersection_multiple_ranges():
 
 @pytest.mark.django_db
 def test_availability_replace_for_instance_replaces_all(event):
-    """replace_for_instance deletes existing and bulk-creates new availabilities."""
     room = RoomFactory(event=event)
     AvailabilityFactory(event=event, room=room)
 
@@ -486,9 +483,8 @@ def test_availability_replace_for_instance_replaces_all(event):
     new_end = event.datetime_to - dt.timedelta(hours=1)
     new_avails = [Availability(event=event, room=room, start=new_start, end=new_end)]
 
-    with scopes_disabled():
-        Availability.replace_for_instance(room, new_avails)
-        result = list(room.availabilities.all())
+    Availability.replace_for_instance(room, new_avails)
+    result = list(room.availabilities.all())
 
     assert len(result) == 1
     assert result[0].start == new_start
@@ -497,7 +493,6 @@ def test_availability_replace_for_instance_replaces_all(event):
 
 @pytest.mark.django_db
 def test_availability_replace_for_instance_with_person(event):
-    """replace_for_instance works for person-based availabilities too."""
     speaker = SpeakerFactory(event=event)
     AvailabilityFactory(event=event, person=speaker)
 
@@ -510,8 +505,7 @@ def test_availability_replace_for_instance_with_person(event):
         )
     ]
 
-    with scopes_disabled():
-        Availability.replace_for_instance(speaker, new_avails)
-        result = list(speaker.availabilities.all())
+    Availability.replace_for_instance(speaker, new_avails)
+    result = list(speaker.availabilities.all())
 
     assert len(result) == 1

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 from io import BytesIO
 
 import pytest
@@ -5,6 +7,7 @@ from django.core.cache import caches
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from django_scopes import scopes_disabled
+from PIL import Image
 
 from pretalx.common.models.settings import GlobalSettings
 from pretalx.submission.models import SubmissionStates
@@ -25,6 +28,30 @@ from tests.factories import (
     TrackFactory,
 )
 from tests.utils import make_orga_user
+
+# -- django-scopes pytest hooks ------------------------------------------------
+# Fixture setup is never production code, so we always disable scopes there.
+# For test bodies, unit tests (marked @pytest.mark.unit) run with scopes
+# disabled since they don't exercise middleware. Integration and e2e tests
+# keep scopes active so the middleware sets scope(event=…) naturally;
+# assertions in those tests still need `with scopes_disabled():`.
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_fixture_setup(fixturedef, request):
+    """Disable django-scopes during all fixture setup."""
+    with scopes_disabled():
+        yield
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_call(item):
+    """Disable django-scopes for the body of unit tests."""
+    if item.get_closest_marker("unit"):
+        with scopes_disabled():
+            yield
+    else:
+        yield
 
 
 @pytest.fixture(autouse=True)
@@ -57,18 +84,7 @@ def locmem_cache():
 
 @pytest.fixture
 def event():
-    with scopes_disabled():
-        return EventFactory()
-
-
-@pytest.fixture
-def submission_with_speaker():
-    """A submission with one speaker attached, returning (submission, speaker_user)."""
-    with scopes_disabled():
-        submission = SubmissionFactory()
-        speaker_profile = SpeakerFactory(event=submission.event)
-        submission.speakers.add(speaker_profile)
-    return submission, speaker_profile.user
+    return EventFactory()
 
 
 @pytest.fixture
@@ -89,28 +105,27 @@ def populated_event():
     Use this when you need a fully-loaded event, e.g. for shred or
     copy tests that exercise cascading operations.
     """
-    with scopes_disabled():
-        event = EventFactory()
+    event = EventFactory()
 
-        TrackFactory(event=event)
-        room = RoomFactory(event=event)
-        AvailabilityFactory(event=event, room=room)
+    TrackFactory(event=event)
+    room = RoomFactory(event=event)
+    AvailabilityFactory(event=event, room=room)
 
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event)
-        submission.speakers.add(speaker)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
 
-        question = QuestionFactory(event=event)
-        AnswerFactory(question=question, submission=submission)
+    question = QuestionFactory(event=event)
+    AnswerFactory(question=question, submission=submission)
 
-        ReviewFactory(submission=submission)
-        FeedbackFactory(talk=submission)
-        ResourceFactory(submission=submission)
+    ReviewFactory(submission=submission)
+    FeedbackFactory(talk=submission)
+    ResourceFactory(submission=submission)
 
-        TagFactory(event=event)
-        SpeakerInformationFactory(event=event)
+    TagFactory(event=event)
+    SpeakerInformationFactory(event=event)
 
-        TalkSlotFactory(submission=submission)
+    TalkSlotFactory(submission=submission)
 
     return event
 
@@ -158,35 +173,24 @@ def organiser_user(event):
 
     Use with ``client.force_login(organiser_user)`` when a test needs an
     authenticated organiser."""
-    with scopes_disabled():
-        return make_orga_user(event)
+    return make_orga_user(event)
 
 
 @pytest.fixture
 def talk_slot(event):
     """An event with a WIP schedule containing one visible, confirmed talk slot."""
-    with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        submission.speakers.add(speaker)
-        return TalkSlotFactory(submission=submission, is_visible=True)
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    return TalkSlotFactory(submission=submission, is_visible=True)
 
 
 @pytest.fixture
 def published_talk_slot(talk_slot):
     """A talk slot in a released schedule — event.current_schedule is set,
     so event.talks and event.speakers are populated."""
-    with scopes_disabled():
-        talk_slot.schedule.freeze("v1", notify_speakers=False)
+    talk_slot.schedule.freeze("v1", notify_speakers=False)
     return talk_slot
-
-
-@pytest.fixture
-def published_schedule(published_talk_slot):
-    """A published schedule — event.current_schedule is set.
-
-    Access the event via published_schedule.event."""
-    return published_talk_slot.schedule
 
 
 @pytest.fixture
@@ -195,27 +199,7 @@ def public_event_with_schedule(published_talk_slot):
 
     Derives from published_talk_slot — the event has one visible, confirmed talk.
     The returned event has event.current_schedule set."""
-    event = published_talk_slot.submission.event
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
-    return event
-
-
-@pytest.fixture
-def orga_client(client, public_event_with_schedule):
-    """A logged-in client with organiser access to public_event_with_schedule,
-    returning (client, event)."""
-    event = public_event_with_schedule
-    with scopes_disabled():
-        user = make_orga_user(event, can_change_submissions=True)
-    client.force_login(user)
-    return client, event
-
-
-@pytest.fixture
-def schedule_with_talk(talk_slot):
-    return talk_slot.schedule
+    return published_talk_slot.submission.event
 
 
 @pytest.fixture
@@ -226,8 +210,6 @@ def make_image():
 
     Call as ``make_image()`` for a 1×1 default, or
     ``make_image("logo.png", width=10, height=10)`` for custom dimensions."""
-    from PIL import Image  # noqa: PLC0415
-
     # Pre-built 1×1 PNG for the common case (avoids PIL overhead)
     _1x1 = (
         b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"

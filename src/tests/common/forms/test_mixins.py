@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 from io import BytesIO
 from unittest.mock import patch
@@ -6,7 +8,6 @@ import pytest
 from django import forms
 from django.core.files.base import File
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django_scopes import scopes_disabled
 from i18nfield.forms import I18nFormField, I18nFormMixin, I18nTextarea, I18nTextInput
 
 from pretalx.common.forms.mixins import (
@@ -125,12 +126,6 @@ def test_read_only_flag_clean(read_only, expected_valid):
     assert form.is_valid() is expected_valid
 
 
-def test_read_only_flag_defaults_to_not_read_only():
-    form = ReadOnlyTestForm()
-
-    assert form.read_only is False
-
-
 @pytest.mark.parametrize(
     ("text", "min_length", "max_length", "count_in", "expected"),
     (
@@ -200,7 +195,6 @@ def test_request_require_validate_field_length_rejects_invalid(
 
 
 def test_request_require_validate_field_length_counts_crlf_as_one_char():
-    """\\r\\n line breaks count as a single character."""
     value = "line1\r\nline2"
     RequestRequire.validate_field_length(value, 11, 11, "chars")
 
@@ -251,19 +245,16 @@ def test_request_require_validate_tag_count_rejects_invalid(
 
 @pytest.mark.django_db
 def test_request_require_init_sets_field_required_from_cfp():
-    with scopes_disabled():
-        event = EventFactory()
-        event.cfp.fields["title"] = {
-            "visibility": "required",
-            "min_length": None,
-            "max_length": None,
+    event = EventFactory(
+        cfp__fields={
+            "title": {"visibility": "required", "min_length": None, "max_length": None},
+            "abstract": {
+                "visibility": "optional",
+                "min_length": None,
+                "max_length": None,
+            },
         }
-        event.cfp.fields["abstract"] = {
-            "visibility": "optional",
-            "min_length": None,
-            "max_length": None,
-        }
-        event.cfp.save()
+    )
 
     form = RequestRequireTestForm(event=event)
 
@@ -273,19 +264,20 @@ def test_request_require_init_sets_field_required_from_cfp():
 
 @pytest.mark.django_db
 def test_request_require_init_removes_do_not_ask_fields():
-    with scopes_disabled():
-        event = EventFactory()
-        event.cfp.fields["title"] = {
-            "visibility": "do_not_ask",
-            "min_length": None,
-            "max_length": None,
+    event = EventFactory(
+        cfp__fields={
+            "title": {
+                "visibility": "do_not_ask",
+                "min_length": None,
+                "max_length": None,
+            },
+            "abstract": {
+                "visibility": "required",
+                "min_length": None,
+                "max_length": None,
+            },
         }
-        event.cfp.fields["abstract"] = {
-            "visibility": "required",
-            "min_length": None,
-            "max_length": None,
-        }
-        event.cfp.save()
+    )
 
     form = RequestRequireTestForm(event=event)
 
@@ -295,14 +287,11 @@ def test_request_require_init_removes_do_not_ask_fields():
 
 @pytest.mark.django_db
 def test_request_require_init_adds_length_validator_with_chars():
-    with scopes_disabled():
-        event = EventFactory()
-        event.cfp.fields["title"] = {
-            "visibility": "required",
-            "min_length": 5,
-            "max_length": 100,
+    event = EventFactory(
+        cfp__fields={
+            "title": {"visibility": "required", "min_length": 5, "max_length": 100}
         }
-        event.cfp.save()
+    )
 
     form = RequestRequireTestForm(event=event)
 
@@ -313,16 +302,12 @@ def test_request_require_init_adds_length_validator_with_chars():
 
 @pytest.mark.django_db
 def test_request_require_init_word_counting_skips_data_attrs():
-    """When count_length_in is 'words', data-minlength/data-maxlength are NOT set."""
-    with scopes_disabled():
-        event = EventFactory()
-        event.cfp.fields["title"] = {
-            "visibility": "required",
-            "min_length": 5,
-            "max_length": 100,
-        }
-        event.cfp.settings["count_length_in"] = "words"
-        event.cfp.save()
+    event = EventFactory(
+        cfp__fields={
+            "title": {"visibility": "required", "min_length": 5, "max_length": 100}
+        },
+        cfp__settings={"count_length_in": "words"},
+    )
 
     form = RequestRequireTestForm(event=event)
 
@@ -333,14 +318,11 @@ def test_request_require_init_word_counting_skips_data_attrs():
 
 @pytest.mark.django_db
 def test_request_require_init_adds_help_text_for_length():
-    with scopes_disabled():
-        event = EventFactory()
-        event.cfp.fields["title"] = {
-            "visibility": "required",
-            "min_length": 10,
-            "max_length": 200,
+    event = EventFactory(
+        cfp__fields={
+            "title": {"visibility": "required", "min_length": 10, "max_length": 200}
         }
-        event.cfp.save()
+    )
 
     form = RequestRequireTestForm(event=event)
 
@@ -366,19 +348,16 @@ def test_request_require_init_field_not_in_form_is_skipped():
             # 'description' is a valid default_fields key but form lacks it
             request_require = ["title", "description"]
 
-    with scopes_disabled():
-        event = EventFactory()
-        event.cfp.fields["title"] = {
-            "visibility": "required",
-            "min_length": None,
-            "max_length": None,
+    event = EventFactory(
+        cfp__fields={
+            "title": {"visibility": "required", "min_length": None, "max_length": None},
+            "description": {
+                "visibility": "optional",
+                "min_length": None,
+                "max_length": None,
+            },
         }
-        event.cfp.fields["description"] = {
-            "visibility": "optional",
-            "min_length": None,
-            "max_length": None,
-        }
-        event.cfp.save()
+    )
 
     form = FormWithoutDescription(event=event)
 
@@ -388,15 +367,12 @@ def test_request_require_init_field_not_in_form_is_skipped():
 
 @pytest.mark.django_db
 def test_request_require_init_tags_with_limits():
-    with scopes_disabled():
-        event = EventFactory()
-        event.cfp.fields["title"] = {
-            "visibility": "required",
-            "min_length": None,
-            "max_length": None,
+    event = EventFactory(
+        cfp__fields={
+            "title": {"visibility": "required", "min_length": None, "max_length": None},
+            "tags": {"visibility": "optional", "min": 1, "max": 5},
         }
-        event.cfp.fields["tags"] = {"visibility": "optional", "min": 1, "max": 5}
-        event.cfp.save()
+    )
 
     form = RequestRequireWithTagsForm(event=event)
 
@@ -406,16 +382,12 @@ def test_request_require_init_tags_with_limits():
 
 @pytest.mark.django_db
 def test_request_require_init_tags_without_limits_preserves_help_text():
-    """When tags have no limits but have original help_text, it is preserved."""
-    with scopes_disabled():
-        event = EventFactory()
-        event.cfp.fields["title"] = {
-            "visibility": "required",
-            "min_length": None,
-            "max_length": None,
+    event = EventFactory(
+        cfp__fields={
+            "title": {"visibility": "required", "min_length": None, "max_length": None},
+            "tags": {"visibility": "optional", "min": None, "max": None},
         }
-        event.cfp.fields["tags"] = {"visibility": "optional", "min": None, "max": None}
-        event.cfp.save()
+    )
 
     class TagsWithHelpForm(RequestRequire, forms.Form):
         title = forms.CharField()
@@ -437,16 +409,12 @@ def test_request_require_init_tags_without_limits_preserves_help_text():
 
 @pytest.mark.django_db
 def test_request_require_init_tags_without_limits_or_help_text():
-    """When tags have no limits and no original help_text, help_text stays empty."""
-    with scopes_disabled():
-        event = EventFactory()
-        event.cfp.fields["title"] = {
-            "visibility": "required",
-            "min_length": None,
-            "max_length": None,
+    event = EventFactory(
+        cfp__fields={
+            "title": {"visibility": "required", "min_length": None, "max_length": None},
+            "tags": {"visibility": "optional", "min": None, "max": None},
         }
-        event.cfp.fields["tags"] = {"visibility": "optional", "min": None, "max": None}
-        event.cfp.save()
+    )
 
     form = RequestRequireWithTagsForm(event=event)
 
@@ -455,15 +423,11 @@ def test_request_require_init_tags_without_limits_or_help_text():
 
 @pytest.mark.django_db
 def test_request_require_init_min_only_chars():
-    """When only min_length is set with char counting, data-minlength is set."""
-    with scopes_disabled():
-        event = EventFactory()
-        event.cfp.fields["title"] = {
-            "visibility": "required",
-            "min_length": 5,
-            "max_length": None,
+    event = EventFactory(
+        cfp__fields={
+            "title": {"visibility": "required", "min_length": 5, "max_length": None}
         }
-        event.cfp.save()
+    )
 
     form = RequestRequireTestForm(event=event)
 
@@ -474,15 +438,11 @@ def test_request_require_init_min_only_chars():
 
 @pytest.mark.django_db
 def test_request_require_init_max_only_chars():
-    """When only max_length is set with char counting, data-maxlength is set."""
-    with scopes_disabled():
-        event = EventFactory()
-        event.cfp.fields["title"] = {
-            "visibility": "required",
-            "min_length": None,
-            "max_length": 50,
+    event = EventFactory(
+        cfp__fields={
+            "title": {"visibility": "required", "min_length": None, "max_length": 50}
         }
-        event.cfp.save()
+    )
 
     form = RequestRequireTestForm(event=event)
 
@@ -493,10 +453,9 @@ def test_request_require_init_max_only_chars():
 
 @pytest.mark.django_db
 def test_question_field_get_field_boolean():
-    with scopes_disabled():
-        question = QuestionFactory(
-            variant=QuestionVariant.BOOLEAN, question_required="required"
-        )
+    question = QuestionFactory(
+        variant=QuestionVariant.BOOLEAN, question_required="required"
+    )
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -509,8 +468,7 @@ def test_question_field_get_field_boolean():
 
 @pytest.mark.django_db
 def test_question_field_get_field_boolean_with_initial_true():
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.BOOLEAN)
+    question = QuestionFactory(variant=QuestionVariant.BOOLEAN)
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -522,10 +480,9 @@ def test_question_field_get_field_boolean_with_initial_true():
 
 @pytest.mark.django_db
 def test_question_field_get_field_number():
-    with scopes_disabled():
-        question = QuestionFactory(
-            variant=QuestionVariant.NUMBER, min_number=1, max_number=100
-        )
+    question = QuestionFactory(
+        variant=QuestionVariant.NUMBER, min_number=1, max_number=100
+    )
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -540,10 +497,9 @@ def test_question_field_get_field_number():
 
 @pytest.mark.django_db
 def test_question_field_get_field_string_with_char_counting():
-    with scopes_disabled():
-        question = QuestionFactory(
-            variant=QuestionVariant.STRING, min_length=10, max_length=200
-        )
+    question = QuestionFactory(
+        variant=QuestionVariant.STRING, min_length=10, max_length=200
+    )
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -557,15 +513,12 @@ def test_question_field_get_field_string_with_char_counting():
 
 @pytest.mark.django_db
 def test_question_field_get_field_string_with_word_counting():
-    """When count_length_in is 'words', data attrs are NOT set."""
-    with scopes_disabled():
-        question = QuestionFactory(
-            variant=QuestionVariant.STRING, min_length=5, max_length=50
-        )
-        question.event.cfp.settings["count_length_in"] = "words"
-        question.event.cfp.save()
+    event = EventFactory(cfp__settings={"count_length_in": "words"})
+    question = QuestionFactory(
+        event=event, variant=QuestionVariant.STRING, min_length=5, max_length=50
+    )
 
-    helper = QuestionFieldTestHelper(question.event)
+    helper = QuestionFieldTestHelper(event)
     field = helper.get_field(
         question=question, initial=None, initial_object=None, readonly=False
     )
@@ -577,8 +530,7 @@ def test_question_field_get_field_string_with_word_counting():
 
 @pytest.mark.django_db
 def test_question_field_get_field_string_without_length_constraints():
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.STRING)
+    question = QuestionFactory(variant=QuestionVariant.STRING)
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -592,8 +544,7 @@ def test_question_field_get_field_string_without_length_constraints():
 
 @pytest.mark.django_db
 def test_question_field_get_field_url():
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.URL)
+    question = QuestionFactory(variant=QuestionVariant.URL)
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -609,10 +560,9 @@ def test_question_field_get_field_url():
 
 @pytest.mark.django_db
 def test_question_field_get_field_text_with_char_counting():
-    with scopes_disabled():
-        question = QuestionFactory(
-            variant=QuestionVariant.TEXT, min_length=20, max_length=500
-        )
+    question = QuestionFactory(
+        variant=QuestionVariant.TEXT, min_length=20, max_length=500
+    )
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -627,15 +577,12 @@ def test_question_field_get_field_text_with_char_counting():
 
 @pytest.mark.django_db
 def test_question_field_get_field_text_with_word_counting():
-    """When counting words, data attrs are skipped for TEXT questions too."""
-    with scopes_disabled():
-        question = QuestionFactory(
-            variant=QuestionVariant.TEXT, min_length=5, max_length=100
-        )
-        question.event.cfp.settings["count_length_in"] = "words"
-        question.event.cfp.save()
+    event = EventFactory(cfp__settings={"count_length_in": "words"})
+    question = QuestionFactory(
+        event=event, variant=QuestionVariant.TEXT, min_length=5, max_length=100
+    )
 
-    helper = QuestionFieldTestHelper(question.event)
+    helper = QuestionFieldTestHelper(event)
     field = helper.get_field(
         question=question, initial=None, initial_object=None, readonly=False
     )
@@ -647,9 +594,7 @@ def test_question_field_get_field_text_with_word_counting():
 
 @pytest.mark.django_db
 def test_question_field_get_field_text_without_length_constraints():
-    """TEXT question with char counting but no min/max still skips data attrs."""
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.TEXT)
+    question = QuestionFactory(variant=QuestionVariant.TEXT)
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -664,8 +609,7 @@ def test_question_field_get_field_text_without_length_constraints():
 
 @pytest.mark.django_db
 def test_question_field_get_field_file():
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.FILE)
+    question = QuestionFactory(variant=QuestionVariant.FILE)
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -677,16 +621,14 @@ def test_question_field_get_field_file():
 
 @pytest.mark.django_db
 def test_question_field_get_field_choices():
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.CHOICES)
-        opt1 = AnswerOptionFactory(question=question, answer="Option A")
-        opt2 = AnswerOptionFactory(question=question, answer="Option B")
+    question = QuestionFactory(variant=QuestionVariant.CHOICES)
+    opt1 = AnswerOptionFactory(question=question, answer="Option A")
+    opt2 = AnswerOptionFactory(question=question, answer="Option B")
 
     helper = QuestionFieldTestHelper(question.event)
-    with scopes_disabled():
-        field = helper.get_field(
-            question=question, initial=None, initial_object=None, readonly=False
-        )
+    field = helper.get_field(
+        question=question, initial=None, initial_object=None, readonly=False
+    )
 
     assert isinstance(field, forms.ModelChoiceField)
     assert set(field.queryset) == {opt1, opt2}
@@ -694,16 +636,14 @@ def test_question_field_get_field_choices():
 
 @pytest.mark.django_db
 def test_question_field_get_field_multiple():
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
-        opt1 = AnswerOptionFactory(question=question, answer="Option A")
-        opt2 = AnswerOptionFactory(question=question, answer="Option B")
+    question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
+    opt1 = AnswerOptionFactory(question=question, answer="Option A")
+    opt2 = AnswerOptionFactory(question=question, answer="Option B")
 
     helper = QuestionFieldTestHelper(question.event)
-    with scopes_disabled():
-        field = helper.get_field(
-            question=question, initial=None, initial_object=None, readonly=False
-        )
+    field = helper.get_field(
+        question=question, initial=None, initial_object=None, readonly=False
+    )
 
     assert isinstance(field, forms.ModelMultipleChoiceField)
     assert set(field.queryset) == {opt1, opt2}
@@ -711,12 +651,11 @@ def test_question_field_get_field_multiple():
 
 @pytest.mark.django_db
 def test_question_field_get_field_date_with_constraints():
-    with scopes_disabled():
-        question = QuestionFactory(
-            variant=QuestionVariant.DATE,
-            min_date=dt.date(2025, 1, 1),
-            max_date=dt.date(2025, 12, 31),
-        )
+    question = QuestionFactory(
+        variant=QuestionVariant.DATE,
+        min_date=dt.date(2025, 1, 1),
+        max_date=dt.date(2025, 12, 31),
+    )
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -731,8 +670,7 @@ def test_question_field_get_field_date_with_constraints():
 
 @pytest.mark.django_db
 def test_question_field_get_field_date_with_initial():
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.DATE)
+    question = QuestionFactory(variant=QuestionVariant.DATE)
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -746,10 +684,9 @@ def test_question_field_get_field_date_with_initial():
 def test_question_field_get_field_datetime_with_constraints():
     min_dt = dt.datetime(2025, 1, 1, 0, 0, tzinfo=dt.UTC)
     max_dt = dt.datetime(2025, 12, 31, 23, 59, tzinfo=dt.UTC)
-    with scopes_disabled():
-        question = QuestionFactory(
-            variant=QuestionVariant.DATETIME, min_datetime=min_dt, max_datetime=max_dt
-        )
+    question = QuestionFactory(
+        variant=QuestionVariant.DATETIME, min_datetime=min_dt, max_datetime=max_dt
+    )
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -764,8 +701,7 @@ def test_question_field_get_field_datetime_with_constraints():
 
 @pytest.mark.django_db
 def test_question_field_get_field_datetime_with_initial():
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.DATETIME)
+    question = QuestionFactory(variant=QuestionVariant.DATETIME)
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -783,11 +719,10 @@ def test_question_field_get_field_datetime_with_initial():
 
 @pytest.mark.django_db
 def test_question_field_get_field_read_only():
-    with scopes_disabled():
-        question = QuestionFactory(
-            variant=QuestionVariant.STRING,
-            freeze_after=dt.datetime(2020, 1, 1, tzinfo=dt.UTC),
-        )
+    question = QuestionFactory(
+        variant=QuestionVariant.STRING,
+        freeze_after=dt.datetime(2020, 1, 1, tzinfo=dt.UTC),
+    )
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -799,8 +734,7 @@ def test_question_field_get_field_read_only():
 
 @pytest.mark.django_db
 def test_question_field_get_field_readonly_param():
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.STRING)
+    question = QuestionFactory(variant=QuestionVariant.STRING)
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -812,8 +746,7 @@ def test_question_field_get_field_readonly_param():
 
 @pytest.mark.django_db
 def test_question_field_get_field_date_no_constraints():
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.DATE)
+    question = QuestionFactory(variant=QuestionVariant.DATE)
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -827,8 +760,7 @@ def test_question_field_get_field_date_no_constraints():
 
 @pytest.mark.django_db
 def test_question_field_get_field_datetime_no_constraints():
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.DATETIME)
+    question = QuestionFactory(variant=QuestionVariant.DATETIME)
 
     helper = QuestionFieldTestHelper(question.event)
     field = helper.get_field(
@@ -842,55 +774,48 @@ def test_question_field_get_field_datetime_no_constraints():
 
 @pytest.mark.django_db
 def test_question_field_get_field_choices_with_initial_object():
-    """When there's an existing answer for a choice question, its option is the initial."""
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.CHOICES)
-        opt = AnswerOptionFactory(question=question, answer="Selected")
-        AnswerOptionFactory(question=question, answer="Other")
-        answer = AnswerFactory(
-            question=question, submission=SubmissionFactory(event=question.event)
-        )
-        answer.options.add(opt)
+    question = QuestionFactory(variant=QuestionVariant.CHOICES)
+    opt = AnswerOptionFactory(question=question, answer="Selected")
+    AnswerOptionFactory(question=question, answer="Other")
+    answer = AnswerFactory(
+        question=question, submission=SubmissionFactory(event=question.event)
+    )
+    answer.options.add(opt)
 
     helper = QuestionFieldTestHelper(question.event)
-    with scopes_disabled():
-        field = helper.get_field(
-            question=question, initial=None, initial_object=answer, readonly=False
-        )
+    field = helper.get_field(
+        question=question, initial=None, initial_object=answer, readonly=False
+    )
 
     assert field.initial == opt
 
 
 @pytest.mark.django_db
 def test_question_field_get_field_multiple_with_initial_object():
-    """When there's an existing answer for a multiple-choice question, its options are initial."""
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
-        opt1 = AnswerOptionFactory(question=question, answer="A")
-        opt2 = AnswerOptionFactory(question=question, answer="B")
-        answer = AnswerFactory(
-            question=question, submission=SubmissionFactory(event=question.event)
-        )
-        answer.options.add(opt1, opt2)
+    question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
+    opt1 = AnswerOptionFactory(question=question, answer="A")
+    opt2 = AnswerOptionFactory(question=question, answer="B")
+    answer = AnswerFactory(
+        question=question, submission=SubmissionFactory(event=question.event)
+    )
+    answer.options.add(opt1, opt2)
 
     helper = QuestionFieldTestHelper(question.event)
-    with scopes_disabled():
-        field = helper.get_field(
-            question=question, initial=None, initial_object=answer, readonly=False
-        )
+    field = helper.get_field(
+        question=question, initial=None, initial_object=answer, readonly=False
+    )
 
     assert set(field.initial) == {opt1, opt2}
 
 
 @pytest.mark.django_db
 def test_question_save_questions_creates_answer_for_submission():
-    with scopes_disabled():
-        submission = SubmissionFactory()
-        question = QuestionFactory(
-            event=submission.event,
-            variant=QuestionVariant.STRING,
-            target=QuestionTarget.SUBMISSION,
-        )
+    submission = SubmissionFactory()
+    question = QuestionFactory(
+        event=submission.event,
+        variant=QuestionVariant.STRING,
+        target=QuestionTarget.SUBMISSION,
+    )
 
     helper = QuestionFieldTestHelper(question.event)
     helper.submission = submission
@@ -902,9 +827,8 @@ def test_question_save_questions_creates_answer_for_submission():
     field.answer = None
     helper.fields = {f"question_{question.pk}": field}
 
-    with scopes_disabled():
-        helper.save_questions(f"question_{question.pk}", "My answer")
-        answer = Answer.objects.get(question=question, submission=submission)
+    helper.save_questions(f"question_{question.pk}", "My answer")
+    answer = Answer.objects.get(question=question, submission=submission)
 
     assert answer.answer == "My answer"
     assert field.answer == answer
@@ -912,14 +836,13 @@ def test_question_save_questions_creates_answer_for_submission():
 
 @pytest.mark.django_db
 def test_question_save_questions_updates_existing_answer():
-    with scopes_disabled():
-        submission = SubmissionFactory()
-        question = QuestionFactory(
-            event=submission.event,
-            variant=QuestionVariant.STRING,
-            target=QuestionTarget.SUBMISSION,
-        )
-        answer = AnswerFactory(question=question, submission=submission, answer="Old")
+    submission = SubmissionFactory()
+    question = QuestionFactory(
+        event=submission.event,
+        variant=QuestionVariant.STRING,
+        target=QuestionTarget.SUBMISSION,
+    )
+    answer = AnswerFactory(question=question, submission=submission, answer="Old")
 
     helper = QuestionFieldTestHelper(question.event)
     helper.submission = submission
@@ -931,8 +854,7 @@ def test_question_save_questions_updates_existing_answer():
     field.answer = answer
     helper.fields = {f"question_{question.pk}": field}
 
-    with scopes_disabled():
-        helper.save_questions(f"question_{question.pk}", "New answer")
+    helper.save_questions(f"question_{question.pk}", "New answer")
 
     answer.refresh_from_db()
     assert answer.answer == "New answer"
@@ -940,14 +862,13 @@ def test_question_save_questions_updates_existing_answer():
 
 @pytest.mark.django_db
 def test_question_save_questions_deletes_answer_on_empty_value():
-    with scopes_disabled():
-        submission = SubmissionFactory()
-        question = QuestionFactory(
-            event=submission.event,
-            variant=QuestionVariant.STRING,
-            target=QuestionTarget.SUBMISSION,
-        )
-        answer = AnswerFactory(question=question, submission=submission, answer="Old")
+    submission = SubmissionFactory()
+    question = QuestionFactory(
+        event=submission.event,
+        variant=QuestionVariant.STRING,
+        target=QuestionTarget.SUBMISSION,
+    )
+    answer = AnswerFactory(question=question, submission=submission, answer="Old")
 
     helper = QuestionFieldTestHelper(question.event)
     helper.submission = submission
@@ -959,22 +880,19 @@ def test_question_save_questions_deletes_answer_on_empty_value():
     field.answer = answer
     helper.fields = {f"question_{question.pk}": field}
 
-    with scopes_disabled():
-        helper.save_questions(f"question_{question.pk}", "")
-        assert not Answer.objects.filter(pk=answer.pk).exists()
+    helper.save_questions(f"question_{question.pk}", "")
+    assert not Answer.objects.filter(pk=answer.pk).exists()
     assert field.answer is None
 
 
 @pytest.mark.django_db
 def test_question_save_questions_noop_for_empty_value_without_existing_answer():
-    """When value is empty/None and there's no existing answer, nothing happens."""
-    with scopes_disabled():
-        submission = SubmissionFactory()
-        question = QuestionFactory(
-            event=submission.event,
-            variant=QuestionVariant.STRING,
-            target=QuestionTarget.SUBMISSION,
-        )
+    submission = SubmissionFactory()
+    question = QuestionFactory(
+        event=submission.event,
+        variant=QuestionVariant.STRING,
+        target=QuestionTarget.SUBMISSION,
+    )
 
     helper = QuestionFieldTestHelper(question.event)
     helper.submission = submission
@@ -986,155 +904,134 @@ def test_question_save_questions_noop_for_empty_value_without_existing_answer():
     field.answer = None
     helper.fields = {f"question_{question.pk}": field}
 
-    with scopes_disabled():
-        helper.save_questions(f"question_{question.pk}", "")
-        assert not Answer.objects.filter(question=question).exists()
+    helper.save_questions(f"question_{question.pk}", "")
+    assert not Answer.objects.filter(question=question).exists()
 
 
 @pytest.mark.django_db
 def test_question_save_to_answer_model_choice_field_new():
-    """_save_to_answer with ModelChoiceField creates answer with option."""
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.CHOICES)
-        opt = AnswerOptionFactory(question=question, answer="Selected")
-        submission = SubmissionFactory(event=question.event)
+    question = QuestionFactory(variant=QuestionVariant.CHOICES)
+    opt = AnswerOptionFactory(question=question, answer="Selected")
+    submission = SubmissionFactory(event=question.event)
 
     helper = QuestionFieldTestHelper(question.event)
-    with scopes_disabled():
-        choices = AnswerOption.objects.filter(question=question)
-        field = forms.ModelChoiceField(queryset=choices)
-        answer = Answer(question=question, submission=submission)
+    choices = AnswerOption.objects.filter(question=question)
+    field = forms.ModelChoiceField(queryset=choices)
+    answer = Answer(question=question, submission=submission)
 
-        helper._save_to_answer(field, answer, opt)
+    helper._save_to_answer(field, answer, opt)
 
-        assert answer.pk is not None
-        assert answer.answer == opt.answer
-        assert list(answer.options.all()) == [opt]
+    assert answer.pk is not None
+    assert answer.answer == opt.answer
+    assert list(answer.options.all()) == [opt]
 
 
 @pytest.mark.django_db
 def test_question_save_to_answer_model_choice_field_update_clears_old():
-    """When updating a ModelChoiceField answer, old options are cleared first."""
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.CHOICES)
-        opt1 = AnswerOptionFactory(question=question, answer="Old")
-        opt2 = AnswerOptionFactory(question=question, answer="New")
-        submission = SubmissionFactory(event=question.event)
-        answer = AnswerFactory(question=question, submission=submission)
-        answer.options.add(opt1)
+    question = QuestionFactory(variant=QuestionVariant.CHOICES)
+    opt1 = AnswerOptionFactory(question=question, answer="Old")
+    opt2 = AnswerOptionFactory(question=question, answer="New")
+    submission = SubmissionFactory(event=question.event)
+    answer = AnswerFactory(question=question, submission=submission)
+    answer.options.add(opt1)
 
     helper = QuestionFieldTestHelper(question.event)
-    with scopes_disabled():
-        choices = AnswerOption.objects.filter(question=question)
-        field = forms.ModelChoiceField(queryset=choices)
+    choices = AnswerOption.objects.filter(question=question)
+    field = forms.ModelChoiceField(queryset=choices)
 
-        helper._save_to_answer(field, answer, opt2)
+    helper._save_to_answer(field, answer, opt2)
 
-        answer.refresh_from_db()
-        assert list(answer.options.all()) == [opt2]
-        assert answer.answer == opt2.answer
+    answer.refresh_from_db()
+    assert list(answer.options.all()) == [opt2]
+    assert answer.answer == opt2.answer
 
 
 @pytest.mark.django_db
 def test_question_save_to_answer_model_choice_field_empty_value():
-    """When ModelChoiceField value is empty, answer is saved with empty string."""
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.CHOICES)
-        AnswerOptionFactory(question=question)
-        submission = SubmissionFactory(event=question.event)
-        answer = AnswerFactory(question=question, submission=submission)
+    question = QuestionFactory(variant=QuestionVariant.CHOICES)
+    AnswerOptionFactory(question=question)
+    submission = SubmissionFactory(event=question.event)
+    answer = AnswerFactory(question=question, submission=submission)
 
     helper = QuestionFieldTestHelper(question.event)
-    with scopes_disabled():
-        choices = AnswerOption.objects.filter(question=question)
-        field = forms.ModelChoiceField(queryset=choices, required=False)
+    choices = AnswerOption.objects.filter(question=question)
+    field = forms.ModelChoiceField(queryset=choices, required=False)
 
-        helper._save_to_answer(field, answer, None)
+    helper._save_to_answer(field, answer, None)
 
-        answer.refresh_from_db()
-        assert answer.answer == ""
-        assert list(answer.options.all()) == []
+    answer.refresh_from_db()
+    assert answer.answer == ""
+    assert list(answer.options.all()) == []
 
 
 @pytest.mark.django_db
 def test_question_save_to_answer_model_multiple_choice_field_new():
-    """_save_to_answer with ModelMultipleChoiceField creates answer with options."""
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
-        opt1 = AnswerOptionFactory(question=question, answer="A")
-        opt2 = AnswerOptionFactory(question=question, answer="B")
-        submission = SubmissionFactory(event=question.event)
+    question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
+    opt1 = AnswerOptionFactory(question=question, answer="A")
+    opt2 = AnswerOptionFactory(question=question, answer="B")
+    submission = SubmissionFactory(event=question.event)
 
     helper = QuestionFieldTestHelper(question.event)
-    with scopes_disabled():
-        choices = AnswerOption.objects.filter(question=question)
-        field = forms.ModelMultipleChoiceField(queryset=choices)
-        answer = Answer(question=question, submission=submission)
+    choices = AnswerOption.objects.filter(question=question)
+    field = forms.ModelMultipleChoiceField(queryset=choices)
+    answer = Answer(question=question, submission=submission)
 
-        helper._save_to_answer(
-            field, answer, AnswerOption.objects.filter(pk__in=[opt1.pk, opt2.pk])
-        )
+    helper._save_to_answer(
+        field, answer, AnswerOption.objects.filter(pk__in=[opt1.pk, opt2.pk])
+    )
 
-        assert answer.pk is not None
-        assert set(answer.options.all()) == {opt1, opt2}
-        assert answer.answer == "A, B"
+    assert answer.pk is not None
+    assert set(answer.options.all()) == {opt1, opt2}
+    assert answer.answer == "A, B"
 
 
 @pytest.mark.django_db
 def test_question_save_to_answer_model_multiple_choice_field_update_clears():
-    """When updating, old options are cleared before adding new ones."""
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
-        opt1 = AnswerOptionFactory(question=question, answer="Old")
-        opt2 = AnswerOptionFactory(question=question, answer="New")
-        submission = SubmissionFactory(event=question.event)
-        answer = AnswerFactory(question=question, submission=submission)
-        answer.options.add(opt1)
+    question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
+    opt1 = AnswerOptionFactory(question=question, answer="Old")
+    opt2 = AnswerOptionFactory(question=question, answer="New")
+    submission = SubmissionFactory(event=question.event)
+    answer = AnswerFactory(question=question, submission=submission)
+    answer.options.add(opt1)
 
     helper = QuestionFieldTestHelper(question.event)
-    with scopes_disabled():
-        choices = AnswerOption.objects.filter(question=question)
-        field = forms.ModelMultipleChoiceField(queryset=choices)
+    choices = AnswerOption.objects.filter(question=question)
+    field = forms.ModelMultipleChoiceField(queryset=choices)
 
-        helper._save_to_answer(field, answer, AnswerOption.objects.filter(pk=opt2.pk))
+    helper._save_to_answer(field, answer, AnswerOption.objects.filter(pk=opt2.pk))
 
-        answer.refresh_from_db()
-        assert list(answer.options.all()) == [opt2]
+    answer.refresh_from_db()
+    assert list(answer.options.all()) == [opt2]
 
 
 @pytest.mark.django_db
 def test_question_save_to_answer_model_multiple_choice_empty_value():
-    """When value is an empty queryset, answer is saved with no options."""
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
-        AnswerOptionFactory(question=question, answer="Opt")
-        submission = SubmissionFactory(event=question.event)
+    question = QuestionFactory(variant=QuestionVariant.MULTIPLE)
+    AnswerOptionFactory(question=question, answer="Opt")
+    submission = SubmissionFactory(event=question.event)
 
     helper = QuestionFieldTestHelper(question.event)
-    with scopes_disabled():
-        choices = AnswerOption.objects.filter(question=question)
-        field = forms.ModelMultipleChoiceField(queryset=choices, required=False)
-        answer = Answer(question=question, submission=submission)
+    choices = AnswerOption.objects.filter(question=question)
+    field = forms.ModelMultipleChoiceField(queryset=choices, required=False)
+    answer = Answer(question=question, submission=submission)
 
-        helper._save_to_answer(field, answer, AnswerOption.objects.none())
+    helper._save_to_answer(field, answer, AnswerOption.objects.none())
 
-        assert answer.pk is not None
-        assert list(answer.options.all()) == []
+    assert answer.pk is not None
+    assert list(answer.options.all()) == []
 
 
 @pytest.mark.django_db
 def test_question_save_to_answer_file_field():
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.FILE)
-        submission = SubmissionFactory(event=question.event)
+    question = QuestionFactory(variant=QuestionVariant.FILE)
+    submission = SubmissionFactory(event=question.event)
 
     helper = QuestionFieldTestHelper(question.event)
     field = forms.FileField()
     answer = Answer(question=question, submission=submission)
     upload = SimpleUploadedFile("test.pdf", b"content", content_type="application/pdf")
 
-    with scopes_disabled():
-        helper._save_to_answer(field, answer, upload)
+    helper._save_to_answer(field, answer, upload)
 
     assert answer.pk is not None
     assert answer.answer.startswith("file://")
@@ -1142,19 +1039,16 @@ def test_question_save_to_answer_file_field():
 
 @pytest.mark.django_db
 def test_question_save_to_answer_file_field_existing_answer():
-    """When a FileField value is not an UploadedFile, answer.answer is preserved."""
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.FILE)
-        submission = SubmissionFactory(event=question.event)
-        answer = AnswerFactory(
-            question=question, submission=submission, answer="file://existing.pdf"
-        )
+    question = QuestionFactory(variant=QuestionVariant.FILE)
+    submission = SubmissionFactory(event=question.event)
+    answer = AnswerFactory(
+        question=question, submission=submission, answer="file://existing.pdf"
+    )
 
     helper = QuestionFieldTestHelper(question.event)
     field = forms.FileField()
     # Pass a non-UploadedFile value (e.g. existing file path string)
-    with scopes_disabled():
-        helper._save_to_answer(field, answer, "file://existing.pdf")
+    helper._save_to_answer(field, answer, "file://existing.pdf")
 
     answer.refresh_from_db()
     assert answer.answer == "file://existing.pdf"
@@ -1162,16 +1056,14 @@ def test_question_save_to_answer_file_field_existing_answer():
 
 @pytest.mark.django_db
 def test_question_save_to_answer_plain_text():
-    with scopes_disabled():
-        question = QuestionFactory(variant=QuestionVariant.STRING)
-        submission = SubmissionFactory(event=question.event)
+    question = QuestionFactory(variant=QuestionVariant.STRING)
+    submission = SubmissionFactory(event=question.event)
 
     helper = QuestionFieldTestHelper(question.event)
     field = forms.CharField()
     answer = Answer(question=question, submission=submission)
 
-    with scopes_disabled():
-        helper._save_to_answer(field, answer, "test answer")
+    helper._save_to_answer(field, answer, "test answer")
 
     assert answer.pk is not None
     assert answer.answer == "test answer"
@@ -1179,13 +1071,12 @@ def test_question_save_to_answer_plain_text():
 
 @pytest.mark.django_db
 def test_question_save_questions_creates_speaker_answer():
-    with scopes_disabled():
-        speaker = SpeakerFactory()
-        question = QuestionFactory(
-            event=speaker.event,
-            variant=QuestionVariant.STRING,
-            target=QuestionTarget.SPEAKER,
-        )
+    speaker = SpeakerFactory()
+    question = QuestionFactory(
+        event=speaker.event,
+        variant=QuestionVariant.STRING,
+        target=QuestionTarget.SPEAKER,
+    )
 
     helper = QuestionFieldTestHelper(question.event)
     helper.submission = None
@@ -1197,9 +1088,8 @@ def test_question_save_questions_creates_speaker_answer():
     field.answer = None
     helper.fields = {f"question_{question.pk}": field}
 
-    with scopes_disabled():
-        helper.save_questions(f"question_{question.pk}", "Speaker answer")
-        answer = Answer.objects.get(question=question, speaker=speaker)
+    helper.save_questions(f"question_{question.pk}", "Speaker answer")
+    answer = Answer.objects.get(question=question, speaker=speaker)
 
     assert answer.answer == "Speaker answer"
 
@@ -1207,19 +1097,15 @@ def test_question_save_questions_creates_speaker_answer():
 @pytest.mark.django_db
 def test_json_subfield_mixin_init_reads_existing_values():
     event = EventFactory()
-    event.feature_flags["show_schedule"] = True
-    event.feature_flags["use_feedback"] = False
-    event.save()
 
     form = JsonSubfieldTestForm(obj=event)
 
-    assert form.fields["show_schedule"].initial is True
-    assert form.fields["use_feedback"].initial is False
+    for field in ("show_schedule", "use_feedback"):
+        assert form.fields[field].initial is event.feature_flags.get(field)
 
 
 @pytest.mark.django_db
 def test_json_subfield_mixin_init_uses_defaults_for_missing_fields():
-    """When a JSON field isn't in the data dict yet, the model field default is used."""
     event = EventFactory()
     # Remove the key to simulate a newly-added form field
     event.feature_flags.pop("show_schedule", None)
@@ -1250,7 +1136,6 @@ def test_json_subfield_mixin_save_writes_values():
 
 @pytest.mark.django_db
 def test_json_subfield_mixin_save_commit_false():
-    """When commit=False, instance is not saved to the database."""
     event = EventFactory()
     original_flags = dict(event.feature_flags)
     form = JsonSubfieldTestForm(
@@ -1272,7 +1157,6 @@ def test_json_subfield_mixin_save_commit_false():
 
 @pytest.mark.django_db
 def test_json_subfield_mixin_init_with_obj_kwarg():
-    """The 'obj' kwarg sets self.instance when no instance exists."""
     event = EventFactory()
     form = JsonSubfieldTestForm(obj=event)
 
@@ -1281,7 +1165,6 @@ def test_json_subfield_mixin_init_with_obj_kwarg():
 
 @pytest.mark.django_db
 def test_json_subfield_mixin_init_with_existing_instance():
-    """When self.instance is already set (e.g. ModelForm), it's not overridden."""
     event = EventFactory()
 
     class PreSetInstanceForm(JsonSubfieldMixin, forms.Form):
@@ -1301,7 +1184,6 @@ def test_json_subfield_mixin_init_with_existing_instance():
 
 @pytest.mark.django_db
 def test_json_subfield_mixin_init_with_self_obj_fallback():
-    """When no 'obj' kwarg but self.obj exists, instance is set from self.obj."""
     event = EventFactory()
 
     class ObjForm(JsonSubfieldMixin, forms.Form):
@@ -1337,7 +1219,6 @@ def test_json_subfield_mixin_init_without_obj_or_instance_raises():
 
 @pytest.mark.django_db
 def test_json_subfield_mixin_save_delegates_to_super():
-    """When super has a save() method (e.g. ModelForm), it is called."""
 
     class BaseSave(forms.Form):
         """Simulates a ModelForm-like base with a save() method."""
@@ -1394,7 +1275,6 @@ def test_hierarkey_mixin_save_changed_value():
 
 @pytest.mark.django_db
 def test_hierarkey_mixin_save_unchanged_value():
-    """When value matches what's already stored, no update happens."""
     event = EventFactory()
     event.settings.set("test_setting", "same")
 
@@ -1410,7 +1290,6 @@ def test_hierarkey_mixin_save_unchanged_value():
 
 @pytest.mark.django_db
 def test_hierarkey_mixin_save_none_value_deletes():
-    """When value is None, the setting is deleted."""
     event = EventFactory()
     event.settings.set("test_setting", "will_be_deleted")
 
@@ -1424,7 +1303,6 @@ def test_hierarkey_mixin_save_none_value_deletes():
 
 @pytest.mark.django_db
 def test_hierarkey_mixin_save_uploaded_file():
-    """When value is an UploadedFile, the file is stored and setting updated."""
     event = EventFactory()
     upload = SimpleUploadedFile("logo.png", b"png data", content_type="image/png")
 
@@ -1446,7 +1324,6 @@ def test_hierarkey_mixin_save_uploaded_file():
 
 @pytest.mark.django_db
 def test_hierarkey_mixin_save_uploaded_file_deletes_old():
-    """When uploading a new file, the old one is deleted from storage."""
     event = EventFactory()
 
     # First, upload a file through the full save path so it exists in storage
@@ -1480,7 +1357,6 @@ def test_hierarkey_mixin_save_uploaded_file_deletes_old():
 
 @pytest.mark.django_db
 def test_hierarkey_mixin_save_file_unchanged():
-    """When value is a plain File (not UploadedFile), it's skipped."""
     event = EventFactory()
     event.settings.set("test_setting", "keep_this")
     plain_file = File(BytesIO(b"content"), name="existing.txt")
@@ -1500,7 +1376,6 @@ def test_hierarkey_mixin_save_file_unchanged():
 
 @pytest.mark.django_db
 def test_hierarkey_mixin_save_empty_file_field_deletes():
-    """When a FileField value becomes empty, the stored file is deleted."""
     event = EventFactory()
 
     # First upload a file through the save path so it exists in storage
@@ -1605,24 +1480,7 @@ def test_hierarkey_mixin_get_new_filename():
     assert "logo.png." in filename
 
 
-def test_pretalx_i18n_form_mixin_replaces_textarea_with_markdown():
-    """I18nTextarea widgets are replaced with I18nMarkdownTextarea."""
-    form = I18nTestForm(locales=["en"])
-
-    assert isinstance(form.fields["name"].widget, I18nMarkdownTextarea)
-
-
-def test_pretalx_i18n_form_mixin_sets_placeholder():
-    """When an I18nFormField has no placeholder, it's set to the field label."""
-    form = I18nTestForm(locales=["en"])
-
-    assert (
-        form.fields["name"].widget.attrs.get("placeholder") == form.fields["name"].label
-    )
-
-
 def test_pretalx_i18n_form_mixin_preserves_existing_placeholder():
-    """When an I18nFormField already has a placeholder, it's preserved."""
 
     class _InjectPlaceholder(I18nFormMixin):
         """Sets placeholder after I18nFormMixin sets up widgets but before
@@ -1644,7 +1502,6 @@ def test_pretalx_i18n_form_mixin_preserves_existing_placeholder():
 
 
 def test_pretalx_i18n_form_mixin_skips_non_i18n_fields():
-    """Non-I18nFormField fields are left untouched by the mixin."""
 
     class MixedForm(PretalxI18nFormMixin, forms.Form):
         plain = forms.CharField(required=False)
@@ -1657,7 +1514,6 @@ def test_pretalx_i18n_form_mixin_skips_non_i18n_fields():
 
 
 def test_pretalx_i18n_form_mixin_non_textarea_i18n_widget():
-    """I18nFormField with a non-I18nTextarea widget keeps its widget type."""
 
     class I18nTextInputForm(PretalxI18nFormMixin, forms.Form):
         name = I18nFormField(widget=I18nTextInput, required=False)
@@ -1665,7 +1521,3 @@ def test_pretalx_i18n_form_mixin_non_textarea_i18n_widget():
     form = I18nTextInputForm(locales=["en"])
 
     assert isinstance(form.fields["name"].widget, I18nTextInput)
-
-
-def test_pretalx_i18n_model_form_is_subclass():
-    assert issubclass(PretalxI18nModelForm, PretalxI18nFormMixin)

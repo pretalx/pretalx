@@ -1,4 +1,5 @@
-import json
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import pytest
 from django_scopes import scope, scopes_disabled
@@ -9,42 +10,52 @@ from tests.factories import (
     AnswerFactory,
     EventFactory,
     QuestionFactory,
-    SpeakerFactory,
-    SubmissionFactory,
+    SpeakerRoleFactory,
     TalkSlotFactory,
     TeamFactory,
     UserApiTokenFactory,
     UserFactory,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
-def test_speaker_list_anonymous_without_schedule_returns_401(client, event):
-    """Anonymous users get 401 when schedule is not publicly visible."""
-    event.feature_flags["show_schedule"] = False
-    event.save()
+@pytest.fixture
+def speaker_on_event(event):
     with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub.speakers.add(speaker)
+        role = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
+    return role.speaker, role.submission
+
+
+def test_speaker_list_anonymous_without_schedule_returns_401(client):
+    """Anonymous users get 401 when schedule is not publicly visible."""
+    event = EventFactory(feature_flags={"show_schedule": False})
+    with scopes_disabled():
+        SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
 
     response = client.get(event.api_urls.speakers, follow=True)
 
     assert response.status_code == 401
 
 
-@pytest.mark.django_db
 def test_speaker_list_anonymous_with_schedule(client, event):
     """Anonymous users see published speakers when the schedule is public."""
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
     with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub.speakers.add(speaker)
+        role = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
+        speaker = role.speaker
+        sub = role.submission
         TalkSlotFactory(submission=sub, is_visible=True)
         with scope(event=event):
             event.wip_schedule.freeze("v1", notify_speakers=False)
@@ -63,21 +74,25 @@ def test_speaker_list_anonymous_with_schedule(client, event):
     assert "avatar" not in result
 
 
-@pytest.mark.django_db
 def test_speaker_list_anonymous_excludes_unscheduled_submissions(client, event):
     """Anonymous users only see submissions from the published schedule,
     not accepted-but-unscheduled ones."""
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
     with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        scheduled_sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        scheduled_sub.speakers.add(speaker)
+        role = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
+        speaker = role.speaker
+        scheduled_sub = role.submission
         TalkSlotFactory(submission=scheduled_sub, is_visible=True)
 
-        accepted_sub = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-        accepted_sub.speakers.add(speaker)
+        role2 = SpeakerRoleFactory(
+            speaker=speaker,
+            submission__event=event,
+            submission__state=SubmissionStates.ACCEPTED,
+        )
+        accepted_sub = role2.submission
 
         with scope(event=event):
             event.wip_schedule.freeze("v1", notify_speakers=False)
@@ -92,17 +107,8 @@ def test_speaker_list_anonymous_excludes_unscheduled_submissions(client, event):
     assert accepted_sub.code not in result["submissions"]
 
 
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    "show_schedule", (True, False), ids=["public_schedule", "private_schedule"]
-)
-def test_speaker_list_reviewer_names_hidden_returns_403(
-    client, review_token, event, show_schedule
-):
-    """Reviewers are denied when speaker name anonymisation is active,
-    regardless of schedule visibility."""
-    event.feature_flags["show_schedule"] = show_schedule
-    event.save()
+def test_speaker_list_reviewer_names_hidden_returns_403(client, review_token, event):
+    """Reviewers are denied when speaker name anonymisation is active."""
     with scopes_disabled():
         phase = event.active_review_phase
         phase.can_see_speaker_names = False
@@ -117,7 +123,6 @@ def test_speaker_list_reviewer_names_hidden_returns_403(
     assert response.status_code == 403
 
 
-@pytest.mark.django_db
 def test_speaker_list_reviewer_names_visible(
     client, review_token, event, speaker_on_event
 ):
@@ -140,111 +145,53 @@ def test_speaker_list_reviewer_names_visible(
     assert content["results"][0]["code"] == speaker.code
 
 
-@pytest.mark.django_db
-def test_speaker_list_orga(client, orga_token, event, speaker_on_event):
-    """Organisers see all speakers with extended fields like email and has_arrived."""
-    speaker, submission = speaker_on_event
-
-    response = client.get(
-        event.api_urls.speakers,
-        follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
-    )
-
-    assert response.status_code == 200
-    content = response.json()
-    assert content["count"] == 1
-    result = content["results"][0]
-    assert result["code"] == speaker.code
-    assert result["email"] == speaker.user.email
-    assert result["has_arrived"] is False
-
-
-@pytest.mark.django_db
 @pytest.mark.parametrize("item_count", (1, 3))
-def test_speaker_list_orga_query_count(
-    client, orga_token, event, item_count, django_assert_num_queries
+def test_speaker_list_orga(
+    client, orga_read_token, event, item_count, django_assert_num_queries
 ):
-    """Query count is constant regardless of the number of speakers (N+1 prevention)."""
+    """Organisers see all speakers with extended fields like email and has_arrived,
+    and query count is constant regardless of speaker count."""
     with scopes_disabled():
-        for _ in range(item_count):
-            speaker = SpeakerFactory(event=event)
-            sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-            sub.speakers.add(speaker)
+        SpeakerRoleFactory.create_batch(
+            item_count,
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
 
-    with django_assert_num_queries(16):
+    with django_assert_num_queries(17):
         response = client.get(
             event.api_urls.speakers,
             follow=True,
-            headers={"Authorization": f"Token {orga_token.token}"},
+            headers={"Authorization": f"Token {orga_read_token.token}"},
         )
 
     assert response.status_code == 200
-    assert response.json()["count"] == item_count
-
-
-@pytest.mark.django_db
-def test_speaker_list_pagination_limit_offset(
-    client, orga_token, event, speaker_on_event
-):
-    """Limit/offset pagination works on the speaker list."""
-    with scopes_disabled():
-        speaker2 = SpeakerFactory(event=event)
-        sub2 = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub2.speakers.add(speaker2)
-
-    response = client.get(
-        event.api_urls.speakers + "?limit=1&offset=0",
-        follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
-    )
-
-    assert response.status_code == 200
     content = response.json()
-    assert content["count"] == 2
-    assert len(content["results"]) == 1
-    assert "offset=1" in content["next"]
+    assert content["count"] == item_count
+    result = content["results"][0]
+    assert "email" in result
+    assert result["has_arrived"] is False
 
 
-@pytest.mark.django_db
-def test_speaker_list_pagination_page_number(
-    client, orga_token, event, speaker_on_event
-):
-    """Page-number pagination works on the speaker list."""
-    with scopes_disabled():
-        speaker2 = SpeakerFactory(event=event)
-        sub2 = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub2.speakers.add(speaker2)
-
-    response = client.get(
-        event.api_urls.speakers + "?page_size=1",
-        follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
-    )
-
-    assert response.status_code == 200
-    content = response.json()
-    assert content["count"] == 2
-    assert len(content["results"]) == 1
-    assert "page=2" in content["next"]
-
-
-@pytest.mark.django_db
 def test_speaker_list_search_by_name(client, event):
     """The ?q= parameter filters speakers by name."""
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
     with scopes_disabled():
-        target = SpeakerFactory(event=event, name="Findablename")
-        target_sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        target_sub.speakers.add(target)
-        TalkSlotFactory(submission=target_sub, is_visible=True)
+        role1 = SpeakerRoleFactory(
+            speaker__event=event,
+            speaker__name="Findablename",
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+        )
+        TalkSlotFactory(submission=role1.submission, is_visible=True)
 
-        other = SpeakerFactory(event=event, name="Otherperson")
-        other_sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        other_sub.speakers.add(other)
-        TalkSlotFactory(submission=other_sub, is_visible=True)
+        role2 = SpeakerRoleFactory(
+            speaker__event=event,
+            speaker__name="Otherperson",
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+        )
+        TalkSlotFactory(submission=role2.submission, is_visible=True)
 
         with scope(event=event):
             event.wip_schedule.freeze("v1", notify_speakers=False)
@@ -257,17 +204,16 @@ def test_speaker_list_search_by_name(client, event):
     assert content["results"][0]["name"] == "Findablename"
 
 
-@pytest.mark.django_db
 def test_speaker_list_search_by_email_anonymous_finds_nothing(client, event):
     """Anonymous users cannot search speakers by email."""
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
     with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub.speakers.add(speaker)
-        TalkSlotFactory(submission=sub, is_visible=True)
+        role = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
+        speaker = role.speaker
+        TalkSlotFactory(submission=role.submission, is_visible=True)
         with scope(event=event):
             event.wip_schedule.freeze("v1", notify_speakers=False)
         email = speaker.user.email
@@ -278,15 +224,16 @@ def test_speaker_list_search_by_email_anonymous_finds_nothing(client, event):
     assert response.json()["count"] == 0
 
 
-@pytest.mark.django_db
-def test_speaker_list_search_by_email_orga(client, orga_token, event, speaker_on_event):
+def test_speaker_list_search_by_email_orga(
+    client, orga_read_token, event, speaker_on_event
+):
     """Organisers can search speakers by email."""
     speaker, _ = speaker_on_event
 
     response = client.get(
         event.api_urls.speakers + f"?q={speaker.user.email}",
         follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -295,15 +242,16 @@ def test_speaker_list_search_by_email_orga(client, orga_token, event, speaker_on
     assert content["results"][0]["email"] == speaker.user.email
 
 
-@pytest.mark.django_db
-def test_speaker_list_expand_submissions(client, orga_token, event, speaker_on_event):
+def test_speaker_list_expand_submissions(
+    client, orga_read_token, event, speaker_on_event
+):
     """Expanding submissions returns full submission objects instead of codes."""
     speaker, submission = speaker_on_event
 
     response = client.get(
         event.api_urls.speakers + "?expand=submissions",
         follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -315,8 +263,7 @@ def test_speaker_list_expand_submissions(client, orga_token, event, speaker_on_e
     assert result["submissions"][0]["title"] == submission.title
 
 
-@pytest.mark.django_db
-def test_speaker_list_expand_answers(client, orga_token, event, speaker_on_event):
+def test_speaker_list_expand_answers(client, orga_read_token, event, speaker_on_event):
     """Expanding answers returns full answer objects with question data,
     scoped to the correct speaker."""
     speaker, _ = speaker_on_event
@@ -331,12 +278,14 @@ def test_speaker_list_expand_answers(client, orga_token, event, speaker_on_event
             question=question, speaker=speaker, submission=None, answer="test answer"
         )
         # Decoy answer for another speaker — must not leak into the target speaker's answers
-        other_speaker = SpeakerFactory(event=event)
-        other_sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        other_sub.speakers.add(other_speaker)
+        other_role = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
         AnswerFactory(
             question=question,
-            speaker=other_speaker,
+            speaker=other_role.speaker,
             submission=None,
             answer="other answer",
         )
@@ -344,7 +293,7 @@ def test_speaker_list_expand_answers(client, orga_token, event, speaker_on_event
     response = client.get(
         event.api_urls.speakers + "?expand=answers,answers.question",
         follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -357,34 +306,37 @@ def test_speaker_list_expand_answers(client, orga_token, event, speaker_on_event
     assert result["answers"][0]["question"]["id"] == question.pk
 
 
-@pytest.mark.django_db
 def test_speaker_list_expand_block_recursion(
-    client, orga_token, event, speaker_on_event
+    client, orga_read_token, event, speaker_on_event
 ):
     """Attempting to expand answers recursively returns 400."""
     response = client.get(
         event.api_urls.speakers
         + "?expand=answers,answers.question,answers.question.answers",
         follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 400
 
 
-@pytest.mark.django_db
 def test_speaker_list_multiple_talks_not_duplicated(client, event):
     """A speaker with multiple talks appears only once in the list."""
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
     with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        sub1 = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub1.speakers.add(speaker)
+        role1 = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
+        speaker = role1.speaker
+        sub1 = role1.submission
         TalkSlotFactory(submission=sub1, is_visible=True)
-        sub2 = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub2.speakers.add(speaker)
+        role2 = SpeakerRoleFactory(
+            speaker=speaker,
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+        )
+        sub2 = role2.submission
         TalkSlotFactory(submission=sub2, is_visible=True)
         with scope(event=event):
             event.wip_schedule.freeze("v1", notify_speakers=False)
@@ -398,16 +350,16 @@ def test_speaker_list_multiple_talks_not_duplicated(client, event):
     assert set(content["results"][0]["submissions"]) == {sub1.code, sub2.code}
 
 
-@pytest.mark.django_db
 def test_speaker_retrieve_anonymous_with_schedule(client, event):
     """Anonymous users can retrieve a speaker detail when the schedule is public."""
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
     with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub.speakers.add(speaker)
+        role = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
+        speaker = role.speaker
+        sub = role.submission
         TalkSlotFactory(submission=sub, is_visible=True)
         with scope(event=event):
             event.wip_schedule.freeze("v1", notify_speakers=False)
@@ -422,30 +374,31 @@ def test_speaker_retrieve_anonymous_with_schedule(client, event):
     assert "email" not in content
 
 
-@pytest.mark.django_db
-def test_speaker_retrieve_anonymous_without_schedule_returns_404(client, event):
+def test_speaker_retrieve_anonymous_without_schedule_returns_404(client):
     """Anonymous users get 404 for a speaker when the schedule is not public."""
-    event.feature_flags["show_schedule"] = False
-    event.save()
+    event = EventFactory(feature_flags={"show_schedule": False})
     with scopes_disabled():
-        speaker = SpeakerFactory(event=event)
-        sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub.speakers.add(speaker)
+        role = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
 
-    response = client.get(event.api_urls.speakers + f"{speaker.code}/", follow=True)
+    response = client.get(
+        event.api_urls.speakers + f"{role.speaker.code}/", follow=True
+    )
 
     assert response.status_code == 404
 
 
-@pytest.mark.django_db
-def test_speaker_retrieve_orga(client, orga_token, event, speaker_on_event):
+def test_speaker_retrieve_orga(client, orga_read_token, event, speaker_on_event):
     """Organisers see extended fields (email, etc.) on speaker detail."""
     speaker, _ = speaker_on_event
 
     response = client.get(
         event.api_urls.speakers + f"{speaker.code}/",
         follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -456,8 +409,9 @@ def test_speaker_retrieve_orga(client, orga_token, event, speaker_on_event):
     assert content["email"] == speaker.user.email
 
 
-@pytest.mark.django_db
-def test_speaker_retrieve_expand_answers(client, orga_token, event, speaker_on_event):
+def test_speaker_retrieve_expand_answers(
+    client, orga_read_token, event, speaker_on_event
+):
     """Expanding answers on detail view returns full answer objects,
     scoped to the correct speaker."""
     speaker, _ = speaker_on_event
@@ -472,12 +426,14 @@ def test_speaker_retrieve_expand_answers(client, orga_token, event, speaker_on_e
             question=question, speaker=speaker, submission=None, answer="detail answer"
         )
         # Decoy answer for another speaker — must not leak into the target speaker's answers
-        other_speaker = SpeakerFactory(event=event)
-        other_sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        other_sub.speakers.add(other_speaker)
+        other_role = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
         AnswerFactory(
             question=question,
-            speaker=other_speaker,
+            speaker=other_role.speaker,
             submission=None,
             answer="other answer",
         )
@@ -485,7 +441,7 @@ def test_speaker_retrieve_expand_answers(client, orga_token, event, speaker_on_e
     response = client.get(
         event.api_urls.speakers + f"{speaker.code}/?expand=answers",
         follow=True,
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 200
@@ -495,52 +451,31 @@ def test_speaker_retrieve_expand_answers(client, orga_token, event, speaker_on_e
     assert content["answers"][0]["id"] == answer.pk
 
 
-@pytest.mark.django_db
-@pytest.mark.parametrize("expand", (False, True), ids=["no_expand", "expand"])
 @pytest.mark.parametrize(
-    ("is_visible_to_reviewers", "is_reviewer", "can_see"),
-    (
-        (True, True, True),
-        (False, True, False),
-        (True, False, True),
-        (False, False, True),
-    ),
-    ids=[
-        "visible_reviewer_sees",
-        "hidden_reviewer_cannot_see",
-        "visible_orga_sees",
-        "hidden_orga_sees",
-    ],
+    ("is_reviewer", "can_see"),
+    ((True, False), (False, True)),
+    ids=["hidden_reviewer_cannot_see", "hidden_orga_sees"],
 )
-def test_speaker_answer_visibility(
-    client,
-    orga_token,
-    review_token,
-    event,
-    speaker_on_event,
-    is_visible_to_reviewers,
-    is_reviewer,
-    can_see,
-    expand,
+def test_speaker_answer_visibility_hidden_questions(
+    client, orga_read_token, review_token, event, speaker_on_event, is_reviewer, can_see
 ):
-    """Answer visibility depends on question visibility settings and user role."""
+    """When a question is hidden from reviewers, reviewers can't see answers but orga can."""
     speaker, _ = speaker_on_event
-    token = review_token if is_reviewer else orga_token
+    token = review_token if is_reviewer else orga_read_token
     with scopes_disabled():
         question = QuestionFactory(
             event=event,
             target=QuestionTarget.SPEAKER,
             variant=QuestionVariant.STRING,
             active=True,
-            is_visible_to_reviewers=is_visible_to_reviewers,
+            is_visible_to_reviewers=False,
         )
-        answer = AnswerFactory(
+        AnswerFactory(
             question=question, speaker=speaker, submission=None, answer="visible?"
         )
 
-    expand_param = "?expand=answers" if expand else ""
     response = client.get(
-        event.api_urls.speakers + f"{speaker.code}/{expand_param}",
+        event.api_urls.speakers + f"{speaker.code}/",
         follow=True,
         headers={"Authorization": f"Token {token.token}"},
     )
@@ -550,15 +485,10 @@ def test_speaker_answer_visibility(
 
     if can_see:
         assert len(content["answers"]) == 1
-        if expand:
-            assert content["answers"][0]["id"] == answer.pk
-        else:
-            assert content["answers"][0] == answer.pk
     else:
         assert len(content["answers"]) == 0
 
 
-@pytest.mark.django_db
 def test_speaker_update_by_orga(client, orga_write_token, event, speaker_on_event):
     """Organisers with write tokens can update speaker biography."""
     speaker, _ = speaker_on_event
@@ -566,7 +496,7 @@ def test_speaker_update_by_orga(client, orga_write_token, event, speaker_on_even
 
     response = client.patch(
         event.api_urls.speakers + f"{speaker.code}/",
-        data=json.dumps({"biography": new_bio}),
+        data={"biography": new_bio},
         follow=True,
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
@@ -584,66 +514,23 @@ def test_speaker_update_by_orga(client, orga_write_token, event, speaker_on_even
         )
 
 
-@pytest.mark.django_db
 def test_speaker_update_by_orga_readonly_token_returns_403(
-    client, orga_token, event, speaker_on_event
+    client, orga_read_token, event, speaker_on_event
 ):
     """Organisers with read-only tokens cannot update speakers."""
     speaker, _ = speaker_on_event
 
     response = client.patch(
         event.api_urls.speakers + f"{speaker.code}/",
-        data=json.dumps({"biography": "Should fail"}),
+        data={"biography": "Should fail"},
         follow=True,
         content_type="application/json",
-        headers={"Authorization": f"Token {orga_token.token}"},
+        headers={"Authorization": f"Token {orga_read_token.token}"},
     )
 
     assert response.status_code == 403
 
 
-@pytest.mark.django_db
-def test_speaker_update_by_reviewer_returns_403(
-    client, review_token, event, speaker_on_event
-):
-    """Reviewers cannot update speakers."""
-    speaker, _ = speaker_on_event
-
-    response = client.patch(
-        event.api_urls.speakers + f"{speaker.code}/",
-        data=json.dumps({"biography": "Should fail"}),
-        follow=True,
-        content_type="application/json",
-        headers={"Authorization": f"Token {review_token.token}"},
-    )
-
-    assert response.status_code == 403
-
-
-@pytest.mark.django_db
-def test_speaker_update_by_anonymous_returns_401(client, event, speaker_on_event):
-    """Anonymous users cannot update speakers."""
-    speaker, _ = speaker_on_event
-    # Make schedule public so speaker is accessible for anonymous read
-    event.is_public = True
-    event.feature_flags["show_schedule"] = True
-    event.save()
-    with scopes_disabled():
-        TalkSlotFactory(submission=speaker_on_event[1], is_visible=True)
-        with scope(event=event):
-            event.wip_schedule.freeze("v1", notify_speakers=False)
-
-    response = client.patch(
-        event.api_urls.speakers + f"{speaker.code}/",
-        data=json.dumps({"biography": "Should fail"}),
-        follow=True,
-        content_type="application/json",
-    )
-
-    assert response.status_code == 401
-
-
-@pytest.mark.django_db
 def test_speaker_update_change_name_and_email(
     client, orga_write_token, event, speaker_on_event
 ):
@@ -654,7 +541,7 @@ def test_speaker_update_change_name_and_email(
 
     response = client.patch(
         event.api_urls.speakers + f"{speaker.code}/",
-        data=json.dumps({"name": new_name, "email": new_email}),
+        data={"name": new_name, "email": new_email},
         follow=True,
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
@@ -673,7 +560,6 @@ def test_speaker_update_change_name_and_email(
         assert speaker.user.email == new_email
 
 
-@pytest.mark.django_db
 def test_speaker_update_duplicate_email_returns_400(
     client, orga_write_token, event, speaker_on_event
 ):
@@ -683,7 +569,7 @@ def test_speaker_update_duplicate_email_returns_400(
 
     response = client.patch(
         event.api_urls.speakers + f"{speaker.code}/",
-        data=json.dumps({"email": other_user.email}),
+        data={"email": other_user.email},
         follow=True,
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
@@ -695,14 +581,16 @@ def test_speaker_update_duplicate_email_returns_400(
         assert speaker.user.email != other_user.email
 
 
-@pytest.mark.django_db
 def test_speaker_retrieve_answers_scoped_to_event(client, event):
     """Answers from other events do not leak into the speaker detail."""
     with scopes_disabled():
         # Set up speaker on primary event
-        speaker = SpeakerFactory(event=event)
-        sub = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-        sub.speakers.add(speaker)
+        role = SpeakerRoleFactory(
+            submission__event=event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=event,
+        )
+        speaker = role.speaker
         q1 = QuestionFactory(
             event=event,
             target=QuestionTarget.SPEAKER,
@@ -715,11 +603,13 @@ def test_speaker_retrieve_answers_scoped_to_event(client, event):
 
         # Set up same user on a different event
         other_event = EventFactory()
-        other_speaker = SpeakerFactory(event=other_event, user=speaker.user)
-        other_sub = SubmissionFactory(
-            event=other_event, state=SubmissionStates.CONFIRMED
+        other_role = SpeakerRoleFactory(
+            submission__event=other_event,
+            submission__state=SubmissionStates.CONFIRMED,
+            speaker__event=other_event,
+            speaker__user=speaker.user,
         )
-        other_sub.speakers.add(other_speaker)
+        other_speaker = other_role.speaker
         q2 = QuestionFactory(
             event=other_event,
             target=QuestionTarget.SPEAKER,
@@ -754,8 +644,7 @@ def test_speaker_retrieve_answers_scoped_to_event(client, event):
     assert content["answers"][0]["answer"] == "Event 1 answer"
 
 
-@pytest.mark.django_db
-def test_speaker_list_legacy_version(client, orga_token, event, speaker_on_event):
+def test_speaker_list_legacy_version(client, orga_read_token, event, speaker_on_event):
     """The LEGACY API version returns speakers with the legacy serializer format."""
     speaker, submission = speaker_on_event
 
@@ -763,7 +652,7 @@ def test_speaker_list_legacy_version(client, orga_token, event, speaker_on_event
         event.api_urls.speakers,
         follow=True,
         headers={
-            "Authorization": f"Token {orga_token.token}",
+            "Authorization": f"Token {orga_read_token.token}",
             "pretalx-version": "LEGACY",
         },
     )

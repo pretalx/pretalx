@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2025-present Tobias Kunze
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from types import SimpleNamespace
@@ -341,11 +341,10 @@ def test_select_locale_sets_timezone_from_settings_for_anonymous_without_event()
 
 
 @pytest.mark.django_db
-def test_select_locale_query_param_takes_priority(event):
+def test_select_locale_query_param_takes_priority():
     """The ?lang= query parameter has highest priority."""
     middleware = _make_middleware()
-    event.locale_array = "en,de"
-    event.save()
+    event = EventFactory(locale_array="en,de")
     request = rf.get("/", {"lang": "de"})
     request.event = event
     request.user = AnonymousUser()
@@ -357,11 +356,10 @@ def test_select_locale_query_param_takes_priority(event):
 
 
 @pytest.mark.django_db
-def test_select_locale_user_locale_over_cookie(event):
+def test_select_locale_user_locale_over_cookie():
     """User locale has higher priority than cookie."""
     middleware = _make_middleware()
-    event.locale_array = "en,de"
-    event.save()
+    event = EventFactory(locale_array="en,de")
     user = UserFactory(locale="de")
     request = rf.get("/")
     request.event = event
@@ -374,11 +372,10 @@ def test_select_locale_user_locale_over_cookie(event):
 
 
 @pytest.mark.django_db
-def test_select_locale_cookie_over_browser(event):
+def test_select_locale_cookie_over_browser():
     """Cookie has higher priority than Accept-Language header."""
     middleware = _make_middleware()
-    event.locale_array = "en,de"
-    event.save()
+    event = EventFactory(locale_array="en,de")
     request = rf.get("/", HTTP_ACCEPT_LANGUAGE="en;q=1.0")
     request.event = event
     request.user = AnonymousUser()
@@ -449,10 +446,9 @@ def test_call_unknown_event_raises_404():
 
 
 @pytest.mark.django_db
-def test_call_event_with_custom_domain_redirects_from_main_domain(event):
+def test_call_event_with_custom_domain_redirects_from_main_domain():
     """An event with a custom domain redirects non-exempt requests from the main domain."""
-    event.custom_domain = "https://custom.example.com"
-    event.save()
+    event = EventFactory(custom_domain="https://custom.example.com")
     middleware = _make_middleware()
     request = rf.get(f"/{event.slug}/")
     request.user = AnonymousUser()
@@ -503,10 +499,9 @@ def test_call_orga_url_anonymous_redirects_to_login(event):
 
 
 @pytest.mark.django_db
-def test_call_api_path_is_exempt_from_custom_domain_redirect(event):
+def test_call_api_path_is_exempt_from_custom_domain_redirect():
     """API paths are exempt and don't redirect to custom domains."""
-    event.custom_domain = "https://custom.example.com"
-    event.save()
+    event = EventFactory(custom_domain="https://custom.example.com")
     middleware = _make_middleware()
     request = rf.get(f"/api/events/{event.slug}/submissions/")
     request.user = AnonymousUser()
@@ -619,10 +614,9 @@ def test_call_disabled_plugin_raises_404(event):
 
 
 @pytest.mark.django_db
-def test_call_enabled_plugin_passes_through(event):
+def test_call_enabled_plugin_passes_through():
     """A plugin URL for an enabled plugin passes through normally."""
-    event.plugins = "dummy_app"
-    event.save()
+    event = EventFactory(plugins="dummy_app")
     middleware = _make_middleware()
     request = rf.get(f"/{event.slug}/test-plugin/")
     request.user = AnonymousUser()

@@ -1,8 +1,10 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 from zoneinfo import ZoneInfo
 
 import pytest
 import vobject.icalendar as ical_module
-from django_scopes import scope, scopes_disabled
+from django_scopes import scope
 
 from pretalx.schedule.ical import (
     get_slot_ical,
@@ -16,7 +18,6 @@ pytestmark = pytest.mark.unit
 
 
 def test_patch_out_timezone_cache_preserves_utc():
-    """The context manager preserves UTC in vobject's timezone map."""
     original_utc = ical_module.__tzidMap.get("UTC")
     with patch_out_timezone_cache(ZoneInfo("UTC")):
         pass
@@ -25,7 +26,6 @@ def test_patch_out_timezone_cache_preserves_utc():
 
 
 def test_patch_out_timezone_cache_clears_non_utc():
-    """Non-UTC entries added inside the context manager are cleared on exit."""
     with patch_out_timezone_cache(ZoneInfo("UTC")):
         ical_module.__tzidMap["Fake/Zone"] = "something"
 
@@ -33,7 +33,6 @@ def test_patch_out_timezone_cache_clears_non_utc():
 
 
 def test_patch_out_timezone_cache_handles_missing_utc():
-    """When UTC is not in the timezone map, the context manager starts with an empty map."""
     saved = dict(ical_module.__tzidMap)
     try:
         ical_module.__tzidMap.pop("UTC", None)
@@ -46,7 +45,6 @@ def test_patch_out_timezone_cache_handles_missing_utc():
 
 @pytest.mark.django_db
 def test_get_slots_ical_with_slot(event, talk_slot):
-    """get_slots_ical returns a calendar with VEVENT and a prodid containing the event slug."""
     with scope(event=event):
         slots = event.wip_schedule.talks.filter(pk=talk_slot.pk)
         cal = get_slots_ical(event, slots)
@@ -81,9 +79,7 @@ def test_get_slots_ical_empty_slots(event):
 
 @pytest.mark.django_db
 def test_get_slot_ical(event, talk_slot):
-    """get_slot_ical returns a calendar with the slot's submission code in the prodid."""
-    with scopes_disabled():
-        cal = get_slot_ical(talk_slot)
+    cal = get_slot_ical(talk_slot)
 
     result = cal.serialize()
     assert "BEGIN:VCALENDAR" in result
@@ -94,9 +90,8 @@ def test_get_slot_ical(event, talk_slot):
 
 @pytest.mark.django_db
 def test_get_speaker_ical(event, talk_slot):
-    with scopes_disabled():
-        speaker = talk_slot.submission.speakers.first()
-        cal = get_speaker_ical(event, speaker)
+    speaker = talk_slot.submission.speakers.first()
+    cal = get_speaker_ical(event, speaker)
 
     prodid = list(cal.contents["prodid"])[0].value
     assert f"speaker//{speaker.code}" in prodid

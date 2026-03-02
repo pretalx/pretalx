@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
 from zoneinfo import ZoneInfo
 
@@ -9,13 +11,17 @@ from django_scopes import scopes_disabled
 
 from pretalx.mail.models import QueuedMail
 from pretalx.submission.models.question import QuestionRequired
-from tests.factories import SpeakerFactory, SubmissionFactory, SubmissionTypeFactory
+from tests.factories import (
+    EventFactory,
+    SpeakerFactory,
+    SubmissionFactory,
+    SubmissionTypeFactory,
+)
 from tests.utils import make_orga_user
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.django_db]
 
 
-@pytest.mark.django_db
 def test_cfp_editor_step_header_visible_in_submission_form(client, event):
     """Editing a CfP step header in the editor makes the custom title and
     text visible on the public submission form."""
@@ -36,13 +42,10 @@ def test_cfp_editor_step_header_visible_in_submission_form(client, event):
     assert "PLS SUBMIT HERE THX" in content
 
 
-@pytest.mark.django_db
-def test_cfp_editor_field_toggle_shows_in_submission_form(client, event):
+def test_cfp_editor_field_toggle_shows_in_submission_form(client):
     """Adding a field via the CfP editor makes it appear in the submission form;
     removing it hides it again."""
-    with scopes_disabled():
-        event.cfp.fields["duration"] = {"visibility": "do_not_ask"}
-        event.cfp.save()
+    event = EventFactory(cfp__fields={"duration": {"visibility": "do_not_ask"}})
     user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
@@ -70,7 +73,6 @@ def test_cfp_editor_field_toggle_shows_in_submission_form(client, event):
     assert b"id_duration" not in response.content
 
 
-@pytest.mark.django_db
 def test_cfp_editor_field_config_applies_to_submission_form(client, event):
     """Configuring field constraints (min/max length) in the CfP editor
     applies them to the submission form's data attributes and help text."""
@@ -97,11 +99,10 @@ def test_cfp_editor_field_config_applies_to_submission_form(client, event):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "data-minlength=50" in content
-    assert "data-maxlength=500" in content
+    assert 'data-minlength="50"' in content
+    assert 'data-maxlength="500"' in content
 
 
-@pytest.mark.django_db
 def test_question_create_and_remind_sends_mails(client, event):
     """Creating a question, then sending reminders generates one email per
     speaker with a missing answer."""
@@ -141,7 +142,6 @@ def test_question_create_and_remind_sends_mails(client, event):
         assert QueuedMail.objects.count() == original_count + 1
 
 
-@pytest.mark.django_db
 def test_access_code_create_send_and_verify_email(client, event):
     """Creating an access code and sending it delivers a correctly addressed
     email with the expected subject and body."""
@@ -176,7 +176,6 @@ def test_access_code_create_send_and_verify_email(client, event):
     assert mail.body == "Please submit!"
 
 
-@pytest.mark.django_db
 def test_access_code_bypasses_closed_cfp(client, event):
     """An access code allows accessing the submission form even when the CfP
     is closed (deadline in the past)."""
@@ -201,7 +200,6 @@ def test_access_code_bypasses_closed_cfp(client, event):
     assert b"id_title" in response.content
 
 
-@pytest.mark.django_db
 def test_submission_type_deadline_shown_on_cfp_text_page(client, event):
     """A submission type with a custom deadline is displayed on the CfP
     text settings page as a different deadline."""

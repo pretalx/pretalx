@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
 from pretalx.common.cache import NamespacedCache, ObjectRelatedCache
@@ -147,7 +149,6 @@ def test_namespaced_cache_decr_by_amount():
 
 
 def test_namespaced_cache_close_is_noop():
-    """close() exists for interface compatibility but does nothing."""
     cache = NamespacedCache("test-ns")
     cache.close()
 

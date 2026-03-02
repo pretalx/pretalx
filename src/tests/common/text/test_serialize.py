@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 from i18nfield.strings import LazyI18nString
 
@@ -42,7 +44,6 @@ def test_i18n_str_json_encoder_with_lazy_i18n_string():
 
 @pytest.mark.django_db
 def test_i18n_str_json_encoder_falls_back_to_parent(event):
-    """Non-LazyI18nString objects are handled by the parent I18nJSONEncoder."""
     encoder = I18nStrJSONEncoder()
 
     result = encoder.default(event)
@@ -59,7 +60,6 @@ def test_json_roundtrip_preserves_data():
 
 
 def test_json_roundtrip_with_i18n_string():
-    """LazyI18nString objects survive the round-trip via I18nJSONEncoder."""
     data = {"title": LazyI18nString({"en": "Talk", "de": "Vortrag"})}
 
     result = json_roundtrip(data)
@@ -68,7 +68,6 @@ def test_json_roundtrip_with_i18n_string():
 
 
 def test_serialize_i18n_with_data_attribute():
-    """Objects with a .data attribute (like LazyI18nString) return .data."""
     i18n_str = LazyI18nString({"en": "hello"})
 
     result = serialize_i18n(i18n_str)
@@ -78,5 +77,4 @@ def test_serialize_i18n_with_data_attribute():
 
 @pytest.mark.parametrize("value", ("plain string", 42, None))
 def test_serialize_i18n_without_data_attribute(value):
-    """Plain values without .data are returned as-is."""
     assert serialize_i18n(value) == value
