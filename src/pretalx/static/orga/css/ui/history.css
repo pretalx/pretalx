@@ -39,16 +39,16 @@
   }
 }
 
-.form-history-container:has(.sidebar-container) {
-  position: relative;
+.form-history-container {
+  display: flex;
+  gap: 20px;
   .form-container {
-    margin-right: 220px;
+    flex: 1;
+    min-width: 0;
   }
   .sidebar-container {
     width: 220px;
-    position: absolute;
-    top: -40px;
-    right: -20px;
+    flex-shrink: 0;
     .card-title {
       margin-bottom: 0;
       font-size: 18px;
@@ -93,6 +93,12 @@ dialog#dialog-history-details {
 }
 
 @media (max-width: 768px) {
+  .form-history-container {
+    flex-direction: column;
+    .sidebar-container {
+      width: 100%;
+    }
+  }
   .dashboard-history .list-group .logentry {
     display: flex;
     flex-direction: column;
