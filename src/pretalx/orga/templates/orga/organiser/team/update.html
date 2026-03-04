@@ -65,17 +65,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         <tr>
                             <td>
                                 <strong>{% translate "Add member" %}</strong>
-                                <br>
-                                <small><em><a id="bulk-email" href="">{% translate "Add multiple team members?" %}</a></em></small>
                             </td>
                             <td class="w-50">
                                 {% csrf_token %}
-                                <div id="single-invite">
-                                    <select multiple name="invite-email" id="id_invite-email" class="form-control" placeholder="{{ invite_form.email.label }}"> </select>
-                                </div>
-                                <div id="bulk-invite" class="d-none">
-                                    {{ invite_form.bulk_email.as_field_group }}
-                                </div>
+                                {{ invite_form.emails.as_field_group }}
                             </td>
                             <td class="flip text-right">
                                 <button type="submit" name="form" value="invite" class="btn btn-success btn-sm"><i class="fa fa-check"></i></button>

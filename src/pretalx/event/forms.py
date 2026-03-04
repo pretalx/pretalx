@@ -3,13 +3,12 @@
 
 from django import forms
 from django.conf import settings
-from django.core.validators import validate_email
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from django_scopes import scopes_disabled
 from django_scopes.forms import SafeModelMultipleChoiceField
 
-from pretalx.common.forms.fields import ColorField, ImageField
+from pretalx.common.forms.fields import ColorField, ImageField, MultiEmailField
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
@@ -81,10 +80,7 @@ class TeamForm(ReadOnlyFlag, PretalxI18nModelForm):
         return data
 
     class Media:
-        js = [
-            forms.Script("orga/js/forms/usersearch.js", defer=""),
-            forms.Script("orga/js/forms/team.js", defer=""),
-        ]
+        js = [forms.Script("orga/js/forms/team.js", defer="")]
 
     class Meta:
         model = Team
@@ -108,58 +104,19 @@ class TeamForm(ReadOnlyFlag, PretalxI18nModelForm):
         field_classes = {"limit_tracks": SafeModelMultipleChoiceField}
 
 
-class TeamInviteForm(ReadOnlyFlag, forms.ModelForm):
+class TeamInviteForm(ReadOnlyFlag, forms.Form):
     default_renderer = InlineFormRenderer
 
-    bulk_email = forms.CharField(
-        label=_("Email addresses"),
-        help_text=_("Enter one email address per line."),
-        widget=forms.Textarea(attrs={"rows": 5}),
-        required=False,
-    )
-
-    def clean_bulk_email(self):
-        data = self.cleaned_data["bulk_email"]
-        if not data:
-            return []
-        result = []
-        for raw_email in data.split("\n"):
-            email = raw_email.strip()
-            try:
-                validate_email(email)
-                result.append(email)
-            except forms.ValidationError:
-                self.add_error(
-                    "bulk_email",
-                    forms.ValidationError(
-                        _("“%(email)s” is not a valid email address."),
-                        params={"email": email},
-                    ),
-                )
-        return result
-
-    def clean(self):
-        data = super().clean()
-        # if we already have found errors, no need to add another one
-        if not self.errors and not data.get("email") and not data.get("bulk_email"):
-            raise forms.ValidationError(_("Please enter at least one email address!"))
-        return data
+    emails = MultiEmailField(label=_("Email addresses"))
 
     def save(self, team):
-        if emails := self.cleaned_data.get("bulk_email"):
-            invites = TeamInvite.objects.bulk_create(
-                [TeamInvite(team=team, email=email) for email in emails]
-            )
-        else:
-            self.instance.team = team
-            invites = [super().save()]
+        emails = self.cleaned_data.get("emails", [])
+        invites = TeamInvite.objects.bulk_create(
+            [TeamInvite(team=team, email=email) for email in emails]
+        )
         for invite in invites:
             invite.send()
         return invites
-
-    class Meta:
-        model = TeamInvite
-        fields = ("email",)
 
 
 class OrganiserForm(ReadOnlyFlag, PretalxI18nModelForm):

@@ -5,23 +5,24 @@
 # SPDX-FileContributor: Johan Van de Wauw
 # SPDX-FileContributor: Michael Reichert
 
-import re
-
 from django import forms
-from django.core.validators import validate_email
 from django.db.models import Count, Exists, OuterRef, Q
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField
 
 from pretalx.cfp.forms.cfp import CfPFormMixin
-from pretalx.common.forms.fields import CountableOption, ImageField, SubmissionTypeField
+from pretalx.common.forms.fields import (
+    CountableOption,
+    ImageField,
+    MultiEmailField,
+    SubmissionTypeField,
+)
 from pretalx.common.forms.mixins import RequestRequire
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import (
     EnhancedSelect,
     EnhancedSelectMultiple,
-    MultiEmailInput,
     SearchInput,
     SelectMultipleWithCount,
 )
@@ -38,14 +39,13 @@ from pretalx.submission.models import (
 
 
 class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
-    additional_speaker = forms.CharField(
+    additional_speaker = MultiEmailField(
         label=_("Additional Speakers"),
         help_text=_(
             "If you have co-speakers, please add their email addresses here, "
             "and we will invite them to create an account."
         ),
         required=False,
-        widget=MultiEmailInput(),
     )
     image = ImageField(
         required=False,
@@ -209,30 +209,9 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
             self.initial["tags"] = instance.tags.filter(is_public=True)
 
     def clean_additional_speaker(self):
-        value = self.cleaned_data.get("additional_speaker", "")
-        if not value:
-            return []
-
-        raw_emails = re.split(r"[,\n\r]+", value)
-        emails = []
-        errors = []
-
-        for raw_email in raw_emails:
-            email = raw_email.strip()
-            if not email:
-                continue
-            try:
-                validate_email(email)
-                emails.append(email.lower())
-            except forms.ValidationError:
-                errors.append(email)
-
-        if errors:
-            raise forms.ValidationError(
-                _("Invalid email addresses: {emails}").format(emails=", ".join(errors))
-            )
-
-        emails = list(set(emails))
+        emails = self.cleaned_data.get("additional_speaker", [])
+        if not emails:
+            return emails
         max_speakers = self.event.cfp.max_speakers
         if max_speakers is not None:
             instance = self.instance if self.instance and self.instance.pk else None
@@ -252,7 +231,6 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
                         pending=pending_invites,
                     )
                 )
-
         return emails
 
     def clean_tags(self):

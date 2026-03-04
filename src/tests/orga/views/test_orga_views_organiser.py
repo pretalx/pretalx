@@ -177,7 +177,7 @@ def test_invite_orga_member_as_orga(orga_client, organiser):
     assert team.members.count() == 1
     assert team.invites.count() == 0
     response = orga_client.post(
-        url, {"invite-email": "other@user.org", "form": "invite"}, follow=True
+        url, {"invite-emails": "other@user.org", "form": "invite"}, follow=True
     )
     assert response.status_code == 200
     assert team.members.count() == 1
@@ -198,10 +198,7 @@ def test_invite_multiple_orga_members_as_orga(orga_client, organiser):
     assert team.invites.count() == 0
     response = orga_client.post(
         url,
-        {
-            "invite-bulk_email": "first@pretalx.org\nsecond@pretalx.org",
-            "form": "invite",
-        },
+        {"invite-emails": "first@pretalx.org,second@pretalx.org", "form": "invite"},
         follow=True,
     )
     assert response.status_code == 200

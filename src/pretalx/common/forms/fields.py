@@ -3,11 +3,13 @@
 
 import datetime as dt
 import json
+import re
 from pathlib import Path
 
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.uploadedfile import UploadedFile
+from django.core.validators import validate_email
 from django.forms import BooleanField, CharField, FileField, RegexField, ValidationError
 from django.utils.dateparse import parse_datetime
 from django.utils.translation import gettext_lazy as _
@@ -19,6 +21,7 @@ from pretalx.common.forms.widgets import (
     ColorPickerWidget,
     HoneypotWidget,
     ImageInput,
+    MultiEmailInput,
     PasswordConfirmationInput,
     PasswordStrengthInput,
     ProfilePictureWidget,
@@ -311,6 +314,33 @@ class HoneypotField(BooleanField):
     def validate(self, value):
         if value:
             raise ValidationError(_("Form submission failed."), code="invalid")
+
+
+class MultiEmailField(CharField):
+    widget = MultiEmailInput
+
+    def clean(self, value):
+        value = super().clean(value)
+        if not value:
+            return []
+        raw_emails = re.split(r"[,\n\r]+", value)
+        result = []
+        errors = []
+        for raw_email in raw_emails:
+            email = raw_email.strip()
+            if not email:
+                continue
+            try:
+                validate_email(email)
+                result.append(email.lower())
+            except ValidationError:
+                errors.append(email)
+        if errors:
+            raise ValidationError(
+                _("Invalid email addresses: {emails}").format(emails=", ".join(errors))
+            )
+        # Deduplicate while preserving input order (set() doesn't)
+        return list(dict.fromkeys(result))
 
 
 class AvailabilitiesField(CharField):

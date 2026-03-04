@@ -8,8 +8,3 @@ const updateVisibility = () => {
 reviewerInput.addEventListener("change", updateVisibility)
 updateVisibility()
 
-document.querySelector("a#bulk-email").addEventListener("click", (event) => {
-    event.preventDefault()
-    document.querySelector("#single-invite").classList.add("d-none")
-    document.querySelector("#bulk-invite").classList.remove("d-none")
-})
