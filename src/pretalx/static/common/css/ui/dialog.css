@@ -48,6 +48,12 @@ dialog {
     font-size: 20px;
     border: none;
     background: transparent;
+
+    &:hover,
+    &:active {
+      background: transparent;
+      color: rgb(0 0 0 / 0.7);
+    }
   }
 }
 
