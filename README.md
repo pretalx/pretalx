@@ -233,7 +233,7 @@
 | src/pretalx/schedule/ical.py                                               |       32 |        2 |        4 |        0 |     94% |     24-25 |
 | src/pretalx/schedule/models/availability.py                                |       86 |        1 |       30 |        1 |     98% |55, 76->79 |
 | src/pretalx/schedule/models/room.py                                        |       47 |        3 |        4 |        2 |     90% |94, 101, 104 |
-| src/pretalx/schedule/models/schedule.py                                    |      191 |       22 |       62 |        3 |     88% |143-184, 327, 371->373, 473 |
+| src/pretalx/schedule/models/schedule.py                                    |      193 |       23 |       64 |        4 |     87% |143-184, 327, 371->373, 473, 499 |
 | src/pretalx/schedule/models/slot.py                                        |      126 |        5 |       20 |        2 |     94% |208-215, 226 |
 | src/pretalx/schedule/notifications.py                                      |       24 |        0 |        8 |        0 |    100% |           |
 | src/pretalx/schedule/phrases.py                                            |       14 |        0 |        0 |        0 |    100% |           |
@@ -368,7 +368,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **36551** | **1833** | **5650** |  **762** | **93%** |           |
+| **TOTAL**                                                                  | **36553** | **1834** | **5652** |  **763** | **93%** |           |
 
 
 ## Setup coverage badge
