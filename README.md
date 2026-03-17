@@ -165,7 +165,7 @@
 | src/pretalx/mail/models.py                                                 |      247 |       11 |       62 |        7 |     94% |41, 249-265, 267, 274, 432->434, 456, 510-513 |
 | src/pretalx/mail/placeholders.py                                           |       40 |        3 |        2 |        0 |     93% |16, 28, 50 |
 | src/pretalx/mail/signals.py                                                |        9 |        0 |        0 |        0 |    100% |           |
-| src/pretalx/mail/tasks.py                                                  |       13 |        0 |        2 |        0 |    100% |           |
+| src/pretalx/mail/tasks.py                                                  |       15 |        0 |        2 |        0 |    100% |           |
 | src/pretalx/orga/apps.py                                                   |        4 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/orga/context\_processors.py                                    |       42 |        0 |       18 |        1 |     98% |    17->14 |
 | src/pretalx/orga/forms/cfp.py                                              |      313 |       55 |       82 |       21 |     77% |88->exit, 160, 162, 172-186, 205, 212, 225-271, 338->340, 341, 349, 365->exit, 374->376, 377, 400, 448-449, 514, 515->exit, 528, 530, 554, 632->635 |
@@ -368,7 +368,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **36553** | **1834** | **5652** |  **763** | **93%** |           |
+| **TOTAL**                                                                  | **36555** | **1834** | **5652** |  **763** | **93%** |           |
 
 
 ## Setup coverage badge
