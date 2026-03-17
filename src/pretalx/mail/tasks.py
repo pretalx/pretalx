@@ -6,6 +6,7 @@ import logging
 
 from django.dispatch import receiver
 from django.utils.timezone import now
+from django_scopes import scopes_disabled
 
 from pretalx.common.signals import minimum_interval, periodic_task
 
@@ -17,17 +18,18 @@ logger = logging.getLogger(__name__)
 def mark_stale_sending_mails_as_failed(sender, **kwargs):
     from pretalx.mail.models import QueuedMail, QueuedMailStates  # noqa: PLC0415
 
-    cutoff = now() - dt.timedelta(hours=1)
-    count = QueuedMail.objects.filter(
-        state=QueuedMailStates.SENDING, updated__lt=cutoff
-    ).update(
-        state=QueuedMailStates.DRAFT,
-        error_data={
-            "error": "Timed out waiting for delivery confirmation",
-            "type": "TimeoutError",
-        },
-        error_timestamp=now(),
-        updated=now(),
-    )
-    if count:
-        logger.warning("Marked %d stale sending mails as failed", count)
+    with scopes_disabled():
+        cutoff = now() - dt.timedelta(hours=1)
+        count = QueuedMail.objects.filter(
+            state=QueuedMailStates.SENDING, updated__lt=cutoff
+        ).update(
+            state=QueuedMailStates.DRAFT,
+            error_data={
+                "error": "Timed out waiting for delivery confirmation",
+                "type": "TimeoutError",
+            },
+            error_timestamp=now(),
+            updated=now(),
+        )
+        if count:
+            logger.warning("Marked %d stale sending mails as failed", count)
