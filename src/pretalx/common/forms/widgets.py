@@ -401,6 +401,11 @@ class MultiEmailInput(forms.TextInput):
         attrs = add_attribute(attrs, "class", "tags-input")
         super().__init__(attrs=attrs)
 
+    def use_required_attribute(self, initial):
+        # Choices.js hides the original input, so the browser can't focus it
+        # for native required validation. Server-side validation still applies.
+        return False
+
     def format_value(self, value):
         if isinstance(value, (list, tuple)):
             return self.delimiter.join(value)
