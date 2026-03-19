@@ -495,7 +495,7 @@ class Schedule(PretalxModel):
         for talk in talks:
             rooms.add(talk.room)
             if talk.submission:
-                if not talk.submission.get_duration():
+                if not talk.submission.get_duration() and not (talk.start and talk.end):
                     continue
                 tracks.add(talk.submission.track)
                 speakers |= set(talk.submission.sorted_speakers)
