@@ -29,7 +29,7 @@ class ExportForm(forms.Form):
         help_text=_(
             "How do you want to separate data within a single cell (for example, multiple speakers in one session/multiple sessions for one speaker)?"
         ),
-        choices=(("newline", _("Newline")), ("comma", _("Comma"))),
+        choices=(("newline", _("Newline")), ("comma", _("Comma")), ("tab", _("Tab"))),
         widget=forms.RadioSelect,
     )
 
@@ -142,7 +142,7 @@ class ExportForm(forms.Form):
         return self.json_export(data)
 
     def csv_export(self, data):
-        delimiters = {"newline": "\n", "comma": ", "}
+        delimiters = {"newline": "\n", "comma": ", ", "tab": "\t"}
         delimiter = delimiters[self.cleaned_data.get("data_delimiter") or "newline"]
 
         for row in data:
