@@ -10,6 +10,7 @@ from django.db.models import Count, Q
 from django.utils.functional import cached_property
 from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ngettext_lazy
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.forms.fields import CountableOption
@@ -314,13 +315,17 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
 
     def get_valid_placeholders(self, ignore_data=False):
         kwargs = ["event", "user", "submission", "slot"]
+        if not self.event.current_schedule:
+            kwargs.remove("slot")
         if (
             getattr(self, "cleaned_data", None)
             and not ignore_data
             and self.cleaned_data.get("speakers")
         ):
-            kwargs.remove("submission")
-            kwargs.remove("slot")
+            if "submission" in kwargs:
+                kwargs.remove("submission")
+            if "slot" in kwargs:
+                kwargs.remove("slot")
         return get_available_placeholders(event=self.event, kwargs=kwargs)
 
     def clean(self):
@@ -403,10 +408,9 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
 
         mails_by_user = defaultdict(list)
         contexts = self.get_recipients()
+        render_failures = 0
         for context in contexts:
-            with suppress(
-                SendMailException
-            ):  # This happens when there are template errors
+            try:
                 speaker = context["user"]
                 user = speaker.user if hasattr(speaker, "user") else speaker
                 context["user"] = user
@@ -422,6 +426,8 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
                     allow_empty_address=True,
                 )
                 mails_by_user[user].append((mail, context))
+            except SendMailException:
+                render_failures += 1
 
         result = []
         for user, user_mails in mails_by_user.items():
@@ -442,6 +448,14 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
         if self.cleaned_data.get("skip_queue"):
             for mail in result:
                 mail.send()
+        if render_failures:
+            self.warnings.append(
+                ngettext_lazy(
+                    "Could not generate one email, most likely because the session has not been scheduled yet.",
+                    "Could not generate {count} emails, most likely because their sessions have not been scheduled yet.",
+                    render_failures,
+                ).format(count=render_failures)
+            )
         return result
 
 

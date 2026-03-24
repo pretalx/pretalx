@@ -557,6 +557,8 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
             messages.success(
                 self.request, phrases.orga.mails_in_outbox.format(count=len(result))
             )
+        for warning in getattr(form, "warnings", []):
+            messages.warning(self.request, warning)
         return super().form_valid(form)
 
 
