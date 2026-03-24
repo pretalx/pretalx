@@ -197,7 +197,7 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             return
         self.fields["submission_type"].queryset = self.event.submission_types.all()
         self.fields["track"].queryset = self.event.tracks.all()
-        self.fields["tags"].queryset = self.event.tags.all()
+        self.fields["tags"].child_relation.queryset = self.event.tags.all()
 
         if not self.event.get_feature_flag("use_tracks"):
             self.fields.pop("track", None)
@@ -386,6 +386,7 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
         return submission
 
     def update(self, instance, validated_data):
+        has_tags = "tags" in validated_data
         tags_data = validated_data.pop("tags", [])
         image = validated_data.pop("image", None)
         validated_data["event"] = self.event
@@ -403,7 +404,7 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
 
         submission = super().update(instance, validated_data)
 
-        if tags_data:
+        if has_tags:
             submission.tags.set(tags_data)
         if image:
             submission.image.save(Path(image.name).name, image)

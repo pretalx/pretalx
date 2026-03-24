@@ -1071,6 +1071,37 @@ def test_orga_can_update_submission(client, orga_user_write_token, submission):
 
 
 @pytest.mark.django_db
+def test_orga_can_update_submission_tags(client, orga_user_write_token, submission, tag):
+    response = client.patch(
+        submission.event.api_urls.submissions + f"{submission.code}/",
+        follow=True,
+        data=json.dumps({"tags": [tag.pk]}),
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+            "Content-Type": "application/json",
+        },
+    )
+    assert response.status_code == 200, response.text
+    with scope(event=submission.event):
+        submission.refresh_from_db()
+        assert list(submission.tags.values_list("pk", flat=True)) == [tag.pk]
+
+    response = client.patch(
+        submission.event.api_urls.submissions + f"{submission.code}/",
+        follow=True,
+        data=json.dumps({"tags": []}),
+        headers={
+            "Authorization": f"Token {orga_user_write_token.token}",
+            "Content-Type": "application/json",
+        },
+    )
+    assert response.status_code == 200, response.text
+    with scope(event=submission.event):
+        submission.refresh_from_db()
+        assert not submission.tags.exists()
+
+
+@pytest.mark.django_db
 def test_orga_can_delete_submission(client, orga_user_write_token, submission):
     submission_code = submission.code
     response = client.delete(
