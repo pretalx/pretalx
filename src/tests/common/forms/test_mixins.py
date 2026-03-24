@@ -14,12 +14,10 @@ from pretalx.common.forms.mixins import (
     HierarkeyMixin,
     JsonSubfieldMixin,
     PretalxI18nFormMixin,
-    PretalxI18nModelForm,
     QuestionFieldsMixin,
     ReadOnlyFlag,
     RequestRequire,
 )
-from pretalx.common.forms.widgets import I18nMarkdownTextarea
 from pretalx.submission.models import QuestionTarget, QuestionVariant
 from pretalx.submission.models.question import Answer, AnswerOption
 from tests.factories import (

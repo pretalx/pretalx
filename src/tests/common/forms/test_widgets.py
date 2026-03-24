@@ -12,7 +12,6 @@ from pretalx.common.forms.widgets import (
     AvailabilitiesWidget,
     BiographyWidget,
     ClearableBasenameFileInput,
-    ColorPickerWidget,
     EnhancedSelect,
     HtmlDateInput,
     HtmlDateTimeInput,
@@ -469,6 +468,14 @@ def test_multi_email_input_adds_tags_input_class():
     widget = MultiEmailInput()
 
     assert "tags-input" in widget.attrs["class"]
+
+
+def test_multi_email_input_use_required_attribute_returns_false():
+    """Choices.js hides the original input, so native required
+    validation cannot focus it."""
+    widget = MultiEmailInput()
+
+    assert widget.use_required_attribute(None) is False
 
 
 def test_availabilities_widget_adds_class():
