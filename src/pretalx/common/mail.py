@@ -13,6 +13,7 @@ from smtplib import SMTPResponseException, SMTPSenderRefused
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives, get_connection
 from django.core.mail.backends.smtp import EmailBackend
+from django_scopes import scopes_disabled
 
 from pretalx.celery_app import app
 from pretalx.common.exceptions import SendMailException
@@ -56,6 +57,7 @@ def _format_email(addr, fallback_name):
 DEBUG_DOMAINS = ["localhost", "example.org", "example.com"]
 
 
+@scopes_disabled()
 def _mark_mail_sent(queued_mail_id):
     from pretalx.mail.models import QueuedMail  # noqa: PLC0415
 
@@ -67,6 +69,7 @@ def _mark_mail_sent(queued_mail_id):
     mail.mark_sent()
 
 
+@scopes_disabled()
 def _mark_mail_failed(queued_mail_id, exception):
     from pretalx.mail.models import QueuedMail  # noqa: PLC0415
 

@@ -15,6 +15,7 @@ from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import override, pgettext_lazy
+from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField, I18nTextField
 
 from pretalx.common.exceptions import SendMailException
@@ -122,6 +123,8 @@ class MailTemplate(PretalxModel):
     # Auto-created templates are created when mass emails are sent out. They are only used to re-create similar
     # emails, and are never shown in a list of email templates or anywhere else.
     is_auto_created = models.BooleanField(default=False)
+
+    objects = ScopedManager(event="event")
 
     class Meta:
         unique_together = (("event", "role"),)
@@ -314,6 +317,10 @@ class QueuedMailQuerySet(models.QuerySet):
         )
 
 
+class QueuedMailManager(models.Manager.from_queryset(QueuedMailQuerySet)):
+    pass
+
+
 class QueuedMail(PretalxModel):
     """Emails in pretalx are rarely sent directly, hence the name QueuedMail.
 
@@ -391,7 +398,7 @@ class QueuedMail(PretalxModel):
         to="submission.Submission", related_name="mails"
     )
 
-    objects = QueuedMailQuerySet.as_manager()
+    objects = ScopedManager(event="event", _manager_class=QueuedMailManager)
 
     class Meta:
         rules_permissions = {

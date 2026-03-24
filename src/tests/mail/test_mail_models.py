@@ -97,35 +97,38 @@ def test_mail_prefixed_subject(event, text, prefix, expected):
 
 
 @pytest.mark.django_db
-def test_mail_state_draft_to_sending_to_sent(mail):
-    assert mail.state == QueuedMailStates.DRAFT
-    mail.send()
-    mail.refresh_from_db()
-    assert mail.state == QueuedMailStates.SENT
-    assert mail.sent is not None
+def test_mail_state_draft_to_sending_to_sent(mail, event):
+    with scope(event=event):
+        assert mail.state == QueuedMailStates.DRAFT
+        mail.send()
+        mail.refresh_from_db()
+        assert mail.state == QueuedMailStates.SENT
+        assert mail.sent is not None
 
 
 @pytest.mark.django_db
-def test_mark_mail_failed(mail):
-    mail.state = QueuedMailStates.SENDING
-    mail.save()
-    mail.mark_failed(Exception("SMTP auth failed"))
-    mail.refresh_from_db()
-    assert mail.state == QueuedMailStates.DRAFT
-    assert mail.error_data == {"error": "SMTP auth failed", "type": "Exception"}
-    assert mail.error_timestamp is not None
-    assert mail.has_error
+def test_mark_mail_failed(mail, event):
+    with scope(event=event):
+        mail.state = QueuedMailStates.SENDING
+        mail.save()
+        mail.mark_failed(Exception("SMTP auth failed"))
+        mail.refresh_from_db()
+        assert mail.state == QueuedMailStates.DRAFT
+        assert mail.error_data == {"error": "SMTP auth failed", "type": "Exception"}
+        assert mail.error_timestamp is not None
+        assert mail.has_error
 
 
 @pytest.mark.django_db
-def test_mark_mail_sent(mail):
-    mail.state = QueuedMailStates.SENDING
-    mail.save()
-    mail.mark_sent()
-    mail.refresh_from_db()
-    assert mail.state == QueuedMailStates.SENT
-    assert mail.sent is not None
-    assert mail.error_data is None
+def test_mark_mail_sent(mail, event):
+    with scope(event=event):
+        mail.state = QueuedMailStates.SENDING
+        mail.save()
+        mail.mark_sent()
+        mail.refresh_from_db()
+        assert mail.state == QueuedMailStates.SENT
+        assert mail.sent is not None
+        assert mail.error_data is None
 
 
 @pytest.mark.django_db
@@ -207,23 +210,29 @@ def test_smtp_auth_failure_marks_mail_failed(mail, event):
 
 
 @pytest.mark.django_db
-def test_stale_sending_mail_marked_as_failed(mail):
-    mail.state = QueuedMailStates.SENDING
-    mail.save()
-    QueuedMail.objects.filter(pk=mail.pk).update(updated=now() - dt.timedelta(hours=2))
+def test_stale_sending_mail_marked_as_failed(mail, event):
+    with scope(event=event):
+        mail.state = QueuedMailStates.SENDING
+        mail.save()
+        QueuedMail.objects.filter(pk=mail.pk).update(
+            updated=now() - dt.timedelta(hours=2)
+        )
     mark_stale_sending_mails_as_failed(None)
-    mail.refresh_from_db()
-    assert mail.state == QueuedMailStates.DRAFT
-    assert mail.has_error
-    assert "Timed out" in mail.error_data["error"]
-    assert mail.error_data["type"] == "TimeoutError"
+    with scope(event=event):
+        mail.refresh_from_db()
+        assert mail.state == QueuedMailStates.DRAFT
+        assert mail.has_error
+        assert "Timed out" in mail.error_data["error"]
+        assert mail.error_data["type"] == "TimeoutError"
 
 
 @pytest.mark.django_db
-def test_recent_sending_mail_not_marked_as_failed(mail):
-    mail.state = QueuedMailStates.SENDING
-    mail.save()
+def test_recent_sending_mail_not_marked_as_failed(mail, event):
+    with scope(event=event):
+        mail.state = QueuedMailStates.SENDING
+        mail.save()
     mark_stale_sending_mails_as_failed(None)
-    mail.refresh_from_db()
-    assert mail.state == QueuedMailStates.SENDING
-    assert not mail.has_error
+    with scope(event=event):
+        mail.refresh_from_db()
+        assert mail.state == QueuedMailStates.SENDING
+        assert not mail.has_error
