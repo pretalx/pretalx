@@ -312,7 +312,7 @@ def test_team_invite_single_member(client, event):
     )
     response = client.post(
         url,
-        data={"invite-email": "newinvite@example.com", "form": "invite"},
+        data={"invite-emails": "newinvite@example.com", "form": "invite"},
         follow=True,
     )
 
@@ -339,7 +339,7 @@ def test_team_invite_multiple_members(client, event):
     response = client.post(
         url,
         data={
-            "invite-bulk_email": "first@example.com\nsecond@example.com",
+            "invite-emails": "first@example.com,second@example.com",
             "form": "invite",
         },
         follow=True,
@@ -674,7 +674,7 @@ def test_team_invite_invalid_email_shows_error(client, event):
         kwargs={"organiser": event.organiser.slug, "pk": team.pk},
     )
     response = client.post(
-        url, data={"invite-email": "", "form": "invite"}, follow=True
+        url, data={"invite-emails": "", "form": "invite"}, follow=True
     )
 
     assert response.status_code == 200

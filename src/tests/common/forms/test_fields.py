@@ -5,24 +5,21 @@ import json
 
 import pytest
 from django.conf import settings
-from django.contrib.auth.password_validation import validate_password
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms import ValidationError
 
 from pretalx.common.forms.fields import (
     AvailabilitiesField,
     ColorField,
-    CountableOption,
     ExtensionFileField,
     HoneypotField,
     ImageField,
-    NewPasswordConfirmationField,
-    NewPasswordField,
+    MultiEmailField,
     ProfilePictureField,
     SizeFileField,
-    SizeFileInput,
     SubmissionTypeField,
 )
+from pretalx.common.forms.widgets import MultiEmailInput
 from pretalx.schedule.models import Availability
 from tests.factories import (
     AvailabilityFactory,
@@ -797,3 +794,76 @@ def test_availabilities_field_validate_availability_with_datetime_objects(event)
 
     assert rawavail["start"] == start
     assert rawavail["end"] == end
+
+
+# --- MultiEmailField ---
+
+
+def test_multi_email_field_uses_multi_email_input_widget():
+    field = MultiEmailField()
+
+    assert isinstance(field.widget, MultiEmailInput)
+
+
+def test_multi_email_field_clean_comma_separated():
+    field = MultiEmailField(required=False)
+
+    result = field.clean("a@example.com,b@example.com")
+
+    assert result == ["a@example.com", "b@example.com"]
+
+
+def test_multi_email_field_clean_newline_separated():
+    field = MultiEmailField(required=False)
+
+    result = field.clean("a@example.com\nb@example.com")
+
+    assert result == ["a@example.com", "b@example.com"]
+
+
+def test_multi_email_field_clean_strips_whitespace():
+    field = MultiEmailField(required=False)
+
+    result = field.clean("  a@example.com  ,  b@example.com  ")
+
+    assert result == ["a@example.com", "b@example.com"]
+
+
+def test_multi_email_field_clean_lowercases():
+    field = MultiEmailField(required=False)
+
+    result = field.clean("Test@Example.COM")
+
+    assert result == ["test@example.com"]
+
+
+def test_multi_email_field_clean_deduplicates_preserving_order():
+    field = MultiEmailField(required=False)
+
+    result = field.clean("b@example.com,a@example.com,b@example.com")
+
+    assert result == ["b@example.com", "a@example.com"]
+
+
+def test_multi_email_field_clean_empty_returns_empty_list():
+    field = MultiEmailField(required=False)
+
+    result = field.clean("")
+
+    assert result == []
+
+
+def test_multi_email_field_clean_invalid_raises():
+    field = MultiEmailField(required=False)
+
+    with pytest.raises(ValidationError, match="not-an-email"):
+        field.clean("valid@example.com,not-an-email")
+
+
+def test_multi_email_field_clean_skips_blank_entries():
+    """Extra commas/newlines between addresses are silently ignored."""
+    field = MultiEmailField(required=False)
+
+    result = field.clean("a@example.com,,\n,b@example.com")
+
+    assert result == ["a@example.com", "b@example.com"]

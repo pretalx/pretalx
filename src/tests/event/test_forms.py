@@ -195,61 +195,42 @@ def test_team_form_clean_read_only_rejects_changes(event):
     assert not form.is_valid()
 
 
-@pytest.mark.parametrize(
-    ("bulk_email", "fallback_email", "expected"),
-    (
-        ("a@example.com\nb@example.com", "", ["a@example.com", "b@example.com"]),
-        ("", "single@example.com", []),
-    ),
-    ids=("valid_emails", "empty"),
-)
-def test_team_invite_form_clean_bulk_email(bulk_email, fallback_email, expected):
-    data = {"bulk_email": bulk_email, "email": fallback_email}
+def test_team_invite_form_clean_multiple_emails():
+    data = {"emails": "a@example.com\nb@example.com"}
     form = TeamInviteForm(data=data)
-    form.is_valid()
+    assert form.is_valid(), form.errors
 
-    assert form.cleaned_data["bulk_email"] == expected
+    assert form.cleaned_data["emails"] == ["a@example.com", "b@example.com"]
 
 
-def test_team_invite_form_clean_bulk_email_invalid_email_adds_error():
-    data = {"bulk_email": "valid@example.com\nnot-an-email", "email": ""}
+def test_team_invite_form_clean_invalid_email_adds_error():
+    data = {"emails": "valid@example.com\nnot-an-email"}
     form = TeamInviteForm(data=data)
 
     assert not form.is_valid()
-    assert "bulk_email" in form.errors
+    assert "emails" in form.errors
 
 
 def test_team_invite_form_clean_requires_at_least_one_email():
-    data = {"bulk_email": "", "email": ""}
+    data = {"emails": ""}
     form = TeamInviteForm(data=data)
 
     assert not form.is_valid()
-    assert "__all__" in form.errors
+    assert "emails" in form.errors
 
 
 def test_team_invite_form_clean_accepts_single_email():
-    data = {"email": "test@example.com", "bulk_email": ""}
+    data = {"emails": "test@example.com"}
     form = TeamInviteForm(data=data)
 
     assert form.is_valid(), form.errors
-
-
-def test_team_invite_form_clean_does_not_add_extra_error_if_bulk_errors_exist():
-    """When bulk_email already has errors, clean() does not add a
-    redundant 'please enter an email' error."""
-    data = {"bulk_email": "not-valid-at-all", "email": ""}
-    form = TeamInviteForm(data=data)
-
-    form.is_valid()
-
-    assert "bulk_email" in form.errors
-    assert "__all__" not in form.errors
+    assert form.cleaned_data["emails"] == ["test@example.com"]
 
 
 def test_team_invite_form_save_single_email():
     djmail.outbox = []
     team = TeamFactory()
-    data = {"email": "invitee@example.com", "bulk_email": ""}
+    data = {"emails": "invitee@example.com"}
     form = TeamInviteForm(data=data)
     assert form.is_valid(), form.errors
 
@@ -262,10 +243,10 @@ def test_team_invite_form_save_single_email():
     assert len(djmail.outbox) == 1
 
 
-def test_team_invite_form_save_bulk_emails():
+def test_team_invite_form_save_multiple_emails():
     djmail.outbox = []
     team = TeamFactory()
-    data = {"bulk_email": "a@example.com\nb@example.com", "email": ""}
+    data = {"emails": "a@example.com,b@example.com"}
     form = TeamInviteForm(data=data)
     assert form.is_valid(), form.errors
 
@@ -277,10 +258,10 @@ def test_team_invite_form_save_bulk_emails():
     assert len(djmail.outbox) == 2
 
 
-def test_team_invite_form_save_bulk_emails_strips_whitespace():
+def test_team_invite_form_save_strips_whitespace():
     djmail.outbox = []
     team = TeamFactory()
-    data = {"bulk_email": "  a@example.com  \n  b@example.com  ", "email": ""}
+    data = {"emails": "  a@example.com  ,  b@example.com  "}
     form = TeamInviteForm(data=data)
     assert form.is_valid(), form.errors
 

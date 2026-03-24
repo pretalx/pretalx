@@ -987,6 +987,29 @@ def test_schedule_build_data_filter_updated(event):
     assert len(data["talks"]) == 0
 
 
+def test_schedule_build_data_skips_zero_duration_without_times(event):
+    """Slots whose submission has zero duration and no start/end are excluded."""
+    room = RoomFactory(event=event)
+    submission = SubmissionFactory(
+        event=event, state=SubmissionStates.CONFIRMED, duration=0
+    )
+    with scope(event=event):
+        schedule = event.wip_schedule
+    TalkSlotFactory(
+        submission=submission,
+        schedule=schedule,
+        room=room,
+        start=None,
+        end=None,
+        is_visible=True,
+    )
+
+    with scope(event=event):
+        data = schedule.build_data()
+
+    assert len(data["talks"]) == 0
+
+
 def test_schedule_unique_event_version():
     event = EventFactory()
     ScheduleFactory(event=event, version="v1")
