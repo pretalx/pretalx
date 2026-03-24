@@ -180,6 +180,7 @@ omit = [
 relative_files = true
 
 [tool.coverage.report]
+fail_under = 100
 exclude_also = [
   "def __repr__",
   "def __str__",
