@@ -8,4 +8,4 @@ class MailConfig(AppConfig):
     name = "pretalx.mail"
 
     def ready(self):
-        from . import signals  # noqa: F401, PLC0415
+        from . import signals, tasks  # noqa: F401, PLC0415
