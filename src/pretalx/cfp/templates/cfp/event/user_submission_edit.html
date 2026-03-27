@@ -45,9 +45,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endif %}
         {{ form }}
         {{ qform }}
-        {% if can_edit %}
+        {% if can_edit and resources_enabled %}
             {% include "cfp/includes/submission_resources_form.html" %}
-        {% elif form.instance.active_resources.count %}
+        {% elif resources_enabled and form.instance.active_resources.count %}
             <ul>
                 {% for resource in form.instance.active_resources %}
                     <li>{% include "agenda/includes/submission_resource.html" %}</li>

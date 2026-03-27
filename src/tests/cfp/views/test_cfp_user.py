@@ -193,6 +193,8 @@ def test_cannot_discard_non_draft_proposal(speaker_client, submission):
 @pytest.mark.django_db
 def test_can_edit_submission(speaker_client, submission, resource, other_resource):
     with scope(event=submission.event):
+        submission.event.cfp.fields["resources"] = {"visibility": "optional"}
+        submission.event.cfp.save()
         assert submission.resources.count() == 2
         resource_one = submission.resources.first()
         resource_two = submission.resources.last()

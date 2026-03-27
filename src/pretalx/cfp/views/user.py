@@ -352,9 +352,19 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
     def size_warning(self):
         return SizeFileInput.get_size_warning()
 
+    @cached_property
+    def _resources_enabled(self):
+        return self.request.event.cfp.request_resources
+
+    @context
+    def resources_enabled(self):
+        return self._resources_enabled
+
     @context
     @cached_property
     def formset(self):
+        if not self._resources_enabled:
+            return None
         formset_class = inlineformset_factory(
             Submission,
             Resource,
@@ -374,6 +384,8 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
         )
 
     def save_formset(self, obj):
+        if not self.formset:
+            return True
         if not self.formset.is_valid():
             return False
 
@@ -481,7 +493,7 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
             and (
                 form.has_changed()
                 or self.qform.has_changed()
-                or self.formset.has_changed()
+                or (self.formset and self.formset.has_changed())
             )
         ):
             if "duration" in form.changed_data:

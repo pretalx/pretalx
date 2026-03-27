@@ -477,7 +477,13 @@ class SubmissionContent(
         return SizeFileInput.get_size_warning()
 
     @cached_property
+    def _resources_enabled(self):
+        return self.request.event.cfp.request_resources
+
+    @cached_property
     def _formset(self):
+        if not self._resources_enabled:
+            return None
         formset_class = inlineformset_factory(
             Submission,
             Resource,
@@ -500,6 +506,10 @@ class SubmissionContent(
     @context
     def formset(self):
         return self._formset
+
+    @context
+    def resources_enabled(self):
+        return self._resources_enabled
 
     @context
     @cached_property
@@ -544,6 +554,8 @@ class SubmissionContent(
         return [Button()]
 
     def save_formset(self, obj):
+        if not self._formset:
+            return True
         if not self._formset.is_valid():
             return False
 
@@ -629,7 +641,7 @@ class SubmissionContent(
         if not created and (
             form.has_changed()
             or self._questions_form.has_changed()
-            or self._formset.has_changed()
+            or (self._formset and self._formset.has_changed())
         ):
             if not created:
                 new_submission_data = form.instance.get_instance_data() or {}
