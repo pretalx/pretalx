@@ -73,7 +73,7 @@
 | src/pretalx/cfp/views/event.py                                             |       57 |        6 |       10 |        3 |     84% |30, 62, 82, 92-95 |
 | src/pretalx/cfp/views/locale.py                                            |       19 |        0 |        4 |        1 |     96% |    21->38 |
 | src/pretalx/cfp/views/robots.py                                            |        5 |        0 |        0 |        0 |    100% |           |
-| src/pretalx/cfp/views/user.py                                              |      364 |       18 |       64 |       11 |     93% |140, 162, 234-236, 260, 303-305, 378, 383, 386->380, 426-427, 468->472, 476, 488, 490, 507->509, 617-618 |
+| src/pretalx/cfp/views/user.py                                              |      374 |       18 |       68 |       11 |     93% |140, 162, 234-236, 260, 303-305, 390, 395, 398->392, 438-439, 480->484, 488, 500, 502, 519->521, 629-630 |
 | src/pretalx/cfp/views/wizard.py                                            |       75 |        0 |       34 |        0 |    100% |           |
 | src/pretalx/common/apps.py                                                 |        6 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/common/auth.py                                                 |       20 |        3 |        4 |        1 |     83% | 31-32, 35 |
@@ -207,7 +207,7 @@
 | src/pretalx/orga/views/review.py                                           |      562 |       49 |      132 |       21 |     88% |95, 98-101, 103-106, 256->258, 258->264, 299->exit, 320-321, 323-329, 372->374, 379, 385-390, 406, 448-461, 471, 483-484, 494->496, 502-503, 554-555, 566-567, 578->590, 592, 741->747, 785-786, 961-962, 1023-1034, 1049, 1076-1077 |
 | src/pretalx/orga/views/schedule.py                                         |      300 |       29 |       52 |        9 |     86% |52->59, 121-122, 165-168, 316, 317->320, 329, 359, 382, 394, 404, 414-445, 463, 505, 570-577 |
 | src/pretalx/orga/views/speaker.py                                          |      192 |       11 |       22 |        5 |     92% |104-114, 116-119, 123, 224, 298, 361-362 |
-| src/pretalx/orga/views/submission.py                                       |      691 |       36 |      118 |       21 |     92% |208-212, 232-234, 237, 254-260, 349->357, 434, 442, 465, 553, 556->550, 593, 616->626, 627, 634->646, 644->646, 705, 757->exit, 759, 841-842, 875->885, 921, 972, 999, 1261, 1265, 1269, 1276-1282, 1305-1306, 1308-1309 |
+| src/pretalx/orga/views/submission.py                                       |      701 |       39 |      122 |       24 |     92% |208-212, 232-234, 237, 254-260, 349->357, 434, 442, 465, 560, 565, 568->562, 605, 628->638, 636, 639, 646->658, 656->658, 659, 717, 769->exit, 771, 853-854, 887->897, 933, 984, 1011, 1273, 1277, 1281, 1288-1294, 1317-1318, 1320-1321 |
 | src/pretalx/orga/views/typeahead.py                                        |       59 |       16 |       16 |        5 |     64% |37, 46, 55, 96-101, 106, 111-123, 146, 185-188 |
 | src/pretalx/person/apps.py                                                 |        4 |        0 |        0 |        0 |    100% |           |
 | src/pretalx/person/exporters.py                                            |       25 |        1 |        4 |        1 |     93% |        38 |
@@ -292,7 +292,7 @@
 | src/tests/cfp/test\_cfp\_flow.py                                           |      165 |        0 |        0 |        0 |    100% |           |
 | src/tests/cfp/views/test\_cfp\_auth.py                                     |      139 |        0 |        2 |        0 |    100% |           |
 | src/tests/cfp/views/test\_cfp\_base.py                                     |       70 |        0 |        0 |        0 |    100% |           |
-| src/tests/cfp/views/test\_cfp\_user.py                                     |      871 |        0 |       24 |        0 |    100% |           |
+| src/tests/cfp/views/test\_cfp\_user.py                                     |      873 |        0 |       24 |        0 |    100% |           |
 | src/tests/cfp/views/test\_cfp\_view\_flow.py                               |        0 |        0 |        0 |        0 |    100% |           |
 | src/tests/cfp/views/test\_cfp\_wizard.py                                   |      641 |        0 |       34 |        0 |    100% |           |
 | src/tests/common/forms/test\_cfp\_forms\_utils.py                          |        5 |        0 |        0 |        0 |    100% |           |
@@ -344,7 +344,7 @@
 | src/tests/orga/views/test\_orga\_views\_review.py                          |      486 |        0 |        8 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_schedule.py                        |      346 |        0 |        8 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_speaker.py                         |      293 |        0 |        6 |        0 |    100% |           |
-| src/tests/orga/views/test\_orga\_views\_submission.py                      |      782 |        0 |       16 |        0 |    100% |           |
+| src/tests/orga/views/test\_orga\_views\_submission.py                      |      784 |        0 |       16 |        0 |    100% |           |
 | src/tests/orga/views/test\_orga\_views\_submission\_cards.py               |       14 |        0 |        0 |        0 |    100% |           |
 | src/tests/person/test\_auth\_token\_model.py                               |       11 |        0 |        0 |        0 |    100% |           |
 | src/tests/person/test\_information\_model.py                               |        7 |        0 |        0 |        0 |    100% |           |
@@ -368,7 +368,7 @@
 | src/tests/submission/test\_submission\_permissions.py                      |       47 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_tasks.py                            |       98 |        0 |        0 |        0 |    100% |           |
 | src/tests/submission/test\_submission\_type\_model.py                      |       21 |        0 |        0 |        0 |    100% |           |
-| **TOTAL**                                                                  | **36583** | **1836** | **5662** |  **763** | **93%** |           |
+| **TOTAL**                                                                  | **36607** | **1839** | **5670** |  **766** | **93%** |           |
 
 
 ## Setup coverage badge
