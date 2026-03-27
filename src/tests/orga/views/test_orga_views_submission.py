@@ -47,7 +47,7 @@ def test_orga_can_see_submissions(
 def test_orga_can_see_single_submission(
     orga_client, event, submission, django_assert_num_queries
 ):
-    with django_assert_num_queries(29):
+    with django_assert_num_queries(28):
         response = orga_client.get(submission.orga_urls.base, follow=True)
     assert response.status_code == 200
     assert submission.title in response.text
@@ -682,6 +682,8 @@ def test_orga_can_remove_and_add_resources(
     orga_client, event, submission, resource, other_resource
 ):
     with scope(event=submission.event):
+        event.cfp.fields["resources"] = {"visibility": "optional"}
+        event.cfp.save()
         assert submission.resources.count() == 2
         resource_one = submission.resources.first()
         resource_two = submission.resources.last()

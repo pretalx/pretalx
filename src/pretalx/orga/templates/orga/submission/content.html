@@ -74,7 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {{ form.duration.as_field_group }}
             {% if form.slot_count %}{{ form.slot_count.as_field_group }}{% endif %}
             {% if form.image %}{{ form.image.as_field_group }}{% endif %}
-            {% if permission_action != "create" %}
+            {% if permission_action != "create" and resources_enabled %}
                 {% include "cfp/includes/submission_resources_form.html" %}
             {% endif %}
             {% if questions_form and questions_form.fields %}
