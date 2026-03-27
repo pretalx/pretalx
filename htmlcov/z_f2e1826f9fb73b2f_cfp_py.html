@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_f2e1826f9fb73b2f_comment_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-03-27 10:36 +0000
+            created at 2026-03-27 20:22 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -245,14 +245,14 @@
     <p class="pln"><span class="n"><a id="t161" href="#t161">161</a></span><span class="t">        <span class="str">"""Returns True if an opening date is set</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t162" href="#t162">162</a></span><span class="t"><span class="str">        and the current time is before that date.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t163" href="#t163">163</a></span><span class="t"><span class="str">        """</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t164" href="#t164">164</a></span><span class="t">        <span class="key">return</span> <span class="nam">self</span><span class="op">.</span><span class="nam">opening</span> <span class="key">and</span> <span class="nam">now</span><span class="op">(</span><span class="op">)</span> <span class="op">&lt;</span> <span class="nam">self</span><span class="op">.</span><span class="nam">opening</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t164" href="#t164">164</a></span><span class="t">        <span class="key">return</span> <span class="nam">bool</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">opening</span> <span class="key">and</span> <span class="nam">now</span><span class="op">(</span><span class="op">)</span> <span class="op">&lt;</span> <span class="nam">self</span><span class="op">.</span><span class="nam">opening</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t165" href="#t165">165</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t166" href="#t166">166</a></span><span class="t">    <span class="op">@</span><span class="nam">cached_property</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t167" href="#t167">167</a></span><span class="t">    <span class="key">def</span> <span class="nam">after_deadline</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span> <span class="op">-></span> <span class="nam">bool</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t168" href="#t168">168</a></span><span class="t">        <span class="str">"""Returns True if a (maximum) deadline is set</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t169" href="#t169">169</a></span><span class="t"><span class="str">        and the current time is after that deadline.</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t170" href="#t170">170</a></span><span class="t"><span class="str">        """</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t171" href="#t171">171</a></span><span class="t">        <span class="key">return</span> <span class="nam">self</span><span class="op">.</span><span class="nam">deadline</span> <span class="key">and</span> <span class="nam">self</span><span class="op">.</span><span class="nam">max_deadline</span> <span class="key">and</span> <span class="nam">self</span><span class="op">.</span><span class="nam">max_deadline</span> <span class="op">&lt;</span> <span class="nam">now</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t171" href="#t171">171</a></span><span class="t">        <span class="key">return</span> <span class="nam">bool</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">deadline</span> <span class="key">and</span> <span class="nam">self</span><span class="op">.</span><span class="nam">max_deadline</span> <span class="key">and</span> <span class="nam">self</span><span class="op">.</span><span class="nam">max_deadline</span> <span class="op">&lt;</span> <span class="nam">now</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t172" href="#t172">172</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t173" href="#t173">173</a></span><span class="t">    <span class="op">@</span><span class="nam">cached_property</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t174" href="#t174">174</a></span><span class="t">    <span class="key">def</span> <span class="nam">is_open</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span> <span class="op">-></span> <span class="nam">bool</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -298,7 +298,7 @@
             <a class="nav" href="z_f2e1826f9fb73b2f_comment_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-03-27 10:36 +0000
+            created at 2026-03-27 20:22 +0000
         </p>
     </div>
 </footer>
