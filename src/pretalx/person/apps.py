@@ -9,5 +9,6 @@ class PersonConfig(AppConfig):
 
     def ready(self):
         from . import (  # noqa: F401, PLC0415 -- register signals/receivers on startup
-            signals, tasks
+            signals,
+            tasks,
         )

@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from django.conf import settings
+from django.db import connection
 from django.utils import translation
 
 from pretalx.orga.utils.i18n import (
@@ -109,10 +110,15 @@ def test_translate_transform_template_injects_current_locale():
     lhs = _make_translate_lhs()
     transform = Translate(lhs)
 
+    if connection.vendor == "sqlite":  # pragma: no cover -- vendor-specific
+        fr_marker, de_marker = "$.fr", "$.de"
+    else:  # pragma: no cover -- vendor-specific
+        fr_marker, de_marker = ">>'fr'", ">>'de'"
+
     with translation.override("fr"):
-        assert "$.fr" in transform.template
+        assert fr_marker in transform.template
     with translation.override("de"):
-        assert "$.de" in transform.template
+        assert de_marker in transform.template
 
 
 @pytest.mark.django_db

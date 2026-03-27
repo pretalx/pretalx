@@ -199,6 +199,8 @@ def test_submissions_edit_view_with_resources(speaker_client, submission_with_sp
     """Speaker can add, update, and delete resources via the edit form."""
     submission = submission_with_speaker
     with scopes_disabled():
+        submission.event.cfp.fields["resources"] = {"visibility": "optional"}
+        submission.event.cfp.save()
         resource1 = ResourceFactory(submission=submission)
         resource2 = ResourceFactory(submission=submission)
         new_file = SimpleUploadedFile("newfile.txt", b"new_file_content")
@@ -1320,6 +1322,8 @@ def test_submission_confirm_view_handles_submission_error(
 
 def test_submissions_edit_view_invalid_formset_shows_form_again(client, event):
     with scopes_disabled():
+        event.cfp.fields["resources"] = {"visibility": "optional"}
+        event.cfp.save()
         speaker = SpeakerFactory(event=event)
         submission = SubmissionFactory(
             event=event, state=SubmissionStates.SUBMITTED, abstract="Test abstract"
@@ -1349,6 +1353,8 @@ def test_submissions_edit_view_unchanged_resource_preserved(
 ):
     submission = submission_with_speaker
     with scopes_disabled():
+        submission.event.cfp.fields["resources"] = {"visibility": "optional"}
+        submission.event.cfp.save()
         resource = ResourceFactory(submission=submission, description="My resource")
     data = _edit_form_data(
         submission,

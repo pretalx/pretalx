@@ -322,10 +322,7 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
             and not ignore_data
             and self.cleaned_data.get("speakers")
         ):
-            if "submission" in kwargs:
-                kwargs.remove("submission")
-            if "slot" in kwargs:
-                kwargs.remove("slot")
+            kwargs = [k for k in kwargs if k not in ("submission", "slot")]
         return get_available_placeholders(event=self.event, kwargs=kwargs)
 
     def clean(self):
