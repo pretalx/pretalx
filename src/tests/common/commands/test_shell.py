@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import logging
+import sys
 from io import StringIO
-from unittest.mock import patch
+from types import ModuleType
+from unittest.mock import MagicMock, patch
 
 import pytest
 from django.core.management import call_command
@@ -70,18 +72,24 @@ def test_shell_handle_no_startup_skips_event_info(event):
     assert repr(event) not in out.getvalue()
 
 
-@pytest.mark.slow
-@pytest.mark.parametrize(
-    ("extra_kwargs", "expected_prefix"),
-    (({}, "In [0]: event"), ({"interface": "python"}, ">>> event")),
-    ids=("ipython_style", "python_style"),
-)
-def test_shell_handle_with_event_prints_event_info(
-    event, extra_kwargs, expected_prefix
-):
-    """IPython-style info is printed by default (IPython is installed in the
-    test env); forcing 'python' interface uses plain Python-style instead.
-    Marked slow due to IPython startup overhead."""
+def test_shell_handle_with_event_prints_ipython_style(event):
+    """When IPython is importable, the default interface prints IPython-style
+    prompts.  We inject a fake IPython module so the test works regardless
+    of whether IPython is actually installed."""
+    out = StringIO()
+
+    with patch.dict(sys.modules, {"IPython": ModuleType("IPython")}):
+        call_command(
+            "shell", event=event.slug, command="pass", stdout=out, no_color=True
+        )
+    output = out.getvalue()
+
+    assert "In [0]: event" in output
+    assert repr(event) in output
+
+
+def test_shell_handle_with_event_prints_python_style(event):
+    """Forcing 'python' interface uses plain Python-style prompts."""
     out = StringIO()
 
     call_command(
@@ -90,20 +98,41 @@ def test_shell_handle_with_event_prints_event_info(
         command="pass",
         stdout=out,
         no_color=True,
-        **extra_kwargs,
+        interface="python",
     )
     output = out.getvalue()
 
-    assert expected_prefix in output
+    assert ">>> event" in output
     assert repr(event) in output
+
+
+class _NestedNamespace:
+    """Stand-in for traitlets.config.Config: auto-creates sub-namespaces."""
+
+    def __getattr__(self, name):
+        ns = _NestedNamespace()
+        object.__setattr__(self, name, ns)
+        return ns
 
 
 def test_shell_ipython_method_configures_ipython():
     """Mocking start_ipython: starts interactive terminal session (system boundary)."""
     cmd = Command()
     options = {"no_startup": True, "verbosity": 1, "no_imports": False}
+    mock_start = MagicMock()
+    fake_ipython = ModuleType("IPython")
+    fake_ipython.start_ipython = mock_start
+    fake_traitlets_config = ModuleType("traitlets.config")
+    fake_traitlets_config.Config = _NestedNamespace
 
-    with patch("IPython.start_ipython") as mock_start:
+    with patch.dict(
+        sys.modules,
+        {
+            "IPython": fake_ipython,
+            "traitlets": ModuleType("traitlets"),
+            "traitlets.config": fake_traitlets_config,
+        },
+    ):
         cmd.ipython(options)
 
     _, kwargs = mock_start.call_args

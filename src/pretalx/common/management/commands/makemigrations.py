@@ -25,13 +25,20 @@ from django.db.migrations.operations import models as modelops
 
 
 def hack_model_fields():
-    modelops.AlterModelOptions.ALTER_OPTION_KEYS.remove("verbose_name")
-    modelops.AlterModelOptions.ALTER_OPTION_KEYS.remove("verbose_name_plural")
-    modelops.AlterModelOptions.ALTER_OPTION_KEYS.remove("ordering")
-    modelops.AlterModelOptions.ALTER_OPTION_KEYS.remove("get_latest_by")
-    modelops.AlterModelOptions.ALTER_OPTION_KEYS.remove("default_manager_name")
-    modelops.AlterModelOptions.ALTER_OPTION_KEYS.remove("permissions")
-    modelops.AlterModelOptions.ALTER_OPTION_KEYS.remove("default_permissions")
+    _unwanted_keys = {
+        "verbose_name",
+        "verbose_name_plural",
+        "ordering",
+        "get_latest_by",
+        "default_manager_name",
+        "permissions",
+        "default_permissions",
+    }
+    modelops.AlterModelOptions.ALTER_OPTION_KEYS = [
+        k
+        for k in modelops.AlterModelOptions.ALTER_OPTION_KEYS
+        if k not in _unwanted_keys
+    ]
     ignored_attrs = [
         # (field type, attribute name, blacklist of field sub-types)
         (models.Field, "verbose_name", []),

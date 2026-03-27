@@ -442,7 +442,7 @@ def unfreeze_schedule(schedule, user=None):
     try:
         # We force evaluation to catch the DatabaseError early
         talks = list(talks.union(schedule.talks.all()))
-    except DatabaseError:  # SQLite cannot deal with ordered querysets in union()
+    except DatabaseError:  # pragma: no cover -- vendor-specific SQLite workaround
         talks = set(talks) | set(schedule.talks.all())
 
     with transaction.atomic():

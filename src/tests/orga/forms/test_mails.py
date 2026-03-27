@@ -773,10 +773,26 @@ def test_write_session_mail_form_save_skip_queue():
     assert len(djmail.outbox) == 1
 
 
-def test_write_session_mail_form_save_suppresses_template_error():
-    """When a placeholder can't be rendered (e.g. {session_room} without a
-    slot), the mail is silently skipped rather than crashing."""
+def test_write_session_mail_form_save_suppresses_template_error(
+    register_signal_handler,
+):
+    """When a placeholder can't be rendered (e.g. a slot-requiring
+    placeholder without a slot), the mail is silently skipped rather than
+    crashing."""
+    slot_placeholder = SimpleFunctionalMailTextPlaceholder(
+        identifier="test_slot_placeholder",
+        args=["slot"],
+        func=lambda slot: str(slot.room),
+        sample="Room 101",
+    )
+
+    def provide_placeholder(signal, sender, **kwargs):
+        return slot_placeholder
+
+    register_signal_handler(register_mail_placeholders, provide_placeholder)
+
     event = EventFactory()
+    ScheduleFactory(event=event)  # slot placeholders require a current_schedule
     submission = SubmissionFactory(event=event)
     speaker = SpeakerFactory(event=event)
     submission.speakers.add(speaker)
@@ -785,7 +801,7 @@ def test_write_session_mail_form_save_suppresses_template_error():
         data={
             "submissions": [submission.code],
             "subject_0": "Hello",
-            "text_0": "Your room: {session_room}",
+            "text_0": "Your room: {test_slot_placeholder}",
         },
     )
     assert form.is_valid(), form.errors

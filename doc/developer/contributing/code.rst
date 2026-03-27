@@ -59,7 +59,7 @@ We separate our tests into three layers: *Unit tests*, *Integration tests* and
 *End-to-End tests*.
 
 **Unit tests:** Every function, method, property, or class has at least one
-test or one parameterization per exit condition. This includes particularly
+test or one parameterisation per exit condition. This includes particularly
 models, forms, serializers, and all service and utility methods.
 
 Unit testing for views is more tricky: we *include* methods and properties on
@@ -285,7 +285,7 @@ Test utilities:
 * We set up sensible test settings, including configuring Celery to run in
   eager mode.
 
-Parametrization
+Parametrisation
 ~~~~~~~~~~~~~~~
 
 We use ``pytest.mark.parametrize`` to collapse related scenarios into a single
@@ -297,7 +297,7 @@ cases, they stay separate.
 N+1 query prevention
 ~~~~~~~~~~~~~~~~~~~~~
 
-List views and other views that render collections are parameterized with
+List views and other views that render collections are parameterised with
 ``item_count`` values of **1 and 3** and wrapped in
 ``django_assert_num_queries`` with a literal integer. This ensures the query
 count stays constant regardless of data size — when a middleware, signal, or

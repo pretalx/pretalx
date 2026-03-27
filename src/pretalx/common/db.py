@@ -12,7 +12,9 @@ class Median(Aggregate):
     output_field = FloatField()
     template = "%(function)s(0.5) WITHIN GROUP (ORDER BY %(expressions)s)"
 
-    def as_sqlite(self, compiler, connection, **extra_context):
+    def as_sqlite(
+        self, compiler, connection, **extra_context
+    ):  # pragma: no cover -- vendor-specific SQLite fallback
         # SQLite doesn't have PERCENTILE_CONT, but has a median() extension function
         # However, it's not always available. We'll use a subquery approach instead.
         # For now, fall back to using the mean for SQLite

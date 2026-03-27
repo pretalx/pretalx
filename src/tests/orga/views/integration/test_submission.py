@@ -712,6 +712,8 @@ def test_submission_edit_datetime_answer_validation(
 def test_submission_edit_resources_add_and_remove(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
+        event.cfp.fields["resources"] = {"visibility": "optional"}
+        event.cfp.save()
         submission = SubmissionFactory(event=event, abstract="Test abstract")
         file_one = SimpleUploadedFile("res1.txt", b"content_one")
         file_two = SimpleUploadedFile("res2.txt", b"content_two")
@@ -765,6 +767,8 @@ def test_submission_edit_resources_add_and_remove(client, event):
 def test_submission_edit_wrong_resources_not_added(client, event):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
+        event.cfp.fields["resources"] = {"visibility": "optional"}
+        event.cfp.save()
         submission = SubmissionFactory(event=event, abstract="Test abstract")
         file_one = SimpleUploadedFile("res1.txt", b"content_one")
         file_two = SimpleUploadedFile("res2.txt", b"content_two")
@@ -1571,7 +1575,7 @@ def test_submission_content_query_count(client, event, django_assert_num_queries
         submission = SubmissionFactory(event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(29):
+    with django_assert_num_queries(28):
         response = client.get(submission.orga_urls.base, follow=True)
 
     assert response.status_code == 200
@@ -1799,6 +1803,8 @@ def test_submission_edit_unchanged_resource_not_resaved(client, event):
     """Existing resources that haven't changed are not re-saved."""
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
+        event.cfp.fields["resources"] = {"visibility": "optional"}
+        event.cfp.save()
         submission = SubmissionFactory(event=event, abstract="Test abstract")
         resource = ResourceFactory(
             submission=submission,
