@@ -4,7 +4,7 @@
 import hashlib
 
 from django.core.cache import caches
-from django.http import HttpResponse, HttpResponseNotModified
+from django.http import HttpResponseNotModified
 from django.utils.cache import (
     get_cache_key,
     has_vary_header,
@@ -112,7 +112,7 @@ def etag_cache_page(
         return patched_response(HttpResponseNotModified(), timeout, headers=headers)
 
     if cache_key and (cached_response := cache.get(cache_key)):
-        return patched_response(HttpResponse(cached_response), timeout, headers=headers)
+        return patched_response(cached_response, timeout, headers=headers)
 
     response = cache_page(
         timeout=server_timeout, cache=cache_alias, key_prefix=key_prefix
