@@ -1,13 +1,10 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# SPDX-FileCopyrightText: 2017-present Tobias Kunze and contributors
+# SPDX-License-Identifier: Apache-2.0
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-28 15:20+0000\n"
+"POT-Creation-Date: 2026-03-28 18:35+0000\n"
 "PO-Revision-Date: 2026-03-23 08:42+0000\n"
 "Last-Translator: Dima <uzhdimka@gmail.com>\n"
 "Language-Team: none\n"
@@ -9298,14 +9295,18 @@ msgid "Portuguese"
 msgstr "Португальська"
 
 #: pretalx/settings.py:392
+msgid "Ukrainian"
+msgstr ""
+
+#: pretalx/settings.py:393
 msgid "Vietnamese"
 msgstr "В'єтнамська"
 
-#: pretalx/settings.py:394
+#: pretalx/settings.py:395
 msgid "Traditional Chinese (Taiwan)"
 msgstr "Традиційна китайська (Тайвань)"
 
-#: pretalx/settings.py:400
+#: pretalx/settings.py:401
 msgid "Simplified Chinese"
 msgstr "Спрощена китайська"
 

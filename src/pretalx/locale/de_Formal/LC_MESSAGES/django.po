@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-28 15:20+0000\n"
+"POT-Creation-Date: 2026-03-28 18:35+0000\n"
 "PO-Revision-Date: 2026-03-28 15:11+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: \n"
@@ -9386,14 +9386,18 @@ msgid "Portuguese"
 msgstr "Portugiesisch"
 
 #: pretalx/settings.py:392
+msgid "Ukrainian"
+msgstr ""
+
+#: pretalx/settings.py:393
 msgid "Vietnamese"
 msgstr "Vietnamesisch"
 
-#: pretalx/settings.py:394
+#: pretalx/settings.py:395
 msgid "Traditional Chinese (Taiwan)"
 msgstr "Chinesisch (Taiwan)"
 
-#: pretalx/settings.py:400
+#: pretalx/settings.py:401
 msgid "Simplified Chinese"
 msgstr "Chinesisch (Kurzzeichen)"
 
