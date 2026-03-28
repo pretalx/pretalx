@@ -5,8 +5,8 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-02-18 11:16+0000\n"
-"PO-Revision-Date: 2026-01-30 07:25+0000\n"
-"Last-Translator: Renne Rocha <renne@rocha.dev.br>\n"
+"PO-Revision-Date: 2026-03-11 22:42+0000\n"
+"Last-Translator: Lanusse <thalita.lanusse@gmail.com>\n"
 "Language-Team: none\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
@@ -205,10 +205,8 @@ msgid "Our schedule is not live yet."
 msgstr "Nossa programação ainda não está publicada."
 
 #: pretalx/agenda/views/schedule.py:201
-#, fuzzy
-#| msgid "Media files"
 msgid "Clear filters"
-msgstr "Arquivos de mídia"
+msgstr "Limpar filtros"
 
 #: pretalx/agenda/views/schedule.py:203
 msgid ""
@@ -229,10 +227,8 @@ msgid "Filter"
 msgstr "Filtrar"
 
 #: pretalx/agenda/views/schedule.py:209
-#, fuzzy
-#| msgid "Filter"
 msgid "Filters"
-msgstr "Filtrar"
+msgstr "Filtros"
 
 #: pretalx/agenda/views/schedule.py:210
 #, fuzzy
@@ -260,22 +256,22 @@ msgstr "Não registrar"
 #, fuzzy
 #| msgid "Recording opt-out"
 msgid "Recording"
-msgstr "Opção de não gravação"
+msgstr "Gravação"
 
 #: pretalx/agenda/views/schedule.py:216
 #, fuzzy
 #| msgid "There was an error sending the mail. Please try again later."
 msgid "An error occurred while loading the schedule. Please try again later."
-msgstr ""
-"Ocorreu um erro ao enviar o e-mail. Por favor, tente novamente mais tarde."
+msgstr "Ocorreu um erro ao carregar a programação. Tente novamente mais tarde."
 
 #: pretalx/agenda/views/schedule.py:219
+#, fuzzy
 msgid "The schedule is not yet available. Please check back later!"
-msgstr ""
+msgstr "A programação ainda não está disponível. Por favor, volte mais tarde!"
 
 #: pretalx/agenda/views/schedule.py:221
 msgid "Show results"
-msgstr ""
+msgstr "Mostrar resultados"
 
 #: pretalx/agenda/views/schedule.py:222 pretalx/common/forms/forms.py:15
 #: pretalx/common/forms/widgets.py:334
@@ -338,10 +334,8 @@ msgid "Resources"
 msgstr "Recursos"
 
 #: pretalx/cfp/flow.py:532
-#, fuzzy
-#| msgid "Please enter at least one email address!"
 msgid "Please add at least one resource."
-msgstr "Por favor, forneça ao menos um endereço de e-mail!"
+msgstr "Por favor, adicione pelo menos um recurso."
 
 #: pretalx/cfp/flow.py:602
 msgid ""
@@ -431,7 +425,7 @@ msgstr ""
 #: pretalx/cfp/forms/submissions.py:37
 #, python-brace-format
 msgid "You must include the “{invitation_url}” placeholder in your email."
-msgstr ""
+msgstr "Você deve incluir o marcador “{invitation_url}” em seu e-mail."
 
 #: pretalx/cfp/forms/submissions.py:45
 #, fuzzy
@@ -440,15 +434,13 @@ msgid "This person is already a speaker on this proposal."
 msgstr "O palestrante já fazia parte da proposta."
 
 #: pretalx/cfp/forms/submissions.py:49
-#, fuzzy
-#| msgid "The speaker has been added to the proposal."
 msgid "This person has already been invited to this proposal."
-msgstr "Palestrante adicionada à proposta."
+msgstr "Essa pessoa já foi convidada para esta proposta."
 
 #: pretalx/cfp/forms/submissions.py:58
 #, python-brace-format
 msgid "This would exceed the maximum of {max} speakers per proposal."
-msgstr ""
+msgstr "Isso excederia o máximo de {max} palestrantes por proposta."
 
 #: pretalx/cfp/phrases.py:11
 msgid ""
@@ -1220,7 +1212,7 @@ msgstr "Por favor, forneça uma pontuação de revisão!"
 #: pretalx/common/forms/fields.py:184 pretalx/common/forms/fields.py:190
 #: pretalx/common/forms/fields.py:198
 msgid "Invalid picture selection."
-msgstr ""
+msgstr "Seleção de imagem inválida."
 
 #: pretalx/common/forms/fields.py:205
 #, fuzzy
@@ -1231,6 +1223,7 @@ msgstr "Arquivo não fornecido"
 #: pretalx/common/forms/fields.py:208
 msgid "Please upload an image file (JPG, PNG, GIF, or WebP)."
 msgstr ""
+"Por favor, faça o upload de um arquivo de imagem (JPG, PNG, GIF ou WebP)."
 
 #: pretalx/common/forms/fields.py:312
 #, fuzzy
@@ -1309,7 +1302,7 @@ msgstr "Você escreveu {count} palavras."
 #: pretalx/common/forms/mixins.py:164
 #, python-brace-format
 msgid "Please select exactly {count} tags."
-msgstr ""
+msgstr "Por favor, selecione exatamente {count} tags."
 
 #: pretalx/common/forms/mixins.py:168
 #, fuzzy, python-brace-format
@@ -1353,7 +1346,7 @@ msgstr "Colunas selecionadas"
 
 #: pretalx/common/forms/tables.py:37
 msgid "Sort by"
-msgstr ""
+msgstr "Ordenar por"
 
 #: pretalx/common/forms/tables.py:42 pretalx/common/forms/tables.py:53
 #, fuzzy
@@ -2158,7 +2151,7 @@ msgstr "Continuar para %(host)s"
 
 #: pretalx/common/templates/common/widgets/biography.html:9
 msgid "Use a biography from another event"
-msgstr ""
+msgstr "Utilize uma biografia de outro evento."
 
 #. Translators: Text is used to describe the main text body of an email, or of
 #. similar options like the main text of the CfP or a review. It's separate from
@@ -2175,7 +2168,7 @@ msgstr "Prévia"
 
 #: pretalx/common/templates/common/widgets/markdown.html:16
 msgid "Bold"
-msgstr ""
+msgstr "Negrito"
 
 #: pretalx/common/templates/common/widgets/markdown.html:17
 #, fuzzy
@@ -2185,7 +2178,7 @@ msgstr "Italiano"
 
 #: pretalx/common/templates/common/widgets/markdown.html:18
 msgid "Strikethrough"
-msgstr ""
+msgstr "Trachar"
 
 #: pretalx/common/templates/common/widgets/markdown.html:20
 #, fuzzy
