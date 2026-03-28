@@ -389,6 +389,7 @@ LANGUAGES_INFORMATION = {
         "official": False,
         "public_code": "pt",
     },
+    "uk": {"name": _("Ukrainian"), "natural_name": "Українська", "official": False},
     "vi": {"name": _("Vietnamese"), "natural_name": "người Việt", "official": False},
     "zh-hant": {
         "name": _("Traditional Chinese (Taiwan)"),
