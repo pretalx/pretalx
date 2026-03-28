@@ -283,7 +283,7 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
                 }
             )
         elif today > event.date_to:
-            days = (today - event.date_from).days
+            days = (today - event.date_to).days
             result["tiles"].append(
                 {
                     "large": days,
