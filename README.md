@@ -268,6 +268,7 @@
 | src/tests/agenda/test\_commands.py                                         |      250 |        0 |        2 |        0 |     100% |           |
 | src/tests/agenda/test\_rules.py                                            |      104 |        0 |        2 |        0 |     100% |           |
 | src/tests/agenda/test\_tasks.py                                            |       33 |        0 |        0 |        0 |     100% |           |
+| src/tests/agenda/views/e2e/test\_widget.py                                 |       14 |        0 |        0 |        0 |     100% |           |
 | src/tests/agenda/views/integration/test\_featured.py                       |       36 |        0 |        0 |        0 |     100% |           |
 | src/tests/agenda/views/integration/test\_feed.py                           |       25 |        0 |        2 |        0 |     100% |           |
 | src/tests/agenda/views/integration/test\_schedule.py                       |      158 |        0 |       10 |        0 |     100% |           |
@@ -550,7 +551,7 @@
 | src/tests/submission/test\_rules.py                                        |      623 |        0 |        0 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **68287** |    **0** | **5792** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **68301** |    **0** | **5792** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
