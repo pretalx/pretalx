@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga` The "days since event end" dashboard entry was incorrectly showing days since event start
 - :feature:`orga:schedule` Sessions with no duration are no longer shown in the schedule editor, allowing for better handling of poster sessions and similar sessions that do not need a schedule slot.
 - :feature:`orga,2266` The session search and speaker search can now be set to full-text mode to include all built-in text fields in the search.
 - :feature:`orga,2185` The feedback list pages now use sortable table views with optional columns, consistent with other organiser list views.
