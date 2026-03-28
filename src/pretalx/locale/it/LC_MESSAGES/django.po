@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-02-18 11:16+0000\n"
-"PO-Revision-Date: 2025-11-28 20:54+0000\n"
+"PO-Revision-Date: 2026-03-28 15:11+0000\n"
 "Last-Translator: albanobattistella <albano_battistella@hotmail.com>\n"
 "Language-Team: none\n"
 "Language: it\n"
@@ -232,10 +232,8 @@ msgid "Filter"
 msgstr "Filtro"
 
 #: pretalx/agenda/views/schedule.py:209
-#, fuzzy
-#| msgid "Filter"
 msgid "Filters"
-msgstr "Filtro"
+msgstr "Filtri"
 
 #: pretalx/agenda/views/schedule.py:210
 #, fuzzy
@@ -273,11 +271,11 @@ msgstr "Si è verificato un errore nell'invio della e-mail. Riprova più tardi."
 
 #: pretalx/agenda/views/schedule.py:219
 msgid "The schedule is not yet available. Please check back later!"
-msgstr ""
+msgstr "Il programma non è ancora disponibile. Si prega di riprovare più tardi!"
 
 #: pretalx/agenda/views/schedule.py:221
 msgid "Show results"
-msgstr ""
+msgstr "Mostra risultati"
 
 #: pretalx/agenda/views/schedule.py:222 pretalx/common/forms/forms.py:15
 #: pretalx/common/forms/widgets.py:334
