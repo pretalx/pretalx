@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-28 18:35+0000\n"
+"POT-Creation-Date: 2026-03-30 15:42+0000\n"
 "PO-Revision-Date: 2025-12-02 17:41+0000\n"
 "Last-Translator: r spoor <pretalx.com@spoor.nu>\n"
 "Language-Team: none\n"
@@ -14,415 +14,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 5.12.2\n"
-
-#: local/pretalx-pages/pretalx_pages/apps.py:12
-#: local/pretalx-pages/pretalx_pages/apps.py:20
-#: local/pretalx-pages/pretalx_pages/apps.py:21
-#: local/pretalx-pages/pretalx_pages/signals.py:21
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:5
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:8
-msgid "Pages"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/apps.py:15
-msgid ""
-"Add static pages to your event site, for example Terms of Service, venue "
-"listings, a code of conduct, etc."
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/models.py:16
-msgid "URL to static page"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/models.py:21
-#: pretalx/event/models/event.py:189 pretalx/event/models/event.py:195
-#: pretalx/event/models/organiser.py:105
-msgid "The slug may only contain letters, numbers, dots and dashes."
-msgstr ""
-"Dit pad in het domein kan alleen letters, nummers, punten en schuine "
-"streepjes bevatten."
-
-#: local/pretalx-pages/pretalx_pages/models.py:26
-msgid ""
-"This will be used to generate the URL of the page. Please only use latin "
-"letters, numbers, dots and dashes. You cannot change this afterwards."
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/models.py:31
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:29
-#, fuzzy
-#| msgid "Proposal title"
-msgid "Page title"
-msgstr "Voorstel titel"
-
-#: local/pretalx-pages/pretalx_pages/models.py:33
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/form.html:18
-#, fuzzy
-#| msgid "Content"
-msgid "Page content"
-msgstr "Inhoud"
-
-#: local/pretalx-pages/pretalx_pages/models.py:36
-msgid "Show link in the event footer"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/signals.py:43
-#, fuzzy
-#| msgid "The team has been created."
-msgid "The page has been created."
-msgstr "Het team is aangemaakt."
-
-#: local/pretalx-pages/pretalx_pages/signals.py:44
-#, fuzzy
-#| msgid "The CfP has been modified."
-msgid "The page has been modified."
-msgstr "De CfP is aangepast."
-
-#: local/pretalx-pages/pretalx_pages/signals.py:45
-#, fuzzy
-#| msgid "The tag has been deleted."
-msgid "The page has been deleted."
-msgstr "De tag is verwijderd."
-
-#: local/pretalx-pages/pretalx_pages/signals.py:58
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/form.html:4
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/form.html:7
-msgid "Page"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:4
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:7
-#, fuzzy
-#| msgid "Delete phase"
-msgid "Delete a page"
-msgstr "Verwijder fase"
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:11
-#, fuzzy, python-format
-#| msgid "Are you sure you want to resend the invitation to this user?"
-msgid "Are you sure you want to delete the page <strong>%(name)s</strong>?"
-msgstr ""
-"Weet u zeker dat u de uitnodiging opnieuw naar deze gebruiker wilt verzenden?"
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:17
-#: pretalx/common/text/phrases.py:51
-#: pretalx/orga/templates/orga/cfp/editor.html:147
-#: pretalx/orga/templates/orga/cfp/editor.html:295
-#: pretalx/orga/templates/orga/cfp/editor.html:480
-msgid "Cancel"
-msgstr "Annuleer"
-
-#. Translators: This is a label on delete buttons.
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:20
-#: pretalx/common/tables.py:530 pretalx/common/text/phrases.py:58
-#: pretalx/orga/templates/orga/submission/delete.html:9
-#: pretalx/orga/templates/orga/submission/review_fragment.html:34
-msgid "Delete"
-msgstr "Verwijder"
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/form.html:12
-#: pretalx/orga/views/event.py:131 pretalx/orga/views/event.py:339
-msgid "General information"
-msgstr "Algemene informatie"
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:12
-#, fuzzy
-#| msgid "You don’t have any proposals yet."
-msgid "You haven't created any pages yet."
-msgstr "Je hebt nog geen voorstellen."
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:18
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:22
-#, fuzzy
-#| msgid "Create a new event"
-msgid "Create a new page"
-msgstr "Maak een nieuw evenement aan"
-
-#: local/pretalx-pages/pretalx_pages/views.py:73
-#: local/pretalx-pages/pretalx_pages/views.py:78
-#: local/pretalx-pages/pretalx_pages/views.py:137
-#: local/pretalx-pages/pretalx_pages/views.py:246
-#, fuzzy
-#| msgid "This page does not exist."
-msgid "The requested page does not exist."
-msgstr "Deze pagina bestaat niet."
-
-#: local/pretalx-pages/pretalx_pages/views.py:92
-#, fuzzy
-#| msgid "The proposal has been updated!"
-msgid "The order of pages has been updated."
-msgstr "Het voorstel is bijgewerkt!"
-
-#: local/pretalx-pages/pretalx_pages/views.py:118
-#, fuzzy
-#| msgid "You already have a tag by this name!"
-msgid "You already have a page on that URL."
-msgstr "Je hebt al een tag met deze naam!"
-
-#: local/pretalx-pages/pretalx_pages/views.py:124
-msgid "URL form"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/views.py:159
-#, fuzzy
-#| msgid "The tag has been deleted."
-msgid "The selected page has been deleted."
-msgstr "De tag is verwijderd."
-
-#: local/pretalx-pages/pretalx_pages/views.py:185
-#: pretalx/common/text/phrases.py:66
-msgid "Your changes have been saved."
-msgstr "Je wijzigingen zijn opgeslagen."
-
-#: local/pretalx-pages/pretalx_pages/views.py:197
-#: local/pretalx-pages/pretalx_pages/views.py:231
-#, fuzzy
-#| msgid "Oh :( We had trouble saving your input. See below for details."
-msgid "We could not save your changes. See below for details."
-msgstr ""
-"We hadden problemen om je invoer op te slaan. Zie hieronder voor meer "
-"informatie."
-
-#: local/pretalx-pages/pretalx_pages/views.py:219
-#, fuzzy
-#| msgid "The team has been created."
-msgid "The new page has been created."
-msgstr "Het team is aangemaakt."
-
-#: local/pretalx-venueless/pretalx_venueless/apps.py:12
-#, fuzzy
-#| msgid "Recording integrations"
-msgid "Venueless integration"
-msgstr "Opname integraties"
-
-#: local/pretalx-venueless/pretalx_venueless/apps.py:15
-msgid ""
-"Venueless integration in pretalx: Notify venueless about new schedule "
-"releases!"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/apps.py:21
-#: local/pretalx-vimeo/pretalx_vimeo/apps.py:21
-#: pretalx/orga/templates/orga/admin/admin.html:45
-#: pretalx/orga/templates/orga/base.html:209
-#: pretalx/orga/templates/orga/base.html:258
-#: pretalx/orga/templates/orga/base.html:440
-#: pretalx/orga/templates/orga/organiser/detail.html:13
-#: pretalx/orga/templates/orga/settings/form.html:10
-#: pretalx/orga/templates/orga/settings/form.html:13
-msgid "Settings"
-msgstr "Instellingen"
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:13
-#: local/pretalx-venueless/pretalx_venueless/models.py:15
-msgid ""
-"Generate a token with the trait 'world:api' in the Config -> Token Generator "
-"menu in Venueless. Leave empty to leave unchanged."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:15
-#: local/pretalx-venueless/pretalx_venueless/models.py:17
-msgid "Venueless Token"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:19
-#: local/pretalx-venueless/pretalx_venueless/models.py:22
-msgid "URL of your Venueless event"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:20
-#: local/pretalx-venueless/pretalx_venueless/models.py:23
-#: local/pretalx-venueless/pretalx_venueless/models.py:39
-msgid "Venueless URL"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:59
-msgid ""
-"This field is required if you want to show a join button to your speakers."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:32
-msgid ""
-"If you enable this feature, speakers will find a venueless join button on "
-"their profile pages."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:34
-msgid "Show join button"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:38
-msgid "URL used for sign-up links"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:43
-msgid "Venueless secret"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:44
-msgid "Venueless issuer"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:46
-msgid "Venueless audience"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:49
-msgid "Do not allow access before"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:52
-msgid "Introductory text"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/signals.py:35
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:29
-msgid "Venueless"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/join_link.html:9
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/join_link.html:27
-msgid "Join online event"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/join_link.html:18
-msgid "You can now join the event using the following button:"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/join_link.html:33
-msgid ""
-"You will be able to join this event with your browser right here when it "
-"starts."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:19
-#, fuzzy
-#| msgid "Confirm deletion"
-msgid "Confirm your Venueless connection"
-msgstr "Bevestig verwijdering"
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:22
-msgid ""
-"<strong>Venueless</strong> is asking to connect to your pretalx event. If "
-"you confirm this connection, pretalx will notify Venueless about all "
-"schedule changes."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:33
-#, python-format
-msgid ""
-"Successfully connected to venueless. Data was last pushed on %(last_push)s."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:40
-msgid ""
-"Setting up the connection with Venueless will configure the pretalx settings "
-"in Venueless, and will automatically push schedule changes to venueless "
-"users. Please use Venueless to begin this process. Go to <strong>Config → "
-"Event</strong> in Venueless, and enter the following settings to create the "
-"connection:"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:59
-#, fuzzy
-#| msgid "Login settings"
-msgid "Main settings"
-msgstr "Login instellingen"
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:61
-msgid ""
-"These settings will get filled in automatically when you set up your event "
-"with venueless. Please follow the instructions at the top of this page!"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:74
-#, fuzzy
-#| msgid "Login settings"
-msgid "Join link settings"
-msgstr "Login instellingen"
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:76
-msgid ""
-"These settings are only required if you want to distribute the sign-up links "
-"to venueless for your speakers by way of pretalx."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:101
-msgid "Connect"
-msgstr ""
-
-#. Translators: This is the label on save buttons.
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:103
-#: pretalx/common/text/phrases.py:50
-#: pretalx/orga/templates/orga/cfp/editor.html:298
-#: pretalx/orga/templates/orga/cfp/editor.html:483
-#: pretalx/orga/templates/orga/generic/table.html:100
-msgid "Save"
-msgstr "Opslaan"
-
-#: local/pretalx-venueless/pretalx_venueless/views.py:63
-msgid "Yay! We saved your changes."
-msgstr "Joepie! We hebben je wijzigingen opgeslagen."
-
-#: local/pretalx-venueless/pretalx_venueless/views.py:71
-msgid "Unable to reach Venueless:"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/views.py:89
-msgid "Unknown user or not authorized to access venueless."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/apps.py:12
-#, fuzzy
-#| msgid "Recording integrations"
-msgid "Vimeo integration"
-msgstr "Opname integraties"
-
-#: local/pretalx-vimeo/pretalx_vimeo/apps.py:15
-msgid "Embed Vimeo videos as session recordings, and retrieve them via an API."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/forms.py:25
-#, fuzzy
-#| msgid "Go to API"
-msgid "Go to video"
-msgstr "Ga naar de API"
-
-#: local/pretalx-vimeo/pretalx_vimeo/forms.py:26
-msgid "Go to talk page."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/forms.py:46
-#, fuzzy
-#| msgid "Please provide a review text!"
-msgid "Please provide a Vimeo URL!"
-msgstr "Voer een recentie tekst in!"
-
-#: local/pretalx-vimeo/pretalx_vimeo/templates/pretalx_vimeo/settings.html:6
-msgid "Set up Vimeo embeds"
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/templates/pretalx_vimeo/settings.html:11
-msgid ""
-"You will be able to add vimeo URLs to your sessions once you've created a "
-"schedule."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/views.py:30
-#, fuzzy
-#| msgid "We released a new schedule version!"
-msgid "Please create a schedule first!"
-msgstr "We hebben een nieuw schema gepubliceerd!"
-
-#: local/pretalx-vimeo/pretalx_vimeo/views.py:34
-msgid "Please fix the errors below."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/views.py:37
-#, fuzzy
-#| msgid "The anonymisation has been updated."
-msgid "The Vimeo URLs were updated."
-msgstr "De anonimisering is bijgewerkt."
 
 #: pretalx/agenda/phrases.py:11
 msgid "Thank you for your feedback!"
@@ -2454,6 +2045,13 @@ msgstr "Anders"
 msgid "edit"
 msgstr "bewerk"
 
+#. Translators: This is a label on delete buttons.
+#: pretalx/common/tables.py:530 pretalx/common/text/phrases.py:58
+#: pretalx/orga/templates/orga/submission/delete.html:9
+#: pretalx/orga/templates/orga/submission/review_fragment.html:34
+msgid "Delete"
+msgstr "Verwijder"
+
 #: pretalx/common/tables.py:539
 #: pretalx/orga/templates/orga/cfp/question/_form.html:104
 msgid "Move item"
@@ -2827,6 +2425,21 @@ msgstr "{date_from} – {date_to}"
 msgid "Send"
 msgstr "Verzend"
 
+#. Translators: This is the label on save buttons.
+#: pretalx/common/text/phrases.py:50
+#: pretalx/orga/templates/orga/cfp/editor.html:298
+#: pretalx/orga/templates/orga/cfp/editor.html:483
+#: pretalx/orga/templates/orga/generic/table.html:100
+msgid "Save"
+msgstr "Opslaan"
+
+#: pretalx/common/text/phrases.py:51
+#: pretalx/orga/templates/orga/cfp/editor.html:147
+#: pretalx/orga/templates/orga/cfp/editor.html:295
+#: pretalx/orga/templates/orga/cfp/editor.html:480
+msgid "Cancel"
+msgstr "Annuleer"
+
 #. Translators: This is the label on edit buttons.
 #: pretalx/common/text/phrases.py:53
 #: pretalx/orga/templatetags/orga_edit_link.py:15
@@ -2854,6 +2467,10 @@ msgstr ""
 #| msgid "The tag has been deleted."
 msgid "The item has been deleted."
 msgstr "De tag is verwijderd."
+
+#: pretalx/common/text/phrases.py:66
+msgid "Your changes have been saved."
+msgstr "Je wijzigingen zijn opgeslagen."
 
 #: pretalx/common/text/phrases.py:67
 msgid "Please go back and try again."
@@ -3189,6 +2806,13 @@ msgstr ""
 #: pretalx/submission/models/track.py:32
 msgid "Name"
 msgstr "Naam"
+
+#: pretalx/event/models/event.py:189 pretalx/event/models/event.py:195
+#: pretalx/event/models/organiser.py:105
+msgid "The slug may only contain letters, numbers, dots and dashes."
+msgstr ""
+"Dit pad in het domein kan alleen letters, nummers, punten en schuine "
+"streepjes bevatten."
 
 #: pretalx/event/models/event.py:194 pretalx/event/models/organiser.py:109
 msgid "Short form"
@@ -5915,6 +5539,16 @@ msgstr "Je pretalx versie is:"
 #, python-format
 msgid "You can check for updates <a href=\"%(url)s\">here</a>."
 msgstr "Check <a href=\"%(url)s\">hier</a> voor updates."
+
+#: pretalx/orga/templates/orga/admin/admin.html:45
+#: pretalx/orga/templates/orga/base.html:209
+#: pretalx/orga/templates/orga/base.html:258
+#: pretalx/orga/templates/orga/base.html:440
+#: pretalx/orga/templates/orga/organiser/detail.html:13
+#: pretalx/orga/templates/orga/settings/form.html:10
+#: pretalx/orga/templates/orga/settings/form.html:13
+msgid "Settings"
+msgstr "Instellingen"
 
 #: pretalx/orga/templates/orga/admin/admin.html:49
 msgid "Settings have been loaded from:"
@@ -8705,6 +8339,10 @@ msgid_plural "sent emails"
 msgstr[0] "Verstuurde e-mail"
 msgstr[1] "Verstuurde e-mails"
 
+#: pretalx/orga/views/event.py:131 pretalx/orga/views/event.py:339
+msgid "General information"
+msgstr "Algemene informatie"
+
 #: pretalx/orga/views/event.py:132
 msgid "Localisation"
 msgstr "Lokalisatie"
@@ -10721,6 +10359,133 @@ msgstr ""
 
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
+
+#, fuzzy
+#~| msgid "Proposal title"
+#~ msgid "Page title"
+#~ msgstr "Voorstel titel"
+
+#, fuzzy
+#~| msgid "Content"
+#~ msgid "Page content"
+#~ msgstr "Inhoud"
+
+#, fuzzy
+#~| msgid "The team has been created."
+#~ msgid "The page has been created."
+#~ msgstr "Het team is aangemaakt."
+
+#, fuzzy
+#~| msgid "The CfP has been modified."
+#~ msgid "The page has been modified."
+#~ msgstr "De CfP is aangepast."
+
+#, fuzzy
+#~| msgid "The tag has been deleted."
+#~ msgid "The page has been deleted."
+#~ msgstr "De tag is verwijderd."
+
+#, fuzzy
+#~| msgid "Delete phase"
+#~ msgid "Delete a page"
+#~ msgstr "Verwijder fase"
+
+#, fuzzy, python-format
+#~| msgid "Are you sure you want to resend the invitation to this user?"
+#~ msgid "Are you sure you want to delete the page <strong>%(name)s</strong>?"
+#~ msgstr ""
+#~ "Weet u zeker dat u de uitnodiging opnieuw naar deze gebruiker wilt "
+#~ "verzenden?"
+
+#, fuzzy
+#~| msgid "You don’t have any proposals yet."
+#~ msgid "You haven't created any pages yet."
+#~ msgstr "Je hebt nog geen voorstellen."
+
+#, fuzzy
+#~| msgid "Create a new event"
+#~ msgid "Create a new page"
+#~ msgstr "Maak een nieuw evenement aan"
+
+#, fuzzy
+#~| msgid "This page does not exist."
+#~ msgid "The requested page does not exist."
+#~ msgstr "Deze pagina bestaat niet."
+
+#, fuzzy
+#~| msgid "The proposal has been updated!"
+#~ msgid "The order of pages has been updated."
+#~ msgstr "Het voorstel is bijgewerkt!"
+
+#, fuzzy
+#~| msgid "You already have a tag by this name!"
+#~ msgid "You already have a page on that URL."
+#~ msgstr "Je hebt al een tag met deze naam!"
+
+#, fuzzy
+#~| msgid "The tag has been deleted."
+#~ msgid "The selected page has been deleted."
+#~ msgstr "De tag is verwijderd."
+
+#, fuzzy
+#~| msgid "Oh :( We had trouble saving your input. See below for details."
+#~ msgid "We could not save your changes. See below for details."
+#~ msgstr ""
+#~ "We hadden problemen om je invoer op te slaan. Zie hieronder voor meer "
+#~ "informatie."
+
+#, fuzzy
+#~| msgid "The team has been created."
+#~ msgid "The new page has been created."
+#~ msgstr "Het team is aangemaakt."
+
+#, fuzzy
+#~| msgid "Recording integrations"
+#~ msgid "Venueless integration"
+#~ msgstr "Opname integraties"
+
+#, fuzzy
+#~| msgid "Confirm deletion"
+#~ msgid "Confirm your Venueless connection"
+#~ msgstr "Bevestig verwijdering"
+
+#, fuzzy
+#~| msgid "Login settings"
+#~ msgid "Main settings"
+#~ msgstr "Login instellingen"
+
+#, fuzzy
+#~| msgid "Login settings"
+#~ msgid "Join link settings"
+#~ msgstr "Login instellingen"
+
+#~ msgid "Yay! We saved your changes."
+#~ msgstr "Joepie! We hebben je wijzigingen opgeslagen."
+
+#, fuzzy
+#~| msgid "Recording integrations"
+#~ msgid "Vimeo integration"
+#~ msgstr "Opname integraties"
+
+#, fuzzy
+#~| msgid "Go to API"
+#~ msgid "Go to video"
+#~ msgstr "Ga naar de API"
+
+#, fuzzy
+#~| msgid "Please provide a review text!"
+#~ msgid "Please provide a Vimeo URL!"
+#~ msgstr "Voer een recentie tekst in!"
+
+#, fuzzy
+#~| msgid "We released a new schedule version!"
+#~ msgid "Please create a schedule first!"
+#~ msgstr "We hebben een nieuw schema gepubliceerd!"
+
+#, fuzzy
+#~| msgid "The anonymisation has been updated."
+#~ msgid "The Vimeo URLs were updated."
+#~ msgstr "De anonimisering is bijgewerkt."
 
 #~ msgid "Enter one email address per line."
 #~ msgstr "Vul één e-mailadres in per regel."

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-28 18:35+0000\n"
+"POT-Creation-Date: 2026-03-30 15:42+0000\n"
 "PO-Revision-Date: 2025-12-04 17:41+0000\n"
 "Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
@@ -14,410 +14,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: Weblate 5.12.2\n"
-
-#: local/pretalx-pages/pretalx_pages/apps.py:12
-#: local/pretalx-pages/pretalx_pages/apps.py:20
-#: local/pretalx-pages/pretalx_pages/apps.py:21
-#: local/pretalx-pages/pretalx_pages/signals.py:21
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:5
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:8
-msgid "Pages"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/apps.py:15
-msgid ""
-"Add static pages to your event site, for example Terms of Service, venue "
-"listings, a code of conduct, etc."
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/models.py:16
-msgid "URL to static page"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/models.py:21
-#: pretalx/event/models/event.py:189 pretalx/event/models/event.py:195
-#: pretalx/event/models/organiser.py:105
-msgid "The slug may only contain letters, numbers, dots and dashes."
-msgstr "slug 에는 문자, 숫자, 점, 대시만 포함할 수 있습니다."
-
-#: local/pretalx-pages/pretalx_pages/models.py:26
-msgid ""
-"This will be used to generate the URL of the page. Please only use latin "
-"letters, numbers, dots and dashes. You cannot change this afterwards."
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/models.py:31
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:29
-#, fuzzy
-#| msgid "Proposal title"
-msgid "Page title"
-msgstr "제안 제목"
-
-#: local/pretalx-pages/pretalx_pages/models.py:33
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/form.html:18
-#, fuzzy
-#| msgid "Content"
-msgid "Page content"
-msgstr "내용"
-
-#: local/pretalx-pages/pretalx_pages/models.py:36
-msgid "Show link in the event footer"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/signals.py:43
-#, fuzzy
-#| msgid "The user has been activated."
-msgid "The page has been created."
-msgstr "사용자가 활성화되었습니다."
-
-#: local/pretalx-pages/pretalx_pages/signals.py:44
-#, fuzzy
-#| msgid "The CfP has been modified."
-msgid "The page has been modified."
-msgstr "CfP(발표 제안서)가 수정되었습니다."
-
-#: local/pretalx-pages/pretalx_pages/signals.py:45
-#, fuzzy
-#| msgid "The item has been deleted."
-msgid "The page has been deleted."
-msgstr "항목이 삭제되었습니다."
-
-#: local/pretalx-pages/pretalx_pages/signals.py:58
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/form.html:4
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/form.html:7
-msgid "Page"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:4
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:7
-#, fuzzy
-msgid "Delete a page"
-msgstr "삭제"
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:11
-#, fuzzy, python-format
-#| msgid "Are you sure you want to resend the invitation to this user?"
-msgid "Are you sure you want to delete the page <strong>%(name)s</strong>?"
-msgstr "이 사용자에게 초대를 다시 보내시겠습니까?"
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:17
-#: pretalx/common/text/phrases.py:51
-#: pretalx/orga/templates/orga/cfp/editor.html:147
-#: pretalx/orga/templates/orga/cfp/editor.html:295
-#: pretalx/orga/templates/orga/cfp/editor.html:480
-msgid "Cancel"
-msgstr "취소"
-
-#. Translators: This is a label on delete buttons.
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:20
-#: pretalx/common/tables.py:530 pretalx/common/text/phrases.py:58
-#: pretalx/orga/templates/orga/submission/delete.html:9
-#: pretalx/orga/templates/orga/submission/review_fragment.html:34
-msgid "Delete"
-msgstr "삭제"
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/form.html:12
-#: pretalx/orga/views/event.py:131 pretalx/orga/views/event.py:339
-msgid "General information"
-msgstr "일반 정보"
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:12
-#, fuzzy
-#| msgid "You don't have any API tokens yet."
-msgid "You haven't created any pages yet."
-msgstr "아직 API 토큰이 없습니다."
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:18
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:22
-#, fuzzy
-msgid "Create a new page"
-msgstr "새 이벤트 만들기"
-
-#: local/pretalx-pages/pretalx_pages/views.py:73
-#: local/pretalx-pages/pretalx_pages/views.py:78
-#: local/pretalx-pages/pretalx_pages/views.py:137
-#: local/pretalx-pages/pretalx_pages/views.py:246
-#, fuzzy
-#| msgid "This page does not exist."
-msgid "The requested page does not exist."
-msgstr "페이지가 존재하지 않습니다."
-
-#: local/pretalx-pages/pretalx_pages/views.py:92
-#, fuzzy
-#| msgid "The proposal has been updated!"
-msgid "The order of pages has been updated."
-msgstr "제안이 업데이트되었습니다!"
-
-#: local/pretalx-pages/pretalx_pages/views.py:118
-#, fuzzy
-#| msgid "You already have a tag by this name!"
-msgid "You already have a page on that URL."
-msgstr "이미 이 이름으로 태그가 있습니다!"
-
-#: local/pretalx-pages/pretalx_pages/views.py:124
-msgid "URL form"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/views.py:159
-#, fuzzy
-#| msgid "The item has been deleted."
-msgid "The selected page has been deleted."
-msgstr "항목이 삭제되었습니다."
-
-#: local/pretalx-pages/pretalx_pages/views.py:185
-#: pretalx/common/text/phrases.py:66
-msgid "Your changes have been saved."
-msgstr "변경 사항이 저장되었습니다."
-
-#: local/pretalx-pages/pretalx_pages/views.py:197
-#: local/pretalx-pages/pretalx_pages/views.py:231
-#, fuzzy
-#| msgid "We had trouble saving your input – Please see below for details."
-msgid "We could not save your changes. See below for details."
-msgstr ""
-"입력 내용을 저장하는 데 문제가 발생했습니다. 자세한 내용은 아래를 참조하세"
-"요. 🠯"
-
-#: local/pretalx-pages/pretalx_pages/views.py:219
-#, fuzzy
-#| msgid "The event has been added."
-msgid "The new page has been created."
-msgstr "이벤트가 추가되었습니다."
-
-#: local/pretalx-venueless/pretalx_venueless/apps.py:12
-#, fuzzy
-#| msgid "Recording integrations"
-msgid "Venueless integration"
-msgstr "레코딩 통합"
-
-#: local/pretalx-venueless/pretalx_venueless/apps.py:15
-msgid ""
-"Venueless integration in pretalx: Notify venueless about new schedule "
-"releases!"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/apps.py:21
-#: local/pretalx-vimeo/pretalx_vimeo/apps.py:21
-#: pretalx/orga/templates/orga/admin/admin.html:45
-#: pretalx/orga/templates/orga/base.html:209
-#: pretalx/orga/templates/orga/base.html:258
-#: pretalx/orga/templates/orga/base.html:440
-#: pretalx/orga/templates/orga/organiser/detail.html:13
-#: pretalx/orga/templates/orga/settings/form.html:10
-#: pretalx/orga/templates/orga/settings/form.html:13
-msgid "Settings"
-msgstr "설정"
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:13
-#: local/pretalx-venueless/pretalx_venueless/models.py:15
-msgid ""
-"Generate a token with the trait 'world:api' in the Config -> Token Generator "
-"menu in Venueless. Leave empty to leave unchanged."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:15
-#: local/pretalx-venueless/pretalx_venueless/models.py:17
-msgid "Venueless Token"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:19
-#: local/pretalx-venueless/pretalx_venueless/models.py:22
-msgid "URL of your Venueless event"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:20
-#: local/pretalx-venueless/pretalx_venueless/models.py:23
-#: local/pretalx-venueless/pretalx_venueless/models.py:39
-msgid "Venueless URL"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:59
-msgid ""
-"This field is required if you want to show a join button to your speakers."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:32
-msgid ""
-"If you enable this feature, speakers will find a venueless join button on "
-"their profile pages."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:34
-msgid "Show join button"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:38
-msgid "URL used for sign-up links"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:43
-msgid "Venueless secret"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:44
-msgid "Venueless issuer"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:46
-msgid "Venueless audience"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:49
-msgid "Do not allow access before"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:52
-msgid "Introductory text"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/signals.py:35
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:29
-msgid "Venueless"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/join_link.html:9
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/join_link.html:27
-msgid "Join online event"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/join_link.html:18
-msgid "You can now join the event using the following button:"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/join_link.html:33
-msgid ""
-"You will be able to join this event with your browser right here when it "
-"starts."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:19
-#, fuzzy
-#| msgid "Confirm deletion"
-msgid "Confirm your Venueless connection"
-msgstr "삭제 확인"
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:22
-msgid ""
-"<strong>Venueless</strong> is asking to connect to your pretalx event. If "
-"you confirm this connection, pretalx will notify Venueless about all "
-"schedule changes."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:33
-#, python-format
-msgid ""
-"Successfully connected to venueless. Data was last pushed on %(last_push)s."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:40
-msgid ""
-"Setting up the connection with Venueless will configure the pretalx settings "
-"in Venueless, and will automatically push schedule changes to venueless "
-"users. Please use Venueless to begin this process. Go to <strong>Config → "
-"Event</strong> in Venueless, and enter the following settings to create the "
-"connection:"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:59
-#, fuzzy
-#| msgid "Login settings"
-msgid "Main settings"
-msgstr "로그인 설정"
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:61
-msgid ""
-"These settings will get filled in automatically when you set up your event "
-"with venueless. Please follow the instructions at the top of this page!"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:74
-#, fuzzy
-#| msgid "Login settings"
-msgid "Join link settings"
-msgstr "로그인 설정"
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:76
-msgid ""
-"These settings are only required if you want to distribute the sign-up links "
-"to venueless for your speakers by way of pretalx."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:101
-msgid "Connect"
-msgstr ""
-
-#. Translators: This is the label on save buttons.
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:103
-#: pretalx/common/text/phrases.py:50
-#: pretalx/orga/templates/orga/cfp/editor.html:298
-#: pretalx/orga/templates/orga/cfp/editor.html:483
-#: pretalx/orga/templates/orga/generic/table.html:100
-msgid "Save"
-msgstr "저장"
-
-#: local/pretalx-venueless/pretalx_venueless/views.py:63
-msgid "Yay! We saved your changes."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/views.py:71
-msgid "Unable to reach Venueless:"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/views.py:89
-msgid "Unknown user or not authorized to access venueless."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/apps.py:12
-#, fuzzy
-#| msgid "Recording integrations"
-msgid "Vimeo integration"
-msgstr "레코딩 통합"
-
-#: local/pretalx-vimeo/pretalx_vimeo/apps.py:15
-msgid "Embed Vimeo videos as session recordings, and retrieve them via an API."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/forms.py:25
-#, fuzzy
-#| msgid "Go to API"
-msgid "Go to video"
-msgstr "API로 이동"
-
-#: local/pretalx-vimeo/pretalx_vimeo/forms.py:26
-msgid "Go to talk page."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/forms.py:46
-#, fuzzy
-#| msgid "Please provide a review text!"
-msgid "Please provide a Vimeo URL!"
-msgstr "리뷰 텍스트를 제공하십시오!"
-
-#: local/pretalx-vimeo/pretalx_vimeo/templates/pretalx_vimeo/settings.html:6
-msgid "Set up Vimeo embeds"
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/templates/pretalx_vimeo/settings.html:11
-msgid ""
-"You will be able to add vimeo URLs to your sessions once you've created a "
-"schedule."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/views.py:30
-#, fuzzy
-#| msgid "We released a new schedule version!"
-msgid "Please create a schedule first!"
-msgstr "새로운 일정 버전을 출시했습니다!"
-
-#: local/pretalx-vimeo/pretalx_vimeo/views.py:34
-msgid "Please fix the errors below."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/views.py:37
-#, fuzzy
-#| msgid "The anonymisation has been updated."
-msgid "The Vimeo URLs were updated."
-msgstr "익명화가 업데이트되었습니다."
 
 #: pretalx/agenda/phrases.py:11
 msgid "Thank you for your feedback!"
@@ -2363,6 +1959,13 @@ msgstr "기타"
 msgid "edit"
 msgstr ""
 
+#. Translators: This is a label on delete buttons.
+#: pretalx/common/tables.py:530 pretalx/common/text/phrases.py:58
+#: pretalx/orga/templates/orga/submission/delete.html:9
+#: pretalx/orga/templates/orga/submission/review_fragment.html:34
+msgid "Delete"
+msgstr "삭제"
+
 #: pretalx/common/tables.py:539
 #: pretalx/orga/templates/orga/cfp/question/_form.html:104
 msgid "Move item"
@@ -2725,6 +2328,21 @@ msgstr "{date_from} ~ {date_to}"
 msgid "Send"
 msgstr "보내기"
 
+#. Translators: This is the label on save buttons.
+#: pretalx/common/text/phrases.py:50
+#: pretalx/orga/templates/orga/cfp/editor.html:298
+#: pretalx/orga/templates/orga/cfp/editor.html:483
+#: pretalx/orga/templates/orga/generic/table.html:100
+msgid "Save"
+msgstr "저장"
+
+#: pretalx/common/text/phrases.py:51
+#: pretalx/orga/templates/orga/cfp/editor.html:147
+#: pretalx/orga/templates/orga/cfp/editor.html:295
+#: pretalx/orga/templates/orga/cfp/editor.html:480
+msgid "Cancel"
+msgstr "취소"
+
 #. Translators: This is the label on edit buttons.
 #: pretalx/common/text/phrases.py:53
 #: pretalx/orga/templatetags/orga_edit_link.py:15
@@ -2750,6 +2368,10 @@ msgstr ""
 #: pretalx/common/text/phrases.py:64
 msgid "The item has been deleted."
 msgstr "항목이 삭제되었습니다."
+
+#: pretalx/common/text/phrases.py:66
+msgid "Your changes have been saved."
+msgstr "변경 사항이 저장되었습니다."
 
 #: pretalx/common/text/phrases.py:67
 msgid "Please go back and try again."
@@ -3077,6 +2699,11 @@ msgstr "잘못된 이벤트 slug - 이 slug는 예약되어 있습니다: {value
 #: pretalx/submission/models/track.py:32
 msgid "Name"
 msgstr "이름"
+
+#: pretalx/event/models/event.py:189 pretalx/event/models/event.py:195
+#: pretalx/event/models/organiser.py:105
+msgid "The slug may only contain letters, numbers, dots and dashes."
+msgstr "slug 에는 문자, 숫자, 점, 대시만 포함할 수 있습니다."
 
 #: pretalx/event/models/event.py:194 pretalx/event/models/organiser.py:109
 msgid "Short form"
@@ -5621,6 +5248,16 @@ msgstr "귀하의 pretalx 버전은:"
 #, python-format
 msgid "You can check for updates <a href=\"%(url)s\">here</a>."
 msgstr "현재 버전은 <a href=\"%(url)s\">여기</a>에서 확인할 수 있습니다."
+
+#: pretalx/orga/templates/orga/admin/admin.html:45
+#: pretalx/orga/templates/orga/base.html:209
+#: pretalx/orga/templates/orga/base.html:258
+#: pretalx/orga/templates/orga/base.html:440
+#: pretalx/orga/templates/orga/organiser/detail.html:13
+#: pretalx/orga/templates/orga/settings/form.html:10
+#: pretalx/orga/templates/orga/settings/form.html:13
+msgid "Settings"
+msgstr "설정"
 
 #: pretalx/orga/templates/orga/admin/admin.html:49
 msgid "Settings have been loaded from:"
@@ -8233,6 +7870,10 @@ msgid "sent email"
 msgid_plural "sent emails"
 msgstr[0] "이메일 전송됨"
 
+#: pretalx/orga/views/event.py:131 pretalx/orga/views/event.py:339
+msgid "General information"
+msgstr "일반 정보"
+
 #: pretalx/orga/views/event.py:132
 msgid "Localisation"
 msgstr "지역화"
@@ -10153,6 +9794,126 @@ msgstr ""
 
 msgid "Drag the box to the schedule to create a new blocker"
 msgstr ""
+
+#, fuzzy
+#~| msgid "Proposal title"
+#~ msgid "Page title"
+#~ msgstr "제안 제목"
+
+#, fuzzy
+#~| msgid "Content"
+#~ msgid "Page content"
+#~ msgstr "내용"
+
+#, fuzzy
+#~| msgid "The user has been activated."
+#~ msgid "The page has been created."
+#~ msgstr "사용자가 활성화되었습니다."
+
+#, fuzzy
+#~| msgid "The CfP has been modified."
+#~ msgid "The page has been modified."
+#~ msgstr "CfP(발표 제안서)가 수정되었습니다."
+
+#, fuzzy
+#~| msgid "The item has been deleted."
+#~ msgid "The page has been deleted."
+#~ msgstr "항목이 삭제되었습니다."
+
+#, fuzzy
+#~ msgid "Delete a page"
+#~ msgstr "삭제"
+
+#, fuzzy, python-format
+#~| msgid "Are you sure you want to resend the invitation to this user?"
+#~ msgid "Are you sure you want to delete the page <strong>%(name)s</strong>?"
+#~ msgstr "이 사용자에게 초대를 다시 보내시겠습니까?"
+
+#, fuzzy
+#~| msgid "You don't have any API tokens yet."
+#~ msgid "You haven't created any pages yet."
+#~ msgstr "아직 API 토큰이 없습니다."
+
+#, fuzzy
+#~ msgid "Create a new page"
+#~ msgstr "새 이벤트 만들기"
+
+#, fuzzy
+#~| msgid "This page does not exist."
+#~ msgid "The requested page does not exist."
+#~ msgstr "페이지가 존재하지 않습니다."
+
+#, fuzzy
+#~| msgid "The proposal has been updated!"
+#~ msgid "The order of pages has been updated."
+#~ msgstr "제안이 업데이트되었습니다!"
+
+#, fuzzy
+#~| msgid "You already have a tag by this name!"
+#~ msgid "You already have a page on that URL."
+#~ msgstr "이미 이 이름으로 태그가 있습니다!"
+
+#, fuzzy
+#~| msgid "The item has been deleted."
+#~ msgid "The selected page has been deleted."
+#~ msgstr "항목이 삭제되었습니다."
+
+#, fuzzy
+#~| msgid "We had trouble saving your input – Please see below for details."
+#~ msgid "We could not save your changes. See below for details."
+#~ msgstr ""
+#~ "입력 내용을 저장하는 데 문제가 발생했습니다. 자세한 내용은 아래를 참조하세"
+#~ "요. 🠯"
+
+#, fuzzy
+#~| msgid "The event has been added."
+#~ msgid "The new page has been created."
+#~ msgstr "이벤트가 추가되었습니다."
+
+#, fuzzy
+#~| msgid "Recording integrations"
+#~ msgid "Venueless integration"
+#~ msgstr "레코딩 통합"
+
+#, fuzzy
+#~| msgid "Confirm deletion"
+#~ msgid "Confirm your Venueless connection"
+#~ msgstr "삭제 확인"
+
+#, fuzzy
+#~| msgid "Login settings"
+#~ msgid "Main settings"
+#~ msgstr "로그인 설정"
+
+#, fuzzy
+#~| msgid "Login settings"
+#~ msgid "Join link settings"
+#~ msgstr "로그인 설정"
+
+#, fuzzy
+#~| msgid "Recording integrations"
+#~ msgid "Vimeo integration"
+#~ msgstr "레코딩 통합"
+
+#, fuzzy
+#~| msgid "Go to API"
+#~ msgid "Go to video"
+#~ msgstr "API로 이동"
+
+#, fuzzy
+#~| msgid "Please provide a review text!"
+#~ msgid "Please provide a Vimeo URL!"
+#~ msgstr "리뷰 텍스트를 제공하십시오!"
+
+#, fuzzy
+#~| msgid "We released a new schedule version!"
+#~ msgid "Please create a schedule first!"
+#~ msgstr "새로운 일정 버전을 출시했습니다!"
+
+#, fuzzy
+#~| msgid "The anonymisation has been updated."
+#~ msgid "The Vimeo URLs were updated."
+#~ msgstr "익명화가 업데이트되었습니다."
 
 #~ msgid "Enter one email address per line."
 #~ msgstr "한 줄에 한 개의 이메일 주소를 입력하세요."

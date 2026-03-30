@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-28 18:35+0000\n"
+"POT-Creation-Date: 2026-03-30 15:42+0000\n"
 "PO-Revision-Date: 2025-01-15 10:49+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: none\n"
@@ -15,397 +15,6 @@ msgstr ""
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
 "&& n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
 "X-Generator: Weblate 5.6.2\n"
-
-#: local/pretalx-pages/pretalx_pages/apps.py:12
-#: local/pretalx-pages/pretalx_pages/apps.py:20
-#: local/pretalx-pages/pretalx_pages/apps.py:21
-#: local/pretalx-pages/pretalx_pages/signals.py:21
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:5
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:8
-msgid "Pages"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/apps.py:15
-msgid ""
-"Add static pages to your event site, for example Terms of Service, venue "
-"listings, a code of conduct, etc."
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/models.py:16
-msgid "URL to static page"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/models.py:21
-#: pretalx/event/models/event.py:189 pretalx/event/models/event.py:195
-#: pretalx/event/models/organiser.py:105
-msgid "The slug may only contain letters, numbers, dots and dashes."
-msgstr "قد يحتوي هذا الوسم على أحرف وأرقام ونقاط وشرطات فقط."
-
-#: local/pretalx-pages/pretalx_pages/models.py:26
-msgid ""
-"This will be used to generate the URL of the page. Please only use latin "
-"letters, numbers, dots and dashes. You cannot change this afterwards."
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/models.py:31
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:29
-#, fuzzy
-msgid "Page title"
-msgstr "عنوان الطلب (المقترح)"
-
-#: local/pretalx-pages/pretalx_pages/models.py:33
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/form.html:18
-msgid "Page content"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/models.py:36
-msgid "Show link in the event footer"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/signals.py:43
-#, fuzzy
-msgid "The page has been created."
-msgstr "تم حذف المسار."
-
-#: local/pretalx-pages/pretalx_pages/signals.py:44
-#, fuzzy
-msgid "The page has been modified."
-msgstr "تم تعديل CfP."
-
-#: local/pretalx-pages/pretalx_pages/signals.py:45
-#, fuzzy
-#| msgid "The track has been deleted."
-msgid "The page has been deleted."
-msgstr "تم حذف المسار."
-
-#: local/pretalx-pages/pretalx_pages/signals.py:58
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/form.html:4
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/form.html:7
-msgid "Page"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:4
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:7
-#, fuzzy
-msgid "Delete a page"
-msgstr "أحذف المرحلة"
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:11
-#, fuzzy, python-format
-msgid "Are you sure you want to delete the page <strong>%(name)s</strong>?"
-msgstr "هل تريد حقًا حذف هذا السؤال؟"
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:17
-#: pretalx/common/text/phrases.py:51
-#: pretalx/orga/templates/orga/cfp/editor.html:147
-#: pretalx/orga/templates/orga/cfp/editor.html:295
-#: pretalx/orga/templates/orga/cfp/editor.html:480
-msgid "Cancel"
-msgstr "إلغاء"
-
-#. Translators: This is a label on delete buttons.
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/delete.html:20
-#: pretalx/common/tables.py:530 pretalx/common/text/phrases.py:58
-#: pretalx/orga/templates/orga/submission/delete.html:9
-#: pretalx/orga/templates/orga/submission/review_fragment.html:34
-msgid "Delete"
-msgstr "حذف"
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/form.html:12
-#: pretalx/orga/views/event.py:131 pretalx/orga/views/event.py:339
-msgid "General information"
-msgstr "معلومات عامة"
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:12
-#, fuzzy
-msgid "You haven't created any pages yet."
-msgstr "ليس لديك أي مقترحات حتى الآن."
-
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:18
-#: local/pretalx-pages/pretalx_pages/templates/pretalx_pages/index.html:22
-#, fuzzy
-msgid "Create a new page"
-msgstr "إنشاء حدث جديد"
-
-#: local/pretalx-pages/pretalx_pages/views.py:73
-#: local/pretalx-pages/pretalx_pages/views.py:78
-#: local/pretalx-pages/pretalx_pages/views.py:137
-#: local/pretalx-pages/pretalx_pages/views.py:246
-#, fuzzy
-msgid "The requested page does not exist."
-msgstr "هذه الصفحة غير متاحة."
-
-#: local/pretalx-pages/pretalx_pages/views.py:92
-#, fuzzy
-msgid "The order of pages has been updated."
-msgstr "تم تحديث ترتيب الأسئلة."
-
-#: local/pretalx-pages/pretalx_pages/views.py:118
-#, fuzzy
-msgid "You already have a page on that URL."
-msgstr "لديك بالفعل علامة بهذا الاسم!"
-
-#: local/pretalx-pages/pretalx_pages/views.py:124
-msgid "URL form"
-msgstr ""
-
-#: local/pretalx-pages/pretalx_pages/views.py:159
-#, fuzzy
-#| msgid "The track has been deleted."
-msgid "The selected page has been deleted."
-msgstr "تم حذف المسار."
-
-#: local/pretalx-pages/pretalx_pages/views.py:185
-#: pretalx/common/text/phrases.py:66
-msgid "Your changes have been saved."
-msgstr "تم حفظ التعديلات التي قمت بها."
-
-#: local/pretalx-pages/pretalx_pages/views.py:197
-#: local/pretalx-pages/pretalx_pages/views.py:231
-#, fuzzy
-msgid "We could not save your changes. See below for details."
-msgstr ""
-"واجهتنا مشكلة في حفظ إدخالاتك - يرجى الاطلاع أدناه للحصول على التفاصيل. 🠯"
-
-#: local/pretalx-pages/pretalx_pages/views.py:219
-#, fuzzy
-msgid "The new page has been created."
-msgstr "تم حذف المسار."
-
-#: local/pretalx-venueless/pretalx_venueless/apps.py:12
-#, fuzzy
-#| msgid "pending Invitation"
-msgid "Venueless integration"
-msgstr "دعوة معلقة"
-
-#: local/pretalx-venueless/pretalx_venueless/apps.py:15
-msgid ""
-"Venueless integration in pretalx: Notify venueless about new schedule "
-"releases!"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/apps.py:21
-#: local/pretalx-vimeo/pretalx_vimeo/apps.py:21
-#: pretalx/orga/templates/orga/admin/admin.html:45
-#: pretalx/orga/templates/orga/base.html:209
-#: pretalx/orga/templates/orga/base.html:258
-#: pretalx/orga/templates/orga/base.html:440
-#: pretalx/orga/templates/orga/organiser/detail.html:13
-#: pretalx/orga/templates/orga/settings/form.html:10
-#: pretalx/orga/templates/orga/settings/form.html:13
-msgid "Settings"
-msgstr "الإعدادات"
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:13
-#: local/pretalx-venueless/pretalx_venueless/models.py:15
-msgid ""
-"Generate a token with the trait 'world:api' in the Config -> Token Generator "
-"menu in Venueless. Leave empty to leave unchanged."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:15
-#: local/pretalx-venueless/pretalx_venueless/models.py:17
-msgid "Venueless Token"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:19
-#: local/pretalx-venueless/pretalx_venueless/models.py:22
-msgid "URL of your Venueless event"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:20
-#: local/pretalx-venueless/pretalx_venueless/models.py:23
-#: local/pretalx-venueless/pretalx_venueless/models.py:39
-msgid "Venueless URL"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/forms.py:59
-msgid ""
-"This field is required if you want to show a join button to your speakers."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:32
-msgid ""
-"If you enable this feature, speakers will find a venueless join button on "
-"their profile pages."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:34
-msgid "Show join button"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:38
-msgid "URL used for sign-up links"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:43
-msgid "Venueless secret"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:44
-msgid "Venueless issuer"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:46
-msgid "Venueless audience"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:49
-msgid "Do not allow access before"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/models.py:52
-msgid "Introductory text"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/signals.py:35
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:29
-msgid "Venueless"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/join_link.html:9
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/join_link.html:27
-msgid "Join online event"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/join_link.html:18
-msgid "You can now join the event using the following button:"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/join_link.html:33
-msgid ""
-"You will be able to join this event with your browser right here when it "
-"starts."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:19
-#, fuzzy
-#| msgid "Account deletion"
-msgid "Confirm your Venueless connection"
-msgstr "حذف الحساب"
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:22
-msgid ""
-"<strong>Venueless</strong> is asking to connect to your pretalx event. If "
-"you confirm this connection, pretalx will notify Venueless about all "
-"schedule changes."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:33
-#, python-format
-msgid ""
-"Successfully connected to venueless. Data was last pushed on %(last_push)s."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:40
-msgid ""
-"Setting up the connection with Venueless will configure the pretalx settings "
-"in Venueless, and will automatically push schedule changes to venueless "
-"users. Please use Venueless to begin this process. Go to <strong>Config → "
-"Event</strong> in Venueless, and enter the following settings to create the "
-"connection:"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:59
-#, fuzzy
-#| msgid "Login settings"
-msgid "Main settings"
-msgstr "إعدادات تسجيل الدخول"
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:61
-msgid ""
-"These settings will get filled in automatically when you set up your event "
-"with venueless. Please follow the instructions at the top of this page!"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:74
-#, fuzzy
-#| msgid "Login settings"
-msgid "Join link settings"
-msgstr "إعدادات تسجيل الدخول"
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:76
-msgid ""
-"These settings are only required if you want to distribute the sign-up links "
-"to venueless for your speakers by way of pretalx."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:101
-msgid "Connect"
-msgstr ""
-
-#. Translators: This is the label on save buttons.
-#: local/pretalx-venueless/pretalx_venueless/templates/pretalx_venueless/settings.html:103
-#: pretalx/common/text/phrases.py:50
-#: pretalx/orga/templates/orga/cfp/editor.html:298
-#: pretalx/orga/templates/orga/cfp/editor.html:483
-#: pretalx/orga/templates/orga/generic/table.html:100
-msgid "Save"
-msgstr "حفظ"
-
-#: local/pretalx-venueless/pretalx_venueless/views.py:63
-msgid "Yay! We saved your changes."
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/views.py:71
-msgid "Unable to reach Venueless:"
-msgstr ""
-
-#: local/pretalx-venueless/pretalx_venueless/views.py:89
-msgid "Unknown user or not authorized to access venueless."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/apps.py:12
-#, fuzzy
-#| msgid "pending Invitation"
-msgid "Vimeo integration"
-msgstr "دعوة معلقة"
-
-#: local/pretalx-vimeo/pretalx_vimeo/apps.py:15
-msgid "Embed Vimeo videos as session recordings, and retrieve them via an API."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/forms.py:25
-#, fuzzy
-#| msgid "Go to API"
-msgid "Go to video"
-msgstr "الاانتقل إلى API"
-
-#: local/pretalx-vimeo/pretalx_vimeo/forms.py:26
-msgid "Go to talk page."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/forms.py:46
-#, fuzzy
-#| msgid "Please provide a valid email address."
-msgid "Please provide a Vimeo URL!"
-msgstr "يرجى تقديم عنوان بريد إلكتروني فعال."
-
-#: local/pretalx-vimeo/pretalx_vimeo/templates/pretalx_vimeo/settings.html:6
-msgid "Set up Vimeo embeds"
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/templates/pretalx_vimeo/settings.html:11
-msgid ""
-"You will be able to add vimeo URLs to your sessions once you've created a "
-"schedule."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/views.py:30
-#, fuzzy
-#| msgid "We released a new schedule version!"
-msgid "Please create a schedule first!"
-msgstr "أصدرنا نسخة جديدة من الجدول الزمني!"
-
-#: local/pretalx-vimeo/pretalx_vimeo/views.py:34
-msgid "Please fix the errors below."
-msgstr ""
-
-#: local/pretalx-vimeo/pretalx_vimeo/views.py:37
-#, fuzzy
-#| msgid "The track has been deleted."
-msgid "The Vimeo URLs were updated."
-msgstr "تم حذف المسار."
 
 #: pretalx/agenda/phrases.py:11
 msgid "Thank you for your feedback!"
@@ -2498,6 +2107,13 @@ msgstr "اجمع فريقك"
 msgid "edit"
 msgstr "تعديل"
 
+#. Translators: This is a label on delete buttons.
+#: pretalx/common/tables.py:530 pretalx/common/text/phrases.py:58
+#: pretalx/orga/templates/orga/submission/delete.html:9
+#: pretalx/orga/templates/orga/submission/review_fragment.html:34
+msgid "Delete"
+msgstr "حذف"
+
 #: pretalx/common/tables.py:539
 #: pretalx/orga/templates/orga/cfp/question/_form.html:104
 #, fuzzy
@@ -2873,6 +2489,21 @@ msgstr "{date_from} – {date_to}"
 msgid "Send"
 msgstr "إرسال"
 
+#. Translators: This is the label on save buttons.
+#: pretalx/common/text/phrases.py:50
+#: pretalx/orga/templates/orga/cfp/editor.html:298
+#: pretalx/orga/templates/orga/cfp/editor.html:483
+#: pretalx/orga/templates/orga/generic/table.html:100
+msgid "Save"
+msgstr "حفظ"
+
+#: pretalx/common/text/phrases.py:51
+#: pretalx/orga/templates/orga/cfp/editor.html:147
+#: pretalx/orga/templates/orga/cfp/editor.html:295
+#: pretalx/orga/templates/orga/cfp/editor.html:480
+msgid "Cancel"
+msgstr "إلغاء"
+
 #. Translators: This is the label on edit buttons.
 #: pretalx/common/text/phrases.py:53
 #: pretalx/orga/templatetags/orga_edit_link.py:15
@@ -2900,6 +2531,10 @@ msgstr ""
 #| msgid "The track has been deleted."
 msgid "The item has been deleted."
 msgstr "تم حذف المسار."
+
+#: pretalx/common/text/phrases.py:66
+msgid "Your changes have been saved."
+msgstr "تم حفظ التعديلات التي قمت بها."
 
 #: pretalx/common/text/phrases.py:67
 msgid "Please go back and try again."
@@ -3231,6 +2866,11 @@ msgstr "وسم الحدث غير صالح - هذا الوسم محجوز:{value}
 #: pretalx/submission/models/track.py:32
 msgid "Name"
 msgstr "الاسم"
+
+#: pretalx/event/models/event.py:189 pretalx/event/models/event.py:195
+#: pretalx/event/models/organiser.py:105
+msgid "The slug may only contain letters, numbers, dots and dashes."
+msgstr "قد يحتوي هذا الوسم على أحرف وأرقام ونقاط وشرطات فقط."
 
 #: pretalx/event/models/event.py:194 pretalx/event/models/organiser.py:109
 msgid "Short form"
@@ -5860,6 +5500,16 @@ msgstr ""
 msgid "You can check for updates <a href=\"%(url)s\">here</a>."
 msgstr ""
 "يمكنك الإطلاع على الإصدار الحالي <a href=\"%(current_url)s\"> من هنا </a>."
+
+#: pretalx/orga/templates/orga/admin/admin.html:45
+#: pretalx/orga/templates/orga/base.html:209
+#: pretalx/orga/templates/orga/base.html:258
+#: pretalx/orga/templates/orga/base.html:440
+#: pretalx/orga/templates/orga/organiser/detail.html:13
+#: pretalx/orga/templates/orga/settings/form.html:10
+#: pretalx/orga/templates/orga/settings/form.html:13
+msgid "Settings"
+msgstr "الإعدادات"
 
 #: pretalx/orga/templates/orga/admin/admin.html:49
 msgid "Settings have been loaded from:"
@@ -8779,6 +8429,10 @@ msgstr[3] ""
 msgstr[4] ""
 msgstr[5] ""
 
+#: pretalx/orga/views/event.py:131 pretalx/orga/views/event.py:339
+msgid "General information"
+msgstr "معلومات عامة"
+
 #: pretalx/orga/views/event.py:132
 #, fuzzy
 #| msgid "Anonymisation"
@@ -10817,6 +10471,110 @@ msgstr ""
 
 msgid "Hidden rooms"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Page title"
+#~ msgstr "عنوان الطلب (المقترح)"
+
+#, fuzzy
+#~ msgid "The page has been created."
+#~ msgstr "تم حذف المسار."
+
+#, fuzzy
+#~ msgid "The page has been modified."
+#~ msgstr "تم تعديل CfP."
+
+#, fuzzy
+#~| msgid "The track has been deleted."
+#~ msgid "The page has been deleted."
+#~ msgstr "تم حذف المسار."
+
+#, fuzzy
+#~ msgid "Delete a page"
+#~ msgstr "أحذف المرحلة"
+
+#, fuzzy, python-format
+#~ msgid "Are you sure you want to delete the page <strong>%(name)s</strong>?"
+#~ msgstr "هل تريد حقًا حذف هذا السؤال؟"
+
+#, fuzzy
+#~ msgid "You haven't created any pages yet."
+#~ msgstr "ليس لديك أي مقترحات حتى الآن."
+
+#, fuzzy
+#~ msgid "Create a new page"
+#~ msgstr "إنشاء حدث جديد"
+
+#, fuzzy
+#~ msgid "The requested page does not exist."
+#~ msgstr "هذه الصفحة غير متاحة."
+
+#, fuzzy
+#~ msgid "The order of pages has been updated."
+#~ msgstr "تم تحديث ترتيب الأسئلة."
+
+#, fuzzy
+#~ msgid "You already have a page on that URL."
+#~ msgstr "لديك بالفعل علامة بهذا الاسم!"
+
+#, fuzzy
+#~| msgid "The track has been deleted."
+#~ msgid "The selected page has been deleted."
+#~ msgstr "تم حذف المسار."
+
+#, fuzzy
+#~ msgid "We could not save your changes. See below for details."
+#~ msgstr ""
+#~ "واجهتنا مشكلة في حفظ إدخالاتك - يرجى الاطلاع أدناه للحصول على التفاصيل. 🠯"
+
+#, fuzzy
+#~ msgid "The new page has been created."
+#~ msgstr "تم حذف المسار."
+
+#, fuzzy
+#~| msgid "pending Invitation"
+#~ msgid "Venueless integration"
+#~ msgstr "دعوة معلقة"
+
+#, fuzzy
+#~| msgid "Account deletion"
+#~ msgid "Confirm your Venueless connection"
+#~ msgstr "حذف الحساب"
+
+#, fuzzy
+#~| msgid "Login settings"
+#~ msgid "Main settings"
+#~ msgstr "إعدادات تسجيل الدخول"
+
+#, fuzzy
+#~| msgid "Login settings"
+#~ msgid "Join link settings"
+#~ msgstr "إعدادات تسجيل الدخول"
+
+#, fuzzy
+#~| msgid "pending Invitation"
+#~ msgid "Vimeo integration"
+#~ msgstr "دعوة معلقة"
+
+#, fuzzy
+#~| msgid "Go to API"
+#~ msgid "Go to video"
+#~ msgstr "الاانتقل إلى API"
+
+#, fuzzy
+#~| msgid "Please provide a valid email address."
+#~ msgid "Please provide a Vimeo URL!"
+#~ msgstr "يرجى تقديم عنوان بريد إلكتروني فعال."
+
+#, fuzzy
+#~| msgid "We released a new schedule version!"
+#~ msgid "Please create a schedule first!"
+#~ msgstr "أصدرنا نسخة جديدة من الجدول الزمني!"
+
+#, fuzzy
+#~| msgid "The track has been deleted."
+#~ msgid "The Vimeo URLs were updated."
+#~ msgstr "تم حذف المسار."
 
 #, fuzzy
 #~| msgid "Organiser email address"
