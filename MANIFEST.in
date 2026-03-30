@@ -16,10 +16,6 @@ recursive-exclude src/data *
 recursive-exclude src/local *
 recursive-exclude src/static.dist *
 
-recursive-include src/pretalx/frontend *
-recursive-exclude src/pretalx/frontend/schedule-editor/dist *
-recursive-exclude src/pretalx/frontend/schedule-editor/node_modules *
-
 recursive-include src/pretalx/static *
 recursive-include src/pretalx/locale *
 recursive-include src/pretalx/agenda/templates *
@@ -32,6 +28,13 @@ recursive-include src/pretalx/schedule/templates *
 recursive-exclude src/tests *
 recursive-include src *.py
 recursive-include src *.license
+
+# Frontend block must come last: the node_modules exclude needs to override
+# the "recursive-include src *.py" above, since later directives take precedence,
+# and node_modules can contain Python modules because this is the world we made.
+recursive-include src/pretalx/frontend *
+recursive-exclude src/pretalx/frontend/schedule-editor/dist *
+recursive-exclude src/pretalx/frontend/schedule-editor/node_modules *
 
 global-exclude *.py[co]
 global-exclude __pycache__
