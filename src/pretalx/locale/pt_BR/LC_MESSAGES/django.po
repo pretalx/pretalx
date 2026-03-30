@@ -5,8 +5,8 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-03-30 15:42+0000\n"
-"PO-Revision-Date: 2026-03-11 22:42+0000\n"
-"Last-Translator: Lanusse <thalita.lanusse@gmail.com>\n"
+"PO-Revision-Date: 2026-03-30 17:08+0000\n"
+"Last-Translator: Renne Rocha <renne@rocha.dev.br>\n"
 "Language-Team: none\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
@@ -253,8 +253,6 @@ msgid "Not recorded"
 msgstr "Não registrar"
 
 #: pretalx/agenda/views/schedule.py:213
-#, fuzzy
-#| msgid "Recording opt-out"
 msgid "Recording"
 msgstr "Gravação"
 
@@ -265,7 +263,6 @@ msgid "An error occurred while loading the schedule. Please try again later."
 msgstr "Ocorreu um erro ao carregar a programação. Tente novamente mais tarde."
 
 #: pretalx/agenda/views/schedule.py:218
-#, fuzzy
 msgid "The schedule is not yet available. Please check back later!"
 msgstr "A programação ainda não está disponível. Por favor, volte mais tarde!"
 
@@ -2086,7 +2083,7 @@ msgstr "Impressão"
 
 #: pretalx/common/templates/common/error.html:32
 msgid "Try again"
-msgstr ""
+msgstr "Tente novamente"
 
 #: pretalx/common/templates/common/forms/auth.html:15
 #: pretalx/orga/templates/orga/cfp/editor.html:182
@@ -2305,11 +2302,11 @@ msgstr "Copiar"
 
 #: pretalx/common/templatetags/copyable.py:17
 msgid "Copied!"
-msgstr ""
+msgstr "Copiado!"
 
 #: pretalx/common/templatetags/copyable.py:18
 msgid "Failed to copy"
-msgstr ""
+msgstr "Falha ao copiar"
 
 #: pretalx/common/templatetags/times.py:17
 msgid "once"
@@ -5744,7 +5741,7 @@ msgstr "programação atual"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:344
 msgid "Talk (30 minutes)"
-msgstr ""
+msgstr "Palestra (30 minutos)"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:355
 #, fuzzy
@@ -6623,7 +6620,7 @@ msgstr "Adicionar integrante"
 #: pretalx/orga/templates/orga/plugins.html:39
 #: pretalx/orga/templates/orga/widgets/plugin_option.html:13
 msgid "Recommended"
-msgstr ""
+msgstr "Recomendado"
 
 #: pretalx/orga/templates/orga/plugins.html:43
 msgid "Disable"
@@ -9013,7 +9010,7 @@ msgstr "{speaker} está programado para outra sessão nesse mesmo horário."
 
 #: pretalx/schedule/models/slot.py:34
 msgid "Break"
-msgstr ""
+msgstr "Pausa"
 
 #: pretalx/schedule/models/slot.py:35
 msgid "Blocker"
@@ -9118,7 +9115,7 @@ msgstr "Árabe"
 
 #: pretalx/settings.py:360
 msgid "Bulgarian"
-msgstr ""
+msgstr "Búlgaro"
 
 #: pretalx/settings.py:361
 msgid "Czech"
@@ -9168,7 +9165,7 @@ msgstr "Português"
 
 #: pretalx/settings.py:392
 msgid "Ukrainian"
-msgstr ""
+msgstr "Ucraniano"
 
 #: pretalx/settings.py:393
 msgid "Vietnamese"
@@ -9897,17 +9894,17 @@ msgstr "{name} ({duration} dias)"
 #: pretalx/submission/models/type.py:93
 #, python-brace-format
 msgid "1 hour, {minutes} minutes"
-msgstr ""
+msgstr "1 hora, {minutes} minutos"
 
 #: pretalx/submission/models/type.py:95
 #, python-brace-format
 msgid "{hours} hours, {minutes} minutes"
-msgstr ""
+msgstr "{hours} horas, {minutes} minutos"
 
 #: pretalx/submission/models/type.py:99
 #, python-brace-format
 msgid "{hours} hours"
-msgstr ""
+msgstr "{hours} horas"
 
 #: pretalx/submission/models/type.py:101
 #, python-brace-format
