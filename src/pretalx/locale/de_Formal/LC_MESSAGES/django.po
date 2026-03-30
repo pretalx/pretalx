@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-03-30 15:42+0000\n"
-"PO-Revision-Date: 2026-03-28 15:11+0000\n"
+"PO-Revision-Date: 2026-03-30 17:08+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: \n"
 "Language: de_Formal\n"
@@ -1966,7 +1966,7 @@ msgstr ""
 #: pretalx/common/templates/403_csrf.html:34
 #: pretalx/common/templates/common/error.html:31
 msgid "Take a step back"
-msgstr ""
+msgstr "Einen Schritt zurück"
 
 #: pretalx/common/templates/500.html:15
 msgid "Internal server error."
@@ -1987,15 +1987,13 @@ msgstr ""
 
 #: pretalx/common/templates/common/base.html:62
 #: pretalx/orga/templates/orga/base.html:61
-#, fuzzy
-#| msgid "Public link"
 msgid "Skip link"
-msgstr "Öffentlicher Link"
+msgstr "Zum Hauptteil"
 
 #: pretalx/common/templates/common/base.html:63
 #: pretalx/orga/templates/orga/base.html:62
 msgid "Skip to main content"
-msgstr ""
+msgstr "Zum Hauptteil springen"
 
 #: pretalx/common/templates/common/base.html:79
 #: pretalx/orga/templates/orga/auth/base.html:33
@@ -2037,7 +2035,7 @@ msgstr "Impressum"
 
 #: pretalx/common/templates/common/error.html:32
 msgid "Try again"
-msgstr ""
+msgstr "Noch einmal versuchen"
 
 #: pretalx/common/templates/common/forms/auth.html:15
 #: pretalx/orga/templates/orga/cfp/editor.html:182
@@ -2236,11 +2234,11 @@ msgstr "Kopieren"
 
 #: pretalx/common/templatetags/copyable.py:17
 msgid "Copied!"
-msgstr ""
+msgstr "Kopiert!"
 
 #: pretalx/common/templatetags/copyable.py:18
 msgid "Failed to copy"
-msgstr ""
+msgstr "Kopieren fehlgeschlagen"
 
 #: pretalx/common/templatetags/times.py:17
 msgid "once"
@@ -3543,10 +3541,8 @@ msgstr ""
 
 #: pretalx/mail/models.py:32
 #: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:7
-#, fuzzy
-#| msgid "pending"
 msgid "Sending"
-msgstr "vorgemerkt"
+msgstr "Wird versendet"
 
 #: pretalx/mail/models.py:33 pretalx/orga/forms/event.py:887
 #: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:9
@@ -3858,16 +3854,17 @@ msgstr ""
 "Das ist ein Zugangscode für den „{event}“-CfP."
 
 #: pretalx/orga/forms/cfp.py:442
-#, fuzzy, python-brace-format
-#| msgid "It will allow you to submit a proposal to the “{track}” track."
+#, python-brace-format
 msgid ""
 "It will allow you to submit a proposal to the following track(s): {tracks}."
-msgstr "Er erlaubt Ihnen, eine Einreichung zum „{track}“-Track einzureichen."
+msgstr ""
+"Er erlaubt Ihnen, eine Einreichung zu den folgenden Track(s) einzureichen: "
+"{tracks}."
 
 #: pretalx/orga/forms/cfp.py:450
 #, python-brace-format
 msgid "It is valid for the following session type(s): {types}."
-msgstr ""
+msgstr "Er gilt für die folgenden Einreichungsarten: {types}."
 
 #: pretalx/orga/forms/cfp.py:456
 msgid "It will allow you to submit a proposal to our CfP."
@@ -4711,6 +4708,8 @@ msgid ""
 "Please select at least one filter or specific proposals/speakers as "
 "recipients."
 msgstr ""
+"Bitte wählen Sie mindestens einen Filter oder geben Sie eine Session oder "
+"eine Vortragende als Empfängerkreis an."
 
 #: pretalx/orga/forms/mails.py:451
 #, python-brace-format
@@ -4721,18 +4720,20 @@ msgid_plural ""
 "Could not generate {count} emails, most likely because their sessions have "
 "not been scheduled yet."
 msgstr[0] ""
+"Eine E-Mail konnte nicht erstellt werden, möglicherweise weil noch keine "
+"passende Session im Programm veröffentlicht wurde."
 msgstr[1] ""
+"{count} E-Mails konnten nicht erstellt werden, möglicherweise weil noch "
+"keine passende Session im Programm veröffentlicht wurde."
 
 #: pretalx/orga/forms/mails.py:490
-#, fuzzy
-#| msgid "pending"
 msgid "Pending"
-msgstr "vorgemerkt"
+msgstr "Vorgemerkt"
 
 #: pretalx/orga/forms/mails.py:491
 #: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:11
 msgid "Failed"
-msgstr ""
+msgstr "Fehlgeschlagen"
 
 #: pretalx/orga/forms/review.py:90
 msgid "No score"
@@ -5093,10 +5094,8 @@ msgid "Subject"
 msgstr "Betreff"
 
 #: pretalx/orga/tables/mail.py:97
-#, fuzzy
-#| msgid "Retract"
 msgid "Retry"
-msgstr "Zurückziehen"
+msgstr "Erneut versuchen"
 
 #: pretalx/orga/tables/organiser.py:23
 #: pretalx/orga/templates/orga/organiser/team/update.html:12
@@ -5114,9 +5113,8 @@ msgid "Reviewer"
 msgstr "Reviewer"
 
 #: pretalx/orga/tables/organiser.py:35
-#, fuzzy
 msgid "You have not created any teams yet."
-msgstr "Sie haben noch keine Einreichungen."
+msgstr "Sie haben noch keine Teams angelegt."
 
 #: pretalx/orga/tables/schedule.py:23
 msgid "Please add at least one place in which sessions can take place."
@@ -6393,26 +6391,23 @@ msgid "This email was sent on %(timestamp)s."
 msgstr "Diese E-Mail wurde am %(timestamp)s verschickt."
 
 #: pretalx/orga/templates/orga/mails/outbox_form.html:39
-#, fuzzy
-#| msgid "This mail had been sent already."
 msgid "This email failed to send:"
-msgstr "Diese Mail wurde bereits verschickt."
+msgstr "Diese E-Mail konnte nicht verschickt werden:"
 
 #: pretalx/orga/templates/orga/mails/outbox_list.html:16
-#, fuzzy, python-format
-#| msgid "{count} emails have been sent."
+#, python-format
 msgid "%(count)s email failed to send."
 msgid_plural "%(count)s emails failed to send."
-msgstr[0] "{count} E-Mails wurden verschickt."
-msgstr[1] "{count} E-Mails wurden verschickt."
+msgstr[0] "%(count)s E-Mail konnte nicht verschickt werden."
+msgstr[1] "%(count)s E-Mail konnten nicht verschickt werden."
 
 #: pretalx/orga/templates/orga/mails/outbox_list.html:23
 msgid "Show failed"
-msgstr ""
+msgstr "Fehlgeschlagene anzeigen"
 
 #: pretalx/orga/templates/orga/mails/outbox_list.html:24
 msgid "Retry all failed"
-msgstr ""
+msgstr "Alle fehlgeschlagenen erneut versenden"
 
 #: pretalx/orga/templates/orga/mails/outbox_list.html:32
 msgid "pending mail"
@@ -8087,10 +8082,8 @@ msgstr ""
 "genutzt."
 
 #: pretalx/orga/views/mails.py:386
-#, fuzzy
-#| msgid "Save and next"
 msgid "Save and retry"
-msgstr "Speichern und zur nächsten"
+msgstr "Speichern und erneut versuchen"
 
 #: pretalx/orga/views/mails.py:386
 msgid "Save and send"
@@ -8263,11 +8256,9 @@ msgid "Nice, you have no proposals left to review!"
 msgstr "Sie haben keine Einreichungen mehr zu bewerten!"
 
 #: pretalx/orga/views/review.py:852
-#, fuzzy, python-brace-format
-#| msgctxt "proposal status"
-#| msgid "in review"
+#, python-brace-format
 msgid "{name}'s review"
-msgstr "Review läuft"
+msgstr "{name}'s Review"
 
 #: pretalx/orga/views/review.py:853
 msgid "Your review"
@@ -8544,7 +8535,7 @@ msgstr "Noch nicht angekommen"
 #: pretalx/person/forms/profile.py:239
 #: pretalx/submission/forms/submission.py:335
 msgid "Full text search"
-msgstr ""
+msgstr "Volltextsuche"
 
 #: pretalx/person/forms/user.py:33
 msgid "For security reasons, please wait 5 minutes before you try again."
@@ -9036,7 +9027,7 @@ msgstr "Portugiesisch"
 
 #: pretalx/settings.py:392
 msgid "Ukrainian"
-msgstr ""
+msgstr "Ukrainisch"
 
 #: pretalx/settings.py:393
 msgid "Vietnamese"
@@ -9140,10 +9131,6 @@ msgid "You already have a tag by this name!"
 msgstr "Ein Tag mit diesem Namen liegt bereits vor!"
 
 #: pretalx/submission/models/access_code.py:34
-#, fuzzy
-#| msgid ""
-#| "You can restrict the access code to a single track, or leave it open for "
-#| "all tracks."
 msgid ""
 "You can restrict the access code to one or more tracks, or leave it open for "
 "all non-restricted tracks."
@@ -9152,10 +9139,6 @@ msgstr ""
 "das Feld frei, um ihn auf alle Tracks anzuwenden."
 
 #: pretalx/submission/models/access_code.py:43
-#, fuzzy
-#| msgid ""
-#| "You can restrict the access code to a single session type, or leave it "
-#| "open for all session types."
 msgid ""
 "You can restrict the access code to one or more session types, or leave it "
 "open for all non-restricted session types."
