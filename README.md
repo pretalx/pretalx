@@ -359,7 +359,7 @@
 | src/tests/common/commands/test\_makemigrations.py                          |       36 |        0 |        2 |        0 |     100% |           |
 | src/tests/common/commands/test\_migrate.py                                 |       15 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/commands/test\_move\_event.py                             |       32 |        0 |        0 |        0 |     100% |           |
-| src/tests/common/commands/test\_runperiodic.py                             |       13 |        0 |        0 |        0 |     100% |           |
+| src/tests/common/commands/test\_runperiodic.py                             |       15 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/commands/test\_sendtestemail.py                           |       24 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/commands/test\_shell.py                                   |       71 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/commands/test\_spectacular.py                             |       10 |        0 |        0 |        0 |     100% |           |
@@ -551,7 +551,7 @@
 | src/tests/submission/test\_rules.py                                        |      623 |        0 |        0 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **68301** |    **0** | **5792** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **68303** |    **0** | **5792** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
