@@ -71,16 +71,20 @@ class TeamSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         super().__init__(*args, **kwargs)
         request = kwargs.get("context", {}).get("request")
         if request and hasattr(request, "organiser"):
-            self.fields["limit_events"].queryset = request.organiser.events.all()
-            self.fields["limit_tracks"].queryset = Track.objects.filter(
+            self.fields[
+                "limit_events"
+            ].child_relation.queryset = request.organiser.events.all()
+            self.fields["limit_tracks"].child_relation.queryset = Track.objects.filter(
                 event__organiser=request.organiser
             )
-            self.fields["invites"].queryset = TeamInvite.objects.filter(
+            self.fields["invites"].child_relation.queryset = TeamInvite.objects.filter(
                 team__organiser=request.organiser
             )
         if self.instance and not isinstance(self.instance, list) and self.instance.pk:
-            self.fields["limit_events"].queryset = self.instance.events.all()
-            self.fields["members"].queryset = self.instance.members.all()
+            self.fields[
+                "limit_events"
+            ].child_relation.queryset = self.instance.events.all()
+            self.fields["members"].child_relation.queryset = self.instance.members.all()
 
     def validate(self, data):
         all_events = self.get_with_fallback(data, "all_events")

@@ -143,7 +143,7 @@ def test_review_write_serializer_init_scores_queryset_filtered_by_event():
     request = make_api_request(event)
     serializer = ReviewWriteSerializer(context={"request": request})
 
-    scores_qs = serializer.fields["scores"].queryset
+    scores_qs = serializer.fields["scores"].child_relation.queryset
     assert score in scores_qs
     assert other_score not in scores_qs
     assert set(scores_qs.values_list("category__event", flat=True)) == {event.pk}

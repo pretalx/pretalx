@@ -736,7 +736,6 @@ def test_submission_orga_serializer_update_with_tags():
 
 
 def test_submission_orga_serializer_update_validates_tag_pks():
-    """is_valid() accepts tag PKs and resolves them via the event-scoped queryset."""
     submission = SubmissionFactory()
     tag1 = TagFactory(event=submission.event)
     tag2 = TagFactory(event=submission.event)

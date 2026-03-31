@@ -67,9 +67,13 @@ class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         self.fields["answers"].required = False
         self.fields["score"].read_only = True
         if self.event:
-            self.fields["scores"].queryset = ReviewScore.objects.filter(
-                category__event=self.event
-            )
+            scores_field = self.fields["scores"]
+            # ReviewSerializer (read-only) overrides scores with a nested
+            # serializer that has no child_relation, so guard before accessing.
+            if hasattr(scores_field, "child_relation"):
+                scores_field.child_relation.queryset = ReviewScore.objects.filter(
+                    category__event=self.event
+                )
             self.fields["text"].required = self.event.review_settings["text_mandatory"]
             self.fields["scores"].required = self.event.review_settings[
                 "score_mandatory"
@@ -114,19 +118,16 @@ class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
     def create(self, validated_data):
         validated_data["user"] = self.context["request"].user
-        scores = validated_data.pop("scores", None)
         instance = super().create(validated_data)
-        if scores:
-            instance.scores.set(scores)
+        if instance.scores.exists():
             instance.save(update_score=True)
         return instance
 
     def update(self, instance, validated_data):
         validated_data["user"] = self.context["request"].user
-        scores = validated_data.pop("scores", None)
+        has_scores = "scores" in validated_data
         instance = super().update(instance, validated_data)
-        if scores:
-            instance.scores.set(scores)
+        if has_scores:
             instance.save(update_score=True)
         return instance
 
