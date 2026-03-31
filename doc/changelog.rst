@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga:review,1932` When reviewers proceed to the next unreviewed proposal, the proposal picker now uses better randomisation to assure an even spread of reviews across the code base.
 - :feature:`lang` pretalx now includes a full Ukrainian translation!
 - :bug:`orga` The "days since event end" dashboard entry was incorrectly showing days since event start
 - :feature:`orga:schedule` Sessions with no duration are no longer shown in the schedule editor, allowing for better handling of poster sessions and similar sessions that do not need a schedule slot.

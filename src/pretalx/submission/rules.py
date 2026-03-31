@@ -3,7 +3,8 @@
 
 import rules
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Count, Exists, OuterRef, Q, Subquery
+from django.db.models import Count, Exists, OuterRef, Q, Subquery, Value
+from django.db.models.functions import Coalesce
 
 from pretalx.person.rules import is_only_reviewer, is_reviewer
 
@@ -350,15 +351,26 @@ def get_reviewable_submissions(event, user, queryset=None):
     assignments and review phases into account. The result is ordered by review count.
     """
     from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+        Review,
         SubmissionStates,
     )
 
     if queryset is None:
         queryset = event.submissions.filter(state=SubmissionStates.SUBMITTED)
     queryset = limit_for_reviewers(queryset, event, user, add_assignments=True)
-    queryset = queryset.annotate(review_count=Count("reviews"))
-    # This is not randomised, because order_by("review_count", "?") sets all annotated
-    # review_count values to 1.
+    # Use a subquery instead of Count("reviews") to avoid a GROUP BY on the
+    # outer query — this lets callers add order_by("?") without breaking the
+    # annotation values (a known Django ORM issue with COUNT + RANDOM).
+    review_count = (
+        Review.objects.filter(submission=OuterRef("pk"))
+        .order_by()
+        .values("submission")
+        .annotate(count=Count("pk"))
+        .values("count")
+    )
+    queryset = queryset.annotate(
+        review_count=Coalesce(Subquery(review_count), Value(0))
+    )
     return queryset.order_by("-is_assigned", "review_count")
 
 
@@ -372,4 +384,7 @@ def get_missing_reviews(event, user, ignore=None):
     )
     if ignore:
         queryset = queryset.exclude(pk__in=ignore)
-    return get_reviewable_submissions(event, user, queryset=queryset)
+    queryset = get_reviewable_submissions(event, user, queryset=queryset)
+    # Randomise within each priority tier so that "save and next" doesn't
+    # always hand reviewers the same deterministic sequence of proposals.
+    return queryset.order_by("-is_assigned", "review_count", "?")
