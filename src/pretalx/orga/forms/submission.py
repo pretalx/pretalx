@@ -4,8 +4,6 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: Florian Mösch
 
-import json
-
 from django import forms
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
@@ -50,7 +48,7 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             kwargs.pop("initial", None)
             initial = {}
             instance = kwargs.pop("instance", None)
-            previous_data = instance.anonymised
+            previous_data = instance.anonymised or {}
             for key in self._meta.fields:
                 initial[key] = (
                     previous_data.get(key) or getattr(instance, key, None) or ""
@@ -291,7 +289,7 @@ class AnonymiseForm(SubmissionForm):
             self.fields.pop(key, None)
 
     def save(self):
-        anonymised_data = {
+        self._instance.anonymised = {
             "_anonymised": True,
             **{
                 key: value
@@ -299,8 +297,7 @@ class AnonymiseForm(SubmissionForm):
                 if value != getattr(self._instance, key, "")
             },
         }
-        self._instance.anonymised_data = json.dumps(anonymised_data)
-        self._instance.save(update_fields=["anonymised_data"])
+        self._instance.save(update_fields=["anonymised"])
 
     class Media:
         js = [forms.Script("orga/js/forms/anonymise.js", defer="")]

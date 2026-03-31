@@ -899,3 +899,114 @@ def test_submission_filter_form_filter_queryset_no_filters():
     filtered = form.filter_queryset(qs)
 
     assert set(filtered) == {sub1, sub2}
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_key"),
+    (("Specialized", "normal"), ("Redacted", "anonymised")),
+    ids=["original_title_hidden", "anonymised_title_found"],
+)
+def test_submission_filter_form_anonymised_title_search(query, expected_key):
+    """When can_view_speakers=False, search hides the original title of
+    anonymised submissions but finds the anonymised title (#970)."""
+    event = EventFactory()
+    subs = {
+        "anonymised": SubmissionFactory(
+            event=event,
+            title="Specialized Workshop Title",
+            anonymised={"_anonymised": True, "title": "Redacted Title"},
+        ),
+        "normal": SubmissionFactory(event=event, title="Specialized Talk Title"),
+    }
+
+    form = SubmissionFilterForm(event=event, data={"q": query}, can_view_speakers=False)
+    assert form.is_valid(), form.errors
+
+    filtered = form.filter_queryset(event.submissions.all())
+
+    assert set(filtered) == {subs[expected_key]}
+
+
+@pytest.mark.parametrize(
+    ("query", "finds_submission"),
+    (("Secretive", False), ("Redacted", True)),
+    ids=["original_content_hidden", "anonymised_content_found"],
+)
+def test_submission_filter_form_anonymised_fulltext_search(query, finds_submission):
+    """When can_view_speakers=False, fulltext search hides original content of
+    anonymised submissions but finds the anonymised content (#970)."""
+    event = EventFactory()
+    sub = SubmissionFactory(
+        event=event,
+        abstract="Secretive abstract content",
+        anonymised={"_anonymised": True, "abstract": "Redacted abstract"},
+    )
+
+    form = SubmissionFilterForm(
+        event=event, data={"q": query, "fulltext": True}, can_view_speakers=False
+    )
+    assert form.is_valid(), form.errors
+
+    filtered = form.filter_queryset(event.submissions.all())
+
+    assert set(filtered) == ({sub} if finds_submission else set())
+
+
+@pytest.mark.parametrize(
+    ("query", "fulltext", "finds_submission"),
+    (("Unique", True, True), ("Original", False, False)),
+    ids=["unredacted_field_found", "redacted_field_hidden"],
+)
+def test_submission_filter_form_partial_anonymisation_search(
+    query, fulltext, finds_submission
+):
+    """When only the title is anonymised, un-redacted fields remain searchable
+    but the redacted title is protected (#970)."""
+    event = EventFactory()
+    sub = SubmissionFactory(
+        event=event,
+        title="Original Title",
+        description="Unique description content",
+        anonymised={"_anonymised": True, "title": "Redacted Title"},
+    )
+
+    data = {"q": query}
+    if fulltext:
+        data["fulltext"] = True
+    form = SubmissionFilterForm(event=event, data=data, can_view_speakers=False)
+    assert form.is_valid(), form.errors
+
+    filtered = form.filter_queryset(event.submissions.all())
+
+    assert set(filtered) == ({sub} if finds_submission else set())
+
+
+def test_submission_filter_form_can_view_speakers_searches_original_title():
+    """When can_view_speakers=True, search uses the original title even for
+    anonymised submissions (organiser view)."""
+    event = EventFactory()
+    anonymised_sub = SubmissionFactory(
+        event=event,
+        title="Specialized Workshop Title",
+        anonymised={"_anonymised": True, "title": "Redacted Title"},
+    )
+
+    form = SubmissionFilterForm(
+        event=event, data={"q": "Specialized"}, can_view_speakers=True
+    )
+    assert form.is_valid(), form.errors
+
+    filtered = form.filter_queryset(event.submissions.all())
+
+    assert set(filtered) == {anonymised_sub}
+
+
+def test_submission_filter_form_anonymised_search_empty_search_fields():
+    """When search_fields is empty, _anonymised_search returns the queryset unchanged."""
+    event = EventFactory()
+    sub = SubmissionFactory(event=event, title="Some Title")
+    qs = event.submissions.all()
+
+    result = SubmissionFilterForm._anonymised_search(qs, "Some", search_fields=())
+
+    assert set(result) == {sub}

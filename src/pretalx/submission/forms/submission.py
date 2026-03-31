@@ -336,14 +336,28 @@ class SubmissionFilterForm(forms.Form):
 
     default_renderer = InlineFormRenderer
 
-    def __init__(self, event, *args, limit_tracks=False, search_fields=None, **kwargs):
+    def __init__(
+        self,
+        event,
+        *args,
+        limit_tracks=False,
+        search_fields=None,
+        can_view_speakers=True,
+        **kwargs,
+    ):
         self.event = event
-        self.search_fields = search_fields or (
-            "code__icontains",
-            "title__icontains",
-            "speakers__user__name__icontains",
-            "speakers__name__icontains",
-        )
+        self.can_view_speakers = can_view_speakers
+        if search_fields:
+            self.search_fields = search_fields
+        elif can_view_speakers:
+            self.search_fields = (
+                "code__icontains",
+                "title__icontains",
+                "speakers__user__name__icontains",
+                "speakers__name__icontains",
+            )
+        else:
+            self.search_fields = ("code__icontains", "title__icontains")
         usable_states = kwargs.pop("usable_states", None)
         initial = kwargs.pop("initial", {}) or {}
         initial["exclude_pending"] = False
@@ -513,7 +527,10 @@ class SubmissionFilterForm(forms.Form):
                     "notes__icontains",
                     "internal_notes__icontains",
                 )
-            qs = Filterable.handle_search(qs, search, search_fields)
+            if self.can_view_speakers:
+                qs = Filterable.handle_search(qs, search, search_fields)
+            else:
+                qs = self._anonymised_search(qs, search, search_fields)
 
         return self._filter_question(
             qs,
@@ -522,6 +539,40 @@ class SubmissionFilterForm(forms.Form):
             option=self.cleaned_data.get("answer__options"),
             unanswered=self.cleaned_data.get("unanswered"),
         )
+
+    # Fields where anonymised data should be searched instead of the original
+    # when the reviewer cannot see speaker names.
+    ANONYMISABLE_FIELDS = {"title", "description", "abstract", "notes"}
+
+    @staticmethod
+    def _anonymised_search(qs, query, search_fields):
+        """Search that respects anonymisation.
+
+        For fields that can be anonymised, we search the original value only on
+        non-anonymised submissions, and the anonymised JSON value on anonymised
+        ones.  Other fields (code, internal_notes, speakers) are searched
+        normally.
+        """
+        filters = Q()
+        anonymisable = SubmissionFilterForm.ANONYMISABLE_FIELDS
+        is_anonymised = {"anonymised___anonymised": True}
+        for field in search_fields:
+            # field looks like "title__icontains"
+            base = field.split("__")[0]
+            if base in anonymisable:
+                # Not anonymised at all → search original
+                filters |= Q(anonymised__isnull=True, **{field: query})
+                # Field was redacted → search anonymised value
+                filters |= Q(**is_anonymised, **{f"anonymised__{field}": query})
+                # Anonymised submission, but this field was not redacted → search original
+                filters |= Q(**is_anonymised, **{field: query}) & ~Q(
+                    anonymised__has_key=base
+                )
+            else:
+                filters |= Q(**{field: query})
+        if filters:
+            qs = qs.filter(filters)
+        return qs
 
     class Media:
         js = [

@@ -358,9 +358,19 @@ class BulkReview(EventPermissionRequired, TemplateView):
 
     @context
     @cached_property
+    def can_view_speakers(self):
+        return self.request.user.has_perm(
+            "person.reviewer_list_speakerprofile", self.request.event
+        )
+
+    @context
+    @cached_property
     def filter_form(self):
         return SubmissionFilterForm(
-            data=self.request.GET, event=self.request.event, prefix="filter"
+            data=self.request.GET,
+            event=self.request.event,
+            prefix="filter",
+            can_view_speakers=self.can_view_speakers,
         )
 
     @context
@@ -503,13 +513,10 @@ class BulkReview(EventPermissionRequired, TemplateView):
                 return redirect(request.path)
             row = self._build_row(submission, form, state="error")
 
-        can_view_speakers = request.user.has_perm(
-            "person.reviewer_list_speakerprofile", request.event
-        )
         return render(
             request,
             "orga/review/bulk.html#bulk-review-row",
-            {"row": row, "can_view_speakers": can_view_speakers},
+            {"row": row, "can_view_speakers": self.can_view_speakers},
         )
 
 

@@ -330,6 +330,7 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
 @register_serializer()
 class SubmissionOrgaSerializer(SubmissionSerializer):
+    anonymised_data = serializers.JSONField(source="anonymised", required=False)
     assigned_reviewers = serializers.SlugRelatedField(
         slug_field="code", queryset=User.objects.none(), required=False, many=True
     )

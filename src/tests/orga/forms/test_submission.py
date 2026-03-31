@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
-import json
 
 import pytest
 from django import forms
@@ -264,7 +263,7 @@ def test_submission_form_init_anonymise_uses_anonymised_data(event):
     submission = SubmissionFactory(
         event=event,
         title="Original Title",
-        anonymised_data=json.dumps({"_anonymised": True, "title": "Anonymised Title"}),
+        anonymised={"_anonymised": True, "title": "Anonymised Title"},
     )
 
     form = SubmissionForm(event=event, anonymise=True, instance=submission)
@@ -275,9 +274,7 @@ def test_submission_form_init_anonymise_uses_anonymised_data(event):
 def test_submission_form_init_anonymise_falls_back_to_instance_attr(event):
     """When anonymise=True and field not in anonymised_data, uses instance attr."""
     submission = SubmissionFactory(
-        event=event,
-        title="Original Title",
-        anonymised_data=json.dumps({"_anonymised": True}),
+        event=event, title="Original Title", anonymised={"_anonymised": True}
     )
 
     form = SubmissionForm(event=event, anonymise=True, instance=submission)
@@ -591,10 +588,9 @@ def test_anonymise_form_save_stores_anonymised_data(event):
     form.save()
 
     submission.refresh_from_db()
-    data = json.loads(submission.anonymised_data)
 
-    assert data["_anonymised"] is True
-    assert data["title"] == "Anonymised Title"
+    assert submission.anonymised["_anonymised"] is True
+    assert submission.anonymised["title"] == "Anonymised Title"
 
 
 def test_anonymise_form_save_only_stores_changed_fields(event):
@@ -614,14 +610,13 @@ def test_anonymise_form_save_only_stores_changed_fields(event):
     form.save()
 
     submission.refresh_from_db()
-    data = json.loads(submission.anonymised_data)
 
-    assert "title" not in data
-    assert data["abstract"] == "New abstract"
+    assert "title" not in submission.anonymised
+    assert submission.anonymised["abstract"] == "New abstract"
 
 
 def test_anonymise_form_save_does_not_modify_original_model_fields(event):
-    """Saving AnonymiseForm only updates anonymised_data, not the submission fields."""
+    """Saving AnonymiseForm only updates the anonymised field, not the submission fields."""
     submission = SubmissionFactory(event=event, title="Original Title")
 
     form = AnonymiseForm(
