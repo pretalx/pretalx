@@ -373,7 +373,7 @@ def test_submission_serializer_init_sets_querysets():
 
     assert list(serializer.fields["submission_type"].queryset) == [stype]
     assert list(serializer.fields["track"].queryset) == [track]
-    assert list(serializer.fields["tags"].queryset) == [tag]
+    assert list(serializer.fields["tags"].child_relation.queryset) == [tag]
 
 
 def test_submission_serializer_init_removes_track_when_feature_disabled():
@@ -618,7 +618,7 @@ def test_submission_orga_serializer_assigned_reviewers_queryset():
     request = make_api_request(event)
     serializer = SubmissionOrgaSerializer(context={"request": request})
 
-    qs = serializer.fields["assigned_reviewers"].queryset
+    qs = serializer.fields["assigned_reviewers"].child_relation.queryset
     assert set(qs) == {reviewer}
 
 
@@ -733,6 +733,129 @@ def test_submission_orga_serializer_update_with_tags():
     )
     updated = serializer.update(submission, {"tags": [tag]})
     assert list(updated.tags.all()) == [tag]
+
+
+def test_submission_orga_serializer_update_validates_tag_pks():
+    """is_valid() accepts tag PKs and resolves them via the event-scoped queryset."""
+    submission = SubmissionFactory()
+    tag1 = TagFactory(event=submission.event)
+    tag2 = TagFactory(event=submission.event)
+    request = make_api_request(submission.event)
+    serializer = SubmissionOrgaSerializer(
+        instance=submission,
+        data={"tags": [tag1.pk, tag2.pk]},
+        partial=True,
+        context={"request": request},
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+    assert set(submission.tags.all()) == {tag1, tag2}
+
+
+def test_submission_orga_serializer_update_rejects_cross_event_tag():
+    submission = SubmissionFactory()
+    other_event = EventFactory()
+    foreign_tag = TagFactory(event=other_event)
+    request = make_api_request(submission.event)
+    serializer = SubmissionOrgaSerializer(
+        instance=submission,
+        data={"tags": [foreign_tag.pk]},
+        partial=True,
+        context={"request": request},
+    )
+
+    assert not serializer.is_valid()
+    assert "tags" in serializer.errors
+
+
+def test_submission_orga_serializer_update_validates_assigned_reviewer_codes():
+    submission = SubmissionFactory()
+    reviewer = UserFactory()
+    team = TeamFactory(
+        organiser=submission.event.organiser, all_events=True, is_reviewer=True
+    )
+    team.members.add(reviewer)
+    request = make_api_request(submission.event)
+    serializer = SubmissionOrgaSerializer(
+        instance=submission,
+        data={"assigned_reviewers": [reviewer.code]},
+        partial=True,
+        context={"request": request},
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+    assert list(submission.assigned_reviewers.all()) == [reviewer]
+
+
+def test_submission_orga_serializer_update_empty_tags_clears():
+    submission = SubmissionFactory()
+    tag = TagFactory(event=submission.event)
+    submission.tags.add(tag)
+    request = make_api_request(submission.event)
+    serializer = SubmissionOrgaSerializer(
+        instance=submission,
+        data={"tags": []},
+        partial=True,
+        context={"request": request},
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+    assert list(submission.tags.all()) == []
+
+
+def test_submission_orga_serializer_update_omitted_tags_unchanged():
+    submission = SubmissionFactory()
+    tag = TagFactory(event=submission.event)
+    submission.tags.add(tag)
+    request = make_api_request(submission.event)
+    serializer = SubmissionOrgaSerializer(
+        instance=submission,
+        data={"title": "Changed"},
+        partial=True,
+        context={"request": request},
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+    assert list(submission.tags.all()) == [tag]
+
+
+def test_submission_orga_serializer_update_null_tags_rejected():
+    submission = SubmissionFactory()
+    request = make_api_request(submission.event)
+    serializer = SubmissionOrgaSerializer(
+        instance=submission,
+        data={"tags": None},
+        partial=True,
+        context={"request": request},
+    )
+
+    assert not serializer.is_valid()
+    assert "tags" in serializer.errors
+
+
+def test_submission_orga_serializer_update_empty_assigned_reviewers_clears():
+    submission = SubmissionFactory()
+    reviewer = UserFactory()
+    team = TeamFactory(
+        organiser=submission.event.organiser, all_events=True, is_reviewer=True
+    )
+    team.members.add(reviewer)
+    submission.assigned_reviewers.add(reviewer)
+    request = make_api_request(submission.event)
+    serializer = SubmissionOrgaSerializer(
+        instance=submission,
+        data={"assigned_reviewers": []},
+        partial=True,
+        context={"request": request},
+    )
+
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+    assert list(submission.assigned_reviewers.all()) == []
 
 
 def test_submission_orga_serializer_update_duration_change_updates_slot_end():

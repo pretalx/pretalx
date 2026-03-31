@@ -197,7 +197,7 @@ class SubmissionSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             return
         self.fields["submission_type"].queryset = self.event.submission_types.all()
         self.fields["track"].queryset = self.event.tracks.all()
-        self.fields["tags"].queryset = self.event.tags.all()
+        self.fields["tags"].child_relation.queryset = self.event.tags.all()
 
         if not self.event.get_feature_flag("use_tracks"):
             self.fields.pop("track", None)
@@ -341,7 +341,9 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
         super().__init__(*args, **kwargs)
         self.fields["reviews"].required = False
         if self.event:
-            self.fields["assigned_reviewers"].queryset = self.event.reviewers
+            self.fields[
+                "assigned_reviewers"
+            ].child_relation.queryset = self.event.reviewers
 
     @extend_schema_field(list[int])
     def get_invitations(self, obj):
@@ -367,7 +369,6 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
         return value
 
     def create(self, validated_data):
-        tags_data = validated_data.pop("tags", [])
         image = validated_data.pop("image", None)
         validated_data["event"] = self.event
         if "get_duration" in validated_data:
@@ -377,8 +378,6 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
 
         submission = super().create(validated_data)
 
-        if tags_data:
-            submission.tags.set(tags_data)
         if image:
             submission.image.save(Path(image.name).name, image, save=True)
             submission.save(update_fields=("image",))
@@ -386,7 +385,6 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
         return submission
 
     def update(self, instance, validated_data):
-        tags_data = validated_data.pop("tags", [])
         image = validated_data.pop("image", None)
         validated_data["event"] = self.event
         duration_changed = False
@@ -403,8 +401,6 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
 
         submission = super().update(instance, validated_data)
 
-        if tags_data:
-            submission.tags.set(tags_data)
         if image:
             submission.image.save(Path(image.name).name, image)
             submission.process_image("image", generate_thumbnail=True)

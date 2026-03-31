@@ -149,6 +149,18 @@ date                  String in ISO 8601 format    ``2017-12-27``
 multi-language string Object of strings            ``{"en": "red", "de": "rot"}``
 ===================== ============================ ===================================
 
+List fields in updates
+^^^^^^^^^^^^^^^^^^^^^^
+
+When updating a resource with ``PATCH``, list fields (such as ``tags`` or
+``assigned_reviewers``) follow these rules:
+
+- **Omit the field** to leave it unchanged.
+- **Send an empty list** (``[]``) to clear all values.
+- **Send a non-empty list** to replace the current values entirely (not a merge).
+
+Sending ``null`` for a list field is not valid and will return a ``400`` error.
+
 Multi-language strings
 ^^^^^^^^^^^^^^^^^^^^^^
 
