@@ -1041,6 +1041,102 @@ def test_get_missing_reviews_with_ignore():
     assert s2.pk in result_pks
 
 
+def test_get_missing_reviews_is_randomised():
+    """Calling get_missing_reviews repeatedly returns submissions in varying
+    order, proving the queryset is not deterministic."""
+    event = EventFactory()
+    user = UserFactory()
+    SubmissionFactory.create_batch(6, event=event, state=SubmissionStates.SUBMITTED)
+    event.review_phases.filter(is_active=True).update(
+        proposal_visibility="all", can_review=True
+    )
+
+    with scope(event=event):
+        orderings = set()
+        for _ in range(20):
+            pks = tuple(
+                rules.get_missing_reviews(event, user).values_list("pk", flat=True)
+            )
+            orderings.add(pks)
+
+    assert len(orderings) > 1
+
+
+def test_get_missing_reviews_prioritises_fewer_reviews():
+    """Submissions with fewer reviews always come before those with more,
+    even though the ordering within a tier is random."""
+    event = EventFactory()
+    reviewer = UserFactory()
+    other_user = UserFactory()
+    s_zero = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    s_one = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    ReviewFactory(submission=s_one, user=other_user)
+    event.review_phases.filter(is_active=True).update(
+        proposal_visibility="all", can_review=True
+    )
+
+    with scope(event=event):
+        result = list(
+            rules.get_missing_reviews(event, reviewer).values_list("pk", flat=True)
+        )
+
+    assert result.index(s_zero.pk) < result.index(s_one.pk)
+
+
+def test_get_missing_reviews_prioritises_assigned():
+    """Assigned submissions come before unassigned ones regardless of review
+    count."""
+    event = EventFactory()
+    reviewer = UserFactory()
+    s_unassigned = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    s_assigned = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    s_assigned.assigned_reviewers.add(reviewer)
+    event.review_phases.filter(is_active=True).update(
+        proposal_visibility="all", can_review=True
+    )
+
+    with scope(event=event):
+        result = list(
+            rules.get_missing_reviews(event, reviewer).values_list("pk", flat=True)
+        )
+
+    assert result.index(s_assigned.pk) < result.index(s_unassigned.pk)
+
+
+def test_get_missing_reviews_randomises_within_same_review_count():
+    """Three submissions with 0 reviews and three with 1 review: the 0-review
+    tier always comes first, but within each tier the order varies."""
+    event = EventFactory()
+    reviewer = UserFactory()
+    other_user = UserFactory()
+    zero_review = set()
+    for _ in range(3):
+        s = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        zero_review.add(s.pk)
+    one_review = set()
+    for _ in range(3):
+        s = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+        ReviewFactory(submission=s, user=other_user)
+        one_review.add(s.pk)
+    event.review_phases.filter(is_active=True).update(
+        proposal_visibility="all", can_review=True
+    )
+
+    with scope(event=event):
+        orderings = set()
+        for _ in range(20):
+            pks = tuple(
+                rules.get_missing_reviews(event, reviewer).values_list("pk", flat=True)
+            )
+            orderings.add(pks)
+            # The 0-review tier always occupies the first three positions
+            assert set(pks[:3]) == zero_review
+            assert set(pks[3:]) == one_review
+
+    # Within-tier ordering is not deterministic
+    assert len(orderings) > 1
+
+
 def test_questions_for_user_update_question_perm():
     event = EventFactory()
     team = TeamFactory(
