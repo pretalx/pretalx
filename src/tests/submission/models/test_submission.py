@@ -202,43 +202,16 @@ def test_submission_update_duration():
 @pytest.mark.parametrize(
     ("data", "expected"),
     (
-        ("", {}),
-        (None, {}),
-        ("{}", {}),
-        ("[]", {}),
-        ("[1,2,3]", {}),
-        ('{"a": "b"}', {"a": "b"}),
-        ("invalid_json;", {}),
+        (None, False),
+        ({}, False),
+        ({"_anonymised": True}, True),
+        ({"_anonymised": False}, False),
     ),
-    ids=[
-        "empty_string",
-        "none",
-        "empty_dict",
-        "list",
-        "list_of_ints",
-        "valid_dict",
-        "invalid_json",
-    ],
-)
-def test_submission_anonymised(data, expected):
-    s = Submission()
-    s.anonymised_data = data
-    assert s.anonymised == expected
-
-
-@pytest.mark.parametrize(
-    ("data", "expected"),
-    (
-        ("{}", False),
-        ('{"_anonymised": true}', True),
-        ('{"_anonymised": false}', False),
-        ("", False),
-    ),
-    ids=["empty_dict", "anonymised_true", "anonymised_false", "empty_string"],
+    ids=["none", "empty_dict", "anonymised_true", "anonymised_false"],
 )
 def test_submission_is_anonymised(data, expected):
     s = Submission()
-    s.anonymised_data = data
+    s.anonymised = data
     assert s.is_anonymised is expected
 
 

@@ -7,7 +7,6 @@
 # SPDX-FileContributor: luto
 
 import datetime as dt
-import json
 import statistics
 from enum import nonmember
 from itertools import repeat
@@ -288,7 +287,7 @@ class Submission(GenerateCode, PretalxModel):
     review_code = models.CharField(
         max_length=32, unique=True, null=True, blank=True, default=generate_invite_code
     )
-    anonymised_data = models.TextField(null=True, blank=True, default="{}")
+    anonymised = models.JSONField(null=True, blank=True)
     assigned_reviewers = models.ManyToManyField(
         verbose_name=_("Assigned reviewers"),
         to="person.User",
@@ -425,16 +424,6 @@ class Submission(GenerateCode, PretalxModel):
                 and event.active_review_phase.speakers_can_change_submissions
             )
         return self.state in SubmissionStates.accepted_states
-
-    @property
-    def anonymised(self):
-        try:
-            result = json.loads(self.anonymised_data)
-        except (ValueError, TypeError):
-            result = None
-        if not result or not isinstance(result, dict):
-            return {}
-        return result
 
     @property
     def is_anonymised(self) -> bool:

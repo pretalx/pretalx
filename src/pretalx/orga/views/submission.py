@@ -684,12 +684,18 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
     usable_states = None
 
     def get_filter_form(self):
+        can_view_speakers = self.request.user.has_perm(
+            "person.orga_list_speakerprofile", self.request.event
+        ) or self.request.user.has_perm(
+            "person.reviewer_list_speakerprofile", self.request.event
+        )
         return SubmissionFilterForm(
             data=self.request.GET,
             event=self.request.event,
             usable_states=self.usable_states,
             limit_tracks=self.limit_tracks,
             search_fields=self.get_default_filters(),
+            can_view_speakers=can_view_speakers,
         )
 
     @context
@@ -863,9 +869,7 @@ class Anonymise(SubmissionViewMixin, UpdateView):
 
     @cached_property
     def next_unanonymised(self):
-        return self.request.event.submissions.filter(
-            Q(anonymised_data="{}") | Q(anonymised_data__isnull=True)
-        ).first()
+        return self.request.event.submissions.filter(Q(anonymised__isnull=True)).first()
 
     def form_valid(self, form):
         if self.object.is_anonymised:

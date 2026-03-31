@@ -1505,7 +1505,7 @@ def test_submission_anonymise_already_anonymised_updates(client):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
         submission = SubmissionFactory(
-            event=event, anonymised_data='{"_anonymised": true, "title": ""}'
+            event=event, anonymised={"_anonymised": True, "title": ""}
         )
     client.force_login(user)
 
