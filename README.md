@@ -262,7 +262,7 @@
 | src/pretalx/submission/models/track.py                                     |       39 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/submission/models/type.py                                      |       44 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/submission/phrases.py                                          |        6 |        0 |        0 |        0 |     100% |           |
-| src/pretalx/submission/rules.py                                            |      190 |        0 |       58 |        0 |     100% |           |
+| src/pretalx/submission/rules.py                                            |      193 |        0 |       58 |        0 |     100% |           |
 | src/pretalx/submission/signals.py                                          |        5 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/submission/tasks.py                                            |       86 |        0 |       18 |        0 |     100% |           |
 | src/tests/agenda/test\_commands.py                                         |      250 |        0 |        2 |        0 |     100% |           |
@@ -548,10 +548,10 @@
 | src/tests/submission/models/test\_type.py                                  |       65 |        0 |        0 |        0 |     100% |           |
 | src/tests/submission/test\_cards.py                                        |       42 |        0 |        0 |        0 |     100% |           |
 | src/tests/submission/test\_exporters.py                                    |       67 |        0 |        0 |        0 |     100% |           |
-| src/tests/submission/test\_rules.py                                        |      623 |        0 |        0 |        0 |     100% |           |
+| src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **68303** |    **0** | **5792** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **68360** |    **0** | **5800** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
