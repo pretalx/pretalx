@@ -38,12 +38,12 @@
 | src/pretalx/api/serializers/mail.py                                        |       29 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/api/serializers/mixins.py                                      |       38 |        0 |       12 |        0 |     100% |           |
 | src/pretalx/api/serializers/question.py                                    |      126 |        0 |       32 |        0 |     100% |           |
-| src/pretalx/api/serializers/review.py                                      |       74 |        0 |       12 |        0 |     100% |           |
+| src/pretalx/api/serializers/review.py                                      |       73 |        0 |       14 |        0 |     100% |           |
 | src/pretalx/api/serializers/room.py                                        |       30 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/api/serializers/schedule.py                                    |       71 |        0 |       12 |        0 |     100% |           |
 | src/pretalx/api/serializers/speaker.py                                     |       91 |        0 |       28 |        0 |     100% |           |
 | src/pretalx/api/serializers/speaker\_information.py                        |       36 |        0 |        6 |        0 |     100% |           |
-| src/pretalx/api/serializers/submission.py                                  |      235 |        0 |       74 |        0 |     100% |           |
+| src/pretalx/api/serializers/submission.py                                  |      229 |        0 |       70 |        0 |     100% |           |
 | src/pretalx/api/serializers/team.py                                        |       49 |        0 |        8 |        0 |     100% |           |
 | src/pretalx/api/versions.py                                                |       30 |        0 |       10 |        0 |     100% |           |
 | src/pretalx/api/views/access\_code.py                                      |       24 |        0 |        0 |        0 |     100% |           |
@@ -302,7 +302,7 @@
 | src/tests/api/serializers/test\_schedule.py                                |      134 |        0 |        0 |        0 |     100% |           |
 | src/tests/api/serializers/test\_speaker.py                                 |      166 |        0 |        2 |        0 |     100% |           |
 | src/tests/api/serializers/test\_speaker\_information.py                    |       65 |        0 |        0 |        0 |     100% |           |
-| src/tests/api/serializers/test\_submission.py                              |      490 |        0 |        4 |        0 |     100% |           |
+| src/tests/api/serializers/test\_submission.py                              |      552 |        0 |        4 |        0 |     100% |           |
 | src/tests/api/serializers/test\_team.py                                    |       90 |        0 |        0 |        0 |     100% |           |
 | src/tests/api/test\_documentation.py                                       |       40 |        0 |        0 |        0 |     100% |           |
 | src/tests/api/test\_exceptions.py                                          |       21 |        0 |        0 |        0 |     100% |           |
@@ -551,7 +551,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **68360** |    **0** | **5800** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **68415** |    **0** | **5798** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
