@@ -27,16 +27,16 @@ def test_speaker_information_serializer_init_sets_from_event():
         context={"request": make_api_request(event=event)}
     )
 
-    assert list(serializer.fields["limit_tracks"].queryset) == [track]
-    qs = set(serializer.fields["limit_types"].queryset)
+    assert list(serializer.fields["limit_tracks"].child_relation.queryset) == [track]
+    qs = set(serializer.fields["limit_types"].child_relation.queryset)
     assert qs == {event.cfp.default_type, sub_type}
 
 
 def test_speaker_information_serializer_init_without_event_uses_empty_querysets():
     serializer = SpeakerInformationSerializer(context={"request": make_api_request()})
 
-    assert serializer.fields["limit_tracks"].queryset.count() == 0
-    assert serializer.fields["limit_types"].queryset.count() == 0
+    assert serializer.fields["limit_tracks"].child_relation.queryset.count() == 0
+    assert serializer.fields["limit_types"].child_relation.queryset.count() == 0
 
 
 def test_speaker_information_serializer_fields():

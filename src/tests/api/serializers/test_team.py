@@ -58,9 +58,9 @@ def test_team_serializer_init_scopes_querysets_to_organiser():
         context={"request": make_api_request(organiser=organiser)}
     )
 
-    assert list(serializer.fields["limit_events"].queryset) == [event]
-    assert list(serializer.fields["limit_tracks"].queryset) == [track]
-    assert list(serializer.fields["invites"].queryset) == [invite]
+    assert list(serializer.fields["limit_events"].child_relation.queryset) == [event]
+    assert list(serializer.fields["limit_tracks"].child_relation.queryset) == [track]
+    assert list(serializer.fields["invites"].child_relation.queryset) == [invite]
 
 
 def test_team_serializer_init_with_instance_scopes_members():
@@ -74,7 +74,7 @@ def test_team_serializer_init_with_instance_scopes_members():
         instance=team, context={"request": make_api_request(organiser=organiser)}
     )
 
-    assert list(serializer.fields["members"].queryset) == [member]
+    assert list(serializer.fields["members"].child_relation.queryset) == [member]
 
 
 def test_team_serializer_validate_requires_events():

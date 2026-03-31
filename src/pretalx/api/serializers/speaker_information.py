@@ -41,11 +41,17 @@ class SpeakerInformationSerializer(FlexFieldsSerializerMixin, PretalxSerializer)
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.event:
-            self.fields["limit_tracks"].queryset = self.event.tracks.all()
-            self.fields["limit_types"].queryset = self.event.submission_types.all()
+            self.fields[
+                "limit_tracks"
+            ].child_relation.queryset = self.event.tracks.all()
+            self.fields[
+                "limit_types"
+            ].child_relation.queryset = self.event.submission_types.all()
         else:
-            self.fields["limit_tracks"].queryset = Track.objects.none()
-            self.fields["limit_types"].queryset = SubmissionType.objects.none()
+            self.fields["limit_tracks"].child_relation.queryset = Track.objects.none()
+            self.fields[
+                "limit_types"
+            ].child_relation.queryset = SubmissionType.objects.none()
 
     def create(self, validated_data):
         validated_data["event"] = self.event

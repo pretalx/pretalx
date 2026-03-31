@@ -135,8 +135,8 @@ def test_question_orga_serializer_init_sets_querysets():
     request = make_api_request(event=event)
     serializer = QuestionOrgaSerializer(context={"request": request})
 
-    assert list(serializer.fields["tracks"].queryset) == [track]
-    assert set(serializer.fields["submission_types"].queryset) == {
+    assert list(serializer.fields["tracks"].child_relation.queryset) == [track]
+    assert set(serializer.fields["submission_types"].child_relation.queryset) == {
         default_type,
         sub_type,
     }
@@ -145,10 +145,13 @@ def test_question_orga_serializer_init_sets_querysets():
 def test_question_orga_serializer_init_without_request_sets_empty_querysets():
     serializer = QuestionOrgaSerializer()
 
-    assert serializer.fields["tracks"].queryset.model is Track
-    assert serializer.fields["tracks"].queryset.count() == 0
-    assert serializer.fields["submission_types"].queryset.model is SubmissionType
-    assert serializer.fields["submission_types"].queryset.count() == 0
+    assert serializer.fields["tracks"].child_relation.queryset.model is Track
+    assert serializer.fields["tracks"].child_relation.queryset.count() == 0
+    assert (
+        serializer.fields["submission_types"].child_relation.queryset.model
+        is SubmissionType
+    )
+    assert serializer.fields["submission_types"].child_relation.queryset.count() == 0
 
 
 def test_question_orga_serializer_create_sets_event():

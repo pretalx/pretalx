@@ -149,13 +149,15 @@ class QuestionOrgaSerializer(QuestionSerializer):
         super().__init__(*args, **kwargs)
         request = kwargs.get("context", {}).get("request")
         if request and hasattr(request, "event"):
-            self.fields["tracks"].queryset = request.event.tracks.all()
+            self.fields["tracks"].child_relation.queryset = request.event.tracks.all()
             self.fields[
                 "submission_types"
-            ].queryset = request.event.submission_types.all()
+            ].child_relation.queryset = request.event.submission_types.all()
         else:
-            self.fields["tracks"].queryset = Track.objects.none()
-            self.fields["submission_types"].queryset = SubmissionType.objects.none()
+            self.fields["tracks"].child_relation.queryset = Track.objects.none()
+            self.fields[
+                "submission_types"
+            ].child_relation.queryset = SubmissionType.objects.none()
 
     def create(self, validated_data):
         options_data = validated_data.pop("options", None)
