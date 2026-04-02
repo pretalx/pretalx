@@ -55,8 +55,8 @@
             </div>
         </aside>
         <h2>
-            <span class="text">116 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">116<span class="text"> run</span></button>
+            <span class="text">118 statements &nbsp;</span>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">118<span class="text"> run</span></button>
             <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">0<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">8<span class="text"> excluded</span></button>
             <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">0<span class="text"> partial</span></button>
@@ -66,8 +66,8 @@
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a id="nextFileLink" class="nav" href="z_cb03a9e3cb4eb025_tables_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-03-31 08:25 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
+            created at 2026-04-02 18:07 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -357,6 +357,47 @@
     <p class="run run2"><span class="n"><a id="t273" href="#t273">273</a></span><span class="t"><span class="str">plugin is enabled in the current event context if your locale should be scoped to</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t274" href="#t274">274</a></span><span class="t"><span class="str">events with your plugin activated.</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t275" href="#t275">275</a></span><span class="t"><span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t276" href="#t276">276</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t277" href="#t277">277</a></span><span class="t"><span class="nam">register_fonts</span> <span class="op">=</span> <span class="nam">EventPluginSignal</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t278" href="#t278">278</a></span><span class="t"><span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t279" href="#t279">279</a></span><span class="t"><span class="str">This signal is sent out to get all fonts provided by plugins. Receivers should</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t280" href="#t280">280</a></span><span class="t"><span class="str">return a dictionary mapping font family names to their font data::</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t281" href="#t281">281</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t282" href="#t282">282</a></span><span class="t"><span class="str">    {</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t283" href="#t283">283</a></span><span class="t"><span class="str">        "Font Name": {</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t284" href="#t284">284</a></span><span class="t"><span class="str">            "regular": {</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t285" href="#t285">285</a></span><span class="t"><span class="str">                "truetype": "path/to/font-regular.ttf",</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t286" href="#t286">286</a></span><span class="t"><span class="str">                "woff2": "path/to/font-regular.woff2",</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t287" href="#t287">287</a></span><span class="t"><span class="str">            },</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t288" href="#t288">288</a></span><span class="t"><span class="str">            "bold": {</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t289" href="#t289">289</a></span><span class="t"><span class="str">                "truetype": "path/to/font-bold.ttf",</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t290" href="#t290">290</a></span><span class="t"><span class="str">                "woff2": "path/to/font-bold.woff2",</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t291" href="#t291">291</a></span><span class="t"><span class="str">            },</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t292" href="#t292">292</a></span><span class="t"><span class="str">            "italic": {</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t293" href="#t293">293</a></span><span class="t"><span class="str">                "truetype": "path/to/font-italic.ttf",</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t294" href="#t294">294</a></span><span class="t"><span class="str">                "woff2": "path/to/font-italic.woff2",</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t295" href="#t295">295</a></span><span class="t"><span class="str">            },</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t296" href="#t296">296</a></span><span class="t"><span class="str">            "bolditalic": {</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t297" href="#t297">297</a></span><span class="t"><span class="str">                "truetype": "path/to/font-bolditalic.ttf",</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t298" href="#t298">298</a></span><span class="t"><span class="str">                "woff2": "path/to/font-bolditalic.woff2",</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t299" href="#t299">299</a></span><span class="t"><span class="str">            },</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t300" href="#t300">300</a></span><span class="t"><span class="str">            "sample": "Optional sample text, e.g. for non-Latin charsets",</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t301" href="#t301">301</a></span><span class="t"><span class="str">        },</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t302" href="#t302">302</a></span><span class="t"><span class="str">    }</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t303" href="#t303">303</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t304" href="#t304">304</a></span><span class="t"><span class="str">Paths should be relative to the static root (findable via</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t305" href="#t305">305</a></span><span class="t"><span class="str">``django.contrib.staticfiles.finders.find()``). Each font must provide a</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t306" href="#t306">306</a></span><span class="t"><span class="str">``regular`` variant with at least a ``woff2`` key for web display. Providing</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t307" href="#t307">307</a></span><span class="t"><span class="str">``truetype`` as well is recommended, as it is required for PDF card generation.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t308" href="#t308">308</a></span><span class="t"><span class="str">Supported format keys are ``woff2``, ``woff``, and ``truetype``.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t309" href="#t309">309</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t310" href="#t310">310</a></span><span class="t"><span class="str">The ``bold``, ``italic``, ``bolditalic``, and ``sample`` keys are optional.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t311" href="#t311">311</a></span><span class="t"><span class="str">Use ``sample`` to show additional preview text for fonts covering non-Latin</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t312" href="#t312">312</a></span><span class="t"><span class="str">scripts (e.g. Arabic, CJK). The sample is shown below the standard pangram</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t313" href="#t313">313</a></span><span class="t"><span class="str">in the font picker.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t314" href="#t314">314</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t315" href="#t315">315</a></span><span class="t"><span class="str">As with all event plugin signals, the ``sender`` keyword argument will contain the event.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t316" href="#t316">316</a></span><span class="t"><span class="str">"""</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -365,8 +406,8 @@
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a class="nav" href="z_cb03a9e3cb4eb025_tables_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-03-31 08:25 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
+            created at 2026-04-02 18:07 +0000
         </p>
     </div>
 </footer>

@@ -18,7 +18,7 @@
 | src/pretalx/agenda/views/speaker.py                                        |       90 |        0 |       18 |        0 |     100% |           |
 | src/pretalx/agenda/views/talk.py                                           |      162 |        0 |       18 |        0 |     100% |           |
 | src/pretalx/agenda/views/utils.py                                          |       50 |        0 |       22 |        0 |     100% |           |
-| src/pretalx/agenda/views/widget.py                                         |       83 |        0 |       28 |        0 |     100% |           |
+| src/pretalx/agenda/views/widget.py                                         |       93 |        0 |       32 |        0 |     100% |           |
 | src/pretalx/api/apps.py                                                    |        3 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/api/documentation.py                                           |       25 |        0 |        2 |        0 |     100% |           |
 | src/pretalx/api/exceptions.py                                              |        9 |        0 |        2 |        0 |     100% |           |
@@ -83,6 +83,7 @@
 | src/pretalx/common/diff\_utils.py                                          |       41 |        0 |       10 |        0 |     100% |           |
 | src/pretalx/common/exceptions.py                                           |       76 |        0 |       26 |        0 |     100% |           |
 | src/pretalx/common/exporter.py                                             |       63 |        0 |        0 |        0 |     100% |           |
+| src/pretalx/common/fonts.py                                                |       61 |        0 |       36 |        0 |     100% |           |
 | src/pretalx/common/formats/en/formats.py                                   |        3 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/common/forms/fields.py                                         |      296 |        0 |      104 |        0 |     100% |           |
 | src/pretalx/common/forms/forms.py                                          |       22 |        0 |        0 |        0 |     100% |           |
@@ -90,7 +91,7 @@
 | src/pretalx/common/forms/renderers.py                                      |       22 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/common/forms/tables.py                                         |       39 |        0 |       14 |        0 |     100% |           |
 | src/pretalx/common/forms/validators.py                                     |       50 |        0 |        4 |        0 |     100% |           |
-| src/pretalx/common/forms/widgets.py                                        |      297 |        0 |       42 |        0 |     100% |           |
+| src/pretalx/common/forms/widgets.py                                        |      312 |        0 |       48 |        0 |     100% |           |
 | src/pretalx/common/image.py                                                |      101 |        0 |       30 |        0 |     100% |           |
 | src/pretalx/common/language.py                                             |       22 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/common/log\_display.py                                         |       84 |        0 |       34 |        0 |     100% |           |
@@ -114,7 +115,7 @@
 | src/pretalx/common/models/transaction.py                                   |       11 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/common/plugins.py                                              |       30 |        0 |        8 |        0 |     100% |           |
 | src/pretalx/common/settings/config.py                                      |       23 |        0 |        2 |        0 |     100% |           |
-| src/pretalx/common/signals.py                                              |      116 |        0 |       42 |        0 |     100% |           |
+| src/pretalx/common/signals.py                                              |      118 |        0 |       42 |        0 |     100% |           |
 | src/pretalx/common/tables.py                                               |      399 |        0 |      166 |        0 |     100% |           |
 | src/pretalx/common/tasks.py                                                |       44 |        0 |       14 |        0 |     100% |           |
 | src/pretalx/common/templatetags/copyable.py                                |       13 |        0 |        2 |        0 |     100% |           |
@@ -149,7 +150,7 @@
 | src/pretalx/common/views/shortlink.py                                      |       30 |        0 |       18 |        0 |     100% |           |
 | src/pretalx/event/apps.py                                                  |        4 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/event/forms.py                                                 |      137 |        0 |       26 |        0 |     100% |           |
-| src/pretalx/event/models/event.py                                          |      537 |        0 |      110 |        0 |     100% |           |
+| src/pretalx/event/models/event.py                                          |      540 |        0 |      110 |        0 |     100% |           |
 | src/pretalx/event/models/organiser.py                                      |      117 |        0 |       18 |        0 |     100% |           |
 | src/pretalx/event/rules.py                                                 |       51 |        0 |       12 |        0 |     100% |           |
 | src/pretalx/event/services.py                                              |       34 |        0 |       10 |        0 |     100% |           |
@@ -166,7 +167,7 @@
 | src/pretalx/orga/context\_processors.py                                    |       42 |        0 |       18 |        0 |     100% |           |
 | src/pretalx/orga/forms/admin.py                                            |       11 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/orga/forms/cfp.py                                              |      312 |        0 |       80 |        0 |     100% |           |
-| src/pretalx/orga/forms/event.py                                            |      379 |        0 |      114 |        0 |     100% |           |
+| src/pretalx/orga/forms/event.py                                            |      396 |        0 |      116 |        0 |     100% |           |
 | src/pretalx/orga/forms/export.py                                           |       91 |        0 |       32 |        0 |     100% |           |
 | src/pretalx/orga/forms/mails.py                                            |      288 |        0 |       92 |        0 |     100% |           |
 | src/pretalx/orga/forms/review.py                                           |      274 |        0 |       74 |        0 |     100% |           |
@@ -198,7 +199,7 @@
 | src/pretalx/orga/views/cards.py                                            |       16 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/orga/views/cfp.py                                              |      715 |        0 |      198 |        0 |     100% |           |
 | src/pretalx/orga/views/dashboard.py                                        |      162 |        0 |       46 |        0 |     100% |           |
-| src/pretalx/orga/views/event.py                                            |      425 |        0 |      102 |        0 |     100% |           |
+| src/pretalx/orga/views/event.py                                            |      436 |        0 |      106 |        0 |     100% |           |
 | src/pretalx/orga/views/mails.py                                            |      389 |        0 |       82 |        0 |     100% |           |
 | src/pretalx/orga/views/organiser.py                                        |      314 |        0 |       58 |        0 |     100% |           |
 | src/pretalx/orga/views/person.py                                           |      118 |        0 |       30 |        0 |     100% |           |
@@ -241,7 +242,7 @@
 | src/pretalx/schedule/tasks.py                                              |        7 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/schedule/utils.py                                              |       14 |        0 |        8 |        0 |     100% |           |
 | src/pretalx/submission/apps.py                                             |        4 |        0 |        0 |        0 |     100% |           |
-| src/pretalx/submission/cards.py                                            |       83 |        0 |        8 |        0 |     100% |           |
+| src/pretalx/submission/cards.py                                            |      132 |        0 |       32 |        0 |     100% |           |
 | src/pretalx/submission/exporters.py                                        |       43 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/submission/forms/comment.py                                    |       18 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/submission/forms/feedback.py                                   |       25 |        0 |        4 |        0 |     100% |           |
@@ -274,7 +275,7 @@
 | src/tests/agenda/views/integration/test\_schedule.py                       |      158 |        0 |       10 |        0 |     100% |           |
 | src/tests/agenda/views/integration/test\_speaker.py                        |      181 |        0 |        6 |        0 |     100% |           |
 | src/tests/agenda/views/integration/test\_talk.py                           |      300 |        0 |        2 |        0 |     100% |           |
-| src/tests/agenda/views/integration/test\_widget.py                         |      128 |        0 |        8 |        0 |     100% |           |
+| src/tests/agenda/views/integration/test\_widget.py                         |      151 |        0 |        8 |        0 |     100% |           |
 | src/tests/agenda/views/unit/test\_featured.py                              |       31 |        0 |        0 |        0 |     100% |           |
 | src/tests/agenda/views/unit/test\_feed.py                                  |       73 |        0 |        0 |        0 |     100% |           |
 | src/tests/agenda/views/unit/test\_schedule.py                              |       98 |        0 |        0 |        0 |     100% |           |
@@ -368,7 +369,7 @@
 | src/tests/common/forms/test\_mixins.py                                     |      768 |        0 |        6 |        0 |     100% |           |
 | src/tests/common/forms/test\_tables.py                                     |       82 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/forms/test\_validators.py                                 |       52 |        0 |        2 |        0 |     100% |           |
-| src/tests/common/forms/test\_widgets.py                                    |      307 |        0 |        0 |        0 |     100% |           |
+| src/tests/common/forms/test\_widgets.py                                    |      337 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/middleware/test\_domains.py                               |      382 |        0 |        2 |        0 |     100% |           |
 | src/tests/common/middleware/test\_event.py                                 |      384 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/models/test\_file.py                                      |       37 |        0 |        0 |        0 |     100% |           |
@@ -397,6 +398,7 @@
 | src/tests/common/test\_diff\_utils.py                                      |       62 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_exceptions.py                                       |      147 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_exporter.py                                         |       71 |        0 |        0 |        0 |     100% |           |
+| src/tests/common/test\_fonts.py                                            |      116 |        0 |        2 |        0 |     100% |           |
 | src/tests/common/test\_image.py                                            |      161 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_language.py                                         |       51 |        0 |        4 |        0 |     100% |           |
 | src/tests/common/test\_log\_display.py                                     |      122 |        0 |        0 |        0 |     100% |           |
@@ -426,7 +428,7 @@
 | src/tests/conftest.py                                                      |       94 |        0 |        6 |        0 |     100% |           |
 | src/tests/dummy\_app/apps.py                                               |       20 |        0 |        0 |        0 |     100% |           |
 | src/tests/dummy\_app\_no\_hooks/apps.py                                    |       11 |        0 |        0 |        0 |     100% |           |
-| src/tests/event/models/test\_event.py                                      |      729 |        0 |        4 |        0 |     100% |           |
+| src/tests/event/models/test\_event.py                                      |      745 |        0 |        4 |        0 |     100% |           |
 | src/tests/event/models/test\_organiser.py                                  |      203 |        0 |        0 |        0 |     100% |           |
 | src/tests/event/test\_forms.py                                             |      267 |        0 |        4 |        0 |     100% |           |
 | src/tests/event/test\_rules.py                                             |      182 |        0 |        2 |        0 |     100% |           |
@@ -445,7 +447,7 @@
 | src/tests/mail/test\_tasks.py                                              |       22 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/forms/test\_admin.py                                        |       39 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/forms/test\_cfp.py                                          |      535 |        0 |        0 |        0 |     100% |           |
-| src/tests/orga/forms/test\_event.py                                        |      664 |        0 |       22 |        0 |     100% |           |
+| src/tests/orga/forms/test\_event.py                                        |      686 |        0 |       22 |        0 |     100% |           |
 | src/tests/orga/forms/test\_mails.py                                        |      482 |        0 |        4 |        0 |     100% |           |
 | src/tests/orga/forms/test\_review.py                                       |      702 |        0 |       14 |        0 |     100% |           |
 | src/tests/orga/forms/test\_schedule.py                                     |      384 |        0 |        4 |        0 |     100% |           |
@@ -490,7 +492,7 @@
 | src/tests/orga/views/unit/test\_cards.py                                   |       23 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/unit/test\_cfp.py                                     |      535 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/unit/test\_dashboard.py                               |      219 |        0 |        0 |        0 |     100% |           |
-| src/tests/orga/views/unit/test\_event.py                                   |      288 |        0 |        0 |        0 |     100% |           |
+| src/tests/orga/views/unit/test\_event.py                                   |      329 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/unit/test\_mails.py                                   |      202 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/unit/test\_organiser.py                               |      343 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/unit/test\_person.py                                  |       57 |        0 |        0 |        0 |     100% |           |
@@ -546,12 +548,12 @@
 | src/tests/submission/models/test\_tag.py                                   |       12 |        0 |        0 |        0 |     100% |           |
 | src/tests/submission/models/test\_track.py                                 |       61 |        0 |        4 |        0 |     100% |           |
 | src/tests/submission/models/test\_type.py                                  |       65 |        0 |        0 |        0 |     100% |           |
-| src/tests/submission/test\_cards.py                                        |       42 |        0 |        0 |        0 |     100% |           |
+| src/tests/submission/test\_cards.py                                        |      156 |        0 |        0 |        0 |     100% |           |
 | src/tests/submission/test\_exporters.py                                    |       67 |        0 |        0 |        0 |     100% |           |
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **68463** |    **0** | **5810** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **68993** |    **0** | **5888** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
