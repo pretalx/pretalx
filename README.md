@@ -173,7 +173,7 @@
 | src/pretalx/orga/forms/review.py                                           |      274 |        0 |       74 |        0 |     100% |           |
 | src/pretalx/orga/forms/schedule.py                                         |      121 |        0 |       14 |        0 |     100% |           |
 | src/pretalx/orga/forms/speaker.py                                          |       45 |        0 |        2 |        0 |     100% |           |
-| src/pretalx/orga/forms/submission.py                                       |      172 |        0 |       72 |        0 |     100% |           |
+| src/pretalx/orga/forms/submission.py                                       |      173 |        0 |       74 |        0 |     100% |           |
 | src/pretalx/orga/forms/widgets.py                                          |       47 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/orga/permissions.py                                            |        3 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/orga/phrases.py                                                |       11 |        0 |        0 |        0 |     100% |           |
@@ -452,7 +452,7 @@
 | src/tests/orga/forms/test\_review.py                                       |      702 |        0 |       14 |        0 |     100% |           |
 | src/tests/orga/forms/test\_schedule.py                                     |      384 |        0 |        4 |        0 |     100% |           |
 | src/tests/orga/forms/test\_speaker.py                                      |      123 |        0 |        4 |        0 |     100% |           |
-| src/tests/orga/forms/test\_submission.py                                   |      333 |        0 |        4 |        0 |     100% |           |
+| src/tests/orga/forms/test\_submission.py                                   |      338 |        0 |        4 |        0 |     100% |           |
 | src/tests/orga/forms/test\_widgets.py                                      |       83 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/tables/test\_cfp.py                                         |      110 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/tables/test\_feedback.py                                    |       33 |        0 |        0 |        0 |     100% |           |
@@ -553,7 +553,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **68993** |    **0** | **5888** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **68999** |    **0** | **5890** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
