@@ -534,6 +534,16 @@ def test_anonymise_form_raises_on_instance_without_pk(event):
         AnonymiseForm(instance=unsaved)
 
 
+def test_anonymise_form_init_with_tags_does_not_crash(event):
+    """AnonymiseForm doesn't include tags, so it must not crash when the event has tags."""
+    TagFactory(event=event)
+    submission = SubmissionFactory(event=event)
+
+    form = AnonymiseForm(instance=submission)
+
+    assert "tags" not in form.fields
+
+
 def test_anonymise_form_init_sets_plaintext_on_fields(event):
     """Each field gets a `plaintext` attribute from the original instance."""
     submission = SubmissionFactory(event=event, title="Original")
