@@ -5,8 +5,8 @@ from django_scopes import scope
 
 import pretalx.agenda.views.widget as widget_module
 from pretalx.agenda.views.widget import (
-    color_etag,
     is_public_and_versioned,
+    style_etag,
     version_prefix,
     widget_js_etag,
 )
@@ -16,10 +16,10 @@ from tests.utils import make_request
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_color_etag_no_color(event):
+def test_style_etag_no_color(event):
     request = make_request(event)
 
-    result = color_etag(request, event)
+    result = style_etag(request, event)
 
     assert result == "none"
 
@@ -33,11 +33,11 @@ def test_color_etag_no_color(event):
     ),
     ids=["dark_no_dark_text", "green_needs_dark_text", "light_needs_dark_text"],
 )
-def test_color_etag_with_color(color, expected):
+def test_style_etag_with_color(color, expected):
     event = EventFactory(primary_color=color)
     request = make_request(event)
 
-    result = color_etag(request, event)
+    result = style_etag(request, event)
 
     assert result == expected
 

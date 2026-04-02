@@ -3,6 +3,7 @@
 import pytest
 from django_scopes import scope
 
+from pretalx.common.signals import register_fonts
 from pretalx.orga.views.event import (
     EventDelete,
     EventDetail,
@@ -11,6 +12,7 @@ from pretalx.orga.views.event import (
     EventLive,
     EventMailSettings,
     EventReviewSettings,
+    FontPreviewCSS,
     InvitationView,
     PhaseActivate,
     WidgetSettings,
@@ -515,3 +517,70 @@ def test_event_live_context_no_suggestion_when_questions_exist(event):
 
     suggestion_texts = [str(s["text"]) for s in context["suggestions"]]
     assert not any("custom field" in t for t in suggestion_texts)
+
+
+def test_event_detail_context_includes_font_preview_url_when_fonts_available(
+    register_signal_handler,
+):
+    event = EventFactory()
+
+    def handler(signal, sender, **kwargs):
+        return {"PluginFont": {"regular": {"woff2": "fonts/plugin.woff2"}}}
+
+    register_signal_handler(register_fonts, handler)
+    user = make_orga_user(event)
+    request = make_request(event, user=user)
+    view = make_view(EventDetail, request)
+
+    context = view.get_context_data()
+
+    assert "font_preview_url" in context
+    assert "font-preview.css" in context["font_preview_url"]
+
+
+def test_event_detail_context_no_font_preview_url_without_fonts():
+    event = EventFactory()
+    user = make_orga_user(event)
+    request = make_request(event, user=user)
+    view = make_view(EventDetail, request)
+
+    context = view.get_context_data()
+
+    assert "font_preview_url" not in context
+
+
+def test_font_preview_css_returns_empty_when_no_fonts():
+    event = EventFactory()
+    user = make_orga_user(event)
+    request = make_request(event, user=user)
+    view = make_view(FontPreviewCSS, request)
+
+    response = view.get(request)
+
+    assert response.status_code == 200
+    assert response["Content-Type"] == "text/css"
+    assert response.content == b""
+
+
+def test_font_preview_css_returns_font_face_rules(register_signal_handler):
+    event = EventFactory()
+
+    def handler(signal, sender, **kwargs):
+        return {
+            "PluginFont": {
+                "regular": {"woff2": "fonts/plugin.woff2"},
+                "bold": {"woff2": "fonts/plugin-bold.woff2"},
+            }
+        }
+
+    register_signal_handler(register_fonts, handler)
+    user = make_orga_user(event)
+    request = make_request(event, user=user)
+    view = make_view(FontPreviewCSS, request)
+
+    response = view.get(request)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "@font-face {" in content
+    assert '"PluginFont"' in content

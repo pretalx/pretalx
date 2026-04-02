@@ -74,7 +74,11 @@ const initSelect = (element) => {
         allowHTML: true,
         position: element.dataset.position || "auto",
     }
-    if (element.querySelectorAll("option[data-description]").length || element.querySelectorAll("option[data-color]").length || element.querySelectorAll("option[data-highlight]").length) {
+    const hasDescriptions = element.querySelectorAll("option[data-description]").length
+    const hasColors = element.querySelectorAll("option[data-color]").length
+    const hasHighlights = element.querySelectorAll("option[data-highlight]").length
+    const hasFonts = element.querySelectorAll("option[data-font-family]").length
+    if (hasDescriptions || hasColors || hasHighlights || hasFonts) {
         choicesOptions.callbackOnCreateTemplates = (strToEl, escapeForTemplates, getClassNames) => ({
             choice: (allowHTML, classNames, choice, selectedText, groupName) => {
                 let originalResult = Choices.defaults.templates.choice(allowHTML, classNames, choice, selectedText, groupName)
@@ -92,6 +96,18 @@ const initSelect = (element) => {
                 if (classNames.element && classNames.element.dataset.highlight === "true") {
                     originalResult.classList.add("choice-item-highlight")
                 }
+                if (classNames.element && classNames.element.dataset.fontFamily) {
+                    const family = classNames.element.dataset.fontFamily
+                    const sample = classNames.element.dataset.fontSample || ""
+                    const pangram = document.documentElement.lang === "de"
+                        ? "Victor jagt zwölf Boxkämpfer quer über den großen Sylter Deich."
+                        : "The quick brown fox jumps over the lazy dog."
+                    let previewText = pangram
+                    if (sample) {
+                        previewText += "<br>" + sample
+                    }
+                    originalResult.innerHTML += `<div class="choice-font-preview" style="font-family: '${family}', sans-serif">${previewText}</div>`
+                }
                 return originalResult
             },
             item: (_a, choice, removeItemButton) => {
@@ -106,6 +122,10 @@ const initSelect = (element) => {
                 }
                 if (choice.element && choice.element.dataset.highlight === "true") {
                     originalResult.classList.add("choice-item-highlight")
+                }
+                if (choice.element && choice.element.dataset.fontFamily) {
+                    const family = choice.element.dataset.fontFamily
+                    originalResult.style.fontFamily = `'${family}', sans-serif`
                 }
                 return originalResult
             }

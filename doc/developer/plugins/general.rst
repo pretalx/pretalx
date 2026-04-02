@@ -59,4 +59,4 @@ Display
 
 .. automodule:: pretalx.common.signals
    :no-index:
-   :members: profile_bottom_html
+   :members: profile_bottom_html, register_fonts

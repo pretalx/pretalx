@@ -18,6 +18,7 @@ from pretalx.common.mail import CustomSMTPBackend
 from pretalx.common.signals import register_locales
 from pretalx.event.models import Event
 from pretalx.event.models.event import (
+    default_display_settings,
     default_feature_flags,
     event_css_path,
     event_header_path,
@@ -1395,3 +1396,31 @@ def test_event_talks_deduplicates_shared_speakers(event):
         assert set(talks) == {sub1, sub2}
         assert len(speakers) == len(set(speakers))
         assert speakers == [speaker]
+
+
+def test_has_custom_styles_false_by_default():
+    event = EventFactory()
+
+    assert event.has_custom_styles is False
+
+
+def test_has_custom_styles_true_with_primary_color():
+    event = EventFactory(primary_color="#ff0000")
+
+    assert event.has_custom_styles is True
+
+
+def test_has_custom_styles_true_with_heading_font():
+    settings = default_display_settings()
+    settings["heading_font"] = "SomeFont"
+    event = EventFactory(display_settings=settings)
+
+    assert event.has_custom_styles is True
+
+
+def test_has_custom_styles_true_with_text_font():
+    settings = default_display_settings()
+    settings["text_font"] = "SomeFont"
+    event = EventFactory(display_settings=settings)
+
+    assert event.has_custom_styles is True

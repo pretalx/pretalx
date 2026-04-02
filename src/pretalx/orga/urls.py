@@ -513,6 +513,11 @@ urlpatterns = [
                     "settings/", event.EventDetail.as_view(), name="settings.event.view"
                 ),
                 path(
+                    "settings/font-preview.css",
+                    event.FontPreviewCSS.as_view(),
+                    name="settings.font-preview.css",
+                ),
+                path(
                     "settings/mail",
                     event.EventMailSettings.as_view(),
                     name="settings.mail.view",

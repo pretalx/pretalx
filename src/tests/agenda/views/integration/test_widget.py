@@ -4,6 +4,7 @@ import pytest
 from django.urls import reverse
 from django_scopes import scopes_disabled
 
+from pretalx.common.signals import register_fonts
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
     AnswerFactory,
@@ -128,7 +129,7 @@ def test_event_css_no_color(client, event):
     assert response["Content-Type"] == "text/css"
     content = response.content.decode()
     assert "--color-primary" not in content
-    assert content == ":root {  }"
+    assert content == ""
 
 
 @pytest.mark.parametrize(
@@ -225,3 +226,74 @@ def test_widget_data_query_count(client, item_count, django_assert_num_queries):
     assert response["Access-Control-Allow-Origin"] == "*"
     data = response.json()
     assert len(data["talks"]) == item_count
+
+
+def test_event_css_with_heading_font(client, register_signal_handler):
+    event = EventFactory(
+        display_settings={
+            "schedule": "grid",
+            "imprint_url": None,
+            "header_pattern": "",
+            "html_export_url": "",
+            "meta_noindex": False,
+            "heading_font": "TestFont",
+            "text_font": "",
+            "texts": {"agenda_session_above": "", "agenda_session_below": ""},
+        }
+    )
+
+    def handler(signal, sender, **kwargs):
+        return {
+            "TestFont": {
+                "regular": {
+                    "truetype": "fonts/test-regular.ttf",
+                    "woff2": "fonts/test-regular.woff2",
+                }
+            }
+        }
+
+    register_signal_handler(register_fonts, handler)
+    response = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert content.count("@font-face {") == 1
+    assert content.count('font-family: "TestFont"') == 1
+    root_block = content.split(":root {\n")[1].split("\n}")[0].strip()
+    assert root_block == '--font-family-title: "TestFont", var(--font-fallback);'
+
+
+def test_event_css_with_both_fonts(client, register_signal_handler):
+    event = EventFactory(
+        display_settings={
+            "schedule": "grid",
+            "imprint_url": None,
+            "header_pattern": "",
+            "html_export_url": "",
+            "meta_noindex": False,
+            "heading_font": "TestFont",
+            "text_font": "TestFont",
+            "texts": {"agenda_session_above": "", "agenda_session_below": ""},
+        }
+    )
+
+    def handler(signal, sender, **kwargs):
+        return {
+            "TestFont": {
+                "regular": {
+                    "truetype": "fonts/test-regular.ttf",
+                    "woff2": "fonts/test-regular.woff2",
+                }
+            }
+        }
+
+    register_signal_handler(register_fonts, handler)
+    response = client.get(reverse("agenda:event.css", kwargs={"event": event.slug}))
+
+    content = response.content.decode()
+    root_block = content.split(":root {\n")[1].split("\n}")[0]
+    root_lines = [line.strip() for line in root_block.strip().splitlines()]
+    assert root_lines == [
+        '--font-family-title: "TestFont", var(--font-fallback);',
+        '--font-family: "TestFont", var(--font-fallback);',
+    ]

@@ -56,6 +56,7 @@ ETags
 favicon
 favourited
 filesystem
+findable
 frab
 frontend
 gettext
@@ -99,6 +100,7 @@ nodejs
 noopener
 npm
 OAuth
+pangram
 parameterisation
 parameterised
 parametrisation
