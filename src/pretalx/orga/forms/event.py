@@ -20,10 +20,12 @@ from django.db.models import F, Q
 from django.forms import inlineformset_factory
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from django_scopes.forms import SafeModelMultipleChoiceField
 from i18nfield.fields import I18nFormField, I18nTextarea
 from i18nfield.forms import I18nFormSetMixin
 
+from pretalx.common.fonts import get_fonts
 from pretalx.common.forms.fields import ColorField, ImageField
 from pretalx.common.forms.mixins import (
     HierarkeyMixin,
@@ -36,6 +38,7 @@ from pretalx.common.forms.renderers import InlineFormLabelRenderer, InlineFormRe
 from pretalx.common.forms.widgets import (
     EnhancedSelect,
     EnhancedSelectMultiple,
+    FontSelect,
     HtmlDateInput,
     MarkdownWidget,
     PasswordInput,
@@ -140,6 +143,12 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
         required=False,
         widget=HeaderSelect,
     )
+    heading_font = forms.ChoiceField(
+        label=_("Heading font"),
+        help_text=_("Select a font for headings and buttons."),
+        required=False,
+    )
+    text_font = forms.ChoiceField(label=_("Text font"), required=False)
     meta_noindex = forms.BooleanField(
         label=_("Ask search engines not to index the event pages"), required=False
     )
@@ -181,6 +190,27 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             or choice[0] in self.instance.plugin_locales
         ]
         self.fields["content_locales"].choices = self.instance.available_content_locales
+
+        fonts = get_fonts(self.instance)
+        if fonts:
+            default = pgettext_lazy("default choice in a menu", "Default")
+            font_choices = [("", f"Titillium Web ({default})")]
+            font_choices += sorted([(name, name) for name in fonts], key=lambda c: c[0])
+            text_font_choices = [("", f"Muli ({default})")]
+            text_font_choices += sorted(
+                [(name, name) for name in fonts], key=lambda c: c[0]
+            )
+            self.fields["heading_font"].choices = font_choices
+            self.fields["heading_font"].widget = FontSelect(
+                fonts=fonts, choices=font_choices, default_font="Titillium Web"
+            )
+            self.fields["text_font"].choices = text_font_choices
+            self.fields["text_font"].widget = FontSelect(
+                fonts=fonts, choices=text_font_choices, default_font="Muli"
+            )
+        else:
+            del self.fields["heading_font"]
+            del self.fields["text_font"]
 
     def clean_custom_domain(self):
         data = self.cleaned_data["custom_domain"]
@@ -371,6 +401,8 @@ class EventForm(ReadOnlyFlag, JsonSubfieldMixin, PretalxI18nModelForm):
             "use_feedback": "feature_flags",
             "html_export_url": "display_settings",
             "header_pattern": "display_settings",
+            "heading_font": "display_settings",
+            "text_font": "display_settings",
             "meta_noindex": "display_settings",
         }
 

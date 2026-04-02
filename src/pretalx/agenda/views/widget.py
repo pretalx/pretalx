@@ -13,6 +13,7 @@ from django.views.decorators.http import condition
 from i18nfield.utils import I18nJSONEncoder
 
 from pretalx.agenda.rules import is_widget_visible
+from pretalx.common.fonts import get_font_css
 from pretalx.common.views.cache import conditional_cache_page
 
 WIDGET_JS_CHECKSUM = None
@@ -20,10 +21,15 @@ WIDGET_JS_CONTENT = None
 WIDGET_PATH = "agenda/js/pretalx-schedule.min.js"
 
 
-def color_etag(request, event, **kwargs):
-    if not (color := request.event.primary_color):
-        return "none"
-    return f"{color}:{request.event.primary_color_needs_dark_text}"
+def style_etag(request, event, **kwargs):
+    parts = []
+    if color := request.event.primary_color:
+        parts.append(f"{color}:{request.event.primary_color_needs_dark_text}")
+    heading_font = request.event.display_settings.get("heading_font", "")
+    text_font = request.event.display_settings.get("text_font", "")
+    if heading_font or text_font:
+        parts.append(f"f:{heading_font}:{text_font}")
+    return ":".join(parts) if parts else "none"
 
 
 def _load_widget_js():
@@ -131,20 +137,24 @@ def widget_script(request, event):
     return HttpResponse(WIDGET_JS_CONTENT, content_type="text/javascript")
 
 
-@condition(etag_func=color_etag)
+@condition(etag_func=style_etag)
 @cache_page(5 * 60)
 @csp_exempt()
 def event_css(request, event):
-    # If this event has custom colours, we send back a simple CSS file that sets the
-    # root colours for the event.
+    parts = []
     rules = []
+    is_orga = request.GET.get("target") == "orga"
     if color := request.event.primary_color:
         variable = "--color-primary"
-        postfix = ""
-        if request.GET.get("target") == "orga":
-            postfix = "-event"
+        postfix = "-event" if is_orga else ""
         if request.event.primary_color_needs_dark_text:
             rules.append(f" --color-text-on-primary{postfix}: var(--color-text);")
         rules.append(f"{variable}{postfix}: {color};")
-    result = ":root { " + " ".join(rules) + " }"
+    if rules:
+        parts.append(":root { " + " ".join(rules) + " }")
+
+    if not is_orga and (font_css := get_font_css(request.event)):
+        parts.append(font_css)
+
+    result = "\n".join(parts)
     return HttpResponse(result, content_type="text/css")

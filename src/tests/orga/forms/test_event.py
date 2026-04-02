@@ -11,7 +11,9 @@ from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 
+from pretalx.common.forms.widgets import FontSelect
 from pretalx.common.models import ActivityLog
+from pretalx.common.signals import register_fonts
 from pretalx.event.models.event import Event, EventExtraLink
 from pretalx.orga.forms.event import (
     ENCRYPTED_PASSWORD_PLACEHOLDER,
@@ -576,6 +578,37 @@ def test_eventform_read_only_disables_all_fields():
 
     for field in form.fields.values():
         assert field.disabled is True
+
+
+def test_eventform_font_fields_present_when_plugin_provides_fonts(
+    register_signal_handler,
+):
+    event = EventFactory()
+
+    def handler(signal, sender, **kwargs):
+        return {"PluginFont": {"regular": {"woff2": "fonts/plugin.woff2"}}}
+
+    register_signal_handler(register_fonts, handler)
+    form = EventForm(instance=event, locales=event.locales)
+
+    assert "heading_font" in form.fields
+    assert "text_font" in form.fields
+    assert isinstance(form.fields["heading_font"].widget, FontSelect)
+    assert isinstance(form.fields["text_font"].widget, FontSelect)
+    heading_choices = dict(form.fields["heading_font"].choices)
+    assert "PluginFont" in heading_choices
+    assert "" in heading_choices
+    text_choices = dict(form.fields["text_font"].choices)
+    assert "PluginFont" in text_choices
+
+
+def test_eventform_font_fields_removed_when_no_plugins():
+    event = EventFactory()
+
+    form = EventForm(instance=event, locales=event.locales)
+
+    assert "heading_font" not in form.fields
+    assert "text_font" not in form.fields
 
 
 def _build_mail_form_data(**overrides):

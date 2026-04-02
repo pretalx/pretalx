@@ -584,3 +584,33 @@ class ToggleChoiceWidget(forms.Select):
 
     class Media:
         js = [forms.Script("common/js/forms/toggle_choice.js", defer="")]
+
+
+class FontSelect(EnhancedSelect):
+    """A select widget for font selection with live font preview.
+
+    Renders a Choices.js dropdown where each option shows a preview of the
+    font. Requires ``fonts`` kwarg — the dict from ``get_fonts(event)``.
+    The @font-face CSS for preview is served via the font-preview.css endpoint
+    and must be included as a stylesheet on the page.
+    """
+
+    def __init__(self, attrs=None, choices=(), fonts=None, default_font=None):
+        super().__init__(attrs, choices)
+        self.fonts = fonts or {}
+        self.default_font = default_font
+
+    def create_option(
+        self, name, value, label, selected, index, subindex=None, attrs=None
+    ):
+        option = super().create_option(
+            name, value, label, selected, index, subindex, attrs
+        )
+        if value and value in self.fonts:
+            option["attrs"]["data-font-family"] = value
+            sample = self.fonts[value].get("sample", "")
+            if sample:
+                option["attrs"]["data-font-sample"] = sample
+        elif not value and self.default_font:
+            option["attrs"]["data-font-family"] = self.default_font
+        return option

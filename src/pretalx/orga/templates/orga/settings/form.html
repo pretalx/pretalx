@@ -9,6 +9,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% block extra_title %}{% translate "Settings" %} :: {% endblock extra_title %}
 
+{% block stylesheets %}
+    {% if font_preview_url %}
+        <link rel="stylesheet" type="text/css" href="{{ font_preview_url }}" />
+    {% endif %}
+{% endblock stylesheets %}
+
 {% block settings_content %}
     <h2>{% translate "Settings" %}</h2>
     <form method="post" enctype="multipart/form-data">
@@ -57,6 +63,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <div {% if request.event.primary_color %}style="--color: {{ request.event.primary_color }}"{% endif %} class="colorpicker-update">
                     {{ form.header_pattern.as_field_group }}
                 </div>
+                {% if form.heading_font %}
+                    {{ form.heading_font.as_field_group }}
+                {% endif %}
+                {% if form.text_font %}
+                    {{ form.text_font.as_field_group }}
+                {% endif %}
             </fieldset>
             <fieldset>
                 <legend id="schedule">{% translate "Schedule" %}</legend>

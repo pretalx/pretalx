@@ -17,6 +17,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage
 from django.db import transaction
 from django.forms.models import inlineformset_factory
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -37,6 +38,7 @@ from django_context_decorator import context
 from django_scopes import scope, scopes_disabled
 from formtools.wizard.views import SessionWizardView
 
+from pretalx.common.fonts import get_font_definitions, get_fonts
 from pretalx.common.forms import I18nEventFormSet
 from pretalx.common.models import ActivityLog
 from pretalx.common.plugins import get_all_plugins_grouped
@@ -84,6 +86,15 @@ class EventSettingsPermission(EventPermissionRequired):
     @property
     def permission_object(self):
         return self.request.event
+
+
+class FontPreviewCSS(EventSettingsPermission, View):
+    def get(self, request, *args, **kwargs):
+        fonts = get_fonts(request.event)
+        if not fonts:
+            return HttpResponse("", content_type="text/css")
+        css = get_font_definitions(fonts, list(fonts.keys()))
+        return HttpResponse(css, content_type="text/css")
 
 
 class EventDetail(EventSettingsPermission, UpdateView):
@@ -140,6 +151,10 @@ class EventDetail(EventSettingsPermission, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["submit_buttons"] = [Button()]
+        if "heading_font" in self.get_form().fields:
+            context["font_preview_url"] = reverse(
+                "orga:settings.font-preview.css", kwargs={"event": self.object.slug}
+            )
         if self.request.user.is_administrator:
             context["submit_buttons_extra"] = [
                 delete_link(

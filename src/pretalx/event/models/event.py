@@ -118,6 +118,8 @@ def default_display_settings():
         "header_pattern": "",
         "html_export_url": "",
         "meta_noindex": False,
+        "heading_font": "",
+        "text_font": "",
         "texts": {"agenda_session_above": "", "agenda_session_below": ""},
     }
 
@@ -569,6 +571,14 @@ class Event(PretalxModel):
             f"dark_text_{self.primary_color.lstrip('#')}",
             lambda: not has_good_contrast(self.primary_color, threshold=3),
             timeout=86400 * 365,
+        )
+
+    @cached_property
+    def has_custom_styles(self):
+        return bool(
+            self.primary_color
+            or self.display_settings.get("heading_font")
+            or self.display_settings.get("text_font")
         )
 
     def _get_default_submission_type(self):

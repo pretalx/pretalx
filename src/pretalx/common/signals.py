@@ -273,3 +273,44 @@ make your locale available to the makemessages command. Otherwise, check that yo
 plugin is enabled in the current event context if your locale should be scoped to
 events with your plugin activated.
 """
+
+register_fonts = EventPluginSignal()
+"""
+This signal is sent out to get all fonts provided by plugins. Receivers should
+return a dictionary mapping font family names to their font data::
+
+    {
+        "Font Name": {
+            "regular": {
+                "truetype": "path/to/font-regular.ttf",
+                "woff2": "path/to/font-regular.woff2",
+            },
+            "bold": {
+                "truetype": "path/to/font-bold.ttf",
+                "woff2": "path/to/font-bold.woff2",
+            },
+            "italic": {
+                "truetype": "path/to/font-italic.ttf",
+                "woff2": "path/to/font-italic.woff2",
+            },
+            "bolditalic": {
+                "truetype": "path/to/font-bolditalic.ttf",
+                "woff2": "path/to/font-bolditalic.woff2",
+            },
+            "sample": "Optional sample text, e.g. for non-Latin charsets",
+        },
+    }
+
+Paths should be relative to the static root (findable via
+``django.contrib.staticfiles.finders.find()``). Each font must provide a
+``regular`` variant with at least a ``woff2`` key for web display. Providing
+``truetype`` as well is recommended, as it is required for PDF card generation.
+Supported format keys are ``woff2``, ``woff``, and ``truetype``.
+
+The ``bold``, ``italic``, ``bolditalic``, and ``sample`` keys are optional.
+Use ``sample`` to show additional preview text for fonts covering non-Latin
+scripts (e.g. Arabic, CJK). The sample is shown below the standard pangram
+in the font picker.
+
+As with all event plugin signals, the ``sender`` keyword argument will contain the event.
+"""

@@ -23,10 +23,49 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import BaseDocTemplate, Flowable, Frame, PageTemplate, Paragraph
 
-reportlab.rl_config.TTFSearchPath.append(finders.find("fonts"))
-pdfmetrics.registerFont(TTFont("Muli", "mulish-v12-latin-ext-regular.ttf"))
-pdfmetrics.registerFont(TTFont("Muli-Italic", "mulish-v12-latin-ext-italic.ttf"))
-pdfmetrics.registerFont(TTFont("Titillium-Bold", "titillium-web-v17-latin-ext-600.ttf"))
+_fonts_registered = False
+
+
+def _register_default_fonts():
+    global _fonts_registered  # noqa: PLW0603
+    if _fonts_registered:
+        return
+    reportlab.rl_config.TTFSearchPath.append(finders.find("fonts"))
+    pdfmetrics.registerFont(TTFont("Muli", "mulish-v12-latin-ext-regular.ttf"))
+    pdfmetrics.registerFont(TTFont("Muli-Italic", "mulish-v12-latin-ext-italic.ttf"))
+    pdfmetrics.registerFont(
+        TTFont("Titillium-Bold", "titillium-web-v17-latin-ext-600.ttf")
+    )
+    _fonts_registered = True
+
+
+def _register_plugin_font(font_name, font_data):
+    """Register a plugin-provided font with reportlab for PDF rendering.
+
+    Returns the set of variant names that were successfully registered.
+    """
+    registered_names = pdfmetrics.getRegisteredFontNames()
+    registered_variants = set()
+    for variant in ("regular", "bold", "italic", "bolditalic"):
+        if variant not in font_data or not isinstance(font_data[variant], dict):
+            continue
+        ttf_path = font_data[variant].get("truetype")
+        if not ttf_path:
+            continue
+        resolved = finders.find(ttf_path)
+        if not resolved:
+            continue
+        suffix_map = {
+            "regular": "",
+            "bold": "-Bold",
+            "italic": "-Italic",
+            "bolditalic": "-BoldItalic",
+        }
+        reg_name = font_name + suffix_map[variant]
+        if reg_name not in registered_names:
+            pdfmetrics.registerFont(TTFont(reg_name, resolved))
+        registered_variants.add(variant)
+    return registered_variants
 
 
 def _text(text, max_length=None):
@@ -44,13 +83,14 @@ def _text(text, max_length=None):
 
 
 class SubmissionCard(Flowable):
-    def __init__(self, submission, styles, width):
+    def __init__(self, submission, styles, width, heading_font_name):
         super().__init__()
         self.submission = submission
         self.styles = styles
         self.width = width
         self.height = min(2.5 * max(submission.get_duration(), 30) * mm, A4[1])
         self.text_location = 0
+        self.heading_font_name = heading_font_name
 
     def coord(self, x, y, unit=1):
         """http://stackoverflow.com/questions/4726011/wrap-text-in-a-table-
@@ -67,7 +107,7 @@ class SubmissionCard(Flowable):
         self.canv.rect(0, 0, self.width, self.height)
 
         self.canv.rotate(90)
-        self.canv.setFont("Titillium-Bold", 16)
+        self.canv.setFont(self.heading_font_name, 16)
         self.canv.drawString(
             25 * mm, -12 * mm, _text(self.submission.submission_type.name)
         )
@@ -119,29 +159,74 @@ class SubmissionCard(Flowable):
             )
 
 
-def get_style():
+def _resolve_fonts(event=None):
+    """Determine the reportlab font names to use for this event.
+
+    Returns (heading_font_name, text_font_name, text_italic_font_name)
+    for use with reportlab ParagraphStyle fontName. Falls back to
+    built-in defaults when no event is given or no custom fonts are set.
+    """
+    heading_font_name = "Titillium-Bold"
+    text_font_name = "Muli"
+    text_italic_font_name = "Muli-Italic"
+
+    if not event:
+        return heading_font_name, text_font_name, text_italic_font_name
+
+    from pretalx.common.fonts import get_fonts  # noqa: PLC0415
+
+    fonts = get_fonts(event)
+    heading_font_setting = event.display_settings.get("heading_font", "")
+    text_font_setting = event.display_settings.get("text_font", "")
+
+    if heading_font_setting and heading_font_setting in fonts:
+        registered = _register_plugin_font(
+            heading_font_setting, fonts[heading_font_setting]
+        )
+        if "regular" in registered:
+            heading_font_name = heading_font_setting
+            if "bold" in registered:
+                heading_font_name = heading_font_setting + "-Bold"
+
+    if text_font_setting and text_font_setting in fonts:
+        registered = _register_plugin_font(text_font_setting, fonts[text_font_setting])
+        if "regular" in registered:
+            text_font_name = text_font_setting
+            if "italic" in registered:
+                text_italic_font_name = text_font_setting + "-Italic"
+            else:
+                text_italic_font_name = text_font_setting
+
+    return heading_font_name, text_font_name, text_italic_font_name
+
+
+def get_style(heading_font, text_font, text_italic_font):
     stylesheet = StyleSheet1()
     stylesheet.add(
-        ParagraphStyle(name="Normal", fontName="Muli", fontSize=12, leading=14)
+        ParagraphStyle(name="Normal", fontName=text_font, fontSize=12, leading=14)
     )
     stylesheet.add(
-        ParagraphStyle(name="Title", fontName="Titillium-Bold", fontSize=14, leading=16)
+        ParagraphStyle(name="Title", fontName=heading_font, fontSize=14, leading=16)
     )
     stylesheet.add(
-        ParagraphStyle(name="Speaker", fontName="Muli-Italic", fontSize=12, leading=14)
+        ParagraphStyle(
+            name="Speaker", fontName=text_italic_font, fontSize=12, leading=14
+        )
     )
     stylesheet.add(
-        ParagraphStyle(name="Meta", fontName="Muli", fontSize=10, leading=12)
+        ParagraphStyle(name="Meta", fontName=text_font, fontSize=10, leading=12)
     )
     return stylesheet
 
 
-def get_story(doc, queryset):
-    styles = get_style()
-    return [SubmissionCard(s, styles, doc.width / 2) for s in queryset]
+def get_story(doc, queryset, event):
+    heading_font, text_font, text_italic_font = _resolve_fonts(event)
+    styles = get_style(heading_font, text_font, text_italic_font)
+    return [SubmissionCard(s, styles, doc.width / 2, heading_font) for s in queryset]
 
 
 def build_cards(queryset, event):
+    _register_default_fonts()
     with tempfile.NamedTemporaryFile(suffix=".pdf") as f:
         doc = BaseDocTemplate(
             f.name,
@@ -183,7 +268,7 @@ def build_cards(queryset, event):
                 )
             ]
         )
-        doc.build(get_story(doc, queryset))
+        doc.build(get_story(doc, queryset, event))
         f.seek(0)
         timestamp = now().strftime("%Y-%m-%d-%H%M")
         r = HttpResponse(
