@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from types import SimpleNamespace
+
 import pytest
 from django.core import mail as djmail
 from django.urls import reverse
@@ -1266,3 +1268,69 @@ def test_compose_teams_mail_blocked_by_exception(
 
     assert response.status_code == 302
     assert response.url == event.orga_urls.outbox
+
+
+def test_bulk_send_empty_outbox(client, event):
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    response = client.post(event.orga_urls.send_outbox, follow=True)
+
+    assert response.status_code == 200
+    assert "No emails to send" in response.content.decode()
+
+
+@pytest.mark.parametrize(
+    ("url_attr", "expected_title"),
+    (("send_outbox", "Sending emails"), ("compose_mails_sessions", "Composing emails")),
+)
+def test_async_progress_page(
+    client, event, settings, monkeypatch, url_attr, expected_title
+):
+    """Celery runs in eager mode with a DisabledBackend during tests, so the
+    progress page is never reached.  We patch the Celery setting and the
+    result lookup to return a PENDING result for a fake task ID."""
+    settings.CELERY_TASK_ALWAYS_EAGER = False
+    pending = SimpleNamespace(
+        ready=lambda: False, state="PENDING", info=None, id="fake-id"
+    )
+    monkeypatch.setattr(
+        "pretalx.common.views.mixins._get_celery_async_result", lambda _: pending
+    )
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+
+    url = getattr(event.orga_urls, url_attr) + "?async_id=fake-id"
+    response = client.get(url)
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert expected_title in content
+    assert event.orga_urls.outbox in content
+
+
+def test_compose_teams_mail_preview(client, event):
+    user = make_orga_user(event, can_change_submissions=True, can_change_teams=True)
+    client.force_login(user)
+    with scopes_disabled():
+        reviewer = UserFactory()
+        team = TeamFactory(
+            organiser=event.organiser, all_events=True, can_change_submissions=True
+        )
+        team.members.add(reviewer)
+
+    response = client.post(
+        event.orga_urls.compose_mails_teams,
+        data={
+            "recipients": str(team.pk),
+            "subject_0": "hi {name}",
+            "text_0": "hello {name}",
+            "action": "preview",
+        },
+    )
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Subject:" in content
+    with scopes_disabled():
+        assert QueuedMail.objects.filter(event=event).count() == 0

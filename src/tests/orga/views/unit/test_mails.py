@@ -364,3 +364,14 @@ def test_compose_draft_reminders_submit_buttons(event):
     buttons = view.submit_buttons()
 
     assert len(buttons) == 1
+
+
+def test_outbox_send_get_task_success_message(event):
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(OutboxSend, request)
+
+    assert (
+        str(view.get_task_success_message({"count": 3}))
+        == "3 mails have been processed."
+    )

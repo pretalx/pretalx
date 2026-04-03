@@ -14,13 +14,15 @@ from django.core.files.base import ContentFile
 from django.http import Http404, QueryDict
 from django.test import RequestFactory
 from django.utils.module_loading import import_string
-from django.views.generic import ListView
+from django.views.generic import ListView, View
 from django.views.generic.edit import FormMixin
+from kombu.exceptions import OperationalError
 
 from pretalx.common.forms.mixins import PretalxI18nModelForm, ReadOnlyFlag
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
     AsyncFileDownloadMixin,
+    AsyncTaskProgressMixin,
     EventPermissionRequired,
     Filterable,
     OrderActionMixin,
@@ -1211,3 +1213,294 @@ def test_async_download_handle_starts_task_when_no_params(event, settings):
     response = view.handle_async_download(request)
     assert response.status_code == 302
     assert "async_id=fake-task-id" in response.url
+
+
+# -- AsyncTaskProgressMixin -------------------------------------------------
+
+
+class _FakeTaskAsyncResult:
+    """Lightweight stand-in for celery.result.AsyncResult for the
+    AsyncTaskProgressMixin tests, injected via the overridable
+    _get_async_result hook."""
+
+    def __init__(self, *, ready, successful, result=None, state="PENDING", info=None):
+        self.id = "fake-task-id"
+        self.result = result
+        self.state = state
+        self.info = info
+        self._ready = ready
+        self._successful = successful
+
+    def ready(self):
+        return self._ready
+
+    def successful(self):
+        return self._successful
+
+
+class ConcreteTaskProgress(AsyncTaskProgressMixin, View):
+    _async_result = None
+
+    def __init__(self, request):
+        self.request = _add_messages(request)
+
+    def get_task_success_url(self, result):
+        return "/success/"
+
+    def get_task_error_url(self):
+        return "/error/"
+
+    def get_task_success_message(self, result):
+        return "Done"
+
+    def _get_async_result(self, async_id):
+        if self._async_result is not None:
+            return self._async_result
+        return super()._get_async_result(async_id)
+
+
+def test_async_task_progress_get_task_success_message_default():
+    """Default get_task_success_message returns a generic completion string."""
+    view = AsyncTaskProgressMixin()
+    msg = view.get_task_success_message(None)
+    assert str(msg) == "The task has been completed."
+
+
+def test_async_task_progress_get_task_progress_template_default():
+    """Default progress template points to the sending_progress page."""
+    view = AsyncTaskProgressMixin()
+    assert view.get_task_progress_template() == "orga/includes/async_task_waiting.html"
+
+
+def test_async_task_progress_get_async_result_returns_celery_result(event):
+    """The base _get_async_result returns a Celery AsyncResult."""
+    request = make_request(event, path="/test/")
+    view = ConcreteTaskProgress(request)
+    result = view._get_async_result("test-task-id")
+    assert isinstance(result, celery.result.AsyncResult)
+    assert result.id == "test-task-id"
+
+
+def test_async_task_progress_get_without_async_id_calls_super(event):
+    """get() without async_id passes through to super().get(), which raises
+    AttributeError since our concrete class has no real view."""
+    request = make_request(event, path="/test/")
+    view = ConcreteTaskProgress(request)
+
+    with pytest.raises(AttributeError):
+        view.get(request)
+
+
+def test_async_task_progress_get_with_async_id_checks_progress(event):
+    """get() with async_id in GET delegates to _check_task_progress."""
+    request = make_request(event, path="/test/")
+    request.GET = {"async_id": "some-id"}
+    view = ConcreteTaskProgress(request)
+    view._async_result = _FakeTaskAsyncResult(ready=True, successful=True, result={})
+
+    response = view.get(request)
+    assert response.status_code == 302
+    assert response.url == "/success/"
+
+
+def test_async_task_progress_dispatch_async_task_eager_success(event, settings):
+    """In eager mode, dispatch_async_task redirects to success URL on success."""
+    settings.CELERY_TASK_ALWAYS_EAGER = True
+
+    request = make_request(event, path="/test/")
+    view = ConcreteTaskProgress(request)
+
+    fake_result = _FakeTaskAsyncResult(ready=True, successful=True, result={"count": 5})
+    task = SimpleNamespace(apply_async=lambda **kw: fake_result)
+
+    response = view.dispatch_async_task(request, task, event_id=1)
+    assert response.status_code == 302
+    assert response.url == "/success/"
+    msgs = list(request._messages)
+    assert len(msgs) == 1
+    assert str(msgs[0]) == "Done"
+
+
+def test_async_task_progress_dispatch_async_task_eager_failure(event, settings):
+    """In eager mode, dispatch_async_task redirects to error URL on failure."""
+    settings.CELERY_TASK_ALWAYS_EAGER = True
+
+    request = make_request(event, path="/test/")
+    view = ConcreteTaskProgress(request)
+
+    fake_result = _FakeTaskAsyncResult(ready=True, successful=False)
+    task = SimpleNamespace(apply_async=lambda **kw: fake_result)
+
+    response = view.dispatch_async_task(request, task, event_id=1)
+    assert response.status_code == 302
+    assert response.url == "/error/"
+    msgs = list(request._messages)
+    assert len(msgs) == 1
+    assert str(msgs[0]) == "An error occurred. Please try again."
+
+
+def test_async_task_progress_dispatch_async_task_non_eager_redirects(event, settings):
+    """In non-eager mode, dispatch_async_task redirects to progress page."""
+    settings.CELERY_TASK_ALWAYS_EAGER = False
+
+    request = make_request(event, path="/test/")
+    view = ConcreteTaskProgress(request)
+
+    fake_result = SimpleNamespace(id="task-uuid-123")
+    task = SimpleNamespace(apply_async=lambda **kw: fake_result)
+
+    response = view.dispatch_async_task(request, task, event_id=1)
+    assert response.status_code == 302
+    assert "async_id=task-uuid-123" in response.url
+
+
+def test_async_task_progress_dispatch_async_task_connection_error(event, settings):
+    """dispatch_async_task redirects to error URL when Celery is unreachable."""
+    settings.CELERY_TASK_ALWAYS_EAGER = False
+
+    request = make_request(event, path="/test/")
+    view = ConcreteTaskProgress(request)
+
+    def raise_os_error(**kw):
+        raise OSError("Connection refused")
+
+    task = SimpleNamespace(apply_async=raise_os_error)
+
+    response = view.dispatch_async_task(request, task, event_id=1)
+    assert response.status_code == 302
+    assert response.url == "/error/"
+    msgs = list(request._messages)
+    assert len(msgs) == 1
+    assert str(msgs[0]) == "Could not start background task. Please try again."
+
+
+def test_async_task_progress_check_progress_htmx_complete_success(event):
+    """HTMX poll returns 286 with HX-Redirect when task finishes successfully."""
+    request = make_request(event, path="/test/", headers={"HX-Request": "true"})
+    request.GET = {"async_id": "done-id"}
+    view = ConcreteTaskProgress(request)
+    view._async_result = _FakeTaskAsyncResult(
+        ready=True, successful=True, result={"count": 3}
+    )
+
+    response = view._check_task_progress(request)
+    assert response.status_code == 286
+    assert response["HX-Redirect"] == "/success/"
+    msgs = list(request._messages)
+    assert len(msgs) == 1
+    assert str(msgs[0]) == "Done"
+
+
+def test_async_task_progress_check_progress_htmx_complete_failure(event):
+    """HTMX poll returns 286 with HX-Redirect to error URL on task failure."""
+    request = make_request(event, path="/test/", headers={"HX-Request": "true"})
+    request.GET = {"async_id": "fail-id"}
+    view = ConcreteTaskProgress(request)
+    view._async_result = _FakeTaskAsyncResult(ready=True, successful=False)
+
+    response = view._check_task_progress(request)
+    assert response.status_code == 286
+    assert response["HX-Redirect"] == "/error/"
+    msgs = list(request._messages)
+    assert len(msgs) == 1
+    assert str(msgs[0]) == "An error occurred. Please try again."
+
+
+def test_async_task_progress_check_progress_htmx_in_progress(event):
+    """HTMX poll returns 200 with progress partial when task is running."""
+    request = make_request(event, path="/test/", headers={"HX-Request": "true"})
+    request.GET = {"async_id": "running-id"}
+    view = ConcreteTaskProgress(request)
+    view._async_result = _FakeTaskAsyncResult(
+        ready=False,
+        successful=False,
+        state="PROGRESS",
+        info={"value": 50, "current": 5, "total": 10},
+    )
+
+    response = view._check_task_progress(request)
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "5" in content
+    assert "10" in content
+
+
+def test_async_task_progress_check_progress_htmx_pending_no_info(event):
+    """HTMX poll returns progress partial with generic message when no info yet."""
+    request = make_request(event, path="/test/", headers={"HX-Request": "true"})
+    request.GET = {"async_id": "pending-id"}
+    view = ConcreteTaskProgress(request)
+    view._async_result = _FakeTaskAsyncResult(
+        ready=False, successful=False, state="PENDING"
+    )
+
+    response = view._check_task_progress(request)
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "Processing" in content
+    assert "/error/" in content
+
+
+def test_async_task_progress_check_progress_non_htmx_complete(event):
+    """Non-HTMX request redirects to success URL when task is done."""
+    request = make_request(event, path="/test/")
+    request.GET = {"async_id": "done-id"}
+    view = ConcreteTaskProgress(request)
+    view._async_result = _FakeTaskAsyncResult(
+        ready=True, successful=True, result={"count": 3}
+    )
+
+    response = view._check_task_progress(request)
+    assert response.status_code == 302
+    assert response.url == "/success/"
+    msgs = list(request._messages)
+    assert len(msgs) == 1
+    assert str(msgs[0]) == "Done"
+
+
+def test_async_task_progress_check_progress_non_htmx_failure(event):
+    """Non-HTMX request redirects to error URL when task fails."""
+    request = make_request(event, path="/test/")
+    request.GET = {"async_id": "fail-id"}
+    view = ConcreteTaskProgress(request)
+    view._async_result = _FakeTaskAsyncResult(ready=True, successful=False)
+
+    response = view._check_task_progress(request)
+    assert response.status_code == 302
+    assert response.url == "/error/"
+
+
+def test_async_task_progress_check_progress_non_htmx_pending(event):
+    """Non-HTMX request renders the full progress template when task is pending."""
+    request = make_request(event, path="/test/")
+    request.GET = {"async_id": "pending-id"}
+    view = ConcreteTaskProgress(request)
+    view._async_result = _FakeTaskAsyncResult(
+        ready=False, successful=False, state="PENDING"
+    )
+
+    response = view._check_task_progress(request)
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "pending-id" in content
+    assert "/error/" in content
+
+
+def test_async_task_progress_dispatch_async_task_operational_error(event, settings):
+    """dispatch_async_task handles OperationalError from kombu."""
+    settings.CELERY_TASK_ALWAYS_EAGER = False
+
+    request = make_request(event, path="/test/")
+    view = ConcreteTaskProgress(request)
+
+    def raise_operational(**kw):
+        raise OperationalError("broker down")
+
+    task = SimpleNamespace(apply_async=raise_operational)
+
+    response = view.dispatch_async_task(request, task, event_id=1)
+    assert response.status_code == 302
+    assert response.url == "/error/"
+    msgs = list(request._messages)
+    assert len(msgs) == 1
+    assert str(msgs[0]) == "Could not start background task. Please try again."

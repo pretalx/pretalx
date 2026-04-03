@@ -1,0 +1,20 @@
+<!--
+SPDX-FileCopyrightText: 2026-present Tobias Kunze
+SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+-->
+
+{% extends "orga/base.html" %}
+
+{% load i18n %}
+
+{% block extra_title %}{{ async_task_title }} :: {% endblock extra_title %}
+
+{% block content %}
+    <h2>{{ async_task_title }}</h2>
+
+    <div hx-get="?async_id={{ async_id }}"
+         hx-trigger="every 2s"
+         hx-swap="innerHTML">
+        {% include "orga/includes/async_progress.html#progress" %}
+    </div>
+{% endblock content %}

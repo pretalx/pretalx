@@ -13,7 +13,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
@@ -377,6 +377,17 @@ class OrderActionMixin:
         return self.list(request, *args, **kwargs)
 
 
+def _get_celery_async_result(async_id):
+    """Return a Celery AsyncResult for the given task ID.
+
+    Shared helper used by both AsyncFileDownloadMixin and
+    AsyncTaskProgressMixin to avoid duplicating the (slow) import.
+    """
+    from celery.result import AsyncResult  # noqa: PLC0415 -- slow import
+
+    return AsyncResult(async_id)
+
+
 class AsyncFileDownloadMixin:
     """Mixin for views that generate and serve files asynchronously via Celery.
 
@@ -443,9 +454,7 @@ class AsyncFileDownloadMixin:
         return redirect(f"{request.path}?async_id={result.id}")
 
     def _get_async_result(self, async_id):
-        from celery.result import AsyncResult  # noqa: PLC0415 -- slow import
-
-        return AsyncResult(async_id)
+        return _get_celery_async_result(async_id)
 
     def _check_task_status(self, request, async_id):
         result = self._get_async_result(async_id)
@@ -498,3 +507,110 @@ class AsyncFileDownloadMixin:
             messages.error(request, _("Export file not found. Please try again."))
             return redirect(self.get_error_redirect_url())
         return response
+
+
+class AsyncTaskProgressMixin:
+    """Mixin for views that dispatch Celery tasks with progress reporting.
+
+    Intercepts GET requests with ``?async_id=`` to show an HTMX-polled
+    progress page.  In eager mode (tests / dev without Celery) the task
+    runs synchronously and the view redirects straight to the result.
+
+    Subclasses must implement:
+    - get_task_success_url(result): URL to redirect to on success
+    - get_task_error_url(): URL to redirect to on error
+    - get_task_success_message(result): user-facing success string
+    """
+
+    def get_task_success_url(self, result):
+        raise NotImplementedError
+
+    def get_task_error_url(self):
+        raise NotImplementedError
+
+    def get_task_success_message(self, result):
+        return _("The task has been completed.")
+
+    def get_task_error_message(self):
+        return _("An error occurred. Please try again.")
+
+    def get_task_progress_template(self):
+        return "orga/includes/async_task_waiting.html"
+
+    def get_task_progress_title(self):
+        return _("Processing")
+
+    def handle_task_success(self, request, result):
+        """Called when the async task finishes successfully.
+
+        Override to add extra messages (e.g. render-failure warnings).
+        """
+        messages.success(request, self.get_task_success_message(result))
+
+    # -- dispatch plumbing --------------------------------------------------
+
+    def get(self, request, *args, **kwargs):
+        if "async_id" in request.GET:
+            return self._check_task_progress(request)
+        return super().get(request, *args, **kwargs)
+
+    def dispatch_async_task(self, request, task, **task_kwargs):
+        """Dispatch *task* and return the appropriate HTTP response.
+
+        Eager mode  -> task runs now, redirect to success/error URL.
+        Normal mode -> redirect to ``?async_id=...`` progress page.
+        """
+        from kombu.exceptions import OperationalError  # noqa: PLC0415
+
+        try:
+            result = task.apply_async(kwargs=task_kwargs)
+        except (OSError, OperationalError):
+            messages.error(
+                request, _("Could not start background task. Please try again.")
+            )
+            return redirect(self.get_task_error_url())
+
+        if settings.CELERY_TASK_ALWAYS_EAGER:
+            if result.successful():
+                self.handle_task_success(request, result.result)
+                return redirect(self.get_task_success_url(result.result))
+            messages.error(request, self.get_task_error_message())
+            return redirect(self.get_task_error_url())
+
+        return redirect(f"{request.path}?async_id={result.id}")
+
+    def _get_async_result(self, async_id):
+        return _get_celery_async_result(async_id)
+
+    def _check_task_progress(self, request):
+        async_id = request.GET["async_id"]
+        result = self._get_async_result(async_id)
+
+        if result.ready():
+            if result.successful():
+                self.handle_task_success(request, result.result)
+                redirect_url = self.get_task_success_url(result.result)
+            else:
+                messages.error(request, self.get_task_error_message())
+                redirect_url = self.get_task_error_url()
+
+            if request.headers.get("HX-Request"):
+                response = HttpResponse(status=286)
+                response["HX-Redirect"] = str(redirect_url)
+                return response
+            return redirect(redirect_url)
+
+        # Task still running -- return progress info
+        context = {
+            "async_id": async_id,
+            "back_url": self.get_task_error_url(),
+            "async_task_title": self.get_task_progress_title(),
+        }
+        if result.state == "PROGRESS" and isinstance(result.info, dict):
+            context.update(result.info)
+
+        if request.headers.get("HX-Request"):
+            return render(
+                request, "orga/includes/async_progress.html#progress", context
+            )
+        return render(request, self.get_task_progress_template(), context)
