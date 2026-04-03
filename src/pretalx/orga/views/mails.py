@@ -25,6 +25,7 @@ from pretalx.common.views.generic import (
 )
 from pretalx.common.views.mixins import (
     ActionConfirmMixin,
+    AsyncTaskProgressMixin,
     EventPermissionRequired,
     Filterable,
     PermissionRequired,
@@ -160,12 +161,28 @@ class SentMail(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
         return result
 
 
-class OutboxSend(ActionConfirmMixin, OutboxList):
+class OutboxSend(AsyncTaskProgressMixin, ActionConfirmMixin, OutboxList):
     permission_required = "mail.send_queuedmail"
     action_object_name = ""
     action_confirm_label = phrases.base.send
     action_confirm_color = "success"
     action_confirm_icon = "envelope"
+
+    def get_task_progress_template(self):
+        return "orga/mails/sending_progress.html"
+
+    def get_task_progress_title(self):
+        return _("Sending emails")
+
+    def get_task_success_url(self, result):
+        return self.request.event.orga_urls.sent_mails
+
+    def get_task_error_url(self):
+        return self.request.event.orga_urls.outbox
+
+    def get_task_success_message(self, result):
+        count = result.get("count", 0) if result else 0
+        return _("{count} mails have been processed.").format(count=count)
 
     @context
     def question(self):
@@ -197,7 +214,7 @@ class OutboxSend(ActionConfirmMixin, OutboxList):
 
     def post(self, request, *args, **kwargs):
         if "pk" not in self.kwargs:
-            self.bulk_send(request)
+            return self.bulk_send(request)
         return self.single_send(request)
 
     def single_send(self, request):
@@ -232,15 +249,21 @@ class OutboxSend(ActionConfirmMixin, OutboxList):
         if errors:
             for error in errors:
                 messages.error(request, error)
-            return redirect(self.request.event.orga_urls.outbox)
-        mails = self.queryset
-        count = len(mails)
-        for mail in mails:
-            mail.send(requestor=self.request.user)
-        messages.success(
-            request, _("{count} mails have been sent.").format(count=count)
+            return redirect(request.event.orga_urls.outbox)
+
+        from pretalx.mail.tasks import task_send_outbox_mails  # noqa: PLC0415
+
+        mail_pks = list(self.queryset.values_list("pk", flat=True))
+        if not mail_pks:
+            messages.info(request, _("No emails to send."))
+            return redirect(request.event.orga_urls.outbox)
+        return self.dispatch_async_task(
+            request,
+            task_send_outbox_mails,
+            event_id=request.event.pk,
+            mail_pks=mail_pks,
+            requestor_id=request.user.pk,
         )
-        return redirect(self.request.event.orga_urls.outbox)
 
 
 class MailDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
@@ -448,9 +471,44 @@ class ComposeMailChoice(EventPermissionRequired, TemplateView):
     permission_required = "mail.send_queuedmail"
 
 
-class ComposeMailBaseView(EventPermissionRequired, FormView):
+class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormView):
     permission_required = "mail.send_queuedmail"
     write_permission_required = "mail.send_queuedmail"
+
+    def get_task_progress_template(self):
+        return "orga/mails/sending_progress.html"
+
+    def get_task_progress_title(self):
+        return _("Composing emails")
+
+    def get_task_success_url(self, result):
+        if result.get("skip_queue"):
+            return self.request.event.orga_urls.sent_mails
+        return self.request.event.orga_urls.outbox
+
+    def get_task_error_url(self):
+        return self.request.event.orga_urls.outbox
+
+    def get_task_success_message(self, result):
+        count = result.get("count", 0)
+        if result.get("skip_queue"):
+            return _("{count} emails have been sent.").format(count=count)
+        return phrases.orga.mails_in_outbox.format(count=count)
+
+    def handle_task_success(self, request, result):
+        super().handle_task_success(request, result)
+        render_failures = result.get("render_failures", 0)
+        if render_failures:
+            messages.warning(
+                request,
+                str(
+                    ngettext_lazy(
+                        "Could not generate one email, most likely because the session has not been scheduled yet.",
+                        "Could not generate {count} emails, most likely because their sessions have not been scheduled yet.",
+                        render_failures,
+                    )
+                ).format(count=render_failures),
+            )
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -473,9 +531,6 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
         errors = get_send_mail_exceptions(self.request)
         kwargs["may_skip_queue"] = not bool(errors)
         return kwargs
-
-    def get_success_url(self):
-        return getattr(self, "success_url", self.request.event.orga_urls.outbox)
 
     def get_context_data(self, *args, **kwargs):
         ctx = super().get_context_data(*args, **kwargs)
@@ -545,21 +600,10 @@ class ComposeMailBaseView(EventPermissionRequired, FormView):
                     self.mail_count = len({str(res) for res in result})
             return self.get(self.request, *self.args, **self.kwargs)
 
-        result = form.save()
-        if len(result) and result[0].state != QueuedMailStates.DRAFT:
-            self.success_url = self.request.event.orga_urls.sent_mails
-            messages.success(
-                self.request,
-                _("{count} emails have been sent.").format(count=len(result)),
-            )
-        else:
-            self.success_url = self.request.event.orga_urls.outbox
-            messages.success(
-                self.request, phrases.orga.mails_in_outbox.format(count=len(result))
-            )
-        for warning in getattr(form, "warnings", []):
-            messages.warning(self.request, warning)
-        return super().form_valid(form)
+        from pretalx.mail.tasks import task_generate_mails  # noqa: PLC0415
+
+        task_data = form.save_template_and_get_task_data()
+        return self.dispatch_async_task(self.request, task_generate_mails, **task_data)
 
 
 class ComposeTeamsMail(ComposeMailBaseView):
@@ -578,6 +622,15 @@ class ComposeTeamsMail(ComposeMailBaseView):
 
     def get_success_url(self):
         return self.request.event.orga_urls.outbox
+
+    def form_valid(self, form):
+        if self.request.POST.get("action") == "preview":
+            return super().form_valid(form)
+        result = form.save()
+        messages.success(
+            self.request, _("{count} emails have been sent.").format(count=len(result))
+        )
+        return redirect(self.get_success_url())
 
 
 class ComposeSessionMail(ComposeMailBaseView):

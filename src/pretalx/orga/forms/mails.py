@@ -10,7 +10,6 @@ from django.db.models import Count, Q
 from django.utils.functional import cached_property
 from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import ngettext_lazy
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.forms.fields import CountableOption
@@ -249,7 +248,6 @@ class WriteTeamsMailForm(WriteMailBaseForm):
         result = []
         users = self.get_recipients()
         for user in users:
-            # This happens when there are template errors
             with suppress(SendMailException):
                 result.append(
                     template.to_mail(
@@ -365,15 +363,18 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
 
         result = []
         for submission in submissions:
-            for slot in submission.current_slots or []:
+            slots = submission.current_slots or []
+            if slots:
+                for slot in slots:
+                    result.extend(
+                        {"submission": submission, "slot": slot, "user": speaker}
+                        for speaker in submission.sorted_speakers
+                    )
+            else:
                 result.extend(
-                    {"submission": submission, "slot": slot, "user": speaker}
+                    {"submission": submission, "user": speaker}
                     for speaker in submission.sorted_speakers
                 )
-            result.extend(
-                {"submission": submission, "user": speaker}
-                for speaker in submission.sorted_speakers
-            )
         if added_speakers:
             result.extend({"user": user} for user in added_speakers)
         self._recipients = result
@@ -381,6 +382,30 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
 
     def get_recipients(self):
         return self._recipients
+
+    def save_template_and_get_task_data(self):
+        """Save the MailTemplate and return serialized data for async generation."""
+        self.instance.event = self.event
+        self.instance.is_auto_created = True
+        template = super().save()
+
+        recipients = []
+        for ctx in self.get_recipients():
+            speaker = ctx["user"]
+            user = speaker.user if hasattr(speaker, "user") else speaker
+            entry = {"user_id": user.pk}
+            if submission := ctx.get("submission"):
+                entry["submission_id"] = submission.pk
+            if slot := ctx.get("slot"):
+                entry["slot_id"] = slot.pk
+            recipients.append(entry)
+
+        return {
+            "event_id": self.event.pk,
+            "template_id": template.pk,
+            "recipients": recipients,
+            "skip_queue": self.cleaned_data.get("skip_queue", False),
+        }
 
     def clean_question(self):
         return getattr(self, "filter_question", None)
@@ -396,64 +421,6 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
 
     def clean_q(self):
         return getattr(self, "filter_search", None)
-
-    @transaction.atomic
-    def save(self):
-        self.instance.event = self.event
-        self.instance.is_auto_created = True
-        template = super().save()
-
-        mails_by_user = defaultdict(list)
-        contexts = self.get_recipients()
-        render_failures = 0
-        for context in contexts:
-            try:
-                speaker = context["user"]
-                user = speaker.user if hasattr(speaker, "user") else speaker
-                context["user"] = user
-                locale = user.locale
-                if submission := context.get("submission"):
-                    locale = submission.get_email_locale(user.locale)
-                mail = template.to_mail(
-                    user=None,
-                    event=self.event,
-                    locale=locale,
-                    context_kwargs=context,
-                    commit=False,
-                    allow_empty_address=True,
-                )
-                mails_by_user[user].append((mail, context))
-            except SendMailException:
-                render_failures += 1
-
-        result = []
-        for user, user_mails in mails_by_user.items():
-            # Deduplicate emails: we don't want speakers to receive the same
-            # email twice, just because they have multiple submissions.
-            mail_dict = defaultdict(list)
-            for mail, context in user_mails:
-                mail_dict[mail.subject + mail.text].append((mail, context))
-            # Now we can create the emails and add the speakers to them
-            for mail_list in mail_dict.values():
-                mail = mail_list[0][0]
-                mail.save()
-                mail.to_users.add(user)
-                for __, context in mail_list:
-                    if submission := context.get("submission"):
-                        mail.submissions.add(submission)
-                result.append(mail)
-        if self.cleaned_data.get("skip_queue"):
-            for mail in result:
-                mail.send()
-        if render_failures:
-            self.warnings.append(
-                ngettext_lazy(
-                    "Could not generate one email, most likely because the session has not been scheduled yet.",
-                    "Could not generate {count} emails, most likely because their sessions have not been scheduled yet.",
-                    render_failures,
-                ).format(count=render_failures)
-            )
-        return result
 
 
 class QueuedMailFilterForm(forms.Form):
