@@ -55,8 +55,8 @@
             </div>
         </aside>
         <h2>
-            <span class="text">202 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">202<span class="text"> run</span></button>
+            <span class="text">207 statements &nbsp;</span>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">207<span class="text"> run</span></button>
             <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">0<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
             <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">0<span class="text"> partial</span></button>
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_072c692d5375a47a_test_organiser_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-02 18:18 +0000
+            created at 2026-04-03 13:19 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -448,6 +448,17 @@
     <p class="run"><span class="n"><a id="t364" href="#t364">364</a></span><span class="t">    <span class="nam">buttons</span> <span class="op">=</span> <span class="nam">view</span><span class="op">.</span><span class="nam">submit_buttons</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t365" href="#t365">365</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t366" href="#t366">366</a></span><span class="t">    <span class="key">assert</span> <span class="nam">len</span><span class="op">(</span><span class="nam">buttons</span><span class="op">)</span> <span class="op">==</span> <span class="num">1</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t367" href="#t367">367</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t368" href="#t368">368</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t369" href="#t369">369</a></span><span class="t"><span class="key">def</span> <span class="nam">test_outbox_send_get_task_success_message</span><span class="op">(</span><span class="nam">event</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t370" href="#t370">370</a></span><span class="t">    <span class="nam">user</span> <span class="op">=</span> <span class="nam">make_orga_user</span><span class="op">(</span><span class="nam">event</span><span class="op">,</span> <span class="nam">can_change_submissions</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t371" href="#t371">371</a></span><span class="t">    <span class="nam">request</span> <span class="op">=</span> <span class="nam">make_request</span><span class="op">(</span><span class="nam">event</span><span class="op">,</span> <span class="nam">user</span><span class="op">=</span><span class="nam">user</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t372" href="#t372">372</a></span><span class="t">    <span class="nam">view</span> <span class="op">=</span> <span class="nam">make_view</span><span class="op">(</span><span class="nam">OutboxSend</span><span class="op">,</span> <span class="nam">request</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t373" href="#t373">373</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t374" href="#t374">374</a></span><span class="t">    <span class="key">assert</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t375" href="#t375">375</a></span><span class="t">        <span class="nam">str</span><span class="op">(</span><span class="nam">view</span><span class="op">.</span><span class="nam">get_task_success_message</span><span class="op">(</span><span class="op">{</span><span class="str">"count"</span><span class="op">:</span> <span class="num">3</span><span class="op">}</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t376" href="#t376">376</a></span><span class="t">        <span class="op">==</span> <span class="str">"3 mails have been processed."</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t377" href="#t377">377</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -457,7 +468,7 @@
             <a class="nav" href="z_072c692d5375a47a_test_organiser_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-02 18:18 +0000
+            created at 2026-04-03 13:19 +0000
         </p>
     </div>
 </footer>
