@@ -419,7 +419,9 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
         return self.request.event.get_mail_template(MailTemplateRoles.QUESTION_REMINDER)
 
     def form_invalid(self, form):
-        messages.error(self.request, _("Could not send mails, error in configuration."))
+        messages.error(
+            self.request, _("Could not send emails, error in configuration.")
+        )
         return super().form_invalid(form)
 
     def form_valid(self, form):

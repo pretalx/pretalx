@@ -418,16 +418,16 @@ class MailSettingsForm(
         required=False,
     )
     subject_prefix = forms.CharField(
-        label=_("Mail subject prefix"),
+        label=_("Email subject prefix"),
         help_text=_(
-            "The prefix will be prepended to outgoing mail subjects in [brackets]."
+            "The prefix will be prepended to outgoing email subjects in [brackets]."
         ),
         required=False,
     )
     signature = forms.CharField(
-        label=_("Mail signature"),
+        label=_("Email signature"),
         help_text=str(
-            _("The signature will be added to outgoing mails, preceded by “-- ”.")
+            _("The signature will be added to outgoing emails, preceded by “-- ”.")
         ),
         required=False,
         widget=MarkdownWidget,
@@ -435,7 +435,7 @@ class MailSettingsForm(
     smtp_use_custom = forms.BooleanField(
         label=_("Use custom SMTP server"),
         help_text=_(
-            "All mail related to your event will be sent over the SMTP server specified by you."
+            "All email related to your event will be sent over the SMTP server specified by you."
         ),
         required=False,
     )
@@ -881,7 +881,7 @@ class EventHistoryFilterForm(forms.Form):
         "submission.submissiontype": _("Proposal types"),
         "person.speakerprofile": _("Speakers"),
         "person.user": _("Users"),
-        "mail.mailtemplate": _("Mail templates"),
+        "mail.mailtemplate": _("Email templates"),
         "mail.queuedmail": _("Emails"),
         "schedule.room": _("Rooms"),
         "schedule.schedule": _("Schedules"),

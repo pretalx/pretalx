@@ -77,7 +77,7 @@ class SubmissionStates(models.TextChoices):
     ACCEPTED = "accepted", _("accepted")
     CONFIRMED = "confirmed", _("confirmed")
     REJECTED = "rejected", _("rejected")
-    CANCELED = "canceled", _("canceled")
+    CANCELED = "canceled", _("cancelled")
     WITHDRAWN = "withdrawn", _("withdrawn")
     DRAFT = "draft", _("draft")
 

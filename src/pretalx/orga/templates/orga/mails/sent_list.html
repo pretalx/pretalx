@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% block mail_content %}
     <h2>
         {{ page_obj.paginator.count }}
-        {% translate "Sent Mails" %}
+        {% translate "Sent emails" %}
     </h2>
     {% include "common/includes/search_form.html" %}
     {% if sending_ids %}

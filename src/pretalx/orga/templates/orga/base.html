@@ -401,7 +401,7 @@ SPDX-FileContributor: Raphael Michel
                                 <a class="nav-link nav-link-inner" href="{{ request.event.orga_urls.outbox }}">
                                     <i class="fa fa-envelope"></i>
                                     <span class="sidebar-text">
-                                        {% translate "Mails" %}
+                                        {% translate "Emails" %}
                                         <span hx-get="{% url 'orga:mails.sidebar_count' event=request.event.slug %}"
                                               hx-trigger="load, updateSidebarCount from:body"
                                               hx-swap="innerHTML" class="sidebar-notification-wrapper"></span>

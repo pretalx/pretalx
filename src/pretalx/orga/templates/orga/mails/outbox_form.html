@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% load rich_text %}
 {% load static %}
 
-{% block extra_title %}{% translate "Mail Editor" %} :: {% endblock extra_title %}
+{% block extra_title %}{% translate "Email editor" %} :: {% endblock extra_title %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -46,7 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endif %}
             <form method="post">
                 {% csrf_token %}
-                <h2>{% translate "Mail Editor" %}</h2>
+                <h2>{% translate "Email editor" %}</h2>
 
                 {% if not form.read_only %}
                     {{ form }}
