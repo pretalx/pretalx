@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-03-28 15:20+0000\n"
-"PO-Revision-Date: 2026-03-29 16:42+0000\n"
+"PO-Revision-Date: 2026-04-01 05:42+0000\n"
 "Last-Translator: albanobattistella <albano_battistella@hotmail.com>\n"
 "Language-Team: none\n"
 "Language: it\n"
@@ -252,22 +252,18 @@ msgid "No sessions match your current filters."
 msgstr "Nessuna proposta trovata corrispondente ai tuoi filtri."
 
 #: pretalx/agenda/views/schedule.py:212
-#, fuzzy
-#| msgid "Do not record"
 msgid "Not recorded"
-msgstr "Non registrare"
+msgstr "Non registrato"
 
 #: pretalx/agenda/views/schedule.py:213
-#, fuzzy
-#| msgid "Recording opt-out"
 msgid "Recording"
-msgstr "Richiesta di non essere registrati"
+msgstr "Registrazione"
 
 #: pretalx/agenda/views/schedule.py:215
-#, fuzzy
-#| msgid "There was an error sending the mail. Please try again later."
 msgid "An error occurred while loading the schedule. Please try again later."
-msgstr "Si è verificato un errore nell'invio della e-mail. Riprova più tardi."
+msgstr ""
+"Si è verificato un errore durante il caricamento del programma. Riprova più "
+"tardi."
 
 #: pretalx/agenda/views/schedule.py:218
 msgid "The schedule is not yet available. Please check back later!"
@@ -342,10 +338,8 @@ msgid "Resources"
 msgstr "Risorse"
 
 #: pretalx/cfp/flow.py:518
-#, fuzzy
-#| msgid "Please enter at least one email address!"
 msgid "Please add at least one resource."
-msgstr "Per favore fornire un indirizzo email valido!"
+msgstr "Si prega di aggiungere almeno una risorsa."
 
 #: pretalx/cfp/flow.py:587
 msgid ""
