@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-04 13:22+0000\n"
+"POT-Creation-Date: 2026-04-04 14:50+0000\n"
 "PO-Revision-Date: 2025-01-15 10:49+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: none\n"
@@ -333,7 +333,7 @@ msgstr "جلسة “{title}” - {event}"
 msgid "Title"
 msgstr "العنوان"
 
-#: pretalx/cfp/flow.py:104
+#: pretalx/cfp/flow.py:104 pretalx/submission/forms/submission.py:43
 #, fuzzy
 #| msgid "Additional Speaker"
 msgid "Additional speakers"
@@ -624,12 +624,12 @@ msgid "Proposals are closed"
 msgstr "تم إغلاق الطلبات(المقترحات)"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:19
-#: pretalx/submission/models/submission.py:77
+#: pretalx/orga/forms/event.py:901 pretalx/submission/models/submission.py:77
 msgid "accepted"
 msgstr "تمت الموافقة"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:21
-#: pretalx/orga/views/dashboard.py:346
+#: pretalx/orga/forms/event.py:904 pretalx/orga/views/dashboard.py:346
 #: pretalx/submission/models/submission.py:78
 msgid "confirmed"
 msgstr "تم التأكيد"
@@ -640,7 +640,7 @@ msgid "cancelled"
 msgstr "ألغيت"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:25
-#: pretalx/submission/models/submission.py:81
+#: pretalx/orga/forms/event.py:905 pretalx/submission/models/submission.py:81
 msgid "withdrawn"
 msgstr "منسحب"
 
@@ -1149,6 +1149,7 @@ msgstr[4] "عدد المقدمين"
 msgstr[5] "عدد المقدمين"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:41
+#: pretalx/orga/templates/orga/organiser/team/update.html:47
 #, fuzzy
 #| msgid "pending Invitation"
 msgid "Pending invitation"
@@ -1923,7 +1924,9 @@ msgid "The user changed their email address."
 msgstr "عنوان ايميل المستخدم"
 
 #: pretalx/common/log_display.py:207 pretalx/common/log_display.py:211
-#: pretalx/orga/tables/cfp.py:213 pretalx/orga/views/cfp.py:147
+#: pretalx/orga/tables/cfp.py:213
+#: pretalx/orga/templates/orga/cfp/editor.html:490
+#: pretalx/orga/views/cfp.py:147
 #, fuzzy
 #| msgid "Custom Mail"
 msgid "Custom field"
@@ -4138,6 +4141,7 @@ msgstr "اتركه فارغًا لاستخدام العنوان الأساسي: 
 
 #: pretalx/orga/forms/cfp.py:577
 #: pretalx/orga/templates/orga/cfp/editor.html:504
+#: pretalx/submission/models/question.py:247
 #, fuzzy
 #| msgid "help text"
 msgid "Help text"
@@ -4697,6 +4701,7 @@ msgstr "ايميل مخصص"
 #: pretalx/orga/templates/orga/review/dashboard.html:25
 #: pretalx/orga/templates/orga/submission/base.html:78
 #: pretalx/orga/templates/orga/submission/content.html:55
+#: pretalx/orga/templates/orga/submission/content.html:59
 #: pretalx/orga/templates/orga/submission/review.html:13
 #: pretalx/orga/views/dashboard.py:198
 msgid "Reviews"
@@ -4721,7 +4726,8 @@ msgstr "عناوين الطللبات (المقترحات)"
 #: pretalx/orga/forms/event.py:882 pretalx/orga/tables/submission.py:185
 #: pretalx/orga/templates/orga/base.html:453
 #: pretalx/orga/templates/orga/submission/speakers.html:27
-#: pretalx/schedule/phrases.py:21 pretalx/submission/models/submission.py:195
+#: pretalx/schedule/phrases.py:21 pretalx/submission/exporters.py:22
+#: pretalx/submission/models/submission.py:195
 msgid "Speakers"
 msgstr "المحاضرون"
 
@@ -4779,16 +4785,9 @@ msgstr ""
 msgid "Deleted"
 msgstr "حذف"
 
-#: pretalx/orga/forms/event.py:901
-#, fuzzy
-#| msgid "accepted"
-msgid "Accepted"
-msgstr "تمت الموافقة"
-
-#: pretalx/orga/forms/event.py:902
-#, fuzzy
-#| msgid "rejected"
-msgid "Rejected"
+#: pretalx/orga/forms/event.py:902 pretalx/orga/views/dashboard.py:397
+#: pretalx/submission/models/submission.py:79
+msgid "rejected"
 msgstr "لم يتم الموافقة"
 
 #: pretalx/orga/forms/event.py:903
@@ -4796,18 +4795,6 @@ msgstr "لم يتم الموافقة"
 #| msgid "canceled"
 msgid "Cancelled"
 msgstr "ألغيت"
-
-#: pretalx/orga/forms/event.py:904
-#, fuzzy
-#| msgid "confirmed"
-msgid "Confirmed"
-msgstr "تم التأكيد"
-
-#: pretalx/orga/forms/event.py:905
-#, fuzzy
-#| msgid "Withdraw"
-msgid "Withdrawn"
-msgstr "الحذف"
 
 #: pretalx/orga/forms/event.py:911
 #, fuzzy
@@ -5349,7 +5336,7 @@ msgid ""
 "changes there or just send them all."
 msgstr ""
 
-#: pretalx/orga/tables/admin.py:35
+#: pretalx/orga/tables/admin.py:35 pretalx/submission/exporters.py:64
 #, fuzzy
 #| msgid "Sessions"
 msgid "Submissions"
@@ -5475,6 +5462,7 @@ msgid "Number of speakers"
 msgstr "لا يوجد متحدثين"
 
 #: pretalx/orga/tables/submission.py:57
+#: pretalx/orga/templates/orga/submission/speakers.html:121
 #, fuzzy
 #| msgid "pending Invitation"
 msgid "Pending invitations"
@@ -5926,7 +5914,8 @@ msgstr "تعديل CfP"
 #: pretalx/orga/templates/orga/cfp/editor.html:48
 #: pretalx/orga/templates/orga/cfp/editor.html:136
 #: pretalx/orga/templates/orga/cfp/editor.html:150
-msgid "Reset to Defaults"
+#: pretalx/orga/templates/orga/generic/table.html:97
+msgid "Reset to defaults"
 msgstr ""
 
 #: pretalx/orga/templates/orga/cfp/editor.html:51
@@ -6053,12 +6042,6 @@ msgstr ""
 #| msgid "Configure rooms"
 msgid "Configure Field"
 msgstr "تكوين الغرف"
-
-#: pretalx/orga/templates/orga/cfp/editor.html:490
-#, fuzzy
-#| msgid "Custom Mail"
-msgid "Custom Field"
-msgstr "ايميل مخصص"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:494
 msgid "Type"
@@ -6521,10 +6504,6 @@ msgstr "انقل الغرفة للأعلى"
 msgid "Move down"
 msgstr "انقل الغرفة للأسفل"
 
-#: pretalx/orga/templates/orga/generic/table.html:97
-msgid "Reset to defaults"
-msgstr ""
-
 #: pretalx/orga/templates/orga/includes/async_download.html:11
 #, fuzzy
 #| msgid "Regenerate Export"
@@ -6937,10 +6916,6 @@ msgstr[5] ""
 #: pretalx/orga/templates/orga/organiser/team/update.html:37
 msgid "Remove team member"
 msgstr "إزالة عضو الفريق"
-
-#: pretalx/orga/templates/orga/organiser/team/update.html:47
-msgid "pending Invitation"
-msgstr "دعوة معلقة"
 
 #: pretalx/orga/templates/orga/organiser/team/update.html:57
 #: pretalx/orga/views/organiser.py:225
@@ -7826,10 +7801,6 @@ msgstr "تم إنشاء هذا المقترح باستخدام رمز الوصو
 msgid "Proposal"
 msgstr "مقترح"
 
-#: pretalx/orga/templates/orga/submission/content.html:59
-msgid "reviews"
-msgstr "المراجعات"
-
 #: pretalx/orga/templates/orga/submission/feedback_list.html:11
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:14
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:17
@@ -7950,12 +7921,6 @@ msgstr "مقترحات أخرى لهذا المتحدث:"
 #| msgid "Public changelog"
 msgid "Change order"
 msgstr "التغييرات العامة"
-
-#: pretalx/orga/templates/orga/submission/speakers.html:121
-#, fuzzy
-#| msgid "pending Invitation"
-msgid "Pending Invitations"
-msgstr "دعوة معلقة"
 
 #: pretalx/orga/templates/orga/submission/speakers.html:128
 #, fuzzy
@@ -8430,11 +8395,6 @@ msgstr[2] ""
 msgstr[3] ""
 msgstr[4] ""
 msgstr[5] ""
-
-#: pretalx/orga/views/dashboard.py:397
-#: pretalx/submission/models/submission.py:79
-msgid "rejected"
-msgstr "لم يتم الموافقة"
 
 #: pretalx/orga/views/dashboard.py:421
 msgid "sent email"
@@ -9707,18 +9667,6 @@ msgstr "{} الدقائق، #{}، {}، {}"
 msgid "Custom fields data"
 msgstr "ايميل مخصص"
 
-#: pretalx/submission/exporters.py:22
-#, fuzzy
-#| msgid "Speakers"
-msgid "speakers"
-msgstr "المحاضرون"
-
-#: pretalx/submission/exporters.py:64
-#, fuzzy
-#| msgid "Sessions"
-msgid "submissions"
-msgstr "الجلسات"
-
 #: pretalx/submission/forms/feedback.py:25
 msgid "All speakers"
 msgstr "كل المتحدثين"
@@ -9732,12 +9680,6 @@ msgstr ""
 #| msgid "Please provide a valid email address."
 msgid "Please provide a link or upload a file!"
 msgstr "يرجى تقديم عنوان بريد إلكتروني فعال."
-
-#: pretalx/submission/forms/submission.py:43
-#, fuzzy
-#| msgid "Additional Speaker"
-msgid "Additional Speakers"
-msgstr "متحدث إضافي"
 
 #: pretalx/submission/forms/submission.py:45
 #, fuzzy
@@ -10057,10 +9999,6 @@ msgstr "محدودية المسارات"
 #: pretalx/submission/models/question.py:242
 msgid "Label"
 msgstr ""
-
-#: pretalx/submission/models/question.py:247
-msgid "help text"
-msgstr "النص المساعد"
 
 #: pretalx/submission/models/question.py:248
 #, fuzzy

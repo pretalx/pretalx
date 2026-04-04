@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-04 13:22+0000\n"
+"POT-Creation-Date: 2026-04-04 14:50+0000\n"
 "PO-Revision-Date: 2025-04-08 14:25+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: none\n"
@@ -329,7 +329,7 @@ msgstr "Phiên “{title}” của Hội thảo {event}"
 msgid "Title"
 msgstr "Tiêu đề"
 
-#: pretalx/cfp/flow.py:104
+#: pretalx/cfp/flow.py:104 pretalx/submission/forms/submission.py:43
 msgid "Additional speakers"
 msgstr "Các diễn giả khác"
 
@@ -623,12 +623,12 @@ msgid "Proposals are closed"
 msgstr "Các đề xuất đã đóng"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:19
-#: pretalx/submission/models/submission.py:77
+#: pretalx/orga/forms/event.py:901 pretalx/submission/models/submission.py:77
 msgid "accepted"
 msgstr "duyệt"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:21
-#: pretalx/orga/views/dashboard.py:346
+#: pretalx/orga/forms/event.py:904 pretalx/orga/views/dashboard.py:346
 #: pretalx/submission/models/submission.py:78
 msgid "confirmed"
 msgstr "chốt"
@@ -639,7 +639,7 @@ msgid "cancelled"
 msgstr "huỷ"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:25
-#: pretalx/submission/models/submission.py:81
+#: pretalx/orga/forms/event.py:905 pretalx/submission/models/submission.py:81
 msgid "withdrawn"
 msgstr "thu hồi"
 
@@ -1116,6 +1116,7 @@ msgid_plural "Submitters"
 msgstr[0] "Người nộp bài"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:41
+#: pretalx/orga/templates/orga/organiser/team/update.html:47
 #, fuzzy
 #| msgid "pending Invitation"
 msgid "Pending invitation"
@@ -1865,7 +1866,9 @@ msgid "The user changed their email address."
 msgstr "Email của người dùng được giải quyết"
 
 #: pretalx/common/log_display.py:207 pretalx/common/log_display.py:211
-#: pretalx/orga/tables/cfp.py:213 pretalx/orga/views/cfp.py:147
+#: pretalx/orga/tables/cfp.py:213
+#: pretalx/orga/templates/orga/cfp/editor.html:490
+#: pretalx/orga/views/cfp.py:147
 #, fuzzy
 #| msgid "Custom Mail"
 msgid "Custom field"
@@ -4090,6 +4093,7 @@ msgstr "Để trống để sử dụng thời lượng mặc định cho loại
 
 #: pretalx/orga/forms/cfp.py:577
 #: pretalx/orga/templates/orga/cfp/editor.html:504
+#: pretalx/submission/models/question.py:247
 msgid "Help text"
 msgstr ""
 
@@ -4642,6 +4646,7 @@ msgstr "Trường tuỳ chỉnh"
 #: pretalx/orga/templates/orga/review/dashboard.html:25
 #: pretalx/orga/templates/orga/submission/base.html:78
 #: pretalx/orga/templates/orga/submission/content.html:55
+#: pretalx/orga/templates/orga/submission/content.html:59
 #: pretalx/orga/templates/orga/submission/review.html:13
 #: pretalx/orga/views/dashboard.py:198
 msgid "Reviews"
@@ -4666,7 +4671,8 @@ msgstr "Tiêu đề của đề xuất"
 #: pretalx/orga/forms/event.py:882 pretalx/orga/tables/submission.py:185
 #: pretalx/orga/templates/orga/base.html:453
 #: pretalx/orga/templates/orga/submission/speakers.html:27
-#: pretalx/schedule/phrases.py:21 pretalx/submission/models/submission.py:195
+#: pretalx/schedule/phrases.py:21 pretalx/submission/exporters.py:22
+#: pretalx/submission/models/submission.py:195
 msgid "Speakers"
 msgstr "Diễn giả"
 
@@ -4723,35 +4729,16 @@ msgstr ""
 msgid "Deleted"
 msgstr "Xoá"
 
-#: pretalx/orga/forms/event.py:901
-#, fuzzy
-#| msgid "accepted"
-msgid "Accepted"
-msgstr "duyệt"
-
-#: pretalx/orga/forms/event.py:902
-#, fuzzy
-#| msgid "Reject"
-msgid "Rejected"
-msgstr "Từ chối"
+#: pretalx/orga/forms/event.py:902 pretalx/orga/views/dashboard.py:397
+#: pretalx/submission/models/submission.py:79
+msgid "rejected"
+msgstr ""
 
 #: pretalx/orga/forms/event.py:903
 #, fuzzy
 #| msgid "canceled"
 msgid "Cancelled"
 msgstr "huỷ"
-
-#: pretalx/orga/forms/event.py:904
-#, fuzzy
-#| msgid "confirmed"
-msgid "Confirmed"
-msgstr "chốt"
-
-#: pretalx/orga/forms/event.py:905
-#, fuzzy
-#| msgid "Withdraw"
-msgid "Withdrawn"
-msgstr "Thu hồi"
 
 #: pretalx/orga/forms/event.py:911
 #, fuzzy
@@ -5274,7 +5261,7 @@ msgstr ""
 "{count} email đã được lưu vào hộp thư đi – bạn có thể thực hiện từng thay "
 "đổi ở đó hoặc gửi tất cả."
 
-#: pretalx/orga/tables/admin.py:35
+#: pretalx/orga/tables/admin.py:35 pretalx/submission/exporters.py:64
 msgid "Submissions"
 msgstr "Bài đã nộp"
 
@@ -5395,6 +5382,7 @@ msgid "Number of speakers"
 msgstr "Số nhận xét bình duyệt"
 
 #: pretalx/orga/tables/submission.py:57
+#: pretalx/orga/templates/orga/submission/speakers.html:121
 #, fuzzy
 #| msgid "pending Invitation"
 msgid "Pending invitations"
@@ -5827,7 +5815,8 @@ msgstr "Soạn Thông báo mời viết Đề xuất Tham luận"
 #: pretalx/orga/templates/orga/cfp/editor.html:48
 #: pretalx/orga/templates/orga/cfp/editor.html:136
 #: pretalx/orga/templates/orga/cfp/editor.html:150
-msgid "Reset to Defaults"
+#: pretalx/orga/templates/orga/generic/table.html:97
+msgid "Reset to defaults"
 msgstr ""
 
 #: pretalx/orga/templates/orga/cfp/editor.html:51
@@ -5952,12 +5941,6 @@ msgstr ""
 #| msgid "Configure rooms"
 msgid "Configure Field"
 msgstr "Cấu hình phòng hội thảo"
-
-#: pretalx/orga/templates/orga/cfp/editor.html:490
-#, fuzzy
-#| msgid "Custom Mail"
-msgid "Custom Field"
-msgstr "Email tuỳ chỉnh"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:494
 msgid "Type"
@@ -6392,10 +6375,6 @@ msgstr "Di chuyển mục"
 msgid "Move down"
 msgstr ""
 
-#: pretalx/orga/templates/orga/generic/table.html:97
-msgid "Reset to defaults"
-msgstr ""
-
 #: pretalx/orga/templates/orga/includes/async_download.html:11
 #, fuzzy
 #| msgid "Regenerate Export"
@@ -6771,10 +6750,6 @@ msgstr[0] "diễn giả"
 #: pretalx/orga/templates/orga/organiser/team/update.html:37
 msgid "Remove team member"
 msgstr "Bỏ một thành viên tiểu ban"
-
-#: pretalx/orga/templates/orga/organiser/team/update.html:47
-msgid "pending Invitation"
-msgstr "chờ được mời"
 
 #: pretalx/orga/templates/orga/organiser/team/update.html:57
 #: pretalx/orga/views/organiser.py:225
@@ -7571,10 +7546,6 @@ msgstr "Đề xuất này được tạo bằng mã truy cập:"
 msgid "Proposal"
 msgstr "Đề xuất"
 
-#: pretalx/orga/templates/orga/submission/content.html:59
-msgid "reviews"
-msgstr "bài bình duyệt"
-
 #: pretalx/orga/templates/orga/submission/feedback_list.html:11
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:14
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:17
@@ -7687,12 +7658,6 @@ msgstr "Các đề xuất khác của diễn giả này:"
 #| msgid "Changelog"
 msgid "Change order"
 msgstr "Danh sác những thay đổi"
-
-#: pretalx/orga/templates/orga/submission/speakers.html:121
-#, fuzzy
-#| msgid "pending Invitation"
-msgid "Pending Invitations"
-msgstr "chờ được mời"
 
 #: pretalx/orga/templates/orga/submission/speakers.html:128
 #, fuzzy
@@ -8139,11 +8104,6 @@ msgstr ""
 msgid "submission with pending changes"
 msgid_plural "submissions with pending changes"
 msgstr[0] "Thực thi các thay đổi đang chờ"
-
-#: pretalx/orga/views/dashboard.py:397
-#: pretalx/submission/models/submission.py:79
-msgid "rejected"
-msgstr ""
 
 #: pretalx/orga/views/dashboard.py:421
 msgid "sent email"
@@ -9311,19 +9271,6 @@ msgstr "{} phút, #{}, {}, {}"
 msgid "Custom fields data"
 msgstr "Email tuỳ chỉnh"
 
-#: pretalx/submission/exporters.py:22
-#, fuzzy
-#| msgid "speaker"
-#| msgid_plural "speakers"
-msgid "speakers"
-msgstr "diễn giả"
-
-#: pretalx/submission/exporters.py:64
-#, fuzzy
-#| msgid "Submissions"
-msgid "submissions"
-msgstr "Bài đã nộp"
-
 #: pretalx/submission/forms/feedback.py:25
 msgid "All speakers"
 msgstr ""
@@ -9335,12 +9282,6 @@ msgstr ""
 #: pretalx/submission/forms/resource.py:35
 msgid "Please provide a link or upload a file!"
 msgstr ""
-
-#: pretalx/submission/forms/submission.py:43
-#, fuzzy
-#| msgid "Additional speakers"
-msgid "Additional Speakers"
-msgstr "Các diễn giả khác"
 
 #: pretalx/submission/forms/submission.py:45
 msgid ""
@@ -9631,10 +9572,6 @@ msgstr "Ngày giới hạn"
 
 #: pretalx/submission/models/question.py:242
 msgid "Label"
-msgstr ""
-
-#: pretalx/submission/models/question.py:247
-msgid "help text"
 msgstr ""
 
 #: pretalx/submission/models/question.py:248

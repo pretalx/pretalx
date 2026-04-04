@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-04 13:22+0000\n"
+"POT-Creation-Date: 2026-04-04 14:50+0000\n"
 "PO-Revision-Date: 2025-12-04 17:41+0000\n"
 "Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
@@ -317,7 +317,7 @@ msgstr "{event} 会议上主题为 {title} 的会期"
 msgid "Title"
 msgstr "标题"
 
-#: pretalx/cfp/flow.py:104
+#: pretalx/cfp/flow.py:104 pretalx/submission/forms/submission.py:43
 msgid "Additional speakers"
 msgstr "附加演讲者"
 
@@ -587,12 +587,12 @@ msgid "Proposals are closed"
 msgstr "提案已关闭"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:19
-#: pretalx/submission/models/submission.py:77
+#: pretalx/orga/forms/event.py:901 pretalx/submission/models/submission.py:77
 msgid "accepted"
 msgstr "接受"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:21
-#: pretalx/orga/views/dashboard.py:346
+#: pretalx/orga/forms/event.py:904 pretalx/orga/views/dashboard.py:346
 #: pretalx/submission/models/submission.py:78
 msgid "confirmed"
 msgstr "确认"
@@ -603,7 +603,7 @@ msgid "cancelled"
 msgstr "取消"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:25
-#: pretalx/submission/models/submission.py:81
+#: pretalx/orga/forms/event.py:905 pretalx/submission/models/submission.py:81
 msgid "withdrawn"
 msgstr "撤回"
 
@@ -1075,6 +1075,7 @@ msgid_plural "Submitters"
 msgstr[0] "提交者"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:41
+#: pretalx/orga/templates/orga/organiser/team/update.html:47
 #, fuzzy
 #| msgid "pending Invitation"
 msgid "Pending invitation"
@@ -1835,7 +1836,9 @@ msgid "The user changed their email address."
 msgstr "所指用户的电子邮件地址"
 
 #: pretalx/common/log_display.py:207 pretalx/common/log_display.py:211
-#: pretalx/orga/tables/cfp.py:213 pretalx/orga/views/cfp.py:147
+#: pretalx/orga/tables/cfp.py:213
+#: pretalx/orga/templates/orga/cfp/editor.html:490
+#: pretalx/orga/views/cfp.py:147
 msgid "Custom field"
 msgstr "自定义字段"
 
@@ -4032,6 +4035,7 @@ msgstr "持续时间（以分钟为单位）。如需使用此类型的默认持
 
 #: pretalx/orga/forms/cfp.py:577
 #: pretalx/orga/templates/orga/cfp/editor.html:504
+#: pretalx/submission/models/question.py:247
 #, fuzzy
 #| msgid "help text"
 msgid "Help text"
@@ -4568,6 +4572,7 @@ msgstr "定制邮件"
 #: pretalx/orga/templates/orga/review/dashboard.html:25
 #: pretalx/orga/templates/orga/submission/base.html:78
 #: pretalx/orga/templates/orga/submission/content.html:55
+#: pretalx/orga/templates/orga/submission/content.html:59
 #: pretalx/orga/templates/orga/submission/review.html:13
 #: pretalx/orga/views/dashboard.py:198
 msgid "Reviews"
@@ -4592,7 +4597,8 @@ msgstr "提案标题"
 #: pretalx/orga/forms/event.py:882 pretalx/orga/tables/submission.py:185
 #: pretalx/orga/templates/orga/base.html:453
 #: pretalx/orga/templates/orga/submission/speakers.html:27
-#: pretalx/schedule/phrases.py:21 pretalx/submission/models/submission.py:195
+#: pretalx/schedule/phrases.py:21 pretalx/submission/exporters.py:22
+#: pretalx/submission/models/submission.py:195
 msgid "Speakers"
 msgstr "演讲者"
 
@@ -4650,16 +4656,9 @@ msgstr ""
 msgid "Deleted"
 msgstr "删除"
 
-#: pretalx/orga/forms/event.py:901
-#, fuzzy
-#| msgid "accepted"
-msgid "Accepted"
-msgstr "接受"
-
-#: pretalx/orga/forms/event.py:902
-#, fuzzy
-#| msgid "rejected"
-msgid "Rejected"
+#: pretalx/orga/forms/event.py:902 pretalx/orga/views/dashboard.py:397
+#: pretalx/submission/models/submission.py:79
+msgid "rejected"
 msgstr "拒绝"
 
 #: pretalx/orga/forms/event.py:903
@@ -4667,18 +4666,6 @@ msgstr "拒绝"
 #| msgid "canceled"
 msgid "Cancelled"
 msgstr "取消"
-
-#: pretalx/orga/forms/event.py:904
-#, fuzzy
-#| msgid "confirmed"
-msgid "Confirmed"
-msgstr "确认"
-
-#: pretalx/orga/forms/event.py:905
-#, fuzzy
-#| msgid "Withdraw"
-msgid "Withdrawn"
-msgstr "取回"
 
 #: pretalx/orga/forms/event.py:911
 #, fuzzy
@@ -5215,7 +5202,7 @@ msgid ""
 msgstr ""
 "“{count}封电子邮件已保存到发件箱 - 您可以在发件箱中进行个别更改或全部发送。”"
 
-#: pretalx/orga/tables/admin.py:35
+#: pretalx/orga/tables/admin.py:35 pretalx/submission/exporters.py:64
 #, fuzzy
 #| msgid "Sessions"
 msgid "Submissions"
@@ -5343,6 +5330,7 @@ msgid "Number of speakers"
 msgstr "没有演讲者"
 
 #: pretalx/orga/tables/submission.py:57
+#: pretalx/orga/templates/orga/submission/speakers.html:121
 #, fuzzy
 #| msgid "pending Invitation"
 msgid "Pending invitations"
@@ -5781,7 +5769,8 @@ msgstr "CfP编辑"
 #: pretalx/orga/templates/orga/cfp/editor.html:48
 #: pretalx/orga/templates/orga/cfp/editor.html:136
 #: pretalx/orga/templates/orga/cfp/editor.html:150
-msgid "Reset to Defaults"
+#: pretalx/orga/templates/orga/generic/table.html:97
+msgid "Reset to defaults"
 msgstr ""
 
 #: pretalx/orga/templates/orga/cfp/editor.html:51
@@ -5910,12 +5899,6 @@ msgstr ""
 #| msgid "Configure rooms"
 msgid "Configure Field"
 msgstr "配置房间"
-
-#: pretalx/orga/templates/orga/cfp/editor.html:490
-#, fuzzy
-#| msgid "Custom field"
-msgid "Custom Field"
-msgstr "自定义字段"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:494
 msgid "Type"
@@ -6366,10 +6349,6 @@ msgstr "移动房间向上"
 msgid "Move down"
 msgstr "移动房间向下"
 
-#: pretalx/orga/templates/orga/generic/table.html:97
-msgid "Reset to defaults"
-msgstr ""
-
 #: pretalx/orga/templates/orga/includes/async_download.html:11
 #, fuzzy
 #| msgid "Regenerate Export"
@@ -6749,10 +6728,6 @@ msgstr[1] ""
 #: pretalx/orga/templates/orga/organiser/team/update.html:37
 msgid "Remove team member"
 msgstr "删除团队成员"
-
-#: pretalx/orga/templates/orga/organiser/team/update.html:47
-msgid "pending Invitation"
-msgstr "待处理的邀请"
 
 #: pretalx/orga/templates/orga/organiser/team/update.html:57
 #: pretalx/orga/views/organiser.py:225
@@ -7542,10 +7517,6 @@ msgstr "这个提案是使用访问代码创建的："
 msgid "Proposal"
 msgstr "提案"
 
-#: pretalx/orga/templates/orga/submission/content.html:59
-msgid "reviews"
-msgstr "评论"
-
 #: pretalx/orga/templates/orga/submission/feedback_list.html:11
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:14
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:17
@@ -7661,12 +7632,6 @@ msgstr "这位演讲者的其他提议："
 #| msgid "Public changelog"
 msgid "Change order"
 msgstr "公共变更日志"
-
-#: pretalx/orga/templates/orga/submission/speakers.html:121
-#, fuzzy
-#| msgid "pending Invitation"
-msgid "Pending Invitations"
-msgstr "待处理的邀请"
 
 #: pretalx/orga/templates/orga/submission/speakers.html:128
 #, fuzzy
@@ -8117,11 +8082,6 @@ msgid "submission with pending changes"
 msgid_plural "submissions with pending changes"
 msgstr[0] "应用待定更改"
 msgstr[1] "应用待定更改"
-
-#: pretalx/orga/views/dashboard.py:397
-#: pretalx/submission/models/submission.py:79
-msgid "rejected"
-msgstr "拒绝"
 
 #: pretalx/orga/views/dashboard.py:421
 msgid "sent email"
@@ -9356,18 +9316,6 @@ msgstr "{} 分钟，#{}, {}, {}"
 msgid "Custom fields data"
 msgstr "定制邮件"
 
-#: pretalx/submission/exporters.py:22
-#, fuzzy
-#| msgid "Speakers"
-msgid "speakers"
-msgstr "演讲者"
-
-#: pretalx/submission/exporters.py:64
-#, fuzzy
-#| msgid "Sessions"
-msgid "submissions"
-msgstr "会议"
-
 #: pretalx/submission/forms/feedback.py:25
 msgid "All speakers"
 msgstr "所有演讲者"
@@ -9379,12 +9327,6 @@ msgstr "请提供链接或上传文件，不能同时做两件事！"
 #: pretalx/submission/forms/resource.py:35
 msgid "Please provide a link or upload a file!"
 msgstr "请提供一个链接或上传一个文件！"
-
-#: pretalx/submission/forms/submission.py:43
-#, fuzzy
-#| msgid "Additional Speaker"
-msgid "Additional Speakers"
-msgstr "添加演讲者"
 
 #: pretalx/submission/forms/submission.py:45
 #, fuzzy
@@ -9685,10 +9627,6 @@ msgstr "限制为轨道"
 #: pretalx/submission/models/question.py:242
 msgid "Label"
 msgstr ""
-
-#: pretalx/submission/models/question.py:247
-msgid "help text"
-msgstr "帮助文本"
 
 #: pretalx/submission/models/question.py:248
 #, fuzzy

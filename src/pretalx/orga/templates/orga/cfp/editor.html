@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </h2>
         <div class="d-flex justify-content-end gap-2">
             <button type="button" class="btn btn-outline-danger btn-sm" data-dialog-target="#reset-modal" data-toggle="dialog">
-                <i class="fa fa-undo"></i> {% translate "Reset to Defaults" %}
+                <i class="fa fa-undo"></i> {% translate "Reset to defaults" %}
             </button>
             <a href="{{ request.event.cfp.urls.text }}" class="btn btn-outline-info btn-sm">
                 <i class="fa fa-cog"></i> {% translate "CfP Settings" %}
@@ -133,7 +133,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             <i class="fa fa-times"></i>
         </button>
         <div class="modal-card-content">
-            <h3 class="mb-3">{% translate "Reset to Defaults" %}</h3>
+            <h3 class="mb-3">{% translate "Reset to defaults" %}</h3>
             <p class="mb-4">
                 {% blocktranslate trimmed %}
                     This will reset all CfP field settings, custom labels, help texts, and field ordering
@@ -147,7 +147,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% translate "Cancel" %}
                     </button>
                     <button type="submit" class="btn btn-danger">
-                        <i class="fa fa-undo"></i> {% translate "Reset to Defaults" %}
+                        <i class="fa fa-undo"></i> {% translate "Reset to defaults" %}
                     </button>
                 </div>
             </form>
@@ -487,7 +487,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% endpartialdef field-modal %}
 
 {% partialdef question-modal %}
-    <h3 class="mb-3">{% translate "Custom Field" %}: {{ question.question }}</h3>
+    <h3 class="mb-3">{% translate "Custom field" %}: {{ question.question }}</h3>
 
     <div class="mb-4">
         <dl class="row mb-0 d-flex flex-column ml-2 mr-2">

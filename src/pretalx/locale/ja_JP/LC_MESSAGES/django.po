@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-04 13:22+0000\n"
+"POT-Creation-Date: 2026-04-04 14:50+0000\n"
 "PO-Revision-Date: 2025-09-01 13:37+0000\n"
 "Last-Translator: Takuya FUTATSUGI <takuyafjp@gmail.com>\n"
 "Language-Team: \n"
@@ -336,7 +336,7 @@ msgstr "講演 “{title}” at {event}"
 msgid "Title"
 msgstr "タイトル"
 
-#: pretalx/cfp/flow.py:104
+#: pretalx/cfp/flow.py:104 pretalx/submission/forms/submission.py:43
 #, fuzzy
 #| msgid "Additional Speaker"
 msgid "Additional speakers"
@@ -625,12 +625,12 @@ msgid "Proposals are closed"
 msgstr "提案期間は終了しました"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:19
-#: pretalx/submission/models/submission.py:77
+#: pretalx/orga/forms/event.py:901 pretalx/submission/models/submission.py:77
 msgid "accepted"
 msgstr "受理されました"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:21
-#: pretalx/orga/views/dashboard.py:346
+#: pretalx/orga/forms/event.py:904 pretalx/orga/views/dashboard.py:346
 #: pretalx/submission/models/submission.py:78
 msgid "confirmed"
 msgstr "確定済"
@@ -641,7 +641,7 @@ msgid "cancelled"
 msgstr "キャンセル済"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:25
-#: pretalx/submission/models/submission.py:81
+#: pretalx/orga/forms/event.py:905 pretalx/submission/models/submission.py:81
 msgid "withdrawn"
 msgstr "取り下げ"
 
@@ -1147,6 +1147,7 @@ msgstr[0] "投稿者"
 msgstr[1] "投稿者"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:41
+#: pretalx/orga/templates/orga/organiser/team/update.html:47
 #, fuzzy
 #| msgid "pending Invitation"
 msgid "Pending invitation"
@@ -1923,7 +1924,9 @@ msgid "The user changed their email address."
 msgstr "運営者のEメールアドレス"
 
 #: pretalx/common/log_display.py:207 pretalx/common/log_display.py:211
-#: pretalx/orga/tables/cfp.py:213 pretalx/orga/views/cfp.py:147
+#: pretalx/orga/tables/cfp.py:213
+#: pretalx/orga/templates/orga/cfp/editor.html:490
+#: pretalx/orga/views/cfp.py:147
 #, fuzzy
 #| msgid "Custom Mail"
 msgid "Custom field"
@@ -4267,6 +4270,7 @@ msgstr "デフォルトのアドレスを使用するには空のままにしま
 
 #: pretalx/orga/forms/cfp.py:577
 #: pretalx/orga/templates/orga/cfp/editor.html:504
+#: pretalx/submission/models/question.py:247
 #, fuzzy
 #| msgid "help text"
 msgid "Help text"
@@ -4833,6 +4837,7 @@ msgstr "カスタムメール"
 #: pretalx/orga/templates/orga/review/dashboard.html:25
 #: pretalx/orga/templates/orga/submission/base.html:78
 #: pretalx/orga/templates/orga/submission/content.html:55
+#: pretalx/orga/templates/orga/submission/content.html:59
 #: pretalx/orga/templates/orga/submission/review.html:13
 #: pretalx/orga/views/dashboard.py:198
 msgid "Reviews"
@@ -4855,7 +4860,8 @@ msgstr "投稿タイトル"
 #: pretalx/orga/forms/event.py:882 pretalx/orga/tables/submission.py:185
 #: pretalx/orga/templates/orga/base.html:453
 #: pretalx/orga/templates/orga/submission/speakers.html:27
-#: pretalx/schedule/phrases.py:21 pretalx/submission/models/submission.py:195
+#: pretalx/schedule/phrases.py:21 pretalx/submission/exporters.py:22
+#: pretalx/submission/models/submission.py:195
 msgid "Speakers"
 msgstr "登壇者"
 
@@ -4913,16 +4919,9 @@ msgstr ""
 msgid "Deleted"
 msgstr "削除"
 
-#: pretalx/orga/forms/event.py:901
-#, fuzzy
-#| msgid "accepted"
-msgid "Accepted"
-msgstr "受理されました"
-
-#: pretalx/orga/forms/event.py:902
-#, fuzzy
-#| msgid "rejected"
-msgid "Rejected"
+#: pretalx/orga/forms/event.py:902 pretalx/orga/views/dashboard.py:397
+#: pretalx/submission/models/submission.py:79
+msgid "rejected"
 msgstr "リジェクト済"
 
 #: pretalx/orga/forms/event.py:903
@@ -4930,18 +4929,6 @@ msgstr "リジェクト済"
 #| msgid "canceled"
 msgid "Cancelled"
 msgstr "キャンセル済"
-
-#: pretalx/orga/forms/event.py:904
-#, fuzzy
-#| msgid "confirmed"
-msgid "Confirmed"
-msgstr "確定済"
-
-#: pretalx/orga/forms/event.py:905
-#, fuzzy
-#| msgid "Withdraw"
-msgid "Withdrawn"
-msgstr "撤回する"
 
 #: pretalx/orga/forms/event.py:911
 #, fuzzy
@@ -5505,7 +5492,7 @@ msgstr ""
 "{count} 個のメールアドレスが送信箱に保存されました - メールを個別に修正しても"
 "かまいませんし、そのまま送信することも可能です。"
 
-#: pretalx/orga/tables/admin.py:35
+#: pretalx/orga/tables/admin.py:35 pretalx/submission/exporters.py:64
 #, fuzzy
 #| msgid "Sessions"
 msgid "Submissions"
@@ -5631,6 +5618,7 @@ msgid "Number of speakers"
 msgstr "登壇者なし"
 
 #: pretalx/orga/tables/submission.py:57
+#: pretalx/orga/templates/orga/submission/speakers.html:121
 #, fuzzy
 #| msgid "pending Invitation"
 msgid "Pending invitations"
@@ -6084,7 +6072,8 @@ msgstr "CfP エディタ"
 #: pretalx/orga/templates/orga/cfp/editor.html:48
 #: pretalx/orga/templates/orga/cfp/editor.html:136
 #: pretalx/orga/templates/orga/cfp/editor.html:150
-msgid "Reset to Defaults"
+#: pretalx/orga/templates/orga/generic/table.html:97
+msgid "Reset to defaults"
 msgstr ""
 
 #: pretalx/orga/templates/orga/cfp/editor.html:51
@@ -6213,12 +6202,6 @@ msgstr ""
 #| msgid "Configure rooms"
 msgid "Configure Field"
 msgstr "部屋の設定"
-
-#: pretalx/orga/templates/orga/cfp/editor.html:490
-#, fuzzy
-#| msgid "Custom Mail"
-msgid "Custom Field"
-msgstr "カスタムメール"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:494
 msgid "Type"
@@ -6679,10 +6662,6 @@ msgstr "部屋を上に移動"
 msgid "Move down"
 msgstr "部屋を下に移動"
 
-#: pretalx/orga/templates/orga/generic/table.html:97
-msgid "Reset to defaults"
-msgstr ""
-
 #: pretalx/orga/templates/orga/includes/async_download.html:11
 #, fuzzy
 #| msgid "Regenerate Export"
@@ -7083,10 +7062,6 @@ msgstr[1] "講演者"
 #: pretalx/orga/templates/orga/organiser/team/update.html:37
 msgid "Remove team member"
 msgstr "チームメンバーを削除"
-
-#: pretalx/orga/templates/orga/organiser/team/update.html:47
-msgid "pending Invitation"
-msgstr "招待送付の一時停止"
 
 #: pretalx/orga/templates/orga/organiser/team/update.html:57
 #: pretalx/orga/views/organiser.py:225
@@ -7937,10 +7912,6 @@ msgstr "この投稿はアクセスコードを利用しています: "
 msgid "Proposal"
 msgstr "投稿"
 
-#: pretalx/orga/templates/orga/submission/content.html:59
-msgid "reviews"
-msgstr "レビュー"
-
 #: pretalx/orga/templates/orga/submission/feedback_list.html:11
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:14
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:17
@@ -8062,12 +8033,6 @@ msgstr "この講演者の他の投稿: "
 #| msgid "Changelog"
 msgid "Change order"
 msgstr "更新履歴"
-
-#: pretalx/orga/templates/orga/submission/speakers.html:121
-#, fuzzy
-#| msgid "pending Invitation"
-msgid "Pending Invitations"
-msgstr "招待送付の一時停止"
 
 #: pretalx/orga/templates/orga/submission/speakers.html:128
 #, fuzzy
@@ -8532,11 +8497,6 @@ msgid "submission with pending changes"
 msgid_plural "submissions with pending changes"
 msgstr[0] ""
 msgstr[1] ""
-
-#: pretalx/orga/views/dashboard.py:397
-#: pretalx/submission/models/submission.py:79
-msgid "rejected"
-msgstr "リジェクト済"
 
 #: pretalx/orga/views/dashboard.py:421
 msgid "sent email"
@@ -9829,19 +9789,6 @@ msgstr "{} 分, #{}, {}, {}"
 msgid "Custom fields data"
 msgstr "カスタムメール"
 
-#: pretalx/submission/exporters.py:22
-#, fuzzy
-#| msgid "speaker"
-#| msgid_plural "speakers"
-msgid "speakers"
-msgstr "講演者"
-
-#: pretalx/submission/exporters.py:64
-#, fuzzy
-#| msgid "Sessions"
-msgid "submissions"
-msgstr "講演"
-
 #: pretalx/submission/forms/feedback.py:25
 msgid "All speakers"
 msgstr "全発表者"
@@ -9855,12 +9802,6 @@ msgstr ""
 #| msgid "Please provide a valid email address!"
 msgid "Please provide a link or upload a file!"
 msgstr "正しいメールアドレスを入力してください！"
-
-#: pretalx/submission/forms/submission.py:43
-#, fuzzy
-#| msgid "Additional Speaker"
-msgid "Additional Speakers"
-msgstr "追加講演者"
 
 #: pretalx/submission/forms/submission.py:45
 #, fuzzy
@@ -10183,10 +10124,6 @@ msgstr "トラックに限定"
 #: pretalx/submission/models/question.py:242
 msgid "Label"
 msgstr ""
-
-#: pretalx/submission/models/question.py:247
-msgid "help text"
-msgstr "ヘルプテキスト"
 
 #: pretalx/submission/models/question.py:248
 #, fuzzy

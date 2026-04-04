@@ -40,7 +40,7 @@ from pretalx.submission.models import (
 
 class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
     additional_speaker = MultiEmailField(
-        label=_("Additional Speakers"),
+        label=_("Additional speakers"),
         help_text=_(
             "If you have co-speakers, please add their email addresses here, "
             "and we will invite them to create an account."

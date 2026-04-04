@@ -19,7 +19,7 @@ class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
 
     @property
     def verbose_name(self):
-        return _("Custom fields data") + " (" + _("speakers") + ")"
+        return _("Custom fields data") + " (" + _("Speakers") + ")"
 
     def get_csv_data(self, request, **kwargs):
         field_names = ["code", "name", "email", "question", "answer"]
@@ -61,7 +61,7 @@ class SubmissionQuestionData(CSVExporterMixin, BaseExporter):
 
     @property
     def verbose_name(self):
-        return _("Custom fields data") + " (" + _("submissions") + ")"
+        return _("Custom fields data") + " (" + _("Submissions") + ")"
 
     def get_csv_data(self, request, **kwargs):
         field_names = ["code", "title", "question", "answer"]

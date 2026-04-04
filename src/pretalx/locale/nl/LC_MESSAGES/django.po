@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-04 13:22+0000\n"
+"POT-Creation-Date: 2026-04-04 14:50+0000\n"
 "PO-Revision-Date: 2025-12-02 17:41+0000\n"
 "Last-Translator: r spoor <pretalx.com@spoor.nu>\n"
 "Language-Team: none\n"
@@ -329,7 +329,7 @@ msgstr "Deze sessie “{title}” op {event}"
 msgid "Title"
 msgstr "Titel"
 
-#: pretalx/cfp/flow.py:104
+#: pretalx/cfp/flow.py:104 pretalx/submission/forms/submission.py:43
 msgid "Additional speakers"
 msgstr "Extra sprekers"
 
@@ -623,12 +623,12 @@ msgid "Proposals are closed"
 msgstr "Voorstellen zijn gesloten"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:19
-#: pretalx/submission/models/submission.py:77
+#: pretalx/orga/forms/event.py:901 pretalx/submission/models/submission.py:77
 msgid "accepted"
 msgstr "geaccepteerd"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:21
-#: pretalx/orga/views/dashboard.py:346
+#: pretalx/orga/forms/event.py:904 pretalx/orga/views/dashboard.py:346
 #: pretalx/submission/models/submission.py:78
 msgid "confirmed"
 msgstr "bevestigd"
@@ -639,7 +639,7 @@ msgid "cancelled"
 msgstr "afgezegd"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:25
-#: pretalx/submission/models/submission.py:81
+#: pretalx/orga/forms/event.py:905 pretalx/submission/models/submission.py:81
 msgid "withdrawn"
 msgstr "ingetrokken"
 
@@ -1123,6 +1123,7 @@ msgstr[0] "Instuurder"
 msgstr[1] "Instuurders"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:41
+#: pretalx/orga/templates/orga/organiser/team/update.html:47
 #, fuzzy
 #| msgid "pending Invitation"
 msgid "Pending invitation"
@@ -1888,7 +1889,9 @@ msgid "The user changed their email address."
 msgstr "Het e-mailadres van de geadresseerde gebruiker"
 
 #: pretalx/common/log_display.py:207 pretalx/common/log_display.py:211
-#: pretalx/orga/tables/cfp.py:213 pretalx/orga/views/cfp.py:147
+#: pretalx/orga/tables/cfp.py:213
+#: pretalx/orga/templates/orga/cfp/editor.html:490
+#: pretalx/orga/views/cfp.py:147
 #, fuzzy
 #| msgid "Custom Mail"
 msgid "Custom field"
@@ -4203,6 +4206,7 @@ msgstr "Leeg laten om de standaardduur voor het sessietype te gebruiken."
 
 #: pretalx/orga/forms/cfp.py:577
 #: pretalx/orga/templates/orga/cfp/editor.html:504
+#: pretalx/submission/models/question.py:247
 #, fuzzy
 #| msgid "help text"
 msgid "Help text"
@@ -4757,6 +4761,7 @@ msgstr "Aangepaste e-mail"
 #: pretalx/orga/templates/orga/review/dashboard.html:25
 #: pretalx/orga/templates/orga/submission/base.html:78
 #: pretalx/orga/templates/orga/submission/content.html:55
+#: pretalx/orga/templates/orga/submission/content.html:59
 #: pretalx/orga/templates/orga/submission/review.html:13
 #: pretalx/orga/views/dashboard.py:198
 msgid "Reviews"
@@ -4781,7 +4786,8 @@ msgstr "Voorstel titels"
 #: pretalx/orga/forms/event.py:882 pretalx/orga/tables/submission.py:185
 #: pretalx/orga/templates/orga/base.html:453
 #: pretalx/orga/templates/orga/submission/speakers.html:27
-#: pretalx/schedule/phrases.py:21 pretalx/submission/models/submission.py:195
+#: pretalx/schedule/phrases.py:21 pretalx/submission/exporters.py:22
+#: pretalx/submission/models/submission.py:195
 msgid "Speakers"
 msgstr "Sprekers"
 
@@ -4837,16 +4843,9 @@ msgstr ""
 msgid "Deleted"
 msgstr "Verwijder"
 
-#: pretalx/orga/forms/event.py:901
-#, fuzzy
-#| msgid "accepted"
-msgid "Accepted"
-msgstr "geaccepteerd"
-
-#: pretalx/orga/forms/event.py:902
-#, fuzzy
-#| msgid "rejected"
-msgid "Rejected"
+#: pretalx/orga/forms/event.py:902 pretalx/orga/views/dashboard.py:397
+#: pretalx/submission/models/submission.py:79
+msgid "rejected"
 msgstr "afgewezen"
 
 #: pretalx/orga/forms/event.py:903
@@ -4854,18 +4853,6 @@ msgstr "afgewezen"
 #| msgid "canceled"
 msgid "Cancelled"
 msgstr "afgezegd"
-
-#: pretalx/orga/forms/event.py:904
-#, fuzzy
-#| msgid "confirmed"
-msgid "Confirmed"
-msgstr "bevestigd"
-
-#: pretalx/orga/forms/event.py:905
-#, fuzzy
-#| msgid "Withdraw"
-msgid "Withdrawn"
-msgstr "Intrekken"
 
 #: pretalx/orga/forms/event.py:911
 #, fuzzy
@@ -5400,7 +5387,7 @@ msgstr ""
 "{count} e-mails zijn opgeslagen in de outbox. Je kunt daar individuele "
 "wijzigingen aanbrengen of ze gewoon allemaal versturen."
 
-#: pretalx/orga/tables/admin.py:35
+#: pretalx/orga/tables/admin.py:35 pretalx/submission/exporters.py:64
 msgid "Submissions"
 msgstr "Inzendingen"
 
@@ -5525,6 +5512,7 @@ msgid "Number of speakers"
 msgstr "Geen sprekers"
 
 #: pretalx/orga/tables/submission.py:57
+#: pretalx/orga/templates/orga/submission/speakers.html:121
 #, fuzzy
 #| msgid "pending Invitation"
 msgid "Pending invitations"
@@ -5956,7 +5944,8 @@ msgstr "CfP Editor"
 #: pretalx/orga/templates/orga/cfp/editor.html:48
 #: pretalx/orga/templates/orga/cfp/editor.html:136
 #: pretalx/orga/templates/orga/cfp/editor.html:150
-msgid "Reset to Defaults"
+#: pretalx/orga/templates/orga/generic/table.html:97
+msgid "Reset to defaults"
 msgstr ""
 
 #: pretalx/orga/templates/orga/cfp/editor.html:51
@@ -6085,12 +6074,6 @@ msgstr ""
 #| msgid "Configure rooms"
 msgid "Configure Field"
 msgstr "Maak zalen aan"
-
-#: pretalx/orga/templates/orga/cfp/editor.html:490
-#, fuzzy
-#| msgid "Custom Mail"
-msgid "Custom Field"
-msgstr "Aangepaste e-mail"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:494
 msgid "Type"
@@ -6563,10 +6546,6 @@ msgstr "Verplaats naar boven"
 msgid "Move down"
 msgstr "Verplaats naar beneden"
 
-#: pretalx/orga/templates/orga/generic/table.html:97
-msgid "Reset to defaults"
-msgstr ""
-
 #: pretalx/orga/templates/orga/includes/async_download.html:11
 #, fuzzy
 #| msgid "Regenerate Export"
@@ -6952,10 +6931,6 @@ msgstr[1] "sprekers"
 #: pretalx/orga/templates/orga/organiser/team/update.html:37
 msgid "Remove team member"
 msgstr "Verwijder teamlid"
-
-#: pretalx/orga/templates/orga/organiser/team/update.html:47
-msgid "pending Invitation"
-msgstr "in afwachting van uitnodiging"
 
 #: pretalx/orga/templates/orga/organiser/team/update.html:57
 #: pretalx/orga/views/organiser.py:225
@@ -7768,10 +7743,6 @@ msgstr "Dit voorstel was gemaakt met gebruik van een toegangscode:"
 msgid "Proposal"
 msgstr "Voorstel"
 
-#: pretalx/orga/templates/orga/submission/content.html:59
-msgid "reviews"
-msgstr "recenties"
-
 #: pretalx/orga/templates/orga/submission/feedback_list.html:11
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:14
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:17
@@ -7885,12 +7856,6 @@ msgstr "Andere voorstellen van deze spreker:"
 #| msgid "Changelog"
 msgid "Change order"
 msgstr "Wijzigingslogboek"
-
-#: pretalx/orga/templates/orga/submission/speakers.html:121
-#, fuzzy
-#| msgid "pending Invitation"
-msgid "Pending Invitations"
-msgstr "in afwachting van uitnodiging"
 
 #: pretalx/orga/templates/orga/submission/speakers.html:128
 #, fuzzy
@@ -8352,11 +8317,6 @@ msgid "submission with pending changes"
 msgid_plural "submissions with pending changes"
 msgstr[0] "Pas wijzigingen toe"
 msgstr[1] "Pas wijzigingen toe"
-
-#: pretalx/orga/views/dashboard.py:397
-#: pretalx/submission/models/submission.py:79
-msgid "rejected"
-msgstr "afgewezen"
 
 #: pretalx/orga/views/dashboard.py:421
 msgid "sent email"
@@ -9613,19 +9573,6 @@ msgstr "{} minuten, #{}, {}, {}"
 msgid "Custom fields data"
 msgstr "Aangepaste e-mail"
 
-#: pretalx/submission/exporters.py:22
-#, fuzzy
-#| msgid "speaker"
-#| msgid_plural "speakers"
-msgid "speakers"
-msgstr "spreker"
-
-#: pretalx/submission/exporters.py:64
-#, fuzzy
-#| msgid "Submissions"
-msgid "submissions"
-msgstr "Inzendingen"
-
 #: pretalx/submission/forms/feedback.py:25
 msgid "All speakers"
 msgstr "Alle sprekers"
@@ -9639,12 +9586,6 @@ msgstr ""
 #: pretalx/submission/forms/resource.py:35
 msgid "Please provide a link or upload a file!"
 msgstr "Stuur een link of upload een bestand!"
-
-#: pretalx/submission/forms/submission.py:43
-#, fuzzy
-#| msgid "Additional Speaker"
-msgid "Additional Speakers"
-msgstr "Extra spreker"
 
 #: pretalx/submission/forms/submission.py:45
 #, fuzzy
@@ -9960,10 +9901,6 @@ msgstr "Beperk dagen"
 #: pretalx/submission/models/question.py:242
 msgid "Label"
 msgstr ""
-
-#: pretalx/submission/models/question.py:247
-msgid "help text"
-msgstr "helptekst"
 
 #: pretalx/submission/models/question.py:248
 #, fuzzy
