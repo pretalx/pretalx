@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-03-30 15:42+0000\n"
-"PO-Revision-Date: 2026-02-07 14:42+0000\n"
+"PO-Revision-Date: 2026-04-04 11:25+0000\n"
 "Last-Translator: Vasil Kolew <vasil@ludost.net>\n"
 "Language-Team: none\n"
 "Language: bg\n"
@@ -1947,7 +1947,7 @@ msgstr ""
 #: pretalx/common/templates/403_csrf.html:34
 #: pretalx/common/templates/common/error.html:31
 msgid "Take a step back"
-msgstr ""
+msgstr "Стъпка назад"
 
 #: pretalx/common/templates/500.html:15
 msgid "Internal server error."
@@ -1968,15 +1968,13 @@ msgstr ""
 
 #: pretalx/common/templates/common/base.html:62
 #: pretalx/orga/templates/orga/base.html:61
-#, fuzzy
-#| msgid "Public link"
 msgid "Skip link"
-msgstr "Публична връзка"
+msgstr "Прескочи връзка"
 
 #: pretalx/common/templates/common/base.html:63
 #: pretalx/orga/templates/orga/base.html:62
 msgid "Skip to main content"
-msgstr ""
+msgstr "Към главното съдържание"
 
 #: pretalx/common/templates/common/base.html:79
 #: pretalx/orga/templates/orga/auth/base.html:33
@@ -2018,7 +2016,7 @@ msgstr "Щампа"
 
 #: pretalx/common/templates/common/error.html:32
 msgid "Try again"
-msgstr ""
+msgstr "Опитай пак"
 
 #: pretalx/common/templates/common/forms/auth.html:15
 #: pretalx/orga/templates/orga/cfp/editor.html:182
@@ -2115,7 +2113,7 @@ msgstr "Продължете към %(host)s"
 
 #: pretalx/common/templates/common/widgets/biography.html:9
 msgid "Use a biography from another event"
-msgstr ""
+msgstr "Използвай биография от друго събитие"
 
 #. Translators: Text is used to describe the main text body of an email, or of
 #. similar options like the main text of the CfP or a review. It's separate from
@@ -2158,7 +2156,7 @@ msgstr "Връзки"
 
 #: pretalx/common/templates/common/widgets/markdown.html:22
 msgid "Quote"
-msgstr ""
+msgstr "Цитат"
 
 #: pretalx/common/templates/common/widgets/markdown.html:23
 #: pretalx/orga/templates/orga/review/bulk_tag.html:52
@@ -2167,17 +2165,15 @@ msgstr "Код"
 
 #: pretalx/common/templates/common/widgets/markdown.html:25
 msgid "Unordered list"
-msgstr ""
+msgstr "Неномериран списък"
 
 #: pretalx/common/templates/common/widgets/markdown.html:26
 msgid "Ordered list"
-msgstr ""
+msgstr "Номериран списък"
 
 #: pretalx/common/templates/common/widgets/profile_picture.html:21
-#, fuzzy
-#| msgid "Changes"
 msgid "Change"
-msgstr "Промени"
+msgstr "Промяна"
 
 #: pretalx/common/templates/common/widgets/profile_picture.html:21
 #: pretalx/common/templates/common/widgets/profile_picture.html:33
@@ -2186,28 +2182,20 @@ msgid "Add"
 msgstr "Добави"
 
 #: pretalx/common/templates/common/widgets/profile_picture.html:35
-#, fuzzy
-#| msgid "Header image"
 msgid "Upload image"
-msgstr "Заглавна картинка"
+msgstr "Качи картинка"
 
 #: pretalx/common/templates/common/widgets/profile_picture.html:36
-#, fuzzy
-#| msgid "Click to edit"
 msgid "Click or drag"
-msgstr "Натиснете тук за редакция"
+msgstr "Натиснете или изтегли"
 
 #: pretalx/common/templates/common/widgets/profile_picture.html:40
-#, fuzzy
-#| msgid "Profile picture"
 msgid "Your other pictures"
-msgstr "Профилна снимка"
+msgstr "Друга снимка"
 
 #: pretalx/common/templates/common/widgets/profile_picture.html:54
-#, fuzzy
-#| msgid "Remove filter"
 msgid "Remove picture"
-msgstr "Изчистване на филтър"
+msgstr "Премахване на снимка"
 
 #: pretalx/common/templates/common/widgets/profile_picture.html:62
 #: pretalx/common/templates/common/widgets/profile_picture.html:66
@@ -2232,11 +2220,11 @@ msgstr "Копиране"
 
 #: pretalx/common/templatetags/copyable.py:17
 msgid "Copied!"
-msgstr ""
+msgstr "Копирано!"
 
 #: pretalx/common/templatetags/copyable.py:18
 msgid "Failed to copy"
-msgstr ""
+msgstr "Неуспешно копиране"
 
 #: pretalx/common/templatetags/times.py:17
 msgid "once"
@@ -2517,10 +2505,8 @@ msgid "ManagementForm data is missing or has been tampered with."
 msgstr "ManagementForm данните липсват или са били променени."
 
 #: pretalx/common/views/mixins.py:424 pretalx/common/views/mixins.py:498
-#, fuzzy
-#| msgid "Export failed. Please try again."
 msgid "Export file not found. Please try again."
-msgstr "Изнасянето се провали. Моля опитайте пак."
+msgstr "Не се открива експорт файл. Моля опитайте пак."
 
 #: pretalx/common/views/mixins.py:485
 #: pretalx/orga/templates/orga/includes/async_download.html:31
@@ -2727,12 +2713,6 @@ msgid "Header image"
 msgstr "Заглавна картинка"
 
 #: pretalx/event/models/event.py:263
-#, fuzzy
-#| msgid ""
-#| "If you provide a header image, it will be displayed instead of your "
-#| "event's color and/or header pattern at the top of all event pages. It "
-#| "will be center-aligned, so when the window shrinks, the center parts will "
-#| "continue to be displayed, and not stretched."
 msgid ""
 "If you provide a header image, it will be displayed instead of your event’s "
 "color and/or header pattern at the top of all event pages. It will be center-"
@@ -3488,24 +3468,11 @@ msgstr ""
 "Организационният екип на {event_name}"
 
 #: pretalx/mail/default_templates.py:127
-#, fuzzy
-#| msgid "Submit a proposal"
 msgid "Reminder: Submit your proposal"
-msgstr "Изпрати предложение"
+msgstr "Напомняне: Изпратете предложението си"
 
 #: pretalx/mail/default_templates.py:130
-#, fuzzy, python-brace-format
-#| msgid ""
-#| "Hi!\n"
-#| "\n"
-#| "We have received your proposal “{submission_title}” to\n"
-#| "{event_name}. We will notify you once we have had time to consider all\n"
-#| "proposals, but until then you can see and edit your proposal at\n"
-#| "{submission_url}.\n"
-#| "\n"
-#| "Please do not hesitate to contact us if you have any questions!\n"
-#| "\n"
-#| "The {event_name} organisers"
+#, python-brace-format
 msgid ""
 "Hi!\n"
 "\n"
@@ -3522,10 +3489,11 @@ msgid ""
 msgstr ""
 "Здравейте!\n"
 "\n"
-"Получихме Вашето предложение „{submission_title}“ за\n"
-"{event_name}. Ще Ви уведомим, след като имаме време да разгледаме всички\n"
-"предложения, но дотогава можете да видите и редактирате предложението си на\n"
+"Започнахте подаване на предложението ви „{submission_title}“ за\n"
+"{event_name}, но все още не сте го изпратили. Моля отидете на\n"
 "{submission_url}.\n"
+"\n"
+"за да го завършите и изпратите.\n"
 "\n"
 "Моля, не се колебайте да се свържете с нас, ако имате въпроси!\n"
 "\n"
@@ -3533,10 +3501,8 @@ msgstr ""
 
 #: pretalx/mail/models.py:32
 #: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:7
-#, fuzzy
-#| msgid "pending"
 msgid "Sending"
-msgstr "изчакващо"
+msgstr "Изпраща се"
 
 #: pretalx/mail/models.py:33 pretalx/orga/forms/event.py:887
 #: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:9
@@ -3575,10 +3541,8 @@ msgstr "Напомняне за допълнителни полета"
 
 #: pretalx/mail/models.py:63
 #: pretalx/orga/templates/orga/mails/send_draft_reminders.html:22
-#, fuzzy
-#| msgid "Create proposal"
 msgid "Draft proposal reminder"
-msgstr "Създайте предложение"
+msgstr "Създайте напомняне за предложение"
 
 #: pretalx/mail/models.py:64
 msgid "New schedule published"
@@ -3846,16 +3810,15 @@ msgstr ""
 "Това е код за достъп за поканата за предложения за {event}."
 
 #: pretalx/orga/forms/cfp.py:442
-#, fuzzy, python-brace-format
-#| msgid "It will allow you to submit a proposal to the “{track}” track."
+#, python-brace-format
 msgid ""
 "It will allow you to submit a proposal to the following track(s): {tracks}."
-msgstr "Позволява Ви да подадете предложение за потока „{track}“."
+msgstr "Позволява Ви да подадете предложение за следните потоци: „{tracks}“."
 
 #: pretalx/orga/forms/cfp.py:450
 #, python-brace-format
 msgid "It is valid for the following session type(s): {types}."
-msgstr ""
+msgstr "Валидно за следните типове сесии: {types}."
 
 #: pretalx/orga/forms/cfp.py:456
 msgid "It will allow you to submit a proposal to our CfP."
@@ -4687,6 +4650,7 @@ msgid ""
 "Please select at least one filter or specific proposals/speakers as "
 "recipients."
 msgstr ""
+"Моля изберете поне един филтър или укажете предложения/лектори за получатели."
 
 #: pretalx/orga/forms/mails.py:451
 #, python-brace-format
@@ -4697,28 +4661,28 @@ msgid_plural ""
 "Could not generate {count} emails, most likely because their sessions have "
 "not been scheduled yet."
 msgstr[0] ""
+"Неуспешно генериране на писмо, вероятно понеже сесията не е в графика все "
+"още."
 msgstr[1] ""
+"Неуспешно генериране на {count} писма, вероятно понеже сесиите не са в "
+"графика все още."
 
 #: pretalx/orga/forms/mails.py:490
-#, fuzzy
-#| msgid "pending"
 msgid "Pending"
-msgstr "изчакващо"
+msgstr "Изчакващо"
 
 #: pretalx/orga/forms/mails.py:491
 #: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:11
 msgid "Failed"
-msgstr ""
+msgstr "Неуспешно"
 
 #: pretalx/orga/forms/review.py:90
 msgid "No score"
 msgstr "Няма оценка"
 
 #: pretalx/orga/forms/review.py:135
-#, fuzzy
-#| msgid "Please provide a review score!"
 msgid "Please provide at least one review score!"
-msgstr "Въведете числова оценка!"
+msgstr "Въведете поне една числова оценка!"
 
 #: pretalx/orga/forms/review.py:165
 msgid "Assign proposals to reviewers"
@@ -5065,10 +5029,8 @@ msgid "Subject"
 msgstr "Тема"
 
 #: pretalx/orga/tables/mail.py:97
-#, fuzzy
-#| msgid "Retract"
 msgid "Retry"
-msgstr "Оттегли"
+msgstr "Опитай отново"
 
 #: pretalx/orga/tables/organiser.py:23
 #: pretalx/orga/templates/orga/organiser/team/update.html:12
@@ -5086,10 +5048,8 @@ msgid "Reviewer"
 msgstr "Рецензент"
 
 #: pretalx/orga/tables/organiser.py:35
-#, fuzzy
-#| msgid "You don't have any API tokens yet."
 msgid "You have not created any teams yet."
-msgstr "Все още нямате нито един API токен."
+msgstr "Няма създадени екипи."
 
 #: pretalx/orga/tables/schedule.py:23
 msgid "Please add at least one place in which sessions can take place."
@@ -5719,10 +5679,8 @@ msgid "Activate field"
 msgstr "Включване на поле"
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html:62
-#, fuzzy
-#| msgid "Download"
 msgid "Download all files"
-msgstr "Изтегляне"
+msgstr "Изтегляне на всички файлове"
 
 #: pretalx/orga/templates/orga/cfp/question/detail.html:68
 msgid "Nobody has responded to this field at the moment."
@@ -6067,22 +6025,16 @@ msgid "Reset to defaults"
 msgstr "Върни настройки по подразбиране"
 
 #: pretalx/orga/templates/orga/includes/async_download.html:11
-#, fuzzy
-#| msgid "Generating export..."
 msgid "Generating download."
-msgstr "Генериране на изнасянето..."
+msgstr "Генериране на изнасянето."
 
 #: pretalx/orga/templates/orga/includes/async_download.html:12
-#, fuzzy
-#| msgid "This may take a few minutes for large events."
 msgid "This may take a moment."
-msgstr "Може да отнеме няколко минути за по-големи събития."
+msgstr "Може да отнеме известно време."
 
 #: pretalx/orga/templates/orga/includes/async_download.html:21
-#, fuzzy
-#| msgid "Download"
 msgid "Download ready!"
-msgstr "Изтегляне"
+msgstr "Изтеглянето е готово!"
 
 #: pretalx/orga/templates/orga/includes/async_download.html:24
 #: pretalx/orga/templates/orga/includes/async_download_waiting.html:11
@@ -6357,10 +6309,8 @@ msgid "This email was sent on %(timestamp)s."
 msgstr "Това писмо е пратено на %(timestamp)s."
 
 #: pretalx/orga/templates/orga/mails/outbox_form.html:39
-#, fuzzy
-#| msgid "This mail had been sent already."
 msgid "This email failed to send:"
-msgstr "Това е-писмо вече е пратено."
+msgstr "Това е-писмо не можа да се изпрати."
 
 #: pretalx/orga/templates/orga/mails/outbox_list.html:16
 #, fuzzy, python-format
