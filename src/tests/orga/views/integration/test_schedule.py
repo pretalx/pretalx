@@ -526,7 +526,7 @@ def test_room_list_shows_rooms(client, event, item_count, django_assert_num_quer
         rooms = RoomFactory.create_batch(item_count, event=event)
     client.force_login(user)
 
-    with django_assert_num_queries(18):
+    with django_assert_num_queries(17):
         response = client.get(event.orga_urls.room_settings)
 
     assert response.status_code == 200

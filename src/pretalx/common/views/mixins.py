@@ -369,6 +369,7 @@ class OrderActionMixin:
     """Change an ordered model with a POST endpoint to a CRUDView list view."""
 
     extra_actions = {"list": {"post": "order_handler"}}
+    table_pagination = False
 
     def order_handler(self, request, *args, **kwargs):
         order = request.POST.get("order")
