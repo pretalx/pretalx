@@ -10,6 +10,7 @@ from django.db.models import Count, Q
 from django.utils.functional import cached_property
 from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.forms.fields import CountableOption
@@ -425,7 +426,10 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
 
 class QueuedMailFilterForm(forms.Form):
     status = forms.MultipleChoiceField(
-        required=False, widget=SelectMultipleWithCount(attrs={"title": _("Status")})
+        required=False,
+        widget=SelectMultipleWithCount(
+            attrs={"title": pgettext_lazy("email delivery status", "Status")}
+        ),
     )
     track = forms.ModelMultipleChoiceField(
         required=False,
@@ -454,7 +458,13 @@ class QueuedMailFilterForm(forms.Form):
                 self.fields.pop("status")
             else:
                 self.fields["status"].choices = [
-                    ("draft", CountableOption(_("Pending"), pending_count)),
+                    (
+                        "draft",
+                        CountableOption(
+                            pgettext_lazy("email status: not yet sent", "Pending"),
+                            pending_count,
+                        ),
+                    ),
                     ("failed", CountableOption(_("Failed"), failed_count)),
                 ]
 

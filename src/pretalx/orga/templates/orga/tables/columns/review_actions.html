@@ -9,11 +9,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
   <div class="action-row d-flex justify-space-around">
     <div class="radio form-check accept">
       <input type="radio" id="a-{{ record.code }}" name="s-{{ record.code }}" value="accept">
-      <label for="a-{{ record.code }}" title="{% translate "Accept" %}"></label>
+      <label for="a-{{ record.code }}" title="{% translate "Accept" context "action: accept a proposal" %}"></label>
     </div>
     <div class="radio form-check reject">
       <input type="radio" id="r-{{ record.code }}" name="s-{{ record.code }}" value="reject">
-      <label for="r-{{ record.code }}" title="{% translate "Reject" %}"></label>
+      <label for="r-{{ record.code }}" title="{% translate "Reject" context "action: reject a proposal" %}"></label>
     </div>
     <div class="unmark-radio" title="{% translate "Unset accept/reject vote" %}">
       <i class="fa fa-ban"></i>

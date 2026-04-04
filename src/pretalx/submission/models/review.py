@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField
 
@@ -132,7 +133,11 @@ class Review(PretalxModel):
     )
     text = MarkdownField(verbose_name=_("Review"), null=True, blank=True)
     score = models.DecimalField(
-        max_digits=10, decimal_places=2, verbose_name=_("Score"), null=True, blank=True
+        max_digits=10,
+        decimal_places=2,
+        verbose_name=pgettext_lazy("review score/rating", "Score"),
+        null=True,
+        blank=True,
     )
     scores = models.ManyToManyField(to=ReviewScore, related_name="reviews")
 

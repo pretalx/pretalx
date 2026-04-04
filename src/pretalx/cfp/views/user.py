@@ -14,7 +14,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render, reverse
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import override
+from django.utils.translation import override, pgettext_lazy
 from django.views.generic import (
     DetailView,
     FormView,
@@ -272,7 +272,9 @@ class SubmissionConfirmView(LoggedInEventPageMixin, SubmissionViewMixin, FormVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["submit_buttons"] = [Button(label=_("Confirm"))]
+        context["submit_buttons"] = [
+            Button(label=pgettext_lazy("action: confirm attendance", "Confirm"))
+        ]
         context["submit_buttons_extra"] = [
             back_button(self.submission.urls.user_base),
             LinkButton(

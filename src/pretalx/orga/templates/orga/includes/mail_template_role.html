@@ -5,9 +5,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 {% if template.role == "submission.state.accepted" %}
-    <span class="badge color-success">{% translate "Accept email" %}</span>
+    <span class="badge color-success">{% translate "Accept email" context "email template: acceptance notification" %}</span>
 {% elif template.role == "submission.state.rejected" %}
-    <span class="badge color-danger">{% translate "Reject email" %}</span>
+    <span class="badge color-danger">{% translate "Reject email" context "email template: rejection notification" %}</span>
 {% elif template.role == "schedule.new" %}
     <span class="badge color-info">{% translate "Schedule update" %}</span>
 {% elif template.role == "question.reminder" %}
@@ -15,5 +15,5 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% elif template.role %}
     <span class="badge color-info">{{ template.get_role_display }}</span>
 {% elif show_custom %}
-    <span class="badge color-secondary">{% translate "Custom email" %}</span>
+    <span class="badge color-secondary">{% translate "Custom email" context "email template: custom/user-created" %}</span>
 {% endif %}

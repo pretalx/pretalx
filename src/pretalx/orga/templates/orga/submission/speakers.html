@@ -92,7 +92,7 @@ SPDX-FileContributor: Florian Mösch
                     {% if can_send_mails %}
                         <a class="btn btn-outline-info" role="button" href="{{ speaker.speaker.orga_urls.send_mail }}">
                             <i class="fa fa-envelope"></i>
-                            {% translate "Send email" %}
+                            {% translate "Send email" context "action: send email to speaker(s)" %}
                         </a>
                     {% endif %}
                     <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.speaker.code %}"

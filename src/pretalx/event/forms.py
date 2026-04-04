@@ -200,7 +200,7 @@ class EventWizardBasicsForm(PretalxI18nModelForm):
                 queryset=copy_from_queryset,
                 widget=EnhancedSelect(color_field="visible_primary_color"),
                 help_text=_(
-                    "You can copy settings from previous events here, such as mail settings, session types, and email templates. "
+                    "You can copy settings from previous events here, such as email settings, session types, and email templates. "
                     "Please check those settings once the event has been created!"
                 ),
                 empty_label=_("Do not copy"),

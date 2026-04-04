@@ -20,6 +20,7 @@ from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import FormView, TemplateView, UpdateView, View
 from django_context_decorator import context
@@ -187,7 +188,12 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
         context["submit_buttons_extra"] = [
             back_button(self.request.event.orga_urls.schedule)
         ]
-        context["submit_buttons"] = [Button(label=_("Release"), icon=None)]
+        context["submit_buttons"] = [
+            Button(
+                label=pgettext_lazy("action: publish the schedule", "Release"),
+                icon=None,
+            )
+        ]
         return context
 
     @context
@@ -251,7 +257,7 @@ class ScheduleResendMailsView(EventPermissionRequired, View):
             messages.warning(
                 self.request,
                 _(
-                    "You can only regenerate mails after the first schedule was released."
+                    "You can only regenerate emails after the first schedule was released."
                 ),
             )
         return redirect(self.request.event.orga_urls.schedule)

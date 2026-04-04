@@ -25,6 +25,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from django.views.generic import FormView, ListView, TemplateView
 from django_context_decorator import context
 
@@ -1053,7 +1054,7 @@ class ReviewAssignmentImport(EventPermissionRequired, FormView):
 
     @context
     def submit_buttons(self):
-        return [Button(label=_("Import"))]
+        return [Button(label=pgettext_lazy("action: import data", "Import"))]
 
     @transaction.atomic
     def form_valid(self, form):

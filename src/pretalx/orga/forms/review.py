@@ -11,6 +11,7 @@ from django.db.models import Q
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext as _n
+from django.utils.translation import pgettext_lazy
 from django_scopes.forms import SafeModelMultipleChoiceField
 
 from pretalx.common.forms.mixins import ReadOnlyFlag
@@ -322,7 +323,10 @@ class ReviewExportForm(ExportForm):
         required=False, label=Submission._meta.get_field("title").verbose_name
     )
     user_name = forms.BooleanField(required=False, label=_("Reviewer name"))
-    user_email = forms.BooleanField(required=False, label=_("Reviewer email"))
+    user_email = forms.BooleanField(
+        required=False,
+        label=pgettext_lazy("field: reviewer's email address", "Reviewer email"),
+    )
 
     class Meta:
         model = Review

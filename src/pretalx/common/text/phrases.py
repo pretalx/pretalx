@@ -69,7 +69,7 @@ class BasePhrases(Phrases, app="base"):
     # Translators: This is an established term in the context of software development.
     bad_request = _("Bad request.")
     error_sending_mail = _(
-        "There was an error sending the mail. Please try again later."
+        "There was an error sending the email. Please try again later."
     )
     error_saving_changes = _(
         "We had trouble saving your input – Please see below for details."
@@ -117,7 +117,7 @@ class BasePhrases(Phrases, app="base"):
     language = _("Language")
 
     # Translators: Used as settings/section heading
-    general = _("General")
+    general = pgettext_lazy("settings section: general/miscellaneous", "General")
 
     email_subject = pgettext_lazy("email subject", "Subject")
     # Translators: Text is used to describe the main text body of an email, or of

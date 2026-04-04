@@ -9,6 +9,7 @@ from django import forms
 from django.db.models import Count, Exists, OuterRef, Q
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from django_scopes.forms import SafeModelChoiceField
 
 from pretalx.cfp.forms.cfp import CfPFormMixin
@@ -332,7 +333,11 @@ class SubmissionFilterForm(forms.Form):
     unanswered = forms.BooleanField(required=False)
     answer = forms.CharField(required=False)
     answer__options = forms.IntegerField(required=False)
-    q = forms.CharField(required=False, label=_("Search"), widget=SearchInput)
+    q = forms.CharField(
+        required=False,
+        label=pgettext_lazy("action/label: search", "Search"),
+        widget=SearchInput,
+    )
     fulltext = forms.BooleanField(required=False, label=_("Full text search"))
 
     default_renderer = InlineFormRenderer

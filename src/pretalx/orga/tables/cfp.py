@@ -5,6 +5,7 @@ import django_tables2 as tables
 from django.utils.functional import cached_property
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 from pretalx.common.tables import (
     ActionsColumn,
@@ -102,7 +103,7 @@ class TrackTable(UnsortableMixin, PretalxTable):
 
     name = TemplateColumn(
         linkify=lambda record: record.urls.edit,
-        verbose_name=_("Track"),
+        verbose_name=pgettext_lazy("conference track/topic category", "Track"),
         template_name="orga/tables/columns/track_name.html",
     )
     color = TemplateColumn(

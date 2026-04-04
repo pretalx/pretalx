@@ -56,7 +56,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </tr>
         {% if submission.state != "draft" %}
             <tr>
-                <th>{% translate "Status" %}</th>
+                <th>{% translate "State" context "proposal/submission state" %}</th>
                 <td>{% include "cfp/event/fragment_state.html" with state=submission.state as_badge=True %}</td>
             </tr>
         {% endif %}
@@ -68,7 +68,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% endif %}
         {% if submission.track and request.event.tracks.all|length > 1 %}
             <tr>
-                <th>{% translate "Track" %}</th>
+                <th>{% translate "Track" context "conference track/topic category" %}</th>
                 <td>{{ submission.track.name }}</td>
             </tr>
         {% endif %}

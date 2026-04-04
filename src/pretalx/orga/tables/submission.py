@@ -9,6 +9,7 @@ from django.db.models.functions import Lower
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 from pretalx.common.tables import (
     ActionsColumn,
@@ -68,7 +69,7 @@ class SubmissionTable(QuestionColumnMixin, PretalxTable):
     )
     state = TemplateColumn(
         template_name="orga/submission/state_dropdown.html",
-        verbose_name=_("State"),
+        verbose_name=pgettext_lazy("proposal/submission state", "State"),
         context_object_name="submission",
     )
     pending_state = SortableTemplateColumn(
@@ -211,7 +212,7 @@ class ReviewTable(QuestionColumnMixin, PretalxTable):
     )
     state = TemplateColumn(
         template_name="orga/tables/columns/review_state.html",
-        verbose_name=_("State"),
+        verbose_name=pgettext_lazy("proposal/submission state", "State"),
         initial_sort_descending=True,
         attrs={"td": {"class": "nowrap"}},
     )
