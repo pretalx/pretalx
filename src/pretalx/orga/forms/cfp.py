@@ -59,7 +59,7 @@ class CfPSettingsForm(
         help_text=_("Can sessions be held multiple times?"),
     )
     mail_on_new_submission = forms.BooleanField(
-        label=_("Send mail on new proposal"),
+        label=_("Send email on new proposal"),
         help_text=_(
             "If this setting is checked, you will receive an email to the organiser address for every received proposal."
         ),

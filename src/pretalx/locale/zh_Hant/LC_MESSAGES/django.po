@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-04 11:33+0000\n"
+"POT-Creation-Date: 2026-04-04 13:22+0000\n"
 "PO-Revision-Date: 2025-12-04 17:41+0000\n"
 "Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
@@ -289,7 +289,7 @@ msgstr "標籤"
 
 #: pretalx/agenda/views/schedule.py:224 pretalx/orga/forms/event.py:880
 #: pretalx/orga/forms/mails.py:434 pretalx/orga/tables/cfp.py:31
-#: pretalx/orga/templates/orga/base.html:265 pretalx/orga/views/cfp.py:548
+#: pretalx/orga/templates/orga/base.html:265 pretalx/orga/views/cfp.py:550
 #: pretalx/submission/forms/submission.py:322
 #: pretalx/submission/models/access_code.py:32
 #: pretalx/submission/models/question.py:221
@@ -598,7 +598,7 @@ msgstr "已確認"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:23
 #: pretalx/submission/models/submission.py:80
-msgid "canceled"
+msgid "cancelled"
 msgstr "已取消"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:25
@@ -727,7 +727,7 @@ msgid "… about yourself:"
 msgstr "… 關於您自己："
 
 #: pretalx/cfp/templates/cfp/event/submission_user.html:13
-msgid "Sign in or register to save your draft"
+msgid "Log in or register to save your draft"
 msgstr "登入或註冊以儲存草稿"
 
 #: pretalx/cfp/templates/cfp/event/submission_user.html:22
@@ -773,7 +773,7 @@ msgid "Your Account"
 msgstr "您的帳號"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:59
-msgid "You can change your log in data here."
+msgid "You can change your login data here."
 msgstr "您可以在此變更您的登入資料。"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:79
@@ -1079,7 +1079,7 @@ msgstr "狀態"
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:65
 #: pretalx/orga/tables/cfp.py:150
 #: pretalx/orga/templates/orga/submission/review.html:68
-#: pretalx/orga/views/cfp.py:478 pretalx/submission/models/submission.py:205
+#: pretalx/orga/views/cfp.py:480 pretalx/submission/models/submission.py:205
 msgid "Session type"
 msgstr "議程類型"
 
@@ -1087,7 +1087,7 @@ msgstr "議程類型"
 #: pretalx/orga/tables/cfp.py:105
 #: pretalx/orga/templates/orga/review/bulk_tag.html:55
 #: pretalx/orga/templates/orga/submission/review.html:73
-#: pretalx/orga/views/cfp.py:543 pretalx/submission/models/submission.py:211
+#: pretalx/orga/views/cfp.py:545 pretalx/submission/models/submission.py:211
 msgid "Track"
 msgstr "議程軌"
 
@@ -1487,15 +1487,15 @@ msgid "An email was modified."
 msgstr "已變更一封電子郵件。"
 
 #: pretalx/common/log_display.py:86
-msgid "A mail template was added."
+msgid "An email template was added."
 msgstr "已加入一個郵件範本。"
 
 #: pretalx/common/log_display.py:87
-msgid "A mail template was deleted."
+msgid "An email template was deleted."
 msgstr "已刪除一個郵件範本。"
 
 #: pretalx/common/log_display.py:88
-msgid "A mail template was modified."
+msgid "An email template was modified."
 msgstr "已變更一個郵件範本。"
 
 #: pretalx/common/log_display.py:89
@@ -1786,9 +1786,13 @@ msgstr "自訂欄位回應"
 msgid "Call for Proposals"
 msgstr "徵求議程投稿"
 
-#: pretalx/common/log_display.py:224
-msgid "Mail template"
-msgstr "郵件範本"
+#: pretalx/common/log_display.py:224 pretalx/orga/forms/schedule.py:37
+#: pretalx/orga/templates/orga/cfp/question/remind.html:22
+#: pretalx/orga/templates/orga/mails/send_draft_reminders.html:21
+#: pretalx/orga/templates/orga/schedule/release.html:59
+#: pretalx/orga/views/mails.py:717 pretalx/orga/views/mails.py:718
+msgid "Email template"
+msgstr "電子郵件範本"
 
 #: pretalx/common/log_display.py:228 pretalx/event/models/organiser.py:292
 #: pretalx/orga/forms/speaker.py:32 pretalx/orga/tables/speaker.py:78
@@ -1832,7 +1836,7 @@ msgstr "請公正地寫下審稿意見，說明為何希望或不希望此投稿
 msgid ""
 "Hi,\n"
 "\n"
-"just writing you to let you know that your Call for Participation is now\n"
+"just writing you to let you know that your Call for Proposals is now\n"
 "closed. Here is a list of links that should be useful in the next days:\n"
 "\n"
 "- You’ll find a list of all your {submission_count} proposals here:\n"
@@ -2015,7 +2019,8 @@ msgid "Organiser area"
 msgstr "主辦單位區域"
 
 #: pretalx/common/templates/common/base.html:131
-msgid "Logout"
+#: pretalx/orga/templates/orga/base.html:126
+msgid "Log out"
 msgstr "登出"
 
 #: pretalx/common/templates/common/base.html:159
@@ -2041,6 +2046,7 @@ msgid "I already have an account"
 msgstr "我已經有帳號了"
 
 #: pretalx/common/templates/common/forms/auth.html:21
+#: pretalx/orga/templates/orga/auth/login.html:9
 #: pretalx/orga/templates/orga/cfp/editor.html:185
 msgid "Log in"
 msgstr "登入"
@@ -2640,7 +2646,7 @@ msgstr ""
 
 #: pretalx/event/forms.py:239
 msgid ""
-"The default deadline for your Call for Papers. You can assign additional "
+"The default deadline for your Call for Proposals. You can assign additional "
 "deadlines to individual session types, which will take precedence over this "
 "deadline."
 msgstr ""
@@ -3025,7 +3031,7 @@ msgid "Write a CfP"
 msgstr "撰寫徵稿內容"
 
 #: pretalx/event/stages.py:54
-msgid "Customize mail templates"
+msgid "Customize email templates"
 msgstr "自訂電子郵件範本"
 
 #: pretalx/event/stages.py:60
@@ -3602,7 +3608,7 @@ msgstr "密件副本"
 
 #: pretalx/mail/models.py:120
 msgid ""
-"Enter comma separated addresses. Will receive a blind copy of every mail "
+"Enter comma separated addresses. Will receive a blind copy of every email "
 "sent from this template. This may be a LOT!"
 msgstr ""
 "每個電子郵件地址間請用逗號區隔。從此範本中送出的每封信，都會送一份密件副本到"
@@ -3645,7 +3651,7 @@ msgid "Sent at"
 msgstr "傳送於"
 
 #: pretalx/mail/models.py:505
-msgid "This mail has been sent already. It cannot be sent again."
+msgid "This email has been sent already. It cannot be sent again."
 msgstr "此郵件已傳送，不能再送一次。"
 
 #: pretalx/orga/forms/admin.py:20
@@ -3694,7 +3700,7 @@ msgid "Can sessions be held multiple times?"
 msgstr "議程可以舉辦多次嗎？"
 
 #: pretalx/orga/forms/cfp.py:62
-msgid "Send mail on new proposal"
+msgid "Send email on new proposal"
 msgstr "有新的議程投稿時傳送郵件"
 
 #: pretalx/orga/forms/cfp.py:64
@@ -4169,19 +4175,19 @@ msgstr ""
 "址做為回覆地址。"
 
 #: pretalx/orga/forms/event.py:421
-msgid "Mail subject prefix"
+msgid "Email subject prefix"
 msgstr "郵件主旨前置字串"
 
 #: pretalx/orga/forms/event.py:423
-msgid "The prefix will be prepended to outgoing mail subjects in [brackets]."
+msgid "The prefix will be prepended to outgoing email subjects in [brackets]."
 msgstr "發出的郵件主旨前面用 [中括號] 包起來的前置字串。"
 
 #: pretalx/orga/forms/event.py:428
-msgid "Mail signature"
+msgid "Email signature"
 msgstr "郵件的簽名檔"
 
 #: pretalx/orga/forms/event.py:430
-msgid "The signature will be added to outgoing mails, preceded by “-- ”."
+msgid "The signature will be added to outgoing emails, preceded by “-- ”."
 msgstr "簽名檔會放在郵件最後方，“-- ” 之下。"
 
 #: pretalx/orga/forms/event.py:436
@@ -4190,7 +4196,7 @@ msgstr "使用自訂的 SMTP 伺服器"
 
 #: pretalx/orga/forms/event.py:438
 msgid ""
-"All mail related to your event will be sent over the SMTP server specified "
+"All email related to your event will be sent over the SMTP server specified "
 "by you."
 msgstr "您的活動的相關郵件會透過此 SMTP 伺服器傳送。"
 
@@ -4455,13 +4461,13 @@ msgstr "講者"
 msgid "Users"
 msgstr "使用者"
 
-#: pretalx/orga/forms/event.py:884
-#, fuzzy
-#| msgid "Mail template"
-msgid "Mail templates"
-msgstr "郵件範本"
+#: pretalx/orga/forms/event.py:884 pretalx/orga/views/mails.py:721
+msgid "Email templates"
+msgstr "電子郵件範本"
 
 #: pretalx/orga/forms/event.py:885 pretalx/orga/forms/event.py:915
+#: pretalx/orga/templates/orga/admin/admin.html:84
+#: pretalx/orga/templates/orga/base.html:404
 #: pretalx/orga/templates/orga/speaker/form.html:107
 msgid "Emails"
 msgstr "電子郵件"
@@ -4830,14 +4836,6 @@ msgstr "未知投稿：{}"
 msgid "Notify speakers of changes"
 msgstr "將所做變更通知講者"
 
-#: pretalx/orga/forms/schedule.py:37
-#: pretalx/orga/templates/orga/cfp/question/remind.html:22
-#: pretalx/orga/templates/orga/mails/send_draft_reminders.html:21
-#: pretalx/orga/templates/orga/schedule/release.html:59
-#: pretalx/orga/views/mails.py:717 pretalx/orga/views/mails.py:718
-msgid "Email template"
-msgstr "電子郵件範本"
-
 #: pretalx/orga/forms/schedule.py:41
 msgid "We released a new schedule version!"
 msgstr "我們釋出了新版議程表！"
@@ -5045,7 +5043,7 @@ msgid "Submissions"
 msgstr "投稿"
 
 #: pretalx/orga/tables/cfp.py:37 pretalx/orga/templates/orga/base.html:269
-#: pretalx/orga/views/cfp.py:483 pretalx/submission/forms/submission.py:309
+#: pretalx/orga/views/cfp.py:485 pretalx/submission/forms/submission.py:309
 #: pretalx/submission/models/access_code.py:41
 #: pretalx/submission/models/question.py:230
 msgid "Session types"
@@ -5094,7 +5092,10 @@ msgid "Template"
 msgstr "範本"
 
 #: pretalx/orga/tables/mail.py:35
-msgid "Send mails"
+#: pretalx/orga/templates/orga/mails/compose_choice.html:10
+#: pretalx/orga/templates/orga/mails/compose_choice.html:13
+#: pretalx/orga/views/mails.py:194
+msgid "Send emails"
 msgstr "傳送郵件"
 
 #: pretalx/orga/tables/mail.py:63
@@ -5250,11 +5251,6 @@ msgstr "靜態檔案"
 #: pretalx/orga/templates/orga/admin/admin.html:79
 msgid "Media files"
 msgstr "媒體檔案"
-
-#: pretalx/orga/templates/orga/admin/admin.html:84
-#: pretalx/orga/templates/orga/base.html:404
-msgid "Mails"
-msgstr "郵件"
 
 #: pretalx/orga/templates/orga/admin/admin.html:87
 msgid "Host"
@@ -5459,18 +5455,10 @@ msgstr "依姓名或電子郵件地址搜尋使用者"
 msgid "The pretalx logo"
 msgstr "pretalx 圖示"
 
-#: pretalx/orga/templates/orga/auth/login.html:9
-msgid "Sign in"
-msgstr "登入"
-
 #: pretalx/orga/templates/orga/base.html:89
 #: pretalx/orga/templates/orga/base.html:98
 msgid "View event"
 msgstr "檢視活動"
-
-#: pretalx/orga/templates/orga/base.html:126
-msgid "Log out"
-msgstr "登出"
 
 #: pretalx/orga/templates/orga/base.html:136
 msgid "You’re using pretalx as a superuser. This is not recommended."
@@ -5511,7 +5499,7 @@ msgstr "小工具"
 msgid "Editor"
 msgstr "編輯器"
 
-#: pretalx/orga/templates/orga/base.html:272 pretalx/orga/views/cfp.py:590
+#: pretalx/orga/templates/orga/base.html:272 pretalx/orga/views/cfp.py:592
 msgid "Access codes"
 msgstr "存取代碼"
 
@@ -5557,6 +5545,7 @@ msgid "Compose emails"
 msgstr "撰寫郵件"
 
 #: pretalx/orga/templates/orga/base.html:422
+#: pretalx/orga/templates/orga/mails/sent_list.html:14
 msgid "Sent emails"
 msgstr "傳送郵件"
 
@@ -5659,7 +5648,7 @@ msgid "Currently hidden"
 msgstr "目前的議程表"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:344
-msgid "Talk (30 minutes)"
+msgid "Session (30 minutes)"
 msgstr ""
 
 #: pretalx/orga/templates/orga/cfp/editor.html:355
@@ -5892,7 +5881,7 @@ msgstr ""
 
 #: pretalx/orga/templates/orga/cfp/text.html:37
 msgid ""
-"A good Call for Participation will engage potential speakers. Remember to "
+"A good Call for Proposals will engage potential speakers. Remember to "
 "include:"
 msgstr "徵求議程投稿的文案可以吸引潛在的講者。記得要加入以下資訊："
 
@@ -5943,8 +5932,8 @@ msgstr ""
 #: pretalx/orga/templates/orga/event/dashboard.html:30
 msgid ""
 "Your event has been created and you’re ready to go! Check out the event "
-"settings, set up your Call for Papers with session types and custom fields, "
-"and you’re ready to go!"
+"settings, set up your Call for Proposals with session types and custom "
+"fields, and you’re ready to go!"
 msgstr ""
 "您的活動已經建立，並且準備好了！檢查一下活動設定，設定好徵稿（Call for "
 "Papers）的場次型態與自訂問題欄位，就可以上路了！"
@@ -6200,7 +6189,7 @@ msgid "Schedule update"
 msgstr "議程表更新"
 
 #: pretalx/orga/templates/orga/includes/mail_template_role.html:18
-msgid "Custom Mail"
+msgid "Custom email"
 msgstr "自訂郵件"
 
 #: pretalx/orga/templates/orga/includes/mark_speakers_arrived.html:15
@@ -6300,6 +6289,8 @@ msgstr "請加入我們團隊！"
 
 #: pretalx/orga/templates/orga/mails/_mail_editor.html:11
 #: pretalx/orga/templates/orga/mails/_mail_editor.html:19
+#: pretalx/orga/templates/orga/mails/outbox_form.html:13
+#: pretalx/orga/templates/orga/mails/outbox_form.html:49
 msgid "Email editor"
 msgstr "郵件編輯器"
 
@@ -6350,12 +6341,6 @@ msgstr "無法使用"
 #: pretalx/orga/templates/orga/mails/_placeholder_group.html:46
 msgid "e.g."
 msgstr "例如"
-
-#: pretalx/orga/templates/orga/mails/compose_choice.html:10
-#: pretalx/orga/templates/orga/mails/compose_choice.html:13
-#: pretalx/orga/views/mails.py:194
-msgid "Send emails"
-msgstr "傳送郵件"
 
 #: pretalx/orga/templates/orga/mails/compose_choice.html:17
 #: pretalx/orga/templates/orga/mails/compose_session_mail_form.html:11
@@ -6415,11 +6400,6 @@ msgstr ""
 "根據範本類型的不同，會有不同的預留位置可供使用。當您開始編輯範本時，會詳細說"
 "明這些預留位置。"
 
-#: pretalx/orga/templates/orga/mails/outbox_form.html:13
-#: pretalx/orga/templates/orga/mails/outbox_form.html:49
-msgid "Mail Editor"
-msgstr "郵件編輯器"
-
 #: pretalx/orga/templates/orga/mails/outbox_form.html:32
 #, python-format
 msgid "This email was sent on %(timestamp)s."
@@ -6447,8 +6427,8 @@ msgid "Retry all failed"
 msgstr ""
 
 #: pretalx/orga/templates/orga/mails/outbox_list.html:32
-msgid "pending mail"
-msgid_plural "pending mails"
+msgid "pending email"
+msgid_plural "pending emails"
 msgstr[0] "暫未發出的郵件"
 
 #: pretalx/orga/templates/orga/mails/outbox_list.html:47
@@ -6478,10 +6458,6 @@ msgid ""
 msgstr ""
 "這些電子郵件將立即傳送出去！電子信件不會儲存到寄件匣或預先保留，這是為了保護"
 "作者的草稿隱私。"
-
-#: pretalx/orga/templates/orga/mails/sent_list.html:14
-msgid "Sent Mails"
-msgstr "已傳送的電子郵件"
 
 #: pretalx/orga/templates/orga/organiser/list.html:42
 msgctxt "number of teams"
@@ -7162,7 +7138,7 @@ msgid "pending"
 msgstr "待處理"
 
 #: pretalx/orga/templates/orga/speaker/form.html:111
-msgid "No mails were sent to this speaker yet."
+msgid "No emails were sent to this speaker yet."
 msgstr "尚未送出郵件給此名講者。"
 
 #: pretalx/orga/templates/orga/speaker/information_form.html:10
@@ -7652,43 +7628,43 @@ msgstr "您無法刪除已有回應的自訂欄位。我們已將此欄位停用
 msgid "This field does not support file downloads."
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:422
-msgid "Could not send mails, error in configuration."
+#: pretalx/orga/views/cfp.py:423
+msgid "Could not send emails, error in configuration."
 msgstr "設定中有錯誤，因此無法傳送電子郵件。"
 
-#: pretalx/orga/views/cfp.py:457
+#: pretalx/orga/views/cfp.py:459
 msgid "New type"
 msgstr "新型態"
 
-#: pretalx/orga/views/cfp.py:482
+#: pretalx/orga/views/cfp.py:484
 msgid "New session type"
 msgstr "新的投稿類型"
 
-#: pretalx/orga/views/cfp.py:491
+#: pretalx/orga/views/cfp.py:493
 msgid "This session type is in use in a proposal and cannot be deleted."
 msgstr "此議程類型正在被議程投稿使用中，無法刪除。"
 
-#: pretalx/orga/views/cfp.py:512
+#: pretalx/orga/views/cfp.py:514
 msgid "The session type has been made default."
 msgstr "此投稿類型被設為預設值。"
 
-#: pretalx/orga/views/cfp.py:522 pretalx/orga/views/cfp.py:547
+#: pretalx/orga/views/cfp.py:524 pretalx/orga/views/cfp.py:549
 msgid "New track"
 msgstr "新的議程軌"
 
-#: pretalx/orga/views/cfp.py:555
+#: pretalx/orga/views/cfp.py:557
 msgid "This track is in use in a proposal and cannot be deleted."
 msgstr "此議程軌正在被議程投稿使用中，無法刪除。"
 
-#: pretalx/orga/views/cfp.py:568 pretalx/orga/views/cfp.py:589
+#: pretalx/orga/views/cfp.py:570 pretalx/orga/views/cfp.py:591
 msgid "New access code"
 msgstr "新存取代碼"
 
-#: pretalx/orga/views/cfp.py:585 pretalx/submission/models/access_code.py:25
+#: pretalx/orga/views/cfp.py:587 pretalx/submission/models/access_code.py:25
 msgid "Access code"
 msgstr "存取代碼"
 
-#: pretalx/orga/views/cfp.py:618
+#: pretalx/orga/views/cfp.py:620
 msgid ""
 "This access code has been used for a proposal and cannot be deleted. To "
 "disable it, you can set its validity date to the past."
@@ -7696,35 +7672,35 @@ msgstr ""
 "此存取代碼已被用於議程投稿，無法刪除。如要停用，您可以將有效期限設為過去的日"
 "期。"
 
-#: pretalx/orga/views/cfp.py:653
+#: pretalx/orga/views/cfp.py:655
 msgid "The access code has been sent."
 msgstr "此存取代碼已被傳送。"
 
-#: pretalx/orga/views/cfp.py:689
+#: pretalx/orga/views/cfp.py:691
 msgid "only one option available"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:693
+#: pretalx/orga/views/cfp.py:695
 msgid "only one language configured"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:695
+#: pretalx/orga/views/cfp.py:697
 #, fuzzy
 #| msgid "Update checks are disabled."
 msgid "tracks are disabled"
 msgstr "更新檢查功能已關閉。"
 
-#: pretalx/orga/views/cfp.py:697
+#: pretalx/orga/views/cfp.py:699
 msgid "no tracks exist"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:699
+#: pretalx/orga/views/cfp.py:701
 #, fuzzy
 #| msgid "not public yet"
 msgid "no public tags exist"
 msgstr "尚未公開"
 
-#: pretalx/orga/views/cfp.py:1186
+#: pretalx/orga/views/cfp.py:1188
 #, fuzzy
 #| msgid "The information has been deleted."
 msgid "CfP configuration has been reset to defaults."
@@ -7966,27 +7942,27 @@ msgstr "傳送郵件"
 #: pretalx/orga/views/mails.py:185
 #, fuzzy, python-brace-format
 #| msgid "{count} mails have been purged."
-msgid "{count} mails have been processed."
+msgid "{count} emails have been processed."
 msgstr "{count} 份郵件已被毀滅。"
 
 #: pretalx/orga/views/mails.py:189
 #, python-brace-format
-msgid "Do you really want to send {count} mails?"
+msgid "Do you really want to send {count} emails?"
 msgstr "您確定要送出這 {count} 份電子郵件嗎？"
 
 #: pretalx/orga/views/mails.py:227
 msgid ""
-"This mail either does not exist or cannot be sent because it was sent "
+"This email either does not exist or cannot be sent because it was sent "
 "already."
 msgstr "此郵件不存在，或因為已經傳送過而無法再次傳送。"
 
 #: pretalx/orga/views/mails.py:232
-msgid "This mail had been sent already."
+msgid "This email had been sent already."
 msgstr "此郵件之前就已被傳送了。"
 
-#: pretalx/orga/views/mails.py:244
-msgid "The mail has been sent."
-msgstr "此郵件已送出。"
+#: pretalx/orga/views/mails.py:244 pretalx/orga/views/mails.py:395
+msgid "The email has been sent."
+msgstr "電子郵件已傳送。"
 
 #: pretalx/orga/views/mails.py:258
 #, fuzzy
@@ -8002,7 +7978,7 @@ msgstr[0] "您確定要刪除這 {count} 封郵件嗎？"
 
 #: pretalx/orga/views/mails.py:312
 msgid ""
-"This mail either does not exist or cannot be discarded because it was sent "
+"This email either does not exist or cannot be discarded because it was sent "
 "already."
 msgstr "此郵件不存在，或因為已經傳送過而無法捨棄。"
 
@@ -8014,17 +7990,13 @@ msgstr[0] "{count} 封郵件已送出。"
 
 #: pretalx/orga/views/mails.py:340
 #, python-brace-format
-msgid "Do you really want to purge {count} mails?"
+msgid "Do you really want to purge {count} emails?"
 msgstr "您確定要毀滅這 {count} 份郵件嗎？"
 
 #: pretalx/orga/views/mails.py:360
 #, python-brace-format
-msgid "{count} mails have been purged."
+msgid "{count} emails have been purged."
 msgstr "{count} 份郵件已被毀滅。"
-
-#: pretalx/orga/views/mails.py:395
-msgid "The email has been sent."
-msgstr "電子郵件已傳送。"
 
 #: pretalx/orga/views/mails.py:400
 msgid ""
@@ -8050,7 +8022,7 @@ msgid "Copy to draft"
 msgstr "複製到草稿"
 
 #: pretalx/orga/views/mails.py:452
-msgid "The mail has been copied, you can edit it now."
+msgid "The email has been copied, you can edit it now."
 msgstr "郵件已複製，您現在可以編輯它。"
 
 #: pretalx/orga/views/mails.py:482
@@ -8109,10 +8081,6 @@ msgstr "新增自訂範本"
 #: pretalx/orga/views/mails.py:720
 msgid "New email template"
 msgstr "新增電子郵件範本"
-
-#: pretalx/orga/views/mails.py:721
-msgid "Email templates"
-msgstr "電子郵件範本"
 
 #: pretalx/orga/views/organiser.py:116
 msgid "The invitation has been sent."
@@ -8824,7 +8792,7 @@ msgid "Blocker"
 msgstr ""
 
 #: pretalx/schedule/models/slot.py:74
-msgid "The room this talk is scheduled in, if any"
+msgid "The room this session is scheduled in, if any"
 msgstr "此議程安排的會議室（如有的話）"
 
 #: pretalx/schedule/models/slot.py:87
@@ -8844,7 +8812,7 @@ msgid "Start"
 msgstr "開始"
 
 #: pretalx/schedule/models/slot.py:95
-msgid "When the talk starts, if it is currently scheduled"
+msgid "When the session starts, if it is currently scheduled"
 msgstr "此議程的開始時間（如已排定的話）"
 
 #: pretalx/schedule/models/slot.py:99
@@ -8852,7 +8820,7 @@ msgid "End"
 msgstr "結束"
 
 #: pretalx/schedule/models/slot.py:100
-msgid "When the talk ends, if it is currently scheduled"
+msgid "When the session ends, if it is currently scheduled"
 msgstr "此議程的結束時間（如已排定的話）"
 
 #: pretalx/schedule/phrases.py:12
@@ -9716,7 +9684,6 @@ msgstr ""
 #~ msgstr "頁面"
 
 #, fuzzy
-#~| msgid "Page title"
 #~ msgid "Page title"
 #~ msgstr "頁面標題"
 
@@ -9730,7 +9697,6 @@ msgstr ""
 #~ msgstr "此頁面已變更。"
 
 #, fuzzy
-#~| msgid "The item has been deleted."
 #~ msgid "The page has been deleted."
 #~ msgstr "項目已刪除。"
 
@@ -9745,7 +9711,6 @@ msgstr ""
 #~ msgstr "您確定要刪除<strong>%(name)s</strong>頁面嗎？"
 
 #, fuzzy
-#~| msgid "You haven’t created any pages yet."
 #~ msgid "You haven't created any pages yet."
 #~ msgstr "您尚未建立任何頁面。"
 
@@ -9765,7 +9730,6 @@ msgstr ""
 #~ msgstr "網址格式"
 
 #, fuzzy
-#~| msgid "The item has been deleted."
 #~ msgid "The selected page has been deleted."
 #~ msgstr "項目已刪除。"
 
@@ -9776,27 +9740,22 @@ msgstr ""
 #~ msgstr "新頁面已被建立。"
 
 #, fuzzy
-#~| msgid "Recording integrations"
 #~ msgid "Venueless integration"
 #~ msgstr "錄影整合"
 
 #, fuzzy
-#~| msgid "Show on dashboard"
 #~ msgid "Show join button"
 #~ msgstr "顯示在資訊看板上"
 
 #, fuzzy
-#~| msgid "Confirm deletion"
 #~ msgid "Confirm your Venueless connection"
 #~ msgstr "確認刪除"
 
 #, fuzzy
-#~| msgid "Login settings"
 #~ msgid "Main settings"
 #~ msgstr "登入設定"
 
 #, fuzzy
-#~| msgid "Login settings"
 #~ msgid "Join link settings"
 #~ msgstr "登入設定"
 
@@ -9804,27 +9763,22 @@ msgstr ""
 #~ msgstr "耶！我們保存了您的更改。"
 
 #, fuzzy
-#~| msgid "Recording integrations"
 #~ msgid "Vimeo integration"
 #~ msgstr "錄影整合"
 
 #, fuzzy
-#~| msgid "Go to API"
 #~ msgid "Go to video"
 #~ msgstr "前往 API"
 
 #, fuzzy
-#~| msgid "Please provide a review text!"
 #~ msgid "Please provide a Vimeo URL!"
 #~ msgstr "請提供審稿意見！"
 
 #, fuzzy
-#~| msgid "We released a new schedule version!"
 #~ msgid "Please create a schedule first!"
 #~ msgstr "我們釋出了新版議程表！"
 
 #, fuzzy
-#~| msgid "The anonymisation has been updated."
 #~ msgid "The Vimeo URLs were updated."
 #~ msgstr "匿名化已更新。"
 
@@ -9850,7 +9804,6 @@ msgstr ""
 #~ msgstr "選擇了無效的權限：{perms}"
 
 #, fuzzy
-#~| msgid "Select all"
 #~ msgid "Clear all"
 #~ msgstr "全選"
 
@@ -9870,17 +9823,14 @@ msgstr ""
 #~ msgstr "您的頭像"
 
 #, fuzzy
-#~| msgid "Your avatar"
 #~ msgid "Crop your avatar"
 #~ msgstr "您的頭像"
 
 #, fuzzy
-#~| msgid "Data Export"
 #~ msgid "Back to Export"
 #~ msgstr "資料匯出"
 
 #, fuzzy
-#~| msgid "Export format"
 #~ msgid "Export ready!"
 #~ msgstr "匯出格式"
 
@@ -9891,7 +9841,6 @@ msgstr ""
 #~ msgstr "您無法審稿此投稿"
 
 #, fuzzy
-#~| msgid "A new export is being generated and will be available soon."
 #~ msgid "A new export is being generated."
 #~ msgstr "正在產生新的匯出檔案，很快就會可供使用。"
 
@@ -10013,7 +9962,6 @@ msgstr ""
 #~ msgstr "這個活動尚未公開，只有主辦單位可以檢視。"
 
 #, fuzzy
-#~| msgid "This content will be shown publicly."
 #~ msgid "This content may be shown publicly."
 #~ msgstr "這裡的內容會公開顯示。"
 
@@ -10048,12 +9996,10 @@ msgstr ""
 #~ msgstr "點此檢視投稿表單。"
 
 #, fuzzy
-#~| msgid "Move question up"
 #~ msgid "Move selected columns up"
 #~ msgstr "將問題向上移"
 
 #, fuzzy
-#~| msgid "Move question down"
 #~ msgid "Move selected columns down"
 #~ msgstr "將問題向下移"
 

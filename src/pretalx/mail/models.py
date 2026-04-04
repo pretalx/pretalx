@@ -117,7 +117,7 @@ class MailTemplate(PretalxModel):
         null=True,
         verbose_name=_("BCC"),
         help_text=_(
-            "Enter comma separated addresses. Will receive a blind copy of every mail sent from this template. This may be a LOT!"
+            "Enter comma separated addresses. Will receive a blind copy of every email sent from this template. This may be a LOT!"
         ),
     )
     # Auto-created templates are created when mass emails are sent out. They are only used to re-create similar
@@ -502,7 +502,7 @@ class QueuedMail(PretalxModel):
         """
         if self.state in (QueuedMailStates.SENT, QueuedMailStates.SENDING):
             raise ValidationError(
-                _("This mail has been sent already. It cannot be sent again.")
+                _("This email has been sent already. It cannot be sent again.")
             )
 
         has_event = getattr(self, "event", None)

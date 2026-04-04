@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-04 11:33+0000\n"
+"POT-Creation-Date: 2026-04-04 13:22+0000\n"
 "PO-Revision-Date: 2025-09-01 13:37+0000\n"
 "Last-Translator: Takuya FUTATSUGI <takuyafjp@gmail.com>\n"
 "Language-Team: \n"
@@ -311,7 +311,7 @@ msgstr ""
 
 #: pretalx/agenda/views/schedule.py:224 pretalx/orga/forms/event.py:880
 #: pretalx/orga/forms/mails.py:434 pretalx/orga/tables/cfp.py:31
-#: pretalx/orga/templates/orga/base.html:265 pretalx/orga/views/cfp.py:548
+#: pretalx/orga/templates/orga/base.html:265 pretalx/orga/views/cfp.py:550
 #: pretalx/submission/forms/submission.py:322
 #: pretalx/submission/models/access_code.py:32
 #: pretalx/submission/models/question.py:221
@@ -637,7 +637,7 @@ msgstr "確定済"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:23
 #: pretalx/submission/models/submission.py:80
-msgid "canceled"
+msgid "cancelled"
 msgstr "キャンセル済"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:25
@@ -773,7 +773,7 @@ msgid "… about yourself:"
 msgstr "… あなたについて"
 
 #: pretalx/cfp/templates/cfp/event/submission_user.html:13
-msgid "Sign in or register to save your draft"
+msgid "Log in or register to save your draft"
 msgstr ""
 
 #: pretalx/cfp/templates/cfp/event/submission_user.html:22
@@ -820,7 +820,7 @@ msgid "Your Account"
 msgstr "あなたのアカウント"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:59
-msgid "You can change your log in data here."
+msgid "You can change your login data here."
 msgstr "ログイン情報をこちらから変更できます"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:79
@@ -1176,7 +1176,7 @@ msgstr "状態"
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:65
 #: pretalx/orga/tables/cfp.py:150
 #: pretalx/orga/templates/orga/submission/review.html:68
-#: pretalx/orga/views/cfp.py:478 pretalx/submission/models/submission.py:205
+#: pretalx/orga/views/cfp.py:480 pretalx/submission/models/submission.py:205
 msgid "Session type"
 msgstr "提案のタイプ"
 
@@ -1184,7 +1184,7 @@ msgstr "提案のタイプ"
 #: pretalx/orga/tables/cfp.py:105
 #: pretalx/orga/templates/orga/review/bulk_tag.html:55
 #: pretalx/orga/templates/orga/submission/review.html:73
-#: pretalx/orga/views/cfp.py:543 pretalx/submission/models/submission.py:211
+#: pretalx/orga/views/cfp.py:545 pretalx/submission/models/submission.py:211
 msgid "Track"
 msgstr "トラック"
 
@@ -1591,15 +1591,15 @@ msgid "An email was modified."
 msgstr "Eメールが変更されました。"
 
 #: pretalx/common/log_display.py:86
-msgid "A mail template was added."
+msgid "An email template was added."
 msgstr "メールテンプレートが追加されました。"
 
 #: pretalx/common/log_display.py:87
-msgid "A mail template was deleted."
+msgid "An email template was deleted."
 msgstr "メールテンプレートが削除されました。"
 
 #: pretalx/common/log_display.py:88
-msgid "A mail template was modified."
+msgid "An email template was modified."
 msgstr "メールテンプレートが変更されました。"
 
 #: pretalx/common/log_display.py:89
@@ -1940,10 +1940,14 @@ msgstr ""
 msgid "Call for Proposals"
 msgstr "私の提案"
 
-#: pretalx/common/log_display.py:224
+#: pretalx/common/log_display.py:224 pretalx/orga/forms/schedule.py:37
+#: pretalx/orga/templates/orga/cfp/question/remind.html:22
+#: pretalx/orga/templates/orga/mails/send_draft_reminders.html:21
+#: pretalx/orga/templates/orga/schedule/release.html:59
+#: pretalx/orga/views/mails.py:717 pretalx/orga/views/mails.py:718
 #, fuzzy
 #| msgid "Mail templates"
-msgid "Mail template"
+msgid "Email template"
 msgstr "メールテンプレート"
 
 #: pretalx/common/log_display.py:228 pretalx/event/models/organiser.py:292
@@ -2005,7 +2009,7 @@ msgstr ""
 msgid ""
 "Hi,\n"
 "\n"
-"just writing you to let you know that your Call for Participation is now\n"
+"just writing you to let you know that your Call for Proposals is now\n"
 "closed. Here is a list of links that should be useful in the next days:\n"
 "\n"
 "- You’ll find a list of all your {submission_count} proposals here:\n"
@@ -2204,8 +2208,11 @@ msgid "Organiser area"
 msgstr "管理者向けエリア"
 
 #: pretalx/common/templates/common/base.html:131
-msgid "Logout"
-msgstr "ログアウト"
+#: pretalx/orga/templates/orga/base.html:126
+#, fuzzy
+#| msgid "Log in"
+msgid "Log out"
+msgstr "ログイン"
 
 #: pretalx/common/templates/common/base.html:159
 #, python-format
@@ -2230,6 +2237,7 @@ msgid "I already have an account"
 msgstr "既にアカウントを持っています"
 
 #: pretalx/common/templates/common/forms/auth.html:21
+#: pretalx/orga/templates/orga/auth/login.html:9
 #: pretalx/orga/templates/orga/cfp/editor.html:185
 msgid "Log in"
 msgstr "ログイン"
@@ -2856,7 +2864,7 @@ msgstr ""
 
 #: pretalx/event/forms.py:239
 msgid ""
-"The default deadline for your Call for Papers. You can assign additional "
+"The default deadline for your Call for Proposals. You can assign additional "
 "deadlines to individual session types, which will take precedence over this "
 "deadline."
 msgstr ""
@@ -3267,7 +3275,7 @@ msgid "Write a CfP"
 msgstr "CfPを書く"
 
 #: pretalx/event/stages.py:54
-msgid "Customize mail templates"
+msgid "Customize email templates"
 msgstr "Eメールテンプレートをカスタマイズする"
 
 #: pretalx/event/stages.py:60
@@ -3952,7 +3960,7 @@ msgstr "BCC"
 
 #: pretalx/mail/models.py:120
 msgid ""
-"Enter comma separated addresses. Will receive a blind copy of every mail "
+"Enter comma separated addresses. Will receive a blind copy of every email "
 "sent from this template. This may be a LOT!"
 msgstr ""
 "コンマで区切ったアドレスを入力してください。このテンプレートから送信されたす"
@@ -3996,7 +4004,7 @@ msgid "Sent at"
 msgstr "送信時間"
 
 #: pretalx/mail/models.py:505
-msgid "This mail has been sent already. It cannot be sent again."
+msgid "This email has been sent already. It cannot be sent again."
 msgstr "このメールは既に送信済みです。再度送信することはできません。"
 
 #: pretalx/orga/forms/admin.py:20
@@ -4050,7 +4058,7 @@ msgid "Can sessions be held multiple times?"
 msgstr "会談は複数回できますか？"
 
 #: pretalx/orga/forms/cfp.py:62
-msgid "Send mail on new proposal"
+msgid "Send email on new proposal"
 msgstr "新規投稿のメール送信"
 
 #: pretalx/orga/forms/cfp.py:64
@@ -4543,19 +4551,19 @@ msgstr ""
 "ルアドレスがReply-Toアドレスとして使用されます。"
 
 #: pretalx/orga/forms/event.py:421
-msgid "Mail subject prefix"
+msgid "Email subject prefix"
 msgstr "メール件名のプレフィックス"
 
 #: pretalx/orga/forms/event.py:423
-msgid "The prefix will be prepended to outgoing mail subjects in [brackets]."
+msgid "The prefix will be prepended to outgoing email subjects in [brackets]."
 msgstr "送信メールの件名には、[カッコ]の中に接頭辞が付加されます。"
 
 #: pretalx/orga/forms/event.py:428
-msgid "Mail signature"
+msgid "Email signature"
 msgstr "メール署名"
 
 #: pretalx/orga/forms/event.py:430
-msgid "The signature will be added to outgoing mails, preceded by “-- ”."
+msgid "The signature will be added to outgoing emails, preceded by “-- ”."
 msgstr "送信メールには、”-“の後に署名が追加されます。"
 
 #: pretalx/orga/forms/event.py:436
@@ -4564,7 +4572,7 @@ msgstr "カスタムSMTPサーバーを使用する"
 
 #: pretalx/orga/forms/event.py:438
 msgid ""
-"All mail related to your event will be sent over the SMTP server specified "
+"All email related to your event will be sent over the SMTP server specified "
 "by you."
 msgstr ""
 "イベントに関する全てのメールは、ここで指定したSMTPサーバーを経由して送信され"
@@ -4858,13 +4866,15 @@ msgstr "登壇者"
 msgid "Users"
 msgstr "User"
 
-#: pretalx/orga/forms/event.py:884
+#: pretalx/orga/forms/event.py:884 pretalx/orga/views/mails.py:721
 #, fuzzy
 #| msgid "Mail templates"
-msgid "Mail templates"
+msgid "Email templates"
 msgstr "メールテンプレート"
 
 #: pretalx/orga/forms/event.py:885 pretalx/orga/forms/event.py:915
+#: pretalx/orga/templates/orga/admin/admin.html:84
+#: pretalx/orga/templates/orga/base.html:404
 #: pretalx/orga/templates/orga/speaker/form.html:107
 msgid "Emails"
 msgstr "メール"
@@ -5249,16 +5259,6 @@ msgstr "あなたの提案: "
 msgid "Notify speakers of changes"
 msgstr "スピーカーに変更を通知する"
 
-#: pretalx/orga/forms/schedule.py:37
-#: pretalx/orga/templates/orga/cfp/question/remind.html:22
-#: pretalx/orga/templates/orga/mails/send_draft_reminders.html:21
-#: pretalx/orga/templates/orga/schedule/release.html:59
-#: pretalx/orga/views/mails.py:717 pretalx/orga/views/mails.py:718
-#, fuzzy
-#| msgid "Mail templates"
-msgid "Email template"
-msgstr "メールテンプレート"
-
 #: pretalx/orga/forms/schedule.py:41
 msgid "We released a new schedule version!"
 msgstr "新しいスケジュールバージョンをリリースしました"
@@ -5512,7 +5512,7 @@ msgid "Submissions"
 msgstr "講演"
 
 #: pretalx/orga/tables/cfp.py:37 pretalx/orga/templates/orga/base.html:269
-#: pretalx/orga/views/cfp.py:483 pretalx/submission/forms/submission.py:309
+#: pretalx/orga/views/cfp.py:485 pretalx/submission/forms/submission.py:309
 #: pretalx/submission/models/access_code.py:41
 #: pretalx/submission/models/question.py:230
 msgid "Session types"
@@ -5565,7 +5565,12 @@ msgid "Template"
 msgstr "テンプレート"
 
 #: pretalx/orga/tables/mail.py:35
-msgid "Send mails"
+#: pretalx/orga/templates/orga/mails/compose_choice.html:10
+#: pretalx/orga/templates/orga/mails/compose_choice.html:13
+#: pretalx/orga/views/mails.py:194
+#, fuzzy
+#| msgid "Send mails"
+msgid "Send emails"
 msgstr "メールを送信"
 
 #: pretalx/orga/tables/mail.py:63
@@ -5730,11 +5735,6 @@ msgstr "静的ファイル"
 #: pretalx/orga/templates/orga/admin/admin.html:79
 msgid "Media files"
 msgstr "メディアファイル"
-
-#: pretalx/orga/templates/orga/admin/admin.html:84
-#: pretalx/orga/templates/orga/base.html:404
-msgid "Mails"
-msgstr "メール"
 
 #: pretalx/orga/templates/orga/admin/admin.html:87
 msgid "Host"
@@ -5948,22 +5948,12 @@ msgstr "運営者のEメールアドレス"
 msgid "The pretalx logo"
 msgstr "The pretalx logo"
 
-#: pretalx/orga/templates/orga/auth/login.html:9
-msgid "Sign in"
-msgstr "サインイン"
-
 #: pretalx/orga/templates/orga/base.html:89
 #: pretalx/orga/templates/orga/base.html:98
 #, fuzzy
 #| msgid "New event"
 msgid "View event"
 msgstr "新しいイベント"
-
-#: pretalx/orga/templates/orga/base.html:126
-#, fuzzy
-#| msgid "Log in"
-msgid "Log out"
-msgstr "ログイン"
 
 #: pretalx/orga/templates/orga/base.html:136
 msgid "You’re using pretalx as a superuser. This is not recommended."
@@ -6009,7 +5999,7 @@ msgstr "ウィジェット"
 msgid "Editor"
 msgstr "エディター"
 
-#: pretalx/orga/templates/orga/base.html:272 pretalx/orga/views/cfp.py:590
+#: pretalx/orga/templates/orga/base.html:272 pretalx/orga/views/cfp.py:592
 msgid "Access codes"
 msgstr "アクセスコード"
 
@@ -6059,6 +6049,7 @@ msgid "Compose emails"
 msgstr "メール作成"
 
 #: pretalx/orga/templates/orga/base.html:422
+#: pretalx/orga/templates/orga/mails/sent_list.html:14
 msgid "Sent emails"
 msgstr "送信済みメール"
 
@@ -6163,7 +6154,7 @@ msgid "Currently hidden"
 msgstr "現在のスケジュール"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:344
-msgid "Talk (30 minutes)"
+msgid "Session (30 minutes)"
 msgstr ""
 
 #: pretalx/orga/templates/orga/cfp/editor.html:355
@@ -6446,7 +6437,7 @@ msgstr ""
 
 #: pretalx/orga/templates/orga/cfp/text.html:37
 msgid ""
-"A good Call for Participation will engage potential speakers. Remember to "
+"A good Call for Proposals will engage potential speakers. Remember to "
 "include:"
 msgstr ""
 "優れた参加者募集は、潜在的な講演者を惹きつけることができます。盛り込むことを"
@@ -6505,8 +6496,8 @@ msgstr ""
 #| "and you’re ready to go!"
 msgid ""
 "Your event has been created and you’re ready to go! Check out the event "
-"settings, set up your Call for Papers with session types and custom fields, "
-"and you’re ready to go!"
+"settings, set up your Call for Proposals with session types and custom "
+"fields, and you’re ready to go!"
 msgstr ""
 "イベントが作成され、準備が整いました！イベントの設定を確認し、投稿タイプや質"
 "問をセットアップすることで論文募集を設定しましょう。"
@@ -6774,7 +6765,7 @@ msgid "Schedule update"
 msgstr "スケジュールされた講演"
 
 #: pretalx/orga/templates/orga/includes/mail_template_role.html:18
-msgid "Custom Mail"
+msgid "Custom email"
 msgstr "カスタムメール"
 
 #: pretalx/orga/templates/orga/includes/mark_speakers_arrived.html:15
@@ -6880,6 +6871,8 @@ msgstr "チームへ参加する！"
 
 #: pretalx/orga/templates/orga/mails/_mail_editor.html:11
 #: pretalx/orga/templates/orga/mails/_mail_editor.html:19
+#: pretalx/orga/templates/orga/mails/outbox_form.html:13
+#: pretalx/orga/templates/orga/mails/outbox_form.html:49
 #, fuzzy
 #| msgid "Mail Editor"
 msgid "Email editor"
@@ -6935,14 +6928,6 @@ msgstr "pretalx のアップデート版が利用できます"
 #: pretalx/orga/templates/orga/mails/_placeholder_group.html:46
 msgid "e.g."
 msgstr ""
-
-#: pretalx/orga/templates/orga/mails/compose_choice.html:10
-#: pretalx/orga/templates/orga/mails/compose_choice.html:13
-#: pretalx/orga/views/mails.py:194
-#, fuzzy
-#| msgid "Send mails"
-msgid "Send emails"
-msgstr "メールを送信"
 
 #: pretalx/orga/templates/orga/mails/compose_choice.html:17
 #: pretalx/orga/templates/orga/mails/compose_session_mail_form.html:11
@@ -7011,11 +6996,6 @@ msgstr ""
 "テンプレートの種類によって、利用可能なプレースホルダが異なります。これらにつ"
 "いては、テンプレートの編集を開始してから詳しく説明します。"
 
-#: pretalx/orga/templates/orga/mails/outbox_form.html:13
-#: pretalx/orga/templates/orga/mails/outbox_form.html:49
-msgid "Mail Editor"
-msgstr "メールエディタ"
-
 #: pretalx/orga/templates/orga/mails/outbox_form.html:32
 #, python-format
 msgid "This email was sent on %(timestamp)s."
@@ -7044,8 +7024,8 @@ msgid "Retry all failed"
 msgstr ""
 
 #: pretalx/orga/templates/orga/mails/outbox_list.html:32
-msgid "pending mail"
-msgid_plural "pending mails"
+msgid "pending email"
+msgid_plural "pending emails"
 msgstr[0] "待機中メール"
 msgstr[1] "Ausgehende E-Mails"
 
@@ -7078,10 +7058,6 @@ msgid ""
 "These emails will be sent out immediately! They will not be saved to the "
 "outbox or logged first, to protect the privacy of the draft authors."
 msgstr ""
-
-#: pretalx/orga/templates/orga/mails/sent_list.html:14
-msgid "Sent Mails"
-msgstr "メールを送信"
 
 #: pretalx/orga/templates/orga/organiser/list.html:42
 #, fuzzy
@@ -7858,7 +7834,7 @@ msgid "pending"
 msgstr "待機中メール"
 
 #: pretalx/orga/templates/orga/speaker/form.html:111
-msgid "No mails were sent to this speaker yet."
+msgid "No emails were sent to this speaker yet."
 msgstr "この講演者へのメール送信履歴はありません。"
 
 #: pretalx/orga/templates/orga/speaker/information_form.html:10
@@ -8406,43 +8382,43 @@ msgstr ""
 msgid "This field does not support file downloads."
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:422
-msgid "Could not send mails, error in configuration."
+#: pretalx/orga/views/cfp.py:423
+msgid "Could not send emails, error in configuration."
 msgstr "メールを送信できません。設定にエラーがあるようです。"
 
-#: pretalx/orga/views/cfp.py:457
+#: pretalx/orga/views/cfp.py:459
 msgid "New type"
 msgstr "新しいタイプ"
 
-#: pretalx/orga/views/cfp.py:482
+#: pretalx/orga/views/cfp.py:484
 msgid "New session type"
 msgstr "新しい提案タイプ"
 
-#: pretalx/orga/views/cfp.py:491
+#: pretalx/orga/views/cfp.py:493
 msgid "This session type is in use in a proposal and cannot be deleted."
 msgstr "投稿タイプは投稿に割り当てられており、削除できません。"
 
-#: pretalx/orga/views/cfp.py:512
+#: pretalx/orga/views/cfp.py:514
 msgid "The session type has been made default."
 msgstr "この投稿タイプがデフォルトに設定されました。"
 
-#: pretalx/orga/views/cfp.py:522 pretalx/orga/views/cfp.py:547
+#: pretalx/orga/views/cfp.py:524 pretalx/orga/views/cfp.py:549
 msgid "New track"
 msgstr "新しいトラック"
 
-#: pretalx/orga/views/cfp.py:555
+#: pretalx/orga/views/cfp.py:557
 msgid "This track is in use in a proposal and cannot be deleted."
 msgstr "トラックは投稿に割り当てられており、削除できません。"
 
-#: pretalx/orga/views/cfp.py:568 pretalx/orga/views/cfp.py:589
+#: pretalx/orga/views/cfp.py:570 pretalx/orga/views/cfp.py:591
 msgid "New access code"
 msgstr "新しいアクセスコード"
 
-#: pretalx/orga/views/cfp.py:585 pretalx/submission/models/access_code.py:25
+#: pretalx/orga/views/cfp.py:587 pretalx/submission/models/access_code.py:25
 msgid "Access code"
 msgstr "アクセスコード"
 
-#: pretalx/orga/views/cfp.py:618
+#: pretalx/orga/views/cfp.py:620
 msgid ""
 "This access code has been used for a proposal and cannot be deleted. To "
 "disable it, you can set its validity date to the past."
@@ -8450,35 +8426,35 @@ msgstr ""
 "このアクセスコードは投稿に利用され、削除できません。コードを無効化するには過"
 "去の日付を入力してください。"
 
-#: pretalx/orga/views/cfp.py:653
+#: pretalx/orga/views/cfp.py:655
 msgid "The access code has been sent."
 msgstr "アクセスコードは送付されています。"
 
-#: pretalx/orga/views/cfp.py:689
+#: pretalx/orga/views/cfp.py:691
 msgid "only one option available"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:693
+#: pretalx/orga/views/cfp.py:695
 msgid "only one language configured"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:695
+#: pretalx/orga/views/cfp.py:697
 #, fuzzy
 #| msgid "Update checks are disabled."
 msgid "tracks are disabled"
 msgstr "更新チェックは無効化されています。"
 
-#: pretalx/orga/views/cfp.py:697
+#: pretalx/orga/views/cfp.py:699
 msgid "no tracks exist"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:699
+#: pretalx/orga/views/cfp.py:701
 #, fuzzy
 #| msgid "Not public"
 msgid "no public tags exist"
 msgstr "非公開"
 
-#: pretalx/orga/views/cfp.py:1186
+#: pretalx/orga/views/cfp.py:1188
 #, fuzzy
 #| msgid "The information has been deleted."
 msgid "CfP configuration has been reset to defaults."
@@ -8745,12 +8721,12 @@ msgstr "メールを送信"
 #: pretalx/orga/views/mails.py:185
 #, fuzzy, python-brace-format
 #| msgid "{count} mails have been purged."
-msgid "{count} mails have been processed."
+msgid "{count} emails have been processed."
 msgstr "{count} 個のメールが切り離されました。"
 
 #: pretalx/orga/views/mails.py:189
 #, python-brace-format
-msgid "Do you really want to send {count} mails?"
+msgid "Do you really want to send {count} emails?"
 msgstr "本当に {count} 個のメールを送付して良いですか？"
 
 #: pretalx/orga/views/mails.py:227
@@ -8759,16 +8735,16 @@ msgstr "本当に {count} 個のメールを送付して良いですか？"
 #| "This mail either does not exist or cannot be discarded because it was "
 #| "sent already."
 msgid ""
-"This mail either does not exist or cannot be sent because it was sent "
+"This email either does not exist or cannot be sent because it was sent "
 "already."
 msgstr "メールが存在しないか、あるいは送付済みのため破棄することができません"
 
 #: pretalx/orga/views/mails.py:232
-msgid "This mail had been sent already."
+msgid "This email had been sent already."
 msgstr "このメールは既に送信済みです。"
 
-#: pretalx/orga/views/mails.py:244
-msgid "The mail has been sent."
+#: pretalx/orga/views/mails.py:244 pretalx/orga/views/mails.py:395
+msgid "The email has been sent."
 msgstr "メールが送付されました。"
 
 #: pretalx/orga/views/mails.py:258
@@ -8787,7 +8763,7 @@ msgstr[1] "本当にこのトラックを削除していいですか？"
 
 #: pretalx/orga/views/mails.py:312
 msgid ""
-"This mail either does not exist or cannot be discarded because it was sent "
+"This email either does not exist or cannot be discarded because it was sent "
 "already."
 msgstr "メールが存在しないか、あるいは送付済みのため破棄することができません"
 
@@ -8801,17 +8777,13 @@ msgstr[1] "メールが送付されました。"
 
 #: pretalx/orga/views/mails.py:340
 #, python-brace-format
-msgid "Do you really want to purge {count} mails?"
+msgid "Do you really want to purge {count} emails?"
 msgstr "本当に {count} のメールを切り離しますか？"
 
 #: pretalx/orga/views/mails.py:360
 #, python-brace-format
-msgid "{count} mails have been purged."
+msgid "{count} emails have been purged."
 msgstr "{count} 個のメールが切り離されました。"
-
-#: pretalx/orga/views/mails.py:395
-msgid "The email has been sent."
-msgstr "メールが送付されました。"
 
 #: pretalx/orga/views/mails.py:400
 msgid ""
@@ -8840,7 +8812,7 @@ msgid "Copy to draft"
 msgstr "コピーして草稿にする"
 
 #: pretalx/orga/views/mails.py:452
-msgid "The mail has been copied, you can edit it now."
+msgid "The email has been copied, you can edit it now."
 msgstr "メールがコピーされ、編集可能になりました。"
 
 #: pretalx/orga/views/mails.py:482
@@ -8908,12 +8880,6 @@ msgstr "新しいカスタムテンプレート"
 #, fuzzy
 #| msgid "Mail templates"
 msgid "New email template"
-msgstr "メールテンプレート"
-
-#: pretalx/orga/views/mails.py:721
-#, fuzzy
-#| msgid "Mail templates"
-msgid "Email templates"
 msgstr "メールテンプレート"
 
 #: pretalx/orga/views/organiser.py:116
@@ -9691,7 +9657,7 @@ msgstr ""
 #: pretalx/schedule/models/slot.py:74
 #, fuzzy
 #| msgid "The room is not available at the scheduled time."
-msgid "The room this talk is scheduled in, if any"
+msgid "The room this session is scheduled in, if any"
 msgstr "予定された時間は部屋が使えません。"
 
 #: pretalx/schedule/models/slot.py:87
@@ -9711,7 +9677,7 @@ msgid "Start"
 msgstr ""
 
 #: pretalx/schedule/models/slot.py:95
-msgid "When the talk starts, if it is currently scheduled"
+msgid "When the session starts, if it is currently scheduled"
 msgstr ""
 
 #: pretalx/schedule/models/slot.py:99
@@ -9719,7 +9685,7 @@ msgid "End"
 msgstr ""
 
 #: pretalx/schedule/models/slot.py:100
-msgid "When the talk ends, if it is currently scheduled"
+msgid "When the session ends, if it is currently scheduled"
 msgstr ""
 
 #: pretalx/schedule/phrases.py:12
@@ -10705,7 +10671,6 @@ msgstr ""
 #~ msgstr "提案受付処理が変更されました。"
 
 #, fuzzy
-#~| msgid "The track has been deleted."
 #~ msgid "The page has been deleted."
 #~ msgstr "トラックが削除されました。"
 
@@ -10738,7 +10703,6 @@ msgstr ""
 #~ msgstr "すでにこの名前のトラックがあります"
 
 #, fuzzy
-#~| msgid "The track has been deleted."
 #~ msgid "The selected page has been deleted."
 #~ msgstr "トラックが削除されました。"
 
@@ -10751,27 +10715,22 @@ msgstr ""
 #~ msgstr "トラックが削除されました。"
 
 #, fuzzy
-#~| msgid "pending Invitation"
 #~ msgid "Venueless integration"
 #~ msgstr "招待送付の一時停止"
 
 #, fuzzy
-#~| msgid "Show on dashboard"
 #~ msgid "Show join button"
 #~ msgstr "ダッシュボードに表示"
 
 #, fuzzy
-#~| msgid "Account deletion"
 #~ msgid "Confirm your Venueless connection"
 #~ msgstr "アカウント削除"
 
 #, fuzzy
-#~| msgid "Mail settings"
 #~ msgid "Main settings"
 #~ msgstr "メール設定"
 
 #, fuzzy
-#~| msgid "Login settings"
 #~ msgid "Join link settings"
 #~ msgstr "ログイン設定"
 
@@ -10779,47 +10738,38 @@ msgstr ""
 #~ msgstr "イエイ！ 変更を保存しました。"
 
 #, fuzzy
-#~| msgid "Unable to release new schedule: "
 #~ msgid "Unable to reach Venueless:"
 #~ msgstr "新しいスケジュールのリリースに失敗しました: "
 
 #, fuzzy
-#~| msgid "pending Invitation"
 #~ msgid "Vimeo integration"
 #~ msgstr "招待送付の一時停止"
 
 #, fuzzy
-#~| msgid "Go to API"
 #~ msgid "Go to video"
 #~ msgstr "APIを表示"
 
 #, fuzzy
-#~| msgid "Please provide a valid email address!"
 #~ msgid "Please provide a Vimeo URL!"
 #~ msgstr "正しいメールアドレスを入力してください！"
 
 #, fuzzy
-#~| msgid "We released a new schedule version!"
 #~ msgid "Please create a schedule first!"
 #~ msgstr "新しいスケジュールバージョンをリリースしました"
 
 #, fuzzy
-#~| msgid "The anonymisation has been updated."
 #~ msgid "The Vimeo URLs were updated."
 #~ msgstr "講演者の未開示情報が更新されました。"
 
 #, fuzzy
-#~| msgid "Organiser email address"
 #~ msgid "Enter one email address per line."
 #~ msgstr "運営者のEメールアドレス"
 
 #, fuzzy, python-format
-#~| msgid "Please provide a valid email address."
 #~ msgid "“%(email)s” is not a valid email address."
 #~ msgstr "有効なメールアドレスをご記入ください。"
 
 #, fuzzy
-#~| msgid "Please provide a valid email address!"
 #~ msgid "Please enter at least one email address!"
 #~ msgstr "正しいメールアドレスを入力してください！"
 
@@ -10828,12 +10778,10 @@ msgstr ""
 #~ msgstr "コードは複数回({num}回)引き換え可能です。"
 
 #, fuzzy
-#~| msgid "Remove team member"
 #~ msgid "Add multiple team members?"
 #~ msgstr "チームメンバーを削除"
 
 #, fuzzy
-#~| msgid "Reject all"
 #~ msgid "Clear all"
 #~ msgstr "すべてリジェクト"
 
@@ -10844,7 +10792,6 @@ msgstr ""
 #~ msgstr "プロフィールが修正されました。"
 
 #, fuzzy
-#~| msgid "Speaker email"
 #~ msgid "Speaker profile"
 #~ msgstr "登壇者のメールアドレス"
 
@@ -10852,32 +10799,26 @@ msgstr ""
 #~ msgstr "あなたのアバター"
 
 #, fuzzy
-#~| msgid "Your avatar"
 #~ msgid "Crop your avatar"
 #~ msgstr "あなたのアバター"
 
 #, fuzzy
-#~| msgid "Data Export"
 #~ msgid "Back to Export"
 #~ msgstr "データエクスポート"
 
 #, fuzzy
-#~| msgid "Short form"
 #~ msgid "Export ready!"
 #~ msgstr "短いフォーム"
 
 #, fuzzy
-#~| msgid "New schedule version"
 #~ msgid "Override WIP schedule with this version"
 #~ msgstr "新しいスケジュールのバージョン"
 
 #, fuzzy
-#~| msgid "You have reviewed this proposal"
 #~ msgid "You cannot review this proposal"
 #~ msgstr "この投稿は既にレビュー済みです"
 
 #, fuzzy
-#~| msgid "A new export is being generated and will be available soon."
 #~ msgid "A new export is being generated."
 #~ msgstr "新しいエクスポートは生成中です、少々お待ちください。"
 
@@ -11005,12 +10946,10 @@ msgstr ""
 #~ msgstr "このイベントは現在公開されていません。主催者のみ閲覧できます。"
 
 #, fuzzy
-#~| msgid "This content will be shown publicly."
 #~ msgid "This content may be shown publicly."
 #~ msgstr "このコンテンツは公開されます。"
 
 #, fuzzy
-#~| msgid "Do not copy"
 #~ msgid "Do not ask"
 #~ msgstr "コピーしない"
 
@@ -11040,12 +10979,10 @@ msgstr ""
 #~ msgstr "録画の許可"
 
 #, fuzzy
-#~| msgid "Move question up"
 #~ msgid "Move selected columns up"
 #~ msgstr "質問を上に移動"
 
 #, fuzzy
-#~| msgid "Move question down"
 #~ msgid "Move selected columns down"
 #~ msgstr "質問を下に移動"
 

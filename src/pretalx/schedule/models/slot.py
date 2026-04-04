@@ -71,7 +71,7 @@ class TalkSlot(PretalxModel):
         on_delete=models.PROTECT,
         related_name="talks",
         verbose_name=_("Room"),
-        help_text=_("The room this talk is scheduled in, if any"),
+        help_text=_("The room this session is scheduled in, if any"),
         null=True,
         blank=True,
     )
@@ -92,12 +92,12 @@ class TalkSlot(PretalxModel):
     start = DateTimeField(
         null=True,
         verbose_name=_("Start"),
-        help_text=_("When the talk starts, if it is currently scheduled"),
+        help_text=_("When the session starts, if it is currently scheduled"),
     )
     end = DateTimeField(
         null=True,
         verbose_name=_("End"),
-        help_text=_("When the talk ends, if it is currently scheduled"),
+        help_text=_("When the session ends, if it is currently scheduled"),
     )
     description = I18nCharField(null=True)
 

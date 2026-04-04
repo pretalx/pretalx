@@ -73,7 +73,7 @@ hierarkey.add_default(
     LazyI18nString.from_gettext(
         gettext_noop("""Hi,
 
-just writing you to let you know that your Call for Participation is now
+just writing you to let you know that your Call for Proposals is now
 closed. Here is a list of links that should be useful in the next days:
 
 - You’ll find a list of all your {submission_count} proposals here:

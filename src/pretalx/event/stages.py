@@ -51,7 +51,7 @@ STAGES = {
             {"title": _("Gather your team"), "url": ["organiser", "orga_urls", "base"]},
             {"title": _("Write a CfP"), "url": ["cfp", "urls", "edit_text"]},
             {
-                "title": _("Customize mail templates"),
+                "title": _("Customize email templates"),
                 "url": ["orga_urls", "mail_templates"],
             },
         ],

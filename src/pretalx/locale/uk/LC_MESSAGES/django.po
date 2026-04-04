@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-04 11:33+0000\n"
+"POT-Creation-Date: 2026-04-04 13:22+0000\n"
 "PO-Revision-Date: 2026-03-23 08:42+0000\n"
 "Last-Translator: Dima <uzhdimka@gmail.com>\n"
 "Language-Team: none\n"
@@ -285,7 +285,7 @@ msgstr "Теги"
 
 #: pretalx/agenda/views/schedule.py:224 pretalx/orga/forms/event.py:880
 #: pretalx/orga/forms/mails.py:434 pretalx/orga/tables/cfp.py:31
-#: pretalx/orga/templates/orga/base.html:265 pretalx/orga/views/cfp.py:548
+#: pretalx/orga/templates/orga/base.html:265 pretalx/orga/views/cfp.py:550
 #: pretalx/submission/forms/submission.py:322
 #: pretalx/submission/models/access_code.py:32
 #: pretalx/submission/models/question.py:221
@@ -599,7 +599,7 @@ msgstr "підтверджено"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:23
 #: pretalx/submission/models/submission.py:80
-msgid "canceled"
+msgid "cancelled"
 msgstr "скасовано"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:25
@@ -734,7 +734,7 @@ msgid "… about yourself:"
 msgstr "… про себе:"
 
 #: pretalx/cfp/templates/cfp/event/submission_user.html:13
-msgid "Sign in or register to save your draft"
+msgid "Log in or register to save your draft"
 msgstr "Увійдіть або зареєструйтесь, щоб зберегти свою чернетку"
 
 #: pretalx/cfp/templates/cfp/event/submission_user.html:22
@@ -785,7 +785,7 @@ msgid "Your Account"
 msgstr "Ваш акаунт"
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:59
-msgid "You can change your log in data here."
+msgid "You can change your login data here."
 msgstr "Тут ви можете змінити свої дані для входу."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:79
@@ -1102,7 +1102,7 @@ msgstr "Статус"
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:65
 #: pretalx/orga/tables/cfp.py:150
 #: pretalx/orga/templates/orga/submission/review.html:68
-#: pretalx/orga/views/cfp.py:478 pretalx/submission/models/submission.py:205
+#: pretalx/orga/views/cfp.py:480 pretalx/submission/models/submission.py:205
 msgid "Session type"
 msgstr "Тип сесії"
 
@@ -1110,7 +1110,7 @@ msgstr "Тип сесії"
 #: pretalx/orga/tables/cfp.py:105
 #: pretalx/orga/templates/orga/review/bulk_tag.html:55
 #: pretalx/orga/templates/orga/submission/review.html:73
-#: pretalx/orga/views/cfp.py:543 pretalx/submission/models/submission.py:211
+#: pretalx/orga/views/cfp.py:545 pretalx/submission/models/submission.py:211
 msgid "Track"
 msgstr "Трек"
 
@@ -1477,15 +1477,15 @@ msgid "An email was modified."
 msgstr "Електронний лист змінено."
 
 #: pretalx/common/log_display.py:86
-msgid "A mail template was added."
+msgid "An email template was added."
 msgstr "Шаблон електронного листа додано."
 
 #: pretalx/common/log_display.py:87
-msgid "A mail template was deleted."
+msgid "An email template was deleted."
 msgstr "Шаблон електронного листа видалено."
 
 #: pretalx/common/log_display.py:88
-msgid "A mail template was modified."
+msgid "An email template was modified."
 msgstr "Шаблон електронного листа змінено."
 
 #: pretalx/common/log_display.py:89
@@ -1758,8 +1758,12 @@ msgstr "Відповідь у додатковому полі"
 msgid "Call for Proposals"
 msgstr "Запрошення до подання пропозицій"
 
-#: pretalx/common/log_display.py:224
-msgid "Mail template"
+#: pretalx/common/log_display.py:224 pretalx/orga/forms/schedule.py:37
+#: pretalx/orga/templates/orga/cfp/question/remind.html:22
+#: pretalx/orga/templates/orga/mails/send_draft_reminders.html:21
+#: pretalx/orga/templates/orga/schedule/release.html:59
+#: pretalx/orga/views/mails.py:717 pretalx/orga/views/mails.py:718
+msgid "Email template"
 msgstr "Шаблон листа"
 
 #: pretalx/common/log_display.py:228 pretalx/event/models/organiser.py:292
@@ -1807,7 +1811,7 @@ msgstr ""
 msgid ""
 "Hi,\n"
 "\n"
-"just writing you to let you know that your Call for Participation is now\n"
+"just writing you to let you know that your Call for Proposals is now\n"
 "closed. Here is a list of links that should be useful in the next days:\n"
 "\n"
 "- You’ll find a list of all your {submission_count} proposals here:\n"
@@ -1997,7 +2001,8 @@ msgid "Organiser area"
 msgstr "Панель організатора"
 
 #: pretalx/common/templates/common/base.html:131
-msgid "Logout"
+#: pretalx/orga/templates/orga/base.html:126
+msgid "Log out"
 msgstr "Вийти"
 
 #: pretalx/common/templates/common/base.html:159
@@ -2023,6 +2028,7 @@ msgid "I already have an account"
 msgstr "У мене вже є обліковий запис"
 
 #: pretalx/common/templates/common/forms/auth.html:21
+#: pretalx/orga/templates/orga/auth/login.html:9
 #: pretalx/orga/templates/orga/cfp/editor.html:185
 msgid "Log in"
 msgstr "Увійти"
@@ -2610,7 +2616,7 @@ msgstr ""
 
 #: pretalx/event/forms.py:239
 msgid ""
-"The default deadline for your Call for Papers. You can assign additional "
+"The default deadline for your Call for Proposals. You can assign additional "
 "deadlines to individual session types, which will take precedence over this "
 "deadline."
 msgstr ""
@@ -3012,7 +3018,7 @@ msgid "Write a CfP"
 msgstr "Створити CfP"
 
 #: pretalx/event/stages.py:54
-msgid "Customize mail templates"
+msgid "Customize email templates"
 msgstr "Налаштувати шаблони листів"
 
 #: pretalx/event/stages.py:60
@@ -3582,7 +3588,7 @@ msgstr "Прихована копія"
 
 #: pretalx/mail/models.py:120
 msgid ""
-"Enter comma separated addresses. Will receive a blind copy of every mail "
+"Enter comma separated addresses. Will receive a blind copy of every email "
 "sent from this template. This may be a LOT!"
 msgstr ""
 "Введіть адреси через кому. Вони отримуватимуть приховану копію кожного "
@@ -3627,7 +3633,7 @@ msgid "Sent at"
 msgstr "Надіслано о"
 
 #: pretalx/mail/models.py:505
-msgid "This mail has been sent already. It cannot be sent again."
+msgid "This email has been sent already. It cannot be sent again."
 msgstr "Цей лист уже було надіслано. Його не можна надіслати повторно."
 
 #: pretalx/orga/forms/admin.py:20
@@ -3681,7 +3687,7 @@ msgid "Can sessions be held multiple times?"
 msgstr "Чи можуть сесії проводитися кілька разів?"
 
 #: pretalx/orga/forms/cfp.py:62
-msgid "Send mail on new proposal"
+msgid "Send email on new proposal"
 msgstr "Надсилати сповіщення про нову пропозицію"
 
 #: pretalx/orga/forms/cfp.py:64
@@ -4155,19 +4161,19 @@ msgstr ""
 "відправника, адреса вашої події буде використовуватися як Reply-To."
 
 #: pretalx/orga/forms/event.py:421
-msgid "Mail subject prefix"
+msgid "Email subject prefix"
 msgstr "Префікс теми електронного листа"
 
 #: pretalx/orga/forms/event.py:423
-msgid "The prefix will be prepended to outgoing mail subjects in [brackets]."
+msgid "The prefix will be prepended to outgoing email subjects in [brackets]."
 msgstr "Префікс додається до теми листа у [квадратних дужках]."
 
 #: pretalx/orga/forms/event.py:428
-msgid "Mail signature"
+msgid "Email signature"
 msgstr "Підпис листа"
 
 #: pretalx/orga/forms/event.py:430
-msgid "The signature will be added to outgoing mails, preceded by “-- ”."
+msgid "The signature will be added to outgoing emails, preceded by “-- ”."
 msgstr "Підпис буде додаватися до вихідних листів, перед ним буде “-- ”."
 
 #: pretalx/orga/forms/event.py:436
@@ -4176,7 +4182,7 @@ msgstr "Використовувати власний SMTP-сервер"
 
 #: pretalx/orga/forms/event.py:438
 msgid ""
-"All mail related to your event will be sent over the SMTP server specified "
+"All email related to your event will be sent over the SMTP server specified "
 "by you."
 msgstr ""
 "Всі листи, пов’язані з вашою подією, будуть надсилатися через SMTP-сервер, "
@@ -4443,11 +4449,13 @@ msgstr "Доповідачі"
 msgid "Users"
 msgstr "Користувачі"
 
-#: pretalx/orga/forms/event.py:884
-msgid "Mail templates"
-msgstr "Шаблони листів"
+#: pretalx/orga/forms/event.py:884 pretalx/orga/views/mails.py:721
+msgid "Email templates"
+msgstr "Шаблони електронних листів"
 
 #: pretalx/orga/forms/event.py:885 pretalx/orga/forms/event.py:915
+#: pretalx/orga/templates/orga/admin/admin.html:84
+#: pretalx/orga/templates/orga/base.html:404
 #: pretalx/orga/templates/orga/speaker/form.html:107
 msgid "Emails"
 msgstr "Електронні листи"
@@ -4774,14 +4782,6 @@ msgstr "Невідома пропозиція: {}"
 msgid "Notify speakers of changes"
 msgstr "Повідомити доповідачів про зміни"
 
-#: pretalx/orga/forms/schedule.py:37
-#: pretalx/orga/templates/orga/cfp/question/remind.html:22
-#: pretalx/orga/templates/orga/mails/send_draft_reminders.html:21
-#: pretalx/orga/templates/orga/schedule/release.html:59
-#: pretalx/orga/views/mails.py:717 pretalx/orga/views/mails.py:718
-msgid "Email template"
-msgstr "Шаблон листа"
-
 #: pretalx/orga/forms/schedule.py:41
 msgid "We released a new schedule version!"
 msgstr "Ми випустили нову версію розкладу!"
@@ -4996,7 +4996,7 @@ msgid "Submissions"
 msgstr "Надсилання"
 
 #: pretalx/orga/tables/cfp.py:37 pretalx/orga/templates/orga/base.html:269
-#: pretalx/orga/views/cfp.py:483 pretalx/submission/forms/submission.py:309
+#: pretalx/orga/views/cfp.py:485 pretalx/submission/forms/submission.py:309
 #: pretalx/submission/models/access_code.py:41
 #: pretalx/submission/models/question.py:230
 msgid "Session types"
@@ -5043,7 +5043,10 @@ msgid "Template"
 msgstr "Шаблон"
 
 #: pretalx/orga/tables/mail.py:35
-msgid "Send mails"
+#: pretalx/orga/templates/orga/mails/compose_choice.html:10
+#: pretalx/orga/templates/orga/mails/compose_choice.html:13
+#: pretalx/orga/views/mails.py:194
+msgid "Send emails"
 msgstr "Надіслати листи"
 
 #: pretalx/orga/tables/mail.py:63
@@ -5192,11 +5195,6 @@ msgstr "Статичні файли"
 #: pretalx/orga/templates/orga/admin/admin.html:79
 msgid "Media files"
 msgstr "Медіафайли"
-
-#: pretalx/orga/templates/orga/admin/admin.html:84
-#: pretalx/orga/templates/orga/base.html:404
-msgid "Mails"
-msgstr "Листи"
 
 #: pretalx/orga/templates/orga/admin/admin.html:87
 msgid "Host"
@@ -5401,18 +5399,10 @@ msgstr "Шукати користувачів за іменем або елек�
 msgid "The pretalx logo"
 msgstr "Логотип pretalx"
 
-#: pretalx/orga/templates/orga/auth/login.html:9
-msgid "Sign in"
-msgstr "Увійти"
-
 #: pretalx/orga/templates/orga/base.html:89
 #: pretalx/orga/templates/orga/base.html:98
 msgid "View event"
 msgstr "Переглянути захід"
-
-#: pretalx/orga/templates/orga/base.html:126
-msgid "Log out"
-msgstr "Вийти"
 
 #: pretalx/orga/templates/orga/base.html:136
 msgid "You’re using pretalx as a superuser. This is not recommended."
@@ -5457,7 +5447,7 @@ msgstr "Віджет"
 msgid "Editor"
 msgstr "Редактор"
 
-#: pretalx/orga/templates/orga/base.html:272 pretalx/orga/views/cfp.py:590
+#: pretalx/orga/templates/orga/base.html:272 pretalx/orga/views/cfp.py:592
 msgid "Access codes"
 msgstr "Коди доступу"
 
@@ -5501,6 +5491,7 @@ msgid "Compose emails"
 msgstr "Створити листи"
 
 #: pretalx/orga/templates/orga/base.html:422
+#: pretalx/orga/templates/orga/mails/sent_list.html:14
 msgid "Sent emails"
 msgstr "Надіслані листи"
 
@@ -5592,7 +5583,7 @@ msgid "Currently hidden"
 msgstr "Наразі приховано"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:344
-msgid "Talk (30 minutes)"
+msgid "Session (30 minutes)"
 msgstr "Доповідь (30 хвилин)"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:355
@@ -5813,7 +5804,7 @@ msgstr "Цей код доступу було використано для на
 
 #: pretalx/orga/templates/orga/cfp/text.html:37
 msgid ""
-"A good Call for Participation will engage potential speakers. Remember to "
+"A good Call for Proposals will engage potential speakers. Remember to "
 "include:"
 msgstr ""
 "Якісний Call for Participation приверне увагу потенційних доповідачів. Не "
@@ -5869,8 +5860,8 @@ msgstr ""
 #: pretalx/orga/templates/orga/event/dashboard.html:30
 msgid ""
 "Your event has been created and you’re ready to go! Check out the event "
-"settings, set up your Call for Papers with session types and custom fields, "
-"and you’re ready to go!"
+"settings, set up your Call for Proposals with session types and custom "
+"fields, and you’re ready to go!"
 msgstr ""
 "Ваш захід створено, і ви готові до роботи! Перегляньте налаштування заходу, "
 "налаштуйте Call for Papers із типами сесій та користувацькими полями — і "
@@ -6117,7 +6108,7 @@ msgid "Schedule update"
 msgstr "Оновлення розкладу"
 
 #: pretalx/orga/templates/orga/includes/mail_template_role.html:18
-msgid "Custom Mail"
+msgid "Custom email"
 msgstr "Користувацький лист"
 
 #: pretalx/orga/templates/orga/includes/mark_speakers_arrived.html:15
@@ -6220,6 +6211,8 @@ msgstr "Приєднатися до команди!"
 
 #: pretalx/orga/templates/orga/mails/_mail_editor.html:11
 #: pretalx/orga/templates/orga/mails/_mail_editor.html:19
+#: pretalx/orga/templates/orga/mails/outbox_form.html:13
+#: pretalx/orga/templates/orga/mails/outbox_form.html:49
 msgid "Email editor"
 msgstr "Редактор електронної пошти"
 
@@ -6273,12 +6266,6 @@ msgstr "Недоступний"
 #: pretalx/orga/templates/orga/mails/_placeholder_group.html:46
 msgid "e.g."
 msgstr "напр."
-
-#: pretalx/orga/templates/orga/mails/compose_choice.html:10
-#: pretalx/orga/templates/orga/mails/compose_choice.html:13
-#: pretalx/orga/views/mails.py:194
-msgid "Send emails"
-msgstr "Надіслати листи"
 
 #: pretalx/orga/templates/orga/mails/compose_choice.html:17
 #: pretalx/orga/templates/orga/mails/compose_session_mail_form.html:11
@@ -6344,11 +6331,6 @@ msgstr ""
 "Доступні різні заповнювачі залежно від типу шаблону. Детальні пояснення "
 "з’являться, коли ви почнете редагувати шаблон."
 
-#: pretalx/orga/templates/orga/mails/outbox_form.html:13
-#: pretalx/orga/templates/orga/mails/outbox_form.html:49
-msgid "Mail Editor"
-msgstr "Редактор листів"
-
 #: pretalx/orga/templates/orga/mails/outbox_form.html:32
 #, python-format
 msgid "This email was sent on %(timestamp)s."
@@ -6378,8 +6360,8 @@ msgid "Retry all failed"
 msgstr ""
 
 #: pretalx/orga/templates/orga/mails/outbox_list.html:32
-msgid "pending mail"
-msgid_plural "pending mails"
+msgid "pending email"
+msgid_plural "pending emails"
 msgstr[0] "лист в черзі"
 msgstr[1] "листа в черзі"
 msgstr[2] "листів в черзі"
@@ -6412,10 +6394,6 @@ msgid ""
 msgstr ""
 "Ці листи будуть надіслані одразу! Вони не зберігатимуться у вихідних і не "
 "фіксуються у журналі, щоб захистити конфіденційність авторів чернеток."
-
-#: pretalx/orga/templates/orga/mails/sent_list.html:14
-msgid "Sent Mails"
-msgstr "Надіслані листи"
 
 #: pretalx/orga/templates/orga/organiser/list.html:42
 msgctxt "number of teams"
@@ -7167,7 +7145,7 @@ msgid "pending"
 msgstr "очікується"
 
 #: pretalx/orga/templates/orga/speaker/form.html:111
-msgid "No mails were sent to this speaker yet."
+msgid "No emails were sent to this speaker yet."
 msgstr "Цьому доповідачеві ще не надсилали листи."
 
 #: pretalx/orga/templates/orga/speaker/information_form.html:10
@@ -7663,43 +7641,43 @@ msgstr ""
 msgid "This field does not support file downloads."
 msgstr "Це поле не підтримує завантаження файлів."
 
-#: pretalx/orga/views/cfp.py:422
-msgid "Could not send mails, error in configuration."
+#: pretalx/orga/views/cfp.py:423
+msgid "Could not send emails, error in configuration."
 msgstr "Не вдалося надіслати листи, помилка у конфігурації."
 
-#: pretalx/orga/views/cfp.py:457
+#: pretalx/orga/views/cfp.py:459
 msgid "New type"
 msgstr "Новий тип"
 
-#: pretalx/orga/views/cfp.py:482
+#: pretalx/orga/views/cfp.py:484
 msgid "New session type"
 msgstr "Новий тип сесії"
 
-#: pretalx/orga/views/cfp.py:491
+#: pretalx/orga/views/cfp.py:493
 msgid "This session type is in use in a proposal and cannot be deleted."
 msgstr "Цей тип сесії використовується у пропозиції і не може бути видалений."
 
-#: pretalx/orga/views/cfp.py:512
+#: pretalx/orga/views/cfp.py:514
 msgid "The session type has been made default."
 msgstr "Тип сесії встановлено за замовчуванням."
 
-#: pretalx/orga/views/cfp.py:522 pretalx/orga/views/cfp.py:547
+#: pretalx/orga/views/cfp.py:524 pretalx/orga/views/cfp.py:549
 msgid "New track"
 msgstr "Новий трек"
 
-#: pretalx/orga/views/cfp.py:555
+#: pretalx/orga/views/cfp.py:557
 msgid "This track is in use in a proposal and cannot be deleted."
 msgstr "Цей трек використовується у пропозиції і не може бути видалений."
 
-#: pretalx/orga/views/cfp.py:568 pretalx/orga/views/cfp.py:589
+#: pretalx/orga/views/cfp.py:570 pretalx/orga/views/cfp.py:591
 msgid "New access code"
 msgstr "Новий код доступу"
 
-#: pretalx/orga/views/cfp.py:585 pretalx/submission/models/access_code.py:25
+#: pretalx/orga/views/cfp.py:587 pretalx/submission/models/access_code.py:25
 msgid "Access code"
 msgstr "Код доступу"
 
-#: pretalx/orga/views/cfp.py:618
+#: pretalx/orga/views/cfp.py:620
 msgid ""
 "This access code has been used for a proposal and cannot be deleted. To "
 "disable it, you can set its validity date to the past."
@@ -7707,31 +7685,31 @@ msgstr ""
 "Цей код доступу був використаний для пропозиції і не може бути видалений. "
 "Щоб відключити його, можна встановити дату його дії в минуле."
 
-#: pretalx/orga/views/cfp.py:653
+#: pretalx/orga/views/cfp.py:655
 msgid "The access code has been sent."
 msgstr "Код доступу надіслано."
 
-#: pretalx/orga/views/cfp.py:689
+#: pretalx/orga/views/cfp.py:691
 msgid "only one option available"
 msgstr "доступна лише одна опція"
 
-#: pretalx/orga/views/cfp.py:693
+#: pretalx/orga/views/cfp.py:695
 msgid "only one language configured"
 msgstr "лише одна мова налаштована"
 
-#: pretalx/orga/views/cfp.py:695
+#: pretalx/orga/views/cfp.py:697
 msgid "tracks are disabled"
 msgstr "треки вимкнено"
 
-#: pretalx/orga/views/cfp.py:697
+#: pretalx/orga/views/cfp.py:699
 msgid "no tracks exist"
 msgstr "треки відсутні"
 
-#: pretalx/orga/views/cfp.py:699
+#: pretalx/orga/views/cfp.py:701
 msgid "no public tags exist"
 msgstr "публічні теги відсутні"
 
-#: pretalx/orga/views/cfp.py:1186
+#: pretalx/orga/views/cfp.py:1188
 msgid "CfP configuration has been reset to defaults."
 msgstr "Конфігурацію CfP скинуто до значень за замовчуванням."
 
@@ -7992,29 +7970,29 @@ msgstr "Надіслати листи"
 #: pretalx/orga/views/mails.py:185
 #, fuzzy, python-brace-format
 #| msgid "{count} mails have been purged."
-msgid "{count} mails have been processed."
+msgid "{count} emails have been processed."
 msgstr "{count} листів було безповоротно видалено."
 
 #: pretalx/orga/views/mails.py:189
 #, python-brace-format
-msgid "Do you really want to send {count} mails?"
+msgid "Do you really want to send {count} emails?"
 msgstr "Ви дійсно хочете надіслати {count} листів?"
 
 #: pretalx/orga/views/mails.py:227
 msgid ""
-"This mail either does not exist or cannot be sent because it was sent "
+"This email either does not exist or cannot be sent because it was sent "
 "already."
 msgstr ""
 "Цей лист або не існує, або не може бути надісланий, оскільки його вже "
 "відправлено."
 
 #: pretalx/orga/views/mails.py:232
-msgid "This mail had been sent already."
+msgid "This email had been sent already."
 msgstr "Цей лист уже було надіслано."
 
-#: pretalx/orga/views/mails.py:244
-msgid "The mail has been sent."
-msgstr "Лист було надіслано."
+#: pretalx/orga/views/mails.py:244 pretalx/orga/views/mails.py:395
+msgid "The email has been sent."
+msgstr "Електронний лист було надіслано."
 
 #: pretalx/orga/views/mails.py:258
 #, fuzzy
@@ -8032,7 +8010,7 @@ msgstr[2] "Ви справді хочете видалити {count} листі�
 
 #: pretalx/orga/views/mails.py:312
 msgid ""
-"This mail either does not exist or cannot be discarded because it was sent "
+"This email either does not exist or cannot be discarded because it was sent "
 "already."
 msgstr ""
 "Цей лист або не існує, або його неможливо видалити, оскільки він уже "
@@ -8048,17 +8026,13 @@ msgstr[2] "{count} листів було видалено."
 
 #: pretalx/orga/views/mails.py:340
 #, python-brace-format
-msgid "Do you really want to purge {count} mails?"
+msgid "Do you really want to purge {count} emails?"
 msgstr "Ви справді хочете безповоротно видалити {count} листів?"
 
 #: pretalx/orga/views/mails.py:360
 #, python-brace-format
-msgid "{count} mails have been purged."
+msgid "{count} emails have been purged."
 msgstr "{count} листів було безповоротно видалено."
-
-#: pretalx/orga/views/mails.py:395
-msgid "The email has been sent."
-msgstr "Електронний лист було надіслано."
 
 #: pretalx/orga/views/mails.py:400
 msgid ""
@@ -8086,7 +8060,7 @@ msgid "Copy to draft"
 msgstr "Скопіювати в чернетку"
 
 #: pretalx/orga/views/mails.py:452
-msgid "The mail has been copied, you can edit it now."
+msgid "The email has been copied, you can edit it now."
 msgstr "Лист скопійовано, тепер ви можете його редагувати."
 
 #: pretalx/orga/views/mails.py:482
@@ -8149,10 +8123,6 @@ msgstr "Новий користувацький шаблон"
 #: pretalx/orga/views/mails.py:720
 msgid "New email template"
 msgstr "Новий шаблон електронного листа"
-
-#: pretalx/orga/views/mails.py:721
-msgid "Email templates"
-msgstr "Шаблони електронних листів"
 
 #: pretalx/orga/views/organiser.py:116
 msgid "The invitation has been sent."
@@ -8872,7 +8842,7 @@ msgid "Blocker"
 msgstr "Блокер"
 
 #: pretalx/schedule/models/slot.py:74
-msgid "The room this talk is scheduled in, if any"
+msgid "The room this session is scheduled in, if any"
 msgstr "Кімната, у якій заплановано цю доповідь, якщо така є"
 
 #: pretalx/schedule/models/slot.py:87
@@ -8892,7 +8862,7 @@ msgid "Start"
 msgstr "Старт"
 
 #: pretalx/schedule/models/slot.py:95
-msgid "When the talk starts, if it is currently scheduled"
+msgid "When the session starts, if it is currently scheduled"
 msgstr "Коли починається доповідь, якщо вона наразі запланована"
 
 #: pretalx/schedule/models/slot.py:99
@@ -8900,7 +8870,7 @@ msgid "End"
 msgstr "Кінець"
 
 #: pretalx/schedule/models/slot.py:100
-msgid "When the talk ends, if it is currently scheduled"
+msgid "When the session ends, if it is currently scheduled"
 msgstr "Коли закінчується доповідь, якщо вона наразі запланована"
 
 #: pretalx/schedule/phrases.py:12
@@ -9791,123 +9761,99 @@ msgstr ""
 #~ msgstr "Надіслано {count} листів."
 
 #, fuzzy
-#~| msgid "Step title"
 #~ msgid "Page title"
 #~ msgstr "Назва кроку"
 
 #, fuzzy
-#~| msgid "Content"
 #~ msgid "Page content"
 #~ msgstr "Зміст"
 
 #, fuzzy
-#~| msgid "The item has been deleted."
 #~ msgid "The page has been created."
 #~ msgstr "Елемент було видалено."
 
 #, fuzzy
-#~| msgid "The CfP has been modified."
 #~ msgid "The page has been modified."
 #~ msgstr "Оголошення про прийом доповідей (CfP) було змінено."
 
 #, fuzzy
-#~| msgid "The item has been deleted."
 #~ msgid "The page has been deleted."
 #~ msgstr "Елемент було видалено."
 
 #, fuzzy
-#~| msgid "Delete event"
 #~ msgid "Delete a page"
 #~ msgstr "Видалити подію"
 
 #, fuzzy, python-format
-#~| msgid "Are you sure you want to resend the invitation to this user?"
 #~ msgid "Are you sure you want to delete the page <strong>%(name)s</strong>?"
 #~ msgstr ""
 #~ "Ви впевнені, що хочете надіслати запрошення цьому користувачу повторно?"
 
 #, fuzzy
-#~| msgid "You don't have any API tokens yet."
 #~ msgid "You haven't created any pages yet."
 #~ msgstr "У вас ще немає токенів API."
 
 #, fuzzy
-#~| msgid "Create a new event"
 #~ msgid "Create a new page"
 #~ msgstr "Створити новий захід"
 
 #, fuzzy
-#~| msgid "This page does not exist."
 #~ msgid "The requested page does not exist."
 #~ msgstr "Цієї сторінки не існує."
 
 #, fuzzy
-#~| msgid "The proposal has been updated!"
 #~ msgid "The order of pages has been updated."
 #~ msgstr "Пропозицію оновлено!"
 
 #, fuzzy
-#~| msgid "You already have a tag by this name!"
 #~ msgid "You already have a page on that URL."
 #~ msgstr "Тег з такою назвою вже існує!"
 
 #, fuzzy
-#~| msgid "The item has been deleted."
 #~ msgid "The selected page has been deleted."
 #~ msgstr "Елемент було видалено."
 
 #, fuzzy
-#~| msgid "We had trouble saving your input – Please see below for details."
 #~ msgid "We could not save your changes. See below for details."
 #~ msgstr "Не вдалося зберегти ваше запит – дивіться деталі нижче."
 
 #, fuzzy
-#~| msgid "The event has been added."
 #~ msgid "The new page has been created."
 #~ msgstr "Подію додано."
 
 #, fuzzy
-#~| msgid "Recording integrations"
 #~ msgid "Venueless integration"
 #~ msgstr "Інтеграції запису"
 
 #, fuzzy
-#~| msgid "Confirm deletion"
 #~ msgid "Confirm your Venueless connection"
 #~ msgstr "Підтвердити видалення"
 
 #, fuzzy
-#~| msgid "Login settings"
 #~ msgid "Main settings"
 #~ msgstr "Налаштування входу"
 
 #, fuzzy
-#~| msgid "Login settings"
 #~ msgid "Join link settings"
 #~ msgstr "Налаштування входу"
 
 #, fuzzy
-#~| msgid "Recording integrations"
 #~ msgid "Vimeo integration"
 #~ msgstr "Інтеграції запису"
 
 #, fuzzy
-#~| msgid "Go to API"
 #~ msgid "Go to video"
 #~ msgstr "Перейти до API"
 
 #, fuzzy
-#~| msgid "Please provide a profile picture!"
 #~ msgid "Please provide a Vimeo URL!"
 #~ msgstr "Будь ласка, додайте фото профілю!"
 
 #, fuzzy
-#~| msgid "We released a new schedule version!"
 #~ msgid "Please create a schedule first!"
 #~ msgstr "Ми випустили нову версію розкладу!"
 
 #, fuzzy
-#~| msgid "The anonymisation has been updated."
 #~ msgid "The Vimeo URLs were updated."
 #~ msgstr "Анонімізацію оновлено."
 

@@ -182,11 +182,11 @@ class OutboxSend(AsyncTaskProgressMixin, ActionConfirmMixin, OutboxList):
 
     def get_task_success_message(self, result):
         count = result.get("count", 0) if result else 0
-        return _("{count} mails have been processed.").format(count=count)
+        return _("{count} emails have been processed.").format(count=count)
 
     @context
     def question(self):
-        return _("Do you really want to send {count} mails?").format(
+        return _("Do you really want to send {count} emails?").format(
             count=self.queryset.count()
         )
 
@@ -224,12 +224,12 @@ class OutboxSend(AsyncTaskProgressMixin, ActionConfirmMixin, OutboxList):
             messages.error(
                 request,
                 _(
-                    "This mail either does not exist or cannot be sent because it was sent already."
+                    "This email either does not exist or cannot be sent because it was sent already."
                 ),
             )
             return redirect(self.request.event.orga_urls.outbox)
         if mail.state != QueuedMailStates.DRAFT:
-            messages.error(request, _("This mail had been sent already."))
+            messages.error(request, _("This email had been sent already."))
         else:
             errors = get_send_mail_exceptions(request)
             if errors:
@@ -241,7 +241,7 @@ class OutboxSend(AsyncTaskProgressMixin, ActionConfirmMixin, OutboxList):
                 response = HttpResponse(status=200)
                 response["HX-Trigger"] = "updateSidebarCount"
                 return response
-            messages.success(request, _("The mail has been sent."))
+            messages.success(request, _("The email has been sent."))
         return redirect(self.request.event.orga_urls.outbox)
 
     def bulk_send(self, request):
@@ -309,7 +309,7 @@ class MailDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
             messages.error(
                 request,
                 _(
-                    "This mail either does not exist or cannot be discarded because it was sent already."
+                    "This email either does not exist or cannot be discarded because it was sent already."
                 ),
             )
             return redirect(self.request.event.orga_urls.outbox)
@@ -337,7 +337,7 @@ class OutboxPurge(ActionConfirmMixin, OutboxList):
 
     @context
     def question(self):
-        return _("Do you really want to purge {count} mails?").format(
+        return _("Do you really want to purge {count} emails?").format(
             count=self.queryset.count()
         )
 
@@ -357,7 +357,7 @@ class OutboxPurge(ActionConfirmMixin, OutboxList):
         count = qs.count()
         qs.delete()
         messages.success(
-            request, _("{count} mails have been purged.").format(count=count)
+            request, _("{count} emails have been purged.").format(count=count)
         )
         return redirect(self.request.event.orga_urls.outbox)
 
@@ -449,7 +449,7 @@ class MailCopy(PermissionRequired, View):
     def dispatch(self, request, *args, **kwargs):
         mail = self.get_object()
         new_mail = mail.copy_to_draft()
-        messages.success(request, _("The mail has been copied, you can edit it now."))
+        messages.success(request, _("The email has been copied, you can edit it now."))
         return redirect(new_mail.urls.edit)
 
 

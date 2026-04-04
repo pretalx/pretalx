@@ -32,7 +32,7 @@ class MailTemplateTable(PretalxTable):
     actions = ActionsColumn(
         actions={
             "send": {
-                "label": _("Send mails"),
+                "label": _("Send emails"),
                 "condition": lambda record: not record.role,
                 "color": "primary",
                 "icon": None,

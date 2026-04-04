@@ -83,9 +83,9 @@ LOG_NAMES = {
     "pretalx.mail.delete_all": _("All pending emails were deleted."),
     "pretalx.mail.sent": _("An email was sent."),
     "pretalx.mail.update": _("An email was modified."),
-    "pretalx.mail_template.create": _("A mail template was added."),
-    "pretalx.mail_template.delete": _("A mail template was deleted."),
-    "pretalx.mail_template.update": _("A mail template was modified."),
+    "pretalx.mail_template.create": _("An email template was added."),
+    "pretalx.mail_template.delete": _("An email template was deleted."),
+    "pretalx.mail_template.update": _("An email template was modified."),
     "pretalx.organiser.delete": _("The organiser was deleted."),  # old data
     "pretalx.question.create": _("A custom field was added."),
     "pretalx.question.delete": _("A custom field was deleted."),
@@ -221,7 +221,7 @@ def default_activitylog_object_link(sender: Event, activitylog: ActivityLog, **k
         link_text = _("Call for Proposals")
     elif isinstance(activitylog.content_object, MailTemplate):
         url = activitylog.content_object.urls.base
-        text = _("Mail template")
+        text = _("Email template")
         link_text = escape(activitylog.content_object.subject)
     elif isinstance(activitylog.content_object, QueuedMail):
         url = activitylog.content_object.urls.base
