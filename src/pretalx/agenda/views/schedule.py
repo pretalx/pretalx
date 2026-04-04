@@ -17,6 +17,7 @@ from django.http import (
 from django.urls import resolve, reverse
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from django.views.decorators.cache import cache_page
 from django.views.generic import TemplateView, View
 from django_context_decorator import context
@@ -199,12 +200,12 @@ def schedule_messages(request, **kwargs):
     strings = {
         "clear_filters": _("Clear filters"),
         "favs_not_logged_in": _(
-            "You're currently not logged in, so your favourited talks will only be stored locally in your browser."
+            "You're currently not logged in, so your favourited sessions will only be stored locally in your browser."
         ),
         "favs_not_saved": _(
             "Your favourites could only be saved locally in your browser."
         ),
-        "filter": _("Filter"),
+        "filter": pgettext_lazy("action: filter/narrow down results", "Filter"),
         "filters": _("Filters"),
         "jump_to_now": _("Jump to now"),
         "languages": _("Languages"),
@@ -218,7 +219,7 @@ def schedule_messages(request, **kwargs):
             "The schedule is not yet available. Please check back later!"
         ),
         "show_results": _("Show results"),
-        "search": _("Search"),
+        "search": pgettext_lazy("action/label: search", "Search"),
         "see_also": _("See also:"),
         "tags": _("Tags"),
         "tracks": _("Tracks"),

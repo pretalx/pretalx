@@ -11,6 +11,7 @@ from django.db.models import Count
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from django_scopes import scopes_disabled
 from i18nfield.forms import I18nTextarea
 
@@ -327,7 +328,9 @@ class SearchInput(forms.TextInput):
 
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
-        context["widget"]["attrs"]["placeholder"] = _("Search")
+        context["widget"]["attrs"]["placeholder"] = pgettext_lazy(
+            "action/label: search", "Search"
+        )
         return context
 
 

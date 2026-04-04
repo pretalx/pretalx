@@ -9,7 +9,7 @@ from django.template.loader import render_to_string
 from django.utils.functional import cached_property
 from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import ngettext_lazy
+from django.utils.translation import ngettext_lazy, pgettext_lazy
 from django.views.generic import FormView, ListView, TemplateView, View
 from django_context_decorator import context
 
@@ -296,8 +296,8 @@ class MailDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
         count = len(self.queryset)
         return str(
             ngettext_lazy(
-                "Do you really want to delete this mail?",
-                "Do you really want to purge {count} mails?",
+                "Do you really want to delete this email?",
+                "Do you really want to purge {count} emails?",
                 count,
             )
         ).format(count=count)
@@ -321,8 +321,8 @@ class MailDelete(PermissionRequired, ActionConfirmMixin, TemplateView):
             request,
             str(
                 ngettext_lazy(
-                    "The mail has been discarded.",
-                    "{count} mails have been discarded.",
+                    "The email has been discarded.",
+                    "{count} emails have been discarded.",
                     mail_count,
                 )
             ).format(count=mail_count),
@@ -541,7 +541,9 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
                 color="outline-info",
                 name="action",
                 value="preview",
-                label=_("Preview email"),
+                label=pgettext_lazy(
+                    "action: preview the email before sending", "Preview email"
+                ),
                 icon=None,
             )
         ]

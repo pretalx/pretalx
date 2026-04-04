@@ -4,6 +4,7 @@
 from django.core.validators import RegexValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from i18nfield.fields import I18nTextField
 
 from pretalx.common.models.mixins import PretalxModel
@@ -22,7 +23,9 @@ class Tag(PretalxModel):
         to="event.Event", on_delete=models.PROTECT, related_name="tags"
     )
 
-    tag = models.CharField(verbose_name=_("Tag"), max_length=50)
+    tag = models.CharField(
+        verbose_name=pgettext_lazy("proposal tag for organising", "Tag"), max_length=50
+    )
     description = I18nTextField(verbose_name=_("Description"), blank=True)
     color = models.CharField(
         max_length=7,

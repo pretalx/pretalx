@@ -102,7 +102,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <th>{% translate "Title" %}</th>
                     {% if can_view_speakers %}<th>{{ phrases.schedule.speakers }}</th>{% endif %}
                     {% for category in categories %}<th>{{ category.name }}</th>{% endfor %}
-                    <th>{% translate "Comment" %}</th>
+                    <th>{% translate "Comment" context "internal team comment on proposal" %}</th>
                     <th></th>
                 </tr>
             </thead>

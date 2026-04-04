@@ -15,7 +15,7 @@ from django.db import models, transaction
 from django.utils.functional import cached_property
 from django.utils.timezone import make_aware, now
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import override
+from django.utils.translation import override, pgettext_lazy
 from django_scopes import ScopedManager, scopes_disabled
 from i18nfield.fields import I18nCharField, I18nTextField
 
@@ -661,7 +661,7 @@ class Event(PretalxModel):
             )
 
             category = ReviewScoreCategory.objects.create(
-                event=self, name=str(_("Score"))
+                event=self, name=str(pgettext_lazy("review score/rating", "Score"))
             )
             ReviewScore.objects.create(category=category, value=0, label=str(_("No")))
             ReviewScore.objects.create(

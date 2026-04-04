@@ -24,8 +24,8 @@ table.include_after_table attributes.
         </div>
         <i class="fa fa-question-circle mr-4" data-toggle="tooltip" data-placement="top" title="{% translate "If you mark state changes as pending, they won't be visible to speakers right away. You can always apply pending changes for some or all proposals in one go once you're ready to make your decisions public." %}"></i>
         <span id="submitText" class="d-none ml-2">
-            {% translate "Accept" %}: <span id="acceptCount" class="text-success"></span>
-            {% translate "Reject" %}: <span id="rejectCount" class="text-danger"></span>
+            {% translate "Accept" context "action: accept a proposal" %}: <span id="acceptCount" class="text-success"></span>
+            {% translate "Reject" context "action: reject a proposal" %}: <span id="rejectCount" class="text-danger"></span>
         </span>
         <button type="submit" class="btn btn-success">{% translate "Go!" %}</button>
     </div>

@@ -90,7 +90,7 @@ SPDX-FileContributor: akoskaaa
                 <thead>
                     <tr>
                         <th>{% translate "Title" %}</th>
-                        <th>{% translate "State" %}</th>
+                        <th>{% translate "State" context "proposal/submission state" %}</th>
                         <th></th>
                         <th></th>
                     </tr>
@@ -137,7 +137,7 @@ SPDX-FileContributor: akoskaaa
                                 </a>
                                 {% if submission.state == "accepted" %}
                                     <a href="{{ submission.urls.confirm }}" class="btn btn-sm btn-success">
-                                        <i class="fa fa-check"></i> {% translate "Confirm" %}
+                                        <i class="fa fa-check"></i> {% translate "Confirm" context "action: confirm attendance" %}
                                     </a>
                                 {% endif %}
                                 {% if request.event|get_feature_flag:"use_feedback" and submission.does_accept_feedback %}

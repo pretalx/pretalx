@@ -100,7 +100,7 @@ statistics you might find interesting:
 - Of which you selected {talk_count} sessions.
 - The reviewers wrote {review_count} reviews.
 - You released {schedule_count} schedules in total.
-- Over the course of the event, you sent {mail_count} mails.
+- Over the course of the event, you sent {mail_count} emails.
 
 If there is anything you’re missing, come tell us about it
 at https://github.com/pretalx/pretalx/issues/new or via an

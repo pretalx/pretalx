@@ -18,6 +18,7 @@ from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from django.views.generic import FormView, TemplateView, UpdateView, View
 from django_context_decorator import context
 from i18nfield.strings import LazyI18nString
@@ -542,7 +543,7 @@ class TrackView(OrderActionMixin, OrgaCRUDView):
     def get_generic_title(self, instance=None):
         if instance:
             return (
-                _("Track")
+                pgettext_lazy("conference track/topic category", "Track")
                 + f" {phrases.base.quotation_open}{instance.name}{phrases.base.quotation_close}"
             )
         if self.action == "create":

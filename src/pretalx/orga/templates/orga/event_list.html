@@ -23,7 +23,7 @@ SPDX-FileContributor: luto
 
     {% if current_orga_events or past_orga_events or can_create_event %}
         <form class="mb-4 m-2">
-            <input type="text" name="q" class="form-control" value="{% if request.GET.q %}{{ request.GET.q }}{% endif %}" placeholder="{% translate "Search" %}">
+            <input type="text" name="q" class="form-control" value="{% if request.GET.q %}{{ request.GET.q }}{% endif %}" placeholder="{% translate "Search" context "action/label: search" %}">
         </form>
         {% if current_orga_events or can_create_event %}
             <h2>{% translate "Your upcoming events" %}</h2>

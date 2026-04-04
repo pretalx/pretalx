@@ -4,6 +4,7 @@
 import django_tables2 as tables
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 from pretalx.common.language import LANGUAGE_NAMES
 from pretalx.common.tables import (
@@ -56,7 +57,7 @@ class OutboxMailTable(PretalxTable):
 
     status_display = SortableTemplateColumn(
         template_name="orga/tables/columns/queued_mail_status.html",
-        verbose_name=_("Status"),
+        verbose_name=pgettext_lazy("email delivery status", "Status"),
         order_by=("computed_state",),
     )
     subject = SortableColumn(
@@ -142,7 +143,7 @@ class SentMailTable(OutboxMailTable):
 
     status_display = SortableTemplateColumn(
         template_name="orga/tables/columns/sent_mail_status.html",
-        verbose_name=_("Status"),
+        verbose_name=pgettext_lazy("email delivery status", "Status"),
         order_by=("computed_state",),
     )
     sent = DateTimeColumn()

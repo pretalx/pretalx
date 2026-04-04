@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 from pretalx.common.text.phrases import Phrases
 
@@ -34,7 +35,7 @@ class CfPPhrases(Phrases, app="cfp"):
         "This proposal cannot be edited at this time. Please contact the organisers if you need to make changes."
     )
 
-    speaker_email = _("Speaker email")
+    speaker_email = pgettext_lazy("field: speaker's email address", "Speaker email")
     invite_subject = _("{speaker} invites you to join their session!")
     invite_text = _("""Hi!
 
@@ -55,7 +56,7 @@ I’m looking forward to it!
     )
 
     submission_email_fail = _(
-        "We are experiencing difficulties when sending mails, but your session was submitted successfully!"
+        "We are experiencing difficulties when sending emails, but your session was submitted successfully!"
     )
 
     custom_fields = _("Custom fields")

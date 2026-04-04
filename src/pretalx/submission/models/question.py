@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from django_scopes import ScopedManager
 from i18nfield.fields import I18nCharField
 from i18nfield.strings import override
@@ -239,7 +240,10 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
         verbose_name=_("Limit access"),
         blank=True,
     )
-    question = I18nCharField(max_length=800, verbose_name=_("Label"))
+    question = I18nCharField(
+        max_length=800,
+        verbose_name=pgettext_lazy("display label for custom field", "Label"),
+    )
     help_text = I18nCharField(
         null=True,
         blank=True,
