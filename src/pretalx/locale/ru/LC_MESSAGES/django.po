@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-04 13:22+0000\n"
+"POT-Creation-Date: 2026-04-04 14:50+0000\n"
 "PO-Revision-Date: 2026-01-07 22:56+0000\n"
 "Last-Translator: davidschapiro <david@schapiro.org>\n"
 "Language-Team: none\n"
@@ -321,7 +321,7 @@ msgstr "Доклад “{title}” на {event}"
 msgid "Title"
 msgstr "название"
 
-#: pretalx/cfp/flow.py:104
+#: pretalx/cfp/flow.py:104 pretalx/submission/forms/submission.py:43
 msgid "Additional speakers"
 msgstr "Дополнительные докладчики"
 
@@ -587,12 +587,12 @@ msgid "Proposals are closed"
 msgstr "Заявка закрыта"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:19
-#: pretalx/submission/models/submission.py:77
+#: pretalx/orga/forms/event.py:901 pretalx/submission/models/submission.py:77
 msgid "accepted"
 msgstr "принято"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:21
-#: pretalx/orga/views/dashboard.py:346
+#: pretalx/orga/forms/event.py:904 pretalx/orga/views/dashboard.py:346
 #: pretalx/submission/models/submission.py:78
 msgid "confirmed"
 msgstr "подтверждено"
@@ -603,7 +603,7 @@ msgid "cancelled"
 msgstr "отменено"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:25
-#: pretalx/submission/models/submission.py:81
+#: pretalx/orga/forms/event.py:905 pretalx/submission/models/submission.py:81
 msgid "withdrawn"
 msgstr "снято"
 
@@ -1030,6 +1030,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:41
+#: pretalx/orga/templates/orga/organiser/team/update.html:47
 #, fuzzy
 #| msgid "pending"
 msgid "Pending invitation"
@@ -1765,7 +1766,9 @@ msgid "The user changed their email address."
 msgstr "Пожалуйста, укажите корректный адрес электронной почты."
 
 #: pretalx/common/log_display.py:207 pretalx/common/log_display.py:211
-#: pretalx/orga/tables/cfp.py:213 pretalx/orga/views/cfp.py:147
+#: pretalx/orga/tables/cfp.py:213
+#: pretalx/orga/templates/orga/cfp/editor.html:490
+#: pretalx/orga/views/cfp.py:147
 #, fuzzy
 #| msgid "Data fields"
 msgid "Custom field"
@@ -3676,6 +3679,7 @@ msgstr ""
 
 #: pretalx/orga/forms/cfp.py:577
 #: pretalx/orga/templates/orga/cfp/editor.html:504
+#: pretalx/submission/models/question.py:247
 msgid "Help text"
 msgstr ""
 
@@ -4156,6 +4160,7 @@ msgstr "Поля данных"
 #: pretalx/orga/templates/orga/review/dashboard.html:25
 #: pretalx/orga/templates/orga/submission/base.html:78
 #: pretalx/orga/templates/orga/submission/content.html:55
+#: pretalx/orga/templates/orga/submission/content.html:59
 #: pretalx/orga/templates/orga/submission/review.html:13
 #: pretalx/orga/views/dashboard.py:198
 msgid "Reviews"
@@ -4178,7 +4183,8 @@ msgstr "Внести изменения в заявку"
 #: pretalx/orga/forms/event.py:882 pretalx/orga/tables/submission.py:185
 #: pretalx/orga/templates/orga/base.html:453
 #: pretalx/orga/templates/orga/submission/speakers.html:27
-#: pretalx/schedule/phrases.py:21 pretalx/submission/models/submission.py:195
+#: pretalx/schedule/phrases.py:21 pretalx/submission/exporters.py:22
+#: pretalx/submission/models/submission.py:195
 msgid "Speakers"
 msgstr ""
 
@@ -4233,14 +4239,9 @@ msgstr ""
 msgid "Deleted"
 msgstr ""
 
-#: pretalx/orga/forms/event.py:901
-#, fuzzy
-#| msgid "accepted"
-msgid "Accepted"
-msgstr "принято"
-
-#: pretalx/orga/forms/event.py:902
-msgid "Rejected"
+#: pretalx/orga/forms/event.py:902 pretalx/orga/views/dashboard.py:397
+#: pretalx/submission/models/submission.py:79
+msgid "rejected"
 msgstr ""
 
 #: pretalx/orga/forms/event.py:903
@@ -4248,18 +4249,6 @@ msgstr ""
 #| msgid "canceled"
 msgid "Cancelled"
 msgstr "отменено"
-
-#: pretalx/orga/forms/event.py:904
-#, fuzzy
-#| msgid "confirmed"
-msgid "Confirmed"
-msgstr "подтверждено"
-
-#: pretalx/orga/forms/event.py:905
-#, fuzzy
-#| msgid "withdrawn"
-msgid "Withdrawn"
-msgstr "снято"
 
 #: pretalx/orga/forms/event.py:911
 msgid "Option created"
@@ -4728,7 +4717,7 @@ msgid ""
 "changes there or just send them all."
 msgstr ""
 
-#: pretalx/orga/tables/admin.py:35
+#: pretalx/orga/tables/admin.py:35 pretalx/submission/exporters.py:64
 #, fuzzy
 #| msgid "Version"
 msgid "Submissions"
@@ -4840,6 +4829,7 @@ msgid "Number of speakers"
 msgstr "Количество проверяющих"
 
 #: pretalx/orga/tables/submission.py:57
+#: pretalx/orga/templates/orga/submission/speakers.html:121
 #, fuzzy
 #| msgid "pending"
 msgid "Pending invitations"
@@ -5253,7 +5243,8 @@ msgstr ""
 #: pretalx/orga/templates/orga/cfp/editor.html:48
 #: pretalx/orga/templates/orga/cfp/editor.html:136
 #: pretalx/orga/templates/orga/cfp/editor.html:150
-msgid "Reset to Defaults"
+#: pretalx/orga/templates/orga/generic/table.html:97
+msgid "Reset to defaults"
 msgstr ""
 
 #: pretalx/orga/templates/orga/cfp/editor.html:51
@@ -5368,12 +5359,6 @@ msgstr ""
 #| msgid "confirmed"
 msgid "Configure Field"
 msgstr "подтверждено"
-
-#: pretalx/orga/templates/orga/cfp/editor.html:490
-#, fuzzy
-#| msgid "Data fields"
-msgid "Custom Field"
-msgstr "Поля данных"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:494
 msgid "Type"
@@ -5749,10 +5734,6 @@ msgstr ""
 msgid "Move down"
 msgstr ""
 
-#: pretalx/orga/templates/orga/generic/table.html:97
-msgid "Reset to defaults"
-msgstr ""
-
 #: pretalx/orga/templates/orga/includes/async_download.html:11
 msgid "Generating download."
 msgstr ""
@@ -6092,10 +6073,6 @@ msgstr[1] ""
 
 #: pretalx/orga/templates/orga/organiser/team/update.html:37
 msgid "Remove team member"
-msgstr ""
-
-#: pretalx/orga/templates/orga/organiser/team/update.html:47
-msgid "pending Invitation"
 msgstr ""
 
 #: pretalx/orga/templates/orga/organiser/team/update.html:57
@@ -6810,10 +6787,6 @@ msgstr ""
 msgid "Proposal"
 msgstr "Внести изменения в заявку"
 
-#: pretalx/orga/templates/orga/submission/content.html:59
-msgid "reviews"
-msgstr ""
-
 #: pretalx/orga/templates/orga/submission/feedback_list.html:11
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:14
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:17
@@ -6924,12 +6897,6 @@ msgstr ""
 #| msgid "Changelog"
 msgid "Change order"
 msgstr "Журнал изменений"
-
-#: pretalx/orga/templates/orga/submission/speakers.html:121
-#, fuzzy
-#| msgid "pending"
-msgid "Pending Invitations"
-msgstr "в ожидании"
 
 #: pretalx/orga/templates/orga/submission/speakers.html:128
 msgid "Invited on"
@@ -7340,11 +7307,6 @@ msgid_plural "submissions with pending changes"
 msgstr[0] ""
 msgstr[1] ""
 msgstr[2] ""
-
-#: pretalx/orga/views/dashboard.py:397
-#: pretalx/submission/models/submission.py:79
-msgid "rejected"
-msgstr ""
 
 #: pretalx/orga/views/dashboard.py:421
 msgid "sent email"
@@ -8494,18 +8456,6 @@ msgstr ""
 msgid "Custom fields data"
 msgstr ""
 
-#: pretalx/submission/exporters.py:22
-#, fuzzy
-#| msgid "Confirmed speakers"
-msgid "speakers"
-msgstr "Подтвержденные докладчики"
-
-#: pretalx/submission/exporters.py:64
-#, fuzzy
-#| msgid "Version"
-msgid "submissions"
-msgstr "Версия"
-
 #: pretalx/submission/forms/feedback.py:25
 msgid "All speakers"
 msgstr ""
@@ -8516,10 +8466,6 @@ msgstr ""
 
 #: pretalx/submission/forms/resource.py:35
 msgid "Please provide a link or upload a file!"
-msgstr ""
-
-#: pretalx/submission/forms/submission.py:43
-msgid "Additional Speakers"
 msgstr ""
 
 #: pretalx/submission/forms/submission.py:45
@@ -8775,10 +8721,6 @@ msgstr "Подать предложение"
 
 #: pretalx/submission/models/question.py:242
 msgid "Label"
-msgstr ""
-
-#: pretalx/submission/models/question.py:247
-msgid "help text"
 msgstr ""
 
 #: pretalx/submission/models/question.py:248

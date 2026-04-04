@@ -244,7 +244,7 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
         null=True,
         blank=True,
         max_length=800,
-        verbose_name=_("help text"),
+        verbose_name=_("Help text"),
         help_text=_("Will appear just like this text below the custom input field.")
         + " "
         + phrases.base.use_markdown,

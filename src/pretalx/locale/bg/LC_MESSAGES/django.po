@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-04 13:02+0000\n"
+"POT-Creation-Date: 2026-04-04 14:43+0000\n"
 "PO-Revision-Date: 2026-04-04 11:25+0000\n"
 "Last-Translator: Vasil Kolew <vasil@ludost.net>\n"
 "Language-Team: none\n"
@@ -312,7 +312,7 @@ msgstr "Сесията „{title}“ на {event}"
 msgid "Title"
 msgstr "Заглавие"
 
-#: pretalx/cfp/flow.py:104
+#: pretalx/cfp/flow.py:104 pretalx/submission/forms/submission.py:43
 msgid "Additional speakers"
 msgstr "Допълнителни лектори"
 
@@ -589,12 +589,12 @@ msgid "Proposals are closed"
 msgstr "Приемането на предложения е затворено"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:19
-#: pretalx/submission/models/submission.py:77
+#: pretalx/orga/forms/event.py:901 pretalx/submission/models/submission.py:77
 msgid "accepted"
 msgstr "прието"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:21
-#: pretalx/orga/views/dashboard.py:346
+#: pretalx/orga/forms/event.py:904 pretalx/orga/views/dashboard.py:346
 #: pretalx/submission/models/submission.py:78
 msgid "confirmed"
 msgstr "потвърдено"
@@ -605,7 +605,7 @@ msgid "cancelled"
 msgstr "отказано"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:25
-#: pretalx/submission/models/submission.py:81
+#: pretalx/orga/forms/event.py:905 pretalx/submission/models/submission.py:81
 msgid "withdrawn"
 msgstr "оттеглено"
 
@@ -1079,6 +1079,7 @@ msgstr[0] "Подател"
 msgstr[1] "Податели"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:41
+#: pretalx/orga/templates/orga/organiser/team/update.html:47
 msgid "Pending invitation"
 msgstr "Изчакваща покана"
 
@@ -1753,7 +1754,9 @@ msgid "The user changed their email address."
 msgstr "Потребителят смени email адреса си."
 
 #: pretalx/common/log_display.py:207 pretalx/common/log_display.py:211
-#: pretalx/orga/tables/cfp.py:213 pretalx/orga/views/cfp.py:147
+#: pretalx/orga/tables/cfp.py:213
+#: pretalx/orga/templates/orga/cfp/editor.html:490
+#: pretalx/orga/views/cfp.py:147
 msgid "Custom field"
 msgstr "Допълнително поле"
 
@@ -3900,6 +3903,7 @@ msgstr "Оставете празно за стандартен надпис."
 
 #: pretalx/orga/forms/cfp.py:577
 #: pretalx/orga/templates/orga/cfp/editor.html:504
+#: pretalx/submission/models/question.py:247
 msgid "Help text"
 msgstr "Помощен текст"
 
@@ -4427,6 +4431,7 @@ msgstr "Опции на допълнителните полета"
 #: pretalx/orga/templates/orga/review/dashboard.html:25
 #: pretalx/orga/templates/orga/submission/base.html:78
 #: pretalx/orga/templates/orga/submission/content.html:55
+#: pretalx/orga/templates/orga/submission/content.html:59
 #: pretalx/orga/templates/orga/submission/review.html:13
 #: pretalx/orga/views/dashboard.py:198
 msgid "Reviews"
@@ -4447,7 +4452,8 @@ msgstr "Типове на предложения"
 #: pretalx/orga/forms/event.py:882 pretalx/orga/tables/submission.py:185
 #: pretalx/orga/templates/orga/base.html:453
 #: pretalx/orga/templates/orga/submission/speakers.html:27
-#: pretalx/schedule/phrases.py:21 pretalx/submission/models/submission.py:195
+#: pretalx/schedule/phrases.py:21 pretalx/submission/exporters.py:22
+#: pretalx/submission/models/submission.py:195
 msgid "Speakers"
 msgstr "Лектори"
 
@@ -4498,25 +4504,14 @@ msgstr "Променено"
 msgid "Deleted"
 msgstr "Изтрит"
 
-#: pretalx/orga/forms/event.py:901
-msgid "Accepted"
-msgstr "Прието"
-
-#: pretalx/orga/forms/event.py:902
-msgid "Rejected"
-msgstr "Отхвърлено"
+#: pretalx/orga/forms/event.py:902 pretalx/orga/views/dashboard.py:397
+#: pretalx/submission/models/submission.py:79
+msgid "rejected"
+msgstr "отхвърлено"
 
 #: pretalx/orga/forms/event.py:903
 msgid "Cancelled"
 msgstr "Отказано"
-
-#: pretalx/orga/forms/event.py:904
-msgid "Confirmed"
-msgstr "Потвърдено"
-
-#: pretalx/orga/forms/event.py:905
-msgid "Withdrawn"
-msgstr "Оттеглено"
 
 #: pretalx/orga/forms/event.py:911
 msgid "Option created"
@@ -4998,7 +4993,7 @@ msgstr ""
 "{count} писма са запазени в изходящата поща – може да направите отделни "
 "промени там или просто да ги пратите всички."
 
-#: pretalx/orga/tables/admin.py:35
+#: pretalx/orga/tables/admin.py:35 pretalx/submission/exporters.py:64
 msgid "Submissions"
 msgstr "Предложения"
 
@@ -5106,6 +5101,7 @@ msgid "Number of speakers"
 msgstr "Брой лектори"
 
 #: pretalx/orga/tables/submission.py:57
+#: pretalx/orga/templates/orga/submission/speakers.html:121
 msgid "Pending invitations"
 msgstr "Изчакващи покани"
 
@@ -5524,7 +5520,8 @@ msgstr "CfP редактор"
 #: pretalx/orga/templates/orga/cfp/editor.html:48
 #: pretalx/orga/templates/orga/cfp/editor.html:136
 #: pretalx/orga/templates/orga/cfp/editor.html:150
-msgid "Reset to Defaults"
+#: pretalx/orga/templates/orga/generic/table.html:97
+msgid "Reset to defaults"
 msgstr "Върни настройки по подразбиране"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:51
@@ -5627,10 +5624,6 @@ msgstr "Всички полета се използват."
 #: pretalx/orga/templates/orga/cfp/editor.html:436
 msgid "Configure Field"
 msgstr "Настрой поле"
-
-#: pretalx/orga/templates/orga/cfp/editor.html:490
-msgid "Custom Field"
-msgstr "Допълнително поле"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:494
 msgid "Type"
@@ -6040,10 +6033,6 @@ msgstr "Преместване нагоре"
 msgid "Move down"
 msgstr "Премести надолу"
 
-#: pretalx/orga/templates/orga/generic/table.html:97
-msgid "Reset to defaults"
-msgstr "Върни настройки по подразбиране"
-
 #: pretalx/orga/templates/orga/includes/async_download.html:11
 msgid "Generating download."
 msgstr "Генериране на изнасянето."
@@ -6412,10 +6401,6 @@ msgstr[1] "лектори"
 #: pretalx/orga/templates/orga/organiser/team/update.html:37
 msgid "Remove team member"
 msgstr "Премахване на член на екип"
-
-#: pretalx/orga/templates/orga/organiser/team/update.html:47
-msgid "pending Invitation"
-msgstr "изчаква покана"
 
 #: pretalx/orga/templates/orga/organiser/team/update.html:57
 #: pretalx/orga/views/organiser.py:225
@@ -7223,10 +7208,6 @@ msgstr "Това предложение е създадено със следн�
 msgid "Proposal"
 msgstr "Предложение"
 
-#: pretalx/orga/templates/orga/submission/content.html:59
-msgid "reviews"
-msgstr "рецензии"
-
 #: pretalx/orga/templates/orga/submission/feedback_list.html:11
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:14
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:17
@@ -7339,10 +7320,6 @@ msgstr "Други предложения от този лектор:"
 #| msgid "Changes"
 msgid "Change order"
 msgstr "Промени"
-
-#: pretalx/orga/templates/orga/submission/speakers.html:121
-msgid "Pending Invitations"
-msgstr "Изчакващи покани"
 
 #: pretalx/orga/templates/orga/submission/speakers.html:128
 msgid "Invited on"
@@ -7757,11 +7734,6 @@ msgid "submission with pending changes"
 msgid_plural "submissions with pending changes"
 msgstr[0] "Предложение с чакащи промени"
 msgstr[1] "Предложения с чакащи промени"
-
-#: pretalx/orga/views/dashboard.py:397
-#: pretalx/submission/models/submission.py:79
-msgid "rejected"
-msgstr "отхвърлено"
 
 #: pretalx/orga/views/dashboard.py:421
 msgid "sent email"
@@ -8985,14 +8957,6 @@ msgstr "{} минути, #{}, {}, {}"
 msgid "Custom fields data"
 msgstr "Данни за допълнителни полета"
 
-#: pretalx/submission/exporters.py:22
-msgid "speakers"
-msgstr "лектори"
-
-#: pretalx/submission/exporters.py:64
-msgid "submissions"
-msgstr "предложения"
-
 #: pretalx/submission/forms/feedback.py:25
 msgid "All speakers"
 msgstr "Всички лектори"
@@ -9005,10 +8969,6 @@ msgstr ""
 #: pretalx/submission/forms/resource.py:35
 msgid "Please provide a link or upload a file!"
 msgstr "Въведете хипервръзка, или качете файл!"
-
-#: pretalx/submission/forms/submission.py:43
-msgid "Additional Speakers"
-msgstr "Допълнителни лектори"
 
 #: pretalx/submission/forms/submission.py:45
 msgid ""
@@ -9298,10 +9258,6 @@ msgstr "Ограничаване на достъпа"
 #: pretalx/submission/models/question.py:242
 msgid "Label"
 msgstr "Етикет"
-
-#: pretalx/submission/models/question.py:247
-msgid "help text"
-msgstr "помощен текст"
 
 #: pretalx/submission/models/question.py:248
 msgid "Will appear just like this text below the custom input field."

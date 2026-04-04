@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-04 13:22+0000\n"
+"POT-Creation-Date: 2026-04-04 14:50+0000\n"
 "PO-Revision-Date: 2025-12-04 17:41+0000\n"
 "Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
@@ -324,7 +324,7 @@ msgstr "{event}의 '{title}' 세션"
 msgid "Title"
 msgstr "제목"
 
-#: pretalx/cfp/flow.py:104
+#: pretalx/cfp/flow.py:104 pretalx/submission/forms/submission.py:43
 msgid "Additional speakers"
 msgstr "추가 발표자"
 
@@ -597,12 +597,12 @@ msgid "Proposals are closed"
 msgstr "발표 제안서 마감"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:19
-#: pretalx/submission/models/submission.py:77
+#: pretalx/orga/forms/event.py:901 pretalx/submission/models/submission.py:77
 msgid "accepted"
 msgstr "수락됨"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:21
-#: pretalx/orga/views/dashboard.py:346
+#: pretalx/orga/forms/event.py:904 pretalx/orga/views/dashboard.py:346
 #: pretalx/submission/models/submission.py:78
 msgid "confirmed"
 msgstr "확인됨"
@@ -613,7 +613,7 @@ msgid "cancelled"
 msgstr "취소됨"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:25
-#: pretalx/submission/models/submission.py:81
+#: pretalx/orga/forms/event.py:905 pretalx/submission/models/submission.py:81
 msgid "withdrawn"
 msgstr "철회됨"
 
@@ -1078,6 +1078,7 @@ msgid_plural "Submitters"
 msgstr[0] "제출자"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:41
+#: pretalx/orga/templates/orga/organiser/team/update.html:47
 #, fuzzy
 #| msgid "pending Invitation"
 msgid "Pending invitation"
@@ -1806,7 +1807,9 @@ msgid "The user changed their email address."
 msgstr "유효한 이메일 주소를 입력하세요!"
 
 #: pretalx/common/log_display.py:207 pretalx/common/log_display.py:211
-#: pretalx/orga/tables/cfp.py:213 pretalx/orga/views/cfp.py:147
+#: pretalx/orga/tables/cfp.py:213
+#: pretalx/orga/templates/orga/cfp/editor.html:490
+#: pretalx/orga/views/cfp.py:147
 msgid "Custom field"
 msgstr "커스텀 필드"
 
@@ -3960,6 +3963,7 @@ msgstr "세션 유형의 기본 지속 시간을 사용하려면 비워 두십�
 
 #: pretalx/orga/forms/cfp.py:577
 #: pretalx/orga/templates/orga/cfp/editor.html:504
+#: pretalx/submission/models/question.py:247
 #, fuzzy
 #| msgid "help text"
 msgid "Help text"
@@ -4499,6 +4503,7 @@ msgstr "커스텀 필드"
 #: pretalx/orga/templates/orga/review/dashboard.html:25
 #: pretalx/orga/templates/orga/submission/base.html:78
 #: pretalx/orga/templates/orga/submission/content.html:55
+#: pretalx/orga/templates/orga/submission/content.html:59
 #: pretalx/orga/templates/orga/submission/review.html:13
 #: pretalx/orga/views/dashboard.py:198
 msgid "Reviews"
@@ -4521,7 +4526,8 @@ msgstr "제안 제목"
 #: pretalx/orga/forms/event.py:882 pretalx/orga/tables/submission.py:185
 #: pretalx/orga/templates/orga/base.html:453
 #: pretalx/orga/templates/orga/submission/speakers.html:27
-#: pretalx/schedule/phrases.py:21 pretalx/submission/models/submission.py:195
+#: pretalx/schedule/phrases.py:21 pretalx/submission/exporters.py:22
+#: pretalx/submission/models/submission.py:195
 msgid "Speakers"
 msgstr "스피커"
 
@@ -4576,16 +4582,9 @@ msgstr ""
 msgid "Deleted"
 msgstr "삭제"
 
-#: pretalx/orga/forms/event.py:901
-#, fuzzy
-#| msgid "accepted"
-msgid "Accepted"
-msgstr "수락됨"
-
-#: pretalx/orga/forms/event.py:902
-#, fuzzy
-#| msgid "rejected"
-msgid "Rejected"
+#: pretalx/orga/forms/event.py:902 pretalx/orga/views/dashboard.py:397
+#: pretalx/submission/models/submission.py:79
+msgid "rejected"
 msgstr "거부됨"
 
 #: pretalx/orga/forms/event.py:903
@@ -4593,18 +4592,6 @@ msgstr "거부됨"
 #| msgid "canceled"
 msgid "Cancelled"
 msgstr "취소됨"
-
-#: pretalx/orga/forms/event.py:904
-#, fuzzy
-#| msgid "confirmed"
-msgid "Confirmed"
-msgstr "확인됨"
-
-#: pretalx/orga/forms/event.py:905
-#, fuzzy
-#| msgid "Withdraw"
-msgid "Withdrawn"
-msgstr "철회하기"
 
 #: pretalx/orga/forms/event.py:911
 #, fuzzy
@@ -5112,7 +5099,7 @@ msgstr ""
 "{count}개의 이메일이 발신함에 저장되었습니다 – 개별 변경을 거기에서 하거나 모"
 "두 보낼 수 있습니다."
 
-#: pretalx/orga/tables/admin.py:35
+#: pretalx/orga/tables/admin.py:35 pretalx/submission/exporters.py:64
 msgid "Submissions"
 msgstr "제출물"
 
@@ -5230,6 +5217,7 @@ msgid "Number of speakers"
 msgstr "발표자가 없습니다"
 
 #: pretalx/orga/tables/submission.py:57
+#: pretalx/orga/templates/orga/submission/speakers.html:121
 #, fuzzy
 #| msgid "pending Invitation"
 msgid "Pending invitations"
@@ -5658,7 +5646,8 @@ msgstr "CfP 편집기"
 #: pretalx/orga/templates/orga/cfp/editor.html:48
 #: pretalx/orga/templates/orga/cfp/editor.html:136
 #: pretalx/orga/templates/orga/cfp/editor.html:150
-msgid "Reset to Defaults"
+#: pretalx/orga/templates/orga/generic/table.html:97
+msgid "Reset to defaults"
 msgstr ""
 
 #: pretalx/orga/templates/orga/cfp/editor.html:51
@@ -5785,12 +5774,6 @@ msgstr ""
 #| msgid "Configure rooms"
 msgid "Configure Field"
 msgstr "발표장 구성"
-
-#: pretalx/orga/templates/orga/cfp/editor.html:490
-#, fuzzy
-#| msgid "Custom field"
-msgid "Custom Field"
-msgstr "커스텀 필드"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:494
 msgid "Type"
@@ -6209,10 +6192,6 @@ msgstr "항목 이동"
 msgid "Move down"
 msgstr ""
 
-#: pretalx/orga/templates/orga/generic/table.html:97
-msgid "Reset to defaults"
-msgstr ""
-
 #: pretalx/orga/templates/orga/includes/async_download.html:11
 #, fuzzy
 #| msgid "Regenerate Export"
@@ -6572,10 +6551,6 @@ msgstr[0] "발표자"
 #: pretalx/orga/templates/orga/organiser/team/update.html:37
 msgid "Remove team member"
 msgstr "팀 맴버 제거"
-
-#: pretalx/orga/templates/orga/organiser/team/update.html:47
-msgid "pending Invitation"
-msgstr "대기 중인 초대"
 
 #: pretalx/orga/templates/orga/organiser/team/update.html:57
 #: pretalx/orga/views/organiser.py:225
@@ -7342,10 +7317,6 @@ msgstr "이 제안은 액세스 코드를 사용하여 생성되었습니다:"
 msgid "Proposal"
 msgstr "제안서"
 
-#: pretalx/orga/templates/orga/submission/content.html:59
-msgid "reviews"
-msgstr "리뷰"
-
 #: pretalx/orga/templates/orga/submission/feedback_list.html:11
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:14
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:17
@@ -7455,12 +7426,6 @@ msgstr "이 발표자의 다른 제안:"
 #| msgid "Changelog"
 msgid "Change order"
 msgstr "변경사항"
-
-#: pretalx/orga/templates/orga/submission/speakers.html:121
-#, fuzzy
-#| msgid "pending Invitation"
-msgid "Pending Invitations"
-msgstr "대기 중인 초대"
 
 #: pretalx/orga/templates/orga/submission/speakers.html:128
 #, fuzzy
@@ -7881,11 +7846,6 @@ msgstr "확인되지 않음"
 msgid "submission with pending changes"
 msgid_plural "submissions with pending changes"
 msgstr[0] "변경 사항이 보류 중인 제출"
-
-#: pretalx/orga/views/dashboard.py:397
-#: pretalx/submission/models/submission.py:79
-msgid "rejected"
-msgstr "거부됨"
 
 #: pretalx/orga/views/dashboard.py:421
 msgid "sent email"
@@ -9109,14 +9069,6 @@ msgstr "{} 분, #{}, {}, {}"
 msgid "Custom fields data"
 msgstr "사용자 정의 필드 데이터"
 
-#: pretalx/submission/exporters.py:22
-msgid "speakers"
-msgstr "발표자"
-
-#: pretalx/submission/exporters.py:64
-msgid "submissions"
-msgstr "제출된 제안서"
-
 #: pretalx/submission/forms/feedback.py:25
 msgid "All speakers"
 msgstr "모든 발표자"
@@ -9128,12 +9080,6 @@ msgstr "링크를 제공하거나 파일을 업로드하세요, 둘 다 할 수 
 #: pretalx/submission/forms/resource.py:35
 msgid "Please provide a link or upload a file!"
 msgstr "링크를 제공하거나 파일을 업로드하세요!"
-
-#: pretalx/submission/forms/submission.py:43
-#, fuzzy
-#| msgid "Additional Speaker"
-msgid "Additional Speakers"
-msgstr "추가 발표자"
 
 #: pretalx/submission/forms/submission.py:45
 #, fuzzy
@@ -9426,10 +9372,6 @@ msgstr "일수 제한"
 #: pretalx/submission/models/question.py:242
 msgid "Label"
 msgstr "라벨"
-
-#: pretalx/submission/models/question.py:247
-msgid "help text"
-msgstr "도움말 텍스트"
 
 #: pretalx/submission/models/question.py:248
 msgid "Will appear just like this text below the custom input field."

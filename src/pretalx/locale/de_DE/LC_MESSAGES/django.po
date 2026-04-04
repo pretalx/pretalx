@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-04 13:02+0000\n"
+"POT-Creation-Date: 2026-04-04 14:43+0000\n"
 "PO-Revision-Date: 2026-03-30 17:08+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: \n"
@@ -315,7 +315,7 @@ msgstr "Der Beitrag „{title}“, {event}"
 msgid "Title"
 msgstr "Titel"
 
-#: pretalx/cfp/flow.py:104
+#: pretalx/cfp/flow.py:104 pretalx/submission/forms/submission.py:43
 msgid "Additional speakers"
 msgstr "Zusätzliche Vortragende"
 
@@ -593,12 +593,12 @@ msgid "Proposals are closed"
 msgstr "Einreichung geschlossen"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:19
-#: pretalx/submission/models/submission.py:77
+#: pretalx/orga/forms/event.py:901 pretalx/submission/models/submission.py:77
 msgid "accepted"
 msgstr "angenommen"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:21
-#: pretalx/orga/views/dashboard.py:346
+#: pretalx/orga/forms/event.py:904 pretalx/orga/views/dashboard.py:346
 #: pretalx/submission/models/submission.py:78
 msgid "confirmed"
 msgstr "bestätigt"
@@ -609,7 +609,7 @@ msgid "cancelled"
 msgstr "abgesagt"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:25
-#: pretalx/submission/models/submission.py:81
+#: pretalx/orga/forms/event.py:905 pretalx/submission/models/submission.py:81
 msgid "withdrawn"
 msgstr "zurückgezogen"
 
@@ -1097,6 +1097,7 @@ msgstr[0] "Einreichende"
 msgstr[1] "Einreichende"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:41
+#: pretalx/orga/templates/orga/organiser/team/update.html:47
 msgid "Pending invitation"
 msgstr "Ausstehende Einladung"
 
@@ -1763,7 +1764,9 @@ msgid "The user changed their email address."
 msgstr "User-E-Mail-Adresse wurde geändert."
 
 #: pretalx/common/log_display.py:207 pretalx/common/log_display.py:211
-#: pretalx/orga/tables/cfp.py:213 pretalx/orga/views/cfp.py:147
+#: pretalx/orga/tables/cfp.py:213
+#: pretalx/orga/templates/orga/cfp/editor.html:490
+#: pretalx/orga/views/cfp.py:147
 msgid "Custom field"
 msgstr "Zusatzfeld"
 
@@ -3942,6 +3945,7 @@ msgstr "Leer lassen, um das Standard-Label zu verwenden."
 
 #: pretalx/orga/forms/cfp.py:577
 #: pretalx/orga/templates/orga/cfp/editor.html:504
+#: pretalx/submission/models/question.py:247
 msgid "Help text"
 msgstr "Erklärung"
 
@@ -4475,6 +4479,7 @@ msgstr "Zusatzfeld-Optionen"
 #: pretalx/orga/templates/orga/review/dashboard.html:25
 #: pretalx/orga/templates/orga/submission/base.html:78
 #: pretalx/orga/templates/orga/submission/content.html:55
+#: pretalx/orga/templates/orga/submission/content.html:59
 #: pretalx/orga/templates/orga/submission/review.html:13
 #: pretalx/orga/views/dashboard.py:198
 msgid "Reviews"
@@ -4495,7 +4500,8 @@ msgstr "Einreichungsarten"
 #: pretalx/orga/forms/event.py:882 pretalx/orga/tables/submission.py:185
 #: pretalx/orga/templates/orga/base.html:453
 #: pretalx/orga/templates/orga/submission/speakers.html:27
-#: pretalx/schedule/phrases.py:21 pretalx/submission/models/submission.py:195
+#: pretalx/schedule/phrases.py:21 pretalx/submission/exporters.py:22
+#: pretalx/submission/models/submission.py:195
 msgid "Speakers"
 msgstr "Vortragende"
 
@@ -4546,25 +4552,14 @@ msgstr "Geändert"
 msgid "Deleted"
 msgstr "Gelöscht"
 
-#: pretalx/orga/forms/event.py:901
-msgid "Accepted"
-msgstr "Angenommen"
-
-#: pretalx/orga/forms/event.py:902
-msgid "Rejected"
-msgstr "Abgelehnt"
+#: pretalx/orga/forms/event.py:902 pretalx/orga/views/dashboard.py:397
+#: pretalx/submission/models/submission.py:79
+msgid "rejected"
+msgstr "abgelehnt"
 
 #: pretalx/orga/forms/event.py:903
 msgid "Cancelled"
 msgstr "Abgesagt"
-
-#: pretalx/orga/forms/event.py:904
-msgid "Confirmed"
-msgstr "Bestätigt"
-
-#: pretalx/orga/forms/event.py:905
-msgid "Withdrawn"
-msgstr "Zurückgezogen"
 
 #: pretalx/orga/forms/event.py:911
 msgid "Option created"
@@ -5057,7 +5052,7 @@ msgstr ""
 "{count} E-Mails wurden in den Postausgang gelegt – du kannst dort einzelne "
 "Änderungen vornehmen oder einfach alle verschicken."
 
-#: pretalx/orga/tables/admin.py:35
+#: pretalx/orga/tables/admin.py:35 pretalx/submission/exporters.py:64
 msgid "Submissions"
 msgstr "Einreichungen"
 
@@ -5166,6 +5161,7 @@ msgid "Number of speakers"
 msgstr "Anzahl an Vortragenden"
 
 #: pretalx/orga/tables/submission.py:57
+#: pretalx/orga/templates/orga/submission/speakers.html:121
 msgid "Pending invitations"
 msgstr "Ausstehende Einladungen"
 
@@ -5587,8 +5583,9 @@ msgstr "CfP-Editor"
 #: pretalx/orga/templates/orga/cfp/editor.html:48
 #: pretalx/orga/templates/orga/cfp/editor.html:136
 #: pretalx/orga/templates/orga/cfp/editor.html:150
-msgid "Reset to Defaults"
-msgstr "Auf Standardeinstellungen zurücksetzen"
+#: pretalx/orga/templates/orga/generic/table.html:97
+msgid "Reset to defaults"
+msgstr "Zurücksetzen"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:51
 #: pretalx/orga/templates/orga/cfp/text.html:20
@@ -5695,10 +5692,6 @@ msgstr "Alle Felder sind in Verwendung."
 #: pretalx/orga/templates/orga/cfp/editor.html:436
 msgid "Configure Field"
 msgstr "Feld konfigurieren"
-
-#: pretalx/orga/templates/orga/cfp/editor.html:490
-msgid "Custom Field"
-msgstr "Benutzerdefiniertes Feld"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:494
 msgid "Type"
@@ -6111,10 +6104,6 @@ msgstr "Nach oben verschieben"
 msgid "Move down"
 msgstr "Nach unten verschieben"
 
-#: pretalx/orga/templates/orga/generic/table.html:97
-msgid "Reset to defaults"
-msgstr "Zurücksetzen"
-
 #: pretalx/orga/templates/orga/includes/async_download.html:11
 msgid "Generating download."
 msgstr "Download wird erstellt."
@@ -6480,10 +6469,6 @@ msgstr[1] "Vortragende"
 #: pretalx/orga/templates/orga/organiser/team/update.html:37
 msgid "Remove team member"
 msgstr "Team-Mitglied entfernen"
-
-#: pretalx/orga/templates/orga/organiser/team/update.html:47
-msgid "pending Invitation"
-msgstr "ausstehende Einladung"
 
 #: pretalx/orga/templates/orga/organiser/team/update.html:57
 #: pretalx/orga/views/organiser.py:225
@@ -7301,10 +7286,6 @@ msgstr "Die Einreichung wurde mit einem Zugangscode erstellt:"
 msgid "Proposal"
 msgstr "Einreichung"
 
-#: pretalx/orga/templates/orga/submission/content.html:59
-msgid "reviews"
-msgstr "Reviews"
-
 #: pretalx/orga/templates/orga/submission/feedback_list.html:11
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:14
 #: pretalx/orga/templates/orga/submission/feedbacks_list.html:17
@@ -7417,10 +7398,6 @@ msgstr "Andere Einreichungen mit dieser Vortragenden:"
 #: pretalx/orga/templates/orga/submission/speakers.html:104
 msgid "Change order"
 msgstr "Reihenfolge ändern"
-
-#: pretalx/orga/templates/orga/submission/speakers.html:121
-msgid "Pending Invitations"
-msgstr "Ausstehende Einladungen"
 
 #: pretalx/orga/templates/orga/submission/speakers.html:128
 msgid "Invited on"
@@ -7840,11 +7817,6 @@ msgid "submission with pending changes"
 msgid_plural "submissions with pending changes"
 msgstr[0] "Einreichung mit vorgemerkten Änderungen"
 msgstr[1] "Einreichungen mit vorgemerkten Änderungen"
-
-#: pretalx/orga/views/dashboard.py:397
-#: pretalx/submission/models/submission.py:79
-msgid "rejected"
-msgstr "abgelehnt"
 
 #: pretalx/orga/views/dashboard.py:421
 msgid "sent email"
@@ -9081,14 +9053,6 @@ msgstr "{} Minuten, #{}, {}, {}"
 msgid "Custom fields data"
 msgstr "Zusatzfeld-Angaben"
 
-#: pretalx/submission/exporters.py:22
-msgid "speakers"
-msgstr "Vortragende"
-
-#: pretalx/submission/exporters.py:64
-msgid "submissions"
-msgstr "Einreichungen"
-
 #: pretalx/submission/forms/feedback.py:25
 msgid "All speakers"
 msgstr "Alle Vortragenden"
@@ -9101,10 +9065,6 @@ msgstr ""
 #: pretalx/submission/forms/resource.py:35
 msgid "Please provide a link or upload a file!"
 msgstr "Bitte gib einen Link an oder lade eine Datei hoch!"
-
-#: pretalx/submission/forms/submission.py:43
-msgid "Additional Speakers"
-msgstr "Zusätzliche Vortragende"
 
 #: pretalx/submission/forms/submission.py:45
 msgid ""
@@ -9385,10 +9345,6 @@ msgstr "Zugang beschränken"
 #: pretalx/submission/models/question.py:242
 msgid "Label"
 msgstr "Label"
-
-#: pretalx/submission/models/question.py:247
-msgid "help text"
-msgstr "Erklärung"
 
 #: pretalx/submission/models/question.py:248
 msgid "Will appear just like this text below the custom input field."
