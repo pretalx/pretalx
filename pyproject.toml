@@ -216,6 +216,13 @@ ignore = [
 allowed-confusables = ["–", "’", "×"]
 
 [tool.ruff.lint.per-file-ignores]
+"tools/**.py" = [
+  "E741",    # Ambiguous variable names are fine in scripts
+  "EXE001",  # Shebang without executable bit is fine for uv run scripts
+  "PTH",     # os.path is fine in standalone scripts
+  "RUF015",  # next() vs [0] is a style nit
+  "T201",    # print() is the primary output mechanism in CLI tools
+]
 "src/tests/**.py" = [
   "DTZ",     # TODO: do not use naive datetimes in tests
   "RUF",     # Ignore ambiguous characters in tests, may be security tests

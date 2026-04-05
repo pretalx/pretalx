@@ -18,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             {% endif %}
         </div>
         <button type="button" class="btn btn-primary btn-sm pp-edit-btn">
-            {% if widget.current_picture %}{% translate "Change" %}{% else %}{% translate "Add" %}{% endif %}
+            {% if widget.current_picture %}{% translate "Change" context "button" %}{% else %}{% translate "Add" context "button" %}{% endif %}
         </button>
     </div>
 
@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </div>
 
             <div class="pp-selection-view">
-                <div class="pp-upload-zone" tabindex="0" role="button" aria-label="{% translate "Add" %}">
+                <div class="pp-upload-zone" tabindex="0" role="button" aria-label="{% translate "Add" context "button" %}">
                     <i class="fa fa-folder-open"></i>
                     <strong>{% translate "Upload image" %}</strong>
                     <small>{% translate "Click or drag" %}</small>

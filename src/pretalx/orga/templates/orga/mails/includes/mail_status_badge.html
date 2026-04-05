@@ -4,11 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 -->
 {% load i18n %}
 {% if mail.state == "sending" %}
-    <span class="badge bg-warning">{% translate "Sending" %}</span>
+    <span class="badge bg-warning">{% translate "Sending" context "email status" %}</span>
 {% elif mail.state == "sent" %}
-    <span class="badge bg-success">{% translate "Sent" %}</span>
+    <span class="badge bg-success">{% translate "Sent" context "email status" %}</span>
 {% elif mail.has_error %}
-    <span class="badge bg-danger" title="{{ mail.error_data.error }}">{% translate "Failed" %}</span>
+    <span class="badge bg-danger" title="{{ mail.error_data.error }}">{% translate "Failed" context "email status" %}</span>
     <br>
     <small class="text-muted">
         {% if mail.error_data.smtp_code %}SMTP {{ mail.error_data.smtp_code }}{% else %}{{ mail.error_data.type }}{% endif %}

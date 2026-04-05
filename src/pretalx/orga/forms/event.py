@@ -54,7 +54,10 @@ from pretalx.submission.models import ReviewPhase, ReviewScore, ReviewScoreCateg
 
 ENCRYPTED_PASSWORD_PLACEHOLDER = "*" * 24
 
-SCHEDULE_DISPLAY_CHOICES = (("grid", _("Grid")), ("list", _("List")))
+SCHEDULE_DISPLAY_CHOICES = (
+    ("grid", pgettext_lazy("schedule display format", "Grid")),
+    ("list", pgettext_lazy("schedule display format", "List")),
+)
 
 
 def make_naive(moment):
@@ -566,7 +569,7 @@ class ReviewSettingsForm(
         label=_("Require a review text"), required=False
     )
     score_format = forms.ChoiceField(
-        label=_("Score display"),
+        label=pgettext_lazy("review setting: how scores are shown", "Score display"),
         required=True,
         choices=(
             ("words_numbers", _("Text and score, e.g “Good (3)”")),
@@ -916,13 +919,16 @@ class EventHistoryFilterForm(forms.Form):
             ("pretalx.mail.create", _("Created")),
             ("pretalx.mail.update", _("Modified")),
             ("pretalx.mail.delete", _("Deleted")),
-            ("pretalx.mail.sent", _("Sent")),
+            ("pretalx.mail.sent", pgettext_lazy("email status", "Sent")),
             ("pretalx.mail_template.create", _("Template created")),
             ("pretalx.mail_template.update", _("Template modified")),
             ("pretalx.mail_template.delete", _("Template deleted")),
         ],
-        _("Schedule"): [
-            ("pretalx.schedule.release", _("Released")),
+        pgettext_lazy("history filter category", "Schedule"): [
+            (
+                "pretalx.schedule.release",
+                pgettext_lazy("history log entry", "Released"),
+            ),
             ("pretalx.room.create", _("Room created")),
             ("pretalx.room.update", _("Room modified")),
             ("pretalx.room.delete", _("Room deleted")),
@@ -930,8 +936,11 @@ class EventHistoryFilterForm(forms.Form):
         _("Event"): [
             ("pretalx.event.create", _("Created")),
             ("pretalx.event.update", _("Modified")),
-            ("pretalx.event.activate", _("Activated")),
-            ("pretalx.event.deactivate", _("Deactivated")),
+            ("pretalx.event.activate", pgettext_lazy("history log entry", "Activated")),
+            (
+                "pretalx.event.deactivate",
+                pgettext_lazy("history log entry", "Deactivated"),
+            ),
             ("pretalx.cfp.update", _("CfP modified")),
         ],
     }
@@ -992,7 +1001,9 @@ class EventHistoryFilterForm(forms.Form):
                     other_actions.append((action_type, display_name))
 
             if other_actions:
-                action_type_choices.append((_("Other"), other_actions))
+                action_type_choices.append(
+                    (pgettext_lazy("history filter category", "Other"), other_actions)
+                )
 
             self.fields["action_type"].choices = action_type_choices
 

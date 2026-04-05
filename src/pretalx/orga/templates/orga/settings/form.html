@@ -71,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% endif %}
             </fieldset>
             <fieldset>
-                <legend id="schedule">{% translate "Schedule" %}</legend>
+                <legend id="schedule">{% translate "Schedule" context "Schedule/program of the conference" %}</legend>
                 {{ form.show_schedule.as_field_group }}
                 {{ form.schedule.as_field_group }}
                 {{ form.show_featured.as_field_group }}
@@ -91,7 +91,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             {% blocktranslate trimmed %}
                                 These links will be shown at the top of all your schedule-related pages, e.g.
                                 the schedule itself, speaker pages, session pages, etc.
-                                You could for example link to your home page, your registration page, or your
+                                For example, you could link to your home page, your registration page, or your
                                 livestream here.
                             {% endblocktranslate %}
                         </p>

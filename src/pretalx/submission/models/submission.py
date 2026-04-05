@@ -236,7 +236,7 @@ class Submission(GenerateCode, PretalxModel):
         blank=True,
         verbose_name=_("Notes"),
         help_text=_(
-            "These notes are meant for the organiser and won’t be made public."
+            "These notes are meant for the organisers and won’t be made public."
         ),
     )
     internal_notes = models.TextField(

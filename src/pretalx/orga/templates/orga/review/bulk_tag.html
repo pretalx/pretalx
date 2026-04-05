@@ -49,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         <th class="text-center">
                             <input type="checkbox" id="select-all" title="{% translate 'Select all' %}">
                         </th>
-                        <th>{% translate "Code" %}</th>
+                        <th>{% translate "Code" context "proposal identifier code" %}</th>
                         <th>{% translate "Title" %}</th>
                         {% if can_view_speakers %}<th>{{ phrases.schedule.speakers }}</th>{% endif %}
                         {% if show_tracks %}<th>{% translate "Track" context "conference track/topic category" %}</th>{% endif %}

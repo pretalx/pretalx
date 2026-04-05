@@ -12,7 +12,7 @@ from django.utils.translation import pgettext_lazy
 CATEGORY_LABELS = {
     "FEATURE": pgettext_lazy("Type of plugin", "Features"),
     "INTEGRATION": pgettext_lazy("Type of plugin", "Integrations"),
-    "CUSTOMIZATION": pgettext_lazy("Type of plugin", "Customizations"),
+    "CUSTOMIZATION": pgettext_lazy("Type of plugin", "Customisations"),
     "EXPORTER": _("Exporters"),
     "RECORDING": _("Recording integrations"),
     "LANGUAGE": _("Languages"),

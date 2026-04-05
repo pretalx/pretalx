@@ -26,7 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </a>
         <a href="{{ event.orga_urls.base }}" class="dashboard-block-addon dashboard-block-addon-{% if event.is_public %}success{% else %}secondary{% endif %}">
             {% if event.is_public %}
-                <div class="state active">{% translate "live" %}</div>
+                <div class="state active">{% translate "live" context "event visibility: publicly accessible" %}</div>
             {% else %}
                 <div class="state inactive">{% translate "Not public" %}</div>
             {% endif %}

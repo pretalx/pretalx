@@ -7,14 +7,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
-{% block extra_title %}{% if request.event.is_public %}{% translate "Deactivate event" %}{% else %}{% translate "Go live" %}{% endif %} :: {% endblock extra_title %}
+{% block extra_title %}{% if request.event.is_public %}{% translate "Deactivate event" %}{% else %}{% translate "Go live" context "event visibility: make publicly accessible" %}{% endif %} :: {% endblock extra_title %}
 
 {% block content %}
     <h2>
         {% if request.event.is_public %}
             {% translate "Deactivate event" %}
         {% else %}
-            {% translate "Go live" %}
+            {% translate "Go live" context "event visibility: make publicly accessible" %}
         {% endif %}
     </h2>
 

@@ -42,7 +42,7 @@ class SubmitterAccessCodeTable(PretalxTable):
     )
     valid_until = DateTimeColumn()
     uses = tables.Column(
-        verbose_name=_("Uses"),
+        verbose_name=pgettext_lazy("number of redemptions", "Uses"),
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
         order_by="redeemed",
         empty_values=[""],

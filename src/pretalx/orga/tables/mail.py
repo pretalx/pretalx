@@ -61,7 +61,8 @@ class OutboxMailTable(PretalxTable):
         order_by=("computed_state",),
     )
     subject = SortableColumn(
-        linkify=lambda record: record.urls.edit, verbose_name=_("Subject")
+        linkify=lambda record: record.urls.edit,
+        verbose_name=pgettext_lazy("email subject", "Subject"),
     )
     to_recipients = SortableTemplateColumn(
         template_name="orga/tables/columns/queued_mail_recipients.html",

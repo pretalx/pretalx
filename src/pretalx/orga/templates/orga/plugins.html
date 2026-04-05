@@ -40,9 +40,9 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                         {% endif %}
                                     </span>
                                     {% if plugin.module in plugins_active %}
-                                        <button class="btn btn-outline-danger btn-block" name="plugin:{{ plugin.module }}" value="disable">{% translate "Disable" %}</button>
+                                        <button class="btn btn-outline-danger btn-block" name="plugin:{{ plugin.module }}" value="disable">{% translate "Disable" context "button: disable plugin" %}</button>
                                     {% else %}
-                                        <button class="btn btn-success btn-block" name="plugin:{{ plugin.module }}" value="enable">{% translate "Enable" %}</button>
+                                        <button class="btn btn-success btn-block" name="plugin:{{ plugin.module }}" value="enable">{% translate "Enable" context "button: enable plugin" %}</button>
                                     {% endif %}
                                 </div>
                                 {% include "orga/includes/plugin_card_body.html" %}
