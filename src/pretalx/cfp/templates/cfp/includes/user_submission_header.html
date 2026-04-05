@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 <h2>
     {{ quotation_open }}{{ submission.title }}{{ quotation_close }}
     {% if submission.state == "draft" %}
-        <span class="badge color-secondary">{% translate "Draft" %}</span>
+        <span class="badge color-secondary">{% translate "Draft" context "proposal status" %}</span>
     {% endif %}
 </h2>
 {% if submission.state == "draft" %}

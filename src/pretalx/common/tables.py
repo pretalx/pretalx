@@ -519,7 +519,7 @@ class ActionsColumn(tables.Column):
     empty_values = ()
     default_actions = {
         "edit": {
-            "title": _("edit"),
+            "title": _("Edit"),
             "icon": "edit",
             "url": "urls.edit",
             "color": "info",

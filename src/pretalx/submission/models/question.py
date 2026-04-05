@@ -67,7 +67,7 @@ class QuestionVariant(models.TextChoices):
     STRING = "string", _("Text (one-line)")
     TEXT = "text", _("Multi-line text")
     URL = "url", _("URL")
-    DATE = "date", _("Date")
+    DATE = "date", pgettext_lazy("question field type", "Date")
     DATETIME = "datetime", _("Date and time")
     BOOLEAN = "boolean", _("Yes/No")
     FILE = "file", _("File upload")

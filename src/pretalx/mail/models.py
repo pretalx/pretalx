@@ -28,7 +28,7 @@ from pretalx.submission.rules import orga_can_change_submissions
 
 
 class QueuedMailStates(models.TextChoices):
-    DRAFT = "draft", _("Draft")
+    DRAFT = "draft", pgettext_lazy("email status", "Draft")
     SENDING = "sending", _("Sending")
     SENT = "sent", _("Sent")
 

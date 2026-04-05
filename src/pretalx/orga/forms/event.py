@@ -878,7 +878,7 @@ class EventHistoryFilterForm(forms.Form):
         "submission.submissioncomment": _("Comments"),
         "submission.tag": _("Tags"),
         "submission.track": _("Tracks"),
-        "submission.submissiontype": _("Proposal types"),
+        "submission.submissiontype": _("Session types"),
         "person.speakerprofile": _("Speakers"),
         "person.user": _("Users"),
         "mail.mailtemplate": _("Email templates"),

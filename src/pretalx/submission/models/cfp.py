@@ -9,6 +9,7 @@ from django.db import models
 from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from i18nfield.fields import I18nCharField, I18nTextField
 
 from pretalx.common.models.fields import DateTimeField
@@ -89,7 +90,7 @@ class CfP(PretalxModel):
     text = I18nTextField(
         null=True,
         blank=True,
-        verbose_name=_("text"),
+        verbose_name=pgettext_lazy("CfP text body", "text"),
         help_text=phrases.base.use_markdown,
     )
     default_type = models.ForeignKey(
@@ -103,7 +104,7 @@ class CfP(PretalxModel):
         blank=True,
         verbose_name=_("Opening"),
         help_text=_(
-            "Please put in the date you want to start accepting proposals from users."
+            "Please put in the date you want to start accepting proposals from users. "
             "Leave the date empty to start accepting proposals immediately once the event is live."
         ),
     )

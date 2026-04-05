@@ -72,7 +72,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             class="dropdown-item submission-action-delete"
             role="menuitem" tabindex="-1"
             href="{{ submission.orga_urls.delete }}{% if submission.code not in request.path %}{% querystring next=request.path|urlencode %}{% else %}{% querystring next="" %}{% endif %}">
-            <i class="fa fa-trash"></i> <span class="nowrap">{% translate "delete" %}</span>
+            <i class="fa fa-trash"></i> <span class="nowrap">{% translate "Delete" as delete_label %}{{ delete_label|lower }}</span>
         </a>
     </div>
 </details>

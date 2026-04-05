@@ -77,9 +77,9 @@ class SubmissionStates(models.TextChoices):
     ACCEPTED = "accepted", _("accepted")
     CONFIRMED = "confirmed", _("confirmed")
     REJECTED = "rejected", _("rejected")
-    CANCELED = "canceled", _("cancelled")
+    CANCELED = "canceled", _("Cancelled")
     WITHDRAWN = "withdrawn", _("withdrawn")
-    DRAFT = "draft", _("draft")
+    DRAFT = "draft", pgettext_lazy("proposal status", "Draft")
 
     method_names = nonmember(
         {
