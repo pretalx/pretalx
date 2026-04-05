@@ -465,7 +465,12 @@ class QueuedMailFilterForm(forms.Form):
                             pending_count,
                         ),
                     ),
-                    ("failed", CountableOption(_("Failed"), failed_count)),
+                    (
+                        "failed",
+                        CountableOption(
+                            pgettext_lazy("email status", "Failed"), failed_count
+                        ),
+                    ),
                 ]
 
         # Only show track filter if tracks are enabled

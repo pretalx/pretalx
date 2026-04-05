@@ -75,12 +75,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% if request.event.is_public %}
                     <div class="dashboard-live text-success">
                         <i class="fa fa-check-circle"></i>
-                        {% translate "live" %}
+                        {% translate "live" context "event visibility: publicly accessible" %}
                     </div>
                 {% else %}
                     <div class="dashboard-live text-danger">
                         <i class="fa fa-times-circle"></i>
-                        {% translate "not live" %}
+                        {% translate "not live" context "event visibility: not publicly accessible" %}
                     </div>
                 {% endif %}
                 <div class="dashboard-live-text">

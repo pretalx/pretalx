@@ -211,7 +211,7 @@ def schedule_messages(request, **kwargs):
         "languages": _("Languages"),
         "no_matching_sessions": _("No sessions match your current filters."),
         "not_recorded": _("Not recorded"),
-        "recording": _("Recording"),
+        "recording": pgettext_lazy("schedule filter", "Recording"),
         "schedule_load_error": _(
             "An error occurred while loading the schedule. Please try again later."
         ),

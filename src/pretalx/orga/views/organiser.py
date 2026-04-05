@@ -15,6 +15,7 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from django.views.generic import DetailView, ListView, TemplateView
 from django_context_decorator import context
 from django_scopes import scopes_disabled
@@ -84,7 +85,7 @@ class TeamView(OrgaCRUDView):
     def get_generic_title(self, instance=None):
         if instance:
             return (
-                _("Team")
+                pgettext_lazy("organiser team", "Team")
                 + f" {phrases.base.quotation_open}{instance.name}{phrases.base.quotation_close}"
             )
         if self.action == "create":

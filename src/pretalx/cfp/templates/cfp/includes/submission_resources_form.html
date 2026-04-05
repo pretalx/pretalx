@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     <div data-formset-body class="col-md-9">
         {% if can_edit and size_warning %}
             <div class="alert alert-info flip ml-auto">
-                {% translate "Resources will be publicly visible unless marked as non-public." %}
+                {% translate "Resources will be publicly visible unless marked as private." %}
                 {{ size_warning }}
             </div>
         {% endif %}

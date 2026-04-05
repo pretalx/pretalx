@@ -25,7 +25,7 @@ from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import ngettext_lazy
+from django.utils.translation import ngettext_lazy, pgettext
 from django.views.generic import (
     DetailView,
     FormView,
@@ -245,7 +245,9 @@ class EventLive(EventSettingsPermission, TemplateView):
             button_kwargs["label"] = _("Go offline")
         else:
             button_kwargs["value"] = "activate"
-            button_kwargs["label"] = _("Go live")
+            button_kwargs["label"] = pgettext(
+                "event visibility: make publicly accessible", "Go live"
+            )
         result["submit_buttons"] = [Button(**button_kwargs)]
         return result
 

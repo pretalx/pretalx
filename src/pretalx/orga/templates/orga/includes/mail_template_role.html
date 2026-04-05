@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% elif template.role == "submission.state.rejected" %}
     <span class="badge color-danger">{% translate "Reject email" context "email template: rejection notification" %}</span>
 {% elif template.role == "schedule.new" %}
-    <span class="badge color-info">{% translate "Schedule update" %}</span>
+    <span class="badge color-info">{% translate "Schedule update" context "email template: schedule change notification" %}</span>
 {% elif template.role == "question.reminder" %}
     <span class="badge color-warning">{% translate "Custom fields reminder" %}</span>
 {% elif template.role %}
