@@ -43,17 +43,17 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <div class="pb-4">
                     <form class="form-inline filter-form">
                         {{ filter_form }}
-                        <button class="btn btn-info" type="submit">{% translate "Filter" context "action: filter/narrow down results" %}</button>
+                        <button class="btn btn-info" type="submit">{{ phrases.base.filter_action }}</button>
                     </form>
                 </div>
             {% endif %}
 
             <p>
                 {% if question.active %}
-                    {% translate "This field is currently active, it will be asked during submission." %}
+                    {{ phrases.orga.custom_field_active }}
                     <a class="btn btn-sm btn-danger" href="{{ question.urls.toggle }}">{% translate "Hide field" %}</a>
                 {% else %}
-                    {% translate "This field is currently inactive, and will not be asked during submission." %}
+                    {{ phrases.orga.custom_field_inactive }}
                     <a class="btn btn-sm btn-success" href="{{ question.urls.toggle }}">{% translate "Activate field" %}</a>
                 {% endif %}
                 {% if question.variant == "file" and answer_count %}

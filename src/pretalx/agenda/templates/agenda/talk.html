@@ -172,7 +172,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 {% if not hide_speaker_links %}<a href="{{ speaker.urls.public }}">{% endif %}
                 <div class="avatar-wrapper">
                     {% if speaker.avatar_url and request.event.cfp.request_avatar %}
-                        <img loading="lazy" src="{{ speaker.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
+                        <img loading="lazy" src="{{ speaker.avatar|thumbnail:"default" }}" alt="{{ phrases.schedule.speaker_picture_alt }}">
                     {% else %}
                         <img loading="lazy" src="{{ request.event.urls.speakers }}avatar.svg" alt="The speaker’s profile picture">
                     {% endif %}

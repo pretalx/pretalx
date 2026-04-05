@@ -124,3 +124,19 @@ class BasePhrases(Phrases, app="base"):
     # similar options like the main text of the CfP or a review. It's separate from
     # the "text" input type used in questions.
     text_body = _("Text")
+
+    internal_notes = _("Internal notes")
+    internal_notes_help = _(
+        "Internal notes for other organisers/reviewers. Not visible to the speakers or the public."
+    )
+    slug_validator_message = _(
+        "The slug may only contain letters, numbers, dots and dashes."
+    )
+    password_reset_confirm = _(
+        "Do you really want to reset this user's password? They won't be able to log in until they set a new password."
+    )
+    duration_help = _("Leave empty to use the default duration for the session type.")
+    image_help = _("Use this if you want an illustration to go with your proposal.")
+
+    search = pgettext_lazy("action/label: search", "Search")
+    filter_action = pgettext_lazy("action: filter/narrow down results", "Filter")

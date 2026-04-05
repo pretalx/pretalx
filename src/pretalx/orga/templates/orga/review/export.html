@@ -16,12 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
     <section role="tabpanel" id="tabpanel-custom" aria-labelledby="tab-custom" tabindex="0" aria-hidden="false">
         <p>
-            {% blocktranslate trimmed %}
-                Build your own custom export here, by selecting all the data you need,
-                and the export format. CSV exports can be opened with Excel and similar
-                applications, while JSON exports are often used for integration with
-                other tools.
-            {% endblocktranslate %}
+            {{ phrases.orga.export_custom_hint }}
         </p>
         <form method="post">
             {% csrf_token %}
@@ -53,26 +48,18 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </section>
     <section role="tabpanel" id="tabpanel-api" aria-labelledby="tab-api" tabindex="0" aria-hidden="true">
         <p>
-            {% translate "You can also use the API to export or use data." %}
+            {{ phrases.orga.api_export_hint }}
         </p>
 
         <p>
-            {% blocktranslate trimmed %}
-                Some of the general exports are only accessible for organisers, or include
-                more information when accessed with your organiser account. If you want to
-                access the organiser version in automatic integrations, you’ll have to
-                provide your authentication token just like in the API, like this:
-            {% endblocktranslate %}
+            {{ phrases.orga.export_organiser_access }}
         </p>
 
-            <pre> curl -H "Authorization: Token INSERTAUTHTOKENHERE" {{ request.event.api_urls.reviews.full }}
- curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.api_urls.schedules.full }}latest/exporters/speakers.csv/ </pre>
+            <pre> curl -H “Authorization: Token INSERTAUTHTOKENHERE” {{ request.event.api_urls.reviews.full }}
+ curl -H “Authorization: Token INSERTTOKENHERE” {{ request.event.api_urls.schedules.full }}latest/exporters/speakers.csv/ </pre>
 
         <p>
-            {% blocktranslate trimmed %}
-                Please note that your token will have to have the “action” permissions in order
-                to access the predefined schedule exports via the API.
-            {% endblocktranslate %}
+            {{ phrases.orga.export_api_note }}
         </p>
 
         {% include "orga/includes/submit_row.html" with submit_buttons=api_buttons %}

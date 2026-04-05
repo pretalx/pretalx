@@ -60,7 +60,7 @@ SPDX-FileContributor: Florian Mösch
                 {% if speaker.speaker.avatar and request.event.cfp.request_avatar %}
                     <div class="float-right speaker-detail">
                         <a href="{{ speaker.speaker.avatar_url }}" data-lightbox>
-                            <img loading="lazy" width="100%" src="{{ speaker.speaker.avatar|thumbnail:"default" }}" alt="{% translate "The speaker’s profile picture" %}">
+                            <img loading="lazy" width="100%" src="{{ speaker.speaker.avatar|thumbnail:"default" }}" alt="{{ phrases.schedule.speaker_picture_alt }}">
                         </a>
                     </div>
                 {% endif %}
@@ -92,7 +92,7 @@ SPDX-FileContributor: Florian Mösch
                     {% if can_send_mails %}
                         <a class="btn btn-outline-info" role="button" href="{{ speaker.speaker.orga_urls.send_mail }}">
                             <i class="fa fa-envelope"></i>
-                            {% translate "Send email" context "action: send email to speaker(s)" %}
+                            {{ phrases.orga.send_email }}
                         </a>
                     {% endif %}
                     <a href="{% url "orga:speakers.view" event=request.event.slug code=speaker.speaker.code %}"

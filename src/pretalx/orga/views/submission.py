@@ -20,7 +20,6 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils import feedgenerator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
 from django.views.generic import FormView, ListView, TemplateView, UpdateView, View
 from django_context_decorator import context
 
@@ -1219,7 +1218,7 @@ class TagView(OrgaCRUDView):
     def get_generic_title(self, instance=None):
         if instance:
             return (
-                pgettext_lazy("proposal tag for organising", "Tag")
+                phrases.submission.tag
                 + f" {phrases.base.quotation_open}{instance.tag}{phrases.base.quotation_close}"
             )
         if self.action == "create":

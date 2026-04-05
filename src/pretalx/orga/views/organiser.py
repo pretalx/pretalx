@@ -15,7 +15,6 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
 from django.views.generic import DetailView, ListView, TemplateView
 from django_context_decorator import context
 from django_scopes import scopes_disabled
@@ -85,7 +84,7 @@ class TeamView(OrgaCRUDView):
     def get_generic_title(self, instance=None):
         if instance:
             return (
-                pgettext_lazy("organiser team", "Team")
+                phrases.orga.team
                 + f" {phrases.base.quotation_open}{instance.name}{phrases.base.quotation_close}"
             )
         if self.action == "create":
@@ -302,9 +301,7 @@ class TeamResetPassword(TeamMemberMixin, ActionConfirmMixin, TemplateView):
     action_confirm_icon = "key"
     action_confirm_label = phrases.base.password_reset_heading
     action_title = phrases.base.password_reset_heading
-    action_text = _(
-        "Do your really want to reset this user’s password? They won’t be able to log in until they set a new password."
-    )
+    action_text = phrases.base.password_reset_confirm
 
     def post(self, request, *args, **kwargs):
         user_to_reset = self.member

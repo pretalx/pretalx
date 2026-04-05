@@ -9,7 +9,6 @@ from django import forms
 from django.db.models import Count, Exists, OuterRef, Q
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import pgettext_lazy
 from django_scopes.forms import SafeModelChoiceField
 
 from pretalx.cfp.forms.cfp import CfPFormMixin
@@ -49,9 +48,7 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
         required=False,
     )
     image = ImageField(
-        required=False,
-        label=_("Session image"),
-        help_text=_("Use this if you want an illustration to go with your proposal."),
+        required=False, label=_("Session image"), help_text=phrases.base.image_help
     )
     content_locale = forms.ChoiceField(label=phrases.base.language)
     tags = forms.ModelMultipleChoiceField(
@@ -172,7 +169,7 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
             )
             if "duration" in self.fields and not self.fields["duration"].required:
                 self.fields["duration"].help_text += " " + str(
-                    _("Leave empty to use the default duration for the session type.")
+                    phrases.base.duration_help
                 )
 
     def _set_locales(self):
@@ -333,11 +330,7 @@ class SubmissionFilterForm(forms.Form):
     unanswered = forms.BooleanField(required=False)
     answer = forms.CharField(required=False)
     answer__options = forms.IntegerField(required=False)
-    q = forms.CharField(
-        required=False,
-        label=pgettext_lazy("action/label: search", "Search"),
-        widget=SearchInput,
-    )
+    q = forms.CharField(required=False, label=phrases.base.search, widget=SearchInput)
     fulltext = forms.BooleanField(required=False, label=_("Full text search"))
 
     default_renderer = InlineFormRenderer

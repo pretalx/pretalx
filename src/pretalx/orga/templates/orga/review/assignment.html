@@ -37,7 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <table class="table table-sm table-flip">
             <thead>
                 <tr>
-                    <th class="col col-md-4">{% translate "Team" context "organiser team" %}</th>
+                    <th class="col col-md-4">{{ phrases.orga.team }}</th>
                     <th class="col col-md-3">{% translate "Members" %}</th>
                     {% if request.event|get_feature_flag:"use_tracks" %}
                         <th class="col col-md-3">{% translate "Limited to tracks" %}</th>

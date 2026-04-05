@@ -3,20 +3,16 @@
 
 import i18nfield.forms
 from django import forms
-from django.utils.translation import pgettext_lazy
 
 from pretalx.common.forms.renderers import InlineFormRenderer
 from pretalx.common.forms.widgets import SearchInput
+from pretalx.common.text.phrases import phrases
 
 
 class SearchForm(forms.Form):
     default_renderer = InlineFormRenderer
 
-    q = forms.CharField(
-        label=pgettext_lazy("action/label: search", "Search"),
-        required=False,
-        widget=SearchInput,
-    )
+    q = forms.CharField(label=phrases.base.search, required=False, widget=SearchInput)
 
 
 class I18nFormSet(i18nfield.forms.I18nModelFormSet):

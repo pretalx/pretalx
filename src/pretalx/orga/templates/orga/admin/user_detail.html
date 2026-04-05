@@ -79,7 +79,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
       <table class="table table-sm table-flip">
         <thead>
           <tr>
-            <th>{% translate "Team" context "organiser team" %}</th>
+            <th>{{ phrases.orga.team }}</th>
             <th>{% translate "Organiser" %}</th>
             <th>{% translate "Events" %}</th>
             <th>{% translate "Permissions" %}</th>
@@ -128,7 +128,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
           <tr>
             <th>{% translate "Title" %}</th>
             <th>{% blocktranslate trimmed count count=1 %}Event{% plural %}Events{% endblocktranslate %}</th>
-            <th>{% translate "State" context "proposal/submission state" %}</th>
+            <th>{{ phrases.submission.state }}</th>
             <th></th>
           </tr>
         </thead>

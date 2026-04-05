@@ -21,12 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
     <section role="tabpanel" id="tabpanel-custom" aria-labelledby="tab-custom" tabindex="0" aria-hidden="false">
         <p>
-            {% blocktranslate trimmed %}
-                Build your own custom export here, by selecting all the data you need,
-                and the export format. CSV exports can be opened with Excel and similar
-                applications, while JSON exports are often used for integration with
-                other tools.
-            {% endblocktranslate %}
+            {{ phrases.orga.export_custom_hint }}
         </p>
         <form method="post">
             {% csrf_token %}
@@ -61,15 +56,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </section>
     <section role="tabpanel" id="tabpanel-general" aria-labelledby="tab-general" tabindex="0" aria-hidden="true">
         <p>
-            {% blocktranslate trimmed %}
-                pretalx provides a range of exports. If none of these match what you are looking
-                for, you can also provide a custom plugin to export the data – please ask
-                your administrator to install the plugin.
-            {% endblocktranslate %}
-            {% blocktranslate trimmed %}
-                If you are looking for exports of proposals, sessions or schedule data, please head
-                here:
-            {% endblocktranslate %}
+            {{ phrases.orga.export_plugin_hint }}
+            {{ phrases.orga.export_cross_link }}
             <a class="btn btn-outline-info btn-sm" href="{{ request.event.orga_urls.schedule_export }}">{% translate "Schedule exports" %}</a>
         </p>
         <p>
@@ -100,16 +88,11 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
     </section>
     <section role="tabpanel" id="tabpanel-api" aria-labelledby="tab-api" tabindex="0" aria-hidden="true">
         <p>
-            {% translate "You can also use the API to export or use data." %}
+            {{ phrases.orga.api_export_hint }}
         </p>
 
         <p>
-            {% blocktranslate trimmed %}
-                Some of the general exports are only accessible for organisers, or include
-                more information when accessed with your organiser account. If you want to
-                access the organiser version in automatic integrations, you’ll have to
-                provide your authentication token just like in the API, like this:
-            {% endblocktranslate %}
+            {{ phrases.orga.export_organiser_access }}
         </p>
 
             <pre> curl -H "Authorization: Token INSERTAUTHTOKENHERE" {{ request.event.api_urls.speakers.full }} </pre>

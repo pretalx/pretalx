@@ -70,7 +70,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </div>
             {% if submission.track %}
                 <div class="form-group row">
-                    <label class="col-md-3 col-form-label">{% translate "Track" context "conference track/topic category" %}</label>
+                    <label class="col-md-3 col-form-label">{{ phrases.submission.track }}</label>
                     <div class="col-md-9 mt-2">{{ submission.track.name|default:"-" }}</div>
                 </div>
             {% endif %}
@@ -197,7 +197,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <table class="table review-table table-flip table-sticky">
                         <thead>
                             <tr>
-                                <th>{% translate "Score" context "review score/rating" %}</th>
+                                <th>{{ phrases.submission.score }}</th>
                                 {% if score_categories|length > 1 %}
                                     {% for cat in score_categories %}<th>{{ cat.name }}</th>{% endfor %}
                                 {% endif %}

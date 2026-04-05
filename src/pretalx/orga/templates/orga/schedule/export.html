@@ -55,15 +55,8 @@ SPDX-FileContributor: luto
     </section>
 
     <section role="tabpanel" id="tabpanel-general" aria-labelledby="tab-general" tabindex="0" aria-hidden="true">
-        {% blocktranslate trimmed %}
-            pretalx provides a range of exports. If none of these match what you are looking
-            for, you can also provide a custom plugin to export the data – please ask
-            your administrator to install the plugin.
-        {% endblocktranslate %}
-        {% blocktranslate trimmed %}
-            If you are looking for exports of proposals, sessions or schedule data, please head
-            here:
-        {% endblocktranslate %}
+        {{ phrases.orga.export_plugin_hint }}
+        {{ phrases.orga.export_cross_link }}
         <a class="btn btn-outline-info btn-sm" href="{{ request.event.orga_urls.speakers }}export/">{% translate "Speaker exports" %}</a>
         {% if not request.event.current_schedule %}
             <div class="alert alert-warning">
@@ -111,25 +104,17 @@ SPDX-FileContributor: luto
 
         <h3>{% translate "API" %}</h3>
 
-        <p>{% translate "You can also use the API to export or use data." %}</p>
+        <p>{{ phrases.orga.api_export_hint }}</p>
 
         <p>
-            {% blocktranslate trimmed %}
-                Some of the general exports are only accessible for organisers, or include
-                more information when accessed with your organiser account. If you want to
-                access the organiser version in automatic integrations, you’ll have to
-                provide your authentication token just like in the API, like this:
-            {% endblocktranslate %}
+            {{ phrases.orga.export_organiser_access }}
         </p>
 
-            <pre> curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.api_urls.submissions.full }}
- curl -H "Authorization: Token INSERTTOKENHERE" {{ request.event.api_urls.schedules.full }}latest/exporters/schedule.xml/ </pre>
+            <pre> curl -H “Authorization: Token INSERTTOKENHERE” {{ request.event.api_urls.submissions.full }}
+ curl -H “Authorization: Token INSERTTOKENHERE” {{ request.event.api_urls.schedules.full }}latest/exporters/schedule.xml/ </pre>
 
         <p>
-            {% blocktranslate trimmed %}
-                Please note that your token will have to have the “action” permissions in order
-                to access the predefined schedule exports via the API.
-            {% endblocktranslate %}
+            {{ phrases.orga.export_api_note }}
         </p>
 
 

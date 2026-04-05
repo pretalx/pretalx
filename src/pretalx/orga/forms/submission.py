@@ -127,9 +127,7 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             and "submission_type" in self.fields
             and len(self.fields["submission_type"].queryset) > 1
         ):
-            self.fields["duration"].help_text += " " + str(
-                _("Leave empty to use the default duration for the session type.")
-            )
+            self.fields["duration"].help_text += " " + str(phrases.base.duration_help)
 
     def _validate_date(self, value):
         if self.event.datetime_from and value < self.event.datetime_from:
