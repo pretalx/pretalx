@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-05 13:18+0000\n"
+"POT-Creation-Date: 2026-04-05 14:13+0000\n"
 "PO-Revision-Date: 2025-04-08 14:25+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: none\n"
@@ -341,7 +341,7 @@ msgstr "Thời gian có thể thuyết trình"
 
 #: pretalx/cfp/flow.py:106
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:13
-#: pretalx/orga/forms/schedule.py:163
+#: pretalx/orga/forms/schedule.py:167
 #: pretalx/orga/templates/orga/submission/review.html:126
 #: pretalx/submission/models/resource.py:47
 msgid "Resources"
@@ -599,7 +599,7 @@ msgstr "Trường tuỳ chỉnh"
 #| "You can enter proposals until %(deadline)s (%(timezone)s), "
 #| "%(until_string)s from now."
 msgid ""
-"Submissions close on %(deadline)s (%(timezone)s), %(until_string)s from now."
+"Proposals close on %(deadline)s (%(timezone)s), %(until_string)s from now."
 msgstr ""
 "Quý vị có gửi đề xuất từ bây giờ cho đến %(deadline)s (%(timezone)s), "
 "%(until_string)s ."
@@ -607,13 +607,13 @@ msgstr ""
 #: pretalx/cfp/templates/cfp/event/cfp.html:34
 #, fuzzy, python-format
 #| msgid "This Call for Papers closed on %(deadline)s (%(timezone)s)."
-msgid "Submissions open on %(opening)s (%(timezone)s)."
+msgid "Proposals open on %(opening)s (%(timezone)s)."
 msgstr "Thông báo Nộp bài đã hết hạn vào ngày %(deadline)s (%(timezone)s)."
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:38
 #, fuzzy, python-format
 #| msgid "This Call for Papers closed on %(deadline)s (%(timezone)s)."
-msgid "Submissions closed on %(deadline)s (%(timezone)s)."
+msgid "Proposals closed on %(deadline)s (%(timezone)s)."
 msgstr "Thông báo Nộp bài đã hết hạn vào ngày %(deadline)s (%(timezone)s)."
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:64
@@ -637,8 +637,10 @@ msgid "confirmed"
 msgstr "chốt"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:23
-#: pretalx/submission/models/submission.py:80
-msgid "cancelled"
+#: pretalx/orga/forms/event.py:903 pretalx/submission/models/submission.py:80
+#, fuzzy
+#| msgid "canceled"
+msgid "Cancelled"
 msgstr "huỷ"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:25
@@ -678,8 +680,10 @@ msgstr ""
 "chấp nhận lời mời này không?"
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:39
-msgid "Abstract:"
-msgstr "Tóm tắt:"
+#: pretalx/orga/templates/orga/submission/review.html:79
+#: pretalx/submission/models/submission.py:232
+msgid "Abstract"
+msgstr "Tóm tắt"
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:48
 #: pretalx/event/models/event.py:666
@@ -743,8 +747,9 @@ msgid "Continue"
 msgstr "Tiếp tục"
 
 #: pretalx/cfp/templates/cfp/event/submission_base.html:70
-msgid "Submit proposal!"
-msgstr "Gửi đề xuất!"
+#: pretalx/cfp/templates/cfp/event/user_submission_edit.html:66
+msgid "Submit proposal"
+msgstr "Gửi đề xuất"
 
 #: pretalx/cfp/templates/cfp/event/submission_base.html:74
 msgid "or save as draft for now"
@@ -913,10 +918,6 @@ msgstr "Người tham dự có thể để lại phản hồi tại đây sau kh
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:63
 msgid "Save draft"
 msgstr "Ghi bản nháp"
-
-#: pretalx/cfp/templates/cfp/event/user_submission_edit.html:66
-msgid "Submit proposal"
-msgstr "Gửi đề xuất"
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:82
 msgid "Share proposal"
@@ -1096,10 +1097,10 @@ msgid "Upload a file"
 msgstr ""
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:16
-#: pretalx/mail/models.py:31
-#: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:18
+#: pretalx/submission/models/submission.py:82
+msgctxt "proposal status"
 msgid "Draft"
-msgstr "Dự thảo"
+msgstr ""
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:21
 msgid ""
@@ -1882,7 +1883,7 @@ msgstr ""
 msgid "Call for Proposals"
 msgstr "Thông báo mời viết Đề xuất tham luận"
 
-#: pretalx/common/log_display.py:224 pretalx/orga/forms/schedule.py:37
+#: pretalx/common/log_display.py:224 pretalx/orga/forms/schedule.py:38
 #: pretalx/orga/templates/orga/cfp/question/remind.html:22
 #: pretalx/orga/templates/orga/mails/send_draft_reminders.html:21
 #: pretalx/orga/templates/orga/schedule/release.html:59
@@ -2024,14 +2025,17 @@ msgctxt "category of items"
 msgid "Other"
 msgstr "Khác"
 
-#: pretalx/common/tables.py:522
-msgid "edit"
-msgstr ""
+#. Translators: This is the label on edit buttons.
+#: pretalx/common/tables.py:522 pretalx/common/text/phrases.py:53
+#: pretalx/orga/templatetags/orga_edit_link.py:15
+msgid "Edit"
+msgstr "Sửa"
 
 #. Translators: This is a label on delete buttons.
 #: pretalx/common/tables.py:530 pretalx/common/text/phrases.py:58
 #: pretalx/orga/templates/orga/submission/delete.html:9
 #: pretalx/orga/templates/orga/submission/review_fragment.html:34
+#: pretalx/orga/templates/orga/submission/state_dropdown.html:75
 msgid "Delete"
 msgstr "Xoá"
 
@@ -2420,14 +2424,8 @@ msgstr "Ghi"
 msgid "Cancel"
 msgstr "Hủy"
 
-#. Translators: This is the label on edit buttons.
-#: pretalx/common/text/phrases.py:53
-#: pretalx/orga/templatetags/orga_edit_link.py:15
-msgid "Edit"
-msgstr "Sửa"
-
-#: pretalx/common/text/phrases.py:54
-msgid "all"
+#: pretalx/common/text/phrases.py:54 pretalx/submission/models/review.py:235
+msgid "All"
 msgstr "tất cả"
 
 #: pretalx/common/text/phrases.py:60
@@ -2802,7 +2800,7 @@ msgstr "Slug hội thảo không hợp lệ – slug này được dành riêng:
 #: pretalx/person/models/auth_token.py:65 pretalx/person/models/profile.py:45
 #: pretalx/person/models/user.py:131 pretalx/schedule/models/room.py:35
 #: pretalx/submission/models/review.py:224
-#: pretalx/submission/models/track.py:32
+#: pretalx/submission/models/track.py:32 pretalx/submission/models/type.py:36
 msgid "Name"
 msgstr "Tên"
 
@@ -3708,6 +3706,12 @@ msgstr ""
 "Xin đừng ngần ngại liên hệ với chúng tôi nếu quý vị có bất kỳ câu hỏi nào!\n"
 "\n"
 "Ban tổ chức {event_name}"
+
+#: pretalx/mail/models.py:31
+#: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:18
+msgctxt "email status"
+msgid "Draft"
+msgstr "Dự thảo"
 
 #: pretalx/mail/models.py:32
 #: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:7
@@ -4660,11 +4664,13 @@ msgstr "Bài bình duyệt"
 msgid "Comments"
 msgstr "Bình luận"
 
-#: pretalx/orga/forms/event.py:881
-#, fuzzy
-#| msgid "Proposal titles"
-msgid "Proposal types"
-msgstr "Tiêu đề của đề xuất"
+#: pretalx/orga/forms/event.py:881 pretalx/orga/tables/cfp.py:38
+#: pretalx/orga/templates/orga/base.html:269 pretalx/orga/views/cfp.py:486
+#: pretalx/submission/forms/submission.py:310
+#: pretalx/submission/models/access_code.py:41
+#: pretalx/submission/models/question.py:231
+msgid "Session types"
+msgstr "Loại phiên"
 
 #. Translators: Ideally a term that is as broad as possible, to refer to anybody who
 #. presents/owns a session. This word is also used to differentiate accepted „speakers“
@@ -4734,12 +4740,6 @@ msgstr "Xoá"
 #: pretalx/submission/models/submission.py:79
 msgid "rejected"
 msgstr ""
-
-#: pretalx/orga/forms/event.py:903
-#, fuzzy
-#| msgid "canceled"
-msgid "Cancelled"
-msgstr "huỷ"
 
 #: pretalx/orga/forms/event.py:911
 #, fuzzy
@@ -5052,62 +5052,63 @@ msgstr "Người dùng không xác định: {}"
 msgid "Unknown proposal: {}"
 msgstr "Đề xuất không xác định: {}"
 
-#: pretalx/orga/forms/schedule.py:26
+#: pretalx/orga/forms/schedule.py:27
 msgid "Notify speakers of changes"
 msgstr "Cập nhật cho diễn giả về các thay đổi"
 
-#: pretalx/orga/forms/schedule.py:41
+#: pretalx/orga/forms/schedule.py:42
 msgid "We released a new schedule version!"
 msgstr "Chúng tôi vừa công bố một phiên bản lịch hội thảo mới."
 
-#: pretalx/orga/forms/schedule.py:52
+#: pretalx/orga/forms/schedule.py:53
 msgid "This schedule version was used already, please choose a different one."
 msgstr ""
 "Phiên bản lịch trình hội thảo đã được sử dụng, vui lòng chọn phiên bản khác."
 
-#: pretalx/orga/forms/schedule.py:65 pretalx/orga/forms/speaker.py:17
+#: pretalx/orga/forms/schedule.py:66 pretalx/orga/forms/speaker.py:17
 msgid "Target group"
 msgstr "Nhóm mục tiêu"
 
-#: pretalx/orga/forms/schedule.py:102
+#: pretalx/orga/forms/schedule.py:103
 msgid "Speaker IDs"
 msgstr "Mã số (ID) của diễn giả"
 
-#: pretalx/orga/forms/schedule.py:104
+#: pretalx/orga/forms/schedule.py:105
 msgid "The unique ID of a speaker is used in the speaker URL and in exports"
 msgstr ""
 "ID đơn nhất của diễn giả được sử dụng trong đường dẫn URL của diễn giả và "
 "trong các bản xuất dữ liệu"
 
-#: pretalx/orga/forms/schedule.py:108
+#: pretalx/orga/forms/schedule.py:109
 msgid "Speaker names"
 msgstr "Tên diễn giả"
 
-#: pretalx/orga/forms/schedule.py:124 pretalx/orga/forms/schedule.py:143
+#: pretalx/orga/forms/schedule.py:125 pretalx/orga/forms/schedule.py:146
+msgctxt "date as in calendar date"
 msgid "date"
 msgstr "ngày"
 
-#: pretalx/orga/forms/schedule.py:132 pretalx/orga/forms/schedule.py:148
+#: pretalx/orga/forms/schedule.py:133 pretalx/orga/forms/schedule.py:152
 msgid "time"
 msgstr "giờ"
 
-#: pretalx/orga/forms/schedule.py:153
+#: pretalx/orga/forms/schedule.py:157
 msgid "Median score"
 msgstr "Điểm trung bình (median)"
 
-#: pretalx/orga/forms/schedule.py:154
+#: pretalx/orga/forms/schedule.py:158
 msgid "Median review score, if there have been reviews yet"
 msgstr "Điểm đánh giá trung bình, nếu đã có đánh giá"
 
-#: pretalx/orga/forms/schedule.py:158
+#: pretalx/orga/forms/schedule.py:162
 msgid "Average (mean) score"
 msgstr "Điểm trung bình (mean)"
 
-#: pretalx/orga/forms/schedule.py:159
+#: pretalx/orga/forms/schedule.py:163
 msgid "Average review score, if there have been reviews yet"
 msgstr "Điểm đánh giá trung bình (average), nếu đã có đánh giá"
 
-#: pretalx/orga/forms/schedule.py:165
+#: pretalx/orga/forms/schedule.py:169
 msgid "Resources provided by the speaker, either as links or as uploaded files"
 msgstr ""
 "Tài nguyên do diễn giả cung cấp, dưới dạng liên kết hoặc tệp đã tải lên"
@@ -5275,13 +5276,6 @@ msgstr ""
 #: pretalx/orga/tables/admin.py:35 pretalx/submission/exporters.py:64
 msgid "Submissions"
 msgstr "Bài đã nộp"
-
-#: pretalx/orga/tables/cfp.py:38 pretalx/orga/templates/orga/base.html:269
-#: pretalx/orga/views/cfp.py:486 pretalx/submission/forms/submission.py:310
-#: pretalx/submission/models/access_code.py:41
-#: pretalx/submission/models/question.py:231
-msgid "Session types"
-msgstr "Loại phiên"
 
 #: pretalx/orga/tables/cfp.py:45
 msgid "Uses"
@@ -7466,6 +7460,7 @@ msgstr "Gửi email"
 
 #: pretalx/orga/templates/orga/speaker/form.html:76
 #: pretalx/orga/templates/orga/tables/columns/review_state.html:11
+msgctxt "proposal status: pending state change"
 msgid "pending"
 msgstr "đang xử lý"
 
@@ -7497,6 +7492,7 @@ msgid "Original"
 msgstr "Nguyên bản"
 
 #: pretalx/orga/templates/orga/submission/anonymise.html:32
+#: pretalx/orga/templates/orga/tables/columns/submission_side_indicator.html:10
 msgid "Anonymised"
 msgstr "Vô danh"
 
@@ -7595,11 +7591,6 @@ msgstr ""
 msgid "You will be able to see other reviews once you have given yours."
 msgstr "Bạn sẽ có thể xem lời bình khác sau khi đã đưa ra lời bình của mình."
 
-#: pretalx/orga/templates/orga/submission/review.html:79
-#: pretalx/submission/models/submission.py:232
-msgid "Abstract"
-msgstr "Tóm tắt"
-
 #: pretalx/orga/templates/orga/submission/review.html:91
 #: pretalx/schedule/models/room.py:48 pretalx/submission/models/resource.py:38
 #: pretalx/submission/models/submission.py:233
@@ -7687,12 +7678,6 @@ msgid ""
 "Please confirm that you really want to change the state of this proposal."
 msgstr ""
 "Vui lòng xác nhận rằng bạn thực sự muốn thay đổi trạng thái của đề xuất này."
-
-#: pretalx/orga/templates/orga/submission/state_dropdown.html:75
-#, fuzzy
-#| msgid "Delete"
-msgid "delete"
-msgstr "Xoá"
 
 #: pretalx/orga/templates/orga/submission/stats.html:26
 msgid "Proposal Statistics"
@@ -7783,10 +7768,6 @@ msgid "Show this proposal in the list of featured sessions."
 msgstr ""
 "Hiển thị phiên này trong danh sách các phiên nổi bật sau khi phiên này được "
 "chấp nhận."
-
-#: pretalx/orga/templates/orga/tables/columns/submission_side_indicator.html:10
-msgid "anonymised"
-msgstr "vô danh"
 
 #: pretalx/orga/templates/orga/tables/columns/submission_type_name.html:9
 #: pretalx/orga/templates/orga/tables/columns/track_name.html:9
@@ -8741,7 +8722,7 @@ msgid "New {event} proposal: {title}"
 msgstr ""
 
 #: pretalx/orga/views/submission.py:1006 pretalx/orga/views/submission.py:1018
-#: pretalx/submission/models/cfp.py:113
+#: pretalx/submission/models/cfp.py:114
 #: pretalx/submission/models/question.py:199
 #: pretalx/submission/models/type.py:45
 msgid "Deadline"
@@ -9392,30 +9373,31 @@ msgstr ""
 msgid "Redeemed"
 msgstr ""
 
-#: pretalx/submission/models/cfp.py:87
+#: pretalx/submission/models/cfp.py:88
 msgid "headline"
 msgstr ""
 
-#: pretalx/submission/models/cfp.py:92
+#: pretalx/submission/models/cfp.py:93
+msgctxt "CfP text body"
 msgid "text"
 msgstr ""
 
-#: pretalx/submission/models/cfp.py:99
+#: pretalx/submission/models/cfp.py:100
 msgid "Default session type"
 msgstr ""
 
-#: pretalx/submission/models/cfp.py:104
+#: pretalx/submission/models/cfp.py:105
 msgid "Opening"
 msgstr ""
 
-#: pretalx/submission/models/cfp.py:106
+#: pretalx/submission/models/cfp.py:107
 msgid ""
-"Please put in the date you want to start accepting proposals from "
-"users.Leave the date empty to start accepting proposals immediately once the "
-"event is live."
+"Please put in the date you want to start accepting proposals from users. "
+"Leave the date empty to start accepting proposals immediately once the event "
+"is live."
 msgstr ""
 
-#: pretalx/submission/models/cfp.py:115
+#: pretalx/submission/models/cfp.py:116
 msgid "Please put in the last date you want to accept proposals from users."
 msgstr ""
 
@@ -9437,6 +9419,7 @@ msgid "URL"
 msgstr ""
 
 #: pretalx/submission/models/question.py:70
+msgctxt "question field type"
 msgid "Date"
 msgstr ""
 
@@ -9763,10 +9746,6 @@ msgid "Reviewers may see these proposals"
 msgstr ""
 
 #: pretalx/submission/models/review.py:235
-msgid "All"
-msgstr ""
-
-#: pretalx/submission/models/review.py:235
 msgid "Only assigned proposals"
 msgstr ""
 
@@ -9823,10 +9802,6 @@ msgstr ""
 #: pretalx/submission/models/submission.py:76 pretalx/submission/phrases.py:10
 msgctxt "proposal status"
 msgid "submitted"
-msgstr ""
-
-#: pretalx/submission/models/submission.py:82
-msgid "draft"
 msgstr ""
 
 #: pretalx/submission/models/submission.py:200
@@ -9903,10 +9878,6 @@ msgstr ""
 #: pretalx/submission/models/track.py:47
 msgid ""
 "This track will only be shown to submitters with a matching access code."
-msgstr ""
-
-#: pretalx/submission/models/type.py:36
-msgid "name"
 msgstr ""
 
 #: pretalx/submission/models/type.py:39
@@ -10008,6 +9979,10 @@ msgstr ""
 
 msgid "Hidden rooms"
 msgstr ""
+
+#, fuzzy
+#~ msgid "delete"
+#~ msgstr "Xoá"
 
 #, fuzzy
 #~ msgid "Page title"

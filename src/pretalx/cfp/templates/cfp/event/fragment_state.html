@@ -20,7 +20,7 @@ SPDX-FileContributor: Raphael Michel
 {% elif state == "confirmed" %}
     <i class="fa fa-check-circle"></i> <span class="nowrap">{% translate "confirmed" %}</span>
 {% elif state == "canceled" %}
-    <i class="fa fa-times-circle"></i> <span class="nowrap">{% translate "cancelled" %}</span>
+    <i class="fa fa-times-circle"></i> <span class="nowrap">{% translate "Cancelled" as cancelled_label %}{{ cancelled_label|lower }}</span>
 {% elif state == "withdrawn" %}
     <i class="fa fa-times-circle"></i> <span class="nowrap">{% translate "withdrawn" %}</span>
 {% endif %}

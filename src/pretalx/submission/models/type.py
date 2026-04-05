@@ -33,7 +33,7 @@ class SubmissionType(PretalxModel):
     event = models.ForeignKey(
         to="event.Event", related_name="submission_types", on_delete=models.CASCADE
     )
-    name = I18nCharField(max_length=100, verbose_name=_("name"))
+    name = I18nCharField(max_length=100, verbose_name=_("Name"))
     default_duration = models.PositiveIntegerField(
         default=30,
         verbose_name=_("default duration"),

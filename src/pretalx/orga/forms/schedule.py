@@ -7,6 +7,7 @@
 from django import forms
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 from pretalx.common.forms.mixins import PretalxI18nModelForm
 from pretalx.common.forms.renderers import InlineFormRenderer
@@ -121,7 +122,7 @@ class ScheduleExportForm(ExportForm):
             required=False,
             label=TalkSlot._meta.get_field("start").verbose_name
             + " ("
-            + _("date")
+            + pgettext_lazy("date as in calendar date", "date")
             + ")",
             help_text=TalkSlot._meta.get_field("start").help_text,
         )
@@ -140,7 +141,10 @@ class ScheduleExportForm(ExportForm):
         )
         self.fields["end_date"] = forms.BooleanField(
             required=False,
-            label=TalkSlot._meta.get_field("end").verbose_name + " (" + _("date") + ")",
+            label=TalkSlot._meta.get_field("end").verbose_name
+            + " ("
+            + pgettext_lazy("date as in calendar date", "date")
+            + ")",
             help_text=TalkSlot._meta.get_field("end").help_text,
         )
         self.fields["end_time"] = forms.BooleanField(

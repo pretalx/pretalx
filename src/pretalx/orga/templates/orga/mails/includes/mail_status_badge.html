@@ -15,5 +15,5 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% if mail.error_data.error %}<br>{{ mail.error_data.error }}{% endif %}
     </small>
 {% else %}
-    <span class="badge bg-info">{% translate "Draft" %}</span>
+    <span class="badge bg-info">{% translate "Draft" context "email status" %}</span>
 {% endif %}

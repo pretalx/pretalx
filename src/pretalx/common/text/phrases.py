@@ -51,7 +51,7 @@ class BasePhrases(Phrases, app="base"):
     cancel = _("Cancel")
     # Translators: This is the label on edit buttons.
     edit = _("Edit")
-    all_choices = _("all")
+    all_choices = _("All")
     # Translators: This is a label on navigation elements leading to the previous page.
     back_button = _("Back")
     # Translators: This is a label on delete buttons.

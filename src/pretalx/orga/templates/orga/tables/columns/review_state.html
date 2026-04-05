@@ -8,5 +8,5 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 {% include "cfp/event/fragment_state.html" with state=record.state %}
 {% if record.pending_state %}
     <br>
-    ({% translate "pending" %} {% include "cfp/event/fragment_state.html" with state=record.pending_state %})
+    ({% translate "pending" context "proposal status: pending state change" %} {% include "cfp/event/fragment_state.html" with state=record.pending_state %})
 {% endif %}
