@@ -9,6 +9,11 @@ on:
     paths:
       - 'src/pretalx/locale/**'
       - 'pyproject.toml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/pretalx/locale/**'
+      - 'pyproject.toml'
   pull_request_target:
     branches: [ main ]
     paths:
@@ -16,24 +21,18 @@ on:
       - 'pyproject.toml'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
-
-permissions:
-  contents: write
-  checks: write
-  pull-requests: write
 
 jobs:
   compile:
+    if: github.event_name != 'pull_request_target'
     runs-on: ubuntu-latest
     name: Check that translation files compile
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{github.event.pull_request.head.ref}}
-          repository: ${{github.event.pull_request.head.repo.full_name}}
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -55,14 +54,65 @@ jobs:
       - name: Compile locales
         run: just run compilemessages
 
+  update-percentages:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    name: Update translation percentages
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      # Check out base branch for trusted tooling (justfile, pyproject.toml, Python code)
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.base_ref }}
+          fetch-depth: 0
+          path: base
+
+      # Check out PR code separately — only locale files will be used from here
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          fetch-depth: 0
+          path: pr
+
+      - name: Overlay PR locale files onto trusted base
+        run: rsync -a pr/src/pretalx/locale/ base/src/pretalx/locale/
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "base/.github/workflows/python-version.txt"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - uses: extractions/setup-just@v3
+      - name: Install system dependencies
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
+          sudo rm -f /etc/apt/sources.list.d/azure-cli.list
+          sudo apt clean
+          sudo apt update
+          sudo apt install -y gettext
+      - name: Install Python dependencies
+        working-directory: base
+        run: just install --extra dev
+      - name: Compile locales
+        working-directory: base
+        run: just run compilemessages
       - name: Update translation percentages
-        if: github.event_name == 'pull_request_target'
+        working-directory: base
         run: just run update_translation_percentages
 
+      - name: Copy updated percentages to PR checkout
+        run: cp base/src/pretalx/locale/translation_percentages.json pr/src/pretalx/locale/translation_percentages.json
+
       - name: Commit updated translation percentages
-        if: github.event_name == 'pull_request_target'
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
+          repository: pr
           commit_message: "Update translation percentages"
           file_pattern: "*translation_percentages.json"
           commit_user_name: "pretalx-translations"
