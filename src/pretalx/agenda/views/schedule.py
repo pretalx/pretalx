@@ -26,6 +26,7 @@ from pretalx.agenda.views.utils import (
     get_schedule_exporter_content,
     get_schedule_exporters,
 )
+from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import (
     EventPermissionRequired,
     PermissionRequired,
@@ -205,7 +206,7 @@ def schedule_messages(request, **kwargs):
         "favs_not_saved": _(
             "Your favourites could only be saved locally in your browser."
         ),
-        "filter": pgettext_lazy("action: filter/narrow down results", "Filter"),
+        "filter": phrases.base.filter_action,
         "filters": _("Filters"),
         "jump_to_now": _("Jump to now"),
         "languages": _("Languages"),
@@ -219,7 +220,7 @@ def schedule_messages(request, **kwargs):
             "The schedule is not yet available. Please check back later!"
         ),
         "show_results": _("Show results"),
-        "search": pgettext_lazy("action/label: search", "Search"),
+        "search": phrases.base.search,
         "see_also": _("See also:"),
         "tags": _("Tags"),
         "tracks": _("Tracks"),

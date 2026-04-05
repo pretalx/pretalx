@@ -15,6 +15,7 @@ from pretalx.common.tables import (
     TemplateColumn,
     UnsortableMixin,
 )
+from pretalx.common.text.phrases import phrases
 from pretalx.submission.models import (
     Question,
     SubmissionType,
@@ -103,7 +104,7 @@ class TrackTable(UnsortableMixin, PretalxTable):
 
     name = TemplateColumn(
         linkify=lambda record: record.urls.edit,
-        verbose_name=pgettext_lazy("conference track/topic category", "Track"),
+        verbose_name=phrases.submission.track,
         template_name="orga/tables/columns/track_name.html",
     )
     color = TemplateColumn(

@@ -186,15 +186,12 @@ class Event(PretalxModel):
         unique=True,
         validators=[
             RegexValidator(
-                regex=FULL_SLUG_REGEX,
-                message=_(
-                    "The slug may only contain letters, numbers, dots and dashes."
-                ),
+                regex=FULL_SLUG_REGEX, message=phrases.base.slug_validator_message
             ),
             validate_event_slug_permitted,
         ],
         verbose_name=_("Short form"),
-        help_text=_("The slug may only contain letters, numbers, dots and dashes."),
+        help_text=phrases.base.slug_validator_message,
     )
     organiser = models.ForeignKey(
         to="Organiser",

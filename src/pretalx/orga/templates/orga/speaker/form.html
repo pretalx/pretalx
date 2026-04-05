@@ -54,7 +54,7 @@ SPDX-FileContributor: Florian Mösch
             {% if can_send_mails %}
                 <a class="btn btn-outline-info ml-2" href="{{ form.instance.orga_urls.send_mail }}">
                     <i class="fa fa-envelope"></i>
-                    {% translate "Send email" context "action: send email to speaker(s)" %}
+                    {{ phrases.orga.send_email }}
                 </a>
             {% endif %}
         </div>

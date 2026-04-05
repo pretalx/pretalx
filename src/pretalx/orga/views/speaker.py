@@ -250,9 +250,7 @@ class SpeakerPasswordReset(SpeakerViewMixin, ActionConfirmMixin, DetailView):
     action_confirm_icon = "key"
     action_confirm_label = phrases.base.password_reset_heading
     action_title = phrases.base.password_reset_heading
-    action_text = _(
-        "Do your really want to reset this user’s password? They won’t be able to log in until they set a new password."
-    )
+    action_text = phrases.base.password_reset_confirm
 
     def action_object_name(self):
         speaker = self.get_object()
@@ -357,6 +355,6 @@ class SpeakerExport(EventPermissionRequired, FormView):
     def form_valid(self, form):
         result = form.export_data()
         if not result:
-            messages.success(self.request, _("No data to be exported"))
+            messages.success(self.request, phrases.orga.no_data_to_export)
             return redirect(self.request.path)
         return result

@@ -11,6 +11,7 @@ from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.models.fields import DateTimeField
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
+from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import can_change_event_settings
 
@@ -68,10 +69,8 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
     internal_notes = models.TextField(
         null=True,
         blank=True,
-        verbose_name=_("Internal notes"),
-        help_text=_(
-            "Internal notes for other organisers/reviewers. Not visible to the speakers or the public."
-        ),
+        verbose_name=phrases.base.internal_notes,
+        help_text=phrases.base.internal_notes_help,
     )
 
     code_length = 32

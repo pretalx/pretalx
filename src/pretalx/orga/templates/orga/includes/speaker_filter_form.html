@@ -16,6 +16,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% if request.GET.question %} <input type="hidden" name="question" value="{{ request.GET.question }}"> {% endif %}
         {% if request.GET.answer__options %} <input type="hidden" name="answer__options" value="{{ request.GET.answer__options }}"> {% endif %}
         {% if request.GET.answer %} <input type="hidden" name="answer" value="{{ request.GET.answer }}"> {% endif %}
-        <button class="btn-info" type="submit">{% translate "Search" context "action/label: search" %}</button>
+        <button class="btn-info" type="submit">{{ phrases.base.search }}</button>
     </form>
 </div>

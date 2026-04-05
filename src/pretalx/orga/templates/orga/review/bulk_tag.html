@@ -52,7 +52,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         <th>{% translate "Code" context "proposal identifier code" %}</th>
                         <th>{% translate "Title" %}</th>
                         {% if can_view_speakers %}<th>{{ phrases.schedule.speakers }}</th>{% endif %}
-                        {% if show_tracks %}<th>{% translate "Track" context "conference track/topic category" %}</th>{% endif %}
+                        {% if show_tracks %}<th>{{ phrases.submission.track }}</th>{% endif %}
                         <th>{% translate "Current Tags" %}</th>
                     </tr>
                 </thead>

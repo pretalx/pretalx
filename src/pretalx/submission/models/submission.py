@@ -242,10 +242,8 @@ class Submission(GenerateCode, PretalxModel):
     internal_notes = models.TextField(
         null=True,
         blank=True,
-        verbose_name=_("Internal notes"),
-        help_text=_(
-            "Internal notes for other organisers/reviewers. Not visible to the speakers or the public."
-        ),
+        verbose_name=phrases.base.internal_notes,
+        help_text=phrases.base.internal_notes_help,
     )
     duration = models.PositiveIntegerField(
         null=True,
@@ -274,7 +272,7 @@ class Submission(GenerateCode, PretalxModel):
         blank=True,
         upload_to=submission_image_path,
         verbose_name=_("Session image"),
-        help_text=_("Use this if you want an illustration to go with your proposal."),
+        help_text=phrases.base.image_help,
     )
     invitation_token = models.CharField(max_length=32, default=generate_invite_code)
     access_code = models.ForeignKey(

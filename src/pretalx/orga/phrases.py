@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 
 from pretalx.common.text.phrases import Phrases
 
@@ -23,4 +24,32 @@ class OrgaPhrases(Phrases, app="orga"):
     )
     mails_in_outbox = _(
         "{count} emails have been saved to the outbox – you can make individual changes there or just send them all."
+    )
+
+    team = pgettext_lazy("organiser team", "Team")
+    send_email = pgettext_lazy("action: send email to speaker(s)", "Send email")
+    apply_pending_changes = _("Apply pending changes")
+    no_data_to_export = _("No data to be exported")
+    api_export_hint = _("You can also use the API to export or use data.")
+    export_organiser_access = _(
+        "Some of the general exports are only accessible for organisers, or include more information when accessed with your organiser account. If you want to access the organiser version in automatic integrations, you'll have to provide your authentication token just like in the API, like this:"
+    )
+    export_api_note = _(
+        'Please note that your token will have to have the "action" permissions in order to access the predefined schedule exports via the API.'
+    )
+    export_custom_hint = _(
+        "Build your own custom export here, by selecting all the data you need, and the export format. CSV exports can be opened with Excel and similar applications, while JSON exports are often used for integration with other tools."
+    )
+    export_plugin_hint = _(
+        "pretalx provides a range of exports. If none of these match what you are looking for, you can also provide a custom plugin to export the data – please ask your administrator to install the plugin."
+    )
+    export_cross_link = _(
+        "If you are looking for exports of proposals, sessions or schedule data, please head here:"
+    )
+
+    custom_field_active = _(
+        "This field is currently active, it will be asked during submission."
+    )
+    custom_field_inactive = _(
+        "This field is currently inactive, and will not be asked during submission."
     )

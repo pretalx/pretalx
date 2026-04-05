@@ -14,6 +14,7 @@ from django_scopes import scope, scopes_disabled
 from i18nfield.fields import I18nCharField
 
 from pretalx.common.models.mixins import PretalxModel
+from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls, build_absolute_uri
 from pretalx.event.models.event import FULL_SLUG_REGEX
 from pretalx.event.rules import (
@@ -100,10 +101,7 @@ class Organiser(PretalxModel):
         unique=True,
         validators=[
             RegexValidator(
-                regex=FULL_SLUG_REGEX,
-                message=_(
-                    "The slug may only contain letters, numbers, dots and dashes."
-                ),
+                regex=FULL_SLUG_REGEX, message=phrases.base.slug_validator_message
             )
         ],
         verbose_name=_("Short form"),

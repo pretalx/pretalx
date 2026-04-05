@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from pretalx.agenda.rules import can_view_schedule, is_speaker_viewable
 from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
+from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.models.picture import ProfilePictureMixin
@@ -52,10 +53,8 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
     internal_notes = models.TextField(
         null=True,
         blank=True,
-        verbose_name=_("Internal notes"),
-        help_text=_(
-            "Internal notes for other organisers/reviewers. Not visible to the speakers or the public."
-        ),
+        verbose_name=phrases.base.internal_notes,
+        help_text=phrases.base.internal_notes_help,
     )
     profile_picture = models.ForeignKey(
         "person.ProfilePicture",
