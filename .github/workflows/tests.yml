@@ -67,7 +67,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-just@v4
       - name: Set up node
         uses: actions/setup-node@v6
         with:

@@ -34,7 +34,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-just@v4
       - name: Run isort
         run: just fmt-check
   html:
@@ -49,7 +49,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-just@v4
       - name: Install Dependencies
         run: just install --extra dev
       - name: Run djhtml
@@ -68,6 +68,6 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - uses: extractions/setup-just@v3
+      - uses: extractions/setup-just@v4
       - name: Run REUSE
         run: just reuse
