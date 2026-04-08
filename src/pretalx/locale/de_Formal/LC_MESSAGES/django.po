@@ -2145,7 +2145,7 @@ msgstr "Zitat"
 #: pretalx/common/templates/common/widgets/markdown.html:23
 msgctxt "markdown formatting: code block"
 msgid "Code"
-msgstr "Zugangscode"
+msgstr "Code"
 
 #: pretalx/common/templates/common/widgets/markdown.html:25
 msgid "Unordered list"
@@ -2545,26 +2545,20 @@ msgid "Export failed. Please try again."
 msgstr "Export fehlgeschlagen. Bitte versuchen Sie es noch einmal."
 
 #: pretalx/common/views/mixins.py:532
-#, fuzzy
-#| msgid "The track has been deleted."
 msgid "The task has been completed."
-msgstr "Der Track wurde gelöscht."
+msgstr "Die Aufgabe wurde abgeschlossen."
 
 #: pretalx/common/views/mixins.py:535
-#, fuzzy
-#| msgid "Export failed. Please try again."
 msgid "An error occurred. Please try again."
-msgstr "Export fehlgeschlagen. Bitte versuchen Sie es noch einmal."
+msgstr "Ein Fehler ist aufgetreten. Bitte versuchen Sie es noch einmal."
 
 #: pretalx/common/views/mixins.py:541
 msgid "Processing"
 msgstr ""
 
 #: pretalx/common/views/mixins.py:569
-#, fuzzy
-#| msgid "Export file not found. Please try again."
 msgid "Could not start background task. Please try again."
-msgstr "Export nicht gefunden. Bitte versuchen Sie es noch einmal."
+msgstr "Hintergrundaufgabe konnte nicht gestartet werden. Bitte versuchen Sie es noch einmal."
 
 #: pretalx/event/forms.py:63
 msgid ""
@@ -3438,8 +3432,8 @@ msgstr ""
 "\n"
 "Die Antworten können Sie unter {url} eingeben.\n"
 "\n"
-"Bitte zögere nicht, dich an uns zu wenden, wenn du deinerseits auch Fragen "
-"hast!\n"
+"Bitte zögern Sie nicht, sich an uns zu wenden, wenn Sie Ihrerseits auch "
+"Fragen haben!\n"
 "\n"
 "Die {event_name}-Orga"
 
@@ -4152,10 +4146,8 @@ msgid "Select a font for headings and buttons."
 msgstr ""
 
 #: pretalx/orga/forms/event.py:154
-#, fuzzy
-#| msgid "Text"
 msgid "Text font"
-msgstr "Text"
+msgstr "Textschriftart"
 
 #: pretalx/orga/forms/event.py:156
 msgid "Ask search engines not to index the event pages"
@@ -4190,11 +4182,9 @@ msgstr ""
 "müssen Sie eine neue Programmversion veröffentlichen."
 
 #: pretalx/orga/forms/event.py:199
-#, fuzzy
-#| msgid "Make default"
 msgctxt "default choice in a menu"
 msgid "Default"
-msgstr "Zum Default machen"
+msgstr "Standard"
 
 #: pretalx/orga/forms/event.py:225
 msgid "Please do not choose the default domain as custom event domain."
@@ -5108,7 +5098,7 @@ msgstr ""
 "Einige dieser allgemeinen Exporte sind nur für Veranstalter zugänglich, oder "
 "enthalten zusätzliche Informationen, wenn sie von einem Veranstalter-Account "
 "abgerufen werden. Wenn Sie diese Exporte in Automatisierungen einbinden "
-"möchten, wirst du ein Authentifizierungs-Token angeben müssen, wie in der "
+"möchten, werden Sie ein Authentifizierungs-Token angeben müssen, wie in der "
 "API. Das geht so:"
 
 #: pretalx/orga/phrases.py:38
@@ -5127,7 +5117,7 @@ msgid ""
 "applications, while JSON exports are often used for integration with other "
 "tools."
 msgstr ""
-"Erstellen Sie hier deinen eigenen Export, indem Sie alle Daten auswählen, "
+"Erstellen Sie hier Ihren eigenen Export, indem Sie alle Daten auswählen, "
 "die Sie benötigen. Das CSV-Format kann in Excel und vergleichbaren "
 "Programmen geöffnet werden, während JSON-Exporte oft zur Integration mit "
 "anderen Programmierschnittstellen dienen."
@@ -5196,11 +5186,11 @@ msgstr "Bewertung"
 
 #: pretalx/orga/tables/feedback.py:38 pretalx/schedule/phrases.py:35
 msgid "There has been no feedback for this session yet."
-msgstr "Es gab bislang keine Rückmeldungen zu dieser Veranstaltung."
+msgstr "Es gab bislang keine Rückmeldungen zu diesem Vortrag."
 
 #: pretalx/orga/tables/feedback.py:41
 msgid "There has been no feedback for sessions in this event yet."
-msgstr "Es gab bislang keine Rückmeldungen zu dieser Veranstaltung."
+msgstr "Es gab bislang keine Rückmeldungen zu Vorträgen dieser Veranstaltung."
 
 #: pretalx/orga/tables/mail.py:30 pretalx/orga/tables/mail.py:79
 msgid "Template"
@@ -5683,7 +5673,7 @@ msgstr "CfP-Editor"
 #: pretalx/orga/templates/orga/cfp/editor.html:150
 #: pretalx/orga/templates/orga/generic/table.html:97
 msgid "Reset to defaults"
-msgstr "Zurücksetzen"
+msgstr "Auf Standard zurücksetzen"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:51
 #: pretalx/orga/templates/orga/cfp/text.html:20
@@ -6213,10 +6203,9 @@ msgid "Download"
 msgstr "Download"
 
 #: pretalx/orga/templates/orga/includes/async_progress.html:13
-#, fuzzy, python-format
-#| msgid "Step %(current)s of %(total)s"
+#, python-format
 msgid "Processing %(current)s of %(total)s…"
-msgstr "Schritt %(current)s von %(total)s"
+msgstr "%(current)s von %(total)s wird verarbeitet …"
 
 #: pretalx/orga/templates/orga/includes/async_progress.html:17
 msgid "Processing…"
@@ -6739,7 +6728,7 @@ msgstr "Alle auswählen"
 #: pretalx/orga/templates/orga/review/bulk_tag.html:52
 msgctxt "proposal identifier code"
 msgid "Code"
-msgstr "Zugangscode"
+msgstr "Code"
 
 #: pretalx/orga/templates/orga/review/bulk_tag.html:56
 msgid "Current Tags"
@@ -6829,8 +6818,8 @@ msgid ""
 "The event schedule can be exported to a static HTML dump, so you can upload "
 "it to a normal file-serving web server like nginx."
 msgstr ""
-"Das Programm kann in eine statische HTML-Sammlung exportiert werden, die du "
-"über einen Webserver (z.B. nginx) bereitstellen kannst."
+"Das Programm kann in eine statische HTML-Sammlung exportiert werden, die Sie "
+"über einen Webserver (z.B. nginx) bereitstellen können."
 
 #: pretalx/orga/templates/orga/schedule/export.html:105
 #: pretalx/orga/views/review.py:1073 pretalx/orga/views/schedule.py:116
@@ -7493,7 +7482,7 @@ msgstr "Ablehnen"
 
 #: pretalx/orga/templates/orga/tables/columns/review_actions.html:18
 msgid "Unset accept/reject vote"
-msgstr "Zurücksetzen"
+msgstr "Abstimmung zurücksetzen"
 
 #: pretalx/orga/templates/orga/tables/columns/review_actions_header.html:12
 msgid "Accept all"
@@ -8011,16 +8000,13 @@ msgid "You cannot send emails at this time."
 msgstr "Derzeit können für diese Veranstaltung keine E-Mails versandt werden."
 
 #: pretalx/orga/views/mails.py:175
-#, fuzzy
-#| msgid "Send emails"
 msgid "Sending emails"
-msgstr "E-Mails verschicken"
+msgstr "E-Mails werden verschickt"
 
 #: pretalx/orga/views/mails.py:185
-#, fuzzy, python-brace-format
-#| msgid "{count} mails have been purged."
+#, python-brace-format
 msgid "{count} emails have been processed."
-msgstr "{count} E-Mails wurden verworfen."
+msgstr "{count} E-Mails wurden verarbeitet."
 
 #: pretalx/orga/views/mails.py:189
 #, python-brace-format
@@ -8044,10 +8030,8 @@ msgid "The email has been sent."
 msgstr "Die E-Mail wurde verschickt."
 
 #: pretalx/orga/views/mails.py:258
-#, fuzzy
-#| msgid "An email was sent."
 msgid "No emails to send."
-msgstr "Eine E-Mail wurde verschickt."
+msgstr "Keine E-Mails zu verschicken."
 
 #: pretalx/orga/views/mails.py:299
 #, python-brace-format
@@ -8109,10 +8093,8 @@ msgid "The email has been copied, you can edit it now."
 msgstr "Die E-Mail wurde kopiert, Sie können sie jetzt editieren."
 
 #: pretalx/orga/views/mails.py:482
-#, fuzzy
-#| msgid "Compose emails"
 msgid "Composing emails"
-msgstr "E-Mails schreiben"
+msgstr "E-Mails werden erstellt"
 
 #: pretalx/orga/views/mails.py:495 pretalx/orga/views/mails.py:633
 #: pretalx/orga/views/mails.py:690
@@ -8653,7 +8635,7 @@ msgstr ""
 
 #: pretalx/person/models/user.py:162
 msgid "Preferred language"
-msgstr "Standardsprache"
+msgstr "Bevorzugte Sprache"
 
 #: pretalx/person/models/user.py:185
 msgid "Unnamed user"
@@ -9453,7 +9435,7 @@ msgstr ""
 
 #: pretalx/submission/models/question.py:344
 msgid "Icon"
-msgstr "Logo"
+msgstr "Icon"
 
 #: pretalx/submission/models/question.py:346
 msgid ""
