@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-08 17:24+0000\n"
+"POT-Creation-Date: 2026-04-08 22:48+0000\n"
 "PO-Revision-Date: 2025-12-26 19:42+0000\n"
 "Last-Translator: ButterflyOfFire <butterflyoffire+pretalx@protonmail.com>\n"
 "Language-Team: \n"
@@ -3003,7 +3003,7 @@ msgid "Selection"
 msgstr "Sélection"
 
 #: pretalx/event/models/event.py:661 pretalx/submission/models/review.py:138
-#: pretalx/submission/phrases.py:16
+#: pretalx/submission/phrases.py:17
 msgctxt "review score/rating"
 msgid "Score"
 msgstr "Score"
@@ -6652,8 +6652,8 @@ msgstr "Retourner en arrière"
 #: pretalx/orga/views/dashboard.py:357
 msgid "proposal"
 msgid_plural "proposals"
-msgstr[0] "Proposition"
-msgstr[1] "Proposition"
+msgstr[0] "proposition"
+msgstr[1] "propositions"
 
 #: pretalx/orga/templates/orga/includes/dashboard_block_event.html:24
 msgid "No proposals yet"
@@ -7667,8 +7667,8 @@ msgstr[1] "Informations pour les intervenants"
 #: pretalx/orga/views/dashboard.py:412
 msgid "submitter"
 msgid_plural "submitters"
-msgstr[0] "Intervenant"
-msgstr[1] "Intervenants"
+msgstr[0] "personne ayant déposé une proposition"
+msgstr[1] "personnes ayant déposé une proposition"
 
 #: pretalx/orga/templates/orga/submission/anonymise.html:13
 #: pretalx/orga/templates/orga/submission/base.html:68
@@ -8823,7 +8823,7 @@ msgstr "L'intervention a été planifiée."
 msgid "New room"
 msgstr "Nouvelle salle"
 
-#: pretalx/orga/views/schedule.py:564 pretalx/schedule/models/slot.py:74
+#: pretalx/orga/views/schedule.py:564 pretalx/schedule/models/slot.py:73
 msgid "Room"
 msgstr "Salle"
 
@@ -9332,45 +9332,43 @@ msgid "{speaker} is scheduled for another session at the same time."
 msgstr ""
 "{speaker} présente une autre intervention pendant le créneau sélectionné."
 
-#: pretalx/schedule/models/slot.py:35
-msgctxt "schedule slot type"
+#: pretalx/schedule/models/slot.py:34
 msgid "Break"
 msgstr "Pause"
 
-#: pretalx/schedule/models/slot.py:36
-msgctxt "schedule slot type"
+#: pretalx/schedule/models/slot.py:35
 msgid "Blocker"
 msgstr ""
 
-#: pretalx/schedule/models/slot.py:75
+#: pretalx/schedule/models/slot.py:74
 msgid "The room this session is scheduled in, if any"
 msgstr "Salle dans laquelle cette intervention est prévue, si nécessaire"
 
-#: pretalx/schedule/models/slot.py:88
+#: pretalx/schedule/models/slot.py:87
 #, fuzzy
 #| msgid "Session type"
 msgid "Slot type"
 msgstr "Type de proposition"
 
-#: pretalx/schedule/models/slot.py:90
+#: pretalx/schedule/models/slot.py:89
 msgid ""
 "For non-submission slots: 'break' for public breaks, 'blocker' for hidden "
 "blockers"
 msgstr ""
 
-#: pretalx/schedule/models/slot.py:95
+#: pretalx/schedule/models/slot.py:94
 msgid "Start"
 msgstr "Début"
 
-#: pretalx/schedule/models/slot.py:96
+#: pretalx/schedule/models/slot.py:95
 msgid "When the session starts, if it is currently scheduled"
 msgstr "Début de l'intervention, si elle est déjà planifiée"
 
-#: pretalx/schedule/models/slot.py:100
+#: pretalx/schedule/models/slot.py:99
 msgid "End"
 msgstr "Fin"
 
-#: pretalx/schedule/models/slot.py:101
+#: pretalx/schedule/models/slot.py:100
 msgid "When the session ends, if it is currently scheduled"
 msgstr "Fin de l'intervention, si elle est déjà planifiée"
 
@@ -9660,7 +9658,7 @@ msgstr ""
 msgid "Please put in the last date you want to accept proposals from users."
 msgstr "Veuillez entrer la date de fin de dépôt des propositions."
 
-#: pretalx/submission/models/comment.py:35 pretalx/submission/phrases.py:17
+#: pretalx/submission/models/comment.py:35 pretalx/submission/phrases.py:18
 msgctxt "internal team comment on proposal"
 msgid "Comment"
 msgstr "Commentaire"
@@ -10108,7 +10106,7 @@ msgstr ""
 "l'appel à participation, et est déverrouillée une fois la proposition "
 "acceptée."
 
-#: pretalx/submission/models/submission.py:76 pretalx/submission/phrases.py:10
+#: pretalx/submission/models/submission.py:76 pretalx/submission/phrases.py:11
 msgctxt "proposal status"
 msgid "submitted"
 msgstr "proposé"
@@ -10117,8 +10115,7 @@ msgstr "proposé"
 msgid "Proposal title"
 msgstr "Titre de la proposition"
 
-#: pretalx/submission/models/submission.py:211 pretalx/submission/phrases.py:14
-msgctxt "conference track/topic category"
+#: pretalx/submission/models/submission.py:211 pretalx/submission/phrases.py:15
 msgid "Track"
 msgstr "Parcours"
 
@@ -10167,7 +10164,7 @@ msgstr "{title_in_quotes} par {list_of_speakers}"
 msgid "Invite to {submission} for {email}"
 msgstr "Invitation dans l'équipe {team} pour {email}"
 
-#: pretalx/submission/models/tag.py:27 pretalx/submission/phrases.py:18
+#: pretalx/submission/models/tag.py:27 pretalx/submission/phrases.py:19
 msgctxt "proposal tag for organising"
 msgid "Tag"
 msgstr "Étiquette"
@@ -10252,17 +10249,17 @@ msgstr ""
 msgid "{name} ({duration} minutes)"
 msgstr "{name} ({duration} minutes)"
 
-#: pretalx/submission/phrases.py:11
+#: pretalx/submission/phrases.py:12
 msgctxt "proposal status"
 msgid "in review"
 msgstr "en évaluation"
 
-#: pretalx/submission/phrases.py:12
+#: pretalx/submission/phrases.py:13
 msgctxt "proposal status"
 msgid "not accepted"
 msgstr "rejeté"
 
-#: pretalx/submission/phrases.py:15
+#: pretalx/submission/phrases.py:16
 msgctxt "proposal/submission state"
 msgid "State"
 msgstr "État"
@@ -10274,15 +10271,6 @@ msgid "Condensed View"
 msgstr ""
 
 msgid "Unscheduled sessions"
-msgstr ""
-
-msgid "Blocker"
-msgstr ""
-
-msgid "Break"
-msgstr ""
-
-msgid "Track"
 msgstr ""
 
 msgid "Unschedule"

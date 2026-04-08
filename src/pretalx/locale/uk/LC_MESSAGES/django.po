@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-08 17:24+0000\n"
+"POT-Creation-Date: 2026-04-08 22:48+0000\n"
 "PO-Revision-Date: 2026-03-23 08:42+0000\n"
 "Last-Translator: Dima <uzhdimka@gmail.com>\n"
 "Language-Team: none\n"
@@ -2834,7 +2834,7 @@ msgid "Selection"
 msgstr "Відбір"
 
 #: pretalx/event/models/event.py:661 pretalx/submission/models/review.py:138
-#: pretalx/submission/phrases.py:16
+#: pretalx/submission/phrases.py:17
 msgctxt "review score/rating"
 msgid "Score"
 msgstr "Оцінка"
@@ -6144,9 +6144,9 @@ msgstr "Ласкаво просимо назад!"
 #: pretalx/orga/views/dashboard.py:357
 msgid "proposal"
 msgid_plural "proposals"
-msgstr[0] "Пропозиція"
-msgstr[1] "Пропозиція"
-msgstr[2] "Пропозиція"
+msgstr[0] "пропозиція"
+msgstr[1] "пропозиції"
+msgstr[2] "пропозицій"
 
 #: pretalx/orga/templates/orga/includes/dashboard_block_event.html:24
 msgid "No proposals yet"
@@ -8247,7 +8247,7 @@ msgstr "Сесію заплановано."
 msgid "New room"
 msgstr "Нова кімната"
 
-#: pretalx/orga/views/schedule.py:564 pretalx/schedule/models/slot.py:74
+#: pretalx/orga/views/schedule.py:564 pretalx/schedule/models/slot.py:73
 msgid "Room"
 msgstr "Кімната"
 
@@ -8734,25 +8734,23 @@ msgstr "{speaker} недоступний у запланований час."
 msgid "{speaker} is scheduled for another session at the same time."
 msgstr "{speaker} запланований на іншу сесію в той самий час."
 
-#: pretalx/schedule/models/slot.py:35
-msgctxt "schedule slot type"
+#: pretalx/schedule/models/slot.py:34
 msgid "Break"
 msgstr "Перерва"
 
-#: pretalx/schedule/models/slot.py:36
-msgctxt "schedule slot type"
+#: pretalx/schedule/models/slot.py:35
 msgid "Blocker"
 msgstr "Блокер"
 
-#: pretalx/schedule/models/slot.py:75
+#: pretalx/schedule/models/slot.py:74
 msgid "The room this session is scheduled in, if any"
 msgstr "Кімната, у якій заплановано цю доповідь, якщо така є"
 
-#: pretalx/schedule/models/slot.py:88
+#: pretalx/schedule/models/slot.py:87
 msgid "Slot type"
 msgstr "Тип слоту"
 
-#: pretalx/schedule/models/slot.py:90
+#: pretalx/schedule/models/slot.py:89
 msgid ""
 "For non-submission slots: 'break' for public breaks, 'blocker' for hidden "
 "blockers"
@@ -8760,19 +8758,19 @@ msgstr ""
 "Для слотів, які не пов’язані з доповідями: «break» — для публічних перерв, "
 "«blocker» — для прихованих слотів"
 
-#: pretalx/schedule/models/slot.py:95
+#: pretalx/schedule/models/slot.py:94
 msgid "Start"
 msgstr "Старт"
 
-#: pretalx/schedule/models/slot.py:96
+#: pretalx/schedule/models/slot.py:95
 msgid "When the session starts, if it is currently scheduled"
 msgstr "Коли починається доповідь, якщо вона наразі запланована"
 
-#: pretalx/schedule/models/slot.py:100
+#: pretalx/schedule/models/slot.py:99
 msgid "End"
 msgstr "Кінець"
 
-#: pretalx/schedule/models/slot.py:101
+#: pretalx/schedule/models/slot.py:100
 msgid "When the session ends, if it is currently scheduled"
 msgstr "Коли закінчується доповідь, якщо вона наразі запланована"
 
@@ -9052,7 +9050,7 @@ msgstr ""
 "Будь ласка, вкажіть кінцеву дату, до якої ви хочете приймати пропозиції від "
 "користувачів."
 
-#: pretalx/submission/models/comment.py:35 pretalx/submission/phrases.py:17
+#: pretalx/submission/models/comment.py:35 pretalx/submission/phrases.py:18
 msgctxt "internal team comment on proposal"
 msgid "Comment"
 msgstr "Коментар"
@@ -9440,7 +9438,7 @@ msgstr ""
 "За замовчуванням редагування пропозицій блокується після завершення CfP і "
 "знову стає доступним після прийняття пропозиції."
 
-#: pretalx/submission/models/submission.py:76 pretalx/submission/phrases.py:10
+#: pretalx/submission/models/submission.py:76 pretalx/submission/phrases.py:11
 msgctxt "proposal status"
 msgid "submitted"
 msgstr "надіслано"
@@ -9449,8 +9447,7 @@ msgstr "надіслано"
 msgid "Proposal title"
 msgstr "Назва доповіді"
 
-#: pretalx/submission/models/submission.py:211 pretalx/submission/phrases.py:14
-msgctxt "conference track/topic category"
+#: pretalx/submission/models/submission.py:211 pretalx/submission/phrases.py:15
 msgid "Track"
 msgstr "Трек"
 
@@ -9496,7 +9493,7 @@ msgstr "«{title_in_quotes}» від {list_of_speakers}"
 msgid "Invite to {submission} for {email}"
 msgstr "Запрошення на «{submission}» для {email}"
 
-#: pretalx/submission/models/tag.py:27 pretalx/submission/phrases.py:18
+#: pretalx/submission/models/tag.py:27 pretalx/submission/phrases.py:19
 msgctxt "proposal tag for organising"
 msgid "Tag"
 msgstr "Тег"
@@ -9580,17 +9577,17 @@ msgstr "{hours} годин"
 msgid "{name} ({duration} minutes)"
 msgstr "{name} ({duration} хвилин)"
 
-#: pretalx/submission/phrases.py:11
+#: pretalx/submission/phrases.py:12
 msgctxt "proposal status"
 msgid "in review"
 msgstr "На рецензуванні"
 
-#: pretalx/submission/phrases.py:12
+#: pretalx/submission/phrases.py:13
 msgctxt "proposal status"
 msgid "not accepted"
 msgstr "відхилено"
 
-#: pretalx/submission/phrases.py:15
+#: pretalx/submission/phrases.py:16
 msgctxt "proposal/submission state"
 msgid "State"
 msgstr "Статус"
@@ -9605,15 +9602,6 @@ msgid "Unscheduled sessions"
 msgstr ""
 
 msgid "Availabilities"
-msgstr ""
-
-msgid "Blocker"
-msgstr ""
-
-msgid "Break"
-msgstr ""
-
-msgid "Track"
 msgstr ""
 
 msgid "Unschedule"

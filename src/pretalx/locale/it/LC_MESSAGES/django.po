@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-08 17:24+0000\n"
+"POT-Creation-Date: 2026-04-08 22:48+0000\n"
 "PO-Revision-Date: 2026-04-01 05:42+0000\n"
 "Last-Translator: albanobattistella <albano_battistella@hotmail.com>\n"
 "Language-Team: none\n"
@@ -2729,9 +2729,9 @@ msgid ""
 "deadlines to individual session types, which will take precedence over this "
 "deadline."
 msgstr ""
-"Scadenza predefinita per la Call for Proposals. È possibile assegnare scadenze "
-"aggiuntive ai singoli tipi di sessione, che avranno la precedenza su questa "
-"scadenza."
+"Scadenza predefinita per la Call for Proposals. È possibile assegnare "
+"scadenze aggiuntive ai singoli tipi di sessione, che avranno la precedenza "
+"su questa scadenza."
 
 #: pretalx/event/forms.py:329 pretalx/event/models/event.py:306
 #: pretalx/orga/templates/orga/admin/admin.html:123
@@ -2944,7 +2944,7 @@ msgid "Selection"
 msgstr "Selezione"
 
 #: pretalx/event/models/event.py:661 pretalx/submission/models/review.py:138
-#: pretalx/submission/phrases.py:16
+#: pretalx/submission/phrases.py:17
 msgctxt "review score/rating"
 msgid "Score"
 msgstr "Punteggio"
@@ -6134,8 +6134,7 @@ msgid ""
 "A good Call for Proposals will engage potential speakers. Remember to "
 "include:"
 msgstr ""
-"Una buona Call for Proposals attirerà relatori diversi. Ricorda di "
-"includere:"
+"Una buona Call for Proposals attirerà relatori diversi. Ricorda di includere:"
 
 #: pretalx/orga/templates/orga/cfp/text.html:40
 msgid "The formats (sessions, workshops, panels) and their durations"
@@ -6419,8 +6418,8 @@ msgstr "Torna indietro"
 #: pretalx/orga/views/dashboard.py:357
 msgid "proposal"
 msgid_plural "proposals"
-msgstr[0] "Proposta"
-msgstr[1] "Proposta"
+msgstr[0] "proposta"
+msgstr[1] "proposte"
 
 #: pretalx/orga/templates/orga/includes/dashboard_block_event.html:24
 msgid "No proposals yet"
@@ -8294,7 +8293,11 @@ msgid_plural ""
 "Could not generate {count} emails, most likely because their sessions have "
 "not been scheduled yet."
 msgstr[0] ""
+"Impossibile generare un'email, molto probabilmente perché la sessione non è "
+"ancora stata programmata."
 msgstr[1] ""
+"Impossibile generare {count} email, molto probabilmente perché le relative "
+"sessioni non sono ancora state programmate."
 
 #: pretalx/orga/views/mails.py:545
 msgctxt "action: preview the email before sending"
@@ -8512,7 +8515,7 @@ msgstr "La presentazione è stata programmata."
 msgid "New room"
 msgstr "Nuova aula"
 
-#: pretalx/orga/views/schedule.py:564 pretalx/schedule/models/slot.py:74
+#: pretalx/orga/views/schedule.py:564 pretalx/schedule/models/slot.py:73
 msgid "Room"
 msgstr "Aula"
 
@@ -9018,27 +9021,25 @@ msgstr "{speaker} non è disponibile nell'ora prevista."
 msgid "{speaker} is scheduled for another session at the same time."
 msgstr "{speaker} è già previsto in un'altra sessione nella stessa ora."
 
-#: pretalx/schedule/models/slot.py:35
-msgctxt "schedule slot type"
+#: pretalx/schedule/models/slot.py:34
 msgid "Break"
-msgstr ""
+msgstr "Break"
 
-#: pretalx/schedule/models/slot.py:36
-msgctxt "schedule slot type"
+#: pretalx/schedule/models/slot.py:35
 msgid "Blocker"
-msgstr ""
+msgstr "Blocco"
 
-#: pretalx/schedule/models/slot.py:75
+#: pretalx/schedule/models/slot.py:74
 msgid "The room this session is scheduled in, if any"
 msgstr "L'aula della conferenza, se prevista"
 
-#: pretalx/schedule/models/slot.py:88
+#: pretalx/schedule/models/slot.py:87
 #, fuzzy
 #| msgid "Session type"
 msgid "Slot type"
 msgstr "Tipologia di sessione"
 
-#: pretalx/schedule/models/slot.py:90
+#: pretalx/schedule/models/slot.py:89
 msgid ""
 "For non-submission slots: 'break' for public breaks, 'blocker' for hidden "
 "blockers"
@@ -9046,19 +9047,19 @@ msgstr ""
 "Per gli slot non di invio: 'break' per le pause pubbliche, 'blocker' per i "
 "blocchi nascosti"
 
-#: pretalx/schedule/models/slot.py:95
+#: pretalx/schedule/models/slot.py:94
 msgid "Start"
 msgstr "Inizio"
 
-#: pretalx/schedule/models/slot.py:96
+#: pretalx/schedule/models/slot.py:95
 msgid "When the session starts, if it is currently scheduled"
 msgstr "L'inizio della conferenza, se già programmato"
 
-#: pretalx/schedule/models/slot.py:100
+#: pretalx/schedule/models/slot.py:99
 msgid "End"
 msgstr "Fine"
 
-#: pretalx/schedule/models/slot.py:101
+#: pretalx/schedule/models/slot.py:100
 msgid "When the session ends, if it is currently scheduled"
 msgstr "Fine della conferenza, se già programmata"
 
@@ -9342,7 +9343,7 @@ msgstr ""
 msgid "Please put in the last date you want to accept proposals from users."
 msgstr "Specifica l'ultima data in cui vuoi accettare proposte dagli utenti."
 
-#: pretalx/submission/models/comment.py:35 pretalx/submission/phrases.py:17
+#: pretalx/submission/models/comment.py:35 pretalx/submission/phrases.py:18
 msgctxt "internal team comment on proposal"
 msgid "Comment"
 msgstr "Commento"
@@ -9751,7 +9752,7 @@ msgstr ""
 "la fine delle CfP. Possono essere modificate di nuovo dopo l'accettazione "
 "della proposta."
 
-#: pretalx/submission/models/submission.py:76 pretalx/submission/phrases.py:10
+#: pretalx/submission/models/submission.py:76 pretalx/submission/phrases.py:11
 msgctxt "proposal status"
 msgid "submitted"
 msgstr "inviata"
@@ -9760,8 +9761,7 @@ msgstr "inviata"
 msgid "Proposal title"
 msgstr "Titolo della proposta"
 
-#: pretalx/submission/models/submission.py:211 pretalx/submission/phrases.py:14
-msgctxt "conference track/topic category"
+#: pretalx/submission/models/submission.py:211 pretalx/submission/phrases.py:15
 msgid "Track"
 msgstr "Tema"
 
@@ -9808,7 +9808,7 @@ msgstr "{title_in_quotes} di {list_of_speakers}"
 msgid "Invite to {submission} for {email}"
 msgstr "Invito nel team {team} per {email}"
 
-#: pretalx/submission/models/tag.py:27 pretalx/submission/phrases.py:18
+#: pretalx/submission/models/tag.py:27 pretalx/submission/phrases.py:19
 msgctxt "proposal tag for organising"
 msgid "Tag"
 msgstr "Tag"
@@ -9895,32 +9895,23 @@ msgstr "{hours} ore"
 msgid "{name} ({duration} minutes)"
 msgstr "{name} ({duration} minuti)"
 
-#: pretalx/submission/phrases.py:11
+#: pretalx/submission/phrases.py:12
 msgctxt "proposal status"
 msgid "in review"
 msgstr "in revisione"
 
-#: pretalx/submission/phrases.py:12
+#: pretalx/submission/phrases.py:13
 msgctxt "proposal status"
 msgid "not accepted"
 msgstr "non accettata"
 
-#: pretalx/submission/phrases.py:15
+#: pretalx/submission/phrases.py:16
 msgctxt "proposal/submission state"
 msgid "State"
 msgstr "Stato"
 
 #~ msgid "Availabilities"
 #~ msgstr "Disponibilità"
-
-#~ msgid "Blocker"
-#~ msgstr "Blocco"
-
-#~ msgid "Break"
-#~ msgstr "Break"
-
-#~ msgid "Track"
-#~ msgstr "Tema"
 
 #~ msgid "New blocker"
 #~ msgstr "Nuovo blocco"

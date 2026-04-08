@@ -208,7 +208,7 @@ class Submission(GenerateCode, PretalxModel):
         to="submission.Track",
         related_name="submissions",
         on_delete=models.PROTECT,
-        verbose_name=pgettext_lazy("conference track/topic category", "Track"),
+        verbose_name=_("Track"),
         null=True,
         blank=True,
     )
