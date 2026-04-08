@@ -133,7 +133,7 @@ class BasePhrases(Phrases, app="base"):
         "The slug may only contain letters, numbers, dots and dashes."
     )
     password_reset_confirm = _(
-        "Do you really want to reset this user's password? They won't be able to log in until they set a new password."
+        "Do you really want to reset this user\u2019s password? They will not be able to log in until they set a new password."
     )
     duration_help = _("Leave empty to use the default duration for the session type.")
     image_help = _("Use this if you want an illustration to go with your proposal.")

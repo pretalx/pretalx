@@ -37,7 +37,7 @@ class SubmissionType(PretalxModel):
     default_duration = models.PositiveIntegerField(
         default=30,
         verbose_name=_("default duration"),
-        help_text=_("Default duration in minutes"),
+        help_text=_("Duration in minutes"),
     )
     deadline = DateTimeField(
         null=True,

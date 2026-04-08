@@ -234,7 +234,7 @@ def base_placeholders(sender, **kwargs):
             ["submission"],
             lambda submission: submission.get_duration(),
             "30",
-            _("The session’s duration in minutes"),
+            _("Duration in minutes"),
         ),
         SimpleFunctionalMailTextPlaceholder(
             "all_reviews",
@@ -319,7 +319,7 @@ def base_placeholders(sender, **kwargs):
                 "- Your session “Title” will take place at {time} in Room 101.\n"
                 "- Your session “Other Title” will take place at {time2} in Room 102."
             ).format(time=time, time2=time2),
-            _("A list of time and place for this user’s publicly visible sessions."),
+            _("Times and locations for this user\u2019s publicly visible sessions."),
         ),
     ]
 

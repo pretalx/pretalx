@@ -290,17 +290,17 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
     min_length = models.PositiveIntegerField(
         null=True,
         blank=True,
-        verbose_name=_("Minimum text length"),
+        verbose_name=_("Minimum length"),
         help_text=_(
-            "Minimum allowed text in characters or words (set in CfP settings)."
+            "Minimum text length in characters or words (set in CfP settings)."
         ),
     )
     max_length = models.PositiveIntegerField(
         null=True,
         blank=True,
-        verbose_name=_("Maximum text length"),
+        verbose_name=_("Maximum length"),
         help_text=_(
-            "Maximum allowed text length in characters or words (set in CfP settings)."
+            "Maximum text length in characters or words (set in CfP settings)."
         ),
     )
     min_number = models.DecimalField(

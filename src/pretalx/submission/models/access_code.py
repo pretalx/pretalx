@@ -57,7 +57,7 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
     maximum_uses = models.PositiveIntegerField(
         verbose_name=_("Maximum uses"),
         help_text=_(
-            "Numbers of times this access code can be used to submit a proposal. Leave empty for no limit."
+            "Number of times this access code can be used to submit a proposal. Leave empty for no limit."
         ),
         default=1,
         null=True,

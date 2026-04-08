@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         {% elif submission.state == "confirmed" and request.event|get_feature_flag:"use_feedback" %}
             <a href="{{ submission.urls.feedback }}" class="btn btn-sm btn-success">
                 {% if submission.does_accept_feedback %}
-                    {% translate "Audience feedback" %}
+                    {% translate "Attendee feedback" %}
                 {% else %}
                     {% translate "Attendees can leave feedback here after your session has taken place." %}
                 {% endif %}
