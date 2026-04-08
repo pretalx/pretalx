@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-08 17:24+0000\n"
+"POT-Creation-Date: 2026-04-08 22:48+0000\n"
 "PO-Revision-Date: 2025-12-04 17:41+0000\n"
 "Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
@@ -2900,7 +2900,7 @@ msgid "Selection"
 msgstr "선택"
 
 #: pretalx/event/models/event.py:661 pretalx/submission/models/review.py:138
-#: pretalx/submission/phrases.py:16
+#: pretalx/submission/phrases.py:17
 msgctxt "review score/rating"
 msgid "Score"
 msgstr "점수"
@@ -8296,7 +8296,7 @@ msgstr "세션이 예약되었습니다."
 msgid "New room"
 msgstr "새 발표장"
 
-#: pretalx/orga/views/schedule.py:564 pretalx/schedule/models/slot.py:74
+#: pretalx/orga/views/schedule.py:564 pretalx/schedule/models/slot.py:73
 msgid "Room"
 msgstr "방"
 
@@ -8796,45 +8796,43 @@ msgstr "{speaker}는 예정된 시간에 사용할 수 없습니다."
 msgid "{speaker} is scheduled for another session at the same time."
 msgstr "{speaker}는 같은 시간에 다른 세션에 예정되어 있습니다."
 
-#: pretalx/schedule/models/slot.py:35
-msgctxt "schedule slot type"
+#: pretalx/schedule/models/slot.py:34
 msgid "Break"
 msgstr ""
 
-#: pretalx/schedule/models/slot.py:36
-msgctxt "schedule slot type"
+#: pretalx/schedule/models/slot.py:35
 msgid "Blocker"
 msgstr ""
 
-#: pretalx/schedule/models/slot.py:75
+#: pretalx/schedule/models/slot.py:74
 msgid "The room this session is scheduled in, if any"
 msgstr "이 발표가 예정된 방, 있을 경우"
 
-#: pretalx/schedule/models/slot.py:88
+#: pretalx/schedule/models/slot.py:87
 #, fuzzy
 #| msgid "Session type"
 msgid "Slot type"
 msgstr "세션 유형"
 
-#: pretalx/schedule/models/slot.py:90
+#: pretalx/schedule/models/slot.py:89
 msgid ""
 "For non-submission slots: 'break' for public breaks, 'blocker' for hidden "
 "blockers"
 msgstr ""
 
-#: pretalx/schedule/models/slot.py:95
+#: pretalx/schedule/models/slot.py:94
 msgid "Start"
 msgstr "시작"
 
-#: pretalx/schedule/models/slot.py:96
+#: pretalx/schedule/models/slot.py:95
 msgid "When the session starts, if it is currently scheduled"
 msgstr "발표가 시작되는 시간, 현재 예정된 경우"
 
-#: pretalx/schedule/models/slot.py:100
+#: pretalx/schedule/models/slot.py:99
 msgid "End"
 msgstr "끝"
 
-#: pretalx/schedule/models/slot.py:101
+#: pretalx/schedule/models/slot.py:100
 msgid "When the session ends, if it is currently scheduled"
 msgstr "대화가 끝나면, 현재 예정된 경우"
 
@@ -9109,7 +9107,7 @@ msgstr ""
 msgid "Please put in the last date you want to accept proposals from users."
 msgstr "사용자로부터 제안서를 수락하고 싶은 마지막 날짜를 입력하세요."
 
-#: pretalx/submission/models/comment.py:35 pretalx/submission/phrases.py:17
+#: pretalx/submission/models/comment.py:35 pretalx/submission/phrases.py:18
 msgctxt "internal team comment on proposal"
 msgid "Comment"
 msgstr "댓글"
@@ -9502,7 +9500,7 @@ msgstr ""
 "기본적으로, 제안 수정은 CfP 종료 후 잠겨 있으며, 제안이 수락되면 다시 활성화"
 "됩니다."
 
-#: pretalx/submission/models/submission.py:76 pretalx/submission/phrases.py:10
+#: pretalx/submission/models/submission.py:76 pretalx/submission/phrases.py:11
 msgctxt "proposal status"
 msgid "submitted"
 msgstr "제출됨"
@@ -9511,8 +9509,7 @@ msgstr "제출됨"
 msgid "Proposal title"
 msgstr "제안 제목"
 
-#: pretalx/submission/models/submission.py:211 pretalx/submission/phrases.py:14
-msgctxt "conference track/topic category"
+#: pretalx/submission/models/submission.py:211 pretalx/submission/phrases.py:15
 msgid "Track"
 msgstr "트랙"
 
@@ -9559,7 +9556,7 @@ msgstr "{title_in_quotes} 작성자: {list_of_speakers}"
 msgid "Invite to {submission} for {email}"
 msgstr "{email}을 {team}팀에 초대합니다"
 
-#: pretalx/submission/models/tag.py:27 pretalx/submission/phrases.py:18
+#: pretalx/submission/models/tag.py:27 pretalx/submission/phrases.py:19
 msgctxt "proposal tag for organising"
 msgid "Tag"
 msgstr "태그"
@@ -9640,17 +9637,17 @@ msgstr ""
 msgid "{name} ({duration} minutes)"
 msgstr "{name} ({duration}분)"
 
-#: pretalx/submission/phrases.py:11
+#: pretalx/submission/phrases.py:12
 msgctxt "proposal status"
 msgid "in review"
 msgstr "검토 중"
 
-#: pretalx/submission/phrases.py:12
+#: pretalx/submission/phrases.py:13
 msgctxt "proposal status"
 msgid "not accepted"
 msgstr "수락되지 않음"
 
-#: pretalx/submission/phrases.py:15
+#: pretalx/submission/phrases.py:16
 msgctxt "proposal/submission state"
 msgid "State"
 msgstr "상태"
@@ -9665,15 +9662,6 @@ msgid "Unscheduled sessions"
 msgstr ""
 
 msgid "Availabilities"
-msgstr ""
-
-msgid "Blocker"
-msgstr ""
-
-msgid "Break"
-msgstr ""
-
-msgid "Track"
 msgstr ""
 
 msgid "Unschedule"

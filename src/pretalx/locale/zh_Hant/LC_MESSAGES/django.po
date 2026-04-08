@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-08 17:24+0000\n"
+"POT-Creation-Date: 2026-04-08 22:48+0000\n"
 "PO-Revision-Date: 2025-12-04 17:41+0000\n"
 "Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
@@ -2853,7 +2853,7 @@ msgid "Selection"
 msgstr "選擇"
 
 #: pretalx/event/models/event.py:661 pretalx/submission/models/review.py:138
-#: pretalx/submission/phrases.py:16
+#: pretalx/submission/phrases.py:17
 msgctxt "review score/rating"
 msgid "Score"
 msgstr "分數"
@@ -6192,7 +6192,7 @@ msgstr "返回"
 #: pretalx/orga/views/dashboard.py:357
 msgid "proposal"
 msgid_plural "proposals"
-msgstr[0] "議程投稿"
+msgstr[0] "個投稿"
 
 #: pretalx/orga/templates/orga/includes/dashboard_block_event.html:24
 msgid "No proposals yet"
@@ -8168,7 +8168,7 @@ msgstr "此議程已被安排進議程表。"
 msgid "New room"
 msgstr "新會議室"
 
-#: pretalx/orga/views/schedule.py:564 pretalx/schedule/models/slot.py:74
+#: pretalx/orga/views/schedule.py:564 pretalx/schedule/models/slot.py:73
 msgid "Room"
 msgstr "會議室"
 
@@ -8649,45 +8649,43 @@ msgstr "{speaker} 在排定時間內無法參與。"
 msgid "{speaker} is scheduled for another session at the same time."
 msgstr "{speaker} 已在相同時間被安排至另一場議程。"
 
-#: pretalx/schedule/models/slot.py:35
-msgctxt "schedule slot type"
+#: pretalx/schedule/models/slot.py:34
 msgid "Break"
 msgstr ""
 
-#: pretalx/schedule/models/slot.py:36
-msgctxt "schedule slot type"
+#: pretalx/schedule/models/slot.py:35
 msgid "Blocker"
 msgstr ""
 
-#: pretalx/schedule/models/slot.py:75
+#: pretalx/schedule/models/slot.py:74
 msgid "The room this session is scheduled in, if any"
 msgstr "此議程安排的會議室（如有的話）"
 
-#: pretalx/schedule/models/slot.py:88
+#: pretalx/schedule/models/slot.py:87
 #, fuzzy
 #| msgid "Session type"
 msgid "Slot type"
 msgstr "議程類型"
 
-#: pretalx/schedule/models/slot.py:90
+#: pretalx/schedule/models/slot.py:89
 msgid ""
 "For non-submission slots: 'break' for public breaks, 'blocker' for hidden "
 "blockers"
 msgstr ""
 
-#: pretalx/schedule/models/slot.py:95
+#: pretalx/schedule/models/slot.py:94
 msgid "Start"
 msgstr "開始"
 
-#: pretalx/schedule/models/slot.py:96
+#: pretalx/schedule/models/slot.py:95
 msgid "When the session starts, if it is currently scheduled"
 msgstr "此議程的開始時間（如已排定的話）"
 
-#: pretalx/schedule/models/slot.py:100
+#: pretalx/schedule/models/slot.py:99
 msgid "End"
 msgstr "結束"
 
-#: pretalx/schedule/models/slot.py:101
+#: pretalx/schedule/models/slot.py:100
 msgid "When the session ends, if it is currently scheduled"
 msgstr "此議程的結束時間（如已排定的話）"
 
@@ -8954,7 +8952,7 @@ msgstr ""
 msgid "Please put in the last date you want to accept proposals from users."
 msgstr "請輸入您希望接受使用者投稿的最後日期。"
 
-#: pretalx/submission/models/comment.py:35 pretalx/submission/phrases.py:17
+#: pretalx/submission/models/comment.py:35 pretalx/submission/phrases.py:18
 msgctxt "internal team comment on proposal"
 msgid "Comment"
 msgstr "留言"
@@ -9339,7 +9337,7 @@ msgstr ""
 "預設情況下，議程投稿在投稿徵求結束後即被鎖定不可修改，一旦投稿被接受後才會重"
 "新開放修改。"
 
-#: pretalx/submission/models/submission.py:76 pretalx/submission/phrases.py:10
+#: pretalx/submission/models/submission.py:76 pretalx/submission/phrases.py:11
 msgctxt "proposal status"
 msgid "submitted"
 msgstr "已送出"
@@ -9348,8 +9346,7 @@ msgstr "已送出"
 msgid "Proposal title"
 msgstr "議程投稿標題"
 
-#: pretalx/submission/models/submission.py:211 pretalx/submission/phrases.py:14
-msgctxt "conference track/topic category"
+#: pretalx/submission/models/submission.py:211 pretalx/submission/phrases.py:15
 msgid "Track"
 msgstr "議程軌"
 
@@ -9396,7 +9393,7 @@ msgstr "{title_in_quotes} 由 {list_of_speakers}"
 msgid "Invite to {submission} for {email}"
 msgstr "邀請 {email} 加入 {team} 團隊"
 
-#: pretalx/submission/models/tag.py:27 pretalx/submission/phrases.py:18
+#: pretalx/submission/models/tag.py:27 pretalx/submission/phrases.py:19
 msgctxt "proposal tag for organising"
 msgid "Tag"
 msgstr "標籤"
@@ -9475,17 +9472,17 @@ msgstr ""
 msgid "{name} ({duration} minutes)"
 msgstr "{name}（{duration} 分鐘）"
 
-#: pretalx/submission/phrases.py:11
+#: pretalx/submission/phrases.py:12
 msgctxt "proposal status"
 msgid "in review"
 msgstr "在審稿中"
 
-#: pretalx/submission/phrases.py:12
+#: pretalx/submission/phrases.py:13
 msgctxt "proposal status"
 msgid "not accepted"
 msgstr "未接受"
 
-#: pretalx/submission/phrases.py:15
+#: pretalx/submission/phrases.py:16
 msgctxt "proposal/submission state"
 msgid "State"
 msgstr "狀態"
@@ -9500,15 +9497,6 @@ msgid "Unscheduled sessions"
 msgstr ""
 
 msgid "Availabilities"
-msgstr ""
-
-msgid "Blocker"
-msgstr ""
-
-msgid "Break"
-msgstr ""
-
-msgid "Track"
 msgstr ""
 
 msgid "Unschedule"
