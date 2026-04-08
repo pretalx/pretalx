@@ -258,7 +258,7 @@
 | src/pretalx/submission/models/question.py                                  |      270 |        0 |       62 |        0 |     100% |           |
 | src/pretalx/submission/models/resource.py                                  |       37 |        0 |        6 |        0 |     100% |           |
 | src/pretalx/submission/models/review.py                                    |      125 |        0 |       26 |        0 |     100% |           |
-| src/pretalx/submission/models/submission.py                                |      509 |        0 |      124 |        0 |     100% |           |
+| src/pretalx/submission/models/submission.py                                |      512 |        0 |      126 |        0 |     100% |           |
 | src/pretalx/submission/models/tag.py                                       |       24 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/submission/models/track.py                                     |       39 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/submission/models/type.py                                      |       44 |        0 |        4 |        0 |     100% |           |
@@ -544,7 +544,7 @@
 | src/tests/submission/models/test\_question.py                              |      388 |        0 |        6 |        0 |     100% |           |
 | src/tests/submission/models/test\_resource.py                              |       54 |        0 |        0 |        0 |     100% |           |
 | src/tests/submission/models/test\_review.py                                |      188 |        0 |        0 |        0 |     100% |           |
-| src/tests/submission/models/test\_submission.py                            |      911 |        0 |        2 |        0 |     100% |           |
+| src/tests/submission/models/test\_submission.py                            |      916 |        0 |        2 |        0 |     100% |           |
 | src/tests/submission/models/test\_tag.py                                   |       12 |        0 |        0 |        0 |     100% |           |
 | src/tests/submission/models/test\_track.py                                 |       61 |        0 |        4 |        0 |     100% |           |
 | src/tests/submission/models/test\_type.py                                  |       65 |        0 |        0 |        0 |     100% |           |
@@ -553,7 +553,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **69426** |    **0** | **5922** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **69434** |    **0** | **5924** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
