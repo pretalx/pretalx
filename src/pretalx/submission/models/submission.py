@@ -746,7 +746,10 @@ class Submission(GenerateCode, PretalxModel):
         return self.event.locale
 
     def get_content_locale_display(self):
-        return str(dict(self.event.named_content_locales)[self.content_locale])
+        locale_names = dict(self.event.named_content_locales)
+        if self.content_locale not in locale_names:
+            locale_names = dict(self.event.available_content_locales)
+        return str(locale_names.get(self.content_locale, self.content_locale))
 
     def send_state_mail(self):
         from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import

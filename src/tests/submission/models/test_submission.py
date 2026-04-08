@@ -1302,6 +1302,15 @@ def test_submission_get_content_locale_display():
     assert result == "English"
 
 
+def test_submission_get_content_locale_display_locale_not_in_event():
+    """When a submission's content_locale is not in the event's content_locales,
+    get_content_locale_display should still return a human-readable name."""
+    event = EventFactory()  # default content_locales is ['en']
+    submission = SubmissionFactory(event=event, content_locale="de-formal")
+    result = submission.get_content_locale_display()
+    assert result == "Deutsch"
+
+
 def test_submission_does_accept_feedback_with_past_slot():
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
