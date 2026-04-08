@@ -358,7 +358,7 @@ msgid ""
 "There was an error when logging in. Please contact the organiser for further "
 "help."
 msgstr ""
-"Es gab ein Fehler beim Einloggen. Bitte wenden Sie sich an die Veranstalter."
+"Es gab ein Fehler beim Einloggen. Bitte wenden Sie sich an das Veranstalter-Team."
 
 #: pretalx/cfp/flow.py:746
 msgid "Account"
@@ -708,7 +708,7 @@ msgid ""
 "reminder emails about the upcoming deadline."
 msgstr ""
 "Sie können Ihre Einreichung auch vorerst als Entwurf speichern und erst "
-"später einreichen. Die Veranstalter können die Einreichung noch nicht sehen, "
+"später einreichen. Das Veranstalter-Team kann die Einreichung noch nicht sehen, "
 "jedoch Erinnerungs-E-Mails bzgl. der Einreichungsfrist verschicken."
 
 #: pretalx/cfp/templates/cfp/event/submission_questions.html:18
@@ -731,7 +731,7 @@ msgid ""
 "will be able to send you reminders about your pending proposal draft closer "
 "to the deadline."
 msgstr ""
-"Die Veranstalter werden weder Ihren Entwurf noch Ihre E-Mail-Adresse sehen "
+"Das Veranstalter-Team wird weder Ihren Entwurf noch Ihre E-Mail-Adresse sehen "
 "können. Auch wenn sie E-Mails zu Erinnerung an die Einreichungsfrist "
 "schicken, bleibst Sie ihnen gegenüber anonym."
 
@@ -842,7 +842,7 @@ msgid ""
 msgstr ""
 "Die Einreichung, die Sie bestätigen möchten, existiert entweder nicht, oder "
 "gehört einem anderen Account. Versuchen Sie sich mit dem passenden Account "
-"einzuloggen, oder kontaktieren Sie die Veranstalter, um weitere "
+"einzuloggen, oder kontaktieren Sie das Veranstalter-Team, um weitere "
 "Informationen zu erhalten."
 
 #: pretalx/cfp/templates/cfp/event/user_submission_discard.html:23
@@ -1370,17 +1370,17 @@ msgstr "Der Veranstalter {name} wurde gelöscht."
 #: pretalx/common/log_display.py:37
 #, python-brace-format
 msgid "A speaker invitation was sent to {email}."
-msgstr "Eine Einladung als Vortragender wurde an {email} versendet."
+msgstr "Eine Einladung als Vortragende·r wurde an {email} versendet."
 
 #: pretalx/common/log_display.py:40
 #, python-brace-format
 msgid "A speaker invitation to {email} was accepted."
-msgstr "Die Einladung als Vortragender an {email} wurde angenommen."
+msgstr "Die Einladung als Vortragende·r an {email} wurde angenommen."
 
 #: pretalx/common/log_display.py:43
 #, python-brace-format
 msgid "A speaker invitation to {email} was retracted."
-msgstr "Die Einladung als Vortragender an {email} wurde zurückgezogen."
+msgstr "Die Einladung als Vortragende·r an {email} wurde zurückgezogen."
 
 #: pretalx/common/log_display.py:65
 msgid "The CfP has been modified."
@@ -1593,15 +1593,15 @@ msgstr "Eine Vortragende wurde von der Einreichung entfernt."
 
 #: pretalx/common/log_display.py:122
 msgid "A speaker invitation was sent."
-msgstr "Eine Einladung als Vortragender wurde verschickt."
+msgstr "Eine Einladung als Vortragende·r wurde verschickt."
 
 #: pretalx/common/log_display.py:123
 msgid "A speaker invitation was accepted."
-msgstr "Eine Einladung als Vortragender wurde akzeptiert."
+msgstr "Eine Einladung als Vortragende·r wurde akzeptiert."
 
 #: pretalx/common/log_display.py:124
 msgid "A speaker invitation was retracted."
-msgstr "Die Einladung als Vortragender wurde zurückgezogen."
+msgstr "Die Einladung als Vortragende·r wurde zurückgezogen."
 
 #: pretalx/common/log_display.py:125
 msgid "The proposal was unconfirmed."
@@ -2050,7 +2050,7 @@ msgstr "Schließen"
 #: pretalx/common/templates/common/includes/nonpublic.html:10
 msgid "This schedule-related page is non-public. Only organisers can see it."
 msgstr ""
-"Diese Programm-Seite ist derzeit nicht öffentlich. Nur die Veranstalter "
+"Diese Programm-Seite ist derzeit nicht öffentlich. Nur das Veranstalter-Team"
 "können sie sehen."
 
 #: pretalx/common/templates/common/logs.html:15
@@ -2060,7 +2060,7 @@ msgstr "Letzte Änderungen"
 #: pretalx/common/templates/common/logs.html:28
 #: pretalx/orga/templates/orga/event/history_detail_content.html:17
 msgid "This change was performed by an event organiser."
-msgstr "Diese Aktion wurde von einem Veranstalter durchgeführt."
+msgstr "Diese Aktion wurde vom Veranstalter-Team durchgeführt."
 
 #: pretalx/common/templates/common/logs.html:53
 msgid "View detailed changes"
@@ -3073,7 +3073,7 @@ msgstr "Laden Sie Leute zum Review-Team ein"
 
 #: pretalx/event/stages.py:77
 msgid "Let reviewers do their work"
-msgstr "Lassen Sie die Reviewerinnen ihre Arbeit machen"
+msgstr "Lassen Sie die Reviewer·innen ihre Arbeit machen"
 
 #: pretalx/event/stages.py:79
 msgid "Accept or reject proposals"
@@ -3248,7 +3248,7 @@ msgstr "Maria Musterfrau"
 
 #: pretalx/mail/context.py:288
 msgid "The addressed user’s full name"
-msgstr "Der volle Name der Adressat:in"
+msgstr "Der volle Name der Adressat·in"
 
 #: pretalx/mail/context.py:295
 msgid "The addressed user’s email address"
@@ -3267,7 +3267,7 @@ msgstr ""
 msgid ""
 "A list of all changes to the user’s schedule in the current schedule version."
 msgstr ""
-"Eine Liste aller Änderungen an den Beiträgen dieser Nutzer*in in der "
+"Eine Liste aller Änderungen an den Beiträgen dieser Nutzer·in in der "
 "aktuellen Programmversion."
 
 #: pretalx/mail/context.py:319
@@ -3282,7 +3282,7 @@ msgstr ""
 #: pretalx/mail/context.py:322
 msgid "Times and locations for this user’s publicly visible sessions."
 msgstr ""
-"Eine Liste aller Räume und Zeiten der öffentlichen Beiträge dieser Nutzer*in."
+"Eine Liste aller Räume und Zeiten der öffentlichen Beiträge dieser Nutzer·in."
 
 #: pretalx/mail/default_templates.py:7
 #, python-brace-format
@@ -3410,7 +3410,7 @@ msgstr ""
 "bei uns, wenn es ein Problem mit Ihrem Beitrag oder Ihrem Beitragstermin "
 "gibt.\n"
 "\n"
-"Die {event_name} Veranstalter"
+"Das {event_name}-Team"
 
 #: pretalx/mail/default_templates.py:64
 msgid "We have some questions about your proposal"
@@ -3501,7 +3501,7 @@ msgid ""
 msgstr ""
 "Hi!\n"
 "\n"
-"Sie wurden als Vortragende(r) einer Einreichung von {event_name} genannt, "
+"Sie wurden als Vortragende·r einer Einreichung von {event_name} genannt, "
 "unter dem Titel „{proposal_title}“.\n"
 "Es wurde ein Account für Sie erstellt – bitte folgen Sie diesem Link, um ein "
 "Passwort zu setzen.\n"
@@ -3607,11 +3607,11 @@ msgstr "Beitragsablehnung"
 
 #: pretalx/mail/models.py:56
 msgid "Add a speaker to a proposal (new account)"
-msgstr "Vortragende*n zu Einreichung hinzufügen (neuer Account)"
+msgstr "Vortragende·n zu Einreichung hinzufügen (neuer Account)"
 
 #: pretalx/mail/models.py:60
 msgid "Add a speaker to a proposal (existing account)"
-msgstr "Vortragende*n zu Einreichung hinzufügen (bestehender Account)"
+msgstr "Vortragende·n zu Einreichung hinzufügen (bestehender Account)"
 
 #: pretalx/mail/models.py:62
 #: pretalx/orga/templates/orga/cfp/question/remind.html:23
@@ -4055,9 +4055,9 @@ msgid ""
 "language a user selects, it will be shown in your event’s default language "
 "instead."
 msgstr ""
-"Nutzer werden pretalx in diesen Sprachen verwenden können, und Sie werden "
+"Nutzer·innen werden pretalx in diesen Sprachen verwenden können, und Sie werden "
 "Texte in diesen Sprachen hinterlegen können. Wenn Sie einen Text nicht in "
-"der Sprache hinterlegt haben, die ein Nutzer auswählt, wird er stattdessen "
+"der Sprache hinterlegt haben, die ein·e Nutzer·in auswählt, wird er stattdessen "
 "in der nächstbesten Sprache angezeigt."
 
 #: pretalx/orga/forms/event.py:85
@@ -4343,7 +4343,7 @@ msgid ""
 "Allow organisers and reviewers to comment on submissions, separate from "
 "reviews."
 msgstr ""
-"Veranstalter und Reviewer dürfen Einreichungen kommentieren (getrennt vom "
+"Das Veranstalter-Team und Reviewer dürfen Einreichungen kommentieren (getrennt vom "
 "Bewertungsprozess)."
 
 #: pretalx/orga/forms/event.py:566
@@ -5106,7 +5106,7 @@ msgid ""
 "access the organiser version in automatic integrations, you'll have to "
 "provide your authentication token just like in the API, like this:"
 msgstr ""
-"Einige dieser allgemeinen Exporte sind nur für Veranstalter zugänglich, oder "
+"Einige dieser allgemeinen Exporte sind nur für das Veranstalter-Team zugänglich, oder "
 "enthalten zusätzliche Informationen, wenn sie von einem Veranstalter-Account "
 "abgerufen werden. Wenn Sie diese Exporte in Automatisierungen einbinden "
 "möchten, werden Sie ein Authentifizierungs-Token angeben müssen, wie in der "
@@ -5566,7 +5566,7 @@ msgstr "Sie verwenden pretalx als Superuser, davon raten wir ab."
 #: pretalx/orga/templates/orga/base.html:140
 msgid "Please click here to switch to an administrator account."
 msgstr ""
-"Bitte klicken Sie hier, um Ihren Account zu einem Administratoraccount zu "
+"Bitte klicken Sie hier, um Ihren Account zu einem Administrations-Account zu "
 "machen."
 
 #: pretalx/orga/templates/orga/base.html:147
@@ -5804,7 +5804,7 @@ msgid ""
 "Yes and No is not accepted. If you want to allow both options, do not make "
 "this field required."
 msgstr ""
-"Wenn Sie ein Ja/Nein-Feld als benötigt markieren, müssen Nutzer*innen „Ja“ "
+"Wenn Sie ein Ja/Nein-Feld als benötigt markieren, müssen Nutzer·innen „Ja“ "
 "auswählen, und „Nein“ wird nicht akzeptiert. Wenn Sie beide Antworten "
 "erlauben wollen, markieren Sie dieses Feld nicht als benötigt."
 
@@ -5892,7 +5892,7 @@ msgid ""
 msgstr ""
 "Zusatzfelder können Ihnen helfen, zusätzliche Informationen über die "
 "Einreichenden zu erfahren, z.B. Kleidergrößen, Essensvorlieben oder "
-"benötigte Unterstützung. Felder können pro Einreichung oder pro Vortragender "
+"benötigte Unterstützung. Felder können pro Einreichung oder pro Vortragende·r "
 "angelegt werden."
 
 #: pretalx/orga/templates/orga/cfp/question/remind.html:10
@@ -6091,7 +6091,7 @@ msgid ""
 "will only be visible to you and your team."
 msgstr ""
 "Diese Veranstaltung ist derzeit öffentlich sichtbar. Wenn Sie sie "
-"deaktivieren, wird sie nur für die Veranstalter sichtbar sein."
+"deaktivieren, wird sie nur für das Veranstalter-Team sichtbar sein."
 
 #: pretalx/orga/templates/orga/event/live.html:27
 msgid ""
@@ -6347,7 +6347,7 @@ msgstr ""
 "Knopf. Um die Einladung mit einem anderen Account anzunehmen, können Sie "
 "sich <a href=\"/orga/logout/?next=%(link)s\">ausloggen</a> und dann mit dem "
 "anderen Account einloggen. </p><p> Wenn Sie diese Einladung irrtümlich "
-"erhalten haben, melden Sie sich bitte beim Veranstalter direkt."
+"erhalten haben, melden Sie sich bitte beim Veranstalter-Team direkt."
 
 #: pretalx/orga/templates/orga/invitation.html:53
 msgid "Join the team!"
@@ -7918,7 +7918,7 @@ msgid ""
 "There was a problem with your authentication. Please contact the organiser "
 "for further help."
 msgstr ""
-"Es gab ein Problem beim Log-In. Bitte wenden Sie sich an den Veranstalter."
+"Es gab ein Problem beim Log-In. Bitte wenden Sie sich an das Veranstalter-Team."
 
 #: pretalx/orga/views/event.py:623
 msgid "You are now part of the team!"
@@ -8179,7 +8179,7 @@ msgstr "Das API-Token wurde aktualisiert."
 
 #: pretalx/orga/views/person.py:123
 msgid "You are now an administrator instead of a superuser."
-msgstr "Sie sind jetzt ein Administrator statt ein Superuser."
+msgstr "Sie sind jetzt ein·e Administrator·in statt ein Superuser."
 
 #: pretalx/orga/views/review.py:337
 #, python-brace-format
@@ -8566,7 +8566,7 @@ msgstr "Diese(r) Vortragende ist angekommen"
 #: pretalx/person/models/profile.py:110 tests/person/models/test_profile.py:50
 #: tests/person/models/test_profile.py:56
 msgid "Unnamed speaker"
-msgstr "Unbenannter Vortragender"
+msgstr "Unbenannte·r Vortragende·r"
 
 #: pretalx/person/models/user.py:92
 msgid "Your username must not contain HTML or other markup."
@@ -8595,7 +8595,7 @@ msgstr "Bevorzugte Sprache"
 
 #: pretalx/person/models/user.py:185
 msgid "Unnamed user"
-msgstr "Unbenannter Nutzer"
+msgstr "Unbenannte·r Nutzer·in"
 
 #: pretalx/person/models/user.py:490
 #, python-brace-format
@@ -9027,7 +9027,7 @@ msgid ""
 "{current} speaker(s) and {pending} pending invitation(s)."
 msgstr ""
 "Dies würde die Maximalanzahl von {max} Vortragenden pro Einreichung "
-"übersteigen. Momentan: {current} Vortragende(r) und {pending} Einladung(en)."
+"übersteigen. Momentan: {current} Vortragende und {pending} Einladungen."
 
 #: pretalx/submission/forms/submission.py:301
 msgid "Proposal states"
@@ -9167,11 +9167,11 @@ msgstr "pro Einreichung"
 
 #: pretalx/submission/models/question.py:99
 msgid "per speaker"
-msgstr "pro Vortragender"
+msgstr "pro Vortragende·r"
 
 #: pretalx/submission/models/question.py:100
 msgid "for reviewers"
-msgstr "für Reviewerinnen"
+msgstr "für Reviewer·innen"
 
 #: pretalx/submission/models/question.py:108
 msgid "always optional"
@@ -9526,7 +9526,7 @@ msgstr "Vorgemerkter Status"
 #: pretalx/submission/models/submission.py:239
 msgid "These notes are meant for the organisers and won’t be made public."
 msgstr ""
-"Diese Notizen sind für die Veranstalter bestimmt und werden nicht "
+"Diese Notizen sind für das Veranstalter-Team bestimmt und werden nicht "
 "veröffentlicht."
 
 #: pretalx/submission/models/submission.py:257
@@ -9543,7 +9543,7 @@ msgstr "Zeichnet meine Veranstaltung nicht auf."
 
 #: pretalx/submission/models/submission.py:290
 msgid "Assigned reviewers"
-msgstr "Eingeteilte Reviewer*innen"
+msgstr "Eingeteilte Reviewer·innen"
 
 #: pretalx/submission/models/submission.py:632
 msgid ""
@@ -9995,7 +9995,7 @@ msgstr ""
 
 #~ msgid "This event is currently non-public. Only organisers can see it."
 #~ msgstr ""
-#~ "Die Veranstaltung ist derzeit nicht öffentlich. Nur die Veranstalter "
+#~ "Die Veranstaltung ist derzeit nicht öffentlich. Nur das Veranstalter-Team"
 #~ "können sie sehen."
 
 #~ msgid "This content may be shown publicly."
@@ -10391,7 +10391,7 @@ msgstr ""
 
 #~ msgid "Please ask an organiser to invite you to an event."
 #~ msgstr ""
-#~ "Bitten Sie die Organisator*innen, zu einer Veranstaltung eingeladen zu "
+#~ "Bitten Sie die Organisator·innen, zu einer Veranstaltung eingeladen zu "
 #~ "werden."
 
 #, python-brace-format
