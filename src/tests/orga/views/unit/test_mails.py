@@ -373,5 +373,5 @@ def test_outbox_send_get_task_success_message(event):
 
     assert (
         str(view.get_task_success_message({"count": 3}))
-        == "3 mails have been processed."
+        == "3 emails have been processed."
     )

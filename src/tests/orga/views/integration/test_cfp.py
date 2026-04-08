@@ -597,7 +597,7 @@ def test_question_remind_invalid_role(client, event):
 
     assert response.status_code == 200
     content = response.content.decode()
-    assert "Could not send mails" in content
+    assert "Could not send emails" in content
 
 
 def test_question_file_download_non_file_redirects(client, event, question):
