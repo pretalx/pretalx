@@ -175,12 +175,13 @@ class InfoForm(CfPFormMixin, RequestRequire, forms.ModelForm):
                 )
 
     def _set_locales(self):
-        if "content_locale" in self.fields:
-            if len(self.event.content_locales) == 1:
-                self.default_values["content_locale"] = self.event.content_locales[0]
-                self.fields.pop("content_locale")
-            else:
-                self.fields["content_locale"].choices = self.event.named_content_locales
+        if "content_locale" not in self.fields:
+            self.default_values["content_locale"] = self.event.content_locales[0]
+        elif len(self.event.content_locales) == 1:
+            self.default_values["content_locale"] = self.event.content_locales[0]
+            self.fields.pop("content_locale")
+        else:
+            self.fields["content_locale"].choices = self.event.named_content_locales
 
     def _set_slot_count(self, instance=None):
         if not self.event.get_feature_flag("present_multiple_times"):

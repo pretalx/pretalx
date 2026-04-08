@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`cfp` When the content locale field was hidden or the event had only one content locale, new submissions would incorrectly get the default language instead of the event's content locale.
 - :bug:`orga` Sortable list pages (tracks, rooms, questions, session types, access codes) are no longer paginated, fixing broken drag-and-drop reordering when more than 50 items are present.
 - :feature:`orga:email,2177` Sending emails to many recipients (composing and bulk outbox send) now runs in the background, preventing gateway timeouts. Composing and bulk sending show a progress page.
 - :bug:`orga:review,1932` When reviewers proceed to the next unreviewed proposal, the proposal picker now uses better randomisation to assure an even spread of reviews across the code base.

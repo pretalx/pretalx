@@ -304,6 +304,31 @@ def test_e2e_logged_in_user_no_questions(cfp_event, client, cfp_user):
     _assert_speaker(sub, email=cfp_user.email)
 
 
+def test_e2e_single_non_english_content_locale_do_not_ask(client):
+    """When an event has a single non-English content locale and the field is
+    set to do_not_ask, submissions should still get the event's content locale."""
+    event = EventFactory(
+        cfp__deadline=now() + dt.timedelta(days=30),
+        cfp__fields={"content_locale": {"visibility": "do_not_ask"}},
+        locale="de",
+        locale_array="de",
+        content_locale_array="de",
+    )
+    user = UserFactory()
+    client.force_login(user)
+
+    _, info_url = start_wizard(client, event)
+    _, profile_url = _post_info(client, info_url, event)
+    assert "/profile/" in profile_url
+
+    _, final_url = _post_profile(client, profile_url)
+    assert "/me/submissions/" in final_url
+
+    with scope(event=event):
+        sub = Submission.objects.last()
+        assert sub.content_locale == "de"
+
+
 def test_e2e_tracks_with_access_code_and_questions(client):
     """Track requiring access code: no code fails, code succeeds with track-specific questions."""
     event = EventFactory(
