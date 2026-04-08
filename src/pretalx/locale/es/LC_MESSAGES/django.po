@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-03-30 15:42+0000\n"
-"PO-Revision-Date: 2026-02-25 17:29+0000\n"
+"PO-Revision-Date: 2026-04-06 17:42+0000\n"
 "Last-Translator: Andres Gomez Casanova <angoca@yahoo.com>\n"
 "Language-Team: none\n"
 "Language: es\n"
@@ -9004,7 +9004,7 @@ msgstr "Portugués"
 
 #: pretalx/settings.py:392
 msgid "Ukrainian"
-msgstr ""
+msgstr "Ucraniano"
 
 #: pretalx/settings.py:393
 msgid "Vietnamese"
