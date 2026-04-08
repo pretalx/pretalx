@@ -234,7 +234,7 @@
 | src/pretalx/schedule/models/availability.py                                |       86 |        0 |       30 |        0 |     100% |           |
 | src/pretalx/schedule/models/room.py                                        |       47 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/schedule/models/schedule.py                                    |      172 |        0 |       58 |        0 |     100% |           |
-| src/pretalx/schedule/models/slot.py                                        |      127 |        0 |       20 |        0 |     100% |           |
+| src/pretalx/schedule/models/slot.py                                        |      126 |        0 |       20 |        0 |     100% |           |
 | src/pretalx/schedule/notifications.py                                      |       24 |        0 |        8 |        0 |     100% |           |
 | src/pretalx/schedule/phrases.py                                            |       15 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/schedule/services.py                                           |      220 |        0 |       86 |        0 |     100% |           |
@@ -262,7 +262,7 @@
 | src/pretalx/submission/models/tag.py                                       |       25 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/submission/models/track.py                                     |       39 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/submission/models/type.py                                      |       44 |        0 |        4 |        0 |     100% |           |
-| src/pretalx/submission/phrases.py                                          |       11 |        0 |        0 |        0 |     100% |           |
+| src/pretalx/submission/phrases.py                                          |       12 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/submission/rules.py                                            |      193 |        0 |       58 |        0 |     100% |           |
 | src/pretalx/submission/signals.py                                          |        5 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/submission/tasks.py                                            |       86 |        0 |       18 |        0 |     100% |           |
