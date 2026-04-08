@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-08 11:54+0000\n"
+"POT-Creation-Date: 2026-04-08 17:24+0000\n"
 "PO-Revision-Date: 2025-12-04 17:41+0000\n"
 "Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
@@ -243,11 +243,9 @@ msgid "Not recorded"
 msgstr "복사 금지"
 
 #: pretalx/agenda/views/schedule.py:215
-#, fuzzy
-#| msgid "Recording opt-out"
 msgctxt "schedule filter"
 msgid "Recording"
-msgstr "녹화 허용 안함"
+msgstr ""
 
 #: pretalx/agenda/views/schedule.py:217
 #, fuzzy
@@ -267,7 +265,7 @@ msgstr ""
 #: pretalx/orga/forms/review.py:425 pretalx/orga/templates/orga/base.html:294
 #: pretalx/orga/views/submission.py:1226
 #: pretalx/submission/forms/submission.py:56
-#: pretalx/submission/forms/submission.py:326
+#: pretalx/submission/forms/submission.py:327
 #: pretalx/submission/models/submission.py:216
 msgid "Tags"
 msgstr "태그"
@@ -275,7 +273,7 @@ msgstr "태그"
 #: pretalx/agenda/views/schedule.py:226 pretalx/orga/forms/event.py:883
 #: pretalx/orga/forms/mails.py:438 pretalx/orga/tables/cfp.py:33
 #: pretalx/orga/templates/orga/base.html:265 pretalx/orga/views/cfp.py:550
-#: pretalx/submission/forms/submission.py:320
+#: pretalx/submission/forms/submission.py:321
 #: pretalx/submission/models/access_code.py:33
 #: pretalx/submission/models/question.py:222
 msgid "Tracks"
@@ -546,7 +544,7 @@ msgstr "커스텀 필드"
 #: pretalx/cfp/templates/cfp/event/cfp.html:29
 #, python-format
 msgid ""
-"Proposals close on %(deadline)s (%(timezone)s), %(until_string)s from now."
+"Submissions close on %(deadline)s (%(timezone)s), %(until_string)s from now."
 msgstr ""
 "지금부터 %(deadline)s (%(timezone)s) 까지 , %(until_string)s 동안 제안서를 입"
 "력할 수 있습니다."
@@ -554,13 +552,13 @@ msgstr ""
 #: pretalx/cfp/templates/cfp/event/cfp.html:34
 #, fuzzy, python-format
 #| msgid "This Call for Papers closed on %(deadline)s (%(timezone)s)."
-msgid "Proposals open on %(opening)s (%(timezone)s)."
+msgid "Submissions open on %(opening)s (%(timezone)s)."
 msgstr "이 공모는 %(deadline)s (%(timezone)s)에 마감되었습니다."
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:38
 #, fuzzy, python-format
 #| msgid "This Call for Papers closed on %(deadline)s (%(timezone)s)."
-msgid "Proposals closed on %(deadline)s (%(timezone)s)."
+msgid "Submissions closed on %(deadline)s (%(timezone)s)."
 msgstr "이 공모는 %(deadline)s (%(timezone)s)에 마감되었습니다."
 
 #: pretalx/cfp/templates/cfp/event/cfp.html:64
@@ -636,7 +634,7 @@ msgstr "개요"
 #: pretalx/event/models/event.py:663
 #: pretalx/orga/templates/orga/cfp/editor.html:498
 #: pretalx/submission/models/question.py:629
-#: pretalx/submission/models/submission.py:1015
+#: pretalx/submission/models/submission.py:1018
 msgid "No"
 msgstr "아니요"
 
@@ -1797,7 +1795,7 @@ msgstr "이메일 템플릿"
 #: pretalx/orga/templates/orga/base.html:228
 #: pretalx/orga/templates/orga/organiser/team/update.html:19
 #: pretalx/person/models/user.py:139
-#: pretalx/submission/models/submission.py:1183
+#: pretalx/submission/models/submission.py:1186
 msgid "Email"
 msgstr "이메일"
 
@@ -2601,16 +2599,12 @@ msgid "Export failed. Please try again."
 msgstr ""
 
 #: pretalx/common/views/mixins.py:533
-#, fuzzy
-#| msgid "The item has been deleted."
 msgid "The task has been completed."
-msgstr "항목이 삭제되었습니다."
+msgstr ""
 
 #: pretalx/common/views/mixins.py:536
-#, fuzzy
-#| msgid "There was an error sending the mail. Please try again later."
 msgid "An error occurred. Please try again."
-msgstr "메일을 보내는 동안 오류가 발생했습니다. 나중에 다시 시도해 주세요."
+msgstr ""
 
 #: pretalx/common/views/mixins.py:542
 msgid "Processing"
@@ -2918,7 +2912,7 @@ msgstr "아마도"
 #: pretalx/event/models/event.py:667
 #: pretalx/orga/templates/orga/cfp/editor.html:498
 #: pretalx/submission/models/question.py:627
-#: pretalx/submission/models/submission.py:1015
+#: pretalx/submission/models/submission.py:1018
 msgid "Yes"
 msgstr "확인"
 
@@ -3599,11 +3593,9 @@ msgstr "초안"
 
 #: pretalx/mail/models.py:32
 #: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:7
-#, fuzzy
-#| msgid "pending"
 msgctxt "email status"
 msgid "Sending"
-msgstr "보류 중"
+msgstr ""
 
 #: pretalx/mail/models.py:33 pretalx/orga/forms/event.py:922
 #: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:9
@@ -4176,10 +4168,8 @@ msgid "Select a font for headings and buttons."
 msgstr ""
 
 #: pretalx/orga/forms/event.py:154
-#, fuzzy
-#| msgid "Text"
 msgid "Text font"
-msgstr "텍스트"
+msgstr ""
 
 #: pretalx/orga/forms/event.py:156
 msgid "Ask search engines not to index the event pages"
@@ -4528,7 +4518,7 @@ msgstr "댓글"
 
 #: pretalx/orga/forms/event.py:884 pretalx/orga/tables/cfp.py:39
 #: pretalx/orga/templates/orga/base.html:269 pretalx/orga/views/cfp.py:485
-#: pretalx/submission/forms/submission.py:307
+#: pretalx/submission/forms/submission.py:308
 #: pretalx/submission/models/access_code.py:42
 #: pretalx/submission/models/question.py:231
 msgid "Session types"
@@ -7986,10 +7976,9 @@ msgid "Sending emails"
 msgstr "이메일 발송"
 
 #: pretalx/orga/views/mails.py:185
-#, fuzzy, python-brace-format
-#| msgid "{count} mails have been purged."
+#, python-brace-format
 msgid "{count} emails have been processed."
-msgstr "{count}개의 메일이 삭제되었습니다."
+msgstr ""
 
 #: pretalx/orga/views/mails.py:189
 #, python-brace-format
@@ -8011,10 +8000,8 @@ msgid "The email has been sent."
 msgstr "이메일이 전송되었습니다."
 
 #: pretalx/orga/views/mails.py:258
-#, fuzzy
-#| msgid "An email was sent."
 msgid "No emails to send."
-msgstr "이메일이 전송되었습니다."
+msgstr ""
 
 #: pretalx/orga/views/mails.py:299
 #, python-brace-format
@@ -8488,7 +8475,7 @@ msgid "Not yet arrived"
 msgstr "아직 도착하지 않음"
 
 #: pretalx/person/forms/profile.py:239
-#: pretalx/submission/forms/submission.py:333
+#: pretalx/submission/forms/submission.py:334
 msgid "Full text search"
 msgstr ""
 
@@ -9021,28 +9008,28 @@ msgstr ""
 msgid "Session image"
 msgstr "세션 이미지"
 
-#: pretalx/submission/forms/submission.py:194
+#: pretalx/submission/forms/submission.py:195
 msgid ""
 "Please contact the organisers if you want to change how often you’re "
 "presenting this proposal."
 msgstr "제안서를 발표하는 빈도를 변경하고 싶으시면 주최자에게 연락하세요."
 
-#: pretalx/submission/forms/submission.py:224
+#: pretalx/submission/forms/submission.py:225
 #, python-brace-format
 msgid ""
 "This would exceed the maximum of {max} speakers per proposal. Currently: "
 "{current} speaker(s) and {pending} pending invitation(s)."
 msgstr ""
 
-#: pretalx/submission/forms/submission.py:301
+#: pretalx/submission/forms/submission.py:302
 msgid "Proposal states"
 msgstr "제안 상태"
 
-#: pretalx/submission/forms/submission.py:310
+#: pretalx/submission/forms/submission.py:311
 msgid "exclude pending"
 msgstr "보류 중 제외"
 
-#: pretalx/submission/forms/submission.py:451
+#: pretalx/submission/forms/submission.py:452
 #, python-brace-format
 msgid "Pending {state}"
 msgstr "보류 중 {state}"
@@ -9561,12 +9548,12 @@ msgstr ""
 "전체 제안서 내용:\n"
 "\n"
 
-#: pretalx/submission/models/submission.py:889
+#: pretalx/submission/models/submission.py:892
 #, python-brace-format
 msgid "{title_in_quotes} by {list_of_speakers}"
 msgstr "{title_in_quotes} 작성자: {list_of_speakers}"
 
-#: pretalx/submission/models/submission.py:1199
+#: pretalx/submission/models/submission.py:1202
 #, fuzzy, python-brace-format
 #| msgid "Invite to team {team} for {email}"
 msgid "Invite to {submission} for {email}"

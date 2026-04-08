@@ -232,7 +232,7 @@ def test_default_activitylog_object_link_mail_template():
     result = default_activitylog_object_link(sender=template.event, activitylog=log)
 
     assert result == (
-        f'Mail template <a href="{template.urls.base}">{escape(template.subject)}</a>'
+        f'Email template <a href="{template.urls.base}">{escape(template.subject)}</a>'
     )
 
 
