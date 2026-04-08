@@ -34,7 +34,7 @@ class RoomForm(ReadOnlyFlag, PretalxI18nModelForm):
                 "We will try to schedule your slot during these times. You can click a block twice to remove it."
             )
             + " "
-            + _("Please note that all times are in the event timezone, {tz}.").format(
+            + _("All times are in the event timezone, {tz}.").format(
                 tz=event.timezone if event else ""
             )
             + " "

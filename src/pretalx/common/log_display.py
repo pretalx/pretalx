@@ -104,9 +104,9 @@ LOG_NAMES = {
     "pretalx.submission.cancel": _("The proposal was cancelled."),
     "pretalx.submission.confirm": _("The proposal was confirmed."),
     "pretalx.submission.create": _("The proposal was added."),
-    "pretalx.submission.delete": _("The proposal was deleted."),
+    "pretalx.submission.delete": _("The proposal has been deleted."),
     "pretalx.submission.deleted": _(
-        "The proposal was deleted."
+        "The proposal has been deleted."
     ),  # backwards compatibility
     "pretalx.submission.reject": _("The proposal was rejected."),
     "pretalx.submission.resource.create": _("A proposal resource was added."),
@@ -132,10 +132,12 @@ LOG_NAMES = {
     "pretalx.submission.comment.delete": _("A proposal comment was deleted."),
     "pretalx.submission_type.create": _("A session type was added."),
     "pretalx.submission_type.delete": _("A session type was deleted."),
-    "pretalx.submission_type.make_default": _("The session type was made default."),
+    "pretalx.submission_type.make_default": _(
+        "The session type has been made default."
+    ),
     "pretalx.submission_type.update": _("A session type was modified."),
     "pretalx.access_code.create": _("An access code was added."),
-    "pretalx.access_code.send": _("An access code was sent."),
+    "pretalx.access_code.send": _("The access code has been sent."),
     "pretalx.access_code.update": _("An access code was modified."),
     "pretalx.access_code.delete": _("An access code was deleted."),
     "pretalx.track.create": _("A track was added."),

@@ -39,7 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <br>
                 <small><a href="{{ request.event.orga_urls.reviews }}bulk/">{% translate "Or review all proposals at once." %}</a></small>
             {% elif can_review %}
-                {% translate "You’ve got no proposals left to review!" %}
+                {% translate "You have no proposals left to review!" %}
             {% else %}
                 {% if not reviews_open %}
                     {% translate "Reviews are currently closed." %}

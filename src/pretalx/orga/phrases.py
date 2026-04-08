@@ -35,7 +35,7 @@ class OrgaPhrases(Phrases, app="orga"):
         "Some of the general exports are only accessible for organisers, or include more information when accessed with your organiser account. If you want to access the organiser version in automatic integrations, you'll have to provide your authentication token just like in the API, like this:"
     )
     export_api_note = _(
-        'Please note that your token will have to have the "action" permissions in order to access the predefined schedule exports via the API.'
+        'Your token needs "action" permissions to access the predefined schedule exports via the API.'
     )
     export_custom_hint = _(
         "Build your own custom export here, by selecting all the data you need, and the export format. CSV exports can be opened with Excel and similar applications, while JSON exports are often used for integration with other tools."

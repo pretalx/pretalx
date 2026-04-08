@@ -50,7 +50,7 @@ at {event}. Please follow this link to join:
 I’m looking forward to it!
 {speaker}""")
     invite_invalid_email = _("Please provide a valid email address.")
-    invite_sent = _("The invitation was sent!")
+    invite_sent = _("The invitation has been sent.")
     invite_accepted = _(
         "You are now part of this proposal! Please fill in your profile below."
     )

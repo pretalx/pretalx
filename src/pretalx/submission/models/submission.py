@@ -249,12 +249,12 @@ class Submission(GenerateCode, PretalxModel):
         null=True,
         blank=True,
         verbose_name=_("Duration"),
-        help_text=_("The duration in minutes."),
+        help_text=_("Duration in minutes"),
     )
     slot_count = models.IntegerField(
         default=1,
         verbose_name=_("Slot Count"),
-        help_text=_("How many times this session will take place."),
+        help_text=_("How often this session takes place."),
         validators=[MinValueValidator(1)],
     )
     content_locale = models.CharField(

@@ -65,7 +65,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <h1>
                     <a href="{{ request.event.urls.base }}">
                         {% if request.event.logo %}
-                            <img loading="lazy" src="{{ request.event.logo.url }}" id="event-logo" alt="{% translate "The event's logo" %}" class="cfp-preview-logo">
+                            <img loading="lazy" src="{{ request.event.logo.url }}" id="event-logo" alt="{% translate "The event’s logo" %}" class="cfp-preview-logo">
                         {% else %}
                             {{ request.event.name }}
                         {% endif %}

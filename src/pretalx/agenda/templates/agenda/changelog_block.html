@@ -44,7 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
             </ul>
         {% else %}
             <p>
-                {% translate "We sadly had to cancel a session: " %}
+                {% translate "Sadly, we had to cancel a session:" %}
                 {% for talk in schedule.changes.canceled_talks %}{{ talk.submission.display_title_with_speakers }}{% endfor %}
             </p>
         {% endif %}

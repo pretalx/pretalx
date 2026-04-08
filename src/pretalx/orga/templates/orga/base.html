@@ -483,7 +483,7 @@ SPDX-FileContributor: Raphael Michel
                             </span>
                             <div class="collapse in{% if "/orga/admin/" in request.path %} show{% endif %}" aria-expand="true" id="collapseAdmin">
                                 <a class="nav-link nav-link-second-level {% if "/orga/admin/" == request.path %} active{% endif %}" href="{% url "orga:admin.dashboard" %}">
-                                    <span>{% translate "Admin information" %}</span>
+                                    <span>{% translate "Administrator information" %}</span>
                                 </a>
                                 <a href="{% url "orga:admin.user.list" %}" class="nav-link nav-link-second-level{% if "/orga/admin/users" in request.path %} active{% endif %}">
                                     <span>{% translate "Users" %}</span>
