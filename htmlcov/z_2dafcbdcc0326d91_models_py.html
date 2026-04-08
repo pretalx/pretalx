@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_2dafcbdcc0326d91_placeholders_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-08 10:46 +0000
+            created at 2026-04-08 20:50 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -112,9 +112,9 @@
     <p class="pln"><span class="n"><a id="t28" href="#t28">28</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t29" href="#t29">29</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t"><span class="key">class</span> <span class="nam">QueuedMailStates</span><span class="op">(</span><span class="nam">models</span><span class="op">.</span><span class="nam">TextChoices</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t">    <span class="nam">DRAFT</span> <span class="op">=</span> <span class="str">"draft"</span><span class="op">,</span> <span class="nam">_</span><span class="op">(</span><span class="str">"Draft"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t">    <span class="nam">SENDING</span> <span class="op">=</span> <span class="str">"sending"</span><span class="op">,</span> <span class="nam">_</span><span class="op">(</span><span class="str">"Sending"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t">    <span class="nam">SENT</span> <span class="op">=</span> <span class="str">"sent"</span><span class="op">,</span> <span class="nam">_</span><span class="op">(</span><span class="str">"Sent"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t">    <span class="nam">DRAFT</span> <span class="op">=</span> <span class="str">"draft"</span><span class="op">,</span> <span class="nam">pgettext_lazy</span><span class="op">(</span><span class="str">"email status"</span><span class="op">,</span> <span class="str">"Draft"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t">    <span class="nam">SENDING</span> <span class="op">=</span> <span class="str">"sending"</span><span class="op">,</span> <span class="nam">pgettext_lazy</span><span class="op">(</span><span class="str">"email status"</span><span class="op">,</span> <span class="str">"Sending"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t">    <span class="nam">SENT</span> <span class="op">=</span> <span class="str">"sent"</span><span class="op">,</span> <span class="nam">pgettext_lazy</span><span class="op">(</span><span class="str">"email status"</span><span class="op">,</span> <span class="str">"Sent"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t36" href="#t36">36</a></span><span class="t"><span class="key">def</span> <span class="nam">get_prefixed_subject</span><span class="op">(</span><span class="nam">event</span><span class="op">,</span> <span class="nam">subject</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -201,7 +201,7 @@
     <p class="run run2"><span class="n"><a id="t117" href="#t117">117</a></span><span class="t">        <span class="nam">null</span><span class="op">=</span><span class="key">True</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t118" href="#t118">118</a></span><span class="t">        <span class="nam">verbose_name</span><span class="op">=</span><span class="nam">_</span><span class="op">(</span><span class="str">"BCC"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t119" href="#t119">119</a></span><span class="t">        <span class="nam">help_text</span><span class="op">=</span><span class="nam">_</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t120" href="#t120">120</a></span><span class="t">            <span class="str">"Enter comma separated addresses. Will receive a blind copy of every mail sent from this template. This may be a LOT!"</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t120" href="#t120">120</a></span><span class="t">            <span class="str">"Enter comma separated addresses. Will receive a blind copy of every email sent from this template. This may be a LOT!"</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t121" href="#t121">121</a></span><span class="t">        <span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t122" href="#t122">122</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t123" href="#t123">123</a></span><span class="t">    <span class="com"># Auto-created templates are created when mass emails are sent out. They are only used to re-create similar</span>&nbsp;</span><span class="r"></span></p>
@@ -586,7 +586,7 @@
     <p class="pln"><span class="n"><a id="t502" href="#t502">502</a></span><span class="t"><span class="str">        """</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t503" href="#t503">503</a></span><span class="t">        <span class="key">if</span> <span class="nam">self</span><span class="op">.</span><span class="nam">state</span> <span class="key">in</span> <span class="op">(</span><span class="nam">QueuedMailStates</span><span class="op">.</span><span class="nam">SENT</span><span class="op">,</span> <span class="nam">QueuedMailStates</span><span class="op">.</span><span class="nam">SENDING</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t504" href="#t504">504</a></span><span class="t">            <span class="key">raise</span> <span class="nam">ValidationError</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t505" href="#t505">505</a></span><span class="t">                <span class="nam">_</span><span class="op">(</span><span class="str">"This mail has been sent already. It cannot be sent again."</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t505" href="#t505">505</a></span><span class="t">                <span class="nam">_</span><span class="op">(</span><span class="str">"This email has been sent already. It cannot be sent again."</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t506" href="#t506">506</a></span><span class="t">            <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t507" href="#t507">507</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t508" href="#t508">508</a></span><span class="t">        <span class="nam">has_event</span> <span class="op">=</span> <span class="nam">getattr</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="str">"event"</span><span class="op">,</span> <span class="key">None</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -688,7 +688,7 @@
             <a class="nav" href="z_2dafcbdcc0326d91_placeholders_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-08 10:46 +0000
+            created at 2026-04-08 20:50 +0000
         </p>
     </div>
 </footer>
