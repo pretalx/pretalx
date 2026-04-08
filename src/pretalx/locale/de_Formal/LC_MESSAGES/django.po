@@ -46,7 +46,7 @@ msgstr "Programm-Änderungen"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:19
 msgid "We have new sessions!"
-msgstr "Wir haben neue Vorträge!"
+msgstr "Wir haben neue Beiträge!"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:29
 msgid "We have a new session: "
@@ -54,7 +54,7 @@ msgstr "Wir haben einen neuen Beitrag: "
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:39
 msgid "Sadly, we had to cancel sessions:"
-msgstr "Leider müssen wir Vorträge absagen:"
+msgstr "Leider müssen wir Beiträge absagen:"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:47
 msgid "Sadly, we had to cancel a session:"
@@ -65,7 +65,7 @@ msgid ""
 "We had to move some sessions, so if you were planning on seeing them, check "
 "their new dates or locations:"
 msgstr ""
-"Wir mussten einige Vorträge verlegen – hier können Sie die neuen Zeiten/Orte "
+"Wir mussten einige Beiträge verlegen – hier können Sie die neuen Zeiten/Orte "
 "ansehen:"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:74
@@ -158,7 +158,7 @@ msgstr ""
 #: pretalx/agenda/templates/agenda/schedule_nojs.html:79
 #, python-format
 msgid "No sessions on %(weekday)s, %(current_day)s."
-msgstr "Keine Vorträge an %(weekday)s, %(current_day)s."
+msgstr "Keine Beiträge an %(weekday)s, %(current_day)s."
 
 #: pretalx/agenda/templates/agenda/session_block.html:17
 #, python-format
@@ -797,7 +797,7 @@ msgid ""
 "sessions, and overriding my public and private data."
 msgstr ""
 "Ich möchte wirklich meinen Account löschen, Zugriff auf meine Einreichungen "
-"und Vorträge verlieren, und meine öffentlichen und privaten Daten "
+"und Beiträge verlieren, und meine öffentlichen und privaten Daten "
 "überschreiben."
 
 #: pretalx/cfp/templates/cfp/event/user_profile.html:97
@@ -1565,15 +1565,15 @@ msgstr "Eine Ressource wurde verändert."
 
 #: pretalx/common/log_display.py:115
 msgid "A review was deleted."
-msgstr "Eine Bewertung wurde gelöscht."
+msgstr "Ein Review wurde gelöscht."
 
 #: pretalx/common/log_display.py:116
 msgid "A review was modified."
-msgstr "Eine Bewertung wurde verändert."
+msgstr "Ein Review wurde verändert."
 
 #: pretalx/common/log_display.py:117
 msgid "A review was added."
-msgstr "Eine Bewertung wurde hinzugefügt."
+msgstr "Ein Review wurde hinzugefügt."
 
 #: pretalx/common/log_display.py:118
 msgid "A speaker was added to the proposal."
@@ -1787,7 +1787,7 @@ msgid ""
 "Please give a fair review on why you’d like to see this proposal at the "
 "conference, or why you think it would not be a good fit."
 msgstr ""
-"Bitte geben Sie eine faire Bewertung ab und erklären Sie, warum Sie diese "
+"Bitte geben Sie ein faires Review ab und erklären Sie, warum Sie diese "
 "Einreichung gerne bei der Veranstaltung sehen würden, oder warum Sie meinen, "
 "dass sie eher nicht gut hineinpassen würde."
 
@@ -1849,7 +1849,7 @@ msgstr ""
 "ein paar Fakten, die Sie vielleicht interessieren:\n"
 "\n"
 "- Es gab {submission_count} Einreichungen,\n"
-"- von denen {talk_count} Vorträge ausgewählt wurden.\n"
+"- von denen {talk_count} Beiträge ausgewählt wurden.\n"
 "- Die Reviewer haben {review_count} Reviews verfasst.\n"
 "- Es wurden {schedule_count} Programmversionen veröffentlicht.\n"
 "- Über dieses Event wurden {mail_count} Mails verschickt.\n"
@@ -2878,7 +2878,7 @@ msgstr "Ja"
 
 #: pretalx/event/models/event.py:1153
 msgid "News from your content system"
-msgstr "Nachricht von Ihrem Vortrags-System"
+msgstr "Nachricht von Ihrem Beitrags-System"
 
 #: pretalx/event/models/event.py:1246
 msgid "Link text"
@@ -3169,7 +3169,7 @@ msgstr "Link zum Zurückziehen der Einreichung"
 
 #: pretalx/mail/context.py:208
 msgid "This Is a Proposal Title"
-msgstr "Das ist ein Vortragstitel"
+msgstr "Das ist ein Beitragstitel"
 
 #: pretalx/mail/context.py:209
 msgid "The proposal’s title"
@@ -3208,31 +3208,31 @@ msgid ""
 "\n"
 "Second review, containing heavy criticism!"
 msgstr ""
-"Erste Bewertung, sehr positiv, hält große Stücke auf die Einreichung.\n"
+"Erstes Review, sehr positiv, hält große Stücke auf die Einreichung.\n"
 "\n"
 "---------\n"
 "\n"
-"Zweite Bewertung, sehr kritisch!"
+"Zweites Review, sehr kritisch!"
 
 #: pretalx/mail/context.py:246
 msgid "All review texts for this proposal"
-msgstr "Alle Bewertungstexte für diese Einreichung"
+msgstr "Alle Review-Texte für diese Einreichung"
 
 #: pretalx/mail/context.py:253
 msgid "The session’s start date"
-msgstr "Startdatum des Programmpunkts"
+msgstr "Startdatum des Beitrags"
 
 #: pretalx/mail/context.py:260
 msgid "The session’s start time"
-msgstr "Startuhrzeit des Programmpunkts"
+msgstr "Startuhrzeit des Beitrags"
 
 #: pretalx/mail/context.py:267
 msgid "The session’s end date"
-msgstr "Enddatum des Programmpunkts"
+msgstr "Enddatum des Beitrags"
 
 #: pretalx/mail/context.py:274
 msgid "The session’s end time"
-msgstr "Enduhrzeit des Programmpunkts"
+msgstr "Enduhrzeit des Beitrags"
 
 #: pretalx/mail/context.py:280
 msgid "Room 101"
@@ -3240,7 +3240,7 @@ msgstr "Raum 101"
 
 #: pretalx/mail/context.py:281
 msgid "The session’s room"
-msgstr "Der Raum des Programmpunkts"
+msgstr "Der Raum des Beitrags"
 
 #: pretalx/mail/context.py:287
 msgid "Jane Doe"
@@ -3344,7 +3344,7 @@ msgstr ""
 "“{submission_title}” für\n"
 "{event_name} akzeptiert haben. Bitte klicken Sie auf den folgenden Link um "
 "zu bestätigen, dass\n"
-"Sie kommen und Ihren Programmpunkt beisteuern:\n"
+"Sie kommen und Ihren Beitrag beisteuern:\n"
 "\n"
 "    {confirmation_link}\n"
 "\n"
@@ -3407,7 +3407,7 @@ msgstr ""
 "{speaker_schedule_new}\n"
 "\n"
 "Wir freuen uns schon darauf, Sie zu sehen. Bitte melden Sie sich jederzeit "
-"bei uns, wenn es ein Problem mit Ihrem Beitrag oder Ihrem Vortragstermin "
+"bei uns, wenn es ein Problem mit Ihrem Beitrag oder Ihrem Beitragstermin "
 "gibt.\n"
 "\n"
 "Die {event_name} Veranstalter"
@@ -3599,11 +3599,11 @@ msgstr "Neue Einreichung (Veranstalter-Benachrichtigung)"
 
 #: pretalx/mail/models.py:52
 msgid "Proposal accepted"
-msgstr "Vortragsannahme"
+msgstr "Beitragsannahme"
 
 #: pretalx/mail/models.py:53
 msgid "Proposal rejected"
-msgstr "Vortragsablehnung"
+msgstr "Beitragsablehnung"
 
 #: pretalx/mail/models.py:56
 msgid "Add a speaker to a proposal (new account)"
@@ -3736,7 +3736,7 @@ msgstr "Tracks verwenden"
 
 #: pretalx/orga/forms/cfp.py:54
 msgid "Do you organise your sessions by tracks?"
-msgstr "Werden die Vorträge dieser Veranstaltung in Tracks sortiert?"
+msgstr "Werden die Beiträge dieser Veranstaltung in Tracks sortiert?"
 
 #: pretalx/orga/forms/cfp.py:57 pretalx/submission/models/submission.py:256
 msgid "Slot Count"
@@ -3744,7 +3744,7 @@ msgstr "Anzahl"
 
 #: pretalx/orga/forms/cfp.py:59
 msgid "Can sessions be held multiple times?"
-msgstr "Können Vorträge mehrfach gehalten werden?"
+msgstr "Können Beiträge mehrfach stattfinden?"
 
 #: pretalx/orga/forms/cfp.py:62
 msgid "Send email on new proposal"
@@ -4066,7 +4066,7 @@ msgstr "Einreichungssprachen"
 
 #: pretalx/orga/forms/event.py:88
 msgid "Users will be able to submit proposals in these languages."
-msgstr "Vortragende können diese Sprachen für ihren Vortrag auswählen."
+msgstr "Vortragende können diese Sprachen für ihren Beitrag auswählen."
 
 #: pretalx/orga/forms/event.py:94
 msgid "You can type in your CSS instead of uploading it, too."
@@ -4186,7 +4186,7 @@ msgid ""
 "event dates. You will have to release a new schedule version to notify all "
 "speakers."
 msgstr ""
-"Alle Vorträge, die schon Teil des Programms sind, werden verschoben, wenn "
+"Alle Beiträge, die schon Teil des Programms sind, werden verschoben, wenn "
 "das Veranstaltungsdatum sich ändert. Um die Vortragenden zu benachrichtigen, "
 "müssen Sie eine neue Programmversion veröffentlichen."
 
@@ -4913,7 +4913,7 @@ msgstr "Wertung (Durchschnitt)"
 
 #: pretalx/orga/forms/schedule.py:163
 msgid "Average review score, if there have been reviews yet"
-msgstr "Durchschnittswertung, wenn es schon Bewertungen gibt"
+msgstr "Durchschnittswertung, wenn es schon Reviews gibt"
 
 #: pretalx/orga/forms/schedule.py:169
 msgid "Resources provided by the speaker, either as links or as uploaded files"
@@ -5148,7 +5148,7 @@ msgid ""
 "If you are looking for exports of proposals, sessions or schedule data, "
 "please head here:"
 msgstr ""
-"Wenn Sie nach einem Export für Einreichungen, Vorträge oder Programmdaten "
+"Wenn Sie nach einem Export für Einreichungen, Beiträge oder Programmdaten "
 "suchen, klicken Sie bitte hier:"
 
 #: pretalx/orga/phrases.py:51
@@ -5196,11 +5196,11 @@ msgstr "Bewertung"
 
 #: pretalx/orga/tables/feedback.py:38 pretalx/schedule/phrases.py:35
 msgid "There has been no feedback for this session yet."
-msgstr "Es gab bislang keine Rückmeldungen zu diesem Vortrag."
+msgstr "Es gab bislang keine Rückmeldungen zu diesem Beitrag."
 
 #: pretalx/orga/tables/feedback.py:41
 msgid "There has been no feedback for sessions in this event yet."
-msgstr "Es gab bislang keine Rückmeldungen zu Vorträgen dieser Veranstaltung."
+msgstr "Es gab bislang keine Rückmeldungen zu Beiträgen dieser Veranstaltung."
 
 #: pretalx/orga/tables/mail.py:30 pretalx/orga/tables/mail.py:79
 msgid "Template"
@@ -5239,7 +5239,7 @@ msgstr "Sie haben noch keine Teams angelegt."
 #: pretalx/orga/tables/schedule.py:23
 msgid "Please add at least one place in which sessions can take place."
 msgstr ""
-"Bitte fügen Sie mindestens einen Raum hinzu, in dem Vorträge stattfinden "
+"Bitte fügen Sie mindestens einen Raum hinzu, in dem Beiträge stattfinden "
 "können."
 
 #: pretalx/orga/tables/speaker.py:76 pretalx/orga/tables/submission.py:39
@@ -5741,7 +5741,7 @@ msgstr "Momentan versteckt"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:344
 msgid "Session (30 minutes)"
-msgstr "Vortrag (30 Minuten)"
+msgstr "Beitrag (30 Minuten)"
 
 #: pretalx/orga/templates/orga/cfp/editor.html:355
 msgid "This field cannot be removed."
@@ -6001,7 +6001,7 @@ msgid ""
 "themselves. Track colors are helpful to help attendees navigate your "
 "schedule."
 msgstr ""
-"Tracks werden genutzt, um Vorträge in Kategorien zu sortieren. In den CfP-"
+"Tracks werden genutzt, um Beiträge in Kategorien zu sortieren. In den CfP-"
 "Einstellungen kann festgelegt werden, ob die Vortragenden den Track beim "
 "Einreichen angeben können. Track-Farben helfen den Teilnehmern, sich im "
 "Programm besser zurechtzufinden."
@@ -6414,7 +6414,7 @@ msgstr "z.B."
 #: pretalx/orga/templates/orga/mails/compose_choice.html:17
 #: pretalx/orga/templates/orga/mails/compose_session_mail_form.html:11
 msgid "Sessions, proposals, speakers"
-msgstr "Vorträge, Einreichungen, Vortragende"
+msgstr "Beiträge, Einreichungen, Vortragende"
 
 #: pretalx/orga/templates/orga/mails/compose_choice.html:20
 msgid ""
@@ -6744,8 +6744,8 @@ msgstr "Keine Einreichung für diese Suche gefunden."
 #, python-format
 msgid "%(count)s proposal is waiting for your review."
 msgid_plural "%(count)s proposals are waiting for your review."
-msgstr[0] "Eine Einreichung wartet auf Ihre Bewertung."
-msgstr[1] "%(count)s Einreichungen warten auf Ihre Bewertung."
+msgstr[0] "Eine Einreichung wartet auf Ihr Review."
+msgstr[1] "%(count)s Einreichungen warten auf Ihr Review."
 
 #: pretalx/orga/templates/orga/review/dashboard.html:38
 msgid "Click here to get started!"
@@ -6863,7 +6863,7 @@ msgstr "Räume konfigurieren"
 #: pretalx/orga/templates/orga/schedule/quick.html:10
 #: pretalx/orga/templates/orga/schedule/quick.html:14
 msgid "Schedule session"
-msgstr "Programmpunkt festlegen"
+msgstr "Beitrag festlegen"
 
 #: pretalx/orga/templates/orga/schedule/release.html:11
 #: pretalx/orga/templates/orga/schedule/release.html:22
@@ -6901,11 +6901,11 @@ msgid_plural ""
 msgstr[0] ""
 "Beim Veröffentlichen dieser Programmversion wird <strong>eine "
 "Benachrichtigung</strong> generiert und in den Postausgang gelegt, in der "
-"die Vortragenden über ihre Programmpunkte informiert werden."
+"die Vortragenden über ihre Beiträge informiert werden."
 msgstr[1] ""
 "Beim Veröffentlichen dieser Programmversion werden <strong>%(count)s "
 "Benachrichtigungn</strong> generiert und in den Postausgang gelegt, in denen "
-"die Vortragenden über ihre Programmpunkte informiert werden."
+"die Vortragenden über ihre Beiträge informiert werden."
 
 #: pretalx/orga/templates/orga/schedule/release.html:59
 msgid "New schedule version"
@@ -6928,31 +6928,31 @@ msgid_plural ""
 "%(count)s sessions are still <strong>unconfirmed</strong> and will not show "
 "up on the public schedule."
 msgstr[0] ""
-"Ein Programmpunkt ist noch <strong>nicht bestätigt</strong> und wird nicht "
+"Ein Beitrag ist noch <strong>nicht bestätigt</strong> und wird nicht "
 "im öffentlichen Programm angezeigt werden."
 msgstr[1] ""
-"%(count)s Programmpunkte sind noch <strong>nicht bestätigt</strong> und "
+"%(count)s Beiträge sind noch <strong>nicht bestätigt</strong> und "
 "werden nicht im öffentlichen Programm angezeigt werden."
 
 #: pretalx/orga/templates/orga/schedule/release.html:74
 msgid "See all unconfirmed sessions."
-msgstr "Alle noch nicht bestätigten Vorträge sehen."
+msgstr "Alle noch nicht bestätigten Beiträge sehen."
 
 #: pretalx/orga/templates/orga/schedule/release.html:77
 #, python-format
 msgid "One session has <strong>not yet been scheduled</strong>."
 msgid_plural "%(count)s sessions have <strong>not yet been scheduled</strong>."
-msgstr[0] "Ein Programmpunkt wurde <strong>noch nicht geplant</strong>."
+msgstr[0] "Ein Beitrag wurde <strong>noch nicht eingeplant</strong>."
 msgstr[1] ""
-"%(count)s Programmpunkte wurden <strong>noch nicht geplant</strong>."
+"%(count)s Beiträge wurden <strong>noch nicht eingeplant</strong>."
 
 #: pretalx/orga/templates/orga/schedule/release.html:84
 #, python-format
 msgid "One session has <strong>not yet been assigned a track</strong>."
 msgid_plural ""
 "%(count)s sessions have <strong>not yet been assigned a track</strong>."
-msgstr[0] "Ein Programmpunkt hat noch <strong>keinen Track</strong>."
-msgstr[1] "%(count)s Programmpunkte haben noch <strong>keinen Track</strong>."
+msgstr[0] "Ein Beitrag hat noch <strong>keinen Track</strong>."
+msgstr[1] "%(count)s Beiträge haben noch <strong>keinen Track</strong>."
 
 #: pretalx/orga/templates/orga/schedule/release.html:100
 msgid "Warnings"
@@ -7050,8 +7050,8 @@ msgid ""
 "this total score can be weighted. Currently, the total score is calculated "
 "as:"
 msgstr ""
-"Sie können Reviewer bitten, eine oder mehrere Bewertungen abzugeben. Wenn "
-"Sie mehrere Bewertungen einrichten, werden sie addiert. Bei Bedarf können "
+"Sie können Reviewer bitten, ein oder mehrere Reviews abzugeben. Wenn "
+"Sie mehrere Reviews einrichten, werden sie addiert. Bei Bedarf können "
 "Sie diese Gesamtwertung gewichten. Derzeit wird die Gesamtwertung so "
 "berechnet:"
 
@@ -7315,7 +7315,7 @@ msgstr[1] "Beiträge"
 
 #: pretalx/orga/templates/orga/submission/list.html:57
 msgid "Add new session or proposal"
-msgstr "Vortrag oder Einreichung hinzufügen"
+msgstr "Beitrag oder Einreichung hinzufügen"
 
 #: pretalx/orga/templates/orga/submission/review.html:28
 msgid "You’re not allowed to review or see reviews for your own proposals."
@@ -7326,7 +7326,7 @@ msgstr ""
 #: pretalx/orga/templates/orga/submission/review.html:44
 msgid "You will be able to see other reviews once you have given yours."
 msgstr ""
-"Sie werden andere Bewertungen sehen können, sobald Sie Ihre eigene erstellt "
+"Sie werden andere Reviews sehen können, sobald Sie Ihre eigene erstellt "
 "haben."
 
 #: pretalx/orga/templates/orga/submission/review.html:91
@@ -7390,7 +7390,7 @@ msgstr "Vorerst überspringen"
 #: pretalx/orga/templates/orga/submission/review_delete.html:10
 msgctxt "action: delete your review of this proposal"
 msgid "Delete review"
-msgstr "Bewertung löschen"
+msgstr "Review löschen"
 
 #: pretalx/orga/templates/orga/submission/speakers.html:45
 msgid "Add speaker"
@@ -7425,7 +7425,7 @@ msgstr "Einreichungen nach Einreichungsdatum"
 
 #: pretalx/orga/templates/orga/submission/stats.html:39
 msgid "Sessions by submission date"
-msgstr "Vorträge nach Einreichungsdatum"
+msgstr "Beiträge nach Einreichungsdatum"
 
 #: pretalx/orga/templates/orga/submission/stats.html:42
 msgid "Total proposals"
@@ -7437,7 +7437,7 @@ msgstr "Einreichungen nach Einreichungstyp"
 
 #: pretalx/orga/templates/orga/submission/stats.html:50
 msgid "Sessions by session type"
-msgstr "Vorträge nach Einreichungstyp"
+msgstr "Beiträge nach Einreichungstyp"
 
 #: pretalx/orga/templates/orga/submission/stats.html:60
 msgid "Proposals by track"
@@ -7445,7 +7445,7 @@ msgstr "Einreichungen nach Track"
 
 #: pretalx/orga/templates/orga/submission/stats.html:61
 msgid "Sessions by track"
-msgstr "Vorträge nach Track"
+msgstr "Beiträge nach Track"
 
 #: pretalx/orga/templates/orga/submission/stats.html:71
 msgid "Proposals by state"
@@ -7453,7 +7453,7 @@ msgstr "Einreichungen nach Status"
 
 #: pretalx/orga/templates/orga/submission/stats.html:72
 msgid "Sessions by state"
-msgstr "Vorträge nach Status"
+msgstr "Beiträge nach Status"
 
 #: pretalx/orga/templates/orga/tables/columns/queued_mail_template_info.html:9
 msgid "Contains an attachment"
@@ -7756,8 +7756,8 @@ msgstr "Aktive Reviewer"
 #: pretalx/orga/views/dashboard.py:224
 msgid "proposal is waiting for your review."
 msgid_plural "proposals are waiting for your review."
-msgstr[0] "Einreichung wartet auf Ihre Bewertung."
-msgstr[1] "Einreichungen warten auf Ihre Bewertung."
+msgstr[0] "Einreichung wartet auf Ihr Review."
+msgstr[1] "Einreichungen warten auf Ihr Review."
 
 #: pretalx/orga/views/dashboard.py:280
 msgid "day until event start"
@@ -8222,11 +8222,11 @@ msgstr "{name}'s Review"
 
 #: pretalx/orga/views/review.py:861
 msgid "Your review"
-msgstr "Deine Bewertungen"
+msgstr "Ihre Reviews"
 
 #: pretalx/orga/views/review.py:870
 msgid "The review has been deleted."
-msgstr "Die Bewertung wurde gelöscht."
+msgstr "Das Review wurde gelöscht."
 
 #: pretalx/orga/views/review.py:901
 #, python-format
@@ -8579,7 +8579,7 @@ msgid ""
 msgstr ""
 "Bitte geben Sie den Namen an, den Sie veröffentlichen wollen. Dieser Name "
 "wird für alle Veranstaltungen verwendet, für die Sie auf dieser Website "
-"Vorträge einreichen."
+"Beiträge einreichen."
 
 #: pretalx/person/models/user.py:141
 msgid ""
@@ -8790,7 +8790,7 @@ msgstr "Der Raum {room_name} steht zur gewählten Zeit nicht zur Verfügung."
 #: pretalx/schedule/models/schedule.py:221
 msgid "Another session in the same room overlaps with this one."
 msgstr ""
-"Ein anderer Programmpunkt überschneidet sich mit diesem im selben Raum."
+"Ein anderer Beitrag überschneidet sich mit diesem im selben Raum."
 
 #: pretalx/schedule/models/schedule.py:242
 #, python-brace-format
@@ -8801,7 +8801,7 @@ msgstr "{speaker} steht zum gewählten Zeitpunkt nicht zur Verfügung."
 #, python-brace-format
 msgid "{speaker} is scheduled for another session at the same time."
 msgstr ""
-"{speaker} ist zu diesem Zeitpunkt schon für einen anderen Programmpunkt "
+"{speaker} ist zu diesem Zeitpunkt schon für einen anderen Beitrag "
 "verplant."
 
 #: pretalx/schedule/models/slot.py:35
@@ -8816,7 +8816,7 @@ msgstr "Blocker"
 
 #: pretalx/schedule/models/slot.py:75
 msgid "The room this session is scheduled in, if any"
-msgstr "Der Raum, in dem dieser Programmpunkt stattfindet, wenn es einen gibt"
+msgstr "Der Raum, in dem dieser Beitrag stattfindet, wenn es einen gibt"
 
 #: pretalx/schedule/models/slot.py:88
 msgid "Slot type"
@@ -8850,7 +8850,7 @@ msgstr "Wann der Beitrag endet, sofern er schon geplant ist"
 #. formats. Plural, used in headings.
 #: pretalx/schedule/phrases.py:16
 msgid "Sessions"
-msgstr "Vorträge"
+msgstr "Beiträge"
 
 #: pretalx/schedule/phrases.py:23
 msgid "We released our first schedule!"
@@ -9465,7 +9465,7 @@ msgstr "Reviewer können andere Reviews sehen"
 
 #: pretalx/submission/models/review.py:249
 msgid "After reviewing the proposal"
-msgstr "Nach Bewertung der Einreichung"
+msgstr "Nach Review der Einreichung"
 
 #: pretalx/submission/models/review.py:254
 msgid "Reviewers can see speaker names"
@@ -9531,7 +9531,7 @@ msgstr ""
 
 #: pretalx/submission/models/submission.py:257
 msgid "How often this session takes place."
-msgstr "Wie oft der Programmpunkt abgehalten wird."
+msgstr "Wie oft der Beitrag stattfindet."
 
 #: pretalx/submission/models/submission.py:265
 msgid "Show this session in public list of featured sessions."
@@ -10432,7 +10432,7 @@ msgstr ""
 #~ msgstr "Oh :( Wir konnten Ihre Änderungen leider nicht speichern."
 
 #~ msgid "Your reviews have been saved."
-#~ msgstr "Ihre Bewertungen wurden gespeichert."
+#~ msgstr "Ihre Reviews wurden gespeichert."
 
 #~ msgid "The tag has been saved."
 #~ msgstr "Der Tag wurde gespeichert."
@@ -10610,7 +10610,7 @@ msgstr ""
 #~ msgstr ""
 #~ "Wie sieht Ihr Zeitplan aus? Später können Sie auch noch Einreichungsarten "
 #~ "mit abweichendem Einreichungsschluss anlegen, falls Sie z.B. Workshop-"
-#~ "Einreichungen länger annehmt als Vortragseinreichungen."
+#~ "Einreichungen länger annehmt als Beitragseinreichungen."
 
 #~ msgid "Import XML"
 #~ msgstr "XML importieren"
@@ -10696,7 +10696,7 @@ msgstr ""
 #~ msgstr "Möchten Sie diese Information wirklich löschen?"
 
 #~ msgid "Do you really want to delete your review?"
-#~ msgstr "Möchten Sie Ihre Bewertung wirklich löschen?"
+#~ msgstr "Möchten Sie Ihr Review wirklich löschen?"
 
 #~ msgid "Do you really want to delete this tag?"
 #~ msgstr "Möchten Sie diesen Tag wirklich löschen?"
@@ -10995,7 +10995,7 @@ msgstr ""
 
 #~ msgid "There’s an overlapping session scheduled in this room."
 #~ msgstr ""
-#~ "Es findet gleichzeitig schon ein anderer Programmpunkt in diesem Raum "
+#~ "Es findet gleichzeitig schon ein anderer Beitrag in diesem Raum "
 #~ "statt."
 
 #~ msgid "Use Gravatar"
@@ -11007,7 +11007,7 @@ msgstr ""
 #~ "Vortragende können ihr Profilbild automatisch von Gravatar einbinden."
 
 #~ msgid "Should the sessions marked as featured be shown publicly?"
-#~ msgstr "Sollen die als Highlight markierten Vorträge sichtbar sein?"
+#~ msgstr "Sollen die als Highlight markierten Beiträge sichtbar sein?"
 
 #~ msgid "John Doe"
 #~ msgstr "Maxe Mustermann"
@@ -11025,13 +11025,13 @@ msgstr ""
 
 #, fuzzy
 #~ msgid "Proposals available for review"
-#~ msgstr "Einreichung wartet auf Ihre Bewertung."
+#~ msgstr "Einreichung wartet auf Ihr Review."
 
 #~ msgid "Additional review team settings"
 #~ msgstr "Zusätzliche Review-Einstellungen"
 
 #~ msgid "Scheduled Sessions"
-#~ msgstr "Verplante Vorträge"
+#~ msgstr "Beiträge im Programm"
 
 #~ msgid "This proposal can’t be reviewed at the moment."
 #~ msgstr "Die Einreichung kann derzeit nicht bewertet werden."
@@ -11161,7 +11161,7 @@ msgstr ""
 #~ "session ;)"
 #~ msgstr ""
 #~ "Sogar die Veranstalter, die nur am rotieren sind, sollte mindestens einen "
-#~ "Vortrag anhören - welchen nehmen Sie?"
+#~ "Beitrag anhören - welchen nehmen Sie?"
 
 #~ msgid "Pudding"
 #~ msgstr "Pudding"
@@ -11276,7 +11276,7 @@ msgstr ""
 #~ "sehen."
 
 #~ msgid "No talk matches your search."
-#~ msgstr "Keine Vorträge wurde für diese Suche gefunden."
+#~ msgstr "Für diese Suche wurden keine Beiträge gefunden."
 
 #, fuzzy
 #~ msgid "Proportional"
@@ -11386,7 +11386,7 @@ msgstr ""
 #~ "enabled and the talk was accepted."
 #~ msgstr ""
 #~ "Zeige diese Einreichung auf der Vorschauseite, wenn diese freigegeben ist "
-#~ "und der Vortrag angenommen wurde."
+#~ "und der Beitrag angenommen wurde."
 
 #~ msgid "This stylesheet is not valid CSS."
 #~ msgstr "Diese Datei ist kein valides CSS."
@@ -11621,7 +11621,7 @@ msgstr ""
 #~ msgstr ""
 #~ "Hi!\n"
 #~ "\n"
-#~ "Wir haben eine neue Programmversion, und dein Vortrag wurde verlegt:\n"
+#~ "Wir haben eine neue Programmversion, und dein Beitrag wurde verlegt:\n"
 #~ "Von {old_datetime} ({old_room}) nach {new_datetime} ({new_room}).\n"
 #~ "\n"
 #~ "Wenn das ein Problem ist, melde dich einfach!\n"
@@ -11673,7 +11673,7 @@ msgstr ""
 #~ "anderen!"
 
 #~ msgid "total talks"
-#~ msgstr "Vorträge insgesamt"
+#~ msgstr "Beiträge insgesamt"
 
 #~ msgid "The submitted availability is not within the event timeframe."
 #~ msgstr "Die Verfügbarkeit liegt nicht im Veranstaltungszeitraum."
