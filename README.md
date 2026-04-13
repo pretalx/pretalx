@@ -191,7 +191,6 @@
 | src/pretalx/orga/templatetags/formsets.py                                  |       15 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/orga/templatetags/orga\_edit\_link.py                          |        9 |        0 |        2 |        0 |     100% |           |
 | src/pretalx/orga/templatetags/platform\_icons.py                           |        8 |        0 |        0 |        0 |     100% |           |
-| src/pretalx/orga/templatetags/querystring.py                               |        6 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/orga/templatetags/review\_score.py                             |       17 |        0 |        8 |        0 |     100% |           |
 | src/pretalx/orga/utils/i18n.py                                             |       39 |        0 |       10 |        0 |     100% |           |
 | src/pretalx/orga/views/admin.py                                            |      136 |        0 |       16 |        0 |     100% |           |
@@ -463,7 +462,6 @@
 | src/tests/orga/tables/test\_submission.py                                  |      216 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/templatetags/test\_orga\_edit\_link.py                      |       14 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/templatetags/test\_platform\_icons.py                       |       12 |        0 |        0 |        0 |     100% |           |
-| src/tests/orga/templatetags/test\_querystring.py                           |       13 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/templatetags/test\_review\_score.py                         |       22 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/test\_context\_processors.py                                |      198 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/test\_receivers.py                                          |       24 |        0 |        0 |        0 |     100% |           |
@@ -553,7 +551,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **69494** |    **0** | **5924** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **69475** |    **0** | **5924** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
