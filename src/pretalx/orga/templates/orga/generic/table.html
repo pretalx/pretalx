@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load django_tables2 %}
 {% load i18n %}
-{% load querystring %} {# we need this because django_tables2 overrides django's querystring with its own incompatible version #}
 
 {% block table-wrapper %}
     <div id="table-content-{{ table.name }}" class="table-content" data-table-name="{{ table.name }}" aria-live="polite">
@@ -120,7 +119,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 {% for column in table.columns %}
                                     <th {{ column.attrs.th.as_html }}>
                                         {% if column.orderable %}
-                                            <a href="{% django_querystring sort=column.order_by_alias.next page=None %}" class="table-sort-link">{{ column.header }}</a>
+                                            <a href="{% querystring sort=column.order_by_alias.next page=None %}" class="table-sort-link">{{ column.header }}</a>
                                         {% else %}
                                             {{ column.header }}
                                         {% endif %}
