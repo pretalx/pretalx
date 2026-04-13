@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-08 22:48+0000\n"
-"PO-Revision-Date: 2026-02-25 17:29+0000\n"
+"PO-Revision-Date: 2026-04-13 14:47+0000\n"
 "Last-Translator: Andres Gomez Casanova <angoca@yahoo.com>\n"
 "Language-Team: none\n"
 "Language: es\n"
@@ -59,7 +59,7 @@ msgstr "Lastimosamente, hemos tenido que cancelar sesiones:"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:47
 msgid "Sadly, we had to cancel a session:"
-msgstr "Lastimosamente, hemos tenido que cancelar una sesión: "
+msgstr "Lastimosamente, hemos tenido que cancelar una sesión:"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:56
 msgid ""
@@ -2536,26 +2536,21 @@ msgid "Export failed. Please try again."
 msgstr "La exportación ha fallado. Por favor, inténtalo de nuevo."
 
 #: pretalx/common/views/mixins.py:533
-#, fuzzy
-#| msgid "The track has been deleted."
 msgid "The task has been completed."
-msgstr "El itinerario ha sido eliminado."
+msgstr "La tarea ha sido completada."
 
 #: pretalx/common/views/mixins.py:536
-#, fuzzy
-#| msgid "Export failed. Please try again."
 msgid "An error occurred. Please try again."
-msgstr "La exportación ha fallado. Por favor, inténtalo de nuevo."
+msgstr "Un error ha ocurrido. Por favor, inténtalo de nuevo."
 
 #: pretalx/common/views/mixins.py:542
 msgid "Processing"
-msgstr ""
+msgstr "Procesando"
 
 #: pretalx/common/views/mixins.py:570
-#, fuzzy
-#| msgid "Export file not found. Please try again."
 msgid "Could not start background task. Please try again."
-msgstr "Archivo de exportación no se encuentra. Por favor, inténtalo de nuevo."
+msgstr ""
+"No se puede iniciar la tarea en segundo plano. Por favor, inténtalo de nuevo."
 
 #: pretalx/event/forms.py:63
 msgid ""
@@ -4128,17 +4123,15 @@ msgstr ""
 
 #: pretalx/orga/forms/event.py:150
 msgid "Heading font"
-msgstr ""
+msgstr "Fuente de encabezado"
 
 #: pretalx/orga/forms/event.py:151
 msgid "Select a font for headings and buttons."
-msgstr ""
+msgstr "Selecciona una fuente para encabezados y botones."
 
 #: pretalx/orga/forms/event.py:154
-#, fuzzy
-#| msgid "Text"
 msgid "Text font"
-msgstr "Texto"
+msgstr "Fuente de texto"
 
 #: pretalx/orga/forms/event.py:156
 msgid "Ask search engines not to index the event pages"
@@ -4174,11 +4167,9 @@ msgstr ""
 "todos los ponentes."
 
 #: pretalx/orga/forms/event.py:199
-#, fuzzy
-#| msgid "Make default"
 msgctxt "default choice in a menu"
 msgid "Default"
-msgstr "Hacer por defecto"
+msgstr "Por defecto"
 
 #: pretalx/orga/forms/event.py:225
 msgid "Please do not choose the default domain as custom event domain."
@@ -6192,14 +6183,13 @@ msgid "Download"
 msgstr "Descargar"
 
 #: pretalx/orga/templates/orga/includes/async_progress.html:13
-#, fuzzy, python-format
-#| msgid "Step %(current)s of %(total)s"
+#, python-format
 msgid "Processing %(current)s of %(total)s…"
-msgstr "Paso %(current)s de %(total)s"
+msgstr "Procesando %(current)s de %(total)s…"
 
 #: pretalx/orga/templates/orga/includes/async_progress.html:17
 msgid "Processing…"
-msgstr ""
+msgstr "Procesando…"
 
 #: pretalx/orga/templates/orga/includes/async_progress.html:24
 msgid "Go back"
@@ -7962,16 +7952,13 @@ msgid "You cannot send emails at this time."
 msgstr "No puedes enviar correos electrónicos en este momento."
 
 #: pretalx/orga/views/mails.py:175
-#, fuzzy
-#| msgid "Send emails"
 msgid "Sending emails"
-msgstr "Enviar correos electrónicos"
+msgstr "Enviando correos electrónicos"
 
 #: pretalx/orga/views/mails.py:185
-#, fuzzy, python-brace-format
-#| msgid "{count} mails have been purged."
+#, python-brace-format
 msgid "{count} emails have been processed."
-msgstr "{count} correos electrónicos han sido purgados."
+msgstr "{count} correos electrónicos han sido procesados."
 
 #: pretalx/orga/views/mails.py:189
 #, python-brace-format
@@ -7995,10 +7982,8 @@ msgid "The email has been sent."
 msgstr "El correo electrónico ha sido enviado."
 
 #: pretalx/orga/views/mails.py:258
-#, fuzzy
-#| msgid "An email was sent."
 msgid "No emails to send."
-msgstr "Se envió un correo electrónico."
+msgstr "No hay correos electrónicos para enviar."
 
 #: pretalx/orga/views/mails.py:299
 #, python-brace-format
@@ -8058,10 +8043,8 @@ msgid "The email has been copied, you can edit it now."
 msgstr "El correo ha sido copiado, ahora puede editarlo."
 
 #: pretalx/orga/views/mails.py:482
-#, fuzzy
-#| msgid "Compose emails"
 msgid "Composing emails"
-msgstr "Escribir un email"
+msgstr "Escribiendo correos electrónicos"
 
 #: pretalx/orga/views/mails.py:495 pretalx/orga/views/mails.py:633
 #: pretalx/orga/views/mails.py:690
