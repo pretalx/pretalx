@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-08 22:48+0000\n"
-"PO-Revision-Date: 2026-04-04 11:25+0000\n"
+"PO-Revision-Date: 2026-04-12 05:42+0000\n"
 "Last-Translator: Vasil Kolew <vasil@ludost.net>\n"
 "Language-Team: none\n"
 "Language: bg\n"
@@ -58,7 +58,7 @@ msgstr "За жалост, трябваше да откажем сесии:"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:47
 msgid "Sadly, we had to cancel a session:"
-msgstr "За жалост, трябваше да откажем сесия: "
+msgstr "За жалост, трябваше да откажем сесия:"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:56
 msgid ""
@@ -227,17 +227,13 @@ msgid "No sessions match your current filters."
 msgstr "Няма сесии, които да отговарят на филтрите ви."
 
 #: pretalx/agenda/views/schedule.py:214
-#, fuzzy
-#| msgid "Do not record"
 msgid "Not recorded"
-msgstr "Без запис"
+msgstr "Не е записана"
 
 #: pretalx/agenda/views/schedule.py:215
-#, fuzzy
-#| msgid "Recording opt-out"
 msgctxt "schedule filter"
 msgid "Recording"
-msgstr "Заявка сесията да НЕ се записва"
+msgstr "Записване"
 
 #: pretalx/agenda/views/schedule.py:217
 msgid "An error occurred while loading the schedule. Please try again later."
@@ -304,10 +300,8 @@ msgid "Resources"
 msgstr "Ресурси"
 
 #: pretalx/cfp/flow.py:518
-#, fuzzy
-#| msgid "Please enter at least one email address!"
 msgid "Please add at least one resource."
-msgstr "Моля, въведете поне един e-mail адрес!"
+msgstr "Моля, добавете поне един ресурс."
 
 #: pretalx/cfp/flow.py:587
 msgid ""
@@ -1020,7 +1014,7 @@ msgstr "Добавяне на връзка"
 
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:90
 msgid "Upload a file"
-msgstr ""
+msgstr "Качете файл"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:16
 #: pretalx/submission/models/submission.py:82
@@ -1141,25 +1135,21 @@ msgid "Profile picture"
 msgstr "Профилна снимка"
 
 #: pretalx/common/forms/fields.py:173 pretalx/common/forms/fields.py:181
-#, fuzzy
-#| msgid "Please provide a review score!"
 msgid "Please provide a profile picture!"
-msgstr "Въведете числова оценка!"
+msgstr "Моля качете профилна снимка!"
 
 #: pretalx/common/forms/fields.py:188 pretalx/common/forms/fields.py:194
 #: pretalx/common/forms/fields.py:204
 msgid "Invalid picture selection."
-msgstr ""
+msgstr "Избрана е невалидна снимка."
 
 #: pretalx/common/forms/fields.py:211
-#, fuzzy
-#| msgid "No file provided"
 msgid "No file was uploaded."
-msgstr "Не е изпратен файл"
+msgstr "Няма качен файл."
 
 #: pretalx/common/forms/fields.py:214
 msgid "Please upload an image file (JPG, PNG, GIF, or WebP)."
-msgstr ""
+msgstr "Моля качете снимка (JPG, PNG, GIF или WebP)."
 
 #: pretalx/common/forms/fields.py:313
 msgid "Form submission failed."
@@ -1317,10 +1307,9 @@ msgid "Please select an option."
 msgstr "Моля, изберете опция."
 
 #: pretalx/common/forms/widgets.py:490
-#, fuzzy, python-brace-format
-#| msgid "Upcoming events"
+#, python-brace-format
 msgid "{count} events"
-msgstr "Предстоящи събития"
+msgstr "{count} събития"
 
 #: pretalx/common/image.py:46 pretalx/common/image.py:54
 msgid ""
@@ -1565,10 +1554,8 @@ msgid "A speaker was invited to the proposal."
 msgstr "Лектор беше поканен да се включи в предложението."
 
 #: pretalx/common/log_display.py:120
-#, fuzzy
-#| msgid "The speaker has arrived"
 msgid "The speaker order was changed."
-msgstr "Лекторът е пристигнал"
+msgstr "Редът на лекторите беше променен."
 
 #: pretalx/common/log_display.py:121
 msgid "A speaker was removed from the proposal."
@@ -1703,10 +1690,8 @@ msgid "The password was modified."
 msgstr "Паролата беше променена."
 
 #: pretalx/common/log_display.py:159
-#, fuzzy
-#| msgid "The event was modified."
 msgid "The speaker was modified."
-msgstr "Събитието беше променено."
+msgstr "Лекторът беше променен."
 
 #: pretalx/common/log_display.py:160
 msgid "The user changed their email address."
@@ -2104,29 +2089,23 @@ msgstr "Преглед"
 
 #: pretalx/common/templates/common/widgets/markdown.html:16
 msgid "Bold"
-msgstr ""
+msgstr "Удебелен"
 
 #: pretalx/common/templates/common/widgets/markdown.html:17
-#, fuzzy
-#| msgid "Italian"
 msgid "Italic"
-msgstr "Италиански"
+msgstr "Курсив"
 
 #: pretalx/common/templates/common/widgets/markdown.html:18
 msgid "Strikethrough"
-msgstr ""
+msgstr "Задраскан"
 
 #: pretalx/common/templates/common/widgets/markdown.html:20
-#, fuzzy
-#| msgid "Header image"
 msgid "Header"
-msgstr "Заглавна картинка"
+msgstr "Заглавие"
 
 #: pretalx/common/templates/common/widgets/markdown.html:21
-#, fuzzy
-#| msgid "Links"
 msgid "Link"
-msgstr "Връзки"
+msgstr "Връзка"
 
 #: pretalx/common/templates/common/widgets/markdown.html:22
 msgid "Quote"
@@ -2530,26 +2509,20 @@ msgid "Export failed. Please try again."
 msgstr "Изнасянето се провали. Моля опитайте пак."
 
 #: pretalx/common/views/mixins.py:533
-#, fuzzy
-#| msgid "The track has been deleted."
 msgid "The task has been completed."
-msgstr "Потокът е изтрит."
+msgstr "Потокът е завършен."
 
 #: pretalx/common/views/mixins.py:536
-#, fuzzy
-#| msgid "Export failed. Please try again."
 msgid "An error occurred. Please try again."
-msgstr "Изнасянето се провали. Моля опитайте пак."
+msgstr "Грешка, моля опитайте пак."
 
 #: pretalx/common/views/mixins.py:542
 msgid "Processing"
-msgstr ""
+msgstr "Обработка"
 
 #: pretalx/common/views/mixins.py:570
-#, fuzzy
-#| msgid "Export file not found. Please try again."
 msgid "Could not start background task. Please try again."
-msgstr "Не се открива експорт файл. Моля опитайте пак."
+msgstr "Неуспешно стартиране на фонов процес. Моля опитайте пак."
 
 #: pretalx/event/forms.py:63
 msgid ""
@@ -3525,6 +3498,7 @@ msgstr ""
 "\n"
 "Започнахте подаване на предложението ви „{submission_title}“ за\n"
 "{event_name}, но все още не сте го изпратили. Моля отидете на\n"
+"\n"
 "{submission_url}.\n"
 "\n"
 "за да го завършите и изпратите.\n"
@@ -4097,17 +4071,15 @@ msgstr ""
 
 #: pretalx/orga/forms/event.py:150
 msgid "Heading font"
-msgstr ""
+msgstr "Шрифт за заглавието"
 
 #: pretalx/orga/forms/event.py:151
 msgid "Select a font for headings and buttons."
-msgstr ""
+msgstr "Изберете шрифт за заглавията и бутоните."
 
 #: pretalx/orga/forms/event.py:154
-#, fuzzy
-#| msgid "Text"
 msgid "Text font"
-msgstr "Текст"
+msgstr "Шрифт на текста"
 
 #: pretalx/orga/forms/event.py:156
 msgid "Ask search engines not to index the event pages"
@@ -4143,11 +4115,9 @@ msgstr ""
 "известите всички лектори."
 
 #: pretalx/orga/forms/event.py:199
-#, fuzzy
-#| msgid "Make default"
 msgctxt "default choice in a menu"
 msgid "Default"
-msgstr "Направи по подразбиране"
+msgstr "По подразбиране"
 
 #: pretalx/orga/forms/event.py:225
 msgid "Please do not choose the default domain as custom event domain."
@@ -6128,20 +6098,17 @@ msgid "Download"
 msgstr "Изтегляне"
 
 #: pretalx/orga/templates/orga/includes/async_progress.html:13
-#, fuzzy, python-format
-#| msgid "Step %(current)s of %(total)s"
+#, python-format
 msgid "Processing %(current)s of %(total)s…"
-msgstr "Стъпка %(current)s от общо %(total)s"
+msgstr "Обработка на %(current)s от общо %(total)s…"
 
 #: pretalx/orga/templates/orga/includes/async_progress.html:17
 msgid "Processing…"
-msgstr ""
+msgstr "Обработка…"
 
 #: pretalx/orga/templates/orga/includes/async_progress.html:24
-#, fuzzy
-#| msgid "Welcome back!"
 msgid "Go back"
-msgstr "Добре дошли!"
+msgstr "Връщане"
 
 #: pretalx/orga/templates/orga/includes/dashboard_block_event.html:18
 #: pretalx/orga/templates/orga/speaker/form.html:42
@@ -6402,23 +6369,22 @@ msgstr "Това писмо е пратено на %(timestamp)s."
 
 #: pretalx/orga/templates/orga/mails/outbox_form.html:39
 msgid "This email failed to send:"
-msgstr "Това е-писмо не можа да се изпрати."
+msgstr "Следното писмо не можа да се изпрати:"
 
 #: pretalx/orga/templates/orga/mails/outbox_list.html:16
-#, fuzzy, python-format
-#| msgid "{count} emails have been sent."
+#, python-format
 msgid "%(count)s email failed to send."
 msgid_plural "%(count)s emails failed to send."
-msgstr[0] "{count} е-писма са пратени."
-msgstr[1] "{count} е-писма са пратени."
+msgstr[0] "%(count)s писмо не се изпрати."
+msgstr[1] "%(count)s писма не се изпратиха."
 
 #: pretalx/orga/templates/orga/mails/outbox_list.html:23
 msgid "Show failed"
-msgstr ""
+msgstr "Неуспешно показване"
 
 #: pretalx/orga/templates/orga/mails/outbox_list.html:24
 msgid "Retry all failed"
-msgstr ""
+msgstr "Опитай отново всички неуспешни"
 
 #: pretalx/orga/templates/orga/mails/outbox_list.html:32
 msgid "pending email"
@@ -7315,10 +7281,8 @@ msgid "Other proposals by this speaker:"
 msgstr "Други предложения от този лектор:"
 
 #: pretalx/orga/templates/orga/submission/speakers.html:104
-#, fuzzy
-#| msgid "Changes"
 msgid "Change order"
-msgstr "Промени"
+msgstr "Промени реда"
 
 #: pretalx/orga/templates/orga/submission/speakers.html:128
 msgid "Invited on"
@@ -7576,7 +7540,7 @@ msgstr ""
 
 #: pretalx/orga/views/cfp.py:382
 msgid "This field does not support file downloads."
-msgstr ""
+msgstr "Това поле не поддържа файлове."
 
 #: pretalx/orga/views/cfp.py:423
 msgid "Could not send emails, error in configuration."
@@ -7856,10 +7820,9 @@ msgid "Did you really mean to make your event take place in the past?"
 msgstr "Наистина ли искате събитието да се случи в миналото?"
 
 #: pretalx/orga/views/event.py:762
-#, fuzzy, python-brace-format
-#| msgid "Team name"
+#, python-brace-format
 msgid "Team {event.name}"
-msgstr "Име на екипа"
+msgstr "Екип на {event.name}"
 
 #: pretalx/orga/views/event.py:807
 msgid ""
@@ -7882,10 +7845,9 @@ msgid "Sending emails"
 msgstr "Изпращане на писма"
 
 #: pretalx/orga/views/mails.py:185
-#, fuzzy, python-brace-format
-#| msgid "{count} mails have been purged."
+#, python-brace-format
 msgid "{count} emails have been processed."
-msgstr "{count} е-писма са изтрити."
+msgstr "{count} е-писма бяха обработени."
 
 #: pretalx/orga/views/mails.py:189
 #, python-brace-format
@@ -7907,10 +7869,8 @@ msgid "The email has been sent."
 msgstr "Е-писмото е пратено."
 
 #: pretalx/orga/views/mails.py:258
-#, fuzzy
-#| msgid "An email was sent."
 msgid "No emails to send."
-msgstr "Изпратено е писмо."
+msgstr "Няма писма за пращане."
 
 #: pretalx/orga/views/mails.py:299
 #, python-brace-format
@@ -7949,10 +7909,8 @@ msgid ""
 msgstr "Е-писмото е запазено. Като го пратите ще се ползва новия текст."
 
 #: pretalx/orga/views/mails.py:409
-#, fuzzy
-#| msgid "Save and next"
 msgid "Save and retry"
-msgstr "Запазване и нататък"
+msgstr "Запазване и опитване отново"
 
 #: pretalx/orga/views/mails.py:409
 msgid "Save and send"
@@ -8125,11 +8083,9 @@ msgid "Removed tags from {count} proposals."
 msgstr "Премахнати са тагове от {count} предложения."
 
 #: pretalx/orga/views/review.py:860
-#, fuzzy, python-brace-format
-#| msgctxt "proposal status"
-#| msgid "in review"
+#, python-brace-format
 msgid "{name}'s review"
-msgstr "разглежда се"
+msgstr "рецензия на {name}"
 
 #: pretalx/orga/views/review.py:861
 msgid "Your review"
@@ -8391,7 +8347,7 @@ msgstr "Не е пристигнал още"
 #: pretalx/person/forms/profile.py:239
 #: pretalx/submission/forms/submission.py:334
 msgid "Full text search"
-msgstr ""
+msgstr "Пълнотекстово търсене"
 
 #: pretalx/person/forms/user.py:33
 msgid "For security reasons, please wait 5 minutes before you try again."
@@ -8471,10 +8427,8 @@ msgstr "Лекторът е пристигнал"
 
 #: pretalx/person/models/profile.py:110 tests/person/models/test_profile.py:50
 #: tests/person/models/test_profile.py:56
-#, fuzzy
-#| msgid "Unnamed user"
 msgid "Unnamed speaker"
-msgstr "Потребител без име"
+msgstr "Лектор без име"
 
 #: pretalx/person/models/user.py:92
 msgid "Your username must not contain HTML or other markup."
@@ -8858,7 +8812,7 @@ msgstr "Португалски"
 
 #: pretalx/settings.py:392
 msgid "Ukrainian"
-msgstr ""
+msgstr "Украински"
 
 #: pretalx/settings.py:393
 msgid "Vietnamese"
@@ -8942,28 +8896,20 @@ msgid "You already have a tag by this name!"
 msgstr "Вече има етикет с това име!"
 
 #: pretalx/submission/models/access_code.py:35
-#, fuzzy
-#| msgid ""
-#| "You can restrict the access code to a single track, or leave it open for "
-#| "all tracks."
 msgid ""
 "You can restrict the access code to one or more tracks, or leave it open for "
 "all non-restricted tracks."
 msgstr ""
-"Може да ограничите кода за достъп до един поток или да го оставите така — за "
-"всички."
+"Може да ограничите кода за достъп до един или повече потоци или да го "
+"оставите така — за всички не-ограничени потоци."
 
 #: pretalx/submission/models/access_code.py:44
-#, fuzzy
-#| msgid ""
-#| "You can restrict the access code to a single session type, or leave it "
-#| "open for all session types."
 msgid ""
 "You can restrict the access code to one or more session types, or leave it "
 "open for all non-restricted session types."
 msgstr ""
-"Може да ограничите кода за достъп до един вид сесия или да го оставите така "
-"— за всички."
+"Може да ограничите кода за достъп до един или повече видове сесии или да го "
+"оставите така — за всички не-ограничени типове."
 
 #: pretalx/submission/models/access_code.py:52
 msgid "You can set or change this date later to invalidate the access code."
