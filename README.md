@@ -145,7 +145,7 @@
 | src/pretalx/common/views/errors.py                                         |       26 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/common/views/generic.py                                        |      479 |        0 |      132 |        0 |     100% |           |
 | src/pretalx/common/views/helpers.py                                        |       13 |        0 |        0 |        0 |     100% |           |
-| src/pretalx/common/views/mixins.py                                         |      368 |        0 |      122 |        0 |     100% |           |
+| src/pretalx/common/views/mixins.py                                         |      369 |        0 |      122 |        0 |     100% |           |
 | src/pretalx/common/views/redirect.py                                       |       26 |        0 |        6 |        0 |     100% |           |
 | src/pretalx/common/views/shortlink.py                                      |       30 |        0 |       18 |        0 |     100% |           |
 | src/pretalx/event/apps.py                                                  |        4 |        0 |        0 |        0 |     100% |           |
@@ -551,7 +551,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **69475** |    **0** | **5924** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **69476** |    **0** | **5924** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
