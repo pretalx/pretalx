@@ -19,6 +19,7 @@ from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import pgettext_lazy
 from django_context_decorator import context
 from formtools.wizard.forms import ManagementForm
 from rules.contrib.views import PermissionRequiredMixin
@@ -539,7 +540,10 @@ class AsyncTaskProgressMixin:
         return "orga/includes/async_task_waiting.html"
 
     def get_task_progress_title(self):
-        return _("Processing")
+        return pgettext_lazy(
+            "heading shown next to a loading spinner while an operation runs",
+            "Processing",
+        )
 
     def handle_task_success(self, request, result):
         """Called when the async task finishes successfully.

@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     Processing {{ current }} of {{ total }}…
                 {% endblocktranslate %}
             {% else %}
-                {% translate "Processing…" %}
+                {% translate "Processing" context "heading shown next to a loading spinner while an operation runs" %}&thinsp;…
             {% endif %}
         </h3>
         {% if value %}

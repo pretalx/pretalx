@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-08 22:48+0000\n"
+"POT-Creation-Date: 2026-04-14 07:16+0000\n"
 "PO-Revision-Date: 2025-04-08 14:25+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: none\n"
@@ -298,7 +298,6 @@ msgstr "Phiên “{title}” của Hội thảo {event}"
 #: pretalx/orga/templates/orga/review/bulk.html:102
 #: pretalx/orga/templates/orga/review/bulk_tag.html:53
 #: pretalx/orga/templates/orga/submission/review.html:58
-#: tests/cfp/test_flow.py:105
 msgid "Title"
 msgstr "Tiêu đề"
 
@@ -2142,7 +2141,7 @@ msgstr "Không bắt buộc"
 #: pretalx/common/templates/common/logs.html:69
 #: pretalx/common/templates/common/widgets/profile_picture.html:29
 #: pretalx/orga/templates/orga/cfp/editor.html:512
-#: pretalx/orga/templates/orga/generic/table.html:30
+#: pretalx/orga/templates/orga/generic/table.html:29
 msgid "Close"
 msgstr ""
 
@@ -2279,7 +2278,7 @@ msgstr ""
 
 #: pretalx/common/templates/common/widgets/profile_picture.html:21
 #: pretalx/common/templates/common/widgets/profile_picture.html:33
-#: pretalx/orga/templates/orga/generic/table.html:49
+#: pretalx/orga/templates/orga/generic/table.html:48
 msgctxt "button"
 msgid "Add"
 msgstr ""
@@ -2374,7 +2373,7 @@ msgstr "Gửi"
 #: pretalx/common/text/phrases.py:50
 #: pretalx/orga/templates/orga/cfp/editor.html:298
 #: pretalx/orga/templates/orga/cfp/editor.html:483
-#: pretalx/orga/templates/orga/generic/table.html:100
+#: pretalx/orga/templates/orga/generic/table.html:99
 msgid "Save"
 msgstr "Ghi"
 
@@ -2677,11 +2676,13 @@ msgstr ""
 msgid "An error occurred. Please try again."
 msgstr "Đã xảy ra lỗi khi gửi thư. Vui lòng thử lại sau."
 
-#: pretalx/common/views/mixins.py:542
+#: pretalx/common/views/mixins.py:544
+#: pretalx/orga/templates/orga/includes/async_progress.html:17
+msgctxt "heading shown next to a loading spinner while an operation runs"
 msgid "Processing"
 msgstr ""
 
-#: pretalx/common/views/mixins.py:570
+#: pretalx/common/views/mixins.py:573
 msgid "Could not start background task. Please try again."
 msgstr ""
 
@@ -5884,7 +5885,7 @@ msgstr "Soạn Thông báo mời viết Đề xuất Tham luận"
 #: pretalx/orga/templates/orga/cfp/editor.html:48
 #: pretalx/orga/templates/orga/cfp/editor.html:136
 #: pretalx/orga/templates/orga/cfp/editor.html:150
-#: pretalx/orga/templates/orga/generic/table.html:97
+#: pretalx/orga/templates/orga/generic/table.html:96
 msgid "Reset to defaults"
 msgstr ""
 
@@ -6397,35 +6398,35 @@ msgstr ""
 "Hiện tại quý vị đang ở khu vực dành cho Ban tổ chức. Để xem các đề xuất mà "
 "bản thân quý vị đã nộp, vui lòng truy cập trực tiếp vào chính của hội thảo:"
 
-#: pretalx/orga/templates/orga/generic/table.html:23
-#: pretalx/orga/templates/orga/generic/table.html:29
+#: pretalx/orga/templates/orga/generic/table.html:22
+#: pretalx/orga/templates/orga/generic/table.html:28
 #, fuzzy
 #| msgid "Upload options"
 msgid "Table options"
 msgstr "Lựa chọn tải lên"
 
-#: pretalx/orga/templates/orga/generic/table.html:48
+#: pretalx/orga/templates/orga/generic/table.html:47
 msgid "Add selected columns"
 msgstr ""
 
-#: pretalx/orga/templates/orga/generic/table.html:51
+#: pretalx/orga/templates/orga/generic/table.html:50
 msgid "Remove selected columns"
 msgstr ""
 
-#: pretalx/orga/templates/orga/generic/table.html:52
+#: pretalx/orga/templates/orga/generic/table.html:51
 #: pretalx/orga/templates/orga/submission/speakers.html:109
 #: pretalx/orga/templates/orga/submission/speakers.html:134
 msgctxt "button"
 msgid "Remove"
 msgstr "Loại bỏ"
 
-#: pretalx/orga/templates/orga/generic/table.html:68
+#: pretalx/orga/templates/orga/generic/table.html:67
 #, fuzzy
 #| msgid "Move item"
 msgid "Move up"
 msgstr "Di chuyển mục"
 
-#: pretalx/orga/templates/orga/generic/table.html:71
+#: pretalx/orga/templates/orga/generic/table.html:70
 msgid "Move down"
 msgstr ""
 
@@ -6456,10 +6457,6 @@ msgstr "Tải file ZIP"
 #: pretalx/orga/templates/orga/includes/async_progress.html:13
 #, python-format
 msgid "Processing %(current)s of %(total)s…"
-msgstr ""
-
-#: pretalx/orga/templates/orga/includes/async_progress.html:17
-msgid "Processing…"
 msgstr ""
 
 #: pretalx/orga/templates/orga/includes/async_progress.html:24
@@ -8791,8 +8788,7 @@ msgstr ""
 msgid "The speaker has arrived"
 msgstr ""
 
-#: pretalx/person/models/profile.py:110 tests/person/models/test_profile.py:50
-#: tests/person/models/test_profile.py:56
+#: pretalx/person/models/profile.py:110
 #, fuzzy
 #| msgid "Confirmed speakers"
 msgid "Unnamed speaker"
