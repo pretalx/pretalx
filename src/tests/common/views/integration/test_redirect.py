@@ -43,3 +43,15 @@ def test_redirect_view_missing_url_returns_400(client):
     response = client.get("/redirect/")
 
     assert response.status_code == 400
+
+
+def test_redirect_view_escapes_hostname_html(client):
+    """HTML in a crafted hostname must not render as real DOM elements."""
+    url = "https://x<dialog open><h2>Session Expired</h2></dialog>y.com/"
+    response = client.get("/redirect/", {"url": _sign(url)})
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "<dialog open>" not in content
+    assert "<h2>Session Expired</h2>" not in content
+    assert "&lt;dialog open&gt;" in content

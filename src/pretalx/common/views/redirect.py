@@ -7,6 +7,7 @@ from django.core import signing
 from django.http import HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
+from django.utils.html import format_html
 
 
 def _is_samesite_referer(request):
@@ -31,9 +32,12 @@ def redirect_view(request):
         return HttpResponseBadRequest("Invalid parameter")
 
     if not _is_samesite_referer(request):
-        u = urllib.parse.urlparse(url)
+        hostname = urllib.parse.urlparse(url).hostname or ""
+        host = format_html("<strong>{}</strong>", hostname)
         return render(
-            request, "common/redirect.html", {"hostname": u.hostname, "url": url}
+            request,
+            "common/redirect.html",
+            {"hostname": hostname, "host": host, "url": url},
         )
     return HttpResponseRedirect(url)
 
