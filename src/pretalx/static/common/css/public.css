@@ -180,7 +180,7 @@ footer {
 
 @media (max-width: 1200px) {
   header {
-    text-align: right;
+    padding: 0 8px;
     flex-direction: column;
   }
 }
@@ -212,7 +212,7 @@ footer {
     }
 
     header {
-      padding: 0;
+      padding: 0 8px;
       #event-logo {
         max-height: 120px;
       }
