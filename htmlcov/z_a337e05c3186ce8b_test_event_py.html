@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_a337e05c3186ce8b_test_mails_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-15 08:03 +0000
+            created at 2026-04-15 13:17 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -639,7 +639,7 @@
     <p class="run"><span class="n"><a id="t555" href="#t555">555</a></span><span class="t">        <span class="nam">phase</span> <span class="op">=</span> <span class="nam">event</span><span class="op">.</span><span class="nam">active_review_phase</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t556" href="#t556">556</a></span><span class="t">        <span class="nam">other_phase</span> <span class="op">=</span> <span class="nam">event</span><span class="op">.</span><span class="nam">review_phases</span><span class="op">.</span><span class="nam">exclude</span><span class="op">(</span><span class="nam">pk</span><span class="op">=</span><span class="nam">phase</span><span class="op">.</span><span class="nam">pk</span><span class="op">)</span><span class="op">.</span><span class="nam">first</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t557" href="#t557">557</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t558" href="#t558">558</a></span><span class="t">    <span class="nam">response</span> <span class="op">=</span> <span class="nam">client</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="nam">other_phase</span><span class="op">.</span><span class="nam">urls</span><span class="op">.</span><span class="nam">activate</span><span class="op">,</span> <span class="nam">follow</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t558" href="#t558">558</a></span><span class="t">    <span class="nam">response</span> <span class="op">=</span> <span class="nam">client</span><span class="op">.</span><span class="nam">post</span><span class="op">(</span><span class="nam">other_phase</span><span class="op">.</span><span class="nam">urls</span><span class="op">.</span><span class="nam">activate</span><span class="op">,</span> <span class="nam">follow</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t559" href="#t559">559</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t560" href="#t560">560</a></span><span class="t">    <span class="key">assert</span> <span class="nam">response</span><span class="op">.</span><span class="nam">status_code</span> <span class="op">==</span> <span class="num">200</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t561" href="#t561">561</a></span><span class="t">    <span class="nam">event</span> <span class="op">=</span> <span class="nam">Event</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="nam">slug</span><span class="op">=</span><span class="nam">event</span><span class="op">.</span><span class="nam">slug</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -653,7 +653,7 @@
     <p class="run"><span class="n"><a id="t569" href="#t569">569</a></span><span class="t">    <span class="key">with</span> <span class="nam">scope</span><span class="op">(</span><span class="nam">event</span><span class="op">=</span><span class="nam">event</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t570" href="#t570">570</a></span><span class="t">        <span class="nam">phase</span> <span class="op">=</span> <span class="nam">event</span><span class="op">.</span><span class="nam">active_review_phase</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t571" href="#t571">571</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t572" href="#t572">572</a></span><span class="t">    <span class="nam">response</span> <span class="op">=</span> <span class="nam">client</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="nam">phase</span><span class="op">.</span><span class="nam">urls</span><span class="op">.</span><span class="nam">activate</span><span class="op">,</span> <span class="nam">follow</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t572" href="#t572">572</a></span><span class="t">    <span class="nam">response</span> <span class="op">=</span> <span class="nam">client</span><span class="op">.</span><span class="nam">post</span><span class="op">(</span><span class="nam">phase</span><span class="op">.</span><span class="nam">urls</span><span class="op">.</span><span class="nam">activate</span><span class="op">,</span> <span class="nam">follow</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t573" href="#t573">573</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t574" href="#t574">574</a></span><span class="t">    <span class="key">assert</span> <span class="nam">response</span><span class="op">.</span><span class="nam">status_code</span> <span class="op">==</span> <span class="num">200</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t575" href="#t575">575</a></span><span class="t">    <span class="nam">phase</span><span class="op">.</span><span class="nam">refresh_from_db</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -1274,7 +1274,7 @@
             <a class="nav" href="z_a337e05c3186ce8b_test_mails_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-15 08:03 +0000
+            created at 2026-04-15 13:17 +0000
         </p>
     </div>
 </footer>

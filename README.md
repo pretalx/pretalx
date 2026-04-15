@@ -196,17 +196,17 @@
 | src/pretalx/orga/views/admin.py                                            |      136 |        0 |       16 |        0 |     100% |           |
 | src/pretalx/orga/views/auth.py                                             |       63 |        0 |        8 |        0 |     100% |           |
 | src/pretalx/orga/views/cards.py                                            |       16 |        0 |        0 |        0 |     100% |           |
-| src/pretalx/orga/views/cfp.py                                              |      715 |        0 |      198 |        0 |     100% |           |
+| src/pretalx/orga/views/cfp.py                                              |      729 |        0 |      198 |        0 |     100% |           |
 | src/pretalx/orga/views/dashboard.py                                        |      162 |        0 |       46 |        0 |     100% |           |
-| src/pretalx/orga/views/event.py                                            |      436 |        0 |      106 |        0 |     100% |           |
-| src/pretalx/orga/views/mails.py                                            |      416 |        0 |       82 |        0 |     100% |           |
+| src/pretalx/orga/views/event.py                                            |      435 |        0 |      106 |        0 |     100% |           |
+| src/pretalx/orga/views/mails.py                                            |      418 |        0 |       82 |        0 |     100% |           |
 | src/pretalx/orga/views/organiser.py                                        |      314 |        0 |       58 |        0 |     100% |           |
 | src/pretalx/orga/views/person.py                                           |      118 |        0 |       30 |        0 |     100% |           |
 | src/pretalx/orga/views/plugins.py                                          |       56 |        0 |       14 |        0 |     100% |           |
 | src/pretalx/orga/views/review.py                                           |      566 |        0 |      130 |        0 |     100% |           |
-| src/pretalx/orga/views/schedule.py                                         |      292 |        0 |       46 |        0 |     100% |           |
+| src/pretalx/orga/views/schedule.py                                         |      290 |        0 |       46 |        0 |     100% |           |
 | src/pretalx/orga/views/speaker.py                                          |      193 |        0 |       20 |        0 |     100% |           |
-| src/pretalx/orga/views/submission.py                                       |      699 |        0 |      118 |        0 |     100% |           |
+| src/pretalx/orga/views/submission.py                                       |      698 |        0 |      118 |        0 |     100% |           |
 | src/pretalx/orga/views/typeahead.py                                        |       59 |        0 |       16 |        0 |     100% |           |
 | src/pretalx/person/apps.py                                                 |        4 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/person/exporters.py                                            |       25 |        0 |        4 |        0 |     100% |           |
@@ -488,7 +488,7 @@
 | src/tests/orga/views/unit/test\_admin.py                                   |      127 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/unit/test\_auth.py                                    |       67 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/unit/test\_cards.py                                   |       23 |        0 |        0 |        0 |     100% |           |
-| src/tests/orga/views/unit/test\_cfp.py                                     |      535 |        0 |        0 |        0 |     100% |           |
+| src/tests/orga/views/unit/test\_cfp.py                                     |      558 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/unit/test\_dashboard.py                               |      219 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/unit/test\_event.py                                   |      329 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/unit/test\_mails.py                                   |      207 |        0 |        0 |        0 |     100% |           |
@@ -551,7 +551,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **69475** |    **0** | **5926** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **69510** |    **0** | **5926** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
