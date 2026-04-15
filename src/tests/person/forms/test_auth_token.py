@@ -79,6 +79,17 @@ def test_auth_token_form_clean_preset_sets_permissions(
         assert form.cleaned_data["endpoints"][endpoint] == expected_permissions
 
 
+def test_auth_token_form_clean_custom_preset_rejects_no_permissions(user_with_event):
+    user, event = user_with_event
+    data = _build_form_data(event, preset="custom")
+    for endpoint in ENDPOINTS:
+        data[f"endpoint_{endpoint}"] = []
+
+    form = AuthTokenForm(data=data, user=user)
+
+    assert not form.is_valid()
+
+
 def test_auth_token_form_clean_custom_preset_uses_per_endpoint_selections(
     user_with_event,
 ):
