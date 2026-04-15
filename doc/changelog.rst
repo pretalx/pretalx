@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :feature:`api` Speaker email addresses can no longer be changed via the API; the ``email`` field on the speaker endpoint is now read-only.
 - :bug:`api` The file upload API endpoint now requires the token to have write access to at least one endpoint, matching its only legitimate use.
 - :bug:`-` The external redirect confirmation page now escapes HTML in the target hostname instead of rendering it as markup. Thanks go to Elad Meged from Novee Security for finding and reporting the problem.
 - :bug:`api` API tokens can no longer be created without any endpoint permissions.

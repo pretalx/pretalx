@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
-from rest_framework import exceptions
 from rest_framework.serializers import (
     CharField,
     EmailField,
@@ -18,7 +17,7 @@ from pretalx.api.serializers.availability import (
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
-from pretalx.person.models import SpeakerProfile, User
+from pretalx.person.models import SpeakerProfile
 from pretalx.submission.models import QuestionTarget
 
 
@@ -93,7 +92,7 @@ class SpeakerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class SpeakerOrgaSerializer(AvailabilitiesMixin, SpeakerSerializer):
-    email = EmailField(source="user.email")
+    email = EmailField(source="user.email", read_only=True)
     timezone = CharField(source="user.timezone", read_only=True)
     locale = CharField(source="user.locale", read_only=True)
     availabilities = AvailabilitySerializer(many=True, required=False)
@@ -127,24 +126,10 @@ class SpeakerUpdateSerializer(SpeakerOrgaSerializer):
 
     def update(self, instance, validated_data):
         avatar = validated_data.pop("avatar", None)
-        user_fields = validated_data.pop("user", None) or {}
         instance = super().update(instance, validated_data)
-        for key, value in user_fields.items():
-            setattr(instance.user, key, value)
-            instance.user.save(update_fields=[key])
         if avatar:
             instance.set_avatar(avatar)
         return instance
-
-    def validate_email(self, value):
-        value = value.lower()
-        if (
-            User.objects.exclude(pk=self.instance.user_id)
-            .filter(email__iexact=value)
-            .exists()
-        ):
-            raise exceptions.ValidationError("Email already exists in system.")
-        return value
 
     class Meta(SpeakerOrgaSerializer.Meta):
         fields = (*SpeakerOrgaSerializer.Meta.fields, "avatar")

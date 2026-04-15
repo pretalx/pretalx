@@ -59,7 +59,7 @@ class LegacySubmitterSerializer(ModelSerializer):
 
 
 class LegacySubmitterOrgaSerializer(LegacySubmitterSerializer):
-    email = CharField(source="user.email")
+    email = CharField(source="user.email", read_only=True)
 
     class Meta(LegacySubmitterSerializer.Meta):
         fields = (*LegacySubmitterSerializer.Meta.fields, "email")
@@ -118,7 +118,7 @@ class LegacySpeakerSerializer(ModelSerializer):
 
 @register_serializer(versions=[LEGACY])
 class LegacySpeakerOrgaSerializer(LegacySpeakerSerializer):
-    email = CharField(source="user.email")
+    email = CharField(source="user.email", read_only=True)
     availabilities = AvailabilitySerializer(
         Availability.objects.none(), many=True, read_only=True
     )

@@ -3,7 +3,6 @@
 import datetime as dt
 
 import pytest
-from rest_framework import exceptions
 
 from pretalx.api.serializers.speaker import (
     SpeakerOrgaSerializer,
@@ -17,7 +16,6 @@ from tests.factories import (
     QuestionFactory,
     SpeakerFactory,
     SpeakerRoleFactory,
-    UserFactory,
 )
 from tests.utils import make_api_request
 
@@ -187,58 +185,26 @@ def test_speaker_update_serializer_removes_avatar_when_not_requested():
     assert "avatar" not in serializer.fields
 
 
-def test_speaker_update_serializer_validate_email_rejects_duplicate():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-    UserFactory(email="taken@example.com")
-
-    serializer = SpeakerUpdateSerializer(
-        speaker, context=make_context(event=event), partial=True
-    )
-
-    with pytest.raises(exceptions.ValidationError):
-        serializer.validate_email("TAKEN@example.com")
-
-
-def test_speaker_update_serializer_validate_email_allows_own_email():
+def test_speaker_update_serializer_email_is_read_only():
     event = EventFactory()
     speaker = SpeakerFactory(event=event, user__email="mine@example.com")
 
     serializer = SpeakerUpdateSerializer(
-        speaker, context=make_context(event=event), partial=True
+        speaker,
+        data={"email": "new@example.com", "biography": "New bio"},
+        context=make_context(event=event),
+        partial=True,
     )
 
-    result = serializer.validate_email("MINE@EXAMPLE.COM")
-    assert result == "mine@example.com"
+    assert serializer.is_valid(), serializer.errors
+    assert "email" not in serializer.validated_data
+    assert "user" not in serializer.validated_data
+    serializer.save()
 
-
-def test_speaker_update_serializer_validate_email_lowercases():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-
-    serializer = SpeakerUpdateSerializer(
-        speaker, context=make_context(event=event), partial=True
-    )
-
-    result = serializer.validate_email("NeW@Example.COM")
-    assert result == "new@example.com"
-
-
-def test_speaker_update_serializer_update_saves_user_fields():
-    event = EventFactory()
-    speaker = SpeakerFactory(event=event)
-
-    serializer = SpeakerUpdateSerializer(
-        speaker, context=make_context(event=event), partial=True
-    )
-    result = serializer.update(
-        speaker, {"user": {"email": "updated@example.com"}, "biography": "New bio"}
-    )
-
-    result.user.refresh_from_db()
-    assert result.user.email == "updated@example.com"
-    result.refresh_from_db()
-    assert result.biography == "New bio"
+    speaker.user.refresh_from_db()
+    speaker.refresh_from_db()
+    assert speaker.user.email == "mine@example.com"
+    assert speaker.biography == "New bio"
 
 
 def test_speaker_update_serializer_update_with_avatar(make_image):
