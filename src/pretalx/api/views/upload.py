@@ -6,7 +6,7 @@ import datetime
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.timezone import now
 from rest_framework import permissions, serializers
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.parsers import FileUploadParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -54,6 +54,8 @@ class UploadView(APIView):
         tags=["file-uploads"],
     )
     def post(self, request):
+        if not request.auth.has_any_write_permission():
+            raise PermissionDenied
         file_obj = request.data.get("file")
         if not file_obj:
             raise ValidationError("No file has been submitted.")
