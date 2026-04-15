@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-14 07:16+0000\n"
+"POT-Creation-Date: 2026-04-15 13:12+0000\n"
 "PO-Revision-Date: 2025-12-02 17:41+0000\n"
 "Last-Translator: r spoor <pretalx.com@spoor.nu>\n"
 "Language-Team: none\n"
@@ -1127,7 +1127,7 @@ msgstr "Duur"
 #: pretalx/orga/templates/orga/admin/user_detail.html:84
 #: pretalx/orga/templates/orga/base.html:464
 #: pretalx/orga/templates/orga/user.html:41
-#: pretalx/person/models/auth_token.py:71
+#: pretalx/person/models/auth_token.py:72
 msgid "Events"
 msgstr "Evenementen"
 
@@ -2685,26 +2685,26 @@ msgstr "Je wijzigingen zijn opgeslagen."
 msgid "New"
 msgstr "Nieuwe regel"
 
-#: pretalx/common/views/mixins.py:218
+#: pretalx/common/views/mixins.py:219
 msgid "ManagementForm data is missing or has been tampered with."
 msgstr "Deze beheerformulier gegevens ontbreken of zijn aangepast."
 
-#: pretalx/common/views/mixins.py:436 pretalx/common/views/mixins.py:508
+#: pretalx/common/views/mixins.py:437 pretalx/common/views/mixins.py:509
 msgid "Export file not found. Please try again."
 msgstr ""
 
-#: pretalx/common/views/mixins.py:495
+#: pretalx/common/views/mixins.py:496
 #: pretalx/orga/templates/orga/includes/async_download.html:31
 msgid "Export failed. Please try again."
 msgstr ""
 
-#: pretalx/common/views/mixins.py:533
+#: pretalx/common/views/mixins.py:534
 #, fuzzy
 #| msgid "The track has been deleted."
 msgid "The task has been completed."
 msgstr "De track is verwijderd."
 
-#: pretalx/common/views/mixins.py:536
+#: pretalx/common/views/mixins.py:537
 #, fuzzy
 #| msgid "There was an error sending the mail. Please try again later."
 msgid "An error occurred. Please try again."
@@ -2712,13 +2712,13 @@ msgstr ""
 "Er is een fout opgetreden bij het versturen van de email. Probeer het later "
 "nog eens."
 
-#: pretalx/common/views/mixins.py:544
+#: pretalx/common/views/mixins.py:545
 #: pretalx/orga/templates/orga/includes/async_progress.html:17
 msgctxt "heading shown next to a loading spinner while an operation runs"
 msgid "Processing"
 msgstr ""
 
-#: pretalx/common/views/mixins.py:573
+#: pretalx/common/views/mixins.py:574
 msgid "Could not start background task. Please try again."
 msgstr ""
 
@@ -2833,7 +2833,7 @@ msgstr ""
 #: pretalx/orga/templates/orga/cfp/editor.html:189
 #: pretalx/orga/templates/orga/organiser/team/update.html:18
 #: pretalx/orga/templates/orga/user.html:39 pretalx/person/forms/user.py:49
-#: pretalx/person/models/auth_token.py:65 pretalx/person/models/profile.py:46
+#: pretalx/person/models/auth_token.py:66 pretalx/person/models/profile.py:46
 #: pretalx/person/models/user.py:131 pretalx/schedule/models/room.py:35
 #: pretalx/submission/models/review.py:224
 #: pretalx/submission/models/track.py:32 pretalx/submission/models/type.py:36
@@ -8949,6 +8949,12 @@ msgstr ""
 msgid "Select all events"
 msgstr "Selecteer alles"
 
+#: pretalx/person/forms/auth_token.py:85
+#, fuzzy
+#| msgid "Please write at least {min_length} words."
+msgid "Please select at least one endpoint permission."
+msgstr "Schrijf minstens {min_length} woorden."
+
 #: pretalx/person/forms/profile.py:30
 msgid "There already exists an account for this email address."
 msgstr ""
@@ -9020,11 +9026,11 @@ msgstr ""
 "We hebben al een gebruiker met dat e-mailadres. Heb je je al eerder "
 "geregistreerd en hoef je alleen maar in te loggen?"
 
-#: pretalx/person/models/auth_token.py:73
+#: pretalx/person/models/auth_token.py:74
 msgid "Expiry date"
 msgstr ""
 
-#: pretalx/person/models/auth_token.py:79
+#: pretalx/person/models/auth_token.py:80
 #, fuzzy
 #| msgctxt "Version of the conference schedule"
 #| msgid "Version"

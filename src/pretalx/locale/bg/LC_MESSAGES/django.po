@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-14 07:16+0000\n"
+"POT-Creation-Date: 2026-04-15 13:12+0000\n"
 "PO-Revision-Date: 2026-04-12 05:42+0000\n"
 "Last-Translator: Vasil Kolew <vasil@ludost.net>\n"
 "Language-Team: none\n"
@@ -1075,7 +1075,7 @@ msgstr "Продължителност"
 #: pretalx/orga/templates/orga/admin/user_detail.html:84
 #: pretalx/orga/templates/orga/base.html:464
 #: pretalx/orga/templates/orga/user.html:41
-#: pretalx/person/models/auth_token.py:71
+#: pretalx/person/models/auth_token.py:72
 msgid "Events"
 msgstr "Събития"
 
@@ -2494,34 +2494,34 @@ msgstr "Някои промени не можаха да бъдат запазе
 msgid "New"
 msgstr "Нов"
 
-#: pretalx/common/views/mixins.py:218
+#: pretalx/common/views/mixins.py:219
 msgid "ManagementForm data is missing or has been tampered with."
 msgstr "ManagementForm данните липсват или са били променени."
 
-#: pretalx/common/views/mixins.py:436 pretalx/common/views/mixins.py:508
+#: pretalx/common/views/mixins.py:437 pretalx/common/views/mixins.py:509
 msgid "Export file not found. Please try again."
 msgstr "Не се открива експорт файл. Моля опитайте пак."
 
-#: pretalx/common/views/mixins.py:495
+#: pretalx/common/views/mixins.py:496
 #: pretalx/orga/templates/orga/includes/async_download.html:31
 msgid "Export failed. Please try again."
 msgstr "Изнасянето се провали. Моля опитайте пак."
 
-#: pretalx/common/views/mixins.py:533
+#: pretalx/common/views/mixins.py:534
 msgid "The task has been completed."
 msgstr "Потокът е завършен."
 
-#: pretalx/common/views/mixins.py:536
+#: pretalx/common/views/mixins.py:537
 msgid "An error occurred. Please try again."
 msgstr "Грешка, моля опитайте пак."
 
-#: pretalx/common/views/mixins.py:544
+#: pretalx/common/views/mixins.py:545
 #: pretalx/orga/templates/orga/includes/async_progress.html:17
 msgctxt "heading shown next to a loading spinner while an operation runs"
 msgid "Processing"
 msgstr "Обработка"
 
-#: pretalx/common/views/mixins.py:573
+#: pretalx/common/views/mixins.py:574
 msgid "Could not start background task. Please try again."
 msgstr "Неуспешно стартиране на фонов процес. Моля опитайте пак."
 
@@ -2634,7 +2634,7 @@ msgstr "Неправилен идентификатор на събитие — 
 #: pretalx/orga/templates/orga/cfp/editor.html:189
 #: pretalx/orga/templates/orga/organiser/team/update.html:18
 #: pretalx/orga/templates/orga/user.html:39 pretalx/person/forms/user.py:49
-#: pretalx/person/models/auth_token.py:65 pretalx/person/models/profile.py:46
+#: pretalx/person/models/auth_token.py:66 pretalx/person/models/profile.py:46
 #: pretalx/person/models/user.py:131 pretalx/schedule/models/room.py:35
 #: pretalx/submission/models/review.py:224
 #: pretalx/submission/models/track.py:32 pretalx/submission/models/type.py:36
@@ -8317,6 +8317,12 @@ msgstr "Изберете шаблон или настройте детайлни
 msgid "Select all events"
 msgstr "Избор на всички събития"
 
+#: pretalx/person/forms/auth_token.py:85
+#, fuzzy
+#| msgid "Please select at least {min} tags."
+msgid "Please select at least one endpoint permission."
+msgstr "Моля, изберете поне {min} тага."
+
 #: pretalx/person/forms/profile.py:30
 msgid "There already exists an account for this email address."
 msgstr "Вече съществува потребител с този e-mail адрес."
@@ -8384,11 +8390,11 @@ msgstr ""
 "Вече има потребител за този адрес на е-поща. Да не би вече да сте се "
 "регистрирали и да трябва просто да се впишете?"
 
-#: pretalx/person/models/auth_token.py:73
+#: pretalx/person/models/auth_token.py:74
 msgid "Expiry date"
 msgstr "Дата на изтичане"
 
-#: pretalx/person/models/auth_token.py:79
+#: pretalx/person/models/auth_token.py:80
 msgid "API version"
 msgstr "Версия на API"
 
