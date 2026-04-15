@@ -211,7 +211,7 @@
 | src/pretalx/person/apps.py                                                 |        4 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/person/exporters.py                                            |       25 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/person/forms/auth.py                                           |       41 |        0 |       10 |        0 |     100% |           |
-| src/pretalx/person/forms/auth\_token.py                                    |       39 |        0 |        8 |        0 |     100% |           |
+| src/pretalx/person/forms/auth\_token.py                                    |       41 |        0 |       10 |        0 |     100% |           |
 | src/pretalx/person/forms/information.py                                    |       21 |        0 |        2 |        0 |     100% |           |
 | src/pretalx/person/forms/profile.py                                        |      170 |        0 |       56 |        0 |     100% |           |
 | src/pretalx/person/forms/user.py                                           |      108 |        0 |       26 |        0 |     100% |           |
@@ -501,7 +501,7 @@
 | src/tests/orga/views/unit/test\_submission.py                              |      546 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/unit/test\_typeahead.py                               |       33 |        0 |        0 |        0 |     100% |           |
 | src/tests/person/forms/test\_auth.py                                       |       91 |        0 |        0 |        0 |     100% |           |
-| src/tests/person/forms/test\_auth\_token.py                                |       66 |        0 |       10 |        0 |     100% |           |
+| src/tests/person/forms/test\_auth\_token.py                                |       73 |        0 |       12 |        0 |     100% |           |
 | src/tests/person/forms/test\_information.py                                |       49 |        0 |        0 |        0 |     100% |           |
 | src/tests/person/forms/test\_profile.py                                    |      357 |        0 |        8 |        0 |     100% |           |
 | src/tests/person/forms/test\_user.py                                       |      206 |        0 |        2 |        0 |     100% |           |
@@ -551,7 +551,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **69486** |    **0** | **5924** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **69495** |    **0** | **5928** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
