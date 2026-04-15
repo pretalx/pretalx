@@ -80,4 +80,8 @@ class AuthTokenForm(forms.ModelForm):
                 permissions = self.cleaned_data.get(field_name)
                 endpoint = field_name.replace("endpoint_", "")
                 data["endpoints"][endpoint] = list(permissions)
+            if not any(data["endpoints"].values()):
+                raise forms.ValidationError(
+                    _("Please select at least one endpoint permission.")
+                )
         return data

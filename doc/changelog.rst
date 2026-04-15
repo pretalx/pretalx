@@ -10,6 +10,7 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :bug:`-` The external redirect confirmation page now escapes HTML in the target hostname instead of rendering it as markup. Thanks go to Elad Meged from Novee Security for finding and reporting the problem.
+- :bug:`api` API tokens can no longer be created without any endpoint permissions.
 - :bug:`cfp` When the content locale field was hidden or the event had only one content locale, new submissions would incorrectly get the default language instead of the event's content locale.
 - :bug:`orga` Sortable list pages (tracks, rooms, questions, session types, access codes) are no longer paginated, fixing broken drag-and-drop reordering when more than 50 items are present.
 - :feature:`orga:email,2177` Sending emails to many recipients (composing and bulk outbox send) now runs in the background, preventing gateway timeouts. Composing and bulk sending show a progress page.
