@@ -232,8 +232,7 @@ class ScheduleReleaseView(EventPermissionRequired, FormView):
 class ScheduleToggleView(EventPermissionRequired, View):
     permission_required = "event.update_event"
 
-    def dispatch(self, request, event):
-        super().dispatch(request, event)
+    def post(self, request, event):
         self.request.event.feature_flags[
             "show_schedule"
         ] = not self.request.event.get_feature_flag("show_schedule")
@@ -244,8 +243,7 @@ class ScheduleToggleView(EventPermissionRequired, View):
 class ScheduleResendMailsView(EventPermissionRequired, View):
     permission_required = "schedule.release_schedule"
 
-    def dispatch(self, request, event):
-        super().dispatch(request, event)
+    def post(self, request, event):
         if self.request.event.current_schedule:
             mails = self.request.event.current_schedule.generate_notifications(
                 save=True

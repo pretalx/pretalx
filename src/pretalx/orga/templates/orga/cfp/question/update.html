@@ -7,6 +7,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load i18n %}
 
+{% block form %}
+    <form id="question-toggle-form" method="post" action="{{ question.urls.toggle }}" class="d-none">
+        {% csrf_token %}
+    </form>
+    {{ block.super }}
+{% endblock form %}
+
 {% block warnings %}
     {% if question.answers.count %}
         <div class="alert alert-warning col-md-9 offset-md-3">
@@ -21,11 +28,12 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <span>
             {% if question.active %}
                 {{ phrases.orga.custom_field_active }}
-                <a class="btn btn-sm btn-outline-danger"
-                   href="{{ question.urls.toggle }}">{% translate "Hide field" %}</a>
+                <button type="submit" form="question-toggle-form"
+                        class="btn btn-sm btn-outline-danger">{% translate "Hide field" %}</button>
             {% else %}
                 {{ phrases.orga.custom_field_inactive }}
-                <a class="btn btn-sm btn-success" href="{{ question.urls.toggle }}">{% translate "Activate field" %}</a>
+                <button type="submit" form="question-toggle-form"
+                        class="btn btn-sm btn-success">{% translate "Activate field" %}</button>
             {% endif %}
         </span>
     </div>

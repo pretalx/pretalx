@@ -29,6 +29,7 @@ from pretalx.common.text.serialize import I18nStrJSONEncoder, serialize_i18n
 from pretalx.common.ui import send_button
 from pretalx.common.views.generic import OrgaCRUDView, get_next_url
 from pretalx.common.views.mixins import (
+    ActionConfirmMixin,
     AsyncFileDownloadMixin,
     EventPermissionRequired,
     OrderActionMixin,
@@ -339,8 +340,7 @@ class CfPQuestionToggle(PermissionRequired, View):
             event=self.request.event, pk=self.kwargs.get("pk")
         ).first()
 
-    def dispatch(self, request, *args, **kwargs):
-        super().dispatch(request, *args, **kwargs)
+    def post(self, request, *args, **kwargs):
         question = self.get_object()
 
         question.active = not question.active
@@ -495,17 +495,38 @@ class SubmissionTypeView(OrderActionMixin, OrgaCRUDView):
             return self.delete_view(request, *args, **kwargs)
 
 
-class SubmissionTypeDefault(PermissionRequired, View):
+class SubmissionTypeDefault(PermissionRequired, ActionConfirmMixin, TemplateView):
     permission_required = "submission.update_submissiontype"
+    action_confirm_label = _("Make default")
+    action_confirm_color = "info"
+    action_confirm_icon = "star"
+    action_title = _("Make default")
 
-    def get_object(self):
+    @cached_property
+    def object(self):
         return get_object_or_404(
             self.request.event.submission_types, pk=self.kwargs.get("pk")
         )
 
-    def dispatch(self, request, *args, **kwargs):
-        super().dispatch(request, *args, **kwargs)
-        submission_type = self.get_object()
+    def get_permission_object(self):
+        return self.object
+
+    @property
+    def action_object_name(self):
+        return str(self.object.name)
+
+    @property
+    def action_text(self):
+        return _(
+            "Are you sure you want to make “{name}” the default session type?"
+        ).format(name=self.object.name)
+
+    @property
+    def action_back_url(self):
+        return get_next_url(self.request) or self.request.event.cfp.urls.types
+
+    def post(self, request, *args, **kwargs):
+        submission_type = self.object
         self.request.event.cfp.default_type = submission_type
         self.request.event.cfp.save(update_fields=["default_type"])
         submission_type.log_action(

@@ -205,18 +205,20 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                                 {% endif %}
                                 {% if permission_action != "view" %}
                                     <div class="phase-option-delete flip ml-auto">
-                                        {% if not form.instance.is_active %}
-                                            <a href="{{ form.instance.urls.activate }}"
-                                               class="btn btn-outline-warning flip ml-auto mr-2 keep-scroll-position"
-                                               title="{% translate "Activate phase" %}">
-                                                <i class="fa fa-star"></i>
-                                            </a>
-                                        {% else %}
-                                            <a href="{{ form.instance.urls.activate }}"
-                                               class="btn btn-warning flip ml-auto mr-2 keep-scroll-position"
-                                               title="{% translate "Phase is active" %}">
-                                                <i class="fa fa-star"></i>
-                                            </a>
+                                        {% if form.instance.pk %}
+                                            {% if not form.instance.is_active %}
+                                                <button type="submit" form="phase-activate-{{ form.instance.pk }}"
+                                                        class="btn btn-outline-warning flip ml-auto mr-2 keep-scroll-position"
+                                                        title="{% translate "Activate phase" %}">
+                                                    <i class="fa fa-star"></i>
+                                                </button>
+                                            {% else %}
+                                                <button type="submit" form="phase-activate-{{ form.instance.pk }}"
+                                                        class="btn btn-warning flip ml-auto mr-2 keep-scroll-position"
+                                                        title="{% translate "Phase is active" %}">
+                                                    <i class="fa fa-star"></i>
+                                                </button>
+                                            {% endif %}
                                         {% endif %}
                                         <button type="button" class="btn btn-xs btn-danger ml-auto" data-formset-delete-button>
                                             <i class="fa fa-trash"></i>
@@ -276,4 +278,14 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         </section>
         {% include "orga/includes/submit_row.html" %}
     </form>
+    {% if permission_action != "view" %}
+        {% for form in phases_formset %}
+            {% if form.instance.pk %}
+                <form id="phase-activate-{{ form.instance.pk }}" method="post"
+                      action="{{ form.instance.urls.activate }}" class="d-none">
+                    {% csrf_token %}
+                </form>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
 {% endblock settings_content %}

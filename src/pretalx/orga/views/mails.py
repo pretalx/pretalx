@@ -17,7 +17,7 @@ from pretalx.common.exceptions import SendMailException
 from pretalx.common.language import language
 from pretalx.common.mail import TolerantDict
 from pretalx.common.text.phrases import phrases
-from pretalx.common.ui import Button, LinkButton, delete_link, send_button
+from pretalx.common.ui import Button, delete_link, send_button
 from pretalx.common.views.generic import (
     CreateOrUpdateView,
     OrgaCRUDView,
@@ -429,12 +429,14 @@ class MailDetail(PermissionRequired, CreateOrUpdateView):
             ]
         elif self.object.state != QueuedMailStates.DRAFT:
             if pk := self.object.template_id:
-                href = f"{self.request.event.orga_urls.compose_mails_sessions}?template={pk}"
+                context["copy_to_draft_url"] = (
+                    f"{self.request.event.orga_urls.compose_mails_sessions}?template={pk}"
+                )
+                context["copy_to_draft_method"] = "get"
             else:
-                href = self.object.urls.copy
-            context["submit_buttons"] = [
-                LinkButton(href=href, label=_("Copy to draft"))
-            ]
+                context["copy_to_draft_url"] = self.object.urls.copy
+                context["copy_to_draft_method"] = "post"
+            context["submit_buttons"] = []
         return context
 
 
@@ -446,7 +448,7 @@ class MailCopy(PermissionRequired, View):
             self.request.event.queued_mails, pk=self.kwargs.get("pk")
         )
 
-    def dispatch(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         mail = self.get_object()
         new_mail = mail.copy_to_draft()
         messages.success(request, _("The email has been copied, you can edit it now."))

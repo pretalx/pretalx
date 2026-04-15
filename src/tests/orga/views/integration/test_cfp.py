@@ -506,7 +506,7 @@ def test_question_toggle_deactivate(client, event, question):
     client.force_login(user)
     assert question.active
 
-    response = client.get(question.urls.toggle, follow=True)
+    response = client.post(question.urls.toggle, follow=True)
 
     assert response.status_code == 200
     with scopes_disabled():
@@ -520,7 +520,7 @@ def test_question_toggle_activate(client, event, inactive_question):
     )
     client.force_login(user)
 
-    response = client.get(inactive_question.urls.toggle, follow=True)
+    response = client.post(inactive_question.urls.toggle, follow=True)
 
     assert response.status_code == 200
     inactive_question.refresh_from_db()
@@ -745,7 +745,7 @@ def test_submission_type_make_default(client, event, submission_type):
     with scopes_disabled():
         assert event.cfp.default_type != submission_type
 
-    response = client.get(submission_type.urls.default, follow=True)
+    response = client.post(submission_type.urls.default, follow=True)
 
     assert response.status_code == 200
     with scopes_disabled():

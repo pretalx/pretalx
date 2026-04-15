@@ -881,8 +881,8 @@ def test_submission_speakers_remove(client, event):
         speaker_pk = speaker.pk
     client.force_login(user)
 
-    response = client.get(
-        submission.orga_urls.delete_speaker + f"?id={speaker_pk}", follow=True
+    response = client.post(
+        submission.orga_urls.delete_speaker, {"id": speaker_pk}, follow=True
     )
 
     assert response.status_code == 200
@@ -901,8 +901,8 @@ def test_submission_speakers_remove_wrong_speaker(client, event):
         other_sub.speakers.add(other_speaker)
     client.force_login(user)
 
-    response = client.get(
-        submission.orga_urls.delete_speaker + f"?id={other_speaker.pk}", follow=True
+    response = client.post(
+        submission.orga_urls.delete_speaker, {"id": other_speaker.pk}, follow=True
     )
 
     assert response.status_code == 200

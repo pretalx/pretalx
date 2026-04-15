@@ -86,13 +86,13 @@ def test_schedule_toggle_flips_visibility(client, event):
         user = make_orga_user(event, can_change_event_settings=True)
     client.force_login(user)
 
-    response = client.get(event.orga_urls.toggle_schedule, follow=True)
+    response = client.post(event.orga_urls.toggle_schedule, follow=True)
 
     assert response.status_code == 200
     updated = Event.objects.get(pk=event.pk)
     assert updated.feature_flags["show_schedule"] is False
 
-    response = client.get(event.orga_urls.toggle_schedule, follow=True)
+    response = client.post(event.orga_urls.toggle_schedule, follow=True)
 
     assert response.status_code == 200
     updated = Event.objects.get(pk=event.pk)

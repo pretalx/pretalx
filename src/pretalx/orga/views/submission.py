@@ -313,11 +313,10 @@ class SubmissionDelete(SubmissionViewMixin, ActionConfirmMixin, TemplateView):
 class SubmissionSpeakersDelete(SubmissionViewMixin, View):
     permission_required = "submission.update_submission"
 
-    def dispatch(self, request, *args, **kwargs):
-        super().dispatch(request, *args, **kwargs)
+    def post(self, request, *args, **kwargs):
         submission = self.object
         speaker = get_object_or_404(
-            SpeakerProfile, pk=request.GET.get("id"), event=request.event
+            SpeakerProfile, pk=request.POST.get("id"), event=request.event
         )
 
         if submission.speakers.filter(pk=speaker.pk).exists():

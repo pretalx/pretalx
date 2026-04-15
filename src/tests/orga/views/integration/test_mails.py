@@ -403,7 +403,7 @@ def test_copy_sent_mail_to_draft(client, event, sent_mail):
     with scopes_disabled():
         assert QueuedMail.objects.filter(event=event).count() == 1
 
-    response = client.get(sent_mail.urls.copy, follow=True)
+    response = client.post(sent_mail.urls.copy, follow=True)
 
     assert response.status_code == 200
     with scopes_disabled():

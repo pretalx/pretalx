@@ -505,8 +505,7 @@ class PhaseActivate(EventSettingsPermission, View):
             ReviewPhase, event=self.request.event, pk=self.kwargs.get("pk")
         )
 
-    def dispatch(self, request, *args, **kwargs):
-        super().dispatch(request, *args, **kwargs)
+    def post(self, request, *args, **kwargs):
         phase = self.get_object()
         if phase.is_active:
             phase.is_active = False

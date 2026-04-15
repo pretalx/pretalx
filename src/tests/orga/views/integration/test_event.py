@@ -555,7 +555,7 @@ def test_phase_activate_toggles_active_phase(client, event):
         phase = event.active_review_phase
         other_phase = event.review_phases.exclude(pk=phase.pk).first()
 
-    response = client.get(other_phase.urls.activate, follow=True)
+    response = client.post(other_phase.urls.activate, follow=True)
 
     assert response.status_code == 200
     event = Event.objects.get(slug=event.slug)
@@ -569,7 +569,7 @@ def test_phase_deactivate(client, event):
     with scope(event=event):
         phase = event.active_review_phase
 
-    response = client.get(phase.urls.activate, follow=True)
+    response = client.post(phase.urls.activate, follow=True)
 
     assert response.status_code == 200
     phase.refresh_from_db()
