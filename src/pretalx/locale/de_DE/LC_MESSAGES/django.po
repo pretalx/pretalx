@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-15 13:12+0000\n"
-"PO-Revision-Date: 2026-03-30 17:08+0000\n"
+"PO-Revision-Date: 2026-04-15 13:28+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: \n"
 "Language: de_DE\n"
@@ -59,7 +59,7 @@ msgstr "Leider müssen wir Beiträge absagen:"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:47
 msgid "Sadly, we had to cancel a session:"
-msgstr "Wir mussten leider einen Beitrag absagen: "
+msgstr "Wir mussten leider einen Beitrag absagen:"
 
 #: pretalx/agenda/templates/agenda/changelog_block.html:56
 msgid ""
@@ -2558,7 +2558,7 @@ msgstr "Ein Fehler ist aufgetreten. Bitte versuch es noch einmal."
 #: pretalx/orga/templates/orga/includes/async_progress.html:17
 msgctxt "heading shown next to a loading spinner while an operation runs"
 msgid "Processing"
-msgstr ""
+msgstr "In Arbeit"
 
 #: pretalx/common/views/mixins.py:574
 msgid "Could not start background task. Please try again."
@@ -4145,11 +4145,11 @@ msgstr ""
 
 #: pretalx/orga/forms/event.py:150
 msgid "Heading font"
-msgstr ""
+msgstr "Schriftart für Überschriften"
 
 #: pretalx/orga/forms/event.py:151
 msgid "Select a font for headings and buttons."
-msgstr ""
+msgstr "Diese Schriftart wird für Überschriften und Buttons verwendet."
 
 #: pretalx/orga/forms/event.py:154
 msgid "Text font"
@@ -8438,10 +8438,8 @@ msgid "Select all events"
 msgstr "Alle Veranstaltungen auswählen"
 
 #: pretalx/person/forms/auth_token.py:85
-#, fuzzy
-#| msgid "Please select at least {min} tags."
 msgid "Please select at least one endpoint permission."
-msgstr "Bitte wähle mindestens {min} Tags."
+msgstr "Bitte wähle mindestens einen Endpunkt aus."
 
 #: pretalx/person/forms/profile.py:30
 msgid "There already exists an account for this email address."
