@@ -8,7 +8,7 @@ from pretalx.common.models.file import CachedFile
 pytestmark = [pytest.mark.integration, pytest.mark.django_db]
 
 
-def test_upload_pdf_creates_cached_file(client, orga_read_token):
+def test_upload_pdf_creates_cached_file(client, orga_write_token):
     """Uploading a valid PDF creates a CachedFile and returns file:PK identifier."""
     assert CachedFile.objects.count() == 0
 
@@ -16,7 +16,7 @@ def test_upload_pdf_creates_cached_file(client, orga_read_token):
         "/api/upload/",
         data={"name": "file.pdf", "file_field": ContentFile(b"fake pdf content")},
         headers={
-            "Authorization": f"Token {orga_read_token.token}",
+            "Authorization": f"Token {orga_write_token.token}",
             "Content-Disposition": 'attachment; filename="file.pdf"',
             "Content-Type": "application/pdf",
         },
@@ -30,7 +30,7 @@ def test_upload_pdf_creates_cached_file(client, orga_read_token):
     assert cf.content_type == "application/pdf"
 
 
-def test_upload_image_creates_cached_file(client, orga_read_token, make_image):
+def test_upload_image_creates_cached_file(client, orga_write_token, make_image):
     """Uploading a valid PNG image creates a CachedFile."""
     image = make_image("avatar.png")
 
@@ -39,7 +39,7 @@ def test_upload_image_creates_cached_file(client, orga_read_token, make_image):
         data=image.read(),
         content_type="image/png",
         headers={
-            "Authorization": f"Token {orga_read_token.token}",
+            "Authorization": f"Token {orga_write_token.token}",
             "Content-Disposition": 'attachment; filename="avatar.png"',
         },
     )
@@ -49,13 +49,13 @@ def test_upload_image_creates_cached_file(client, orga_read_token, make_image):
     assert CachedFile.objects.count() == 1
 
 
-def test_upload_extension_mismatch_returns_400(client, orga_read_token):
+def test_upload_extension_mismatch_returns_400(client, orga_write_token):
     """File with extension not matching content type is rejected."""
     response = client.post(
         "/api/upload/",
         data={"name": "file.png", "file_field": ContentFile(b"fake pdf content")},
         headers={
-            "Authorization": f"Token {orga_read_token.token}",
+            "Authorization": f"Token {orga_write_token.token}",
             "Content-Disposition": 'attachment; filename="file.png"',
             "Content-Type": "application/pdf",
         },
@@ -67,13 +67,13 @@ def test_upload_extension_mismatch_returns_400(client, orga_read_token):
     ]
 
 
-def test_upload_disallowed_content_type_returns_400(client, orga_read_token):
+def test_upload_disallowed_content_type_returns_400(client, orga_write_token):
     """Files with unsupported content types are rejected."""
     response = client.post(
         "/api/upload/",
         data={"name": "file.bin", "file_field": ContentFile(b"binary content")},
         headers={
-            "Authorization": f"Token {orga_read_token.token}",
+            "Authorization": f"Token {orga_write_token.token}",
             "Content-Disposition": 'attachment; filename="file.bin"',
             "Content-Type": "application/octet-stream",
         },
@@ -83,27 +83,27 @@ def test_upload_disallowed_content_type_returns_400(client, orga_read_token):
     assert "Content type is not allowed" in str(response.data)
 
 
-def test_upload_no_file_returns_400(client, orga_read_token):
+def test_upload_no_file_returns_400(client, orga_write_token):
     """Request without Content-Disposition (no filename) returns 400."""
     response = client.post(
         "/api/upload/",
         data=b"",
         content_type="application/pdf",
-        headers={"Authorization": f"Token {orga_read_token.token}"},
+        headers={"Authorization": f"Token {orga_write_token.token}"},
     )
 
     assert response.status_code == 400
     assert "No file" in str(response.data)
 
 
-def test_upload_invalid_image_returns_400(client, orga_read_token):
+def test_upload_invalid_image_returns_400(client, orga_write_token):
     """Uploading a file with image content type but corrupt data returns 400."""
     response = client.post(
         "/api/upload/",
         data=b"this is not a valid png image",
         content_type="image/png",
         headers={
-            "Authorization": f"Token {orga_read_token.token}",
+            "Authorization": f"Token {orga_write_token.token}",
             "Content-Disposition": 'attachment; filename="bad.png"',
         },
     )
@@ -124,3 +124,19 @@ def test_upload_unauthenticated_returns_401(client):
     )
 
     assert response.status_code == 401
+
+
+def test_upload_read_only_token_returns_403(client, orga_read_token):
+    """Tokens without any write permission cannot upload files."""
+    response = client.post(
+        "/api/upload/",
+        data={"name": "file.pdf", "file_field": ContentFile(b"fake pdf content")},
+        headers={
+            "Authorization": f"Token {orga_read_token.token}",
+            "Content-Disposition": 'attachment; filename="file.pdf"',
+            "Content-Type": "application/pdf",
+        },
+    )
+
+    assert response.status_code == 403
+    assert CachedFile.objects.count() == 0

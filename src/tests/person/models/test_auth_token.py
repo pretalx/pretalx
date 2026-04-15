@@ -54,6 +54,38 @@ def test_user_api_token_has_endpoint_permission(endpoints, endpoint, method, exp
 
 
 @pytest.mark.parametrize(
+    ("endpoints", "expected"),
+    (
+        ({}, False),
+        ({"events": []}, False),
+        ({"events": ["list", "retrieve"]}, False),
+        ({"events": ["list", "retrieve"], "submissions": ["list", "retrieve"]}, False),
+        ({"events": ["create"]}, True),
+        ({"events": ["update"]}, True),
+        ({"events": ["destroy"]}, True),
+        ({"events": ["actions"]}, True),
+        ({"events": ["list", "retrieve", "create"]}, True),
+        ({"events": ["list", "retrieve"], "submissions": ["list", "update"]}, True),
+    ),
+    ids=[
+        "empty",
+        "empty_endpoint_list",
+        "read_only_single",
+        "read_only_multiple",
+        "create",
+        "update",
+        "destroy",
+        "actions",
+        "mixed_single_endpoint",
+        "mixed_multiple_endpoints",
+    ],
+)
+def test_user_api_token_has_any_write_permission(endpoints, expected):
+    token = UserApiToken(endpoints=endpoints)
+    assert token.has_any_write_permission() is expected
+
+
+@pytest.mark.parametrize(
     ("expires", "expected"),
     ((None, True), ("future", True), ("past", False)),
     ids=["no_expiry", "future_expiry", "past_expiry"],

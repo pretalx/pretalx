@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`api` The file upload API endpoint now requires the token to have write access to at least one endpoint, matching its only legitimate use.
 - :bug:`-` The external redirect confirmation page now escapes HTML in the target hostname instead of rendering it as markup. Thanks go to Elad Meged from Novee Security for finding and reporting the problem.
 - :bug:`api` API tokens can no longer be created without any endpoint permissions.
 - :bug:`cfp` When the content locale field was hidden or the event had only one content locale, new submissions would incorrectly get the default language instead of the event's content locale.

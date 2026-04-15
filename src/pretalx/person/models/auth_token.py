@@ -23,7 +23,8 @@ def generate_api_token():
 
 
 READ_PERMISSIONS = ("list", "retrieve")
-WRITE_PERMISSIONS = (*READ_PERMISSIONS, "create", "update", "destroy", "actions")
+WRITE_ONLY_PERMISSIONS = ("create", "update", "destroy", "actions")
+WRITE_PERMISSIONS = (*READ_PERMISSIONS, *WRITE_ONLY_PERMISSIONS)
 PERMISSION_CHOICES = (
     ("list", _p("API endpoint permissions", "Read list")),
     ("retrieve", _p("API endpoint permissions", "Read details")),
@@ -89,6 +90,12 @@ class UserApiToken(PretalxModel):
         elif method not in dict(PERMISSION_CHOICES):
             method = "actions"
         return method in self.endpoints.get(endpoint, [])
+
+    def has_any_write_permission(self):
+        write_actions = set(WRITE_ONLY_PERMISSIONS)
+        return any(
+            write_actions.intersection(actions) for actions in self.endpoints.values()
+        )
 
     @property
     def is_active(self):
