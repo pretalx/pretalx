@@ -359,9 +359,45 @@ def test_submission_type_default_get_object(event):
     request = make_request(event, user=user)
     view = make_view(SubmissionTypeDefault, request, pk=st.pk)
 
-    obj = view.get_object()
+    assert view.object == st
 
-    assert obj == st
+
+def test_submission_type_default_action_object_name(event):
+    st = SubmissionTypeFactory(event=event, name="Workshop")
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(SubmissionTypeDefault, request, pk=st.pk)
+
+    assert view.action_object_name == "Workshop"
+
+
+def test_submission_type_default_action_text_includes_name(event):
+    st = SubmissionTypeFactory(event=event, name="Workshop")
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(SubmissionTypeDefault, request, pk=st.pk)
+
+    assert str(view.action_text) == (
+        "Are you sure you want to make “Workshop” the default session type?"
+    )
+
+
+def test_submission_type_default_action_back_url_fallback(event):
+    st = SubmissionTypeFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user)
+    view = make_view(SubmissionTypeDefault, request, pk=st.pk)
+
+    assert view.action_back_url == event.cfp.urls.types
+
+
+def test_submission_type_default_action_back_url_uses_next(event):
+    st = SubmissionTypeFactory(event=event)
+    user = make_orga_user(event, can_change_submissions=True)
+    request = make_request(event, user=user, path="/?next=/orga/event/")
+    view = make_view(SubmissionTypeDefault, request, pk=st.pk)
+
+    assert view.action_back_url == "/orga/event/"
 
 
 def test_track_view_get_queryset(event):

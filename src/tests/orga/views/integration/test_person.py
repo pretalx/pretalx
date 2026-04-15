@@ -175,7 +175,7 @@ def test_subuser_view_demotes_superuser(client):
     user = UserFactory(is_superuser=True)
     client.force_login(user)
 
-    response = client.get(reverse("orga:user.subuser"))
+    response = client.post(reverse("orga:user.subuser"))
 
     assert response.status_code == 302
     user.refresh_from_db()
@@ -192,7 +192,7 @@ def test_subuser_view_respects_next_url(client, next_url, expected_redirect):
     user = UserFactory(is_superuser=True)
     client.force_login(user)
 
-    response = client.get(reverse("orga:user.subuser"), data={"next": next_url})
+    response = client.post(reverse("orga:user.subuser") + f"?next={next_url}")
 
     assert response.status_code == 302
     assert response.url == expected_redirect
@@ -202,7 +202,7 @@ def test_subuser_view_non_superuser_still_works(client):
     user = UserFactory()
     client.force_login(user)
 
-    response = client.get(reverse("orga:user.subuser"))
+    response = client.post(reverse("orga:user.subuser"))
 
     assert response.status_code == 302
     user.refresh_from_db()

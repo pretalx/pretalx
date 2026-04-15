@@ -48,13 +48,19 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 </div>
             {% endif %}
 
-            <p>
+            <div>
                 {% if question.active %}
                     {{ phrases.orga.custom_field_active }}
-                    <a class="btn btn-sm btn-danger" href="{{ question.urls.toggle }}">{% translate "Hide field" %}</a>
+                    <form method="post" action="{{ question.urls.toggle }}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger">{% translate "Hide field" %}</button>
+                    </form>
                 {% else %}
                     {{ phrases.orga.custom_field_inactive }}
-                    <a class="btn btn-sm btn-success" href="{{ question.urls.toggle }}">{% translate "Activate field" %}</a>
+                    <form method="post" action="{{ question.urls.toggle }}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-success">{% translate "Activate field" %}</button>
+                    </form>
                 {% endif %}
                 {% if question.variant == "file" and answer_count %}
                     <a class="btn btn-sm btn-info" href="{{ question.urls.download }}">
@@ -62,7 +68,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         {% translate "Download all files" %}
                     </a>
                 {% endif %}
-            </p>
+            </div>
 
             {% if not answer_count %}
                 {% translate "Nobody has responded to this field at the moment." %}

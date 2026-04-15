@@ -104,10 +104,13 @@ SPDX-FileContributor: Florian Mösch
                             <i class="fa fa-bars"></i> {% translate "Change order" %}
                         </div>
                     {% endif %}
-                    <a href="{{ submission.orga_urls.delete_speaker }}?id={{ speaker.speaker.id }}"
-                       role="button" class="btn btn-danger">
-                        <i class="fa fa-trash"></i> {% translate "Remove" context "button" %}
-                    </a>
+                    <form method="post" action="{{ submission.orga_urls.delete_speaker }}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" value="{{ speaker.speaker.id }}">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fa fa-trash"></i> {% translate "Remove" context "button" %}
+                        </button>
+                    </form>
                 {% endif %}
             </div>
         </div></div>

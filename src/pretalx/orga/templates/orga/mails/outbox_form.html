@@ -114,6 +114,26 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
                 {% include "orga/includes/submit_row.html" %}
             </form>
+            {% if copy_to_draft_url %}
+                {% if copy_to_draft_method == "post" %}
+                    <form method="post" action="{{ copy_to_draft_url }}" class="submit-group flex-row-reverse">
+                        {% csrf_token %}
+                        <span>
+                            <button type="submit" class="btn btn-lg btn-success">
+                                {% translate "Copy to draft" %}
+                            </button>
+                        </span>
+                    </form>
+                {% else %}
+                    <div class="submit-group flex-row-reverse">
+                        <span>
+                            <a href="{{ copy_to_draft_url }}" class="btn btn-lg btn-success">
+                                {% translate "Copy to draft" %}
+                            </a>
+                        </span>
+                    </div>
+                {% endif %}
+            {% endif %}
         </div>
         <div class="sidebar-container mt-4 pt-4">
             {% history_sidebar form.instance %}

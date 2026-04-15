@@ -40,22 +40,27 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                     <a class="dropdown-item" href="{{ request.event.wip_schedule.urls.public }}" target="_blank" rel="noopener" role="menuitem" tabindex="-1">
                         <i class="fa fa-link"></i> {% translate "View in frontend" %}
                     </a>
-                    {% if request.event|get_feature_flag:"show_schedule" %}
-                        <a class="dropdown-item role="menuitem" tabindex="-1""
-                           href="{{ request.event.orga_urls.toggle_schedule }}">
-                            <i class="fa fa-eye"></i> {% translate "Hide schedule" %}
-                        </a>
-                    {% else %}
-                        <a class="dropdown-item" href="{{ request.event.orga_urls.toggle_schedule }}" role="menuitem" tabindex="-1">
-                            <i class="fa fa-eye"></i> {% translate "Make schedule public" %}
-                        </a>
-                    {% endif %}
+                    <form method="post" action="{{ request.event.orga_urls.toggle_schedule }}">
+                        {% csrf_token %}
+                        {% if request.event|get_feature_flag:"show_schedule" %}
+                            <button type="submit" class="dropdown-item" role="menuitem" tabindex="-1">
+                                <i class="fa fa-eye"></i> {% translate "Hide schedule" %}
+                            </button>
+                        {% else %}
+                            <button type="submit" class="dropdown-item" role="menuitem" tabindex="-1">
+                                <i class="fa fa-eye"></i> {% translate "Make schedule public" %}
+                            </button>
+                        {% endif %}
+                    </form>
                     <a href="{{ request.event.orga_urls.submission_cards }}" class="dropdown-item" role="menuitem" tabindex="-1">
                         <i class="fa fa-print"></i> {% translate "Print cards" %}
                     </a>
-                    <a href="resend_mails" class="dropdown-item" role="menuitem" tabindex="-1">
-                        <i class="fa fa-envelope"></i> {% translate "Resend speaker notifications" %}
-                    </a>
+                    <form method="post" action="resend_mails">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item" role="menuitem" tabindex="-1">
+                            <i class="fa fa-envelope"></i> {% translate "Resend speaker notifications" %}
+                        </button>
+                    </form>
                 </div>
             </details>
         </div>

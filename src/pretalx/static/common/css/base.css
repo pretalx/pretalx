@@ -371,6 +371,10 @@ summary.btn {
 a[data-toggle] {
   cursor: pointer;
 }
+button[role=menuitem] {
+  font-family: var(--font-family);
+  font-size: inherit;
+}
 
 button,
 input {
