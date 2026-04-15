@@ -50,6 +50,7 @@ docstrings
 Django
 drag'n'drop
 dropdown
+Elad
 embeddable
 env
 ETags
@@ -64,6 +65,7 @@ Gmail
 gravatar
 GSuite
 gunicorn
+hostname
 href
 iCal
 iframe
@@ -86,6 +88,7 @@ lookups
 lossy
 macOS
 makemessages
+Meged
 middleware
 middlewares
 misconfigured
@@ -98,6 +101,7 @@ neurodiversity
 nginx
 nodejs
 noopener
+Novee
 npm
 OAuth
 pangram
