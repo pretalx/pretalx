@@ -41,7 +41,7 @@
 | src/pretalx/api/serializers/review.py                                      |       73 |        0 |       14 |        0 |     100% |           |
 | src/pretalx/api/serializers/room.py                                        |       30 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/api/serializers/schedule.py                                    |       71 |        0 |       12 |        0 |     100% |           |
-| src/pretalx/api/serializers/speaker.py                                     |       91 |        0 |       28 |        0 |     100% |           |
+| src/pretalx/api/serializers/speaker.py                                     |       81 |        0 |       24 |        0 |     100% |           |
 | src/pretalx/api/serializers/speaker\_information.py                        |       36 |        0 |        6 |        0 |     100% |           |
 | src/pretalx/api/serializers/submission.py                                  |      230 |        0 |       70 |        0 |     100% |           |
 | src/pretalx/api/serializers/team.py                                        |       49 |        0 |        8 |        0 |     100% |           |
@@ -300,7 +300,7 @@
 | src/tests/api/serializers/test\_review.py                                  |      161 |        0 |        0 |        0 |     100% |           |
 | src/tests/api/serializers/test\_room.py                                    |       94 |        0 |        0 |        0 |     100% |           |
 | src/tests/api/serializers/test\_schedule.py                                |      134 |        0 |        0 |        0 |     100% |           |
-| src/tests/api/serializers/test\_speaker.py                                 |      166 |        0 |        2 |        0 |     100% |           |
+| src/tests/api/serializers/test\_speaker.py                                 |      149 |        0 |        2 |        0 |     100% |           |
 | src/tests/api/serializers/test\_speaker\_information.py                    |       65 |        0 |        0 |        0 |     100% |           |
 | src/tests/api/serializers/test\_submission.py                              |      552 |        0 |        4 |        0 |     100% |           |
 | src/tests/api/serializers/test\_team.py                                    |       90 |        0 |        0 |        0 |     100% |           |
@@ -319,7 +319,7 @@
 | src/tests/api/views/integration/test\_room.py                              |      184 |        0 |        0 |        0 |     100% |           |
 | src/tests/api/views/integration/test\_root.py                              |        9 |        0 |        0 |        0 |     100% |           |
 | src/tests/api/views/integration/test\_schedule.py                          |      426 |        0 |       12 |        0 |     100% |           |
-| src/tests/api/views/integration/test\_speaker.py                           |      285 |        0 |        2 |        0 |     100% |           |
+| src/tests/api/views/integration/test\_speaker.py                           |      278 |        0 |        2 |        0 |     100% |           |
 | src/tests/api/views/integration/test\_speaker\_information.py              |       88 |        0 |        0 |        0 |     100% |           |
 | src/tests/api/views/integration/test\_submission.py                        |      747 |        0 |       12 |        0 |     100% |           |
 | src/tests/api/views/integration/test\_team.py                              |      207 |        0 |        4 |        0 |     100% |           |
@@ -551,7 +551,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **69509** |    **0** | **5930** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **69475** |    **0** | **5926** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
