@@ -531,17 +531,16 @@ def test_speaker_update_by_orga_readonly_token_returns_403(
     assert response.status_code == 403
 
 
-def test_speaker_update_change_name_and_email(
-    client, orga_write_token, event, speaker_on_event
-):
-    """Orga can update both speaker name and email, name is profile-level, email is user-level."""
+def test_speaker_update_change_name(client, orga_write_token, event, speaker_on_event):
+    """Orga can update a speaker's profile name; email is read-only and ignored."""
     speaker, _ = speaker_on_event
     new_name = "New Speaker Name"
-    new_email = "newspeaker@example.com"
+    with scopes_disabled():
+        original_email = speaker.user.email
 
     response = client.patch(
         event.api_urls.speakers + f"{speaker.code}/",
-        data={"name": new_name, "email": new_email},
+        data={"name": new_name, "email": "newspeaker@example.com"},
         follow=True,
         content_type="application/json",
         headers={"Authorization": f"Token {orga_write_token.token}"},
@@ -550,35 +549,14 @@ def test_speaker_update_change_name_and_email(
     assert response.status_code == 200
     content = response.json()
     assert content["name"] == new_name
-    assert content["email"] == new_email
+    assert content["email"] == original_email
     with scopes_disabled():
         speaker.refresh_from_db()
         speaker.user.refresh_from_db()
         assert speaker.name == new_name
         # User-level name is unchanged; only profile name is set
         assert speaker.user.name != new_name
-        assert speaker.user.email == new_email
-
-
-def test_speaker_update_duplicate_email_returns_400(
-    client, orga_write_token, event, speaker_on_event
-):
-    """Updating a speaker's email to one that already exists returns 400."""
-    speaker, _ = speaker_on_event
-    other_user = UserFactory()
-
-    response = client.patch(
-        event.api_urls.speakers + f"{speaker.code}/",
-        data={"email": other_user.email},
-        follow=True,
-        content_type="application/json",
-        headers={"Authorization": f"Token {orga_write_token.token}"},
-    )
-
-    assert response.status_code == 400
-    with scopes_disabled():
-        speaker.user.refresh_from_db()
-        assert speaker.user.email != other_user.email
+        assert speaker.user.email == original_email
 
 
 def test_speaker_retrieve_answers_scoped_to_event(client, event):

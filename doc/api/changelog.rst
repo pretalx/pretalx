@@ -32,6 +32,10 @@ renamed to ``tracks`` and ``submission_types``, and now return arrays of IDs ins
 of a single ID, as access codes can now be associated with multiple tracks and
 session types.
 
+Speaker email addresses can no longer be changed via the API. We will add this
+functionality back once we decouple the per-event contact email address from
+the authentication email address.
+
 .. warning::
 
    If you are using API v1, the ``/access-codes/`` endpoint will continue to use the
