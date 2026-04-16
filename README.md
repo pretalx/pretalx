@@ -62,7 +62,7 @@
 | src/pretalx/api/views/team.py                                              |       91 |        0 |        6 |        0 |     100% |           |
 | src/pretalx/api/views/upload.py                                            |       39 |        0 |       10 |        0 |     100% |           |
 | src/pretalx/cfp/apps.py                                                    |        4 |        0 |        0 |        0 |     100% |           |
-| src/pretalx/cfp/flow.py                                                    |      648 |        0 |      210 |        0 |     100% |           |
+| src/pretalx/cfp/flow.py                                                    |      667 |        0 |      212 |        0 |     100% |           |
 | src/pretalx/cfp/forms/auth.py                                              |       26 |        0 |        2 |        0 |     100% |           |
 | src/pretalx/cfp/forms/cfp.py                                               |       30 |        0 |       18 |        0 |     100% |           |
 | src/pretalx/cfp/forms/submissions.py                                       |       45 |        0 |       12 |        0 |     100% |           |
@@ -340,7 +340,7 @@
 | src/tests/cfp/forms/test\_auth.py                                          |       37 |        0 |        0 |        0 |     100% |           |
 | src/tests/cfp/forms/test\_cfp.py                                           |       72 |        0 |        0 |        0 |     100% |           |
 | src/tests/cfp/forms/test\_submissions.py                                   |       96 |        0 |        0 |        0 |     100% |           |
-| src/tests/cfp/test\_flow.py                                                |     1051 |        0 |        2 |        0 |     100% |           |
+| src/tests/cfp/test\_flow.py                                                |     1137 |        0 |        2 |        0 |     100% |           |
 | src/tests/cfp/views/conftest.py                                            |       45 |        0 |       10 |        0 |     100% |           |
 | src/tests/cfp/views/e2e/test\_auth.py                                      |       19 |        0 |        0 |        0 |     100% |           |
 | src/tests/cfp/views/e2e/test\_wizard.py                                    |      361 |        0 |       14 |        0 |     100% |           |
@@ -551,7 +551,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **69563** |    **0** | **5926** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **69668** |    **0** | **5928** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
