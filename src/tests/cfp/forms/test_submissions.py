@@ -33,45 +33,15 @@ def submission_with_speaker():
     return _create_submission_with_speaker()
 
 
-def test_invitation_form_init_populates_subject_and_text(submission_with_speaker):
-    submission, speaker_user = submission_with_speaker
-
-    form = SubmissionInvitationForm(submission=submission, speaker=speaker_user)
-
-    assert speaker_user.get_display_name() in form.initial["subject"]
-    assert str(submission.event.name) in form.initial["text"]
-    assert str(submission.title) in form.initial["text"]
-    assert "{invitation_url}" in form.initial["text"]
-
-
 def test_invitation_form_valid_with_correct_data(submission_with_speaker):
     submission, speaker_user = submission_with_speaker
 
     form = SubmissionInvitationForm(
         submission=submission,
         speaker=speaker_user,
-        data={
-            "speaker": "new-speaker@example.com",
-            "subject": "You're invited!",
-            "text": "Join us at {invitation_url} please!",
-        },
+        data={"speaker": "new-speaker@example.com"},
     )
     assert form.is_valid(), form.errors
-
-
-@pytest.mark.parametrize(
-    "text", ("Join us please!", ""), ids=("missing_placeholder", "empty")
-)
-def test_invitation_form_clean_text_rejects_invalid_text(submission_with_speaker, text):
-    submission, speaker_user = submission_with_speaker
-
-    form = SubmissionInvitationForm(
-        submission=submission,
-        speaker=speaker_user,
-        data={"speaker": "new-speaker@example.com", "subject": "Invite", "text": text},
-    )
-    assert not form.is_valid()
-    assert "text" in form.errors
 
 
 @pytest.mark.parametrize("upcase", (False, True), ids=("exact", "case_insensitive"))
@@ -82,13 +52,7 @@ def test_invitation_form_clean_speaker_rejects_existing_speaker(
     email = speaker_user.email.upper() if upcase else speaker_user.email
 
     form = SubmissionInvitationForm(
-        submission=submission,
-        speaker=speaker_user,
-        data={
-            "speaker": email,
-            "subject": "Invite",
-            "text": "Join at {invitation_url}",
-        },
+        submission=submission, speaker=speaker_user, data={"speaker": email}
     )
     assert not form.is_valid()
     assert "speaker" in form.errors
@@ -102,13 +66,7 @@ def test_invitation_form_clean_speaker_rejects_already_invited(
     SubmissionInvitationFactory(submission=submission, email="invited@example.com")
     email = "INVITED@example.com" if upcase else "invited@example.com"
     form = SubmissionInvitationForm(
-        submission=submission,
-        speaker=speaker_user,
-        data={
-            "speaker": email,
-            "subject": "Invite",
-            "text": "Join at {invitation_url}",
-        },
+        submission=submission, speaker=speaker_user, data={"speaker": email}
     )
     assert not form.is_valid()
     assert "speaker" in form.errors
@@ -120,11 +78,7 @@ def test_invitation_form_clean_speaker_lowercases_and_strips(submission_with_spe
     form = SubmissionInvitationForm(
         submission=submission,
         speaker=speaker_user,
-        data={
-            "speaker": "  NewSpeaker@Example.COM  ",
-            "subject": "Invite",
-            "text": "Join at {invitation_url}",
-        },
+        data={"speaker": "  NewSpeaker@Example.COM  "},
     )
     assert form.is_valid(), form.errors
     assert form.cleaned_data["speaker"] == "newspeaker@example.com"
@@ -138,11 +92,7 @@ def test_invitation_form_clean_speaker_rejects_exceeding_max_speakers():
     form = SubmissionInvitationForm(
         submission=submission,
         speaker=speaker_user,
-        data={
-            "speaker": "extra@example.com",
-            "subject": "Invite",
-            "text": "Join at {invitation_url}",
-        },
+        data={"speaker": "extra@example.com"},
     )
     assert not form.is_valid()
     assert "speaker" in form.errors
@@ -156,11 +106,7 @@ def test_invitation_form_clean_speaker_allows_within_max_speakers():
     form = SubmissionInvitationForm(
         submission=submission,
         speaker=speaker_user,
-        data={
-            "speaker": "extra@example.com",
-            "subject": "Invite",
-            "text": "Join at {invitation_url}",
-        },
+        data={"speaker": "extra@example.com"},
     )
     assert form.is_valid(), form.errors
 
@@ -174,11 +120,7 @@ def test_invitation_form_clean_speaker_counts_pending_invitations_toward_max():
     form = SubmissionInvitationForm(
         submission=submission,
         speaker=speaker_user,
-        data={
-            "speaker": "extra@example.com",
-            "subject": "Invite",
-            "text": "Join at {invitation_url}",
-        },
+        data={"speaker": "extra@example.com"},
     )
     assert not form.is_valid()
     assert "speaker" in form.errors
@@ -193,11 +135,7 @@ def test_invitation_form_save_creates_invitation_and_sends_email(
     form = SubmissionInvitationForm(
         submission=submission,
         speaker=speaker_user,
-        data={
-            "speaker": "new-speaker@example.com",
-            "subject": "You're invited!",
-            "text": "Join us at {invitation_url} please!",
-        },
+        data={"speaker": "new-speaker@example.com"},
     )
     assert form.is_valid(), form.errors
     invitation = form.save()
@@ -207,28 +145,35 @@ def test_invitation_form_save_creates_invitation_and_sends_email(
     assert invitation.email == "new-speaker@example.com"
     assert len(djmail.outbox) == 1
     assert djmail.outbox[0].to == ["new-speaker@example.com"]
-    assert "You're invited!" in djmail.outbox[0].subject
+    # Subject comes from the built-in phrases.cfp.invite_subject template,
+    # rendered with the inviting speaker's display name.
+    assert speaker_user.get_display_name() in djmail.outbox[0].subject
 
 
-def test_invitation_form_save_replaces_placeholder_in_text(submission_with_speaker):
+def test_invitation_form_save_uses_builtin_template_with_invitation_url(
+    submission_with_speaker,
+):
     djmail.outbox = []
     submission, speaker_user = submission_with_speaker
 
     form = SubmissionInvitationForm(
         submission=submission,
         speaker=speaker_user,
-        data={
-            "speaker": "new-speaker@example.com",
-            "subject": "Invite",
-            "text": "Click here: {invitation_url} to join.",
-        },
+        data={"speaker": "new-speaker@example.com"},
     )
     assert form.is_valid(), form.errors
     invitation = form.save()
 
     assert len(djmail.outbox) == 1
     body = djmail.outbox[0].body
-    assert "{invitation_url}" not in body
+    # Built-in template placeholders must be resolved, not leak verbatim.
+    assert "{proposal_title}" not in body
+    assert "{event_name}" not in body
+    assert "{inviting_speaker}" not in body
+    assert "{url}" not in body
+    # Resolved values are present.
+    assert str(submission.title) in body
+    assert str(submission.event.name) in body
     assert invitation.token in body
 
 
@@ -244,17 +189,9 @@ def test_invitation_form_save_returns_existing_without_resending(
     form = SubmissionInvitationForm(
         submission=submission,
         speaker=speaker_user,
-        data={
-            "speaker": "repeat@example.com",
-            "subject": "Invite",
-            "text": "Join at {invitation_url}",
-        },
+        data={"speaker": "repeat@example.com"},
     )
-    form.cleaned_data = {
-        "speaker": "repeat@example.com",
-        "subject": "Invite",
-        "text": "Join at {invitation_url}",
-    }
+    form.cleaned_data = {"speaker": "repeat@example.com"}
 
     result = form.save()
 

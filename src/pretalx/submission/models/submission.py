@@ -1035,29 +1035,23 @@ class Submission(GenerateCode, PretalxModel):
             create_user,
         )
 
-        user_created = False
-        context = {}
+        safe_extra_context = {}
         try:
             speaker_user = User.objects.get(email__iexact=email)
+            template_role = MailTemplateRoles.EXISTING_SPEAKER_INVITE
         except User.DoesNotExist:
             speaker_user = create_user(email=email, name=name, event=self.event)
-            user_created = True
-            context["invitation_link"] = build_absolute_uri(
-                "cfp:event.new_recover",
-                kwargs={"event": self.event.slug, "token": speaker_user.pw_reset_token},
+            template_role = MailTemplateRoles.NEW_SPEAKER_INVITE
+            safe_extra_context["invitation_link"] = mark_safe(  # noqa: S308  -- internally-built URL
+                speaker.urls.invitation.full()
             )
 
         speaker = self.add_speaker(user=speaker_user, name=name, log_user=user)
-        context["user"] = speaker_user
-        template = self.event.get_mail_template(
-            MailTemplateRoles.EXISTING_SPEAKER_INVITE
-            if not user_created
-            else MailTemplateRoles.NEW_SPEAKER_INVITE
-        )
+        template = self.event.get_mail_template(template_role)
         template.to_mail(
             user=speaker_user,
             event=self.event,
-            context=context,
+            safe_extra_context=safe_extra_context,
             context_kwargs={
                 "user": speaker_user,
                 "submission": self,
@@ -1118,36 +1112,6 @@ class Submission(GenerateCode, PretalxModel):
                 },
             )
 
-    def send_invite(self, to, _from=None, subject=None, text=None):
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            QueuedMail,
-        )
-
-        if not _from and (not subject or not text):
-            raise ValueError("Please enter a sender for this invitation.")
-
-        subject = subject or phrases.cfp.invite_subject.format(
-            speaker=_from.get_display_name()
-        )
-        subject = get_prefixed_subject(self.event, subject)
-        text = text or phrases.cfp.invite_text.format(
-            event=self.event.name,
-            title=self.title,
-            url=self.urls.accept_invitation.full(),
-            speaker=_from.get_display_name(),
-        )
-        to = to.split(",") if isinstance(to, str) else to
-        for invite in to:
-            QueuedMail(
-                event=self.event,
-                to=invite,
-                subject=subject,
-                text=text,
-                locale=self.get_email_locale(),
-            ).send()
-
-    send_invite.alters_data = True
-
     def add_favourite(self, user):
         SubmissionFavourite.objects.get_or_create(user=user, submission=self)
 
@@ -1203,33 +1167,30 @@ class SubmissionInvitation(PretalxModel):
             submission=self.submission.title, email=self.email
         )
 
-    def send(self, _from=None, subject=None, text=None):
+    def send(self, _from):
+        """Send the invitation email to the invited speaker."""
         from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            QueuedMail,
+            MailTemplate,
         )
 
         if not _from:
             raise ValueError("Please enter a sender for this invitation.")
 
-        subject = subject or phrases.cfp.invite_subject.format(
-            speaker=_from.get_display_name()
-        )
-        subject = get_prefixed_subject(self.submission.event, subject)
-        text = text or phrases.cfp.invite_text.format(
-            event=self.submission.event.name,
-            title=self.submission.title,
-            url=self.urls.base.full(),
-            speaker=_from.get_display_name(),
-        )
-        mail = QueuedMail(
+        return MailTemplate(
+            subject=phrases.cfp.invite_subject, text=phrases.cfp.invite_text
+        ).to_mail(
+            user=self.email,
             event=self.submission.event,
-            to=self.email,
-            subject=subject,
-            text=text,
             locale=self.submission.get_email_locale(),
+            safe_extra_context={
+                "url": mark_safe(  # noqa: S308  -- internally-built invitation URL
+                    self.urls.base.full()
+                )
+            },
+            context_kwargs={"submission": self.submission, "inviting_user": _from},
+            commit=False,
+            skip_queue=True,
         )
-        mail.send()
-        return mail
 
     send.alters_data = True
 

@@ -789,24 +789,6 @@ def test_submission_invite_view_sends_invitation(
         )
 
 
-def test_submission_invite_view_rejects_without_url_placeholder(
-    speaker_client, submission_with_speaker
-):
-    submission = submission_with_speaker
-    djmail.outbox = []
-
-    data = {
-        "speaker": "other@speaker.org",
-        "subject": "Please join!",
-        "text": "Come join us, no link here!",
-    }
-
-    response = speaker_client.post(submission.urls.invite, follow=True, data=data)
-
-    assert response.status_code == 200
-    assert len(djmail.outbox) == 0
-
-
 def test_submission_invite_view_rejects_existing_speaker(
     speaker_client, submission_with_speaker
 ):
