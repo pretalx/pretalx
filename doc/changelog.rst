@@ -10,6 +10,7 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :bug:`orga:submission` Submitting the new proposal form with invalid input to required custom fields no longer crashes with an internal server error, and correctly re-renders the form instead.
+- :bug:`cfp` CfP submissions with resource uploads no longer return a 500 error when the uploaded temp file vanishes between request parsing and storage; the user now sees a "please try again" message and can re-upload.
 - :feature:`api` Speaker email addresses can no longer be changed via the API; the ``email`` field on the speaker endpoint is now read-only.
 - :bug:`api` The file upload API endpoint now requires the token to have write access to at least one endpoint, matching its only legitimate use.
 - :bug:`-` The external redirect confirmation page now escapes HTML in the target hostname instead of rendering it as markup. Thanks go to Elad Meged from Novee Security for finding and reporting the problem.
