@@ -916,44 +916,6 @@ def test_submission_user_state_accepted():
     assert submission.user_state == SubmissionStates.ACCEPTED
 
 
-def test_submission_send_invite_requires_sender():
-    submission = SubmissionFactory()
-    with pytest.raises(ValueError, match="sender"):
-        submission.send_invite("test@example.com")
-
-
-def test_submission_send_invite_with_from():
-    submission = SubmissionFactory()
-    user = UserFactory()
-    djmail.outbox = []
-    with scope(event=submission.event):
-        submission.send_invite("test@example.com", _from=user)
-    assert len(djmail.outbox) == 1
-    assert "test@example.com" in djmail.outbox[0].to
-
-
-def test_submission_send_invite_with_custom_subject_and_text():
-    submission = SubmissionFactory()
-    djmail.outbox = []
-    with scope(event=submission.event):
-        submission.send_invite(
-            "test@example.com", subject="Join us!", text="Please speak at our event."
-        )
-    assert len(djmail.outbox) == 1
-    assert "Join us!" in djmail.outbox[0].subject
-    assert "Please speak at our event." in djmail.outbox[0].body
-
-
-def test_submission_send_invite_multiple_recipients():
-    submission = SubmissionFactory()
-    djmail.outbox = []
-    with scope(event=submission.event):
-        submission.send_invite(
-            "a@example.com,b@example.com", subject="Join!", text="Please speak."
-        )
-    assert len(djmail.outbox) == 2
-
-
 def test_submission_invite_speaker_existing_user():
     submission = SubmissionFactory()
     user = UserFactory()
@@ -1138,7 +1100,7 @@ def test_submission_invitation_send_requires_from():
         submission=submission, email="test@example.com"
     )
     with pytest.raises(ValueError, match="sender"):
-        invitation.send()
+        invitation.send(_from=None)
 
 
 def test_submission_invitation_retract():

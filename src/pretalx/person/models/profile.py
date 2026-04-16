@@ -90,6 +90,7 @@ class SpeakerProfile(ProfilePictureMixin, GenerateCode, PretalxModel):
         public = "{self.event.urls.base}speaker/{self.code}/"
         social_image = "{public}og-image"
         talks_ical = "{public}talks.ics"
+        invitation = "{self.event.urls.base}invite/{self.user.pw_reset_token}"
 
     class orga_urls(EventUrls):
         base = "{self.event.orga_urls.speakers}{self.code}/"
