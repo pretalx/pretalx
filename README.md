@@ -483,7 +483,7 @@
 | src/tests/orga/views/integration/test\_review.py                           |      830 |        0 |       10 |        0 |     100% |           |
 | src/tests/orga/views/integration/test\_schedule.py                         |      526 |        0 |        2 |        0 |     100% |           |
 | src/tests/orga/views/integration/test\_speaker.py                          |      367 |        0 |        6 |        0 |     100% |           |
-| src/tests/orga/views/integration/test\_submission.py                       |     1118 |        0 |       14 |        0 |     100% |           |
+| src/tests/orga/views/integration/test\_submission.py                       |     1128 |        0 |       14 |        0 |     100% |           |
 | src/tests/orga/views/integration/test\_typeahead.py                        |      225 |        0 |       12 |        0 |     100% |           |
 | src/tests/orga/views/unit/test\_admin.py                                   |      127 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/unit/test\_auth.py                                    |       67 |        0 |        0 |        0 |     100% |           |
@@ -551,7 +551,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **69510** |    **0** | **5926** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **69520** |    **0** | **5926** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
