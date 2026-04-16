@@ -254,18 +254,28 @@ class SocialMediaCardMixin:
     def get_image(self):
         raise NotImplementedError
 
+    @staticmethod
+    def _file_response(image):
+        # A truthy FieldFile only means the DB has a reference; the backing
+        # file may be missing or unreadable. Creating the FileResponse eagerly
+        # opens it early, so we surface failures here and try the next candidate.
+        if not image:
+            return None
+        try:
+            return FileResponse(image)
+        except OSError:
+            return None
+
     @csp_exempt()
     def get(self, request, *args, **kwargs):
         with suppress(Exception):
             image = self.get_image()
             if image:
                 return FileResponse(image)
-        if self.request.event.og_image:
-            return FileResponse(self.request.event.og_image)
-        if self.request.event.logo:
-            return FileResponse(self.request.event.logo)
-        if self.request.event.header_image:
-            return FileResponse(self.request.event.header_image)
+        event = self.request.event
+        for candidate in (event.og_image, event.logo, event.header_image):
+            if (response := self._file_response(candidate)) is not None:
+                return response
         raise Http404
 
 
