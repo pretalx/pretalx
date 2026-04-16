@@ -600,11 +600,11 @@ class SubmissionContent(
         speaker_form = self.new_speaker_form
         if speaker_form and not speaker_form.is_valid():
             return self.form_invalid(form)
-        self.object = form.instance
         self._questions_form.submission = form.instance
         if not self._questions_form.is_valid():
             messages.error(self.request, phrases.base.error_saving_changes)
             return self.get(self.request, *self.args, **self.kwargs)
+        self.object = form.instance
 
         old_submission_data = {}
         old_questions_data = {}
