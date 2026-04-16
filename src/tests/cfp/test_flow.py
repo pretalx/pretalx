@@ -1,19 +1,24 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from django.contrib.messages import constants as message_constants
+from django.contrib.messages import get_messages
 from django.contrib.messages.storage.fallback import FallbackStorage
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.forms import CharField, FileField, ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile, TemporaryUploadedFile
+from django.forms import CharField, FileField, Form, ValidationError
 from django.http import QueryDict
+from django.utils.datastructures import MultiValueDict
 from django.utils.translation import gettext_lazy as _
 from i18nfield.strings import LazyI18nString
 
 from pretalx.cfp.flow import (
     BaseCfPStep,
     CfPFlow,
+    FormFlowStep,
     InfoStep,
     ProfileStep,
     QuestionsStep,
@@ -1801,6 +1806,184 @@ def test_info_step_get_resource_formset_post_merges_stored_files():
     formset = step.get_resource_formset()
 
     assert formset.files["resource-0-resource"].name == "slides.pdf"
+
+
+@pytest.mark.django_db
+def test_info_step_get_resource_formset_post_keeps_reuploaded_file():
+    event = EventFactory(cfp__fields={"resources": {"visibility": "optional"}})
+    session = _cfp_session()
+
+    step = InfoStep(event=event)
+    step.request = make_request(event, resolver_match=_resolver(), session=session)
+    step.set_files(
+        {
+            "resource-0-resource": SimpleUploadedFile(
+                "old.pdf", b"%PDF-old", content_type="application/pdf"
+            )
+        }
+    )
+
+    step = InfoStep(event=event)
+    request = make_request(
+        event, method="post", resolver_match=_resolver(), session=session
+    )
+    request.POST = QueryDict(
+        "resource-TOTAL_FORMS=1&resource-INITIAL_FORMS=0"
+        "&resource-MIN_NUM_FORMS=0&resource-MAX_NUM_FORMS=1000"
+    )
+    request._files = MultiValueDict(
+        {
+            "resource-0-resource": [
+                SimpleUploadedFile(
+                    "new.pdf", b"%PDF-new", content_type="application/pdf"
+                )
+            ]
+        }
+    )
+    step.request = request
+
+    formset = step.get_resource_formset()
+
+    assert formset.files["resource-0-resource"].name == "new.pdf"
+
+
+@pytest.mark.django_db
+def test_form_flow_step_is_valid_false_when_set_files_raises():
+    class _AttachmentForm(Form):
+        attachment = FileField(required=False)
+
+        def __init__(self, *args, event=None, field_configuration=None, **kwargs):
+            super().__init__(*args, **kwargs)
+
+    class _AttachmentStep(FormFlowStep):
+        identifier = "info"
+        form_class = _AttachmentForm
+        template_name = "cfp/event/submission_base.html"
+
+    event = EventFactory()
+    step = _AttachmentStep(event=event)
+
+    tmp_file = TemporaryUploadedFile("slides.pdf", "application/pdf", 4, "utf-8")
+    tmp_file.write(b"%PDF")
+    tmp_file.seek(0)
+    Path(tmp_file.temporary_file_path()).unlink()
+
+    request = make_request(
+        event, method="post", resolver_match=_resolver(), session=_cfp_session()
+    )
+    request.POST = QueryDict("")
+    request._files = MultiValueDict({"attachment": [tmp_file]})
+    request._messages = FallbackStorage(request)
+    step.request = request
+
+    assert step.is_valid() is False
+    error_messages = [
+        m for m in get_messages(request) if m.level == message_constants.ERROR
+    ]
+    assert len(error_messages) == 1
+
+
+@pytest.mark.django_db
+def test_form_flow_step_set_files_raises_when_tmp_file_missing():
+    """If the upload's backing temp file has vanished between request parsing
+    and storage (OS temp-reaper, race, etc.), set_files must raise a
+    ValidationError rather than propagating FileNotFoundError."""
+    event = EventFactory()
+    step = InfoStep(event=event)
+    step.request = make_request(
+        event, resolver_match=_resolver(), session=_cfp_session()
+    )
+
+    tmp_file = TemporaryUploadedFile("slides.pdf", "application/pdf", 4, "utf-8")
+    tmp_file.write(b"%PDF")
+    tmp_file.seek(0)
+    Path(tmp_file.temporary_file_path()).unlink()
+
+    with pytest.raises(ValidationError):
+        step.set_files({"resource-0-resource": tmp_file})
+
+    assert step.cfp_session["files"].get("info", {}) == {}
+
+
+@pytest.mark.django_db
+def test_form_flow_step_set_files_persists_on_success():
+    event = EventFactory()
+    step = InfoStep(event=event)
+    step.request = make_request(
+        event, resolver_match=_resolver(), session=_cfp_session()
+    )
+
+    step.set_files(
+        {"image": SimpleUploadedFile("image.png", b"\x89PNG", content_type="image/png")}
+    )
+
+    assert "image" in step.cfp_session["files"]["info"]
+
+
+@pytest.mark.django_db
+def test_form_flow_step_get_files_drops_missing_stored_file():
+    """If a previously stored session file has been cleaned up from disk,
+    get_files must drop that entry from the session and continue, instead
+    of raising FileNotFoundError when opening the missing path."""
+    event = EventFactory()
+    step = InfoStep(event=event)
+    step.request = make_request(
+        event,
+        resolver_match=_resolver(),
+        session=_cfp_session(
+            files={
+                "info": {
+                    "image": {
+                        "tmp_name": "does-not-exist.pdf",
+                        "name": "slides.pdf",
+                        "content_type": "application/pdf",
+                        "size": 4,
+                        "charset": "utf-8",
+                    }
+                }
+            }
+        ),
+    )
+
+    result = step.get_files()
+
+    assert result is None
+    assert step.cfp_session["files"]["info"] == {}
+
+
+@pytest.mark.django_db
+def test_info_step_is_valid_false_when_resource_tmp_file_missing():
+    """is_valid() must surface a user-facing error and return False when
+    a resource upload's temp file has disappeared, instead of crashing
+    the whole submit view with a 500."""
+    event = EventFactory(cfp__fields={"resources": {"visibility": "optional"}})
+    step = InfoStep(event=event)
+
+    tmp_file = TemporaryUploadedFile("slides.pdf", "application/pdf", 4, "utf-8")
+    tmp_file.write(b"%PDF")
+    tmp_file.seek(0)
+    Path(tmp_file.temporary_file_path()).unlink()
+
+    request = make_request(
+        event, method="post", resolver_match=_resolver(), session=_cfp_session()
+    )
+    request.POST = QueryDict(
+        "title=Test&abstract=An+abstract&content_locale=en"
+        f"&submission_type={event.cfp.default_type.pk}"
+        "&resource-TOTAL_FORMS=1&resource-INITIAL_FORMS=0"
+        "&resource-MIN_NUM_FORMS=0&resource-MAX_NUM_FORMS=1000"
+        "&resource-0-description=Slides"
+    )
+    request._files = MultiValueDict({"resource-0-resource": [tmp_file]})
+    request._messages = FallbackStorage(request)
+    step.request = request
+
+    assert step.is_valid() is False
+    assert step.cfp_session["files"].get("info", {}) == {}
+    error_messages = [
+        m for m in get_messages(request) if m.level == message_constants.ERROR
+    ]
+    assert len(error_messages) == 1
 
 
 @pytest.mark.django_db

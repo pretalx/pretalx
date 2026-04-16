@@ -295,7 +295,12 @@ class FormFlowStep(TemplateFlowStep):
             messages.error(self.request, error_message)
             return False
         self.set_data(form.cleaned_data)
-        self.set_files(form.files)
+        own_files = {k: v for k, v in form.files.items() if k in form.fields}
+        try:
+            self.set_files(own_files)
+        except ValidationError as e:
+            messages.error(self.request, e.message)
+            return False
         return True
 
     def post(self, request):
@@ -320,17 +325,38 @@ class FormFlowStep(TemplateFlowStep):
     def get_files(self):
         saved_files = self.cfp_session["files"].get(self.identifier, {})
         files = {}
+        dropped = []
         for field, field_dict in saved_files.items():
             file_data = field_dict.copy()
             tmp_name = file_data.pop("tmp_name")
-            files[field] = UploadedFile(
-                file=self.file_storage.open(tmp_name), **file_data
-            )
+            try:
+                files[field] = UploadedFile(
+                    file=self.file_storage.open(tmp_name), **file_data
+                )
+            except FileNotFoundError:
+                # The CfP temp upload has been cleaned up (e.g. by the OS
+                # temp-reaper between sessions); drop the broken entry so
+                # the user can re-upload instead of seeing a 500.
+                dropped.append(field)
+        if dropped:
+            remaining = {k: v for k, v in saved_files.items() if k not in dropped}
+            self.cfp_session["files"][self.identifier] = remaining
         return files or None
 
     def set_files(self, files):
+        """Persist uploaded files into the CfP session storage.
+
+        Raises ``ValidationError`` if the underlying OS temp file has
+        been removed between request parsing and storage, so the caller
+        can surface a re-upload prompt instead of propagating a
+        ``FileNotFoundError`` up to a 500 response."""
         for field, field_file in files.items():
-            tmp_filename = self.file_storage.save(field_file.name, field_file)
+            try:
+                tmp_filename = self.file_storage.save(field_file.name, field_file)
+            except FileNotFoundError as e:
+                raise ValidationError(
+                    _("Your file upload could not be processed. Please try again.")
+                ) from e
             file_dict = {
                 "tmp_name": tmp_filename,
                 "name": field_file.name,
@@ -509,7 +535,11 @@ class InfoStep(DedraftMixin, FormFlowStep):
             if key.startswith("resource-")
         }
         if resource_files:
-            self.set_files(resource_files)
+            try:
+                self.set_files(resource_files)
+            except ValidationError as e:
+                messages.error(self.request, e.message)
+                formset_valid = False
         if (
             formset_valid
             and self._resources_required
