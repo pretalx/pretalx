@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from io import BytesIO
+from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import quote
 
@@ -749,6 +750,39 @@ def test_social_media_card_get_returns_get_image_result(event):
     view.request = request
     response = view.get(request)
     assert response.status_code == 200
+
+
+def test_social_media_card_get_skips_missing_files(event, make_image):
+    event.og_image.save("og.png", make_image("og.png", width=2, height=2), save=True)
+    event.logo.save("logo.png", make_image("logo.png", width=3, height=3), save=True)
+    Path(event.og_image.path).unlink()
+    expected = Path(event.logo.path).read_bytes()
+
+    class ConcreteCard(SocialMediaCardMixin):
+        def get_image(self):
+            return None
+
+    view = ConcreteCard()
+    request = make_request(event)
+    view.request = request
+    response = view.get(request)
+    assert response.status_code == 200
+    assert b"".join(response.streaming_content) == expected
+
+
+def test_social_media_card_get_404_when_all_files_missing(event, make_image):
+    event.og_image.save("og.png", make_image(), save=True)
+    Path(event.og_image.path).unlink()
+
+    class ConcreteCard(SocialMediaCardMixin):
+        def get_image(self):
+            return None
+
+    view = ConcreteCard()
+    request = make_request(event)
+    view.request = request
+    with pytest.raises(Http404):
+        view.get(request)
 
 
 class ConcretePagination(PaginationMixin):
