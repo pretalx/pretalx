@@ -1569,6 +1569,42 @@ def test_submission_create_with_invalid_speaker_form(client, event):
         assert event.submissions.count() == 0
 
 
+def test_submission_create_with_invalid_question_answer(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        type_pk = event.submission_types.first().pk
+        QuestionFactory(
+            event=event,
+            target="submission",
+            variant=QuestionVariant.STRING,
+            question_required=QuestionRequired.REQUIRED,
+        )
+    client.force_login(user)
+
+    response = client.post(
+        event.orga_urls.new_submission,
+        data={
+            "abstract": "abstract",
+            "content_locale": "en",
+            "description": "description",
+            "duration": "",
+            "slot_count": 1,
+            "notes": "notes",
+            "speaker-email": "",
+            "speaker-name": "",
+            "speaker-locale": "en",
+            "title": "My Talk",
+            "submission_type": type_pk,
+            "state": "submitted",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert event.submissions.count() == 0
+
+
 def test_submission_content_query_count(client, event, django_assert_num_queries):
     with scopes_disabled():
         user = make_orga_user(event, can_change_submissions=True)
