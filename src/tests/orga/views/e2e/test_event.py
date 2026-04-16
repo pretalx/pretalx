@@ -5,6 +5,7 @@ from io import BytesIO
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 from django.utils.timezone import now
 from django_scopes import scope, scopes_disabled
 from PIL import Image
@@ -22,6 +23,16 @@ from tests.factories import (
 pytestmark = [pytest.mark.e2e, pytest.mark.django_db]
 
 WIZARD_URL = "/orga/event/new/"
+
+
+@pytest.fixture(autouse=True)
+def _reset_timezone_state():
+    """The wizard creates events with ``Europe/Amsterdam`` and makes client
+    requests against them, so EventMiddleware activates that timezone on
+    the thread-local and never deactivates. Reset afterwards so subsequent
+    tests reading ``timezone.get_current_timezone_name()`` see the default."""
+    yield
+    timezone.deactivate()
 
 
 def _wizard_post(client, step, data):
