@@ -157,6 +157,14 @@ class MailDetailForm(ReadOnlyFlag, forms.ModelForm):
         return cleaned_data
 
     def save(self, *args, **kwargs):
+        # The organiser has eyes on the plain-text body now; any cached
+        # HTML rendering is stale. Drop it so make_html() falls back to
+        # regenerating from the edited text at send time.
+        # This removes some escaping, as we now have to assume that
+        # all content in the text is meant to be parsed as Markdown and
+        # is trusted, as it has been reviewed and modified by an organiser.
+        if self.has_changed() and "text" in self.changed_data:
+            self.instance.text_html = None
         obj = super().save(*args, **kwargs)
         if self.has_changed() and "to" in self.changed_data:
             addresses = list(

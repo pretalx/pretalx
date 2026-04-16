@@ -7,7 +7,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 {% load history_sidebar %}
 {% load i18n %}
-{% load rich_text %}
 {% load static %}
 
 {% block extra_title %}{% translate "Email editor" %} :: {% endblock extra_title %}
@@ -100,7 +99,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
                         <div class="row form-group">
                             <label class="col col-md-3 col-form-label">Text</label>
-                            <div class="col col-md-9 mt-2">{{ form.instance.text|rich_text }}</div>
+                            <div class="col col-md-9 mt-2">{{ form.instance.html_body }}</div>
                         </div>
                     </div>
 

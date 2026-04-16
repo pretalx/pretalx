@@ -3,7 +3,6 @@ SPDX-FileCopyrightText: 2019-present Tobias Kunze
 SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 -->
 
-{% load rich_text %}
 {% if mails %}
     <div id="accordion">
         {% for mail in mails %}
@@ -20,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
                 <div id="mail-{{ mail.pk }}" class="collapse" aria-labelledby="subject-{{ subject.pk }}" aria-expanded="false" data-parent="#accordion">
                     <div class="card-body">
-                        {{ mail.text|rich_text }}
+                        {{ mail.html_body }}
                     </div>
                 </div>
             </div>
