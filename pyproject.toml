@@ -176,6 +176,7 @@ omit = [
   "*/test_settings*",
   "*/urls.py",
   "*/wsgi.py",
+  "*/tests/services/test_documentation.py",
 ]
 relative_files = true
 
