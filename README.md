@@ -469,7 +469,7 @@
 | src/tests/orga/utils/test\_i18n.py                                         |       59 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/e2e/test\_auth.py                                     |       21 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/e2e/test\_cfp.py                                      |      105 |        0 |        0 |        0 |     100% |           |
-| src/tests/orga/views/e2e/test\_event.py                                    |      204 |        0 |        2 |        0 |     100% |           |
+| src/tests/orga/views/e2e/test\_event.py                                    |      209 |        0 |        2 |        0 |     100% |           |
 | src/tests/orga/views/integration/test\_admin.py                            |      176 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/integration/test\_auth.py                             |       93 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/integration/test\_cards.py                            |       42 |        0 |        2 |        0 |     100% |           |
@@ -551,7 +551,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **69668** |    **0** | **5928** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **69673** |    **0** | **5928** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
