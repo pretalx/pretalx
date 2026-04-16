@@ -427,11 +427,15 @@ class AccessCodeSendForm(forms.Form):
 
     def __init__(self, *args, instance, user, **kwargs):
         self.access_code = instance
-        subject = _("Access code for the {event} CfP").format(event=instance.event.name)
+        self.user = user
+        event_name = str(instance.event.name)
+        subject = _("Access code for the {event_name} CfP").format(
+            event_name=event_name
+        )
         text = (
             _("""Hi!
 
-This is an access code for the {event} CfP.""").format(event=instance.event.name)
+This is an access code for the {event_name} CfP.""").format(event_name=event_name)
             + " "
         )
         tracks = list(instance.tracks.all())
@@ -469,7 +473,9 @@ Please follow this URL to use the code:
   {url}
 
 I’m looking forward to your proposal!
-{name}""").format(url=instance.urls.cfp_url.full(), name=user.get_display_name())
+{inviting_name}""").format(
+            url=instance.urls.cfp_url.full(), inviting_name=user.get_display_name()
+        )
         initial = kwargs.get("initial", {})
         initial["subject"] = get_prefixed_subject(instance.event, subject)
         initial["text"] = text

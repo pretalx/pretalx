@@ -36,19 +36,19 @@ class CfPPhrases(Phrases, app="cfp"):
     )
 
     speaker_email = pgettext_lazy("field: speaker's email address", "Speaker email")
-    invite_subject = _("{speaker} invites you to join their session!")
+    invite_subject = _("{inviting_speaker} invites you to join their session!")
     invite_text = _("""Hi!
 
 I’d like to invite you to be a speaker in the session
 
-  “{title}”
+  “{proposal_title}”
 
-at {event}. Please follow this link to join:
+at {event_name}. Please follow this link to join:
 
   {url}
 
 I’m looking forward to it!
-{speaker}""")
+{inviting_speaker}""")
     invite_invalid_email = _("Please provide a valid email address.")
     invite_sent = _("The invitation has been sent.")
     invite_accepted = _(
