@@ -221,12 +221,13 @@ class MailTemplate(PretalxModel):
 
             mail = QueuedMail(
                 event=event,
-                template=self,
+                template=self if self.pk else None,
                 to=address,
                 reply_to=self.reply_to,
                 bcc=self.bcc,
                 subject=subject,
                 text=text,
+                text_html=text_html,
                 locale=locale,
                 attachments=attachments,
             )
@@ -384,6 +385,11 @@ class QueuedMail(PretalxModel):
         max_length=200, verbose_name=pgettext_lazy("email subject", "Subject")
     )
     text = models.TextField(verbose_name=_("Text"))
+    # Stored when the mail was created via the placeholder rendering system,
+    # so the HTML body does not need to be re-synthesised from ``text`` by
+    # the markdown/bleach pipeline at send time. Cleared when a draft is
+    # edited, so ``make_html()`` falls back to the legacy path.
+    text_html = models.TextField(null=True, blank=True)
     sent = models.DateTimeField(null=True, blank=True, verbose_name=_("Sent at"))
     state = models.CharField(
         max_length=10,
@@ -426,7 +432,16 @@ class QueuedMail(PretalxModel):
         self.sent = now()
         self.error_data = None
         self.error_timestamp = None
-        self.save(update_fields=["state", "sent", "error_data", "error_timestamp"])
+        self.html_body = None  # No need to store extra data
+        self.save(
+            update_fields=[
+                "state",
+                "sent",
+                "error_data",
+                "error_timestamp",
+                "html_body",
+            ]
+        )
 
     mark_sent.alters_data = True
 
@@ -466,7 +481,7 @@ class QueuedMail(PretalxModel):
                 sig = sig.strip()[3:].strip()
         body_md = render_markdown_abslinks(self.text)
         html_context = {
-            "body": body_md,
+            "body": self.html_body,
             "event": event,
             "color": (event.primary_color if event else "")
             or settings.DEFAULT_EVENT_PRIMARY_COLOR,
