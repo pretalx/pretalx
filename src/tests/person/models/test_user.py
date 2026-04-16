@@ -10,7 +10,7 @@ from rest_framework.authtoken.models import Token
 from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.models import ActivityLog
 from pretalx.common.urls import build_absolute_uri
-from pretalx.person.models import User
+from pretalx.person.models import ProfilePicture, User
 from pretalx.person.models.user import validate_username
 from pretalx.person.signals import delete_user as delete_user_signal
 from pretalx.submission.models import Answer
@@ -266,6 +266,22 @@ def test_user_deactivate_clears_biography():
     speaker.refresh_from_db()
 
     assert speaker.biography == ""
+
+
+def test_user_deactivate_with_profile_picture_clears_fk():
+    """Deactivating a user whose profile_picture points to one of their pictures
+    must not leave a dangling FK or an active profile picture."""
+    user = UserFactory()
+    picture = ProfilePictureFactory(user=user)
+    user.profile_picture = picture
+    user.save()
+    picture_pk = picture.pk
+
+    user.deactivate()
+
+    user.refresh_from_db()
+    assert user.profile_picture_id is None
+    assert not ProfilePicture.objects.filter(pk=picture_pk).exists()
 
 
 def test_user_deactivate_deletes_personal_answers():

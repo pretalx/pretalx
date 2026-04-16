@@ -304,6 +304,7 @@ class User(
         self.pw_reset_time = None
         self.set_unusable_password()
         self._delete_files()
+        self.profile_picture = None
         self.save()
         self.profiles.all().update(biography="")
         for answer in Answer.objects.filter(
