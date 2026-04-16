@@ -145,7 +145,7 @@
 | src/pretalx/common/views/errors.py                                         |       26 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/common/views/generic.py                                        |      479 |        0 |      132 |        0 |     100% |           |
 | src/pretalx/common/views/helpers.py                                        |       13 |        0 |        0 |        0 |     100% |           |
-| src/pretalx/common/views/mixins.py                                         |      369 |        0 |      122 |        0 |     100% |           |
+| src/pretalx/common/views/mixins.py                                         |      375 |        0 |      122 |        0 |     100% |           |
 | src/pretalx/common/views/redirect.py                                       |       28 |        0 |        6 |        0 |     100% |           |
 | src/pretalx/common/views/shortlink.py                                      |       30 |        0 |       18 |        0 |     100% |           |
 | src/pretalx/event/apps.py                                                  |        4 |        0 |        0 |        0 |     100% |           |
@@ -422,7 +422,7 @@
 | src/tests/common/views/unit/test\_errors.py                                |       34 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/views/unit/test\_generic.py                               |      836 |        0 |        8 |        0 |     100% |           |
 | src/tests/common/views/unit/test\_helpers.py                               |       22 |        0 |        0 |        0 |     100% |           |
-| src/tests/common/views/unit/test\_mixins.py                                |      958 |        0 |       14 |        0 |     100% |           |
+| src/tests/common/views/unit/test\_mixins.py                                |      984 |        0 |       14 |        0 |     100% |           |
 | src/tests/common/views/unit/test\_redirect.py                              |       19 |        0 |        0 |        0 |     100% |           |
 | src/tests/conftest.py                                                      |       94 |        0 |        6 |        0 |     100% |           |
 | src/tests/dummy\_app/apps.py                                               |       20 |        0 |        0 |        0 |     100% |           |
@@ -551,7 +551,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **69531** |    **0** | **5926** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **69563** |    **0** | **5926** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
