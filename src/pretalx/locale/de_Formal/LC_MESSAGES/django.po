@@ -5,7 +5,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-17 21:02+0000\n"
-"PO-Revision-Date: 2026-04-15 13:28+0000\n"
+"PO-Revision-Date: 2026-04-17 21:08+0000\n"
 "Last-Translator: Tobias Kunze <r@rixx.de>\n"
 "Language-Team: \n"
 "Language: de_Formal\n"
@@ -306,10 +306,10 @@ msgid "Resources"
 msgstr "Ressourcen"
 
 #: pretalx/cfp/flow.py:358
-#, fuzzy
-#| msgid "Export file not found. Please try again."
 msgid "Your file upload could not be processed. Please try again."
-msgstr "Export nicht gefunden. Bitte versuchen Sie es noch einmal."
+msgstr ""
+"Ihr Dateiupload kann nicht verarbeitet werden. Bitte versuchen Sie es noch "
+"einmal."
 
 #: pretalx/cfp/flow.py:548
 msgid "Please add at least one resource."
@@ -3918,15 +3918,7 @@ msgid "This access code is valid until {date}."
 msgstr "Dieser Code ist bis {date} gültig."
 
 #: pretalx/orga/forms/cfp.py:477
-#, fuzzy, python-brace-format
-#| msgid ""
-#| "\n"
-#| "Please follow this URL to use the code:\n"
-#| "\n"
-#| "  {url}\n"
-#| "\n"
-#| "I’m looking forward to your proposal!\n"
-#| "{name}"
+#, python-brace-format
 msgid ""
 "\n"
 "Please follow this URL to use the code:\n"
@@ -3942,7 +3934,7 @@ msgstr ""
 "  {url}\n"
 "\n"
 "Wir freuen uns auf Ihre Einreichung!\n"
-"{name}"
+"{inviting_speaker}"
 
 #: pretalx/orga/forms/cfp.py:509
 msgid "Accepted or confirmed speakers"
@@ -7691,10 +7683,9 @@ msgstr ""
 "werden."
 
 #: pretalx/orga/views/cfp.py:524
-#, fuzzy, python-brace-format
-#| msgid "Do you really want to delete this session type?"
+#, python-brace-format
 msgid "Are you sure you want to make “{name}” the default session type?"
-msgstr "Möchten Sie diese Einreichungsart wirklich löschen?"
+msgstr "Möchten Sie {name} wirklich zur Standard-Einreichungsart machen?"
 
 #: pretalx/orga/views/cfp.py:548 pretalx/orga/views/cfp.py:573
 msgid "New track"
