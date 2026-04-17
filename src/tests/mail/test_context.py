@@ -1,10 +1,15 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+from decimal import Decimal
+
 import pytest
+from django.utils.safestring import mark_safe
 from django_scopes import scope
 from i18nfield.strings import LazyI18nString
 
+from pretalx.common.text.formatting import EmailAlternativeString
 from pretalx.mail.context import (
+    _validate_safe_extra_context,
     base_placeholders,
     get_all_reviews,
     get_available_placeholders,
@@ -13,7 +18,11 @@ from pretalx.mail.context import (
     get_used_placeholders,
     placeholder_aliases,
 )
-from pretalx.mail.placeholders import SimpleFunctionalMailTextPlaceholder
+from pretalx.mail.placeholders import (
+    BaseMailTextPlaceholder,
+    SimpleFunctionalMailTextPlaceholder,
+    TrustedPlainMailTextPlaceholder,
+)
 from tests.factories import (
     ReviewFactory,
     RoomFactory,
@@ -88,7 +97,11 @@ def test_get_invalid_placeholders(text, valid, expected):
 def test_placeholder_aliases_first_is_visible_rest_hidden():
     """Only the first alias is visible; the rest are hidden aliases."""
     result = placeholder_aliases(
-        ["primary", "alias1", "alias2"], ["event"], lambda event: event, "sample"
+        ["primary", "alias1", "alias2"],
+        ["event"],
+        lambda event: event,
+        "sample",
+        cls=TrustedPlainMailTextPlaceholder,
     )
     assert result[0].is_visible is True
     assert result[1].is_visible is False
@@ -103,13 +116,18 @@ def test_placeholder_aliases_identifiers_match():
         lambda event: event,
         "sample",
         explanation="The event name",
+        cls=TrustedPlainMailTextPlaceholder,
     )
     assert [p.identifier for p in result] == identifiers
 
 
 def test_placeholder_aliases_render_uses_same_func():
     result = placeholder_aliases(
-        ["a", "b"], ["event"], lambda event: f"rendered-{event}", "sample"
+        ["a", "b"],
+        ["event"],
+        lambda event: f"rendered-{event}",
+        "sample",
+        cls=TrustedPlainMailTextPlaceholder,
     )
     context = {"event": "test"}
     assert result[0].render(context) == "rendered-test"
@@ -186,8 +204,14 @@ def test_get_mail_context_includes_user_placeholders(event):
     with scope(event=event):
         context = get_mail_context(event=event, user=user)
 
-    assert context["name"] == "Jane Doe"
-    assert context["email"] == "jane@example.org"
+    # ``name`` and ``email`` are UntrustedPlain placeholders — their
+    # values are EmailAlternativeString pairs so the formatter can
+    # fence the HTML-body output in a ``<span>``. Legitimate content
+    # round-trips through both variants unchanged.
+    assert context["name"].plain == "Jane Doe"
+    assert context["name"].html == "<span>Jane Doe</span>"
+    assert context["email"].plain == "jane@example.org"
+    assert context["email"].html == "<span>jane@example.org</span>"
 
 
 @pytest.mark.django_db
@@ -207,7 +231,10 @@ def test_get_mail_context_includes_submission_placeholders(event):
     with scope(event=event):
         context = get_mail_context(event=event, submission=submission)
 
-    assert context["proposal_title"] == "My Great Talk"
+    # ``proposal_title`` is UntrustedPlain — the value is a
+    # EmailAlternativeString. Legit content round-trips unchanged.
+    assert context["proposal_title"].plain == "My Great Talk"
+    assert context["proposal_title"].html == "<span>My Great Talk</span>"
     assert context["proposal_code"] == submission.code
 
 
@@ -300,9 +327,9 @@ def test_get_available_placeholders_filters_by_context(
 @pytest.mark.django_db
 def test_base_placeholders_contains_expected_identifiers(event):
     """The base set includes all documented placeholder identifiers as
-    SimpleFunctionalMailTextPlaceholder instances."""
+    BaseMailTextPlaceholder instances (either plain or rich)."""
     result = base_placeholders(sender=event)
-    assert all(isinstance(p, SimpleFunctionalMailTextPlaceholder) for p in result)
+    assert all(isinstance(p, BaseMailTextPlaceholder) for p in result)
     identifiers = {p.identifier for p in result}
 
     expected_identifiers = {
@@ -338,6 +365,7 @@ def test_base_placeholders_contains_expected_identifiers(event):
         "session_end_time",
         "session_room",
         "name",
+        "inviting_speaker",
         "email",
         "speaker_schedule_new",
         "notifications",
@@ -363,3 +391,68 @@ def test_base_placeholders_aliases_share_render_output(event):
     context = {"event": event}
     assert by_id["event_name"].render(context) == by_id["event"].render(context)
     assert by_id["event_name"].render(context) == event.name
+
+
+@pytest.mark.parametrize("value", (None, {}))
+def test_validate_safe_extra_context_accepts_empty(value):
+    _validate_safe_extra_context(value)
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        mark_safe("https://example.com"),
+        EmailAlternativeString("plain", "<b>html</b>"),
+        42,
+        3.14,
+        Decimal("19.95"),
+    ),
+    ids=("SafeString", "EmailAlternativeString", "int", "float", "Decimal"),
+)
+def test_validate_safe_extra_context_accepts_allowed_types(value):
+    _validate_safe_extra_context({"key": value})
+
+
+def test_validate_safe_extra_context_rejects_plain_string():
+    with pytest.raises(TypeError, match="safe_extra_context\\['key'\\]"):
+        _validate_safe_extra_context({"key": "a plain string"})
+
+
+def test_validate_safe_extra_context_rejects_lazy_i18n_string():
+    with pytest.raises(TypeError, match="safe_extra_context"):
+        _validate_safe_extra_context({"key": LazyI18nString("hello")})
+
+
+@pytest.mark.django_db
+def test_validate_safe_extra_context_accepts_urlman_urls(event):
+    # Regression for the boilerplate-reduction escape hatch: organiser
+    # call sites can pass ``obj.urls.foo`` directly instead of spelling
+    # out ``mark_safe(obj.urls.foo.full())``. The validator must accept
+    # the raw ``urlman.Urls`` attribute.
+    _validate_safe_extra_context({"url": event.urls.base})
+
+
+@pytest.mark.django_db
+def test_get_mail_context_auto_wraps_urlman_urls(event):
+    """``get_mail_context`` resolves a raw ``urlman.Urls`` attribute
+    in ``safe_extra_context`` to a ``mark_safe``-wrapped absolute URL
+    so the HTML-mode formatter does not mangle query-string ``&``
+    characters in internally-built URLs."""
+    from django.utils.safestring import SafeString  # noqa: PLC0415
+
+    context = get_mail_context(event=event, safe_extra_context={"url": event.urls.base})
+
+    assert isinstance(context["url"], SafeString)
+    assert context["url"] == event.urls.base.full()
+
+
+@pytest.mark.django_db
+def test_get_mail_context_leaves_non_urlman_safe_string_alone(event):
+    """A caller that already has a plain URL string and wraps it in
+    ``mark_safe`` by hand (e.g. ``build_absolute_uri`` results) still
+    works — only ``urlman.Urls`` attributes go through the auto-wrap."""
+    url = mark_safe("https://foo.test/?x=1&y=2")
+
+    context = get_mail_context(event=event, safe_extra_context={"url": url})
+
+    assert context["url"] is url

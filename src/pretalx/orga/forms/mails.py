@@ -22,6 +22,7 @@ from pretalx.common.forms.widgets import (
     SelectMultipleWithCount,
 )
 from pretalx.common.language import language
+from pretalx.common.text.formatting import MODE_HTML, format_map
 from pretalx.common.text.phrases import phrases
 from pretalx.mail.context import get_available_placeholders, get_invalid_placeholders
 from pretalx.mail.models import MailTemplate, QueuedMail, QueuedMailStates
@@ -101,19 +102,20 @@ class MailTemplateForm(ReadOnlyFlag, PretalxI18nModelForm):
         from bs4 import BeautifulSoup  # noqa: PLC0415 -- slow import
 
         from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
-            render_markdown_abslinks,
+            render_mail_body,
         )
 
         for locale in self.event.locales:
             with language(locale):
                 message = text.localize(locale)
-                preview_text = render_markdown_abslinks(
-                    message.format_map(
-                        {
-                            key: escape(value.render_sample(self.event))
-                            for key, value in self.valid_placeholders.items()
-                        }
-                    )
+                # Mirror ``MailTemplate.to_mail`` so the empty-link
+                # check sees the exact markup organisers will receive.
+                preview_context = {
+                    key: value.render_sample_for_preview(self.event)
+                    for key, value in self.valid_placeholders.items()
+                }
+                preview_text = render_mail_body(
+                    format_map(message, preview_context, mode=MODE_HTML)
                 )
                 doc = BeautifulSoup(preview_text, "lxml")
                 for link in doc.find_all("a"):

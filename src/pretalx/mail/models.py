@@ -21,6 +21,7 @@ from i18nfield.fields import I18nCharField, I18nTextField
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.models.mixins import PretalxModel
+from pretalx.common.text.formatting import MODE_HTML, MODE_PLAIN, format_map
 from pretalx.common.urls import EventUrls
 from pretalx.mail.context import get_available_placeholders
 from pretalx.mail.placeholders import SimpleFunctionalMailTextPlaceholder
@@ -181,7 +182,7 @@ class MailTemplate(PretalxModel):
         :param safe_extra_context: Per-call overrides for the template
             context. Every value must be a
             :class:`~django.utils.safestring.SafeString`, a
-            :class:`~pretalx.common.text.format.PlainHtmlAlternativeString`,
+            :class:`~pretalx.common.text.formatting.EmailAlternativeString`,
             or a numeric type (``int``, ``float``, ``Decimal``); see
             :func:`~pretalx.mail.context.get_mail_context`.
         :param context_kwargs: Passed to get_mail_context to retrieve the correct
@@ -192,10 +193,6 @@ class MailTemplate(PretalxModel):
         """
         from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
             render_mail_body,
-        )
-        from pretalx.common.text.format import (  # noqa: PLC0415 -- avoid circular import
-            SafeFormatter,
-            format_map,
         )
         from pretalx.mail.context import (  # noqa: PLC0415 -- avoid circular import
             get_mail_context,
@@ -229,14 +226,10 @@ class MailTemplate(PretalxModel):
                 safe_extra_context=safe_extra_context, **context_kwargs
             )
             try:
-                subject = format_map(
-                    self.subject, context, mode=SafeFormatter.MODE_RICH_TO_PLAIN
-                )
-                text = format_map(
-                    self.text, context, mode=SafeFormatter.MODE_RICH_TO_PLAIN
-                )
+                subject = format_map(self.subject, context, mode=MODE_PLAIN)
+                text = format_map(self.text, context, mode=MODE_PLAIN)
                 text_html = render_mail_body(
-                    format_map(self.text, context, mode=SafeFormatter.MODE_RICH_TO_HTML)
+                    format_map(self.text, context, mode=MODE_HTML)
                 )
             except KeyError as e:
                 raise SendMailException(
@@ -412,11 +405,8 @@ class QueuedMail(PretalxModel):
         max_length=200, verbose_name=pgettext_lazy("email subject", "Subject")
     )
     text = models.TextField(verbose_name=_("Text"))
-    # Final, sanitised HTML body produced by the placeholder rendering
-    # system at ``MailTemplate.to_mail`` time (markdown + bleach already
-    # applied via ``render_mail_body``). ``html_body`` returns this
-    # verbatim when set. Cleared when a draft's plain text is edited, so
-    # ``make_html()`` falls back to re-rendering from ``text``.
+    # Set at send-time when the rendered HTML diverges from what
+    # re-rendering ``text`` would produce; cleared on organiser edit.
     text_html = models.TextField(null=True, blank=True)
     sent = models.DateTimeField(null=True, blank=True, verbose_name=_("Sent at"))
     state = models.CharField(
@@ -460,16 +450,7 @@ class QueuedMail(PretalxModel):
         self.sent = now()
         self.error_data = None
         self.error_timestamp = None
-        self.text_html = None  # No need to keep the rendered body after send
-        self.save(
-            update_fields=[
-                "state",
-                "sent",
-                "error_data",
-                "error_timestamp",
-                "text_html",
-            ]
-        )
+        self.save(update_fields=["state", "sent", "error_data", "error_timestamp"])
 
     mark_sent.alters_data = True
 

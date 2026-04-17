@@ -33,11 +33,12 @@ from pretalx.agenda.rules import (
 from pretalx.common.exceptions import SubmissionError
 from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import GenerateCode, PretalxModel
+from pretalx.common.text.formatting import EmailAlternativeString
 from pretalx.common.text.path import hashed_path
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import serialize_duration
 from pretalx.common.urls import EventUrls
-from pretalx.mail.models import get_prefixed_subject
+from pretalx.mail.placeholders import escape_for_html_body, escape_for_plain_body
 from pretalx.person.rules import is_reviewer
 from pretalx.submission.rules import (
     are_featured_submissions_visible,
@@ -635,7 +636,9 @@ class Submission(GenerateCode, PretalxModel):
             user=person,
             event=self.event,
             context_kwargs={"user": person, "submission": self},
-            context={"full_submission_content": self.get_content_for_mail()},
+            safe_extra_context={
+                "full_submission_content": self._content_for_mail_placeholder()
+            },
             skip_queue=True,
             commit=True,  # Send immediately, but save a record
             locale=self.get_email_locale(person.locale),
@@ -979,7 +982,12 @@ class Submission(GenerateCode, PretalxModel):
         )
         return Availability.intersection(all_availabilities)
 
-    def get_content_for_mail(self):
+    def _collect_content_fields(self):
+        """Return ``[(field_name, field_value), …]`` for every non-empty
+        model field and custom-question answer on this submission. The
+        values are coerced to display strings (booleans → Yes/No, file
+        fields → absolute URL). Used by :meth:`get_content_for_mail` and
+        :meth:`_content_for_mail_placeholder`."""
         order = [
             "title",
             "abstract",
@@ -991,7 +999,6 @@ class Submission(GenerateCode, PretalxModel):
             "image",
         ]
         data = []
-        result = ""
         for field in order:
             field_content = getattr(self, field, None)
             if field_content:
@@ -1011,6 +1018,7 @@ class Submission(GenerateCode, PretalxModel):
                 data.append(
                     {"name": answer.question.question, "value": answer.answer or "-"}
                 )
+        result = []
         for content in data:
             field_name = content["name"]
             field_content = content["value"]
@@ -1020,13 +1028,29 @@ class Submission(GenerateCode, PretalxModel):
                 field_content = (
                     self.event.custom_domain or settings.SITE_URL
                 ) + field_content.url
-            result += f"**{field_name}**: {field_content}\n\n"
+            result.append((str(field_name), str(field_content)))
         return result
 
-    def invite_speaker(self, email, name=None, locale=None, user=None):
-        from pretalx.common.urls import (  # noqa: PLC0415 -- avoid circular import
-            build_absolute_uri,
+    def get_content_for_mail(self):
+        return "".join(
+            f"**{name}**: {value}\n\n" for name, value in self._collect_content_fields()
         )
+
+    def _content_for_mail_placeholder(self):
+        """Build the :class:`EmailAlternativeString` for the
+        ``{full_submission_content}`` placeholder: organiser-authored
+        field names in bold, values escaped as untrusted-plain."""
+        fields = self._collect_content_fields()
+        plain_parts = []
+        html_parts = []
+        for name, value in fields:
+            plain_parts.append(f"**{name}**: {escape_for_plain_body(value)}")
+            html_parts.append(f"**{name}**: {escape_for_html_body(value)}")
+        return EmailAlternativeString(
+            plain="\n\n".join(plain_parts), html="\n\n".join(html_parts)
+        )
+
+    def invite_speaker(self, email, name=None, locale=None, user=None):
         from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
             MailTemplateRoles,
         )
