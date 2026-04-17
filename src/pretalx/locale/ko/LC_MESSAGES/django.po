@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-16 07:22+0000\n"
+"POT-Creation-Date: 2026-04-17 21:02+0000\n"
 "PO-Revision-Date: 2025-12-04 17:41+0000\n"
 "Last-Translator: Robert Sim <contact@robertsky.com>\n"
 "Language-Team: none\n"
@@ -266,15 +266,15 @@ msgstr ""
 #: pretalx/orga/views/submission.py:1225
 #: pretalx/submission/forms/submission.py:56
 #: pretalx/submission/forms/submission.py:327
-#: pretalx/submission/models/submission.py:218
+#: pretalx/submission/models/submission.py:217
 msgid "Tags"
 msgstr "태그"
 
 #: pretalx/agenda/views/schedule.py:226 pretalx/orga/forms/event.py:883
-#: pretalx/orga/forms/mails.py:443 pretalx/orga/tables/cfp.py:33
-#: pretalx/orga/templates/orga/base.html:268 pretalx/orga/views/cfp.py:581
+#: pretalx/orga/forms/mails.py:448 pretalx/orga/tables/cfp.py:33
+#: pretalx/orga/templates/orga/base.html:268 pretalx/orga/views/cfp.py:574
 #: pretalx/submission/forms/submission.py:321
-#: pretalx/submission/models/access_code.py:33
+#: pretalx/submission/models/access_code.py:32
 #: pretalx/submission/models/question.py:222
 msgid "Tracks"
 msgstr "트랙"
@@ -293,7 +293,6 @@ msgstr "{event}의 '{title}' 세션"
 #: pretalx/orga/templates/orga/review/bulk.html:102
 #: pretalx/orga/templates/orga/review/bulk_tag.html:53
 #: pretalx/orga/templates/orga/submission/review.html:58
-#: tests/cfp/test_flow.py:105
 msgid "Title"
 msgstr "제목"
 
@@ -313,18 +312,22 @@ msgstr "사용 가능한 시간"
 msgid "Resources"
 msgstr "자료"
 
-#: pretalx/cfp/flow.py:518
+#: pretalx/cfp/flow.py:358
+msgid "Your file upload could not be processed. Please try again."
+msgstr ""
+
+#: pretalx/cfp/flow.py:548
 #, fuzzy
 #| msgid "Please enter at least one email address!"
 msgid "Please add at least one resource."
 msgstr "유효한 이메일 주소를 입력하세요!"
 
-#: pretalx/cfp/flow.py:587
+#: pretalx/cfp/flow.py:617
 msgid ""
 "Your draft was saved. You can continue to edit it as long as the CfP is open."
 msgstr "초안이 저장되었습니다. CfP가 열려 있는 한 계속 편집할 수 있습니다."
 
-#: pretalx/cfp/flow.py:595
+#: pretalx/cfp/flow.py:625
 msgid ""
 "Congratulations, you’ve submitted your proposal! You can continue to make "
 "changes to it up to the submission deadline, and you will be notified of any "
@@ -333,11 +336,11 @@ msgstr ""
 "제안서를 제출하셨습니다! 제출 마감일까지 제안서를 계속 변경할 수 있으며, 변"
 "경 사항이나 질문이 있을 경우 알림을 받게 됩니다."
 
-#: pretalx/cfp/flow.py:627
+#: pretalx/cfp/flow.py:657
 msgid "Hey, nice to meet you!"
 msgstr "안녕하세요, 만나서 반가워요!"
 
-#: pretalx/cfp/flow.py:632
+#: pretalx/cfp/flow.py:662
 msgid ""
 "We’re glad that you want to contribute to our event with your proposal. "
 "Let’s get started, this won’t take long."
@@ -345,35 +348,35 @@ msgstr ""
 "제안서를 통해 이벤트에 참여해주셔서 감사합니다. 오래 걸리지 않을 테니 시작해 "
 "보겠습니다."
 
-#: pretalx/cfp/flow.py:697
+#: pretalx/cfp/flow.py:727
 msgid "Additional information"
 msgstr "추가 정보"
 
-#: pretalx/cfp/flow.py:701
+#: pretalx/cfp/flow.py:731
 msgid "Tell us more!"
 msgstr "더 자세히 알려주세요!"
 
-#: pretalx/cfp/flow.py:706
+#: pretalx/cfp/flow.py:736
 msgid "Before we can save your proposal, we have some more questions for you."
 msgstr "제안서를 저장하기 전에 몇 가지 질문이 더 있습니다."
 
-#: pretalx/cfp/flow.py:737
+#: pretalx/cfp/flow.py:767
 msgid ""
 "There was an error when logging in. Please contact the organiser for further "
 "help."
 msgstr ""
 "로그인하는 동안 오류가 발생했습니다. 주최자에게 문의하여 도움을 받으세요."
 
-#: pretalx/cfp/flow.py:746
+#: pretalx/cfp/flow.py:776
 msgid "Account"
 msgstr "계정"
 
-#: pretalx/cfp/flow.py:751
+#: pretalx/cfp/flow.py:781
 msgid "That’s it about your proposal! We now just need a way to contact you."
 msgstr ""
 "제안서는 여기까지입니다! 이제 당신에게 연락드릴 방법을 알려주시면 됩니다."
 
-#: pretalx/cfp/flow.py:757
+#: pretalx/cfp/flow.py:787
 msgid ""
 "To create your proposal, you need an account on this page. This not only "
 "gives us a way to contact you, it also gives you the possibility to edit "
@@ -382,15 +385,15 @@ msgstr ""
 "제안서를 작성하려면 이 페이지에서 계정이 필요합니다. 계정을 통해 연락할 수 있"
 "을 뿐만 아니라 제안서를 수정하거나 현재 상태를 확인할 수 있습니다."
 
-#: pretalx/cfp/flow.py:813
+#: pretalx/cfp/flow.py:843
 msgid "Profile"
 msgstr "프로필"
 
-#: pretalx/cfp/flow.py:817
+#: pretalx/cfp/flow.py:847
 msgid "Tell us something about yourself!"
 msgstr "당신에 대해서 알려주세요!"
 
-#: pretalx/cfp/flow.py:822
+#: pretalx/cfp/flow.py:852
 msgid ""
 "This information will be publicly displayed next to your session - you can "
 "always edit for as long as proposals are still open."
@@ -566,25 +569,25 @@ msgid "Proposals are closed"
 msgstr "발표 제안서 마감"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:19
-#: pretalx/orga/forms/event.py:904 pretalx/submission/models/submission.py:79
+#: pretalx/orga/forms/event.py:904 pretalx/submission/models/submission.py:78
 msgid "accepted"
 msgstr "수락됨"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:21
 #: pretalx/orga/forms/event.py:907 pretalx/orga/views/dashboard.py:346
-#: pretalx/submission/models/submission.py:80
+#: pretalx/submission/models/submission.py:79
 msgid "confirmed"
 msgstr "확인됨"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:23
-#: pretalx/orga/forms/event.py:906 pretalx/submission/models/submission.py:82
+#: pretalx/orga/forms/event.py:906 pretalx/submission/models/submission.py:81
 #, fuzzy
 #| msgid "canceled"
 msgid "Cancelled"
 msgstr "취소됨"
 
 #: pretalx/cfp/templates/cfp/event/fragment_state.html:25
-#: pretalx/orga/forms/event.py:908 pretalx/submission/models/submission.py:83
+#: pretalx/orga/forms/event.py:908 pretalx/submission/models/submission.py:82
 msgid "withdrawn"
 msgstr "철회됨"
 
@@ -621,15 +624,15 @@ msgstr ""
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:39
 #: pretalx/orga/templates/orga/submission/review.html:79
-#: pretalx/submission/models/submission.py:234
+#: pretalx/submission/models/submission.py:233
 msgid "Abstract"
 msgstr "개요"
 
 #: pretalx/cfp/templates/cfp/event/invitation.html:48
-#: pretalx/event/models/event.py:664
+#: pretalx/event/models/event.py:663
 #: pretalx/orga/templates/orga/cfp/editor.html:498
 #: pretalx/submission/models/question.py:629
-#: pretalx/submission/models/submission.py:1040
+#: pretalx/submission/models/submission.py:1026
 msgid "No"
 msgstr "아니요"
 
@@ -881,7 +884,7 @@ msgstr ""
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:103
 #: pretalx/cfp/templates/cfp/event/user_submission_withdraw.html:27
-#: pretalx/cfp/views/user.py:285
+#: pretalx/cfp/views/user.py:282
 msgid "Withdraw"
 msgstr "철회하기"
 
@@ -899,7 +902,7 @@ msgstr ""
 "약 본인의 제안에 확신이 없는 경우, 운영진에게 문의하는 것을 고려해 주세요."
 
 #: pretalx/cfp/templates/cfp/event/user_submission_edit.html:119
-#: pretalx/orga/views/mails.py:423
+#: pretalx/orga/views/mails.py:424
 msgid "Discard"
 msgstr "삭제"
 
@@ -959,7 +962,7 @@ msgid "Open proposal"
 msgstr "제안서 열기"
 
 #: pretalx/cfp/templates/cfp/event/user_submissions.html:140
-#: pretalx/cfp/views/user.py:277
+#: pretalx/cfp/views/user.py:274
 msgctxt "action: confirm attendance"
 msgid "Confirm"
 msgstr "확정"
@@ -994,8 +997,8 @@ msgstr "지금 바로 작성을 시작해봐요!"
 #: pretalx/cfp/templates/cfp/includes/submission_resources_form.html:37
 #: pretalx/orga/forms/review.py:445 pretalx/person/models/information.py:62
 #: pretalx/submission/models/resource.py:34
-#: pretalx/submission/models/submission.py:513
-#: pretalx/submission/models/submission.py:516
+#: pretalx/submission/models/submission.py:512
+#: pretalx/submission/models/submission.py:515
 msgid "File"
 msgstr "파일"
 
@@ -1021,7 +1024,7 @@ msgid "Upload a file"
 msgstr ""
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:16
-#: pretalx/submission/models/submission.py:84
+#: pretalx/submission/models/submission.py:83
 msgctxt "proposal status"
 msgid "Draft"
 msgstr "초안"
@@ -1067,13 +1070,13 @@ msgstr "발표자당"
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:65
 #: pretalx/orga/tables/cfp.py:152
 #: pretalx/orga/templates/orga/submission/review.html:68
-#: pretalx/orga/views/cfp.py:490 pretalx/submission/models/submission.py:207
+#: pretalx/orga/views/cfp.py:483 pretalx/submission/models/submission.py:206
 msgid "Session type"
 msgstr "세션 유형"
 
 #: pretalx/cfp/templates/cfp/includes/user_submission_header.html:82
 #: pretalx/orga/tables/submission.py:204
-#: pretalx/submission/models/submission.py:253
+#: pretalx/submission/models/submission.py:252
 msgid "Duration"
 msgstr "기간"
 
@@ -1098,25 +1101,25 @@ msgstr "다가오는 이벤트"
 msgid "Past events"
 msgstr "지난 이벤트"
 
-#: pretalx/cfp/views/user.py:329
+#: pretalx/cfp/views/user.py:326
 msgid "Your draft was discarded."
 msgstr "초안이 삭제되었습니다."
 
-#: pretalx/cfp/views/user.py:522
+#: pretalx/cfp/views/user.py:519
 msgid "Your account has now been deleted."
 msgstr "계정이 삭제되었습니다."
 
-#: pretalx/cfp/views/user.py:524
+#: pretalx/cfp/views/user.py:521
 msgid "Are you really sure? Please tick the box"
 msgstr "정말 확실하신가요? 확인란을 선택해 주세요"
 
-#: pretalx/cfp/views/user.py:586 pretalx/orga/views/submission.py:390
+#: pretalx/cfp/views/user.py:583 pretalx/orga/views/submission.py:390
 #, fuzzy
 #| msgid "The invitation has been sent."
 msgid "The invitation has been retracted."
 msgstr "초대장이 전송되었습니다."
 
-#: pretalx/cfp/views/user.py:619
+#: pretalx/cfp/views/user.py:616
 msgid "You cannot accept this invitation."
 msgstr "이 초대를 수락할 수 없습니다."
 
@@ -1670,7 +1673,7 @@ msgstr "세션 타입이 추가되었습니다."
 msgid "A session type was deleted."
 msgstr "세션 타입이 삭제되었습니다."
 
-#: pretalx/common/log_display.py:136 pretalx/orga/views/cfp.py:545
+#: pretalx/common/log_display.py:136 pretalx/orga/views/cfp.py:538
 msgid "The session type has been made default."
 msgstr "세션 유형이 기본값으로 설정되었습니다."
 
@@ -1682,7 +1685,7 @@ msgstr "세션 타입이 수정되었습니다."
 msgid "An access code was added."
 msgstr "엑세스 코드가 추가되었습니다."
 
-#: pretalx/common/log_display.py:140 pretalx/orga/views/cfp.py:686
+#: pretalx/common/log_display.py:140 pretalx/orga/views/cfp.py:679
 msgid "The access code has been sent."
 msgstr "접속 코드가 전송되었습니다."
 
@@ -1780,17 +1783,17 @@ msgstr "제안서 요청"
 #: pretalx/orga/templates/orga/cfp/question/remind.html:22
 #: pretalx/orga/templates/orga/mails/send_draft_reminders.html:21
 #: pretalx/orga/templates/orga/schedule/release.html:59
-#: pretalx/orga/views/mails.py:721 pretalx/orga/views/mails.py:722
+#: pretalx/orga/views/mails.py:724 pretalx/orga/views/mails.py:725
 msgid "Email template"
 msgstr "이메일 템플릿"
 
-#: pretalx/common/log_display.py:230 pretalx/event/models/organiser.py:290
+#: pretalx/common/log_display.py:230 pretalx/event/models/organiser.py:291
 #: pretalx/orga/forms/speaker.py:32 pretalx/orga/tables/speaker.py:78
 #: pretalx/orga/templates/orga/admin/user_detail.html:44
 #: pretalx/orga/templates/orga/base.html:231
 #: pretalx/orga/templates/orga/organiser/team/update.html:19
 #: pretalx/person/models/user.py:140
-#: pretalx/submission/models/submission.py:1182
+#: pretalx/submission/models/submission.py:1173
 msgid "Email"
 msgstr "이메일"
 
@@ -2147,8 +2150,8 @@ msgstr ""
 #. similar options like the main text of the CfP or a review. It's separate from
 #. the "text" input type used in questions.
 #: pretalx/common/templates/common/widgets/markdown.html:11
-#: pretalx/common/text/phrases.py:126 pretalx/mail/models.py:104
-#: pretalx/mail/models.py:396 pretalx/person/models/information.py:60
+#: pretalx/common/text/phrases.py:126 pretalx/mail/models.py:106
+#: pretalx/mail/models.py:407 pretalx/person/models/information.py:60
 msgid "Text"
 msgstr "텍스트"
 
@@ -2452,7 +2455,7 @@ msgstr "”"
 #: pretalx/common/text/phrases.py:117 pretalx/orga/tables/mail.py:82
 #: pretalx/orga/tables/speaker.py:92 pretalx/orga/tables/submission.py:89
 #: pretalx/orga/tables/submission.py:229
-#: pretalx/submission/models/submission.py:263
+#: pretalx/submission/models/submission.py:262
 msgid "Language"
 msgstr "언어"
 
@@ -2462,8 +2465,8 @@ msgctxt "settings section: general/miscellaneous"
 msgid "General"
 msgstr "일반"
 
-#: pretalx/common/text/phrases.py:122 pretalx/mail/models.py:102
-#: pretalx/mail/models.py:394 pretalx/orga/tables/mail.py:65
+#: pretalx/common/text/phrases.py:122 pretalx/mail/models.py:104
+#: pretalx/mail/models.py:405 pretalx/orga/tables/mail.py:65
 #: pretalx/person/models/information.py:58
 msgctxt "email subject"
 msgid "Subject"
@@ -2584,30 +2587,30 @@ msgstr "줄 바꿈"
 msgid "ManagementForm data is missing or has been tampered with."
 msgstr "ManagementForm 데이터가 누락되었거나 변조되었습니다."
 
-#: pretalx/common/views/mixins.py:437 pretalx/common/views/mixins.py:509
+#: pretalx/common/views/mixins.py:447 pretalx/common/views/mixins.py:519
 msgid "Export file not found. Please try again."
 msgstr ""
 
-#: pretalx/common/views/mixins.py:496
+#: pretalx/common/views/mixins.py:506
 #: pretalx/orga/templates/orga/includes/async_download.html:31
 msgid "Export failed. Please try again."
 msgstr ""
 
-#: pretalx/common/views/mixins.py:534
+#: pretalx/common/views/mixins.py:544
 msgid "The task has been completed."
 msgstr ""
 
-#: pretalx/common/views/mixins.py:537
+#: pretalx/common/views/mixins.py:547
 msgid "An error occurred. Please try again."
 msgstr ""
 
-#: pretalx/common/views/mixins.py:545
+#: pretalx/common/views/mixins.py:555
 #: pretalx/orga/templates/orga/includes/async_progress.html:17
 msgctxt "heading shown next to a loading spinner while an operation runs"
 msgid "Processing"
 msgstr ""
 
-#: pretalx/common/views/mixins.py:574
+#: pretalx/common/views/mixins.py:584
 msgid "Could not start background task. Please try again."
 msgstr ""
 
@@ -2699,7 +2702,7 @@ msgstr ""
 "CFP의 기본 마감일입니다. 개별 세션 유형에 추가 마감일을 지정할 수 있으며, 이 "
 "마감 기한이 기본 마감 기한보다 우선합니다."
 
-#: pretalx/event/forms.py:329 pretalx/event/models/event.py:307
+#: pretalx/event/forms.py:329 pretalx/event/models/event.py:306
 #: pretalx/orga/templates/orga/admin/admin.html:123
 #: pretalx/orga/templates/orga/base.html:237
 #: pretalx/orga/templates/orga/plugins.html:21
@@ -2707,12 +2710,12 @@ msgstr ""
 msgid "Plugins"
 msgstr "플러그인"
 
-#: pretalx/event/models/event.py:73
+#: pretalx/event/models/event.py:72
 #, python-brace-format
 msgid "Invalid event slug – this slug is reserved: {value}."
 msgstr "잘못된 이벤트 slug - 이 slug는 예약되어 있습니다: {value}."
 
-#: pretalx/event/models/event.py:183 pretalx/event/models/organiser.py:97
+#: pretalx/event/models/event.py:182 pretalx/event/models/organiser.py:98
 #: pretalx/orga/tables/organiser.py:19 pretalx/orga/tables/schedule.py:15
 #: pretalx/orga/tables/speaker.py:68 pretalx/orga/tables/speaker.py:121
 #: pretalx/orga/templates/orga/admin/admin.html:65
@@ -2726,48 +2729,48 @@ msgstr "잘못된 이벤트 slug - 이 slug는 예약되어 있습니다: {value
 msgid "Name"
 msgstr "이름"
 
-#: pretalx/event/models/event.py:194 pretalx/event/models/organiser.py:107
+#: pretalx/event/models/event.py:193 pretalx/event/models/organiser.py:108
 msgid "Short form"
 msgstr "짧은 형식"
 
-#: pretalx/event/models/event.py:203
+#: pretalx/event/models/event.py:202
 msgid "Event is public"
 msgstr "이벤트가 공개됨"
 
-#: pretalx/event/models/event.py:204
+#: pretalx/event/models/event.py:203
 msgid "Event start date"
 msgstr "이벤트 시작일"
 
-#: pretalx/event/models/event.py:205
+#: pretalx/event/models/event.py:204
 msgid "Event end date"
 msgstr "이벤트 종료일"
 
-#: pretalx/event/models/event.py:211
+#: pretalx/event/models/event.py:210
 msgid ""
 "All event dates will be localised and interpreted to be in this timezone."
 msgstr "모든 이벤트 날짜는 이 시간대에 맞춰 현지화되고 해석됩니다."
 
-#: pretalx/event/models/event.py:215
+#: pretalx/event/models/event.py:214
 msgid "Organiser email address"
 msgstr "주최자 이메일 주소"
 
-#: pretalx/event/models/event.py:216
+#: pretalx/event/models/event.py:215
 msgid "Will be used as Reply-To in emails."
 msgstr "이메일에서 회신 받는 사람으로 사용됩니다."
 
-#: pretalx/event/models/event.py:219
+#: pretalx/event/models/event.py:218
 msgid "Custom domain"
 msgstr "커스텀 도메인"
 
-#: pretalx/event/models/event.py:220
+#: pretalx/event/models/event.py:219
 msgid "Enter a custom domain, such as https://my.event.example.org"
 msgstr "커스텀 도메인을 입력합니다(예: https://my.event.example.org)"
 
-#: pretalx/event/models/event.py:233
+#: pretalx/event/models/event.py:232
 msgid "Main event colour"
 msgstr "메인 이벤트 색상"
 
-#: pretalx/event/models/event.py:235
+#: pretalx/event/models/event.py:234
 msgid ""
 "Provide a hex value like #00ff00 if you want to style pretalx in your "
 "event’s colour scheme."
@@ -2775,11 +2778,11 @@ msgstr ""
 "이벤트의 색 구성표에 pretalx 스타일을 지정하려면 #00ff00과 같은 16진수 값을 "
 "입력합니다."
 
-#: pretalx/event/models/event.py:242
+#: pretalx/event/models/event.py:241
 msgid "Custom Event CSS"
 msgstr "커스텀 이벤트 CSS"
 
-#: pretalx/event/models/event.py:244
+#: pretalx/event/models/event.py:243
 msgid ""
 "Upload a custom CSS file if changing the primary colour is not sufficient "
 "for you."
@@ -2787,11 +2790,11 @@ msgstr ""
 "기본 색상을 변경하는 것만으로는 충분하지 않은 경우 커스텀 CSS 파일을 업로드하"
 "세요."
 
-#: pretalx/event/models/event.py:251
+#: pretalx/event/models/event.py:250
 msgid "Logo"
 msgstr "로고"
 
-#: pretalx/event/models/event.py:253
+#: pretalx/event/models/event.py:252
 msgid ""
 "If you provide a logo image, your event’s name will not be shown in the "
 "event header. The logo will be scaled down to a height of 140px."
@@ -2799,11 +2802,11 @@ msgstr ""
 "로고 이미지를 제공하면 이벤트 헤더에 이벤트 이름이 표시되지 않습니다. 로고는 "
 "150px 높이로 축소됩니다."
 
-#: pretalx/event/models/event.py:261
+#: pretalx/event/models/event.py:260
 msgid "Header image"
 msgstr "헤더 이미지"
 
-#: pretalx/event/models/event.py:263
+#: pretalx/event/models/event.py:262
 #, fuzzy
 #| msgid ""
 #| "If you provide a header image, it will be displayed instead of your "
@@ -2820,69 +2823,69 @@ msgstr ""
 "더 패턴 대신 해당 이미지가 표시됩니다. 중앙에 정렬되므로 창이 축소되어도 가운"
 "데 부분이 늘어나지 않고 계속 표시됩니다."
 
-#: pretalx/event/models/event.py:272
+#: pretalx/event/models/event.py:271
 #, fuzzy
 #| msgid "Preview email"
 msgid "Preview image"
 msgstr "이메일 미리보기"
 
-#: pretalx/event/models/event.py:274
+#: pretalx/event/models/event.py:273
 msgid ""
 "This image will be shown as a preview when links to your event are shared on "
 "social media or messaging apps. For best results, use an image at least "
 "1200x630 pixels. If not set, the logo or header image will be used instead."
 msgstr ""
 
-#: pretalx/event/models/event.py:285
+#: pretalx/event/models/event.py:284
 msgid "Default language"
 msgstr "기본 언어"
 
-#: pretalx/event/models/event.py:288
+#: pretalx/event/models/event.py:287
 msgid "Landing page text"
 msgstr "랜딩 페이지 텍스트"
 
-#: pretalx/event/models/event.py:290
+#: pretalx/event/models/event.py:289
 msgid ""
 "This text will be shown on the landing page, alongside with links to the CfP "
 "and schedule, if appropriate."
 msgstr ""
 "이 텍스트는 랜딩 페이지에 CfP 및 일정 링크와 함께 표시됩니다(적절한 경우)."
 
-#: pretalx/event/models/event.py:298
+#: pretalx/event/models/event.py:297
 msgid "Featured sessions text"
 msgstr "추천 세션 텍스트"
 
-#: pretalx/event/models/event.py:300
+#: pretalx/event/models/event.py:299
 msgid ""
 "This text will be shown at the top of the featured sessions page instead of "
 "the default text."
 msgstr "이 텍스트는 기본 텍스트 대신 추천 세션 페이지 상단에 표시됩니다."
 
-#: pretalx/event/models/event.py:310
+#: pretalx/event/models/event.py:309
 msgid "Plain"
 msgstr "일반"
 
-#: pretalx/event/models/event.py:311
+#: pretalx/event/models/event.py:310
 msgid "Circuits"
 msgstr "회로"
 
-#: pretalx/event/models/event.py:312
+#: pretalx/event/models/event.py:311
 msgid "Circles"
 msgstr "원형"
 
-#: pretalx/event/models/event.py:313
+#: pretalx/event/models/event.py:312
 msgid "Signal"
 msgstr "신호"
 
-#: pretalx/event/models/event.py:314
+#: pretalx/event/models/event.py:313
 msgid "Topography"
 msgstr "지형"
 
-#: pretalx/event/models/event.py:315
+#: pretalx/event/models/event.py:314
 msgid "Graph Paper"
 msgstr "그래프 종이"
 
-#: pretalx/event/models/event.py:639 pretalx/event/models/event.py:980
+#: pretalx/event/models/event.py:638 pretalx/event/models/event.py:979
 #: pretalx/event/stages.py:73 pretalx/orga/templates/orga/base.html:228
 #: pretalx/orga/templates/orga/base.html:319
 #: pretalx/orga/templates/orga/base.html:327
@@ -2892,40 +2895,40 @@ msgstr "그래프 종이"
 msgid "Review"
 msgstr "리뷰"
 
-#: pretalx/event/models/event.py:647
+#: pretalx/event/models/event.py:646
 msgid "Selection"
 msgstr "선택"
 
-#: pretalx/event/models/event.py:662 pretalx/submission/models/review.py:138
+#: pretalx/event/models/event.py:661 pretalx/submission/models/review.py:138
 #: pretalx/submission/phrases.py:17
 msgctxt "review score/rating"
 msgid "Score"
 msgstr "점수"
 
-#: pretalx/event/models/event.py:666
+#: pretalx/event/models/event.py:665
 msgid "Maybe"
 msgstr "아마도"
 
-#: pretalx/event/models/event.py:668
+#: pretalx/event/models/event.py:667
 #: pretalx/orga/templates/orga/cfp/editor.html:498
 #: pretalx/submission/models/question.py:627
-#: pretalx/submission/models/submission.py:1040
+#: pretalx/submission/models/submission.py:1026
 msgid "Yes"
 msgstr "확인"
 
-#: pretalx/event/models/event.py:1180
+#: pretalx/event/models/event.py:1160
 msgid "News from your content system"
 msgstr "콘텐츠 시스템의 소식"
 
-#: pretalx/event/models/event.py:1274
+#: pretalx/event/models/event.py:1257
 msgid "Link text"
 msgstr "링크 텍스트"
 
-#: pretalx/event/models/event.py:1275
+#: pretalx/event/models/event.py:1258
 msgid "Link URL"
 msgstr "링크 URL"
 
-#: pretalx/event/models/organiser.py:45
+#: pretalx/event/models/organiser.py:46
 msgid ""
 "There must be at least one team with the permission to change teams, as "
 "otherwise nobody can create new teams or grant permissions to existing teams."
@@ -2933,16 +2936,16 @@ msgstr ""
 "팀 변경 권한이 있는 팀이 최소한 하나는 있어야 합니다. 그렇지 않으면 새로운 팀"
 "을 만들거나 기존 팀에 권한을 부여할 수 없습니다."
 
-#: pretalx/event/models/organiser.py:52
+#: pretalx/event/models/organiser.py:53
 msgid "Nobody on your teams has the permission to create new events."
 msgstr "귀하의 팀 중 누구도 새로운 이벤트를 생성할 권한이 없습니다."
 
-#: pretalx/event/models/organiser.py:60
+#: pretalx/event/models/organiser.py:61
 msgid ""
 "Nobody on your teams has the permission to change organiser-level settings."
 msgstr "귀하의 팀 중 누구도 주최자 수준의 설정을 변경할 권한이 없습니다."
 
-#: pretalx/event/models/organiser.py:73
+#: pretalx/event/models/organiser.py:74
 #, python-brace-format
 msgid ""
 "There must be at least one team with access to every event. Currently, "
@@ -2951,72 +2954,72 @@ msgstr ""
 "모든 이벤트에 접근할 수 있는 팀이 최소한 하나는 있어야 합니다. 현재 "
 "{event_name}에 접근할 수 있는 사람이 없습니다."
 
-#: pretalx/event/models/organiser.py:83
+#: pretalx/event/models/organiser.py:84
 #, python-brace-format
 msgid ""
 "Nobody on your teams has the permissions to change settings for the event "
 "{event_name}"
 msgstr "귀하의 팀에는 {event_name} 이벤트에 대한 설정을 변경할 권한이 없습니다"
 
-#: pretalx/event/models/organiser.py:109
+#: pretalx/event/models/organiser.py:110
 msgid ""
 "Should be short, only contain lowercase letters and numbers, and must be "
 "unique, as it is used in URLs."
 msgstr "짧고 소문자와 숫자만 포함해야 하며 URL에 사용되므로 고유해야 합니다."
 
-#: pretalx/event/models/organiser.py:187
+#: pretalx/event/models/organiser.py:188
 msgid "Team name"
 msgstr "팀 이름"
 
-#: pretalx/event/models/organiser.py:189
+#: pretalx/event/models/organiser.py:190
 msgid "Team members"
 msgstr "팀 멤버"
 
-#: pretalx/event/models/organiser.py:194
+#: pretalx/event/models/organiser.py:195
 msgid ""
 "Apply permissions to all events by this organiser (including newly created "
 "ones)"
 msgstr "이 주최자의 모든 이벤트(새로 생성한 이벤트 포함)에 권한을 적용합니다"
 
-#: pretalx/event/models/organiser.py:198
+#: pretalx/event/models/organiser.py:199
 msgid "Limit permissions to these events"
 msgstr "다음 이벤트에 대한 권한 제한"
 
-#: pretalx/event/models/organiser.py:202
+#: pretalx/event/models/organiser.py:203
 #: pretalx/person/models/information.py:47
 #: pretalx/submission/models/review.py:38
 msgid "Limit to tracks"
 msgstr "트랙으로 제한"
 
-#: pretalx/event/models/organiser.py:207
+#: pretalx/event/models/organiser.py:208
 msgid "Can create events"
 msgstr "이벤트를 생성할 수 있음"
 
-#: pretalx/event/models/organiser.py:210
+#: pretalx/event/models/organiser.py:211
 msgid "Can change teams and permissions"
 msgstr "팀이나 권한을 변경할 수 있음"
 
-#: pretalx/event/models/organiser.py:213
+#: pretalx/event/models/organiser.py:214
 msgid "Can change organiser settings"
 msgstr "오거나이저 설정 변경 가능"
 
-#: pretalx/event/models/organiser.py:216
+#: pretalx/event/models/organiser.py:217
 msgid "Can change event settings"
 msgstr "이벤트 설정을 변경할 수 있음"
 
-#: pretalx/event/models/organiser.py:219
+#: pretalx/event/models/organiser.py:220
 msgid "Can work with and change proposals"
 msgstr "제안서 작업 및 변경 가능"
 
-#: pretalx/event/models/organiser.py:221
+#: pretalx/event/models/organiser.py:222
 msgid "Is a reviewer"
 msgstr "리뷰어 입니다"
 
-#: pretalx/event/models/organiser.py:223
+#: pretalx/event/models/organiser.py:224
 msgid "Always hide speaker names"
 msgstr "항상 발표자 이름을 가립니다"
 
-#: pretalx/event/models/organiser.py:225
+#: pretalx/event/models/organiser.py:226
 msgid ""
 "Normally, anonymisation is configured in the event review settings. This "
 "setting will <strong>override the event settings</strong> and always hide "
@@ -3025,12 +3028,12 @@ msgstr ""
 "일반적으로 익명화는 이벤트 검토 설정에서 구성됩니다. 이 설정은 <strong>이벤"
 "트 설정을 덮어쓰고</strong> 항상 이 팀의 발표자 이름을 가립니다."
 
-#: pretalx/event/models/organiser.py:238
+#: pretalx/event/models/organiser.py:239
 #, python-brace-format
 msgid "{name} on {orga}"
 msgstr "{name} ({orga})"
 
-#: pretalx/event/models/organiser.py:302
+#: pretalx/event/models/organiser.py:303
 #, python-brace-format
 msgid "Invite to team {team} for {email}"
 msgstr "{email}을 {team}팀에 초대합니다"
@@ -3055,7 +3058,7 @@ msgstr ""
 "거기서 뵙겠습니다,\n"
 "{organiser} 팀"
 
-#: pretalx/event/models/organiser.py:331
+#: pretalx/event/models/organiser.py:327
 msgid "You have been invited to an organiser team"
 msgstr "주최자 팀에 초대되었습니다"
 
@@ -3139,94 +3142,94 @@ msgstr "가능한 경우 세션 녹화물 삽입"
 msgid "Release next event date?"
 msgstr "다음 이벤트 날짜를 공개할까요?"
 
-#: pretalx/mail/context.py:212
+#: pretalx/mail/context.py:159
 msgid "The event’s full name"
 msgstr "행사의 전체 이름(full name)"
 
-#: pretalx/mail/context.py:219
+#: pretalx/mail/context.py:167
 msgid "The event’s short form, used in URLs"
 msgstr "행사의 짧은 이름 (URL로 사용됩니다)"
 
-#: pretalx/mail/context.py:226
+#: pretalx/mail/context.py:174
 msgid "The event’s public base URL"
 msgstr "행사의 base 주소"
 
-#: pretalx/mail/context.py:233
+#: pretalx/mail/context.py:181
 msgid "The event’s public schedule URL"
 msgstr "행사의 스케줄 주소"
 
-#: pretalx/mail/context.py:240
+#: pretalx/mail/context.py:188
 msgid "The event’s public CfP URL"
 msgstr "행사의 Cfp 주소"
 
-#: pretalx/mail/context.py:247
+#: pretalx/mail/context.py:195
 msgid "URL to a user’s list of proposals"
 msgstr "사용자의 제안 목록에 대한 URL"
 
-#: pretalx/mail/context.py:254
+#: pretalx/mail/context.py:202
 #, fuzzy
 #| msgid "URL to a user’s list of proposals"
 msgid "URL to a user’s private profile page."
 msgstr "사용자의 제안 목록에 대한 URL"
 
-#: pretalx/mail/context.py:269
+#: pretalx/mail/context.py:217
 msgid "The general CfP deadline"
 msgstr "일반 CfP 마감일"
 
-#: pretalx/mail/context.py:276
+#: pretalx/mail/context.py:224
 msgid "The proposal’s unique ID"
 msgstr "제안서의 고유 ID"
 
-#: pretalx/mail/context.py:283
+#: pretalx/mail/context.py:232
 msgid "The proposal’s public URL"
 msgstr "제안서의 공개 URL"
 
-#: pretalx/mail/context.py:290
+#: pretalx/mail/context.py:239
 msgid "The speaker’s edit page for the proposal"
 msgstr "제안서의 발표자 편집 페이지"
 
-#: pretalx/mail/context.py:298
+#: pretalx/mail/context.py:247
 msgid "Link to confirm a proposal after it has been accepted."
 msgstr "제안서 수락 이후 확인을 위한 링크."
 
-#: pretalx/mail/context.py:305
+#: pretalx/mail/context.py:254
 msgid "Link to withdraw the proposal"
 msgstr "제안을 철회하는 링크"
 
-#: pretalx/mail/context.py:311
+#: pretalx/mail/context.py:260
 msgid "This Is a Proposal Title"
 msgstr "제안 제목입니다"
 
-#: pretalx/mail/context.py:312
+#: pretalx/mail/context.py:261
 msgid "The proposal’s title"
 msgstr "제안의 제목"
 
-#: pretalx/mail/context.py:320
+#: pretalx/mail/context.py:269
 msgid "The name(s) of all speakers in this proposal."
 msgstr "이 제안의 모든 발표자 이름입니다."
 
-#: pretalx/mail/context.py:326
+#: pretalx/mail/context.py:275
 msgid "Session Type A"
 msgstr "세션 유형 A"
 
-#: pretalx/mail/context.py:327
+#: pretalx/mail/context.py:276
 msgid "The proposal’s session type"
 msgstr "제안의 세션 유형"
 
-#: pretalx/mail/context.py:333
+#: pretalx/mail/context.py:283
 msgid "Track A"
 msgstr "트랙 A"
 
-#: pretalx/mail/context.py:334
+#: pretalx/mail/context.py:284
 msgid "The track the proposal belongs to"
 msgstr "제안이 속한 트랙"
 
-#: pretalx/mail/context.py:341 pretalx/submission/models/submission.py:254
+#: pretalx/mail/context.py:291 pretalx/submission/models/submission.py:253
 #: pretalx/submission/models/type.py:40
 msgid "Duration in minutes"
 msgstr "세션 진행 시간 (분)"
 
-#: pretalx/mail/context.py:348
+#: pretalx/mail/context.py:298
 msgid ""
 "First review, agreeing with the proposal.\n"
 "\n"
@@ -3240,47 +3243,47 @@ msgstr ""
 "\n"
 "무거운 비판이 담긴 두번째 검토 의견!"
 
-#: pretalx/mail/context.py:350
+#: pretalx/mail/context.py:300
 msgid "All review texts for this proposal"
 msgstr "이 제안에 대한 모든 검토 텍스트"
 
-#: pretalx/mail/context.py:357
+#: pretalx/mail/context.py:307
 msgid "The session’s start date"
 msgstr "세션 시작 날짜"
 
-#: pretalx/mail/context.py:364
+#: pretalx/mail/context.py:314
 msgid "The session’s start time"
 msgstr "세션 시작 시간"
 
-#: pretalx/mail/context.py:371
+#: pretalx/mail/context.py:321
 msgid "The session’s end date"
 msgstr "세션 종료 날짜"
 
-#: pretalx/mail/context.py:378
+#: pretalx/mail/context.py:328
 msgid "The session’s end time"
 msgstr "세션 종료 시간"
 
-#: pretalx/mail/context.py:384
+#: pretalx/mail/context.py:334
 msgid "Room 101"
 msgstr "101호"
 
-#: pretalx/mail/context.py:385
+#: pretalx/mail/context.py:335
 msgid "The session’s room"
 msgstr "세션의 방"
 
-#: pretalx/mail/context.py:391 pretalx/mail/context.py:398
+#: pretalx/mail/context.py:341 pretalx/mail/context.py:348
 msgid "Jane Doe"
 msgstr "제인 도"
 
-#: pretalx/mail/context.py:392
+#: pretalx/mail/context.py:342
 msgid "The addressed user’s full name"
 msgstr "대상 사용자의 전체 이름"
 
-#: pretalx/mail/context.py:405
+#: pretalx/mail/context.py:355
 msgid "The addressed user’s email address"
 msgstr "대상 사용자의 이메일 주소"
 
-#: pretalx/mail/context.py:415
+#: pretalx/mail/context.py:365
 #, python-brace-format
 msgid ""
 "- Your session “Title” will take place at {time} in Room 101.\n"
@@ -3289,12 +3292,12 @@ msgstr ""
 "- 귀하의 세션 “제목”은 {time}에 101호에서 진행됩니다.\n"
 "- 귀하의 세션 “다른 제목”은 {time2}에 102호로 이동되었습니다."
 
-#: pretalx/mail/context.py:419
+#: pretalx/mail/context.py:369
 msgid ""
 "A list of all changes to the user’s schedule in the current schedule version."
 msgstr "현재 일정 버전에서 사용자의 일정에 대한 모든 변경 사항 목록입니다."
 
-#: pretalx/mail/context.py:430
+#: pretalx/mail/context.py:380
 #, python-brace-format
 msgid ""
 "- Your session “Title” will take place at {time} in Room 101.\n"
@@ -3303,7 +3306,7 @@ msgstr ""
 "- 귀하의 세션 “제목”은 {time}에 101호에서 진행됩니다.\n"
 "- 귀하의 세션 “다른 제목”은 {time2}에 102호에서 진행됩니다."
 
-#: pretalx/mail/context.py:433
+#: pretalx/mail/context.py:383
 msgid "Times and locations for this user’s publicly visible sessions."
 msgstr "이 사용자의 공개 세션에 대한 시간 및 장소 목록입니다."
 
@@ -3582,80 +3585,80 @@ msgstr ""
 "\n"
 "{event_name} 주최자 드림"
 
-#: pretalx/mail/models.py:31
+#: pretalx/mail/models.py:33
 #: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:18
 msgctxt "email status"
 msgid "Draft"
 msgstr "초안"
 
-#: pretalx/mail/models.py:32
+#: pretalx/mail/models.py:34
 #: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:7
 msgctxt "email status"
 msgid "Sending"
 msgstr ""
 
-#: pretalx/mail/models.py:33 pretalx/orga/forms/event.py:922
+#: pretalx/mail/models.py:35 pretalx/orga/forms/event.py:922
 #: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:9
 msgctxt "email status"
 msgid "Sent"
 msgstr "발송"
 
-#: pretalx/mail/models.py:47
+#: pretalx/mail/models.py:49
 msgid "Acknowledge proposal submission"
 msgstr "제안 제출 확인"
 
-#: pretalx/mail/models.py:50
+#: pretalx/mail/models.py:52
 msgid "New proposal (organiser notification)"
 msgstr "새 제안 (주최자 알림)"
 
-#: pretalx/mail/models.py:52
+#: pretalx/mail/models.py:54
 msgid "Proposal accepted"
 msgstr "제안서 수락됨"
 
-#: pretalx/mail/models.py:53
+#: pretalx/mail/models.py:55
 msgid "Proposal rejected"
 msgstr "제안서 거절됨"
 
-#: pretalx/mail/models.py:56
+#: pretalx/mail/models.py:58
 msgid "Add a speaker to a proposal (new account)"
 msgstr "제안서에 발표자 추가 (새 계정)"
 
-#: pretalx/mail/models.py:60
+#: pretalx/mail/models.py:62
 msgid "Add a speaker to a proposal (existing account)"
 msgstr "제안서에 발표자 추가 (기존 계정)"
 
-#: pretalx/mail/models.py:62
+#: pretalx/mail/models.py:64
 #: pretalx/orga/templates/orga/cfp/question/remind.html:23
 #: pretalx/orga/templates/orga/includes/mail_template_role.html:14
 msgid "Custom fields reminder"
 msgstr "사용자 정의 필드 알림"
 
-#: pretalx/mail/models.py:63
+#: pretalx/mail/models.py:65
 #: pretalx/orga/templates/orga/mails/send_draft_reminders.html:22
 #, fuzzy
 #| msgid "Create proposal"
 msgid "Draft proposal reminder"
 msgstr "발표 제안서 만들기"
 
-#: pretalx/mail/models.py:64
+#: pretalx/mail/models.py:66
 msgid "New schedule published"
 msgstr "새로운 일정이 게시되었습니다"
 
-#: pretalx/mail/models.py:109 pretalx/mail/models.py:376
+#: pretalx/mail/models.py:111 pretalx/mail/models.py:387
 msgid "Reply-To"
 msgstr "회신"
 
-#: pretalx/mail/models.py:111
+#: pretalx/mail/models.py:113
 msgid ""
 "Change the Reply-To address if you do not want to use the default organiser "
 "address"
 msgstr "기본 주최자 주소를 사용하고 싶지 않다면 회신 주소를 변경하세요"
 
-#: pretalx/mail/models.py:118 pretalx/mail/models.py:390
+#: pretalx/mail/models.py:120 pretalx/mail/models.py:401
 msgid "BCC"
 msgstr "숨은참조"
 
-#: pretalx/mail/models.py:120
+#: pretalx/mail/models.py:122
 msgid ""
 "Enter comma separated addresses. Will receive a blind copy of every email "
 "sent from this template. This may be a LOT!"
@@ -3663,7 +3666,7 @@ msgstr ""
 "쉼표로 구분된 주소를 입력하세요. 이 템플릿에서 발송된 모든 메일의 숨은 복사본"
 "을 받게 됩니다. 이건 정말 많을 수 있습니다!"
 
-#: pretalx/mail/models.py:266
+#: pretalx/mail/models.py:277
 msgid ""
 "- First missing field\n"
 "- Second missing field"
@@ -3671,35 +3674,35 @@ msgstr ""
 "- 첫 번째 누락된 필드\n"
 "- 두 번째 누락된 필드"
 
-#: pretalx/mail/models.py:268
+#: pretalx/mail/models.py:279
 msgid ""
 "The list of custom fields that the user has not responded to, as bullet "
 "points"
 msgstr "사용자가 응답하지 않은 사용자 정의 필드 목록, 글머리 기호로 표시"
 
-#: pretalx/mail/models.py:366 pretalx/orga/forms/cfp.py:425
+#: pretalx/mail/models.py:377 pretalx/orga/forms/cfp.py:425
 #: pretalx/orga/tables/mail.py:69
 msgid "To"
 msgstr "받는 사람"
 
-#: pretalx/mail/models.py:367 pretalx/mail/models.py:384
-#: pretalx/mail/models.py:391
+#: pretalx/mail/models.py:378 pretalx/mail/models.py:395
+#: pretalx/mail/models.py:402
 msgid "One email address or several addresses separated by commas."
 msgstr "하나의 이메일 주소 또는 쉼표로 구분된 여러 주소."
 
-#: pretalx/mail/models.py:377
+#: pretalx/mail/models.py:388
 msgid "By default, the organiser address is used as Reply-To."
 msgstr "기본적으로 주최자 주소가 회신 주소로 사용됩니다."
 
-#: pretalx/mail/models.py:383
+#: pretalx/mail/models.py:394
 msgid "CC"
 msgstr "참조"
 
-#: pretalx/mail/models.py:402
+#: pretalx/mail/models.py:411
 msgid "Sent at"
 msgstr "전송 시간"
 
-#: pretalx/mail/models.py:547
+#: pretalx/mail/models.py:554
 msgid "This email has been sent already. It cannot be sent again."
 msgstr "이미 발송된 이메일 입니다. 다시 발송할 수 없습니다."
 
@@ -3743,7 +3746,7 @@ msgstr "트랙 사용"
 msgid "Do you organise your sessions by tracks?"
 msgstr "세션을 트랙별로 조직하시나요?"
 
-#: pretalx/orga/forms/cfp.py:58 pretalx/submission/models/submission.py:258
+#: pretalx/orga/forms/cfp.py:58 pretalx/submission/models/submission.py:257
 msgid "Slot Count"
 msgstr "슬롯 수"
 
@@ -3878,12 +3881,12 @@ msgstr "현재 버전은 <a href=\"{url}\">여기</a>에서 확인할 수 있습
 msgid "You already have a track by this name!"
 msgstr "이미 이 이름으로 트랙이 있습니다!"
 
-#: pretalx/orga/forms/cfp.py:442
+#: pretalx/orga/forms/cfp.py:437
 #, python-brace-format
 msgid "Access code for the {event_name} CfP"
 msgstr "{event_name} CfP에 대한 액세스 코드"
 
-#: pretalx/orga/forms/cfp.py:444
+#: pretalx/orga/forms/cfp.py:441
 #, python-brace-format
 msgid ""
 "Hi!\n"
@@ -3894,29 +3897,37 @@ msgstr ""
 "\n"
 "이것은 {event_name} CfP에 대한 액세스 코드입니다."
 
-#: pretalx/orga/forms/cfp.py:456
+#: pretalx/orga/forms/cfp.py:451
 #, fuzzy, python-brace-format
 #| msgid "It will allow you to submit a proposal to the “{track}” track."
 msgid ""
 "It will allow you to submit a proposal to the following track(s): {tracks}."
 msgstr "“{track}” 트랙에 제안을 제출할 수 있습니다."
 
-#: pretalx/orga/forms/cfp.py:466
+#: pretalx/orga/forms/cfp.py:459
 #, python-brace-format
 msgid "It is valid for the following session type(s): {types}."
 msgstr ""
 
-#: pretalx/orga/forms/cfp.py:472
+#: pretalx/orga/forms/cfp.py:466
 msgid "It will allow you to submit a proposal to our CfP."
 msgstr "우리 CfP에 제안을 제출할 수 있습니다."
 
-#: pretalx/orga/forms/cfp.py:476
+#: pretalx/orga/forms/cfp.py:471
 #, python-brace-format
 msgid "This access code is valid until {date}."
 msgstr "이 액세스 코드는 {date}까지 유효합니다."
 
-#: pretalx/orga/forms/cfp.py:482
-#, python-brace-format
+#: pretalx/orga/forms/cfp.py:477
+#, fuzzy, python-brace-format
+#| msgid ""
+#| "\n"
+#| "Please follow this URL to use the code:\n"
+#| "\n"
+#| "  {url}\n"
+#| "\n"
+#| "I’m looking forward to your proposal!\n"
+#| "{name}"
 msgid ""
 "\n"
 "Please follow this URL to use the code:\n"
@@ -3924,7 +3935,7 @@ msgid ""
 "  {url}\n"
 "\n"
 "I’m looking forward to your proposal!\n"
-"{name}"
+"{inviting_speaker}"
 msgstr ""
 "\n"
 "코드를 사용하려면 이 URL을 따르십시오:\n"
@@ -4481,7 +4492,7 @@ msgid "Action"
 msgstr "작업"
 
 #: pretalx/orga/forms/event.py:877 pretalx/orga/forms/event.py:899
-#: pretalx/orga/forms/mails.py:276 pretalx/orga/forms/mails.py:280
+#: pretalx/orga/forms/mails.py:281 pretalx/orga/forms/mails.py:285
 #: pretalx/orga/tables/cfp.py:115 pretalx/orga/tables/cfp.py:156
 #: pretalx/orga/tables/mail.py:74 pretalx/orga/tables/speaker.py:83
 #: pretalx/orga/tables/submission.py:394
@@ -4514,9 +4525,9 @@ msgid "Comments"
 msgstr "댓글"
 
 #: pretalx/orga/forms/event.py:884 pretalx/orga/tables/cfp.py:39
-#: pretalx/orga/templates/orga/base.html:272 pretalx/orga/views/cfp.py:495
+#: pretalx/orga/templates/orga/base.html:272 pretalx/orga/views/cfp.py:488
 #: pretalx/submission/forms/submission.py:308
-#: pretalx/submission/models/access_code.py:42
+#: pretalx/submission/models/access_code.py:41
 #: pretalx/submission/models/question.py:231
 msgid "Session types"
 msgstr "세션 유형"
@@ -4528,7 +4539,7 @@ msgstr "세션 유형"
 #: pretalx/orga/templates/orga/base.html:456
 #: pretalx/orga/templates/orga/submission/speakers.html:27
 #: pretalx/schedule/phrases.py:21 pretalx/submission/exporters.py:22
-#: pretalx/submission/models/submission.py:197
+#: pretalx/submission/models/submission.py:196
 msgid "Speakers"
 msgstr "스피커"
 
@@ -4537,7 +4548,7 @@ msgstr "스피커"
 msgid "Users"
 msgstr "사용자"
 
-#: pretalx/orga/forms/event.py:887 pretalx/orga/views/mails.py:725
+#: pretalx/orga/forms/event.py:887 pretalx/orga/views/mails.py:728
 msgid "Email templates"
 msgstr "이메일 템플릿"
 
@@ -4584,7 +4595,7 @@ msgid "Deleted"
 msgstr "삭제"
 
 #: pretalx/orga/forms/event.py:905 pretalx/orga/views/dashboard.py:397
-#: pretalx/submission/models/submission.py:81
+#: pretalx/submission/models/submission.py:80
 msgid "rejected"
 msgstr "거부됨"
 
@@ -4732,7 +4743,7 @@ msgstr "쉼표"
 msgid "Please select a delimiter for your CSV export."
 msgstr "CSV 내보내기를 위한 구분 기호를 선택하십시오."
 
-#: pretalx/orga/forms/mails.py:75 pretalx/orga/forms/mails.py:92
+#: pretalx/orga/forms/mails.py:76 pretalx/orga/forms/mails.py:93
 msgid ""
 "Invalid email template! Please check that you don’t have stray { or } "
 "somewhere, and that there are no spaces inside the {} blocks."
@@ -4740,54 +4751,54 @@ msgstr ""
 "유효하지 않은 이메일 템플릿입니다! { 또는 }가 어딘가에 남아 있지 않은지 확인"
 "하고, {} 블록 내부에 공백이 없는지 확인하십시오."
 
-#: pretalx/orga/forms/mails.py:82 pretalx/orga/forms/mails.py:99
+#: pretalx/orga/forms/mails.py:83 pretalx/orga/forms/mails.py:100
 msgid "Unknown placeholder!"
 msgstr "알 수 없는 자리 표시자!"
 
-#: pretalx/orga/forms/mails.py:123
+#: pretalx/orga/forms/mails.py:125
 #, python-brace-format
 msgid "You have an empty link in your email, labeled “{text}”!"
 msgstr "이메일에 “{text}”라는 레이블이 붙은 빈 링크가 있습니다!"
 
-#: pretalx/orga/forms/mails.py:154
+#: pretalx/orga/forms/mails.py:156
 msgid "An email needs to have at least one recipient."
 msgstr "이메일에는 최소한 한 명의 수신자가 필요합니다."
 
-#: pretalx/orga/forms/mails.py:200
+#: pretalx/orga/forms/mails.py:205
 msgid "Send immediately"
 msgstr "즉시 전송"
 
-#: pretalx/orga/forms/mails.py:203
+#: pretalx/orga/forms/mails.py:208
 msgid ""
 "If you check this, the emails will be sent immediately, instead of being put "
 "in the outbox."
 msgstr "이 옵션을 선택하면 이메일이 발신함에 넣어지는 대신 즉시 전송됩니다."
 
-#: pretalx/orga/forms/mails.py:219
+#: pretalx/orga/forms/mails.py:224
 msgid "Recipient groups"
 msgstr "수신자 그룹"
 
-#: pretalx/orga/forms/mails.py:233
+#: pretalx/orga/forms/mails.py:238
 msgid "Reviewers"
 msgstr "검토자"
 
-#: pretalx/orga/forms/mails.py:234
+#: pretalx/orga/forms/mails.py:239
 msgid "Other teams"
 msgstr "기타 팀"
 
-#: pretalx/orga/forms/mails.py:278
+#: pretalx/orga/forms/mails.py:283
 msgid ""
 "Select proposals that should receive the email regardless of the other "
 "filters."
 msgstr "다른 필터와 관계없이 이메일을 받아야 하는 제안을 선택하십시오."
 
-#: pretalx/orga/forms/mails.py:287
+#: pretalx/orga/forms/mails.py:292
 msgid ""
 "Select speakers that should receive the email regardless of the other "
 "filters."
 msgstr "다른 필터와 관계없이 이메일을 받아야 하는 발표자를 선택하십시오."
 
-#: pretalx/orga/forms/mails.py:316
+#: pretalx/orga/forms/mails.py:321
 msgid ""
 "If you provide only one language, that language will be used for all emails. "
 "If you provide multiple languages, the best fit for each speaker will be "
@@ -4796,13 +4807,13 @@ msgstr ""
 "하나의 언어만 제공하면 해당 언어가 모든 이메일에 사용됩니다. 여러 언어를 제공"
 "하면 각 발표자에게 가장 적합한 언어가 사용됩니다."
 
-#: pretalx/orga/forms/mails.py:349
+#: pretalx/orga/forms/mails.py:354
 msgid ""
 "Please select at least one filter or specific proposals/speakers as "
 "recipients."
 msgstr ""
 
-#: pretalx/orga/forms/mails.py:436 pretalx/orga/tables/mail.py:60
+#: pretalx/orga/forms/mails.py:441 pretalx/orga/tables/mail.py:60
 #: pretalx/orga/tables/mail.py:147
 #, fuzzy
 #| msgid "State"
@@ -4810,14 +4821,14 @@ msgctxt "email delivery status"
 msgid "Status"
 msgstr "상태"
 
-#: pretalx/orga/forms/mails.py:469
+#: pretalx/orga/forms/mails.py:474
 #, fuzzy
 #| msgid "pending"
 msgctxt "email status: not yet sent"
 msgid "Pending"
 msgstr "보류 중"
 
-#: pretalx/orga/forms/mails.py:476
+#: pretalx/orga/forms/mails.py:481
 #: pretalx/orga/templates/orga/mails/includes/mail_status_badge.html:11
 msgctxt "email status"
 msgid "Failed"
@@ -4977,7 +4988,7 @@ msgid "The link to the speaker’s profile picture"
 msgstr "발표자의 프로필 사진 링크"
 
 #: pretalx/orga/forms/submission.py:75
-#: pretalx/submission/models/submission.py:224
+#: pretalx/submission/models/submission.py:223
 msgid "Proposal state"
 msgstr "제안 상태"
 
@@ -5200,8 +5211,8 @@ msgstr "액세스 코드를 이메일로 전송"
 msgid "Go to pre-filled CfP form"
 msgstr "미리 채워진 CfP 양식으로 이동"
 
-#: pretalx/orga/tables/cfp.py:177 pretalx/orga/views/cfp.py:510
-#: pretalx/orga/views/cfp.py:513
+#: pretalx/orga/tables/cfp.py:177 pretalx/orga/views/cfp.py:503
+#: pretalx/orga/views/cfp.py:506
 #, fuzzy
 #| msgid "Default"
 msgid "Make default"
@@ -5234,7 +5245,7 @@ msgstr "템플릿"
 #: pretalx/orga/tables/mail.py:36
 #: pretalx/orga/templates/orga/mails/compose_choice.html:10
 #: pretalx/orga/templates/orga/mails/compose_choice.html:13
-#: pretalx/orga/views/mails.py:194
+#: pretalx/orga/views/mails.py:195
 msgid "Send emails"
 msgstr "이메일 발송"
 
@@ -5637,7 +5648,7 @@ msgstr "위젯"
 msgid "Editor"
 msgstr "편집기"
 
-#: pretalx/orga/templates/orga/base.html:275 pretalx/orga/views/cfp.py:623
+#: pretalx/orga/templates/orga/base.html:275 pretalx/orga/views/cfp.py:616
 msgid "Access codes"
 msgstr "접근 코드"
 
@@ -7336,13 +7347,13 @@ msgstr "리뷰를 제출한 후 다른 리뷰를 볼 수 있습니다."
 
 #: pretalx/orga/templates/orga/submission/review.html:91
 #: pretalx/schedule/models/room.py:48 pretalx/submission/models/resource.py:38
-#: pretalx/submission/models/submission.py:235
+#: pretalx/submission/models/submission.py:234
 #: pretalx/submission/models/tag.py:29 pretalx/submission/models/track.py:33
 msgid "Description"
 msgstr "설명"
 
 #: pretalx/orga/templates/orga/submission/review.html:103
-#: pretalx/submission/models/submission.py:239
+#: pretalx/submission/models/submission.py:238
 msgid "Notes"
 msgstr "노트"
 
@@ -7567,7 +7578,7 @@ msgid "Last used"
 msgstr "마지막 사용"
 
 #: pretalx/orga/templates/orga/user.html:45
-#: pretalx/submission/models/access_code.py:50
+#: pretalx/submission/models/access_code.py:49
 msgid "Valid until"
 msgstr "유효 기간"
 
@@ -7676,41 +7687,41 @@ msgstr ""
 msgid "Could not send emails, error in configuration."
 msgstr "메일을 보낼 수 없습니다. 구성에 오류가 있습니다."
 
-#: pretalx/orga/views/cfp.py:469
+#: pretalx/orga/views/cfp.py:462
 msgid "New type"
 msgstr "새 유형"
 
-#: pretalx/orga/views/cfp.py:494
+#: pretalx/orga/views/cfp.py:487
 msgid "New session type"
 msgstr "새 세션 유형"
 
-#: pretalx/orga/views/cfp.py:503
+#: pretalx/orga/views/cfp.py:496
 msgid "This session type is in use in a proposal and cannot be deleted."
 msgstr "이 세션 유형은 제안에서 사용 중이며 삭제할 수 없습니다."
 
-#: pretalx/orga/views/cfp.py:531
+#: pretalx/orga/views/cfp.py:524
 #, fuzzy, python-brace-format
 #| msgid "Are you sure you want to resend the invitation to this user?"
 msgid "Are you sure you want to make “{name}” the default session type?"
 msgstr "이 사용자에게 초대를 다시 보내시겠습니까?"
 
-#: pretalx/orga/views/cfp.py:555 pretalx/orga/views/cfp.py:580
+#: pretalx/orga/views/cfp.py:548 pretalx/orga/views/cfp.py:573
 msgid "New track"
 msgstr "새 트랙"
 
-#: pretalx/orga/views/cfp.py:588
+#: pretalx/orga/views/cfp.py:581
 msgid "This track is in use in a proposal and cannot be deleted."
 msgstr "이 트랙은 제안에서 사용 중이며 삭제할 수 없습니다."
 
-#: pretalx/orga/views/cfp.py:601 pretalx/orga/views/cfp.py:622
+#: pretalx/orga/views/cfp.py:594 pretalx/orga/views/cfp.py:615
 msgid "New access code"
 msgstr "새 액세스 코드"
 
-#: pretalx/orga/views/cfp.py:618 pretalx/submission/models/access_code.py:26
+#: pretalx/orga/views/cfp.py:611 pretalx/submission/models/access_code.py:25
 msgid "Access code"
 msgstr "접속 코드"
 
-#: pretalx/orga/views/cfp.py:651
+#: pretalx/orga/views/cfp.py:644
 msgid ""
 "This access code has been used for a proposal and cannot be deleted. To "
 "disable it, you can set its validity date to the past."
@@ -7718,31 +7729,31 @@ msgstr ""
 "이 접속 코드는 제안서에 사용되었으며 삭제할 수 없습니다. 비활성화하려면 유효"
 "성 날짜를 과거로 설정할 수 있습니다."
 
-#: pretalx/orga/views/cfp.py:722
+#: pretalx/orga/views/cfp.py:715
 msgid "only one option available"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:726
+#: pretalx/orga/views/cfp.py:719
 msgid "only one language configured"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:728
+#: pretalx/orga/views/cfp.py:721
 #, fuzzy
 #| msgid "Update checks are disabled."
 msgid "tracks are disabled"
 msgstr "업데이트 확인이 비활성화되었습니다."
 
-#: pretalx/orga/views/cfp.py:730
+#: pretalx/orga/views/cfp.py:723
 msgid "no tracks exist"
 msgstr ""
 
-#: pretalx/orga/views/cfp.py:732
+#: pretalx/orga/views/cfp.py:725
 #, fuzzy
 #| msgid "not public yet"
 msgid "no public tags exist"
 msgstr "아직 공개되지 않음"
 
-#: pretalx/orga/views/cfp.py:1219
+#: pretalx/orga/views/cfp.py:1212
 msgid "CfP configuration has been reset to defaults."
 msgstr ""
 
@@ -7968,110 +7979,110 @@ msgstr ""
 msgid "Generate widget"
 msgstr "위젯 생성"
 
-#: pretalx/orga/views/mails.py:62
+#: pretalx/orga/views/mails.py:63
 #, fuzzy
 #| msgid "You can’t give feedback for this session at this time."
 msgid "You cannot send emails at this time."
 msgstr "지금은 이 세션에 대한 피드백을 제공할 수 없습니다."
 
-#: pretalx/orga/views/mails.py:175
+#: pretalx/orga/views/mails.py:176
 #, fuzzy
 #| msgid "Send emails"
 msgid "Sending emails"
 msgstr "이메일 발송"
 
-#: pretalx/orga/views/mails.py:185
+#: pretalx/orga/views/mails.py:186
 #, python-brace-format
 msgid "{count} emails have been processed."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:189
+#: pretalx/orga/views/mails.py:190
 #, python-brace-format
 msgid "Do you really want to send {count} emails?"
 msgstr "정말로 {count}개의 메일을 보내시겠습니까?"
 
-#: pretalx/orga/views/mails.py:227
+#: pretalx/orga/views/mails.py:228
 msgid ""
 "This email either does not exist or cannot be sent because it was sent "
 "already."
 msgstr "이 메일은 존재하지 않거나 이미 전송되었기 때문에 보낼 수 없습니다."
 
-#: pretalx/orga/views/mails.py:232
+#: pretalx/orga/views/mails.py:233
 msgid "This email had been sent already."
 msgstr "이 메일은 이미 전송되었습니다."
 
-#: pretalx/orga/views/mails.py:244 pretalx/orga/views/mails.py:395
+#: pretalx/orga/views/mails.py:245 pretalx/orga/views/mails.py:396
 msgid "The email has been sent."
 msgstr "이메일이 전송되었습니다."
 
-#: pretalx/orga/views/mails.py:258
+#: pretalx/orga/views/mails.py:259
 msgid "No emails to send."
 msgstr ""
 
-#: pretalx/orga/views/mails.py:299
+#: pretalx/orga/views/mails.py:300
 #, python-brace-format
 msgid "Do you really want to delete this email?"
 msgid_plural "Do you really want to purge {count} emails?"
 msgstr[0] "정말 {count}개의 메일을 삭제하시겠습니까?"
 
-#: pretalx/orga/views/mails.py:312
+#: pretalx/orga/views/mails.py:313
 msgid ""
 "This email either does not exist or cannot be discarded because it was sent "
 "already."
 msgstr "이 메일은 존재하지 않거나 이미 전송되었기 때문에 폐기할 수 없습니다."
 
-#: pretalx/orga/views/mails.py:324
+#: pretalx/orga/views/mails.py:325
 #, python-brace-format
 msgid "The email has been discarded."
 msgid_plural "{count} emails have been discarded."
 msgstr[0] "{count}개의 메일이 삭제되었습니다."
 
-#: pretalx/orga/views/mails.py:340
+#: pretalx/orga/views/mails.py:341
 #, python-brace-format
 msgid "Do you really want to purge {count} emails?"
 msgstr "정말로 {count}개의 메일을 삭제하시겠습니까?"
 
-#: pretalx/orga/views/mails.py:360
+#: pretalx/orga/views/mails.py:361
 #, python-brace-format
 msgid "{count} emails have been purged."
 msgstr "{count}개의 메일이 삭제되었습니다."
 
-#: pretalx/orga/views/mails.py:400
+#: pretalx/orga/views/mails.py:401
 msgid ""
 "The email has been saved. When you send it, the updated text will be used."
 msgstr "이메일이 저장되었습니다. 전송할 때 업데이트된 텍스트가 사용됩니다."
 
-#: pretalx/orga/views/mails.py:409
+#: pretalx/orga/views/mails.py:410
 #, fuzzy
 #| msgid "Save and next"
 msgid "Save and retry"
 msgstr "저장하고 다음으로"
 
-#: pretalx/orga/views/mails.py:409
+#: pretalx/orga/views/mails.py:410
 msgid "Save and send"
 msgstr "저장 및 발송"
 
-#: pretalx/orga/views/mails.py:427
+#: pretalx/orga/views/mails.py:428
 msgid "Discard all from this template"
 msgstr "이 템플릿의 모든 항목을 취소합니다"
 
-#: pretalx/orga/views/mails.py:454
+#: pretalx/orga/views/mails.py:455
 msgid "The email has been copied, you can edit it now."
 msgstr "메일이 복사되었습니다. 이제 편집할 수 있습니다."
 
-#: pretalx/orga/views/mails.py:484
+#: pretalx/orga/views/mails.py:485
 #, fuzzy
 #| msgid "Compose emails"
 msgid "Composing emails"
 msgstr "이메일 작성"
 
-#: pretalx/orga/views/mails.py:497 pretalx/orga/views/mails.py:635
-#: pretalx/orga/views/mails.py:692
+#: pretalx/orga/views/mails.py:498 pretalx/orga/views/mails.py:638
+#: pretalx/orga/views/mails.py:695
 #, python-brace-format
 msgid "{count} emails have been sent."
 msgstr "{count}개의 이메일이 전송되었습니다."
 
-#: pretalx/orga/views/mails.py:508
+#: pretalx/orga/views/mails.py:509
 #, python-brace-format
 msgid ""
 "Could not generate one email, most likely because the session has not been "
@@ -8081,29 +8092,29 @@ msgid_plural ""
 "not been scheduled yet."
 msgstr[0] ""
 
-#: pretalx/orga/views/mails.py:547
+#: pretalx/orga/views/mails.py:548
 msgctxt "action: preview the email before sending"
 msgid "Preview email"
 msgstr "이메일 미리보기"
 
-#: pretalx/orga/views/mails.py:553
+#: pretalx/orga/views/mails.py:554
 msgid "Send to outbox"
 msgstr "보낸 편지함으로 보내기"
 
-#: pretalx/orga/views/mails.py:565
+#: pretalx/orga/views/mails.py:566
 msgid "There are no recipients matching this selection."
 msgstr "이 선택과 일치하는 수신자가 없습니다."
 
-#: pretalx/orga/views/mails.py:579
+#: pretalx/orga/views/mails.py:580
 msgid "This value will be replaced based on dynamic parameters."
 msgstr "이 값은 동적 매개변수에 따라 대체됩니다."
 
-#: pretalx/orga/views/mails.py:598
+#: pretalx/orga/views/mails.py:601
 #, python-brace-format
 msgid "Subject: {subject}"
 msgstr "제목: {subject}"
 
-#: pretalx/orga/views/mails.py:705
+#: pretalx/orga/views/mails.py:708
 msgid ""
 "The template has been saved - note that already pending emails that are "
 "based on this template will not be changed!"
@@ -8111,11 +8122,11 @@ msgstr ""
 "템플릿이 저장되었습니다 - 이 템플릿을 기반으로 한 이미 보류 중인 이메일은 변"
 "경되지 않습니다!"
 
-#: pretalx/orga/views/mails.py:709
+#: pretalx/orga/views/mails.py:712
 msgid "New custom template"
 msgstr "새 사용자 정의 템플릿"
 
-#: pretalx/orga/views/mails.py:724
+#: pretalx/orga/views/mails.py:727
 msgid "New email template"
 msgstr "새 이메일 템플릿"
 
@@ -8558,8 +8569,7 @@ msgstr "업로드를 작게 유지해 주세요. 가능하면 16MB 이하로 해
 msgid "The speaker has arrived"
 msgstr "발표자가 도착했습니다"
 
-#: pretalx/person/models/profile.py:110 tests/person/models/test_profile.py:50
-#: tests/person/models/test_profile.py:56
+#: pretalx/person/models/profile.py:111
 #, fuzzy
 #| msgid "Unnamed user"
 msgid "Unnamed speaker"
@@ -8592,7 +8602,7 @@ msgstr "선호하는 언어"
 msgid "Unnamed user"
 msgstr "이름 없는 사용자"
 
-#: pretalx/person/models/user.py:490
+#: pretalx/person/models/user.py:492
 #, python-brace-format
 msgid ""
 "Hi {name},\n"
@@ -8619,11 +8629,11 @@ msgstr ""
 "모든 것이 잘 되길 바랍니다,\n"
 "pretalx 로봇"
 
-#: pretalx/person/models/user.py:515
+#: pretalx/person/models/user.py:505
 msgid "Password recovery"
 msgstr "비밀번호 복구"
 
-#: pretalx/person/models/user.py:544
+#: pretalx/person/models/user.py:536
 #, python-brace-format
 msgid ""
 "Hi {name},\n"
@@ -8646,11 +8656,11 @@ msgstr ""
 "모든 것이 잘 되길 바랍니다,\n"
 "pretalx 팀"
 
-#: pretalx/person/models/user.py:556
+#: pretalx/person/models/user.py:547
 msgid "[pretalx] Password changed"
 msgstr "[pretalx] 비밀번호 변경됨"
 
-#: pretalx/person/models/user.py:580
+#: pretalx/person/models/user.py:574
 #, fuzzy, python-brace-format
 #| msgid ""
 #| "Hi {name},\n"
@@ -8684,7 +8694,7 @@ msgstr ""
 "모든 것이 잘 되길 바랍니다,\n"
 "pretalx 팀"
 
-#: pretalx/person/models/user.py:607
+#: pretalx/person/models/user.py:585
 #, fuzzy
 #| msgid "[pretalx] Password changed"
 msgid "[pretalx] Email address changed"
@@ -9009,7 +9019,7 @@ msgstr ""
 "후 더 많은 발표자를 추가할 수 있습니다."
 
 #: pretalx/submission/forms/submission.py:51
-#: pretalx/submission/models/submission.py:276
+#: pretalx/submission/models/submission.py:275
 msgid "Session image"
 msgstr "세션 이미지"
 
@@ -9043,7 +9053,7 @@ msgstr "보류 중 {state}"
 msgid "You already have a tag by this name!"
 msgstr "이미 이 이름으로 태그가 있습니다!"
 
-#: pretalx/submission/models/access_code.py:35
+#: pretalx/submission/models/access_code.py:34
 #, fuzzy
 #| msgid ""
 #| "You can restrict the access code to a single track, or leave it open for "
@@ -9054,7 +9064,7 @@ msgid ""
 msgstr ""
 "접근 코드를 단일 트랙으로 제한하거나 모든 트랙에 대해 열어둘 수 있습니다."
 
-#: pretalx/submission/models/access_code.py:44
+#: pretalx/submission/models/access_code.py:43
 #, fuzzy
 #| msgid ""
 #| "You can restrict the access code to a single session type, or leave it "
@@ -9066,15 +9076,15 @@ msgstr ""
 "접근 코드를 단일 세션 유형으로 제한하거나 모든 세션 유형에 대해 열어둘 수 있"
 "습니다."
 
-#: pretalx/submission/models/access_code.py:52
+#: pretalx/submission/models/access_code.py:51
 msgid "You can set or change this date later to invalidate the access code."
 msgstr "이 날짜를 나중에 설정하거나 변경하여 접근 코드를 무효화할 수 있습니다."
 
-#: pretalx/submission/models/access_code.py:58
+#: pretalx/submission/models/access_code.py:57
 msgid "Maximum uses"
 msgstr "최대 사용 횟수"
 
-#: pretalx/submission/models/access_code.py:60
+#: pretalx/submission/models/access_code.py:59
 msgid ""
 "Number of times this access code can be used to submit a proposal. Leave "
 "empty for no limit."
@@ -9082,7 +9092,7 @@ msgstr ""
 "이 접근 코드를 사용하여 제안서를 제출할 수 있는 횟수입니다. 제한이 없으려면 "
 "비워 두세요."
 
-#: pretalx/submission/models/access_code.py:67
+#: pretalx/submission/models/access_code.py:66
 msgid "Redeemed"
 msgstr ""
 
@@ -9507,44 +9517,44 @@ msgstr ""
 "기본적으로, 제안 수정은 CfP 종료 후 잠겨 있으며, 제안이 수락되면 다시 활성화"
 "됩니다."
 
-#: pretalx/submission/models/submission.py:78 pretalx/submission/phrases.py:11
+#: pretalx/submission/models/submission.py:77 pretalx/submission/phrases.py:11
 msgctxt "proposal status"
 msgid "submitted"
 msgstr "제출됨"
 
-#: pretalx/submission/models/submission.py:202
+#: pretalx/submission/models/submission.py:201
 msgid "Proposal title"
 msgstr "제안 제목"
 
-#: pretalx/submission/models/submission.py:213 pretalx/submission/phrases.py:15
+#: pretalx/submission/models/submission.py:212 pretalx/submission/phrases.py:15
 msgid "Track"
 msgstr "트랙"
 
-#: pretalx/submission/models/submission.py:232
+#: pretalx/submission/models/submission.py:231
 msgid "Pending proposal state"
 msgstr "보류 중인 제안 상태"
 
-#: pretalx/submission/models/submission.py:241
+#: pretalx/submission/models/submission.py:240
 msgid "These notes are meant for the organisers and won’t be made public."
 msgstr "이 노트는 주최자를 위한 것이며 공개되지 않습니다."
 
-#: pretalx/submission/models/submission.py:259
+#: pretalx/submission/models/submission.py:258
 msgid "How often this session takes place."
 msgstr "이 세션이 몇 번 진행될 것인지."
 
-#: pretalx/submission/models/submission.py:267
+#: pretalx/submission/models/submission.py:266
 msgid "Show this session in public list of featured sessions."
 msgstr "이 세션을 공개 추천 세션 목록에 표시합니다."
 
-#: pretalx/submission/models/submission.py:270
+#: pretalx/submission/models/submission.py:269
 msgid "Don’t record this session."
 msgstr "이 세션을 녹화하지 마십시오."
 
-#: pretalx/submission/models/submission.py:292
+#: pretalx/submission/models/submission.py:291
 msgid "Assigned reviewers"
 msgstr "배정된 검토자"
 
-#: pretalx/submission/models/submission.py:634
+#: pretalx/submission/models/submission.py:633
 msgid ""
 "Full proposal content:\n"
 "\n"
@@ -9552,12 +9562,12 @@ msgstr ""
 "전체 제안서 내용:\n"
 "\n"
 
-#: pretalx/submission/models/submission.py:914
+#: pretalx/submission/models/submission.py:895
 #, python-brace-format
 msgid "{title_in_quotes} by {list_of_speakers}"
 msgstr "{title_in_quotes} 작성자: {list_of_speakers}"
 
-#: pretalx/submission/models/submission.py:1198
+#: pretalx/submission/models/submission.py:1189
 #, fuzzy, python-brace-format
 #| msgid "Invite to team {team} for {email}"
 msgid "Invite to {submission} for {email}"
