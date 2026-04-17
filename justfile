@@ -310,13 +310,13 @@ _release-prepare version:
     entry = f'- :release:`{version} <{today}>` {desc}\n'
     changelog.write_text(body[:idx] + entry + body[idx:])
 
-# Release a new pretalx version
+# Release a new pretalx version (tag form: v2026.1.0)
 [group('release')]
 [confirm("This will publish to PyPI and push tags. Continue?")]
-[arg('version', pattern='\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?')]
+[arg('version', pattern='v\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?')]
 release version:
     uv pip install build check-manifest twine wheel
-    just _release-prepare {{ version }}
+    just _release-prepare {{ trim_start_match(version, "v") }}
     git commit -am "Release {{ version }}"
     git tag -m "Release {{ version }}" {{ version }}
     rm -rf dist/ build/ pretalx.egg-info
@@ -324,4 +324,4 @@ release version:
     uvx twine upload dist/pretalx-*
     git push
     git push --tags
-    gh release create {{ version }} --verify-tag --title "Release {{ version }}" --notes "[Blog post](https://pretalx.com/p/news/releasing-pretalx-$(echo "{{ version }}" | cut -d. -f1-2 | tr . -)-0/)" dist/pretalx-*
+    gh release create {{ version }} --verify-tag --title "Release {{ version }}" --notes "[Blog post](https://pretalx.com/p/news/releasing-pretalx-$(echo "{{ trim_start_match(version, "v") }}" | cut -d. -f1-2 | tr . -)-0/)" dist/pretalx-*
