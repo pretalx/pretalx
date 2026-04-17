@@ -252,6 +252,7 @@ test-coverage-report: test-coverage
 # Run release checks
 [group('release')]
 release-checks:
+    uv pip install check-manifest twine wheel
     uv run check-manifest
     rm -rf dist
     {{ python }} -m build
@@ -260,12 +261,62 @@ release-checks:
     unzip -l dist/pretalx*whl | grep node_modules && exit 1 || exit 0
     echo "{{ GREEN }}All release checks successful{{ NORMAL }}"
 
+# Bump __version__ and insert a :release: line in the changelog
+[private]
+[script('python3')]
+_release-prepare version:
+    import re
+    from datetime import date
+    from pathlib import Path
+
+    version = '{{ version }}'
+    today = date.today().isoformat()
+
+    init = Path('src/pretalx/__init__.py')
+    text = init.read_text()
+    new_text, n = re.subn(
+        r'__version__ = "[^"]+"',
+        f'__version__ = "{version}"',
+        text,
+        count=1,
+    )
+    if n != 1:
+        raise SystemExit("Could not find __version__ in src/pretalx/__init__.py")
+    init.write_text(new_text)
+
+    changelog = Path('doc/changelog.rst')
+    body = changelog.read_text()
+    marker = 'For already released changes, head over here:\n'
+    if marker not in body:
+        raise SystemExit(f"Could not find marker in {changelog}")
+    idx = body.index(marker) + len(marker)
+    while idx < len(body) and body[idx] == '\n':
+        idx += 1
+
+    parts = version.split('.')
+    base_slug = f'{parts[0]}-{parts[1]}-0'
+    is_bugfix = len(parts) >= 3 and parts[2].isdigit() and parts[2] != '0'
+    if is_bugfix:
+        desc = (
+            f'Bugfix release for pretalx {parts[0]}.{parts[1]}. '
+            f'See the `release blog post '
+            f'<https://pretalx.com/p/news/releasing-pretalx-{base_slug}/>`_.'
+        )
+    else:
+        desc = (
+            f'See the `release blog post '
+            f'<https://pretalx.com/p/news/releasing-pretalx-{base_slug}/>`_.'
+        )
+    entry = f'- :release:`{version} <{today}>` {desc}\n'
+    changelog.write_text(body[:idx] + entry + body[idx:])
+
 # Release a new pretalx version
 [group('release')]
 [confirm("This will publish to PyPI and push tags. Continue?")]
 [arg('version', pattern='\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?')]
 release version:
-    uv pip install build
+    uv pip install build check-manifest twine wheel
+    just _release-prepare {{ version }}
     git commit -am "Release {{ version }}"
     git tag -m "Release {{ version }}" {{ version }}
     rm -rf dist/ build/ pretalx.egg-info
@@ -273,3 +324,4 @@ release version:
     uvx twine upload dist/pretalx-*
     git push
     git push --tags
+    gh release create {{ version }} --verify-tag --title "Release {{ version }}" --notes "[Blog post](https://pretalx.com/p/news/releasing-pretalx-$(echo "{{ version }}" | cut -d. -f1-2 | tr . -)-0/)" dist/pretalx-*

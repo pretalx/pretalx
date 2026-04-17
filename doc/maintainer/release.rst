@@ -29,23 +29,19 @@ System checks
 
 1. Deploy the release-ready commit to an instance. Check if the upgrade and the instance works.
 2. Clean clone: ``git clone git@github.com:pretalx/pretalx pretalx-release && cd pretalx-release`` (or local clone)
-3. Install release dependencies: ``uv pip install check-manifest twine wheel``
-4. Run ``just release-checks`` **locally**.
+3. Run ``just release-checks`` **locally**.
 
 Take-off and landing
 --------------------
 
-1. Bump version in ``src/pretalx/__init__.py``.
-2. Add the release to the :ref:`changelog`.
-3. Run ``just release v202X.Y.Z``
-4. Install/update the package somewhere.
-5. Publish the blog post.
-6. Add the release on `GitHub <https://github.com/pretalx/pretalx/releases>`_ (upload the archive you uploaded to PyPI, and add a link to the correct section of the :ref:`changelog`)
-7. Upgrade `the docker repository <https://github.com/pretalx/pretalx-docker>`_ by running ``just release v202X.Y.Z``
-8. Increment version number to ``version+1.dev0`` in ``src/pretalx/__init__.py``.
-9. ``rm -rf pretalx-release``
-10. Update version numbers in update checker (``versions.py``) and deploy.
-11. Update any plugins waiting for the new release.
-12. Check if the docker image build was successful.
-13. Post about the release on ``chaos.social``, Twitter and LinkedIn.
-14. Notify interested parties (e.g. big self-hosted instances, prominent plugin developers) about the release.
+1. Run ``just release v202X.Y.Z``
+2. Install/update the package somewhere.
+3. Publish the blog post.
+4. Upgrade `the docker repository <https://github.com/pretalx/pretalx-docker>`_ by running ``just release v202X.Y.Z``
+5. Increment version number to ``version+1.dev0`` in ``src/pretalx/__init__.py``.
+6. ``rm -rf pretalx-release``
+7. Update version numbers in update checker (``versions.py``) and deploy.
+8. Update any plugins waiting for the new release.
+9. Check if the docker image build was successful.
+10. Post about the release on ``chaos.social``, Twitter and LinkedIn.
+11. Notify interested parties (e.g. big self-hosted instances, prominent plugin developers) about the release.
