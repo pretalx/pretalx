@@ -473,8 +473,8 @@ class User(
             path = "orga:auth.recover"
             kwargs = {"token": self.pw_reset_token}
         # Returning an :class:`urlman.UrlString` (a ``str`` subclass)
-        # lets :func:`pretalx.mail.context._coerce_urlman_values` drop
-        # the result into ``safe_extra_context`` without a separate
+        # lets :func:`pretalx.mail.context.get_mail_context` drop the
+        # result into ``safe_extra_context`` without a separate
         # ``mark_safe`` wrap at every call site.
         return UrlString(build_absolute_uri(path, kwargs=kwargs))
 

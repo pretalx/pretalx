@@ -135,6 +135,21 @@ NO_LINKS_CLEANER = bleach.Cleaner(
     protocols=ALLOWED_PROTOCOLS,
     strip=True,
 )
+MAIL_BODY_CLEANER = bleach.Cleaner(
+    tags=ALLOWED_TAGS,
+    attributes=ALLOWED_ATTRIBUTES,
+    protocols=ALLOWED_PROTOCOLS,
+    filters=[
+        partial(
+            bleach.linkifier.LinkifyFilter,
+            url_re=TLD_REGEX,
+            parse_email=True,
+            email_re=EMAIL_REGEX,
+            skip_tags={"pre", "code", "span", "div"},
+            callbacks=[*bleach.linkifier.DEFAULT_CALLBACKS, abslink_callback],
+        )
+    ],
+)
 PLAINTEXT_CLEANER = bleach.Cleaner(tags=set(), strip=True)
 
 
@@ -175,6 +190,17 @@ def render_markdown_abslinks(text: str) -> str:
     """Process markdown and cleans HTML in a text input, but use absolute links instead
     of safelink redirects."""
     return render_markdown(text, cleaner=ABSLINK_CLEANER)
+
+
+def render_mail_body(text: str) -> str:
+    """Render a placeholder-substituted mail body to HTML.
+
+    Identical to :func:`render_markdown_abslinks` in everything except
+    the underlying cleaner: :data:`MAIL_BODY_CLEANER` skips autolinking
+    inside ``<span>`` and ``<div>`` wrappers, which is how the untrusted
+    placeholder classes fence off their output. Organiser-authored bare
+    URLs in the surrounding template text are still autolinked."""
+    return render_markdown(text, cleaner=MAIL_BODY_CLEANER)
 
 
 def render_markdown_plaintext(text: str) -> str:

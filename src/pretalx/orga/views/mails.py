@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.utils.functional import cached_property
 from django.utils.html import escape
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy, pgettext_lazy
 from django.views.generic import FormView, ListView, TemplateView, View
@@ -15,7 +16,7 @@ from django_context_decorator import context
 
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.language import language
-from pretalx.common.mail import TolerantDict
+from pretalx.common.text.formatting import MODE_HTML, format_map
 from pretalx.common.text.phrases import phrases
 from pretalx.common.ui import Button, delete_link, send_button
 from pretalx.common.views.generic import (
@@ -569,18 +570,18 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
             import bleach  # noqa: PLC0415 -- slow import
 
             from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
-                render_markdown_abslinks,
+                render_mail_body,
             )
 
             for locale in self.request.event.locales:
                 with language(locale):
-                    context_dict = TolerantDict()
+                    context_dict = {}
                     title = _(
                         "This value will be replaced based on dynamic parameters."
                     )
                     for key, value in form.get_valid_placeholders().items():
                         content = escape(value.render_sample(self.request.event))
-                        context_dict[key] = (
+                        context_dict[key] = mark_safe(  # noqa: S308  -- content is escape()-d sample text
                             f'<span class="placeholder" title="{title}">{content}</span>'
                         )
 
@@ -588,11 +589,13 @@ class ComposeMailBaseView(AsyncTaskProgressMixin, EventPermissionRequired, FormV
                         form.cleaned_data["subject"].localize(locale), tags={}
                     )
                     preview_subject = get_prefixed_subject(
-                        self.request.event, subject.format_map(context_dict)
+                        self.request.event, format_map(subject, context_dict)
                     )
                     message = form.cleaned_data["text"].localize(locale)
-                    preview_text = render_markdown_abslinks(
-                        message.format_map(context_dict)
+                    # Mirror ``MailTemplate.to_mail`` so the preview
+                    # matches delivery byte-for-byte.
+                    preview_text = render_mail_body(
+                        format_map(message, context_dict, mode=MODE_HTML)
                     )
                     self.output[locale] = {
                         "subject": _("Subject: {subject}").format(

@@ -2,14 +2,24 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import string
+from decimal import Decimal
 
 from django.dispatch import receiver
 from django.template.defaultfilters import date as _date
+from django.utils.safestring import SafeString, mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import override
+from urlman import UrlString
 
-from pretalx.mail.placeholders import SimpleFunctionalMailTextPlaceholder
+from pretalx.common.text.formatting import EmailAlternativeString
+from pretalx.mail.placeholders import (
+    LinkMailTextPlaceholder,
+    TrustedMarkdownMailTextPlaceholder,
+    TrustedPlainMailTextPlaceholder,
+    UntrustedMarkdownMailTextPlaceholder,
+    UntrustedPlainMailTextPlaceholder,
+)
 from pretalx.mail.signals import register_mail_placeholders
 from pretalx.schedule.notifications import (
     get_current_notifications,
@@ -19,8 +29,43 @@ from pretalx.schedule.notifications import (
 )
 
 
-def get_mail_context(**kwargs):
-    event = kwargs["event"]
+def _validate_safe_extra_context(safe_extra_context):
+    """Reject ``safe_extra_context`` values that aren't pre-sanitised:
+    only ``SafeString``, ``EmailAlternativeString``, ``UrlString``,
+    and numeric types pass."""
+    if not safe_extra_context:
+        return
+    for key, value in safe_extra_context.items():
+        if not isinstance(
+            value, (SafeString, EmailAlternativeString, UrlString, int, float, Decimal)
+        ):
+            raise TypeError(
+                f"safe_extra_context[{key!r}] must be a SafeString "
+                f"(e.g. via django.utils.safestring.mark_safe), a "
+                f"EmailAlternativeString, a urlman UrlString "
+                f"(e.g. obj.urls.foo), or a numeric type, got "
+                f"{type(value).__name__!r}. Wrap internally-built "
+                "values in mark_safe, or register a placeholder for "
+                "user-controlled values."
+            )
+
+
+def get_mail_context(*, safe_extra_context=None, **kwargs):
+    """Resolve registered mail placeholders satisfied by ``kwargs``
+    and return a ``{identifier: value}`` dict, merged with
+    ``safe_extra_context`` (see :func:`_validate_safe_extra_context`)."""
+    _validate_safe_extra_context(safe_extra_context)
+    if safe_extra_context:
+        safe_extra_context = {
+            key: (
+                mark_safe(value.full())  # noqa: S308  -- urlman-built internal URL
+                if isinstance(value, UrlString)
+                else value
+            )
+            for key, value in safe_extra_context.items()
+        }
+    kwargs = {key: value for key, value in kwargs.items() if value is not None}
+    event = kwargs.get("event")
     if "submission" in kwargs and "slot" not in kwargs:
         slot = kwargs["submission"].slot
         if slot and slot.start and slot.room:
@@ -33,6 +78,8 @@ def get_mail_context(**kwargs):
         for placeholder in placeholder_list:
             if all(required in kwargs for required in placeholder.required_context):
                 context[placeholder.identifier] = placeholder.render(kwargs)
+    if safe_extra_context:
+        context.update(safe_extra_context)
     return context
 
 
@@ -77,12 +124,12 @@ def get_all_reviews(submission):
     return "\n\n--------------\n\n".join(texts)
 
 
-def placeholder_aliases(identifiers, args, func, sample, explanation=None):
+def placeholder_aliases(identifiers, args, func, sample, explanation=None, *, cls):
     result = []
     is_visible = True
     for identifier in identifiers:
         result.append(
-            SimpleFunctionalMailTextPlaceholder(
+            cls(
                 identifier,
                 args,
                 func,
@@ -97,7 +144,9 @@ def placeholder_aliases(identifiers, args, func, sample, explanation=None):
 
 @receiver(register_mail_placeholders, dispatch_uid="pretalx_register_base_placeholders")
 def base_placeholders(sender, **kwargs):
-    with override(sender.locale):
+    # sender may be None for eventless mail rendering (e.g. User.reset_password
+    # outside an event context). override(None) activates the default language.
+    with override(sender.locale if sender is not None else None):
         date_format = get_notification_date_format()
         time = _date(now().replace(hour=9, minute=0), date_format)
         time2 = _date(now().replace(hour=11, minute=0), date_format)
@@ -108,50 +157,51 @@ def base_placeholders(sender, **kwargs):
             lambda event: event.name,
             lambda event: event.name,
             _("The event’s full name"),
+            cls=TrustedPlainMailTextPlaceholder,
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        TrustedPlainMailTextPlaceholder(
             "event_slug",
             ["event"],
             lambda event: event.slug,
             lambda event: event.slug,
             _("The event’s short form, used in URLs"),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        LinkMailTextPlaceholder(
             "event_url",
             ["event"],
             lambda event: event.urls.base.full(),
             lambda event: f"https://pretalx.com/{event.slug}/",
             _("The event’s public base URL"),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        LinkMailTextPlaceholder(
             "event_schedule_url",
             ["event"],
             lambda event: event.urls.schedule.full(),
             lambda event: f"https://pretalx.com/{event.slug}/schedule/",
             _("The event’s public schedule URL"),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        LinkMailTextPlaceholder(
             "event_cfp_url",
             ["event"],
             lambda event: event.cfp.urls.base.full(),
             lambda event: f"https://pretalx.com/{event.slug}/cfp",
             _("The event’s public CfP URL"),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        LinkMailTextPlaceholder(
             "all_submissions_url",
             ["event", "user"],
             lambda event, user: event.urls.user_submissions.full(),
             "https://pretalx.example.com/democon/me/submissions/",
             _("URL to a user’s list of proposals"),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        LinkMailTextPlaceholder(
             "profile_page_url",
             ["event", "user"],
             lambda event, user: event.urls.user.full(),
             "https://pretalx.example.com/democon/me/",
             _("URL to a user’s private profile page."),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        TrustedPlainMailTextPlaceholder(
             "deadline",
             ["event"],
             lambda event: (
@@ -172,8 +222,9 @@ def base_placeholders(sender, **kwargs):
             lambda submission: submission.code,
             "F8VVL",
             _("The proposal’s unique ID"),
+            cls=TrustedPlainMailTextPlaceholder,
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        LinkMailTextPlaceholder(
             "talk_url",
             ["slot"],
             lambda slot: slot.submission.urls.public.full(),
@@ -186,15 +237,16 @@ def base_placeholders(sender, **kwargs):
             lambda submission: submission.urls.user_base.full(),
             "https://pretalx.example.com/democon/me/submissions/F8VVL/",
             _("The speaker’s edit page for the proposal"),
+            cls=LinkMailTextPlaceholder,
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        LinkMailTextPlaceholder(
             "confirmation_link",
             ["submission"],
             lambda submission: submission.urls.confirm.full(),
             "https://pretalx.example.com/democon/me/submissions/F8VVL/confirm",
             _("Link to confirm a proposal after it has been accepted."),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        LinkMailTextPlaceholder(
             "withdraw_link",
             ["submission"],
             lambda submission: submission.urls.withdraw.full(),
@@ -207,8 +259,9 @@ def base_placeholders(sender, **kwargs):
             lambda submission: submission.title,
             _("This Is a Proposal Title"),
             _("The proposal’s title"),
+            cls=UntrustedPlainMailTextPlaceholder,
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        UntrustedPlainMailTextPlaceholder(
             "speakers",
             ["submission"],
             lambda submission: submission.display_speaker_names,
@@ -221,22 +274,23 @@ def base_placeholders(sender, **kwargs):
             lambda submission: str(submission.submission_type.name),
             _("Session Type A"),
             _("The proposal’s session type"),
+            cls=TrustedPlainMailTextPlaceholder,
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        TrustedPlainMailTextPlaceholder(
             "track_name",
             ["submission"],
             lambda submission: str(submission.track.name) if submission.track else "",
             _("Track A"),
             _("The track the proposal belongs to"),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        TrustedPlainMailTextPlaceholder(
             "session_duration_minutes",
             ["submission"],
             lambda submission: submission.get_duration(),
             "30",
             _("Duration in minutes"),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        TrustedMarkdownMailTextPlaceholder(
             "all_reviews",
             ["submission"],
             get_all_reviews,
@@ -245,49 +299,55 @@ def base_placeholders(sender, **kwargs):
             ),
             _("All review texts for this proposal"),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        TrustedPlainMailTextPlaceholder(
             "session_start_date",
             ["slot"],
             lambda slot: _date(slot.local_start, "SHORT_DATE_FORMAT"),
             _date(now(), "SHORT_DATE_FORMAT"),
             _("The session’s start date"),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        TrustedPlainMailTextPlaceholder(
             "session_start_time",
             ["slot"],
             lambda slot: _date(slot.local_start, "TIME_FORMAT"),
             _date(now(), "TIME_FORMAT"),
             _("The session’s start time"),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        TrustedPlainMailTextPlaceholder(
             "session_end_date",
             ["slot"],
             lambda slot: _date(slot.local_end, "SHORT_DATE_FORMAT"),
             _date(now(), "SHORT_DATE_FORMAT"),
             _("The session’s end date"),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        TrustedPlainMailTextPlaceholder(
             "session_end_time",
             ["slot"],
             lambda slot: _date(slot.local_end, "TIME_FORMAT"),
             _date(now(), "TIME_FORMAT"),
             _("The session’s end time"),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        TrustedPlainMailTextPlaceholder(
             "session_room",
             ["slot"],
             lambda slot: str(slot.room),
             _("Room 101"),
             _("The session’s room"),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        UntrustedPlainMailTextPlaceholder(
             "name",
             ["user"],
-            lambda user: user.name,
+            lambda user: user.name or "",
             _("Jane Doe"),
             _("The addressed user’s full name"),
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        UntrustedPlainMailTextPlaceholder(
+            "inviting_speaker",
+            ["inviting_user"],
+            lambda inviting_user: inviting_user.get_display_name(),
+            _("Jane Doe"),
+        ),
+        UntrustedPlainMailTextPlaceholder(
             "email",
             ["user"],
             lambda user: user.email,
@@ -308,8 +368,9 @@ def base_placeholders(sender, **kwargs):
             _(
                 "A list of all changes to the user’s schedule in the current schedule version."
             ),
+            cls=UntrustedMarkdownMailTextPlaceholder,
         ),
-        SimpleFunctionalMailTextPlaceholder(
+        UntrustedMarkdownMailTextPlaceholder(
             "speaker_schedule_full",
             ["user", "event"],
             lambda user, event: render_notifications(

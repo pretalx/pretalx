@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import re
 import smtplib
 
 import pytest
@@ -22,6 +23,7 @@ from pretalx.mail.signals import queuedmail_pre_send
 from tests.factories import (
     MailTemplateFactory,
     QueuedMailFactory,
+    SpeakerFactory,
     SubmissionFactory,
     UserFactory,
 )
@@ -276,6 +278,55 @@ def test_to_mail_skip_queue_sends_immediately(event):
     assert sent_email.subject == "Hi"
 
 
+def test_to_mail_on_unsaved_template(event):
+    # Unsaved templates (no pk) back ad-hoc mails like password reset.
+    template = MailTemplate(subject="Hi", text="Body text here")
+    mail = template.to_mail("test@example.com", event=event, commit=False)
+
+    assert mail.to == "test@example.com"
+    assert mail.subject == "Hi"
+    assert mail.text == "Body text here"
+    assert mail.template is None
+
+
+def test_to_mail_on_unsaved_template_with_placeholders(event):
+    template = MailTemplate(
+        subject="Welcome to {event_name}", text="Hi {name}, welcome to {event_name}!"
+    )
+    user = UserFactory(name="Jane Doe")
+    mail = template.to_mail(
+        user=user, event=event, context_kwargs={"user": user}, commit=False
+    )
+
+    assert mail.subject == f"Welcome to {event.name}"
+    assert "Jane Doe" in mail.text
+    assert mail.text_html is not None
+    assert mail.template is None
+
+
+def test_to_mail_on_unsaved_template_sends_immediately(event):
+    # skip_queue + commit=False is the reset_password/change_password shape.
+    djmail.outbox = []
+    template = MailTemplate(subject="Test", text="Body")
+    mail = template.to_mail(
+        "test@example.com", event=event, commit=False, skip_queue=True
+    )
+
+    assert mail.pk is None
+    assert len(djmail.outbox) == 1
+
+
+def test_to_mail_on_unsaved_template_without_event():
+    template = MailTemplate(subject="Reset", text="Hi {name}")
+    user = UserFactory(name="Admin")
+    mail = template.to_mail(
+        user=user, event=None, context_kwargs={"user": user}, commit=False
+    )
+
+    assert "Admin" in mail.text
+    assert mail.event is None
+
+
 def test_mail_template_valid_placeholders_without_role(event):
     """A template with no role (custom template) returns the full set
     of placeholders for all kwargs (event, user, submission, slot)."""
@@ -416,6 +467,263 @@ def test_queued_mail_make_html_without_event():
     mail = QueuedMail(text="Hello world", subject="Hi", locale="en")
     html = mail.make_html()
     assert "Hello world" in html
+
+
+def test_queued_mail_make_html_prefers_text_html_when_set(event):
+    # If text_html is set (placeholder pipeline), make_html uses it
+    # directly; otherwise it falls back to rendering self.text.
+    mail = QueuedMailFactory(
+        event=event, text="plain form raw <br>", text_html="html form raw &lt;br&gt;"
+    )
+
+    html = mail.make_html()
+
+    assert "&lt;br&gt;" in html
+    assert "plain form raw" not in html
+
+
+def test_queued_mail_make_html_legacy_fallback_when_text_html_is_none(event):
+    mail = QueuedMailFactory(event=event, text="hello", text_html=None)
+    html = mail.make_html()
+    assert "hello" in html
+
+
+def test_to_mail_escapes_malicious_user_name_in_html_body(event):
+    # CVE regression: a malicious User.name must not surface as live
+    # HTML. The plain body has tags stripped (so the edited-draft
+    # fallback can't re-HTML-ify), the HTML body escapes inside a
+    # <span> fence that defeats downstream autolinking.
+    payload = (
+        "user,<br>We have detected suspicious activity. "
+        '<a href="https://phish.com">Click here to secure your account.</a a=">'
+    )
+    user = UserFactory(name=payload)
+    template = MailTemplateFactory(
+        event=event, subject="Hi", text="Hi {name}, welcome!"
+    )
+
+    mail = template.to_mail(
+        user=user, event=event, context_kwargs={"user": user}, commit=False
+    )
+
+    assert payload not in mail.text
+    assert "<br>" not in mail.text
+    assert '<a href="https://phish.com"' not in mail.text
+    assert "We have detected suspicious activity" in mail.text
+    assert payload not in mail.text_html
+    assert "<span>" in mail.text_html
+    assert "&lt;a href=" in mail.text_html
+    rendered_html = mail.make_html()
+    assert '<a href="https://phish.com"' not in rendered_html
+    assert "&lt;a href=" in rendered_html
+
+
+def test_to_mail_blocks_markdown_link_injection_via_user_name(event):
+    # The CVE phish vector is a markdown link with visible label
+    # different from href. HTML-mode entity-encoding of [] defuses the
+    # primary path; plain-mode backslash-escape defuses the fallback.
+    user = UserFactory(name="[Click here to secure your account](https://phish.com)")
+    template = MailTemplateFactory(
+        event=event, subject="Hi", text="Hi {name}, welcome!"
+    )
+
+    mail = template.to_mail(
+        user=user, event=event, context_kwargs={"user": user}, commit=False
+    )
+
+    rendered_html = mail.make_html()
+    _assert_no_phish_in_rendered(rendered_html)
+    assert "phish.com" in rendered_html  # as literal text only
+    mail.text_html = None
+    _assert_no_phish_in_rendered(mail.make_html(), allow_bare_url_autolink=True)
+
+
+def test_to_mail_blocks_bare_url_autolink_inside_user_name(event):
+    # The <span> fence puts user content in MAIL_BODY_CLEANER's
+    # skip_tags; organiser-typed URLs outside the fence still autolink.
+    user = UserFactory(name="Visit https://phish.com now")
+    template = MailTemplateFactory(
+        event=event,
+        subject="Hi",
+        text="Hi {name} — also check https://example.com today!",
+    )
+
+    mail = template.to_mail(
+        user=user, event=event, context_kwargs={"user": user}, commit=False
+    )
+
+    rendered_html = mail.make_html()
+    assert '<a href="https://phish.com"' not in rendered_html
+    assert '<a href="https://example.com"' in rendered_html
+
+
+_INJECTION_PAYLOADS = (
+    pytest.param(
+        'user,<br>Click <a href="https://phish.com">here</a a=">',
+        id="html_a_tag_malformed",
+    ),
+    pytest.param("[Click here](https://phish.com)", id="markdown_link"),
+    pytest.param("![img](https://phish.com)", id="markdown_image"),
+    pytest.param("<script>alert(1)</script>", id="script_tag"),
+    pytest.param(
+        "Reference-style [label][1]\n\n[1]: https://phish.com",
+        id="markdown_reference_link",
+    ),
+    # Blank lines break the <span> wrapper apart across the markdown
+    # paragraph split; content after the first paragraph escapes the
+    # autolinker skip_tags fence unless render_html collapses them.
+    pytest.param("innocent\n\nhttps://phish.com\n\nhi", id="blank_line_bare_url"),
+    pytest.param(
+        "hi\n\n# Click here to reset your password https://phish.com",
+        id="blank_line_heading_consume",
+    ),
+    # conditional_escape must encode <> before markdown, or <url>
+    # becomes a live autolink.
+    pytest.param("<https://phish.com>", id="angle_bracket_autolink"),
+)
+
+
+_PHISH_LINK_RE = re.compile(r'<a[^>]*href="https://phish\.com[^"]*"[^>]*>([^<]*)</a>')
+
+
+def _assert_no_phish_in_rendered(
+    rendered: str, *, allow_bare_url_autolink: bool = False
+) -> None:
+    # A bare URL autolink (visible label == href) can't mislead, so
+    # it's tolerated on the edited-draft fallback path where user
+    # content isn't inside the <span> fence.
+    assert "<script" not in rendered
+    assert '<img src="https://phish.com"' not in rendered
+    assert '<img src="https://phish.com' not in rendered
+    for match in _PHISH_LINK_RE.finditer(rendered):
+        inner = match.group(1).strip()
+        if allow_bare_url_autolink and inner == "https://phish.com":
+            continue
+        raise AssertionError(  # pragma: no cover
+            f"Phish link with non-matching inner text: {match.group(0)!r}"
+        )
+
+
+# The parametrised integration tests below share one rule: the primary
+# text_html path must have no phish <a> at all; the edited-draft
+# fallback path may contain a bare-URL autolink but nothing misleading.
+
+
+@pytest.mark.parametrize("payload", _INJECTION_PAYLOADS)
+def test_to_mail_blocks_injection_via_submission_title(event, payload):
+    submission = SubmissionFactory(event=event, title=payload)
+    template = MailTemplateFactory(
+        event=event,
+        subject="About {proposal_title}",
+        text="About {proposal_title}. Please respond.",
+    )
+
+    with scope(event=event):
+        mail = template.to_mail(
+            user="recipient@example.com",
+            event=event,
+            context_kwargs={"submission": submission},
+            commit=False,
+        )
+
+    _assert_no_phish_in_rendered(mail.make_html())
+    mail.text_html = None
+    _assert_no_phish_in_rendered(mail.make_html(), allow_bare_url_autolink=True)
+
+
+@pytest.mark.parametrize("payload", _INJECTION_PAYLOADS)
+def test_to_mail_blocks_injection_via_speaker_name(event, payload):
+    speaker_profile = SpeakerFactory(event=event, user__name=payload)
+    submission = SubmissionFactory(event=event)
+    with scope(event=event):
+        submission.speakers.add(speaker_profile)
+    template = MailTemplateFactory(
+        event=event, subject="Hi", text="Speakers: {speakers} — welcome!"
+    )
+
+    with scope(event=event):
+        mail = template.to_mail(
+            user="recipient@example.com",
+            event=event,
+            context_kwargs={"submission": submission},
+            commit=False,
+        )
+
+    _assert_no_phish_in_rendered(mail.make_html())
+    mail.text_html = None
+    _assert_no_phish_in_rendered(mail.make_html(), allow_bare_url_autolink=True)
+
+
+def test_submission_invitation_send_blocks_injection_via_submission_title(event):
+    # Speaker-triggered co-speaker invite; regression for the
+    # speaker-invite bypass identified during the fix review.
+    from pretalx.submission.models import SubmissionInvitation  # noqa: PLC0415
+
+    submission = SubmissionFactory(event=event, title="[click](https://phish.com)")
+    inviting_user = UserFactory(name="Legit Speaker")
+    djmail.outbox = []
+
+    with scope(event=event):
+        invitation = SubmissionInvitation.objects.create(
+            submission=submission, email="victim@example.com"
+        )
+        invitation.send(_from=inviting_user)
+
+    assert len(djmail.outbox) == 1
+    sent = djmail.outbox[0]
+    assert len(sent.alternatives) == 1
+    html_body = sent.alternatives[0][0]
+    _assert_no_phish_in_rendered(html_body)
+    assert invitation.token in html_body
+
+
+def test_submission_invitation_send_blocks_injection_via_inviting_speaker_name(event):
+    from pretalx.submission.models import SubmissionInvitation  # noqa: PLC0415
+
+    submission = SubmissionFactory(event=event)
+    inviting_user = UserFactory(
+        name="[Click here to secure your account](https://phish.com)"
+    )
+    djmail.outbox = []
+
+    with scope(event=event):
+        invitation = SubmissionInvitation.objects.create(
+            submission=submission, email="victim@example.com"
+        )
+        invitation.send(_from=inviting_user)
+
+    assert len(djmail.outbox) == 1
+    sent = djmail.outbox[0]
+    html_body = sent.alternatives[0][0]
+    _assert_no_phish_in_rendered(html_body)
+
+
+def test_to_mail_preserves_markdown_formatting_around_escaped_placeholder(event):
+    user = UserFactory(name="<b>Jane</b>")
+    template = MailTemplateFactory(event=event, subject="Hi", text="**Hello** {name}!")
+
+    mail = template.to_mail(
+        user=user, event=event, context_kwargs={"user": user}, commit=False
+    )
+
+    rendered_html = mail.make_html()
+    assert "<strong>Hello</strong>" in rendered_html
+    assert "<b>Jane</b>" not in rendered_html
+    assert "&lt;b&gt;Jane&lt;/b&gt;" in rendered_html
+
+
+def test_to_mail_url_placeholder_survives_html_render(event):
+    # LinkMailTextPlaceholder produces a SafeString HTML variant so ``&``
+    # in URLs is not corrupted to ``&amp;`` before the linkifier runs.
+    template = MailTemplateFactory(
+        event=event, subject="Hi", text="Visit {event_url} for details."
+    )
+
+    mail = template.to_mail(user="a@b.test", event=event, commit=False)
+
+    assert event.urls.base.full() in mail.text
+    rendered_html = mail.make_html()
+    assert event.urls.base.full() in rendered_html
 
 
 def test_queued_mail_make_html_strips_signature_delimiter(event):

@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import re
 import uuid
 
 import pytest
@@ -508,6 +509,83 @@ def test_user_change_email():
         "old_email": "old@example.com",
         "new_email": "new@example.com",
     }
+
+
+MALICIOUS_NAMES = (
+    pytest.param(
+        "user,<br>We have detected suspicious activity. "
+        '<a href="https://phish.com">Click here to secure your account.</a a=">',
+        id="html_cve",
+    ),
+    pytest.param(
+        "[Click here to secure your account](https://phish.com)", id="md_link"
+    ),
+)
+
+
+def _assert_safe_mail(sent):
+    assert len(sent.alternatives) == 1
+    html_body = sent.alternatives[0][0]
+    assert '<a href="https://phish.com"' not in html_body
+    assert "<br>" not in sent.body
+    assert '<a href="https://phish.com"' not in sent.body
+    # Plain body must have no unescaped markdown link syntax, or the
+    # edited-draft fallback would re-parse it as a live link.
+    assert not re.search(r"(?<!\\)\[.*\]\(https://phish", sent.body)
+
+
+@pytest.mark.parametrize("payload", MALICIOUS_NAMES)
+def test_reset_password_neutralises_injection(event, payload):
+    user = UserFactory(name=payload)
+    djmail.outbox = []
+
+    user.reset_password(event)
+
+    assert len(djmail.outbox) == 1
+    _assert_safe_mail(djmail.outbox[0])
+
+
+@pytest.mark.parametrize("payload", MALICIOUS_NAMES)
+def test_change_password_neutralises_injection(payload):
+    user = UserFactory(name=payload)
+    djmail.outbox = []
+
+    user.change_password("newpassword123!")
+
+    assert len(djmail.outbox) == 1
+    _assert_safe_mail(djmail.outbox[0])
+
+
+@pytest.mark.parametrize("payload", MALICIOUS_NAMES)
+def test_change_email_neutralises_injection(payload):
+    user = UserFactory(name=payload, email="old@example.com")
+    djmail.outbox = []
+
+    user.change_email("new@example.com")
+
+    assert len(djmail.outbox) == 1
+    _assert_safe_mail(djmail.outbox[0])
+
+
+def test_change_email_neutralises_injection_in_email_address():
+    # Django's EmailField accepts RFC 5321 quoted local parts, so a
+    # payload like ``"<script>"@example.com`` reaches change_email()
+    # and must route through untrusted_plain_value rather than mark_safe.
+    email_field = User._meta.get_field("email").formfield()
+    malicious = '"<script>alert(1)</script>"@example.com'
+    email_field.clean(malicious)  # sanity check
+
+    user = UserFactory(email="old@example.com")
+    djmail.outbox = []
+    user.change_email(malicious)
+
+    assert len(djmail.outbox) == 1
+    sent = djmail.outbox[0]
+    html_body = sent.alternatives[0][0]
+    assert "<script>" not in html_body
+    assert "alert(1)" in html_body  # as escaped text only
+    assert "&lt;script&gt;" in html_body
+    assert "<script>" not in sent.body
 
 
 def test_user_get_permissions_for_event_administrator(event):

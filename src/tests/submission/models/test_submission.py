@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
+import re
 import statistics
 
 import pytest
@@ -11,6 +12,7 @@ from django.utils.timezone import now, timedelta
 from django_scopes import scope
 
 from pretalx.common.exceptions import SubmissionError
+from pretalx.common.templatetags.rich_text import render_markdown_abslinks
 from pretalx.mail.models import MailTemplateRoles
 from pretalx.submission.models import Answer, Resource, Submission, SubmissionStates
 from pretalx.submission.models.question import QuestionTarget
@@ -1417,6 +1419,28 @@ def test_submission_send_initial_mails_template_already_has_content():
         submission.send_initial_mails(user)
         template.refresh_from_db()
         assert str(template.text) == original_text
+
+
+def test_submission_content_for_mail_plain_variant_escapes_markdown_link_chars():
+    submission = SubmissionFactory()
+    question = QuestionFactory(
+        event=submission.event, variant="string", target=QuestionTarget.SUBMISSION
+    )
+    AnswerFactory(
+        question=question,
+        submission=submission,
+        answer="[Click here](https://phish.com)",
+    )
+
+    with scope(event=submission.event):
+        alt = submission._content_for_mail_placeholder()
+
+    rendered = render_markdown_abslinks(alt.plain)
+    for match in re.finditer(
+        r'<a[^>]*href="https://phish\.com[^"]*"[^>]*>([^<]*)</a>', rendered
+    ):
+        assert match.group(1).strip() == "https://phish.com"
+    assert "[Click here]" in rendered or r"\[Click here\]" in rendered
 
 
 def test_submission_editable_submitted_past_deadline_with_review_phase():

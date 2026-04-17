@@ -30,6 +30,7 @@ from pretalx.common.forms.widgets import (
     HtmlDateTimeInput,
     TextInputWithAddon,
 )
+from pretalx.common.text.formatting import format_map
 from pretalx.common.text.phrases import phrases
 from pretalx.mail.models import get_prefixed_subject
 from pretalx.orga.forms.widgets import IconSelect
@@ -426,9 +427,6 @@ class AccessCodeSendForm(forms.Form):
     text = forms.CharField(widget=forms.Textarea(), label=phrases.base.text_body)
 
     def __init__(self, *args, instance, user, **kwargs):
-        from pretalx.common.text.format import (  # noqa: PLC0415 -- avoid circular import
-            format_map,
-        )
         from pretalx.mail.context import (  # noqa: PLC0415 -- avoid circular import
             get_mail_context,
         )

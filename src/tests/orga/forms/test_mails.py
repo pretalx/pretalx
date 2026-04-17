@@ -261,6 +261,65 @@ def test_mail_detail_form_clean_no_recipients():
     assert "to" in form.errors
 
 
+def test_mail_detail_form_save_clears_text_html_on_text_change():
+    # Edited plain text invalidates the stored HTML body so make_html
+    # regenerates from self.text at send time.
+    event = EventFactory()
+    mail = QueuedMailFactory(
+        event=event,
+        to="someone@example.com",
+        text="Original body",
+        text_html="<p>Original body rendered</p>",
+    )
+
+    form = MailDetailForm(
+        instance=mail,
+        data={
+            "to": "someone@example.com",
+            "reply_to": "",
+            "cc": "",
+            "bcc": "",
+            "subject": mail.subject,
+            "text": "Edited body",
+        },
+    )
+    assert form.is_valid(), form.errors
+    saved = form.save()
+    saved.refresh_from_db()
+
+    assert saved.text == "Edited body"
+    assert saved.text_html is None
+
+
+def test_mail_detail_form_save_keeps_text_html_when_only_subject_edited():
+    event = EventFactory()
+    mail = QueuedMailFactory(
+        event=event,
+        to="someone@example.com",
+        subject="Original subject",
+        text="Body",
+        text_html="<p>Body rendered</p>",
+    )
+
+    form = MailDetailForm(
+        instance=mail,
+        data={
+            "to": "someone@example.com",
+            "reply_to": "",
+            "cc": "",
+            "bcc": "",
+            "subject": "New subject",
+            "text": "Body",
+        },
+    )
+    assert form.is_valid(), form.errors
+    saved = form.save()
+    saved.refresh_from_db()
+
+    assert saved.subject == "New subject"
+    assert saved.text_html == "<p>Body rendered</p>"
+
+
 def test_mail_detail_form_clean_with_to_address():
     event = EventFactory()
     mail = QueuedMailFactory(event=event, to="someone@example.com")
