@@ -12,6 +12,7 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.template.loader import get_template
 from django.utils.functional import cached_property
+from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import override, pgettext_lazy
@@ -21,7 +22,7 @@ from i18nfield.fields import I18nCharField, I18nTextField
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
-from pretalx.mail.context import get_available_placeholders, get_mail_context
+from pretalx.mail.context import get_available_placeholders
 from pretalx.mail.placeholders import SimpleFunctionalMailTextPlaceholder
 from pretalx.mail.signals import queuedmail_post_send, queuedmail_pre_send
 from pretalx.submission.rules import orga_can_change_submissions
@@ -153,7 +154,7 @@ class MailTemplate(PretalxModel):
         user,
         event,
         locale=None,
-        context=None,
+        safe_extra_context=None,
         context_kwargs=None,
         skip_queue=False,
         commit=True,
@@ -162,7 +163,12 @@ class MailTemplate(PretalxModel):
         attachments=False,
     ):
         """Creates a :class:`~pretalx.mail.models.QueuedMail` object from a
-        MailTemplate.
+        MailTemplate. This is the canonical and safe way of constructing emails,
+        particularly emails including user-generated input (e.g. session titles,
+        user names, etc).
+
+        When the template is unsaved (``self.pk is None``), the resulting
+        ``QueuedMail`` will have ``template=None``.
 
         :param user: Either a :class:`~pretalx.person.models.user.User` or an
             email address as a string.
@@ -172,14 +178,28 @@ class MailTemplate(PretalxModel):
         :param event: The event to which this email belongs. May be ``None``.
         :param locale: The locale will be set via the event and the recipient,
             but can be overridden with this parameter.
-        :param context: Context to be used when rendering the template. Merged with
-            all context available via get_mail_context.
+        :param safe_extra_context: Per-call overrides for the template
+            context. Every value must be a
+            :class:`~django.utils.safestring.SafeString`, a
+            :class:`~pretalx.common.text.format.PlainHtmlAlternativeString`,
+            or a numeric type (``int``, ``float``, ``Decimal``); see
+            :func:`~pretalx.mail.context.get_mail_context`.
         :param context_kwargs: Passed to get_mail_context to retrieve the correct
             context when rendering the template.
         :param skip_queue: Send directly. If combined with commit=False, this will
             remove any logging and traces.
         :param commit: Set ``False`` to return an unsaved object.
         """
+        from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
+            render_mail_body,
+        )
+        from pretalx.common.text.format import (  # noqa: PLC0415 -- avoid circular import
+            SafeFormatter,
+            format_map,
+        )
+        from pretalx.mail.context import (  # noqa: PLC0415 -- avoid circular import
+            get_mail_context,
+        )
         from pretalx.person.models import User  # noqa: PLC0415 -- avoid circular import
 
         if isinstance(user, str):
@@ -200,17 +220,24 @@ class MailTemplate(PretalxModel):
         if users and not commit:
             address = ",".join(user.email for user in users)
             users = None
-        event = event or self.event
+        event = event or getattr(self, "event", None)
 
         with override(locale):
             context_kwargs = context_kwargs or {}
             context_kwargs["event"] = event
-            default_context = get_mail_context(**context_kwargs)
-            default_context.update(context or {})
-            context = default_context
+            context = get_mail_context(
+                safe_extra_context=safe_extra_context, **context_kwargs
+            )
             try:
-                subject = str(self.subject).format(**context)
-                text = str(self.text).format(**context)
+                subject = format_map(
+                    self.subject, context, mode=SafeFormatter.MODE_RICH_TO_PLAIN
+                )
+                text = format_map(
+                    self.text, context, mode=SafeFormatter.MODE_RICH_TO_PLAIN
+                )
+                text_html = render_mail_body(
+                    format_map(self.text, context, mode=SafeFormatter.MODE_RICH_TO_HTML)
+                )
             except KeyError as e:
                 raise SendMailException(
                     f"Experienced KeyError when rendering email text: {e!s}"
@@ -385,10 +412,11 @@ class QueuedMail(PretalxModel):
         max_length=200, verbose_name=pgettext_lazy("email subject", "Subject")
     )
     text = models.TextField(verbose_name=_("Text"))
-    # Stored when the mail was created via the placeholder rendering system,
-    # so the HTML body does not need to be re-synthesised from ``text`` by
-    # the markdown/bleach pipeline at send time. Cleared when a draft is
-    # edited, so ``make_html()`` falls back to the legacy path.
+    # Final, sanitised HTML body produced by the placeholder rendering
+    # system at ``MailTemplate.to_mail`` time (markdown + bleach already
+    # applied via ``render_mail_body``). ``html_body`` returns this
+    # verbatim when set. Cleared when a draft's plain text is edited, so
+    # ``make_html()`` falls back to re-rendering from ``text``.
     text_html = models.TextField(null=True, blank=True)
     sent = models.DateTimeField(null=True, blank=True, verbose_name=_("Sent at"))
     state = models.CharField(
@@ -432,14 +460,14 @@ class QueuedMail(PretalxModel):
         self.sent = now()
         self.error_data = None
         self.error_timestamp = None
-        self.html_body = None  # No need to store extra data
+        self.text_html = None  # No need to keep the rendered body after send
         self.save(
             update_fields=[
                 "state",
                 "sent",
                 "error_data",
                 "error_timestamp",
-                "html_body",
+                "text_html",
             ]
         )
 
@@ -468,18 +496,43 @@ class QueuedMail(PretalxModel):
         """Help with debugging."""
         return f"QueuedMail(to={self.to}, subject={self.subject}, state={self.state})"
 
-    def make_html(self):
+    @property
+    def html_body(self):
+        """Return the sanitised HTML body of this mail — the same markup
+        that will be sent to the recipient, without the outer mail
+        wrapper template. Used both by :meth:`make_html` (which wraps
+        this in the full HTML email layout) and by the organiser outbox
+        / mail-log previews, so the preview matches the delivered body
+        byte-for-byte."""
+        if self.text_html is not None:
+            # Already rendered at to_mail time (markdown + bleach via
+            # render_mail_body, with user-controlled substitutions
+            # escaped and wrapped in <span>/<div>). Stored in the DB as
+            # a plain string; re-mark safe for template rendering.
+            return mark_safe(self.text_html)  # noqa: S308  -- rendered via render_mail_body at creation
+        # No placeholder-rendered HTML available — the mail was
+        # constructed directly (literal string) or the organiser
+        # edited the draft body after rendering (see
+        # ``MailDetailForm.save``). Fall back to the legacy
+        # markdown/bleach pipeline, which autolinks bare URLs in
+        # organiser-typed text as before. This path is safe only
+        # for text that is fully organiser- or system-controlled;
+        # user-content placeholders are already pre-sanitised in
+        # their plain variant so they cannot re-inject HTML or
+        # markdown links when this fallback runs.
         from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
             render_markdown_abslinks,
         )
 
+        return render_markdown_abslinks(self.text)
+
+    def make_html(self):
         event = getattr(self, "event", None)
         sig = None
         if event:
             sig = event.mail_settings["signature"]
             if sig.strip().startswith("-- "):
                 sig = sig.strip()[3:].strip()
-        body_md = render_markdown_abslinks(self.text)
         html_context = {
             "body": self.html_body,
             "event": event,

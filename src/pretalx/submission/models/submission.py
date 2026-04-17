@@ -647,7 +647,7 @@ class Submission(GenerateCode, PretalxModel):
                 user=self.event.email,
                 event=self.event,
                 context_kwargs={"user": person, "submission": self},
-                context={"orga_url": self.orga_urls.base.full()},
+                safe_extra_context={"orga_url": self.orga_urls.base},
                 skip_queue=True,
                 commit=False,  # Send immediately, don't save a record
                 locale=self.event.locale,
@@ -1041,10 +1041,9 @@ class Submission(GenerateCode, PretalxModel):
             template_role = MailTemplateRoles.EXISTING_SPEAKER_INVITE
         except User.DoesNotExist:
             speaker_user = create_user(email=email, name=name, event=self.event)
+            speaker = speaker_user.get_speaker(self.event)
             template_role = MailTemplateRoles.NEW_SPEAKER_INVITE
-            safe_extra_context["invitation_link"] = mark_safe(  # noqa: S308  -- internally-built URL
-                speaker.urls.invitation.full()
-            )
+            safe_extra_context["invitation_link"] = speaker.urls.invitation
 
         speaker = self.add_speaker(user=speaker_user, name=name, log_user=user)
         template = self.event.get_mail_template(template_role)
@@ -1182,11 +1181,7 @@ class SubmissionInvitation(PretalxModel):
             user=self.email,
             event=self.submission.event,
             locale=self.submission.get_email_locale(),
-            safe_extra_context={
-                "url": mark_safe(  # noqa: S308  -- internally-built invitation URL
-                    self.urls.base.full()
-                )
-            },
+            safe_extra_context={"url": self.urls.base},
             context_kwargs={"submission": self.submission, "inviting_user": _from},
             commit=False,
             skip_queue=True,

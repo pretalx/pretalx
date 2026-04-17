@@ -23,6 +23,7 @@ from django.utils.translation import override
 from django_scopes import scopes_disabled
 from rest_framework.authtoken.models import Token
 from rules.contrib.models import RulesModelBase, RulesModelMixin
+from urlman import UrlString
 
 from pretalx.common.exceptions import UserDeletionError
 from pretalx.common.models import TIMEZONE_CHOICES
@@ -471,22 +472,22 @@ class User(
         else:
             path = "orga:auth.recover"
             kwargs = {"token": self.pw_reset_token}
-        return build_absolute_uri(path, kwargs=kwargs)
+        # Returning an :class:`urlman.UrlString` (a ``str`` subclass)
+        # lets :func:`pretalx.mail.context._coerce_urlman_values` drop
+        # the result into ``safe_extra_context`` without a separate
+        # ``mark_safe`` wrap at every call site.
+        return UrlString(build_absolute_uri(path, kwargs=kwargs))
 
     @transaction.atomic
     def reset_password(self, event, user=None, mail_text=None, orga=False):
         from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            QueuedMail,
+            MailTemplate,
         )
 
         self.pw_reset_token = get_random_string(32)
         self.pw_reset_time = now()
         self.save()
 
-        context = {
-            "name": self.name or "",
-            "url": self.get_password_reset_url(event=event, orga=orga),
-        }
         if not mail_text:
             mail_text = _("""Hi {name},
 
@@ -501,12 +502,17 @@ All the best,
 the pretalx robot""")
 
         with override(self.locale):
-            QueuedMail(
-                subject=_("Password recovery"),
-                text=str(mail_text).format(**context),
+            MailTemplate(subject=_("Password recovery"), text=mail_text).to_mail(
+                user=self.email,
+                event=event,
                 locale=self.locale,
-                to=self.email,
-            ).send()
+                safe_extra_context={
+                    "url": self.get_password_reset_url(event=event, orga=orga)
+                },
+                context_kwargs={"user": self},
+                commit=False,
+                skip_queue=True,
+            )
         self.log_action(
             action="pretalx.user.password.reset", person=user, orga=bool(user)
         )
@@ -519,7 +525,7 @@ the pretalx robot""")
     @transaction.atomic
     def change_password(self, new_password):
         from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            QueuedMail,
+            MailTemplate,
         )
 
         self.set_password(new_password)
@@ -527,7 +533,6 @@ the pretalx robot""")
         self.pw_reset_time = None
         self.save()
 
-        context = {"name": self.name or ""}
         mail_text = _("""Hi {name},
 
 Your pretalx account password was just changed.
@@ -538,12 +543,16 @@ All the best,
 the pretalx team""")
 
         with override(self.locale):
-            QueuedMail(
-                subject=_("[pretalx] Password changed"),
-                text=str(mail_text).format(**context),
+            MailTemplate(
+                subject=_("[pretalx] Password changed"), text=mail_text
+            ).to_mail(
+                user=self.email,
+                event=None,
                 locale=self.locale,
-                to=self.email,
-            ).send()
+                context_kwargs={"user": self},
+                commit=False,
+                skip_queue=True,
+            )
 
         self.log_action(action="pretalx.user.password.changed", person=self)
 
@@ -552,18 +561,16 @@ the pretalx team""")
     @transaction.atomic
     def change_email(self, new_email):
         from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            QueuedMail,
+            MailTemplate,
+        )
+        from pretalx.mail.placeholders import (  # noqa: PLC0415 -- avoid circular import
+            untrusted_plain_value,
         )
 
         old_email = self.email
         self.email = new_email.lower().strip()
         self.save(update_fields=["email"])
 
-        context = {
-            "name": self.name or "",
-            "old_email": old_email,
-            "new_email": self.email,
-        }
         mail_text = _("""Hi {name},
 
 This is a confirmation that the email address for your pretalx account has been changed from {old_email} to {new_email}.
@@ -574,12 +581,26 @@ All the best,
 the pretalx team""")
 
         with override(self.locale):
-            QueuedMail(
-                subject=_("[pretalx] Email address changed"),
-                text=str(mail_text).format(**context),
-                to=old_email,
+            MailTemplate(
+                subject=_("[pretalx] Email address changed"), text=mail_text
+            ).to_mail(
+                user=old_email,
+                event=None,
                 locale=self.locale,
-            ).send()
+                safe_extra_context={
+                    # Django's ``EmailField`` accepts RFC 5321 quoted
+                    # local parts (``"<script>"@example.com``), so we
+                    # treat the two address values as untrusted and
+                    # route them through the same escape pipeline as
+                    # an ``UntrustedPlain`` placeholder rather than
+                    # marking them safe.
+                    "old_email": untrusted_plain_value(old_email),
+                    "new_email": untrusted_plain_value(self.email),
+                },
+                context_kwargs={"user": self},
+                commit=False,
+                skip_queue=True,
+            )
 
         self.log_action(
             action="pretalx.user.email.update",

@@ -426,13 +426,20 @@ class AccessCodeSendForm(forms.Form):
     text = forms.CharField(widget=forms.Textarea(), label=phrases.base.text_body)
 
     def __init__(self, *args, instance, user, **kwargs):
+        from pretalx.common.text.format import (  # noqa: PLC0415 -- avoid circular import
+            format_map,
+        )
+        from pretalx.mail.context import (  # noqa: PLC0415 -- avoid circular import
+            get_mail_context,
+        )
+
         self.access_code = instance
         self.user = user
         event_name = str(instance.event.name)
         subject = _("Access code for the {event_name} CfP").format(
             event_name=event_name
         )
-        text = (
+        text_template = (
             _("""Hi!
 
 This is an access code for the {event_name} CfP.""").format(event_name=event_name)
@@ -441,7 +448,7 @@ This is an access code for the {event_name} CfP.""").format(event_name=event_nam
         tracks = list(instance.tracks.all())
         if tracks:
             track_names = ", ".join(str(t.name) for t in tracks)
-            text += (
+            text_template += (
                 _(
                     "It will allow you to submit a proposal to the following track(s): {tracks}."
                 ).format(tracks=track_names)
@@ -450,16 +457,18 @@ This is an access code for the {event_name} CfP.""").format(event_name=event_nam
         submission_types = list(instance.submission_types.all())
         if submission_types:
             type_names = ", ".join(str(t.name) for t in submission_types)
-            text += (
+            text_template += (
                 _("It is valid for the following session type(s): {types}.").format(
                     types=type_names
                 )
                 + " "
             )
         if not tracks and not submission_types:
-            text += str(_("It will allow you to submit a proposal to our CfP.")) + " "
+            text_template += (
+                str(_("It will allow you to submit a proposal to our CfP.")) + " "
+            )
         if instance.valid_until:
-            text += (
+            text_template += (
                 str(
                     _("This access code is valid until {date}.").format(
                         date=instance.valid_until.strftime("%Y-%m-%d %H:%M")
@@ -467,18 +476,21 @@ This is an access code for the {event_name} CfP.""").format(event_name=event_nam
                 )
                 + " "
             )
-        text += _("""
+        text_template += _("""
 Please follow this URL to use the code:
 
   {url}
 
 I’m looking forward to your proposal!
-{inviting_name}""").format(
-            url=instance.urls.cfp_url.full(), inviting_name=user.get_display_name()
+{inviting_speaker}""")
+        context = get_mail_context(
+            event=instance.event,
+            inviting_user=user,
+            safe_extra_context={"url": instance.urls.cfp_url},
         )
         initial = kwargs.get("initial", {})
         initial["subject"] = get_prefixed_subject(instance.event, subject)
-        initial["text"] = text
+        initial["text"] = format_map(text_template, context)
         kwargs["initial"] = initial
         super().__init__(*args, **kwargs)
 

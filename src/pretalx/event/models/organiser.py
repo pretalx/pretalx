@@ -8,6 +8,7 @@ from django.core.validators import RegexValidator
 from django.db import models, transaction
 from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
+from django.utils.safestring import mark_safe
 from django.utils.translation import get_language
 from django.utils.translation import gettext_lazy as _
 from django_scopes import scope, scopes_disabled
@@ -313,30 +314,32 @@ class TeamInvite(PretalxModel):
 
     def send(self):
         from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            QueuedMail,
+            MailTemplate,
         )
 
-        invitation_link = self.invitation_url
         invitation_text = _("""Hi!
 You have been invited to the {name} event organiser team - Please click here to accept:
 
 {invitation_link}
 
 See you there,
-The {organiser} team""").format(
-            name=str(self.team.name),
-            invitation_link=invitation_link,
-            organiser=str(self.team.organiser.name),
-        )
+The {organiser} team""")
         invitation_subject = _("You have been invited to an organiser team")
 
-        mail = QueuedMail.objects.create(
-            to=self.email,
-            subject=str(invitation_subject),
-            text=str(invitation_text),
+        safe_extra_context = {
+            # Team and organiser names are admin-controlled strings
+            # that have already passed through Django's form layer.
+            "name": mark_safe(str(self.team.name)),  # noqa: S308  -- organiser-controlled
+            "invitation_link": mark_safe(self.invitation_url),  # noqa: S308  -- internally-built URL
+            "organiser": mark_safe(str(self.team.organiser.name)),  # noqa: S308  -- organiser-controlled
+        }
+        return MailTemplate(subject=invitation_subject, text=invitation_text).to_mail(
+            user=self.email,
+            event=None,
             locale=get_language(),
+            safe_extra_context=safe_extra_context,
+            commit=True,
+            skip_queue=True,
         )
-        mail.send()
-        return mail
 
     send.alters_data = True

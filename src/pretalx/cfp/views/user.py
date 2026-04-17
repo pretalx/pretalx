@@ -197,27 +197,25 @@ class SubmissionsWithdrawView(LoggedInEventPageMixin, SubmissionViewMixin, Detai
         if self.request.user.has_perm("submission.withdraw_submission", obj):
             if obj.state == SubmissionStates.ACCEPTED:
                 with override(obj.event.locale):
-                    obj.event.send_orga_mail(
-                        str(
-                            _(
-                                textwrap.dedent("""
+                    withdraw_text = str(
+                        _(
+                            textwrap.dedent("""
                         Hi,
 
                         this is your content system at {event_dashboard}.
-                        Your accepted talk “{title}” by {speakers} was just withdrawn by {user}.
+                        Your accepted talk “{proposal_title}” by {speakers} was just withdrawn by {name}.
                         You can find details at {url}.
 
                         Best regards,
                         pretalx
                         """)
-                            )
-                        ).format(
-                            title=obj.title,
-                            speakers=obj.display_speaker_names,
-                            user=request.user.get_display_name(),
-                            event_dashboard=request.event.orga_urls.base.full(),
-                            url=obj.orga_urls.edit.full(),
                         )
+                    )
+                    obj.event.send_orga_mail(
+                        withdraw_text,
+                        safe_extra_context={"url": obj.orga_urls.edit},
+                        submission=obj,
+                        user=request.user,
                     )
             try:
                 obj.withdraw(person=request.user)

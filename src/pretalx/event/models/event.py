@@ -1121,22 +1121,28 @@ class Event(PretalxModel):
 
     release_schedule.alters_data = True
 
-    def send_orga_mail(self, text, stats=False):
+    def send_orga_mail(
+        self, text, stats=False, safe_extra_context=None, **context_kwargs
+    ):
         from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            QueuedMail,
+            MailTemplate,
             QueuedMailStates,
         )
 
-        context = {
-            "event_dashboard": self.orga_urls.base.full(),
-            "event_review": self.orga_urls.reviews.full(),
-            "event_schedule": self.orga_urls.schedule.full(),
-            "event_submissions": self.orga_urls.submissions.full(),
-            "event_team": self.orga_urls.team_settings.full(),
+        internal_safe_extra = {
+            # Internally-built orga URLs. Passing the urlman attributes
+            # directly lets get_mail_context() resolve them to absolute,
+            # mark_safe-wrapped strings so the HTML formatter does not
+            # mangle query-string ``&``.
+            "event_dashboard": self.orga_urls.base,
+            "event_review": self.orga_urls.reviews,
+            "event_schedule": self.orga_urls.schedule,
+            "event_submissions": self.orga_urls.submissions,
+            "event_team": self.orga_urls.team_settings,
             "submission_count": self.submissions.all().count(),
         }
         if stats:
-            context.update(
+            internal_safe_extra.update(
                 {
                     "talk_count": self.current_schedule.talks.filter(
                         is_visible=True
@@ -1148,13 +1154,18 @@ class Event(PretalxModel):
                     ).count(),
                 }
             )
+        if safe_extra_context:
+            internal_safe_extra.update(safe_extra_context)
         with override(self.locale):
-            QueuedMail(
-                subject=_("News from your content system"),
-                text=str(text).format(**context),
-                to=self.email,
+            MailTemplate(subject=_("News from your content system"), text=text).to_mail(
+                user=self.email,
+                event=self,
                 locale=self.locale,
-            ).send()
+                safe_extra_context=internal_safe_extra,
+                context_kwargs=context_kwargs or None,
+                commit=False,
+                skip_queue=True,
+            )
 
     @property
     def has_unreleased_schedule_changes(self) -> bool:
