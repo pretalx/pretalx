@@ -17,6 +17,7 @@ from django.forms.models import inlineformset_factory
 from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.functional import cached_property
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView, UpdateView, View
 from django_context_decorator import context
@@ -428,21 +429,23 @@ class CfPQuestionRemind(EventPermissionRequired, FormView):
         submissions = form.get_submissions()
         people = self.request.event.submitters.filter(submissions__in=submissions)
         questions = form.cleaned_data["questions"] or form.get_question_queryset()
-        data = {"url": self.request.event.urls.user_submissions.full()}
+        data = {"url": self.request.event.urls.user_submissions}
         for person in people:
             missing = self.get_missing_answers(
                 questions=questions, person=person, submissions=submissions
             )
             if missing:
-                data["questions"] = "\n".join(
-                    f"- {question.question}" for question in missing
+                # Question text is organiser-authored, so the assembled
+                # markdown bullet list is trusted content.
+                data["questions"] = mark_safe(  # noqa: S308
+                    "\n".join(f"- {question.question}" for question in missing)
                 )
                 self.request.event.get_mail_template(
                     MailTemplateRoles.QUESTION_REMINDER
                 ).to_mail(
                     person.user,
                     event=self.request.event,
-                    context=data,
+                    safe_extra_context=data,
                     context_kwargs={"user": person.user},
                 )
         return super().form_valid(form)

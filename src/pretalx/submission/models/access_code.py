@@ -6,7 +6,6 @@ import math
 from django.core import validators
 from django.db import models
 from django.utils.timezone import now
-from django.utils.translation import get_language
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.models.fields import DateTimeField
@@ -116,18 +115,21 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
         return self.maximum_uses - self.redeemed
 
     def send_invite(self, to, subject, text):
+        """Send the access-code invitation mail to one or more
+        recipients. ``subject`` and ``text`` are organiser-authored
+        and represent the final text; there will be no placeholder
+        rendering here."""
         from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
             QueuedMail,
         )
 
-        to = to.split(",") if isinstance(to, str) else to
-        for invite in to:
+        addresses = to.split(",") if isinstance(to, str) else to
+        for invite in addresses:
             QueuedMail(
                 event=self.event,
-                to=invite,
+                to=invite.strip() if isinstance(invite, str) else invite,
                 subject=subject,
                 text=text,
-                locale=get_language(),
             ).send()
 
     send_invite.alters_data = True
