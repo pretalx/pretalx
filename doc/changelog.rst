@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :release:`2026.1.0 <2026-04-17>` See the `release blog post <https://pretalx.com/p/news/releasing-pretalx-2026-1-0/>`_.
 - :bug:`orga:submission` Submitting the new proposal form with invalid input to required custom fields no longer crashes with an internal server error, and correctly re-renders the form instead.
 - :bug:`cfp` CfP submissions with resource uploads no longer return a 500 error when the uploaded temp file vanishes between request parsing and storage; the user now sees a "please try again" message and can re-upload.
 - :bug:`orga:email` Fix an email injection vulnerability that allowed unauthenticated attackers to send phishing emails by embedding HTML or markdown in user-controlled placeholder values (e.g. speaker name, proposal title). Mail bodies are now rendered via a trust-aware two-pass formatter that escapes user content and fences it off from the autolinker. The co-speaker invitation form now always uses the built-in invite template.
