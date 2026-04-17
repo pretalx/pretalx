@@ -19,6 +19,29 @@ const getCookie = (name) => {
     return cookieValue
 }
 
+const makeSearchEl = (tag, className, text) => {
+    const el = document.createElement(tag)
+    if (className) el.className = className
+    if (text !== undefined && text !== null) el.textContent = text
+    return el
+}
+const makeSearchTitle = (name, iconTag, iconClass) => {
+    const title = makeSearchEl("span", "search-title")
+    if (iconTag) {
+        title.appendChild(makeSearchEl(iconTag, `fa fa-fw ${iconClass}`))
+        title.append(" ", name ?? "")
+    } else {
+        title.appendChild(makeSearchEl("span", null, name))
+    }
+    return title
+}
+const makeSearchDetail = (iconClass, text) => {
+    const detail = makeSearchEl("span", "search-detail")
+    detail.appendChild(makeSearchEl("span", iconClass))
+    detail.append(" ", text ?? "")
+    return detail
+}
+
 const initNavSearch = () => {
     const wrapper = document.querySelector("#nav-search-wrapper")
     const summary = wrapper.querySelector("summary")
@@ -62,24 +85,33 @@ const initNavSearch = () => {
             response.json().then((data) => {
                 searchResults.querySelectorAll("li:not(.search-loading)").forEach((el) => el.remove())
                 data.results.forEach((res) => {
-                    let content = ""
+                    const a = document.createElement("a")
+                    // Only allow safe URLs — res.url comes from the server but guard against
+                    // javascript: schemes defensively.
+                    try {
+                        const parsed = new URL(res.url, window.location.origin)
+                        if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+                            a.href = parsed.href
+                        }
+                    } catch (_) { /* leave href unset */ }
+
                     if (res.type === "organiser" || res.type === "user") {
                         const icon = res.type === "organiser" ? "fa-users" : "fa-user"
-                        content = `<span class="search-title"><i class="fa fa-fw ${icon}"></i> ${res.name}</span>`
+                        a.appendChild(makeSearchTitle(res.name, "i", icon))
                     } else if (res.type === "user.admin") {
-                        content += `<span class="search-title"><span>${res.name}</span></span>
-                            <span class="search-detail"><span class="fa fa-envelope-o fa-fw"></span> ${res.email}</span>`
+                        a.appendChild(makeSearchTitle(res.name))
+                        a.appendChild(makeSearchDetail("fa fa-envelope-o fa-fw", res.email))
                     } else if (res.type === "submission" || res.type === "speaker") {
-                        content = `<span class="search-title"><span>${res.name}</span></span>
-                            <span class="search-detail"><span class="fa fa-calendar fa-fw"></span> ${res.event}</span>`
+                        a.appendChild(makeSearchTitle(res.name))
+                        a.appendChild(makeSearchDetail("fa fa-calendar fa-fw", res.event))
                     } else if (res.type === "event") {
-                        content = `<span class="search-title"><span>${res.name}</span></span>
-                            <span class="search-detail"><span class="fa fa-users fa-fw"></span> ${res.organiser}</span>
-                            <span class="search-detail"><span class="fa fa-calendar fa-fw"></span> ${res.date_range}</span>`
+                        a.appendChild(makeSearchTitle(res.name))
+                        a.appendChild(makeSearchDetail("fa fa-users fa-fw", res.organiser))
+                        a.appendChild(makeSearchDetail("fa fa-calendar fa-fw", res.date_range))
                     }
 
                     const li = document.createElement("li")
-                    li.innerHTML = `<a href="${res.url}">${content}</a>`
+                    li.appendChild(a)
                     searchResults.append(li)
                 }) /* data.results.forEach */
             }) /* response.json().then */
