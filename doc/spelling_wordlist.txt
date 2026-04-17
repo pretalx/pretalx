@@ -6,6 +6,7 @@ adaptors
 among
 Ansible
 auth
+autolinker
 availabilities
 backend
 backends
@@ -58,6 +59,7 @@ favicon
 favourited
 filesystem
 findable
+formatter
 frab
 frontend
 gettext
