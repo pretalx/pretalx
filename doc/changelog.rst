@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`schedule,2407` When leaving feedback on a session with multiple speakers, attendees can now see the speakers' names in the speaker picker, instead of an internal placeholder string.
 - :release:`2026.1.0 <2026-04-17>` See the `release blog post <https://pretalx.com/p/news/releasing-pretalx-2026-1-0/>`_.
 - :bug:`orga:submission` Submitting the new proposal form with invalid input to required custom fields no longer crashes with an internal server error, and correctly re-renders the form instead.
 - :bug:`cfp` CfP submissions with resource uploads no longer return a 500 error when the uploaded temp file vanishes between request parsing and storage; the user now sees a "please try again" message and can re-upload.

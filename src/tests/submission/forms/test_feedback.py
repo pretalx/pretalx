@@ -43,6 +43,19 @@ def test_feedback_form_init_shows_speaker_field_for_multiple_speakers():
     assert set(form.fields["speaker"].queryset) == {speaker1, speaker2}
 
 
+def test_feedback_form_speaker_choices_use_display_name():
+    submission = SubmissionFactory()
+    speaker = SpeakerFactory(event=submission.event)
+    submission.speakers.add(speaker)
+
+    form = FeedbackForm(talk=submission)
+
+    assert (
+        form.fields["speaker"].label_from_instance(speaker)
+        == speaker.get_display_name()
+    )
+
+
 def test_feedback_form_save_auto_assigns_speaker_when_single():
     """When there is only one speaker and none is selected, save() assigns them."""
     submission = SubmissionFactory()

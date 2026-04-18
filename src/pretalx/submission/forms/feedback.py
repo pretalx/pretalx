@@ -23,6 +23,7 @@ class FeedbackForm(forms.ModelForm):
         speakers = talk.speakers.all()
         self.fields["speaker"].queryset = speakers
         self.fields["speaker"].empty_label = _("All speakers")
+        self.fields["speaker"].label_from_instance = lambda obj: obj.get_display_name()
         if len(speakers) == 1:
             self.fields["speaker"].widget = forms.HiddenInput()
 
