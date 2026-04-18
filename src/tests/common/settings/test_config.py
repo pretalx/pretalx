@@ -77,7 +77,7 @@ def test_read_config_files_without_env_var(monkeypatch, tmp_path):
 
 
 def test_read_config_files_with_env_var(monkeypatch, tmp_path):
-    """With PRETALX_CONFIG_FILE set, that file is read."""
+    """With PRETALX_CONFIG_FILE set, that file is read and tracked."""
     cfg_file = tmp_path / "test.cfg"
     cfg_file.write_text("[site]\nurl = https://custom.example.com\n")
     monkeypatch.setenv("PRETALX_CONFIG_FILE", str(cfg_file))
@@ -86,6 +86,7 @@ def test_read_config_files_with_env_var(monkeypatch, tmp_path):
     config, config_files = read_config_files(config)
 
     assert config.get("site", "url") == "https://custom.example.com"
+    assert config_files == [str(cfg_file)]
 
 
 def test_build_config_returns_config_and_files():

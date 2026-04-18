@@ -78,15 +78,15 @@ CONFIG = {
 
 
 def read_config_files(config):
-    if "PRETALX_CONFIG_FILE" in os.environ:
-        with Path(os.environ.get("PRETALX_CONFIG_FILE")).open(encoding="utf-8") as fp:
-            config_files = config.read_file(fp)
+    if config_file := os.environ.get("PRETALX_CONFIG_FILE"):
+        config_files = [config_file]
+        with Path(config_file).open(encoding="utf-8") as fp:
+            config.read_file(fp)
     else:
         config_files = config.read(
             ["/etc/pretalx/pretalx.cfg", Path.home() / ".pretalx.cfg", "pretalx.cfg"],
             encoding="utf-8",
         )
-    # .read() returns None if there are no config files
     return (config, config_files or [])
 
 
