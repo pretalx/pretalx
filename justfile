@@ -310,6 +310,29 @@ _release-prepare version:
     entry = f'- :release:`{version} <{today}>` {desc}\n'
     changelog.write_text(body[:idx] + entry + body[idx:])
 
+# Bump __version__ to the next minor .dev0 after a release
+[private]
+[script('python3')]
+_release-postbump version:
+    import re
+    from pathlib import Path
+
+    base = '{{ version }}'.split('-')[0]
+    parts = base.split('.')
+    new_version = f'{parts[0]}.{int(parts[1]) + 1}.0.dev0'
+
+    init = Path('src/pretalx/__init__.py')
+    text = init.read_text()
+    new_text, n = re.subn(
+        r'__version__ = "[^"]+"',
+        f'__version__ = "{new_version}"',
+        text,
+        count=1,
+    )
+    if n != 1:
+        raise SystemExit("Could not find __version__ in src/pretalx/__init__.py")
+    init.write_text(new_text)
+
 # Release a new pretalx version (tag form: v2026.1.0)
 [group('release')]
 [confirm("This will publish to PyPI and push tags. Continue?")]
@@ -322,6 +345,8 @@ release version:
     rm -rf dist/ build/ pretalx.egg-info
     {{ python }} -m build -n
     uvx twine upload dist/pretalx-*
+    just _release-postbump {{ trim_start_match(version, "v") }}
+    git commit -am "Bump development version"
     git push
     git push --tags
     gh release create {{ version }} --verify-tag --title "Release {{ version }}" --notes "[Blog post](https://pretalx.com/p/news/releasing-pretalx-$(echo "{{ trim_start_match(version, "v") }}" | cut -d. -f1-2 | tr . -)-0/)" dist/pretalx-*

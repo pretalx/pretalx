@@ -38,10 +38,9 @@ Take-off and landing
 2. Install/update the package somewhere.
 3. Publish the blog post.
 4. Upgrade `the docker repository <https://github.com/pretalx/pretalx-docker>`_ by running ``just release v202X.Y.Z``
-5. Increment version number to ``version+1.dev0`` in ``src/pretalx/__init__.py``.
-6. ``rm -rf pretalx-release``
-7. Update version numbers in update checker (``versions.py``) and deploy.
-8. Update any plugins waiting for the new release.
-9. Check if the docker image build was successful.
-10. Post about the release on ``chaos.social``, Twitter and LinkedIn.
-11. Notify interested parties (e.g. big self-hosted instances, prominent plugin developers) about the release.
+5. ``rm -rf pretalx-release``
+6. Update version numbers in update checker (``versions.py``) and deploy.
+7. Update any plugins waiting for the new release.
+8. Check if the docker image build was successful.
+9. Post about the release on ``chaos.social``, Twitter and LinkedIn.
+10. Notify interested parties (e.g. big self-hosted instances, prominent plugin developers) about the release.
