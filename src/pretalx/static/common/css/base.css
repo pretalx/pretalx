@@ -256,7 +256,7 @@ legend {
 }
 
 button,
-[role="button"],
+[role="button"]:not(.copyable-text),
 a.btn,
 ::file-selector-button,
 summary.btn {
@@ -1216,7 +1216,7 @@ h3,
 h4,
 legend,
 button,
-[role="button"],
+[role="button"]:not(.copyable-text),
 .button a.btn,
 ::file-selector-button,
 summary.btn {

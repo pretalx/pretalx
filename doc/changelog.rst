@@ -10,6 +10,7 @@ The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
 - :bug:`schedule,2407` When leaving feedback on a session with multiple speakers, attendees can now see the speakers' names in the speaker picker, instead of an internal placeholder string.
+- :bug:`admin` Values on the administrator information page that can be copied are now legible again rather than being shown white-on-white.
 - :bug:`admin` The administrator information page now correctly shows the config file path when pretalx is configured via the ``PRETALX_CONFIG_FILE`` environment variable, instead of claiming that no settings files were found.
 - :release:`2026.1.0 <2026-04-17>` See the `release blog post <https://pretalx.com/p/news/releasing-pretalx-2026-1-0/>`_.
 - :bug:`orga:submission` Submitting the new proposal form with invalid input to required custom fields no longer crashes with an internal server error, and correctly re-renders the form instead.
