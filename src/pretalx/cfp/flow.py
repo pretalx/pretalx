@@ -17,7 +17,7 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import UploadedFile
-from django.db.models import Q
+from django.db.models import F, Q
 from django.forms import FileField, ValidationError
 from django.forms.models import modelformset_factory
 from django.http import HttpResponseNotAllowed, QueryDict
@@ -643,8 +643,8 @@ class InfoStep(DedraftMixin, FormFlowStep):
                     LOGGER.warning(str(exception))
                     messages.warning(self.request, phrases.cfp.submission_email_fail)
             if access_code:
-                access_code.redeemed += 1
-                access_code.save()
+                access_code.redeemed = F('redeemed') + 1
+                access_code.save(update_fields=['redeemed'])
 
         request.submission = submission
 
