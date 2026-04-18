@@ -245,7 +245,7 @@
 | src/pretalx/submission/cards.py                                            |      132 |        0 |       32 |        0 |     100% |           |
 | src/pretalx/submission/exporters.py                                        |       43 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/submission/forms/comment.py                                    |       18 |        0 |        0 |        0 |     100% |           |
-| src/pretalx/submission/forms/feedback.py                                   |       25 |        0 |        4 |        0 |     100% |           |
+| src/pretalx/submission/forms/feedback.py                                   |       26 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/submission/forms/question.py                                   |       67 |        0 |       26 |        0 |     100% |           |
 | src/pretalx/submission/forms/resource.py                                   |       25 |        0 |        6 |        0 |     100% |           |
 | src/pretalx/submission/forms/submission.py                                 |      257 |        0 |      114 |        0 |     100% |           |
@@ -531,7 +531,7 @@
 | src/tests/schedule/test\_utils.py                                          |       10 |        0 |        2 |        0 |     100% |           |
 | src/tests/services/test\_models.py                                         |        8 |        0 |        0 |        0 |     100% |           |
 | src/tests/submission/forms/test\_comment.py                                |       31 |        0 |        2 |        0 |     100% |           |
-| src/tests/submission/forms/test\_feedback.py                               |       62 |        0 |        0 |        0 |     100% |           |
+| src/tests/submission/forms/test\_feedback.py                               |       68 |        0 |        0 |        0 |     100% |           |
 | src/tests/submission/forms/test\_question.py                               |      230 |        0 |        2 |        0 |     100% |           |
 | src/tests/submission/forms/test\_resource.py                               |       28 |        0 |        0 |        0 |     100% |           |
 | src/tests/submission/forms/test\_submission.py                             |      542 |        0 |        8 |        0 |     100% |           |
@@ -552,7 +552,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **70314** |    **0** | **5950** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **70321** |    **0** | **5950** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
