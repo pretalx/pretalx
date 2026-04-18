@@ -613,7 +613,12 @@ class InvitationView(FormView):
 
     @transaction.atomic()
     def accept_invite(self, user):
-        invite = self.invitation
+        from pretalx.event.models import TeamInvite
+        try:
+            invite = TeamInvite.objects.select_for_update().get(token__iexact=self.kwargs.get("code"))
+        except TeamInvite.DoesNotExist:
+            messages.info(self.request, _("This invitation has already been used."))
+            return
         invite.team.members.add(user)
         invite.team.save()
         invite.team.organiser.log_action(
