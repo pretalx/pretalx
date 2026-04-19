@@ -261,77 +261,44 @@ release-checks:
     unzip -l dist/pretalx*whl | grep node_modules && exit 1 || exit 0
     echo "{{ GREEN }}All release checks successful{{ NORMAL }}"
 
-# Bump __version__ and insert a :release: line in the changelog
+# Set __version__ in src/pretalx/__init__.py
 [private]
 [script('python3')]
-_release-prepare version:
+_set-version new_version:
     import re
+    from pathlib import Path
+    init = Path('src/pretalx/__init__.py')
+    text, n = re.subn(r'__version__ = "[^"]+"', f'__version__ = "{{ new_version }}"', init.read_text(), 1)
+    if n != 1:
+        raise SystemExit(f"Could not find __version__ in {init}")
+    init.write_text(text)
+
+# Insert a :release: entry at the top of the changelog
+[private]
+[script('python3')]
+_changelog-entry version:
     from datetime import date
     from pathlib import Path
 
     version = '{{ version }}'
-    today = date.today().isoformat()
-
-    init = Path('src/pretalx/__init__.py')
-    text = init.read_text()
-    new_text, n = re.subn(
-        r'__version__ = "[^"]+"',
-        f'__version__ = "{version}"',
-        text,
-        count=1,
-    )
-    if n != 1:
-        raise SystemExit("Could not find __version__ in src/pretalx/__init__.py")
-    init.write_text(new_text)
+    parts = version.split('.')
+    slug = f'{parts[0]}-{parts[1]}-0'
+    prefix = f'Bugfix release for pretalx {parts[0]}.{parts[1]}. ' if len(parts) >= 3 and parts[2].isdigit() and parts[2] != '0' else ''
+    entry = f'- :release:`{version} <{date.today().isoformat()}>` {prefix}See the `release blog post <https://pretalx.com/p/news/releasing-pretalx-{slug}/>`_.\n'
 
     changelog = Path('doc/changelog.rst')
+    marker = 'For already released changes, head over here:\n\n'
     body = changelog.read_text()
-    marker = 'For already released changes, head over here:\n'
     if marker not in body:
         raise SystemExit(f"Could not find marker in {changelog}")
-    idx = body.index(marker) + len(marker)
-    while idx < len(body) and body[idx] == '\n':
-        idx += 1
+    changelog.write_text(body.replace(marker, marker + entry, 1))
 
-    parts = version.split('.')
-    base_slug = f'{parts[0]}-{parts[1]}-0'
-    is_bugfix = len(parts) >= 3 and parts[2].isdigit() and parts[2] != '0'
-    if is_bugfix:
-        desc = (
-            f'Bugfix release for pretalx {parts[0]}.{parts[1]}. '
-            f'See the `release blog post '
-            f'<https://pretalx.com/p/news/releasing-pretalx-{base_slug}/>`_.'
-        )
-    else:
-        desc = (
-            f'See the `release blog post '
-            f'<https://pretalx.com/p/news/releasing-pretalx-{base_slug}/>`_.'
-        )
-    entry = f'- :release:`{version} <{today}>` {desc}\n'
-    changelog.write_text(body[:idx] + entry + body[idx:])
-
-# Bump __version__ to the next minor .dev0 after a release
+# Compute the next-minor .dev0 version following the given release version
 [private]
 [script('python3')]
-_release-postbump version:
-    import re
-    from pathlib import Path
-
-    base = '{{ version }}'.split('-')[0]
-    parts = base.split('.')
-    new_version = f'{parts[0]}.{int(parts[1]) + 1}.0.dev0'
-
-    init = Path('src/pretalx/__init__.py')
-    text = init.read_text()
-    new_text, n = re.subn(
-        r'__version__ = "[^"]+"',
-        f'__version__ = "{new_version}"',
-        text,
-        count=1,
-    )
-    if n != 1:
-        raise SystemExit("Could not find __version__ in src/pretalx/__init__.py")
-    init.write_text(new_text)
+_next-dev-version version:
+    parts = '{{ version }}'.split('-')[0].split('.')
+    print(f'{parts[0]}.{int(parts[1]) + 1}.0.dev0')
 
 # Release a new pretalx version (tag form: v2026.1.0)
 [group('release')]
@@ -339,14 +306,14 @@ _release-postbump version:
 [arg('version', pattern='v\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?')]
 release version:
     uv pip install build check-manifest twine wheel
-    just _release-prepare {{ trim_start_match(version, "v") }}
+    just _set-version {{ trim_start_match(version, "v") }}
+    just _changelog-entry {{ trim_start_match(version, "v") }}
     git commit -am "Release {{ version }}"
     git tag -m "Release {{ version }}" {{ version }}
     rm -rf dist/ build/ pretalx.egg-info
     {{ python }} -m build -n
     uvx twine upload dist/pretalx-*
-    just _release-postbump {{ trim_start_match(version, "v") }}
+    just _set-version "$(just _next-dev-version {{ trim_start_match(version, "v") }})"
     git commit -am "Bump development version"
-    git push
-    git push --tags
+    git push --follow-tags
     gh release create {{ version }} --verify-tag --title "Release {{ version }}" --notes "[Blog post](https://pretalx.com/p/news/releasing-pretalx-$(echo "{{ trim_start_match(version, "v") }}" | cut -d. -f1-2 | tr . -)-0/)" dist/pretalx-*
