@@ -7,7 +7,11 @@ import re
 from pathlib import Path
 
 from django.conf import settings
-from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.password_validation import (
+    MinimumLengthValidator,
+    get_default_password_validators,
+    validate_password,
+)
 from django.core.files.uploadedfile import UploadedFile
 from django.core.validators import validate_email
 from django.forms import BooleanField, CharField, FileField, RegexField, ValidationError
@@ -48,12 +52,25 @@ class CountableOption:
         return str(self.name)
 
 
+def _get_strictest_min_length_validator():
+    validators = [
+        v
+        for v in get_default_password_validators()
+        if isinstance(v, MinimumLengthValidator)
+    ]
+    return max(validators, key=lambda v: v.min_length)
+
+
 class NewPasswordField(CharField):
     default_validators = [validate_password]
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("widget", PasswordStrengthInput(render_value=False))
         super().__init__(*args, **kwargs)
+        validator = _get_strictest_min_length_validator()
+        self.widget.attrs["minlength"] = validator.min_length
+        if not self.help_text:
+            self.help_text = validator.get_help_text()
 
 
 class NewPasswordConfirmationField(CharField):
@@ -61,6 +78,8 @@ class NewPasswordConfirmationField(CharField):
         confirm = kwargs.pop("confirm_with", None)
         kwargs.setdefault("widget", PasswordConfirmationInput(confirm_with=confirm))
         super().__init__(*args, **kwargs)
+        validator = _get_strictest_min_length_validator()
+        self.widget.attrs["minlength"] = validator.min_length
 
 
 class SizeFileInput:
