@@ -42,6 +42,17 @@ def test_reset_form_rejects_invalid_email(email):
     assert "login_email" in form.errors
 
 
+@pytest.mark.django_db
+def test_recover_form_prefills_email_from_user():
+    user = UserFactory(email="speaker@example.com")
+
+    form = RecoverForm(user=user)
+
+    assert form.initial["email"] == "speaker@example.com"
+    assert form.fields["email"].widget.attrs["autocomplete"] == "username"
+    assert form.fields["email"].widget.attrs["readonly"] == "readonly"
+
+
 def test_recover_form_valid_matching_passwords():
     form = RecoverForm(
         data={"password": "mysecurepassword1!", "password_repeat": "mysecurepassword1!"}
