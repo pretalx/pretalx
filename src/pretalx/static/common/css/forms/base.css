@@ -178,6 +178,7 @@ textarea {
   &[readonly] {
     background-color: var(--color-grey-lightest);
     opacity: 1;
+    cursor: not-allowed;
   }
 
   &::-webkit-datetime-edit {
