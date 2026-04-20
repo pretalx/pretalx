@@ -38,7 +38,7 @@ const matchPasswords = (passwordField, confirmationFields) => {
         !passwordField.classList.contains("password_strength") &&
         !passwordField.dataset.passwordListener
     ) {
-        passwordField.addEventListener("keyup", () =>
+        passwordField.addEventListener("input", () =>
             matchPasswords(passwordField),
         )
         passwordField.dataset.passwordListener = true
@@ -119,7 +119,7 @@ const setupPasswordStrength = () => {
         element.classList.add("d-none")
     })
     document.querySelectorAll(".password_strength").forEach((passwordField) => {
-        passwordField.addEventListener("keyup", () =>
+        passwordField.addEventListener("input", () =>
             updatePasswordStrength(passwordField),
         )
     })
@@ -128,7 +128,7 @@ const setupPasswordStrength = () => {
     document
         .querySelectorAll(".password_confirmation")
         .forEach((confirmationField) => {
-            confirmationField.addEventListener("keyup", () => {
+            confirmationField.addEventListener("input", () => {
                 let passwordField
                 const confirmWith = confirmationField.dataset.confirmWith
 

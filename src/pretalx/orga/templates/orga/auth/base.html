@@ -14,13 +14,13 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <link rel="stylesheet" type="text/css" href="{% static "common/css/base.css" %}" />
         <link rel="stylesheet" type="text/css" href="{% static "common/css/_variables.css" %}" />
         <link rel="stylesheet" type="text/css" href="{% static "orga/css/auth.css" %}" />
-        {% form_media always_base=True %}
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#3aa57c">
 
         {% include "common/includes/favicon.html" %}
 
         <script defer src="{% static 'common/js/base.js' %}"></script>
+        {% form_media always_base=True %}
         {% block scripts %}{% endblock scripts %}
 
     </head>
