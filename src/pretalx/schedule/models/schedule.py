@@ -11,6 +11,7 @@ from django.utils.translation import pgettext_lazy
 from i18nfield.fields import I18nTextField
 
 from pretalx.agenda.rules import can_view_schedule, is_agenda_visible, is_widget_visible
+from pretalx.common.language import language
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
@@ -388,6 +389,15 @@ class Schedule(PretalxModel):
                 talk["new_slot"] for talk in (data.get("update") or [])
             ]
             submissions = [slot.submission for slot in slots if slot]
+            with language(locale):
+                attachments = [
+                    {
+                        "name": f"{slot.frab_slug}.ics",
+                        "content": slot.full_ical().serialize(),
+                        "content_type": "text/calendar",
+                    }
+                    for slot in slots
+                ]
             mails.append(
                 self.event.get_mail_template(MailTemplateRoles.NEW_SCHEDULE).to_mail(
                     user=speaker.user,
@@ -396,14 +406,7 @@ class Schedule(PretalxModel):
                     commit=save,
                     locale=locale,
                     submissions=submissions,
-                    attachments=[
-                        {
-                            "name": f"{slot.frab_slug}.ics",
-                            "content": slot.full_ical().serialize(),
-                            "content_type": "text/calendar",
-                        }
-                        for slot in slots
-                    ],
+                    attachments=attachments,
                 )
             )
         return mails

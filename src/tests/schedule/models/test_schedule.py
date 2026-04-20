@@ -6,6 +6,7 @@ import pytest
 from django.db.utils import IntegrityError
 from django.utils.timezone import now as tz_now
 from django_scopes import scope
+from i18nfield.strings import LazyI18nString
 
 from pretalx.schedule.models import Schedule
 from pretalx.schedule.models.slot import SlotType
@@ -696,6 +697,33 @@ def test_schedule_generate_notifications(event):
         mails = v1.generate_notifications(save=False)
 
     assert len(mails) == 1
+
+
+def test_schedule_generate_notifications_ical_localized(event):
+    event.locale = "en"
+    event.locale_array = "en,de"
+    event.save()
+    room = RoomFactory(
+        event=event, name=LazyI18nString({"en": "Main Hall", "de": "Haupthalle"})
+    )
+    speaker = SpeakerFactory(event=event)
+    speaker.user.locale = "de"
+    speaker.user.save()
+    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
+    submission.speakers.add(speaker)
+    TalkSlotFactory(submission=submission, room=room)
+    with scope(event=event):
+        event.release_schedule(name="v1")
+        v1 = Schedule.objects.get(event=event, version="v1")
+
+    with scope(event=event):
+        mails = v1.generate_notifications(save=False)
+
+    assert len(mails) == 1
+    attachments = mails[0].attachments
+    assert len(attachments) == 1
+    assert "Haupthalle" in attachments[0]["content"]
+    assert "Main Hall" not in attachments[0]["content"]
 
 
 def test_schedule_generate_notifications_no_speakers(event):
