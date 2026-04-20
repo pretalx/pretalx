@@ -15,6 +15,8 @@ from pretalx.common.forms.fields import (
     HoneypotField,
     ImageField,
     MultiEmailField,
+    NewPasswordConfirmationField,
+    NewPasswordField,
     ProfilePictureField,
     SizeFileField,
     SubmissionTypeField,
@@ -46,6 +48,23 @@ pytestmark = pytest.mark.unit
 def test_size_file_field_init_max_size(kwargs, expected):
     field = SizeFileField(**kwargs)
     assert field.max_size == expected
+
+
+def test_new_password_field_exposes_min_length():
+    field = NewPasswordField()
+    assert field.widget.attrs.get("minlength") == 8
+    assert "8 characters" in field.help_text
+
+
+def test_new_password_field_keeps_existing_help_text():
+    field = NewPasswordField(help_text="custom help")
+    assert field.widget.attrs.get("minlength") == 8
+    assert field.help_text == "custom help"
+
+
+def test_new_password_confirmation_field_exposes_min_length():
+    field = NewPasswordConfirmationField()
+    assert field.widget.attrs.get("minlength") == 8
 
 
 def test_size_file_field_sets_widget_data_attrs():
