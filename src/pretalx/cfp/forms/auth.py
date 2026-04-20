@@ -34,10 +34,23 @@ class ResetForm(forms.Form):
 class RecoverForm(forms.Form):
     default_renderer = InlineFormRenderer
 
+    email = forms.EmailField(
+        label=phrases.base.enter_email,
+        widget=forms.EmailInput(
+            attrs={"autocomplete": "username", "readonly": "readonly"}
+        ),
+        required=False,
+    )
     password = NewPasswordField(label=phrases.base.new_password, required=False)
     password_repeat = NewPasswordConfirmationField(
         label=phrases.base.password_repeat, required=False, confirm_with="password"
     )
+
+    def __init__(self, *args, user=None, **kwargs):
+        if user is not None:
+            kwargs.setdefault("initial", {})
+            kwargs["initial"]["email"] = user.email
+        super().__init__(*args, **kwargs)
 
     def clean(self):
         data = super().clean()

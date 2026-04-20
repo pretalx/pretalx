@@ -92,6 +92,11 @@ class RecoverView(FormView):
 
         return super().dispatch(request, *args, **kwargs)
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.user
+        return kwargs
+
     def form_valid(self, form):
         self.user.change_password(form.cleaned_data["password"])
         messages.success(self.request, phrases.cfp.auth_reset_success)

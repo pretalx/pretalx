@@ -83,6 +83,11 @@ class RecoverView(FormView):
             return redirect(reverse("orga:auth.reset"))
         return super().dispatch(request, *args, **kwargs)
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.get_user()
+        return kwargs
+
     def form_valid(self, form):
         user = self.get_user()
         user.change_password(form.cleaned_data["password"])
