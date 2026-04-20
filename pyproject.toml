@@ -35,7 +35,7 @@ dependencies = [
   "bleach~=6.3.0",
   "celery~=5.6.0",
   "css_inline~=0.20.0",
-  "cssutils~=2.11.0",
+  "cssutils>=2.11,<2.15",
   "defusedcsv~=3.0.0",
   "defusedxml~=0.7.0",
   "diff-match-patch==20241021",
