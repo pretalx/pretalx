@@ -6,9 +6,11 @@ from pathlib import Path
 
 import PIL.Image
 import pytest
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.files.uploadhandler import TemporaryUploadedFile
+from django.test import override_settings
 from PIL import Image
 
 from pretalx.common.image import (
@@ -18,6 +20,7 @@ from pretalx.common.image import (
     get_thumbnail_field_name,
     load_img,
     process_image,
+    queue_thumbnail_regeneration,
     validate_image,
 )
 from tests.factories import EventFactory, ProfilePictureFactory, UserFactory
@@ -225,14 +228,22 @@ def test_create_thumbnail_with_processed_img(make_image, size):
 
 
 @pytest.mark.django_db
-def test_get_thumbnail_creates_missing(make_image):
+def test_get_thumbnail_falls_back_to_source_and_queues_regeneration(
+    make_image, monkeypatch
+):
+    """When a thumbnail is missing, get_thumbnail returns the source image
+    and dispatches async regeneration — no sync Pillow work in the request."""
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
+    calls = []
+    monkeypatch.setattr(
+        "pretalx.common.image.queue_thumbnail_regeneration", calls.append
+    )
 
     result = get_thumbnail(pic.avatar, "default")
 
-    assert result is not None
-    assert result.path.endswith(".webp")
+    assert result == pic.avatar
+    assert calls == [pic.avatar]
 
 
 @pytest.mark.django_db
@@ -287,6 +298,67 @@ def test_process_image_webp_input_skips_unlink(make_image):
 
     pic.refresh_from_db()
     assert pic.avatar.path.endswith(".webp")
+
+
+@pytest.mark.django_db
+def test_queue_thumbnail_regeneration_dispatches_task(make_image, monkeypatch):
+    cache.clear()
+    user = UserFactory()
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
+    captured = {}
+
+    def fake_apply_async(*, kwargs, **_):
+        captured.update(kwargs)
+
+    monkeypatch.setattr(
+        "pretalx.common.tasks.task_generate_thumbnails.apply_async", fake_apply_async
+    )
+
+    queue_thumbnail_regeneration(pic.avatar)
+
+    assert captured == {"field": "avatar", "model": "Profilepicture", "pk": pic.pk}
+
+
+@pytest.mark.django_db
+@override_settings(
+    CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+)
+def test_queue_thumbnail_regeneration_deduplicates_in_flight(make_image, monkeypatch):
+    """Concurrent callers for the same image must not pile up redundant tasks:
+    the second call within the lock window is a no-op. The default test cache
+    is a DummyCache, so we need a real backend here to exercise cache.add."""
+    cache.clear()
+    user = UserFactory()
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
+    calls = []
+    monkeypatch.setattr(
+        "pretalx.common.tasks.task_generate_thumbnails.apply_async",
+        lambda **kw: calls.append(kw),
+    )
+
+    queue_thumbnail_regeneration(pic.avatar)
+    queue_thumbnail_regeneration(pic.avatar)
+
+    assert len(calls) == 1
+
+
+@pytest.mark.django_db
+def test_queue_thumbnail_regeneration_skips_unsaved_instance(monkeypatch):
+    """Without a pk, there's nothing for the celery task to load — this
+    short-circuits before ever importing or calling the task."""
+    calls = []
+    monkeypatch.setattr(
+        "pretalx.common.tasks.task_generate_thumbnails.apply_async",
+        lambda **kw: calls.append(kw),
+    )
+
+    class _Fake:
+        instance = type("X", (), {"pk": None})()
+        field = type("F", (), {"name": "avatar"})()
+
+    queue_thumbnail_regeneration(_Fake())
+
+    assert calls == []
 
 
 @pytest.mark.django_db

@@ -6,6 +6,7 @@ from io import BytesIO
 from pathlib import Path
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.core.files.base import ContentFile
 from django.utils.translation import gettext_lazy as _
@@ -166,6 +167,24 @@ def create_thumbnail(image, size, processed_img=None):
     return thumbnail_field
 
 
+def queue_thumbnail_regeneration(image):
+    instance = getattr(image, "instance", None)
+    if not instance or not getattr(instance, "pk", None):
+        return
+    model_name = instance._meta.model_name.capitalize()
+    lock_key = f"thumbnail_regen:{model_name}:{instance.pk}:{image.field.name}"
+    if not cache.add(lock_key, True, timeout=60):
+        return
+
+    from pretalx.common.tasks import (  # noqa: PLC0415 -- avoid circular import
+        task_generate_thumbnails,
+    )
+
+    task_generate_thumbnails.apply_async(
+        kwargs={"field": image.field.name, "model": model_name, "pk": instance.pk}
+    )
+
+
 def get_thumbnail(image, size):
     thumbnail_field_name = get_thumbnail_field_name(image, size)
     try:
@@ -174,6 +193,7 @@ def get_thumbnail(image, size):
         return image
 
     thumbnail_field = getattr(image.instance, thumbnail_field_name, None)
-    if not thumbnail_field or not thumbnail_field.storage.exists(thumbnail_field.path):
-        return create_thumbnail(image, size)
-    return thumbnail_field
+    if thumbnail_field and thumbnail_field.storage.exists(thumbnail_field.path):
+        return thumbnail_field
+    queue_thumbnail_regeneration(image)
+    return image

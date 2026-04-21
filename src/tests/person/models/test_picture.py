@@ -95,14 +95,20 @@ def test_profile_picture_get_avatar_url_event_domain(
 
 
 @pytest.mark.parametrize("thumbnail", ("tiny", "default"))
-def test_profile_picture_get_avatar_url_thumbnail_fallback(make_image, thumbnail):
-    """When a thumbnail doesn't exist, create_thumbnail generates one on the fly."""
+def test_profile_picture_get_avatar_url_thumbnail_fallback(
+    make_image, thumbnail, monkeypatch
+):
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
+    calls = []
+    monkeypatch.setattr(
+        "pretalx.person.models.picture.queue_thumbnail_regeneration", calls.append
+    )
 
     result = pic.get_avatar_url(thumbnail=thumbnail)
 
-    assert result.startswith(settings.SITE_URL)
+    assert result == f"{settings.SITE_URL}{pic.avatar.url}"
+    assert calls == [pic.avatar]
 
 
 @pytest.mark.parametrize(
@@ -124,12 +130,18 @@ def test_profile_picture_get_avatar_url_thumbnail_exists(
     assert url.startswith(settings.SITE_URL)
 
 
-def test_profile_picture_get_avatar_url_unknown_thumbnail_size(make_image):
-    """An unknown thumbnail size causes create_thumbnail to return None."""
+def test_profile_picture_get_avatar_url_unknown_thumbnail_size(make_image, monkeypatch):
     user = UserFactory()
     pic = ProfilePictureFactory(user=user, avatar=make_image())
+    calls = []
+    monkeypatch.setattr(
+        "pretalx.person.models.picture.queue_thumbnail_regeneration", calls.append
+    )
+
     result = pic.get_avatar_url(thumbnail="nonexistent_size")
+
     assert result is None
+    assert calls == []
 
 
 def test_profile_picture_mixin_avatar_with_picture(make_image, event):
