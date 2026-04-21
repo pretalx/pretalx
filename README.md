@@ -77,7 +77,7 @@
 | src/pretalx/common/apps.py                                                 |        6 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/common/auth.py                                                 |       18 |        0 |        2 |        0 |     100% |           |
 | src/pretalx/common/cache.py                                                |       61 |        0 |       10 |        0 |     100% |           |
-| src/pretalx/common/checks.py                                               |       65 |        0 |       30 |        0 |     100% |           |
+| src/pretalx/common/checks.py                                               |       72 |        0 |       32 |        0 |     100% |           |
 | src/pretalx/common/context\_processors.py                                  |       62 |        0 |       16 |        0 |     100% |           |
 | src/pretalx/common/db.py                                                   |        6 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/common/diff\_utils.py                                          |       41 |        0 |       10 |        0 |     100% |           |
@@ -92,7 +92,7 @@
 | src/pretalx/common/forms/tables.py                                         |       39 |        0 |       14 |        0 |     100% |           |
 | src/pretalx/common/forms/validators.py                                     |       50 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/common/forms/widgets.py                                        |      312 |        0 |       48 |        0 |     100% |           |
-| src/pretalx/common/image.py                                                |      101 |        0 |       30 |        0 |     100% |           |
+| src/pretalx/common/image.py                                                |      112 |        0 |       32 |        0 |     100% |           |
 | src/pretalx/common/language.py                                             |       22 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/common/log\_display.py                                         |       84 |        0 |       34 |        0 |     100% |           |
 | src/pretalx/common/mail.py                                                 |      110 |        0 |       32 |        0 |     100% |           |
@@ -117,7 +117,7 @@
 | src/pretalx/common/settings/config.py                                      |       24 |        0 |        2 |        0 |     100% |           |
 | src/pretalx/common/signals.py                                              |      118 |        0 |       42 |        0 |     100% |           |
 | src/pretalx/common/tables.py                                               |      399 |        0 |      166 |        0 |     100% |           |
-| src/pretalx/common/tasks.py                                                |       44 |        0 |       14 |        0 |     100% |           |
+| src/pretalx/common/tasks.py                                                |       60 |        0 |       22 |        0 |     100% |           |
 | src/pretalx/common/templatetags/copyable.py                                |       13 |        0 |        2 |        0 |     100% |           |
 | src/pretalx/common/templatetags/datetimerange.py                           |       28 |        0 |        6 |        0 |     100% |           |
 | src/pretalx/common/templatetags/event\_tags.py                             |        5 |        0 |        0 |        0 |     100% |           |
@@ -218,7 +218,7 @@
 | src/pretalx/person/forms/user.py                                           |      108 |        0 |       26 |        0 |     100% |           |
 | src/pretalx/person/models/auth\_token.py                                   |       77 |        0 |       20 |        0 |     100% |           |
 | src/pretalx/person/models/information.py                                   |       33 |        0 |        2 |        0 |     100% |           |
-| src/pretalx/person/models/picture.py                                       |       57 |        0 |       20 |        0 |     100% |           |
+| src/pretalx/person/models/picture.py                                       |       58 |        0 |       20 |        0 |     100% |           |
 | src/pretalx/person/models/preferences.py                                   |       41 |        0 |       18 |        0 |     100% |           |
 | src/pretalx/person/models/profile.py                                       |       63 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/person/models/user.py                                          |      256 |        0 |       54 |        0 |     100% |           |
@@ -386,27 +386,27 @@
 | src/tests/common/templatetags/test\_phrases.py                             |        9 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/templatetags/test\_rich\_text.py                          |       57 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/templatetags/test\_safelink.py                            |        7 |        0 |        0 |        0 |     100% |           |
-| src/tests/common/templatetags/test\_thumbnail.py                           |        6 |        0 |        0 |        0 |     100% |           |
+| src/tests/common/templatetags/test\_thumbnail.py                           |       16 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/templatetags/test\_times.py                               |        6 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/templatetags/test\_vite.py                                |       89 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/templatetags/test\_xmlescape.py                           |        6 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_auth.py                                             |       47 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_cache.py                                            |      138 |        0 |        0 |        0 |     100% |           |
-| src/tests/common/test\_checks.py                                           |      107 |        0 |        0 |        0 |     100% |           |
+| src/tests/common/test\_checks.py                                           |      115 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_context\_processors.py                              |      153 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_db.py                                               |       13 |        0 |        4 |        0 |     100% |           |
 | src/tests/common/test\_diff\_utils.py                                      |       62 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_exceptions.py                                       |      147 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_exporter.py                                         |       71 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_fonts.py                                            |      116 |        0 |        2 |        0 |     100% |           |
-| src/tests/common/test\_image.py                                            |      161 |        0 |        0 |        0 |     100% |           |
+| src/tests/common/test\_image.py                                            |      196 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_language.py                                         |       51 |        0 |        4 |        0 |     100% |           |
 | src/tests/common/test\_log\_display.py                                     |      122 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_mail.py                                             |      251 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_plugins.py                                          |       69 |        0 |        4 |        0 |     100% |           |
 | src/tests/common/test\_signals.py                                          |      210 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_tables.py                                           |      978 |        0 |        0 |        0 |     100% |           |
-| src/tests/common/test\_tasks.py                                            |       96 |        0 |        0 |        0 |     100% |           |
+| src/tests/common/test\_tasks.py                                            |      120 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_ui.py                                               |      122 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_update\_check.py                                    |      163 |        0 |        2 |        0 |     100% |           |
 | src/tests/common/text/test\_console.py                                     |       53 |        0 |        0 |        0 |     100% |           |
@@ -509,7 +509,7 @@
 | src/tests/person/forms/test\_user.py                                       |      206 |        0 |        2 |        0 |     100% |           |
 | src/tests/person/models/test\_auth\_token.py                               |      110 |        0 |        4 |        0 |     100% |           |
 | src/tests/person/models/test\_information.py                               |       25 |        0 |        4 |        0 |     100% |           |
-| src/tests/person/models/test\_picture.py                                   |      121 |        0 |        2 |        0 |     100% |           |
+| src/tests/person/models/test\_picture.py                                   |      127 |        0 |        2 |        0 |     100% |           |
 | src/tests/person/models/test\_preferences.py                               |       53 |        0 |        0 |        0 |     100% |           |
 | src/tests/person/models/test\_profile.py                                   |      114 |        0 |        0 |        0 |     100% |           |
 | src/tests/person/models/test\_user.py                                      |      532 |        0 |        2 |        0 |     100% |           |
@@ -552,7 +552,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **70389** |    **0** | **5954** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **70507** |    **0** | **5966** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
