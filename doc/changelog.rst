@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :announcement:`admin` Pretalx now shows a warning at ``manage.py check`` time when Pillow is installed without WebP support, so administrators are made aware that image uploads will not be processed and thumbnails will not be generated.
 - :feature:`-` Password managers can now reliably associate the account's email address with the new password when setting a password via a reset or speaker-invite link.
 - :bug:`schedule` The calendar attachments sent to speakers on schedule release are now localised to the speaker's preferred language, so translatable content like room names is rendered in the correct language.
 - :feature:`schedule` In the embedded schedule widget, the session language is now shown in the session popup if the event has multiple session languages.

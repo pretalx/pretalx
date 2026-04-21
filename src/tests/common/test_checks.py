@@ -9,6 +9,7 @@ from pretalx.common.checks import (
     check_caches,
     check_celery,
     check_debug,
+    check_pillow_webp,
     check_sqlite_in_production,
     check_system_email,
 )
@@ -23,6 +24,7 @@ pytestmark = pytest.mark.unit
         check_caches,
         check_celery,
         check_debug,
+        check_pillow_webp,
         check_sqlite_in_production,
         check_system_email,
     ),
@@ -31,6 +33,7 @@ pytestmark = pytest.mark.unit
         "caches",
         "celery",
         "debug",
+        "pillow_webp",
         "sqlite_in_production",
         "system_email",
     ),
@@ -206,3 +209,20 @@ def test_check_debug_http_and_debug_both_report():
 @override_settings(SITE_URL="https://example.com", DEBUG=False)
 def test_check_debug_all_ok():
     assert check_debug(app_configs=None) == []
+
+
+def test_check_pillow_webp_ok():
+    """The test environment has libwebp available, so the check passes."""
+    assert check_pillow_webp(app_configs=None) == []
+
+
+def test_check_pillow_webp_missing_warns(monkeypatch):
+    from PIL import features  # noqa: PLC0415 -- features is mocked for this test only
+
+    monkeypatch.setattr(features, "check", lambda _: False)
+
+    errors = check_pillow_webp(app_configs=None)
+
+    assert len(errors) == 1
+    assert errors[0].id == "pretalx.W005"
+    assert errors[0].level == WARNING
