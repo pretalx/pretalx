@@ -13,6 +13,7 @@ For already released changes, head over here:
 - :announcement:`admin` Pretalx now shows a warning at ``manage.py check`` time when Pillow is installed without WebP support, so administrators are made aware that image uploads will not be processed and thumbnails will not be generated.
 - :feature:`-` Password managers can now reliably associate the account's email address with the new password when setting a password via a reset or speaker-invite link.
 - :bug:`schedule` The calendar attachments sent to speakers on schedule release are now localised to the speaker's preferred language, so translatable content like room names is rendered in the correct language.
+- :feature:`-` Error pages now load the event's custom stylesheets when an event is available on the request, so branded events keep their look on 4xx/5xx pages.
 - :feature:`schedule` In the embedded schedule widget, the session language is now shown in the session popup if the event has multiple session languages.
 - :release:`2026.1.1 <2026-04-18>` Bugfix release for pretalx 2026.1. See the `release blog post <https://pretalx.com/p/news/releasing-pretalx-2026-1-0/>`_.
 - :bug:`schedule,2407` When leaving feedback on a session with multiple speakers, attendees can now see the speakers' names in the speaker picker, instead of an internal placeholder string.

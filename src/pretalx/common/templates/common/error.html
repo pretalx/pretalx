@@ -13,6 +13,8 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <link rel="stylesheet" type="text/css" href="{% static "common/css/base.css" %}" />
         <link rel="stylesheet" type="text/css" href="{% static "common/css/_variables.css" %}" />
         <link rel="stylesheet" type="text/css" href="{% static "common/css/error.css" %}" />
+        {% if request.event and request.event.has_custom_styles %}<link rel="stylesheet" type="text/css" href="{{ request.event.urls.settings_css }}" />{% endif %}
+        {% if request.event and request.event.custom_css %}<link rel="stylesheet" type="text/css" href="{{ request.event.custom_css.url }}" />{% endif %}
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta charset="UTF-8">
 
