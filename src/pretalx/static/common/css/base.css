@@ -462,11 +462,19 @@ a, .fake-link {
   vertical-align: baseline;
   white-space: nowrap;
   padding: 0.4em 0.6em;
-  font-weight: bold;
+  font-weight: 600;
   font-size: 75%;
 
-  color: white;
-  background: var(--highlight-color);
+  color: color-mix(
+    in srgb,
+    var(--highlight-color, var(--color-grey-medium)),
+    black 40%
+  );
+  background: color-mix(
+    in srgb,
+    var(--highlight-color, var(--color-grey-medium)),
+    white 85%
+  );
   border-radius: var(--size-border-radius);
 
   color:
@@ -474,6 +482,10 @@ a, .fake-link {
     background-color 0.15s ease-in-out,
     border-color 0.15s ease-in-out,
     box-shadow 0.15s ease-in-out;
+
+  .fa {
+    color: var(--highlight-color, var(--color-grey-medium));
+  }
 
   &:empty {
     display: none;
@@ -483,6 +495,11 @@ a, .fake-link {
     padding: 0 0.6em;
     border-radius: 10rem;
   }
+}
+
+.tag-badge {
+  color: white;
+  font-weight: bold;
 }
 
 .card {
@@ -730,7 +747,12 @@ a, .fake-link {
 }
 
 .badge.submission-state {
-  background-color: var(--submission-color-primary);
+  background: color-mix(in srgb, var(--submission-color-primary), white 85%);
+  color: color-mix(in srgb, var(--submission-color-primary), black 40%);
+
+  .fa {
+    color: var(--submission-color-primary);
+  }
 }
 
 .bg-success {

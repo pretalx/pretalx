@@ -80,7 +80,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             {% endif %}
                             <td>
                                 {% for tag in submission.tags.all %}
-                                    <span class="badge" style="background-color: {{ tag.color }};">{{ tag.tag }}</span>
+                                    <span class="badge tag-badge" style="background-color: {{ tag.color }};">{{ tag.tag }}</span>
                                 {% empty %}
                                     —
                                 {% endfor %}
