@@ -21,12 +21,18 @@ const setupModals = (container) => {
     })
     container.querySelectorAll("dialog").forEach((element) => {
         element.querySelectorAll("button.close-dialog").forEach((btn) => btn.addEventListener("click", () => element.close()))
-        if (supportsClosedBy) return
-        element.addEventListener("click", (ev) => {
-            if (ev.target === element) {
-                element.close()
-            }
-        })
+        if (!supportsClosedBy) {
+            element.addEventListener("click", (ev) => {
+                if (ev.target === element) {
+                    element.close()
+                }
+            })
+        }
+        // Upgrade server-rendered `<dialog open>` to a modal so it gets a backdrop and focus trap.
+        if (element.open) {
+            element.close()
+            element.showModal()
+        }
     })
 }
 
