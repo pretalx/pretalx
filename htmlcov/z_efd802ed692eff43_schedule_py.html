@@ -55,8 +55,8 @@
             </div>
         </aside>
         <h2>
-            <span class="text">290 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">290<span class="text"> run</span></button>
+            <span class="text">291 statements &nbsp;</span>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">291<span class="text"> run</span></button>
             <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">0<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">7<span class="text"> excluded</span></button>
             <button type="button" class="par run show_par button_toggle_par" value="par" data-shortcut="p" title="Toggle lines partially run">0<span class="text"> partial</span></button>
@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_efd802ed692eff43_speaker_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-21 08:04 +0000
+            created at 2026-04-21 08:19 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -514,15 +514,15 @@
     <p class="run run2"><span class="n"><a id="t430" href="#t430">430</a></span><span class="t">            <span class="op">.</span><span class="nam">select_related</span><span class="op">(</span><span class="str">"submission"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t431" href="#t431">431</a></span><span class="t">            <span class="op">.</span><span class="nam">with_sorted_speakers</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t432" href="#t432">432</a></span><span class="t">        <span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t433" href="#t433">433</a></span><span class="t">            <span class="key">if</span> <span class="nam">talk</span><span class="op">.</span><span class="nam">submission</span><span class="op">.</span><span class="nam">speakers</span><span class="op">.</span><span class="nam">count</span><span class="op">(</span><span class="op">)</span> <span class="op">==</span> <span class="num">1</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t434" href="#t434">434</a></span><span class="t">                <span class="nam">result</span><span class="op">[</span><span class="nam">talk</span><span class="op">.</span><span class="nam">id</span><span class="op">]</span> <span class="op">=</span> <span class="op">[</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t435" href="#t435">435</a></span><span class="t">                    <span class="nam">av</span><span class="op">.</span><span class="nam">serialize</span><span class="op">(</span><span class="nam">full</span><span class="op">=</span><span class="key">False</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t436" href="#t436">436</a></span><span class="t">                    <span class="key">for</span> <span class="nam">av</span> <span class="key">in</span> <span class="nam">speaker_avails</span><span class="op">[</span><span class="nam">talk</span><span class="op">.</span><span class="nam">submission</span><span class="op">.</span><span class="nam">speakers</span><span class="op">.</span><span class="nam">first</span><span class="op">(</span><span class="op">)</span><span class="op">.</span><span class="nam">pk</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t433" href="#t433">433</a></span><span class="t">            <span class="nam">speakers</span> <span class="op">=</span> <span class="nam">talk</span><span class="op">.</span><span class="nam">submission</span><span class="op">.</span><span class="nam">sorted_speakers</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t434" href="#t434">434</a></span><span class="t">            <span class="key">if</span> <span class="nam">len</span><span class="op">(</span><span class="nam">speakers</span><span class="op">)</span> <span class="op">==</span> <span class="num">1</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t435" href="#t435">435</a></span><span class="t">                <span class="nam">result</span><span class="op">[</span><span class="nam">talk</span><span class="op">.</span><span class="nam">id</span><span class="op">]</span> <span class="op">=</span> <span class="op">[</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t436" href="#t436">436</a></span><span class="t">                    <span class="nam">av</span><span class="op">.</span><span class="nam">serialize</span><span class="op">(</span><span class="nam">full</span><span class="op">=</span><span class="key">False</span><span class="op">)</span> <span class="key">for</span> <span class="nam">av</span> <span class="key">in</span> <span class="nam">speaker_avails</span><span class="op">[</span><span class="nam">speakers</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">.</span><span class="nam">pk</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t437" href="#t437">437</a></span><span class="t">                <span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t438" href="#t438">438</a></span><span class="t">            <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t439" href="#t439">439</a></span><span class="t">                <span class="nam">all_speaker_avails</span> <span class="op">=</span> <span class="op">[</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t440" href="#t440">440</a></span><span class="t">                    <span class="nam">speaker_avails</span><span class="op">[</span><span class="nam">speaker</span><span class="op">.</span><span class="nam">pk</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t441" href="#t441">441</a></span><span class="t">                    <span class="key">for</span> <span class="nam">speaker</span> <span class="key">in</span> <span class="nam">talk</span><span class="op">.</span><span class="nam">submission</span><span class="op">.</span><span class="nam">sorted_speakers</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t441" href="#t441">441</a></span><span class="t">                    <span class="key">for</span> <span class="nam">speaker</span> <span class="key">in</span> <span class="nam">speakers</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t442" href="#t442">442</a></span><span class="t">                    <span class="key">if</span> <span class="nam">speaker_avails</span><span class="op">[</span><span class="nam">speaker</span><span class="op">.</span><span class="nam">pk</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t443" href="#t443">443</a></span><span class="t">                <span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t444" href="#t444">444</a></span><span class="t">                <span class="key">if</span> <span class="key">not</span> <span class="nam">all_speaker_avails</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -670,7 +670,7 @@
             <a class="nav" href="z_efd802ed692eff43_speaker_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-21 08:04 +0000
+            created at 2026-04-21 08:19 +0000
         </p>
     </div>
 </footer>
