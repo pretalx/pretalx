@@ -95,7 +95,7 @@
 | src/pretalx/common/image.py                                                |      112 |        0 |       32 |        0 |     100% |           |
 | src/pretalx/common/language.py                                             |       22 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/common/log\_display.py                                         |       84 |        0 |       34 |        0 |     100% |           |
-| src/pretalx/common/mail.py                                                 |      110 |        0 |       32 |        0 |     100% |           |
+| src/pretalx/common/mail.py                                                 |      123 |        0 |       36 |        0 |     100% |           |
 | src/pretalx/common/management/commands/create\_test\_event.py              |      176 |        0 |       50 |        0 |     100% |           |
 | src/pretalx/common/management/commands/init.py                             |       56 |        0 |       12 |        0 |     100% |           |
 | src/pretalx/common/management/commands/makemigrations.py                   |       19 |        0 |        4 |        0 |     100% |           |
@@ -402,7 +402,7 @@
 | src/tests/common/test\_image.py                                            |      196 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_language.py                                         |       51 |        0 |        4 |        0 |     100% |           |
 | src/tests/common/test\_log\_display.py                                     |      122 |        0 |        0 |        0 |     100% |           |
-| src/tests/common/test\_mail.py                                             |      251 |        0 |        0 |        0 |     100% |           |
+| src/tests/common/test\_mail.py                                             |      278 |        0 |        4 |        0 |     100% |           |
 | src/tests/common/test\_plugins.py                                          |       69 |        0 |        4 |        0 |     100% |           |
 | src/tests/common/test\_signals.py                                          |      210 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/test\_tables.py                                           |      978 |        0 |        0 |        0 |     100% |           |
@@ -552,7 +552,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **70742** |    **0** | **6036** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **70782** |    **0** | **6044** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
