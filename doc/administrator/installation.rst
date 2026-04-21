@@ -94,6 +94,7 @@ flavours – on Ubuntu-like systems, you will need packages like:
 - ``python3-dev``
 - ``python3-venv``
 - ``gettext``
+- ``libwebp-dev``
 
 
 Step 4: Configuration
