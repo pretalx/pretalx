@@ -106,7 +106,7 @@
 | src/pretalx/common/management/commands/shell.py                            |       71 |        0 |       18 |        0 |     100% |           |
 | src/pretalx/common/management/commands/spectacular.py                      |        6 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/common/management/commands/update\_translation\_percentages.py |       26 |        0 |        6 |        0 |     100% |           |
-| src/pretalx/common/middleware/domains.py                                   |      127 |        0 |       44 |        0 |     100% |           |
+| src/pretalx/common/middleware/domains.py                                   |      142 |        0 |       48 |        0 |     100% |           |
 | src/pretalx/common/middleware/event.py                                     |      119 |        0 |       46 |        0 |     100% |           |
 | src/pretalx/common/models/fields.py                                        |       11 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/common/models/file.py                                          |       23 |        0 |        2 |        0 |     100% |           |
@@ -370,7 +370,7 @@
 | src/tests/common/forms/test\_tables.py                                     |       82 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/forms/test\_validators.py                                 |       52 |        0 |        2 |        0 |     100% |           |
 | src/tests/common/forms/test\_widgets.py                                    |      337 |        0 |        0 |        0 |     100% |           |
-| src/tests/common/middleware/test\_domains.py                               |      382 |        0 |        2 |        0 |     100% |           |
+| src/tests/common/middleware/test\_domains.py                               |      416 |        0 |        2 |        0 |     100% |           |
 | src/tests/common/middleware/test\_event.py                                 |      384 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/models/test\_file.py                                      |       37 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/models/test\_log.py                                       |       96 |        0 |        0 |        0 |     100% |           |
@@ -552,7 +552,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **70507** |    **0** | **5966** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **70556** |    **0** | **5970** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
