@@ -63,12 +63,12 @@
 | src/pretalx/api/views/upload.py                                            |       39 |        0 |       10 |        0 |     100% |           |
 | src/pretalx/cfp/apps.py                                                    |        4 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/cfp/flow.py                                                    |      667 |        0 |      212 |        0 |     100% |           |
-| src/pretalx/cfp/forms/auth.py                                              |       26 |        0 |        2 |        0 |     100% |           |
+| src/pretalx/cfp/forms/auth.py                                              |       32 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/cfp/forms/cfp.py                                               |       30 |        0 |       18 |        0 |     100% |           |
 | src/pretalx/cfp/forms/submissions.py                                       |       31 |        0 |       10 |        0 |     100% |           |
 | src/pretalx/cfp/phrases.py                                                 |       21 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/cfp/signals.py                                                 |       11 |        0 |        0 |        0 |     100% |           |
-| src/pretalx/cfp/views/auth.py                                              |       87 |        0 |       10 |        0 |     100% |           |
+| src/pretalx/cfp/views/auth.py                                              |       91 |        0 |       10 |        0 |     100% |           |
 | src/pretalx/cfp/views/event.py                                             |       57 |        0 |       10 |        0 |     100% |           |
 | src/pretalx/cfp/views/locale.py                                            |       19 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/cfp/views/robots.py                                            |        5 |        0 |        0 |        0 |     100% |           |
@@ -85,7 +85,7 @@
 | src/pretalx/common/exporter.py                                             |       63 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/common/fonts.py                                                |       61 |        0 |       36 |        0 |     100% |           |
 | src/pretalx/common/formats/en/formats.py                                   |        3 |        0 |        0 |        0 |     100% |           |
-| src/pretalx/common/forms/fields.py                                         |      296 |        0 |      104 |        0 |     100% |           |
+| src/pretalx/common/forms/fields.py                                         |      305 |        0 |      106 |        0 |     100% |           |
 | src/pretalx/common/forms/forms.py                                          |       22 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/common/forms/mixins.py                                         |      310 |        0 |      148 |        0 |     100% |           |
 | src/pretalx/common/forms/renderers.py                                      |       22 |        0 |        0 |        0 |     100% |           |
@@ -195,7 +195,7 @@
 | src/pretalx/orga/templatetags/review\_score.py                             |       17 |        0 |        8 |        0 |     100% |           |
 | src/pretalx/orga/utils/i18n.py                                             |       39 |        0 |       10 |        0 |     100% |           |
 | src/pretalx/orga/views/admin.py                                            |      136 |        0 |       16 |        0 |     100% |           |
-| src/pretalx/orga/views/auth.py                                             |       63 |        0 |        8 |        0 |     100% |           |
+| src/pretalx/orga/views/auth.py                                             |       67 |        0 |        8 |        0 |     100% |           |
 | src/pretalx/orga/views/cards.py                                            |       16 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/orga/views/cfp.py                                              |      729 |        0 |      196 |        0 |     100% |           |
 | src/pretalx/orga/views/dashboard.py                                        |      162 |        0 |       46 |        0 |     100% |           |
@@ -233,7 +233,7 @@
 | src/pretalx/schedule/ical.py                                               |       32 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/schedule/models/availability.py                                |       86 |        0 |       30 |        0 |     100% |           |
 | src/pretalx/schedule/models/room.py                                        |       47 |        0 |        4 |        0 |     100% |           |
-| src/pretalx/schedule/models/schedule.py                                    |      172 |        0 |       58 |        0 |     100% |           |
+| src/pretalx/schedule/models/schedule.py                                    |      175 |        0 |       58 |        0 |     100% |           |
 | src/pretalx/schedule/models/slot.py                                        |      126 |        0 |       20 |        0 |     100% |           |
 | src/pretalx/schedule/notifications.py                                      |       24 |        0 |        8 |        0 |     100% |           |
 | src/pretalx/schedule/phrases.py                                            |       15 |        0 |        0 |        0 |     100% |           |
@@ -338,7 +338,7 @@
 | src/tests/api/views/unit/test\_submission.py                               |      277 |        0 |        0 |        0 |     100% |           |
 | src/tests/api/views/unit/test\_team.py                                     |       44 |        0 |        0 |        0 |     100% |           |
 | src/tests/api/views/unit/test\_upload.py                                   |        5 |        0 |        0 |        0 |     100% |           |
-| src/tests/cfp/forms/test\_auth.py                                          |       37 |        0 |        0 |        0 |     100% |           |
+| src/tests/cfp/forms/test\_auth.py                                          |       44 |        0 |        0 |        0 |     100% |           |
 | src/tests/cfp/forms/test\_cfp.py                                           |       72 |        0 |        0 |        0 |     100% |           |
 | src/tests/cfp/forms/test\_submissions.py                                   |       88 |        0 |        0 |        0 |     100% |           |
 | src/tests/cfp/test\_flow.py                                                |     1137 |        0 |        2 |        0 |     100% |           |
@@ -365,7 +365,7 @@
 | src/tests/common/commands/test\_shell.py                                   |       71 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/commands/test\_spectacular.py                             |       10 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/commands/test\_update\_translation\_percentages.py        |       16 |        0 |        2 |        0 |     100% |           |
-| src/tests/common/forms/test\_fields.py                                     |      523 |        0 |        0 |        0 |     100% |           |
+| src/tests/common/forms/test\_fields.py                                     |      534 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/forms/test\_mixins.py                                     |      768 |        0 |        6 |        0 |     100% |           |
 | src/tests/common/forms/test\_tables.py                                     |       82 |        0 |        0 |        0 |     100% |           |
 | src/tests/common/forms/test\_validators.py                                 |       52 |        0 |        2 |        0 |     100% |           |
@@ -519,7 +519,7 @@
 | src/tests/person/test\_tasks.py                                            |       44 |        0 |        0 |        0 |     100% |           |
 | src/tests/schedule/models/test\_availability.py                            |      241 |        0 |        2 |        0 |     100% |           |
 | src/tests/schedule/models/test\_room.py                                    |       71 |        0 |        4 |        0 |     100% |           |
-| src/tests/schedule/models/test\_schedule.py                                |      575 |        0 |        2 |        0 |     100% |           |
+| src/tests/schedule/models/test\_schedule.py                                |      597 |        0 |        2 |        0 |     100% |           |
 | src/tests/schedule/models/test\_slot.py                                    |      181 |        0 |        4 |        0 |     100% |           |
 | src/tests/schedule/test\_ascii.py                                          |      209 |        0 |       10 |        0 |     100% |           |
 | src/tests/schedule/test\_exporters.py                                      |      235 |        0 |        4 |        0 |     100% |           |
@@ -552,7 +552,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **70323** |    **0** | **5950** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **70389** |    **0** | **5954** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
