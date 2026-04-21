@@ -55,6 +55,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                             {{ extra_form }}
                         </fieldset>
                     {% endfor %}
+                    {% include "orga/includes/submit_row.html" %}
                 {% else %}
                     <div class="d-flex flex-column">
                         <div class="row form-group">
@@ -110,8 +111,6 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                         </fieldset>
                     {% endfor %}
                 {% endif %}
-
-                {% include "orga/includes/submit_row.html" %}
             </form>
             {% if copy_to_draft_url %}
                 {% if copy_to_draft_method == "post" %}

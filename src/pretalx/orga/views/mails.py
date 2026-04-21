@@ -437,7 +437,6 @@ class MailDetail(PermissionRequired, CreateOrUpdateView):
             else:
                 context["copy_to_draft_url"] = self.object.urls.copy
                 context["copy_to_draft_method"] = "post"
-            context["submit_buttons"] = []
         return context
 
 
