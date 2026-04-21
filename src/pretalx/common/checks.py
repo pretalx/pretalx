@@ -155,7 +155,7 @@ def check_pillow_webp(app_configs, **kwargs):
                 hint=(
                     "pretalx will keep working and serve uploaded images at their original resolution, "
                     "but you should install libwebp on the host and reinstall Pillow from source in the venv "
-                    "(e.g. `pip install --force-reinstall --no-binary=Pillow Pillow`). "
+                    "(e.g. `pip install --force-reinstall --no-cache-dir --no-binary :all: Pillow`). "
                     "Verify with `python -c 'from PIL import features; features.pilinfo()'`."
                 ),
                 id="pretalx.W005",
