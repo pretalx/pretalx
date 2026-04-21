@@ -98,6 +98,7 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
     def questions_exist(self):
         return self.request.event.questions.filter(target="speaker").exists()
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         if self.login_form.is_bound and self.login_form.is_valid():
             self.login_form.save()
@@ -545,6 +546,7 @@ class SubmissionInviteView(LoggedInEventPageMixin, SubmissionViewMixin, FormView
                 messages.warning(self.request, phrases.cfp.invite_invalid_email)
         return kwargs
 
+    @transaction.atomic
     def form_valid(self, form):
         invitation = form.save()
         messages.success(self.request, phrases.cfp.invite_sent)
@@ -571,6 +573,7 @@ class SubmissionInviteRetractView(LoggedInEventPageMixin, SubmissionViewMixin, V
             SubmissionInvitation, pk=invitation_id, submission=self.submission
         )
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         invitation = self.get_invitation()
         email = invitation.email
@@ -611,6 +614,7 @@ class SubmissionInviteAcceptView(LoggedInEventPageMixin, DetailView):
             "submission.add_speaker_submission", self.get_object()
         )
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         if not self.can_accept_invite:
             messages.error(self.request, _("You cannot accept this invitation."))

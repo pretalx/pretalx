@@ -332,6 +332,7 @@ class SubmissionSpeakersDelete(SubmissionViewMixin, View):
 class SubmissionSpeakersReorder(SubmissionViewMixin, View):
     permission_required = "submission.update_submission"
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         order = request.POST.get("order", "")
         if not order:
@@ -1284,6 +1285,7 @@ class CommentDelete(SubmissionViewMixin, ActionConfirmMixin, TemplateView):
             pk=self.kwargs["pk"],
         )
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         comment = self.get_object()
         comment.submission.log_action(

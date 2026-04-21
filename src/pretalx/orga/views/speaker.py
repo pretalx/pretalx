@@ -277,6 +277,7 @@ class SpeakerPasswordReset(SpeakerViewMixin, ActionConfirmMixin, DetailView):
 class SpeakerToggleArrived(SpeakerViewMixin, View):
     permission_required = "person.update_speakerprofile"
 
+    @transaction.atomic
     def post(self, request, event, code):
         self.object.has_arrived = not self.object.has_arrived
         self.object.save()

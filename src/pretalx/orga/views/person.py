@@ -3,6 +3,7 @@
 import json
 
 from django.contrib import messages
+from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -64,6 +65,7 @@ class UserSettings(TemplateView):
         context["token_submit"] = [Button(name="form", value="token")]
         return context
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         if self.login_form.is_bound and self.login_form.is_valid():
             self.login_form.save()

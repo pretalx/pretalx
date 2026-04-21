@@ -251,6 +251,7 @@ class EventLive(EventSettingsPermission, TemplateView):
         result["submit_buttons"] = [Button(**button_kwargs)]
         return result
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         event = request.event
         action = request.POST.get("action")
