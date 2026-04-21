@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2024-present Tobias Kunze
 // SPDX-License-Identifier: Apache-2.0
 
-const utcoffset = new Date().getTimezoneOffset()
 const FORMAT_ARGS = { hour: "numeric", minute: "2-digit" }
 
 const getOffsetFromIso = (isoString) => {
@@ -21,11 +20,11 @@ const addLocalTimeRange = (element) => {
     const startIso = start.dataset.isodatetime || start.getAttribute("datetime")
     const endIso = end.dataset.isodatetime || end.getAttribute("datetime")
 
-    const startOffset = getOffsetFromIso(startIso)
-    if (startOffset === utcoffset) return // same timezone
-
     const startDate = new Date(startIso)
     const endDate = new Date(endIso)
+
+    const startOffset = getOffsetFromIso(startIso)
+    if (startOffset === startDate.getTimezoneOffset()) return // same timezone at event time
 
     const startString = startDate.toLocaleTimeString(undefined, {
         hour: "2-digit",
@@ -48,9 +47,9 @@ const addLocalTimeRange = (element) => {
 const addLocalTime = (element) => {
     const isoString = element.getAttribute("datetime")
     const elementOffset = getOffsetFromIso(isoString)
-    if (elementOffset === utcoffset) return
-
     const date = new Date(isoString)
+    if (elementOffset === date.getTimezoneOffset()) return // same timezone at event time
+
     const localString = date.toLocaleString(undefined, FORMAT_ARGS)
     const tzString = Intl.DateTimeFormat().resolvedOptions().timeZone
     const helpText = document.createElement("span")
