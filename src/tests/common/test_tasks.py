@@ -5,7 +5,11 @@ from pathlib import Path
 import pytest
 from django.core.files.storage import default_storage
 
-from pretalx.common.tasks import task_cleanup_file, task_process_image
+from pretalx.common.tasks import (
+    task_cleanup_file,
+    task_generate_thumbnails,
+    task_process_image,
+)
 from tests.factories import ProfilePictureFactory, UserFactory
 
 pytestmark = pytest.mark.unit
@@ -85,6 +89,43 @@ def test_task_process_image_catches_processing_error(make_image):
         # Task should complete without raising
     finally:
         avatar_dir.chmod(original_mode)
+
+
+@pytest.mark.django_db
+def test_task_generate_thumbnails_catches_processing_error(make_image):
+    user = UserFactory()
+    pic = ProfilePictureFactory(user=user, avatar=make_image())
+    task_process_image(
+        model="Profilepicture", pk=pic.pk, field="avatar", generate_thumbnail=True
+    )
+    pic.refresh_from_db()
+    Path(pic.avatar_thumbnail.path).unlink()
+    Path(pic.avatar_thumbnail_tiny.path).unlink()
+
+    avatar_dir = Path(pic.avatar.path).parent
+    original_mode = avatar_dir.stat().st_mode
+    try:
+        avatar_dir.chmod(0o555)
+        task_generate_thumbnails(model="Profilepicture", pk=pic.pk, field="avatar")
+    finally:
+        avatar_dir.chmod(original_mode)
+
+
+def test_task_generate_thumbnails_unknown_model():
+    task_generate_thumbnails(model="UnknownModel", pk=1, field="avatar")
+
+
+@pytest.mark.django_db
+def test_task_generate_thumbnails_instance_not_found():
+    task_generate_thumbnails(model="Profilepicture", pk=999999, field="avatar")
+
+
+@pytest.mark.django_db
+def test_task_generate_thumbnails_field_not_set():
+    user = UserFactory()
+    pic = ProfilePictureFactory(user=user)
+
+    task_generate_thumbnails(model="Profilepicture", pk=pic.pk, field="avatar")
 
 
 def test_task_cleanup_file_unknown_model():

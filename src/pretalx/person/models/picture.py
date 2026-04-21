@@ -8,7 +8,7 @@ from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
-from pretalx.common.image import create_thumbnail
+from pretalx.common.image import THUMBNAIL_SIZES, queue_thumbnail_regeneration
 from pretalx.common.models.mixins import FileCleanupMixin, TimestampedModel
 from pretalx.common.text.path import hashed_path
 
@@ -79,15 +79,16 @@ class ProfilePicture(FileCleanupMixin, TimestampedModel, models.Model):
         if not thumbnail:
             image = self.avatar
         else:
+            if thumbnail not in THUMBNAIL_SIZES:
+                return None
             image = (
                 self.avatar_thumbnail_tiny
                 if thumbnail == "tiny"
                 else self.avatar_thumbnail
             )
             if not image:
-                image = create_thumbnail(self.avatar, thumbnail)
-        if not image:
-            return
+                queue_thumbnail_regeneration(self.avatar)
+                image = self.avatar
         if event and event.custom_domain:
             return urljoin(event.custom_domain, image.url)
         return urljoin(settings.SITE_URL, image.url)
