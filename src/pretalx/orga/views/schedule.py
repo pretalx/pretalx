@@ -430,15 +430,15 @@ class ScheduleAvailabilities(EventPermissionRequired, View):
             .select_related("submission")
             .with_sorted_speakers()
         ):
-            if talk.submission.speakers.count() == 1:
+            speakers = talk.submission.sorted_speakers
+            if len(speakers) == 1:
                 result[talk.id] = [
-                    av.serialize(full=False)
-                    for av in speaker_avails[talk.submission.speakers.first().pk]
+                    av.serialize(full=False) for av in speaker_avails[speakers[0].pk]
                 ]
             else:
                 all_speaker_avails = [
                     speaker_avails[speaker.pk]
-                    for speaker in talk.submission.sorted_speakers
+                    for speaker in speakers
                     if speaker_avails[speaker.pk]
                 ]
                 if not all_speaker_avails:
