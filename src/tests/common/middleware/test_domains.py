@@ -8,6 +8,7 @@ from django.core.exceptions import DisallowedHost
 from django.http import Http404, HttpResponse
 from django.middleware.csrf import CSRF_SESSION_KEY
 from django.test import RequestFactory, override_settings
+from django.urls import Resolver404
 
 from pretalx.common.middleware.domains import (
     CsrfViewMiddleware,
@@ -138,6 +139,55 @@ def test_multi_domain_middleware_process_request_nonexistent_event_raises_404():
 
     with pytest.raises(Http404):
         middleware.process_request(request)
+
+
+@pytest.mark.django_db
+@override_settings(SITE_NETLOC="testserver")
+def test_multi_domain_middleware_attaches_event_on_unresolved_event_subpath():
+    event = EventFactory()
+    middleware = MultiDomainMiddleware(dummy_response)
+    request = rf.get(f"/{event.slug}/does-not-exist")
+    request.META["HTTP_HOST"] = "testserver"
+
+    with pytest.raises(Resolver404):
+        middleware.process_request(request)
+
+    assert request.event == event
+
+
+@pytest.mark.django_db
+@override_settings(SITE_NETLOC="testserver")
+def test_multi_domain_middleware_attaches_event_on_unresolved_orga_event_subpath():
+    event = EventFactory()
+    middleware = MultiDomainMiddleware(dummy_response)
+    request = rf.get(f"/orga/event/{event.slug}/nonsense")
+    request.META["HTTP_HOST"] = "testserver"
+
+    with pytest.raises(Resolver404):
+        middleware.process_request(request)
+
+    assert request.event == event
+
+
+@pytest.mark.django_db
+@override_settings(SITE_NETLOC="testserver")
+def test_multi_domain_middleware_leaves_event_unset_on_unresolved_unknown_path():
+    middleware = MultiDomainMiddleware(dummy_response)
+    request = rf.get("/no-such-event/sub/path")
+    request.META["HTTP_HOST"] = "testserver"
+
+    with pytest.raises(Resolver404):
+        middleware.process_request(request)
+
+    assert not hasattr(request, "event")
+
+
+def test_attach_event_from_path_noop_on_empty_path():
+    request = rf.get("/")
+
+    MultiDomainMiddleware._attach_event_from_path(request)
+
+    assert not hasattr(request, "event")
 
 
 @pytest.mark.django_db

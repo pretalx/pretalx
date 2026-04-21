@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 import time
+from contextlib import suppress
 from urllib.parse import urljoin, urlparse
 
 from django.conf import settings
@@ -16,7 +17,7 @@ from django.http.request import split_domain_port
 from django.middleware.csrf import CSRF_SESSION_KEY
 from django.middleware.csrf import CsrfViewMiddleware as BaseCsrfMiddleware
 from django.shortcuts import redirect
-from django.urls import resolve
+from django.urls import Resolver404, resolve
 from django.utils.cache import patch_vary_headers
 from django.utils.http import http_date
 
@@ -29,6 +30,18 @@ ANY_DOMAIN_ALLOWED = ("robots.txt", "redirect", "event.css")
 class MultiDomainMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
+
+    @staticmethod
+    def _attach_event_from_path(request):
+        parts = request.path.strip("/").split("/")
+        if not parts or not parts[0]:
+            return
+        if parts[0] == "orga" and len(parts) >= 3 and parts[1] == "event":
+            slug = parts[2]
+        else:
+            slug = parts[0]
+        with suppress(Event.DoesNotExist, ValueError):
+            request.event = Event.objects.get(slug__iexact=slug)
 
     @staticmethod
     def get_host(request):
@@ -54,7 +67,12 @@ class MultiDomainMiddleware:
         request.port = int(port) if port else None
         request.uses_custom_domain = False
 
-        resolved = resolve(request.path)
+        try:
+            resolved = resolve(request.path)
+        except Resolver404:
+            # Attach the event anyway so 404 pages can pick up the event theme.
+            self._attach_event_from_path(request)
+            raise
         if resolved.url_name in ANY_DOMAIN_ALLOWED or request.path.startswith("/api/"):
             return None
         event_slug = resolved.kwargs.get("event")
