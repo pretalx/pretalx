@@ -141,6 +141,29 @@ def check_caches(app_configs, **kwargs):
     return []
 
 
+@register()
+def check_pillow_webp(app_configs, **kwargs):
+    if app_configs:
+        return []
+    from PIL import features  # noqa: PLC0415 -- slow import
+
+    if not features.check("webp"):
+        return [
+            CheckMessage(
+                level=WARNING,
+                msg="Pillow is installed without WebP support; image uploads will not be processed and thumbnails will not be generated.",
+                hint=(
+                    "pretalx will keep working and serve uploaded images at their original resolution, "
+                    "but you should install libwebp on the host and reinstall Pillow from source in the venv "
+                    "(e.g. `pip install --force-reinstall --no-binary=Pillow Pillow`). "
+                    "Verify with `python -c 'from PIL import features; features.pilinfo()'`."
+                ),
+                id="pretalx.W005",
+            )
+        ]
+    return []
+
+
 @register(deploy=True)
 def check_debug(app_configs, **kwargs):
     if app_configs:
