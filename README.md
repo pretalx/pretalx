@@ -200,7 +200,7 @@
 | src/pretalx/orga/views/cfp.py                                              |      729 |        0 |      196 |        0 |     100% |           |
 | src/pretalx/orga/views/dashboard.py                                        |      162 |        0 |       46 |        0 |     100% |           |
 | src/pretalx/orga/views/event.py                                            |      436 |        0 |      106 |        0 |     100% |           |
-| src/pretalx/orga/views/mails.py                                            |      418 |        0 |       82 |        0 |     100% |           |
+| src/pretalx/orga/views/mails.py                                            |      417 |        0 |       82 |        0 |     100% |           |
 | src/pretalx/orga/views/organiser.py                                        |      314 |        0 |       58 |        0 |     100% |           |
 | src/pretalx/orga/views/person.py                                           |      120 |        0 |       30 |        0 |     100% |           |
 | src/pretalx/orga/views/plugins.py                                          |       56 |        0 |       14 |        0 |     100% |           |
@@ -552,7 +552,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **70782** |    **0** | **6044** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **70781** |    **0** | **6044** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
