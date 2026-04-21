@@ -8,7 +8,7 @@ from django.utils.timezone import now as tz_now
 from django_scopes import scope
 from i18nfield.strings import LazyI18nString
 
-from pretalx.schedule.models import Schedule
+from pretalx.schedule.models import Schedule, TalkSlot
 from pretalx.schedule.models.slot import SlotType
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
@@ -242,7 +242,60 @@ def test_schedule_get_talk_warnings_empty_for_unscheduled(event):
     assert schedule.get_talk_warnings(slot) == []
 
 
-def test_schedule_get_talk_warnings_room_overlap(event):
+@pytest.mark.parametrize(
+    ("offset_a", "offset_b"),
+    (
+        ((0, 60), (0, 60)),
+        ((0, 60), (0, 30)),
+        ((0, 60), (30, 60)),
+        ((0, 60), (0, 90)),
+        ((0, 60), (15, 45)),
+        ((0, 60), (-15, 15)),
+    ),
+    ids=[
+        "exact",
+        "shared_start",
+        "shared_end",
+        "shared_start_longer",
+        "fully_contained",
+        "partial_before",
+    ],
+)
+def test_schedule_get_talk_warnings_room_overlap(event, offset_a, offset_b):
+    room = RoomFactory(event=event)
+    submission1 = SubmissionFactory(event=event)
+    submission2 = SubmissionFactory(event=event)
+    base = event.datetime_from
+    with scope(event=event):
+        schedule = event.wip_schedule
+    slot1 = TalkSlotFactory(
+        submission=submission1,
+        schedule=schedule,
+        room=room,
+        start=base + dt.timedelta(minutes=offset_a[0]),
+        end=base + dt.timedelta(minutes=offset_a[1]),
+    )
+    TalkSlotFactory(
+        submission=submission2,
+        schedule=schedule,
+        room=room,
+        start=base + dt.timedelta(minutes=offset_b[0]),
+        end=base + dt.timedelta(minutes=offset_b[1]),
+    )
+
+    with scope(event=event):
+        warnings = schedule.get_talk_warnings(slot1, with_speakers=False)
+        bulk = schedule.get_all_talk_warnings()
+
+    assert len(warnings) == 1
+    assert warnings[0]["type"] == "room_overlap"
+    assert len(bulk) == 2
+    for slot_warnings in bulk.values():
+        assert len(slot_warnings) == 1
+        assert slot_warnings[0]["type"] == "room_overlap"
+
+
+def test_schedule_get_all_talk_warnings_filter_updated_detects_conflict(event):
     room = RoomFactory(event=event)
     submission1 = SubmissionFactory(event=event)
     submission2 = SubmissionFactory(event=event)
@@ -250,18 +303,188 @@ def test_schedule_get_talk_warnings_room_overlap(event):
     end = start + dt.timedelta(hours=1)
     with scope(event=event):
         schedule = event.wip_schedule
-    slot1 = TalkSlotFactory(
+    past = tz_now() - dt.timedelta(hours=2)
+    stable_slot = TalkSlotFactory(
         submission=submission1, schedule=schedule, room=room, start=start, end=end
     )
+    TalkSlot.objects.filter(pk=stable_slot.pk).update(updated=past)
     TalkSlotFactory(
         submission=submission2, schedule=schedule, room=room, start=start, end=end
     )
 
+    cutoff = tz_now() - dt.timedelta(minutes=5)
     with scope(event=event):
-        warnings = schedule.get_talk_warnings(slot1, with_speakers=False)
+        result = schedule.get_all_talk_warnings(filter_updated=cutoff)
 
-    assert len(warnings) == 1
-    assert warnings[0]["type"] == "room_overlap"
+    assert len(result) == 1
+    (talk_warnings,) = result.values()
+    assert len(talk_warnings) == 1
+    assert talk_warnings[0]["type"] == "room_overlap"
+
+
+def test_schedule_get_all_talk_warnings_non_overlapping(event):
+    """Non-overlapping slots in the same room and with a shared speaker produce no warnings."""
+    room = RoomFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission1 = SubmissionFactory(event=event)
+    submission2 = SubmissionFactory(event=event)
+    submission1.speakers.add(speaker)
+    submission2.speakers.add(speaker)
+    start = event.datetime_from
+    with scope(event=event):
+        schedule = event.wip_schedule
+    TalkSlotFactory(
+        submission=submission1,
+        schedule=schedule,
+        room=room,
+        start=start,
+        end=start + dt.timedelta(minutes=30),
+    )
+    TalkSlotFactory(
+        submission=submission2,
+        schedule=schedule,
+        room=room,
+        start=start + dt.timedelta(minutes=60),
+        end=start + dt.timedelta(minutes=90),
+    )
+
+    with scope(event=event):
+        result = schedule.get_all_talk_warnings()
+
+    assert result == {}
+
+
+def test_schedule_get_all_talk_warnings_filter_updated_speaker_overlap(event):
+    """Subset mode detects speaker overlap against a non-updated slot."""
+    room1 = RoomFactory(event=event)
+    room2 = RoomFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission1 = SubmissionFactory(event=event)
+    submission2 = SubmissionFactory(event=event)
+    submission1.speakers.add(speaker)
+    submission2.speakers.add(speaker)
+    start = event.datetime_from
+    end = start + dt.timedelta(hours=1)
+    with scope(event=event):
+        schedule = event.wip_schedule
+    past = tz_now() - dt.timedelta(hours=2)
+    stable_slot = TalkSlotFactory(
+        submission=submission1, schedule=schedule, room=room1, start=start, end=end
+    )
+    TalkSlot.objects.filter(pk=stable_slot.pk).update(updated=past)
+    TalkSlotFactory(
+        submission=submission2, schedule=schedule, room=room2, start=start, end=end
+    )
+
+    cutoff = tz_now() - dt.timedelta(minutes=5)
+    with scope(event=event):
+        result = schedule.get_all_talk_warnings(filter_updated=cutoff)
+
+    assert len(result) == 1
+    (talk_warnings,) = result.values()
+    assert len(talk_warnings) == 1
+    assert talk_warnings[0]["type"] == "speaker"
+    assert "another session" in talk_warnings[0]["message"]
+
+
+def test_schedule_get_all_talk_warnings_filter_updated_no_overlap(event):
+    """Subset mode handles the updated slot having no room or speaker conflicts."""
+    room = RoomFactory(event=event)
+    speaker = SpeakerFactory(event=event)
+    submission1 = SubmissionFactory(event=event)
+    submission2 = SubmissionFactory(event=event)
+    submission1.speakers.add(speaker)
+    submission2.speakers.add(speaker)
+    start = event.datetime_from
+    with scope(event=event):
+        schedule = event.wip_schedule
+    past = tz_now() - dt.timedelta(hours=2)
+    stable_slot = TalkSlotFactory(
+        submission=submission1,
+        schedule=schedule,
+        room=room,
+        start=start,
+        end=start + dt.timedelta(minutes=30),
+    )
+    TalkSlot.objects.filter(pk=stable_slot.pk).update(updated=past)
+    TalkSlotFactory(
+        submission=submission2,
+        schedule=schedule,
+        room=room,
+        start=start + dt.timedelta(minutes=60),
+        end=start + dt.timedelta(minutes=90),
+    )
+
+    cutoff = tz_now() - dt.timedelta(minutes=5)
+    with scope(event=event):
+        result = schedule.get_all_talk_warnings(filter_updated=cutoff)
+
+    assert result == {}
+
+
+def test_schedule_get_all_talk_warnings_breaks(event):
+    """Breaks participate in overlap detection when well-formed and are skipped otherwise."""
+    room = RoomFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    start = event.datetime_from
+    with scope(event=event):
+        schedule = event.wip_schedule
+    TalkSlotFactory(
+        submission=None,
+        schedule=schedule,
+        room=room,
+        slot_type=SlotType.BREAK,
+        start=start,
+        end=None,
+    )
+    TalkSlotFactory(
+        submission=None,
+        schedule=schedule,
+        room=room,
+        slot_type=SlotType.BREAK,
+        start=start + dt.timedelta(hours=4),
+        end=start + dt.timedelta(hours=5),
+    )
+    TalkSlotFactory(
+        submission=submission,
+        schedule=schedule,
+        room=room,
+        start=start + dt.timedelta(hours=2),
+        end=start + dt.timedelta(hours=3),
+    )
+
+    with scope(event=event):
+        result = schedule.get_all_talk_warnings()
+
+    assert result == {}
+
+
+def test_schedule_get_all_talk_warnings_slot_without_end(event):
+    """Slots with start set but end unset fall back to submission duration."""
+    room = RoomFactory(event=event)
+    submission1 = SubmissionFactory(event=event)
+    submission2 = SubmissionFactory(event=event)
+    start = event.datetime_from
+    with scope(event=event):
+        schedule = event.wip_schedule
+    open_slot = TalkSlotFactory(
+        submission=submission1, schedule=schedule, room=room, start=start, end=None
+    )
+    overlapping_slot = TalkSlotFactory(
+        submission=submission2,
+        schedule=schedule,
+        room=room,
+        start=start + dt.timedelta(minutes=5),
+        end=start + dt.timedelta(minutes=20),
+    )
+
+    with scope(event=event):
+        bulk = schedule.get_all_talk_warnings()
+
+    assert set(bulk.keys()) == {open_slot, overlapping_slot}
+    for slot_warnings in bulk.values():
+        assert len(slot_warnings) == 1
+        assert slot_warnings[0]["type"] == "room_overlap"
 
 
 def test_schedule_get_talk_warnings_room_availability(event):
@@ -291,7 +514,18 @@ def test_schedule_get_talk_warnings_room_availability(event):
     assert warnings[0]["type"] == "room"
 
 
-def test_schedule_get_talk_warnings_speaker_overlap(event):
+@pytest.mark.parametrize(
+    ("offset_a", "offset_b"),
+    (
+        ((0, 60), (0, 60)),
+        ((0, 60), (0, 30)),
+        ((0, 60), (30, 60)),
+        ((0, 60), (15, 45)),
+        ((0, 60), (-15, 15)),
+    ),
+    ids=["exact", "shared_start", "shared_end", "fully_contained", "partial_before"],
+)
+def test_schedule_get_talk_warnings_speaker_overlap(event, offset_a, offset_b):
     room1 = RoomFactory(event=event)
     room2 = RoomFactory(event=event)
     speaker = SpeakerFactory(event=event)
@@ -299,23 +533,37 @@ def test_schedule_get_talk_warnings_speaker_overlap(event):
     submission2 = SubmissionFactory(event=event)
     submission1.speakers.add(speaker)
     submission2.speakers.add(speaker)
-    start = event.datetime_from
-    end = start + dt.timedelta(hours=1)
+    base = event.datetime_from
     with scope(event=event):
         schedule = event.wip_schedule
     slot1 = TalkSlotFactory(
-        submission=submission1, schedule=schedule, room=room1, start=start, end=end
+        submission=submission1,
+        schedule=schedule,
+        room=room1,
+        start=base + dt.timedelta(minutes=offset_a[0]),
+        end=base + dt.timedelta(minutes=offset_a[1]),
     )
     TalkSlotFactory(
-        submission=submission2, schedule=schedule, room=room2, start=start, end=end
+        submission=submission2,
+        schedule=schedule,
+        room=room2,
+        start=base + dt.timedelta(minutes=offset_b[0]),
+        end=base + dt.timedelta(minutes=offset_b[1]),
     )
 
     with scope(event=event):
         warnings = schedule.get_talk_warnings(slot1, with_speakers=True)
+        bulk = schedule.get_all_talk_warnings()
 
     speaker_warnings = [w for w in warnings if w["type"] == "speaker"]
     assert len(speaker_warnings) == 1
+    assert "another session" in speaker_warnings[0]["message"]
     assert speaker_warnings[0]["speaker"]["code"] == speaker.code
+    assert len(bulk) == 2
+    for slot_warnings in bulk.values():
+        bulk_speaker_warnings = [w for w in slot_warnings if w["type"] == "speaker"]
+        assert len(bulk_speaker_warnings) == 1
+        assert "another session" in bulk_speaker_warnings[0]["message"]
 
 
 def test_schedule_get_talk_warnings_speaker_availability(event):
@@ -379,29 +627,6 @@ def test_schedule_get_talk_warnings_no_speaker_avail_when_disabled(event):
         if w["type"] == "speaker" and "not available" in w["message"]
     ]
     assert speaker_avail_warnings == []
-
-
-def test_schedule_get_all_talk_warnings(event):
-    room = RoomFactory(event=event)
-    submission1 = SubmissionFactory(event=event)
-    submission2 = SubmissionFactory(event=event)
-    start = event.datetime_from
-    end = start + dt.timedelta(hours=1)
-    with scope(event=event):
-        schedule = event.wip_schedule
-    TalkSlotFactory(
-        submission=submission1, schedule=schedule, room=room, start=start, end=end
-    )
-    TalkSlotFactory(
-        submission=submission2, schedule=schedule, room=room, start=start, end=end
-    )
-
-    with scope(event=event):
-        result = schedule.get_all_talk_warnings()
-
-    assert len(result) == 2
-    for warnings in result.values():
-        assert any(w["type"] == "room_overlap" for w in warnings)
 
 
 def test_schedule_get_all_talk_warnings_filter_updated(event):
