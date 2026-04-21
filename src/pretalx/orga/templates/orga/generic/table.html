@@ -22,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
                 <i class="fa fa-cog"></i> {% translate "Table options" %}
             </button>
 
-            <dialog id="table-preferences-{{ table.name }}" class="modal-dialog table-preferences" role="dialog" aria-labelledby="table-preferences-label-{{ table.name }}">
+            <dialog id="table-preferences-{{ table.name }}" class="modal-dialog table-preferences" role="dialog" aria-labelledby="table-preferences-label-{{ table.name }}" closedby="any">
                 <div class="modal-card-content"><!-- This div is the inner container, to allow users to close the dialog by clicking outside it -->
                     <div class="modal-card-header">
                         <h3 id="table-preferences-label-{{ table.name }}">{% translate "Table options" %}</h3>

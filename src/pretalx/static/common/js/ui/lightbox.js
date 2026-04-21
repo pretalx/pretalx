@@ -10,11 +10,12 @@ const setupLightbox = () => {
     const caption = dialog.querySelector("figcaption")
     if (!dialog || !img) return
 
-    // Close the dialog when users click outside it, but do not do that when clicking
-    // inside it (e.g. following a link, right-clicking etc). Then restore click-to-close
-    // behaviour when clicking the close button.
-    dialog.addEventListener("click", () => dialog.close())
-    dialog.querySelector(".modal-card-content").addEventListener("click", (ev) => ev.stopPropagation())
+    // Fallback for browsers without `closedby="any"` (Safari as of 2026, TODO 2027 check if we can drop this):
+    // close on outside click, but not when clicking inside (e.g. following a link, right-click).
+    if (!("closedBy" in HTMLDialogElement.prototype)) {
+        dialog.addEventListener("click", () => dialog.close())
+        dialog.querySelector(".modal-card-content").addEventListener("click", (ev) => ev.stopPropagation())
+    }
     dialog.querySelector("button.dialog-close").addEventListener("click", () => dialog.close())
 
     document

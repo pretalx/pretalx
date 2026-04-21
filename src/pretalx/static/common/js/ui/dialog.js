@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: 2024-present Tobias Kunze
 // SPDX-License-Identifier: Apache-2.0
 
-/* Minimal enhancement to native modals, by making them close when the user clicks outside the dialog. */
+/* Minimal enhancement to native modals: wire up `[data-dialog-target]` openers and
+ * `button.close-dialog` closers, and — for browsers without `closedby="any"` support —
+ * add click-outside-to-close. Once Safari ships `closedby`, the fallback block can go.
+ * See https://caniuse.com/?search=closedby, TODO 2027: check if we can drop this. */
+
+const supportsClosedBy = "closedBy" in HTMLDialogElement.prototype
 
 const setupModals = (container) => {
     container.querySelectorAll("[data-dialog-target]").forEach((element) => {
@@ -16,6 +21,7 @@ const setupModals = (container) => {
     })
     container.querySelectorAll("dialog").forEach((element) => {
         element.querySelectorAll("button.close-dialog").forEach((btn) => btn.addEventListener("click", () => element.close()))
+        if (supportsClosedBy) return
         element.addEventListener("click", (ev) => {
             if (ev.target === element) {
                 element.close()
