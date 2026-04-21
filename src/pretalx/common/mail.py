@@ -4,8 +4,11 @@
 # This file contains Apache-2.0 licensed contributions copyrighted by the following contributors:
 # SPDX-FileContributor: Raphael Michel
 
+import ipaddress
 import logging
 import re
+import smtplib
+import socket
 from contextlib import suppress
 from email.utils import formataddr, parseaddr
 from smtplib import SMTPResponseException, SMTPSenderRefused
@@ -22,7 +25,26 @@ from pretalx.event.models import Event
 logger = logging.getLogger(__name__)
 
 
+class SMTP(smtplib.SMTP):
+    def _get_socket(self, host, port, timeout):
+        for res in socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM):
+            ip = ipaddress.ip_address(res[4][0])
+            if ip.is_multicast or ip.is_loopback or ip.is_link_local or ip.is_private:
+                raise OSError(f"Request to address {ip} blocked")
+        return super()._get_socket(host, port, timeout)
+
+
+# smtplib.SMTP_SSL._get_socket calls super()._get_socket and wraps the result;
+# the MRO below makes that super() resolve to our override on SMTP.
+class SMTP_SSL(smtplib.SMTP_SSL, SMTP):  # noqa: N801
+    pass
+
+
 class CustomSMTPBackend(EmailBackend):
+    @property
+    def connection_class(self):
+        return SMTP_SSL if self.use_ssl else SMTP
+
     def test(self, from_addr):
         try:
             self.open()
