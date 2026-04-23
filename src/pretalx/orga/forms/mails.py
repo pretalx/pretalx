@@ -276,6 +276,15 @@ class WriteTeamsMailForm(WriteMailBaseForm):
 class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
     default_renderer = TabularFormRenderer
 
+    RECIPIENT_FILTER_FIELDS = (
+        "state",
+        "submission_type",
+        "content_locale",
+        "track",
+        "tags",
+        "question",
+    )
+
     submissions = forms.MultipleChoiceField(
         required=False,
         label=_("Proposals"),
@@ -326,25 +335,18 @@ class WriteSessionMailForm(SubmissionFilterForm, WriteMailBaseForm):
         kwargs = ["event", "user", "submission", "slot"]
         if not self.event.current_schedule:
             kwargs.remove("slot")
-        if (
-            getattr(self, "cleaned_data", None)
-            and not ignore_data
-            and self.cleaned_data.get("speakers")
-        ):
-            kwargs = [k for k in kwargs if k not in ("submission", "slot")]
+        cleaned_data = getattr(self, "cleaned_data", None)
+        if cleaned_data and not ignore_data and cleaned_data.get("speakers"):
+            has_submission_recipients = cleaned_data.get("submissions") or any(
+                cleaned_data.get(key) for key in self.RECIPIENT_FILTER_FIELDS
+            )
+            if not has_submission_recipients:
+                kwargs = [k for k in kwargs if k not in ("submission", "slot")]
         return get_available_placeholders(event=self.event, kwargs=kwargs)
 
     def clean(self):
         cleaned_data = super().clean()
-        filter_keys = (
-            "state",
-            "submission_type",
-            "content_locale",
-            "track",
-            "tags",
-            "question",
-        )
-        has_filters = any(cleaned_data.get(key) for key in filter_keys)
+        has_filters = any(cleaned_data.get(key) for key in self.RECIPIENT_FILTER_FIELDS)
         added_submissions = cleaned_data.get("submissions")
         added_speakers = cleaned_data.get("speakers")
 
