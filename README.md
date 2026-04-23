@@ -170,7 +170,7 @@
 | src/pretalx/orga/forms/cfp.py                                              |      316 |        0 |       80 |        0 |     100% |           |
 | src/pretalx/orga/forms/event.py                                            |      396 |        0 |      116 |        0 |     100% |           |
 | src/pretalx/orga/forms/export.py                                           |       91 |        0 |       32 |        0 |     100% |           |
-| src/pretalx/orga/forms/mails.py                                            |      270 |        0 |       82 |        0 |     100% |           |
+| src/pretalx/orga/forms/mails.py                                            |      273 |        0 |       84 |        0 |     100% |           |
 | src/pretalx/orga/forms/review.py                                           |      275 |        0 |       74 |        0 |     100% |           |
 | src/pretalx/orga/forms/schedule.py                                         |      122 |        0 |       14 |        0 |     100% |           |
 | src/pretalx/orga/forms/speaker.py                                          |       45 |        0 |        2 |        0 |     100% |           |
@@ -449,7 +449,7 @@
 | src/tests/orga/forms/test\_admin.py                                        |       39 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/forms/test\_cfp.py                                          |      535 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/forms/test\_event.py                                        |      686 |        0 |       22 |        0 |     100% |           |
-| src/tests/orga/forms/test\_mails.py                                        |      574 |        0 |        4 |        0 |     100% |           |
+| src/tests/orga/forms/test\_mails.py                                        |      600 |        0 |        4 |        0 |     100% |           |
 | src/tests/orga/forms/test\_review.py                                       |      702 |        0 |       14 |        0 |     100% |           |
 | src/tests/orga/forms/test\_schedule.py                                     |      384 |        0 |        4 |        0 |     100% |           |
 | src/tests/orga/forms/test\_speaker.py                                      |      123 |        0 |        4 |        0 |     100% |           |
@@ -478,7 +478,7 @@
 | src/tests/orga/views/integration/test\_cfp.py                              |     1016 |        0 |       10 |        0 |     100% |           |
 | src/tests/orga/views/integration/test\_dashboard.py                        |      298 |        0 |        8 |        0 |     100% |           |
 | src/tests/orga/views/integration/test\_event.py                            |      661 |        0 |        2 |        0 |     100% |           |
-| src/tests/orga/views/integration/test\_mails.py                            |      671 |        0 |       12 |        0 |     100% |           |
+| src/tests/orga/views/integration/test\_mails.py                            |      684 |        0 |       12 |        0 |     100% |           |
 | src/tests/orga/views/integration/test\_organiser.py                        |      342 |        0 |        4 |        0 |     100% |           |
 | src/tests/orga/views/integration/test\_person.py                           |      173 |        0 |        0 |        0 |     100% |           |
 | src/tests/orga/views/integration/test\_plugins.py                          |       62 |        0 |        0 |        0 |     100% |           |
@@ -552,7 +552,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **70781** |    **0** | **6044** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **70823** |    **0** | **6046** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
