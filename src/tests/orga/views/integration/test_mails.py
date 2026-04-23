@@ -1254,6 +1254,38 @@ def test_compose_session_mail_preview(client, event, submission):
         )
 
 
+def test_compose_session_mail_preview_with_submissions_and_speakers(client, event):
+    """Regression for PX-165: the preview blew up with KeyError when both
+    submissions and speakers were selected and the template referenced a
+    submission-scoped placeholder like {proposal_title}."""
+    user = make_orga_user(event, can_change_submissions=True)
+    client.force_login(user)
+    with scopes_disabled():
+        speaker = SpeakerFactory(event=event)
+        submission = SubmissionFactory(event=event)
+        submission.speakers.add(speaker)
+        other_speaker = SpeakerFactory(event=event)
+        other_submission = SubmissionFactory(event=event)
+        other_submission.speakers.add(other_speaker)
+
+    response = client.post(
+        event.orga_urls.compose_mails_sessions,
+        data={
+            "submissions": [submission.code],
+            "speakers": [other_speaker.pk],
+            "bcc": "",
+            "cc": "",
+            "reply_to": "",
+            "subject_0": "Preview",
+            "text_0": "Hello {proposal_title}",
+            "action": "preview",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "Subject:" in response.content.decode()
+
+
 def test_compose_teams_mail_blocked_by_exception(
     client, event, register_signal_handler
 ):

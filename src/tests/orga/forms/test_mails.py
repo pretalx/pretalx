@@ -679,7 +679,7 @@ def test_write_session_mail_form_get_valid_placeholders_without_speakers():
 
 
 def test_write_session_mail_form_get_valid_placeholders_with_speakers():
-    """With speaker selection, submission/slot placeholders are removed."""
+    """With speaker-only selection, submission/slot placeholders are removed."""
     event = EventFactory()
     speaker = SpeakerFactory(event=event)
     submission = SubmissionFactory(event=event)
@@ -693,6 +693,58 @@ def test_write_session_mail_form_get_valid_placeholders_with_speakers():
     placeholders = form.get_valid_placeholders()
     assert "submission_title" not in placeholders
     assert "proposal_title" not in placeholders
+
+
+def test_write_session_mail_form_get_valid_placeholders_with_submissions_and_speakers():
+    """Submission placeholders remain valid when submissions AND speakers are
+    both selected: the submission-scoped recipients will still have submission
+    context, so the preview must be able to render those placeholders."""
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event)
+    submission.speakers.add(speaker)
+    other_speaker = SpeakerFactory(event=event)
+    other_submission = SubmissionFactory(event=event)
+    other_submission.speakers.add(other_speaker)
+    form = WriteSessionMailForm(
+        event=event,
+        data={
+            "submissions": [submission.code],
+            "speakers": [other_speaker.pk],
+            "subject_0": "Test",
+            "text_0": "Body {proposal_title}",
+        },
+    )
+    assert form.is_valid(), form.errors
+
+    placeholders = form.get_valid_placeholders()
+    assert "proposal_title" in placeholders
+    assert "submission_title" in placeholders
+
+
+def test_write_session_mail_form_get_valid_placeholders_with_filters_and_speakers():
+    """Same as above, but with a filter instead of explicit submissions."""
+    event = EventFactory()
+    speaker = SpeakerFactory(event=event)
+    submission = SubmissionFactory(event=event, state="submitted")
+    submission.speakers.add(speaker)
+    other_speaker = SpeakerFactory(event=event)
+    other_submission = SubmissionFactory(event=event, state="accepted")
+    other_submission.speakers.add(other_speaker)
+    form = WriteSessionMailForm(
+        event=event,
+        data={
+            "state": ["submitted"],
+            "speakers": [other_speaker.pk],
+            "subject_0": "Test",
+            "text_0": "Body {proposal_title}",
+        },
+    )
+    assert form.is_valid(), form.errors
+
+    placeholders = form.get_valid_placeholders()
+    assert "proposal_title" in placeholders
+    assert "submission_title" in placeholders
 
 
 def test_write_session_mail_form_submissions_field_choices():

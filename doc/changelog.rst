@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`orga:email` Previewing a session email could lead to errors when the recipient groups contained both individual speakers *and* individual sessions due to placeholder conflicts.
 - :feature:`-` Status badges across the organiser backend and speaker area now use better contrast, improving legibility and accessibility.
 - :bug:`schedule` The public schedule widget and other request-path views no longer regenerate missing avatar thumbnails synchronously; regeneration is queued and the full-size avatar is served until the thumbnail is ready. This also means that schedule and speaker pages now load even when thumbnail generation is broken.
 - :announcement:`admin` Pretalx now shows a warning at ``manage.py check`` time when Pillow is installed without WebP support, so administrators are made aware that image uploads will not be processed and thumbnails will not be generated.
