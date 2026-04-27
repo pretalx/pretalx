@@ -477,6 +477,7 @@ export default {
 					start: this.editorSession.start,
 					end: this.editorSession.end,
 					duration: this.editorSession.duration,
+					slot_type: this.editorSession.slot_type,
 					room: room.id
 				}
 
@@ -490,6 +491,7 @@ export default {
 						start: newBreak.start,
 						end: newBreak.end,
 						duration: newBreak.duration,
+						slot_type: newBreak.slot_type,
 						room: room.id
 					}
 					this.schedule.talks.push(createdBreak)
