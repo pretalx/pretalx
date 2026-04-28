@@ -45,7 +45,7 @@ const addLocalTimeRange = (element) => {
 }
 
 const addLocalTime = (element) => {
-    const isoString = element.getAttribute("datetime")
+    const isoString = element.dataset.isodatetime || element.getAttribute("datetime")
     const elementOffset = getOffsetFromIso(isoString)
     const date = new Date(isoString)
     if (elementOffset === date.getTimezoneOffset()) return // same timezone at event time
