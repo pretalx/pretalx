@@ -801,8 +801,13 @@ class Submission(GenerateCode, PretalxModel):
     withdraw.alters_data = True
 
     def delete(self, person=None, orga: bool = True, **kwargs):
+        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
+            Answer,
+        )
+
         self.slots.all().delete()
         self.answers.all().delete()
+        Answer.objects.filter(review__submission=self).delete()
         for resource in self.resources.all():
             resource.delete()
         super().delete(
