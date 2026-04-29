@@ -771,6 +771,22 @@ def test_submission_delete_removes_related():
     assert not Resource.objects.filter(submission_id=sub_pk).exists()
 
 
+def test_submission_delete_removes_review_answers():
+    submission = SubmissionFactory()
+    event = submission.event
+    review = ReviewFactory(submission=submission)
+    reviewer_question = QuestionFactory(event=event, target=QuestionTarget.REVIEWER)
+    review_answer = AnswerFactory(
+        question=reviewer_question, submission=None, review=review
+    )
+    review_answer_pk = review_answer.pk
+    sub_pk = submission.pk
+    with scope(event=event):
+        submission.delete()
+    assert not Submission.all_objects.filter(pk=sub_pk).exists()
+    assert not Answer.objects.filter(pk=review_answer_pk).exists()
+
+
 def test_submission_delete_cleans_up_resource_files():
     submission = SubmissionFactory()
     f = SimpleUploadedFile("testresource.txt", b"test content")
