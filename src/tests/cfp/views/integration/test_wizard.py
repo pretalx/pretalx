@@ -16,6 +16,8 @@ from tests.cfp.views.conftest import get_response_and_url, info_data, start_wiza
 from tests.factories import (
     EventFactory,
     QuestionFactory,
+    ResourceFactory,
+    SubmissionFactory,
     SubmitterAccessCodeFactory,
     UserFactory,
 )
@@ -279,6 +281,27 @@ def test_wizard_with_resources_required_blocks_without(client):
     )
     _, url = get_response_and_url(client, info_url, data=data)
     assert "/profile/" in url
+
+
+def test_wizard_does_not_leak_other_submissions_resources(client):
+    event = EventFactory(
+        cfp__deadline=now() + dt.timedelta(days=30),
+        cfp__fields={"resources": {"visibility": "optional"}},
+    )
+    access_code = SubmitterAccessCodeFactory(event=event)
+    with scopes_disabled():
+        other_submission = SubmissionFactory(event=event, title="Other talk")
+        ResourceFactory(
+            submission=other_submission,
+            link="https://leak.example.com/secret.pdf",
+            description="Slides from other submission",
+        )
+
+    response, info_url = start_wizard(client, event, access_code=access_code)
+    assert "/info/" in info_url
+    content = response.content.decode()
+    assert "Slides from other submission" not in content
+    assert "https://leak.example.com/secret.pdf" not in content
 
 
 def test_wizard_resource_link_preserved_on_back_navigation(client):

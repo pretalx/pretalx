@@ -561,7 +561,7 @@ def test_info_step_get_resource_formset_returns_none_when_disabled():
     request = make_request(event, resolver_match=_resolver(), session=_cfp_session())
     step.request = request
 
-    assert step.get_resource_formset() is None
+    assert step.get_resource_formset(submission=None) is None
 
 
 @pytest.mark.django_db
@@ -571,7 +571,7 @@ def test_info_step_get_resource_formset_returns_formset_when_enabled():
     request = make_request(event, resolver_match=_resolver(), session=_cfp_session())
     step.request = request
 
-    formset = step.get_resource_formset()
+    formset = step.get_resource_formset(submission=None)
     assert formset.prefix == "resource"
 
 
@@ -1803,7 +1803,7 @@ def test_info_step_get_resource_formset_post_merges_stored_files():
     )
     step.request = request
 
-    formset = step.get_resource_formset()
+    formset = step.get_resource_formset(submission=None)
 
     assert formset.files["resource-0-resource"].name == "slides.pdf"
 
@@ -1842,7 +1842,7 @@ def test_info_step_get_resource_formset_post_keeps_reuploaded_file():
     )
     step.request = request
 
-    formset = step.get_resource_formset()
+    formset = step.get_resource_formset(submission=None)
 
     assert formset.files["resource-0-resource"].name == "new.pdf"
 
