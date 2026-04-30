@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_1ea536717bb5aa90_conftest_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-29 19:10 +0000
+            created at 2026-04-30 14:14 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -645,7 +645,7 @@
     <p class="run"><span class="n"><a id="t561" href="#t561">561</a></span><span class="t">    <span class="nam">request</span> <span class="op">=</span> <span class="nam">make_request</span><span class="op">(</span><span class="nam">event</span><span class="op">,</span> <span class="nam">resolver_match</span><span class="op">=</span><span class="nam">_resolver</span><span class="op">(</span><span class="op">)</span><span class="op">,</span> <span class="nam">session</span><span class="op">=</span><span class="nam">_cfp_session</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t562" href="#t562">562</a></span><span class="t">    <span class="nam">step</span><span class="op">.</span><span class="nam">request</span> <span class="op">=</span> <span class="nam">request</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t563" href="#t563">563</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t564" href="#t564">564</a></span><span class="t">    <span class="key">assert</span> <span class="nam">step</span><span class="op">.</span><span class="nam">get_resource_formset</span><span class="op">(</span><span class="op">)</span> <span class="key">is</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t564" href="#t564">564</a></span><span class="t">    <span class="key">assert</span> <span class="nam">step</span><span class="op">.</span><span class="nam">get_resource_formset</span><span class="op">(</span><span class="nam">submission</span><span class="op">=</span><span class="key">None</span><span class="op">)</span> <span class="key">is</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t565" href="#t565">565</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t566" href="#t566">566</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t567" href="#t567">567</a></span><span class="t"><span class="op">@</span><span class="nam">pytest</span><span class="op">.</span><span class="nam">mark</span><span class="op">.</span><span class="nam">django_db</span>&nbsp;</span><span class="r"></span></p>
@@ -655,7 +655,7 @@
     <p class="run"><span class="n"><a id="t571" href="#t571">571</a></span><span class="t">    <span class="nam">request</span> <span class="op">=</span> <span class="nam">make_request</span><span class="op">(</span><span class="nam">event</span><span class="op">,</span> <span class="nam">resolver_match</span><span class="op">=</span><span class="nam">_resolver</span><span class="op">(</span><span class="op">)</span><span class="op">,</span> <span class="nam">session</span><span class="op">=</span><span class="nam">_cfp_session</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t572" href="#t572">572</a></span><span class="t">    <span class="nam">step</span><span class="op">.</span><span class="nam">request</span> <span class="op">=</span> <span class="nam">request</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t573" href="#t573">573</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t574" href="#t574">574</a></span><span class="t">    <span class="nam">formset</span> <span class="op">=</span> <span class="nam">step</span><span class="op">.</span><span class="nam">get_resource_formset</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t574" href="#t574">574</a></span><span class="t">    <span class="nam">formset</span> <span class="op">=</span> <span class="nam">step</span><span class="op">.</span><span class="nam">get_resource_formset</span><span class="op">(</span><span class="nam">submission</span><span class="op">=</span><span class="key">None</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t575" href="#t575">575</a></span><span class="t">    <span class="key">assert</span> <span class="nam">formset</span><span class="op">.</span><span class="nam">prefix</span> <span class="op">==</span> <span class="str">"resource"</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t576" href="#t576">576</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t577" href="#t577">577</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -1887,7 +1887,7 @@
     <p class="run run2"><span class="n"><a id="t1803" href="#t1803">1803</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1804" href="#t1804">1804</a></span><span class="t">    <span class="nam">step</span><span class="op">.</span><span class="nam">request</span> <span class="op">=</span> <span class="nam">request</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1805" href="#t1805">1805</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t1806" href="#t1806">1806</a></span><span class="t">    <span class="nam">formset</span> <span class="op">=</span> <span class="nam">step</span><span class="op">.</span><span class="nam">get_resource_formset</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1806" href="#t1806">1806</a></span><span class="t">    <span class="nam">formset</span> <span class="op">=</span> <span class="nam">step</span><span class="op">.</span><span class="nam">get_resource_formset</span><span class="op">(</span><span class="nam">submission</span><span class="op">=</span><span class="key">None</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1807" href="#t1807">1807</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1808" href="#t1808">1808</a></span><span class="t">    <span class="key">assert</span> <span class="nam">formset</span><span class="op">.</span><span class="nam">files</span><span class="op">[</span><span class="str">"resource-0-resource"</span><span class="op">]</span><span class="op">.</span><span class="nam">name</span> <span class="op">==</span> <span class="str">"slides.pdf"</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1809" href="#t1809">1809</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -1926,7 +1926,7 @@
     <p class="run run2"><span class="n"><a id="t1842" href="#t1842">1842</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1843" href="#t1843">1843</a></span><span class="t">    <span class="nam">step</span><span class="op">.</span><span class="nam">request</span> <span class="op">=</span> <span class="nam">request</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1844" href="#t1844">1844</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t1845" href="#t1845">1845</a></span><span class="t">    <span class="nam">formset</span> <span class="op">=</span> <span class="nam">step</span><span class="op">.</span><span class="nam">get_resource_formset</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1845" href="#t1845">1845</a></span><span class="t">    <span class="nam">formset</span> <span class="op">=</span> <span class="nam">step</span><span class="op">.</span><span class="nam">get_resource_formset</span><span class="op">(</span><span class="nam">submission</span><span class="op">=</span><span class="key">None</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1846" href="#t1846">1846</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1847" href="#t1847">1847</a></span><span class="t">    <span class="key">assert</span> <span class="nam">formset</span><span class="op">.</span><span class="nam">files</span><span class="op">[</span><span class="str">"resource-0-resource"</span><span class="op">]</span><span class="op">.</span><span class="nam">name</span> <span class="op">==</span> <span class="str">"new.pdf"</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1848" href="#t1848">1848</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -2325,7 +2325,7 @@
             <a class="nav" href="z_1ea536717bb5aa90_conftest_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.5">coverage.py v7.13.5</a>,
-            created at 2026-04-29 19:10 +0000
+            created at 2026-04-30 14:14 +0000
         </p>
     </div>
 </footer>
