@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :release:`2026.1.2 <2026-04-30>` Bugfix release for pretalx 2026.1. See the `release blog post <https://pretalx.com/p/news/releasing-pretalx-2026-1-0/>`_.
 - :bug:`cfp` The CfP submission form for a new submission contained public resources from other submissions of the same event in the resource section when the CfP form was opened via an access code link.
 - :bug:`orga:submission` Deleting a session that had answers to reviewer questions attached to its reviews no longer crashes with a database error.
 - :bug:`schedule` Single session times on the public talk page are now correctly converted into the visitor's local timezone again, instead of being shown unchanged in the event's timezone.
