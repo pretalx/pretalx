@@ -9,7 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
-- :bug:`cfp` The CfP submission form for a new submission contained public resources from other submissions of the same event in the resource section when the CfP form was opened via an access code link.
+- :security:`cfp` The CfP submission form for a new submission contained public resources from other submissions of the same event in the resource section when the CfP form was opened via an access code link.
 - :bug:`orga:submission` Deleting a session that had answers to reviewer questions attached to its reviews no longer crashes with a database error.
 - :bug:`schedule` Single session times on the public talk page are now correctly converted into the visitor's local timezone again, instead of being shown unchanged in the event's timezone.
 - :bug:`orga:schedule` Breaks copied to other rooms via the schedule editor are now correctly displayed as breaks immediately, instead of briefly appearing as regular sessions until the page is reloaded.
@@ -28,13 +28,13 @@ For already released changes, head over here:
 - :release:`2026.1.0 <2026-04-17>` See the `release blog post <https://pretalx.com/p/news/releasing-pretalx-2026-1-0/>`_.
 - :bug:`orga:submission` Submitting the new proposal form with invalid input to required custom fields no longer crashes with an internal server error, and correctly re-renders the form instead.
 - :bug:`cfp` CfP submissions with resource uploads no longer return a 500 error when the uploaded temp file vanishes between request parsing and storage; the user now sees a "please try again" message and can re-upload.
-- :bug:`orga:email` Fix an email injection vulnerability that allowed unauthenticated attackers to send phishing emails by embedding HTML or markdown in user-controlled placeholder values (e.g. speaker name, proposal title). Mail bodies are now rendered via a trust-aware two-pass formatter that escapes user content and fences it off from the autolinker. The co-speaker invitation form now always uses the built-in invite template.
+- :security:`orga:email` Fix an email injection vulnerability that allowed unauthenticated attackers to send phishing emails by embedding HTML or markdown in user-controlled placeholder values (e.g. speaker name, proposal title). Mail bodies are now rendered via a trust-aware two-pass formatter that escapes user content and fences it off from the autolinker. The co-speaker invitation form now always uses the built-in invite template.
 - :announcement:`dev` Mail placeholders now declare their trust level explicitly (``TrustedPlain…``, ``TrustedMarkdown…``, ``UntrustedPlain…``, ``UntrustedMarkdown…``). The legacy ``SimpleFunctionalMailTextPlaceholder`` and ``MarkdownMailTextPlaceholder`` names remain as aliases for the trusted variants; plugins emitting user-supplied content should migrate to the matching ``Untrusted…`` class.
-- :feature:`api` Speaker email addresses can no longer be changed via the API; the ``email`` field on the speaker endpoint is now read-only.
+- :bug:`api` Speaker email addresses can no longer be changed via the API; the ``email`` field on the speaker endpoint is now read-only.
 - :bug:`api` The file upload API endpoint now requires the token to have write access to at least one endpoint, matching its only legitimate use.
 - :bug:`-` The external redirect confirmation page now escapes HTML in the target hostname instead of rendering it as markup. Thanks go to Elad Meged from Novee Security for finding and reporting the problem.
 - :bug:`api` API tokens can no longer be created without any endpoint permissions.
-- :bug:`orga` Fixed a vulnerability in the organiser search: a speaker could put harmful code in their name or a session title that would run in an organiser's browser when the organiser searched for that speaker or session. Thanks go to Elad Meged from Novee Security for finding and reporting this issue.
+- :security:`orga` Fixed a vulnerability in the organiser search: a speaker could put harmful code in their name or a session title that would run in an organiser's browser when the organiser searched for that speaker or session. Thanks go to Elad Meged from Novee Security for finding and reporting this issue.
 - :bug:`cfp` When the content locale field was hidden or the event had only one content locale, new submissions would incorrectly get the default language instead of the event's content locale.
 - :bug:`orga` Sortable list pages (tracks, rooms, questions, session types, access codes) are no longer paginated, fixing broken drag-and-drop reordering when more than 50 items are present.
 - :feature:`orga:email,2177` Sending emails to many recipients (composing and bulk outbox send) now runs in the background, preventing gateway timeouts. Composing and bulk sending show a progress page.
@@ -289,7 +289,7 @@ For already released changes, head over here:
 - :bug:`orga` The plugin list was always shown as empty, even when there were plugins installed.
 - :feature:`orga` Administrators can now also deactivate user accounts, which will log out that user and won't allow them to log in again.
 - :release:`2024.2.0 <2024-08-06>` See the `release blog post <https://pretalx.com/p/news/releasing-pretalx-2024-2-0/>`_.
-- :bug:`orga` The markdown preview posed a security vulnerability by allowing speakers and organisers to include unsafe JavaScript. This JavaScript would only be executed when accessing the preview, i.e. when a speaker or organiser opened to proposal page (not attendees or the public). Thanks to Jorian Woltjer for reporting this issue.
+- :security:`orga` The markdown preview posed a security vulnerability by allowing speakers and organisers to include unsafe JavaScript. This JavaScript would only be executed when accessing the preview, i.e. when a speaker or organiser opened to proposal page (not attendees or the public). Thanks to Jorian Woltjer for reporting this issue.
 - :feature:`api` The submission API now has a filter for the ``is_featured`` field.
 - :feature:`cfp,1761` In the CfP submission multi-step form, the tab title now reflects the proposal title, to make it easier to work on multiple proposal submissions at the same time.
 - :bug:`orga:speaker,1768` When filtering the speaker list by only accepted/confirmed speakers, the listed proposal count would be incorrect (inflated).
@@ -711,7 +711,7 @@ For already released changes, head over here:
 - :bug:`orga` Some custom domains could not be set via the frontend.
 - :feature:`schedule` Organisers can now also see unconfirmed talks in their preview of the public schedule page. The unconfirmed talks are clearly marked to avoid confusion.
 - :release:`1.0.2 <2019-06-07>` Security release. See the `incident report <https://pretalx.com/p/news/incident-report-data-leak-in-pretalx-10/>`_ for details.
-- :bug:`orga:email` Organisers were able to see all emails sent to a user in their events, instead of only emails sent for the currently active event. This is a data leak. You can find more information `on our blog <https://pretalx.com/p/news/incident-report-data-leak-in-pretalx-10/>`_.
+- :security:`orga:email` Organisers were able to see all emails sent to a user in their events, instead of only emails sent for the currently active event. This is a data leak. You can find more information `on our blog <https://pretalx.com/p/news/incident-report-data-leak-in-pretalx-10/>`_.
 - :feature:`admin` We now add a hash to all uploaded file names to avoid collisions.
 - :release:`1.0.1 <2019-06-03>` Security release. See the `incident report <https://pretalx.com/p/news/incident-report-data-leak-in-pretalx-10/>`_ for details.
 - :bug:`cfp,719` In the submission process, file upload questions would not be saved correctly.
@@ -760,7 +760,7 @@ For already released changes, head over here:
 - :bug:`orga:schedule` Changing the order of rooms made the schedule break.
 - :feature:`orga:review,433` Organisers can now view all reviews, except for their own submissions.
 - :feature:`orga,589` Before setting a new custom domain for an event, pretalx now checks if the domain has any DNS records.
-- :bug:`cfp` A dependency of ours introduced an XSS vulnerability, which organisers could use to execute JavaScript during the CfP workflow of speakers via question texts. We have added a fix against this behaviour, and submitted a report including a patch to the upstream library. To prevent issues like this one in the future, we have moved all remaining JavaScript sources to files, and set the according CSP header, so that execution of inline JavaScript will be disabled.
+- :security:`cfp` A dependency of ours introduced an XSS vulnerability, which organisers could use to execute JavaScript during the CfP workflow of speakers via question texts. We have added a fix against this behaviour, and submitted a report including a patch to the upstream library. To prevent issues like this one in the future, we have moved all remaining JavaScript sources to files, and set the according CSP header, so that execution of inline JavaScript will be disabled.
 - :feature:`cfp,364` Speakers can now invite a co-speaker while in the submission process.
 - :feature:`schedule,62` Exporters can now opt in to show a QR code to their location. The XML and iCal exporters show a QR code linking their location by default.
 - :feature:`orga:schedule,477` If you only noticed after releasing your schedule that you wanted to changes something in your speaker notifications, you can now generate those emails again from the schedule editor actions menu.

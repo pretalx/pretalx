@@ -34,12 +34,29 @@ def release_pagename(version):
 
 
 ISSUE_TYPES = {
+    "security": {"color": "D9534F", "label": "Security", "order": -1},
     "announcement": {"color": "4070A0", "label": "Announcement", "order": 2},
     "bug": {"color": "A04040", "label": "Fixed bug", "order": 1},
     "feature": {"color": "40A056", "label": "Feature", "order": 0},
 }
 
+SECURITY_BUCKET = "__security__"
+
+SECURITY_NOTICE_HTML = (
+    '<div class="changelog-security-notice" role="alert">'
+    "<strong>Security fixes in this release.</strong> "
+    "Administrators of self-hosted instances should upgrade as soon as "
+    "possible to apply these fixes."
+    "</div>"
+)
+
 CATEGORIES = {
+    SECURITY_BUCKET: {
+        "label": "Security",
+        "order": -1,
+        "heading_class": "changelog-category-security",
+        "hide_entry_label": True,
+    },
     "": {"label": "General", "order": 10},
     "admin": {"label": "Administrators", "order": 11},
     "api": {"label": "API", "order": 8},
@@ -205,14 +222,13 @@ def collect_releases(entries):
             msg += f"Context: {obj.parent!s}"
             raise TypeError(msg)
 
-        releases[-1]["entries"][obj.category].append(
-            {"issue": obj, "description": rest}
-        )
+        bucket = SECURITY_BUCKET if obj.type == "security" else obj.category
+        releases[-1]["entries"][bucket].append({"issue": obj, "description": rest})
 
     return [r for r in releases if r["entries"] or r["release"].number != "next"]
 
 
-def construct_issue_nodes(issue, description):
+def construct_issue_nodes(issue, description, show_label=True):
     description = description.deepcopy()
     # Expand any other issue roles found in the description - sometimes we refer to related issues inline.
     # (They can't be left as issue() objects at render time since that's undefined.)
@@ -230,8 +246,9 @@ def construct_issue_nodes(issue, description):
         github_link = [nodes.inline(text=" ("), identifier, nodes.inline(text=")")]
         description[0].extend(github_link)
 
-    for node in reversed(issue["nodelist"]):
-        description[0].insert(0, node)
+    if show_label:
+        for node in reversed(issue["nodelist"]):
+            description[0].insert(0, node)
 
     return description
 
@@ -244,28 +261,40 @@ def construct_release_nodes(release, entries, description=None, header_html=None
         section.extend(description.deepcopy())
     if header_html:
         section.append(nodes.raw(rawtext="", text=header_html, format="html"))
+
+    if entries.get(SECURITY_BUCKET):
+        section.append(nodes.raw(rawtext="", text=SECURITY_NOTICE_HTML, format="html"))
+
     show_category_headers = len(entries) > 1
+
     for category, cat_info in sorted(CATEGORIES.items(), key=lambda c: c[1]["order"]):
         cat_issues = entries.get(category)
         if not cat_issues:
             continue
         if show_category_headers:
+            heading_class = " ".join(
+                filter(
+                    None, ["changelog-category-heading", cat_info.get("heading_class")]
+                )
+            )
             section.append(
                 nodes.raw(
                     rawtext="",
-                    text=f'<h4 class="changelog-category-heading">{cat_info["label"]}</h4>',
+                    text=f'<h4 class="{heading_class}">{cat_info["label"]}</h4>',
                     format="html",
                 )
             )
         cat_issues = sorted(
             cat_issues, key=lambda i: ISSUE_TYPES[i["issue"].type]["order"]
         )
+        show_label = not cat_info.get("hide_entry_label", False)
         issue_nodes = [
-            construct_issue_nodes(issue["issue"], issue["description"])
+            construct_issue_nodes(
+                issue["issue"], issue["description"], show_label=show_label
+            )
             for issue in cat_issues
         ]
-        issue_ul = nodes.bullet_list("", *issue_nodes)
-        section.append(issue_ul)
+        section.append(nodes.bullet_list("", *issue_nodes))
 
     return nodes.paragraph("", "", section)
 

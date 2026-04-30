@@ -1165,9 +1165,20 @@ redoc#redoc {
 .changelog-label-feature { color: #40A056; }
 .changelog-label-bug { color: #A04040; }
 .changelog-label-announcement { color: #4070A0; }
+.changelog-label-security { color: #D9534F; font-weight: 600; }
 .changelog-date { font-size: 75%; }
 .changelog-release-heading { margin-bottom: 0.3em; }
 .changelog-category-heading { margin-bottom: 0.3em; }
+.changelog-category-security { color: #D9534F; }
+.changelog-security-notice {
+    border-left: 4px solid #D9534F;
+    background: #FDF2F2;
+    color: #6B1F1F;
+    padding: 0.6em 0.9em;
+    margin: 0.8em 0;
+    border-radius: 3px;
+}
+.changelog-security-notice strong { color: #B23A3A; }
 .changelog-nav {
     margin: 1em 0;
     display: flex;
