@@ -485,11 +485,10 @@ class InfoStep(DedraftMixin, FormFlowStep):
             if key.startswith("resource-")
         }
 
-    def get_resource_formset(self, from_storage=False, queryset=None):
+    def get_resource_formset(self, submission, from_storage=False):
         if not self._resources_enabled:
             return None
-        if queryset is None and self.dedraft_submission:
-            queryset = self.dedraft_submission.resources.all()
+        queryset = submission.resources.all() if submission else Resource.objects.none()
         formset_class = modelformset_factory(
             Resource, form=ResourceForm, can_delete=True, extra=0
         )
@@ -516,7 +515,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
 
     @cached_property
     def resource_formset(self):
-        return self.get_resource_formset()
+        return self.get_resource_formset(submission=self.dedraft_submission)
 
     def is_valid(self):
         form_valid = super().is_valid()
@@ -554,7 +553,9 @@ class InfoStep(DedraftMixin, FormFlowStep):
         if not self.get_form(from_storage=True).is_valid():
             return False
         if self._resources_required:
-            formset = self.get_resource_formset(from_storage=True)
+            formset = self.get_resource_formset(
+                submission=self.dedraft_submission, from_storage=True
+            )
             if not formset or not formset.is_valid():
                 return False
             if not self._formset_has_resources(formset):
@@ -591,7 +592,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
 
         if self._resources_enabled:
             formset = self.get_resource_formset(
-                from_storage=True, queryset=submission.resources.all()
+                submission=submission, from_storage=True
             )
             if formset and formset.is_valid():
                 for resource_form in formset.forms:
