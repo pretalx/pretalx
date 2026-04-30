@@ -9,6 +9,7 @@ Release Notes
 The following changes will be part of the upcoming pretalx release.
 For already released changes, head over here:
 
+- :bug:`cfp` The CfP submission form for a new submission contained public resources from other submissions of the same event in the resource section when the CfP form was opened via an access code link.
 - :bug:`orga:submission` Deleting a session that had answers to reviewer questions attached to its reviews no longer crashes with a database error.
 - :bug:`schedule` Single session times on the public talk page are now correctly converted into the visitor's local timezone again, instead of being shown unchanged in the event's timezone.
 - :bug:`orga:schedule` Breaks copied to other rooms via the schedule editor are now correctly displayed as breaks immediately, instead of briefly appearing as regular sessions until the page is reloaded.
