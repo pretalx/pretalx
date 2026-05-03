@@ -98,7 +98,7 @@ def test_submission_list_orga_sees_all_submissions(
             item_count, submission__event=event, speaker__event=event
         )
 
-    with django_assert_num_queries(22):
+    with django_assert_num_queries(21):
         response = client.get(
             event.api_urls.submissions,
             follow=True,

@@ -57,6 +57,7 @@ from pretalx.orga.tables.cfp import (
 from pretalx.orga.utils.i18n import has_i18n_content
 from pretalx.person.forms import SpeakerProfileForm
 from pretalx.submission.forms import InfoForm, QuestionsForm
+from pretalx.submission.interfaces.queries.question import questions_for_user
 from pretalx.submission.models import (
     AnswerOption,
     CfP,
@@ -68,7 +69,6 @@ from pretalx.submission.models import (
     Track,
 )
 from pretalx.submission.models.cfp import default_fields
-from pretalx.submission.rules import questions_for_user
 from pretalx.submission.tasks import export_question_files
 
 
@@ -134,11 +134,8 @@ class QuestionView(OrderActionMixin, OrgaCRUDView):
     create_button_label = _("New custom field")
 
     def get_queryset(self):
-        for_answers = self.action == "detail"
         return (
-            questions_for_user(
-                self.request.event, self.request.user, for_answers=for_answers
-            )
+            questions_for_user(self.request.event, self.request.user)
             .annotate(answer_count=Count("answers"))
             .order_by("position")
         )

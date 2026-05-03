@@ -419,7 +419,7 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
         """Returns how many answers are still missing or this question.
 
         This method only supports submission questions and speaker questions.
-        For missing reviews, please use the get_missing_reviews method.
+        For missing reviews, please use ``unreviewed_submissions_for_user``.
 
         :param filter_speakers: Apply only to these speakers (SpeakerProfile queryset).
         :param filter_talks: Apply only to these talks.

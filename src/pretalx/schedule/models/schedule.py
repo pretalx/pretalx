@@ -133,7 +133,7 @@ class Schedule(PretalxModel):
 
         return Submission.objects.filter(
             id__in=self.scheduled_talks.values_list("submission", flat=True)
-        )
+        ).select_related("event", "track", "submission_type")
 
     @cached_property
     def previous_schedule(self):

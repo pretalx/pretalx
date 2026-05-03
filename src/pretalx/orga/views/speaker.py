@@ -37,15 +37,12 @@ from pretalx.person.forms import (
     SpeakerProfileForm,
 )
 from pretalx.person.models import SpeakerInformation, SpeakerProfile
-from pretalx.person.rules import is_only_reviewer
 from pretalx.submission.forms import QuestionsForm
+from pretalx.submission.interfaces.queries.question import questions_for_user
+from pretalx.submission.interfaces.queries.speaker import speakers_for_user
+from pretalx.submission.interfaces.queries.submission import submissions_for_user
 from pretalx.submission.models import Answer, QuestionTarget, QuestionVariant
 from pretalx.submission.models.submission import SubmissionStates
-from pretalx.submission.rules import (
-    limit_for_reviewers,
-    questions_for_user,
-    speakers_for_user,
-)
 
 
 class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView):
@@ -76,22 +73,18 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
         )
 
     def get_queryset(self):
-        qs = (
-            speakers_for_user(self.request.event, self.request.user)
-            .select_related("event", "user", "profile_picture", "user__profile_picture")
-            .annotate(
-                submission_count=Count(
-                    "submissions",
-                    filter=Q(submissions__event=self.request.event),
-                    distinct=True,
-                ),
-                accepted_submission_count=Count(
-                    "submissions",
-                    filter=Q(submissions__event=self.request.event)
-                    & Q(submissions__state__in=SubmissionStates.accepted_states),
-                    distinct=True,
-                ),
-            )
+        qs = speakers_for_user(self.request.event, self.request.user).annotate(
+            submission_count=Count(
+                "submissions",
+                filter=Q(submissions__event=self.request.event),
+                distinct=True,
+            ),
+            accepted_submission_count=Count(
+                "submissions",
+                filter=Q(submissions__event=self.request.event)
+                & Q(submissions__state__in=SubmissionStates.accepted_states),
+                distinct=True,
+            ),
         )
 
         qs = self.filter_queryset(qs)
@@ -124,9 +117,7 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
 
     @cached_property
     def short_questions(self):
-        return questions_for_user(
-            self.request.event, self.request.user, for_answers=True
-        ).filter(
+        return questions_for_user(self.request.event, self.request.user).filter(
             target=QuestionTarget.SPEAKER, variant__in=QuestionVariant.short_answers
         )
 
@@ -145,9 +136,7 @@ class SpeakerList(EventPermissionRequired, Filterable, OrgaTableMixin, ListView)
 class SpeakerViewMixin(PermissionRequired):
     def get_object(self):
         return get_object_or_404(
-            speakers_for_user(self.request.event, self.request.user).select_related(
-                "user", "profile_picture", "event"
-            ),
+            speakers_for_user(self.request.event, self.request.user),
             code__iexact=self.kwargs["code"],
         )
 
@@ -170,10 +159,9 @@ class SpeakerDetail(SpeakerViewMixin, CreateOrUpdateView):
     @context
     @cached_property
     def submissions(self, **kwargs):
-        qs = self.request.event.submissions.filter(speakers=self.object)
-        if is_only_reviewer(self.request.user, self.request.event):
-            return limit_for_reviewers(qs, self.request.event, self.request.user)
-        return qs
+        return submissions_for_user(self.request.event, self.request.user).filter(
+            speakers=self.object
+        )
 
     @context
     @cached_property

@@ -11,7 +11,6 @@ from django.db.models import (
     Avg,
     Case,
     Count,
-    Exists,
     F,
     IntegerField,
     Max,
@@ -59,6 +58,11 @@ from pretalx.orga.tables.submission import ReviewTable
 from pretalx.orga.views.submission import SubmissionListMixin
 from pretalx.person.models import User
 from pretalx.submission.forms import QuestionsForm, SubmissionFilterForm
+from pretalx.submission.interfaces.queries.question import questions_for_user
+from pretalx.submission.interfaces.queries.submission import (
+    reviewable_submissions_for_user,
+    unreviewed_submissions_for_user,
+)
 from pretalx.submission.models import (
     QuestionTarget,
     QuestionVariant,
@@ -66,14 +70,7 @@ from pretalx.submission.models import (
     Submission,
     SubmissionStates,
 )
-from pretalx.submission.rules import (
-    filter_answers_by_team_access,
-    get_missing_reviews,
-    get_reviewable_submissions,
-    is_speaker,
-    questions_for_user,
-    reviews_are_open,
-)
+from pretalx.submission.rules import is_speaker, reviews_are_open
 
 
 class ReviewDashboard(
@@ -112,7 +109,7 @@ class ReviewDashboard(
             user=self.request.user, submission_id=OuterRef("pk")
         ).values("score")
         queryset = (
-            self._get_base_queryset(for_review=True)
+            self._get_base_queryset()
             .filter(state__in=self.usable_states)
             .annotate(
                 review_count=Count("reviews", distinct=True),
@@ -126,9 +123,6 @@ class ReviewDashboard(
                     When(state=SubmissionStates.REJECTED, then=4),
                     default=5,
                     output_field=IntegerField(),
-                ),
-                is_assigned=Exists(
-                    self.request.user.assigned_reviews.filter(pk=OuterRef("pk"))
                 ),
                 user_score=Subquery(user_reviews),
             )
@@ -219,14 +213,9 @@ class ReviewDashboard(
     @context
     @cached_property
     def short_questions(self):
-        queryset = questions_for_user(
-            self.request.event, self.request.user, for_answers=True
-        ).filter(
+        return questions_for_user(self.request.event, self.request.user).filter(
             target=QuestionTarget.SUBMISSION, variant__in=QuestionVariant.short_answers
         )
-        if not self.can_change_submissions:
-            queryset = queryset.filter(is_visible_to_reviewers=True)
-        return queryset
 
     @context
     @cached_property
@@ -289,7 +278,9 @@ class ReviewDashboard(
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
-        missing_reviews = get_missing_reviews(self.request.event, self.request.user)
+        missing_reviews = unreviewed_submissions_for_user(
+            self.request.event, self.request.user
+        )
         # Do NOT use len() here! It yields a different result.
         result["missing_reviews"] = missing_reviews.count()
         result["next_submission"] = missing_reviews[0] if missing_reviews else None
@@ -377,7 +368,7 @@ class BulkReview(EventPermissionRequired, TemplateView):
     @context
     @cached_property
     def submissions(self):
-        submissions = get_reviewable_submissions(
+        submissions = reviewable_submissions_for_user(
             event=self.request.event, user=self.request.user
         ).with_sorted_speakers()
         if self.filter_form.is_valid():
@@ -394,7 +385,9 @@ class BulkReview(EventPermissionRequired, TemplateView):
 
     def get_context_data(self, **kwargs):
         result = super().get_context_data(**kwargs)
-        missing_reviews = get_missing_reviews(self.request.event, self.request.user)
+        missing_reviews = unreviewed_submissions_for_user(
+            self.request.event, self.request.user
+        )
         # Do NOT use len() here! It yields a different result.
         result["missing_reviews"] = missing_reviews.count()
         result["next_submission"] = missing_reviews[0] if missing_reviews else None
@@ -765,14 +758,16 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
             submission__event=self.request.event
         ).count()
         result["total_reviews"] = (
-            get_missing_reviews(self.request.event, self.request.user).count()
+            unreviewed_submissions_for_user(
+                self.request.event, self.request.user
+            ).count()
             + result["done"]
         )
         if result["total_reviews"]:
             result["percentage"] = int(result["done"] * 100 / result["total_reviews"])
 
-        result["filtered_reviewer_answers"] = filter_answers_by_team_access(
-            self.submission.reviewer_answers, self.request.user
+        result["filtered_reviewer_answers"] = self.submission.reviewer_answers.filter(
+            question__in=questions_for_user(self.submission.event, self.request.user)
         )
         return result
 
@@ -822,16 +817,20 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
 
         key = f"{self.request.event.slug}_ignored_reviews"
         ignored_submissions = self.request.session.get(key) or []
-        next_submission = get_missing_reviews(
-            self.request.event, self.request.user, ignore=ignored_submissions
-        ).first()
+        next_submission = (
+            unreviewed_submissions_for_user(self.request.event, self.request.user)
+            .exclude(pk__in=ignored_submissions)
+            .first()
+        )
         if not next_submission:
             ignored_submissions = (
                 [self.submission.pk] if action == "skip_for_now" else []
             )
-            next_submission = get_missing_reviews(
-                self.request.event, self.request.user, ignore=ignored_submissions
-            ).first()
+            next_submission = (
+                unreviewed_submissions_for_user(self.request.event, self.request.user)
+                .exclude(pk__in=ignored_submissions)
+                .first()
+            )
         self.request.session[key] = ignored_submissions
         if next_submission:
             return next_submission.orga_urls.reviews

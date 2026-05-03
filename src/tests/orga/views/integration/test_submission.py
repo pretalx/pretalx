@@ -48,7 +48,7 @@ def test_submission_list_query_count(
             sub.speakers.add(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(31):
+    with django_assert_num_queries(30):
         response = client.get(event.orga_urls.submissions, follow=True)
 
     assert response.status_code == 200

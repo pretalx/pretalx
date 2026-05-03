@@ -20,6 +20,7 @@ from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
 from pretalx.orga.forms.export import ExportForm
 from pretalx.person.models import User
+from pretalx.submission.interfaces.queries.question import questions_for_user
 from pretalx.submission.models import (
     QuestionTarget,
     Review,
@@ -27,7 +28,6 @@ from pretalx.submission.models import (
     SubmissionStates,
     Tag,
 )
-from pretalx.submission.rules import questions_for_user
 
 
 class TagsForm(ReadOnlyFlag, forms.ModelForm):
@@ -340,7 +340,7 @@ class ReviewExportForm(ExportForm):
 
     @cached_property
     def questions(self):
-        return questions_for_user(self.event, self.user, for_answers=True).filter(
+        return questions_for_user(self.event, self.user).filter(
             target=QuestionTarget.REVIEWER
         )
 

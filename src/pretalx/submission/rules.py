@@ -3,10 +3,8 @@
 
 import rules
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Count, Exists, OuterRef, Q, Subquery, Value
-from django.db.models.functions import Coalesce
 
-from pretalx.person.rules import is_only_reviewer, is_reviewer
+from pretalx.person.rules import is_reviewer
 
 
 @rules.predicate
@@ -201,105 +199,13 @@ def has_reviewer_access(user, obj):
     return user in obj.assigned_reviewers.all()
 
 
-def filter_answers_by_team_access(answers, user):
-    if not user or user.is_anonymous:
-        return answers.none()
-
-    return answers.filter().distinct()
-
-
-def filter_questions_by_team_access(queryset, user):
-    if not user or user.is_anonymous:
-        return queryset.none()
-
-    return queryset.filter(
-        Q(limit_teams__isnull=True) | Q(limit_teams__in=user.teams.all())
-    ).distinct()
-
-
-def questions_for_user(event, user, for_answers=False):
-    """Used to retrieve synced querysets in the orga list and the API list."""
-    from pretalx.orga.rules import (  # noqa: PLC0415 -- avoid circular import
-        can_view_speaker_names,
-    )
-    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-        QuestionTarget,
-    )
-
-    queryset = None
-
-    if user.has_perm("submission.update_question", event):
-        # Organisers with edit permissions can see everything
-        queryset = event.questions(manager="all_objects").all()
-    elif (
-        not user.is_anonymous
-        and is_only_reviewer(user, event)
-        and can_view_speaker_names(user, event)
-    ):
-        queryset = event.questions(manager="all_objects").filter(
-            Q(is_visible_to_reviewers=True) | Q(target=QuestionTarget.REVIEWER),
-            active=True,
-        )
-    elif user.has_perm("submission.orga_list_question", event):
-        # Other team members can either view all active questions
-        # or only questions open to reviewers
-        queryset = event.questions(manager="all_objects").all()
-
-    if queryset and for_answers:
-        return filter_questions_by_team_access(queryset, user)
-    if queryset:
-        return queryset
-
-    # Now we are left with anonymous users or users with very limited permissions.
-    # They can see all public (non-reviewer) questions if they are already publicly
-    # visible in the schedule. Otherwise, nothing.
-    if user.has_perm("submission.list_question", event):
-        return event.questions.all().filter(is_public=True)
-    return event.questions.none()
-
-
 @rules.predicate
 def has_team_question_access(user, obj):
-    return (
-        questions_for_user(obj.event, user, for_answers=True).filter(pk=obj.pk).exists()
+    from pretalx.submission.interfaces.queries.question import (  # noqa: PLC0415 -- avoid circular import
+        questions_for_user,
     )
 
-
-def annotate_assigned(queryset, event, user):
-    assigned = user.assigned_reviews.filter(event=event, pk=OuterRef("pk"))
-    return queryset.annotate(is_assigned=Exists(Subquery(assigned)))
-
-
-def limit_for_reviewers(
-    queryset, event, user, reviewer_tracks=None, add_assignments=False
-):
-    if not (phase := event.active_review_phase):
-        queryset = event.submissions.none()
-    queryset = queryset.exclude(speakers__user=user)
-    if phase and phase.proposal_visibility == "assigned":
-        queryset = annotate_assigned(queryset, event, user)
-        return queryset.filter(is_assigned__gte=1)
-    if add_assignments:
-        queryset = annotate_assigned(queryset, event, user)
-    if reviewer_tracks is None:
-        reviewer_tracks = user.get_reviewer_tracks(event)
-    if reviewer_tracks:
-        queryset = queryset.filter(track__in=reviewer_tracks)
-    return queryset
-
-
-def submissions_for_user(event, user):
-    if not user.is_anonymous:
-        if is_only_reviewer(user, event):
-            return limit_for_reviewers(event.submissions.all(), event, user)
-        if user.has_perm("submission.orga_list_submission", event):
-            return event.submissions.all()
-
-    # Fall through: both anon users and users without permissions
-    # get here, e.g. speakers or attendees.
-    if user.has_perm("schedule.list_schedule", event):
-        return event.current_schedule.slots
-    return event.submissions.none()
+    return questions_for_user(obj.event, user).filter(pk=obj.pk).exists()
 
 
 @rules.predicate
@@ -331,60 +237,3 @@ def is_comment_author(user, obj):
 @rules.predicate
 def submission_comments_active(user, obj):
     return obj.event.get_feature_flag("use_submission_comments")
-
-
-def speakers_for_user(event, user, submissions=None):
-    submissions = submissions or submissions_for_user(event, user)
-    from pretalx.person.models import (  # noqa: PLC0415 -- avoid circular import
-        SpeakerProfile,
-    )
-
-    return SpeakerProfile.objects.filter(
-        event=event, submissions__in=submissions
-    ).distinct()
-
-
-def get_reviewable_submissions(event, user, queryset=None):
-    """Returns all submissions the user is permitted to review.
-
-    Excludes submissions this user has submitted, and takes track team permissions,
-    assignments and review phases into account. The result is ordered by review count.
-    """
-    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-        Review,
-        SubmissionStates,
-    )
-
-    if queryset is None:
-        queryset = event.submissions.filter(state=SubmissionStates.SUBMITTED)
-    queryset = limit_for_reviewers(queryset, event, user, add_assignments=True)
-    # Use a subquery instead of Count("reviews") to avoid a GROUP BY on the
-    # outer query — this lets callers add order_by("?") without breaking the
-    # annotation values (a known Django ORM issue with COUNT + RANDOM).
-    review_count = (
-        Review.objects.filter(submission=OuterRef("pk"))
-        .order_by()
-        .values("submission")
-        .annotate(count=Count("pk"))
-        .values("count")
-    )
-    queryset = queryset.annotate(
-        review_count=Coalesce(Subquery(review_count), Value(0))
-    )
-    return queryset.order_by("-is_assigned", "review_count")
-
-
-def get_missing_reviews(event, user, ignore=None):
-    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-        SubmissionStates,
-    )
-
-    queryset = event.submissions.filter(state=SubmissionStates.SUBMITTED).exclude(
-        reviews__user=user
-    )
-    if ignore:
-        queryset = queryset.exclude(pk__in=ignore)
-    queryset = get_reviewable_submissions(event, user, queryset=queryset)
-    # Randomise within each priority tier so that "save and next" doesn't
-    # always hand reviewers the same deterministic sequence of proposals.
-    return queryset.order_by("-is_assigned", "review_count", "?")

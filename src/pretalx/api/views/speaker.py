@@ -26,12 +26,10 @@ from pretalx.api.serializers.speaker import (
 from pretalx.api.versions import LEGACY
 from pretalx.api.views.mixins import PretalxViewSetMixin
 from pretalx.person.models import SpeakerProfile
+from pretalx.submission.interfaces.queries.question import questions_for_user
+from pretalx.submission.interfaces.queries.speaker import speakers_for_user
+from pretalx.submission.interfaces.queries.submission import submissions_for_user
 from pretalx.submission.models import Answer
-from pretalx.submission.rules import (
-    questions_for_user,
-    speakers_for_user,
-    submissions_for_user,
-)
 
 
 class SpeakerSearchFilter(filters.SearchFilter):
@@ -121,17 +119,13 @@ class SpeakerViewSet(
 
     @cached_property
     def submissions_for_user(self):
-        return submissions_for_user(self.event, self.request.user).select_related(
-            "event"
-        )
+        return submissions_for_user(self.event, self.request.user)
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
         if not self.event:
             return context
-        context["questions"] = questions_for_user(
-            self.event, self.request.user, for_answers=True
-        )
+        context["questions"] = questions_for_user(self.event, self.request.user)
         # We don’t need to check for anonymisation here, because endpoint access implies
         # that the user isn’t restricted to anonymised content.
         context["submissions"] = self.submissions_for_user
@@ -150,7 +144,6 @@ class SpeakerViewSet(
             speakers_for_user(
                 self.event, self.request.user, submissions=self.submissions_for_user
             )
-            .select_related("user", "event", "profile_picture")
             .prefetch_related(
                 Prefetch(
                     "submissions", queryset=self.submissions_for_user.order_by("code")

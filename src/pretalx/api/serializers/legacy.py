@@ -18,6 +18,7 @@ from pretalx.api.serializers.submission import ResourceSerializer
 from pretalx.api.versions import LEGACY, register_serializer
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.schedule.models import Availability, Room, Schedule, TalkSlot
+from pretalx.submission.interfaces.queries.question import questions_for_user
 from pretalx.submission.models import (
     Answer,
     AnswerOption,
@@ -28,7 +29,6 @@ from pretalx.submission.models import (
     SubmissionStates,
     Tag,
 )
-from pretalx.submission.rules import filter_answers_by_team_access
 
 
 class LegacySubmitterSerializer(ModelSerializer):
@@ -124,11 +124,12 @@ class LegacySpeakerOrgaSerializer(LegacySpeakerSerializer):
     )
 
     def answers_queryset(self, obj):
-        queryset = obj.all_answers
         request = self.context.get("request")
-        if request:
-            return filter_answers_by_team_access(queryset, request.user)
-        return queryset.none()
+        if not request:
+            return obj.all_answers.none()
+        return obj.all_answers.filter(
+            question__in=questions_for_user(obj.event, request.user)
+        )
 
     def get_submissions(self, obj):
         return obj.submissions.values_list("code", flat=True)
@@ -140,11 +141,12 @@ class LegacySpeakerOrgaSerializer(LegacySpeakerSerializer):
 @register_serializer(versions=[LEGACY])
 class LegacySpeakerReviewerSerializer(LegacySpeakerOrgaSerializer):
     def answers_queryset(self, obj):
-        queryset = obj.reviewer_answers.all()
         request = self.context.get("request")
-        if request:
-            return filter_answers_by_team_access(queryset, request.user)
-        return queryset.none()
+        if not request:
+            return obj.reviewer_answers.none()
+        return obj.reviewer_answers.filter(
+            question__in=questions_for_user(obj.event, request.user)
+        )
 
     class Meta(LegacySpeakerOrgaSerializer.Meta):
         pass
@@ -276,11 +278,12 @@ class LegacySubmissionOrgaSerializer(LegacySubmissionSerializer):
     speaker_serializer_class = LegacySubmitterOrgaSerializer
 
     def answers_queryset(self, obj):
-        queryset = obj.answers.all()
         request = self.context.get("request")
-        if request:
-            return filter_answers_by_team_access(queryset, request.user)
-        return queryset.none()
+        if not request:
+            return obj.answers.none()
+        return obj.answers.filter(
+            question__in=questions_for_user(obj.event, request.user)
+        )
 
     def get_created(self, obj):
         return obj.created.astimezone(obj.event.tz).isoformat()
@@ -306,11 +309,12 @@ class LegacySubmissionOrgaSerializer(LegacySubmissionSerializer):
 
 class LegacySubmissionReviewerSerializer(LegacySubmissionOrgaSerializer):
     def answers_queryset(self, obj):
-        queryset = obj.reviewer_answers.all()
         request = self.context.get("request")
-        if request:
-            return filter_answers_by_team_access(queryset, request.user)
-        return queryset.none()
+        if not request:
+            return obj.reviewer_answers.none()
+        return obj.reviewer_answers.filter(
+            question__in=questions_for_user(obj.event, request.user)
+        )
 
     class Meta(LegacySubmissionOrgaSerializer.Meta):
         pass

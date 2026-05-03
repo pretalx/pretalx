@@ -4,8 +4,8 @@
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.exporter import BaseExporter, CSVExporterMixin
-from pretalx.submission.models import Answer
-from pretalx.submission.rules import filter_answers_by_team_access
+from pretalx.submission.interfaces.queries.question import answers_for_user
+from pretalx.submission.models import QuestionTarget
 
 
 class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
@@ -21,18 +21,16 @@ class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
 
     def get_csv_data(self, request, **kwargs):
         field_names = ["code", "name", "email", "question", "answer"]
-        data = []
         qs = (
-            Answer.objects.filter(
-                question__target="speaker",
-                question__event=self.event,
+            answers_for_user(self.event, request.user)
+            .filter(
+                question__target=QuestionTarget.SPEAKER,
                 question__active=True,
                 speaker__isnull=False,
             )
-            .select_related("question", "speaker", "speaker__user")
+            .select_related("speaker__user")
             .order_by("speaker__name")
         )
-        qs = filter_answers_by_team_access(qs, request.user)
         data = [
             {
                 "code": answer.speaker.code,
@@ -58,13 +56,11 @@ class SubmissionQuestionData(CSVExporterMixin, BaseExporter):
 
     def get_csv_data(self, request, **kwargs):
         field_names = ["code", "title", "question", "answer"]
-        data = []
-        qs = Answer.objects.filter(
-            question__target="submission",
-            question__event=self.event,
-            question__active=True,
-        ).order_by("submission__title")
-        qs = filter_answers_by_team_access(qs, request.user)
+        qs = (
+            answers_for_user(self.event, request.user)
+            .filter(question__target=QuestionTarget.SUBMISSION, question__active=True)
+            .order_by("submission__title")
+        )
         data = [
             {
                 "code": answer.submission.code,
