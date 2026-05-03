@@ -23,6 +23,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import BaseDocTemplate, Flowable, Frame, PageTemplate, Paragraph
 
+from pretalx.common.fonts import get_fonts
+
 _fonts_registered = False
 
 
@@ -172,8 +174,6 @@ def _resolve_fonts(event=None):
 
     if not event:
         return heading_font_name, text_font_name, text_italic_font_name
-
-    from pretalx.common.fonts import get_fonts  # noqa: PLC0415
 
     fonts = get_fonts(event)
     heading_font_setting = event.display_settings.get("heading_font", "")
