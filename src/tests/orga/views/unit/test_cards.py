@@ -3,7 +3,7 @@
 import pytest
 
 from pretalx.orga.views.cards import SubmissionCards
-from pretalx.submission.cards import _text
+from pretalx.submission.interfaces.cards import _text
 from pretalx.submission.models import SubmissionStates
 from tests.factories import SubmissionFactory
 from tests.utils import make_request, make_view

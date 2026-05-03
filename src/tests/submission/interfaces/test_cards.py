@@ -8,7 +8,7 @@ from reportlab.lib.units import mm
 
 from pretalx.common.signals import register_fonts
 from pretalx.event.models.event import default_display_settings
-from pretalx.submission.cards import (
+from pretalx.submission.interfaces.cards import (
     SubmissionCard,
     _register_plugin_font,
     _resolve_fonts,
