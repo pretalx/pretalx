@@ -1,11 +1,9 @@
 # SPDX-FileCopyrightText: 2019-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.exporter import BaseExporter, CSVExporterMixin
-from pretalx.common.signals import register_data_exporters
 from pretalx.submission.models import Answer
 from pretalx.submission.rules import filter_answers_by_team_access
 
@@ -48,11 +46,6 @@ class SpeakerQuestionData(CSVExporterMixin, BaseExporter):
         return field_names, data
 
 
-@receiver(register_data_exporters, dispatch_uid="exporter_builtin_speaker_question")
-def register_speaker_question_exporter(sender, **kwargs):
-    return SpeakerQuestionData
-
-
 class SubmissionQuestionData(CSVExporterMixin, BaseExporter):
     public = False
     icon = "fa-question-circle-o"
@@ -82,8 +75,3 @@ class SubmissionQuestionData(CSVExporterMixin, BaseExporter):
             for answer in qs
         ]
         return field_names, data
-
-
-@receiver(register_data_exporters, dispatch_uid="exporter_builtin_submission_question")
-def register_submission_question_exporter(sender, **kwargs):
-    return SubmissionQuestionData

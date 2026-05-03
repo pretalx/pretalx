@@ -4,7 +4,10 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory
 
-from pretalx.submission.exporters import SpeakerQuestionData, SubmissionQuestionData
+from pretalx.submission.interfaces.exporters import (
+    SpeakerQuestionData,
+    SubmissionQuestionData,
+)
 from tests.factories import (
     AnswerFactory,
     EventFactory,
