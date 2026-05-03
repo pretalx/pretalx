@@ -127,6 +127,11 @@ def test_user_manager_create_superuser():
     assert user.is_superuser is False
 
 
+def test_user_created_is_set_on_save():
+    user = User.objects.create_user(email="created-test@example.com", password="x")
+    assert user.created is not None
+
+
 def test_user_has_perm_caches_result(event):
     user = UserFactory()
     user.is_administrator = True

@@ -142,6 +142,7 @@ class User(
             "Your email address will be used for password resets and notification about your event/proposals."
         ),
     )
+    created = models.DateTimeField(verbose_name=_("Created"), auto_now_add=True)
     is_active = models.BooleanField(
         default=True, help_text="Inactive users are not allowed to log in."
     )

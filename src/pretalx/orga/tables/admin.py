@@ -36,6 +36,12 @@ class AdminUserTable(PretalxTable):
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
         initial_sort_descending=True,
     )
+    created = TemplateColumn(
+        template_name="orga/tables/columns/timesince.html",
+        verbose_name=_("Created"),
+        attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
+        initial_sort_descending=True,
+    )
     last_login = TemplateColumn(
         template_name="orga/tables/columns/timesince.html",
         attrs={"th": {"class": "numeric"}, "td": {"class": "numeric"}},
@@ -70,6 +76,7 @@ class AdminUserTable(PretalxTable):
             "teams",
             "events",
             "submission_count",
+            "created",
             "last_login",
             "pw_reset_time",
             "actions",
