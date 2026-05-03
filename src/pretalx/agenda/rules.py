@@ -5,10 +5,17 @@ import rules
 
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import is_reviewer
-from pretalx.submission.rules import (
-    are_featured_submissions_visible,
-    orga_can_change_submissions,
-)
+from pretalx.submission.rules import orga_can_change_submissions
+
+
+@rules.predicate
+def are_featured_submissions_visible(user, event):
+    show_featured = event.get_feature_flag("show_featured")
+    if not event.is_public or show_featured == "never":
+        return False
+    if show_featured == "always":
+        return True
+    return (not is_agenda_visible(user, event)) or not event.current_schedule
 
 
 def is_submission_visible_via_featured(user, submission):

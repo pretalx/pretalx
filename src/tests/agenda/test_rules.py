@@ -4,6 +4,7 @@ import pytest
 from django_scopes import scope
 
 from pretalx.agenda.rules import (
+    are_featured_submissions_visible,
     event_uses_feedback,
     is_agenda_submission_visible,
     is_agenda_visible,
@@ -220,3 +221,32 @@ def test_event_uses_feedback_unwraps_event_attribute(flag_value, expected):
     submission = SubmissionFactory(event=event)
 
     assert event_uses_feedback(None, submission) is expected
+
+
+@pytest.mark.django_db
+def test_are_featured_submissions_visible_never():
+    event = EventFactory(is_public=True, feature_flags={"show_featured": "never"})
+    assert are_featured_submissions_visible(None, event) is False
+
+
+@pytest.mark.django_db
+def test_are_featured_submissions_visible_not_public():
+    event = EventFactory(is_public=False)
+    assert are_featured_submissions_visible(None, event) is False
+
+
+@pytest.mark.django_db
+def test_are_featured_submissions_visible_always():
+    event = EventFactory(is_public=True, feature_flags={"show_featured": "always"})
+    assert are_featured_submissions_visible(None, event) is True
+
+
+@pytest.mark.django_db
+def test_are_featured_submissions_visible_pre_schedule():
+    """Default 'pre_schedule' shows featured when there's no current schedule."""
+    event = EventFactory(
+        is_public=True, feature_flags={"show_featured": "pre_schedule"}
+    )
+
+    with scope(event=event):
+        assert are_featured_submissions_visible(None, event) is True

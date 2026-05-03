@@ -25,6 +25,7 @@ from django.utils.translation import override, pgettext_lazy
 from django_scopes import ScopedManager
 
 from pretalx.agenda.rules import (
+    are_featured_submissions_visible,
     event_uses_feedback,
     is_agenda_submission_visible,
     is_agenda_visible,
@@ -41,7 +42,6 @@ from pretalx.common.urls import EventUrls
 from pretalx.mail.placeholders import escape_for_html_body, escape_for_plain_body
 from pretalx.person.rules import is_reviewer
 from pretalx.submission.rules import (
-    are_featured_submissions_visible,
     can_be_confirmed,
     can_be_edited,
     can_be_removed,

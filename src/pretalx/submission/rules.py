@@ -56,20 +56,6 @@ def is_cfp_open(user, obj):
 
 
 @rules.predicate
-def are_featured_submissions_visible(user, event):
-    from pretalx.agenda.rules import (  # noqa: PLC0415 -- avoid circular import
-        is_agenda_visible,
-    )
-
-    show_featured = event.get_feature_flag("show_featured")
-    if not event.is_public or show_featured == "never":
-        return False
-    if show_featured == "always":
-        return True
-    return (not is_agenda_visible(user, event)) or not event.current_schedule
-
-
-@rules.predicate
 def use_tracks(user, obj):
     event = obj.event
     return event.get_feature_flag("use_tracks")
