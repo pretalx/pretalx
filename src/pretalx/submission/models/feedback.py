@@ -10,6 +10,7 @@ from django_scopes import ScopedManager
 
 from pretalx.common.models.fields import MarkdownField
 from pretalx.common.models.mixins import PretalxModel
+from pretalx.submission.interfaces.validators.feedback import validate_speaker_on_talk
 from pretalx.submission.rules import orga_can_change_submissions
 
 
@@ -57,6 +58,10 @@ class Feedback(PretalxModel):
     def __str__(self):
         """Help when debugging."""
         return f"Feedback(event={self.talk.event.slug}, talk={self.talk.title}, rating={self.rating})"
+
+    def clean(self):
+        super().clean()
+        validate_speaker_on_talk(self.talk, self.speaker)
 
     @cached_property
     def event(self):

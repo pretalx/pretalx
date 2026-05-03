@@ -12,6 +12,9 @@ from django_scopes import ScopedManager
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.path import hashed_path, safe_filename
 from pretalx.common.urls import get_base_url
+from pretalx.submission.interfaces.validators.resource import (
+    validate_resource_link_xor_file,
+)
 
 
 def resource_path(instance, filename):
@@ -49,6 +52,10 @@ class Resource(PretalxModel):
     def __str__(self):
         """Help when debugging."""
         return f"Resource(event={self.submission.event.slug}, submission={self.submission.title})"
+
+    def clean(self):
+        super().clean()
+        validate_resource_link_xor_file(link=self.link, resource=self.resource)
 
     @cached_property
     def url(self):

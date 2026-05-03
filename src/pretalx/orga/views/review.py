@@ -57,7 +57,7 @@ from pretalx.orga.forms.submission import SubmissionStateChangeForm
 from pretalx.orga.tables.submission import ReviewTable
 from pretalx.orga.views.submission import SubmissionListMixin
 from pretalx.person.models import User
-from pretalx.submission.forms import QuestionsForm, SubmissionFilterForm
+from pretalx.submission.interfaces.forms import QuestionsForm, SubmissionFilterForm
 from pretalx.submission.interfaces.queries.question import questions_for_user
 from pretalx.submission.interfaces.queries.submission import (
     reviewable_submissions_for_user,
@@ -731,7 +731,7 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
             files=(self.request.FILES if self.request.method == "POST" else None),
             speaker=self.request.user,
             review=self.object,
-            readonly=self.read_only,
+            read_only=self.read_only,
         )
 
     @context

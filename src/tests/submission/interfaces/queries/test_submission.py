@@ -6,7 +6,9 @@ from django_scopes import scope
 
 from pretalx.submission.interfaces.queries.submission import (
     annotate_assigned_reviews,
+    filter_submissions_by_state,
     reviewable_submissions_for_user,
+    search_submissions,
     submissions_for_reviewer,
     submissions_for_user,
     unreviewed_submissions_for_user,
@@ -402,3 +404,139 @@ def test_reviewable_submissions_for_user_randomises_within_same_review_count():
             assert set(pks[3:]) == one_review
 
     assert len(orderings) > 1
+
+
+def test_filter_submissions_by_state_only_states():
+    event = EventFactory()
+    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
+
+    with scope(event=event):
+        result = set(
+            filter_submissions_by_state(event.submissions.all(), ["submitted"])
+        )
+
+    assert result == {submitted}
+
+
+def test_filter_submissions_by_state_only_pending():
+    event = EventFactory()
+    pending = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.SUBMITTED,
+        pending_state=SubmissionStates.ACCEPTED,
+    )
+    SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+
+    with scope(event=event):
+        result = set(
+            filter_submissions_by_state(
+                event.submissions.all(), ["pending_state__accepted"]
+            )
+        )
+
+    assert result == {pending}
+
+
+def test_filter_submissions_by_state_mixed():
+    event = EventFactory()
+    submitted = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
+    pending = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.REJECTED,
+        pending_state=SubmissionStates.ACCEPTED,
+    )
+    SubmissionFactory(event=event, state=SubmissionStates.REJECTED)
+
+    with scope(event=event):
+        result = set(
+            filter_submissions_by_state(
+                event.submissions.all(), ["submitted", "pending_state__accepted"]
+            )
+        )
+
+    assert result == {submitted, pending}
+
+
+def test_filter_submissions_by_state_empty_filter_returns_all():
+    event = EventFactory()
+    sub = SubmissionFactory(event=event)
+
+    with scope(event=event):
+        result = set(filter_submissions_by_state(event.submissions.all(), []))
+
+    assert result == {sub}
+
+
+def test_search_submissions_empty_query_returns_unchanged():
+    event = EventFactory()
+    sub = SubmissionFactory(event=event, title="Anything")
+
+    with scope(event=event):
+        result = set(
+            search_submissions(event.submissions.all(), "", can_view_speakers=True)
+        )
+
+    assert result == {sub}
+
+
+def test_search_submissions_anonymised_finds_redacted_value():
+    event = EventFactory()
+    redacted = SubmissionFactory(
+        event=event,
+        title="Original Title",
+        anonymised={"_anonymised": True, "title": "Redacted Keyword"},
+    )
+    SubmissionFactory(event=event, title="Other")
+
+    with scope(event=event):
+        result = set(
+            search_submissions(
+                event.submissions.all(), "Redacted", can_view_speakers=False
+            )
+        )
+
+    assert result == {redacted}
+
+
+def test_search_submissions_anonymised_skips_original_for_redacted_field():
+    """A redacted field's original value must not match for anonymous searchers."""
+    event = EventFactory()
+    SubmissionFactory(
+        event=event,
+        title="SecretOriginal",
+        anonymised={"_anonymised": True, "title": "Redacted"},
+    )
+
+    with scope(event=event):
+        result = set(
+            search_submissions(
+                event.submissions.all(), "SecretOriginal", can_view_speakers=False
+            )
+        )
+
+    assert result == set()
+
+
+def test_search_submissions_anonymised_searches_original_for_unredacted_field():
+    """When a submission is anonymised but a particular field is not in the
+    redaction set, the original value of that field remains searchable."""
+    event = EventFactory()
+    sub = SubmissionFactory(
+        event=event,
+        title="Original Title",
+        abstract="UniqueAbstractKeyword",
+        anonymised={"_anonymised": True, "title": "Redacted Title"},
+    )
+
+    with scope(event=event):
+        result = set(
+            search_submissions(
+                event.submissions.all(),
+                "UniqueAbstractKeyword",
+                can_view_speakers=False,
+                fulltext=True,
+            )
+        )
+
+    assert result == {sub}

@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Prefetch
 from django.http import Http404
@@ -42,9 +43,13 @@ from pretalx.api.versions import LEGACY
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
+from pretalx.submission.domain.invitation import send_invitation
 from pretalx.submission.interfaces.queries.question import questions_for_user
 from pretalx.submission.interfaces.queries.speaker import speakers_for_user
 from pretalx.submission.interfaces.queries.submission import submissions_for_user
+from pretalx.submission.interfaces.validators.speaker import (
+    validate_speakers_within_limit,
+)
 from pretalx.submission.models import (
     Answer,
     Resource,
@@ -381,28 +386,19 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
                 {"detail": "This person has already been invited to this proposal."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        max_speakers = self.event.cfp.max_speakers
-        if max_speakers is not None:
-            current = submission.speakers.count()
-            pending = submission.invitations.count()
-            if current + pending + 1 > max_speakers:
-                return Response(
-                    {
-                        "detail": f"This would exceed the maximum of {max_speakers} speakers per proposal."
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        try:
+            validate_speakers_within_limit(
+                self.event,
+                current=submission.speakers.count(),
+                pending=submission.invitations.count(),
+                additional=1,
+            )
+        except DjangoValidationError as e:
+            return Response(
+                {"detail": e.messages[0]}, status=status.HTTP_400_BAD_REQUEST
+            )
 
-        invitation = SubmissionInvitation.objects.create(
-            submission=submission, email=email
-        )
-        invitation.send(_from=request.user)
-        submission.log_action(
-            "pretalx.submission.invitation.send",
-            person=request.user,
-            orga=True,
-            data={"email": email},
-        )
+        send_invitation(submission, email=email, sender=request.user, orga=True)
         submission.refresh_from_db()
         return Response(SubmissionOrgaSerializer(submission).data)
 

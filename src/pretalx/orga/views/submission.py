@@ -55,7 +55,7 @@ from pretalx.orga.tables.feedback import FeedbackTable
 from pretalx.orga.tables.submission import SubmissionTable, TagTable
 from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
-from pretalx.submission.forms import (
+from pretalx.submission.interfaces.forms import (
     QuestionsForm,
     ResourceForm,
     SubmissionCommentForm,
@@ -529,7 +529,7 @@ class SubmissionContent(
                     "submission.list_review", self.request.event
                 )
             ),
-            "readonly": form_kwargs["read_only"],
+            "read_only": form_kwargs["read_only"],
         }
         # When creating a new submission, filter out track/type specific questions
         if not self.submission:
@@ -592,7 +592,6 @@ class SubmissionContent(
         speaker_form = self.new_speaker_form
         if speaker_form and not speaker_form.is_valid():
             return self.form_invalid(form)
-        self._questions_form.submission = form.instance
         if not self._questions_form.is_valid():
             messages.error(self.request, phrases.base.error_saving_changes)
             return self.get(self.request, *self.args, **self.kwargs)
@@ -610,7 +609,7 @@ class SubmissionContent(
         # Save the form and show success message (skipping FormLoggingMixin's logging)
         result = super().form_valid(form, skip_logging=True)
         self.object = form.instance
-        self._questions_form.save()
+        self._questions_form.save(submission=form.instance)
 
         stay_on_page = False
         if created:
@@ -685,7 +684,6 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
             event=self.request.event,
             usable_states=self.usable_states,
             limit_tracks=self.limit_tracks,
-            search_fields=self.get_default_filters(),
             can_view_speakers=can_view_speakers,
         )
 
@@ -693,15 +691,6 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
     @cached_property
     def filter_form(self):
         return self.get_filter_form()
-
-    def get_default_filters(self, *args, **kwargs):
-        default_filters = {"code__icontains", "title__icontains"}
-        if self.request.user.has_perm(
-            "person.orga_list_speakerprofile", self.request.event
-        ):
-            default_filters.add("speakers__user__name__icontains")
-            default_filters.add("speakers__name__icontains")
-        return default_filters
 
     def _get_base_queryset(self):
         # If somebody has *only* reviewer permissions for this event, they can only

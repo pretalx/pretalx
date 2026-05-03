@@ -41,6 +41,7 @@ from pretalx.common.urls import EventUrls
 from pretalx.mail.enums import MailTemplateRoles
 from pretalx.mail.placeholders import escape_for_html_body, escape_for_plain_body
 from pretalx.person.rules import is_reviewer
+from pretalx.submission.domain.submission import make_submitted
 from pretalx.submission.enums import QuestionTarget, SubmissionStates
 from pretalx.submission.rules import (
     can_be_confirmed,
@@ -252,6 +253,11 @@ class Submission(GenerateCode, PretalxModel):
         max_length=32, unique=True, null=True, blank=True, default=generate_invite_code
     )
     anonymised = models.JSONField(null=True, blank=True)
+    # Emails the speaker entered into the wizard's "additional_speaker" field
+    # while the proposal is still a DRAFT. Promoted to real
+    # ``SubmissionInvitation`` rows when the proposal is submitted; not
+    # exposed outside the draft → submit transition.
+    draft_additional_speakers = models.JSONField(default=list, blank=True)
     assigned_reviewers = models.ManyToManyField(
         verbose_name=_("Assigned reviewers"),
         to="person.User",
@@ -617,15 +623,7 @@ class Submission(GenerateCode, PretalxModel):
         self, person=None, orga: bool = False, from_pending: bool = False
     ):
         """Sets the submission's state to 'submitted'."""
-        previous = self.state
-        self.set_state(SubmissionStates.SUBMITTED, person=person)
-        if previous != SubmissionStates.DRAFT:
-            self.log_action(
-                "pretalx.submission.make_submitted",
-                person=person,
-                orga=orga,
-                data={"previous": previous, "from_pending": from_pending},
-            )
+        make_submitted(self, person=person, orga=orga, from_pending=from_pending)
 
     make_submitted.alters_data = True
 

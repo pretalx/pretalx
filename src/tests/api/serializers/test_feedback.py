@@ -1,14 +1,12 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
-from rest_framework import exceptions
 
 from pretalx.api.serializers.feedback import FeedbackSerializer, FeedbackWriteSerializer
 from tests.factories import (
     EventFactory,
     FeedbackFactory,
     SpeakerFactory,
-    SpeakerRoleFactory,
     SubmissionFactory,
 )
 from tests.utils import make_api_request
@@ -36,67 +34,66 @@ def test_feedback_write_serializer_init_without_event_leaves_empty_querysets():
     assert serializer.fields["speaker"].queryset.count() == 0
 
 
-def test_feedback_write_serializer_validate_submission_rejects_no_feedback():
+def test_feedback_write_serializer_rejects_when_talk_does_not_accept_feedback():
     event = EventFactory()
     sub = SubmissionFactory(event=event)
     serializer = FeedbackWriteSerializer(
-        context={"request": make_api_request(event=event)}
+        context={"request": make_api_request(event=event)},
+        data={"submission": sub.code, "review": "Hi"},
     )
 
-    with pytest.raises(exceptions.ValidationError):
-        serializer.validate_submission(sub)
+    assert not serializer.is_valid()
+    assert "submission" in serializer.errors
 
 
-def test_feedback_write_serializer_validate_submission_accepts_feedback(
+def test_feedback_write_serializer_accepts_when_talk_accepts_feedback(
     published_talk_slot,
 ):
     sub = published_talk_slot.submission
     event = sub.event
-    assert sub.does_accept_feedback is True
+    speaker = sub.speakers.first()
     serializer = FeedbackWriteSerializer(
-        context={"request": make_api_request(event=event)}
+        context={"request": make_api_request(event=event)},
+        data={"submission": sub.code, "speaker": speaker.code, "review": "Nice"},
     )
 
-    result = serializer.validate_submission(sub)
-    assert result == sub
+    assert serializer.is_valid(), serializer.errors
 
 
-def test_feedback_write_serializer_validate_rejects_unrelated_speaker():
-    event = EventFactory()
-    sub = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
+def test_feedback_write_serializer_rejects_unrelated_speaker(published_talk_slot):
+    sub = published_talk_slot.submission
+    event = sub.event
+    other_speaker = SpeakerFactory(event=event)
     serializer = FeedbackWriteSerializer(
-        context={"request": make_api_request(event=event)}
+        context={"request": make_api_request(event=event)},
+        data={"submission": sub.code, "speaker": other_speaker.code, "review": "Hi"},
     )
 
-    with pytest.raises(exceptions.ValidationError, match="speaker"):
-        serializer.validate({"talk": sub, "speaker": speaker})
+    assert not serializer.is_valid()
+    assert "speaker" in serializer.errors
 
 
-def test_feedback_write_serializer_validate_accepts_related_speaker():
-    event = EventFactory()
-    role = SpeakerRoleFactory(submission__event=event, speaker__event=event)
-    sub = role.submission
-    speaker = role.speaker
+def test_feedback_write_serializer_accepts_related_speaker(published_talk_slot):
+    sub = published_talk_slot.submission
+    event = sub.event
+    speaker = sub.speakers.first()
     serializer = FeedbackWriteSerializer(
-        context={"request": make_api_request(event=event)}
+        context={"request": make_api_request(event=event)},
+        data={"submission": sub.code, "speaker": speaker.code, "review": "Nice"},
     )
 
-    result = serializer.validate({"talk": sub, "speaker": speaker})
-
-    assert result["talk"] == sub
-    assert result["speaker"] == speaker
+    assert serializer.is_valid(), serializer.errors
 
 
-def test_feedback_write_serializer_validate_accepts_no_speaker():
-    event = EventFactory()
-    sub = SubmissionFactory(event=event)
+def test_feedback_write_serializer_accepts_no_speaker(published_talk_slot):
+    sub = published_talk_slot.submission
+    event = sub.event
     serializer = FeedbackWriteSerializer(
-        context={"request": make_api_request(event=event)}
+        context={"request": make_api_request(event=event)},
+        data={"submission": sub.code, "review": "Nice"},
     )
 
-    result = serializer.validate({"talk": sub})
-    assert result["talk"] == sub
+    assert serializer.is_valid(), serializer.errors
 
 
 def test_feedback_serializer_data():

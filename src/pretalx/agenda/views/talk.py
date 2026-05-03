@@ -20,7 +20,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.views.mixins import PermissionRequired, SocialMediaCardMixin
 from pretalx.schedule.ical import get_submission_ical
 from pretalx.schedule.models import TalkSlot
-from pretalx.submission.forms import FeedbackForm
+from pretalx.submission.interfaces.forms import FeedbackForm
 from pretalx.submission.models import Submission, SubmissionStates
 from pretalx.submission.rules import is_speaker
 

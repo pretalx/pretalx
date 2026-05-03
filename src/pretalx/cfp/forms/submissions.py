@@ -5,7 +5,10 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.text.phrases import phrases
-from pretalx.submission.models import SubmissionInvitation
+from pretalx.submission.domain.invitation import send_invitation
+from pretalx.submission.interfaces.validators.speaker import (
+    validate_speakers_within_limit,
+)
 
 
 class SubmissionInvitationForm(forms.Form):
@@ -27,25 +30,16 @@ class SubmissionInvitationForm(forms.Form):
             raise forms.ValidationError(
                 _("This person has already been invited to this proposal.")
             )
-        max_speakers = self.submission.event.cfp.max_speakers
-        if max_speakers is not None:
-            current = self.submission.speakers.count()
-            pending = self.submission.invitations.count()
-            if current + pending + 1 > max_speakers:
-                raise forms.ValidationError(
-                    _(
-                        "This would exceed the maximum of {max} speakers per proposal."
-                    ).format(max=max_speakers)
-                )
-
+        validate_speakers_within_limit(
+            self.submission.event,
+            current=self.submission.speakers.count(),
+            pending=self.submission.invitations.count(),
+            additional=1,
+        )
         return email
 
     def save(self):
-        email = self.cleaned_data["speaker"]
-        self.invitation, created = SubmissionInvitation.objects.get_or_create(
-            submission=self.submission, email=email
+        self.invitation = send_invitation(
+            self.submission, email=self.cleaned_data["speaker"], sender=self.speaker
         )
-        if not created:
-            return self.invitation
-        self.invitation.send(_from=self.speaker)
         return self.invitation

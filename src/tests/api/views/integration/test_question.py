@@ -13,6 +13,7 @@ from tests.factories import (
     AnswerOptionFactory,
     EventFactory,
     QuestionFactory,
+    ReviewFactory,
     SubmissionTypeFactory,
     TrackFactory,
 )
@@ -822,7 +823,6 @@ def test_answerviewset_create_organiser(client, event, orga_write_token, submiss
         question_required=QuestionRequired.OPTIONAL,
     )
     with scopes_disabled():
-        speaker_profile = submission.speakers.first()
         count = Answer.objects.filter(question__event=event).count()
 
     response = client.post(
@@ -830,7 +830,6 @@ def test_answerviewset_create_organiser(client, event, orga_write_token, submiss
         data={
             "question": question.id,
             "submission": submission.code,
-            "person": speaker_profile.code,
             "answer": "Tralalalala",
         },
         content_type="application/json",
@@ -1053,3 +1052,41 @@ def test_answerviewset_validation_submission_question_needs_submission(
 
     assert response.status_code == 400
     assert "review" in response.data
+
+
+@pytest.mark.parametrize(
+    ("target", "right_input", "wrong_input"),
+    (
+        ("submission", "submission", "person"),
+        ("speaker", "person", "submission"),
+        ("speaker", "person", "review"),
+        ("reviewer", "review", "submission"),
+        ("reviewer", "review", "person"),
+    ),
+)
+def test_answerviewset_validation_rejects_other_target_inputs(
+    client, event, orga_write_token, submission, target, right_input, wrong_input
+):
+    """Setting any non-target parent on the wrong question target is rejected."""
+    with scopes_disabled():
+        q = QuestionFactory(event=event, variant="text", target=target)
+        parent_values = {
+            "submission": submission.code,
+            "person": submission.speakers.first().code,
+            "review": ReviewFactory(submission=submission).pk,
+        }
+
+    response = client.post(
+        event.api_urls.answers,
+        data={
+            "question": q.pk,
+            "answer": "Test answer",
+            right_input: parent_values[right_input],
+            wrong_input: parent_values[wrong_input],
+        },
+        content_type="application/json",
+        headers={"Authorization": f"Token {orga_write_token.token}"},
+    )
+
+    assert response.status_code == 400, response.text
+    assert wrong_input in response.data, response.data

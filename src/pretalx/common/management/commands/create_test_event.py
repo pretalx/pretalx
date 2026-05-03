@@ -15,6 +15,7 @@ from pretalx.event.models import Event, Team
 from pretalx.event.utils import create_organiser_with_team
 from pretalx.person.models import SpeakerProfile, User
 from pretalx.schedule.models import Room
+from pretalx.submission.domain.submission import create_submission
 from pretalx.submission.models import Review, Submission, SubmissionType, Track
 
 
@@ -241,7 +242,7 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
 
     def build_submission(self, speaker, submission_type, submission_time):
         with self.freeze_time(submission_time):
-            submission = Submission.objects.create(
+            submission = Submission(
                 event=self.event,
                 title=self.fake.catch_phrase(),
                 submission_type=submission_type,
@@ -251,9 +252,9 @@ If you have any interest in {self.fake.catch_phrase().lower()}, {self.fake.catch
                 content_locale="en",
                 do_not_record=random.choice([False] * 10 + [True]),  # noqa: S311  -- test data
             )
-            submission.log_action("pretalx.submission.create", person=speaker.user)
-        submission.speakers.add(speaker)
-        return submission
+            return create_submission(
+                submission=submission, user=speaker.user, speakers=[speaker.user]
+            )
 
     def build_review_stage(self):
         """We will go with only three reviewers: One to review all submissions,

@@ -177,23 +177,19 @@ def test_invitation_form_save_uses_builtin_template_with_invitation_url(
     assert invitation.token in body
 
 
-def test_invitation_form_save_returns_existing_without_resending(
-    submission_with_speaker,
-):
+def test_invitation_form_clean_rejects_duplicate(submission_with_speaker):
+    """clean_speaker is the guard for duplicate invitations; save() trusts it,
+    so an invalid form must also produce no email."""
     djmail.outbox = []
     submission, speaker_user = submission_with_speaker
-    existing = SubmissionInvitationFactory(
-        submission=submission, email="repeat@example.com"
-    )
+    SubmissionInvitationFactory(submission=submission, email="repeat@example.com")
 
     form = SubmissionInvitationForm(
         submission=submission,
         speaker=speaker_user,
         data={"speaker": "repeat@example.com"},
     )
-    form.cleaned_data = {"speaker": "repeat@example.com"}
 
-    result = form.save()
-
-    assert result == existing
-    assert len(djmail.outbox) == 0
+    assert not form.is_valid()
+    assert "speaker" in form.errors
+    assert djmail.outbox == []

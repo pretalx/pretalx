@@ -5,15 +5,17 @@ import datetime as dt
 import pytest
 from django.utils.timezone import now
 
-from pretalx.submission.forms.submission import InfoForm, SubmissionFilterForm
+from pretalx.submission.interfaces.forms import (
+    InfoForm,
+    SubmissionFilterForm,
+    SubmissionInfoForm,
+)
 from pretalx.submission.models import SubmissionStates
 from tests.factories import (
-    AnswerFactory,
-    AnswerOptionFactory,
     EventFactory,
     QuestionFactory,
-    SpeakerFactory,
     SubmissionFactory,
+    SubmissionInvitationFactory,
     SubmissionTypeFactory,
     SubmitterAccessCodeFactory,
     TagFactory,
@@ -49,23 +51,60 @@ def test_info_form_init_preserves_existing_submission_type():
     assert form.initial["submission_type"] == extra_type.pk
 
 
-@pytest.mark.parametrize(
-    ("remove", "expect_present"),
-    ((True, False), (False, True)),
-    ids=["removed_when_requested", "kept_by_default"],
-)
-def test_info_form_init_additional_speaker_presence(remove, expect_present):
+def test_info_form_has_additional_speaker_field():
     event = EventFactory()
 
-    form = InfoForm(event=event, remove_additional_speaker=remove)
+    form = InfoForm(event=event)
 
-    assert ("additional_speaker" in form.fields) is expect_present
+    assert "additional_speaker" in form.fields
+
+
+def test_submission_info_form_has_no_additional_speaker_field():
+    """The base form is used by the speaker-edit view; co-speakers are
+    added there via the dedicated invitation form, not this one."""
+    event = EventFactory()
+
+    form = SubmissionInfoForm(event=event)
+
+    assert "additional_speaker" not in form.fields
+
+
+def test_info_form_init_prefills_additional_speaker_from_draft_additional_speakers():
+    """A draft that parked invitations on resume must surface them in the
+    form so the speaker sees what they previously entered."""
+    event = EventFactory()
+    submission = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.DRAFT,
+        draft_additional_speakers=["a@example.com", "b@example.com"],
+    )
+
+    form = InfoForm(event=event, instance=submission)
+
+    assert form.initial["additional_speaker"] == "a@example.com, b@example.com"
+
+
+def test_info_form_init_draft_additional_speakers_does_not_override_explicit_initial():
+    event = EventFactory()
+    submission = SubmissionFactory(
+        event=event,
+        state=SubmissionStates.DRAFT,
+        draft_additional_speakers=["a@example.com"],
+    )
+
+    form = InfoForm(
+        event=event,
+        instance=submission,
+        initial={"additional_speaker": "override@example.com"},
+    )
+
+    assert form.initial["additional_speaker"] == "override@example.com"
 
 
 def test_info_form_init_readonly_disables_all_fields():
     event = EventFactory()
 
-    form = InfoForm(event=event, readonly=True)
+    form = InfoForm(event=event, read_only=True)
 
     for field in form.fields.values():
         assert field.disabled is True
@@ -386,8 +425,14 @@ def test_info_form_clean_additional_speaker_skips_empty_between_commas():
     }
 
 
-def test_info_form_clean_additional_speaker_max_speakers_exceeded():
-    """For new submissions, existing_speakers defaults to 1 (the submitter)."""
+def test_info_form_clean_additional_speaker_delegates_to_speaker_limit_validator():
+    """Smoke-test that the form routes through ``validate_speakers_within_limit``.
+
+    The arithmetic itself (current/pending/additional bookkeeping) is
+    covered in ``tests/submission/interfaces/validators/test_speaker.py``;
+    here we only verify that exceeding the limit surfaces as a
+    field-level form error.
+    """
     event = EventFactory(
         cfp__fields={"additional_speaker": {"visibility": "optional", "max": 2}}
     )
@@ -395,9 +440,27 @@ def test_info_form_clean_additional_speaker_max_speakers_exceeded():
 
     form = InfoForm(event=event, data=data)
 
-    # 1 (submitter) + 2 emails = 3 > max 2
     assert not form.is_valid()
     assert "additional_speaker" in form.errors
+
+
+def test_info_form_clean_additional_speaker_skips_validator_when_all_invited():
+    """Re-submitting a draft whose pending invitations already cover every
+    listed email produces no new invites — the speaker-limit validator is
+    skipped so that re-saves don't fail spuriously when the submission is
+    already at the cap."""
+    event = EventFactory(
+        cfp__fields={"additional_speaker": {"visibility": "optional", "max": 1}}
+    )
+    submission = SubmissionFactory(event=event)
+    SubmissionInvitationFactory(submission=submission, email="invited@example.com")
+    data = {"title": submission.title, "additional_speaker": "invited@example.com"}
+
+    form = InfoForm(event=event, instance=submission, data=data)
+    form.is_valid()
+
+    assert form.cleaned_data["additional_speaker"] == ["invited@example.com"]
+    assert "additional_speaker" not in form.errors
 
 
 def test_info_form_clean_additional_speaker_deduplicates():
@@ -418,41 +481,6 @@ def test_info_form_clean_additional_speaker_lowercases():
     form.is_valid()
 
     assert form.cleaned_data.get("additional_speaker") == ["a@example.com"]
-
-
-def test_info_form_clean_additional_speaker_within_max_speakers_limit():
-    event = EventFactory(
-        cfp__fields={"additional_speaker": {"visibility": "optional", "max": 3}}
-    )
-    data = {
-        "title": "Talk",
-        "abstract": "An abstract",
-        "additional_speaker": "a@example.com",
-    }
-
-    form = InfoForm(event=event, data=data)
-
-    assert form.is_valid(), form.errors
-    assert form.cleaned_data["additional_speaker"] == ["a@example.com"]
-
-
-def test_info_form_clean_additional_speaker_max_speakers_with_existing_instance():
-    """max_speakers counts existing speakers on a saved submission instance."""
-    event = EventFactory(
-        cfp__fields={"additional_speaker": {"visibility": "optional", "max": 2}}
-    )
-    submission = SubmissionFactory(event=event)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    data = {
-        "title": "Talk",
-        "abstract": "An abstract",
-        "additional_speaker": "new@example.com",
-    }
-
-    form = InfoForm(event=event, instance=submission, data=data)
-    # 1 existing speaker + 1 new email = 2 <= max 2
-    assert form.is_valid(), form.errors
 
 
 def test_info_form_clean_tags_preserves_private_tags():
@@ -661,63 +689,6 @@ def test_submission_filter_form_init_limit_tracks():
     form = SubmissionFilterForm(event=event, limit_tracks=[track1])
 
     assert list(form.fields["track"].queryset) == [track1]
-
-
-def test_submission_filter_form_filter_question_by_answer():
-    event = EventFactory()
-    question = QuestionFactory(event=event)
-    matching_sub = SubmissionFactory(event=event)
-    AnswerFactory(question=question, submission=matching_sub, answer="yes")
-    non_matching_sub = SubmissionFactory(event=event)
-    AnswerFactory(question=question, submission=non_matching_sub, answer="no")
-
-    form = SubmissionFilterForm(
-        event=event, data={"question": question.pk, "answer": "yes"}
-    )
-    assert form.is_valid(), form.errors
-
-    qs = event.submissions.all()
-    filtered = form.filter_queryset(qs)
-
-    assert set(filtered) == {matching_sub}
-
-
-def test_submission_filter_form_filter_question_by_option():
-    event = EventFactory()
-    question = QuestionFactory(event=event, variant="choices")
-    option = AnswerOptionFactory(question=question)
-    matching_sub = SubmissionFactory(event=event)
-    answer = AnswerFactory(question=question, submission=matching_sub)
-    answer.options.add(option)
-    SubmissionFactory(event=event)  # non-matching submission without the option
-
-    form = SubmissionFilterForm(
-        event=event, data={"question": question.pk, "answer__options": option.pk}
-    )
-    assert form.is_valid(), form.errors
-
-    qs = event.submissions.all()
-    filtered = form.filter_queryset(qs)
-
-    assert set(filtered) == {matching_sub}
-
-
-def test_submission_filter_form_filter_question_unanswered():
-    event = EventFactory()
-    question = QuestionFactory(event=event)
-    answered_sub = SubmissionFactory(event=event)
-    AnswerFactory(question=question, submission=answered_sub)
-    unanswered_sub = SubmissionFactory(event=event)
-
-    form = SubmissionFilterForm(
-        event=event, data={"question": question.pk, "unanswered": True}
-    )
-    assert form.is_valid(), form.errors
-
-    qs = event.submissions.all()
-    filtered = form.filter_queryset(qs)
-
-    assert set(filtered) == {unanswered_sub}
 
 
 def test_submission_filter_form_filter_queryset_by_state():
@@ -999,14 +970,3 @@ def test_submission_filter_form_can_view_speakers_searches_original_title():
     filtered = form.filter_queryset(event.submissions.all())
 
     assert set(filtered) == {anonymised_sub}
-
-
-def test_submission_filter_form_anonymised_search_empty_search_fields():
-    """When search_fields is empty, _anonymised_search returns the queryset unchanged."""
-    event = EventFactory()
-    sub = SubmissionFactory(event=event, title="Some Title")
-    qs = event.submissions.all()
-
-    result = SubmissionFilterForm._anonymised_search(qs, "Some", search_fields=())
-
-    assert set(result) == {sub}

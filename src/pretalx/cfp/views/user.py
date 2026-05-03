@@ -41,7 +41,11 @@ from pretalx.person.forms import (
     SpeakerProfileForm,
 )
 from pretalx.person.rules import can_view_information
-from pretalx.submission.forms import InfoForm, QuestionsForm, ResourceForm
+from pretalx.submission.interfaces.forms import (
+    QuestionsForm,
+    ResourceForm,
+    SubmissionInfoForm,
+)
 from pretalx.submission.models import (
     Resource,
     Submission,
@@ -89,7 +93,7 @@ class ProfileView(LoggedInEventPageMixin, TemplateView):
             data=self.request.POST if bind else None,
             files=self.request.FILES if bind else None,
             speaker=self.request.user.get_speaker(self.request.event),
-            readonly=not self.can_edit_speaker,
+            read_only=not self.can_edit_speaker,
             event=self.request.event,
             target="speaker",
         )
@@ -331,7 +335,7 @@ class SubmissionDraftDiscardView(
 class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateView):
     template_name = "cfp/event/user_submission_edit.html"
     model = Submission
-    form_class = InfoForm
+    form_class = SubmissionInfoForm
     context_object_name = "submission"
     permission_required = "submission.view_submission"
     write_permission_required = "submission.update_submission"
@@ -410,7 +414,7 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
             submission=self.object,
             target="submission",
             event=self.request.event,
-            readonly=not self.can_edit,
+            read_only=not self.can_edit,
         )
 
     @context
@@ -432,6 +436,9 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
         return self.get_object()
 
     def post(self, request, *args, **kwargs):
+        if not self.can_edit:
+            messages.error(self.request, phrases.cfp.submission_uneditable)
+            return redirect(self.object.urls.user_base)
         form = self.get_form()
         if form.is_valid() and self.qform.is_valid():
             return self.form_valid(form)
@@ -450,17 +457,11 @@ class SubmissionsEditView(LoggedInEventPageMixin, SubmissionViewMixin, UpdateVie
             .get("info", {})
             .get("fields")
         )
-        kwargs["readonly"] = not self.can_edit
-        # At this stage, new speakers can be added via the dedicated form
-        kwargs["remove_additional_speaker"] = True
+        kwargs["read_only"] = not self.can_edit
         return kwargs
 
     @transaction.atomic
     def form_valid(self, form):
-        if not self.can_edit:
-            messages.error(self.request, phrases.cfp.submission_uneditable)
-            return redirect(self.object.urls.user_base)
-
         old_submission_data = {}
         old_questions_data = {}
         model_class = form.instance.__class__
@@ -548,13 +549,8 @@ class SubmissionInviteView(LoggedInEventPageMixin, SubmissionViewMixin, FormView
 
     @transaction.atomic
     def form_valid(self, form):
-        invitation = form.save()
+        form.save()
         messages.success(self.request, phrases.cfp.invite_sent)
-        self.submission.log_action(
-            "pretalx.submission.invitation.send",
-            person=self.request.user,
-            data={"email": invitation.email},
-        )
         return super().form_valid(form)
 
     def get_success_url(self):

@@ -17,7 +17,9 @@ from tests.factories import (
     EventFactory,
     QuestionFactory,
     ResourceFactory,
+    SpeakerFactory,
     SubmissionFactory,
+    SubmissionInvitationFactory,
     SubmitterAccessCodeFactory,
     UserFactory,
 )
@@ -144,6 +146,158 @@ def test_wizard_additional_speaker_mail_fail_no_crash(client):
     with scope(event=event):
         assert Submission.objects.count() == 1
     assert len(djmail.outbox) == 0
+
+
+def test_wizard_draft_parks_additional_speakers(client, cfp_event, cfp_user):
+    """Saving a wizard step as a draft must not send invitations — the
+    addresses are parked on ``submission.draft_additional_speakers`` until
+    the proposal is actually submitted."""
+    djmail.outbox = []
+    client.force_login(cfp_user)
+    _, info_url = start_wizard(client, cfp_event)
+
+    data = info_data(
+        cfp_event,
+        additional_speaker="park-me@example.com, also-me@example.com",
+        action="draft",
+    )
+    response, _ = get_response_and_url(client, info_url, data=data)
+
+    assert response.status_code == 200
+    with scope(event=cfp_event):
+        submission = Submission.all_objects.get(event=cfp_event)
+    assert submission.state == SubmissionStates.DRAFT
+    assert submission.draft_additional_speakers == [
+        "park-me@example.com",
+        "also-me@example.com",
+    ]
+    with scope(event=cfp_event):
+        assert submission.invitations.count() == 0
+    assert djmail.outbox == []
+
+
+def test_wizard_dedraft_promotes_draft_additional_speakers(client, cfp_event, cfp_user):
+    """Resuming a draft must repopulate the additional_speaker field from
+    ``draft_additional_speakers`` so the speaker sees what they had entered,
+    and on final submit those addresses are turned into real invitations."""
+    djmail.outbox = []
+    with scopes_disabled():
+        draft = SubmissionFactory(
+            event=cfp_event,
+            state=SubmissionStates.DRAFT,
+            draft_additional_speakers=["parked@example.com"],
+        )
+        speaker = SpeakerFactory(event=cfp_event, user=cfp_user)
+        draft.speakers.add(speaker)
+    client.force_login(cfp_user)
+
+    restart_url = f"/{cfp_event.slug}/submit/restart-{draft.code}/"
+    response, info_url = get_response_and_url(client, restart_url, method="GET")
+    # The parked address must show up in the rendered form so the speaker
+    # can see/edit it before re-submitting.
+    assert b"parked@example.com" in response.content
+
+    data = info_data(
+        cfp_event, title=draft.title, additional_speaker="parked@example.com"
+    )
+    _, profile_url = get_response_and_url(client, info_url, data=data)
+    profile_data = {"name": "Jane Doe", "biography": "bio"}
+    _, final_url = get_response_and_url(client, profile_url, data=profile_data)
+
+    assert "/me/submissions/" in final_url
+    with scope(event=cfp_event):
+        draft.refresh_from_db()
+        assert draft.state == SubmissionStates.SUBMITTED
+        assert draft.draft_additional_speakers == []
+        invited = set(draft.invitations.values_list("email", flat=True))
+    assert invited == {"parked@example.com"}
+    recipients = [r for m in djmail.outbox for r in m.to]
+    assert recipients.count("parked@example.com") == 1
+
+
+def test_wizard_dedraft_skips_already_invited(client, cfp_event, cfp_user):
+    """Dedrafting a submission whose draft already carried an invitation
+    must not raise IntegrityError or send a duplicate mail when the same
+    email is re-listed in ``additional_speaker``."""
+    djmail.outbox = []
+    with scopes_disabled():
+        draft = SubmissionFactory(event=cfp_event, state=SubmissionStates.DRAFT)
+        speaker = SpeakerFactory(event=cfp_event, user=cfp_user)
+        draft.speakers.add(speaker)
+        SubmissionInvitationFactory(submission=draft, email="existing@example.com")
+    client.force_login(cfp_user)
+
+    restart_url = f"/{cfp_event.slug}/submit/restart-{draft.code}/"
+    _, info_url = get_response_and_url(client, restart_url, method="GET")
+    assert "/info/" in info_url
+
+    data = info_data(
+        cfp_event,
+        title=draft.title,
+        additional_speaker="existing@example.com, fresh@example.com",
+    )
+    _, profile_url = get_response_and_url(client, info_url, data=data)
+    profile_data = {"name": "Jane Doe", "biography": "bio"}
+    _, final_url = get_response_and_url(client, profile_url, data=profile_data)
+
+    assert "/me/submissions/" in final_url
+    with scope(event=cfp_event):
+        draft.refresh_from_db()
+        assert draft.state == SubmissionStates.SUBMITTED
+        invited = set(draft.invitations.values_list("email", flat=True))
+    assert invited == {"existing@example.com", "fresh@example.com"}
+    # The pre-existing invitation was created without sending and must not be
+    # re-sent; the fresh one fires once.
+    recipients = [r for m in djmail.outbox for r in m.to]
+    assert recipients.count("fresh@example.com") == 1
+    assert "existing@example.com" not in recipients
+
+
+def test_wizard_dedraft_updates_existing_resource_in_place(client, cfp_user):
+    """Editing an existing resource on a dedraft must update the row, not
+    create a duplicate. The formset rebinds to the resource via the hidden
+    id field, so the wizard's done() handler has to reuse the bound
+    instance rather than always inserting a fresh row."""
+    event = EventFactory(
+        cfp__deadline=now() + dt.timedelta(days=30),
+        cfp__fields={"resources": {"visibility": "optional"}},
+    )
+    with scopes_disabled():
+        draft = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
+        speaker = SpeakerFactory(event=event, user=cfp_user)
+        draft.speakers.add(speaker)
+        resource = ResourceFactory(
+            submission=draft,
+            link="https://example.com/slides.pdf",
+            description="Old description",
+        )
+    client.force_login(cfp_user)
+
+    restart_url = f"/{event.slug}/submit/restart-{draft.code}/"
+    _, info_url = get_response_and_url(client, restart_url, method="GET")
+
+    data = info_data(event, title=draft.title)
+    data.update(
+        {
+            "resource-TOTAL_FORMS": "1",
+            "resource-INITIAL_FORMS": "1",
+            "resource-0-id": str(resource.pk),
+            "resource-0-description": "New description",
+            "resource-0-link": "https://example.com/slides.pdf",
+        }
+    )
+    _, profile_url = get_response_and_url(client, info_url, data=data)
+    profile_data = {"name": "Jane Doe", "biography": "bio"}
+    _, final_url = get_response_and_url(client, profile_url, data=profile_data)
+
+    assert "/me/submissions/" in final_url
+    with scope(event=event):
+        draft.refresh_from_db()
+        assert draft.state == SubmissionStates.SUBMITTED
+        resources = list(draft.resources.all())
+    assert len(resources) == 1
+    assert resources[0].pk == resource.pk
+    assert resources[0].description == "New description"
 
 
 def test_wizard_submit_twice_no_duplicate_speaker_answers(client, cfp_event, cfp_user):
