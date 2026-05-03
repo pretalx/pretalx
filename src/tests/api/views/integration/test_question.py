@@ -71,7 +71,7 @@ def test_questionviewset_list_organiser_sees_all(
             question_required=QuestionRequired.OPTIONAL,
         )
 
-    with django_assert_num_queries(15):
+    with django_assert_num_queries(14):
         response = client.get(
             event.api_urls.questions,
             follow=True,
@@ -757,7 +757,7 @@ def test_answerviewset_list_organiser(
                 question=question, submission=submission, answer="second answer"
             )
 
-    with django_assert_num_queries(13):
+    with django_assert_num_queries(12):
         response = client.get(
             event.api_urls.answers,
             follow=True,

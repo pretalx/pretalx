@@ -25,8 +25,11 @@ from pretalx.api.serializers.question import (
 )
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.submission.icons import PLATFORM_ICONS
+from pretalx.submission.interfaces.queries.question import (
+    answers_for_user,
+    questions_for_user,
+)
 from pretalx.submission.models import Answer, AnswerOption, Question, QuestionVariant
-from pretalx.submission.rules import filter_answers_by_team_access, questions_for_user
 
 OPTIONS_HELP = (
     "Please note that any update to the options field will delete the "
@@ -70,10 +73,8 @@ class QuestionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewS
     endpoint = "questions"
 
     def get_queryset(self):
-        return (
-            questions_for_user(self.event, self.request.user)
-            .select_related("event")
-            .prefetch_related("options", "tracks", "submission_types")
+        return questions_for_user(self.event, self.request.user).prefetch_related(
+            "options", "tracks", "submission_types"
         )
 
     def get_unversioned_serializer_class(self):
@@ -215,15 +216,7 @@ class AnswerViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
     }
 
     def get_queryset(self):
-        queryset = (
-            Answer.objects.filter(
-                question__in=questions_for_user(self.event, self.request.user)
-            )
-            .select_related("question", "question__event", "submission", "speaker")
-            .prefetch_related("options")
-            .order_by("pk")
-        )
-        queryset = filter_answers_by_team_access(queryset, self.request.user)
+        queryset = answers_for_user(self.event, self.request.user).order_by("pk")
         question_fields = self.check_expanded_fields(
             "question.tracks", "question.submissions"
         )

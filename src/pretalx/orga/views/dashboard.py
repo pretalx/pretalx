@@ -24,8 +24,10 @@ from pretalx.event.models import Event, Organiser
 from pretalx.event.stages import get_stages
 from pretalx.mail.models import QueuedMailStates
 from pretalx.orga.signals import dashboard_tile
+from pretalx.submission.interfaces.queries.submission import (
+    unreviewed_submissions_for_user,
+)
 from pretalx.submission.models import Submission, SubmissionStates
-from pretalx.submission.rules import get_missing_reviews
 
 
 def start_redirect_view(request):
@@ -213,7 +215,7 @@ class EventDashboardView(EventPermissionRequired, TemplateView):
             members__in=[self.request.user], is_reviewer=True
         ).exists()
         if is_reviewer:
-            reviews_missing = get_missing_reviews(
+            reviews_missing = unreviewed_submissions_for_user(
                 self.request.event, self.request.user
             ).count()
             if reviews_missing:

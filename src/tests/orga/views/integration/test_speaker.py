@@ -73,7 +73,7 @@ def test_speaker_list_query_count(client, event, item_count, django_assert_num_q
             speakers.append(speaker)
     client.force_login(user)
 
-    with django_assert_num_queries(21):
+    with django_assert_num_queries(20):
         response = client.get(event.orga_urls.speakers)
 
     assert response.status_code == 200

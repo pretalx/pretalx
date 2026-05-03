@@ -62,6 +62,11 @@ from pretalx.submission.forms import (
     SubmissionFilterForm,
     TagForm,
 )
+from pretalx.submission.interfaces.queries.question import questions_for_user
+from pretalx.submission.interfaces.queries.submission import (
+    annotate_assigned_reviews,
+    submissions_for_user,
+)
 from pretalx.submission.models import (
     Feedback,
     QuestionTarget,
@@ -75,11 +80,8 @@ from pretalx.submission.models import (
 )
 from pretalx.submission.models.submission import SpeakerRole
 from pretalx.submission.rules import (
-    annotate_assigned,
     has_reviewer_access,
-    limit_for_reviewers,
     orga_can_change_submissions,
-    questions_for_user,
     submission_comments_active,
 )
 
@@ -149,13 +151,10 @@ class ReviewerSubmissionFilter:
         if self.is_only_reviewer:
             return self.request.user.get_reviewer_tracks(self.request.event)
 
-    def get_queryset(self, for_review=False):
+    def get_queryset(self):
         queryset = (
-            self.request.event.submissions.all()
+            submissions_for_user(self.request.event, self.request.user)
             .select_related(
-                "submission_type",
-                "event",
-                "track",
                 "track__event",
                 "track__event__cfp",
                 "submission_type__event",
@@ -163,17 +162,9 @@ class ReviewerSubmissionFilter:
             )
             .with_sorted_speakers()
         )
-        if self.is_only_reviewer:
-            queryset = limit_for_reviewers(
-                queryset, self.request.event, self.request.user, self.limit_tracks
-            )
-        if for_review or "is_reviewer" in self.request.user.get_permissions_for_event(
-            self.request.event
-        ):
-            queryset = annotate_assigned(
-                queryset, self.request.event, self.request.user
-            )
-        return queryset
+        return annotate_assigned_reviews(
+            queryset, self.request.event, self.request.user
+        )
 
 
 class SubmissionStateChange(SubmissionViewMixin, FormView):
@@ -712,10 +703,10 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
             default_filters.add("speakers__name__icontains")
         return default_filters
 
-    def _get_base_queryset(self, for_review=False):
+    def _get_base_queryset(self):
         # If somebody has *only* reviewer permissions for this event, they can only
         # see the proposals they can review.
-        qs = super().get_queryset(for_review=for_review).order_by("-id")
+        qs = super().get_queryset().order_by("-id")
         if not self.filter_form.is_valid():
             return qs
         return self.filter_form.filter_queryset(qs)
@@ -735,9 +726,7 @@ class SubmissionListMixin(ReviewerSubmissionFilter, OrgaTableMixin):
     @context
     @cached_property
     def short_questions(self):
-        return questions_for_user(
-            self.request.event, self.request.user, for_answers=True
-        ).filter(
+        return questions_for_user(self.request.event, self.request.user).filter(
             target=QuestionTarget.SUBMISSION, variant__in=QuestionVariant.short_answers
         )
 

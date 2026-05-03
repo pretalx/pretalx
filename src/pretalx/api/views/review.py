@@ -14,9 +14,8 @@ from pretalx.api.documentation import (
 from pretalx.api.filters.review import ReviewFilter
 from pretalx.api.serializers.review import ReviewSerializer, ReviewWriteSerializer
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
-from pretalx.person.rules import is_only_reviewer
+from pretalx.submission.interfaces.queries.submission import submissions_for_user
 from pretalx.submission.models import Review, Submission
-from pretalx.submission.rules import get_reviewable_submissions
 
 
 @extend_schema_view(
@@ -78,14 +77,7 @@ class ReviewViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelViewSet
     def visible_submissions(self):
         if not self.event:
             return Submission.objects.none()
-        submissions = self.event.submissions.all().exclude(
-            speakers__user=self.request.user
-        )
-        # Organizers can see all submissions' reviews regardless of review phase
-        # Only pure reviewers are subject to review phase restrictions
-        if not is_only_reviewer(self.request.user, self.event):
-            return submissions
-        return get_reviewable_submissions(self.event, self.request.user, submissions)
+        return submissions_for_user(self.event, self.request.user, review_context=True)
 
     def get_queryset(self):
         if not self.event or self.request.user.is_anonymous:

@@ -42,6 +42,9 @@ from pretalx.api.versions import LEGACY
 from pretalx.api.views.mixins import ActivityLogMixin, PretalxViewSetMixin
 from pretalx.common.auth import TokenAuthentication
 from pretalx.common.exceptions import SubmissionError
+from pretalx.submission.interfaces.queries.question import questions_for_user
+from pretalx.submission.interfaces.queries.speaker import speakers_for_user
+from pretalx.submission.interfaces.queries.submission import submissions_for_user
 from pretalx.submission.models import (
     Answer,
     Resource,
@@ -50,11 +53,6 @@ from pretalx.submission.models import (
     SubmissionType,
     Tag,
     Track,
-)
-from pretalx.submission.rules import (
-    questions_for_user,
-    speakers_for_user,
-    submissions_for_user,
 )
 
 
@@ -244,9 +242,7 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
         context = super().get_serializer_context()
         if not self.event:
             return context
-        context["questions"] = questions_for_user(
-            self.event, self.request.user, for_answers=True
-        )
+        context["questions"] = questions_for_user(self.event, self.request.user)
         context["speakers"] = self.speakers_for_user
         context["schedule"] = self.event.current_schedule
         context["public_slots"] = not self.has_perm("delete")
@@ -274,7 +270,6 @@ class SubmissionViewSet(ActivityLogMixin, PretalxViewSetMixin, viewsets.ModelVie
             prefetches += ["reviews", "assigned_reviewers", "invitations"]
         queryset = (
             submissions_for_user(self.event, self.request.user)
-            .select_related("event", "track", "submission_type")
             .prefetch_related(*prefetches)
             .order_by("code")
         )

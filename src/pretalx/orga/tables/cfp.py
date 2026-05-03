@@ -16,13 +16,13 @@ from pretalx.common.tables import (
     UnsortableMixin,
 )
 from pretalx.common.text.phrases import phrases
+from pretalx.submission.interfaces.queries.question import questions_for_user
 from pretalx.submission.models import (
     Question,
     SubmissionType,
     SubmitterAccessCode,
     Track,
 )
-from pretalx.submission.rules import questions_for_user
 
 
 class SubmitterAccessCodeTable(PretalxTable):
@@ -237,9 +237,7 @@ class QuestionTable(UnsortableMixin, PretalxTable):
         # Pre-compute accessible question IDs to avoid per-question DB queries
         if self.event and self.user:
             return set(
-                questions_for_user(self.event, self.user, for_answers=True).values_list(
-                    "id", flat=True
-                )
+                questions_for_user(self.event, self.user).values_list("id", flat=True)
             )
         return set()
 

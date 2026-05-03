@@ -243,7 +243,7 @@ def test_question_list_shows_questions(
         inactive = QuestionFactory(event=event, active=False)
     client.force_login(user)
 
-    with django_assert_num_queries(20):
+    with django_assert_num_queries(18):
         response = client.get(event.cfp.urls.questions, follow=True)
 
     assert response.status_code == 200
