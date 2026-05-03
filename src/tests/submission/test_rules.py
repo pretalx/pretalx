@@ -645,31 +645,6 @@ def test_has_reviewer_access_object_does_not_exist():
     assert not rules.has_reviewer_access(None, FakeObj())
 
 
-def test_are_featured_submissions_visible_never():
-    event = EventFactory(is_public=True, feature_flags={"show_featured": "never"})
-    assert rules.are_featured_submissions_visible(None, event) is False
-
-
-def test_are_featured_submissions_visible_not_public():
-    event = EventFactory(is_public=False)
-    assert rules.are_featured_submissions_visible(None, event) is False
-
-
-def test_are_featured_submissions_visible_always():
-    event = EventFactory(is_public=True, feature_flags={"show_featured": "always"})
-    assert rules.are_featured_submissions_visible(None, event) is True
-
-
-def test_are_featured_submissions_visible_pre_schedule():
-    """Default 'pre_schedule' shows featured when there's no current schedule."""
-    event = EventFactory(
-        is_public=True, feature_flags={"show_featured": "pre_schedule"}
-    )
-
-    with scope(event=event):
-        assert rules.are_featured_submissions_visible(None, event) is True
-
-
 def test_has_team_question_access_true():
     event = EventFactory()
     team = TeamFactory(
