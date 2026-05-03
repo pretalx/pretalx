@@ -1,11 +1,19 @@
 # SPDX-FileCopyrightText: 2023-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
+import copy
+
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.functional import cached_property
 from i18nfield.fields import I18nCharField, I18nTextField
 from i18nfield.rest_framework import I18nField
 from rest_flex_fields.utils import split_levels
-from rest_framework.serializers import ModelSerializer
+from rest_framework.fields import HiddenField, empty
+from rest_framework.serializers import (
+    ModelSerializer,
+    ValidationError,
+    as_serializer_error,
+)
 
 from pretalx.api.documentation import extend_schema_field
 
@@ -40,6 +48,60 @@ class PretalxSerializer(ModelSerializer):
         self.override_locale = kwargs.get("context", {}).get("override_locale")
         self.event = getattr(kwargs.get("context", {}).get("request"), "event", None)
         super().__init__(*args, **kwargs)
+
+    def get_unique_together_validators(self):
+        # DRF makes every unique-together field required, which breaks pairs of a
+        # context-default HiddenField with a model-filled optional (e.g. identifier).
+        def is_blocked_by_hidden_default(validator):
+            fields = [
+                self.fields[name] for name in validator.fields if name in self.fields
+            ]
+            has_hidden = any(isinstance(f, HiddenField) for f in fields)
+            has_optional = any(
+                not isinstance(f, HiddenField) and not f.required for f in fields
+            )
+            return has_hidden and has_optional
+
+        return [
+            v
+            for v in super().get_unique_together_validators()
+            if not is_blocked_by_hidden_default(v)
+        ]
+
+    def run_validation(self, data=empty):
+        # DRF skips Model.full_clean by default; run it so model-level validators fire.
+        value = super().run_validation(data)
+        self._run_model_full_clean(value)
+        return value
+
+    def _run_model_full_clean(self, attrs):
+        model = self.Meta.model
+        # Don't mutate self.instance: callers may render it on a partial-error path,
+        # and an unsaved-but-dirty instance leaks unvalidated data.
+        instance = copy.copy(self.instance) if self.instance is not None else model()
+        concrete = {f.name for f in model._meta.concrete_fields}
+
+        # attrs is keyed by field.source; resolve back to concrete field names,
+        # falling back to field_name when source points at a method/property
+        # (e.g. duration = IntegerField(source="get_duration")).
+        applied = {}
+        for name, field in self.fields.items():
+            if field.source not in attrs:
+                continue
+            if field.source in concrete:
+                applied[field.source] = attrs[field.source]
+            elif name in concrete:
+                applied[name] = attrs[field.source]
+        for name, value in applied.items():
+            setattr(instance, name, value)
+
+        # validate_unique=False: defer to DRF's UniqueValidator + DB to avoid duplicate errors.
+        try:
+            instance.full_clean(
+                exclude=concrete - applied.keys(), validate_unique=False
+            )
+        except DjangoValidationError as exc:
+            raise ValidationError(as_serializer_error(exc)) from exc
 
     def get_with_fallback(self, data, key):
         """
