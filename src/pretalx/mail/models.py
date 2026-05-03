@@ -24,15 +24,10 @@ from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.formatting import MODE_HTML, MODE_PLAIN, format_map
 from pretalx.common.urls import EventUrls
 from pretalx.mail.context import get_available_placeholders
+from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 from pretalx.mail.placeholders import SimpleFunctionalMailTextPlaceholder
 from pretalx.mail.signals import queuedmail_post_send, queuedmail_pre_send
 from pretalx.submission.rules import orga_can_change_submissions
-
-
-class QueuedMailStates(models.TextChoices):
-    DRAFT = "draft", pgettext_lazy("email status", "Draft")
-    SENDING = "sending", pgettext_lazy("email status", "Sending")
-    SENT = "sent", pgettext_lazy("email status", "Sent")
 
 
 def get_prefixed_subject(event, subject):
@@ -43,27 +38,6 @@ def get_prefixed_subject(event, subject):
     if subject.startswith(prefix):
         return subject
     return f"{prefix} {subject}"
-
-
-class MailTemplateRoles(models.TextChoices):
-    NEW_SUBMISSION = "submission.new", _("Acknowledge proposal submission")
-    NEW_SUBMISSION_INTERNAL = (
-        "submission.new.internal",
-        _("New proposal (organiser notification)"),
-    )
-    SUBMISSION_ACCEPT = "submission.state.accepted", _("Proposal accepted")
-    SUBMISSION_REJECT = "submission.state.rejected", _("Proposal rejected")
-    NEW_SPEAKER_INVITE = (
-        "speaker.invite",
-        _("Add a speaker to a proposal (new account)"),
-    )
-    EXISTING_SPEAKER_INVITE = (
-        "speaker.invite.existing",
-        _("Add a speaker to a proposal (existing account)"),
-    )
-    QUESTION_REMINDER = "question.reminder", _("Custom fields reminder")
-    DRAFT_REMINDER = "draft.reminder", _("Draft proposal reminder")
-    NEW_SCHEDULE = "schedule.new", _("New schedule published")
 
 
 PLACEHOLDER_KWARGS = {

@@ -22,17 +22,13 @@ from pretalx.common.models.fields import DateTimeField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.serialize import serialize_duration
 from pretalx.common.urls import get_netloc
+from pretalx.schedule.enums import SlotType
 from pretalx.schedule.ical import get_slot_ical, patch_out_timezone_cache
 from pretalx.submission.rules import is_break, is_wip, orga_can_change_submissions
 
 INSTANCE_IDENTIFIER = None
 WHITESPACE_REGEX = re.compile(r"\W+")
 FRAB_SLUG_REGEX = re.compile(f"[^{string.ascii_letters + string.digits + '-'}]")
-
-
-class SlotType(models.TextChoices):
-    BREAK = "break", _("Break")
-    BLOCKER = "blocker", _("Blocker")
 
 
 class TalkSlotQuerySet(models.QuerySet):

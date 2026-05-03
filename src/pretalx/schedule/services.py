@@ -11,8 +11,10 @@ from django.db.utils import DatabaseError
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import now
 
-from pretalx.schedule.models.slot import SlotType, TalkSlot
+from pretalx.schedule.enums import SlotType
+from pretalx.schedule.models.slot import TalkSlot
 from pretalx.schedule.signals import schedule_release
+from pretalx.submission.enums import SubmissionStates
 
 
 def serialize_schedule_changes(changes: dict) -> dict:
@@ -372,10 +374,6 @@ def freeze_schedule(schedule, name, user=None, notify_speakers=True, comment=Non
         )
     if not name:
         raise ValueError("Cannot create schedule version without a version name.")
-
-    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-        SubmissionStates,
-    )
 
     with transaction.atomic():
         schedule.version = name

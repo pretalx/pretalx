@@ -32,26 +32,6 @@ from tests.factories import (
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 
 
-def test_question_variant_short_answers():
-    assert set(QuestionVariant.short_answers) | set(
-        QuestionVariant.long_answers
-    ) == set(QuestionVariant.values)
-    assert not set(QuestionVariant.short_answers) & set(QuestionVariant.long_answers)
-
-
-def test_question_variant_long_answers():
-    assert QuestionVariant.long_answers == ("text",)
-
-
-@pytest.mark.parametrize(
-    "cls",
-    (QuestionVariant, QuestionTarget, QuestionRequired, QuestionIcon),
-    ids=("variant", "target", "required", "icon"),
-)
-def test_question_choices_get_max_length(cls):
-    assert cls.get_max_length() == max(len(val) for val in cls.values)
-
-
 def test_question_manager_excludes_inactive():
     event = EventFactory()
     active_q = QuestionFactory(event=event, active=True)

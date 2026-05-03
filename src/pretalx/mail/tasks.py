@@ -13,6 +13,7 @@ from django_scopes import scopes_disabled
 from pretalx.celery_app import app
 from pretalx.common.exceptions import SendMailException
 from pretalx.common.signals import minimum_interval, periodic_task
+from pretalx.mail.enums import QueuedMailStates
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +21,7 @@ logger = logging.getLogger(__name__)
 @receiver(signal=periodic_task)
 @minimum_interval(minutes_after_success=15)
 def mark_stale_sending_mails_as_failed(sender, **kwargs):
-    from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-        QueuedMail,
-        QueuedMailStates,
-    )
+    from pretalx.mail.models import QueuedMail  # noqa: PLC0415 -- avoid circular import
 
     with scopes_disabled():
         cutoff = now() - dt.timedelta(hours=1)
@@ -163,7 +161,6 @@ def task_send_outbox_mails(self, *, event_id, mail_pks, requestor_id=None):
     are no longer in DRAFT state are silently skipped.
     """
     from pretalx.event.models import Event  # noqa: PLC0415
-    from pretalx.mail.models import QueuedMailStates  # noqa: PLC0415
     from pretalx.person.models import User  # noqa: PLC0415
 
     with scopes_disabled():
