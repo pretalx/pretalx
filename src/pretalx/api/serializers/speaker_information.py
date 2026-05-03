@@ -4,7 +4,9 @@
 from pathlib import Path
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
+from rest_framework.serializers import HiddenField
 
+from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
@@ -15,6 +17,7 @@ from pretalx.submission.models import SubmissionType, Track
 @register_serializer(versions=CURRENT_VERSIONS)
 class SpeakerInformationSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     resource = UploadedFileField(required=False)
+    event = HiddenField(default=CurrentEventDefault())
 
     class Meta:
         model = SpeakerInformation
@@ -26,6 +29,7 @@ class SpeakerInformationSerializer(FlexFieldsSerializerMixin, PretalxSerializer)
             "resource",
             "limit_tracks",
             "limit_types",
+            "event",
         )
         expandable_fields = {
             "limit_tracks": (
@@ -54,7 +58,6 @@ class SpeakerInformationSerializer(FlexFieldsSerializerMixin, PretalxSerializer)
             ].child_relation.queryset = SubmissionType.objects.none()
 
     def create(self, validated_data):
-        validated_data["event"] = self.event
         resource = validated_data.pop("resource", None)
         instance = super().create(validated_data)
         if resource:

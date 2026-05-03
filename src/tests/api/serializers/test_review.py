@@ -201,10 +201,12 @@ def test_review_write_serializer_create_sets_user():
     user = UserFactory()
     request = make_api_request(event, user=user)
 
-    serializer = ReviewWriteSerializer(context={"request": request})
-    review = serializer.create(
-        {"submission": submission, "text": "Great talk", "answers": []}
+    serializer = ReviewWriteSerializer(
+        data={"submission": submission.code, "text": "Great talk", "answers": []},
+        context={"request": request, "submissions": event.submissions.all()},
     )
+    assert serializer.is_valid(), serializer.errors
+    review = serializer.save()
 
     assert review.user == user
     assert review.submission == submission
@@ -219,10 +221,17 @@ def test_review_write_serializer_create_with_scores():
     user = UserFactory()
     request = make_api_request(event, user=user)
 
-    serializer = ReviewWriteSerializer(context={"request": request})
-    review = serializer.create(
-        {"submission": submission, "text": "Nice", "scores": [score], "answers": []}
+    serializer = ReviewWriteSerializer(
+        data={
+            "submission": submission.code,
+            "text": "Nice",
+            "scores": [score.pk],
+            "answers": [],
+        },
+        context={"request": request, "submissions": event.submissions.all()},
     )
+    assert serializer.is_valid(), serializer.errors
+    review = serializer.save()
     assert list(review.scores.all()) == [score]
 
 
@@ -232,10 +241,12 @@ def test_review_write_serializer_create_without_scores():
     user = UserFactory()
     request = make_api_request(event, user=user)
 
-    serializer = ReviewWriteSerializer(context={"request": request})
-    review = serializer.create(
-        {"submission": submission, "text": "Text only", "answers": []}
+    serializer = ReviewWriteSerializer(
+        data={"submission": submission.code, "text": "Text only", "answers": []},
+        context={"request": request, "submissions": event.submissions.all()},
     )
+    assert serializer.is_valid(), serializer.errors
+    review = serializer.save()
     assert list(review.scores.all()) == []
 
 
@@ -244,8 +255,14 @@ def test_review_write_serializer_update_sets_user():
     user = UserFactory()
     request = make_api_request(review.submission.event, user=user)
 
-    serializer = ReviewWriteSerializer(context={"request": request})
-    updated = serializer.update(review, {"text": "Updated text", "answers": []})
+    serializer = ReviewWriteSerializer(
+        instance=review,
+        data={"text": "Updated text", "answers": []},
+        partial=True,
+        context={"request": request},
+    )
+    assert serializer.is_valid(), serializer.errors
+    updated = serializer.save()
 
     assert updated.user == user
     assert updated.text == "Updated text"

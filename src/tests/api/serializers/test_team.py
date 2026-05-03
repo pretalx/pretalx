@@ -159,11 +159,11 @@ def test_team_serializer_create_sets_organiser_from_request():
     organiser = OrganiserFactory()
 
     serializer = TeamSerializer(
-        context={"request": make_api_request(organiser=organiser)}
+        data={"name": "New Team", "all_events": True, "can_change_submissions": True},
+        context={"request": make_api_request(organiser=organiser)},
     )
-    team = serializer.create(
-        {"name": "New Team", "all_events": True, "can_change_submissions": True}
-    )
+    assert serializer.is_valid(), serializer.errors
+    team = serializer.save()
 
     assert team.organiser == organiser
     assert team.name == "New Team"

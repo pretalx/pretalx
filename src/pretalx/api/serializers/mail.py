@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from rest_framework import exceptions
+from rest_framework.serializers import HiddenField
 
+from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.mail.context import get_invalid_placeholders
@@ -11,13 +13,11 @@ from pretalx.mail.models import MailTemplate
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class MailTemplateSerializer(PretalxSerializer):
+    event = HiddenField(default=CurrentEventDefault())
+
     class Meta:
         model = MailTemplate
-        fields = ("id", "role", "subject", "text", "reply_to", "bcc")
-
-    def create(self, validated_data):
-        validated_data["event"] = self.event
-        return super().create(validated_data)
+        fields = ("id", "role", "subject", "text", "reply_to", "bcc", "event")
 
     def _validate_text(self, value):
         if not self.instance:

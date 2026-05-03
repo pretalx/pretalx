@@ -3,7 +3,9 @@
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions, serializers
+from rest_framework.serializers import HiddenField
 
+from pretalx.api.serializers.defaults import CurrentOrganiserDefault
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.event.models import Event, Team, TeamInvite
@@ -39,6 +41,7 @@ class TeamSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     invites = serializers.PrimaryKeyRelatedField(
         many=True, required=False, queryset=TeamInvite.objects.none()
     )
+    organiser = HiddenField(default=CurrentOrganiserDefault())
 
     class Meta:
         model = Team
@@ -57,6 +60,7 @@ class TeamSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             "can_change_submissions",
             "is_reviewer",
             "force_hide_speaker_names",
+            "organiser",
         )
         expandable_fields = {
             "limit_tracks": (
@@ -108,9 +112,3 @@ class TeamSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
                 "Please pick at least one permission for this team!"
             )
         return data
-
-    def create(self, validated_data):
-        validated_data["organiser"] = getattr(
-            self.context.get("request"), "organiser", None
-        )
-        return super().create(validated_data)

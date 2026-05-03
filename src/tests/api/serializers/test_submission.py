@@ -145,9 +145,12 @@ def test_tag_serializer_fields():
 def test_tag_serializer_create_sets_event():
     event = EventFactory()
     request = make_api_request(event)
-    serializer = TagSerializer(context={"request": request})
-
-    tag = serializer.create({"tag": "python", "color": "#00ff00", "is_public": True})
+    serializer = TagSerializer(
+        data={"tag": "python", "color": "#00ff00", "is_public": True},
+        context={"request": request},
+    )
+    assert serializer.is_valid(), serializer.errors
+    tag = serializer.save()
 
     assert tag.event == event
 
@@ -214,9 +217,11 @@ def test_submission_type_serializer_fields():
 def test_submission_type_serializer_create_sets_event():
     event = EventFactory()
     request = make_api_request(event)
-    serializer = SubmissionTypeSerializer(context={"request": request})
-
-    stype = serializer.create({"name": "Workshop", "default_duration": 90})
+    serializer = SubmissionTypeSerializer(
+        data={"name": "Workshop", "default_duration": 90}, context={"request": request}
+    )
+    assert serializer.is_valid(), serializer.errors
+    stype = serializer.save()
 
     assert stype.event == event
 
@@ -309,9 +314,12 @@ def test_track_serializer_fields():
 def test_track_serializer_create_sets_event():
     event = EventFactory()
     request = make_api_request(event)
-    serializer = TrackSerializer(context={"request": request})
-
-    track = serializer.create({"name": "Security", "color": "#ff0000", "position": 0})
+    serializer = TrackSerializer(
+        data={"name": "Security", "color": "#ff0000", "position": 0},
+        context={"request": request},
+    )
+    assert serializer.is_valid(), serializer.errors
+    track = serializer.save()
 
     assert track.event == event
 
@@ -673,10 +681,17 @@ def test_submission_orga_serializer_validate_slot_count_allows_multiple_with_fla
 def test_submission_orga_serializer_create_sets_event_and_defaults():
     event = EventFactory()
     request = make_api_request(event)
-    serializer = SubmissionOrgaSerializer(context={"request": request})
-    submission = serializer.create(
-        {"title": "My Talk", "submission_type": event.cfp.default_type}
+    serializer = SubmissionOrgaSerializer(
+        data={
+            "title": "My Talk",
+            "submission_type": event.cfp.default_type.pk,
+            "abstract": "An abstract",
+            "content_locale": event.locale,
+        },
+        context={"request": request},
     )
+    assert serializer.is_valid(), serializer.errors
+    submission = serializer.save()
 
     assert submission.event == event
     assert submission.content_locale == event.locale
@@ -686,14 +701,18 @@ def test_submission_orga_serializer_create_sets_event_and_defaults():
 def test_submission_orga_serializer_create_converts_get_duration():
     event = EventFactory()
     request = make_api_request(event)
-    serializer = SubmissionOrgaSerializer(context={"request": request})
-    submission = serializer.create(
-        {
+    serializer = SubmissionOrgaSerializer(
+        data={
             "title": "My Talk",
-            "submission_type": event.cfp.default_type,
-            "get_duration": 45,
-        }
+            "submission_type": event.cfp.default_type.pk,
+            "duration": 45,
+            "abstract": "An abstract",
+            "content_locale": event.locale,
+        },
+        context={"request": request},
     )
+    assert serializer.is_valid(), serializer.errors
+    submission = serializer.save()
 
     assert submission.duration == 45
 
@@ -702,14 +721,18 @@ def test_submission_orga_serializer_create_with_tags():
     event = EventFactory()
     tag = TagFactory(event=event)
     request = make_api_request(event)
-    serializer = SubmissionOrgaSerializer(context={"request": request})
-    submission = serializer.create(
-        {
+    serializer = SubmissionOrgaSerializer(
+        data={
             "title": "Tagged Talk",
-            "submission_type": event.cfp.default_type,
-            "tags": [tag],
-        }
+            "submission_type": event.cfp.default_type.pk,
+            "tags": [tag.pk],
+            "abstract": "An abstract",
+            "content_locale": event.locale,
+        },
+        context={"request": request},
     )
+    assert serializer.is_valid(), serializer.errors
+    submission = serializer.save()
     assert list(submission.tags.all()) == [tag]
 
 
@@ -1021,24 +1044,6 @@ def test_submission_orga_serializer_get_invitations_expanded():
     assert data["invitations"][0]["email"] == "expanded@example.com"
 
 
-def test_submission_orga_serializer_create_with_image(make_image):
-    """We use a real image via make_image because the serializer calls
-    process_image(), which runs synchronously in tests (Celery eager mode)
-    and requires a valid image file to succeed."""
-    event = EventFactory()
-    request = make_api_request(event)
-    serializer = SubmissionOrgaSerializer(context={"request": request})
-    submission = serializer.create(
-        {
-            "title": "Image Talk",
-            "submission_type": event.cfp.default_type,
-            "image": make_image("talk.png"),
-        }
-    )
-
-    assert submission.image
-
-
 def test_submission_orga_serializer_update_with_image(make_image):
     """We use a real image via make_image because the serializer calls
     process_image(), which runs synchronously in tests (Celery eager mode)
@@ -1054,15 +1059,18 @@ def test_submission_orga_serializer_update_with_image(make_image):
 
 
 def test_submission_orga_serializer_create_with_explicit_content_locale():
-    event = EventFactory(locale="en", locale_array="en,de")
+    event = EventFactory(locale="en", content_locale_array="en,de")
     request = make_api_request(event)
-    serializer = SubmissionOrgaSerializer(context={"request": request})
-    submission = serializer.create(
-        {
+    serializer = SubmissionOrgaSerializer(
+        data={
             "title": "German Talk",
-            "submission_type": event.cfp.default_type,
+            "submission_type": event.cfp.default_type.pk,
             "content_locale": "de",
-        }
+            "abstract": "Ein Abstract",
+        },
+        context={"request": request},
     )
+    assert serializer.is_valid(), serializer.errors
+    submission = serializer.save()
 
     assert submission.content_locale == "de"

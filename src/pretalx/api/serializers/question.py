@@ -6,10 +6,12 @@ from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions
 from rest_framework.serializers import (
     CharField,
+    HiddenField,
     PrimaryKeyRelatedField,
     SlugRelatedField,
 )
 
+from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
@@ -135,6 +137,7 @@ class QuestionOrgaSerializer(QuestionSerializer):
     options = NestedAnswerOptionSerializer(
         many=True, required=False, fields=("id", "answer", "position")
     )
+    event = HiddenField(default=CurrentEventDefault())
 
     class Meta(QuestionSerializer.Meta):
         fields = (
@@ -143,6 +146,7 @@ class QuestionOrgaSerializer(QuestionSerializer):
             "is_public",
             "contains_personal_data",
             "is_visible_to_reviewers",
+            "event",
         )
 
     def __init__(self, *args, **kwargs):
@@ -161,7 +165,6 @@ class QuestionOrgaSerializer(QuestionSerializer):
 
     def create(self, validated_data):
         options_data = validated_data.pop("options", None)
-        validated_data["event"] = getattr(self.context.get("request"), "event", None)
         question = super().create(validated_data)
         if options_data:
             self._handle_options(question, options_data)

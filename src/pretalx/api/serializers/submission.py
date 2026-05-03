@@ -8,9 +8,10 @@ from pathlib import Path
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework import exceptions, serializers
-from rest_framework.serializers import SerializerMethodField
+from rest_framework.serializers import HiddenField, SerializerMethodField
 
 from pretalx.api.documentation import extend_schema_field
+from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
@@ -80,13 +81,11 @@ class ResourceWriteSerializer(PretalxSerializer):
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class TagSerializer(PretalxSerializer):
+    event = HiddenField(default=CurrentEventDefault())
+
     class Meta:
         model = Tag
-        fields = ("id", "tag", "description", "color", "is_public")
-
-    def create(self, validated_data):
-        validated_data["event"] = self.event
-        return super().create(validated_data)
+        fields = ("id", "tag", "description", "color", "is_public", "event")
 
     def validate_tag(self, value):
         existing_tags = self.event.tags.all()
@@ -99,13 +98,18 @@ class TagSerializer(PretalxSerializer):
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class SubmissionTypeSerializer(PretalxSerializer):
+    event = HiddenField(default=CurrentEventDefault())
+
     class Meta:
         model = SubmissionType
-        fields = ("id", "name", "default_duration", "deadline", "requires_access_code")
-
-    def create(self, validated_data):
-        validated_data["event"] = self.event
-        return super().create(validated_data)
+        fields = (
+            "id",
+            "name",
+            "default_duration",
+            "deadline",
+            "requires_access_code",
+            "event",
+        )
 
     def validate_name(self, value):
         existing_types = self.event.submission_types.all()
@@ -130,6 +134,8 @@ class SubmissionTypeSerializer(PretalxSerializer):
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class TrackSerializer(PretalxSerializer):
+    event = HiddenField(default=CurrentEventDefault())
+
     class Meta:
         model = Track
         fields = (
@@ -139,11 +145,8 @@ class TrackSerializer(PretalxSerializer):
             "color",
             "position",
             "requires_access_code",
+            "event",
         )
-
-    def create(self, validated_data):
-        validated_data["event"] = self.event
-        return super().create(validated_data)
 
     def validate_name(self, value):
         existing_types = self.event.tracks.all()
@@ -337,6 +340,7 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
     created = serializers.DateTimeField(read_only=True)
     updated = serializers.DateTimeField(read_only=True)
     invitations = serializers.SerializerMethodField()
+    event = HiddenField(default=CurrentEventDefault())
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -371,7 +375,6 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
 
     def create(self, validated_data):
         image = validated_data.pop("image", None)
-        validated_data["event"] = self.event
         if "get_duration" in validated_data:
             validated_data["duration"] = validated_data.pop("get_duration")
         if not validated_data.get("content_locale"):
@@ -387,7 +390,6 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
 
     def update(self, instance, validated_data):
         image = validated_data.pop("image", None)
-        validated_data["event"] = self.event
         duration_changed = False
         if "get_duration" in validated_data:
             validated_data["duration"] = validated_data.pop("get_duration")
@@ -432,6 +434,7 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
             "created",
             "updated",
             "invitations",
+            "event",
         ]
         # Reviews and assigned reviewers are currently not expandable because
         # reviewers are also receiving the ReviewerOrgaSerializer, but may

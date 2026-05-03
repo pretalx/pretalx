@@ -4,7 +4,9 @@
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_flex_fields.utils import is_expanded
 from rest_framework.relations import PrimaryKeyRelatedField
+from rest_framework.serializers import HiddenField
 
+from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.serializers.submission import SubmissionTypeSerializer, TrackSerializer
 from pretalx.api.versions import CURRENT_VERSION, DEV_PREVIEW, register_serializer
@@ -15,6 +17,8 @@ from pretalx.submission.models.type import SubmissionType
 
 @register_serializer(versions=[DEV_PREVIEW])
 class SubmitterAccessCodeSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
+    event = HiddenField(default=CurrentEventDefault())
+
     class Meta:
         model = SubmitterAccessCode
         fields = (
@@ -26,6 +30,7 @@ class SubmitterAccessCodeSerializer(FlexFieldsSerializerMixin, PretalxSerializer
             "maximum_uses",
             "redeemed",
             "internal_notes",
+            "event",
         )
         expandable_fields = {
             "tracks": (
@@ -47,10 +52,6 @@ class SubmitterAccessCodeSerializer(FlexFieldsSerializerMixin, PretalxSerializer
                 "submission_types"
             ].child_relation.queryset = request.event.submission_types.all()
 
-    def create(self, validated_data):
-        validated_data["event"] = getattr(self.context.get("request"), "event", None)
-        return super().create(validated_data)
-
 
 @register_serializer(
     versions=[CURRENT_VERSION], class_name="SubmitterAccessCodeSerializer"
@@ -62,6 +63,7 @@ class V1SubmitterAccessCodeSerializer(PretalxSerializer):
     submission_type = PrimaryKeyRelatedField(
         queryset=SubmissionType.objects.none(), required=False, allow_null=True
     )
+    event = HiddenField(default=CurrentEventDefault())
 
     class Meta:
         model = SubmitterAccessCode
@@ -74,6 +76,7 @@ class V1SubmitterAccessCodeSerializer(PretalxSerializer):
             "maximum_uses",
             "redeemed",
             "internal_notes",
+            "event",
         )
 
     def __init__(self, *args, **kwargs):
@@ -111,7 +114,6 @@ class V1SubmitterAccessCodeSerializer(PretalxSerializer):
     def create(self, validated_data):
         track = validated_data.pop("track", None)
         submission_type = validated_data.pop("submission_type", None)
-        validated_data["event"] = getattr(self.context.get("request"), "event", None)
         instance = super().create(validated_data)
         if track:
             instance.tracks.set([track])
