@@ -1,12 +1,13 @@
 # SPDX-FileCopyrightText: 2018-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from rest_framework.serializers import UUIDField
+from rest_framework.serializers import HiddenField, UUIDField
 
 from pretalx.api.serializers.availability import (
     AvailabilitiesMixin,
     AvailabilitySerializer,
 )
+from pretalx.api.serializers.defaults import CurrentEventDefault
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.schedule.models import Room
@@ -26,11 +27,11 @@ class RoomSerializer(AvailabilitiesMixin, PretalxSerializer):
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class RoomOrgaSerializer(RoomSerializer):
+    event = HiddenField(default=CurrentEventDefault())
     availabilities = AvailabilitySerializer(many=True, required=False)
 
     def create(self, validated_data):
         availabilities_data = validated_data.pop("availabilities", None)
-        validated_data["event"] = getattr(self.context.get("request"), "event", None)
         room = super().create(validated_data)
         if availabilities_data is not None:
             self._handle_availabilities(room, availabilities_data, field="room")
@@ -45,4 +46,9 @@ class RoomOrgaSerializer(RoomSerializer):
 
     class Meta:
         model = Room
-        fields = (*RoomSerializer.Meta.fields, "speaker_info", "availabilities")
+        fields = (
+            *RoomSerializer.Meta.fields,
+            "speaker_info",
+            "availabilities",
+            "event",
+        )

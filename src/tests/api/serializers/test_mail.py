@@ -13,9 +13,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.django_db]
 def test_mail_template_serializer_create_sets_event():
     event = EventFactory()
     serializer = MailTemplateSerializer(
-        context={"request": make_api_request(event=event)}
+        data={"subject": "Test", "text": "Hello"},
+        context={"request": make_api_request(event=event)},
     )
-    template = serializer.create({"subject": "Test", "text": "Hello"})
+    assert serializer.is_valid(), serializer.errors
+    template = serializer.save()
 
     assert template.event == event
     assert template.subject == "Test"

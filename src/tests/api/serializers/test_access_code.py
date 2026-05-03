@@ -61,8 +61,11 @@ def test_submitter_access_code_serializer_create_sets_event(rf):
     request = rf.get("/")
     request.event = event
     request.query_params = request.GET
-    serializer = SubmitterAccessCodeSerializer(context={"request": request})
-    instance = serializer.create({"code": "testcreatecode"})
+    serializer = SubmitterAccessCodeSerializer(
+        data={"code": "testcreatecode"}, context={"request": request}
+    )
+    assert serializer.is_valid(), serializer.errors
+    instance = serializer.save()
 
     assert instance.pk is not None
     assert instance.event == event
@@ -130,10 +133,12 @@ def test_v1_access_code_serializer_create_with_track_and_type(rf):
     request = rf.get("/")
     request.event = event
 
-    serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
-    instance = serializer.create(
-        {"code": "v1create", "track": track, "submission_type": sub_type}
+    serializer = V1SubmitterAccessCodeSerializer(
+        data={"code": "v1create", "track": track.pk, "submission_type": sub_type.pk},
+        context={"request": request},
     )
+    assert serializer.is_valid(), serializer.errors
+    instance = serializer.save()
     assert list(instance.tracks.all()) == [track]
     assert list(instance.submission_types.all()) == [sub_type]
 
@@ -143,8 +148,11 @@ def test_v1_access_code_serializer_create_without_track_or_type(rf):
     request = rf.get("/")
     request.event = event
 
-    serializer = V1SubmitterAccessCodeSerializer(context={"request": request})
-    instance = serializer.create({"code": "v1notype"})
+    serializer = V1SubmitterAccessCodeSerializer(
+        data={"code": "v1notype"}, context={"request": request}
+    )
+    assert serializer.is_valid(), serializer.errors
+    instance = serializer.save()
     assert instance.tracks.count() == 0
     assert instance.submission_types.count() == 0
 

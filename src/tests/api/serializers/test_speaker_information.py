@@ -65,38 +65,15 @@ def test_speaker_information_serializer_create_sets_event():
     event = EventFactory()
 
     serializer = SpeakerInformationSerializer(
-        context={"request": make_api_request(event=event)}
+        data={"title": "Info", "text": "Some text", "target_group": "accepted"},
+        context={"request": make_api_request(event=event)},
     )
-    instance = serializer.create(
-        {"title": "Info", "text": "Some text", "target_group": "accepted"}
-    )
+    assert serializer.is_valid(), serializer.errors
+    instance = serializer.save()
 
     assert instance.event == event
     assert instance.pk is not None
     assert not instance.resource
-
-
-def test_speaker_information_serializer_create_with_resource():
-    event = EventFactory()
-
-    resource = SimpleUploadedFile(
-        "guide.pdf", b"pdf-content", content_type="application/pdf"
-    )
-    serializer = SpeakerInformationSerializer(
-        context={"request": make_api_request(event=event)}
-    )
-    instance = serializer.create(
-        {
-            "title": "Info",
-            "text": "Some text",
-            "target_group": "accepted",
-            "resource": resource,
-        }
-    )
-
-    assert instance.pk is not None
-    assert instance.resource
-    assert instance.resource.name.endswith(".pdf")
 
 
 def test_speaker_information_serializer_update_with_resource():

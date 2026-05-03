@@ -3,7 +3,7 @@
 
 from rest_flex_fields.serializers import FlexFieldsSerializerMixin
 from rest_framework.exceptions import ValidationError
-from rest_framework.serializers import SlugRelatedField
+from rest_framework.serializers import CurrentUserDefault, HiddenField, SlugRelatedField
 
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.serializers.question import AnswerSerializer
@@ -61,6 +61,7 @@ class ReviewerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 @register_serializer(versions=CURRENT_VERSIONS)
 class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     submission = SlugRelatedField(slug_field="code", queryset=Submission.objects.none())
+    user = HiddenField(default=CurrentUserDefault())
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -83,7 +84,7 @@ class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
     class Meta:
         model = Review
-        fields = ["id", "submission", "text", "score", "scores", "answers"]
+        fields = ["id", "submission", "text", "score", "scores", "answers", "user"]
         read_only_fields = ("submission",)
         expandable_fields = {
             "submission": (
@@ -117,7 +118,6 @@ class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         return value
 
     def create(self, validated_data):
-        validated_data["user"] = self.context["request"].user
         instance = super().create(validated_data)
         if instance.scores.exists():
             instance.save(update_score=True)
@@ -139,4 +139,4 @@ class ReviewSerializer(ReviewWriteSerializer):
     answers = AnswerSerializer(read_only=True, many=True)
 
     class Meta(ReviewWriteSerializer.Meta):
-        fields = [*ReviewWriteSerializer.Meta.fields, "user"]
+        fields = ReviewWriteSerializer.Meta.fields
