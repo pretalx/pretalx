@@ -3,6 +3,7 @@
 import datetime as dt
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.exceptions import ValidationError
 
 from pretalx.api.serializers.submission import (
@@ -61,50 +62,44 @@ def test_resource_serializer_get_resource_returns_url():
     assert serializer.data["resource"] == "https://example.com/slides"
 
 
-@pytest.mark.parametrize(
-    ("data", "match"),
-    (
-        (
-            {
-                "resource": b"fakefile",
-                "link": "https://example.com",
-                "description": "d",
-            },
-            "not both",
-        ),
-        ({"resource": None, "link": "", "description": "d"}, "link or a file"),
-    ),
-    ids=("both_provided", "neither_provided"),
-)
-def test_resource_write_serializer_validate_rejects_invalid_input(data, match):
+def test_resource_write_serializer_rejects_neither_link_nor_file():
     event = EventFactory()
     request = make_api_request(event)
-    serializer = ResourceWriteSerializer(context={"request": request})
-
-    with pytest.raises(ValidationError, match=match):
-        serializer.validate(data)
-
-
-def test_resource_write_serializer_validate_accepts_link_only():
-    event = EventFactory()
-    request = make_api_request(event)
-    serializer = ResourceWriteSerializer(context={"request": request})
-
-    result = serializer.validate(
-        {"link": "https://example.com", "description": "slides"}
+    serializer = ResourceWriteSerializer(
+        data={"description": "d", "link": ""}, context={"request": request}
     )
 
-    assert result["link"] == "https://example.com"
+    assert not serializer.is_valid()
+    assert "provide a link or upload a file" in str(serializer.errors)
 
 
-def test_resource_write_serializer_validate_accepts_file_only():
+def test_resource_write_serializer_rejects_both_link_and_file():
+    submission = SubmissionFactory()
+    request = make_api_request(submission.event)
+    # An instance with a file already attached + new link on top: hits the
+    # "both" branch of Resource.clean() without needing CachedFile + auth setup
+    # that UploadedFileField.to_internal_value would demand.
+    instance = ResourceFactory(submission=submission, link="")
+    instance.resource = SimpleUploadedFile("f.pdf", b"x")
+    serializer = ResourceWriteSerializer(
+        instance=instance, context={"request": request}
+    )
+
+    with pytest.raises(ValidationError, match="cannot do both"):
+        serializer._run_model_full_clean(
+            {"link": "https://example.com", "description": "d"}
+        )
+
+
+def test_resource_write_serializer_accepts_link_only():
     event = EventFactory()
     request = make_api_request(event)
-    serializer = ResourceWriteSerializer(context={"request": request})
+    serializer = ResourceWriteSerializer(
+        data={"link": "https://example.com", "description": "slides"},
+        context={"request": request},
+    )
 
-    result = serializer.validate({"resource": b"data", "description": "file"})
-
-    assert result["resource"] == b"data"
+    assert serializer.is_valid(), serializer.errors
 
 
 @pytest.mark.parametrize(
@@ -155,45 +150,55 @@ def test_tag_serializer_create_sets_event():
     assert tag.event == event
 
 
-def test_tag_serializer_validate_tag_rejects_duplicate():
+def test_tag_serializer_rejects_duplicate():
     existing = TagFactory(tag="python")
     request = make_api_request(existing.event)
-    serializer = TagSerializer(context={"request": request})
+    serializer = TagSerializer(
+        data={"tag": "python", "color": "#00ff00", "is_public": False},
+        context={"request": request},
+    )
 
-    with pytest.raises(ValidationError, match="already exists"):
-        serializer.validate_tag("python")
+    assert not serializer.is_valid()
+    assert "tag" in serializer.errors
 
 
-def test_tag_serializer_validate_tag_allows_editing_own():
+def test_tag_serializer_allows_editing_own():
     tag = TagFactory(tag="python")
     request = make_api_request(tag.event)
-    serializer = TagSerializer(instance=tag, context={"request": request})
+    serializer = TagSerializer(
+        instance=tag,
+        data={"tag": "python", "color": tag.color, "is_public": tag.is_public},
+        context={"request": request},
+    )
 
-    result = serializer.validate_tag("python")
-
-    assert result == "python"
+    assert serializer.is_valid(), serializer.errors
 
 
-def test_tag_serializer_validate_tag_rejects_duplicate_when_editing_other():
+def test_tag_serializer_rejects_duplicate_when_editing_other():
     event = EventFactory()
     TagFactory(event=event, tag="python")
     other = TagFactory(event=event, tag="django")
     request = make_api_request(event)
-    serializer = TagSerializer(instance=other, context={"request": request})
+    serializer = TagSerializer(
+        instance=other,
+        data={"tag": "python", "color": other.color, "is_public": other.is_public},
+        context={"request": request},
+    )
 
-    with pytest.raises(ValidationError, match="already exists"):
-        serializer.validate_tag("python")
+    assert not serializer.is_valid()
+    assert "tag" in serializer.errors
 
 
-def test_tag_serializer_validate_tag_accepts_unique():
+def test_tag_serializer_accepts_unique():
     event = EventFactory()
     TagFactory(event=event, tag="python")
     request = make_api_request(event)
-    serializer = TagSerializer(context={"request": request})
+    serializer = TagSerializer(
+        data={"tag": "django", "color": "#0000ff", "is_public": False},
+        context={"request": request},
+    )
 
-    result = serializer.validate_tag("django")
-
-    assert result == "django"
+    assert serializer.is_valid(), serializer.errors
 
 
 def test_submission_type_serializer_fields():
@@ -680,7 +685,7 @@ def test_submission_orga_serializer_validate_slot_count_allows_multiple_with_fla
 
 def test_submission_orga_serializer_create_sets_event_and_defaults():
     event = EventFactory()
-    request = make_api_request(event)
+    request = make_api_request(event, user=UserFactory())
     serializer = SubmissionOrgaSerializer(
         data={
             "title": "My Talk",
@@ -700,7 +705,7 @@ def test_submission_orga_serializer_create_sets_event_and_defaults():
 
 def test_submission_orga_serializer_create_converts_get_duration():
     event = EventFactory()
-    request = make_api_request(event)
+    request = make_api_request(event, user=UserFactory())
     serializer = SubmissionOrgaSerializer(
         data={
             "title": "My Talk",
@@ -720,7 +725,7 @@ def test_submission_orga_serializer_create_converts_get_duration():
 def test_submission_orga_serializer_create_with_tags():
     event = EventFactory()
     tag = TagFactory(event=event)
-    request = make_api_request(event)
+    request = make_api_request(event, user=UserFactory())
     serializer = SubmissionOrgaSerializer(
         data={
             "title": "Tagged Talk",
@@ -1060,7 +1065,7 @@ def test_submission_orga_serializer_update_with_image(make_image):
 
 def test_submission_orga_serializer_create_with_explicit_content_locale():
     event = EventFactory(locale="en", content_locale_array="en,de")
-    request = make_api_request(event)
+    request = make_api_request(event, user=UserFactory())
     serializer = SubmissionOrgaSerializer(
         data={
             "title": "German Talk",
@@ -1074,3 +1079,53 @@ def test_submission_orga_serializer_create_with_explicit_content_locale():
     submission = serializer.save()
 
     assert submission.content_locale == "de"
+
+
+def test_submission_orga_serializer_create_defaults_content_locale_to_event():
+    """When ``content_locale`` is missing from validated data, ``create``
+    falls back to the event's primary locale rather than leaving it blank.
+
+    We call ``create`` directly rather than via ``is_valid``/``save`` because
+    the serializer's required-field machinery would otherwise inject the
+    event default before reaching this branch.
+    """
+    event = EventFactory(locale="de", content_locale_array="en,de")
+    request = make_api_request(event, user=UserFactory())
+    serializer = SubmissionOrgaSerializer(context={"request": request})
+
+    submission = serializer.create(
+        {
+            "event": event,
+            "title": "Untitled",
+            "submission_type": event.cfp.default_type,
+            "abstract": "An abstract",
+        }
+    )
+
+    assert submission.content_locale == "de"
+
+
+def test_submission_orga_serializer_create_with_image(make_image):
+    """``create`` routes uploaded images through ``submission.image.save``
+    so the upload lands on the submission's hashed ``upload_to`` path
+    (``{event.slug}/submissions/{code}/image_<random>.png``)."""
+    event = EventFactory()
+    request = make_api_request(event, user=UserFactory())
+    serializer = SubmissionOrgaSerializer(context={"request": request})
+
+    submission = serializer.create(
+        {
+            "event": event,
+            "title": "Illustrated Talk",
+            "submission_type": event.cfp.default_type,
+            "abstract": "An abstract",
+            "content_locale": event.locale,
+            "image": make_image("created.png"),
+        }
+    )
+
+    assert submission.image
+    assert submission.image.name.startswith(
+        f"{event.slug}/submissions/{submission.code}/image_"
+    )
+    assert submission.image.name.endswith(".png")

@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
 from django import forms
-from django.core.exceptions import ValidationError
-from django.utils.translation import gettext_lazy as _
 
 from pretalx.common.forms.fields import SizeFileField
 from pretalx.common.forms.renderers import InlineFormLabelRenderer
@@ -18,19 +16,14 @@ class ResourceForm(forms.ModelForm):
         self.fields["description"].required = True
         self.fields["description"].widget.attrs["required"] = True
 
+    def _post_clean(self):
+        # Skip model validation when the row is being deleted: the user's
+        # intent is removal, not correctness of the (possibly cleared) fields.
+        if self.cleaned_data.get("DELETE"):
+            return
+        super()._post_clean()
+
     class Meta:
         model = Resource
         fields = ["resource", "description", "link", "is_public"]
         field_classes = {"resource": SizeFileField}
-
-    def clean(self):
-        cleaned_data = super().clean()
-        if cleaned_data.get("DELETE"):
-            return cleaned_data
-        if cleaned_data.get("resource") and cleaned_data.get("link"):
-            raise ValidationError(
-                _("Please either provide a link or upload a file, you cannot do both!")
-            )
-        if not cleaned_data.get("resource") and not cleaned_data.get("link"):
-            raise ValidationError(_("Please provide a link or upload a file!"))
-        return cleaned_data

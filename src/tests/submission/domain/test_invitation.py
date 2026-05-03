@@ -1,0 +1,111 @@
+# SPDX-FileCopyrightText: 2026-present Tobias Kunze
+# SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
+import pytest
+from django.core import mail as djmail
+from django_scopes import scope
+
+from pretalx.common.exceptions import SendMailException
+from pretalx.submission.domain.invitation import send_invitation
+from pretalx.submission.models.submission import SubmissionInvitation
+from tests.factories import EventFactory, SubmissionFactory, UserFactory
+
+pytestmark = [pytest.mark.unit, pytest.mark.django_db]
+
+
+def test_send_invitation_creates_persists_and_logs():
+    event = EventFactory()
+    sender = UserFactory()
+    submission = SubmissionFactory(event=event)
+
+    with scope(event=event):
+        invitation = send_invitation(
+            submission, email="invitee@example.com", sender=sender
+        )
+
+        assert invitation.pk is not None
+        assert invitation.email == "invitee@example.com"
+        assert (
+            submission.logged_actions()
+            .filter(action_type="pretalx.submission.invitation.send")
+            .exists()
+        )
+
+
+def test_send_invitation_idempotent_for_duplicate():
+    """A second call for the same email returns the existing invitation
+    without sending the mail again or logging a second action."""
+    event = EventFactory()
+    sender = UserFactory()
+    submission = SubmissionFactory(event=event)
+
+    with scope(event=event):
+        first = send_invitation(submission, email="invitee@example.com", sender=sender)
+        djmail.outbox = []
+
+        second = send_invitation(submission, email="invitee@example.com", sender=sender)
+
+        assert second.pk == first.pk
+        assert djmail.outbox == []
+        assert (
+            submission.logged_actions()
+            .filter(action_type="pretalx.submission.invitation.send")
+            .count()
+            == 1
+        )
+
+
+def test_send_invitation_idempotent_case_insensitive():
+    """Email matching is case-insensitive: re-inviting with a different
+    case must not create a duplicate."""
+    event = EventFactory()
+    sender = UserFactory()
+    submission = SubmissionFactory(event=event)
+
+    with scope(event=event):
+        first = send_invitation(submission, email="invitee@example.com", sender=sender)
+        second = send_invitation(submission, email="INVITEE@example.com", sender=sender)
+
+        assert second.pk == first.pk
+        assert submission.invitations.count() == 1
+
+
+def test_send_invitation_orga_flag_is_recorded():
+    event = EventFactory()
+    sender = UserFactory()
+    submission = SubmissionFactory(event=event)
+
+    with scope(event=event):
+        send_invitation(
+            submission, email="invitee@example.com", sender=sender, orga=True
+        )
+
+        log = submission.logged_actions().get(
+            action_type="pretalx.submission.invitation.send"
+        )
+        assert log.is_orga_action is True
+
+
+def test_send_invitation_swallows_send_failure(monkeypatch):
+    """Eager-mode SMTP failures (no broker, broken backend) must not
+    abort the caller. The invitation row and the log entry stay so the
+    speaker can retract or retry; the failure is logged for the admin."""
+    event = EventFactory()
+    sender = UserFactory()
+    submission = SubmissionFactory(event=event)
+
+    def boom(self, _from):
+        raise SendMailException("smtp dead")
+
+    monkeypatch.setattr(SubmissionInvitation, "send", boom)
+
+    with scope(event=event):
+        invitation = send_invitation(
+            submission, email="invitee@example.com", sender=sender
+        )
+
+        assert invitation.pk is not None
+        assert (
+            submission.logged_actions()
+            .filter(action_type="pretalx.submission.invitation.send")
+            .exists()
+        )

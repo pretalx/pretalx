@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import pytest
 
-from pretalx.submission.forms.comment import SubmissionCommentForm
+from pretalx.submission.interfaces.forms import SubmissionCommentForm
 from tests.factories import SubmissionFactory, UserFactory
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -22,7 +22,7 @@ def test_comment_form_validates_text_field(text, expected_valid):
         assert "text" in form.errors
 
 
-def test_comment_form_save_creates_comment():
+def test_comment_form_save_delegates_to_submission():
     submission = SubmissionFactory()
     user = UserFactory()
 
@@ -37,19 +37,3 @@ def test_comment_form_save_creates_comment():
     assert comment.submission == submission
     assert comment.user == user
     assert comment.text == "Needs more detail."
-
-
-def test_comment_form_save_logs_action():
-    submission = SubmissionFactory()
-    user = UserFactory()
-
-    form = SubmissionCommentForm(
-        data={"text": "Logging test"}, submission=submission, user=user
-    )
-    assert form.is_valid(), form.errors
-
-    comment = form.save()
-    log_entry = comment.logged_actions().first()
-
-    assert log_entry.action_type == "pretalx.submission.comment.create"
-    assert log_entry.person == user

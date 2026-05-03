@@ -1388,6 +1388,9 @@ def test_submission_comment_post(client, event):
         assert submission.comments.count() == 1
         comment = submission.comments.first()
         assert comment.text == "Here is a new comment!"
+        log_entries = list(comment.logged_actions())
+        assert len(log_entries) == 1
+        assert log_entries[0].action_type == "pretalx.submission.comment.create"
 
 
 def test_submission_comment_empty_not_created(client, event):
@@ -1567,6 +1570,47 @@ def test_submission_create_with_invalid_speaker_form(client, event):
     assert response.status_code == 200
     with scopes_disabled():
         assert event.submissions.count() == 0
+
+
+def test_submission_create_with_question_answer(client, event):
+    with scopes_disabled():
+        user = make_orga_user(event, can_change_submissions=True)
+        type_pk = event.submission_types.first().pk
+        question = QuestionFactory(
+            event=event,
+            target="submission",
+            variant=QuestionVariant.STRING,
+            question_required=QuestionRequired.OPTIONAL,
+        )
+    client.force_login(user)
+
+    response = client.post(
+        event.orga_urls.new_submission,
+        data={
+            "abstract": "abstract",
+            "content_locale": "en",
+            "description": "description",
+            "duration": "",
+            "slot_count": 1,
+            "notes": "notes",
+            "speaker-email": "newbie@example.org",
+            "speaker-name": "Foo Speaker",
+            "speaker-locale": "en",
+            "title": "Talk With Answer",
+            "submission_type": type_pk,
+            "state": "submitted",
+            f"question_{question.pk}": "Hello",
+        },
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    with scopes_disabled():
+        assert event.submissions.count() == 1
+        sub = event.submissions.first()
+        answer = sub.answers.get(question=question)
+        assert answer.answer == "Hello"
+        assert answer.submission == sub
 
 
 def test_submission_create_with_invalid_question_answer(client, event):

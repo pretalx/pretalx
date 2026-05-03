@@ -17,7 +17,6 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.core.files.storage import FileSystemStorage
 from django.core.files.uploadedfile import UploadedFile
-from django.db.models import Q
 from django.forms import FileField, ValidationError
 from django.forms.models import modelformset_factory
 from django.http import HttpResponseNotAllowed, QueryDict
@@ -31,22 +30,19 @@ from i18nfield.strings import LazyI18nString
 from i18nfield.utils import I18nJSONEncoder
 
 from pretalx.cfp.signals import cfp_steps
-from pretalx.common.exceptions import SendMailException
 from pretalx.common.language import language
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import json_roundtrip
 from pretalx.person.forms import SpeakerProfileForm, UserForm
 from pretalx.person.models import SpeakerProfile, User
-from pretalx.submission.forms import InfoForm, QuestionsForm
-from pretalx.submission.forms.resource import ResourceForm
-from pretalx.submission.models import (
-    QuestionTarget,
-    Resource,
-    SubmissionInvitation,
-    SubmissionStates,
-    SubmissionType,
-    Track,
+from pretalx.submission.domain.submission import (
+    apply_invite_addresses,
+    create_submission,
+    submit_draft,
 )
+from pretalx.submission.interfaces.forms import InfoForm, QuestionsForm, ResourceForm
+from pretalx.submission.interfaces.queries.question import active_questions
+from pretalx.submission.models import Resource, SubmissionStates, SubmissionType, Track
 from pretalx.submission.models.submission import Submission
 
 LOGGER = logging.getLogger(__name__)
@@ -580,15 +576,34 @@ class InfoStep(DedraftMixin, FormFlowStep):
     def done(self, request, draft=False):
         self.request = request
         form = self.get_form(from_storage=True)
-        form.instance.event = self.event
-        if draft:
-            form.instance.state = SubmissionStates.DRAFT
-        elif form.instance.state == SubmissionStates.DRAFT:
-            form.instance.make_submitted(person=self.request.user)
+        form.is_valid()
 
-        form.save()
-        submission = form.instance
-        submission.add_speaker(request.user)
+        if access_code := getattr(request, "access_code", None):
+            # Access code redemption is deferred to ``create_submission`` /
+            # ``submit_draft`` so drafts do not consume codes.
+            form.instance.access_code = access_code
+
+        if form.instance.pk is None:
+            # New proposal or new draft.
+            form.instance.event = self.event
+            form.instance.state = (
+                SubmissionStates.DRAFT if draft else SubmissionStates.SUBMITTED
+            )
+            form.save(commit=False)  # Apply default values
+            submission = create_submission(
+                submission=form.instance,
+                user=request.user,
+                speakers=[request.user],
+                tags=form.cleaned_data.get("tags") or (),
+                invite_addresses=form.cleaned_data.get("additional_speaker"),
+            )
+        else:
+            submission = form.save()
+            emails = form.cleaned_data.get("additional_speaker") or []
+            if not draft and submission.state == SubmissionStates.DRAFT:
+                submit_draft(submission, user=request.user, invite_addresses=emails)
+            else:
+                apply_invite_addresses(submission, emails, sender=request.user)
 
         if self._resources_enabled:
             formset = self.get_resource_formset(
@@ -599,17 +614,13 @@ class InfoStep(DedraftMixin, FormFlowStep):
                     if resource_form.cleaned_data.get("DELETE"):
                         if resource_form.instance.pk:
                             resource_form.instance.delete()
-                    else:
+                    elif resource_form.has_changed():
+                        # Existing resources arrive bound to their pk via the
+                        # hidden id field, so save() updates in place; new
+                        # resources need the submission attached first.
                         resource = resource_form.save(commit=False)
                         resource.submission = submission
                         resource.save()
-
-        # Attach access code to submission even for drafts, so that
-        # dedrafting can pass the code along. Only redeem on actual submission.
-        access_code = getattr(request, "access_code", None)
-        if access_code and access_code != submission.access_code:
-            submission.access_code = access_code
-            submission.save()
 
         if draft:
             messages.success(
@@ -619,7 +630,6 @@ class InfoStep(DedraftMixin, FormFlowStep):
                 ),
             )
         else:
-            submission.log_action("pretalx.submission.create", person=request.user)
             messages.success(
                 self.request,
                 _(
@@ -627,25 +637,6 @@ class InfoStep(DedraftMixin, FormFlowStep):
                     "up to the submission deadline, and you will be notified of any changes or questions."
                 ),
             )
-
-            additional_speakers = form.cleaned_data.get("additional_speaker") or []
-            for email in additional_speakers:
-                try:
-                    invitation = SubmissionInvitation.objects.create(
-                        submission=submission, email=email
-                    )
-                    invitation.send(_from=request.user)
-                    submission.log_action(
-                        "pretalx.submission.invitation.send",
-                        person=request.user,
-                        data={"email": email},
-                    )
-                except SendMailException as exception:
-                    LOGGER.warning(str(exception))
-                    messages.warning(self.request, phrases.cfp.submission_email_fail)
-            if access_code:
-                access_code.redeemed += 1
-                access_code.save()
 
         request.submission = submission
 
@@ -675,27 +666,12 @@ class QuestionsStep(DedraftMixin, FormFlowStep):
     def is_applicable(self, request):
         self.request = request
         info_data = self.cfp_session.get("data", {}).get("info", {})
-        track = info_data.get("track")
-        if track:
-            questions = self.event.questions.exclude(
-                Q(target=QuestionTarget.SUBMISSION)
-                & (
-                    (~Q(tracks__in=[info_data.get("track")]) & Q(tracks__isnull=False))
-                    | (
-                        ~Q(submission_types__in=[info_data.get("submission_type")])
-                        & Q(submission_types__isnull=False)
-                    )
-                )
-            )
-        else:
-            questions = self.event.questions.exclude(
-                Q(target=QuestionTarget.SUBMISSION)
-                & (
-                    ~Q(submission_types__in=[info_data.get("submission_type")])
-                    & Q(submission_types__isnull=False)
-                )
-            )
-        return questions.exists()
+        return active_questions(
+            self.event,
+            target=None,
+            track=info_data.get("track"),
+            submission_type=info_data.get("submission_type"),
+        ).exists()
 
     def get_extra_form_kwargs(self):
         return {"target": ""}
@@ -718,10 +694,11 @@ class QuestionsStep(DedraftMixin, FormFlowStep):
 
     def done(self, request, draft=False):
         form = self.get_form(from_storage=True)
-        form.speaker = request.user.get_speaker(request.event)
-        form.submission = request.submission
         form.is_valid()
-        form.save()
+        form.save(
+            submission=request.submission,
+            speaker=request.user.get_speaker(request.event),
+        )
 
     @property
     def label(self):

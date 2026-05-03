@@ -21,6 +21,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import can_change_event_settings
 from pretalx.person.rules import is_reviewer
+from pretalx.submission.domain.question import save_answer
 from pretalx.submission.enums import (
     QuestionIcon,
     QuestionRequired,
@@ -383,6 +384,11 @@ class Question(GenerateCode, OrderedModel, PretalxModel):
             return max(speakers.count() - answer_count, 0)
         return 0
 
+    def save_answer(self, *, value, target_object, existing=None):
+        return save_answer(
+            question=self, value=value, target_object=target_object, existing=existing
+        )
+
     def get_instance_data(self):
         data = super().get_instance_data()
         if self.pk and self.variant in (
@@ -527,12 +533,24 @@ class Answer(PretalxModel):
         return self.question.event
 
     @property
+    def _target_field(self):
+        return {
+            QuestionTarget.SUBMISSION: "submission",
+            QuestionTarget.SPEAKER: "speaker",
+            QuestionTarget.REVIEWER: "review",
+        }[self.question.target]
+
+    @property
+    def target_object(self):
+        return getattr(self, self._target_field)
+
+    @target_object.setter
+    def target_object(self, obj):
+        setattr(self, self._target_field, obj)
+
+    @property
     def log_parent(self):
-        if self.question.target == QuestionTarget.SUBMISSION:
-            return self.submission
-        if self.question.target == QuestionTarget.REVIEWER:
-            return self.review
-        return self.speaker
+        return self.target_object
 
     def __str__(self):
         """Help when debugging."""
@@ -572,12 +590,6 @@ class Answer(PretalxModel):
     def is_answered(self):
         return bool(self.answer_string)
 
-    def log_action(self, *args, content_object=None, **kwargs):
-        if not content_object:
-            if self.question.target == QuestionTarget.SPEAKER:
-                content_object = self.speaker
-            elif self.question.target == QuestionTarget.SUBMISSION:
-                content_object = self.submission
-            else:
-                content_object = self.review
-        return super().log_action(*args, content_object=content_object, **kwargs)
+    def log_action(self, *args, **kwargs):
+        kwargs.setdefault("content_object", self.target_object)
+        return super().log_action(*args, **kwargs)

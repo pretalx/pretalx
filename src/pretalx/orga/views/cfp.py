@@ -56,7 +56,7 @@ from pretalx.orga.tables.cfp import (
 )
 from pretalx.orga.utils.i18n import has_i18n_content
 from pretalx.person.forms import SpeakerProfileForm
-from pretalx.submission.forms import InfoForm, QuestionsForm
+from pretalx.submission.interfaces.forms import InfoForm, QuestionsForm
 from pretalx.submission.interfaces.queries.question import questions_for_user
 from pretalx.submission.models import (
     AnswerOption,
@@ -792,7 +792,7 @@ class CfPEditorMixin:
 
     def _get_preview_form(self, step):
         if step.identifier == "info":
-            return InfoForm(event=self.request.event, readonly=True)
+            return InfoForm(event=self.request.event, read_only=True)
         if step.identifier == "profile":
             return SpeakerProfileForm(event=self.request.event, read_only=True)
         return None
@@ -888,7 +888,9 @@ class CfPEditorMixin:
 
         form = None
         if active and questions.exists():
-            form = QuestionsForm(event=self.request.event, target=target, readonly=True)
+            form = QuestionsForm(
+                event=self.request.event, target=target, read_only=True
+            )
 
         result = []
         for question in questions:

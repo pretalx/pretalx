@@ -16,6 +16,7 @@ from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import User
+from pretalx.submission.domain.submission import create_submission
 from pretalx.submission.models import (
     QuestionTarget,
     Resource,
@@ -63,17 +64,6 @@ class ResourceWriteSerializer(PretalxSerializer):
         model = Resource
         fields = ("resource", "link", "description", "is_public")
 
-    def validate(self, data):
-        has_resource = data.get("resource") is not None
-        has_link = bool(data.get("link"))
-        if has_resource and has_link:
-            raise serializers.ValidationError(
-                "Provide either a link or a file, not both."
-            )
-        if not has_resource and not has_link:
-            raise serializers.ValidationError("Provide either a link or a file.")
-        return data
-
     def create(self, validated_data):
         validated_data["link"] = validated_data.get("link") or ""
         return super().create(validated_data)
@@ -86,14 +76,9 @@ class TagSerializer(PretalxSerializer):
     class Meta:
         model = Tag
         fields = ("id", "tag", "description", "color", "is_public", "event")
-
-    def validate_tag(self, value):
-        existing_tags = self.event.tags.all()
-        if self.instance and self.instance.pk:
-            existing_tags = existing_tags.exclude(pk=self.instance.pk)
-        if existing_tags.filter(tag=value).exists():
-            raise exceptions.ValidationError("Tag already exists in event.")
-        return value
+        # Tag.clean() reports duplicates on the `tag` field; suppress DRF's
+        # auto unique validator to avoid the message firing twice.
+        validators = []
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
@@ -380,13 +365,19 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
         if not validated_data.get("content_locale"):
             validated_data["content_locale"] = self.event.locale
 
+        # ModelSerializer.create handles M2Ms (tags, assigned_reviewers); we
+        # then route the side effects (log, access-code redemption, image
+        # processing) through the domain function. The orga API doesn't
+        # auto-add a speaker, hence speaker=None.
         submission = super().create(validated_data)
-
         if image:
+            # ``image`` is a FieldFile pointing at the API upload cache (see
+            # UploadedFileField); ``image.save(..., save=True)`` copies the
+            # bytes through Submission.image's upload_to and persists.
             submission.image.save(Path(image.name).name, image, save=True)
-            submission.save(update_fields=("image",))
-            submission.process_image("image", generate_thumbnail=True)
-        return submission
+        return create_submission(
+            submission=submission, user=self.context["request"].user
+        )
 
     def update(self, instance, validated_data):
         image = validated_data.pop("image", None)
@@ -406,7 +397,7 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
 
         if image:
             submission.image.save(Path(image.name).name, image)
-            submission.process_image("image", generate_thumbnail=True)
+            submission.process_image("image")
         if duration_changed:
             submission.update_duration()
         if slot_count_changed:

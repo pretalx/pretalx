@@ -10,6 +10,7 @@ from i18nfield.fields import I18nTextField
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.person.rules import is_reviewer
+from pretalx.submission.interfaces.validators.tag import validate_unique_tag
 from pretalx.submission.rules import (
     orga_can_change_submissions,
     orga_can_view_submissions,
@@ -57,7 +58,11 @@ class Tag(PretalxModel):
             "delete": orga_can_change_submissions
             | (is_reviewer & reviewer_can_change_tags),
         }
-        unique_together = (("event", "tag"),)
+        constraints = [
+            models.UniqueConstraint(
+                fields=("event", "tag"), name="unique_tag_per_event"
+            )
+        ]
 
     class urls(EventUrls):
         base = edit = "{self.event.orga_urls.tags}{self.pk}/"
@@ -69,3 +74,7 @@ class Tag(PretalxModel):
     @property
     def log_parent(self):
         return self.event
+
+    def clean(self):
+        super().clean()
+        validate_unique_tag(self)

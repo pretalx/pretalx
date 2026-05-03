@@ -229,6 +229,14 @@ class AnswerSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
 
 @register_serializer(versions=CURRENT_VERSIONS)
 class AnswerCreateSerializer(AnswerSerializer):
+    # Map QuestionTarget to the user-facing input-field name on this serializer.
+    # The corresponding model attribute is resolved via ``self.fields[name].source``.
+    _INPUT_FIELDS = {
+        QuestionTarget.SUBMISSION: "submission",
+        QuestionTarget.SPEAKER: "person",
+        QuestionTarget.REVIEWER: "review",
+    }
+
     question = PrimaryKeyRelatedField(queryset=Question.objects.none())
     submission = SlugRelatedField(
         queryset=Submission.objects.none(),
@@ -282,35 +290,18 @@ class AnswerCreateSerializer(AnswerSerializer):
                     )
 
         target = question.target
-        submission = self.get_with_fallback(data, "submission")
-        review = self.get_with_fallback(data, "review")
-        speaker = self.get_with_fallback(data, "speaker")
-        if target == QuestionTarget.SUBMISSION and not submission:
+        required_input = self._INPUT_FIELDS[target]
+        if not self.get_with_fallback(data, self.fields[required_input].source):
             raise exceptions.ValidationError(
-                {"submission": "This field is required for submission questions."}
+                {required_input: f"This field is required for {target} questions."}
             )
-        if target == QuestionTarget.REVIEWER and not review:
-            raise exceptions.ValidationError(
-                {"review": "This field is required for reviewer questions."}
-            )
-        if target == QuestionTarget.SPEAKER and not speaker:
-            raise exceptions.ValidationError(
-                {"person": "This field is required for speaker questions."}
-            )
-
-        # Only allow the field matching the question target
-        if target == QuestionTarget.SUBMISSION and review:
-            raise exceptions.ValidationError(
-                {"review": "Cannot set review for submission question."}
-            )
-        if target == QuestionTarget.REVIEWER and submission:
-            raise exceptions.ValidationError(
-                {"submission": "Cannot set submission for reviewer question."}
-            )
-        if target == QuestionTarget.SPEAKER and submission:
-            raise exceptions.ValidationError(
-                {"submission": "Cannot set submission for speaker question."}
-            )
+        for other_target, other_input in self._INPUT_FIELDS.items():
+            if other_target == target:
+                continue
+            if self.get_with_fallback(data, self.fields[other_input].source):
+                raise exceptions.ValidationError(
+                    {other_input: f"Cannot set {other_input} for {target} question."}
+                )
 
         return data
 

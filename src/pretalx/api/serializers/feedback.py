@@ -8,6 +8,7 @@ from rest_framework.serializers import SlugRelatedField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import SpeakerProfile
+from pretalx.submission.domain.feedback import create_feedback
 from pretalx.submission.models import Feedback, Submission
 
 
@@ -36,15 +37,8 @@ class FeedbackWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
             )
         return value
 
-    def validate(self, data):
-        data = super().validate(data)
-        speaker = data.get("speaker")
-        talk = data.get("talk")
-        if speaker and talk and not talk.speakers.filter(pk=speaker.pk).exists():
-            raise exceptions.ValidationError(
-                {"speaker": "This speaker is not a speaker of the given submission."}
-            )
-        return data
+    def create(self, validated_data):
+        return create_feedback(Feedback(**validated_data))
 
     class Meta:
         model = Feedback

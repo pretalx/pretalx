@@ -27,7 +27,7 @@ from pretalx.common.text.phrases import phrases
 from pretalx.mail.context import get_available_placeholders, get_invalid_placeholders
 from pretalx.mail.models import MailTemplate, QueuedMail, QueuedMailStates
 from pretalx.person.models import SpeakerProfile, User
-from pretalx.submission.forms import SubmissionFilterForm
+from pretalx.submission.interfaces.forms import SubmissionFilterForm
 from pretalx.submission.models import Track
 
 

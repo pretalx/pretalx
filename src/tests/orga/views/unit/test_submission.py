@@ -353,40 +353,6 @@ def test_submission_content_can_edit_false_for_reviewer(event):
     assert view.can_edit is False
 
 
-def test_submission_list_mixin_get_default_filters_orga(event):
-    user = make_orga_user(event, can_change_submissions=True)
-
-    request = make_request(event, user=user)
-    request.GET = {}
-    view = make_view(SubmissionList, request)
-
-    filters = view.get_default_filters()
-
-    assert "code__icontains" in filters
-    assert "title__icontains" in filters
-    assert "speakers__user__name__icontains" in filters
-    assert "speakers__name__icontains" in filters
-
-
-def test_submission_list_mixin_get_default_filters_reviewer_no_speaker_search(event):
-    """Reviewers without speaker list permission don't get speaker search fields."""
-    reviewer = make_orga_user(event, can_change_submissions=False, is_reviewer=True)
-    phase = event.review_phases.first()
-    phase.can_see_speaker_names = False
-    phase.save()
-
-    request = make_request(event, user=reviewer)
-    request.GET = {}
-    view = make_view(SubmissionList, request)
-
-    filters = view.get_default_filters()
-
-    assert "code__icontains" in filters
-    assert "title__icontains" in filters
-    assert "speakers__user__name__icontains" not in filters
-    assert "speakers__name__icontains" not in filters
-
-
 def test_submission_list_pending_changes_count(event):
     user = make_orga_user(event, can_change_submissions=True)
     SubmissionFactory(event=event, pending_state=SubmissionStates.ACCEPTED)
