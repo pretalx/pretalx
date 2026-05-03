@@ -181,7 +181,7 @@
 | src/pretalx/orga/receivers.py                                              |       14 |        0 |        4 |        0 |     100% |           |
 | src/pretalx/orga/rules.py                                                  |        8 |        0 |        2 |        0 |     100% |           |
 | src/pretalx/orga/signals.py                                                |       28 |        0 |        0 |        0 |     100% |           |
-| src/pretalx/orga/tables/admin.py                                           |       17 |        0 |        0 |        0 |     100% |           |
+| src/pretalx/orga/tables/admin.py                                           |       18 |        0 |        0 |        0 |     100% |           |
 | src/pretalx/orga/tables/cfp.py                                             |       91 |        0 |        8 |        0 |     100% |           |
 | src/pretalx/orga/tables/feedback.py                                        |       25 |        0 |        2 |        0 |     100% |           |
 | src/pretalx/orga/tables/mail.py                                            |       44 |        0 |        2 |        0 |     100% |           |
@@ -221,7 +221,7 @@
 | src/pretalx/person/models/picture.py                                       |       58 |        0 |       20 |        0 |     100% |           |
 | src/pretalx/person/models/preferences.py                                   |       41 |        0 |       18 |        0 |     100% |           |
 | src/pretalx/person/models/profile.py                                       |       63 |        0 |        4 |        0 |     100% |           |
-| src/pretalx/person/models/user.py                                          |      256 |        0 |       54 |        0 |     100% |           |
+| src/pretalx/person/models/user.py                                          |      257 |        0 |       54 |        0 |     100% |           |
 | src/pretalx/person/rules.py                                                |       32 |        0 |       10 |        0 |     100% |           |
 | src/pretalx/person/services.py                                             |        8 |        0 |        2 |        0 |     100% |           |
 | src/pretalx/person/signals.py                                              |        7 |        0 |        0 |        0 |     100% |           |
@@ -512,7 +512,7 @@
 | src/tests/person/models/test\_picture.py                                   |      127 |        0 |        2 |        0 |     100% |           |
 | src/tests/person/models/test\_preferences.py                               |       53 |        0 |        0 |        0 |     100% |           |
 | src/tests/person/models/test\_profile.py                                   |      114 |        0 |        0 |        0 |     100% |           |
-| src/tests/person/models/test\_user.py                                      |      532 |        0 |        2 |        0 |     100% |           |
+| src/tests/person/models/test\_user.py                                      |      535 |        0 |        2 |        0 |     100% |           |
 | src/tests/person/test\_exporters.py                                        |      102 |        0 |        0 |        0 |     100% |           |
 | src/tests/person/test\_rules.py                                            |       95 |        0 |        0 |        0 |     100% |           |
 | src/tests/person/test\_services.py                                         |       26 |        0 |        0 |        0 |     100% |           |
@@ -552,7 +552,7 @@
 | src/tests/submission/test\_rules.py                                        |      677 |        0 |        8 |        0 |     100% |           |
 | src/tests/submission/test\_tasks.py                                        |      183 |        0 |        0 |        0 |     100% |           |
 | src/tests/utils.py                                                         |       60 |        0 |       16 |        0 |     100% |           |
-| **TOTAL**                                                                  | **70846** |    **0** | **6044** |    **0** | **100%** |           |
+| **TOTAL**                                                                  | **70851** |    **0** | **6044** |    **0** | **100%** |           |
 
 
 ## Setup coverage badge
