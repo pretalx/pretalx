@@ -45,6 +45,10 @@ SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
         <td>{{ user.email|copyable }}</td>
       </tr>
       <tr>
+        <th>{% translate "Created" %}</th>
+        <td>{{ user.created|default:"-" }}</td>
+      </tr>
+      <tr>
         <th>{% translate "Last login" %}</th>
         <td>{{ user.last_login|default:"-" }}</td>
       </tr>
