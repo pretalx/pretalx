@@ -6,6 +6,8 @@ import datetime as dt
 import rules
 from django.utils.timezone import now
 
+from pretalx.submission.enums import SubmissionStates
+
 
 @rules.predicate
 def is_administrator(user, obj):
@@ -36,10 +38,6 @@ def can_mark_speakers_arrived(user, obj):
 
 @rules.predicate
 def can_view_information(user, obj):
-    from pretalx.submission.models.submission import (  # noqa: PLC0415 -- avoid circular import
-        SubmissionStates,
-    )
-
     event = obj.event
     qs = event.submissions.filter(speakers__user=user)
     if tracks := obj.limit_tracks.all():

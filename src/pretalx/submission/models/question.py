@@ -1,8 +1,6 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from enum import nonmember
-
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
@@ -23,6 +21,12 @@ from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
 from pretalx.event.rules import can_change_event_settings
 from pretalx.person.rules import is_reviewer
+from pretalx.submission.enums import (
+    QuestionIcon,
+    QuestionRequired,
+    QuestionTarget,
+    QuestionVariant,
+)
 from pretalx.submission.rules import (
     has_team_question_access,
     is_cfp_open,
@@ -60,75 +64,6 @@ class QuestionManager(models.Manager):
 
 class AllQuestionManager(models.Manager):
     pass
-
-
-class QuestionVariant(models.TextChoices):
-    NUMBER = "number", _("Number")
-    STRING = "string", _("Text (one-line)")
-    TEXT = "text", _("Multi-line text")
-    URL = "url", _("URL")
-    DATE = "date", pgettext_lazy("question field type", "Date")
-    DATETIME = "datetime", _("Date and time")
-    BOOLEAN = "boolean", _("Yes/No")
-    FILE = "file", _("File upload")
-    CHOICES = "choices", _("Choose one from a list")
-    MULTIPLE = "multiple_choice", _("Choose multiple from a list")
-
-    short_answers = nonmember(
-        (
-            "number",
-            "string",
-            "url",
-            "date",
-            "datetime",
-            "boolean",
-            "file",
-            "choices",
-            "multiple_choice",
-        )
-    )
-    long_answers = nonmember(("text",))
-
-    @classmethod
-    def get_max_length(cls):
-        return max(len(val) for val in cls.values)
-
-
-class QuestionTarget(models.TextChoices):
-    SUBMISSION = "submission", _("per proposal")
-    SPEAKER = "speaker", _("per speaker")
-    REVIEWER = "reviewer", _("for reviewers")
-
-    @classmethod
-    def get_max_length(cls):
-        return max(len(val) for val in cls.values)
-
-
-class QuestionRequired(models.TextChoices):
-    OPTIONAL = "optional", _("always optional")
-    REQUIRED = "required", _("always required")
-    AFTER_DEADLINE = "after_deadline", _("required after a deadline")
-
-    @classmethod
-    def get_max_length(cls):
-        return max(len(val) for val in cls.values)
-
-
-class QuestionIcon(models.TextChoices):
-    NONE = "-", _("No icon")
-    BSKY = "bsky", _("Bluesky")
-    DISCORD = "discord", _("Discord")
-    GITHUB = "github", _("GitHub")
-    INSTAGRAM = "instagram", _("Instagram")
-    LINKEDIN = "linkedin", _("LinkedIn")
-    MASTODON = "mastodon", _("Mastodon")
-    TWITTER = "twitter", _("Twitter")
-    WEB = "web", _("Website")
-    YOUTUBE = "youtube", _("YouTube")
-
-    @classmethod
-    def get_max_length(cls):
-        return max(len(val) for val in cls.values)
 
 
 # Question and question option permissions should be in sync

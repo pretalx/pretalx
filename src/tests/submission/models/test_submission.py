@@ -75,40 +75,6 @@ def test_submission_image_path_format():
     assert path.startswith(f"{submission.event.slug}/submissions/{submission.code}/")
 
 
-def test_submission_states_get_max_length():
-    result = SubmissionStates.get_max_length()
-    assert result == max(len(val) for val in SubmissionStates.values)
-
-
-@pytest.mark.parametrize(
-    ("state", "expected_color"),
-    (
-        ("submitted", "--color-info"),
-        ("accepted", "--color-success"),
-        ("confirmed", "--color-success"),
-        ("rejected", "--color-danger"),
-        ("canceled", "--color-grey"),
-        ("withdrawn", "--color-grey"),
-    ),
-    ids=["submitted", "accepted", "confirmed", "rejected", "canceled", "withdrawn"],
-)
-def test_submission_states_get_color(state, expected_color):
-    assert SubmissionStates.get_color(state) == expected_color
-
-
-def test_submission_states_method_names():
-    assert SubmissionStates.method_names["submitted"] == "make_submitted"
-    assert SubmissionStates.method_names["accepted"] == "accept"
-    assert SubmissionStates.method_names["rejected"] == "reject"
-    assert SubmissionStates.method_names["confirmed"] == "confirm"
-    assert SubmissionStates.method_names["canceled"] == "cancel"
-    assert SubmissionStates.method_names["withdrawn"] == "withdraw"
-
-
-def test_submission_states_accepted_states():
-    assert SubmissionStates.accepted_states == ("accepted", "confirmed")
-
-
 def test_submission_manager_excludes_drafts():
     submission = SubmissionFactory(state=SubmissionStates.DRAFT)
     assert submission not in Submission.objects.all()

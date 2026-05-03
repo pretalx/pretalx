@@ -16,14 +16,16 @@ from pretalx.common.language import language
 from pretalx.common.models.mixins import PretalxModel
 from pretalx.common.text.phrases import phrases
 from pretalx.common.urls import EventUrls
+from pretalx.mail.enums import MailTemplateRoles
 from pretalx.orga.rules import can_view_speaker_names
 from pretalx.person.rules import is_reviewer
-from pretalx.schedule.models.slot import SlotType
+from pretalx.schedule.enums import SlotType
 from pretalx.schedule.services import (
     freeze_schedule,
     get_cached_schedule_changes,
     unfreeze_schedule,
 )
+from pretalx.submission.enums import SubmissionStates
 from pretalx.submission.rules import is_wip, orga_can_change_submissions
 
 
@@ -437,10 +439,6 @@ class Schedule(PretalxModel):
         visible due to their unconfirmed status, and ``no_track`` are
         submissions without a track in a conference that uses tracks.
         """
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            SubmissionStates,
-        )
-
         talks = self.talks.filter(submission__isnull=False)
         warnings = {
             "talk_warnings": [
@@ -498,10 +496,6 @@ class Schedule(PretalxModel):
     def generate_notifications(self, save=False):
         """A list of unsaved :class:`~pretalx.mail.models.QueuedMail` objects
         to be sent on schedule release."""
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            MailTemplateRoles,
-        )
-
         mails = []
         for speaker, data in self.speakers_concerned.items():
             locale = speaker.user.get_locale_for_event(self.event)

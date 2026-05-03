@@ -5,6 +5,7 @@ import rules
 from django.core.exceptions import ObjectDoesNotExist
 
 from pretalx.person.rules import is_reviewer
+from pretalx.submission.enums import SubmissionStates
 
 
 @rules.predicate
@@ -71,28 +72,16 @@ def is_speaker(user, obj):
 
 @rules.predicate
 def can_be_withdrawn(user, obj):
-    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-        SubmissionStates,
-    )
-
     return obj and obj.state in (SubmissionStates.SUBMITTED, SubmissionStates.ACCEPTED)
 
 
 @rules.predicate
 def can_be_confirmed(user, obj):
-    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-        SubmissionStates,
-    )
-
     return obj and obj.state == SubmissionStates.ACCEPTED
 
 
 @rules.predicate
 def can_be_removed(user, obj):
-    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-        SubmissionStates,
-    )
-
     return obj and obj.state != SubmissionStates.DRAFT
 
 
@@ -103,10 +92,6 @@ def can_be_edited(user, obj):
 
 @rules.predicate
 def can_request_speakers(user, submission):
-    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-        SubmissionStates,
-    )
-
     return (
         submission.state != SubmissionStates.DRAFT
         and submission.event.cfp.request_additional_speaker
@@ -155,10 +140,6 @@ def can_view_reviews(user, obj):
 
 @rules.predicate
 def can_be_reviewed(user, obj):
-    from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-        SubmissionStates,
-    )
-
     if not obj:
         return False
     obj = getattr(obj, "submission", obj)

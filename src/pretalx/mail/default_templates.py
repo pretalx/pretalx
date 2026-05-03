@@ -4,6 +4,8 @@
 from django.utils.translation import gettext_noop as _
 from i18nfield.strings import LazyI18nString
 
+from pretalx.mail.enums import MailTemplateRoles
+
 GENERIC_SUBJECT = LazyI18nString.from_gettext(_("Your proposal: {submission_title}"))
 
 ACK_TEXT = LazyI18nString.from_gettext(
@@ -143,10 +145,6 @@ The {event_name} organisers""")
 
 
 def get_default_template(role):
-    from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-        MailTemplateRoles,
-    )
-
     template_mapping = {
         MailTemplateRoles.SUBMISSION_ACCEPT: (GENERIC_SUBJECT, ACCEPT_TEXT),
         MailTemplateRoles.SUBMISSION_REJECT: (GENERIC_SUBJECT, REJECT_TEXT),

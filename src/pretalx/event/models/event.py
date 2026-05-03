@@ -37,6 +37,7 @@ from pretalx.event.rules import (
     has_any_permission,
     is_event_visible,
 )
+from pretalx.mail.enums import MailTemplateRoles, QueuedMailStates
 
 # Slugs need to start and end with an alphanumeric character,
 # but may contain dashes and dots in between.
@@ -606,9 +607,6 @@ class Event(PretalxModel):
             return template
 
     def build_initial_data(self):
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            MailTemplateRoles,
-        )
         from pretalx.schedule.models import (  # noqa: PLC0415 -- avoid circular import
             Schedule,
         )
@@ -840,10 +838,6 @@ class Event(PretalxModel):
 
         :class:`~pretalx.mail.models.QueuedMail` objects.
         """
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            QueuedMailStates,
-        )
-
         return self.queued_mails.filter(state=QueuedMailStates.DRAFT).count()
 
     @cached_property
@@ -1126,7 +1120,6 @@ class Event(PretalxModel):
     ):
         from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
             MailTemplate,
-            QueuedMailStates,
         )
 
         internal_safe_extra = {

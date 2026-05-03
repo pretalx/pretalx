@@ -29,6 +29,7 @@ from pretalx.common.forms.widgets import (
     HtmlDateTimeInput,
     I18nMarkdownTextarea,
 )
+from pretalx.submission.enums import QuestionTarget, QuestionVariant
 from pretalx.submission.models.cfp import default_fields
 
 logger = logging.getLogger(__name__)
@@ -193,9 +194,6 @@ class QuestionFieldsMixin:
     def get_field(self, *, question, initial, initial_object, readonly):
         from pretalx.common.templatetags.rich_text import (  # noqa: PLC0415 -- slow import
             rich_text,
-        )
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            QuestionVariant,
         )
 
         read_only = readonly or question.read_only
@@ -446,7 +444,6 @@ class QuestionFieldsMixin:
         """Receives a key and value from cleaned_data."""
         from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
             Answer,
-            QuestionTarget,
         )
 
         field = self.fields[key]

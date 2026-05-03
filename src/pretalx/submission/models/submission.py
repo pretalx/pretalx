@@ -8,7 +8,6 @@
 
 import datetime as dt
 import statistics
-from enum import nonmember
 from itertools import repeat
 
 from django.conf import settings
@@ -21,7 +20,7 @@ from django.utils.crypto import get_random_string
 from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import override, pgettext_lazy
+from django.utils.translation import override
 from django_scopes import ScopedManager
 
 from pretalx.agenda.rules import (
@@ -39,8 +38,10 @@ from pretalx.common.text.path import hashed_path
 from pretalx.common.text.phrases import phrases
 from pretalx.common.text.serialize import serialize_duration
 from pretalx.common.urls import EventUrls
+from pretalx.mail.enums import MailTemplateRoles
 from pretalx.mail.placeholders import escape_for_html_body, escape_for_plain_body
 from pretalx.person.rules import is_reviewer
+from pretalx.submission.enums import QuestionTarget, SubmissionStates
 from pretalx.submission.rules import (
     can_be_confirmed,
     can_be_edited,
@@ -71,42 +72,6 @@ def submission_image_path(instance, filename):
         target_name="image",
         upload_dir=f"{instance.event.slug}/submissions/{instance.code}/",
     )
-
-
-class SubmissionStates(models.TextChoices):
-    SUBMITTED = "submitted", pgettext_lazy("proposal status", "submitted")
-    ACCEPTED = "accepted", _("accepted")
-    CONFIRMED = "confirmed", _("confirmed")
-    REJECTED = "rejected", _("rejected")
-    CANCELED = "canceled", _("Cancelled")
-    WITHDRAWN = "withdrawn", _("withdrawn")
-    DRAFT = "draft", pgettext_lazy("proposal status", "Draft")
-
-    method_names = nonmember(
-        {
-            "submitted": "make_submitted",
-            "rejected": "reject",
-            "accepted": "accept",
-            "confirmed": "confirm",
-            "canceled": "cancel",
-            "withdrawn": "withdraw",
-        }
-    )
-
-    accepted_states = nonmember(("accepted", "confirmed"))
-
-    @classmethod
-    def get_max_length(cls):
-        return max(len(val) for val in cls.values)
-
-    @staticmethod
-    def get_color(state):
-        return {
-            "submitted": "--color-info",
-            "accepted": "--color-success",
-            "confirmed": "--color-success",
-            "rejected": "--color-danger",
-        }.get(state, "--color-grey")
 
 
 class SubmissionQuerySet(models.QuerySet):
@@ -441,10 +406,6 @@ class Submission(GenerateCode, PretalxModel):
 
     @cached_property
     def public_answers(self):
-        from pretalx.submission.models.question import (  # noqa: PLC0415 -- avoid circular import
-            QuestionTarget,
-        )
-
         qs = (
             self.answers.filter(
                 Q(question__submission_types__in=[self.submission_type])
@@ -619,10 +580,6 @@ class Submission(GenerateCode, PretalxModel):
     update_talk_slots.alters_data = True
 
     def send_initial_mails(self, person):
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            MailTemplateRoles,
-        )
-
         template = self.event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
         locale = self.get_email_locale(person.locale)
         with override(locale):
@@ -753,10 +710,6 @@ class Submission(GenerateCode, PretalxModel):
         return str(locale_names.get(self.content_locale, self.content_locale))
 
     def send_state_mail(self):
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            MailTemplateRoles,
-        )
-
         if self.state == SubmissionStates.ACCEPTED:
             template = self.event.get_mail_template(MailTemplateRoles.SUBMISSION_ACCEPT)
         elif self.state == SubmissionStates.REJECTED:
@@ -1056,9 +1009,6 @@ class Submission(GenerateCode, PretalxModel):
         )
 
     def invite_speaker(self, email, name=None, locale=None, user=None):
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            MailTemplateRoles,
-        )
         from pretalx.person.models import User  # noqa: PLC0415 -- avoid circular import
         from pretalx.person.services import (  # noqa: PLC0415 -- avoid circular import
             create_user,
