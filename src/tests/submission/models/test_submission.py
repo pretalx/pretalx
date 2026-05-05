@@ -1,32 +1,23 @@
 # SPDX-FileCopyrightText: 2026-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 import datetime as dt
-import re
 import statistics
 
 import pytest
-from django.core import mail as djmail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 from django.utils.timezone import now, timedelta
 from django_scopes import scope
 
-from pretalx.common.exceptions import SubmissionError
-from pretalx.common.templatetags.rich_text import render_markdown_abslinks
-from pretalx.mail.models import MailTemplateRoles
+from pretalx.submission.domain.submission import update_talk_slots
 from pretalx.submission.models import Answer, Resource, Submission, SubmissionStates
 from pretalx.submission.models.question import QuestionTarget
 from pretalx.submission.models.review import ReviewPhase
 from pretalx.submission.models.submission import (
     SpeakerRole,
     SubmissionFavourite,
-    SubmissionInvitation,
     generate_invite_code,
     submission_image_path,
-)
-from pretalx.submission.signals import (
-    before_submission_state_change,
-    submission_state_change,
 )
 from tests.factories import (
     AnswerFactory,
@@ -37,7 +28,6 @@ from tests.factories import (
     ReviewFactory,
     ReviewPhaseFactory,
     ReviewScoreCategoryFactory,
-    ReviewScoreFactory,
     RoomFactory,
     SpeakerFactory,
     SpeakerRoleFactory,
@@ -149,22 +139,6 @@ def test_submission_get_duration_default():
 def test_submission_get_duration_custom():
     submission = SubmissionFactory(duration=45)
     assert submission.get_duration() == 45
-
-
-def test_submission_update_duration():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    with scope(event=event):
-        submission.update_talk_slots()
-        slot = event.wip_schedule.talks.get(submission=submission)
-        slot.start = event.datetime_from
-        slot.end = event.datetime_from + dt.timedelta(minutes=30)
-        slot.save()
-        submission.duration = 60
-        submission.save()
-        submission.update_duration()
-        slot.refresh_from_db()
-    assert slot.end == slot.start + dt.timedelta(minutes=60)
 
 
 @pytest.mark.parametrize(
@@ -299,384 +273,6 @@ def test_submission_mean_score_none():
     assert submission.mean_score is None
 
 
-def test_submission_save_sends_signal_on_create(register_signal_handler):
-    received = []
-
-    def handler(signal, sender, **kwargs):
-        received.append(kwargs)
-
-    register_signal_handler(submission_state_change, handler)
-
-    submission = SubmissionFactory(state=SubmissionStates.SUBMITTED)
-    assert len(received) == 1
-    assert received[0]["submission"] == submission
-    assert received[0]["old_state"] is None
-
-
-def test_submission_save_no_signal_on_draft_create(register_signal_handler):
-    received = []
-    register_signal_handler(
-        submission_state_change,
-        lambda signal, sender, **kwargs: received.append(kwargs),
-    )
-
-    SubmissionFactory(state=SubmissionStates.DRAFT)
-    assert received == []
-
-
-def test_submission_set_state_noop():
-    event = EventFactory()
-    submission = SubmissionFactory(
-        event=event,
-        state=SubmissionStates.ACCEPTED,
-        pending_state=SubmissionStates.ACCEPTED,
-    )
-    with scope(event=event):
-        submission.set_state(SubmissionStates.ACCEPTED)
-        submission.refresh_from_db()
-    assert submission.pending_state is None
-
-
-@pytest.mark.parametrize(
-    ("initial_state", "target_state"),
-    (
-        (SubmissionStates.SUBMITTED, SubmissionStates.REJECTED),
-        (SubmissionStates.ACCEPTED, SubmissionStates.CANCELED),
-        (SubmissionStates.SUBMITTED, SubmissionStates.WITHDRAWN),
-    ),
-    ids=["rejected", "canceled", "withdrawn"],
-)
-def test_submission_set_state_clears_is_featured(initial_state, target_state):
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=initial_state, is_featured=True)
-    with scope(event=event):
-        submission.set_state(target_state)
-        submission.refresh_from_db()
-    assert submission.is_featured is False
-
-
-def test_submission_set_state_signal_veto(register_signal_handler):
-    """before_submission_state_change can veto state changes via SubmissionError."""
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-
-    def veto_handler(signal, sender, **kwargs):
-        raise SubmissionError("vetoed")
-
-    register_signal_handler(before_submission_state_change, veto_handler)
-
-    with scope(event=event), pytest.raises(SubmissionError, match="vetoed"):
-        submission.set_state(SubmissionStates.ACCEPTED)
-
-    submission.refresh_from_db()
-    assert submission.state == SubmissionStates.SUBMITTED
-
-
-def test_submission_set_state_no_signal_on_initial_submit(register_signal_handler):
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
-    called = []
-    register_signal_handler(
-        before_submission_state_change,
-        lambda signal, sender, **kwargs: called.append(True),
-    )
-
-    with scope(event=event):
-        submission.set_state(SubmissionStates.SUBMITTED)
-
-    assert submission.state == SubmissionStates.SUBMITTED
-    assert called == []
-
-
-@pytest.mark.parametrize(
-    "state",
-    (
-        SubmissionStates.SUBMITTED,
-        SubmissionStates.ACCEPTED,
-        SubmissionStates.REJECTED,
-        SubmissionStates.CONFIRMED,
-        SubmissionStates.CANCELED,
-        SubmissionStates.WITHDRAWN,
-    ),
-    ids=["submitted", "accepted", "rejected", "confirmed", "canceled", "withdrawn"],
-)
-def test_submission_accept(state):
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=state)
-    with scope(event=event):
-        submission.accept()
-
-    assert submission.state == SubmissionStates.ACCEPTED
-    with scope(event=event):
-        assert event.wip_schedule.talks.filter(submission=submission).exists()
-
-
-def test_submission_accept_sends_mail_from_submitted():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    with scope(event=event):
-        mail_count_before = event.queued_mails.count()
-        submission.accept()
-        assert event.queued_mails.count() == mail_count_before + 1
-
-
-def test_submission_accept_no_mail_from_confirmed():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    with scope(event=event):
-        mail_count_before = event.queued_mails.count()
-        submission.accept()
-        assert event.queued_mails.count() == mail_count_before
-
-
-@pytest.mark.parametrize(
-    "state",
-    (
-        SubmissionStates.SUBMITTED,
-        SubmissionStates.ACCEPTED,
-        SubmissionStates.CONFIRMED,
-        SubmissionStates.CANCELED,
-        SubmissionStates.WITHDRAWN,
-    ),
-    ids=["submitted", "accepted", "confirmed", "canceled", "withdrawn"],
-)
-def test_submission_reject(state):
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=state)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    with scope(event=event):
-        submission.reject()
-
-    assert submission.state == SubmissionStates.REJECTED
-    with scope(event=event):
-        assert not event.wip_schedule.talks.filter(submission=submission).exists()
-
-
-def test_submission_reject_sends_mail():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    with scope(event=event):
-        mail_count_before = event.queued_mails.count()
-        submission.reject()
-        assert event.queued_mails.count() == mail_count_before + 1
-
-
-def test_submission_reject_no_duplicate_mail():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.REJECTED)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    with scope(event=event):
-        mail_count_before = event.queued_mails.count()
-        submission.reject()
-        assert event.queued_mails.count() == mail_count_before
-
-
-@pytest.mark.parametrize(
-    "state",
-    (
-        SubmissionStates.SUBMITTED,
-        SubmissionStates.ACCEPTED,
-        SubmissionStates.CONFIRMED,
-        SubmissionStates.REJECTED,
-        SubmissionStates.CANCELED,
-    ),
-    ids=["submitted", "accepted", "confirmed", "rejected", "canceled"],
-)
-def test_submission_withdraw(state):
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=state)
-    with scope(event=event):
-        submission.withdraw()
-    assert submission.state == SubmissionStates.WITHDRAWN
-    with scope(event=event):
-        assert not event.wip_schedule.talks.filter(submission=submission).exists()
-
-
-@pytest.mark.parametrize(
-    "state",
-    (
-        SubmissionStates.SUBMITTED,
-        SubmissionStates.ACCEPTED,
-        SubmissionStates.CONFIRMED,
-        SubmissionStates.REJECTED,
-        SubmissionStates.WITHDRAWN,
-    ),
-    ids=["submitted", "accepted", "confirmed", "rejected", "withdrawn"],
-)
-def test_submission_cancel(state):
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=state)
-    with scope(event=event):
-        submission.cancel()
-    assert submission.state == SubmissionStates.CANCELED
-    with scope(event=event):
-        assert not event.wip_schedule.talks.filter(submission=submission).exists()
-
-
-def test_submission_confirm():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    with scope(event=event):
-        submission.confirm()
-    assert submission.state == SubmissionStates.CONFIRMED
-
-
-@pytest.mark.parametrize(
-    "state",
-    (
-        SubmissionStates.ACCEPTED,
-        SubmissionStates.CONFIRMED,
-        SubmissionStates.REJECTED,
-        SubmissionStates.CANCELED,
-        SubmissionStates.WITHDRAWN,
-    ),
-    ids=["accepted", "confirmed", "rejected", "canceled", "withdrawn"],
-)
-def test_submission_make_submitted(state):
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=state)
-    with scope(event=event):
-        submission.make_submitted()
-    assert submission.state == SubmissionStates.SUBMITTED
-
-
-def test_submission_make_submitted_from_draft_no_log():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.DRAFT)
-    with scope(event=event):
-        submission.make_submitted()
-        assert submission.state == SubmissionStates.SUBMITTED
-        assert submission.logged_actions().count() == 0
-
-
-def test_submission_make_submitted_from_accepted_logs():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.ACCEPTED)
-    with scope(event=event):
-        submission.make_submitted()
-        assert submission.logged_actions().count() == 1
-
-
-def test_submission_apply_pending_state_noop():
-    event = EventFactory()
-    submission = SubmissionFactory(
-        event=event, state=SubmissionStates.SUBMITTED, pending_state=None
-    )
-    with scope(event=event):
-        submission.apply_pending_state()
-    assert submission.state == SubmissionStates.SUBMITTED
-
-
-def test_submission_apply_pending_state_same_as_state():
-    event = EventFactory()
-    submission = SubmissionFactory(
-        event=event,
-        state=SubmissionStates.ACCEPTED,
-        pending_state=SubmissionStates.ACCEPTED,
-    )
-    with scope(event=event):
-        submission.apply_pending_state()
-    submission.refresh_from_db()
-    assert submission.pending_state is None
-    assert submission.state == SubmissionStates.ACCEPTED
-
-
-def test_submission_apply_pending_state_transitions():
-    event = EventFactory()
-    submission = SubmissionFactory(
-        event=event,
-        state=SubmissionStates.SUBMITTED,
-        pending_state=SubmissionStates.ACCEPTED,
-    )
-    with scope(event=event):
-        submission.apply_pending_state()
-    assert submission.state == SubmissionStates.ACCEPTED
-
-
-def test_submission_update_talk_slots_creates_slots():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    with scope(event=event):
-        submission.accept()
-        assert event.wip_schedule.talks.filter(submission=submission).count() == 1
-
-
-def test_submission_update_talk_slots_deletes_on_reject():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    with scope(event=event):
-        submission.accept()
-        assert event.wip_schedule.talks.filter(submission=submission).count() == 1
-        submission.reject()
-        assert event.wip_schedule.talks.filter(submission=submission).count() == 0
-
-
-def test_submission_update_talk_slots_adjusts_count():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    with scope(event=event):
-        submission.accept()
-        assert event.wip_schedule.talks.filter(submission=submission).count() == 1
-        submission.slot_count = 3
-        submission.save()
-        submission.update_talk_slots()
-        assert event.wip_schedule.talks.filter(submission=submission).count() == 3
-
-
-def test_submission_update_talk_slots_reduces_count():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    with scope(event=event):
-        submission.accept()
-        submission.slot_count = 3
-        submission.save()
-        submission.update_talk_slots()
-        assert event.wip_schedule.talks.filter(submission=submission).count() == 3
-        submission.slot_count = 1
-        submission.save()
-        submission.update_talk_slots()
-        assert event.wip_schedule.talks.filter(submission=submission).count() == 1
-
-
-def test_submission_update_talk_slots_visibility_confirmed():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    with scope(event=event):
-        submission.accept()
-        submission.confirm()
-        slot = event.wip_schedule.talks.get(submission=submission)
-    assert slot.is_visible is True
-
-
-def test_submission_update_talk_slots_visibility_accepted():
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=SubmissionStates.SUBMITTED)
-    with scope(event=event):
-        submission.accept()
-        slot = event.wip_schedule.talks.get(submission=submission)
-    assert slot.is_visible is False
-
-
-def test_submission_update_talk_slots_pending_accepted():
-    event = EventFactory()
-    submission = SubmissionFactory(
-        event=event,
-        state=SubmissionStates.SUBMITTED,
-        pending_state=SubmissionStates.ACCEPTED,
-    )
-    with scope(event=event):
-        submission.update_talk_slots()
-        assert event.wip_schedule.talks.filter(submission=submission).count() == 1
-
-
 @pytest.mark.parametrize(
     ("content_locale", "event_locales", "fallback", "expected_locale"),
     (
@@ -702,99 +298,12 @@ def test_submission_get_email_locale(
     assert submission.get_email_locale(fallback=fallback) == expected_locale
 
 
-@pytest.mark.parametrize(
-    ("state", "expected"),
-    (
-        (SubmissionStates.ACCEPTED, 1),
-        (SubmissionStates.REJECTED, 1),
-        (SubmissionStates.SUBMITTED, 0),
-        (SubmissionStates.CONFIRMED, 0),
-        (SubmissionStates.CANCELED, 0),
-    ),
-    ids=["accepted", "rejected", "submitted", "confirmed", "canceled"],
-)
-def test_submission_send_state_mail(state, expected):
-    event = EventFactory()
-    submission = SubmissionFactory(event=event, state=state)
-    speaker = SpeakerFactory(event=event)
-    submission.speakers.add(speaker)
-    with scope(event=event):
-        mail_count_before = event.queued_mails.count()
-        submission.send_state_mail()
-        assert event.queued_mails.count() == mail_count_before + expected
-
-
-def test_submission_delete_removes_related():
-    submission = SubmissionFactory()
-    event = submission.event
-    AnswerFactory(question=QuestionFactory(event=event), submission=submission)
-    ResourceFactory(submission=submission)
-    sub_pk = submission.pk
-    with scope(event=event):
-        submission.delete()
-    assert not Submission.all_objects.filter(pk=sub_pk).exists()
-    assert not Answer.objects.filter(submission_id=sub_pk).exists()
-    assert not Resource.objects.filter(submission_id=sub_pk).exists()
-
-
-def test_submission_delete_removes_review_answers():
-    submission = SubmissionFactory()
-    event = submission.event
-    review = ReviewFactory(submission=submission)
-    reviewer_question = QuestionFactory(event=event, target=QuestionTarget.REVIEWER)
-    review_answer = AnswerFactory(
-        question=reviewer_question, submission=None, review=review
-    )
-    review_answer_pk = review_answer.pk
-    sub_pk = submission.pk
-    with scope(event=event):
-        submission.delete()
-    assert not Submission.all_objects.filter(pk=sub_pk).exists()
-    assert not Answer.objects.filter(pk=review_answer_pk).exists()
-
-
-def test_submission_delete_cleans_up_resource_files():
-    submission = SubmissionFactory()
-    f = SimpleUploadedFile("testresource.txt", b"test content")
-    resource = ResourceFactory(
-        submission=submission, resource=f, description="Test resource"
-    )
-    file_path = resource.resource.path
-    assert resource.resource.storage.exists(file_path)
-    with scope(event=submission.event):
-        submission.delete()
-    assert not resource.resource.storage.exists(file_path)
-
-
-def test_submission_get_content_for_mail():
-    submission = SubmissionFactory(
-        title="My Talk",
-        abstract="An abstract",
-        description="A description",
-        notes="Some notes",
-    )
-    content = submission.get_content_for_mail()
-    assert "My Talk" in content
-    assert "An abstract" in content
-    assert "A description" in content
-    assert "Some notes" in content
-
-
-def test_submission_get_content_for_mail_with_boolean_answer():
-    submission = SubmissionFactory()
-    q = QuestionFactory(event=submission.event, variant="boolean", target="submission")
-    AnswerFactory(question=q, answer="True", submission=submission)
-    content = submission.get_content_for_mail()
-    assert str(q.question) in content
-
-
-def test_submission_get_content_for_mail_with_file_answer():
-    submission = SubmissionFactory()
-    q = QuestionFactory(event=submission.event, variant="file", target="submission")
-    f = SimpleUploadedFile("test.txt", b"content")
-    AnswerFactory(question=q, answer_file=f, submission=submission)
-    content = submission.get_content_for_mail()
-    assert str(q.question) in content
+def test_submission_clean_resets_content_locale_outside_event():
+    event = EventFactory(locale_array="de", locale="de")
+    submission = SubmissionFactory(event=event)
+    submission.content_locale = "fr"
+    submission.clean()
+    assert submission.content_locale == "de"
 
 
 def test_submission_get_instance_data_with_resources():
@@ -804,9 +313,15 @@ def test_submission_get_instance_data_with_resources():
     )
     ResourceFactory(submission=submission, link="https://example.com/2", description="")
     data = submission.get_instance_data()
-    assert "resources" in data
-    assert "[Slides](https://example.com)" in data["resources"]
-    assert "https://example.com/2" in data["resources"]
+    assert data["resources"] == (
+        "- [Slides](https://example.com)\n- https://example.com/2"
+    )
+
+
+def test_submission_get_instance_data_skips_empty_resources():
+    submission = SubmissionFactory()
+    ResourceFactory(submission=submission, resource=None, description=None, link=None)
+    assert "resources" not in submission.get_instance_data()
 
 
 def test_submission_get_instance_data_with_tags():
@@ -900,81 +415,6 @@ def test_submission_user_state_accepted():
     assert submission.user_state == SubmissionStates.ACCEPTED
 
 
-def test_submission_invite_speaker_existing_user():
-    submission = SubmissionFactory()
-    user = UserFactory()
-    speaker = submission.invite_speaker(user.email, user=user)
-    assert speaker is not None
-    assert submission.speakers.filter(pk=speaker.pk).exists()
-
-
-def test_submission_invite_speaker_new_user():
-    submission = SubmissionFactory()
-    user = UserFactory()
-    speaker = submission.invite_speaker(
-        "newperson@example.com", name="New Person", user=user
-    )
-    assert speaker is not None
-    assert submission.speakers.filter(pk=speaker.pk).exists()
-
-
-def test_submission_add_speaker():
-    submission = SubmissionFactory()
-    user = UserFactory()
-    speaker = submission.add_speaker(user=user)
-    assert submission.speakers.filter(pk=speaker.pk).exists()
-
-
-def test_submission_add_speaker_sets_position():
-    submission = SubmissionFactory()
-    speaker1 = SpeakerFactory(event=submission.event)
-    speaker2 = SpeakerFactory(event=submission.event)
-    submission.add_speaker(speaker=speaker1)
-    submission.add_speaker(speaker=speaker2)
-    pos1 = SpeakerRole.objects.get(submission=submission, speaker=speaker1).position
-    pos2 = SpeakerRole.objects.get(submission=submission, speaker=speaker2).position
-    assert pos2 > pos1
-
-
-def test_submission_add_speaker_logs_with_user():
-    submission = SubmissionFactory()
-    log_user = UserFactory()
-    target_user = UserFactory()
-    submission.add_speaker(user=target_user, log_user=log_user)
-    assert (
-        submission.logged_actions()
-        .filter(action_type="pretalx.submission.speakers.add")
-        .exists()
-    )
-
-
-def test_submission_remove_speaker():
-    submission = SubmissionFactory()
-    speaker = SpeakerFactory(event=submission.event)
-    submission.speakers.add(speaker)
-    submission.remove_speaker(speaker)
-    assert not submission.speakers.filter(pk=speaker.pk).exists()
-
-
-def test_submission_remove_speaker_logs():
-    submission = SubmissionFactory()
-    speaker = SpeakerFactory(event=submission.event)
-    submission.speakers.add(speaker)
-    submission.remove_speaker(speaker)
-    assert (
-        submission.logged_actions()
-        .filter(action_type="pretalx.submission.speakers.remove")
-        .exists()
-    )
-
-
-def test_submission_remove_speaker_nonexistent():
-    submission = SubmissionFactory()
-    speaker = SpeakerFactory(event=submission.event)
-    submission.remove_speaker(speaker)
-    assert submission.logged_actions().count() == 0
-
-
 def test_submission_add_favourite():
     submission = SubmissionFactory()
     user = UserFactory()
@@ -1040,13 +480,49 @@ def test_submission_does_accept_feedback_no_slot():
         assert submission.does_accept_feedback is False
 
 
-def test_submission_queryset_with_sorted_speakers():
+def test_submission_delete_removes_related():
     submission = SubmissionFactory()
-    speaker = SpeakerFactory(event=submission.event)
-    submission.speakers.add(speaker)
-    qs = Submission.objects.all().with_sorted_speakers()
-    result = list(qs)
-    assert result == [submission]
+    event = submission.event
+    AnswerFactory(question=QuestionFactory(event=event), submission=submission)
+    ResourceFactory(submission=submission)
+    sub_pk = submission.pk
+    with scope(event=event):
+        submission.delete()
+    assert not Submission.all_objects.filter(pk=sub_pk).exists()
+    assert not Answer.objects.filter(submission_id=sub_pk).exists()
+    assert not Resource.objects.filter(submission_id=sub_pk).exists()
+
+
+def test_submission_delete_removes_review_answers():
+    submission = SubmissionFactory()
+    event = submission.event
+    review = ReviewFactory(submission=submission)
+    reviewer_question = QuestionFactory(event=event, target=QuestionTarget.REVIEWER)
+    review_answer = AnswerFactory(
+        question=reviewer_question, submission=None, review=review
+    )
+    review_answer_pk = review_answer.pk
+    sub_pk = submission.pk
+    with scope(event=event):
+        submission.delete()
+    assert not Submission.all_objects.filter(pk=sub_pk).exists()
+    assert not Answer.objects.filter(pk=review_answer_pk).exists()
+
+
+def test_submission_delete_cleans_up_resource_files(django_capture_on_commit_callbacks):
+    submission = SubmissionFactory()
+    f = SimpleUploadedFile("testresource.txt", b"test content")
+    resource = ResourceFactory(
+        submission=submission, resource=f, description="Test resource"
+    )
+    file_path = resource.resource.path
+    assert resource.resource.storage.exists(file_path)
+    with (
+        scope(event=submission.event),
+        django_capture_on_commit_callbacks(execute=True),
+    ):
+        submission.delete()
+    assert not resource.resource.storage.exists(file_path)
 
 
 def test_submission_invitation_str():
@@ -1065,49 +541,6 @@ def test_submission_invitation_event():
         submission=submission, email="test@example.com"
     )
     assert invitation.event == submission.event
-
-
-def test_submission_invitation_send():
-    submission = SubmissionFactory()
-    user = UserFactory()
-    invitation = SubmissionInvitationFactory(
-        submission=submission, email="test@example.com"
-    )
-    with scope(event=submission.event):
-        mail = invitation.send(_from=user)
-    assert mail is not None
-
-
-def test_submission_invitation_send_requires_from():
-    submission = SubmissionFactory()
-    invitation = SubmissionInvitationFactory(
-        submission=submission, email="test@example.com"
-    )
-    with pytest.raises(ValueError, match="sender"):
-        invitation.send(_from=None)
-
-
-def test_submission_invitation_retract():
-    submission = SubmissionFactory()
-    invitation = SubmissionInvitationFactory(
-        submission=submission, email="test@example.com"
-    )
-    invitation.retract()
-    assert not SubmissionInvitation.objects.filter(pk=invitation.pk).exists()
-
-
-def test_submission_invitation_retract_logs():
-    submission = SubmissionFactory()
-    user = UserFactory()
-    invitation = SubmissionInvitationFactory(
-        submission=submission, email="test@example.com"
-    )
-    invitation.retract(person=user)
-    assert (
-        submission.logged_actions()
-        .filter(action_type="pretalx.submission.invitation.retract")
-        .exists()
-    )
 
 
 def test_submission_invitation_unique_together():
@@ -1191,57 +624,6 @@ def test_submission_public_answers_with_track():
     assert all(a.question != q_other_track for a in result)
 
 
-def test_submission_get_instance_data_resource_label_only():
-    """Resource with description but no link shows as 'File: label'."""
-    submission = SubmissionFactory()
-    ResourceFactory(submission=submission, link="", description="My Slides")
-    data = submission.get_instance_data()
-    assert "resources" in data
-    assert "My Slides" in data["resources"]
-
-
-def test_submission_get_instance_data_resource_filename():
-    """Resource with file but no link or description uses filename."""
-    submission = SubmissionFactory()
-    f = SimpleUploadedFile("slides.pdf", b"content")
-    ResourceFactory(submission=submission, resource=f, description=None, link=None)
-    data = submission.get_instance_data()
-    assert "resources" in data
-    assert "slides" in data["resources"]
-
-
-def test_submission_get_instance_data_resource_no_file_no_link():
-    submission = SubmissionFactory()
-    ResourceFactory(submission=submission, resource=None, description=None, link=None)
-    data = submission.get_instance_data()
-    assert "resources" not in data
-
-
-def test_submission_update_review_scores():
-    submission = SubmissionFactory()
-    event = submission.event
-    cat = ReviewScoreCategoryFactory(event=event, name="Quality", active=True, weight=1)
-    score_option = ReviewScoreFactory(category=cat, value=5)
-    review = ReviewFactory(submission=submission, score=None)
-    review.scores.add(score_option)
-    submission.update_review_scores()
-    review.refresh_from_db()
-    assert review.score is not None
-
-
-def test_submission_send_initial_mails():
-    submission = SubmissionFactory()
-    event = submission.event
-    user = UserFactory()
-    speaker = SpeakerFactory(event=event, user=user)
-    submission.speakers.add(speaker)
-    djmail.outbox = []
-    with scope(event=event):
-        submission.send_initial_mails(user)
-    assert len(djmail.outbox) == 1
-    assert user.email in djmail.outbox[0].to
-
-
 def test_submission_get_content_locale_display():
     submission = SubmissionFactory(content_locale="en")
     result = submission.get_content_locale_display()
@@ -1262,7 +644,7 @@ def test_submission_does_accept_feedback_with_past_slot():
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     room = RoomFactory(event=event)
     with scope(event=event):
-        submission.update_talk_slots()
+        update_talk_slots(submission)
         slot = event.wip_schedule.talks.get(submission=submission)
         slot.start = now() - timedelta(hours=2)
         slot.end = now() - timedelta(hours=1)
@@ -1278,7 +660,7 @@ def test_submission_public_slots_with_visible_agenda():
     rather than returning the early-exit empty list."""
     submission = SubmissionFactory(state=SubmissionStates.CONFIRMED)
     with scope(event=submission.event):
-        submission.update_talk_slots()
+        update_talk_slots(submission)
         submission.event.release_schedule(name="v1")
         result = submission.public_slots
     assert result is not None
@@ -1288,20 +670,10 @@ def test_submission_current_slots_with_schedule():
     event = EventFactory()
     submission = SubmissionFactory(event=event, state=SubmissionStates.CONFIRMED)
     with scope(event=event):
-        submission.update_talk_slots()
+        update_talk_slots(submission)
         event.release_schedule(name="v1")
         result = submission.current_slots
     assert result is not None
-
-
-def test_submission_sorted_speakers_with_prefetch():
-    submission = SubmissionFactory()
-    speaker = SpeakerFactory(event=submission.event)
-    submission.speakers.add(speaker)
-    qs = Submission.objects.all().with_sorted_speakers()
-    sub = qs.get(pk=submission.pk)
-    result = list(sub.sorted_speakers)
-    assert result == [speaker]
 
 
 def test_submission_active_resources():
@@ -1349,80 +721,11 @@ def test_submission_availabilities():
     assert result[0].end == event.datetime_from + dt.timedelta(hours=4)
 
 
-def test_submission_get_content_for_mail_with_text_answer():
-    submission = SubmissionFactory()
-    q = QuestionFactory(event=submission.event, variant="string", target="submission")
-    AnswerFactory(question=q, answer="My answer", submission=submission)
-    content = submission.get_content_for_mail()
-    assert "My answer" in content
-
-
-def test_submission_get_content_for_mail_with_empty_answer():
-    """Text answers with no content show a dash."""
-    submission = SubmissionFactory()
-    q = QuestionFactory(event=submission.event, variant="string", target="submission")
-    AnswerFactory(question=q, answer="", submission=submission)
-    content = submission.get_content_for_mail()
-    assert str(q.question) in content
-    assert "-" in content
-
-
 def test_submission_get_instance_data_unsaved():
     submission = Submission(title="Unsaved", code="ABCDEF")
     data = submission.get_instance_data()
     assert "resources" not in data
     assert "tags" not in data
-
-
-def test_submission_send_initial_mails_with_notification():
-    event = EventFactory(mail_settings={"mail_on_new_submission": True})
-    submission = SubmissionFactory(event=event)
-    user = UserFactory()
-    speaker = SpeakerFactory(event=event, user=user)
-    submission.speakers.add(speaker)
-    djmail.outbox = []
-    with scope(event=event):
-        submission.send_initial_mails(user)
-    assert len(djmail.outbox) == 2
-
-
-def test_submission_send_initial_mails_template_already_has_content():
-    """send_initial_mails doesn't duplicate full_submission_content placeholder."""
-    submission = SubmissionFactory()
-    event = submission.event
-    user = UserFactory()
-    speaker = SpeakerFactory(event=event, user=user)
-    submission.speakers.add(speaker)
-    with scope(event=event):
-        template = event.get_mail_template(MailTemplateRoles.NEW_SUBMISSION)
-        template.text = str(template.text) + "\n{full_submission_content}"
-        template.save()
-        original_text = str(template.text)
-        submission.send_initial_mails(user)
-        template.refresh_from_db()
-        assert str(template.text) == original_text
-
-
-def test_submission_content_for_mail_plain_variant_escapes_markdown_link_chars():
-    submission = SubmissionFactory()
-    question = QuestionFactory(
-        event=submission.event, variant="string", target=QuestionTarget.SUBMISSION
-    )
-    AnswerFactory(
-        question=question,
-        submission=submission,
-        answer="[Click here](https://phish.com)",
-    )
-
-    with scope(event=submission.event):
-        alt = submission._content_for_mail_placeholder()
-
-    rendered = render_markdown_abslinks(alt.plain)
-    for match in re.finditer(
-        r'<a[^>]*href="https://phish\.com[^"]*"[^>]*>([^<]*)</a>', rendered
-    ):
-        assert match.group(1).strip() == "https://phish.com"
-    assert "[Click here]" in rendered or r"\[Click here\]" in rendered
 
 
 def test_submission_editable_submitted_past_deadline_with_review_phase():

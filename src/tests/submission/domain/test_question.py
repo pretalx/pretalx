@@ -244,20 +244,6 @@ def test_save_answer_file_keeps_existing_when_value_is_path_string():
     assert answer.answer_file.name == original_file_name
 
 
-def test_question_save_answer_thin_method_delegates():
-    submission = SubmissionFactory()
-    question = QuestionFactory(
-        event=submission.event,
-        variant=QuestionVariant.STRING,
-        target=QuestionTarget.SUBMISSION,
-    )
-
-    answer = question.save_answer(value="Through model", target_object=submission)
-
-    assert answer.pk is not None
-    assert answer.answer == "Through model"
-
-
 def test_answer_target_object_property_returns_correct_parent():
     submission = SubmissionFactory()
     speaker = SpeakerFactory(event=submission.event)

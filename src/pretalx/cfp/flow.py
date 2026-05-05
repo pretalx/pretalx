@@ -596,6 +596,7 @@ class InfoStep(DedraftMixin, FormFlowStep):
                 speakers=[request.user],
                 tags=form.cleaned_data.get("tags") or (),
                 invite_addresses=form.cleaned_data.get("additional_speaker"),
+                send_initial_mails=not draft,
             )
         else:
             submission = form.save()

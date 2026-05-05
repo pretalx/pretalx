@@ -1424,7 +1424,7 @@ def test_submissions_edit_view_track_change_updates_review_scores(client):
     with scopes_disabled():
         review = ReviewFactory(submission=submission)
         review.score = 5
-        review.save(update_score=False)
+        review.save()
     data = _edit_form_data(submission, track=new_track.pk)
 
     response = client.post(submission.urls.user_base, follow=True, data=data)

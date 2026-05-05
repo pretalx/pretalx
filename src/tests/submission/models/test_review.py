@@ -5,14 +5,8 @@ from decimal import Decimal
 import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django_scopes import scope
 
-from pretalx.submission.models import Review
-from pretalx.submission.models.review import (
-    ReviewPhase,
-    ReviewScore,
-    ReviewScoreCategory,
-)
+from pretalx.submission.models.review import ReviewPhase, ReviewScore
 from tests.factories import (
     EventFactory,
     ReviewFactory,
@@ -21,7 +15,6 @@ from tests.factories import (
     ReviewScoreFactory,
     SubmissionFactory,
     TrackFactory,
-    UserFactory,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.django_db]
@@ -47,29 +40,29 @@ def test_review_score_category_save_keeps_weight_when_not_independent():
     assert category.weight == Decimal("2.5")
 
 
-def test_review_score_category_save_independent_validates_remaining_non_independent():
+def test_review_score_category_clean_independent_validates_remaining_non_independent():
     event = EventFactory()
-    # Remove the default "Score" category created by build_initial_data
     event.score_categories.all().delete()
     category = ReviewScoreCategoryFactory(event=event, is_independent=False)
 
     category.is_independent = True
     with pytest.raises(ValidationError):
-        category.save()
+        category.full_clean()
 
 
-def test_review_score_category_save_independent_allowed_with_other_non_independent():
+def test_review_score_category_clean_independent_allowed_with_other_non_independent():
     event = EventFactory()
     ReviewScoreCategoryFactory(event=event, is_independent=False)
     category = ReviewScoreCategoryFactory(event=event, is_independent=False)
 
     category.is_independent = True
+    category.full_clean()
     category.save()
 
     assert category.weight == 0
 
 
-def test_review_score_category_save_new_independent_skips_validation():
+def test_review_score_category_clean_new_independent_skips_validation():
     event = EventFactory()
     category = ReviewScoreCategoryFactory(event=event, is_independent=True)
 
@@ -79,7 +72,6 @@ def test_review_score_category_save_new_independent_skips_validation():
 
 def test_review_score_category_delete_independent_validates():
     event = EventFactory()
-    # Remove the default "Score" category so only our independent one exists
     event.score_categories.all().delete()
     category = ReviewScoreCategoryFactory(event=event, is_independent=True)
 
@@ -94,21 +86,6 @@ def test_review_score_category_delete_non_independent_succeeds():
     count_before = event.score_categories.count()
     category.delete()
     assert event.score_categories.count() == count_before - 1
-
-
-def test_review_score_category_recalculate_scores():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
-    score = ReviewScoreFactory(category=category, value=Decimal(5))
-    submission = SubmissionFactory(event=event)
-    review = ReviewFactory(submission=submission, score=None)
-    review.scores.add(score)
-
-    with scope(event=event):
-        ReviewScoreCategory.recalculate_scores(event)
-
-    review.refresh_from_db()
-    assert review.score == Decimal("5.0")
 
 
 def test_review_score_category_limit_tracks():
@@ -202,106 +179,12 @@ def test_review_display_score(score, expected):
     assert review.display_score == expected
 
 
-def test_review_calculate_score_empty():
-    assert Review.calculate_score([]) is None
-
-
-def test_review_calculate_score_weighted():
-    """calculate_score sums value * weight for each score."""
-    category1 = ReviewScoreCategoryFactory(weight=Decimal("2.0"))
-    category2 = ReviewScoreCategoryFactory(event=category1.event, weight=Decimal("1.0"))
-    score1 = ReviewScoreFactory(category=category1, value=Decimal(5))
-    score2 = ReviewScoreFactory(category=category2, value=Decimal(3))
-
-    result = Review.calculate_score([score1, score2])
-
-    assert result == Decimal("13.0")
-
-
-def test_review_update_score():
-    """update_score recalculates from the review's scores filtered by submission's score_categories."""
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
-    score = ReviewScoreFactory(category=category, value=Decimal(7))
-    submission = SubmissionFactory(event=event)
-    review = ReviewFactory(submission=submission, score=None)
-    review.scores.add(score)
-
-    review.update_score()
-
-    assert review.score == Decimal("7.0")
-
-
-def test_review_save_updates_score():
-    event = EventFactory()
-    category = ReviewScoreCategoryFactory(event=event, weight=Decimal("1.0"))
-    score = ReviewScoreFactory(category=category, value=Decimal(4))
-    submission = SubmissionFactory(event=event)
-    review = ReviewFactory(submission=submission, score=None)
-    review.scores.add(score)
-
-    review.save(update_score=True)
-    review.refresh_from_db()
-
-    assert review.score == Decimal("4.0")
-
-
-def test_review_save_skips_score_update_when_disabled():
-    submission = SubmissionFactory()
-    review = ReviewFactory(submission=submission, score=Decimal(99))
-
-    review.save(update_score=False)
-    review.refresh_from_db()
-
-    assert review.score == Decimal(99)
-
-
-def test_review_save_skips_score_update_for_new_review():
-    submission = SubmissionFactory()
-    user = UserFactory()
-    review = Review(submission=submission, user=user)
-    review.score = Decimal(42)
-    review.save(update_score=True)
-    review.refresh_from_db()
-
-    assert review.score == Decimal(42)
-
-
 def test_review_unique_per_user_submission():
     submission = SubmissionFactory()
     review = ReviewFactory(submission=submission)
 
     with pytest.raises(IntegrityError):
         ReviewFactory(submission=submission, user=review.user)
-
-
-def test_review_phase_activate_deactivates_others():
-    event = EventFactory()
-    phase1 = ReviewPhaseFactory(event=event, is_active=True)
-    phase2 = ReviewPhaseFactory(event=event, is_active=False)
-
-    phase2.activate()
-
-    phase1.refresh_from_db()
-    phase2.refresh_from_db()
-    assert phase1.is_active is False
-    assert phase2.is_active is True
-
-
-def test_review_phase_activate_deactivates_all_others():
-    event = EventFactory()
-    phase1 = ReviewPhaseFactory(event=event, is_active=True)
-    phase2 = ReviewPhaseFactory(event=event, is_active=False)
-    phase3 = ReviewPhaseFactory(event=event, is_active=True)
-
-    phase2.activate()
-
-    phase1.refresh_from_db()
-    phase2.refresh_from_db()
-    phase3.refresh_from_db()
-    assert phase2.is_active is True
-    assert phase1.is_active is False
-    assert phase3.is_active is False
 
 
 def test_review_phase_ordering():

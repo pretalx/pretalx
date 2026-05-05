@@ -126,7 +126,9 @@ def multiple_choice_question(cfp_event):
     return question
 
 
-def test_e2e_new_user_submission_with_questions(cfp_event, client):
+def test_e2e_new_user_submission_with_questions(
+    cfp_event, client, django_capture_on_commit_callbacks
+):
     """Complete submission flow: new user registers, answers questions, fills profile.
 
     Verifies:
@@ -164,7 +166,8 @@ def test_e2e_new_user_submission_with_questions(cfp_event, client):
     _, profile_url = _register_user(client, user_url)
     assert "/profile/" in profile_url
 
-    response, final_url = _post_profile(client, profile_url)
+    with django_capture_on_commit_callbacks(execute=True):
+        response, final_url = _post_profile(client, profile_url)
     assert "/me/submissions/" in final_url
 
     sub = _assert_submission(cfp_event, question=submission_question)
@@ -176,7 +179,9 @@ def test_e2e_new_user_submission_with_questions(cfp_event, client):
     assert sub.state == SubmissionStates.SUBMITTED
 
 
-def test_e2e_new_user_with_mail_on_new_submission(client):
+def test_e2e_new_user_with_mail_on_new_submission(
+    client, django_capture_on_commit_callbacks
+):
     """New user submission with mail_on_new_submission sends 2 emails (user + orga)."""
     event = EventFactory(
         cfp__deadline=now() + dt.timedelta(days=30),
@@ -187,7 +192,8 @@ def test_e2e_new_user_with_mail_on_new_submission(client):
     _, info_url = start_wizard(client, event)
     _, user_url = _post_info(client, info_url, event)
     _, profile_url = _register_user(client, user_url)
-    _post_profile(client, profile_url)
+    with django_capture_on_commit_callbacks(execute=True):
+        _post_profile(client, profile_url)
 
     assert len(djmail.outbox) == 2
 
@@ -260,7 +266,9 @@ def test_e2e_existing_user_login_with_questions(
         assert speaker_answer.submission is None
 
 
-def test_e2e_logged_in_user_skips_user_step(cfp_event, client, cfp_user):
+def test_e2e_logged_in_user_skips_user_step(
+    cfp_event, client, cfp_user, django_capture_on_commit_callbacks
+):
     djmail.outbox = []
     with scopes_disabled():
         submission_question = QuestionFactory(
@@ -281,7 +289,8 @@ def test_e2e_logged_in_user_skips_user_step(cfp_event, client, cfp_user):
     _, profile_url = _post_questions(client, q_url, answer_data)
     assert "/profile/" in profile_url
 
-    _, final_url = _post_profile(client, profile_url)
+    with django_capture_on_commit_callbacks(execute=True):
+        _, final_url = _post_profile(client, profile_url)
     assert "/me/submissions/" in final_url
 
     sub = _assert_submission(cfp_event, question=submission_question)
@@ -395,7 +404,9 @@ def test_e2e_access_code_bypasses_deadline(client):
         assert sub.access_code == access_code
 
 
-def test_e2e_additional_speakers_send_invitations(cfp_event, client, cfp_user):
+def test_e2e_additional_speakers_send_invitations(
+    cfp_event, client, cfp_user, django_capture_on_commit_callbacks
+):
     djmail.outbox = []
     client.force_login(cfp_user)
     _, info_url = start_wizard(client, cfp_event)
@@ -405,7 +416,8 @@ def test_e2e_additional_speakers_send_invitations(cfp_event, client, cfp_user):
         cfp_event,
         additional_speaker="speaker2@example.com,speaker3@example.com",
     )
-    _, final_url = _post_profile(client, profile_url)
+    with django_capture_on_commit_callbacks(execute=True):
+        _, final_url = _post_profile(client, profile_url)
 
     assert "/me/submissions/" in final_url
     # 1 confirmation + 2 invitation emails

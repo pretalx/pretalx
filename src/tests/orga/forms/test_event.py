@@ -1106,6 +1106,95 @@ def test_reviewscorecategoryform_save_unchanged_scores_preserved():
     assert score.label == "Good"
 
 
+def _build_category_form_data(category, prefix="cat", overrides=None):
+    """Build POST data for ReviewScoreCategoryForm that, by default, matches the
+    current category state (so changed_data is empty). Pass ``overrides`` to
+    introduce specific changes."""
+    data = {
+        f"{prefix}-name_0": str(category.name),
+        f"{prefix}-is_independent": category.is_independent,
+        f"{prefix}-weight": str(category.weight),
+        f"{prefix}-required": category.required,
+        f"{prefix}-active": category.active,
+        f"{prefix}-new_scores": "",
+    }
+    for score in category.scores.all():
+        data[f"{prefix}-value_{score.id}"] = str(score.value)
+        data[f"{prefix}-label_{score.id}"] = score.label or ""
+    if overrides:
+        data.update({f"{prefix}-{key}": value for key, value in overrides.items()})
+    return data
+
+
+def test_reviewscorecategoryform_affects_review_scores_existing_score_value_change():
+    event = EventFactory()
+    category = ReviewScoreCategoryFactory(event=event)
+    score = ReviewScoreFactory(category=category, value=3, label="Good")
+    data = _build_category_form_data(category, overrides={f"value_{score.id}": "4"})
+    form = ReviewScoreCategoryForm(
+        data=data, instance=category, event=event, locales=event.locales, prefix="cat"
+    )
+    assert form.is_valid(), form.errors
+
+    assert form.affects_review_scores is True
+
+
+def test_reviewscorecategoryform_affects_review_scores_label_only_change():
+    event = EventFactory()
+    category = ReviewScoreCategoryFactory(event=event)
+    score = ReviewScoreFactory(category=category, value=3, label="Good")
+    data = _build_category_form_data(
+        category, overrides={f"label_{score.id}": "Excellent"}
+    )
+    form = ReviewScoreCategoryForm(
+        data=data, instance=category, event=event, locales=event.locales, prefix="cat"
+    )
+    assert form.is_valid(), form.errors
+
+    assert form.affects_review_scores is False
+
+
+def test_reviewscorecategoryform_affects_review_scores_no_changes():
+    event = EventFactory()
+    category = ReviewScoreCategoryFactory(event=event)
+    ReviewScoreFactory(category=category, value=3, label="Good")
+    data = _build_category_form_data(category)
+    form = ReviewScoreCategoryForm(
+        data=data, instance=category, event=event, locales=event.locales, prefix="cat"
+    )
+    assert form.is_valid(), form.errors
+
+    assert form.affects_review_scores is False
+
+
+def test_reviewscorecategoryform_affects_review_scores_delete_non_independent():
+    event = EventFactory()
+    category = ReviewScoreCategoryFactory(event=event, is_independent=False)
+    data = _build_category_form_data(category)
+    form = ReviewScoreCategoryForm(
+        data=data, instance=category, event=event, locales=event.locales, prefix="cat"
+    )
+    assert form.is_valid(), form.errors
+    form.cleaned_data["DELETE"] = True  # set by the formset when can_delete=True
+
+    assert form.affects_review_scores is True
+
+
+def test_reviewscorecategoryform_affects_review_scores_delete_independent():
+    event = EventFactory()
+    category = ReviewScoreCategoryFactory(
+        event=event, is_independent=True, weight=Decimal(0)
+    )
+    data = _build_category_form_data(category)
+    form = ReviewScoreCategoryForm(
+        data=data, instance=category, event=event, locales=event.locales, prefix="cat"
+    )
+    assert form.is_valid(), form.errors
+    form.cleaned_data["DELETE"] = True
+
+    assert form.affects_review_scores is False
+
+
 def test_reviewscorecategoryform_save_new_score_without_label_skipped():
     """A new score with a value but no label is silently skipped."""
     event = EventFactory()

@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2017-present Tobias Kunze
 # SPDX-License-Identifier: AGPL-3.0-only WITH LicenseRef-Pretalx-AGPL-3.0-Terms
 
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -13,6 +12,9 @@ from pretalx.common.models.fields import DateTimeField, MarkdownField
 from pretalx.common.models.mixins import OrderedModel, PretalxModel
 from pretalx.common.urls import EventUrls
 from pretalx.person.rules import is_administrator, is_reviewer
+from pretalx.submission.interfaces.validators.review import (
+    validate_non_independent_category_remains,
+)
 from pretalx.submission.rules import (
     can_be_reviewed,
     can_view_all_reviews,
@@ -51,31 +53,20 @@ class ReviewScoreCategory(PretalxModel):
         base = "{self.event.orga_urls.review_settings}category/{self.pk}/"
         delete = "{base}delete"
 
-    @classmethod
-    def recalculate_scores(cls, event):
-        for review in event.reviews.all():
-            review.save(update_score=True)
-
-    def _validate_independence(self):
-        if (
-            not self.event.score_categories.exclude(pk=self.pk)
-            .filter(is_independent=False)
-            .exists()
-        ):
-            raise ValidationError(
-                _("You need to keep at least one non-independent score category!")
-            )
+    def clean(self):
+        super().clean()
+        if self.is_independent and self.pk:
+            # The remaining-non-independent check only matters when an existing
+            # category is being flipped to independent.
+            validate_non_independent_category_remains(self)
 
     def save(self, *args, **kwargs):
         if self.is_independent:
-            if self.pk:
-                self._validate_independence()
             self.weight = 0
         return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        if self.is_independent:
-            self._validate_independence()
+        validate_non_independent_category_remains(self)
         return super().delete(*args, **kwargs)
 
 
@@ -94,19 +85,12 @@ class ReviewScore(PretalxModel):
     def format(self, fmt):
         if fmt == "words":
             return self.label
-
-        value = self.value
-        if int(value) == value:
-            value = int(value)
-
-        # we ignore the format if label and value are the same
-        if fmt == "numbers" or (self.label and self.label == str(value)):
+        value = int(self.value) if int(self.value) == self.value else self.value
+        if fmt == "numbers" or self.label == str(value):
             return str(value)
-
-        if fmt == "words_numbers":
-            return f"{self.label} ({value})"
-        # only remaining version is "numbers_words"
-        return f"{value} ({self.label})"
+        if fmt == "numbers_words":
+            return f"{value} ({self.label})"
+        return f"{self.label} ({value})"
 
     class Meta:
         ordering = ("value",)
@@ -121,8 +105,9 @@ class Review(PretalxModel):
 
     :param text: The review itself. May be empty.
     :param score: This score is calculated from all the related ``scores``
-        and their weights. Do not set it directly, use the ``update_score``
-        method instead.
+        and their weights. Do not set it directly; call
+        ``pretalx.submission.domain.review.update_review_score`` after
+        modifying the m2m scores.
     """
 
     submission = models.ForeignKey(
@@ -170,12 +155,6 @@ class Review(PretalxModel):
     def log_parent(self):
         return self.submission
 
-    @classmethod
-    def calculate_score(cls, scores):
-        if not scores:
-            return None
-        return sum(score.value * score.category.weight for score in scores)
-
     @cached_property
     def event(self):
         return self.submission.event
@@ -189,19 +168,6 @@ class Review(PretalxModel):
             return str(int(self.score))
         return str(self.score)
 
-    def update_score(self):
-        scores = (
-            self.scores.all()
-            .select_related("category")
-            .filter(category__in=self.submission.score_categories)
-        )
-        self.score = self.calculate_score(scores)
-
-    def save(self, *args, update_score=True, **kwargs):
-        if self.id and update_score:
-            self.update_score()
-        return super().save(*args, **kwargs)
-
     class urls(EventUrls):
         base = "{self.submission.orga_urls.reviews}"
         delete = "{base}{self.pk}/delete"
@@ -212,11 +178,14 @@ class ReviewPhase(OrderedModel, PretalxModel):
     open) time frame.
 
     :param is_active: Is this phase currently active? There can be only one
-        active phase per event. Use the ``activate`` method to activate a
-        review phase, as it will take care of this limitation.
+        active phase per event. Use
+        ``pretalx.submission.domain.review.activate_review_phase`` to
+        activate a phase, since it enforces that invariant.
     :param position: Helper field to deal with relative positioning of review
         phases next to each other.
     """
+
+    log_prefix = "pretalx.review_phase"
 
     event = models.ForeignKey(
         to="event.Event", related_name="review_phases", on_delete=models.CASCADE
@@ -285,14 +254,12 @@ class ReviewPhase(OrderedModel, PretalxModel):
         delete = "{base}delete"
         activate = "{base}activate"
 
-    def activate(self) -> None:
-        """Activates this review phase and deactivates all others in this
-        event."""
-        self.event.review_phases.all().update(is_active=False)
-        self.is_active = True
-        self.save()
+    def __str__(self):
+        return self.name
 
-    activate.alters_data = True
+    @property
+    def log_parent(self):
+        return self.event
 
     @staticmethod
     def get_order_queryset(event):

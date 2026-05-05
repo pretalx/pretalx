@@ -16,7 +16,8 @@ from pretalx.api.serializers.fields import UploadedFileField
 from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import User
-from pretalx.submission.domain.submission import create_submission
+from pretalx.submission.domain.submission import apply_field_changes, create_submission
+from pretalx.submission.domain.submission_type import propagate_default_duration
 from pretalx.submission.models import (
     QuestionTarget,
     Resource,
@@ -107,14 +108,11 @@ class SubmissionTypeSerializer(PretalxSerializer):
         return value
 
     def update(self, instance, validated_data):
-        duration_changed = (
-            "default_duration" in validated_data
-            and validated_data["default_duration"] != instance.default_duration
-        )
-        result = super().update(instance, validated_data)
-        if duration_changed:
-            instance.update_duration()
-        return result
+        old_duration = instance.default_duration
+        instance = super().update(instance, validated_data)
+        if old_duration != instance.default_duration:
+            propagate_default_duration(instance)
+        return instance
 
 
 @register_serializer(versions=CURRENT_VERSIONS)
@@ -376,34 +374,25 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
             # bytes through Submission.image's upload_to and persists.
             submission.image.save(Path(image.name).name, image, save=True)
         return create_submission(
-            submission=submission, user=self.context["request"].user
+            submission=submission, user=self.context["request"].user, orga=True
         )
 
     def update(self, instance, validated_data):
         image = validated_data.pop("image", None)
-        duration_changed = False
         if "get_duration" in validated_data:
             validated_data["duration"] = validated_data.pop("get_duration")
-            duration_changed = validated_data["duration"] != instance.duration
-        slot_count_changed = (
-            "slot_count" in validated_data
-            and validated_data["slot_count"] != instance.slot_count
-        )
-        track_changed = (
-            "track" in validated_data and validated_data["track"] != instance.track
-        )
+        changed_fields = {
+            field
+            for field, value in validated_data.items()
+            if getattr(instance, field, object()) != value
+        }
 
         submission = super().update(instance, validated_data)
 
         if image:
             submission.image.save(Path(image.name).name, image)
             submission.process_image("image")
-        if duration_changed:
-            submission.update_duration()
-        if slot_count_changed:
-            submission.update_talk_slots()
-        if track_changed:
-            submission.update_review_scores()
+        apply_field_changes(submission, changed_fields)
         return submission
 
     class Meta(SubmissionSerializer.Meta):

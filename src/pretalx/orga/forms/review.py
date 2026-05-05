@@ -20,6 +20,7 @@ from pretalx.common.forms.widgets import EnhancedSelectMultiple
 from pretalx.common.text.phrases import phrases
 from pretalx.orga.forms.export import ExportForm
 from pretalx.person.models import User
+from pretalx.submission.domain.review import update_review_score
 from pretalx.submission.interfaces.queries.question import questions_for_user
 from pretalx.submission.models import (
     QuestionTarget,
@@ -147,7 +148,7 @@ class ReviewForm(ReadOnlyFlag, forms.ModelForm):
             if score_id:
                 current_scores.append(score_id)
         instance.scores.set(current_scores)
-        instance.save()
+        update_review_score(instance)
         return instance
 
     class Media:

@@ -6,6 +6,7 @@ from decimal import Decimal
 import pytest
 from django_scopes import scopes_disabled
 
+from pretalx.submission.domain.review import update_review_score
 from pretalx.submission.models import QuestionVariant, Review
 from pretalx.submission.models.question import QuestionRequired
 from tests.factories import (
@@ -514,7 +515,7 @@ def test_reviewviewset_update_own_scores(
             category=review_score_category, value=Decimal("-1.0"), label="Bad"
         )
         review.scores.add(review_score_negative)
-        review.save()
+        update_review_score(review)
         initial_score = review.score
 
     response = client.patch(
@@ -550,7 +551,7 @@ def test_reviewviewset_update_multiple_scores_same_category_returns_400(
             category=review_score_category, value=Decimal("-1.0"), label="Bad"
         )
         review.scores.add(review_score_negative)
-        review.save()
+        update_review_score(review)
         initial_score = review.score
 
     response = client.patch(

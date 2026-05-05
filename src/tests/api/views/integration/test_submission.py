@@ -1695,7 +1695,7 @@ def test_submission_add_file_resource(client, event, orga_user_write_token, subm
 
 
 def test_submission_remove_resource_with_file_cleans_up(
-    client, event, orga_user_write_token, submission
+    client, event, orga_user_write_token, submission, django_capture_on_commit_callbacks
 ):
     """Removing a resource with an actual file also deletes the file from storage."""
 
@@ -1711,11 +1711,12 @@ def test_submission_remove_resource_with_file_cleans_up(
     file_path = resource.resource.path
     assert resource.resource.storage.exists(file_path)
 
-    response = client.delete(
-        event.api_urls.submissions + f"{submission.code}/resources/{resource_id}/",
-        follow=True,
-        headers={"Authorization": f"Token {orga_user_write_token.token}"},
-    )
+    with django_capture_on_commit_callbacks(execute=True):
+        response = client.delete(
+            event.api_urls.submissions + f"{submission.code}/resources/{resource_id}/",
+            follow=True,
+            headers={"Authorization": f"Token {orga_user_write_token.token}"},
+        )
     assert response.status_code == 204
     with scopes_disabled():
         assert not Resource.objects.filter(pk=resource_id).exists()

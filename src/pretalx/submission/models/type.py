@@ -116,29 +116,11 @@ class SubmissionType(PretalxModel):
         return f"{self.id}-{slugify(self.name)}"
 
     def delete(self, *args, **kwargs):
-        from pretalx.submission.models import (  # noqa: PLC0415 -- avoid circular import
-            SubmitterAccessCode,
+        from pretalx.submission.domain.access_code import (  # noqa: PLC0415 -- thin method
+            delete_orphan_access_codes,
         )
 
-        ac_ids = list(self.submitter_access_codes.values_list("pk", flat=True))
-        SubmitterAccessCode.objects.filter(pk__in=ac_ids).annotate(
-            type_count=models.Count("submission_types")
-        ).filter(type_count=1).delete()
+        delete_orphan_access_codes(self.submitter_access_codes, "submission_types")
         return super().delete(*args, **kwargs)
 
     delete.alters_data = True
-
-    def update_duration(self):
-        """Updates the duration of all.
-
-        :class:`~pretalx.schedule.models.slot.TalkSlot` objects of
-        :class:`~pretalx.submission.models.submission.Submission` objects of
-        this type.
-
-        Runs only for submissions that do not override their default
-        duration. Should be called whenever ``duration`` changes.
-        """
-        for submission in self.submissions.filter(duration__isnull=True):
-            submission.update_duration()
-
-    update_duration.alters_data = True

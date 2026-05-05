@@ -19,7 +19,7 @@ from pretalx.common.forms.widgets import (
 )
 from pretalx.common.text.phrases import phrases
 from pretalx.schedule.models import TalkSlot
-from pretalx.schedule.tasks import task_update_unreleased_schedule_changes
+from pretalx.submission.domain.submission import apply_field_changes
 from pretalx.submission.models import Submission, SubmissionStates
 
 
@@ -67,21 +67,16 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             self.fields["tags"].queryset = self.event.tags.all()
             self.fields["tags"].required = False
 
-        self.is_creating = False
-        if not self.instance.pk:
-            self.is_creating = True
-            if not anonymise:
-                self.fields["state"] = forms.ChoiceField(
-                    label=_("Proposal state"),
-                    choices=[
-                        (choice, name)
-                        for (choice, name) in SubmissionStates.choices
-                        if choice != SubmissionStates.DRAFT
-                    ],
-                    initial=SubmissionStates.SUBMITTED,
-                    required=True,
-                    widget=EnhancedSelect(color_field=SubmissionStates.get_color),
-                )
+        if not self.instance.pk and not anonymise:
+            state_field = self.fields["state"]
+            state_field.choices = [
+                choice
+                for choice in state_field.choices
+                if choice[0] != SubmissionStates.DRAFT
+            ]
+            state_field.initial = SubmissionStates.SUBMITTED
+        else:
+            self.fields.pop("state", None)
         if (
             not self.instance.pk
             or self.instance.state in SubmissionStates.accepted_states
@@ -180,45 +175,23 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
         return data
 
     def save(self, *args, **kwargs):
-        if "content_locale" not in self.fields:
-            self.instance.content_locale = self.event.locale
         instance = super().save(*args, **kwargs)
-        if self.is_creating:
-            instance.set_state(self.cleaned_data["state"])
-        else:
-            if "duration" in self.changed_data:
-                instance.update_duration()
-            if "track" in self.changed_data:
-                instance.update_review_scores()
-            if "slot_count" in self.changed_data and "slot_count" in self.initial:
-                instance.update_talk_slots()
-        if (
-            instance.state in SubmissionStates.accepted_states
-            and self.cleaned_data.get("room")
-            and self.cleaned_data.get("start")
-            and any(field in self.changed_data for field in ("room", "start", "end"))
-        ):
-            slot = (
-                instance.slots.filter(schedule=instance.event.wip_schedule)
-                .order_by("start")
-                .first()
-            )
-            slot.room = self.cleaned_data.get("room")
-            slot.start = self.cleaned_data.get("start")
-            slot.end = self.cleaned_data.get("end")
-            slot.save()
-            task_update_unreleased_schedule_changes.apply_async(
-                kwargs={"event": self.event.slug}
-            )
-        if not self.cleaned_data.get("start") and any(
-            field in self.changed_data for field in ("room", "start", "end")
-        ):
-            instance.slots.filter(schedule=instance.event.wip_schedule).delete()
-            instance.update_talk_slots()
-            task_update_unreleased_schedule_changes.apply_async(
-                kwargs={"event": self.event.slug}
-            )
+        apply_field_changes(instance, self.changed_data)
         return instance
+
+    def scheduling_kwargs(self):
+        """Return ``room``/``start``/``end`` for ``set_wip_slot``, or ``None``.
+
+        Returns ``None`` unless all three scheduling fields are present on the
+        form and carry values; otherwise the cleaned values for the caller.
+        """
+        scheduling_fields = ("room", "start", "end")
+        if not all(field in self.fields for field in scheduling_fields):
+            return None
+        kwargs = {field: self.cleaned_data.get(field) for field in scheduling_fields}
+        if not all(kwargs.values()):
+            return None
+        return kwargs
 
     class Media:
         js = [forms.Script("orga/js/forms/submission.js", defer="")]
@@ -241,12 +214,14 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
             "slot_count",
             "image",
             "is_featured",
+            "state",
         ]
         widgets = {
             "tags": EnhancedSelectMultiple(color_field="color"),
             "track": EnhancedSelect(color_field="color"),
             "submission_type": EnhancedSelect,
             "duration": TextInputWithAddon(addon_after=_("minutes")),
+            "state": EnhancedSelect(color_field=SubmissionStates.get_color),
         }
         field_classes = {
             "submission_type": SafeModelChoiceField,

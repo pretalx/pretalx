@@ -33,6 +33,8 @@ from pretalx.submission.models import (
 TEMPLATE_LOG_NAMES = {
     "pretalx.event.delete": _("The event {name} ({slug}) by {organiser} was deleted."),
     "pretalx.organiser.delete": _("The organiser {name} was deleted."),
+    "pretalx.access_code.send": _("The access code has been sent to {email}."),
+    "pretalx.review_phase.activate": _("The review phase “{name}” was activated."),
     "pretalx.submission.invitation.send": _(
         "A speaker invitation was sent to {email}."
     ),
@@ -137,7 +139,6 @@ LOG_NAMES = {
     ),
     "pretalx.submission_type.update": _("A session type was modified."),
     "pretalx.access_code.create": _("An access code was added."),
-    "pretalx.access_code.send": _("The access code has been sent."),
     "pretalx.access_code.update": _("An access code was modified."),
     "pretalx.access_code.delete": _("An access code was deleted."),
     "pretalx.track.create": _("A track was added."),

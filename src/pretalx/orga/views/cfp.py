@@ -56,6 +56,7 @@ from pretalx.orga.tables.cfp import (
 )
 from pretalx.orga.utils.i18n import has_i18n_content
 from pretalx.person.forms import SpeakerProfileForm
+from pretalx.submission.domain.access_code import send_access_code
 from pretalx.submission.interfaces.forms import InfoForm, QuestionsForm
 from pretalx.submission.interfaces.queries.question import questions_for_user
 from pretalx.submission.models import (
@@ -644,17 +645,16 @@ class AccessCodeView(OrderActionMixin, OrgaCRUDView):
             return self.delete_view(request, *args, **kwargs)
 
 
-class AccessCodeSend(PermissionRequired, UpdateView):
-    model = SubmitterAccessCode
+class AccessCodeSend(PermissionRequired, FormView):
     form_class = AccessCodeSendForm
-    context_object_name = "access_code"
     template_name = "orga/cfp/submitteraccesscode/send.html"
     permission_required = "submission.view_submitteraccesscode"
 
     def get_success_url(self) -> str:
         return self.request.event.cfp.urls.access_codes
 
-    def get_object(self):
+    @cached_property
+    def access_code(self):
         return self.request.event.submitter_access_codes.filter(
             code__iexact=self.kwargs.get("code")
         ).first()
@@ -664,24 +664,24 @@ class AccessCodeSend(PermissionRequired, UpdateView):
         return [send_button()]
 
     def get_permission_object(self):
-        return self.get_object()
+        return self.access_code
 
     def get_form_kwargs(self):
         result = super().get_form_kwargs()
+        result["instance"] = self.access_code
         result["user"] = self.request.user
         return result
 
     def form_valid(self, form):
-        result = super().form_valid(form)
-        messages.success(self.request, _("The access code has been sent."))
-        code = self.get_object()
-        code.log_action(
-            "pretalx.access_code.send",
-            person=self.request.user,
-            orga=True,
-            data={"email": form.cleaned_data["to"]},
+        send_access_code(
+            self.access_code,
+            user=self.request.user,
+            recipient=form.cleaned_data["to"],
+            subject=form.cleaned_data["subject"],
+            text=form.cleaned_data["text"],
         )
-        return result
+        messages.success(self.request, _("The access code has been sent."))
+        return super().form_valid(form)
 
 
 def get_field_label(field_key, model):

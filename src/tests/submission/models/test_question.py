@@ -10,8 +10,7 @@ from django.db import IntegrityError
 from django.utils.timezone import now as tz_now
 from django_scopes import scope
 
-from pretalx.person.models import SpeakerProfile
-from pretalx.submission.models import Answer, AnswerOption, Question, Submission
+from pretalx.submission.models import Answer, AnswerOption, Question
 from pretalx.submission.models.question import (
     QuestionIcon,
     QuestionRequired,
@@ -159,31 +158,15 @@ def test_question_icon_url_none_when_no_icon():
     assert question.icon_url is None
 
 
-def test_question_clean_identifier_raises_on_duplicate():
+def test_question_clean_rejects_duplicate_identifier():
     event = EventFactory()
     QuestionFactory(event=event, identifier="DUPE-ID")
+    duplicate = QuestionFactory.build(event=event, identifier="DUPE-ID")
 
-    with pytest.raises(ValidationError):
-        Question.clean_identifier(event, "DUPE-ID")
+    with pytest.raises(ValidationError) as exc_info:
+        duplicate.clean()
 
-
-def test_question_clean_identifier_case_insensitive():
-    event = EventFactory()
-    QuestionFactory(event=event, identifier="My-Id")
-
-    with pytest.raises(ValidationError):
-        Question.clean_identifier(event, "my-id")
-
-
-def test_question_clean_identifier_allows_same_instance():
-    event = EventFactory()
-    question = QuestionFactory(event=event, identifier="MY-ID")
-    Question.clean_identifier(event, "MY-ID", instance=question)
-
-
-@pytest.mark.parametrize("code", ("", None), ids=("empty", "none"))
-def test_question_clean_identifier_returns_early_for_falsy_code(code):
-    Question.clean_identifier(EventFactory(), code)
+    assert "identifier" in exc_info.value.message_dict
 
 
 def test_question_get_order_queryset():
@@ -205,80 +188,6 @@ def test_question_get_order_queryset_includes_inactive():
     result = list(Question.get_order_queryset(event))
 
     assert result == [active, inactive]
-
-
-def test_question_missing_answers_submission_all_missing():
-    event = EventFactory()
-    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    SubmissionFactory(event=event)
-    SubmissionFactory(event=event)
-
-    with scope(event=event):
-        assert question.missing_answers() == 2
-
-
-def test_question_missing_answers_submission_some_answered():
-    event = EventFactory()
-    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    submission = SubmissionFactory(event=event)
-    SubmissionFactory(event=event)
-    AnswerFactory(question=question, submission=submission, speaker=None)
-
-    with scope(event=event):
-        assert question.missing_answers() == 1
-
-
-def test_question_missing_answers_speaker():
-    event = EventFactory()
-    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-
-    with scope(event=event):
-        assert question.missing_answers() == 1
-
-
-def test_question_missing_answers_speaker_answered():
-    event = EventFactory()
-    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-    AnswerFactory(question=question, speaker=speaker, submission=None)
-
-    with scope(event=event):
-        assert question.missing_answers() == 0
-
-
-def test_question_missing_answers_reviewer_returns_zero():
-    question = QuestionFactory(target=QuestionTarget.REVIEWER)
-
-    with scope(event=question.event):
-        assert question.missing_answers() == 0
-
-
-def test_question_missing_answers_with_filter_talks():
-    event = EventFactory()
-    question = QuestionFactory(event=event, target=QuestionTarget.SUBMISSION)
-    sub1 = SubmissionFactory(event=event)
-    SubmissionFactory(event=event)
-
-    with scope(event=event):
-        filtered = Submission.objects.filter(pk=sub1.pk)
-        assert question.missing_answers(filter_talks=filtered) == 1
-
-
-def test_question_missing_answers_with_filter_speakers():
-    event = EventFactory()
-    question = QuestionFactory(event=event, target=QuestionTarget.SPEAKER)
-    speaker = SpeakerFactory(event=event)
-    submission = SubmissionFactory(event=event)
-    submission.speakers.add(speaker)
-
-    with scope(event=event):
-        filtered = SpeakerProfile.objects.filter(pk=speaker.pk)
-        assert question.missing_answers(filter_speakers=filtered) == 1
 
 
 def test_question_get_instance_data_for_string_variant():
@@ -391,26 +300,14 @@ def test_answer_option_identifier_unique_per_question():
         AnswerOptionFactory(question=option1.question, identifier="SAME-OPT")
 
 
-def test_answer_option_clean_identifier_raises_on_duplicate():
+def test_answer_option_clean_rejects_duplicate_identifier():
     option = AnswerOptionFactory(identifier="DUPE")
-    with pytest.raises(ValidationError):
-        AnswerOption.clean_identifier(option.question, "DUPE")
+    duplicate = AnswerOptionFactory.build(question=option.question, identifier="DUPE")
 
+    with pytest.raises(ValidationError) as exc_info:
+        duplicate.clean()
 
-def test_answer_option_clean_identifier_case_insensitive():
-    option = AnswerOptionFactory(identifier="MyOpt")
-    with pytest.raises(ValidationError):
-        AnswerOption.clean_identifier(option.question, "myopt")
-
-
-def test_answer_option_clean_identifier_allows_same_instance():
-    option = AnswerOptionFactory(identifier="MY-OPT")
-    AnswerOption.clean_identifier(option.question, "MY-OPT", instance=option)
-
-
-@pytest.mark.parametrize("code", ("", None), ids=("empty", "none"))
-def test_answer_option_clean_identifier_returns_early_for_falsy_code(code):
-    AnswerOption.clean_identifier(QuestionFactory(), code)
+    assert "identifier" in exc_info.value.message_dict
 
 
 def test_answer_option_generate_unique_codes_batch():
@@ -453,26 +350,6 @@ def test_answer_log_parent_reviewer():
     review = ReviewFactory(submission__event=question.event)
     answer = AnswerFactory(question=question, review=review, submission=None)
     assert answer.log_parent == review
-
-
-def test_answer_remove_deletes_answer():
-    answer = AnswerFactory()
-    pk = answer.pk
-
-    answer.remove()
-
-    assert not Answer.objects.filter(pk=pk).exists()
-
-
-def test_answer_remove_clears_options():
-    question = QuestionFactory(variant=QuestionVariant.CHOICES)
-    option = AnswerOptionFactory(question=question)
-    answer = AnswerFactory(question=question)
-    answer.options.add(option)
-
-    answer.remove()
-
-    assert not option.answers.exists()
 
 
 @pytest.mark.parametrize(
@@ -629,7 +506,7 @@ def test_answer_file_path_reviewer():
     assert path.endswith(".txt")
 
 
-def test_answer_file_deleted_on_answer_delete():
+def test_answer_file_deleted_on_answer_delete(django_capture_on_commit_callbacks):
     event = EventFactory()
     question = QuestionFactory(
         event=event, variant=QuestionVariant.FILE, target=QuestionTarget.SUBMISSION
@@ -642,12 +519,13 @@ def test_answer_file_deleted_on_answer_delete():
 
         assert default_storage.exists(file_path)
 
-        answer.delete()
+        with django_capture_on_commit_callbacks(execute=True):
+            answer.delete()
 
     assert not default_storage.exists(file_path)
 
 
-def test_answer_file_deleted_on_file_replace():
+def test_answer_file_deleted_on_file_replace(django_capture_on_commit_callbacks):
     event = EventFactory()
     question = QuestionFactory(
         event=event, variant=QuestionVariant.FILE, target=QuestionTarget.SUBMISSION
@@ -660,11 +538,12 @@ def test_answer_file_deleted_on_file_replace():
 
         assert default_storage.exists(old_path)
 
-        answer.answer_file.save("new.pdf", ContentFile(b"new"), save=True)
+        with django_capture_on_commit_callbacks(execute=True):
+            answer.answer_file.save("new.pdf", ContentFile(b"new"), save=True)
         new_path = answer.answer_file.name
 
     assert not default_storage.exists(old_path)
     assert default_storage.exists(new_path)
 
-    with scope(event=event):
+    with scope(event=event), django_capture_on_commit_callbacks(execute=True):
         answer.delete()

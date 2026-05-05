@@ -75,6 +75,7 @@ from pretalx.orga.forms.event import (
 from pretalx.orga.signals import activate_event
 from pretalx.person.forms import UserForm
 from pretalx.person.models import User
+from pretalx.submission.domain.review import activate_review_phase
 from pretalx.submission.models import ReviewPhase, ReviewScoreCategory
 from pretalx.submission.tasks import recalculate_all_review_scores
 
@@ -377,10 +378,10 @@ class EventReviewSettings(EventSettingsPermission, FormView):
         if not phases or not scores:
             return self.get(self.request, *self.args, **self.kwargs)
         form.save()
-        # Cannot use form.has_changed() here; dynamic fields always report changes
-        recalculate_all_review_scores.apply_async(
-            kwargs={"event_id": self.request.event.pk}, ignore_result=True
-        )
+        if any(f.affects_review_scores for f in self.scores_formset.initial_forms):
+            recalculate_all_review_scores.apply_async(
+                kwargs={"event_id": self.request.event.pk}, ignore_result=True
+            )
         return super().form_valid(form)
 
     @context
@@ -472,10 +473,7 @@ class EventReviewSettings(EventSettingsPermission, FormView):
     def save_scores(self):
         if not self.scores_formset.is_valid():
             return False
-        weights_changed = False
         for form in self.scores_formset.initial_forms:
-            if "weight" in form.changed_data:
-                weights_changed = True
             form.instance.event = self.request.event
             form.save()
 
@@ -489,14 +487,10 @@ class EventReviewSettings(EventSettingsPermission, FormView):
             form.save()
 
         for form in self.scores_formset.deleted_forms:
-            if not form.instance.is_independent:
-                weights_changed = True
             if form.instance.pk:
                 form.instance.scores.all().delete()
                 form.instance.delete()
 
-        if weights_changed:
-            ReviewScoreCategory.recalculate_scores(self.request.event)
         return True
 
 
@@ -512,7 +506,7 @@ class PhaseActivate(EventSettingsPermission, View):
             phase.is_active = False
             phase.save()
         else:
-            phase.activate()
+            activate_review_phase(phase, person=request.user)
         return redirect(self.request.event.orga_urls.review_settings)
 
 

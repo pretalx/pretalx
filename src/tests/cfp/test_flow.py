@@ -2158,10 +2158,14 @@ def test_info_step_done_catches_send_mail_exception(monkeypatch):
     event = EventFactory()
     user = UserFactory()
 
-    def _send_raises(self, _from=None, **kwargs):
-        raise SendMailException("SMTP error")
+    class _RaisingTemplate:
+        def __init__(self, *_, **__):
+            pass
 
-    monkeypatch.setattr(SubmissionInvitation, "send", _send_raises)
+        def to_mail(self, *_, **__):
+            raise SendMailException("SMTP error")
+
+    monkeypatch.setattr("pretalx.mail.models.MailTemplate", _RaisingTemplate)
 
     step = InfoStep(event=event)
     request = make_request(

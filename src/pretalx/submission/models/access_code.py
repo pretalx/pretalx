@@ -123,26 +123,6 @@ class SubmitterAccessCode(GenerateCode, PretalxModel):
 
     redeem.alters_data = True
 
-    def send_invite(self, to, subject, text):
-        """Send the access-code invitation mail to one or more
-        recipients. ``subject`` and ``text`` are organiser-authored
-        and represent the final text; there will be no placeholder
-        rendering here."""
-        from pretalx.mail.models import (  # noqa: PLC0415 -- avoid circular import
-            QueuedMail,
-        )
-
-        addresses = to.split(",") if isinstance(to, str) else to
-        for invite in addresses:
-            QueuedMail(
-                event=self.event,
-                to=invite.strip() if isinstance(invite, str) else invite,
-                subject=subject,
-                text=text,
-            ).send()
-
-    send_invite.alters_data = True
-
     def get_instance_data(self):
         result = super().get_instance_data()
         result["code"] = self.code  # Usually excluded as ID field

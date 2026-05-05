@@ -4,9 +4,10 @@
 from django.db.models import Exists, OuterRef, Q
 
 from pretalx.orga.rules import can_view_speaker_names
+from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_reviewer
 from pretalx.submission.enums import QuestionTarget
-from pretalx.submission.models import Answer
+from pretalx.submission.models import Answer, Submission
 
 
 def active_questions(
@@ -109,6 +110,30 @@ def filter_submissions_by_question(
     if unanswered:
         return qs.filter(~Exists(answers))
     return qs
+
+
+def count_missing_answers(question, *, filter_speakers=None, filter_talks=None):
+    """How many answers are missing for ``question``.
+
+    Only meaningful for submission and speaker questions; reviewer questions
+    return ``0``. Pass ``filter_speakers`` or ``filter_talks`` (querysets) to
+    restrict the scope.
+    """
+    answers = question.answers.all()
+    filter_talks = filter_talks or Submission.objects.none()
+    filter_speakers = filter_speakers or SpeakerProfile.objects.none()
+    if filter_speakers or filter_talks:
+        answers = answers.filter(
+            Q(speaker__in=filter_speakers) | Q(submission__in=filter_talks)
+        )
+    answer_count = answers.count()
+    if question.target == QuestionTarget.SUBMISSION:
+        submissions = filter_talks or question.event.submissions.all()
+        return max(submissions.count() - answer_count, 0)
+    if question.target == QuestionTarget.SPEAKER:
+        speakers = filter_speakers or question.event.submitters
+        return max(speakers.count() - answer_count, 0)
+    return 0
 
 
 def answers_for_user(event, user):

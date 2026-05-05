@@ -772,6 +772,16 @@ class ReviewScoreCategoryForm(PretalxI18nModelForm):
             score_id = score["score"].id
             yield (self[f"value_{score_id}"], self[f"label_{score_id}"])
 
+    @property
+    def affects_review_scores(self):
+        """Whether saving this form would change Review.score for existing reviews."""
+        if self.cleaned_data.get("DELETE"):
+            return not self.instance.is_independent
+        watched = {"weight", "active", "is_independent", "limit_tracks"} | {
+            f"value_{entry['score'].id}" for entry in self.label_fields
+        }
+        return bool(watched.intersection(self.changed_data))
+
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)
         for score in self.label_fields:

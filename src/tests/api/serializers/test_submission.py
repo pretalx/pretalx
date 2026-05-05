@@ -16,6 +16,7 @@ from pretalx.api.serializers.submission import (
     TagSerializer,
     TrackSerializer,
 )
+from pretalx.submission.domain.review import update_review_score
 from pretalx.submission.models import QuestionTarget, SubmissionStates
 from tests.factories import (
     AnswerFactory,
@@ -934,7 +935,7 @@ def test_submission_orga_serializer_update_track_change_recalculates_review_scor
     review = ReviewFactory(submission=submission)
     score_obj = ReviewScoreFactory(category=category, value=5)
     review.scores.add(score_obj)
-    review.save(update_score=True)
+    update_review_score(review)
     review.refresh_from_db()
     assert review.score is not None
     original_updated = review.updated

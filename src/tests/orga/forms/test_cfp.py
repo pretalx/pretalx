@@ -4,7 +4,6 @@ import datetime as dt
 import json
 
 import pytest
-from django.core import mail as djmail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.timezone import now
 
@@ -711,8 +710,8 @@ def test_submission_type_form_clean_name_allows_same_instance():
 
 
 def test_submission_type_form_save_updates_default_duration():
-    """Saving the form with a changed default_duration calls update_duration,
-    updating submissions that use the default."""
+    """Saving the form with a changed default_duration propagates the
+    change to slots of submissions that inherit the default."""
     event = EventFactory()
     stype = SubmissionTypeFactory(event=event, name="Workshop", default_duration=30)
     SubmissionFactory(event=event, submission_type=stype, duration=None)
@@ -732,7 +731,7 @@ def test_submission_type_form_save_updates_default_duration():
 
 
 def test_submission_type_form_save_without_duration_change():
-    """Saving with the same default_duration does not trigger update_duration."""
+    """Saving with the same default_duration does not rewrite slots."""
     event = EventFactory()
     stype = SubmissionTypeFactory(event=event, name="Workshop", default_duration=60)
 
@@ -926,28 +925,6 @@ def test_access_code_send_form_generic_text_without_restrictions():
     form = AccessCodeSendForm(instance=access_code, user=user)
 
     assert "submit a proposal" in form.initial["text"].lower()
-
-
-def test_access_code_send_form_save_sends_invite():
-    djmail.outbox = []
-    event = EventFactory()
-    access_code = SubmitterAccessCodeFactory(event=event)
-    user = UserFactory()
-
-    form = AccessCodeSendForm(
-        data={
-            "to": "recipient@example.com",
-            "subject": "Your access code",
-            "text": "Here it is.",
-        },
-        instance=access_code,
-        user=user,
-    )
-    assert form.is_valid(), form.errors
-    form.save()
-
-    assert len(djmail.outbox) == 1
-    assert djmail.outbox[0].to == ["recipient@example.com"]
 
 
 def test_question_filter_form_init_sets_submission_type_queryset():

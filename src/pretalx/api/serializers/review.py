@@ -9,6 +9,7 @@ from pretalx.api.serializers.mixins import PretalxSerializer
 from pretalx.api.serializers.question import AnswerSerializer
 from pretalx.api.versions import CURRENT_VERSIONS, register_serializer
 from pretalx.person.models import User
+from pretalx.submission.domain.review import update_review_score
 from pretalx.submission.models import (
     Review,
     ReviewScore,
@@ -120,7 +121,7 @@ class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
     def create(self, validated_data):
         instance = super().create(validated_data)
         if instance.scores.exists():
-            instance.save(update_score=True)
+            update_review_score(instance)
         return instance
 
     def update(self, instance, validated_data):
@@ -128,7 +129,7 @@ class ReviewWriteSerializer(FlexFieldsSerializerMixin, PretalxSerializer):
         has_scores = "scores" in validated_data
         instance = super().update(instance, validated_data)
         if has_scores:
-            instance.save(update_score=True)
+            update_review_score(instance)
         return instance
 
 

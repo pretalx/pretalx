@@ -55,6 +55,15 @@ from pretalx.orga.tables.feedback import FeedbackTable
 from pretalx.orga.tables.submission import SubmissionTable, TagTable
 from pretalx.person.models import SpeakerProfile
 from pretalx.person.rules import is_only_reviewer
+from pretalx.submission.domain.submission import (
+    apply_pending_state,
+    create_submission,
+    invite_speaker,
+    remove_speaker,
+    set_submission_state,
+    set_wip_slot,
+    update_talk_slots,
+)
 from pretalx.submission.interfaces.forms import (
     QuestionsForm,
     ResourceForm,
@@ -200,10 +209,11 @@ class SubmissionStateChange(SubmissionViewMixin, FormView):
             self.object.save()
             if self.object.pending_state in SubmissionStates.accepted_states:
                 # allow configureability of pending accepted/confirmed talks
-                self.object.update_talk_slots()
+                update_talk_slots(self.object)
         else:
-            method = getattr(self.object, SubmissionStates.method_names[self._target])
-            method(person=self.request.user, orga=True)
+            set_submission_state(
+                self.object, self._target, person=self.request.user, orga=True
+            )
 
     @transaction.atomic
     def form_valid(self, form):
@@ -311,7 +321,7 @@ class SubmissionSpeakersDelete(SubmissionViewMixin, View):
         )
 
         if submission.speakers.filter(pk=speaker.pk).exists():
-            submission.remove_speaker(speaker, user=self.request.user)
+            remove_speaker(submission, speaker, user=self.request.user)
             messages.success(
                 request, _("The speaker has been removed from the proposal.")
             )
@@ -412,7 +422,8 @@ class SubmissionSpeakers(ReviewerSubmissionFilter, SubmissionViewMixin, FormView
 
     def form_valid(self, form):
         if email := form.cleaned_data.get("email"):
-            speaker = self.object.invite_speaker(
+            speaker = invite_speaker(
+                self.object,
                 email=email,
                 name=form.cleaned_data.get("name"),
                 locale=form.cleaned_data.get("locale"),
@@ -606,15 +617,31 @@ class SubmissionContent(
 
         form.instance.event = self.request.event
 
-        # Save the form and show success message (skipping FormLoggingMixin's logging)
-        result = super().form_valid(form, skip_logging=True)
-        self.object = form.instance
+        if created:
+            try:
+                create_submission(
+                    submission=form.instance,
+                    user=self.request.user,
+                    orga=True,
+                    tags=form.cleaned_data.get("tags"),
+                )
+            except SubmissionError as e:
+                messages.error(self.request, str(e))
+                return redirect(self.request.event.orga_urls.new_submission)
+            self.object = form.instance
+            result = redirect(self.get_success_url())
+        else:
+            result = super().form_valid(form, skip_logging=True)
+            self.object = form.instance
+        if (scheduling := form.scheduling_kwargs()) is not None:
+            set_wip_slot(self.object, **scheduling)
         self._questions_form.save(submission=form.instance)
 
         stay_on_page = False
         if created:
             if speaker_form and (email := speaker_form.cleaned_data["email"]):
-                form.instance.invite_speaker(
+                invite_speaker(
+                    form.instance,
                     email=email,
                     name=self.new_speaker_form.cleaned_data["name"],
                     locale=self.new_speaker_form.cleaned_data.get("locale"),
@@ -640,8 +667,6 @@ class SubmissionContent(
                 old_data=json_roundtrip(old_submission_data | old_questions_data),
                 new_data=json_roundtrip(new_submission_data | new_questions_data),
             )
-        elif created:
-            form.instance.log_action(".create", person=self.request.user, orga=True)
         if stay_on_page:
             return self.get(self.request, *self.args, **self.kwargs)
         return result
@@ -830,7 +855,7 @@ class ApplyPending(SubmissionViewMixin, View):
     def post(self, request, *args, **kwargs):
         submission = self.object
         try:
-            submission.apply_pending_state(person=request.user)
+            apply_pending_state(submission, person=request.user)
         except SubmissionError as e:
             messages.error(request, str(e))
         return redirect(submission.orga_urls.base)
@@ -1293,7 +1318,7 @@ class ApplyPendingBulk(
         errors = []
         for submission in self.submissions:
             try:
-                submission.apply_pending_state(person=self.request.user)
+                apply_pending_state(submission, person=self.request.user)
             except SubmissionError as e:
                 errors.append(f"{submission.title}: {e}")
         if errors:

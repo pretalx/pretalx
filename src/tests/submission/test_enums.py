@@ -34,15 +34,6 @@ def test_submission_states_get_color(state, expected_color):
     assert SubmissionStates.get_color(state) == expected_color
 
 
-def test_submission_states_method_names():
-    assert SubmissionStates.method_names["submitted"] == "make_submitted"
-    assert SubmissionStates.method_names["accepted"] == "accept"
-    assert SubmissionStates.method_names["rejected"] == "reject"
-    assert SubmissionStates.method_names["confirmed"] == "confirm"
-    assert SubmissionStates.method_names["canceled"] == "cancel"
-    assert SubmissionStates.method_names["withdrawn"] == "withdraw"
-
-
 def test_submission_states_accepted_states():
     assert SubmissionStates.accepted_states == ("accepted", "confirmed")
 
